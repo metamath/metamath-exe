@@ -1,10 +1,10 @@
 /*****************************************************************************/
-/*        Copyright (C) 2002  NORMAN MEGILL  nm@alum.mit.edu                 */
+/*        Copyright (C) 2003  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.07m 17-Nov-02"
+#define MVERSION "0.07r 8-Sep-03"
 /* Metamath Proof Verifier - main program */
 /* See the book "Metamath" for description of Metamath and run instructions */
 
@@ -120,10 +120,6 @@ console_options.title = (unsigned char*)"\pMetamath";
   if (!listMode) {
     /*print2("Metamath - Version %s\n", MVERSION);*/
     print2("Metamath - Version %s%s", MVERSION, space(25 - strlen(MVERSION)));
-    /*
-    print2(
-     "Copyright (C) 2002 GPL Norman Megill nm@alum.mit.edu\n");
-    */
   }
   /* if (argc < 2) */ print2("Type HELP for help, EXIT to exit.\n");
 
@@ -1314,16 +1310,306 @@ void command(int argc, char *argv[])
       continue;
     }
 
-    if (cmdMatches("WRITE DICTIONARY")) {
-      print2("?This command has not been implemented.\n");
-      if (0) { /*???NOT IMPLEMENTED YET*/
-        let(&tex_dict_fn, fullArg[2]);
-        tex_dict_fp = fSafeOpen(tex_dict_fn, "w");
-        if (!tex_dict_fp) continue; /* Couldn't open (err msg was provided)*/
-        writeDict();
-        fclose(tex_dict_fp);
-      } /*???*/
-     continue;
+    if (cmdMatches("WRITE BIBLIOGRAPHY")) {
+      /* 10/10/02 -
+         This utility building the bibliographical cross-references to various
+         textbooks and updates the user-specified file normally called
+         mmbiblio.html.
+       */
+      tmpFlag = 0; /* Error flag to recover input file */
+      list1_fp = fSafeOpen(fullArg[2], "r");
+      if (list1_fp == NULL) {
+        /* Couldn't open it (error msg was provided)*/
+        continue;
+      }
+      fclose(list1_fp);
+      /* This will rename the input mmbiblio.html as mmbiblio.html~1 */
+      list2_fp = fSafeOpen(fullArg[2], "w");
+      if (list2_fp == NULL) {
+          /* Couldn't open it (error msg was provided)*/
+        continue;
+      }
+      /* Note: in older versions the "~1" string was OS-dependent, but we
+         don't support VAX or THINK C anymore...  Anyway we reopen it
+         here with the renamed file in case the OS won't let us rename
+         an opened file during the fSafeOpen for write above. */
+      list1_fp = fSafeOpen(cat(fullArg[2], "~1", NULL), "r");
+      if (list1_fp == NULL) bug(1116);
+      if (!texDefsRead) {
+        print2("Reading definitions from $t statement of %s...\n", input_fn);
+        if (!readTexDefs()) {
+          tmpFlag = 1; /* Error flag to recover input file */
+          goto bib_error; /* An error occurred */
+        }
+      }
+
+      /* Transfer the input file up to the special "<!-- #START# -->" comment */
+      while (1) {
+        if (!linput(list1_fp, NULL, &str1)) {
+          print2(
+"?Error: Could not find \"<!-- #START# -->\" line in input file \"%s\".\n",
+              fullArg[2]);
+          tmpFlag = 1; /* Error flag to recover input file */
+          break;
+        }
+        fprintf(list2_fp, "%s\n", str1);
+        if (!strcmp(str1, "<!-- #START# -->")) break;
+      }
+      if (tmpFlag) goto bib_error;
+
+      p2 = 1; /* Pass 1 or 2 flag */
+      lines = 0;
+      while (1) {
+
+        if (p2 == 2) {  /* Pass 2 */
+          /* Allocate memory for sorting */
+          pntrLet(&pntrTmp, pntrSpace(lines));
+          lines = 0;
+        }
+
+        /* Scan all $a and $p statements */
+        for (i = 1; i <= statements; i++) {
+          if (statement[i].type != (char)p__ &&
+            statement[i].type != (char)a__) continue;
+          /* Omit ...OBS (obsolete) and ...NEW (to be implemented) statements */
+          if (instr(1, statement[i].labelName, "NEW")) continue;
+          if (instr(1, statement[i].labelName, "OBS")) continue;
+          let(&str1, "");
+          str1 = getDescription(i); /* Get the statement's comment */
+          if (!instr(1, str1, "[")) continue;
+          for (j = 0; j < strlen(str1); j++) {
+            if (str1[j] == '\n') str1[j] = ' '; /* Change newlines to spaces */
+          }
+          let(&str1, edit(str1, 8 + 128 + 16)); /* Reduce & trim whitespace */
+          /* Put spaces before page #s (up to 4 digits) for sorting */
+          j = 0;
+          while (1) {
+            j = instr(j + 1, str1, " p. "); /* Heuristic - match " p. " */
+            if (!j) break;
+            if (j) {
+              for (k = j + 4; k <= strlen(str1) + 1; k++) {
+                if (!isdigit(str1[k - 1])) {
+                  let(&str1, cat(left(str1, j + 2),
+                      space(4 - (k - (j + 4))), right(str1, j + 3), NULL));
+                  /* Add ### after page number as marker */
+                  let(&str1, cat(left(str1, j + 7), "###", right(str1, j + 8),
+                      NULL));
+                  break;
+                }
+              }
+            }
+          }
+          /* Process any bibliographic references in comment */
+          j = 0;
+          n = 0;
+          while (1) {
+            j = instr(j + 1, str1, "["); /* Find reference (not robust) */
+            if (!j) break;
+            if (!isalnum(str1[j])) continue; /* Not start of reference */
+            n++;
+            /* Backtrack from [reference] to a starting keyword */
+            m = 0;
+            let(&str2, edit(str1, 32)); /* to uppercase */
+            for (k = j - 1; k >= 1; k--) {
+              if (0
+                  || !strcmp(mid(str2, k, strlen("COMPARE")), "COMPARE")
+                  || !strcmp(mid(str2, k, strlen("DEFINITION")), "DEFINITION")
+                  || !strcmp(mid(str2, k, strlen("THEOREM")), "THEOREM")
+                  || !strcmp(mid(str2, k, strlen("PROPOSITION")), "PROPOSITION")
+                  || !strcmp(mid(str2, k, strlen("LEMMA")), "LEMMA")
+                  || !strcmp(mid(str2, k, strlen("COROLLARY")), "COROLLARY")
+                  || !strcmp(mid(str2, k, strlen("AXIOM")), "AXIOM")
+                  || !strcmp(mid(str2, k, strlen("RULE")), "RULE")
+                  || !strcmp(mid(str2, k, strlen("REMARK")), "REMARK")
+                  || !strcmp(mid(str2, k, strlen("EXERCISE")), "EXERCISE")
+                  || !strcmp(mid(str2, k, strlen("NOTATION")), "NOTATION")
+                  || !strcmp(mid(str2, k, strlen("EXAMPLE")), "EXAMPLE")
+                  || !strcmp(mid(str2, k, strlen("PROPERTY")), "PROPERTY")
+                  || !strcmp(mid(str2, k, strlen("FIGURE")), "FIGURE")
+                  || !strcmp(mid(str2, k, strlen("POSTULATE")), "POSTULATE")
+                  || !strcmp(mid(str2, k, strlen("EQUATION")), "EQUATION")
+                  || !strcmp(mid(str2, k, strlen("SCHEME")), "SCHEME")
+                  /* Don't use SCHEMA since we may have THEOREM SCHEMA
+                  || !strcmp(mid(str2, k, strlen("SCHEMA")), "SCHEMA")
+                  */
+                  || !strcmp(mid(str2, k, strlen("CHAPTER")), "CHAPTER")
+                  ) {
+                m = k;
+                break;
+              }
+              let(&str3, ""); /* Clear tmp alloc stack created by "mid" */
+            }
+            if (!m) {
+              if (p == 0) print2("Skipped (no keyword match): %s\n",
+                  statement[i].labelName);
+              continue; /* Not a bib ref - ignore */
+            }
+            /* m is at the start of a keyword */
+            p = instr(m, str1, "["); /* Start of bibliograpy reference */
+            q = instr(p, str1, "]"); /* End of bibliography reference */
+            if (!q) {
+              if (p == 0) print2("Skipped (not a valid reference): %s\n",
+                  statement[i].labelName);
+              continue; /* Not a bib ref - ignore */
+            }
+            s = instr(q, str1, "###"); /* Page number marker */
+            if (!s) {
+              if (p == 0) print2("Skipped (no page number): %s\n",
+                  statement[i].labelName);
+              continue; /* No page number given - ignore */
+            }
+            /* Now we have a real reference; increment reference count */
+            lines++;
+            if (p2 == 1) continue; /* In 1st pass, we just count refs */
+
+            let(&str2, seg(str1, m, p - 1));     /* "Theorem #" */
+            let(&str3, seg(str1, p + 1, q - 1));  /* "[bibref]" w/out [] */
+            let(&str4, seg(str1, q + 1, s - 1)); /* " p. nnnn" */
+            str2[0] = toupper(str2[0]);
+            /* Eliminate noise like "of" in "Theorem 1 of [bibref]" */
+            for (k = strlen(str2); k >=1; k--) {
+              if (0
+                  || !strcmp(mid(str2, k, strlen(" of ")), " of ")
+                  || !strcmp(mid(str2, k, strlen(" in ")), " in ")
+                  || !strcmp(mid(str2, k, strlen(" from ")), " from ")
+                  || !strcmp(mid(str2, k, strlen(" on ")), " on ")
+                  ) {
+                let(&str2, left(str2, k - 1));
+                break;
+              }
+              let(&str2, str2);
+            }
+
+            let(&newstr, "");
+            newstr = pinkHTML(i); /* Get little pink number */
+            let(&oldstr, cat(
+                /* Construct the sorting key */
+                /* The space() helps Th. 9 sort before Th. 10 on same page */
+                str3, " ", str4, space(20 - strlen(str2)), str2,
+                "|||",  /* ||| means end of sort key */
+                /* Construct just the statement href for combining dup refs */
+                "<A HREF=\"", statement[i].labelName,
+                ".html\">", statement[i].labelName, "</A>",
+                newstr,
+                "&&&",  /* &&& means end of statement href */
+                /* Construct actual HTML table row (without ending tag
+                   so duplicate references can be added) */
+                (i < extHtmlStmt) ?
+                   "<TR>" :
+                   cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL),
+                "<TD NOWRAP>[<A HREF=\"",
+                (i < extHtmlStmt) ?
+                   htmlBibliography :
+                   extHtmlBibliography,
+                "#",
+                str3,
+                "\">", str3, "</A>]", str4,
+                "</TD><TD>", str2, "</TD><TD><A HREF=\"",
+                statement[i].labelName,
+                ".html\">", statement[i].labelName, "</A>",
+                newstr, NULL));
+            /* Put construction into string array for sorting */
+            let((vstring *)(&pntrTmp[lines - 1]), oldstr);
+          }
+        }
+        /* 'lines' should be the same in both passes */
+        print2("Pass %ld finished.  %ld references were processed.\n", p2, lines);
+        if (p2 == 2) break;
+        p2++;    /* Increment from pass 1 to pass 2 */
+      }
+
+/*D*/
+      /* Sort */
+      qsortKey = "";
+      qsort(pntrTmp, lines, sizeof(void *), qsortStringCmp);
+
+      /* Combine duplicate references */
+      let(&str1, "");  /* Last biblio ref */
+      for (i = 0; i < lines; i++) {
+        j = instr(1, (vstring)(pntrTmp[i]), "|||");
+        let(&str2, left((vstring)(pntrTmp[i]), j - 1));
+        if (!strcmp(str1, str2)) {
+          n++;
+          /* Combine last with this */
+          k = instr(j, (vstring)(pntrTmp[i]), "&&&");
+          /* Extract statement href */
+          let(&str3, seg((vstring)(pntrTmp[i]), j + 3, k -1));
+          let((vstring *)(&pntrTmp[i]),
+              cat((vstring)(pntrTmp[i - 1]), " &nbsp;", str3, NULL));
+          let((vstring *)(&pntrTmp[i - 1]), ""); /* Clear previous line */
+        }
+        let(&str1, str2);
+      }
+
+      /* Write output */
+      n = 0;
+      for (i = 0; i < lines; i++) {
+        j = instr(1, (vstring)(pntrTmp[i]), "&&&");
+        if (j) {  /* Don't print blanked out combined lines */
+          n++;
+          /* Take off prefixes and reduce spaces */
+          let(&str1, edit(right((vstring)(pntrTmp[i]), j + 3), 16));
+          j = 1;
+          /* Break up long lines for text editors */
+          let(&printString, "");
+          outputToString = 1;
+          printLongLine(cat(str1, "</TD></TR>", NULL),
+              " ",  /* Start continuation line with space */
+              "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+          outputToString = 0;
+          fprintf(list2_fp, "%s", printString);
+          let(&printString, "");
+        }
+      }
+
+
+      /* Discard the input file up to the special "<!-- #END# -->" comment */
+      while (1) {
+        if (!linput(list1_fp, NULL, &str1)) {
+          print2(
+"?Error: Could not find \"<!-- #END# -->\" line in input file \"%s\".\n",
+              fullArg[2]);
+          tmpFlag = 1; /* Error flag to recover input file */
+          break;
+        }
+        if (!strcmp(str1, "<!-- #END# -->")) {
+          fprintf(list2_fp, "%s\n", str1);
+          break;
+        }
+      }
+      if (tmpFlag) goto bib_error;
+
+      /* Transfer the rest of the input file */
+      while (1) {
+        if (!linput(list1_fp, NULL, &str1)) {
+          break;
+        }
+
+        /* This is just a nicety; no error check is done. */
+        if (!strcmp("This page was last updated on ", left(str1, 30))) {
+          let(&str1, cat(left(str1, 30), date(), ".", NULL));
+        }
+
+        fprintf(list2_fp, "%s\n", str1);
+      }
+
+      print2("%ld table rows were written.\n", n);
+      /* Deallocate string array */
+      for (i = 0; i < lines; i++) let((vstring *)(&pntrTmp[i]), "");
+      pntrLet(&pntrTmp,NULL_PNTRSTRING);
+
+
+     bib_error:
+      fclose(list1_fp);
+      fclose(list2_fp);
+      if (tmpFlag) {
+        /* Recover input files in case of error */
+        remove(fullArg[2]);  /* Delete output file */
+        rename(cat(fullArg[2], "~1", NULL), fullArg[2]);
+            /* Restore input file name */
+        print2("?The file \"%s\" was not modified.\n", fullArg[2]);
+      }
+      continue;
     }
 
     if (cmdMatches("SHOW LABELS")) {
@@ -1597,6 +1883,15 @@ void command(int argc, char *argv[])
             provided) */
         texFileOpenFlag = 1;
         printTexHeader((s > 0) ? 1 : 0 /*texHeaderFlag*/);
+        if (!texDefsRead) {
+          /* 9/6/03 If there was an error reading the $t xx.mm statement,
+             texDefsRead won't be set, and we should close out file and skip
+             further processing.  Otherwise we will be attempting to process
+             uninitialized htmldef arrays and such. */
+          print2("?HTML generation was aborted due to the error above.\n");
+          s = statements + 1; /* To force loop to exit */
+          goto ABORT_S; /* Go to end of loop where file is closed out */
+        }
 
         if (s <= 0) {
           outputToString = 1;
@@ -1735,7 +2030,9 @@ void command(int argc, char *argv[])
                         if (altHtmlFlag) {
                           /* Hard-coded for set.mm! */
                           let(&str1, cat(str1,
-        "&nbsp;&nbsp;&nbsp;<FONT FACE=\"Symbol\"> &#38;</FONT>&nbsp;&nbsp;&nbsp;"
+                              /* 8/8/03 - Changed from Symbol to Unicode */
+  /* "&nbsp;&nbsp;&nbsp;<FONT FACE=\"Symbol\"> &#38;</FONT>&nbsp;&nbsp;&nbsp;" */
+                              "&nbsp;&nbsp;&nbsp; &amp;&nbsp;&nbsp;&nbsp;"
                               ,NULL));
                         } else {
                           /* Hard-coded for set.mm! */
@@ -1760,7 +2057,9 @@ void command(int argc, char *argv[])
                     if (altHtmlFlag) {
                       /* Hard-coded for set.mm! */
                       let(&str1, cat(str1,
-       "&nbsp;&nbsp;&nbsp;<FONT FACE=\"Symbol\"> &#222;</FONT>&nbsp;&nbsp;&nbsp;"
+                          /* 8/8/03 - Changed from Symbol to Unicode */
+  /* "&nbsp;&nbsp;&nbsp;<FONT FACE=\"Symbol\"> &#222;</FONT>&nbsp;&nbsp;&nbsp;" */
+                          "&nbsp;&nbsp;&nbsp; &#8658;&nbsp;&nbsp;&nbsp;"
                           ,NULL));
                     } else {
                       /* Hard-coded for set.mm! */
@@ -1809,7 +2108,8 @@ void command(int argc, char *argv[])
                 break;
             } /* end switch */
           } /* next i (statement number) */
-          print2("</TABLE></CENTER>\n");
+          /* print2("</TABLE></CENTER>\n"); */ /* 8/8/03 Removed - already
+              done somewhere else, causing validator.w3.org to fail */
           outputToString = 0;  /* closing will write out the string */
 
         } else { /* s > 0 */
@@ -1823,6 +2123,7 @@ void command(int argc, char *argv[])
 
         } /* if s <= 0 */
 
+       ABORT_S:
         /*** Close the html file ***/
         printTexTrailer(1 /*texHeaderFlag*/);
         fclose(texFilePtr);
@@ -2519,237 +2820,6 @@ void command(int argc, char *argv[])
     if (cmdMatches("DBG")) {
       print2("DEBUGGING MODE IS FOR DEVELOPER'S USE ONLY!\n");
       print2("Argument:  %s\n", fullArg[1]);
-      /* 10/10/02 -
-         This utility assists manually building cross-references to various
-         textbooks.
-         Assumes log file is open, and writes them there.
-       */
-      /*******/
-      if (!logFilePtr) {
-        printLongLine("?Error: You must open a log file with OPEN LOG before"
-            " using the bibliograpy cross-reference generator.  The HTML code"
-            " will be written to the log file.  Afterwards, close"
-            " the log file with CLOSE LOG.", "", " ");
-        continue;
-      }
-      if (!texDefsRead) {
-        print2("Reading definitions from $t statement of %s...\n", input_fn);
-        if (!readTexDefs()) continue; /* An error occurred */
-      }
-      p2 = 1; /* Pass 1 or 2 flag */
-      lines = 0;
-      while (1) {
-
-        if (p2 == 2) {  /* Pass 2 */
-          /* Allocate memory for sorting */
-          pntrLet(&pntrTmp, pntrSpace(lines));
-          lines = 0;
-        }
-
-        /* Scan all $a and $p statements */
-        for (i = 1; i <= statements; i++) {
-          if (statement[i].type != (char)p__ &&
-            statement[i].type != (char)a__) continue;
-          /* Omit ...OBS (obsolete) and ...NEW (to be implemented) statements */
-          if (instr(1, statement[i].labelName, "NEW")) continue;
-          if (instr(1, statement[i].labelName, "OBS")) continue;
-          let(&str1, "");
-          str1 = getDescription(i); /* Get the statement's comment */
-          if (!instr(1, str1, "[")) continue;
-          for (j = 0; j < strlen(str1); j++) {
-            if (str1[j] == '\n') str1[j] = ' '; /* Change newlines to spaces */
-          }
-          let(&str1, edit(str1, 8 + 128 + 16)); /* Reduce & trim whitespace */
-          /* Put spaces before page #s (up to 4 digits) for sorting */
-          j = 0;
-          while (1) {
-            j = instr(j + 1, str1, " p. "); /* Heuristic - match " p. " */
-            if (!j) break;
-            if (j) {
-              for (k = j + 4; k <= strlen(str1) + 1; k++) {
-                if (!isdigit(str1[k - 1])) {
-                  let(&str1, cat(left(str1, j + 2),
-                      space(4 - (k - (j + 4))), right(str1, j + 3), NULL));
-                  /* Add ### after page number as marker */
-                  let(&str1, cat(left(str1, j + 7), "###", right(str1, j + 8),
-                      NULL));
-                  break;
-                }
-              }
-            }
-          }
-          /* Process any bibliographic references in comment */
-          j = 0;
-          n = 0;
-          while (1) {
-            j = instr(j + 1, str1, "["); /* Find reference (not robust) */
-            if (!j) break;
-            if (!isalnum(str1[j])) continue; /* Not start of reference */
-            n++;
-            /* Backtrack from [reference] to a starting keyword */
-            m = 0;
-            let(&str2, edit(str1, 32)); /* to uppercase */
-            for (k = j - 1; k >= 1; k--) {
-              if (0
-                  || !strcmp(mid(str2, k, strlen("COMPARE")), "COMPARE")
-                  || !strcmp(mid(str2, k, strlen("DEFINITION")), "DEFINITION")
-                  || !strcmp(mid(str2, k, strlen("THEOREM")), "THEOREM")
-                  || !strcmp(mid(str2, k, strlen("PROPOSITION")), "PROPOSITION")
-                  || !strcmp(mid(str2, k, strlen("LEMMA")), "LEMMA")
-                  || !strcmp(mid(str2, k, strlen("COROLLARY")), "COROLLARY")
-                  || !strcmp(mid(str2, k, strlen("AXIOM")), "AXIOM")
-                  || !strcmp(mid(str2, k, strlen("RULE")), "RULE")
-                  || !strcmp(mid(str2, k, strlen("REMARK")), "REMARK")
-                  || !strcmp(mid(str2, k, strlen("EXERCISE")), "EXERCISE")
-                  || !strcmp(mid(str2, k, strlen("NOTATION")), "NOTATION")
-                  || !strcmp(mid(str2, k, strlen("EXAMPLE")), "EXAMPLE")
-                  || !strcmp(mid(str2, k, strlen("PROPERTY")), "PROPERTY")
-                  || !strcmp(mid(str2, k, strlen("FIGURE")), "FIGURE")
-                  || !strcmp(mid(str2, k, strlen("POSTULATE")), "POSTULATE")
-                  || !strcmp(mid(str2, k, strlen("EQUATION")), "EQUATION")
-                  || !strcmp(mid(str2, k, strlen("SCHEME")), "SCHEME")
-                  || !strcmp(mid(str2, k, strlen("CHAPTER")), "CHAPTER")
-                  ) {
-                m = k;
-                break;
-              }
-              let(&str3, ""); /* Clear tmp alloc stack created by "mid" */
-            }
-            if (!m) {
-              if (p == 0) print2("Skipped (no keyword match): %s\n",
-                  statement[i].labelName);
-              continue; /* Not a bib ref - ignore */
-            }
-            /* m is at the start of a keyword */
-            p = instr(m, str1, "["); /* Start of bibliograpy reference */
-            q = instr(p, str1, "]"); /* End of bibliography reference */
-            if (!q) {
-              if (p == 0) print2("Skipped (not a valid reference): %s\n",
-                  statement[i].labelName);
-              continue; /* Not a bib ref - ignore */
-            }
-            s = instr(q, str1, "###"); /* Page number marker */
-            if (!s) {
-              if (p == 0) print2("Skipped (no page number): %s\n",
-                  statement[i].labelName);
-              continue; /* No page number given - ignore */
-            }
-            /* Now we have a real reference; increment reference count */
-            lines++;
-            if (p2 == 1) continue; /* In 1st pass, we just count refs */
-
-            let(&str2, seg(str1, m, p - 1));     /* "Theorem #" */
-            let(&str3, seg(str1, p + 1, q - 1));  /* "[bibref]" w/out [] */
-            let(&str4, seg(str1, q + 1, s - 1)); /* " p. nnnn" */
-            str2[0] = toupper(str2[0]);
-            /* Eliminate noise like "of" in "Theorem 1 of [bibref]" */
-            for (k = strlen(str2); k >=1; k--) {
-              if (0
-                  || !strcmp(mid(str2, k, strlen(" of ")), " of ")
-                  || !strcmp(mid(str2, k, strlen(" in ")), " in ")
-                  || !strcmp(mid(str2, k, strlen(" from ")), " from ")
-                  ) {
-                let(&str2, left(str2, k - 1));
-                break;
-              }
-              let(&str2, str2);
-            }
-
-            let(&newstr, "");
-            newstr = pinkHTML(i); /* Get little pink number */
-            let(&oldstr, cat(
-                /* Construct the sorting key */
-                /* The space() helps Th. 9 sort before Th. 10 on same page */
-                str3, " ", str4, space(20 - strlen(str2)), str2,
-                "|||",  /* ||| means end of sort key */
-                /* Construct just the statement href for combining dup refs */
-                "<A HREF=\"", statement[i].labelName,
-                ".html\">", statement[i].labelName, "</A>",
-                newstr,
-                "&&&",  /* &&& means end of statement href */
-                /* Construct actual HTML table row (without ending tag
-                   so duplicate references can be added) */
-                (i < extHtmlStmt) ?
-                   "<TR>" :
-                   cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL),
-                "<TD NOWRAP>[<A HREF=\"",
-                (i < extHtmlStmt) ?
-                   htmlBibliography :
-                   extHtmlBibliography,
-                "#",
-                str3,
-                "\">", str3, "</A>]", str4,
-                "</TD><TD>", str2, "</TD><TD><A HREF=\"",
-                statement[i].labelName,
-                ".html\">", statement[i].labelName, "</A>",
-                newstr, NULL));
-            /* Put construction into string array for sorting */
-            let((vstring *)(&pntrTmp[lines - 1]), oldstr);
-          }
-        }
-        /* 'lines' should be the same in both passes */
-        print2("Pass %ld finished.  %ld references were processed.\n", p2, lines);
-        if (p2 == 2) break;
-        p2++;    /* Increment from pass 1 to pass 2 */
-      }
-
-      /* Sort */
-      qsortKey = "";
-      qsort(pntrTmp, lines, sizeof(void *), qsortStringCmp);
-
-      /* Combine duplicate references */
-      let(&str1, "");  /* Last biblio ref */
-      for (i = 0; i < lines; i++) {
-        j = instr(1, (vstring)(pntrTmp[i]), "|||");
-        let(&str2, left((vstring)(pntrTmp[i]), j - 1));
-        if (!strcmp(str1, str2)) {
-          n++;
-          /* Combine last with this */
-          k = instr(j, (vstring)(pntrTmp[i]), "&&&");
-          /* Extract statement href */
-          let(&str3, seg((vstring)(pntrTmp[i]), j + 3, k -1));
-          let((vstring *)(&pntrTmp[i]),
-              cat((vstring)(pntrTmp[i - 1]), " &nbsp;", str3, NULL));
-          let((vstring *)(&pntrTmp[i - 1]), ""); /* Clear previous line */
-        }
-        let(&str1, str2);
-      }
-
-      /* Write output */
-      /* Print some blank lines for user */
-      fprintf(logFilePtr, "\n\n");
-      n = 0;
-      for (i = 0; i < lines; i++) {
-        j = instr(1, (vstring)(pntrTmp[i]), "&&&");
-        if (j) {  /* Don't print blanked out combined lines */
-          n++;
-          /* Take off prefixes and reduce spaces */
-          let(&str1, edit(right((vstring)(pntrTmp[i]), j + 3), 16));
-          j = 1;
-          /* Break up long lines for text editors */
-          let(&printString, "");
-          outputToString = 1;
-          printLongLine(cat(str1, "</TD></TR>", NULL),
-              " ",  /* Start continuation line with space */
-              "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
-          outputToString = 0;
-          fprintf(logFilePtr, "%s", printString);
-          let(&printString, "");
-        }
-      }
-      /* Print some blank lines for user */
-      fprintf(logFilePtr, "\n\n");
-      print2("%ld table rows were written to log file \"%s\".\n", n,
-          logFileName);
-      /* Deallocate string array */
-      for (i = 0; i < lines; i++) let((vstring *)(&pntrTmp[i]), "");
-      pntrLet(&pntrTmp,NULL_PNTRSTRING);
-
-      if (i == i) continue;  /* i == i prevents lcc compiler warning */
-      /*******/
-
-
-      /* Skip this stuff for now */
       nmbrLet(&nmbrTmp, parseMathTokens(fullArg[1], proveStatement));
       for (j = 0; j < 3; j++) {
         print2("Trying depth %ld\n", j);

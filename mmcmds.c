@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2002  NORMAN MEGILL  nm@alum.mit.edu                 */
+/*        Copyright (C) 2003  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -310,6 +310,15 @@ void typeStatement(long showStatement,
       /* Count the number of essential hypotheses */
       if (statement[statement[showStatement].reqHypList[i]].type
         == (char)e__) k++;
+
+      /* Added 5/26/03 */
+      /* For syntax definitions, also include $f hypotheses so user can more
+         easily match them in syntax breakdowns of axioms and definitions */
+      if (subType == SYNTAX && (texFlag && htmlFlag)) {
+        if (statement[statement[showStatement].reqHypList[i]].type
+          == (char)f__) k++;
+      }
+
     }
     if (k) {
       if (texFlag) outputToString = 1;
@@ -325,7 +334,16 @@ void typeStatement(long showStatement,
       }
       for (i = 0; i < j; i++) {
         k = statement[showStatement].reqHypList[i];
-        if (statement[k].type != (char)e__) continue;
+        if (statement[k].type != (char)e__
+
+            /* Added 5/26/03 */
+            /* For syntax definitions, include $f hypotheses so user can more
+               easily match them in syntax breakdowns of axioms & definitions */
+            && !(subType == SYNTAX && (texFlag && htmlFlag)
+                && statement[k].type == (char)f__)
+
+            ) continue;
+
         if (!texFlag) {
           let(&str2, cat(str(k), " ", NULL));
         } else {
@@ -3312,7 +3330,7 @@ void outputMidi(long plen, nmbrString *indentationLevels,
   let(&tmpStr, left(tmpStr, 38));
   fprintf(midiFilePtr, "0 Meta Text \"%s\"\n", tmpStr);
   fprintf(midiFilePtr,
-      "0 Meta Copyright \"Copyright (C) 2002 nm@alum.mit.edu    \"\n");
+      "0 Meta Copyright \"Copyright (C) 2002 nm at alum.mit.edu \"\n");
 
   /************** Scan the proof ************************/
 

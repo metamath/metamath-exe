@@ -1,10 +1,10 @@
 /*****************************************************************************/
-/*        Copyright (C) 2002  NORMAN MEGILL  nm@alum.mit.edu                 */
+/*        Copyright (C) 2003  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-/* mmdata.h - includes for some principle data structures and data-string handling */
+/* mmdata.h - includes for some principal data structures and data-string handling */
 
 /*E*/extern long db,db0,db1,db2,db3,db4,db5,db6,db7,db8,db9;/* debugging flags & variables */
 /*??? To work on:

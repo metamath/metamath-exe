@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2002  NORMAN MEGILL  nm@alum.mit.edu                 */
+/*        Copyright (C) 2003  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -103,7 +103,7 @@ flag processCommandLine(void)
       }
       if (cmdMatches("HELP WRITE")) {
         if (!getFullArg(2,
-            "SOURCE"))
+            "SOURCE|BIBLIOGRAPHY|<SOURCE>"))
             goto pclbad;
         goto pclgood;
       }
@@ -141,7 +141,7 @@ flag processCommandLine(void)
     }
 
     if (cmdMatches("WRITE")) {
-      if (!getFullArg(1,"SOURCE|DICTIONARY|<SOURCE>")) goto pclbad;
+      if (!getFullArg(1,"SOURCE|BIBLIOGRAPHY|<SOURCE>")) goto pclbad;
       if (cmdMatches("WRITE SOURCE")) {
         if (statements == 0) {
           print2("?No source file has been read in.  Use READ first.\n");
@@ -157,10 +157,17 @@ flag processCommandLine(void)
         }
         goto pclgood;
       }
-      if (cmdMatches("WRITE DICTIONARY")) {
-        if (!getFullArg(2,
-            "* What is the name of the LaTeX symbol dictionary output file? "))
+      if (cmdMatches("WRITE BIBLIOGRAPHY")) {
+        if (statements == 0) {
+          print2("?No source file has been read in.  Use READ first.\n");
           goto pclbad;
+        }
+        if (!getFullArg(2,cat(
+            "* What is the bibliography HTML input/output file <",
+            "mmbiblio.html", ">? ", NULL)))
+          goto pclbad;
+        print2(
+          "The old file will be renamed %s~1.\n", fullArg[2]);
         goto pclgood;
       }
     }

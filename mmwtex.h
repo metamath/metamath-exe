@@ -1,13 +1,13 @@
 /*****************************************************************************/
-/*        Copyright (C) 2002  NORMAN MEGILL  nm@alum.mit.edu                 */
+/*        Copyright (C) 2003  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
 /* Colors for HTML pages. */
-#define GREEN_TITLE_COLOR "\"#006600\""
+#define GREEN_TITLE_COLOR "\"#006633\""
 #define MINT_BACKGROUND_COLOR "\"#EEFFFA\""
-#define PINK_NUMBER_COLOR "\"#FF6666\""
+#define PINK_NUMBER_COLOR "\"#FA8072\""      /* =salmon; was FF6666 */
 #define PURPLISH_BIBLIO_COLOR "\"#FAEEFF\""
 
 /* HTML flags */

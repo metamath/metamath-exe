@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2002  NORMAN MEGILL  nm@alum.mit.edu                 */
+/*        Copyright (C) 2003  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -500,7 +500,8 @@ void bug(int bugNum)
   print2("*** A PROGRAM BUG WAS DETECTED.\n");
   print2("Bug identifier (for technical support):  %ld\n",(long)bugNum);
   print2(
-"To get technical support, please send Norm Megill (nm@alum.mit.edu) a\n");
+"To get technical support, please send Norm Megill (%salum.mit.edu) a\n",
+      "nm@");
   print2(
 "command file that reproduces this bug, along with the source files that\n");
   print2(

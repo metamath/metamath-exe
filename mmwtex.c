@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2002  NORMAN MEGILL  nm@alum.mit.edu                 */
+/*        Copyright (C) 2003  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -30,7 +30,7 @@
 
 flag htmlFlag = 0;  /* HTML flag: 0 = TeX, 1 = HTML */
 flag altHtmlFlag = 0;  /* Use "althtmldef" instead of "htmldef".  This is
-    intended to allow the generation of pages with the old Symbol font
+    intended to allow the generation of pages with the Unicode font
     instead of the individual GIF files. */
 flag briefHtmlFlag = 0;  /* Output statement lists only, for statement display
                 in other HTML pages, such as the Proof Explorer home page */
@@ -75,7 +75,7 @@ vstring extHtmlTitle = ""; /* Set by exthtmltitle command (global!) */
 vstring extHtmlHome = ""; /* Set by exthtmlhome command */
 vstring extHtmlBibliography = ""; /* Optional; set by exthtmlbibliography command */
 vstring htmlDir = ""; /* Directory for GIF version, set by htmldir command */
-vstring altHtmlDir = ""; /* Directory for Symbol Font version, set by
+vstring altHtmlDir = ""; /* Directory for Unicode Font version, set by
                             althtmldir command */
 
 /* Variables holding all HTML <a name..> tags from bibiography pages  */
@@ -127,7 +127,8 @@ flag readTexDefs(void)
     j = statement[i].labelSectionLen;
     /* Note that for statement[statements + 1], the lineNum is one plus the
        number of lines in the file */
-    lineNumOffset = statement[i].lineNum; /* Save for later */
+    if (!fileBuf[0]) lineNumOffset = statement[i].lineNum; /* Save for later */
+        /* (Don't save if we're in scan to end for double $t detection) */
     zapChar = tmpPtr[j]; /* Save the original character */
     tmpPtr[j] = 0; /* Create an end-of-string */
     if (instr(1, tmpPtr, "$t")) {
@@ -137,7 +138,7 @@ flag readTexDefs(void)
          an error below.) */
       if (fileBuf[0]) {
         print2(
-  "?There are two comments containing a $t keyword in \"%s\".\n",
+  "?Error: There are two comments containing a $t keyword in \"%s\".\n",
             input_fn);
         let(&fileBuf, "");
         return 0;
@@ -188,7 +189,7 @@ flag readTexDefs(void)
     startPtr++;
   }
   if (startPtr[0] == 0) {
-    print2("?There is no $t command in the file \"%s\".\n", input_fn);
+    print2("?Error: There is no $t command in the file \"%s\".\n", input_fn);
     print2(
 "The file should have exactly one comment of the form $(...$t...$) with\n");
     print2("the LaTeX and HTML definitions between $t and $).\n");
@@ -210,7 +211,7 @@ flag readTexDefs(void)
   }
   if (tmpPtr[0] == 0) {
     print2(
-  "?There is no $) comment closure after the $t keyword in \"%s\".\n",
+  "?Error: There is no $) comment closure after the $t keyword in \"%s\".\n",
         input_fn);
     let(&fileBuf, "");  /* was: free(fileBuf); */
     return 0;
@@ -222,7 +223,7 @@ flag readTexDefs(void)
     if (tmpPtr2[0] == '$') {
       if (tmpPtr2[1] == 't') {
         print2(
-  "?There are two comments containing a $t keyword in \"%s\".\n",
+  "?Error: There are two comments containing a $t keyword in \"%s\".\n",
             input_fn);
         let(&fileBuf, "");  /* was: free(fileBuf); */
         return 0;
@@ -401,7 +402,9 @@ flag readTexDefs(void)
           }
           lineNum = lineNumOffset;
           for (i = 0; i < (fbPtr - fileBuf); i++) {
-            if (fileBuf[i] == '\n') lineNum++;
+            if (fileBuf[i] == '\n') {
+              lineNum++;
+            }
           }
           rawSourceError(fileBuf, fbPtr, tokenLen, lineNum, input_fn,
               "Expected \"+\" or \";\" here.");
@@ -755,6 +758,10 @@ vstring tokenToTex(vstring mtoken)
   void *texDefsPtr; /* For binary search */
   flag saveOutputToString;
 
+  if (!texDefsRead) {
+    bug(2320); /* This shouldn't be called if definitions weren't read */
+  }
+
   texDefsPtr = (void *)bsearch(mtoken, texDefs, numSymbs,
       sizeof(struct texDef_struct), texSrchCmp);
   if (texDefsPtr) { /* Found it */
@@ -1050,9 +1057,8 @@ void printTexHeader(flag texHeaderFlag)
     print2(     "    \"http://www.w3.org/TR/html4/loose.dtd\">\n");
     print2("<HTML LANG=\"EN-US\">\n");
     print2("<HEAD>\n");
-    print2("<META HTTP-EQUIV=\"Content-Type\"\n");
-    print2(" CONTENT=\"text/html; charset=iso-8859-1\">\n");
-
+    print2("%s%s\n", "<META HTTP-EQUIV=\"Content-Type\" ",
+        "CONTENT=\"text/html; charset=iso-8859-1\">");
 
     /* Print style sheet for pink number that goes after statement label */
     print2("<STYLE TYPE=\"text/css\">\n");
@@ -1071,14 +1077,21 @@ void printTexHeader(flag texHeaderFlag)
     print2("<META NAME=\"GENERATOR\" CONTENT=\"Metamath\">\n");
     */
     if (showStatement < extHtmlStmt) {
-      print2("%s\n", cat(" <TITLE>", htmlTitle, " - ",
-          left(texFileName, instr(1, texFileName, ".htm") - 1),
+      print2("%s\n", cat("<TITLE>", htmlTitle, " - ",
+          /* Strip off ".html" */
+          left(texFileName, strlen(texFileName) - 5),
+          /*left(texFileName, instr(1, texFileName, ".htm") - 1),*/
           "</TITLE>", NULL));
     } else {
-      print2("%s\n", cat(" <TITLE>", extHtmlTitle, " - ",
-          left(texFileName, instr(1, texFileName, ".htm") - 1),
+      print2("%s\n", cat("<TITLE>", extHtmlTitle, " - ",
+          /* Strip off ".html" */
+          left(texFileName, strlen(texFileName) - 5),
+          /*left(texFileName, instr(1, texFileName, ".htm") - 1),*/
           "</TITLE>", NULL));
     }
+    /* Icon for bookmark */
+    print2("%s%s\n", "<LINK REL=\"shortcut icon\" HREF=\"favicon.ico\" ",
+        "TYPE=\"image/x-icon\">");
     /*
     print2("<META HTML-EQUIV=\"Keywords\"\n");
     print2("CONTENT=\"%s\">\n", htmlTitle);
@@ -1180,7 +1193,10 @@ void printTexHeader(flag texHeaderFlag)
             statement[j].labelName);
       }
 
-      /* Print the GIF/Symbol Font choice, if directories specified */
+      /* ??? Is the closing </FONT> printed if there is no altHtml?
+         This should be tested.  8/9/03 ndm */
+
+      /* Print the GIF/Unicode Font choice, if directories are specified */
       if (htmlDir[0]) {
         if (altHtmlFlag) {
           print2("</FONT></TD></TR><TR><TD ALIGN=RIGHT><FONT FACE=sans-serif\n");
@@ -1190,15 +1206,33 @@ void printTexHeader(flag texHeaderFlag)
         } else {
           print2("</FONT></TD></TR><TR><TD ALIGN=RIGHT><FONT FACE=sans-serif\n");
           print2("SIZE=-2>Browser slow? Try the\n");
+          /* 8/8/03 Symbol font is obsolete
           print2("<BR><A HREF=\"%s%s\">Symbol\n",
               altHtmlDir, texFileName);
           print2("font version</A>.</FONT></TD>\n");
+          */
+          print2("<BR><A HREF=\"%s%s\">Unicode\n",
+              altHtmlDir, texFileName);
+          print2("version</A>.</FONT></TD>\n");
         }
       }
 
     } else {
       print2("</TD><TD ALIGN=RIGHT VALIGN=TOP\n");
       print2(" WIDTH=\"25%s\">&nbsp;\n", "%");
+
+      /* Print the GIF/Unicode Font choice, if directories are specified */
+      if (htmlDir[0]) {
+        print2("<FONT FACE=sans-serif SIZE=-2>\n");
+        if (altHtmlFlag) {
+          print2("<A HREF=\"%s%s\">GIF version</A></FONT>\n",
+              htmlDir, texFileName);
+        } else {
+          print2("<A HREF=\"%s%s\">Unicode version</A></FONT>\n",
+              altHtmlDir, texFileName);
+        }
+      }
+
       print2("</TD></TR><TR><TD ALIGN=RIGHT VALIGN=TOP\n");
       print2(" WIDTH=\"25%s\">&nbsp;</TD>\n", "%");
     }
@@ -1362,7 +1396,7 @@ void printTexComment(vstring commentPtr)
         if (!pos2) break;
         let(&bibTag, seg(cmt, pos1, pos2));
         /* There should be no white space in the tag */
-        if (strcspn(bibTag, " \n\r\t\f") < pos2 - pos1 + 1) break;
+        if (strcspn(bibTag, " \n\r\t\f") < pos2 - pos1 + 1) continue;
         /* OK, we have a good tag.  If the file with bibliography has not been
            read in yet, let's do so here for error-checking. */
 
@@ -1911,7 +1945,7 @@ void printTexLongMath(nmbrString *mathString, vstring startPrefix,
   for (pos = 0; pos < nmbrLen(mathString); pos++) {
     tex = tokenToTex(mathToken[mathString[pos]].tokenName);
               /* tokenToTex allocates tex; we must deallocate it */
-    if (!htmlFlag) {
+    if (!htmlFlag) {  /* LaTeX */
       /* If this token and previous token begin with letter, add a thin
            space between them */
       /* Also, anything not in table will have space added */
@@ -1933,21 +1967,68 @@ void printTexLongMath(nmbrString *mathString, vstring startPrefix,
       } else {
         let(&texLine, cat(texLine, "\\m{", tex, "}", NULL));
       }
-    } else {
+    } else {  /* HTML */
+
+      /* 7/27/03 When we have something like "E. x e. om x = y", the lack of
+         space between om and x looks ugly in HTML.  This kludge adds it in
+         for restricted quantifiers not followed by parenthesis, in order
+         to make the web page look a little nicer.  E.g. onminex. */
+      if (pos >=4) {
+        if (!strcmp(mathToken[mathString[pos - 2]].tokenName, "e.")
+            && (!strcmp(mathToken[mathString[pos - 4]].tokenName, "E.")
+              || !strcmp(mathToken[mathString[pos - 4]].tokenName, "A."))
+            && strcmp(mathToken[mathString[pos]].tokenName, "(")
+            /* It also shouldn't be restricted _to_ an expression in parens. */
+            && strcmp(mathToken[mathString[pos - 1]].tokenName, "(")) {
+          let(&texLine, cat(texLine, " ", NULL)); /* Add a space */
+        }
+      }
+      /* This one puts a space between the 2 x's in a case like
+         "E. x x = y".  E.g. cla4egf */
+      if (pos >=2) {
+        /* Match a token starting with a letter */
+        if (isalpha(mathToken[mathString[pos]].tokenName[0])) {
+          /* and make sure its length is 1 */
+          if (!(mathToken[mathString[pos]].tokenName[1])) {
+            /* See if it's 1st letter in a quantified expression */
+            if (!strcmp(mathToken[mathString[pos - 2]].tokenName, "E.")
+                || !strcmp(mathToken[mathString[pos - 2]].tokenName, "A.")) {
+              let(&texLine, cat(texLine, " ", NULL)); /* Add a space */
+            }
+          }
+        }
+      }
+      /* This one puts a space before any "-." that doesn't come after
+         a parentheses e.g. ax-6 has both cases */
+      if (pos >=1) {
+        /* See if we have a non-parenthesis followed by not */
+        if (strcmp(mathToken[mathString[pos - 1]].tokenName, "(")
+            && !strcmp(mathToken[mathString[pos]].tokenName, "-.")) {
+          let(&texLine, cat(texLine, " ", NULL)); /* Add a space */
+        }
+      }
+      /* 7/27/03 end */
+
       let(&texLine, cat(texLine, tex, NULL));
-    }
+    } /* if !htmlFlag */
     let(&lastTex, ""); /* Deallocate */
     lastTex = tex; /* Pass deallocation responsibility for tex to lastTex */
 
   } /* Next pos */
   let(&lastTex, ""); /* Deallocate */
-  if (!htmlFlag) {
+  if (!htmlFlag) {  /* LaTeX */
     printLongLine(texLine, "", "\\");
     print2("\\endm\n");
-  } else {
+  } else {  /* HTML */
+    /* 8/9/03 Discard redundant white space to reduce HTML file size */
+    let(&texLine, edit(texLine, 8 + 16 + 128));
 
     /* 4/22/01 The code below is optional but tries to eliminate redundant
        symbol font specifications to make output shorter */
+    /* 8/8/03 Symbol font is finally obsolete; don't bother to do this
+       anymore.  (Some day delete this code that is skipped over.) */
+    if (pos == pos) /* Same as "if (1)" but prevents compiler warning */
+      goto skip_SymbolFont;
     pos = 0;
     while (1) {
       /* Get to the start of a symbol font specification */
@@ -1966,6 +2047,7 @@ void printTexLongMath(nmbrString *mathString, vstring startPrefix,
         let(&texLine, cat(left(texLine, i - 1), right(texLine, i + 27), NULL));
       }
     }
+   skip_SymbolFont:  /* 8/8/03 */
     /* End of 4/22/01 code */
 
     printLongLine(cat(texLine, "</TD></TR>", NULL), "", "\"");
@@ -1997,10 +2079,6 @@ void printTexTrailer(flag texTrailerFlag) {
       /*
       print2("<A HREF=\"definitions.html\">Definition list</A> |\n");
       print2("<A HREF=\"theorems.html\">Theorem list</A><BR>\n");
-      */
-      /*
-      print2("Copyright (GPL) 2002 Norman Megill <A \n");
-      print2("HREF=\"mailto:nm@alum.mit.edu\">&lt;nm@alum.mit.edu></A>\n");
       */
       /*
       print2("Copyright &copy; 2002 \n");

@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2002  NORMAN MEGILL  nm@alum.mit.edu                 */
+/*        Copyright (C) 2003  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -330,7 +330,10 @@ H("  $} - End of scope.  All $v, $e, $f, and $d statements in the current");
 H("       scope become inactive.  Note that $a and $p statements remain");
 H("       active forever.  Note that $c's may be used only in the outermost");
 H("       scope, so they are always active.  The outermost scope is not");
-H("       bracketed by ${...$}.");
+H("       bracketed by ${...$} .  The scope of a $v, $e, $f, or $d statement");
+H("       starts where the statement occurs and ends with the next $} .  The");
+H("       scope of a $c, $a, or $p statement starts where the statement");
+H("       and ends at the end of the database.");
 H("");
 H("Declarations:");
 H("");
@@ -410,8 +413,10 @@ H("       Inside of comments:");
 H("         ` <symbol> ` - use graphical <symbol> in LaTeX/HTML output;");
 H("             `` means literal `");
 H("         ~ <label> - use typewriter font (URL link) in LaTeX (HTML) output");
+H("         [<author>] - link to bibliography; see HELP HTML and HELP WRITE");
+H("             BIBLIOGRAPHY");
 H("         $t - flags comment as containing LaTeX and/or HTML typesetting");
-H("             definitions; see HELP LATEX or HELP HTML for more information");
+H("             definitions; see HELP LATEX or HELP HTML");
 H("       Note:  Comments may not be nested.");
 H("");
 H("  $[ <file-name> $] - place contents of file <file-name> here; a second,");
@@ -554,6 +559,11 @@ H("recognized.  The HTML specification statements are:");
 H("    htmltitle \"<HTML code for title>\" ;");
 H("    htmlhome \"<HTML code for home link>\" ;");
 H("    htmlvarcolors \"<HTML code for variable color list>\" ;");
+H("    htmlbibliography \"<HTML file>\" ;");
+H("        (The <HTML file> is assumed to have a <A NAME=...> tag for each");
+H("        bibiographic reference in the database comments.  For example");
+H("        if \"[Monk]\" occurs in a comment, then \"<A NAME='Monk'>\" must");
+H("        be present in the <HTML file>; if not, a warning message is given.");
 H("    htmldef \"<mathtoken>\" as \"<HTML code for mathtoken symbol>\" ;");
 H("                    ...");
 H("    htmldef \"<mathtoken>\" as \"<HTML code for mathtoken symbol>\" ;");
@@ -599,6 +609,7 @@ H("database, such as the Hilbert Space Explorer that extends the Metamath");
 H("Proof Explorer, \"extended\" variables may be declared in the $t comment:");
 H("    exthtmltitle \"<HTML code for title>\" ;");
 H("    exthtmlhome \"<HTML code for home link>\" ;");
+H("    exthtmlbibliography \"<HTML file>\" ;");
 H("When these are declared, you also must declare");
 H("    exthtmllabel \"<label>\" ;");
 H("When the output statement is the one declared with \"exthtmllabel\" or");

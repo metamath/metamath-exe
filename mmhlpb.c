@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2002  NORMAN MEGILL  nm@alum.mit.edu                 */
+/*        Copyright (C) 2003  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -38,8 +38,9 @@ H("For a list of help topics, type HELP ?.");
 H("For current program settings, type SHOW SETTINGS.");
 H("To exit Metamath, type EXIT (or its synonym QUIT).");
 H("");
-H("If you need technical support, contact Norman Megill at nm@alum.mit.edu.");
-H("Copyright (C) 2002 Norman Megill");
+H(cat("If you need technical support, contact Norman Megill at nm",
+    "@", "alum.mit.edu.", NULL));
+H("Copyright (C) 2003 Norman Megill");
 H("License terms:  GNU General Public License");
 H("");
 
@@ -352,9 +353,10 @@ H("");
 H("Optional qualifier:");
 H("    / ALL - Also search $e and $f statements.");
 H("    / COMMENTS - Search the comment that immediately precedes each");
-H("        label-matched statement for <symbol-match>.  In this case");
+H("        label-matched statement for <symbol-match>.  In this mode");
 H("        <symbol-match> is an arbitrary, non-case-sensitive character");
-H("        string.");
+H("        string.  Wildcards in <symbol-match> are not implemented in this.");
+H("        mode.");
 H("");
 
 
@@ -487,8 +489,10 @@ H("");
 printHelp = !strcmp(helpCmd, "HELP FILE TYPE");
 H("Syntax:  FILE TYPE <filename> [/ FROM_LINE <number>] [/ TO_LINE <number>]");
 H("");
-H("This command will type the contents of an ASCII file on your screen,");
-H("with an optional range of line numbers.");
+H("This command will type (i.e. display) the contents of an ASCII file on");
+H("your screen, within an optional range of line numbers.  (This command");
+H("is deprecated.  See HELP SYSTEM to invoke your operating system's");
+H("equivalent command, such as \"less\" in Linux.)");
 H("");
 
 
@@ -497,7 +501,10 @@ H("Syntax:  FILE SEARCH <filename> \"<search string>\" [/ FROM_LINE");
 H("             <number>] [/ TO_LINE <number>]");
 H("");
 H("This command will search an ASCII file for the specified string in");
-H("quotes, within an optional range of line numbers.");
+H("quotes, within an optional range of line numbers, and display the result");
+H("on your screen.  The search is case-insensitive.  (This command is");
+H("deprecated.  See HELP SYSTEM to invoke your operating system's");
+H("equivalent command, such as \"grep\" in Linux.)");
 H("");
 
 
@@ -508,6 +515,22 @@ H("This command will write the contents of the Metamath database into a file.");
 H("Note:  The present version of Metamath will not split the database into");
 H("its constituent files included with $[ $] keywords.  Instead it will write");
 H("the entire database as one big file.");
+H("");
+
+
+printHelp = !strcmp(helpCmd, "HELP WRITE BIBLIOGRAPHY");
+H("Syntax:  WRITE BIBLIOGRAPHY <filename>");
+H("");
+H("This command reads an HTML bibliographic cross-reference file, normally");
+H("called \"mmbiblio.html\", and updates it per the bibliographic links in");
+H("the database comments.  The file is updated between the HTML comment");
+H("lines \"<!-- #START# -->\" and \"<!-- #END# -->\".  A name in brackets");
+H("in the database comments is assumed to be a bibliographic reference, and");
+H("this command searches backwards in the comment for a keyword such as");
+H(" \"Theorem\" and forwards for a page number.  Example: \"Theorem 3.1 of");
+H("[Monk] p. 22\". (See the \"set.mm\" database file for examples.  The");
+H("syntax is somewhat loose and subject to refinement.)  The original input");
+H("file is renamed to \"<filename>~1\"");
 H("");
 
 

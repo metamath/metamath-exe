@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2002  NORMAN MEGILL  nm@alum.mit.edu                 */
+/*        Copyright (C) 2003  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -242,7 +242,7 @@ flag print2(char* fmt,...)
       system to get the `verify proof *' progress bar to display
       progressively (rather than all at once). I've conditionalized it on
       __STDC__, since it should be harmless on any ANSI C system.
-        -- Stephen McCamant smccam@uclink4.berkeley.edu 12/9/00
+        -- Stephen McCamant  smccam @ uclink4.berkeley.edu 12/9/00
       */
       fflush(stdout);
 #endif
