@@ -1,10 +1,10 @@
 /*****************************************************************************/
-/*               Copyright (C) 1998, NORMAN D. MEGILL                        */
+/*               Copyright (C) 1997, NORMAN D. MEGILL                        */
 /*****************************************************************************/
 
 /*34567890123456 (79-character line to adjust text window width) 678901234567*/
 /*
-mmvstr.h - VMS-BASIC variable length string library routines header
+mmvstring.h - VMS-BASIC variable length string library routines header
 This is a collection of useful built-in string functions available in VMS BASIC.
 */
 
@@ -153,11 +153,6 @@ long instr(long start, vstring sin, vstring s);
 long ascii_(vstring c);
 double val(vstring s);
 
-/* Emulation of PROGRESS string functions added 11/25/98 */
-vstring entry(long element, vstring list);
-long lookup(vstring expression, vstring list);
-long numEntries(vstring list);
-long entryPosition(long element, vstring list);
 
 /* Routines may/may not be written (lowest priority):
 vstring place$(vstring sout);

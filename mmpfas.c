@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*               Copyright (C) 1999, NORMAN D. MEGILL                        */
+/*               Copyright (C) 1997, NORMAN D. MEGILL                        */
 /*****************************************************************************/
 
 /*34567890123456 (79-character line to adjust text window width) 678901234567*/
@@ -128,7 +128,7 @@ void interactiveMatch(long step, long maxEssential)
       matchListPos++;
     }
   }
-
+  
   nmbrLet(&timeoutList, nmbrSpace(timeoutCount));
   timeoutListPos = 0;
   for (stmt = 1; stmt < proveStatement; stmt++) {
@@ -137,10 +137,10 @@ void interactiveMatch(long step, long maxEssential)
       timeoutListPos++;
     }
   }
-
+  
   let(&tmpStr1, nmbrCvtRToVString(matchList));
   let(&tmpStr4, nmbrCvtRToVString(timeoutList));
-
+    
   printLongLine(cat("Step ", str(step + 1), " matches statements:  ", tmpStr1,
       NULL), "  ", " ");
   if (timeoutCount) {
@@ -201,7 +201,7 @@ void interactiveMatch(long step, long maxEssential)
         statement[stmt].labelName);
 
   } /* End if matchCount == 1 */
-
+  
   /* Add to statement to the proof */
   assignStatement(matchList[matchListPos], step);
   proofChangedFlag = 1; /* Flag for 'undo' stack */
@@ -224,7 +224,7 @@ void assignStatement(long statemNum, long step)
 {
   long hyp;
   nmbrString *hypList = NULL_NMBRSTRING;
-
+  
   if (proofInProgress.proof[step] != -(long)'?') bug(1802);
 
   /* Add the statement to the proof */
@@ -248,8 +248,8 @@ void assignStatement(long statemNum, long step)
 nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
 {
   nmbrString *mString; /* Pointer only */
-  long reqHyps;
-  long hyp, sym, var, i, j, substep;
+  long reqHyps, optHyps;
+  long hyp, stmt, sym, var, i, j, substep;
   nmbrString *proof = NULL_NMBRSTRING;
   nmbrString *scheme = NULL_NMBRSTRING;
   pntrString *hypList = NULL_PNTRSTRING;
@@ -277,14 +277,10 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
   nmbrString *hypTestPtr; /* Points to what we are testing hyp. against */
   flag hypOrSubproofFlag; /* 0 means testing against hyp., 1 against subproof*/
 
-  /* Initialization to avoid compiler warning (should not be theoretically
-     necessary) */
-  substep = 0;
-
 
   mString = proofInProgress.target[step];
   mStringLen = nmbrLen(mString);
-
+  
   /* Get length of the existing subproof at the replacement step.  The
      existing subproof will be scanned to match the $e hypotheses of the
      replacement statement.  */
@@ -310,7 +306,7 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
   }
   for (var = 0; var < schemeVars; var++) {
     /* Put dummy var mapping into mathToken[].tmp field */
-    mathToken[statement[replStatemNum].reqVarList[var]].tmp = mathTokens + 1 +
+    mathToken[statement[replStatemNum].reqVarList[var]].tmp = mathTokens + 1 + 
         pipDummyVars + var;
   }
   for (sym = 0; sym < schemeLen; sym++) {
@@ -323,7 +319,7 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
   pntrLet(&hypList, pntrNSpace(schReqHyps));
   nmbrLet(&hypListMap, nmbrSpace(schReqHyps));
   pntrLet(&hypProofList, pntrNSpace(schReqHyps));
-
+  
   for (hyp = 0; hyp < schReqHyps; hyp++) {
     hypSchemePtr = NULL_NMBRSTRING;
     nmbrLet(&hypSchemePtr,
@@ -338,7 +334,7 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
     hypList[hyp] = hypSchemePtr;
     hypListMap[hyp] = hyp;
   }
-
+  
   /* Move all $e's to front of hypothesis list */
   schEHyps = 0;
   for (hyp = 0; hyp < schReqHyps; hyp++) {
@@ -350,7 +346,7 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
       schEHyps++;
     }
   }
-
+  
   /* Initialize state vector list for hypothesis unifications */
   /* (We will really only use up to schEHyp entries, but allocate all
      for possible future use) */
@@ -363,7 +359,7 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
   nmbrLet(&hypStepList, nmbrSpace(schReqHyps));
   /* Initialize list of hypotheses after substitutions made */
   pntrLet(&hypMakeSubstList, pntrNSpace(schReqHyps));
-
+  
 
   unifTrialCount = 1; /* Reset unification timeout */
   reEntryFlag = 0; /* For unifyH() */
@@ -388,14 +384,14 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
     nmbrLet(&proof, NULL_NMBRSTRING);
     breakFlag = 0;
     for (hyp = 0; hyp < schReqHyps; hyp++) {
-
+    
       /* Make substitutions from replacement statement's stateVector */
       nmbrLet((nmbrString **)(&(hypMakeSubstList[hypListMap[hyp]])),
           NULL_NMBRSTRING); /* Deallocate previous pass if any */
       hypMakeSubstList[hypListMap[hyp]] =
           makeSubstUnif(&dummyVarFlag, hypList[hypListMap[hyp]],
           stateVector);
-
+      
       /* Make substitutions from each earlier hypothesis unification */
       for (i = 0; i < hyp; i++) {
         /* Only do substitutions for $e's -- the $f's will have no
@@ -410,7 +406,7 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
             NULL_NMBRSTRING);
         hypMakeSubstList[hypListMap[hyp]] = makeSubstPtr;
       }
-
+        
       if (hyp < schEHyps) {
         /* It's a $e hypothesis */
         if (statement[statement[replStatemNum].reqHypList[hypListMap[hyp]]
@@ -423,7 +419,7 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
            hypotheses */
         if (dummyVarFlag) bug(1825);
       }
-
+      
 
       /* Scan all known steps of existing subproof to find a hypothesis
          match */
@@ -496,7 +492,7 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
           if (j) continue;  /* Subproof step has dummy var.; don't use it */
 
         }
-
+        
         /* Speedup - skip if no dummy vars in hyp and statements not equal */
         if (!dummyVarFlag) {
           if (!nmbrEq(hypTestPtr, hypMakeSubstList[hypListMap[hyp]])) {
@@ -618,7 +614,7 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
           break;
         } /* end if (!tmpFlag || tmpFlag = 2) */
       } /* next substep */
-
+        
       if (!substepBreakFlag) {
         /* There was no (completely known) step in the subproof that
            matched the hypothesis.  If it's a $f hypothesis, we will try
@@ -642,7 +638,7 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
           }
         } /* end if $f */
       }
-
+      
       if (!substepBreakFlag) {
         /* We must backtrack */
         if (hyp == 0) {
@@ -653,9 +649,9 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
         hyp = hyp - 2; /* Go back one interation (subtract 2 to offset
                           end of loop increment */
       }
-    } /* next hyp */
-
-
+    } /* next hyp */  
+      
+    
     if (breakFlag) {
       /* Proof was not found for some hypothesis. */
       continue; /* Get next unification */
@@ -745,7 +741,7 @@ void deleteSubProof(long step) {
       nmbrLeft(proofInProgress.proof, step - sbPfLen + 1), -(long)'?'),
       nmbrRight(proofInProgress.proof, step + 2), NULL));
   for (pos = step - sbPfLen + 1; pos <= step; pos++) {
-    if (pos < step) {
+    if (pos < step) {    
       /* Deallocate .target and .user */
       nmbrLet((nmbrString **)(&(proofInProgress.target[pos])), NULL_NMBRSTRING);
       nmbrLet((nmbrString **)(&(proofInProgress.user[pos])), NULL_NMBRSTRING);
@@ -782,7 +778,7 @@ char checkStmtMatch(long statemNum, long step)
   /* This is no longer a bug.  (Could be true for REPLACE command.)
   if (proofInProgress.proof[step] != -(long)'?') bug(1806);
   */
-
+  
   targetLen = nmbrLen(proofInProgress.target[step]);
   if (!targetLen) bug(1807);
 
@@ -867,9 +863,9 @@ char checkStmtMatch(long statemNum, long step)
       }
     }
   }
-
+  
   /* Change variables in statement to dummy variables for unification */
-  nmbrLet(&scheme, mString);
+  nmbrLet(&scheme, mString);  
   reqVars = nmbrLen(statement[statemNum].reqVarList);
   if (reqVars + pipDummyVars > dummyVars) {
     /* Declare more dummy vars if necessary */
@@ -877,7 +873,7 @@ char checkStmtMatch(long statemNum, long step)
   }
   for (var = 0; var < reqVars; var++) {
     /* Put dummy var mapping into mathToken[].tmp field */
-    mathToken[statement[statemNum].reqVarList[var]].tmp = mathTokens + 1 +
+    mathToken[statement[statemNum].reqVarList[var]].tmp = mathTokens + 1 + 
         pipDummyVars + var;
   }
   for (sym = 0; sym < mStringLen; sym++) {
@@ -900,11 +896,11 @@ char checkStmtMatch(long statemNum, long step)
  returnPoint:
   nmbrLet(&scheme, NULL_NMBRSTRING);
   purgeStateVector(&stateVector);
-
+  
   if (!targetFlag || !userFlag) return (0);
   if (targetFlag == 1 && userFlag == 1) return (1);
   return (2);
-
+  
 }
 
 /* Check to see if a (user-specified) math string will match the
@@ -926,11 +922,11 @@ char checkMStringMatch(nmbrString *mString, long step)
   }
 
   purgeStateVector(&stateVector);
-
+  
   if (!targetFlag || !sourceFlag) return (0);
   if (targetFlag == 1 && sourceFlag == 1) return (1);
   return (2);
-
+  
 }
 
 /* Find proof of formula or simple theorem (no new vars in $e's) */
@@ -990,7 +986,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
        "\".  Your axiom system may have an error.", NULL), " ", " ");
     goto returnPoint;
   }
-
+  
 
   /* First see if mString matches a required or optional hypothesis; if so,
      we're done; the proof is just the hypothesis. */
@@ -1012,7 +1008,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
       goto returnPoint;
     }
   }
-
+  
   /* Scan all statements up to the current statement to see if we can unify */
 
   mStringLen = nmbrLen(mString);
@@ -1030,7 +1026,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
   }
   lastSymbol = mString[mStringLen - 1];
   if (mathToken[lastSymbol].tokenType != (char)con__) lastSymbol = 0;
-
+  
   for (stmt = 1; stmt < statemNum; stmt++) {
 
     if (statement[stmt].type != (char)a__ &&
@@ -1130,7 +1126,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
       }
     }
     if (breakFlag) continue;
-
+    
 
     /* Change all variables in the statement to dummy vars for unification */
     nmbrLet(&scheme, stmtMathPtr);
@@ -1141,7 +1137,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
     }
     for (var = 0; var < schemeVars; var++) {
       /* Put dummy var mapping into mathToken[].tmp field */
-      mathToken[statement[stmt].reqVarList[var]].tmp = mathTokens + 1 +
+      mathToken[statement[stmt].reqVarList[var]].tmp = mathTokens + 1 + 
           pipDummyVars + var;
     }
     for (sym = 0; sym < schemeLen; sym++) {
@@ -1281,21 +1277,14 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
 
 
 /* Shorten proof by using specified statement. */
-void minimizeProof(long repStatemNum, long prvStatemNum,
-    flag allowGrowthFlag)
+void minimizeProof(long repStatemNum, long prvStatemNum)
 {
-  /* repStatemNum is the statement number we're trying to use
-     in the proof to shorten it */
-  /* prvStatemNum is the statement number we're proving */
-  /* allowGrowthFlag means to make the replacement when possible,
-     even if it doesn't shorten the proof length */
 
   long plen, step, mlen, sym, sublen;
   flag foundFlag, breakFlag;
-  nmbrString *mString; /* Pointer only; not allocated */
-  nmbrString *newSubProofPtr = NULL_NMBRSTRING; /* Pointer only; not allocated;
-                however initialize for nmbrLen function before it's assigned */
-
+  nmbrString *mString; /* Pointer only */
+  nmbrString *newSubProofPtr; /* Pointer only */
+  
   while (1) {
     plen = nmbrLen(proofInProgress.proof);
     foundFlag = 0;
@@ -1311,23 +1300,18 @@ void minimizeProof(long repStatemNum, long prvStatemNum,
         }
       }
       if (breakFlag) continue;  /* Step has dummy var.; don't try it */
-
+      
       /* Reject step not matching replacement step */
       if (!checkStmtMatch(repStatemNum, step)) continue;
 
       /* Try the replacement */
-      if (proofInProgress.proof[step] != repStatemNum) {
-                                   /* Don't replace a step with itself (will
-                                   cause infinite loop in ALLOW_GROWTH mode) */
-        newSubProofPtr = replaceStatement(repStatemNum, step,
-            prvStatemNum);
-      }
-      if (!nmbrLen(newSubProofPtr)) continue;
-                                           /* Replacement was not successful */
-
+      newSubProofPtr = replaceStatement(repStatemNum, step,
+          prvStatemNum);
+      if (!nmbrLen(newSubProofPtr)) continue; /* Replacement was not successful */
+      
       /* Get the subproof at step s */
       sublen = subProofLen(proofInProgress.proof, step);
-      if (sublen > nmbrLen(newSubProofPtr) || allowGrowthFlag) {
+      if (sublen > nmbrLen(newSubProofPtr)) {
         /* Success - proof length was reduced */
         deleteSubProof(step);
         addSubProof(newSubProofPtr, step - sublen + 1);
@@ -1336,13 +1320,13 @@ void minimizeProof(long repStatemNum, long prvStatemNum,
         nmbrLet(&newSubProofPtr, NULL_NMBRSTRING);
         break;
       }
-
+        
       nmbrLet(&newSubProofPtr, NULL_NMBRSTRING);
     } /* next step */
-
+    
     if (!foundFlag) break; /* Done */
   } /* end while */
-
+    
 }
 
 
@@ -1396,7 +1380,7 @@ void initStep(long step)
                                              /* Get to step with previous hyp */
     }
   }
-
+  
   /* Change the variables in the assertion and hypotheses to dummy variables */
   reqVars = nmbrLen(statement[stmt].reqVarList);
   if (pipDummyVars + reqVars > dummyVars) {
@@ -1405,7 +1389,7 @@ void initStep(long step)
   }
   for (var = 0; var < reqVars; var++) {
     /* Put dummy var mapping into mathToken[].tmp field */
-    mathToken[statement[stmt].reqVarList[var]].tmp = mathTokens + 1 +
+    mathToken[statement[stmt].reqVarList[var]].tmp = mathTokens + 1 + 
       pipDummyVars + var;
   }
   /* Change vars in assertion */
@@ -1437,8 +1421,8 @@ void initStep(long step)
   return;
 }
 
-
-
+    
+    
 
 /* Look for completely known subproofs in proofInProgress.proof and
    assign proofInProgress.target and .source.  Calls assignKnownSteps(). */
@@ -1473,7 +1457,7 @@ void assignKnownSubProofs(void)
   } /* Next pos */
   return;
 }
-
+  
 
 /* This function assigns math strings to all steps (proofInProgress.target and
    .source fields) in a subproof with all known steps. */
@@ -1503,7 +1487,7 @@ void assignKnownSteps(long startStep, long sbProofLen)
       stackPtr++;
     } else {
       /* It's an assertion. */
-
+      
       /* Assemble the hypotheses for unification */
       reqHyps = statement[stmt].numReqHyp;
 
@@ -1532,7 +1516,7 @@ void assignKnownSteps(long startStep, long sbProofLen)
       schemeLen = 1; /* First "$|$" separator token */
       for (hyp = 0; hyp < reqHyps; hyp++) {
         /* Add 1 for "$|$" separator token */
-        schemeLen = schemeLen +
+        schemeLen = schemeLen + 
             statement[statement[stmt].reqHypList[hyp]].mathStringLen + 1;
       }
       /* Preallocate scheme */
@@ -1560,7 +1544,7 @@ void assignKnownSteps(long startStep, long sbProofLen)
       }
       for (var = 0; var < reqVars; var++) {
         /* Put dummy var mapping into mathToken[].tmp field */
-        mathToken[statement[stmt].reqVarList[var]].tmp = mathTokens + 1 +
+        mathToken[statement[stmt].reqVarList[var]].tmp = mathTokens + 1 + 
           pipDummyVars + var;
       }
       for (schemePos = 0; schemePos < schemeLen; schemePos++) {
@@ -1569,7 +1553,7 @@ void assignKnownSteps(long startStep, long sbProofLen)
         /* Use dummy var mapping from mathToken[].tmp field */
         scheme[schemePos] = mathToken[scheme[schemePos]].tmp;
       }
-
+    
       /* Change variables in assertion to dummy variables for substitition */
       nmbrLet(&assertion, statement[stmt].mathString);
       assLen = nmbrLen(assertion);
@@ -1579,7 +1563,7 @@ void assignKnownSteps(long startStep, long sbProofLen)
         /* Use dummy var mapping from mathToken[].tmp field */
         assertion[assPos] = mathToken[assertion[assPos]].tmp;
       }
-
+    
       /* Unify scheme and instance */
       unifTrialCount = 0; /* Reset unification to no timeout */
       tmpFlag = unifyH(scheme, instance, &stateVector, 0);
@@ -1608,11 +1592,11 @@ void assignKnownSteps(long startStep, long sbProofLen)
 
       /* Verify unification is unique; also deallocates stateVector */
       if (unifyH(scheme, instance, &stateVector, 1)) bug(1815); /* Not unique */
-
+        
       /* Adjust stack */
       stackPtr = stackPtr - reqHyps;
       stack[stackPtr] = pos;
-      stackPtr++;
+      stackPtr++;      
 
     } /* End if (not) $e, $f */
   } /* Next pos */
@@ -1647,6 +1631,8 @@ void interactiveUnifyStep(long step, char messageFlag)
 {
   pntrString *stateVector = NULL_PNTRSTRING;
   char unifFlag;
+  long pos, plen;
+  nmbrString *nmbrTmpPtr; /* Pointer only; not allocated */
 
   /* Target should never be empty */
   if (!nmbrLen(proofInProgress.target[step])) bug (1817);
@@ -1842,11 +1828,6 @@ void autoUnify(flag congrats)
   pntrString *stateVector = NULL_PNTRSTRING;
   flag somethingNotUnified = 0;
 
-  /* Initialization to avoid compiler warning (should not be theoretically
-     necessary) */
-  schemeAPtr = NULL_NMBRSTRING;
-  schemeBPtr = NULL_NMBRSTRING;
-
   plen = nmbrLen(proofInProgress.proof);
 
   while (somethingChanged) {
@@ -1888,9 +1869,6 @@ void autoUnify(flag congrats)
               print2(
               "Step %ld cannot be unified.  THERE IS AN ERROR IN THE PROOF.\n",
                   (long)(step + 1));
-              print2(
-"If your system needs empty substitutions, see HELP SET EMPTY_SUBSTITUTION.\n"
-                 );
               continue;
             }
             if (unifFlag == 1) {
@@ -1919,9 +1897,9 @@ void autoUnify(flag congrats)
   }
 
   return;
-
+    
 }
-
+  
 
 /* Make stateVector substitutions in all steps.  The stateVector must
    contain the result of a valid unification. */
@@ -1982,7 +1960,7 @@ void replaceDummyVar(long dummyVar, nmbrString *mString)
         stepChanged = 1;
         numSubs++;
       }
-    } /* Next sym */
+    } /* Next sym */        
 
     nmbrTmpPtr = proofInProgress.source[step];
     slen = nmbrLen(nmbrTmpPtr);
@@ -1995,7 +1973,7 @@ void replaceDummyVar(long dummyVar, nmbrString *mString)
         stepChanged = 1;
         numSubs++;
       }
-    } /* Next sym */
+    } /* Next sym */        
 
     nmbrTmpPtr = proofInProgress.user[step];
     slen = nmbrLen(nmbrTmpPtr);

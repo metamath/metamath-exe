@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*               Copyright (C) 1998, NORMAN D. MEGILL                        */
+/*               Copyright (C) 1997, NORMAN D. MEGILL                        */
 /*****************************************************************************/
 
 /*34567890123456 (79-character line to adjust text window width) 678901234567*/
@@ -8,7 +8,6 @@ extern int errorCount;     /* Total error count */
 /* Global variables used by print2() */
 extern flag logFileOpenFlag;
 extern FILE *logFilePtr;
-extern FILE *listFile_fp;
 /* Global variables used by print2() */
 extern flag outputToString;
 extern vstring printString;
@@ -41,11 +40,3 @@ void errorMessage(vstring line, long lineNum, short column, short tokenLength,
    backup of previous version.   Mode must be "r" or "w". */
 FILE *fSafeOpen(vstring fileName, vstring mode);
 
-/* Renames a file with backup of previous version.  If non-zero
-   is returned, there was an error. */
-int fSafeRename(vstring oldFileName, vstring newFileName);
-
-/* Finds the name of the first file of the form filePrefix +
-   nnn + ".tmp" that does not exist.  THE CALLER MUST DEALLOCATE
-   THE RETURNED STRING. */
-vstring fGetTmpName(vstring filePrefix);

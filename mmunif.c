@@ -1,12 +1,12 @@
 /*****************************************************************************/
-/*               Copyright (C) 1998, NORMAN D. MEGILL                        */
+/*               Copyright (C) 1997, NORMAN D. MEGILL                        */
 /*****************************************************************************/
 
 /*34567890123456 (79-character line to adjust text window width) 678901234567*/
 
 /* mmunif.c - Unifications for proof assistant (note: unifications for normal
    proof verification is done in mmveri.c) */
-
+   
 /*
 This module deals with an object called the stateVector, which is a string of
 16 pointers (called entries 0 through 15 below) to either other pntrStrings or
@@ -26,7 +26,7 @@ i.e. the two schemes being unified.
 11[1] or stackTop is the number of variables (minus 1) that will require
 substitutions in order to perform the unification.  Warning:  stackTop may be
 -1, which could be confused with "end of nmbrString" by some nmbrString
-functions.
+functions. 
 
   stackTop = ((nmbrString *)((*stateVector)[11]))[1];
 
@@ -39,12 +39,12 @@ functions.
   hentyFilterSize = ((nmbrString *)((*stateVector)[11]))[3];
 
 Entry 8 is the result of unifying schemeA and schemeB, which are the two
-schemes being unified.
+schemes being unified. 
 
   unifiedScheme = (nmbrString *)((*stateVector)[8]);
 
 Entries 0 through 3 each have length unkVarsLen.  Entry 1 is a list of token
-numbers for the temporary variables substituted in the unification.
+numbers for the temporary variables substituted in the unification. 
 
 Entry 0 has all variables ($1, $2, etc.) in schemeA and schemeB.
 
@@ -52,7 +52,7 @@ Entry 0 has all variables ($1, $2, etc.) in schemeA and schemeB.
 
 In entries 1 through 3, only variables 0 through stackTop (inclusive) have
 meaning.  These entries, along with unifiedScheme, determine what variables
-were substituted and there substitutions.
+were substituted and there substitutions. 
 
 Entry 1 is the list of variables that were substituted.
 Entry 2 is the location of the substitution in unifiedScheme, for each variable
@@ -67,7 +67,7 @@ Entries 4 thru 7 each point to unkVarsLen nmbrString's.  These entries save the
 data needed to resume unification at any point.  Entries 4 and 5 are
 nmbrString's of length unkVarsLen.  Entries 6 and 7 will have variable length.
 Only the first stackTop+1 nmbrString's have meaning.  Note that stackTop may be
--1.
+-1. 
 
   stackSaveUnkVarStart = (pntrString *)((*stateVector)[4]);
   stackSaveUnkVarLen = (pntrString *)((*stateVector)[5]);
@@ -113,9 +113,7 @@ Note:  i = 0 through hentyFilterSize-1 below.
 #include "mmpars.h"
 #include "mmunif.h"
 
-/*long minSubstLen = 0;*/ /* User-settable value - 0 or 1 */
-long minSubstLen = 1; /* It was decided to disallow empty subst. by default
-                         since most formal systems don't need it */
+long minSubstLen = 0; /* User-settable value - 0 or 1 */
 long userMaxUnifTrials = 1000; /* Initial value */
            /* User-defined upper limit (# backtracks) for unification trials */
 long unifTrialCount = 0;
@@ -281,12 +279,12 @@ char unify(
    contents of (*stateVector) when done, UNLESS a 0 is returned.
    The caller must assign (*stateVector) to a legal pntrString
    (e.g. NULL_PNTRSTRING) before calling.
-
+  
    All variables with a tokenNum > mathTokens are assumed
    to be "unknown" variables that can be assigned; all other
    variables are treated like constants in the unification
-   algorithm.
-
+   algorithm.  
+  
    The "unknown" variable assignments are contained in (*stateVector)
    (which is a complex structure, described above).  Some "unknown"
    variables may have no assignment, in which case they will
@@ -294,7 +292,7 @@ char unify(
    "unknown" variables.  The (*stateVector) entries 9 and 10 are used
    by oneDirUnif() only.
 */
-
+  
   long stackTop;
   nmbrString *unkVars; /* List of all unknown vars */
   long unkVarsLen;
@@ -333,11 +331,7 @@ char unify(
 /*E*/    nmbrCvtMToVString(schemeA),".",NULL),"    ","  ");
 /*E*/if(db5)printLongLine(cat("schemeB is ",
 /*E*/    nmbrCvtMToVString(schemeB),".",NULL),"    ","  ");
-
-  /* Initialization to avoid compiler warning (should not be theoretically
-     necessary) */
-  p = 0;
-
+  
   /* Fast early exit -- first or last constants of schemes don't match */
   if (mathToken[schemeA[0]].tokenType == (char)con__) {
     if (mathToken[schemeB[0]].tokenType == (char)con__) {
@@ -366,7 +360,7 @@ char unify(
   if (!reEntryFlag) {
     /* First time called */
     p = 0;
-
+  
     /* Collect the list of "unknown" variables */
     /* (Pre-allocate max. length) */
     /* (Note j and k assignment above) */
@@ -407,14 +401,14 @@ char unify(
         }
       }
     }
-
+  
     /* Deallocate old (*stateVector) assignments */
     if (pntrLen(*stateVector)) {
     /*if (((nmbrString *)((*stateVector)[11]))[0] != -1) { */ /*???Change to nmbrLen?*/
       /* If (*stateVector) not an empty nmbrString */
       for (i = 4; i <= 7; i++) {
         pntrTmpPtr = (pntrString *)((*stateVector)[i]);
-        for (j = 0; j < ((nmbrString *)((*stateVector)[11]))[0]; j++) {
+        for (j = 0; j < ((nmbrString *)((*stateVector)[11]))[0]; j++) { 
           nmbrLet((nmbrString **)(&pntrTmpPtr[j]),
               NULL_NMBRSTRING);
         }
@@ -432,7 +426,7 @@ char unify(
       k = pntrLen((pntrString *)((*stateVector)[12]));
       for (i = 12; i < 16; i++) {
         pntrTmpPtr = (pntrString *)((*stateVector)[i]);
-        for (j = 0; j < k; j++) {
+        for (j = 0; j < k; j++) { 
           nmbrLet((nmbrString **)(&pntrTmpPtr[j]),
               NULL_NMBRSTRING);
         }
@@ -460,7 +454,7 @@ char unify(
     nmbrLet(&stackUnkVar, nmbrSpace(unkVarsLen));
     nmbrLet(&stackUnkVarStart, stackUnkVar);
     nmbrLet(&stackUnkVarLen, stackUnkVar);
-
+    
     /* These next 4 hold pointers to nmbrStrings */
     pntrLet(&stackSaveUnkVarStart, pntrNSpace(unkVarsLen));
     pntrLet(&stackSaveUnkVarLen, stackSaveUnkVarStart);
@@ -479,9 +473,9 @@ char unify(
     for (i = 0; i < unkVarsLen; i++) {
       mathToken[unkVars[i]].tmp = -1;
     }
-
+          
   } else { /* reEntryFlag != 0 */
-
+  
     /* We are re-entering to get the next possible assignment. */
 
     /* Restore the (*stateVector) variables */
@@ -512,12 +506,12 @@ char unify(
     goto backtrack;
    reEntry1: /* goto backtrack will come back here if reEntryFlag is set */
     reEntryFlag = 0;
-
-
+      
+  
   }
-
+  
   /* Perform the unification */
-
+  
  scan:
 /*E*/if(db6)print2("Entered scan: p=%ld\n",p);
 /*E*/if(db6)print2("Enter scn sbA %s\n",nmbrCvtMToVString(schA));
@@ -727,7 +721,7 @@ char unify(
   if (pairingMismatches) {
     goto backtrack;
   }
-
+  
   /* Make sure left and right braces match */
   pairingMismatches = 0; /* Counter of braces: + for "{" and - for "}" */
   for (k = 0; k < j; k++) {
@@ -739,7 +733,7 @@ char unify(
   if (pairingMismatches) {
     goto backtrack;
   }
-
+  
   /* Make sure left and right triangle brackets match */
   pairingMismatches = 0; /* Counter of parentheses: + for "<." and - for ">." */
   for (k = 0; k < j; k++) {
@@ -754,7 +748,7 @@ char unify(
   if (pairingMismatches) {
     goto backtrack;
   }
-
+  
   /* Now perform the substitutions */
 /*E*/if(db6)print2("Substitution is '%s'\n",nmbrCvtMToVString(substitution));
   k = 1;
@@ -860,7 +854,7 @@ char unify(
  switchVarToB:
   /* Restore the state from the stack top */
   nmbrLet(&stackUnkVarLen, (nmbrString *)(stackSaveUnkVarLen[stackTop]));
-
+  
   /* If the variable overflows the end of the scheme its assigned to,
      pop the stack */
 /*E*/if(db6)print2("Backtracked to token %s.\n",
@@ -978,7 +972,7 @@ char unify(
   k = pntrLen((pntrString *)((*stateVector)[12]));
   for (i = 12; i < 16; i++) {
     pntrTmpPtr = (pntrString *)((*stateVector)[i]);
-    for (j = 0; j < k; j++) {
+    for (j = 0; j < k; j++) { 
       nmbrLet((nmbrString **)(&pntrTmpPtr[j]),
           NULL_NMBRSTRING);
     }
@@ -1003,7 +997,7 @@ char unify(
 }
 
 
-/* oneDirUnif() is like unify(), except that when reEntryFlag is 1,
+/* oneDirUnif() is like unify(), except that when reEntryFlag is 1, 
    a new unification is returned ONLY if the assignments to the
    variables in schemeA have changed.  This is used to speed up the
    program. */
@@ -1062,7 +1056,6 @@ nmbrString *oldStackUnkVarLen; /* Pointer only - not allocated */
       }
     } /* End while (1) */
   }
-  return(0); /* Dummy return value - never happens */
 }
 
 
@@ -1083,7 +1076,7 @@ char uniqueUnif(
   pntrString *pntrTmpPtr2; /* Pointer only; not allocated */
   long i, j, k;
   char tmpFlag;
-
+  
   tmpFlag = unifyH(schemeA, schemeB, stateVector, 0);
   if (!tmpFlag) {
     return (0); /* No unification possible */
@@ -1091,7 +1084,7 @@ char uniqueUnif(
   if (tmpFlag == 2) {
     return (2); /* Unification timed out */
   }
-
+  
   /* Save the state vector */
   pntrLet(&saveStateVector,*stateVector);
   if (pntrLen(*stateVector) != 16) bug(1906);
@@ -1141,10 +1134,10 @@ char uniqueUnif(
           (nmbrString *)(pntrTmpPtr2[j]));
     }
   }
-
+  
   /* See if there is a second unification */
   tmpFlag = unifyH(schemeA, schemeB, stateVector, 1);
-
+  
   if (!tmpFlag) {
     /* There is no 2nd unification.  Unify cleared the original stateVector,
        so return the saved version. */
@@ -1178,7 +1171,7 @@ char uniqueUnif(
   k = pntrLen((pntrString *)(saveStateVector[12]));
   for (i = 12; i < 16; i++) {
     pntrTmpPtr1 = (pntrString *)(saveStateVector[i]);
-    for (j = 0; j < k; j++) {
+    for (j = 0; j < k; j++) { 
       nmbrLet((nmbrString **)(&pntrTmpPtr1[j]),
           NULL_NMBRSTRING);
     }
@@ -1186,13 +1179,13 @@ char uniqueUnif(
         NULL_PNTRSTRING);
   }
   pntrLet(&saveStateVector, NULL_PNTRSTRING);
-
+  
   if (tmpFlag == 2) {
     return (2); /* Unification timed out */
   }
-
+  
   return (3); /* Return flag that unification is not unique */
-
+  
 }
 
 
@@ -1231,7 +1224,7 @@ void purgeStateVector(pntrString **stateVector) {
   k = pntrLen((pntrString *)((*stateVector)[12]));
   for (i = 12; i < 16; i++) {
     pntrTmpPtr1 = (pntrString *)((*stateVector)[i]);
-    for (j = 0; j < k; j++) {
+    for (j = 0; j < k; j++) { 
       nmbrLet((nmbrString **)(&pntrTmpPtr1[j]),
           NULL_NMBRSTRING);
     }
@@ -1242,7 +1235,7 @@ void purgeStateVector(pntrString **stateVector) {
 
   return;
 
-}
+}  
 
 
 /* Prints the substitutions determined by unify for debugging purposes */
@@ -1289,6 +1282,7 @@ char unifyH(
     long reEntryFlag)
 {
   char tmpFlag;
+  long i, j;
   nmbrString *hentyVars = NULL_NMBRSTRING;
   nmbrString *hentyVarStart = NULL_NMBRSTRING;
   nmbrString *hentyVarLen = NULL_NMBRSTRING;
@@ -1309,7 +1303,7 @@ char unifyH(
       /* This is the first unification so add it to the filter then return 1 */
       hentyAdd(hentyVars, hentyVarStart, hentyVarLen,
           hentySubstList, stateVector);
-
+          
     }
     return (tmpFlag);
 
@@ -1351,7 +1345,7 @@ char unifyH(
     nmbrLet(&hentyVarStart, NULL_NMBRSTRING);
     nmbrLet(&hentyVarLen, NULL_NMBRSTRING);
     nmbrLet(&hentySubstList, NULL_NMBRSTRING);
-    return (tmpFlag);
+    return (tmpFlag);      
 
   }
 }
@@ -1461,7 +1455,7 @@ void hentyNormalize(nmbrString **hentyVars, nmbrString **hentyVarStart,
   }
   /* For speedup, preallocate total string needed for the substitution list */
   nmbrLet(&substList, nmbrSpace(totalSubstLen));
-
+  
   pos = 0; /* Position in list of substitutions */
   for (i = 0; i < vars; i++) {
     for (j = 0; j < (*hentyVarLen)[i]; j++) {
@@ -1476,7 +1470,7 @@ void hentyNormalize(nmbrString **hentyVars, nmbrString **hentyVarStart,
   /* Deallocate memory */
   nmbrLet(&substList, NULL_NMBRSTRING);
 
-  return;
+  return;    
 
 }
 
@@ -1502,7 +1496,7 @@ flag hentyMatch(nmbrString *hentyVars, nmbrString *hentyVarStart,
       }
     }
   } /* Next i */
-
+          
   return (0); /* There was no previous equivalent unification */
 }
 

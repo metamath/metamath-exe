@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*               Copyright (C) 1998, NORMAN D. MEGILL                        */
+/*               Copyright (C) 1997, NORMAN D. MEGILL                        */
 /*****************************************************************************/
 
 /*34567890123456 (79-character line to adjust text window width) 678901234567*/
@@ -19,97 +19,6 @@
 void help2(vstring helpCmd)
 {
 
-printHelp = !strcmp(helpCmd, "HELP");
-H("");
-H("");
-H("");
-H("");
-H("Welcome to Metamath.  Here are some general guidelines.");
-H("");
-H("To make the most effective use of Metamath, you should become familiar");
-H("with the Metamath book.  In particular, you will need to learn");
-H("the syntax of the Metamath language.");
-H("");
-H("For a summary of the Metamath language, type HELP LANGUAGE.");
-H("For help using the command line interpreter, type HELP CLI.");
-H("For help getting started, type HELP DEMO.");
-H("For help exploring the data base, type HELP EXPLORE.");
-H("For help creating a LaTeX file, type HELP TEX.");
-H("For help using the Proof Assistant, type HELP PROOF_ASSISTANT.");
-H("For a list of help topics, type HELP ?.");
-H("To exit Metamath, type EXIT.");
-H("");
-H("If you need technical support, contact Norman Megill via email at");
-H("nm@alum.mit.edu, or at 19 Locke Lane, Lexington, MA 02173 USA.");
-H("");
-H("");
-H("");
-H("");
-H("Copyright, Licensing, and Warranty Information");
-H("----------------------------------------------");
-H("");
-H("Copyright (C) 1997 Norman D. Megill");
-H("");
-H("Permission to use this software free of charge is granted to individuals");
-H("and not-for-profit organizations.  Commercial use of this software, in");
-H("part or in whole, is prohibited without permission from the copyright");
-H("owner.");
-H("");
-H("This software is provided without warranty of any kind.");
-H("");
-
-
-printHelp = !strcmp(helpCmd, "HELP CLI");
-H("Each command line is a sequence of English-like words separated by");
-H("spaces, as in SHOW SETTINGS.  Command words are not case sensitive, and");
-H("only as many letters are needed as are necessary to eliminate ambiguity;");
-H("for example, \"sh se\" would work for the command SHOW SETTINGS.  In some");
-H("cases arguments such as file names, statement labels, or symbol names are");
-H("required; these are case-sensitive (although file names may not be on");
-H("some operating systems).");
-H("");
-H("A command line is entered by pressing the <return> key.");
-H("");
-H("To find out what commands are available, type ? at the MM> prompt.");
-H("");
-H("To find out the choices at any point in a command, press <return> and you");
-H("will be prompted for them.  The default choice (the one selected if you");
-H("just press <return>) is shown in brackets (<>).");
-H("");
-H("You may also type ? in place of a command word to force Metamath to tell");
-H("you what the choices are.  The ? method won't work, though, if a");
-H("non-keyword argument such as a file name is expected at that point,");
-H("because the CLI will think the ? is the argument.");
-H("");
-H("Some commands have one or more optional qualifiers which modify the");
-H("behavior of the command.  Qualifiers are indicated by a slash (/), such as");
-H("in READ set.mm / VERIFY.  Spaces are optional around the /.  If you need");
-H("to use a slash in a command argument, as in a Unix file name, put single");
-H("or double quotes around the command argument.");
-H("");
-H("The OPEN LOG command will save everything you see on the screen, and is");
-H("useful to help you recover should something go wrong in a proof, or if");
-H("you want to document a bug.");
-H("");
-H("If the response to a command is more than a screenful, you will be");
-H("prompted to '<return> to continue, Q to quit, or S to scroll to end'.");
-H("Q will complete the command internally but suppress further output until");
-H("the next \"MM>\" prompt.  S will suppress further pausing until the next");
-H("\"MM>\" prompt.");
-H("");
-H("A command line enclosed in quotes is executed by your operating system.");
-H("See HELP SYSTEM.");
-H("");
-H("Some other commands you may want to review with HELP are:");
-H("    SET ECHO");
-H("    SET SCROLL");
-H("    SET SCREEN_WIDTH");
-H("    SUBMIT");
-H("    FILE SEARCH");
-H("    FILE TYPE");
-H("");
-
-
 printHelp = !strcmp(helpCmd, "HELP SHOW MEMORY");
 H("Syntax:  SHOW MEMORY");
 H("");
@@ -126,7 +35,7 @@ H("");
 
 
 printHelp = !strcmp(helpCmd, "HELP SHOW LABELS");
-H("Syntax:  SHOW LABELS <label-match> [/ ALL] [/ HTML]");
+H("Syntax:  SHOW LABELS <label-match> [/ ALL]");
 H("");
 H("This command shows the labels of $a and $p statements that match");
 H("<label-match>.  A * in <label-match> matches any zero or more characters.");
@@ -135,14 +44,11 @@ H("ending with \"def\".");
 H("");
 H("Optional qualifier:");
 H("    / ALL - Include matches for $e and $f statement labels.");
-H("    / HTML - Lists statements to current HTML output file (see HELP OPEN");
-H("       HTML).  In this mode, the /ALL qualifier causes only $a's to be");
-H("       listed; otherwise only $p's are listed.");
 H("");
 
 
 printHelp = !strcmp(helpCmd, "HELP SHOW STATEMENT");
-H("Syntax:  SHOW STATEMENT <label> [/ TEX] [/ HTML] [/ COMMENT_ONLY]");
+H("Syntax:  SHOW STATEMENT <label> [/ TEX] [/ COMMENT_ONLY]");
 H("");
 H("This command provides information about a statement.  Only statements");
 H("that have labels ($f, $e, $a, and $p) may be specified.");
@@ -150,8 +56,6 @@ H("");
 H("Optional qualifiers:");
 H("    / TEX - This qualifier will write the statement information to the");
 H("        LaTeX file previously opened with OPEN TEX.");
-H("    / HTML - This qualifier will write the statement information to the");
-H("        HTML file previously opened with OPEN HTML.");
 H("    / COMMENT_ONLY - This qualifier will show only the comment that");
 H("        immediatley precedes the statement.  This is useful when you are");
 H("        using Metamath to preprocess LaTeX source you have created (see");
@@ -187,8 +91,6 @@ H("    / RENUMBER - when used with / ESSENTIAL, the steps are renumbered");
 H("        to correspond only to the essential steps.");
 H("    / TEX - the proof is converted to LaTeX and stored in the file opened");
 H("        with OPEN TEX.");
-H("    / HTML - the proof is converted to HTML and stored in the file opened");
-H("        with OPEN HTML.");
 H("    / LEMMON - The proof is displayed in a non-indented format known");
 H("        as Lemmon style, with explicit previous step number references.");
 H("        If this qualifier is omitted, steps are indented in a tree format.");
@@ -269,7 +171,7 @@ H("");
 
 
 printHelp = !strcmp(helpCmd, "HELP SEARCH");
-H("Syntax:  SEARCH <label-match> \"<symbol-match>\" [/ ALL] [/ COMMENTS]");
+H("Syntax:  SEARCH <label-match> \"<symbol-match>\" <[/ ALL]");
 H("");
 H("This command searches all $a and $p statements matching <label-match>");
 H("for occurrences of <symbol-match>.  A * in <label-match> matches");
@@ -339,20 +241,17 @@ H("");
 printHelp = !strcmp(helpCmd, "HELP SET EMPTY_SUBSTITUTION");
 H("Syntax:  SET EMPTY_SUBSTITUTION ON or SET EMPTY_SUBSTITUTION OFF");
 H("");
-H("(This command affects the Proof Assistant only.  It may be issued)");
-H("outside of the Proof Assistant.");
+H("(This command affects the Proof Assistant only.)");
 H("");
 H("The Metamath language allows variables to be substituted with empty");
-H("symbol sequences.  However, in most formal systems this will never happen");
+H("symbol sequences.  However, in many formal systems this will never happen");
 H("in a valid proof.  Allowing for this possibility increases the likelihood");
-H("of ambiguous unifications during proof creation.  The default is that");
-H("empty substitutions are not allowed; for formal systems requiring them,");
-H("you must SET EMPTY_SUBSTITUTION ON.  Note that empty substitutions are");
-H("always permissable in proof verification (VERIFY PROOFS...) outside the");
-H("Proof Assistant.  (See the MIU system in the Metamath book for an example");
-H("of a system needing empty substitutions; another example would be a");
-H("system that implements a Deduction Rule and in which deductions from");
-H("empty assumption lists would be permissable.)");
+H("of ambiguous unifications during proof creation, and you may want to SET");
+H("EMPTY_SUBSTITUTION OFF to help make the process more efficient.  With");
+H("this mode set, you may not be able to create some proofs in formal");
+H("systems that allow empty substitutions.  (An example would be a system");
+H("that implements a Deduction Rule and in which deductions from empty");
+H("assumption lists would be permissable.)");
 H("");
 
 
@@ -583,7 +482,7 @@ H("");
 
 
 printHelp = !strcmp(helpCmd, "HELP MINIMIZE_WITH");
-H("Syntax:  MINIMIZE_WITH <label> [/ BRIEF] [/ ALLOW_GROWTH]");
+H("Syntax:  MINIMIZE_WITH <label> [/ BRIEF]");
 H("");
 H("This command, available in the Proof Assistant only, checks whether");
 H("the proof can be shortened by using statements matching <label>, and");
@@ -594,9 +493,6 @@ H("");
 H("Optional qualifier:");
 H("    / BRIEF - The labels of statements that were tested but didn't reduce");
 H("        the proof length will not be listed, for brevity.");
-H("    / ALLOW_GROWTH - If a substitution is possible, it will be made even");
-H("        if the proof length increases.  This is useful if we are just");
-H("        updating the proof with a newer version of an obsolete theorem.");
 H("");
 
 

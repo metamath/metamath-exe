@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*               Copyright (C) 1999, NORMAN D. MEGILL                        */
+/*               Copyright (C) 1997, NORMAN D. MEGILL                        */
 /*****************************************************************************/
 
 /*3456789012345678901234567890123456789012345678901234567890123456789012345678*/
@@ -32,8 +32,8 @@ long numAllLabelKeys; /* Number of all labels */
 long wrkProofMaxSize = 0; /* Maximum size so far - it may grow */
 long wrkMathPoolMaxSize = 0; /* Max mathStringPool size so far - it may grow */
 struct wrkProof_struct wrkProof;
-
-
+  
+  
 
 /* This function returns a pointer to a buffer containing the contents of an
    input file and its 'include' calls.  'Size' returns the buffer's size.
@@ -46,7 +46,6 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
 {
   FILE *input_fp;
   long charCount = 0;
-  long fileCharCount; /* charCount for user message */
   long startIncludeCalls;
   long saveIncludeCalls;
   long i, j;
@@ -59,19 +58,15 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
   char mode;
   char *startSection;
   char tmpch;
+  FILE *include_fp;
   char *tmpPtr;
   vstring tmpStr = "";
   char *memmovePtr; /* For memmove emulation */
-
+  
   static char* fileNameBufStrt; /* For file-not-found error msg */
   static char* fileNamePtr; /* For file-not-found error msg */
   static long fileNameLen; /* For file-not-found error msg */
-
-  /* Initialization to avoid compiler warning (should not be theoretically
-     necessary) */
-  startSection = "";
-  tmpPtr = "";
-
+  
   startIncludeCalls = includeCalls;
   if (!startIncludeCalls) {
     /* This is the initial call */
@@ -119,7 +114,7 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
   fileBufSize = fileBufSize + 10; /* Add a factor for unknown text formats */
   fileBuf = malloc(fileBufSize * sizeof(char));
   if (!fileBuf) outOfMemory("#1 (fileBuf)");
-
+  
   /* Put the entire input file into the buffer as a giant character string */
   charCount = fread(fileBuf, sizeof(char), fileBufSize - 2, input_fp);
   if (!feof(input_fp)) {
@@ -131,7 +126,6 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
   fclose(input_fp);
   fileBuf[charCount] = 0; /* End of string */
 /*E*/if(db5)print2("In text mode the file has %ld bytes.\n",charCount);
-  fileCharCount = charCount; /* Save file size for user message */
 
   /* See if last char is newline (needed for comment terminator); if not, add */
   if (fileBuf[charCount - 1] != '\n') {
@@ -140,29 +134,29 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
     rawSourceError(fileBuf, &fileBuf[charCount - 1], 1, 0, input_fn,cat(
         "The last line in the file does not end with a \"line break\"",
         " character.  The \"line break\" character is a line feed in Unix",
-        " or a carriage return on the Macintosh or a CR/LF in Windows.",NULL));
+        " and a carriage return on the Macintosh.",NULL));
     charCount++;
   }
-
+  
   /* Look for $[ and $] 'include' statement start and end */
   fbPtr = fileBuf;
   lineNum = 1;
   mode = 0; /* 0 = outside of 'include', 1 = inside of 'include' */
   insideComment = 0; /* 1 = inside $( $) comment */
   insideLineComment = 0; /* 1 = inside $! comment */
-  while (1) {
+  while (1) {  
     /* Find a keyword or newline */
     /* fbPtr = strpbrk(fbPtr, "\n$"); */ /* Takes 10 msec on VAX 4000/60 ! */
     tmpch = fbPtr[0];
     if (!tmpch) { /* End of file */
       if (insideComment) {
         rawSourceError(fileBuf, fbPtr - 1, 2, lineNum -1, input_fn,
-         "The last comment in the file is incomplete.  \"$)\" was expected.");
+         "The last comment in the file is incomplete.  \"$)\" was expected."); 
       } else {
         if (mode != 0) {
         rawSourceError(fileBuf, fbPtr - 1, 2, lineNum -1, input_fn,
    "The last include statement in the file is incomplete.  \"$]\" was expected."
-           );
+           ); 
         }
       }
       break;
@@ -303,13 +297,13 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
             }
             let(&tmpStr,""); /* Deallocate temp string stack */
           }
-
+          
           tmpPtr = readRawSource(
               includeCall[saveIncludeCalls].current_fn,
               startSection - fileBuf + bufOffsetSoFar,
               &(includeCall[saveIncludeCalls].length));
         }
-
+        
         /* Put included text into the present buffer */
         i = startSection - fileBuf; /* Initial segment */
         j = charCount - (fbPtr - fileBuf + 1) + 1; /* Final segment, incl null*/
@@ -344,8 +338,8 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
         }
         fbPtr = fileBuf + i + includeCall[saveIncludeCalls].length;
         mode = 0;
-
-
+        
+        
         /* Create an includeCall[] entry that points to just after the end
            of the included section.  The pushOrPop flag distinguishes this
            entry.  This entry is used to determine line numbers and file names
@@ -361,10 +355,10 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
         includeCall[includeCalls].length = 0; /* Not used */
         includeCall[includeCalls].pushOrPop = 0; /* 0 = returned from include */
         includeCall[includeCalls].alreadyIncluded = 0; /* Not used */
-
+        
         continue;
-
-
+        
+        
       case '{':
       case '}':
       case '.':
@@ -374,8 +368,8 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
   } /* End while */
 
   if (fbPtr != fileBuf + charCount) bug(1704);
-
-  let(&tmpStr, cat(str(lineNum - 1), " lines (", str(fileCharCount),
+  
+  let(&tmpStr, cat(str(lineNum - 1), " lines (", str(charCount),
       " characters) were read from \"", input_fn, NULL));
   if (startIncludeCalls == 0) {
     print2("%s",cat(tmpStr, "\".\n", NULL));
@@ -386,14 +380,14 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
         "    ", " ");
   }
   let(&tmpStr, ""); /* Deallocate temporary strings */
-
+  
   if (startIncludeCalls == 0) {
     /* Main call */
     includeCall[startIncludeCalls].length = charCount;
   }
   *size = charCount;
   return (fileBuf);
-
+      
 }
 
 /* This function initializes the statement[] structure array and assigns
@@ -404,6 +398,7 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
 void parseKeywords(void)
 {
   long i;
+  long fileBufSize;
   char *fbPtr;
   flag insideComment;
   char mode, type;
@@ -417,11 +412,6 @@ void parseKeywords(void)
   char *nextInclPtr;
   long lineNum;
   vstring fileName;
-
-  /* Initialization to avoid compiler warning (should not be theoretically
-     necessary) */
-  type = 0;
-
 /*E*/if(db5)print2("The total source length is %ld bytes.\n",sourceLen);
 /*E*/if(db5){ print2("Include call table:\n");
 
@@ -439,12 +429,12 @@ void parseKeywords(void)
   potentialStatements = potentialStatements + 3; /* To be cautious */
 /*E*/if(db5)print2("There are up to %ld potential statements.\n",
 /*E*/   potentialStatements);
-
+  
   /* Reallocate the statement array for all potential statements */
   statement = realloc(statement, potentialStatements
       * sizeof(struct statement_struct));
   if (!statement) outOfMemory("#4 (statement)");
-
+  
   /* Initialize the statement array */
   i = 0;
   statement[i].lineNum = 0;
@@ -478,20 +468,20 @@ void parseKeywords(void)
     statement[i] = statement[0];
   }
 /*E*/if(db5)print2("Finished initializing statement array.\n");
-
+  
   /* Fill in the statement array with raw source text */
   fbPtr = sourcePtr;
   mode = 0; /* 0 = label section, 1 = math section, 2 = proof section */
   insideComment = 0; /* 1 = inside comment */
   startSection = fbPtr;
-
+  
   /* Variables for computing line number and file */
   inclCallNum = 1;
   lineNum = 1;
   fileName = includeCall[0].current_fn;
   includeCall[includeCalls + 1].bufOffset = sourceLen + 2; /* Dummy entry */
   nextInclPtr = sourcePtr + includeCall[1].bufOffset;
-  while (1) {
+  while (1) {  
     /* Find a keyword or newline */
     /* fbPtr = strpbrk(fbPtr, "\n$"); */ /* Takes 10 msec on VAX 4000/60 ! */
     tmpch = fbPtr[0];
@@ -506,7 +496,7 @@ void parseKeywords(void)
       }
       break;
     }
-
+    
     /* Get the current line number and file name */
     if (fbPtr >= nextInclPtr) {
       while (1) {
@@ -517,8 +507,8 @@ void parseKeywords(void)
       fileName = includeCall[inclCallNum - 1].current_fn;
       nextInclPtr = sourcePtr + includeCall[inclCallNum].bufOffset;
     }
-
-
+      
+    
     if (tmpch != '$') {
       if (tmpch == '\n') lineNum++;
       fbPtr++;
@@ -640,35 +630,41 @@ void parseKeywords(void)
   } /* End while */
 
   if (fbPtr != sourcePtr + sourceLen) bug(1706);
-
-  print2("The source has %ld statements; %ld are $a and %ld are $p.\n",
+  
+  print2("The source file has %ld statements; %ld are $a and %ld are $p.\n",
        statements, dollarACount, dollarPCount);
-
+  
   /* Put chars after the last $. into the label section of a dummy statement */
   statement[statements + 1].lineNum = lineNum - 1;
   statement[statements + 1].fileName = fileName;
   statement[statements + 1].type = illegal_;
   statement[statements + 1].labelSectionPtr = startSection;
   statement[statements + 1].labelSectionLen = fbPtr - startSection;
-
+  
 /*E*/if(db5){for (i=1; i<=statements; i++){
 /*E*/  if (i == 5) { print2("(etc.)\n");} else { if (i<5)
 /*E*/  print2("Statement %ld: line %ld file %s.\n",i,statement[i].lineNum,
 /*E*/      statement[i].fileName);
 /*E*/}}}
-
+    
 }
-
+  
 /* This function parses the label sections of the statement[] structure array.
    sourcePtr is assumed to point to the raw input buffer.
    sourceLen is assumed to be length of the raw input buffer. */
 void parseLabels(void)
 {
   long i, j, k;
+  long fileBufSize;
   char *fbPtr;
-  char type;
+  long lineNum;
+  flag insideComment;
+  char mode, type;
+  char *startSection;
+  char tmpch;
   long stmt;
-
+  flag tmpflag;
+  
   /* Define the legal label characters */
   for (i = 0; i < 256; i++) {
     illegalLabelChar[i] = !isalnum(i);
@@ -676,15 +672,15 @@ void parseLabels(void)
   illegalLabelChar['-'] = 0;
   illegalLabelChar['_'] = 0;
   illegalLabelChar['.'] = 0;
-
-
+  
+  
   /* Scan all statements and extract their labels */
   for (stmt = 1; stmt <= statements; stmt++) {
     type = statement[stmt].type;
     fbPtr = statement[stmt].labelSectionPtr;
     fbPtr = fbPtr + whiteSpaceLen(fbPtr);
     j = tokenLen(fbPtr);
-    if (j) {
+    if (j) { 
       for (k = 0; k < j; k++) {
         if (illegalLabelChar[(unsigned char)fbPtr[k]]) {
           sourceError(fbPtr + k, 1, stmt,
@@ -732,7 +728,7 @@ void parseLabels(void)
     sourceError(fbPtr + i, j, 0,
         "There should be no tokens after the last statement.");
   }
-
+  
   /* Sort the labels for later lookup */
   labelKey = malloc((statements + 1) * sizeof(long));
   if (!labelKey) outOfMemory("#6 (labelKey)");
@@ -755,7 +751,7 @@ void parseLabels(void)
 /*E*/    if (i >= numLabelKeys) break;
 /*E*/    print2("%s ",statement[labelKeyBase[i]].labelName);
 /*E*/  } print2("\n");}
-
+    
 
 
   /* Copy the keys for all possible labels for lookup by the
@@ -790,9 +786,9 @@ void parseLabels(void)
           "This label is declared more than once.  All labels must be unique.");
     }
   }
-*/
-
-
+*/      
+    
+    
 }
 
 /* This functions retrieves all possible math symbols from $c and $v
@@ -820,10 +816,10 @@ void parseMathDecl(void)
   }
   potentialSymbols = (potentialSymbols / 2) + 2;
 /*E*/if(db5)print2("%ld potential symbols were computed.\n",potentialSymbols);
-  mathToken = realloc(mathToken, potentialSymbols *
+  mathToken = realloc(mathToken, potentialSymbols * 
       sizeof(struct mathToken_struct));
   if (!mathToken) outOfMemory("#7 (mathToken)");
-
+  
   /* Scan $c and $v statements to accumulate all possible math symbols */
   mathTokens = 0;
   for (stmt = 1; stmt <= statements; stmt++) {
@@ -856,9 +852,9 @@ void parseMathDecl(void)
           mathToken[mathTokens].endStatement = statements; /* Unknown for now */
                 /* (Assign to 'statements' in case it's active until the end) */
           mathTokens++;
-
+          
         }
-
+        
         /* Create the symbol list for this statement */
         j = mathTokens - oldMathTokens; /* Number of tokens in this statement */
         nmbrTmpPtr = poolFixedMalloc((j + 1) * sizeof(nmbrString));
@@ -875,13 +871,13 @@ void parseMathDecl(void)
         }
     }
   }
-
+  
 /*E*/if(db5)print2("%ld math symbols were declared.\n",mathTokens);
   /* Reallocate from potential to actual to reduce memory space */
   /* Add 100 to allow for initial Proof Assistant use, and up to 100
      errors in undeclared token references */
   MAX_MATHTOKENS = mathTokens + 100;
-  mathToken = realloc(mathToken, MAX_MATHTOKENS *
+  mathToken = realloc(mathToken, MAX_MATHTOKENS * 
       sizeof(struct mathToken_struct));
   if (!mathToken) outOfMemory("#10 (mathToken)");
 
@@ -910,7 +906,7 @@ void parseMathDecl(void)
 /*E*/    print2("%s ",mathToken[mathKey[i]].tokenName);
 /*E*/  } print2("\n");}
 
-
+     
 }
 
 
@@ -920,6 +916,7 @@ void parseStatements(void)
   long stmt;
   char type;
   long i, j, k, m, n, p;
+  flag tmpflag;
   char *fbPtr;
   long mathStringLen;
   long tokenNum;
@@ -947,7 +944,7 @@ void parseStatements(void)
   };
   struct activeConstStack_struct *activeConstStack; /* Stack of active consts */
   long activeConstStackPtr = 0;
-
+  
   struct activeVarStack_struct {
     long tokenNum;
     int scope;
@@ -977,7 +974,7 @@ void parseStatements(void)
   nmbrString *wrkHypPtr3;
   long activeHypStackSize = 30; /* Starting value; could be as large as
                                    statements. */
-
+                                        
 
   struct activeDisjHypStack_struct { /* Stack of disjoint variables in $d's */
     long tokenNumA; /* First variable in disjoint pair */
@@ -1004,11 +1001,6 @@ void parseStatements(void)
   long maxSymbolLen; /* Longest math symbol (for speedup) */
   flag *symbolLenExists; /* A symbol with this length exists (for speedup) */
 
-  /* Initialization to avoid compiler warning (should not be theoretically
-     necessary) */
-  mathStringLen = 0;
-  tokenNum = 0;
-
   /* Initialize flags for mathKey array that identify math symbols as
      unique (when 0) or, if not unique, the flag is a number identifying a group
      of identical names */
@@ -1027,7 +1019,7 @@ void parseStatements(void)
       mathTokenSameAs[i] = mathTokenSameAs[i - 1];
     }
   }
-
+  
   /* Initialize flags for labelKey array that identify labels as
      unique (when 0) or, if not unique, the flag is a number identifying a group
      of identical names */
@@ -1049,9 +1041,9 @@ void parseStatements(void)
       labelTokenSameAs[i] = labelTokenSameAs[i - 1];
     }
   }
-
+  
   /* Initialize variable and hypothesis stacks */
-
+  
   /* Allocate MAX_MATHTOKENS and not just mathTokens of them so that
      they can accomodate any extra non-declared tokens (which get
      declared as part of error handling, where the MAX_MATHTOKENS
@@ -1076,7 +1068,7 @@ void parseStatements(void)
       !wrkHypPtr3)
       outOfMemory("#15 (activeHypStack)");
 
-  activeDisjHypStack = malloc(activeDisjHypStackSize *
+  activeDisjHypStack = malloc(activeDisjHypStackSize * 
       sizeof(struct activeDisjHypStack_struct));
   wrkDisjHPtr1A = malloc(activeDisjHypStackSize * sizeof(nmbrString));
   wrkDisjHPtr1B = malloc(activeDisjHypStackSize * sizeof(nmbrString));
@@ -1111,7 +1103,7 @@ void parseStatements(void)
   for (i = 0; i < mathTokens; i++) {
     symbolLenExists[mathToken[i].length] = 1;
   }
-
+  
 
   currentScope = 0;
   beginScopeStatementNum = 0;
@@ -1132,7 +1124,7 @@ void parseStatements(void)
     statement[stmt].scope = currentScope;
     type = statement[stmt].type;
     /******* Determine scope, stack active variables, process math strings ****/
-
+    
     switch (type) {
       case lb_:
         currentScope++;
@@ -1141,7 +1133,7 @@ void parseStatements(void)
         break;
       case rb_:
         /* Remove all variables and hypotheses in current scope from stack */
-
+        
         while (activeConstStackPtr) {
           if (activeConstStack[activeConstStackPtr - 1].scope < currentScope)
               break;
@@ -1150,7 +1142,7 @@ void parseStatements(void)
           mathToken[activeConstStack[activeConstStackPtr].tokenNum
               ].endStatement = stmt;
         }
-
+        
         while (activeVarStackPtr) {
           if (activeVarStack[activeVarStackPtr - 1].scope < currentScope) break;
           activeVarStackPtr--;
@@ -1191,7 +1183,7 @@ void parseStatements(void)
       case v__:
         /* Scan all symbols declared (they have already been parsed) and
            flag them as active, add to stack, and check for errors */
-
+           
         /* (Not true anymore) */
     /*
         if (type == c__) {
@@ -1202,8 +1194,8 @@ void parseStatements(void)
           }
         }
      */
-
-
+     
+     
         i = 0; /* Symbol position in mathString */
         nmbrTmpPtr = statement[stmt].mathString;
         while (1) {
@@ -1232,31 +1224,31 @@ void parseStatements(void)
               }
             }
           }
-
+          
           /* Flag the token as active */
           mathToken[tokenNum].active = 1;
           mathToken[tokenNum].scope = currentScope;
-
+          
           if (type == v__) {
-
+          
             /* Identify this stack position in the mathToken array, for use
                by the hypothesis variable scan below */
             mathToken[tokenNum].tmp = activeVarStackPtr;
-
+          
             /* Add the symbol to the stack */
             activeVarStack[activeVarStackPtr].tokenNum = tokenNum;
             activeVarStack[activeVarStackPtr].scope = currentScope;
             activeVarStack[activeVarStackPtr].tmpFlag = 0;
             activeVarStackPtr++;
           } else {
-
+          
             /* Add the symbol to the stack */
             activeConstStack[activeConstStackPtr].tokenNum = tokenNum;
             activeConstStack[activeConstStackPtr].scope = currentScope;
             activeConstStackPtr++;
-
+            
           }
-
+          
           i++;
         }
         break;
@@ -1276,7 +1268,7 @@ void parseStatements(void)
           wrkStrPtr = malloc(wrkLen + 1);
           if (!wrkStrPtr) outOfMemory("#21 (wrkStrPtr)");
         }
-
+        
         /* Scan the math section for tokens */
         mathStringLen = 0;
         fbPtr = statement[stmt].mathSectionPtr;
@@ -1284,7 +1276,7 @@ void parseStatements(void)
           fbPtr = fbPtr + whiteSpaceLen(fbPtr);
           origSymbolLen = tokenLen(fbPtr);
           if (!origSymbolLen) break; /* Done scanning source line */
-
+          
           /* Scan for largest matching token from the left */
          nextAdjToken:
           /* maxSymbolLen is the longest declared symbol */
@@ -1394,7 +1386,7 @@ void parseStatements(void)
               activeVarStackPtr++;
             }
           }
-
+          
           if (type == d__) {
             if (mathToken[tokenNum].tokenType == (char)con__) {
               sourceError(fbPtr, symbolLen, stmt,
@@ -1409,7 +1401,7 @@ void parseStatements(void)
               }
             } else {
               if (type == f__) {
-                if (mathStringLen == 1) {
+                if (mathStringLen == 1) {                      
                   if (mathToken[tokenNum].tokenType == (char)con__) {
                     sourceError(fbPtr, symbolLen, stmt,
                 "The second symbol must be a variable in a \"$f\" statement.");
@@ -1417,7 +1409,7 @@ void parseStatements(void)
                 } else {
                   if (mathStringLen == 2) {
                     sourceError(fbPtr, symbolLen, stmt,
-               "There cannot be more than two symbols in a \"$f\" statement.");
+               "There cannot be more than two symbols in a \"$f\" statement."); 
                   }
                 }
               }
@@ -1436,7 +1428,7 @@ void parseStatements(void)
             goto nextAdjToken; /* (Instead of continue) */
           }
         } /* End while */
-
+       
         if (type == d__) {
           if (mathStringLen < 2) {
             sourceError(fbPtr, 2, stmt,
@@ -1453,7 +1445,7 @@ void parseStatements(void)
             }
           }
         }
-
+         
 
         /* Assign mathString to statement array */
         nmbrTmpPtr = poolFixedMalloc(
@@ -1471,7 +1463,7 @@ void parseStatements(void)
         break;  /* Switch case break */
       default:
         bug(1707);
-
+        
     } /* End switch */
 
     /****** Process hypothesis and variable stacks *******/
@@ -1479,7 +1471,7 @@ void parseStatements(void)
        section, although this section assumes the above section has been done.
        Variables valid only in this pass of the above section are so
        indicated.) */
-
+    
     switch (type) {
       case f__:
       case e__:
@@ -1517,16 +1509,16 @@ void parseStatements(void)
             }
           }
         }
-
+          
         /* Flag the label as active */
         labelActiveFlag[stmt] = 1;
-
+        
     } /* End switch */
-
-
+        
+        
     switch (type) {
       case d__:
-
+      
         nmbrTmpPtr = statement[stmt].mathString;
         /* Stack all possible pairs of disjoint variables */
         for (i = 0; i < mathStringLen - 1; i++) { /* mathStringLen is from the
@@ -1591,18 +1583,18 @@ void parseStatements(void)
               activeDisjHypStack[activeDisjHypStackPtr].tokenNumB = n;
               activeDisjHypStack[activeDisjHypStackPtr].scope = currentScope;
               activeDisjHypStack[activeDisjHypStackPtr].statemNum = stmt;
-
+            
               activeDisjHypStackPtr++;
             }
 
           } /* Next j */
         } /* Next i */
-
+        
         break; /* Switch case break */
-
+        
       case f__:
       case e__:
-
+      
         /* Increase stack size if necessary */
         /* For convenience, we will keep the size greater than the sum of
            active $e and $f hypotheses, as this is the size needed for the
@@ -1623,7 +1615,7 @@ void parseStatements(void)
           if (!activeEHypStack || !activeFHypStack || !wrkHypPtr1 ||
               !wrkHypPtr2 || !wrkHypPtr3) outOfMemory("#32 (activeHypStack)");
         }
-
+              
         /* Add the hypothesis to the stack */
         if (type == e__) {
           activeEHypStack[activeEHypStackPtr].statemNum = stmt;
@@ -1632,7 +1624,7 @@ void parseStatements(void)
           activeFHypStack[activeFHypStackPtr].statemNum = stmt;
           activeFHypStack[activeFHypStackPtr].scope = currentScope;
         }
-
+        
         /* Create the list of variables used by this hypothesis */
         reqVars = 0;
         j = 0;
@@ -1658,7 +1650,7 @@ void parseStatements(void)
         for (i = 0; i < reqVars; i++) {
           activeVarStack[mathToken[nmbrTmpPtr[i]].tmp].tmpFlag = 0;
         }
-
+        
         if (type == e__) {
           activeEHypStack[activeEHypStackPtr].varList = nmbrTmpPtr;
           activeEHypStackPtr++;
@@ -1673,12 +1665,12 @@ void parseStatements(void)
           activeFHypStack[activeFHypStackPtr].varList = nmbrTmpPtr;
           activeFHypStackPtr++;
         }
-
+        
         break;  /* Switch case break */
-
+        
       case a__:
       case p__:
-
+        
         /* Scan this statement for required variables */
         reqVars = 0;
         j = 0;
@@ -1704,7 +1696,7 @@ void parseStatements(void)
 
           /* Add $e hypotheses to required list */
           wrkHypPtr1[i] = activeEHypStack[i].statemNum;
-
+          
           /* Add the $e's variables to required variable list */
           nmbrTmpPtr = activeEHypStack[i].varList;
           j = 0; /* Location in variable list */
@@ -1795,8 +1787,8 @@ void parseStatements(void)
             j++;
             tokenNum = nmbrTmpPtr[j];
           } /* End while */
-
-        } /* Next i */
+          
+        } /* Next i */           
 
 
         /* Error check:  make sure that all variables in the original statement
@@ -1832,12 +1824,12 @@ void parseStatements(void)
             wrkHypPtr3[k] = wrkHypPtr1[j];
             j++;
             continue;
-          }
+          }   
           if (j >= reqHyps) {
             wrkHypPtr3[k] = wrkHypPtr1[i];
             i++;
             continue;
-          }
+          }   
           if (wrkHypPtr1[i] > wrkHypPtr1[j]) {
             wrkHypPtr3[k] = wrkHypPtr1[j];
             j++;
@@ -1846,7 +1838,7 @@ void parseStatements(void)
             i++;
           }
         }
-
+           
         /* Now do the allocation */
         nmbrTmpPtr = poolFixedMalloc((reqHyps + 1) * sizeof(nmbrString));
         /* if (!nmbrTmpPtr) outOfMemory("#33 (reqHyps)"); */ /* Not nec. w/ poolMalloc */
@@ -1865,7 +1857,7 @@ void parseStatements(void)
           statement[stmt].optHypList = nmbrTmpPtr;
         }
 
-
+        
         /* Scan the list of disjoint variable ($d) hypotheses to find those
            that are required */
         optHyps = 0;
@@ -1879,7 +1871,7 @@ void parseStatements(void)
                disjoint hypothesis in the required list. */
             wrkDisjHPtr1A[reqHyps] = m;
             wrkDisjHPtr1B[reqHyps] = n;
-            wrkDisjHPtr1Stmt[reqHyps] =
+            wrkDisjHPtr1Stmt[reqHyps] = 
                 activeDisjHypStack[i].statemNum;
             reqHyps++;
           } else {
@@ -1887,7 +1879,7 @@ void parseStatements(void)
                is not required. */
             wrkDisjHPtr2A[optHyps] = m;
             wrkDisjHPtr2B[optHyps] = n;
-            wrkDisjHPtr2Stmt[optHyps] =
+            wrkDisjHPtr2Stmt[optHyps] = 
                 activeDisjHypStack[i].statemNum;
             optHyps++;
           }
@@ -1918,7 +1910,7 @@ void parseStatements(void)
            permanent list for the statement array */
 
         if (type == p__) { /* Optional ones are not used by $a statements */
-
+        
           nmbrTmpPtr = poolFixedMalloc((optHyps + 1) * sizeof(nmbrString));
           /* if (!nmbrTmpPtr) outOfMemory("#43 (optDisjHyps)"); */ /* Not nec. w/ poolMalloc */
           memcpy(nmbrTmpPtr, wrkDisjHPtr2A, optHyps * sizeof(nmbrString));
@@ -1937,7 +1929,7 @@ void parseStatements(void)
               * sizeof(nmbrString));
           nmbrTmpPtr[optHyps] = -1;
           statement[stmt].optDisjVarsStmt = nmbrTmpPtr;
-
+          
         }
 
 
@@ -1960,10 +1952,10 @@ void parseStatements(void)
           nmbrTmpPtr[optVars] = -1;
           statement[stmt].optVarList = nmbrTmpPtr;
         }
-
+        
         if (optVars + reqVars != activeVarStackPtr) bug(1708);
-
-
+        
+                 
         break;  /* Switch case break */
     }
 
@@ -1979,8 +1971,8 @@ void parseStatements(void)
         statement[statements].labelSectionLen, 2, 0,
         cat(tmpStr," missing at the end of the file.",NULL));
   }
-
-
+  
+  
   /* Filter out all hypothesis labels from the label key array.  We do not
      need them anymore, since they are stored locally in each statement
      structure.  Removing them will speed up lookups during proofs, and
@@ -2031,8 +2023,8 @@ void parseStatements(void)
   free(wrkStrPtr);
   free(symbolLenExists);
   let(&tmpStr,"");
-
-
+    
+        
 
 }
 
@@ -2046,6 +2038,7 @@ char parseProof(long statemNum)
 
   long i, j, k, m, tok, step;
   char *fbPtr;
+  char *fbPtr2;
   long tokenLen;
   long numReqHyp;
   long numOptHyp;
@@ -2056,7 +2049,7 @@ char parseProof(long statemNum)
   nmbrString *nmbrTmpPtr;
   void *voidPtr; /* bsearch returned value */
   vstring tmpStrPtr;
-
+  
   if (statement[statemNum].type != p__) {
     wrkProof.errorSeverity = 4;
     return (4); /* Do nothing if not $p */
@@ -2076,7 +2069,7 @@ char parseProof(long statemNum)
   /* Make sure we have enough working space to hold the proof */
   /* The worst case is less than the number of chars in the source,
      plus the number of active hypotheses */
-
+  
   numOptHyp = nmbrLen(statement[statemNum].optHypList);
   if (statement[statemNum].proofSectionLen + statement[statemNum].numReqHyp
       + numOptHyp > wrkProofMaxSize) {
@@ -2126,8 +2119,8 @@ char parseProof(long statemNum)
         !wrkProof.RPNStack
         ) outOfMemory("#99 (wrkProof)");
   }
-
-  /* Initialization for this proof */
+  
+  /* Initialization for this proof */  
   wrkProof.errorCount = 0; /* Used as threshold for how many error msgs/proof */
   wrkProof.numSteps = 0;
   wrkProof.numTokens = 0;
@@ -2135,9 +2128,9 @@ char parseProof(long statemNum)
   wrkProof.numLocalLabels = 0;
   wrkProof.RPNStackPtr = 0;
   wrkProof.localLabelPoolPtr = wrkProof.localLabelPool;
-
+  
   /* fbPtr points to the first token now. */
-
+  
   /* First break up proof section of source into tokens */
   while (1) {
     tokenLen = proofTokenLen(fbPtr);
@@ -2148,12 +2141,12 @@ char parseProof(long statemNum)
     fbPtr = fbPtr + tokenLen;
     fbPtr = fbPtr + whiteSpaceLen(fbPtr);
   }
-
+  
   /* If there are no tokens, the proof is unknown; make the token a '?' */
   /* (wrkProof.tokenSrcPtrPntr won't point to the source, but this is OK since
      there will never be an error message for it.) */
   if (!wrkProof.numTokens) {
-
+  
     /* For now, this is an error. */
     if (!wrkProof.errorCount) {
       sourceError(fbPtr, 2, statemNum,
@@ -2161,13 +2154,13 @@ char parseProof(long statemNum)
     }
     wrkProof.errorCount++;
     if (returnFlag < 1) returnFlag = 1;
-
+    
     /* Allow empty proofs anyway */
     wrkProof.numTokens = 1;
     wrkProof.tokenSrcPtrPntr[0] = "?";
     wrkProof.tokenSrcPtrNmbr[0] = 1; /* Length */
   }
-
+    
   /* Copy active (opt + req) hypotheses to hypAndLocLabel look-up table */
   nmbrTmpPtr = statement[statemNum].optHypList;
   /* Transfer optional hypotheses */
@@ -2189,7 +2182,7 @@ char parseProof(long statemNum)
         statement[k].labelName;
     wrkProof.numHypAndLoc++;
   }
-
+  
   /* Sort the hypotheses by label name for lookup */
   numActiveHyp = wrkProof.numHypAndLoc; /* Save for bsearch later */
   qsort(wrkProof.hypAndLocLabel, wrkProof.numHypAndLoc,
@@ -2226,21 +2219,21 @@ char parseProof(long statemNum)
     wrkProof.stepSrcPtrNmbr[wrkProof.numSteps] =
         wrkProof.tokenSrcPtrNmbr[tok]; /* Token length */
     wrkProof.stepSrcPtrPntr[wrkProof.numSteps] = fbPtr; /* Token ptr */
-
+    
     /* Save fact that this step has a local label declaration */
     wrkProof.localLabelFlag[wrkProof.numSteps] = labelFlag;
     labelFlag = 0;
-
+    
     wrkProof.numSteps++;
     if (fbPtr[0] != ':') continue;
-
+    
     /* Colon found -- previous token is a label */
     labelFlag = 1;
-
+    
     wrkProof.numSteps = wrkProof.numSteps - 2;
     fbPtr = wrkProof.tokenSrcPtrPntr[tok - 1]; /* The local label */
     tokenLen = wrkProof.tokenSrcPtrNmbr[tok - 1]; /* Its length */
-
+    
     /* Check for illegal characters */
     for (j = 0; j < tokenLen; j++) {
       if (illegalLabelChar[(unsigned char)fbPtr[j]]) {
@@ -2256,7 +2249,7 @@ char parseProof(long statemNum)
         wrkProof.errorCount++;
       }
     }
-
+    
     /* Add the label to the local label pool and hypAndLocLabel table */
     memcpy(wrkProof.localLabelPoolPtr, fbPtr, tokenLen);
     wrkProof.localLabelPoolPtr[tokenLen] = 0; /* String terminator */
@@ -2264,7 +2257,7 @@ char parseProof(long statemNum)
        -wrkProof.numSteps - 1000; /* offset of -1000 is flag for local label*/
     wrkProof.hypAndLocLabel[wrkProof.numHypAndLoc].labelName
         = wrkProof.localLabelPoolPtr;
-
+    
     /* Make sure local label is different from all earlier $a and $p labels */
     voidPtr = (void *)bsearch(wrkProof.localLabelPoolPtr, labelKeyBase,
         numLabelKeys, sizeof(long), labelSrchCmp);
@@ -2288,7 +2281,7 @@ char parseProof(long statemNum)
         if (returnFlag < 2) returnFlag = 2;
       }
     }
-
+    
     /* Make sure local label is different from all active $e and $f labels */
     voidPtr = (void *)bsearch(wrkProof.localLabelPoolPtr,
         wrkProof.hypAndLocLabel,
@@ -2312,14 +2305,14 @@ char parseProof(long statemNum)
       if (returnFlag < 2) returnFlag = 2;
       wrkProof.numHypAndLoc--; /* Ignore the label */
     }
-
+    
     wrkProof.numHypAndLoc++;
     wrkProof.localLabelPoolPtr = &wrkProof.localLabelPoolPtr[tokenLen + 1];
-
+    
   } /* Next i */
-
+  
   if (wrkProof.numHypAndLoc > numActiveHyp) { /* There were local labels */
-
+    
     /* Sort the local labels into the hypAndLocLabel look-up table */
     qsort(wrkProof.hypAndLocLabel, wrkProof.numHypAndLoc,
         sizeof(struct sortHypAndLoc), hypAndLocSortCmp);
@@ -2351,18 +2344,18 @@ char parseProof(long statemNum)
         if (returnFlag < 2) returnFlag = 2;
       } /* End if duplicate label */
     } /* Next i */
-
+    
   } /* End if there are local labels */
 
   /* Build the proof string and check the RPN stack */
   wrkProof.proofString[wrkProof.numSteps] = -1; /* End of proof */
   nmbrZapLen(wrkProof.proofString, wrkProof.numSteps);
      /* Zap mem pool actual length (because nmbrLen will be used later on this)*/
-
+ 
   for (step = 0; step < wrkProof.numSteps; step++) {
     tokenLen = wrkProof.stepSrcPtrNmbr[step];
     fbPtr = wrkProof.stepSrcPtrPntr[step];
-
+    
     /* Handle unknown proof steps */
     if (fbPtr[0] == '?') {
       if (returnFlag < 1) returnFlag = 1;
@@ -2373,11 +2366,11 @@ char parseProof(long statemNum)
       wrkProof.RPNStackPtr++;
       continue;
     }
-
+    
     /* Temporarily zap the token's end with a null for string comparisons */
     zapSave = fbPtr[tokenLen];
     fbPtr[tokenLen] = 0; /* Zap source */
-
+    
     /* See if the proof token is a hypothesis or local label ref. */
     voidPtr = (void *)bsearch(fbPtr, wrkProof.hypAndLocLabel,
         wrkProof.numHypAndLoc, sizeof(struct sortHypAndLoc), hypAndLocSrchCmp);
@@ -2385,11 +2378,11 @@ char parseProof(long statemNum)
       fbPtr[tokenLen] = zapSave; /* Unzap source */
       j = ((struct sortHypAndLoc *)voidPtr)->labelTokenNum; /* Label lookup number */
       wrkProof.proofString[step] = j; /* Proof string */
-
+      
       /* Push the stack */
       wrkProof.RPNStack[wrkProof.RPNStackPtr] = step;
       wrkProof.RPNStackPtr++;
-
+      
       if (j < 0) { /* It's a local label reference */
         i = -1000 - j; /* Step number referenced */
 
@@ -2405,7 +2398,7 @@ char parseProof(long statemNum)
           wrkProof.errorCount++;
           if (returnFlag < 2) returnFlag = 2;
         }
-
+        
         if (wrkProof.localLabelFlag[step]) {
           if (!wrkProof.errorCount) {
             /* Chained labels not allowed because it complicates the language
@@ -2437,7 +2430,7 @@ char parseProof(long statemNum)
       }
       continue;
     } /* End if local label or hypothesis */
-
+    
     /* See if token is an assertion label */
     voidPtr = (void *)bsearch(fbPtr, labelKeyBase, numLabelKeys, sizeof(long),
         labelSrchCmp);
@@ -2457,12 +2450,12 @@ char parseProof(long statemNum)
       if (returnFlag < 2) returnFlag = 2;
       continue;
     }
-
+    
     /* It's an assertion ($a or $p) */
     j = *(long *)voidPtr; /* Statement number */
     if (statement[j].type != a__ && statement[j].type != p__) bug(1710);
     wrkProof.proofString[step] = j; /* Proof string */
-
+    
     if (j >= statemNum) { /* Error */
       if (!wrkProof.errorCount) {
         if (j == statemNum) {
@@ -2485,10 +2478,10 @@ char parseProof(long statemNum)
       wrkProof.errorCount++;
       if (returnFlag < 2) returnFlag = 2;
     }
-
+    
     /* It's a valid assertion, so pop the stack */
     numReqHyp = statement[j].numReqHyp;
-
+    
     /* Error check for exhausted stack */
     if (wrkProof.RPNStackPtr < numReqHyp) { /* Stack exhausted -- error */
       if (!wrkProof.errorCount) {
@@ -2521,7 +2514,7 @@ char parseProof(long statemNum)
       if (returnFlag < 3) returnFlag = 3;
       continue;
     } /* End if stack exhausted */
-
+      
     /* Error check for $e <- $f assignments (illegal) */
     nmbrTmpPtr = statement[j].reqHypList;
     numReqHyp = statement[j].numReqHyp;
@@ -2549,14 +2542,14 @@ char parseProof(long statemNum)
         }
       }
     }
-
+    
     /* Pop the stack */
     wrkProof.RPNStackPtr = wrkProof.RPNStackPtr - numReqHyp;
     wrkProof.RPNStack[wrkProof.RPNStackPtr] = step;
     wrkProof.RPNStackPtr++;
-
+    
   } /* Next step */
-
+  
   /* The stack should have one entry */
   if (wrkProof.RPNStackPtr != 1) {
     tmpStrPtr = shortDumpRPNStack();
@@ -2569,8 +2562,8 @@ char parseProof(long statemNum)
     wrkProof.errorCount++;
     if (returnFlag < 3) returnFlag = 3;
   }
-
-
+    
+  
   wrkProof.errorSeverity = returnFlag;
   return (returnFlag);
 
@@ -2601,7 +2594,7 @@ char parseCompressedProof(long statemNum)
   vstring tmpStrPtr;
   flag hypLocUnkFlag;  /* Hypothesis, local label ref, or unknown step */
   long labelMapIndex;
-
+  
   static char chrWeight[256]; /* Proof label character weights */
   static char chrType[256]; /* Proof character types */
   static flag chrTablesInited = 0;
@@ -2611,9 +2604,6 @@ char parseCompressedProof(long statemNum)
   static long lettersLen;
   static long digitsLen;
 
-  /* Initialization to avoid compiler warning (should not be theoretically
-     necessary) */
-  labelStart = "";
 
   /* Do one-time initialization */
   if (!chrTablesInited) {
@@ -2637,21 +2627,21 @@ char parseCompressedProof(long statemNum)
     }
     j = lettersLen;
     for (i = 0; i < j; i++) {
-      chrWeight[(long)(letters[i])] = i;
-      chrType[(long)(letters[i])] = 0; /* Letter */
+      chrWeight[letters[i]] = i;
+      chrType[letters[i]] = 0; /* Letter */
     }
     j = digitsLen;
     for (i = 0; i < j; i++) {
-      chrWeight[(long)(digits[i])] = i;
-      chrType[(long)(digits[i])] = 1; /* Digit */
+      chrWeight[digits[i]] = i;
+      chrType[digits[i]] = 1; /* Digit */
     }
     for (i = 0; i < 256; i++) {
       if (isspace(i)) chrType[i] = 3; /* White space */
     } /* Next i */
-    chrType[(long)(labelChar)] = 2; /* Colon */
+    chrType[labelChar] = 2; /* Colon */
     chrType['$'] = 4; /* Dollar */
     chrType['?'] = 5; /* Question mark */
-  }
+  }    
 
 
   if (statement[statemNum].type != p__) return (4); /* Do nothing if not $p */
@@ -2668,7 +2658,7 @@ char parseCompressedProof(long statemNum)
   /* Make sure we have enough working space to hold the proof */
   /* The worst case is less than the number of chars in the source,
      plus the number of active hypotheses */
-
+  
   numOptHyp = nmbrLen(statement[statemNum].optHypList);
   if (statement[statemNum].proofSectionLen + statement[statemNum].numReqHyp
       + numOptHyp > wrkProofMaxSize) {
@@ -2716,8 +2706,8 @@ char parseCompressedProof(long statemNum)
         !wrkProof.RPNStack
         ) outOfMemory("#99 (wrkProof)");
   }
-
-  /* Initialization for this proof */
+  
+  /* Initialization for this proof */  
   wrkProof.errorCount = 0; /* Used as threshold for how many error msgs/proof */
   wrkProof.numSteps = 0;
   wrkProof.numTokens = 0;
@@ -2725,10 +2715,10 @@ char parseCompressedProof(long statemNum)
   wrkProof.numLocalLabels = 0;
   wrkProof.RPNStackPtr = 0;
   wrkProof.localLabelPoolPtr = wrkProof.localLabelPool;
-
+  
   fbPtr++;
   /* fbPtr points to the first token now. */
-
+  
 
   /****** This part of the code is heavily borrowed from the regular
    ****** proof parsing, with local label and RPN handling removed,
@@ -2758,7 +2748,7 @@ char parseCompressedProof(long statemNum)
   }
 
   fbStartProof = fbPtr; /* Save pointer to start of compressed proof */
-
+  
   /* Copy active (opt + req) hypotheses to hypAndLocLabel look-up table */
   nmbrTmpPtr = statement[statemNum].optHypList;
   /* Transfer optional hypotheses */
@@ -2782,26 +2772,26 @@ char parseCompressedProof(long statemNum)
         statement[k].labelName;
     wrkProof.numHypAndLoc++;
   }
-
+  
   /* Sort the hypotheses by label name for lookup */
   qsort(wrkProof.hypAndLocLabel, wrkProof.numHypAndLoc,
       sizeof(struct sortHypAndLoc), hypAndLocSortCmp);
-
+  
   /* Build the proof string (actually just a list of labels) */
   wrkProof.proofString[wrkProof.numSteps] = -1; /* End of proof */
   nmbrZapLen(wrkProof.proofString, wrkProof.numSteps);
      /* Zap mem pool actual length (because nmbrLen will be used later on this)*/
-
+ 
   /* Scan proof string with the label list (not really proof steps; we're just
      using the structure for convenience) */
   for (step = 0; step < wrkProof.numSteps; step++) {
     tokenLen = wrkProof.stepSrcPtrNmbr[step];
     fbPtr = wrkProof.stepSrcPtrPntr[step];
-
+    
     /* Temporarily zap the token's end with a null for string comparisons */
     zapSave = fbPtr[tokenLen];
     fbPtr[tokenLen] = 0; /* Zap source */
-
+    
     /* See if the proof token is a hypothesis */
     voidPtr = (void *)bsearch(fbPtr, wrkProof.hypAndLocLabel,
         wrkProof.numHypAndLoc, sizeof(struct sortHypAndLoc), hypAndLocSrchCmp);
@@ -2810,7 +2800,7 @@ char parseCompressedProof(long statemNum)
       fbPtr[tokenLen] = zapSave; /* Unzap source */
       j = ((struct sortHypAndLoc *)voidPtr)->labelTokenNum;
                                                        /* Label lookup number */
-
+      
       /* Make sure it's not a required hypothesis, which is implicitly
          declared */
       if (j < 0) { /* Minus is used as flag for required hypothesis */
@@ -2827,7 +2817,7 @@ char parseCompressedProof(long statemNum)
       if (j <= 0) bug(1713);
       continue;
     } /* End if hypothesis */
-
+    
     /* See if token is an assertion label */
     voidPtr = (void *)bsearch(fbPtr, labelKeyBase, numLabelKeys, sizeof(long),
         labelSrchCmp);
@@ -2842,12 +2832,12 @@ char parseCompressedProof(long statemNum)
       if (returnFlag < 2) returnFlag = 2;
       continue;
     }
-
+    
     /* It's an assertion ($a or $p) */
     j = *(long *)voidPtr; /* Statement number */
     if (statement[j].type != a__ && statement[j].type != p__) bug(1714);
     wrkProof.proofString[step] = j; /* Proof string */
-
+    
     if (j >= statemNum) { /* Error */
       if (!wrkProof.errorCount) {
         if (j == statemNum) {
@@ -2870,7 +2860,7 @@ char parseCompressedProof(long statemNum)
       wrkProof.errorCount++;
       if (returnFlag < 2) returnFlag = 2;
     }
-
+    
   } /* Next step */
 
   /******* Create the starting label map (local labels will be
@@ -2886,8 +2876,8 @@ char parseCompressedProof(long statemNum)
   }
   wrkProof.compressedPfNumLabels = wrkProof.compressedPfNumLabels +
       wrkProof.numSteps;
-
-  /* Re-initialization for the actual proof */
+  
+  /* Re-initialization for the actual proof */  
   wrkProof.numSteps = 0;
   wrkProof.RPNStackPtr = 0;
 
@@ -2897,7 +2887,7 @@ char parseCompressedProof(long statemNum)
   breakFlag = 0;
   labelMapIndex = 0;
   while (1) {
-    switch (chrType[(long)(fbPtr[0])]) {
+    switch (chrType[fbPtr[0]]) {
       case 0: /* Letter */
         if (!labelMapIndex) labelStart = fbPtr; /* Save for error msg */
 
@@ -2906,8 +2896,7 @@ char parseCompressedProof(long statemNum)
         wrkProof.stepSrcPtrNmbr[wrkProof.numSteps] = tokenLen;
         wrkProof.stepSrcPtrPntr[wrkProof.numSteps] = labelStart; /* Token ptr */
 
-        labelMapIndex = labelMapIndex * lettersLen +
-            chrWeight[(long)(fbPtr[0])];
+        labelMapIndex = labelMapIndex * lettersLen + chrWeight[fbPtr[0]];
         if (labelMapIndex >= wrkProof.compressedPfNumLabels) {
           if (!wrkProof.errorCount) {
             sourceError(labelStart, tokenLen, statemNum, cat(
@@ -2940,7 +2929,7 @@ char parseCompressedProof(long statemNum)
 
           /* It's a valid assertion, so pop the stack */
           numReqHyp = statement[stmt].numReqHyp;
-
+    
           /* Error check for exhausted stack */
           if (wrkProof.RPNStackPtr < numReqHyp) { /* Stack exhausted -- error */
             if (!wrkProof.errorCount) {
@@ -2973,7 +2962,7 @@ char parseCompressedProof(long statemNum)
             if (returnFlag < 3) returnFlag = 3;
             continue;
           } /* End if stack exhausted */
-
+      
           /* Error check for $e <- $f assignments (illegal) */
           nmbrTmpPtr = statement[stmt].reqHypList;
           numReqHyp = statement[stmt].numReqHyp;
@@ -3002,7 +2991,7 @@ char parseCompressedProof(long statemNum)
               }
             }
           }
-
+            
           /* Pop the stack */
           wrkProof.RPNStackPtr = wrkProof.RPNStackPtr - numReqHyp;
           wrkProof.RPNStack[wrkProof.RPNStackPtr] = wrkProof.numSteps;
@@ -3017,10 +3006,10 @@ char parseCompressedProof(long statemNum)
       case 1: /* Digit */
         if (!labelMapIndex) {
           /* First digit; mod digitsLen+1 */
-          labelMapIndex = chrWeight[(long)(fbPtr[0])] + 1;
+          labelMapIndex = chrWeight[fbPtr[0]] + 1;
           labelStart = fbPtr; /* Save label start for error msg */
         } else {
-          labelMapIndex = labelMapIndex * digitsLen + chrWeight[(long)(fbPtr[0])];
+          labelMapIndex = labelMapIndex * digitsLen + chrWeight[fbPtr[0]];
         }
         break;
 
@@ -3086,7 +3075,7 @@ char parseCompressedProof(long statemNum)
         } else {
           fbPtr = fbPtr + whiteSpaceLen(fbPtr) - 1; /* -1 because
                   fbPtr will get incremented at end of loop */
-        }
+        }           
         break;
 
       case 5: /* Question mark */
@@ -3151,7 +3140,7 @@ char parseCompressedProof(long statemNum)
           "The proof is empty.  If you don't know the proof, make it a \"?\".");
     }
     wrkProof.errorCount++;
-
+    
     /* Save pointer to source file vs. step for error messages */
     wrkProof.stepSrcPtrNmbr[wrkProof.numSteps] = 1;
     wrkProof.stepSrcPtrPntr[wrkProof.numSteps] = fbPtr; /* Token ptr */
@@ -3193,14 +3182,14 @@ char parseCompressedProof(long statemNum)
 
 
 void rawSourceError(char *startFile, char *ptr, long tokenLen, long lineNum,
-    vstring fileName, vstring errMsg)
+    vstring fileName, vstring errMsg) 
 {
   char *startLine;
   char *endLine;
   vstring errLine = "";
   vstring errorMsg = "";
   let(&errorMsg, errMsg); /* Prevent deallocation of errMsg */
-
+  
   /* Get the line with the error on it */
   startLine = ptr;
   while (startLine[0] != '\n' && startLine > startFile) {
@@ -3232,11 +3221,6 @@ void sourceError(char *ptr, long tokenLen, long stmtNum, vstring errMsg)
   long lineNum;
   long i, j;
   vstring errorMsg = "";
-
-  /* Initialization to avoid compiler warning (should not be theoretically
-     necessary) */
-  i = 0;
-
   let(&errorMsg, errMsg); /* Prevent deallocation of errMsg */
 
   if (!stmtNum) {
@@ -3261,7 +3245,7 @@ void sourceError(char *ptr, long tokenLen, long stmtNum, vstring errMsg)
   for (j = includeCall[i].bufOffset; j < ptr - sourcePtr; j++) {
     if (sourcePtr[j] == '\n') lineNum++;
   }
-
+    
  skipLineNum:
   /* Get the line with the error on it */
   if (lineNum && ptr > sourcePtr) {
@@ -3305,7 +3289,7 @@ void sourceError(char *ptr, long tokenLen, long stmtNum, vstring errMsg)
   let(&errorMsg,"");
 }
 
-
+  
 void mathTokenError(long tokenNum /* 0 is 1st one */,
     nmbrString *tokenList, long stmtNum, vstring errMsg)
 {
@@ -3329,7 +3313,7 @@ vstring shortDumpRPNStack(void) {
   vstring tmpStr = "";
   vstring tmpStr2 = "";
   long i, k, m;
-
+  
   for (i = 0; i < wrkProof.RPNStackPtr; i++) {
      k = wrkProof.RPNStack[i]; /* Step */
      let(&tmpStr,space(wrkProof.stepSrcPtrNmbr[k]));
@@ -3433,18 +3417,7 @@ long whiteSpaceLen(char *ptr)
     if (tmpchr == '$') {
       if (ptr[i + 1] == '(') {
         while (1) {
-          /*ptr1 = strchr(ptr + i + 2, '$'); */
-          /* in-line code for speed */
-          /* (for the lcc-win32 compiler, this speeds it up from 94 sec
-              for set.mm read to 4 sec) */
-          for (ptr1 = ptr + i + 2; ptr1[0] != '$'; ptr1++) {
-            if (ptr1[0] == 0) {
-              if ('$' != 0)
-                ptr1 = NULL;
-              break;
-            }
-          }
-          /* end in-line strchr code */
+          ptr1 = strchr(ptr + i + 2, '$');
           if (!ptr1) {
             return(i + strlen(&ptr[i])); /* Unterminated comment - goto EOF */
           }
@@ -3466,10 +3439,9 @@ long whiteSpaceLen(char *ptr)
     if (isgraph((unsigned char)tmpchr)) return (i);
     i++;
   }
-  return(0); /* Dummy return - never happens */
 }
-
-
+      
+      
 /* This function returns the length of the token (non-white-space) starting at
    ptr.  Comments are considered white space.  ptr should point to the first
    character of the token.  If ptr points to a white space character, 0
@@ -3502,10 +3474,9 @@ long tokenLen(char *ptr)
     if (!isgraph((unsigned char)tmpchr)) return (i); /* White space or null */
     i++;
   }
-  return(0); /* Dummy return (never happens) */
 }
-
-
+      
+      
 /* This function returns the length of the proof token starting at
    ptr.  Comments are considered white space.  ptr should point to the first
    character of the token.  If ptr points to a white space character, 0
@@ -3537,10 +3508,9 @@ long proofTokenLen(char *ptr)
     if (tmpchr == ')') return(i); /* ")" ends a token */
     i++;
   }
-  return(0); /* Dummy return - never happens */
 }
-
-
+      
+      
 /*??? Obsolete from here on... */
 void statementError(vstring msg,vstring statementSoFar)
 /* This is a utility function used by getStatement() only */
@@ -3554,8 +3524,7 @@ void statementError(vstring msg,vstring statementSoFar)
    space and comments, from first token through all white space and
    comments after last token. */
 /* This allows us to modify the input file with MetaMath. */
-/* Note: the text near end of file is obtained from statement[statements
-   + 1] */
+/* Note: the text near end of file is obtained from statement[statements + 1] */
 /* ???This does not implement restoration of the various input files;
       all included files are merged into one. */
 /* Caller must deallocated returned string. */
@@ -3602,10 +3571,10 @@ vstring outputStatement(long stmt)
        the terminator if desired.  (I.e., date in SAVE NEW_PROOF command) */
     if (!newProofFlag) let(&output, cat(output, "$.", NULL));
   }
-
-  let(&labelSection, "");
-  let(&mathSection, "");
-  let(&proofSection, "");
+    
+  let(&labelSection, "");  
+  let(&mathSection, "");  
+  let(&proofSection, "");  
   return output; /* The calling routine must deallocate this vstring */
 }
 
@@ -3651,12 +3620,13 @@ void mathTokenError1(long statementNum,long mathTokenPosition,vstring errorMsg)
    form "?nnn". */
 nmbrString *parseMathTokens(vstring userText, long statemNum)
 {
-  long i, j;
+  long i, j, k, m, n, p;
+  flag tmpflag;
   char *fbPtr;
   long mathStringLen;
   long tokenNum;
   long lowerKey, upperKey;
-  long symbolLen, origSymbolLen, mathKeyNum;
+  long symbolLen, origSymbolLen, mathSectionLen, mathKeyNum;
   void *mathKeyPtr; /* bsearch returned value */
   int maxScope;
   flag errorFlag = 0; /* Prevents bad token from being added to output */
@@ -3664,6 +3634,7 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
   vstring tmpStr = "";
   vstring nlUserText = "";
 
+  nmbrString *nmbrTmpPtr;
 
   long *mathTokenSameAs; /* Flag that symbol is unique (for speed up) */
   long *reverseMathKey; /* Map from mathTokens to mathKey */
@@ -3686,10 +3657,6 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
   nmbrStartTempAllocStack = nmbrTempAllocStackTop;
   saveTempAllocStack = startTempAllocStack;
   startTempAllocStack = tempAllocStackTop;
-
-  /* Initialization to avoid compiler warning (should not be theoretically
-     necessary) */
-  tokenNum = 0;
 
   /* Add a newline before user text for sourceError() */
   let(&nlUserText, cat("\n", userText, NULL));
@@ -3727,7 +3694,7 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
       mathTokenSameAs[i] = mathTokenSameAs[i - 1];
     }
   }
-
+  
   /* Initialize temporary working space for parsing tokens */
   /* Assume the worst case of one token per userText character */
   wrkLen = strlen(userText);
@@ -3751,10 +3718,10 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
   for (i = 0; i < mathTokens; i++) {
     symbolLenExists[mathToken[i].length] = 1;
   }
-
+  
 
   currentScope = statement[statemNum].scope; /* Scope of the ref. statement */
-
+        
 
   /* The code below is indented because it was borrowed from parseStatements().
      We will leave the indentation intact for easier future comparison
@@ -3767,7 +3734,7 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
           fbPtr = fbPtr + whiteSpaceLen(fbPtr);
           origSymbolLen = tokenLen(fbPtr);
           if (!origSymbolLen) break; /* Done scanning source line */
-
+          
           /* Scan for largest matching token from the left */
          nextAdjToken:
           /* maxSymbolLen is the longest declared symbol */
@@ -3856,7 +3823,7 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
               }
             } /* End if fbPtr == '$' */
          } /* End if symbolLen == 0 */
-
+            
 
           if (symbolLen == 0) { /* Symbol was not found */
             symbolLen = tokenLen(fbPtr);
@@ -3867,7 +3834,7 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
             }
             errorFlag = 1;
           }
-
+          
           /* Add symbol to mathString */
           if (!errorFlag) {
             wrkNmbrPtr[mathStringLen] = tokenNum;
@@ -3884,7 +3851,7 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
             goto nextAdjToken; /* (Instead of continue) */
           }
         } /* End while */
-
+       
 
         /* Assign mathString */
         nmbrLet(&mathString, nmbrSpace(mathStringLen));
@@ -3906,7 +3873,7 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
   free(symbolLenExists);
   let(&tmpStr,"");
   let(&nlUserText,"");
-
+    
   return (mathString);
 
 }

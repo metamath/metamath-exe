@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*               Copyright (C) 1999, NORMAN D. MEGILL                        */
+/*               Copyright (C) 1997, NORMAN D. MEGILL                        */
 /*****************************************************************************/
 
 /*3456789012345678901234567890123456789012345678901234567890123456789012345678*/
@@ -37,7 +37,6 @@ int errorCount = 0;
 /* Global variables used by print2() */
 flag logFileOpenFlag = 0;
 FILE *logFilePtr;
-FILE *listFile_fp;
 /* Global variables used by print2() */
 flag outputToString = 0;
 vstring printString = "";
@@ -68,11 +67,11 @@ flag print2(char* fmt,...)
   /* Also, scrolling is interrupted each page if in scroll prompt mode. */
   va_list ap;
   char c;
-  long nlpos, lineLen;
+  long i, j, nlpos, lineLen;
 #ifdef THINK_C
   int ii, jj;
 #endif
-  char printBuffer[10001];
+  char printBuffer[256];
 
   if (!quitPrint && !commandFileOpenFlag && (scrollMode == 1
            && localScrollMode == 1)
@@ -108,18 +107,16 @@ flag print2(char* fmt,...)
 
   nlpos = instr(1, printBuffer, "\n");
   lineLen = strlen(printBuffer);
-  if ((lineLen > screenWidth + 1) /* && (screenWidth != MAX_LEN) */
-         && !outputToString  /* for HTML 7/3/98 */ ) {
-    /* Force wrapping of lines that are too long by recursively calling
-       print2() via printLongLine().  Note:  "+ 1" above accounts for \n. */
-    /* Note that breakMatch is "" so it may break in middle of a word */
+  if ((lineLen > screenWidth + 1) /* && (screenWidth != MAX_LEN) */ ) {
+    /* Force wrapping of lines that are too long by recursively calling print2()
+       via printLongLine().  Note:  "+ 1" above accounts for \n. */
     if (!nlpos) {
       /* No end of line */
-      printLongLine(left(printBuffer, lineLen), "", "");
+      printLongLine(left(printBuffer, lineLen), "", " ");
     } else {
-      printLongLine(left(printBuffer, lineLen - 1), "", "");
+      printLongLine(left(printBuffer, lineLen - 1), "", " ");
     }
-    return (!quitPrint);
+    return (0);
   }
 
   if (!outputToString) {
@@ -144,11 +141,6 @@ flag print2(char* fmt,...)
 
   if (logFileOpenFlag && !outputToString) {
     fprintf(logFilePtr, "%s", printBuffer);  /* Print to log file */
-  }
-
-  if (listMode && listFile_fp != NULL && !outputToString) {
-    /* Put line in list.tmp as comment */
-    fprintf(listFile_fp, "! %s", printBuffer);  /* Print to list command file */
   }
 
   if (outputToString) {
@@ -197,13 +189,13 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
     print2("\n");
     return;
   }
-
+  
   /* Flag to right justify continuation lines */
   if (breakMatch[0] == 1) {
     treeIndentationFlag = 1;
     breakMatch[0] = ' '; /* Change to a space (the real break character) */
   }
-
+  
 
   /* Change the stack allocation start to prevent arguments from being
      deallocated */
@@ -265,7 +257,7 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
           /* p > 0 prevents infinite loop */
           while (!instr(1,breakMatch,mid(tmpStr,p,1)) && p > 0) {
             p--;
-            let(&tmp, ""); /* Clear temp alloc stack from 'mid' call */
+            let(&tmp, ""); /* Clear temp alloc stack */
           }
           if (breakMatch[0] == '&') {
             /* Compressed proof */
@@ -342,7 +334,7 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
 }
 
 
-vstring cmdInput(FILE *stream, vstring ask)
+vstring cmdInput(FILE *stream,vstring ask)
 {
   /* This function prints a prompt (if 'ask' is not NULL) and gets a line from
     the stream.  NULL is returned when end-of-file is encountered.
@@ -350,20 +342,19 @@ vstring cmdInput(FILE *stream, vstring ask)
     be freed by the user if not needed. */
   vstring g = "";
   if (ask) print2("%s",ask);
-#define CMD_BUFFER 2000
 
-  let(&g, space(CMD_BUFFER)); /* Allow for up to CMD_BUFFER characters */
-  if (!fgets(g, CMD_BUFFER, stream)) {
+  let(&g,space(256)); /* Allow for up to 256 characters */
+  if (!fgets(g,256,stream)) {
     /* End of file */
     return NULL;
   }
-/*E*/db = db - (CMD_BUFFER - strlen(g));
+/*E*/db = db - (256 - strlen(g));
   if (g[1]) {
     g[strlen(g)-1]=0;   /* Eliminate new-line character */
 /*E*/db = db - 1;
   } else {
-    let(&g, ""); /* Deallocate vstring space (otherwise empty string will
-                    trick let() into not doing it) */
+    let(&g,""); /* Deallocate vstring space (otherwise empty string will
+                   trick let() into not doing it) */
   }
   return g;
 }
@@ -372,7 +363,6 @@ vstring cmdInput1(vstring ask)
 {
   /* This function gets a line from either the terminal or the command file
     stream depending on commandFileOpenFlag.  It calls cmdInput(). */
-  /* Warning: the calling program must deallocate the returned string. */
   vstring commandLine = "";
   vstring ask1 = "";
   long p;
@@ -408,19 +398,13 @@ vstring cmdInput1(vstring ask)
         let(&commandLine,"^Z"); /* ^Z found */
       }
       if (logFileOpenFlag) fprintf(logFilePtr, "%s\n", commandLine);
-      if (listMode && listFile_fp != NULL) {
-        /* Put line in list.tmp as comment */
-        fprintf(listFile_fp, "%s\n", commandLine);
-      }
-
     } else {
       commandLine = cmdInput(commandFilePtr,NULL);
       if (!commandLine) { /* EOF found */
         fclose(commandFilePtr);
         print2("%s[End of command file \"%s\".]\n", ask1, commandFileName);
         commandFileOpenFlag = 0;
-        commandLine = "";
-        break; /*continue;*/
+        continue;
       }
       print2("%s%s\n", ask1, commandLine);
     }
@@ -537,7 +521,7 @@ FILE *fSafeOpen(vstring fileName, vstring mode)
   vstring postfix = "";
   vstring bakName = "";
   vstring newBakName = "";
-  long v;
+  long i, v;
 
   if (!strcmp(mode, "r")) {
     fp = fopen(fileName, "r");
@@ -572,12 +556,12 @@ FILE *fSafeOpen(vstring fileName, vstring mode)
       if (0) goto skip_backup; /* Prevent compiler warning */
 
 #elif defined __GNUC__ /* Assume unix */
-      let(&prefix, cat(fileName, "~", NULL));
-      let(&postfix, "");
+      let(&prefix, cat(fileName, ".~", NULL));
+      let(&postfix, "~");
 
 #elif defined THINK_C /* Assume Macintosh */
-      let(&prefix, cat(fileName, "~", NULL));
-      let(&postfix, "");
+      let(&prefix, cat(fileName, ".~", NULL));
+      let(&postfix, "~");
 
 #elif defined VAXC /* Assume VMS */
       /* For debugging on VMS: */
@@ -586,49 +570,58 @@ FILE *fSafeOpen(vstring fileName, vstring mode)
       /* Normal: */
       goto skip_backup;
 
-#else /* Unknown; assume unix standard */
-      /*if (1) goto skip_backup;*/  /* [if no backup desired] */
-      let(&prefix, cat(fileName, "~", NULL));
-      let(&postfix, "");
+#else /* Unknown; don't create a backup */
+      goto skip_backup;
 
 #endif
 
 
-      /* See if the lowest version already exists. */
-      let(&bakName, cat(prefix, str(1), postfix, NULL));
+      /* See if the highest version already exists. */
+      let(&bakName, cat(prefix, str(VERSIONS), postfix, NULL));
       fp = fopen(bakName, "r");
       if (fp) {
         fclose(fp);
-        /* The lowest version already exists; rename all to lower versions. */
+        /* The highest version already exists; rename all to lower versions. */
 
-        /* If version VERSIONS exists, delete it. */
-        let(&bakName, cat(prefix, str(VERSIONS), postfix, NULL));
+        /* If version 1 exists, delete it. */
+        let(&bakName, cat(prefix, str(1), postfix, NULL));
         fp = fopen(bakName, "r");
         if (fp) {
           fclose(fp);
           remove(bakName);
         }
 
-        for (v = VERSIONS - 1; v >= 1; v--) {
+        for (v = 2; v <= VERSIONS; v++) {
           let(&bakName, cat(prefix, str(v), postfix, NULL));
           fp = fopen(bakName, "r");
           if (!fp) continue;
           fclose(fp);
-          let(&newBakName, cat(prefix, str(v + 1), postfix, NULL));
+          let(&newBakName, cat(prefix, str(v - 1), postfix, NULL));
           rename(bakName, newBakName);
         }
 
-      }
-      let(&bakName, cat(prefix, str(1), postfix, NULL));
-      rename(fileName, bakName);
+        let(&bakName, cat(prefix, str(VERSIONS), postfix, NULL));
+        rename(fileName, bakName);
 
-      /***
+      } else { /* The file to rename it to doesn't exist. */
+
+        /* Find out what the highest backup version is. */
+        for (v = VERSIONS; v >= 1; v--) {
+          let(&bakName, cat(prefix, str(v), postfix, NULL));
+          fp = fopen(bakName, "r");
+          if (!fp) continue;
+          fclose(fp);
+          break;
+        }
+        let(&bakName, cat(prefix, str(v + 1), postfix, NULL));
+        rename(fileName, bakName);
+      }
+
       printLongLine(cat("The file \"", fileName,
           "\" already exists.  The old file is being renamed to \"",
           bakName, "\".", NULL), "  ", " ");
-      ***/
     } /* End if file already exists */
-   /*skip_backup:*/
+   skip_backup:
 
     fp = fopen(fileName, "w");
     if (!fp) {
@@ -646,75 +639,4 @@ FILE *fSafeOpen(vstring fileName, vstring mode)
   bug(1504); /* Illegal mode */
   return(NULL);
 
-}
-
-
-/* Renames a file with backup of previous version.  If non-zero
-   is returned, there was an error. */
-int fSafeRename(vstring oldFileName, vstring newFileName)
-{
-  int error = 0;
-  int i;
-  FILE *fp;
-  /* Open the new file to force renaming of existing ones */
-  fp = fSafeOpen(newFileName, "w");
-  if (!fp) error = -1;
-  /* Delete the file just created */
-  if (!error) {
-    error = fclose(fp);
-    if (error) print2("?Empty \"%s\" couldn't be closed.\n", newFileName);
-  }
-  if (!error) {
-    error = remove(newFileName);
-    /* On Windows 95, the first attempt may not succeed. */
-    if (error) {
-      for (i = 2; i < 1000; i++) {
-        error = remove(newFileName);
-        if (!error) break;
-      }
-      if (!error)
-        print2("OS WARNING: File delete succeeded only after %i attempts.", i);
-    }
-
-    if (error) print2("?Empty \"%s\" couldn't be deleted.\n", newFileName);
-  }
-  /* Rename the old one to it */
-  if (!error) {
-    error = rename(oldFileName, newFileName);
-    if (error) print2("?Rename of \"%s\" to \"%s\" failed.\n", oldFileName,
-        newFileName);
-  }
-  if (error) {
-    print2("?Sorry, couldn't rename the file \"%s\" to \"%s\".\n", oldFileName,
-        newFileName);
-    print2("\"%s\" may be empty; try recovering from \"%s\".\n", newFileName,
-        oldFileName);
-  }
-  return error;
-}
-
-
-/* Finds the name of the first file of the form filePrefix +
-   nnn + ".tmp" that does not exist.  THE CALLER MUST DEALLOCATE
-   THE RETURNED STRING [i.e. assign function return directly
-   to a local empty vstring with = and not with let(), e.g.
-        let(&str1, "");
-        str1 = fTmpName("zz~list");  ] */
-vstring fGetTmpName(vstring filePrefix)
-{
-  FILE *fp;
-  vstring fname = "";
-  static long counter = 0;
-  while (1) {
-    counter++;
-    let(&fname, cat(filePrefix, str(counter), ".tmp", NULL));
-    fp = fopen(fname, "r");
-    if (!fp) break;
-    if (counter > 1000) {
-      print2("Warning: too many %snnn.tmp files - will reuse %s\n",
-          filePrefix, fname);
-      break;
-    }
-  }
-  return fname; /* Caller must deallocate! */
 }

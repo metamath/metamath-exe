@@ -20,7 +20,7 @@ struct pip_struct {
   pntrString *source; /* Right hand side of = in display */
   pntrString *user; /* User-specified math string assignments to step */
 };
-extern struct pip_struct proofInProgress;
+extern struct pip_struct proofInProgress;  
 
 /* Interactively select statement assignments that match */
 /* maxEssential is the maximum number of essential hypotheses that a
@@ -62,8 +62,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
     long step);
 
 /* Shorten proof by using specified statement. */
-void minimizeProof(long repStatemNum, long prvStatemNum, flag
-    allowGrowthFlag);
+void minimizeProof(long repStatemNum, long prvStatemNum);
 
 /* Initialize proofInProgress.source of the step, and .target of all
    hypotheses, to schemes using new dummy variables. */

@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*               Copyright (C) 1999, NORMAN D. MEGILL                        */
+/*               Copyright (C) 1997, NORMAN D. MEGILL                        */
 /*****************************************************************************/
 
 /*34567890123456 (79-character line to adjust text window width) 678901234567*/
@@ -10,12 +10,13 @@
 /*??? To work on:
    (20) Add a command line editor (compiler-specific - some may not have it)
         - handle arrows & recall buffer
+   (21) Add selected DO LIST functions - PROCESS LINES or LINE PROCESSOR?
+        Commands:  ADD, CLEAN?, DELETE, SUBSTITUTE, SWAP, COUNT, DIFFERENCE
+        (general DIFF), DUPLICATE, PARALLEL, SPLIT, COPY, TYPE, RENAME?
    (23) When near completion:  Verify that each of the error messages
         works with an actual error
 */
 typedef char flag;
-
-extern flag listMode; /* 0 = metamath, 1 = list utility */
 
 typedef long nmbrString; /* String of numbers */
 typedef void* pntrString; /* String of pointers */
@@ -81,7 +82,7 @@ struct statement_struct { /* Array index is statement number, starting at 1 */
   nmbrString *optDisjVarsB; /* Optional disjoint variables, 2nd of pair */
   nmbrString *optDisjVarsStmt; /* Opt disjoint variables, statem number */
   };
-
+  
 /* Sort keys for statement labels (allocated by parseLabels) */
 extern long *labelKey;
 
@@ -225,7 +226,7 @@ struct genString *genRight(struct genString *sin, long n);
 /* Allocate and return an "empty" string n "characters" long */
 struct genString *genSpace(long n);
 
-/* Allocate and return an "empty" string n "characters" long
+/* Allocate and return an "empty" string n "characters" long 
    with whiteSpace initialized to genStrings instead of vStrings */
 struct genString *genGSpace(long n);
 
@@ -515,11 +516,11 @@ pntrString *pntrRight(pntrString *sin, long n);
 /* Allocate and return an "empty" string n "characters" long */
 pntrString *pntrSpace(long n);
 
-/* Allocate and return an "empty" string n "characters" long
+/* Allocate and return an "empty" string n "characters" long 
    initialized to nmbrStrings instead of vStrings */
 pntrString *pntrNSpace(long n);
 
-/* Allocate and return an "empty" string n "characters" long
+/* Allocate and return an "empty" string n "characters" long 
    initialized to pntrStrings instead of vStrings */
 pntrString *pntrPSpace(long n);
 
