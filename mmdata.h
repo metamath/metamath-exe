@@ -1,8 +1,8 @@
 /*****************************************************************************/
-/*               Copyright (C) 1997, NORMAN D. MEGILL                        */
+/*       Copyright (C) 2000  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
-
-/*34567890123456 (79-character line to adjust text window width) 678901234567*/
+/*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
 /* mmdata.h - includes for some principle data structures and data-string handling */
 
@@ -10,13 +10,14 @@
 /*??? To work on:
    (20) Add a command line editor (compiler-specific - some may not have it)
         - handle arrows & recall buffer
-   (21) Add selected DO LIST functions - PROCESS LINES or LINE PROCESSOR?
-        Commands:  ADD, CLEAN?, DELETE, SUBSTITUTE, SWAP, COUNT, DIFFERENCE
-        (general DIFF), DUPLICATE, PARALLEL, SPLIT, COPY, TYPE, RENAME?
    (23) When near completion:  Verify that each of the error messages
         works with an actual error
 */
-typedef char flag;
+typedef char flag; /* A "flag" is simply a character intended for use as a
+                      yes/no logical Boolean; 0 = no and 1 = yes */
+
+extern flag listMode; /* 0 = metamath, 1 = list utility */
+extern flag toolsMode; /* In metamath mode:  0 = metamath, 1 = tools */
 
 typedef long nmbrString; /* String of numbers */
 typedef void* pntrString; /* String of pointers */
@@ -82,7 +83,7 @@ struct statement_struct { /* Array index is statement number, starting at 1 */
   nmbrString *optDisjVarsB; /* Optional disjoint variables, 2nd of pair */
   nmbrString *optDisjVarsStmt; /* Opt disjoint variables, statem number */
   };
-  
+
 /* Sort keys for statement labels (allocated by parseLabels) */
 extern long *labelKey;
 
@@ -108,7 +109,7 @@ struct includeCall_struct {
 struct mathToken_struct {
   vstring tokenName; /* may be used more than once at different scopes */
   long length; /* to speed up parsing scans */
-  char tokenType; /* variable or constant */
+  char tokenType; /* variable or constant - (char)var__ or (char)con__ */
   flag active;  /* 1 if token is recognized in current scope */
   int scope;    /* scope level token was declared at */
   long tmp;     /* Temporary field use to speed up certain functions */
@@ -122,7 +123,7 @@ extern long *mathKey;
 extern long MAX_STATEMENTS;
 extern long MAX_MATHTOKENS;
 extern struct statement_struct *statement;
-/*0bs*/ /*extern struct label_struct *label;*/
+/*Obs*/ /*extern struct label_struct *label;*/
 extern struct mathToken_struct *mathToken;
 extern long statements, /*labels, */mathTokens;
 extern long maxMathTokenLength;
@@ -141,8 +142,6 @@ void poolFree(void *ptr);
 void addToUsedPool(void *ptr);
 /* Purges reset memory pool usage */
 void memFreePoolPurge(flag untilOK);
-void memUsedPoolPurge(flag untilOK);
-void memUsedPoolHalfPurge(flag untilOK);
 /* Statistics */
 void getPoolStats(long *freeAlloc, long *usedAlloc, long *usedActual);
 
@@ -196,10 +195,10 @@ void genMakeTempAlloc(struct genString *s);
 /******* Special pupose routines for better
       memory allocation (use with caution) *******/
 
-extern genTempAllocStackTop;        /* Top of stack for genTempAlloc function */
-extern genStartTempAllocStack;      /* Where to start freeing temporary allocation
-                                    when genLet() is called (normally 0, except for
-                                    nested genString functions) */
+extern int genTempAllocStackTop;   /* Top of stack for genTempAlloc function */
+extern int genStartTempAllocStack; /* Where to start freeing temporary
+    allocation when genLet() is called (normally 0, except for
+    nested genString functions) */
 
 /* Make string have temporary allocation to be released by next genLet() */
 /* Warning:  after genMakeTempAlloc() is called, the genString may NOT be
@@ -226,7 +225,7 @@ struct genString *genRight(struct genString *sin, long n);
 /* Allocate and return an "empty" string n "characters" long */
 struct genString *genSpace(long n);
 
-/* Allocate and return an "empty" string n "characters" long 
+/* Allocate and return an "empty" string n "characters" long
    with whiteSpace initialized to genStrings instead of vStrings */
 struct genString *genGSpace(long n);
 
@@ -341,10 +340,10 @@ void nmbrMakeTempAlloc(nmbrString *s);
 /******* Special pupose routines for better
       memory allocation (use with caution) *******/
 
-extern nmbrTempAllocStackTop;        /* Top of stack for nmbrTempAlloc function */
-extern nmbrStartTempAllocStack;      /* Where to start freeing temporary allocation
-                                    when nmbrLet() is called (normally 0, except for
-                                    nested nmbrString functions) */
+extern int nmbrTempAllocStackTop;   /* Top of stack for nmbrTempAlloc funct */
+extern int nmbrStartTempAllocStack; /* Where to start freeing temporary
+    allocation when nmbrLet() is called (normally 0, except for nested
+    nmbrString functions) */
 
 /* Make string have temporary allocation to be released by next nmbrLet() */
 /* Warning:  after nmbrMakeTempAlloc() is called, the nmbrString may NOT be
@@ -486,10 +485,10 @@ void pntrMakeTempAlloc(pntrString *s);
 /******* Special pupose routines for better
       memory allocation (use with caution) *******/
 
-extern pntrTempAllocStackTop;        /* Top of stack for pntrTempAlloc function */
-extern pntrStartTempAllocStack;      /* Where to start freeing temporary allocation
-                                    when pntrLet() is called (normally 0, except for
-                                    nested pntrString functions) */
+extern int pntrTempAllocStackTop;   /* Top of stack for pntrTempAlloc funct */
+extern int pntrStartTempAllocStack; /* Where to start freeing temporary
+    allocation when pntrLet() is called (normally 0, except for nested
+    pntrString functions) */
 
 /* Make string have temporary allocation to be released by next pntrLet() */
 /* Warning:  after pntrMakeTempAlloc() is called, the pntrString may NOT be
@@ -516,11 +515,11 @@ pntrString *pntrRight(pntrString *sin, long n);
 /* Allocate and return an "empty" string n "characters" long */
 pntrString *pntrSpace(long n);
 
-/* Allocate and return an "empty" string n "characters" long 
+/* Allocate and return an "empty" string n "characters" long
    initialized to nmbrStrings instead of vStrings */
 pntrString *pntrNSpace(long n);
 
-/* Allocate and return an "empty" string n "characters" long 
+/* Allocate and return an "empty" string n "characters" long
    initialized to pntrStrings instead of vStrings */
 pntrString *pntrPSpace(long n);
 

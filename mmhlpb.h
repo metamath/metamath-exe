@@ -1,7 +1,7 @@
 /*****************************************************************************/
-/*               Copyright (C) 1997, NORMAN D. MEGILL                        */
+/*       Copyright (C) 1999  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
-
-/*34567890123456 (79-character line to adjust text window width) 678901234567*/
+/*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
 void help2(vstring helpCmd);

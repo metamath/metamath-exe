@@ -1,8 +1,8 @@
 /*****************************************************************************/
-/*               Copyright (C) 1997, NORMAN D. MEGILL                        */
+/*       Copyright (C) 1999  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
-
-/*34567890123456 (79-character line to adjust text window width) 678901234567*/
+/*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
 extern long proveStatement; /* The statement to be proved */
 extern flag proofChangedFlag; /* Flag to push 'undo' stack */
@@ -20,7 +20,7 @@ struct pip_struct {
   pntrString *source; /* Right hand side of = in display */
   pntrString *user; /* User-specified math string assignments to step */
 };
-extern struct pip_struct proofInProgress;  
+extern struct pip_struct proofInProgress;
 
 /* Interactively select statement assignments that match */
 /* maxEssential is the maximum number of essential hypotheses that a
@@ -62,7 +62,8 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
     long step);
 
 /* Shorten proof by using specified statement. */
-void minimizeProof(long repStatemNum, long prvStatemNum);
+void minimizeProof(long repStatemNum, long prvStatemNum, flag
+    allowGrowthFlag);
 
 /* Initialize proofInProgress.source of the step, and .target of all
    hypotheses, to schemes using new dummy variables. */

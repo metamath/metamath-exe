@@ -1,8 +1,8 @@
 /*****************************************************************************/
-/*               Copyright (C) 1997, NORMAN D. MEGILL                        */
+/*       Copyright (C) 1999  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
-
-/*34567890123456 (79-character line to adjust text window width) 678901234567*/
+/*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
 extern long minSubstLen; /* User-settable value - 0 or 1 */
 extern long userMaxUnifTrials;
@@ -33,12 +33,12 @@ char unify(
    contents of (*stateVector) when done, UNLESS a 0 is returned.
    The caller must assign (*stateVector) to a legal pntrString
    (e.g. NULL_PNTRSTRING) before calling.
-  
+
    All variables with a tokenNum > saveMathTokens are assumed
    to be "unknown" variables that can be assigned; all other
    variables are treated like constants in the unification
-   algorithm.  
-  
+   algorithm.
+
    The "unknown" variable assignments are contained in (*stateVector)
    (which is a complex structure, described below).  Some "unknown"
    variables may have no assignment, in which case they will
@@ -69,7 +69,7 @@ char uniqueUnif(
     nmbrString *schemeB,
     pntrString **stateVector);
 
-/* unifyH() is like unify(), except that when reEntryFlag is 1, 
+/* unifyH() is like unify(), except that when reEntryFlag is 1,
    a new unification is returned ONLY if the normalized unification
    does not previously exist in the "Henty filter".  This reduces
    ambiguous unifications.  The values returned are the same as

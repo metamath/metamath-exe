@@ -1,8 +1,8 @@
 /*****************************************************************************/
-/*               Copyright (C) 1997, NORMAN D. MEGILL                        */
+/*       Copyright (C) 2000  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
-
-/*34567890123456 (79-character line to adjust text window width) 678901234567*/
+/*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
 /* Part 2 of help file for Metamath */
 
@@ -18,6 +18,83 @@
 
 void help2(vstring helpCmd)
 {
+
+printHelp = !strcmp(helpCmd, "HELP");
+H("Welcome to Metamath.  Here are some general guidelines.");
+H("");
+H("To make the most effective use of Metamath, you should become familiar");
+H("with the Metamath book.  In particular, you will need to learn");
+H("the syntax of the Metamath language.");
+H("");
+H("For a summary of the Metamath language, type HELP LANGUAGE.");
+H("For help using the command line interpreter, type HELP CLI.");
+H("For help getting started, type HELP DEMO.");
+H("For help exploring the data base, type HELP EXPLORE.");
+H("For help creating a LaTeX file, type HELP TEX.");
+H("For help creating Web pages, type HELP HTML.");
+H("For help using the Proof Assistant, type HELP PROOF_ASSISTANT.");
+H("For a list of help topics, type HELP ?.");
+H("To exit Metamath, type EXIT.");
+H("");
+H("If you need technical support, contact Norman Megill at nm@alum.mit.edu.");
+H("Copyright (C) 2000 Norman D. Megill");
+H("License terms:  GNU General Public License");
+H("");
+
+
+printHelp = !strcmp(helpCmd, "HELP CLI");
+H("Each command line is a sequence of English-like words separated by");
+H("spaces, as in SHOW SETTINGS.  Command words are not case sensitive, and");
+H("only as many letters are needed as are necessary to eliminate ambiguity;");
+H("for example, \"sh se\" would work for the command SHOW SETTINGS.  In some");
+H("cases arguments such as file names, statement labels, or symbol names are");
+H("required; these are case-sensitive (although file names may not be on");
+H("some operating systems).");
+H("");
+H("A command line is entered by typing it in then pressing the <return> key.");
+H("");
+H("To find out what commands are available, type ? at the MM> prompt.");
+H("");
+H("To find out the choices at any point in a command, press <return> and you");
+H("will be prompted for them.  The default choice (the one selected if you");
+H("just press <return>) is shown in brackets (<>).");
+H("");
+H("You may also type ? in place of a command word to force Metamath to tell");
+H("you what the choices are.  The ? method won't work, though, if a");
+H("non-keyword argument such as a file name is expected at that point,");
+H("because the CLI will think the ? is the argument.");
+H("");
+H("Some commands have one or more optional qualifiers which modify the");
+H("behavior of the command.  Qualifiers are indicated by a slash (/), such as");
+H("in READ set.mm / VERIFY.  Spaces are optional around the /.  If you need");
+H("to use a slash in a command argument, as in a Unix file name, put single");
+H("or double quotes around the command argument.");
+H("");
+H("The OPEN LOG command will save everything you see on the screen, and is");
+H("useful to help you recover should something go wrong in a proof, or if");
+H("you want to document a bug.");
+H("");
+H("If the response to a command is more than a screenful, you will be");
+H("prompted to '<return> to continue, Q to quit, or S to scroll to end'.");
+H("Q will complete the command internally but suppress further output until");
+H("the next \"MM>\" prompt.  S will suppress further pausing until the next");
+H("\"MM>\" prompt.  After the first screen, you are also presented with B");
+H("to go back a screenful.  Note that B may also be entered at the \"MM>\"");
+H("prompt immediately after a command to scroll back through the output of");
+H("that command.");
+H("");
+H("A command line enclosed in quotes is executed by your operating system.");
+H("See HELP SYSTEM.");
+H("");
+H("Some other commands you may want to review with HELP are:");
+H("    SET ECHO");
+H("    SET SCROLL");
+H("    SET SCREEN_WIDTH");
+H("    SUBMIT");
+H("    FILE SEARCH");
+H("    FILE TYPE");
+H("");
+
 
 printHelp = !strcmp(helpCmd, "HELP SHOW MEMORY");
 H("Syntax:  SHOW MEMORY");
@@ -47,38 +124,60 @@ H("    / ALL - Include matches for $e and $f statement labels.");
 H("");
 
 
+printHelp = !strcmp(helpCmd, "HELP SHOW SOURCE");
+H("Syntax:  SHOW SOURCE <label>");
+H("");
+H("This command shows the ASCII source code associated with a statement.");
+H("Normally you should use SHOW STATEMENT for a more meaningful display,");
+H("but SHOW SOURCE can be used to see statements with multiple comments");
+H("and to see the exact content of the Metamath database.");
+H("");
+
+
 printHelp = !strcmp(helpCmd, "HELP SHOW STATEMENT");
-H("Syntax:  SHOW STATEMENT <label> [/ TEX] [/ COMMENT_ONLY]");
+H(
+"Syntax:  SHOW STATEMENT <label> [/ COMMENT] [/ FULL] [/ TEX] [/ HTML]");
 H("");
 H("This command provides information about a statement.  Only statements");
-H("that have labels ($f, $e, $a, and $p) may be specified.");
+H("that have labels ($f, $e, $a, and $p) may be specified.  If <label>");
+H("contains wildcard (\"*\") characters, all matching statements will be");
+H("displayed in the order they occur in the database.");
+H("");
+H("By default, only the statement and its $e hypotheses are shown, and if");
+H("the label has wildcards, only $a and $p statements are shown.");
 H("");
 H("Optional qualifiers:");
+H("    / COMMENT - This qualifier includes the comment that immediately");
+H("        precedes the statement.  Redundant if / FULL is used.");
+H("    / FULL - Show complete information about each statement, and show all");
+H("        statements matching <label> (including $e and $f statements).");
 H("    / TEX - This qualifier will write the statement information to the");
 H("        LaTeX file previously opened with OPEN TEX.");
-H("    / COMMENT_ONLY - This qualifier will show only the comment that");
-H("        immediatley precedes the statement.  This is useful when you are");
-H("        using Metamath to preprocess LaTeX source you have created (see");
-H("        HELP TEX)");
-H("    / BRIEF - This qualifier shows the statement and its $e hypotheses");
-H("        only.");
+H("    / HTML - This qualifier invokes a special mode of SHOW STATEMENT which");
+H("        creates a Web page for the statement.  It may not be used with");
+H("        any other qualifier.  See HELP HTML for more information.");
 H("");
 
 
 printHelp = !strcmp(helpCmd, "HELP SHOW PROOF");
 H("Syntax:  SHOW PROOF <label> [<qualifiers (see below)>]");
 H("");
-H("This command displays the proof of the specified $p statement in various");
-H("formats.  Without any qualifiers, all steps will be shown in indented");
-H("format.");
+H("This command displays the proof of the specified $p statement various");
+H("formats.  The <label> may contain wildcard (\"*\") characters to match");
+H("multiple statements.  Without any qualifiers, only the logical steps will");
+H("be shown (i.e. syntax construction steps will be omitted), in");
+H("indented format.");
 H("");
 H("Most of the time, you will use");
-H("    SHOW PROOF <label> / ESSENTIAL");
+H("    SHOW PROOF <label>");
 H("to see just the proof steps corresponding to logical deduction.");
 H("");
 H("Optional qualifiers:");
 H("    / ESSENTIAL - the proof tree is trimmed of all $f hypotheses before");
-H("        being displayed.");
+H("        being displayed.  (This is the default, and it is redundant to");
+H("        specify it.)");
+H("    / ALL - the proof tree is not trimmed of all $f hypotheses before");
+H("        being displayed.  / ESSENTIAL and / ALL are mutually exclusive.");
 H("    / FROM_STEP <step> - the display starts at the specified step.  If");
 H("        this qualifier is omitted, the display starts at the first step.");
 H("    / TO_STEP <step> - the display ends at the specified step.  If this");
@@ -116,6 +215,25 @@ H("        a specific proof step.  May not be used with any other qualifier.");
 H("");
 
 
+printHelp = !strcmp(helpCmd, "HELP MIDI");
+H("Syntax:  MIDI <label> [/ PARAMETER \"<parameter string>\"]");
+H("");
+H("This will create a MIDI sound file for the proof of <label>, where <label>");
+H("is one of the $p statement labels shown with SHOW LABELS.  The <label>");
+H("may contain wildcard (\"*\") characters to match multiple statements.");
+H("For each matched label, a file will be created called <label>.txt which");
+H("is a MIDI source file that can be converted to a MIDI binary file with");
+H("the \"t2mf\" utility that can be obtained at:");
+H("   http://www.hitsquad.com/smm/programs/mf2t/download.shtml");
+H("Note: the MS-DOS version t2mf.exe only handles old-style 8.3 file names,");
+H("so files such as pm2.11.txt are rejected and must be renamed to");
+H("e.g. pm2_11.txt.");
+H("The parameter string characters currently defined are: f - fast speed,");
+H("s - syncopation, h - turn on hesitation feature of syncopation.  Quotes");
+H("around the parameter string are optional if it has no spaces.");
+H("");
+
+
 printHelp = !strcmp(helpCmd, "HELP SHOW NEW_PROOF");
 H("Syntax:  SHOW NEW_PROOF [<qualifiers (see below)]");
 H("");
@@ -130,9 +248,9 @@ H("Also, the following additional qualifiers are available:");
 H("    / UNKNOWN - Shows only steps that have no statement assigned.");
 H("    / NOT_UNIFIED - Shows only steps that have not been unified.");
 H("");
-H("Note that / ESSENTIAL, / DEPTH, / UNKNOWN, and / NOT_UNIFIED may be");
-H("used in any combination; each of them effectively filters out additional");
-H("steps from the proof display.");
+H("Note that / ESSENTIAL, / DEPTH, / UNKNOWN, and / NOT_UNIFIED may");
+H("be used in any combination; each of them effectively filters out");
+H("additional steps from the proof display.");
 H("");
 H("See also:  SHOW PROOF");
 H("");
@@ -171,7 +289,7 @@ H("");
 
 
 printHelp = !strcmp(helpCmd, "HELP SEARCH");
-H("Syntax:  SEARCH <label-match> \"<symbol-match>\" <[/ ALL]");
+H("Syntax:  SEARCH <label-match> \"<symbol-match>\" [/ ALL] [/ COMMENTS]");
 H("");
 H("This command searches all $a and $p statements matching <label-match>");
 H("for occurrences of <symbol-match>.  A * in <label-match> matches");
@@ -241,17 +359,20 @@ H("");
 printHelp = !strcmp(helpCmd, "HELP SET EMPTY_SUBSTITUTION");
 H("Syntax:  SET EMPTY_SUBSTITUTION ON or SET EMPTY_SUBSTITUTION OFF");
 H("");
-H("(This command affects the Proof Assistant only.)");
+H("(This command affects the Proof Assistant only.  It may be issued)");
+H("outside of the Proof Assistant.");
 H("");
 H("The Metamath language allows variables to be substituted with empty");
-H("symbol sequences.  However, in many formal systems this will never happen");
+H("symbol sequences.  However, in most formal systems this will never happen");
 H("in a valid proof.  Allowing for this possibility increases the likelihood");
-H("of ambiguous unifications during proof creation, and you may want to SET");
-H("EMPTY_SUBSTITUTION OFF to help make the process more efficient.  With");
-H("this mode set, you may not be able to create some proofs in formal");
-H("systems that allow empty substitutions.  (An example would be a system");
-H("that implements a Deduction Rule and in which deductions from empty");
-H("assumption lists would be permissable.)");
+H("of ambiguous unifications during proof creation.  The default is that");
+H("empty substitutions are not allowed; for formal systems requiring them,");
+H("you must SET EMPTY_SUBSTITUTION ON.  Note that empty substitutions are");
+H("always permissable in proof verification (VERIFY PROOFS...) outside the");
+H("Proof Assistant.  (See the MIU system in the Metamath book for an example");
+H("of a system needing empty substitutions; another example would be a");
+H("system that implements a Deduction Rule and in which deductions from");
+H("empty assumption lists would be permissable.)");
 H("");
 
 
@@ -342,12 +463,19 @@ H("");
 
 printHelp = !strcmp(helpCmd, "HELP ASSIGN");
 H("Syntax:  ASSIGN <step> <label>");
+H("         ASSIGN LAST <label>");
 H("");
 H("This command, available in the Proof Assistant only, assigns an unknown");
 H("step (one with ? in the SHOW NEW_PROOF listing) with the statement");
 H("specified by <label>.  The assignment will not be allowed if the");
 H("statement cannot be unified with the step.  To see what statements may be");
 H("unified with the step, you may use the MATCH command.");
+H("");
+H("If LAST is specified instead of <step> number, the last step that is shown");
+H("by SHOW NEW_PROOF /ESSENTIAL /UNKNOWN will be used.  This can be useful for");
+H("building a proof with a command file (see HELP SUBMIT).  Note that");
+H("interactive unification is not done after ASSIGN LAST, so the UNIFY ALL");
+H("/INTERACTIVE may have to used after ASSIGN LAST.");
 H("");
 
 printHelp = !strcmp(helpCmd, "HELP REPLACE");
@@ -400,6 +528,9 @@ H("with information that can only be verified when the proof is built up");
 H("further. If you make an error, the INITIALIZE commands can help undo what");
 H("you did.");
 H("");
+
+
+printHelp = !strcmp(helpCmd, "HELP UNIFY");
 H("HELP UNIFY");
 H("Syntax:  UNIFY STEP <step>");
 H("         UNIFY ALL [/ INTERACTIVE]");
@@ -415,7 +546,9 @@ H("    / INTERACTIVE - You will be prompted to select among the unifications");
 H("        that are possible for any steps that do not have unique");
 H("        unifications.");
 H("");
-H("See also SET UNIFICATION_TIMEOUT.");
+H("See also SET UNIFICATION_TIMEOUT.  The default is 1000, but increasing it");
+H("to 10000 can help difficult cases.  The LET VARIABLE command to manually");
+H("assign unknown variables also helps difficult cases.");
 H("");
 
 
@@ -455,6 +588,7 @@ H("");
 printHelp = !strcmp(helpCmd, "HELP IMPROVE");
 H("Syntax:  IMPROVE STEP <step> [/ DEPTH <number>]");
 H("         IMPROVE ALL [/ DEPTH <number>]");
+H("         IMPROVE LAST [/ DEPTH <number>]");
 H("");
 H("These commands, available in the Proof Assistant only, try to");
 H("automatically find proofs for unknown steps whose symbol sequences are");
@@ -462,13 +596,16 @@ H("completely known.  It is primarily useful for filling in proofs of $f");
 H("hypotheses.  The search will be restricted to statements having no $e");
 H("hypotheses.");
 H("");
+H("IMPROVE LAST is the same as IMPROVE STEP using the last step that is shown");
+H("by SHOW NEW_PROOF /ESSENTIAL /UNKNOWN.");
+H("");
 H("Optional qualifier:");
 H("    / DEPTH <number> - This qualifier will cause the search to include");
 H("        statements with $e hypotheses (but no new variables in the $e");
 H("        hypotheses), provided that the backtracking has not exceeded the");
-H("        specified depth.  Warning:  try DEPTH 1, then 2, then 3, etc");
+H("        specified depth.  **WARNING**:  Try DEPTH 1, then 2, then 3, etc");
 H("        in sequence because of possible exponential blowups.  Save your");
-H("        work before trying DEPTH greater than 1.");
+H("        work before trying DEPTH greater than 1!!!");
 H("");
 H("Note:  If memory is limited, IMPROVE ALL on a large proof may overflow");
 H("memory.  If you use SET UNIFICATION_TIMEOUT 1 before IMPROVE ALL,");
@@ -482,17 +619,25 @@ H("");
 
 
 printHelp = !strcmp(helpCmd, "HELP MINIMIZE_WITH");
-H("Syntax:  MINIMIZE_WITH <label> [/ BRIEF]");
+H("Syntax:  MINIMIZE_WITH <label> [/ BRIEF] [/ ALLOW_GROWTH] [/ NO_DISTINCT]");
 H("");
 H("This command, available in the Proof Assistant only, checks whether");
 H("the proof can be shortened by using statements matching <label>, and");
 H("if so, shortens the proof.  <label> can contain wildcards (*) to test");
 H("more than one statement, but each statement is still tested");
-H("independently from the others.");
+H("independently from the others.  Warning:  MINIMIZE_WITH does not check");
+H("for $d violations, so SAVE PROOF then VERIFY PROOF should be run");
+H("afterwards to check for them.");
 H("");
 H("Optional qualifier:");
 H("    / BRIEF - The labels of statements that were tested but didn't reduce");
 H("        the proof length will not be listed, for brevity.");
+H("    / ALLOW_GROWTH - If a substitution is possible, it will be made even");
+H("        if the proof length increases.  This is useful if we are just");
+H("        updating the proof with a newer version of an obsolete theorem.");
+H("    / NO_DISTINCT - Skip the trial statement if it has a $d requirement.");
+H("        This qualifier is useful when <label> has wildcards, to prevent");
+H("        illegal shortenings that would violate $d requirements.");
 H("");
 
 
@@ -502,7 +647,8 @@ H("");
 H("The SAVE PROOF command will reformat a proof in one of two formats and");
 H("replace the existing proof in the database buffer.  It is useful for");
 H("converting between proof formats.  Note that a proof will not be");
-H("permanently saved until a WRITE SOURCE command is issued.");
+H("permanently saved until a WRITE SOURCE command is issued.  Multiple");
+H("proofs may be saved by using wildcards (\"*\") in <label>.");
 H("");
 H("Optional qualifiers:");
 H("    / NORMAL - The proof is saved in the basic format (i.e., as a sequence");

@@ -1,9 +1,11 @@
 /*****************************************************************************/
-/*               Copyright (C) 1997, NORMAN D. MEGILL                        */
+/*       Copyright (C) 2000  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
+/*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
 /*
-mmvstr.h - VMS-BASIC variable length string library routines header
+mmvstr.c - VMS-BASIC variable length string library routines header
 This is a collection of useful built-in string functions available in VMS BASIC.
 */
 
@@ -39,7 +41,6 @@ vstring tempAlloc(long size)    /* String memory allocation/deallocation */
   if (size) {
     if (tempAllocStackTop>=(MAX_ALLOC_STACK-1)) {
       printf("*** FATAL ERROR ***  Temporary string stack overflow\n");
-/*E*/printf("%s",NULL);
       bug(2201);
     }
     if (!(tempAllocStack[tempAllocStackTop++]=malloc(size))) {
@@ -68,7 +69,6 @@ void makeTempAlloc(vstring s)
 {
     if (tempAllocStackTop>=(MAX_ALLOC_STACK-1)) {
       printf("*** FATAL ERROR ***  Temporary string stack overflow\n");
-/*E*/printf("%s",NULL);
       bug(2203);
     }
     tempAllocStack[tempAllocStackTop++]=s;
@@ -151,7 +151,7 @@ vstring cat(vstring string1,...)        /* String concatenation */
   arg[0]=string1;       /* First argument */
 
   va_start(ap,string1); /* Begin the session */
-  while (arg[numArgs++]=va_arg(ap,char *))
+  while ((arg[numArgs++]=va_arg(ap,char *)))
         /* User-provided argument list must terminate with 0 */
     if (numArgs>=MAX_CAT_ARGS-1) {
       printf("*** FATAL ERROR ***  Too many cat() arguments\n");
@@ -196,14 +196,14 @@ vstring linput(FILE *stream,vstring ask,vstring *target)
     NULL is returned when end-of-file is encountered.  The vstring
     *target MUST be initialized to "" or previously assigned by let(&...)
     before using it in linput. */
-  char f[1025]; /* Allow up to 1024 characters */
+  char f[10001]; /* Allow up to 10000 characters */
   if (ask) printf("%s",ask);
   if (stream == NULL) stream = stdin;
-  if (!fgets(f,1024,stream)) {
+  if (!fgets(f,10000,stream)) {
     /* End of file */
     return NULL;
   }
-  f[1024]=0;     /* Just in case */
+  f[10000]=0;     /* Just in case */
   f[strlen(f)-1]=0;     /* Eliminate new-line character */
   /* Assign the user's input line */
   let(target,f);
@@ -280,15 +280,21 @@ EDIT$
   Syntax
          str-vbl = EDIT$(str-exp, int-exp)
      Values   Effect
-     1%       Trim parity bits
-     2%       Discard all spaces and tabs
-     4%       Discard characters: CR, LF, FF, ESC, RUBOUT, and NULL
-     8%       Discard leading spaces and tabs
-     16%      Reduce spaces and tabs to one space
-     32%      Convert lowercase to uppercase
-     64%      Convert [ to ( and ] to )
-     128%     Discard trailing spaces and tabs
-     256%     Do not alter characters inside quotes
+     1        Trim parity bits
+     2        Discard all spaces and tabs
+     4        Discard characters: CR, LF, FF, ESC, RUBOUT, and NULL
+     8        Discard leading spaces and tabs
+     16       Reduce spaces and tabs to one space
+     32       Convert lowercase to uppercase
+     64       Convert [ to ( and ] to )
+     128      Discard trailing spaces and tabs
+     256      Do not alter characters inside quotes
+
+     (non-BASIC extensions)
+     512      Convert uppercase to lowercase
+     1024     Tab the line (convert spaces to equivalent tabs)
+     2048     Untab the line (convert tabs to equivalent spaces)
+     4096     Convert VT220 screen print frame graphics to -,|,+ characters
 */
   vstring sout;
   long i,j,k;
@@ -296,6 +302,8 @@ EDIT$
   int trim_flag,discardcr_flag,bracket_flag,quote_flag,case_flag;
   int alldiscard_flag,leaddiscard_flag,traildiscard_flag,reduce_flag;
   int processing_inside_quote=0;
+  int lowercase_flag, tab_flag, untab_flag, screen_flag;
+  unsigned char graphicsChar;
 
   /* Set up the flags */
   trim_flag=control & 1;
@@ -308,8 +316,17 @@ EDIT$
   traildiscard_flag=control & 128;
   quote_flag=control & 256;
 
+  /* Non-BASIC extensions */
+  lowercase_flag = control & 512;
+  tab_flag = control & 1024;
+  untab_flag = control & 2048;
+  screen_flag = control & 4096; /* Convert VT220 screen prints to |,-,+
+                                   format */
+
   /* Copy string */
-  sout=tempAlloc(strlen(sin)+1);
+  i = strlen(sin) + 1;
+  if (untab_flag) i = i * 7;
+  sout=tempAlloc(i);
   strcpy(sout,sin);
 
   /* Discard leading space/tab */
@@ -343,6 +360,7 @@ EDIT$
          (sout[i]=='\012') || /* LF  */
          (sout[i]=='\014') || /* FF  */
          (sout[i]=='\033') || /* ESC */
+         /*(sout[i]=='\032') ||*/ /* ^Z */ /* DIFFERENCE won't work w/ this */
          (sout[i]=='\010')))  /* BS  */
       sout[i]=0;
 
@@ -350,11 +368,31 @@ EDIT$
     if ((case_flag) && (islower(sout[i])))
        sout[i]=toupper(sout[i]);
 
-    /* Covert [] to () */
+    /* Convert [] to () */
     if ((bracket_flag) && (sout[i]=='['))
        sout[i]='(';
     if ((bracket_flag) && (sout[i]==']'))
        sout[i]=')';
+
+    /* Convert uppercase to lowercase */
+    if ((lowercase_flag) && (isupper(sout[i])))
+       sout[i]=tolower(sout[i]);
+
+    /* Convert VT220 screen print frame graphics to +,|,- */
+    if (screen_flag) {
+      graphicsChar = sout[i]; /* Need unsigned char for >127 */
+      /* vt220 */
+      if (graphicsChar >= 234 && graphicsChar <= 237) sout[i] = '+';
+      if (graphicsChar == 241) sout[i] = '-';
+      if (graphicsChar == 248) sout[i] = '|';
+      if (graphicsChar == 166) sout[i] = '|';
+      /* vt100 */
+      if (graphicsChar == 218 /*up left*/ || graphicsChar == 217 /*lo r*/
+          || graphicsChar == 191 /*up r*/ || graphicsChar == 192 /*lo l*/)
+        sout[i] = '+';
+      if (graphicsChar == 196) sout[i] = '-';
+      if (graphicsChar == 179) sout[i] = '|';
+    }
 
     /* Process next character */
     i++;
@@ -390,12 +428,82 @@ EDIT$
     }
     sout[j]=0;
   }
+
+  /* Untab the line */
+  if (untab_flag || tab_flag) {
+
+    /*
+    DEF FNUNTAB$(L$)      ! UNTAB LINE L$
+    I9%=1%
+    I9%=INSTR(I9%,L$,CHR$(9%))
+    WHILE I9%
+      L$=LEFT(L$,I9%-1%)+SPACE$(8%-((I9%-1%) AND 7%))+RIGHT(L$,I9%+1%)
+      I9%=INSTR(I9%,L$,CHR$(9%))
+    NEXT
+    FNUNTAB$=L$
+    FNEND
+    */
+
+    k = strlen(sout);
+    for (i = 1; i <= k; i++) {
+      if (sout[i - 1] != '\t') continue;
+      for (j = k; j >= i; j--) {
+        sout[j + 8 - ((i - 1) & 7) - 1] = sout[j];
+      }
+      for (j = i; j < i + 8 - ((i - 1) & 7); j++) {
+        sout[j - 1] = ' ';
+      }
+      k = k + 8 - ((i - 1) & 7);
+    }
+  }
+
+  /* Tab the line */
+  if (tab_flag) {
+
+    /*
+    DEF FNTAB$(L$)        ! TAB LINE L$
+    I9%=0%
+    FOR I9%=8% STEP 8% WHILE I9%<LEN(L$)
+      J9%=I9%
+      J9%=J9%-1% UNTIL ASCII(MID(L$,J9%,1%))<>32% OR J9%=I9%-8%
+      IF J9%<=I9%-2% THEN
+        L$=LEFT(L$,J9%)+CHR$(9%)+RIGHT(L$,I9%+1%)
+        I9%=J9%+1%
+      END IF
+    NEXT I9%
+    FNTAB$=L$
+    FNEND
+    */
+
+    i = 0;
+    k = strlen(sout);
+    for (i = 8; i < k; i = i + 8) {
+      j = i;
+      while (sout[j - 1] == ' ' && j > i - 8) j--;
+      if (j <= i - 2) {
+        sout[j] = '\t';
+        j = i;
+        while (sout[j - 1] == ' ' && j > i - 8 + 1) {
+          sout[j - 1] = 0;
+          j--;
+        }
+      }
+    }
+    i = k;
+    /* sout[i]=0 is the last character at this point */
+    /* Clean up the deleted characters */
+    for (j = 0, k = 0; j <= i; j++)
+      if (sout[j] != 0) sout[k++] = sout[j];
+    sout[k] = 0;
+    /* sout[k]=0 is the last character at this point */
+  }
+
   return (sout);
 }
 
 
 /* Return a string of the same character */
-vstring string(long n,char c)
+vstring string(long n, char c)
 {
   vstring sout;
   long j=0;
@@ -455,7 +563,7 @@ vstring xlate(vstring sin,vstring table)
   long len_table,len_sin;
   long i,j;
   long table_entry;
-  char k,m;
+  char m;
   len_sin=strlen(sin);
   len_table=strlen(table);
   sout=tempAlloc(len_sin+1);
@@ -480,7 +588,31 @@ long ascii_(vstring c)
 /* Returns the floating-point value of a numeric string */
 double val(vstring s)
 {
+  double v = 0;
+  char signFound = 0;
+  double power = 1.0;
+  long i;
+  for (i = strlen(s); i >= 0; i--) {
+    switch (s[i]) {
+      case '.':
+        v = v / power;
+        power = 1.0;
+        break;
+      case '-':
+        signFound = 1;
+        break;
+      case '0': case '1': case '2': case '3': case '4':
+      case '5': case '6': case '7': case '8': case '9':
+        v = v + ((double)(s[i] - '0')) * power;
+        power = 10.0 * power;
+        break;
+    }
+  }
+  if (signFound) v = - v;
+  return v;
+  /*
   return (atof(s));
+  */
 }
 
 
@@ -490,7 +622,6 @@ vstring date()
         vstring sout;
         struct tm *time_structure;
         time_t time_val;
-        long i;
         char *month[12];
 
         /* (Aggregrate initialization is not portable) */
@@ -511,10 +642,11 @@ vstring date()
         time(&time_val);                        /* Retrieve time */
         time_structure=localtime(&time_val); /* Translate to time structure */
         sout=tempAlloc(12);
-        sprintf(sout,"%d-%s-%d",
+        /* "%02d" means leading zeros with min. field width of 2 */
+        sprintf(sout,"%d-%s-%02d",
                 time_structure->tm_mday,
                 month[time_structure->tm_mon],
-                time_structure->tm_year);
+                (int)((time_structure->tm_year) % 100)); /* Y2K */
         return(sout);
 }
 
@@ -588,6 +720,137 @@ vstring num1(double f)
 vstring num(double f)
 {
   return (cat(" ",str(f)," ",NULL));
+}
+
+
+
+/*** NEW FUNCTIONS ADDED 11/25/98 ***/
+
+/* Emulate PROGRESS "entry" and related string functions */
+/* (PROGRESS is a 4-GL database language) */
+
+/* A "list" is a string of comma-separated elements.  Example:
+   "a,b,c" has 3 elements.  "a,b,c," has 4 elements; the last element is
+   an empty string.  ",," has 3 elements; each is an empty string.
+   In "a,b,c", the entry numbers of the elements are 1, 2 and 3 (i.e.
+   the entry numbers start a 1, not 0). */
+
+/* Returns a character string entry from a comma-separated
+   list based on an integer position. */
+/* If element is less than 1 or greater than number of elements
+   in the list, a null string is returned. */
+vstring entry(long element, vstring list)
+{
+  vstring sout;
+  long commaCount, lastComma, i, len;
+  if (element < 1) return ("");
+  lastComma = -1;
+  commaCount = 0;
+  i = 0;
+  while (list[i] != 0) {
+    if (list[i] == ',') {
+      commaCount++;
+      if (commaCount == element) {
+        break;
+      }
+      lastComma = i;
+    }
+    i++;
+  }
+  if (list[i] == 0) commaCount++;
+  if (element > commaCount) return ("");
+  len = i - lastComma - 1;
+  if (len < 1) return ("");
+  sout = tempAlloc(len + 1);
+  strncpy(sout, list + lastComma + 1, len);
+  sout[len] = 0;
+  return (sout);
+}
+
+/* Emulate PROGRESS lookup function */
+/* Returns an integer giving the first position of an expression
+   in a comma-separated list. Returns a 0 if the expression
+   is not in the list. */
+long lookup(vstring expression, vstring list)
+{
+  long i, exprNum, exprPos;
+  char match;
+
+  match = 1;
+  i = 0;
+  exprNum = 0;
+  exprPos = 0;
+  while (list[i] != 0) {
+    if (list[i] == ',') {
+      exprNum++;
+      if (match) {
+        if (expression[exprPos] == 0) return exprNum;
+      }
+      exprPos = 0;
+      match = 1;
+      i++;
+      continue;
+    }
+    if (match) {
+      if (expression[exprPos] != list[i]) match = 0;
+    }
+    i++;
+    exprPos++;
+  }
+  exprNum++;
+  if (match) {
+    if (expression[exprPos] == 0) return exprNum;
+  }
+  return 0;
+}
+
+
+/* Emulate PROGRESS num-entries function */
+/* Returns the number of items in a comma-separated list. */
+long numEntries(vstring list)
+{
+  long i, commaCount;
+  i = 0;
+  commaCount = 0;
+  while (list[i] != 0) {
+    if (list[i] == ',') commaCount++;
+    i++;
+  }
+  return (commaCount + 1);
+}
+
+/* Returns the character position of the start of the
+   element in a list - useful for manipulating
+   the list string directly.  1 means the first string
+   character. */
+/* If element is less than 1 or greater than number of elements
+   in the list, a 0 is returned.  If entry is null, a 0 is
+   returned. */
+long entryPosition(long element, vstring list)
+{
+  long commaCount, lastComma, i;
+  if (element < 1) return 0;
+  lastComma = -1;
+  commaCount = 0;
+  i = 0;
+  while (list[i] != 0) {
+    if (list[i] == ',') {
+      commaCount++;
+      if (commaCount == element) {
+        break;
+      }
+      lastComma = i;
+    }
+    i++;
+  }
+  if (list[i] == 0) {
+    if (i == 0) return 0;
+    if (list[i - 1] == ',') return 0;
+    commaCount++;
+  }
+  if (element > commaCount) return (0);
+  if (list[lastComma + 1] == ',') return 0;
+  return (lastComma + 2);
 }
 
 

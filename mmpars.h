@@ -1,8 +1,8 @@
 /*****************************************************************************/
-/*               Copyright (C) 1997, NORMAN D. MEGILL                        */
+/*       Copyright (C) 1999  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
-
-/*3456789012345678901234567890123456789012345678901234567890123456789012345678*/
+/*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
 char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size);
 void parseKeywords(void);
@@ -78,12 +78,12 @@ struct wrkProof_struct {
   long numSteps; /* Number of steps in proof */
   long numLocalLabels; /* Number of local labels */
   long numHypAndLoc; /* Number of active hypotheses and local labels */
-  char *localLabelPoolPtr; /* Next free location in local label pool */ 
+  char *localLabelPoolPtr; /* Next free location in local label pool */
   long RPNStackPtr; /* Offset of end of RPNStack */
   long errorCount; /* Errors in proof - used to suppress to many error msgs */
   flag errorSeverity; /* 0 = OK, 1 = unk step, 2 = error, 3 = severe error,
                           4 = not a $p statement */
-  
+
   /* The following pointers will always be allocated with wrkProofMaxSize
      entries.  If a function needs more than wrkProofMaxSize, it must
      reallocate all of these and increase wrkProofMaxSize. */
@@ -108,10 +108,10 @@ struct wrkProof_struct {
   /* For compressed proof parsing */
   nmbrString *compressedPfLabelMap; /* Map from compressed label to actual */
   long compressedPfNumLabels; /* Number of compressed labels */
-  
+
 };
-extern struct wrkProof_struct wrkProof;  
-  
+extern struct wrkProof_struct wrkProof;
+
 /* Converts an ASCII string to a nmbrString of math symbols.  statemNum
    provides the context for the parse (to get correct active symbols) */
 nmbrString *parseMathTokens(vstring userText, long statemNum);

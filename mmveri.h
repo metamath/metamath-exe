@@ -1,8 +1,8 @@
 /*****************************************************************************/
-/*               Copyright (C) 1997, NORMAN D. MEGILL                        */
+/*       Copyright (C) 1999  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
-
-/*34567890123456 (79-character line to adjust text window width) 678901234567*/
+/*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
 char verifyProof(long statemNum);
 
@@ -12,7 +12,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
   nmbrString *bigSubstInstAss, long substScheme,
     /* For error messages: */
   long statementNum, long step, flag unkHypFlag);
-  
+
 /* Deallocate the math symbol strings assigned in wrkProof structure during
    proof verification.  This should be called after verifyProof() and after the
    math symbol strings have been used for proof printouts, etc. */
@@ -35,4 +35,4 @@ struct getStep_struct {
   nmbrString *targetSubstsNmbr; /* List of vars w/ ptr to subst math tokens */
   pntrString *targetSubstsPntr; /* List of vars w/ ptr to subst math tokens */
 };
-extern struct getStep_struct getStep;  
+extern struct getStep_struct getStep;

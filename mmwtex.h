@@ -1,8 +1,11 @@
 /*****************************************************************************/
-/*               Copyright (C) 1997, NORMAN D. MEGILL                        */
+/*       Copyright (C) 2000  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
+/*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-/*34567890123456 (79-character line to adjust text window width) 678901234567*/
+/* HTML flag */
+extern flag htmlFlag;
 
 /* TeX word-processor-specific routines */
 flag readTexDefs(vstring tex_def_fn, flag promptForFile); /* Returns 1=OK, 0=error */
@@ -32,19 +35,8 @@ void printTexHeader(flag texHeaderFlag);
    allocation.  */
 void printTexComment(vstring commentPtr);
 void printTexLongMath(nmbrString *proofStep, vstring startPrefix,
-    vstring contPrefix);
+    vstring contPrefix, long hypStmt);
 void printTexTrailer(flag texHeaderFlag);
-    
-int errorCheck(vstring isString, vstring shouldBeString);
-void parseGraphicsDef(void);
-void outputHeader(void);
-void outputTrailer(void);
-void outputDefinitions(void);
-vstring outputMathToken(vstring mathToken);
-vstring outputTextString(vstring textString);
-void texOutputStatement(long statementNum, FILE *output_fp);
-vstring cvtTexMToVString(nmbrString *s);
-vstring cvtTexRToVString(nmbrString *s);
 
 /* TeX symbol dictionary */
 extern FILE *tex_dict_fp;     /* File pointers */

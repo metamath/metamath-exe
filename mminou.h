@@ -1,13 +1,15 @@
 /*****************************************************************************/
-/*               Copyright (C) 1997, NORMAN D. MEGILL                        */
+/*       Copyright (C) 1999  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
+/*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-/*34567890123456 (79-character line to adjust text window width) 678901234567*/
 extern int errorCount;     /* Total error count */
 
 /* Global variables used by print2() */
 extern flag logFileOpenFlag;
 extern FILE *logFilePtr;
+extern FILE *listFile_fp;
 /* Global variables used by print2() */
 extern flag outputToString;
 extern vstring printString;
@@ -19,6 +21,11 @@ extern vstring commandFileName;
 extern FILE *inputDef_fp,*input_fp,*output_fp;  /* File pointers */
 extern vstring inputDef_fn,input_fn,output_fn;  /* File names */
 
+/* PRINTBUFFERSIZE should be at least as long as the longest string we
+   expect (an unfortunate, dangerous limitation of C?) - although if >79
+   chars are output on a line bug #1505 warning will occur */
+#define PRINTBUFFERSIZE 1001
+/* Warning:  never call print2 with string longer than PRINTBUFFERSIZE - 1 */
 /* print2 returns 0 if the user has quit the printout. */
 flag print2(char* fmt,...);
 extern long screenWidth; /* Width of screen */
@@ -40,3 +47,11 @@ void errorMessage(vstring line, long lineNum, short column, short tokenLength,
    backup of previous version.   Mode must be "r" or "w". */
 FILE *fSafeOpen(vstring fileName, vstring mode);
 
+/* Renames a file with backup of previous version.  If non-zero
+   is returned, there was an error. */
+int fSafeRename(vstring oldFileName, vstring newFileName);
+
+/* Finds the name of the first file of the form filePrefix +
+   nnn + ".tmp" that does not exist.  THE CALLER MUST DEALLOCATE
+   THE RETURNED STRING. */
+vstring fGetTmpName(vstring filePrefix);

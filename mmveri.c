@@ -1,8 +1,8 @@
 /*****************************************************************************/
-/*               Copyright (C) 1997, NORMAN D. MEGILL                        */
+/*       Copyright (C) 1999  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
-
-/*34567890123456 (79-character line to adjust text window width) 678901234567*/
+/*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
 #include <string.h>
 #include <stdio.h>
@@ -44,7 +44,7 @@ char verifyProof(long statemNum)
   nmbrString *bigSubstInstHyp = NULL_NMBRSTRING;
   flag unkHypFlag;
   nmbrString *nmbrTmp = NULL_NMBRSTRING; /* Used to force tmp stack dealloc */
-  
+
   if (statement[statemNum].type != p__) return (4); /* Do nothing if not $p */
 
   /* Initialize pointers to math strings in RPN stack and vs. statement. */
@@ -56,75 +56,75 @@ char verifyProof(long statemNum)
   if (wrkProof.errorSeverity > 2) return (wrkProof.errorSeverity);
                                     /* Error too severe to check here */
   wrkProof.RPNStackPtr = 0;
-  
+
   if (wrkProof.numSteps == 0) return (2);
                         /* Empty proof caused by error found by in parseProof */
 
   for (step = 0; step < wrkProof.numSteps; step++) {
 
     stmt = wrkProof.proofString[step];
-    
+
     /* Handle unknown proof steps */
     if (stmt == -(long)'?') {
       if (returnFlag < 1) returnFlag = 1;
                                       /* Flag that proof is partially unknown */
       /* Treat "?" like a hypothesis - push stack and continue */
       wrkProof.RPNStack[wrkProof.RPNStackPtr] = step;
-      
+
       wrkProof.RPNStackPtr++;
       /* Leave the step's math string empty and continue */
       continue;
     }
-    
+
     /* See if the proof token is a local label ref. */
     if (stmt < 0) {
       /* It's a local label reference */
       if (stmt > -1000) bug(2101);
       i = -1000 - stmt; /* Get the step number it refers to */
-      
+
       /* Push the stack */
       wrkProof.RPNStack[wrkProof.RPNStackPtr] = step;
       wrkProof.RPNStackPtr++;
-      
-      /* Assign a math string to the step (must not be deallocated by 
+
+      /* Assign a math string to the step (must not be deallocated by
          cleanWrkProof()!) */
       wrkProof.mathStringPtrs[step] =
           wrkProof.mathStringPtrs[i];
-          
+
       continue;
     }
-        
+
     type = statement[stmt].type;
 
     /* See if the proof token is a hypothesis */
     if (type == e__ || type == f__) {
       /* It's a hypothesis reference */
-      
+
       /* Push the stack */
       wrkProof.RPNStack[wrkProof.RPNStackPtr] = step;
       wrkProof.RPNStackPtr++;
-      
-      /* Assign a math string to the step (must not be deallocated by 
+
+      /* Assign a math string to the step (must not be deallocated by
          cleanWrkProof()!) */
       wrkProof.mathStringPtrs[step] =
           statement[stmt].mathString;
-          
+
       continue;
     }
-    
+
     /* The proof token must be an assertion */
     if (type != a__ && type != p__) bug(2102);
-    
+
     /* It's an valid assertion. */
     numReqHyp = statement[stmt].numReqHyp;
     nmbrHypPtr = statement[stmt].reqHypList;
-        
+
     /* Assemble the hypotheses into two big math strings for unification */
     /* Use a "dummy" token, the top of mathTokens array, to separate them. */
     /* This is already done by the source parsing routines:
     mathToken[mathTokens].tokenType = (char)con__;
     mathToken[mathTokens].tokenName = "$|$"; */ /* Don't deallocate! */
-    
+
     nmbrLet(&bigSubstSchemeHyp, nmbrAddElement(NULL_NMBRSTRING, mathTokens));
     nmbrLet(&bigSubstInstHyp, nmbrAddElement(NULL_NMBRSTRING, mathTokens));
     unkHypFlag = 0; /* Flag that there are unknown hypotheses */
@@ -164,7 +164,7 @@ char verifyProof(long statemNum)
       } /* End of if (getStep.stepNum) */
 
     }
-    
+
 /*E*/if(db7)printLongLine(cat("step ", str(step+1), " sch ",
 /*E*/    nmbrCvtMToVString(bigSubstSchemeHyp), NULL), "", " ");
 /*E*/if(db7)printLongLine(cat("step ", str(step+1), " ins ",
@@ -179,9 +179,9 @@ char verifyProof(long statemNum)
 /*E*/    nmbrCvtMToVString(nmbrTmpPtr), NULL), "", " ");
 
     /* Deallocate stack built up if there are many $d violations */
-    nmbrLet(&nmbrTmp,NULL_NMBRSTRING);
+    nmbrLet(&nmbrTmp, NULL_NMBRSTRING);
 
-    /* Assign the substituted assertion (must be deallocated by 
+    /* Assign the substituted assertion (must be deallocated by
          cleanWrkProof()!) */
     wrkProof.mathStringPtrs[step] = nmbrTmpPtr;
     if (nmbrTmpPtr[0] == -1) {
@@ -190,18 +190,18 @@ char verifyProof(long statemNum)
       }
     }
 
-    
+
     /* Pop the stack */
     wrkProof.RPNStackPtr = wrkProof.RPNStackPtr - numReqHyp;
     wrkProof.RPNStack[wrkProof.RPNStackPtr] = step;
     wrkProof.RPNStackPtr++;
-    
+
   } /* Next step */
 
   /* If there was a stack error, the verifier should have never been
      called. */
   if (wrkProof.RPNStackPtr != 1) bug(2108);
-  
+
   /* See if the result matches the statement to be proved */
   if (returnFlag == 0) {
     if (!nmbrEq(statement[statemNum].mathString,
@@ -223,10 +223,10 @@ char verifyProof(long statemNum)
       wrkProof.errorCount++;
     }
   }
-  
+
   nmbrLet(&bigSubstSchemeHyp, NULL_NMBRSTRING);
   nmbrLet(&bigSubstInstHyp, NULL_NMBRSTRING);
-  
+
   return (returnFlag);
 
 }
@@ -254,9 +254,8 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
   vstring tmpStr2 = "";
   flag ambiguityCheckFlag = 0;
   nmbrString *saveResult = NULL_NMBRSTRING;
-  
+
   /* Variables for disjoint variable ($d) check */
-  nmbrString *nmbrTmpPtr;
   nmbrString *nmbrTmpPtrAS;
   nmbrString *nmbrTmpPtrBS;
   nmbrString *nmbrTmpPtrAIR;
@@ -276,6 +275,18 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
   nmbrString *nmbrTmp = NULL_NMBRSTRING; /* Used to force tmp stack dealloc */
 
   long nmbrSaveTempAllocStack;
+
+  /* Initialization to avoid compiler warnings (should not be theoretically
+     necessary) */
+  dILenR = 0;
+  dILenO = 0;
+  optStart = 0;
+  reqStart = 0;
+  nmbrTmpPtrAIR = NULL_NMBRSTRING;
+  nmbrTmpPtrBIR = NULL_NMBRSTRING;
+  nmbrTmpPtrAIO = NULL_NMBRSTRING;
+  nmbrTmpPtrBIO = NULL_NMBRSTRING;
+
   nmbrSaveTempAllocStack = nmbrStartTempAllocStack;
   nmbrStartTempAllocStack = nmbrTempAllocStackTop; /* For nmbrLet() stack cleanup*/
 
@@ -526,9 +537,9 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
   }
   if (p != bigSubstSchemeLen - 1 || q != bigSubstInstLen - 1
       || v != bigSubstSchemeVarLen - 1) bug(2107);
-      
+
   /* If a second unification was possible, save the first result for the
-     error message */    
+     error message */
   if (ambiguityCheckFlag) {
     if (unkHypFlag) {
       /* If a hypothesis was unknown, the fact that the unification is ambiguous
@@ -539,7 +550,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
     nmbrLet(&saveResult, result);
     nmbrLet(&result, NULL_NMBRSTRING);
   }
-  
+
 
   /***** Get step information if requested *****/
   if (!ambiguityCheckFlag) { /* This is the real (first) unification */
@@ -610,7 +621,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
       for (a = 0; a < substALen; a++) { /* Scan subst of 1st var in disj pair */
         aToken = bigSubstInstAss[instAPos + a];
         if (mathToken[aToken].tokenType == (char)con__) continue; /* Ignore */
-        
+
         /* Speed up:  find the 1st occurrence of aToken in the disjoint variable
            list of the statement being proved. */
         /* To bypass speedup, we would do this:
@@ -790,7 +801,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
     }
   }
 /*E*/if(db7)printLongLine(cat("result ", nmbrCvtMToVString(result), NULL),""," ");
-  
+
   if (ambiguityCheckFlag) {
     if (!wrkProof.errorCount) {
       /*??? Make sure suggested commands are correct. */
@@ -808,7 +819,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
     wrkProof.errorCount++;
     goto returnPoint;
   } else {
-    
+
     /* Prepare to see if the unification is unique */
     while (1) {
       v--;
@@ -824,7 +835,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
     ambiguityCheckFlag = 1;
     goto ambiguityCheck;
   }
-    
+
 
  returnPoint:
 
@@ -844,7 +855,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
 
   nmbrStartTempAllocStack = nmbrSaveTempAllocStack;
   return(result);
-  
+
 }
 
 
@@ -857,7 +868,7 @@ void cleanWrkProof(void) {
 
   long step;
   char type;
-  
+
   for (step = 0; step < wrkProof.numSteps; step++) {
     if (wrkProof.proofString[step] > 0) {
       type = statement[wrkProof.proofString[step]].type;

@@ -1,8 +1,8 @@
 /*****************************************************************************/
-/*               Copyright (C) 1997, NORMAN D. MEGILL                        */
+/*       Copyright (C) 2000  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
-
-/*34567890123456 (79-character line to adjust text window width) 678901234567*/
+/*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
 /* mmcmds.c - assorted user commands */
 
@@ -12,9 +12,9 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdarg.h>
-#include "mmutil.h"
 #include "mmvstr.h"
 #include "mmdata.h"
+#include "mmcmdl.h" /* For texFileName */
 #include "mmcmds.h"
 #include "mminou.h"
 #include "mmpars.h"
@@ -25,353 +25,753 @@
 vstring mainFileName = "";
 flag printHelp = 0;
 
-void typeExpandedProof(nmbrString *reason,
-    pntrString *expansion, nmbrString *stepNumbers,
-    char displayModeFlag)
-/* Prints out an expanded proof in a form that can be cut and pasted into
-   the source file. */
-/* reason[] is the proof; expansion[] points to the expanded
-   math token string for each step in reason[]. */
-/* If stepNumbers is not empty, its steps will be used instead of
-   the computed steps (used for partially displayed proofs) */
-/* If displayModeFlag is 1, only '?' (unknown) steps will be displayed. */
-/* If displayModeFlag is 2, only steps not unified will be displayed. */
+/* For MIDI */
+flag midiFlag = 0;
+vstring midiParam = "";
+
+/* Type (i.e. print) a statement */
+void typeStatement(long showStatement,
+  flag briefFlag,
+  flag commentOnlyFlag,
+  flag texFlag,
+  flag htmlFlag)
 {
-  vstring str1 = "", str2 = "";
-  long pos,targpos,ilev,oldilev,srcpos,step,plen,i,tokenNum;
-  long max_proof_line = 0;
-  char pass;
-  flag splitFlag;
-  char srcType;
-  flag printedALine = 0;
+  /* From HELP SHOW STATEMENT: Optional qualifiers:
+    / TEX - This qualifier will write the statement information to the
+        LaTeX file previously opened with OPEN TEX.
+    / HTML - This qualifier will write the statement information to the
+        HTML file previously opened with OPEN HTML.
+    / COMMENT_ONLY - This qualifier will show only the comment that
+        immediatley precedes the statement.  This is useful when you are
+        using Metamath to preprocess LaTeX source you have created (see
+        HELP TEX)
+    / BRIEF - This qualifier shows the statement and its $e hypotheses
+        only.
+  */
+  long i, j, k, m, n;
+  vstring str1 = "", str2 = "", str3 = "";
+  nmbrString *nmbrTmpPtr1; /* Pointer only; not allocated directly */
+  nmbrString *nmbrTmpPtr2; /* Pointer only; not allocated directly */
+  nmbrString *nmbrDDList = NULL_NMBRSTRING;
+  flag q1, q2;
+  flag type;
+  flag subType;
+  long showStatementMap;
 
-  /* Pass 0 gets the longest label assignment field (max_proof_line)
-     so that the printout can be adjusted for neatness.  Pass 1 does
-     the actual printout. */
-  for (pass = 0; pass < 2; pass++) {
-  /*??? Indent the stuff in this loop...*/
+  /* For syntax breakdown of definitions in HTML page */
+  long zapStatement1stToken;
+  static long wffToken = -1; /* array index of the hard-coded token "wff" -
+      static so we only have to look it up once - set to -2 if not found */
 
-  ilev = 0; /* Indentation level */
-  step = 0; /* Step number */
-#define INDENT_INC 2 /* Indentation increment */
-  plen = pntrLen(expansion); /* Length of reason */
-  for (pos = 0; pos < plen; pos++) {
-    if (stepNumbers[0] == -1) {
-      step++;
+  subType = 0; /* Assign to prevent compiler warnings - not theor. necessary */
+
+  if (!showStatement) bug(225); /* Must be 1 or greater */
+
+  if (!commentOnlyFlag && !briefFlag) {
+    let(&str1, cat("Statement ", str(showStatement),
+        " is located on line ", str(statement[showStatement].lineNum),
+        " of the file ", NULL));
+    if (!texFlag) {
+      printLongLine(cat(str1,
+        "\"", statement[showStatement].fileName,
+        "\".",NULL), "", " ");
     } else {
-      /* One of these will be zero, the other not */
-      step = stepNumbers[pos + 2] + stepNumbers[pos + 3];
-    }
-    let(&str1,str(step));
-    let(&str1,cat(str1,space(ilev * INDENT_INC + 1 - len(str1))," ",NULL));
-    tokenNum = reason[pos];
-    if (tokenNum < 0) bug(201);
-    let(&str1,cat(str1,statement[tokenNum].labelName,NULL));
-    targpos = pos; /* Assignment target */
-    pos++;
-    tokenNum = reason[pos];
-    if (tokenNum != -(long)'=') bug(202);
-    let(&str1,cat(str1,"=",NULL));
-    pos++;
-    tokenNum = reason[pos];
-    if (tokenNum != -(long)'?' && tokenNum != -(long)'(' && tokenNum < 0) {
-      bug(203);
-    }
-    oldilev = ilev;
-    if (tokenNum == -(long)'(') {
-      let(&str1,cat(str1,"(",NULL));
-      ilev++;
-      pos++;
-      tokenNum = reason[pos];
-    }
-    if (tokenNum == -(long)'?') {
-      let(&str1,cat(str1,"?",NULL));
-      srcType = '?';
-    } else {
-      let(&str1,cat(str1,statement[tokenNum].labelName,NULL));
-      srcType = statement[tokenNum].type;
-    }
-    srcpos = pos;
-    pos++;
-    tokenNum = reason[pos];
-    while (tokenNum == -(long)')') {
-      let(&str1,cat(str1,")",NULL));
-      ilev--;
-      if (ilev < 0) bug(204);
-      pos++;
-      tokenNum = reason[pos];
-    }
-    pos--;
+      if (!htmlFlag) let(&printString, "");
+      outputToString = 1; /* Flag for print2 to add to printString */
+                     /* Note that printTexLongMathString resets it */
+      if (!(htmlFlag && texFlag)) {
+        /*
+        printLongLine(cat(str1, "{\\tt ",
+            asciiToTt(statement[showStatement].fileName),
+            "}.", NULL), "", " ");
+        */
+      } else {
+        /* For categorizing html pages, we use the source file convention
+           that syntax statements don't start with "|-" and that axioms
+           have labels starting with "ax-".  It is up to the database
+           creator to follow this standard, which is not enforced. */
+#define SYNTAX 1
+#define DEFINITION 2
+#define AXIOM 3
+#define THEOREM 4
+        if (statement[showStatement].type == (char)p__) {
+          subType = THEOREM;
+        } else {
+          /* Must be a__ due to filter in main() */
+          if (statement[showStatement].type != (char)a__) bug(228);
+          if (strcmp("|-", mathToken[
+              (statement[showStatement].mathString)[0]].tokenName)) {
+            subType = SYNTAX;
+          } else {
+            if (!strcmp("ax-", left(statement[showStatement].labelName, 3))) {
+              subType = AXIOM;
+            } else {
+              subType = DEFINITION;
+            }
+          }
+        }
+        switch (subType) {
+          case SYNTAX:
+            let(&str1, "Syntax Definition"); break;
+          case DEFINITION:
+            let(&str1, "Definition"); break;
+          case AXIOM:
+            let(&str1, "Axiom"); break;
+          case THEOREM:
+            let(&str1, "Theorem"); break;
+          default:
+            bug(229);
+        }
 
-    if (pass == 0) {
-      /* Update the longest proof line if needed, then continue */
-      if (max_proof_line < len(str1) - oldilev * INDENT_INC + 4) {
-        max_proof_line = len(str1) - oldilev * INDENT_INC + 1;
+        /* Statement map for number of showStatement - this makes the statement
+           number more meaningful, by counting only $a and
+           $p. */
+        /* ???This could be done once if we want to speed things up, but
+           be careful because it will have to be redone if ERASE then READ */
+        showStatementMap = 0;
+        for (i = 1; i <= showStatement; i++) {
+          if (statement[i].type == a__ || statement[i].type == p__)
+            showStatementMap++;
+        }
+
+        print2("<CENTER><B><FONT SIZE=+1>%s <FONT\n", str1);
+        print2("COLOR=\"#006600\">%s</FONT></FONT></B>\n",
+            statement[showStatement].labelName);
+
+        /* Print a small pink statement number after the statement */
+        printLongLine(
+              cat("<FONT FACE=\"Arial Narrow\" SIZE=-2 COLOR=\"#FF6666\"> ",
+              str(showStatementMap), "</FONT>",NULL), "", " ");
+
+        print2("</CENTER><BR>\n");
+      } /* (htmlFlag && texFlag) */
+      outputToString = 0;
+    } /* texFlag */
+  }
+
+  if (!briefFlag || commentOnlyFlag) {
+    let(&str1, "");
+    str1 = getDescription(showStatement);
+    if (!str1[0]    /* No comment */
+        || (str1[0] == '[' && str1[strlen(str1) - 1] == ']')) { /* Date stamp
+            from previous proof */
+      print2("?Warning:  Statement \"%s\" has no comment\n",
+          statement[showStatement].labelName);
+    /*if (str1[0]) {*/ /*old*/
+    } else {
+      if (!texFlag) {
+        printLongLine(cat("\"", str1, "\"", NULL), "", " ");
+      } else {
+        if (htmlFlag && texFlag) {
+          let(&str1, cat("<CENTER><B>Description: </B>", str1,
+              "</CENTER><BR>", NULL));
+        }
+        printTexComment(str1);
       }
-      continue; /* The first pass doesn't print anything */
     }
+  }
+  if (commentOnlyFlag && !briefFlag) goto returnPoint;
 
-    if (displayModeFlag == 1 && srcType != '?') continue;
-                                              /* "Display unknown steps" flag */
-    splitFlag = 0;
-    /* Split the line if the target and the source are different */
-    if (reason[srcpos] != -(long)'?') {
-      if (strcmp(expansion[targpos],expansion[srcpos])) {
-        /* (The verify proof function will not assign target assumptions) */
-        if (len(expansion[targpos])) {
-          splitFlag = 1;
-          i = instr(1,str1,"=");
-          let(&str2,cat(space(i - 1),right(str1,i),NULL));
-          let(&str1,left(str1,i - 1));
-          let(&str1,cat(str1,space(len(str1) - len(str2)),NULL));
+  if (briefFlag && !texFlag) {
+    /* In BRIEF mode screen output, show $d's */
+    /* This section was added 8/31/99 */
+    let(&str1, "");
+    nmbrTmpPtr1 = statement[showStatement].reqDisjVarsA;
+    nmbrTmpPtr2 = statement[showStatement].reqDisjVarsB;
+    i = nmbrLen(nmbrTmpPtr1);
+    if (i /* Number of mandatory $d pairs */) {
+      nmbrLet(&nmbrDDList, NULL_NMBRSTRING);
+      for (k = 0; k < i; k++) {
+        /* Is one of the variables in the current list? */
+        if (!nmbrElementIn(1, nmbrDDList, nmbrTmpPtr1[k]) &&
+            !nmbrElementIn(1, nmbrDDList, nmbrTmpPtr2[k])) {
+          /* No, so close out the current list */
+          if (k == 0) let(&str1, "$d");
+          else let(&str1, cat(str1, " $.  $d", NULL));
+          nmbrLet(&nmbrDDList, NULL_NMBRSTRING);
+        }
+        /* Are both variables required to be distinct from all others
+           in current list? */
+        for (n = 0; n < nmbrLen(nmbrDDList); n++) {
+          if (nmbrDDList[n] != nmbrTmpPtr1[k] &&
+              nmbrDDList[n] != nmbrTmpPtr2[k]) {
+            q1 = 0; q2 = 0;
+            for (m = 0; m < i; m++) {
+              if ((nmbrTmpPtr1[m] == nmbrDDList[n] &&
+                      nmbrTmpPtr2[m] == nmbrTmpPtr1[k]) ||
+                  (nmbrTmpPtr2[m] == nmbrDDList[n] &&
+                      nmbrTmpPtr1[m] == nmbrTmpPtr1[k])) {
+                q1 = 1; /* 1st var is required to be distinct */
+              }
+              if ((nmbrTmpPtr1[m] == nmbrDDList[n] &&
+                      nmbrTmpPtr2[m] == nmbrTmpPtr2[k]) ||
+                  (nmbrTmpPtr2[m] == nmbrDDList[n] &&
+                      nmbrTmpPtr1[m] == nmbrTmpPtr2[k])) {
+                q2 = 1;  /* 2nd var is required to be distinct */
+              }
+              if (q1 && q2) break; /* Found both */
+            }  /* Next m */
+            if (!q1 || !q2) {
+              /* One of the variables is not required to be distinct from
+                all others in the current list, so close out current list */
+              if (k == 0) let(&str1, "$d");
+              else let(&str1, cat(str1, " $.  $d", NULL));
+              nmbrLet(&nmbrDDList, NULL_NMBRSTRING);
+              break;
+            }
+          } /* If $d var in current list is not same as one we're adding */
+        } /* Next n */
+        /* If the variable is not already in current list, add it */
+        if (!nmbrElementIn(1, nmbrDDList, nmbrTmpPtr1[k])) {
+          let(&str1, cat(str1, " ", mathToken[nmbrTmpPtr1[k]].tokenName,
+              NULL));
+          nmbrLet(&nmbrDDList, nmbrAddElement(nmbrDDList, nmbrTmpPtr1[k]));
+        }
+        if (!nmbrElementIn(1, nmbrDDList, nmbrTmpPtr2[k])) {
+          let(&str1, cat(str1, " ", mathToken[nmbrTmpPtr2[k]].tokenName,
+              NULL));
+          nmbrLet(&nmbrDDList, nmbrAddElement(nmbrDDList, nmbrTmpPtr2[k]));
+        }
+      } /* Next k */
+      /* Close out entire list */
+      let(&str1, cat(str1, " $.", NULL));
+      printLongLine(str1, "  ", " ");
+    } /* if i(#$d's) > 0 */
+  }
+
+  if (briefFlag || (texFlag && htmlFlag)) {
+    /* For BRIEF mode, print $e hypotheses (only) before statement */
+    /* Also do it for html output */
+    j = nmbrLen(statement[showStatement].reqHypList);
+    k = 0;
+    for (i = 0; i < j; i++) {
+      /* Count the number of essential hypotheses */
+      if (statement[statement[showStatement].reqHypList[i]].type
+        == (char)e__) k++;
+    }
+    if (k) {
+      if (texFlag) outputToString = 1;
+      if (texFlag && htmlFlag) {
+        print2("<CENTER><TABLE BORDER >\n");
+        print2("<CAPTION><B>%s</B></CAPTION>\n",
+            (k == 1) ? "Hypothesis" : "Hypotheses");
+        print2("<TR><TD><B>Ref</B>\n");
+        print2("</TD><TD><B>Expression</B></TD></TR>\n");
+      }
+      for (i = 0; i < j; i++) {
+        k = statement[showStatement].reqHypList[i];
+        if (statement[k].type != (char)e__) continue;
+        if (!texFlag) {
+          let(&str2, cat(str(k), " ", NULL));
+        } else {
+          let(&str2, "  ");
+        }
+        let(&str2, cat(str2, statement[k].labelName,
+            " $", chr(statement[k].type), " ", NULL));
+        if (!texFlag) {
+          printLongLine(cat(str2,
+              nmbrCvtMToVString(statement[k].mathString), " $.", NULL),
+              "      "," ");
+        } else {
+          if (!(htmlFlag && texFlag)) {
+            let(&str3, space(strlen(str2)));
+            printTexLongMath(statement[k].mathString,
+                str2, str3, 0);
+          } else {
+            outputToString = 1;
+            print2("<TR><TD>%s</TD><TD>\n", statement[k].labelName);
+            printTexLongMath(statement[k].mathString, "", "", 0);
+          }
+        }
+      } /* next i */
+      if (texFlag && htmlFlag) {
+        outputToString = 1;
+        print2("</TABLE></CENTER>\n");
+      }
+    } /* if k (#essential hyp) */
+  }
+
+  let(&str1, "");
+  type = statement[showStatement].type;
+  if (type == p__) let(&str1, " $= ...");
+  if (!texFlag) let(&str2, cat(str(showStatement), " ", NULL));
+  else let(&str2, "  ");
+  let(&str2, cat(str2, statement[showStatement].labelName,
+      " $",chr(type), " ", NULL));
+  if (!texFlag) {
+    printLongLine(cat(str2,
+        nmbrCvtMToVString(statement[showStatement].mathString),
+        str1, " $.", NULL), "      ", " ");
+  } else {
+    if (!(htmlFlag && texFlag)) {
+      let(&str3, space(strlen(str2))); /* 3rd argument of printTexLongMath
+          cannot be temp allocated */
+      printTexLongMath(statement[showStatement].mathString,
+          str2, str3, 0);
+    } else {
+      outputToString = 1;
+      print2("<CENTER><TABLE BORDER >\n");
+      print2("<CAPTION><B>Assertion</B></CAPTION>\n");
+      print2("<TR><TD><B>Ref</B>\n");
+      print2("</TD><TD><B>Expression</B></TD></TR>\n");
+      print2(
+          "<TR><TD><FONT COLOR=\"#006600\"><B>%s</B></FONT></TD><TD>\n",
+          statement[showStatement].labelName);
+      printTexLongMath(statement[showStatement].mathString, "", "", 0);
+      outputToString = 1;
+      print2("</TABLE></CENTER>\n");
+    }
+  }
+
+  if (briefFlag) goto returnPoint;
+
+  switch (type) {
+    case a__:
+    case p__:
+      if (texFlag) {
+        outputToString = 1;
+        print2("\n"); /* New paragraph */
+      }
+      if (!(htmlFlag && texFlag)) {
+        print2("Its mandatory hypotheses in RPN order are:\n");
+      }
+      if (texFlag) outputToString = 0;
+      j = nmbrLen(statement[showStatement].reqHypList);
+      for (i = 0; i < j; i++) {
+        k = statement[showStatement].reqHypList[i];
+        if (statement[k].type != (char)e__ && (!htmlFlag && texFlag))
+          continue; /* 9/2/99 Don't put $f's in LaTeX output */
+        let(&str2, cat("  ",statement[k].labelName,
+            " $", chr(statement[k].type), " ", NULL));
+        if (!texFlag) {
+          printLongLine(cat(str2,
+              nmbrCvtMToVString(statement[k].mathString), " $.", NULL),
+              "      "," ");
+        } else {
+          if (!(htmlFlag && texFlag)) {
+            let(&str3, space(strlen(str2)));
+            printTexLongMath(statement[k].mathString,
+                str2, str3, 0);
+          }
         }
       }
-    }
-    if (displayModeFlag == 2 && !splitFlag) continue;
-                                     /* "Display steps not yet unified" flag */
-    let(&str1,cat(str1,space(oldilev * INDENT_INC + max_proof_line - len(str1)),
-        " ",NULL));
-    if (!splitFlag) {
-      if (srcType == '?') {
-        printLongLine(cat(str1,"$",chr(srcType),
-            " ",expansion[targpos],NULL),
-            space(len(str1) + 3)," ");
-      } else {
-        printLongLine(cat(str1,"$",chr(srcType),
-            " ",expansion[srcpos],NULL),
-            space(len(str1) + 3)," ");
+      if (texFlag) {
+        outputToString = 1;
+        print2("\n"); /* New paragraph */
       }
-    } else {
-      printLongLine(cat(str1,"   ",
-          expansion[targpos],NULL),
-          space(len(str1) + 3)," ");
-      let(&str2,cat(str2,space(oldilev * INDENT_INC + max_proof_line
-          - len(str2))," ",NULL));
-      printLongLine(cat(str2,"$",chr(srcType),
-          " ",expansion[srcpos],NULL),
-          space(len(str2) + 3)," ");
-    }
-    printedALine = 1;
-  } /* Next pos */
-
-  } /* Next pass */
-  if (!printedALine) {
-    if (displayModeFlag == 1) {
-      print2("The proof has no unknown steps.\n");
-    }
-    if (displayModeFlag == 2) {
-      print2("All assignments in the proof have been unified.\n");
-    }
-  }
-
-  let(&str1,"");
-  let(&str2,"");
-}
-
-
-void typeCompactProof(nmbrString *reason)
-/* Prints out a compact proof in a form that can be cut and pasted into
-   the source file.  The first two tokens in reason are removed, as
-   reason is assumed to be in the "internal" format "proveStatement = (...)". */
-/* reason[] is the proof. */
-{
-  vstring str1 = "";
-  long j;
-  nmbrString *squishedProof = NULL_NMBRSTRING;
-
-  /*squishedProof = nmbrSquishProof(nmbrRight(reason,3));*/
-  nmbrLet(&squishedProof, nmbrRight(reason,3));
-
-  let(&str1,nmbrCvtRToVString(squishedProof));
-  nmbrLet(&squishedProof,NULL_NMBRSTRING); /* Deallocate */
-  /* Remove spaces around '=' */
-  j = 1;
-  while (1) {
-    j = instr(j, str1, " = ");
-    if (!j) break;
-    let(&str1,cat(left(str1, j - 1), "=", right(str1, j + 3), NULL));
-  }
-  /* Remove space after '(' */
-  j = 1;
-  while (1) {
-    j = instr(j, str1, "( ");
-    if (!j) break;
-    let(&str1,cat(left(str1, j - 1), "(", right(str1, j + 2), NULL));
-  }
-  j = 1;
-  /* Remove space before ')' */
-  while (1) {
-    j = instr(j, str1, " )");
-    if (!j) break;
-    let(&str1,cat(left(str1, j - 1), ")", right(str1, j + 2), NULL));
-  }
-  /* Remove space after ')' */
-/*
-  j = 1;
-  while (1) {
-    j = instr(j, str1, ") ");
-    if (!j) break;
-    let(&str1,cat(left(str1, j - 1), ")", right(str1, j + 2), NULL));
-  }
-*/
-  /* Remove space after '{' */
-  j = 1;
-  while (1) {
-    j = instr(j, str1, "{ ");
-    if (!j) break;
-    let(&str1,cat(left(str1, j - 1), "{", right(str1, j + 2), NULL));
-  }
-  j = 1;
-  /* Remove space before '}' */
-  while (1) {
-    j = instr(j, str1, " }");
-    if (!j) break;
-    let(&str1,cat(left(str1, j - 1), "}", right(str1, j + 2), NULL));
-  }
-  /* Remove space after '}' */
-/*
-  j = 1;
-  while (1) {
-    j = instr(j, str1, "} ");
-    if (!j) break;
-    let(&str1,cat(left(str1, j - 1), "}", right(str1, j + 2), NULL));
-  }
-*/
-  printLongLine(str1,""," ()");
-  let(&str1,"");
-}
-
-
-void typeEnumProof(nmbrString *reason)
-{
-  /* This function types a compact proof with the step numbers listed below
-     it on each line. */
-  long i,rlen;
-  vstring oLine = "";
-  vstring rToken = "";
-  nmbrString *stepNumbs; /* Pointer only - not directly allocated */
-
-  long nmbrSaveTempAllocStack;
-  /* Change the stack allocation start to prevent arguments from being
-     deallocated */
-  nmbrSaveTempAllocStack = nmbrStartTempAllocStack;
-  nmbrStartTempAllocStack = nmbrTempAllocStackTop; /* For nmbrLet() stack cleanup*/
-
-  rlen = nmbrLen(reason);
-  stepNumbs = nmbrGetProofStepNumbs(reason);
-  for (i = 0; i < rlen; i++) {
-    if (reason[i] < 0) {
-      let(&rToken,chr(-reason[i]));
-    } else {
-      let(&rToken,statement[reason[i]].labelName);
-    }
-    if (i == 0) {
-      let(&oLine,rToken);
-    } else {
-      /* For most compact proof (commented out; harder to read): */
-      /* if ((reason[i - 1] >= 0 || reason[i] >=0)
-          || reason[i] == -(long)'?'
-          || stepNumbs[i - 1] != 0) { */
-      if (1) {
-        let(&oLine,cat(oLine," ",NULL));
+      if (j == 0 && !(htmlFlag && texFlag)) print2("  (None)\n");
+      if (texFlag) outputToString = 0;
+      let(&str1, "");
+      nmbrTmpPtr1 = statement[showStatement].reqDisjVarsA;
+      nmbrTmpPtr2 = statement[showStatement].reqDisjVarsB;
+      i = nmbrLen(nmbrTmpPtr1);
+      if (i) {
+        for (k = 0; k < i; k++) {
+          if (!texFlag) {
+            let(&str1, cat(str1, ", <",
+                mathToken[nmbrTmpPtr1[k]].tokenName, ",",
+                mathToken[nmbrTmpPtr2[k]].tokenName, ">", NULL));
+          } else {
+            if (htmlFlag && texFlag) {
+              let(&str2, "");
+              str2 = tokenToTex(mathToken[nmbrTmpPtr1[k]].tokenName);
+                   /* tokenToTex allocates str2; we must deallocate it */
+              let(&str1, cat(str1, " &nbsp; ", str2, NULL));
+              let(&str2, "");
+              str2 = tokenToTex(mathToken[nmbrTmpPtr2[k]].tokenName);
+              let(&str1, cat(str1, ",", str2, NULL));
+            }
+          }
+        }
+        if (!texFlag)
+          printLongLine(cat(
+              "Its mandatory disjoint variable pairs are:  ",
+              right(str1,3),NULL),"  "," ");
       }
-      let(&oLine,cat(oLine,rToken,NULL));
-    }
-    if (stepNumbs[i] != 0) {
-      let(&oLine,cat(oLine,"<",str(stepNumbs[i]),">",NULL));
-    }
-  }
-  printLongLine(oLine,""," ");
-
-  nmbrLet(&stepNumbs,NULL_NMBRSTRING); /* Deallocate */
-  let(&oLine,""); /* Deallocate */
-  let(&rToken,""); /* Deallocate */
-
-  nmbrStartTempAllocStack = nmbrSaveTempAllocStack;
-  return;
-}
-
-
-void typeEnumProof2(nmbrString *reason)
-{
-  /* This function types a compact proof with the step numbers listed below
-     it on each line. */
-  vstring rLine = "";
-  vstring sLine = "";
-  vstring tmpStr = "";
-  long i,j,p,q,step,rlen,rToken;
-  nmbrString *stepNumbs; /* Pointer only - not directly allocated */
-
-  long nmbrSaveTempAllocStack;
-  /* Change the stack allocation start to prevent arguments from being
-     deallocated */
-  nmbrSaveTempAllocStack = nmbrStartTempAllocStack;
-  nmbrStartTempAllocStack = nmbrTempAllocStackTop; /* For nmbrLet() stack cleanup*/
-
-  rlen = nmbrLen(reason);
-  stepNumbs = nmbrGetProofStepNumbs(reason);
-  let(&rLine,cat(nmbrCvtRToVString(reason)," ",NULL));
-  p = 1;
-  rToken = -1;
-  while (1) {
-    q = instr(p,rLine," ");
-    if (q) {
-      rToken++;
-      if (stepNumbs[rToken]) {
-        let(&tmpStr,str(stepNumbs[rToken]));
-      } else {
-        let(&tmpStr,"");
+      if (type == p__ &&
+          nmbrLen(statement[showStatement].optHypList)
+          && !texFlag) {
+        printLongLine(cat(
+           "Its optional hypotheses are:  ",
+            nmbrCvtRToVString(
+            statement[showStatement].optHypList),NULL),
+            "      "," ");
       }
-      i = strlen(tmpStr); /* Length of step number */
-      j = q - p; /* Length of token name */
-      if (i <= j) {
-        let(&tmpStr,cat(tmpStr,space(j - i + 1),NULL));
-      } else {
-        let(&rLine,cat(left(rLine,q - 1),space(i - j),right(rLine,q),NULL));
-        q = q + i - j;
+      nmbrTmpPtr1 = statement[showStatement].optDisjVarsA;
+      nmbrTmpPtr2 = statement[showStatement].optDisjVarsB;
+      i = nmbrLen(nmbrTmpPtr1);
+      if (i && type == p__) {
+        if (!texFlag) {
+          let(&str1, "");
+        } else {
+          if (htmlFlag && texFlag) {
+            let(&str1, cat(str1,
+            " &nbsp; (Dummy variables for use in proof:) ", NULL));
+          }
+        }
+        for (k = 0; k < i; k++) {
+          if (!texFlag) {
+            let(&str1, cat(str1, ", <",
+                mathToken[nmbrTmpPtr1[k]].tokenName, ",",
+                mathToken[nmbrTmpPtr2[k]].tokenName, ">", NULL));
+          } else {
+            if (htmlFlag && texFlag) {
+              let(&str2, "");
+              str2 = tokenToTex(mathToken[nmbrTmpPtr1[k]].tokenName);
+                   /* tokenToTex allocates str2; we must deallocate it */
+              let(&str1, cat(str1, " &nbsp; ", str2, NULL));
+              let(&str2, "");
+              str2 = tokenToTex(mathToken[nmbrTmpPtr2[k]].tokenName);
+              let(&str1, cat(str1, ",", str2, NULL));
+            }
+          }
+        }
+        if (!texFlag) {
+          printLongLine(cat(
+              "Its optional disjoint variable pairs are:  ",
+              right(str1,3),NULL),"  "," ");
+        }
       }
-      let(&sLine,cat(sLine,tmpStr,NULL));
-    } /* End if q */
-    if (q > MAX_LEN || !q) {
-      print2("%s\n",left(rLine,p - 1));
-      print2("%s\n",left(sLine,p - 1));
-      if (!q) break;
-      let(&rLine,right(rLine,p));
-      let(&sLine,right(sLine,p));
-      q = q - p + 1;
-      p = 1;
-    }
-    p = q + 1;
+      if (texFlag && htmlFlag && str1[0]) {
+        outputToString = 1;
+        printLongLine(cat("<CENTER>Substitutions for these variable",
+            " pairs may not have variables in common: ",
+            str1, "</CENTER>", NULL), "", " ");
+        outputToString = 0;
+      }
+      if (texFlag) {
+        outputToString = 1;
+        if (htmlFlag && texFlag) print2("<HR>\n");
+        outputToString = 0; /* Restore normal output */
+        /* will be done automatically at closing
+        fprintf(texFilePtr, "%s", printString);
+        let(&printString, "");
+        */
+        break;
+      }
+      let(&str1, nmbrCvtMToVString(
+          statement[showStatement].reqVarList));
+      if (!strlen(str1)) let(&str1, "(None)");
+      printLongLine(cat(
+          "The statement and its hypotheses require the variables:  ",
+          str1, NULL), "      ", " ");
+      if (type == p__ &&
+          nmbrLen(statement[showStatement].optVarList)) {
+        printLongLine(cat(
+            "These additional variables are allowed in its proof:  "
+            ,nmbrCvtMToVString(
+            statement[showStatement].optVarList),NULL),"      ",
+            " ");
+        /*??? Add variables required by proof */
+      }
+      /* Note:  statement[].reqVarList is only stored for $a and $p
+         statements, not for $e or $f. */
+      let(&str1, nmbrCvtMToVString(
+          statement[showStatement].reqVarList));
+      if (!strlen(str1)) let(&str1, "(None)");
+      printLongLine(cat("The variables it contains are:  ",
+          str1, NULL),
+          "      ", " ");
+      break;
+    default:
+      break;
+  } /* End switch(type) */
+  if (texFlag) {
+    outputToString = 0;
+    /* will be done automatically at closing
+    fprintf(texFilePtr, "%s", printString);
+    let(&printString, "");
+    */
   }
-    
-  nmbrLet(&stepNumbs,NULL_NMBRSTRING);
-  let(&tmpStr,"");
-  let(&rLine,"");
-  let(&sLine,"");
-  nmbrStartTempAllocStack = nmbrSaveTempAllocStack;
-  return;
-}
 
+  /* Start of finding defintion for syntax statement */
+  if (htmlFlag && texFlag) {
+
+    /* For syntax declarations, find the first definition that follows
+       it.  It is up to the user to arrange the database so that a
+       meaningful definition is picked. */
+    if (subType == SYNTAX) {
+      for (i = showStatement + 1; i <= statements; i++) {
+        if (statement[i].type == (char)a__) {
+          if (!strcmp("|-", mathToken[
+              (statement[i].mathString)[0]].tokenName)) {
+            /* It's a definition or axiom */
+            /* See if each constant token in the syntax statement
+               exists in the definition; if not don't use the definition */
+            j = 1;
+            /* We start with k=1 for 2nd token (1st is wff, class, etc.) */
+            for (k = 1; k < statement[showStatement].mathStringLen; k++) {
+              if (mathToken[(statement[showStatement].mathString)[k]].
+                  tokenType == (char)con__) {
+                if (!nmbrElementIn(1, statement[i].mathString,
+                    (statement[showStatement].mathString)[k])) {
+                  /* The definition being considered doesn't have one of
+                     the constant symbols in the syntax statement, so
+                     reject it */
+                  j = 0;
+                  break; /* Out of k loop */
+                }
+              }
+            } /* Next k */
+            if (j) {
+              /* Successful - use this definition or axiom as the reference */
+              outputToString = 1;
+              let(&str1, left(statement[i].labelName, 3));
+              if (!strcmp(str1, "ax-")) {
+                printLongLine(cat(
+                    "<FONT SIZE=-2 FACE=ARIAL>This syntax is primitive.",
+                    "  The first axiom using it is <A HREF=\"",
+                    statement[i].labelName, ".html\">",
+                    statement[i].labelName,
+                    "</A>.</FONT><BR>",
+                    NULL), "", " ");
+              } else {
+                printLongLine(cat(
+                    "<FONT SIZE=-2 FACE=ARIAL>The definition <A HREF=\"",
+                    statement[i].labelName, ".html\">",
+                    statement[i].labelName,
+                    "</A> uses this syntax.</FONT><BR>",
+                    NULL), "", " ");
+              }
+              outputToString = 0;
+              break; /* Out of i loop */
+            }
+          }
+        }
+      } /* Next i */
+    } /* if (subType == SYNTAX) */
+
+
+    /* For definitions, we pretend that the definition is a "wff" (hard-coded
+       here; the .mm database provided by the user must use this convention).
+       We use the proof assistant tools to prove that the statement is
+       a wff, then we print the wff construction proof to the HTML file. */
+    if (subType == DEFINITION || subType == AXIOM) {
+
+      /* Look up the token "wff" if we haven't found it before */
+      if (wffToken == -1) { /* First time */
+        wffToken = -2; /* In case it's not found because the user's source
+            used a convention different for "wff" for wffs */
+        for (i = 0; i < mathTokens; i++) {
+          if (!strcmp("wff", mathToken[i].tokenName)) {
+            wffToken = i;
+            break;
+          }
+        }
+      }
+
+      if (wffToken >= 0) {
+        /* Temporarily zap statement type from $a to $p */
+        if (statement[showStatement].type != (char)a__) bug(231);
+        statement[showStatement].type = (char)p__;
+        /* Temporarily zap statement with "wff" token in 1st position
+           so parseProof will not give errors (in typeProof() call) */
+        zapStatement1stToken = (statement[showStatement].mathString)[0];
+        (statement[showStatement].mathString)[0] = wffToken;
+        if (strcmp("|-", mathToken[zapStatement1stToken].tokenName)) bug(230);
+
+        nmbrTmpPtr1 = NULL_NMBRSTRING;
+        nmbrLet(&nmbrTmpPtr1, statement[showStatement].mathString);
+
+        /* Find proof of formula or simple theorem (no new vars in $e's) */
+        /* maxEDepth is the maximum depth at which statements with $e
+           hypotheses are
+           considered.  A value of 0 means none are considered. */
+        nmbrTmpPtr2 = proveFloating(nmbrTmpPtr1 /*mString*/,
+            showStatement /*statemNum*/, 0 /*maxEDepth*/,
+            0 /*step - 0 = step 1 */ /*For messages*/);
+
+        if (nmbrLen(nmbrTmpPtr2)) {
+          /* A proof for the step was found. */
+          /* Get compact form of proof for shorter display */
+          nmbrLet(&nmbrTmpPtr2, nmbrSquishProof(nmbrTmpPtr2));
+          /* Temporarily zap proof into statement structure */
+          /* (The bug check makes sure there is no proof attached to the
+              definition - this would be impossible) */
+          if (strcmp(statement[showStatement].proofSectionPtr, "")) bug(231);
+          if (statement[showStatement].proofSectionLen != 0) bug(232);
+          let(&str1, nmbrCvtRToVString(nmbrTmpPtr2));
+          /* Temporarily zap proof into the $a statement */
+          statement[showStatement].proofSectionPtr = str1;
+          statement[showStatement].proofSectionLen = strlen(str1) - 1;
+
+          /* Display the HTML proof of syntax breakdown */
+          typeProof(showStatement,
+              0 /*pipFlag*/,
+              0 /*startStep*/,
+              0 /*endStep*/,
+              0 /*startIndent*/, /* Not used */
+              0 /*endIndent*/,
+              0 /*essentialFlag*/, /* <- also used as def flag in typeProof */
+              1 /*renumberFlag*/,
+              0 /*unknownFlag*/,
+              0 /*notUnifiedFlag*/,
+              0 /*reverseFlag*/,
+              1 /*noIndentFlag*/,
+              0 /*splitColumn*/,
+              1 /*texFlag*/,  /* Means either latex or html */
+              1 /*htmlFlag*/);
+
+          /* Restore the zapped statement structure */
+          statement[showStatement].proofSectionPtr = "";
+          statement[showStatement].proofSectionLen = 0;
+
+          /* Deallocate storage */
+          let(&str1, "");
+          nmbrLet(&nmbrTmpPtr2, NULL_NMBRSTRING);
+
+        } /* if (nmbrLen(nmbrTmpPtr2)) */
+
+        /* Restore the zapped statement structure */
+        statement[showStatement].type = (char)a__;
+        (statement[showStatement].mathString)[0] = zapStatement1stToken;
+
+        /* Deallocate storage */
+        nmbrLet(&nmbrTmpPtr1, NULL_NMBRSTRING);
+
+      } /* if (wffToken >= 0) */
+
+    } /* if (subType == DEFINITION) */
+
+
+  } /* if (htmlFlag && texFlag) */
+  /* End of finding definition for syntax statement */
+
+
+  if (htmlFlag && texFlag) {
+    /*** Output the html proof for $p statements ***/
+    if (statement[showStatement].type == (char)p__) {
+      typeProof(showStatement,
+          0 /*pipFlag*/,
+          0 /*startStep*/,
+          0 /*endStep*/,
+          0 /*startIndent*/, /* Not used */
+          0 /*endIndent*/,
+          1 /*essentialFlag*/,
+          1 /*renumberFlag*/,
+          0 /*unknownFlag*/,
+          0 /*notUnifiedFlag*/,
+          0 /*reverseFlag*/,
+          1 /*noIndentFlag*/,
+          0 /*splitColumn*/,
+          1 /*texFlag*/,  /* Means either latex or html */
+          1 /*htmlFlag*/);
+    } /* if (statement[showStatement].type == (char)p__) */
+  } /* if (htmlFlag && texFlag) */
+  /* End of html proof for $p statements */
+
+
+
+  /* 10/6/99 - Start of creating used-by list for html page */
+  if (htmlFlag && texFlag) {
+    outputToString = 1;
+    if (subType != SYNTAX) { /* Only do this for
+        definitions and axioms, not syntax statements */
+      let(&str1, "");
+      str1 = traceUsage(showStatement, 0 /* recursiveFlag */);
+      if (str1[0]) { /* Used by at least one */
+        /* str1 will have a leading space before each label */
+        /* Convert usage list to html links */
+        switch (subType) {
+          case AXIOM:  let(&str3, "axiom"); break;
+          case DEFINITION: let(&str3, "definition"); break;
+          case THEOREM: let(&str3, "theorem"); break;
+          default: bug(233);
+        }
+        let(&str2, cat("<FONT SIZE=-2 FACE=ARIAL>This ", str3,
+            " is referenced by: ", NULL));
+        /* Convert str1 to trailing space after each label */
+        let(&str1, cat(right(str1, 2), " ", NULL));
+        while (1) {
+          i = instr(1, str1, " ");
+          if (!i) break;
+          let(&str2, cat(str2, " <A HREF=\"",
+              left(str1, i - 1), ".html\">",
+              left(str1, i - 1), "</A>", NULL));
+          let(&str1, right(str1, i + 1)); /* Consume str1 */
+        }
+        let(&str2, cat(str2, " ", "</FONT><BR>", NULL));
+        printLongLine(str2, "", " ");
+      }
+    }
+    /* Printing of the trailer in mmwtex.c will close out string later */
+    outputToString = 0;
+  } /* if (htmlFlag && texFlag) */
+  /* 10/6/99 - End of used-by list for html page */
+
+
+
+ returnPoint:
+  /* Deallocate strings */
+  nmbrLet(&nmbrDDList, NULL_NMBRSTRING);
+  let(&str1, "");
+  let(&str2, "");
+  let(&str3, "");
+} /* typeStatement */
 
 /* Displays a proof (or part of a proof, depending on arguments). */
 /* Note that parseProof() and verifyProof() are assumed to have been called,
    so that the wrkProof structure elements are assigned for the current
    statement. */
+/* 8/28/00 - this is also used for the MIDI output, since we conveniently
+   have the necessary proof information here.  The function outputMidi()
+   is called from within. */
 void typeProof(long statemNum,
   flag pipFlag, /* Means use proofInProgress; statemNum must be proveStatement*/
   long startStep, long endStep,
   long startIndent, long endIndent,
-  flag essentialFlag,
+  flag essentialFlag, /* <- also used as definition/axiom flag for HTML
+      syntax breakdown when called from typeStatement() */
   flag renumberFlag,
   flag unknownFlag,
   flag notUnifiedFlag,
   flag reverseFlag,
-  flag noIndentFlag,
+  flag noIndentFlag, /* Means Lemmon-style proof */
   long splitColumn,
-  flag texFlag)
+  flag texFlag,
+  flag htmlFlag /* htmlFlag added 6/27/99 */
+  /* flag midiFlag - global to avoid changing many calls to typeProof() */
+  )
 {
-  long i, plen, maxLocalLen, step, stmt, lens, lent, maxStepNum;
-  vstring proofStr = "";
+  /* From HELP SHOW PROOF: Optional qualifiers:
+    / ESSENTIAL - the proof tree is trimmed of all $f hypotheses before
+        being displayed.
+    / FROM_STEP <step> - the display starts at the specified step.  If
+        this qualifier is omitted, the display starts at the first step.
+    / TO_STEP <step> - the display ends at the specified step.  If this
+        qualifier is omitted, the display ends at the last step.
+    / TREE_DEPTH <number> - Only steps at less than the specified proof
+        tree depth are displayed.  Useful for obtaining an overview of
+        the proof.
+    / REVERSE - the steps are displayed in reverse order.
+    / RENUMBER - when used with / ESSENTIAL, the steps are renumbered
+        to correspond only to the essential steps.
+    / TEX - the proof is converted to LaTeX and stored in the file opened
+        with OPEN TEX.
+    / HTML - the proof is converted to HTML and stored in the file opened
+        with OPEN HTML.
+    / LEMMON - The proof is displayed in a non-indented format known
+        as Lemmon style, with explicit previous step number references.
+        If this qualifier is omitted, steps are indented in a tree format.
+    / COLUMN <number> - Overrides the default column at which
+        the formula display starts in a Lemmon style display.  May be
+        used only in conjuction with / LEMMON.
+    / NORMAL - The proof is displayed in normal format suitable for
+        inclusion in a source file.  May not be used with any other
+        qualifier.
+    / COMPRESSED - The proof is displayed in compressed format
+        suitable for inclusion in a source file.  May not be used with
+        any other qualifier.
+    / STATEMENT_SUMMARY - Summarizes all statements (like a brief SHOW
+        STATEMENT) used by the proof.  May not be used with any other
+        qualifier except / ESSENTIAL.
+    / DETAILED_STEP <step> - Shows the details of what is happening at
+        a specific proof step.  May not be used with any other qualifier.
+    / MIDI - 8/28/00 - puts out a midi sound file instead of a proof
+        - determined by the global variable midiFlag, not by a parameter to
+        typeProof()
+  */
+  long i, plen, step, stmt, lens, lent, maxStepNum;
   vstring tmpStr = "";
   vstring tmpStr1 = "";
   vstring locLabDecl = "";
@@ -382,7 +782,7 @@ void typeProof(long statemNum,
   vstring srcPrefix = "";
   vstring userPrefix = "";
   vstring contPrefix = "";
-  vstring ptr;
+  vstring statementUsedFlags = "";
   nmbrString *proof = NULL_NMBRSTRING;
   nmbrString *localLabels = NULL_NMBRSTRING;
   nmbrString *localLabelNames = NULL_NMBRSTRING;
@@ -391,10 +791,9 @@ void typeProof(long statemNum,
   nmbrString *essentialFlags = NULL_NMBRSTRING;
   nmbrString *stepRenumber = NULL_NMBRSTRING;
   nmbrString *notUnifiedFlags = NULL_NMBRSTRING;
-  long nextLocLabNum = 1; /* Next number to be used for a local label */
+  nmbrString *unprovedList = NULL_NMBRSTRING; /* For traceProofWork() */
   long maxLabelLen = 0;
   long maxStepNumLen = 1;
-  void *voidPtr; /* bsearch result */
   char type;
   flag stepPrintFlag;
   long fromStep, toStep, byStep;
@@ -402,13 +801,79 @@ void typeProof(long statemNum,
   nmbrString *hypPtr;
   long hyp, hypStep;
 
+  if (htmlFlag && texFlag) {
+    outputToString = 1; /* Flag for print2 to add to printString */
+    print2("<CENTER><TABLE BORDER >\n");
+    if (essentialFlag) {
+      print2("<CAPTION><B>Proof of Theorem <FONT\n");
+    } else {
+      /* This is a syntax breakdown "proof" of a definition called
+         from typeStatement */
+
+      if (!strcmp("ax-", left(statement[showStatement].labelName, 3))) {
+        print2("<CAPTION><B>Detailed syntax breakdown of Axiom <FONT\n");
+      } else {
+        print2("<CAPTION><B>Detailed syntax breakdown of Definition <FONT\n");
+      }
+    }
+    printLongLine(cat("   COLOR=\"#006600\">",
+        asciiToTt(statement[statemNum].labelName),
+        "</FONT></B></CAPTION>", NULL), "", " ");
+    print2(
+        "<TR><TD><B>Step</B></TD><TD><B>Hyp</B></TD><TD><B>Ref</B>\n");
+    print2("</TD><TD><B>Expression</B></TD></TR>\n");
+    outputToString = 0;
+    /* printTexLongMath in typeProof will do this
+    fprintf(texFilePtr, "%s", printString);
+    let(&printString, "");
+    */
+  }
+
+  if (!pipFlag) {
+    parseProof(showStatement);
+    if (wrkProof.errorSeverity > 1) return; /* Display could crash */
+    verifyProof(showStatement);
+  }
+
   if (!pipFlag) {
     nmbrLet(&proof, wrkProof.proofString); /* The proof */
+    if (midiFlag) { /* 8/28/00 */
+      /* Get the uncompressed version of the proof */
+      nmbrLet(&proof, nmbrUnsquishProof(proof));
+    }
   } else {
     nmbrLet(&proof, proofInProgress.proof); /* The proof */
   }
   plen = nmbrLen(proof);
- 
+
+  /* 6/27/99 - to reduce the number of steps displayed in an html proof,
+     we will use a local label to reference the 2nd or later reference to a
+     hypothesis, so the hypothesis won't have to be shown multiple times
+     in the proof. */
+  if (htmlFlag && texFlag && !noIndentFlag /* Lemmon */) {
+    /* Only Lemmon-style proofs are implemented for html */
+    bug(218);
+  }
+  if (htmlFlag && texFlag) {
+    for (step = 0; step < plen; step++) {
+      stmt = proof[step];
+      if (stmt < 0) continue;  /* Unknown or label ref */
+      type = statement[stmt].type;
+      if (type == f__ || type == e__  /* It's a hypothesis */
+          || statement[stmt].numReqHyp == 0) { /* A statement w/ no hyp */
+        for (i = 0; i < step; i++) {
+          if (stmt == proof[i]) {
+            /* The hypothesis at 'step' matches an earlier hypothesis at i,
+               so we will backreference 'step' to i with a local label */
+            proof[step] = -1000 - i;
+            break;
+          }
+        } /* next i */
+      }
+    } /* next step */
+  }
+
+
   /* Collect local labels */
   for (step = 0; step < plen; step++) {
     stmt = proof[step];
@@ -426,43 +891,54 @@ void typeProof(long statemNum,
 
   /* Get the indentation level */
   nmbrLet(&indentationLevel, nmbrGetIndentation(proof, 0));
-  
+
   /* Get the target hypotheses */
   nmbrLet(&targetHyps, nmbrGetTargetHyp(proof, statemNum));
-  
+
   /* Get the essential step flags, if required */
-  if (essentialFlag) {
+  if (essentialFlag || midiFlag) {
     nmbrLet(&essentialFlags, nmbrGetEssential(proof));
   } else {
     nmbrLet(&essentialFlags, NULL_NMBRSTRING);
   }
 
-  /* Get the step renumbering */
-  nmbrLet(&stepRenumber, nmbrSpace(plen));
-  if (renumberFlag && essentialFlag) {
-    i = 0;
-    maxStepNum = 0; /* To compute maxStepNumLen below */
-    for (step = 0; step < plen; step++) {
-      if (essentialFlags[step]) {
-        i++;
-        stepRenumber[step] = i; /* Number essential steps only */
-        maxStepNum = i; /* To compute maxStepNumLen below */
-      }
-    }
-  } else {
-    for (step = 0; step < plen; step++) {
-      stepRenumber[step] = step + 1; /* Standard numbering */
-    }
-    maxStepNum = plen; /* To compute maxStepNumLen below */
+  /* 8/28/00 We now have enough information for the MIDI output, so
+     do it */
+  if (midiFlag) {
+    outputMidi(plen, indentationLevel,
+        essentialFlags, midiParam, statement[statemNum].labelName);
+    goto typeProof_return;
   }
 
-  /* Get the printed length of the largest step number */
+  /* Get the step renumbering */
+  nmbrLet(&stepRenumber, nmbrSpace(plen)); /* This initializes all step
+      renumbering to step 0.  Later, we will use (for html) the fact that
+      a step renumbered to 0 is a step to be skipped (6/27/99). */
+  i = 0;
+  maxStepNum = 0;
+  for (step = 0; step < plen; step++) {
+    stepPrintFlag = 1; /* Note: stepPrintFlag is reused below with a
+        slightly different meaning (i.e. it will be printed after
+        a filter such as notUnified is applied) */
+    if (renumberFlag && essentialFlag) {
+      if (!essentialFlags[step]) stepPrintFlag = 0;
+    }
+    if (htmlFlag && texFlag && proof[step] < 0) stepPrintFlag = 0;
+    /* For standard numbering, stepPrintFlag will be always be 1 here */
+    if (stepPrintFlag) {
+      i++;
+      stepRenumber[step] = i; /* Numbering for step to be printed */
+      maxStepNum = i; /* To compute maxStepNumLen below */
+    }
+  }
+
+  /* Get the printed character length of the largest step number */
   i = maxStepNum;
   while (i >= 10) {
-    i = i/10;
+    i = i/10; /* The number is printed in base 10 */
     maxStepNumLen++;
   }
-      
+
   /* Get steps not unified (pipFlag only) */
   if (notUnifiedFlag) {
     if (!pipFlag) bug(205);
@@ -491,25 +967,21 @@ void typeProof(long statemNum,
         stmt = -1000 - stmt;
         /* stmt is now the step number a local label refers to */
         lens = strlen(str(localLabelNames[stmt]));
+        let(&tmpStr1, ""); /* Clear temp alloc stack for str function */
       } else {
-        lens = 1; /* '?' */
+        if (stmt != -(long)'?') bug (219); /* the only other possibility */
+        lens = 1; /* '?' (unknown step) */
       }
     } else {
       if (nmbrElementIn(1, localLabels, step)) {
-        /* This statement declares a local label */
-        /* First, get a name for the local label, using the next integer that
-           does not match any integer used for a statement label. */
-        let(&tmpStr1,str(nextLocLabNum));
-        while (1) {
-          voidPtr = (void *)bsearch(tmpStr,
-              allLabelKeyBase, numAllLabelKeys,
-              sizeof(long), labelSrchCmp);
-          if (!voidPtr) break; /* It does not conflict */
-          nextLocLabNum++; /* Try the next one */
-          let(&tmpStr1, str(nextLocLabNum));
-        }
-        localLabelNames[step] = nextLocLabNum;
-        nextLocLabNum++; /* Prepare for next local label */
+
+        /* 6/27/99 The new philosophy is to number all local labels with the
+           actual step number referenced, for better readability.  This means
+           that if a *.mm label is a pure number, there may be ambiguity in
+           the proof display, but this is felt to be too rare to be a serious
+           drawback. */
+        localLabelNames[step] = stepRenumber[step];
+
       }
       lens = strlen(statement[stmt].labelName);
     }
@@ -520,7 +992,9 @@ void typeProof(long statemNum,
   } /* Next step */
 
   /* Print the steps */
-  if (reverseFlag) {
+  if (reverseFlag
+      && !midiFlag /* 8/28/00 */
+      ) {
     fromStep = plen - 1;
     toStep = -1;
     byStep = -1;
@@ -552,6 +1026,14 @@ void typeProof(long statemNum,
       if (proof[step] != -(long)'?') stepPrintFlag = 0;
     }
 
+    /* 6/27/99 Skip steps that are local label references for html */
+    if (htmlFlag && texFlag) {
+      if (stepRenumber[step] == 0) stepPrintFlag = 0;
+    }
+
+    /* 8/28/00 For MIDI files, ignore all qualifiers and process all steps */
+    if (midiFlag) stepPrintFlag = 1;
+
     if (!stepPrintFlag) continue;
 
     if (noIndentFlag) {
@@ -564,6 +1046,8 @@ void typeProof(long statemNum,
     if (stmt < 0) {
       if (stmt <= -1000) {
         stmt = -1000 - stmt;
+        if (htmlFlag && texFlag) bug(220); /* If html, a step referencing a
+            local label will never be printed since it will be skipped above */
         /* stmt is now the step number a local label refers to */
         if (noIndentFlag) {
           let(&srcLabel, cat("@", str(localLabelNames[stmt]), NULL));
@@ -584,7 +1068,10 @@ void typeProof(long statemNum,
       if (nmbrElementIn(1, localLabels, step)) {
         /* This statement declares a local label */
         if (noIndentFlag) {
-          let(&locLabDecl, cat("@", str(localLabelNames[step]), ":", NULL));
+          if (!(htmlFlag && texFlag)) { /* No local label declaration is
+              shown for html */
+            let(&locLabDecl, cat("@", str(localLabelNames[step]), ":", NULL));
+          }
         } else {
           let(&locLabDecl, cat(str(localLabelNames[step]), ":", NULL));
         }
@@ -599,10 +1086,34 @@ void typeProof(long statemNum,
         hypPtr = statement[stmt].reqHypList;
         for (hyp = statement[stmt].numReqHyp - 1; hyp >=0; hyp--) {
           if (!essentialFlag || statement[hypPtr[hyp]].type == (char)e__) {
+            i = stepRenumber[hypStep];
+            if (i == 0) {
+              if (!(htmlFlag && texFlag)) bug(221);
+              if (proof[hypStep] != -(long)'?') {
+                if (proof[hypStep] > -1000) bug(222);
+                if (localLabelNames[-1000 - proof[hypStep]] == 0) bug(223);
+                if (localLabelNames[-1000 - proof[hypStep]] !=
+                    stepRenumber[-1000 - proof[hypStep]]) bug(224);
+                /* Get the step number the hypothesis refers to */
+                i = stepRenumber[-1000 - proof[hypStep]];
+              } else {
+                /* The hypothesis refers to an unknown step - use i as flag */
+                i = -(long)'?';
+              }
+            }
             if (!hypStr[0]) {
-              let(&hypStr, str(stepRenumber[hypStep]));
+              if (i != -(long)'?') {
+                let(&hypStr, str(i));
+              } else {
+                let(&hypStr, "?");
+              }
             } else {
-              let(&hypStr, cat(str(stepRenumber[hypStep]), ",", hypStr, NULL));
+              /* Put comma between more than one hypothesis reference */
+              if (i != -(long)'?') {
+                let(&hypStr, cat(str(i), ",", hypStr, NULL));
+              } else {
+                let(&hypStr, cat("?", ",", hypStr, NULL));
+              }
             }
           }
           if (hyp < statement[stmt].numReqHyp) {
@@ -622,7 +1133,7 @@ void typeProof(long statemNum,
       type = statement[stmt].type;
     }
 
-    
+
 #define PF_INDENT_INC 2
     /* Print the proof line */
     if (stepPrintFlag) {
@@ -710,15 +1221,18 @@ void typeProof(long statemNum,
       if (!pipFlag) {
 
         if (!texFlag) {
-          printLongLine(cat(startPrefix," $", chr(type), " ",
-              nmbrCvtMToVString(wrkProof.mathStringPtrs[step]),
-              NULL),
-              contPrefix,
-              chr(1)); /* chr(1) is right-justify flag for printLongLine */
-        } else {
+          if (!midiFlag) { /* 8/28/00 */
+            printLongLine(cat(startPrefix," $", chr(type), " ",
+                nmbrCvtMToVString(wrkProof.mathStringPtrs[step]),
+                NULL),
+                contPrefix,
+                chr(1));
+                /* chr(1) is right-justify flag for printLongLine */
+          }
+        } else {  /* TeX or HTML */
           printTexLongMath(wrkProof.mathStringPtrs[step],
               cat(startPrefix, " $", chr(type), " ", NULL),
-              contPrefix);
+              contPrefix, stmt);
         }
 
       } else { /* pipFlag */
@@ -737,13 +1251,13 @@ void typeProof(long statemNum,
                 NULL),
                 contPrefix,
                 chr(1)); /* chr(1) is right-justify flag for printLongLine */
-          } else {
+          } else { /* TeX or HTML */
             printTexLongMath(proofInProgress.target[step],
                 cat(tgtPrefix, " $", chr(type), " ", NULL),
-                contPrefix);
+                contPrefix, 0);
             printTexLongMath(proofInProgress.source[step],
                 cat(srcPrefix, "  = ", NULL),
-                contPrefix);
+                contPrefix, 0);
           }
         } else {
           if (!texFlag) {
@@ -752,10 +1266,10 @@ void typeProof(long statemNum,
                 NULL),
                 contPrefix,
                 chr(1)); /* chr(1) is right-justify flag for printLongLine */
-          } else {
+          } else {  /* TeX or HTML */
             printTexLongMath(proofInProgress.target[step],
                 cat(startPrefix, " $", chr(type), " ", NULL),
-                contPrefix);
+                contPrefix, 0);
           }
 
         }
@@ -770,18 +1284,165 @@ void typeProof(long statemNum,
           } else {
             printTexLongMath(proofInProgress.user[step],
                 cat(userPrefix, "  = ", NULL),
-                contPrefix);
+                contPrefix, 0);
           }
 
         }
       }
     }
-        
-    
+
+
   } /* Next step */
 
+  if (!pipFlag) {
+    cleanWrkProof(); /* Deallocate verifyProof storage */
+  }
+
+  if (htmlFlag && texFlag) {
+    outputToString = 1;
+    print2("</TABLE></CENTER>\n");
+
+    if (essentialFlag) {  /* Means this is not a syntax breakdown of a
+        definition which is called from typeStatement() */
+
+
+
+
+      /* Create list of syntax statements used */
+      let(&statementUsedFlags, string(statements + 1, 'n')); /* Init. to 'no' */
+      for (step = 0; step < plen; step++) {
+        stmt = proof[step];
+        /* Convention: collect all $a's that don't begin with "|-" */
+        if (stmt > 0) {
+          if (statement[stmt].type == a__) {
+            if (strcmp("|-", mathToken[
+                (statement[stmt].mathString)[0]].tokenName)) {
+              statementUsedFlags[stmt] = 'y'; /* Flag to use it */
+            }
+          }
+        }
+      }
+      let(&tmpStr, "");
+      for (stmt = 1; stmt <= statements; stmt++) {
+        if (statementUsedFlags[stmt] == 'y') {
+          if (!tmpStr[0]) {
+            let(&tmpStr,
+               "<FONT SIZE=-2><FONT FACE=ARIAL>Syntax hints:</FONT> ");
+          }
+          let(&tmpStr, cat(tmpStr, " <FONT FACE=ARIAL><A HREF=\"",
+              statement[stmt].labelName, ".html\">",
+              statement[stmt].labelName, "</A></FONT>", NULL));
+
+          /* 10/6/99 - Get the main symbol in the syntax */
+          /* This section can be deleted if not wanted - it is custom
+             for set.mm and might not work with other .mm's */
+          let(&tmpStr1, "");
+          for (i = 1 /* Skip |- */; i < statement[stmt].mathStringLen; i++) {
+            if (mathToken[(statement[stmt].mathString)[i]].tokenType ==
+                (char)con__) {
+              if (strcmp(mathToken[(statement[stmt].mathString)[i]
+                      ].tokenName, "(")
+                  && strcmp(mathToken[(statement[stmt].mathString)[i]
+                      ].tokenName, ",")
+                  && strcmp(mathToken[(statement[stmt].mathString)[i]
+                      ].tokenName, ")")
+                  && strcmp(mathToken[(statement[stmt].mathString)[i]
+                      ].tokenName, ":")
+                  ) {
+                tmpStr1 =
+                    tokenToTex(mathToken[(statement[stmt].mathString)[i]
+                    ].tokenName);
+                break;
+              }
+            }
+          } /* Next i */
+          /* Special cases */
+          if (!strcmp(statement[stmt].labelName, "wbr"))
+            let(&tmpStr1, "[rel]");
+          if (!strcmp(statement[stmt].labelName, "cv"))
+            let(&tmpStr1, "[set]");
+          if (!strcmp(statement[stmt].labelName, "co"))
+            let(&tmpStr1, "[oper]");
+          let(&tmpStr, cat(tmpStr, " ", tmpStr1, NULL));
+          /* End of 10/6/99 section - Get the main symbol in the syntax */
+
+        }
+      }
+      if (tmpStr[0]) {
+        let(&tmpStr, cat(tmpStr, " ", "</FONT><BR>", NULL));
+        printLongLine(tmpStr, "", " ");
+      }
+      /* End of syntax statement list */
+
+
+
+      /* Get list of axioms assumed by proof */
+      let(&tmpStr, "");
+      let(&statementUsedFlags, "");
+      traceProofWork(statemNum,
+          1 /*essentialFlag*/,
+          &statementUsedFlags, /*&statementUsedFlags*/
+          &unprovedList /* &unprovedList */);
+      if (strlen(statementUsedFlags) != statements + 1) bug(227);
+      for (stmt = 1; stmt <= statements; stmt++) {
+        if (statementUsedFlags[stmt] == 'y' && statement[stmt].type == a__) {
+          let(&tmpStr1, left(statement[stmt].labelName, 3));
+          if (!strcmp(tmpStr1, "ax-")) {
+            if (!tmpStr[0]) {
+              let(&tmpStr,
+ "<FONT SIZE=-2 FACE=ARIAL>The theorem was proved from these axioms: ");
+            }
+            let(&tmpStr, cat(tmpStr, " <A HREF=\"",
+                statement[stmt].labelName, ".html\">",
+                statement[stmt].labelName, "</A>", NULL));
+          }
+        }
+      } /* next stmt */
+      if (tmpStr[0]) {
+        let(&tmpStr, cat(tmpStr, " ", "</FONT><BR>", NULL));
+        printLongLine(tmpStr, "", " ");
+      }
+
+      /* Print any unproved statements */
+      if (nmbrLen(unprovedList)) {
+        if (nmbrLen(unprovedList) == 1 &&
+            !strcmp(statement[unprovedList[0]].labelName,
+            statement[statemNum].labelName)) {
+          /* When the unproved list consists only of the statement that
+             was traced, it means the statement traced has no
+             proof (or it has a proof, but is incomplete and all earlier
+             ones do have complete proofs). */
+          print2(
+              "<B><FONT COLOR=\"#FF6600\">WARNING: This theorem has an\n");
+          print2(" incomplete proof.</FONT></B><BR>\n");
+
+        } else {
+          print2("<B><FONT COLOR=\"#FF6600\">WARNING: This proof depends\n");
+          print2(" on the following unproved theorem(s): </FONT>\n");
+          let(&tmpStr, "");
+          for (i = 0; i < nmbrLen(unprovedList); i++) {
+            let(&tmpStr, cat(tmpStr, " <A HREF=\"",
+                statement[unprovedList[i]].labelName, ".html\">",
+                statement[unprovedList[i]].labelName, "</A>",
+                NULL));
+          }
+        }
+        printLongLine(cat(tmpStr, "</B><BR>", NULL), "", " ");
+      }
+
+      /* End of axiom list */
+
+    }  /* if essentialFlag */
+
+
+    /* Printing of the trailer in mmwtex.c will close out string later */
+    outputToString = 0;
+  }
+
+ typeProof_return:
   let(&tmpStr, "");
   let(&tmpStr1, "");
+  let(&statementUsedFlags, "");
   let(&locLabDecl, "");
   let(&tgtLabel, "");
   let(&srcLabel, "");
@@ -791,6 +1452,7 @@ void typeProof(long statemNum,
   let(&userPrefix, "");
   let(&contPrefix, "");
   let(&hypStr, "");
+  nmbrLet(&unprovedList, NULL_NMBRSTRING);
   nmbrLet(&localLabels, NULL_NMBRSTRING);
   nmbrLet(&localLabelNames, NULL_NMBRSTRING);
   nmbrLet(&proof, NULL_NMBRSTRING);
@@ -799,16 +1461,14 @@ void typeProof(long statemNum,
   nmbrLet(&essentialFlags, NULL_NMBRSTRING);
   nmbrLet(&stepRenumber, NULL_NMBRSTRING);
   nmbrLet(&notUnifiedFlags, NULL_NMBRSTRING);
-
-}
+} /* typeProof */
 
 /* Show details of one proof step */
 /* Note:  detailStep is the actual step number (starting with 1), not
    the actual step - 1. */
 void showDetailStep(long statemNum, long detailStep) {
 
-  long i, j, k, plen, maxLocalLen, step, stmt, sourceStmt, targetStmt;
-  vstring proofStr = "";
+  long i, j, plen, step, stmt, sourceStmt, targetStmt;
   vstring tmpStr = "";
   vstring tmpStr1 = "";
   nmbrString *proof = NULL_NMBRSTRING;
@@ -831,7 +1491,7 @@ void showDetailStep(long statemNum, long detailStep) {
         str(plen), NULL), "", " ");
     return;
   }
- 
+
   /* Structure getStep is declared in mmveri.h. */
   getStep.stepNum = detailStep; /* Non-zero is flag for verifyProof */
   parseProof(statemNum); /* ???Do we need to do this again? */
@@ -858,7 +1518,7 @@ void showDetailStep(long statemNum, long detailStep) {
 
   /* Get the target hypotheses */
   nmbrLet(&targetHyps, nmbrGetTargetHyp(proof, statemNum));
-  
+
   /* Get local labels */
   for (step = 0; step < plen; step++) {
     stmt = proof[step];
@@ -906,7 +1566,7 @@ void showDetailStep(long statemNum, long detailStep) {
     let(&tmpStr, cat(tmpStr, "=", statement[stmt].labelName, NULL));
     type = statement[stmt].type;
   }
-    
+
   /* Print the proof line */
   printLongLine(cat("Proof step ",
       str(detailStep),
@@ -993,7 +1653,7 @@ void showDetailStep(long statemNum, long detailStep) {
         let(&tmpStr, cat(tmpStr, ".", NULL));
       }
     }
-  }  
+  }
 
   if (detailStep < plen) {
     let(&tmpStr, cat(tmpStr,
@@ -1121,18 +1781,25 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
     print2("Summary of statements used in the proof of \"%s\":\n",
         statement[statemNum].labelName);
   } else {
-      outputToString = 1; /* Flag for print2 to add to printString */
+    outputToString = 1; /* Flag for print2 to add to printString */
+    if (!htmlFlag) {
       print2("\n");
       print2("\\vspace{1ex}\n");
       printLongLine(cat("Summary of statements used in the proof of ",
           "{\\tt ",
           asciiToTt(statement[statemNum].labelName),
           "}:", NULL), "", " ");
-      outputToString = 0;
-      fprintf(texFilePtr, "%s", printString);
-      let(&printString, "");
+    } else {
+      printLongLine(cat("Summary of statements used in the proof of ",
+          "<B>",
+          asciiToTt(statement[statemNum].labelName),
+          "</B>:", NULL), "", " ");
+    }
+    outputToString = 0;
+    fprintf(texFilePtr, "%s", printString);
+    let(&printString, "");
   }
-  
+
   if (statement[statemNum].type != p__) {
     print2("  This is not a provable ($p) statement.\n");
     return;
@@ -1188,15 +1855,23 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
           "\".",NULL), "", " ");
       } else {
         outputToString = 1; /* Flag for print2 to add to printString */
-        print2("\n");
-        print2("\n");
-        print2("\\vspace{1ex}\n");
-        printLongLine(cat("Statement {\\tt ",
-            asciiToTt(statement[stmt].labelName), "} ",
-            str1, "{\\tt ",
-            asciiToTt(statement[stmt].fileName),
-            "}.", NULL), "", " ");
-        print2("\n");
+        if (!htmlFlag) {
+          print2("\n");
+          print2("\n");
+          print2("\\vspace{1ex}\n");
+          printLongLine(cat("Statement {\\tt ",
+              asciiToTt(statement[stmt].labelName), "} ",
+              str1, "{\\tt ",
+              asciiToTt(statement[stmt].fileName),
+              "}.", NULL), "", " ");
+          print2("\n");
+        } else {
+          printLongLine(cat("Statement <B>",
+              asciiToTt(statement[stmt].labelName), "</B> ",
+              str1, " <B>",
+              asciiToTt(statement[stmt].fileName),
+              "</B> ", NULL), "", " ");
+        }
         outputToString = 0;
         fprintf(texFilePtr, "%s", printString);
         let(&printString, "");
@@ -1227,7 +1902,7 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
           } else {
             let(&str3, space(strlen(str2)));
             printTexLongMath(statement[k].mathString,
-                str2, str3);
+                str2, str3, 0);
           }
         }
       }
@@ -1244,7 +1919,7 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
       } else {
         let(&str3, space(strlen(str2)));
         printTexLongMath(statement[stmt].mathString,
-            str2, str3);
+            str2, str3, 0);
       }
 
     } /* End if (statementUsedFlag[stmt] == 'y') */
@@ -1267,14 +1942,11 @@ void traceProof(long statemNum,
   flag axiomFlag)
 {
 
-  long pos, stmt, plen, slen, step;
-  vstring statementUsedFlags = ""; /* 'y'/'n' flag that statement is used */
+  long stmt, pos;
+  vstring statementUsedFlags = ""; /* y/n flags that statement is used */
   vstring outputString = "";
-  nmbrString *statementList = NULL_NMBRSTRING;
   nmbrString *unprovedList = NULL_NMBRSTRING;
-  nmbrString *proof = NULL_NMBRSTRING;
-  nmbrString *essentialFlags = NULL_NMBRSTRING;
-  
+
   if (axiomFlag) {
     print2(
 "Statement \"%s\" assumes the following axioms ($a statements):\n",
@@ -1284,62 +1956,12 @@ void traceProof(long statemNum,
 "The proof of statement \"%s\" uses the following earlier statements:\n",
         statement[statemNum].labelName);
   }
-  
-  nmbrLet(&statementList, nmbrAddElement(statementList, statemNum)); /* Init. */
-  nmbrLet(&unprovedList, NULL_NMBRSTRING); /* List of unproved statements */
-  
-  for (pos = 0; pos < nmbrLen(statementList); pos++) {
-    if (statement[statementList[pos]].type != p__) {
-      continue; /* Not a $p */
-    }
-    parseProof(statementList[pos]);
-    nmbrLet(&proof, wrkProof.proofString); /* The proof */
-    plen = nmbrLen(proof);
-    /* Get the essential step flags, if required */
-    if (essentialFlag) {
-      nmbrLet(&essentialFlags, nmbrGetEssential(proof));
-    }
-    for (step = 0; step < plen; step++) {
-      if (essentialFlag) {
-        if (!essentialFlags[step]) continue;
-                                                /* Ignore floating hypotheses */
-      }
-      stmt = proof[step];
-      if (stmt < 0) {
-        if (stmt > -1000) {
-          /* '?' */
-          if (!nmbrElementIn(1, unprovedList, statementList[pos])) {
-            nmbrLet(&unprovedList, nmbrAddElement(unprovedList,
-                statementList[pos]));
-                                        /* Add to list of unproved statements */
-          }
-        }
-        continue; /* Ignore '?' and local labels */
-      }
-      if (1) { /* Limit list to $a and $p only */
-        if (statement[stmt].type != a__ && statement[stmt].type != p__) {
-          continue;
-        }
-      }
-      /* Add this statement to the statement list if not already in it */
-      if (!nmbrElementIn(1, statementList, stmt)) {
-        nmbrLet(&statementList, nmbrAddElement(statementList, stmt));
-      }
-    } /* Next step */
-  } /* Next pos */
-    
-  
-  /* Prepare the output */
-  /* First, fill in the statementUsedFlags char array.  This allows us to sort
-     the output by statement number without calling a sort routine. */
-  slen = nmbrLen(statementList);
-  let(&statementUsedFlags, string(statements + 1, 'n')); /* Init. to 'no' */
-  for (pos = 1; pos < slen; pos++) { /* Start with 1 (ignore traced statement)*/
-    stmt = statementList[pos];
-    if (stmt > statemNum || stmt < 1) bug(211);
-    statementUsedFlags[stmt] = 'y';
-  }
-  /* Next, build the output string */
+
+  traceProofWork(statemNum, essentialFlag, &statementUsedFlags,
+      &unprovedList);
+  if (strlen(statementUsedFlags) != statements + 1) bug(226);
+
+  /* Build the output string */
   let(&outputString, "");
   for (stmt = 1; stmt < statemNum; stmt++) {
     if (statementUsedFlags[stmt] == 'y') {
@@ -1367,7 +1989,7 @@ void traceProof(long statemNum,
 
   /* Print the output */
   printLongLine(outputString, "  ", " ");
-  
+
   /* Print any unproved statements */
   if (nmbrLen(unprovedList)) {
     print2("Warning:  the following traced statements were not proved:\n");
@@ -1379,14 +2001,77 @@ void traceProof(long statemNum,
     let(&outputString, cat("  ", outputString, NULL));
     printLongLine(outputString, "  ", " ");
   }
-  
+
   /* Deallocate */
   let(&outputString, "");
   let(&statementUsedFlags, "");
-  nmbrLet(&proof, NULL_NMBRSTRING);
-  nmbrLet(&essentialFlags, NULL_NMBRSTRING);
-  nmbrLet(&statementList, NULL_NMBRSTRING);
   nmbrLet(&unprovedList, NULL_NMBRSTRING);
+}
+
+/* Traces back the statements used by a proof, recursively.  Returns
+   a nmbrString with a list of statements and unproved statements */
+void traceProofWork(long statemNum,
+  flag essentialFlag,
+  vstring *statementUsedFlagsP, /* 'y'/'n' flag that statement is used */
+  nmbrString **unprovedListP)
+{
+
+  long pos, stmt, plen, slen, step;
+  nmbrString *statementList = NULL_NMBRSTRING;
+  nmbrString *proof = NULL_NMBRSTRING;
+  nmbrString *essentialFlags = NULL_NMBRSTRING;
+
+  nmbrLet(&statementList, nmbrSpace(statements));
+  statementList[0] = statemNum;
+  slen = 1;
+  nmbrLet(&(*unprovedListP), NULL_NMBRSTRING); /* List of unproved statements */
+
+  let(&(*statementUsedFlagsP), string(statements + 1, 'n')); /* Init. to 'no' */
+  for (pos = 0; pos < slen; pos++) {
+    if (statement[statementList[pos]].type != p__) {
+      continue; /* Not a $p */
+    }
+    parseProof(statementList[pos]);
+    nmbrLet(&proof, wrkProof.proofString); /* The proof */
+    plen = nmbrLen(proof);
+    /* Get the essential step flags, if required */
+    if (essentialFlag) {
+      nmbrLet(&essentialFlags, nmbrGetEssential(proof));
+    }
+    for (step = 0; step < plen; step++) {
+      if (essentialFlag) {
+        if (!essentialFlags[step]) continue;  /* Ignore floating hypotheses */
+      }
+      stmt = proof[step];
+      if (stmt < 0) {
+        if (stmt > -1000) {
+          /* '?' */
+          if (!nmbrElementIn(1, *unprovedListP, statementList[pos])) {
+            nmbrLet(&(*unprovedListP), nmbrAddElement(*unprovedListP,
+                statementList[pos]));  /* Add to list of unproved statements */
+          }
+        }
+        continue; /* Ignore '?' and local labels */
+      }
+      if (1) { /* Limit list to $a and $p only */
+        if (statement[stmt].type != a__ && statement[stmt].type != p__) {
+          continue;
+        }
+      }
+      /* Add this statement to the statement list if not already in it */
+      if ((*statementUsedFlagsP)[stmt] == 'n') {
+        statementList[slen] = stmt;
+        slen++;
+        (*statementUsedFlagsP)[stmt] = 'y';
+      }
+    } /* Next step */
+  } /* Next pos */
+
+  /* Deallocate */
+  nmbrLet(&essentialFlags, NULL_NMBRSTRING);
+  nmbrLet(&proof, NULL_NMBRSTRING);
+  nmbrLet(&statementList, NULL_NMBRSTRING);
+  return;
 
 }
 
@@ -1421,7 +2106,7 @@ void traceProofTree(long statemNum,
 void traceProofTreeRec(long statemNum,
   flag essentialFlag, long endIndent, long recursDepth)
 {
-  long i, j, pos, stmt, plen, slen, step;
+  long i, pos, stmt, plen, slen, step;
   vstring outputStr = "";
   nmbrString *localFoundList = NULL_NMBRSTRING;
   nmbrString *localPrintedList = NULL_NMBRSTRING;
@@ -1429,12 +2114,12 @@ void traceProofTreeRec(long statemNum,
   nmbrString *proof = NULL_NMBRSTRING;
   nmbrString *essentialFlags = NULL_NMBRSTRING;
 
-  
+
   let(&outputStr, "");
   outputStr = getDescription(statemNum); /* Get statement comment */
   let(&outputStr, edit(outputStr, 8 + 16 + 128)); /* Trim and reduce spaces */
   slen = len(outputStr);
-  for (i = 0; i < slen; i++) { 
+  for (i = 0; i < slen; i++) {
     /* Change newlines to spaces in comment */
     if (outputStr[i] == '\n') {
       outputStr[i] = ' ';
@@ -1467,7 +2152,7 @@ void traceProofTreeRec(long statemNum,
     /* Only print assertions to reduce output bulk */
     print2("%s\n", outputStr);
   }
-  
+
   if (statement[statemNum].type != p__) {
     let(&outputStr, "");
     return;
@@ -1521,7 +2206,7 @@ void traceProofTreeRec(long statemNum,
     if (!nmbrElementIn(1, localPrintedList, stmt)) {
       /* Don't include $f, $e in output */
       if (statement[stmt].type == p__ || statement[stmt].type == a__) {
-        let(&outputStr, cat(outputStr, " ", 
+        let(&outputStr, cat(outputStr, " ",
             statement[stmt].labelName, NULL));
       }
     }
@@ -1539,7 +2224,7 @@ void traceProofTreeRec(long statemNum,
       , NULL),
       space(INDENT_INCR * (recursDepth + 2)), " ");
   }
-  
+
   let(&outputStr, "");
   nmbrLet(&localFoundList, NULL_NMBRSTRING);
   nmbrLet(&localPrintedList, NULL_NMBRSTRING);
@@ -1563,7 +2248,7 @@ double countSteps(long statemNum, flag essentialFlag)
   static long *stmtUsage; /* The number of times the statement is used */
   static long level = 0;
   static flag unprovedFlag;
-  
+
   long stmt, plen, step, i, j, k;
   long essentialplen;
   nmbrString *proof = NULL_NMBRSTRING;
@@ -1574,7 +2259,11 @@ double countSteps(long statemNum, flag essentialFlag)
   vstring tmpStr = "";
   long actualSteps, actualSubTheorems;
   long actualSteps2, actualSubTheorems2;
-  
+
+  /* Initialization to avoid compiler warning (should not be theoretically
+     necessary) */
+  essentialplen = 0;
+
   /* If this is the top level of recursion, initialize things */
   if (!level) {
     stmtCount = malloc(sizeof(double) * (statements + 1));
@@ -1607,7 +2296,7 @@ double countSteps(long statemNum, flag essentialFlag)
   stepNodeCount = 0;
   stepDistSum = 0;
   stmtDist[statemNum] = -2; /* Forces at least one assignment */
-  
+
   if (statement[statemNum].type != (char)p__) {
     /* $a, $e, or $f */
     stepCount = 1;
@@ -1615,7 +2304,7 @@ double countSteps(long statemNum, flag essentialFlag)
     stmtDist[statemNum] = 0;
     goto returnPoint;
   }
-  
+
   parseProof(statemNum);
   nmbrLet(&proof, nmbrUnsquishProof(wrkProof.proofString)); /* The proof */
   plen = nmbrLen(proof);
@@ -1640,7 +2329,7 @@ double countSteps(long statemNum, flag essentialFlag)
         stepNodeCount = stepNodeCount + 1;
         stepDistSum = stepDistSum + 1;
       }
-    } else {    
+    } else {
       if (stmtCount[stmt] == 0) {
         /* It has not been computed yet */
         stepCount = stepCount + countSteps(stmt, essentialFlag);
@@ -1665,7 +2354,7 @@ double countSteps(long statemNum, flag essentialFlag)
       stepNodeCount = stepNodeCount + stmtNodeCount[stmt];
       stepDistSum = stepDistSum + stmtAveDist[stmt] + 1;
     }
-    
+
   } /* Next step */
 
  returnPoint:
@@ -1675,10 +2364,10 @@ double countSteps(long statemNum, flag essentialFlag)
   stmtNodeCount[statemNum] = stepNodeCount + 1;
   stmtAveDist[statemNum] = stepDistSum / essentialplen;
   stmtProofLen[statemNum] = essentialplen;
-  
+
   nmbrLet(&proof, NULL_NMBRSTRING);
   nmbrLet(&essentialFlags, NULL_NMBRSTRING);
-  
+
   level--;
   /* If this is the top level of recursion, deallocate */
   if (!level) {
@@ -1750,42 +2439,42 @@ double countSteps(long statemNum, flag essentialFlag)
     free(stmtProofLen);
     free(stmtUsage);
   }
-  
+
   return(stepCount);
 
 }
 
 
 /* Traces what statements require the use of a given statement */
-void traceUsage(long statemNum,
+/* The output string must be deallocated by the user. */
+vstring traceUsage(long statemNum,
   flag recursiveFlag) {
-  
+
   long lastPos, stmt, slen, pos;
   flag tmpFlag;
   vstring statementUsedFlags = ""; /* 'y'/'n' flag that statement is used */
   vstring outputString = "";
-  vstring tmpStr = "";
   nmbrString *statementList = NULL_NMBRSTRING;
   nmbrString *proof = NULL_NMBRSTRING;
-  
+
   /* For speed-up code */
   char *fbPtr;
   char *fbPtr2;
   char zapSave;
   flag notEFRec;
-  
+
   if (statement[statemNum].type == e__ || statement[statemNum].type == f__
       || recursiveFlag) {
     notEFRec = 0;
   } else {
     notEFRec = 1;
   }
-  
+
   nmbrLet(&statementList, nmbrAddElement(statementList, statemNum));
   lastPos = 1;
   for (stmt = statemNum + 1; stmt <= statements; stmt++) { /* Scan all stmts*/
     if (statement[stmt].type != p__) continue; /* Ignore if not $p */
-    
+
     /* Speed up:  Do a character search for the statement label in the proof,
        before parsing the proof.  Skip this if the label refers to a $e or $f
        because these might not have their labels explicit in a compressed
@@ -1819,7 +2508,7 @@ void traceUsage(long statemNum,
         fbPtr2[0] = zapSave; /* Restore source buffer */
       }
     } /* (End of speed-up code) */
-       
+
     tmpFlag = 0;
     parseProof(stmt); /* Parse proof into wrkProof structure */
     nmbrLet(&proof, wrkProof.proofString); /* The proof */
@@ -1836,29 +2525,9 @@ void traceUsage(long statemNum,
     nmbrLet(&statementList, nmbrAddElement(statementList, stmt));
     if (recursiveFlag) lastPos++;
   } /* Next stmt */
-  
+
   slen = nmbrLen(statementList);
 
-  if (slen - 1 == 0) {
-    printLongLine(cat("Statement \"", statement[statemNum].labelName,
-        "\" is not referenced in the proof of any statement.", NULL), "", " ");
-  } else {
-    if (recursiveFlag) {
-      let(&tmpStr, "\" directly or indirectly affects");
-    } else {
-      let(&tmpStr, "\" is directly referenced in");
-    }
-    if (slen - 1 == 1) {
-      printLongLine(cat("Statement \"", statement[statemNum].labelName,
-          tmpStr, " the proof of ",
-          str(slen - 1), " statement:", NULL), "", " ");
-    } else {
-      printLongLine(cat("Statement \"", statement[statemNum].labelName,
-          tmpStr, " the proofs of ",
-          str(slen - 1), " statements:", NULL), "", " ");
-    }
-  }
-  
   /* Prepare the output */
   /* First, fill in the statementUsedFlags char array.  This allows us to sort
      the output by statement number without calling a sort routine. */
@@ -1875,23 +2544,21 @@ void traceUsage(long statemNum,
     if (statementUsedFlags[stmt] == 'y') {
       let(&outputString, cat(outputString, " ", statement[stmt].labelName,
           NULL));
+      /* For temporary unofficial use by NDM to help build command files: */
+      /*
+      print2("prove %s$min %s/a$sa n/compr$q\n",
+          statement[stmt].labelName,statement[statemNum].labelName);
+      */
     } /* End if (statementUsedFlag[stmt] == 'y') */
   } /* Next stmt */
-  if (outputString[0]) {
-    let(&outputString, cat(" ", outputString, NULL));
-  } else {
-    let(&outputString, "  (None)");
-  }
 
-  /* Print the output */
-  printLongLine(outputString, "  ", " ");
-  
   /* Deallocate */
-  let(&outputString, "");
   let(&statementUsedFlags, "");
   nmbrLet(&statementList, NULL_NMBRSTRING);
   nmbrLet(&proof, NULL_NMBRSTRING);
-  
+
+  return (outputString);
+
 }
 
 
@@ -1905,7 +2572,7 @@ vstring getDescription(long statemNum) {
   char *startDescription;
   char *endDescription;
   char *startLabel;
-  
+
   fbPtr = statement[statemNum].mathSectionPtr;
   if (!fbPtr[0]) return (description);
   startLabel = statement[statemNum].labelSectionPtr;
@@ -1940,11 +2607,36 @@ vstring getDescription(long statemNum) {
 }
 
 
+/* Returns the amount of indentation of a statement label.  Used to
+   determine how much to indent a saved proof. */
+long getSourceIndentation(long statemNum) {
+  char *fbPtr; /* Source buffer pointer */
+  char *startLabel;
+  long indentation = 0;
+
+  fbPtr = statement[statemNum].mathSectionPtr;
+  if (fbPtr[0] == 0) return 0;
+  startLabel = statement[statemNum].labelSectionPtr;
+  if (startLabel[0] == 0) return 0;
+  while (1) { /* Go back to first line feed prior to the label */
+    if (fbPtr <= startLabel) break;
+    if (fbPtr[0] == '\n') break;
+    if (fbPtr[0] == ' ') {
+      indentation++; /* Space increments indentation */
+    } else {
+      indentation = 0; /* Non-space (i.e. a label character) resets back to 0 */
+    }
+    fbPtr--;
+  }
+  return indentation;
+}
+
+
 void readInput(void)
 {
 
   /* Temporary variables and strings */
-  long i,p;
+  long p;
 
   p = instr(1,input_fn,".") - 1;
   if (p == -1) p = len(input_fn);
@@ -1965,7 +2657,7 @@ void writeInput(void)
 {
 
   /* Temporary variables and strings */
-  long i,p;
+  long i;
   vstring str1 = "";
 
   print2("Creating and writing \"%s\"...\n",output_fn);
@@ -1983,37 +2675,7 @@ void writeInput(void)
 
 void writeDict(void)
 {
-  /* Temporary variables and strings */
-  long i,p,dictFlag;
-  vstring str1=""; /* Remember to initialize all vstrings! */
-
-  /* Open the files */
-  inputDef_fp=vmc_fopen(&inputDef_fn,
-        "Name of LaTeX symbol definition input file",
-        "latex.def","r",0);
-
-  print2("Reading LaTeX symbol definitions from \"%s\"...\n",inputDef_fn);
-
-  /* Initialize the lexical analyzer */
-  vmc_lexSetup();
-
-  /*** Read in and parse the graphics symbol definition file ***/
-  parseGraphicsDef();
-
-
-  /* Put out a list of definitions */
-
-  print2("Creating and writing \"%s\"...\n",tex_dict_fn);
-
-  /*** Word-processor specific ***/
-  outputHeader();
-
-  /*** Word-processor specific ***/
-  outputDefinitions();
-
-  /*** Word-processor specific ***/
-  outputTrailer();
-
+  print2("This function has not been implemented yet.\n");
   return;
 }
 
@@ -2022,16 +2684,15 @@ void eraseSource(void)
 {
   long i;
   vstring tmpStr;
-  
+
   /*??? Deallocate wrkProof structure if wrkProofMaxSize != 0 */
-  
+
   if (statements == 0) {
     /* Already called */
     memFreePoolPurge(0);
-    memUsedPoolPurge(0);
     return;
   }
-  
+
   for (i = 0; i <= includeCalls; i++) {
     let(&includeCall[i].current_fn,"");
     let(&includeCall[i].calledBy_fn,"");
@@ -2079,7 +2740,6 @@ void eraseSource(void)
   } /* Next i (statement) */
 
   memFreePoolPurge(0);
-  memUsedPoolPurge(0);
   statements = 0;
   errorCount = 0;
 
@@ -2093,7 +2753,7 @@ void eraseSource(void)
 
   /* Deallocate the wrkProof structure */
   /*???*/
-  
+
   /* Allocate big arrays */
   initBigArrays();
 }
@@ -2105,8 +2765,8 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
   vstring emptyProofList = "";
   long i, k;
   long lineLen = 0;
-  long nextPercent;
   vstring header = "";
+  flag errorFound;
 
 #ifdef __WATCOMC__
   vstring tmpStr="";
@@ -2118,7 +2778,7 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
 
   if (!strcmp("*", labelMatch) && verifyFlag) {
     /* Use status bar */
-    let(&header, "0 10%  20%  30%  40%  50%  60%  70%  80%  90% 100%"); 
+    let(&header, "0 10%  20%  30%  40%  50%  60%  70%  80%  90% 100%");
 #ifdef XXX /*__WATCOMC__*/
     /* The vsprintf function discards text after "%" in 3rd argument string. */
     /* This is a workaround. */
@@ -2139,11 +2799,12 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
     }
     print2("\n");
 #else
-    print2("%s\n", header);                                             
+    print2("%s\n", header);
 #endif
 #endif
   }
 
+  errorFound = 0;
   for (i = 1; i <= statements; i++) {
     if (!strcmp("*", labelMatch) && verifyFlag) {
       while (lineLen < (50 * i) / statements) {
@@ -2163,11 +2824,12 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
       }
       print2("%s ",statement[i].labelName);
     }
-      
+
     k = parseProof(i);
+    if (k >= 2) errorFound = 1;
     if (k < 2) { /* $p with no error */
       if (verifyFlag) {
-        verifyProof(i);
+        if (verifyProof(i) >= 2) errorFound = 1;
         cleanWrkProof(); /* Deallocate verifyProof storage */
       }
     }
@@ -2180,10 +2842,17 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
     print2("\n");
   }
 
-  if (strlen(emptyProofList)) {
+  if (emptyProofList[0]) {
     printLongLine(cat(
         "Warning:  The following $p statements were not proved:  ",
         right(emptyProofList,3),NULL)," ","  ");
+  }
+  if (!emptyProofList[0] && !errorFound && !strcmp("*",labelMatch)) {
+    if (verifyFlag) {
+      print2("All proofs in the database were verified.\n");
+    } else {
+      print2("All proofs in the database passed the syntax-only check.\n");
+    }
   }
   let(&emptyProofList,""); /* Deallocate */
 
@@ -2199,3 +2868,212 @@ void H(vstring helpLine)
     print2("%s\n", helpLine);
   }
 }
+
+
+
+/******** 8/28/00 ***********************************************************/
+/******** The MIDI output algorithm is in this function, outputMidi(). ******/
+/*** Warning:  If you want to experiment with the MIDI output, please
+     confine changes to this function.  Changes to other code
+     in this file is not recommended. ***/
+
+void outputMidi(long plen, nmbrString *indentationLevels,
+  nmbrString *logicalFlags, vstring midiParam, vstring statementLabel) {
+
+  /* plen = length of proof
+     indentationLevels[step] = indentation level in "show proof xxx /full"
+     logicalFlags[step] = 0 for formula-building step, 1 for logical step
+     midiParam = string passed by user in "midi xxx /parameter <midiParam>"
+     statementLabel = label of statement whose proof is being scanned */
+
+  /* This function is called from inside a scan of the proof, where the proof
+     steps count successively from 0 to plen-1. */
+
+/* Larger TEMPO means faster speed */
+#define TEMPO 48
+/* The minimum and maximum notes for the dynamic range we allow: */
+/* (MIDI notes range from 1 to 127, but 28 to 103 seems reasonably pleasant) */
+#define MIN_NOTE 28
+#define MAX_NOTE 103
+
+  /* Note: "flag" is just "char", "vstring" is just "char *" - except
+     that vstring allocation is controlled by string functions in
+     mmvstr.c, "nmbrString" is just "long *" */
+
+  long step; /* Proof step from 0 to plen-1 */
+  long midiNote; /* Current midi note to be output */
+  long midiTime; /* Midi time stamp */
+  long midiPreviousFormulaStep; /* Note saved from previous step */
+  long midiPreviousLogicalStep; /* Note saved from previous step */
+  vstring midiFileName = ""; /* All vstrings MUST be initialized to ""! */
+  FILE *midiFilePtr; /* Output file pointer */
+  long midiBaseline; /* Baseline note */
+  long midiMaxIndent; /* Maximum indentation (to find dyn range of notes) */
+  long midiMinNote; /* Smallest note in output */
+  long midiMaxNote; /* Largest note in output */
+  long midiNoteInc; /* Note increment per proof indentation level */
+  flag midiSyncopate; /* 1 = syncopate the output */
+  flag midiHesitate; /* 1 = silence all repeated notes */
+  long midiTempo; /* larger = faster */
+  vstring midiLocalParam = ""; /* To manipulate user's parameter string */
+  vstring tmpStr = ""; /* Temporary string */
+
+  /************* Initialization ***************/
+
+  midiTime = 0; /* MIDI time stamp */
+  midiPreviousFormulaStep = 0; /* Note in previous formula-building step */
+  midiPreviousLogicalStep = 0; /* Note in previous logical step */
+  midiFilePtr = NULL; /* Output file pointer */
+
+  /* Parse the parameter string passed by the user */
+  let(&midiLocalParam, edit(midiParam, 32)); /* Convert to uppercase */
+
+  /* Set syncopation */
+  if (strchr(midiLocalParam, 'S') != NULL) {
+    midiSyncopate = 1; /* Syncopation */
+  } else {
+    midiSyncopate = 0; /* No syncopation */
+  }
+  /* Set halting character of syncopation (only has effect if
+     syncopation is on) */
+  if (strchr(midiLocalParam, 'H') != NULL) {
+    midiHesitate = 1; /* Silence all repeated fast notes */
+  } else {
+    midiHesitate = 0; /* Silence only every other one in a repeated sequence */
+  }
+  /* Set the tempo: 96=fast, 48=slow */
+  if (strchr(midiLocalParam, 'F') != NULL) {
+    midiTempo = 2 * TEMPO;
+  } else {
+    midiTempo = TEMPO;
+  }
+  /* End of parsing user's parameter string */
+
+  /* Get max indentation, so we can determine the scale factor
+     to make midi output fit within dynamic range */
+  midiMaxIndent = 0;
+  for (step = 0; step < plen; step++) {
+    if (indentationLevels[step] > midiMaxIndent)
+      midiMaxIndent = indentationLevels[step];
+  }
+
+  /* We will use integral note increments multiplied by the indentation
+     level.  We pick the largest possible, with a maximum of 4, so that the
+     midi output stays within the desired dynamic range.  If the proof has
+     *too* large a maximum indentation (not seen so far), the do loop below
+     will decrease the note increment to 0, so the MIDI output will just be a
+     flat sequence of repeating notes and therefore useless, but at least it
+     won't crash the MIDI converter.  */
+
+  midiNoteInc = 5; /* Starting note increment, plus 1 */
+  do { /* Decrement note incr until song will fit MIDI dyn range */
+    midiNoteInc--;
+    /* Compute the baseline note to which add the proof indentation
+      times the midiNoteInc.  The "12" is to allow for the shift
+      of one octave down of the sustained notes on "essential"
+      (i.e. logical, not formula-building) steps. */
+    midiBaseline = ((MAX_NOTE + MIN_NOTE) / 2) -
+      (((midiMaxIndent * midiNoteInc) - 12) / 2);
+    midiMinNote = midiBaseline - 12;
+    midiMaxNote = midiBaseline + (midiMaxIndent * midiNoteInc);
+  } while ((midiMinNote < MIN_NOTE || midiMaxNote > MAX_NOTE) &&
+      midiNoteInc > 0);
+
+  /* Open the output file */
+  let(&midiFileName, cat(statement[showStatement].labelName,
+      ".txt", NULL)); /* Create file name from statement label */
+  print2("Creating MIDI source file \"%s\"...", midiFileName);
+
+  /* fSafeOpen() renames existing files with ~1,~2,etc.  This way
+     existing user files will not be accidentally destroyed. */
+  midiFilePtr = fSafeOpen(midiFileName, "w");
+  if (midiFilePtr == NULL) {
+    print2("?Couldn't open %s\n", midiFileName);
+    goto midi_return;
+  }
+
+  /* Output the MIDI header */
+  fprintf(midiFilePtr, "MFile 0 1 %ld\n", midiTempo);
+  fprintf(midiFilePtr, "MTrk\n");
+
+  /* Create a string exactly 38 characters long for the Meta Text
+     label (I'm not sure why, but they are in the t2mf examples) */
+  let(&tmpStr, cat("Theorem ", statementLabel, " ", midiParam,
+      space(30), NULL));
+  let(&tmpStr, left(tmpStr, 38));
+  fprintf(midiFilePtr, "0 Meta Text \"%s\"\n", tmpStr);
+  fprintf(midiFilePtr,
+      "0 Meta Copyright \"Copyright (C) 2000 nm@alum.mit.edu    \"\n");
+
+  /************** Scan the proof ************************/
+
+  for (step = 0; step < plen; step++) {
+  /* Handle the processing that takes place at each proof step */
+    if (!logicalFlags[step]) {
+
+      /*** Process the higher fast notes for formula-building steps ***/
+      midiNote = (midiNoteInc * indentationLevels[step]) + midiBaseline;
+      if (midiPreviousFormulaStep != midiNote || !midiSyncopate) {
+        /* Turn note on at the current MIDI time stamp */
+        fprintf(midiFilePtr, "%ld On ch=2 n=%ld v=75\n", midiTime, midiNote);
+        /* Turn note off at the time stamp + 18 */
+        fprintf(midiFilePtr, "%ld On ch=2 n=%ld v=0\n", midiTime + 18,
+            midiNote);
+        midiPreviousFormulaStep = midiNote;
+      } else {
+        /* Skip turning on the note to give syncopation */
+        /* To prevent skipping two notes in a row, set last note
+           to 0 so next step it will not be skipped even if the
+           note still doesn't change; this makes the syncopation
+           more rhythmic */
+        if (!midiHesitate) {
+          midiPreviousFormulaStep = 0;
+        }
+      }
+      midiTime += 24; /* Add 24 to the MIDI time stamp */
+
+    } else {
+
+      /*** Process the deeper sustained notes for logical steps ***/
+      /* The idea here is to shift the note down 1 octave before
+         outputting it, so it is distinguished from formula-
+         building notes */
+      midiNote = (midiNoteInc * indentationLevels[step])
+          + midiBaseline;
+      midiNote = midiNote - 12; /* Down 1 octave */
+      if (midiPreviousLogicalStep) { /* If 0, it's the first time */
+        /* Turn off the previous sustained note */
+        fprintf(midiFilePtr, "%ld On ch=1 n=%ld v=0\n", midiTime,
+            midiPreviousLogicalStep);
+      }
+      /* Turn on the new sustained note */
+      fprintf(midiFilePtr, "%ld On ch=1 n=%ld v=100\n", midiTime,
+          midiNote);
+      midiTime += 24; /* Add 24 to the MIDI time stamp */
+      midiPreviousLogicalStep = midiNote; /* Save for next step */
+
+    }
+  } /* next step */
+
+  /****************** Clean up and close output file ****************/
+
+  /* After the last step, do the file closing stuff */
+  /* Sustain the very last note a little longer - sounds better */
+  midiTime += 72;
+  fprintf(midiFilePtr, "%ld On ch=1 n=%ld v=0\n", midiTime,
+      midiPreviousLogicalStep);
+  /* Output the MIDI file trailer */
+  fprintf(midiFilePtr, "%ld Meta TrkEnd\n", midiTime);
+  fprintf(midiFilePtr, "TrkEnd\n");
+  fclose(midiFilePtr);
+  /* Inform the user the run time of the MIDI file */
+  print2(" length = %ld sec\n", (long)(midiTime / (2 * midiTempo)));
+
+ midi_return:
+  /* Important: all local vstrings must be deallocated to prevent
+     memory leakage */
+  let(&midiFileName, "");
+  let(&tmpStr, "");
+  let(&midiLocalParam, "");
+
+} /* outputMidi() */

@@ -1,11 +1,11 @@
 /*****************************************************************************/
-/*               Copyright (C) 1997, NORMAN D. MEGILL                        */
+/*       Copyright (C) 2000  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
-
-/*34567890123456 (79-character line to adjust text window width) 678901234567*/
+/*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
 /*
-mmdata.h
+mmdata.c
 */
 
 #include <stdarg.h>
@@ -23,6 +23,8 @@ mmdata.h
 #include <limits.h>
 #include <setjmp.h>
 /*E*/long db=0,db0=0,db1=0,db2=0,db3=0,db4=0,db5=0,db6=0,db7=0,db8=0,db9=0;
+flag listMode = 0; /* 0 = metamath, 1 = list utility */
+flag toolsMode = 0; /* In metamath: 0 = metamath, 1 = text tools utility */
 
 /* Global variables related to current statement */
 int currentScope = 0;
@@ -72,16 +74,6 @@ pntrString *pntrTempAlloc(long size);
 void pntrCpy(pntrString *sout, pntrString *sin);
 void pntrNCpy(pntrString *s, pntrString *t, long n);
 
-/* Work around VAX c bugs */
-/*
-#ifdef VAXC
-#include "mmutil.h"
-#define malloc(a) vmc_malloc(a)
-#define free(a) vmc_free(a)
-#endif
-*/
-/* End of working around VAX c bugs */
-
 
 /* Memory pools are used to reduce the number of malloc and alloc calls that
    allocate arrays (strings or genStrings typically).   The "free" pool contains
@@ -121,25 +113,12 @@ void *poolFixedMalloc(long size /* bytes */)
 {
   void *ptr;
   void *ptr2;
-  static char bug_1301_warning_flag = 1;
 /*E*/if(db9)getPoolStats(&i1,&j1,&k1); if(db9)print2("a0: pool %ld stat %ld\n",poolTotalFree,i1+j1);
   if (!memFreePoolSize) { /* The pool is empty; we must allocate memory */
     ptr = malloc( 3 * sizeof(long) + size);
-    if (!ptr) {
-      /* Try freeing space */
-      print2("Memory is low.  Trimming unused storage...\n");
-      memUsedPoolHalfPurge(0);
-      ptr = malloc( 3 * sizeof(long) + size);
-      if (!ptr) {
-        /* Try freeing space */
-        print2("Memory is still low.  Trimming more unused storage...\n");
-        memUsedPoolPurge(0);
-        ptr = malloc( 3 * sizeof(long) + size);
-        if (!ptr) outOfMemory(
-            cat("#25 (poolFixedMalloc ", str(size), ")", NULL));
-                                                  /* Nothing more can be done */
-      }
-    }
+    if (!ptr) outOfMemory(
+        cat("#25 (poolFixedMalloc ", str(size), ")", NULL));
+
     ptr = (long *)ptr + 3;
     ((long *)ptr)[-1] = size; /* Actual size */
     ((long *)ptr)[-2] = size; /* Allocated size */
@@ -152,43 +131,21 @@ void *poolFixedMalloc(long size /* bytes */)
 /*E*/if(db9)getPoolStats(&i1,&j1,&k1); if(db9)print2("a: pool %ld stat %ld\n",poolTotalFree,i1+j1);
     if (size <= ((long *)ptr)[-2]) { /* We have enough space already */
       ptr2 = realloc( (long *)ptr - 3, 3 * sizeof(long) + size);
-
-      /* Note:  leaving pointer unchanged is not required by ANSII C but
-         it usually indicates a bug.  Put out warning then turn warning
-         off */
-      if (ptr2 != (long *)ptr - 3 && bug_1301_warning_flag) {
-        print2(
-           "WARNING: Possible program bug - realloc space reduction changed\n");
-        print2(
-            "pointer; could be compiler-dependent.  Warning now turned off.\n");
-        bug_1301_warning_flag = 0;
-      }
-      /*if (ptr2 != (long *)ptr - 3) bug(1301);*/ /* realloc changed ptr */
-      ptr = ptr2; /* Correct it in case user continues */
-    } else { /* We must reallocate */
+      /* Reallocation cannot fail, since we are shrinking space */
+      if (!ptr2) bug(1382);
+      ptr = ptr2;
+    } else { /* The pool's last entry is too small; free and allocate new */
       free((long *)ptr - 3);
       ptr = malloc( 3 * sizeof(long) + size);
     }
     if (!ptr) {
       /* Try freeing space */
-      print2("Memory is low.  Trimming unused storage...\n");
-      memUsedPoolHalfPurge(0);
+      print2("Memory is low.  Deallocating storage pool...\n");
+      memFreePoolPurge(0);
       ptr = malloc( 3 * sizeof(long) + size);
-      if (!ptr) {
-        /* Try freeing space */
-        print2("Memory is still low.  Trimming more unused storage...\n");
-        memUsedPoolPurge(0);
-        ptr = malloc( 3 * sizeof(long) + size);
-        if (!ptr) {
-          /* Try freeing space */
-          print2("Memory is still low.  Deallocating storage pool...\n");
-          memFreePoolPurge(0);
-          ptr = malloc( 3 * sizeof(long) + size);
-          if (!ptr) outOfMemory(
-              cat("#26 (poolFixedMalloc ", str(size), ")", NULL));
-                                                /* Nothing more can be done */
-        }
-      }
+      if (!ptr) outOfMemory(
+          cat("#26 (poolMalloc ", str(size), ")", NULL));
+                                            /* Nothing more can be done */
     }
     ptr = (long *)ptr + 3;
     ((long *)ptr)[-1] = size; /* Actual size */
@@ -202,7 +159,7 @@ void *poolFixedMalloc(long size /* bytes */)
 
 /* poolMalloc tries first to use an array in the memFreePool before actually
    malloc'ing */
-void *poolMalloc(long size /* bytes */) 
+void *poolMalloc(long size /* bytes */)
 {
   void *ptr;
   long memUsedPoolTmpMax;
@@ -210,36 +167,14 @@ void *poolMalloc(long size /* bytes */)
 
   /* Check to see if the pool total exceeds max. */
   if (poolTotalFree > poolAbsoluteMax) {
-    /*print2("Memory pool limit reached.  Trimming unused storage...\n");*/
-    memUsedPoolHalfPurge(1 /* 1 means until poolTotalFree ok */);
-    if (poolTotalFree > poolAbsoluteMax) {
-      /*print2("Memory pool still at limit.  Trimming more unused storage...\n");*/
-      memUsedPoolPurge(1);
-      if (poolTotalFree > poolAbsoluteMax) {
-        /*print2("Memory pool still at limit.  Deallocating storage pool...\n");*/
-        memFreePoolPurge(1);
-        if (poolTotalFree >= poolAbsoluteMax) bug(1302);
-      }
-    }
+    memFreePoolPurge(1);
   }
-    
+
 /*E*/if(db9)getPoolStats(&i1,&j1,&k1); if(db9)print2("b0: pool %ld stat %ld\n",poolTotalFree,i1+j1);
   if (!memFreePoolSize) { /* The pool is empty; we must allocate memory */
     ptr = malloc( 3 * sizeof(long) + size);
     if (!ptr) {
-      /* Try freeing space */
-      print2("Memory is low.  Trimming unused storage...\n");
-      memUsedPoolHalfPurge(0);
-      ptr = malloc( 3 * sizeof(long) + size);
-      if (!ptr) {
-        /* Try freeing space */
-        print2("Memory is still low.  Trimming more unused storage...\n");
-        memUsedPoolPurge(0);
-        ptr = malloc( 3 * sizeof(long) + size);
-        if (!ptr) outOfMemory(
-            cat("#27 (poolMalloc ", str(size), ")", NULL));
-                                                  /* Nothing more can be done */
-      }
+      outOfMemory(cat("#27 (poolMalloc ", str(size), ")", NULL));
     }
     ptr = (long *)ptr + 3;
     ((long *)ptr)[-1] = size; /* Actual size */
@@ -259,24 +194,12 @@ void *poolMalloc(long size /* bytes */)
       ptr = malloc( 3 * sizeof(long) + size);
       if (!ptr) {
         /* Try freeing space */
-        print2("Memory is low.  Trimming unused storage...\n");
-        memUsedPoolHalfPurge(0);
+        print2("Memory is low.  Deallocating storage pool...\n");
+        memFreePoolPurge(0);
         ptr = malloc( 3 * sizeof(long) + size);
-        if (!ptr) {
-          /* Try freeing space */
-          print2("Memory is still low.  Trimming more unused storage...\n");
-          memUsedPoolPurge(0);
-          ptr = malloc( 3 * sizeof(long) + size);
-          if (!ptr) {
-            /* Try freeing space */
-            print2("Memory is still low.  Deallocating storage pool...\n");
-            memFreePoolPurge(0);
-            ptr = malloc( 3 * sizeof(long) + size);
-            if (!ptr) outOfMemory(
-                cat("#28 (poolMalloc ", str(size), ")", NULL));
-                                                  /* Nothing more can be done */
-          }
-        }
+        if (!ptr) outOfMemory(
+            cat("#28 (poolMalloc ", str(size), ")", NULL));
+                                              /* Nothing more can be done */
       }
       ptr = (long *)ptr + 3;
       ((long *)ptr)[-1] = size; /* Actual size */
@@ -301,22 +224,11 @@ void *poolMalloc(long size /* bytes */)
                                                     when program first starts */
     } else {
       /* Normal reallocation */
-      memUsedPoolTmpPtr = realloc(memUsedPool, memUsedPoolTmpMax
-          * sizeof(void *));
+      memUsedPoolTmpPtr = realloc(memUsedPool,
+          memUsedPoolTmpMax * sizeof(void *));
     }
     if (!memUsedPoolTmpPtr) {
-      print2("Memory is low.  Trimming unused storage...\n");
-      memUsedPoolHalfPurge(0);
-      memUsedPoolTmpPtr = realloc(memUsedPool, memUsedPoolTmpMax
-          * sizeof(void *));
-      if (!memUsedPoolTmpPtr) {
-        print2("Memory is still low.  Trimming more unused storage...\n");
-        memUsedPoolPurge(0); /* This will shrink memUsedPoolSize to zero */
-      } else {
-        /* Reallocation successful */
-        memUsedPool = memUsedPoolTmpPtr;
-        memUsedPoolMax = memUsedPoolTmpMax;
-      }
+      outOfMemory(cat("#29 (poolMalloc ", str(memUsedPoolTmpMax), ")", NULL));
     } else {
       /* Reallocation successful */
       memUsedPool = memUsedPoolTmpPtr;
@@ -349,7 +261,7 @@ void poolFree(void *ptr)
     ((long *)ptr1)[-3] = usedLoc;
 /*E*/if(db9)getPoolStats(&i1,&j1,&k1); if(db9)print2("d: pool %ld stat %ld\n",poolTotalFree,i1+j1);
   }
-  
+
   /* Next, add the array to the memFreePool */
   /* First, allocate more memFreePool pointer space if needed */
   if (memFreePoolSize >= memFreePoolMax) { /* Increase size of free pool */
@@ -363,14 +275,12 @@ void poolFree(void *ptr)
                                                     when program first starts */
     } else {
       /* Normal reallocation */
-      memFreePoolTmpPtr = realloc(memFreePool, memFreePoolTmpMax
-          * sizeof(void *));
+      memFreePoolTmpPtr = realloc(memFreePool,
+          memFreePoolTmpMax * sizeof(void *));
     }
     if (!memFreePoolTmpPtr) {
 /*E*/if(db9)print2("Realloc failed\n");
-      /* Memory is too low.  Just free the array directly. */
-      free( (long *)ptr - 3);
-      return;
+      outOfMemory(cat("#30 (poolFree ", str(memFreePoolTmpMax), ")", NULL));
     } else {
       /* Reallocation successful */
       memFreePool = memFreePoolTmpPtr;
@@ -383,11 +293,11 @@ void poolFree(void *ptr)
   poolTotalFree = poolTotalFree + ((long *)ptr)[-2];
 /*E*/if(db9)getPoolStats(&i1,&j1,&k1); if(db9)print2("e: pool %ld stat %ld\n",poolTotalFree,i1+j1);
   return;
-}  
-  
-  
+}
+
+
 /* addToUsedPool adds a (partially used) array to the memUsedPool */
-void addToUsedPool(void *ptr) 
+void addToUsedPool(void *ptr)
 {
   long memUsedPoolTmpMax;
   void *memUsedPoolTmpPtr;
@@ -411,18 +321,7 @@ void addToUsedPool(void *ptr)
           * sizeof(void *));
     }
     if (!memUsedPoolTmpPtr) {
-      print2("Memory is low.  Trimming unused storage...\n");
-      memUsedPoolHalfPurge(0);
-      memUsedPoolTmpPtr = realloc(memUsedPool, memUsedPoolTmpMax
-          * sizeof(void *));
-      if (!memUsedPoolTmpPtr) {
-        print2("Memory is still low.  Trimming more unused storage...\n");
-        memUsedPoolPurge(0); /* This will shrink memUsedPoolSize to zero */
-      } else {
-        /* Reallocation successful */
-        memUsedPool = memUsedPoolTmpPtr;
-        memUsedPoolMax = memUsedPoolTmpMax;
-      }
+      outOfMemory("#31 (addToUsedPool)");
     } else {
       /* Reallocation successful */
       memUsedPool = memUsedPoolTmpPtr;
@@ -449,7 +348,7 @@ void memFreePoolPurge(flag untilOK)
     free((long *)(memFreePool[memFreePoolSize]) - 3);
     if (untilOK) {
       /* If pool size is OK, return. */
-      if (poolTotalFree < poolAbsoluteMax) return;
+      if (poolTotalFree <= poolAbsoluteMax) return;
     }
   }
   /* memFreePoolSize = 0 now. */
@@ -463,74 +362,7 @@ void memFreePoolPurge(flag untilOK)
 /*E*/if(db9)getPoolStats(&i1,&j1,&k1); if(db9)print2("g: pool %ld stat %ld\n",poolTotalFree,i1+j1);
   return;
 }
-    
-  
-/* Trim off unused space with realloc in each array. */  
-void memUsedPoolPurge(flag untilOK)
-{
-  void *ptr1;
-  void *ptr2;
-  long size;
-/*E*/if(db9)getPoolStats(&i1,&j1,&k1); if(db9)print2("f0: pool %ld stat %ld\n",poolTotalFree,i1+j1);
-  while (memUsedPoolSize) {
-    memUsedPoolSize--;
-    /* Reallocate to actual size */
-    ptr1 = memUsedPool[memUsedPoolSize];
-    size = ((long *)ptr1)[-1]; /* Actual size */
-    ptr2 = realloc((long *)ptr1 - 3, 3 * sizeof(long) + size);
-    if (!ptr2) bug(1306);
-    ptr2 = (long *)ptr2 + 3;
-    if (ptr1 != ptr2) bug(1307); /* realloc shouldn't change ptr when shrinking*/
-    poolTotalFree = poolTotalFree - ((long *)ptr2)[-2] + ((long *)ptr2)[-1];
-    ((long *)ptr2)[-2] = size; /* Allocated size = actual size */
-    ((long *)ptr2)[-3] = -1; /* No longer in memUsedPool */
-    if (untilOK) {
-      /* If pool size is OK, return. */
-      if (poolTotalFree < poolAbsoluteMax) return;
-    }
-  }
-  /* memUsedPoolSize = 0 now. */
-  if (memUsedPoolMax != MEM_POOL_GROW) {
-    /* Reduce size of pool pointer array to minimum growth increment. */
-    if (memUsedPool) free(memUsedPool); /* Only when starting program */
-    memUsedPool = malloc(MEM_POOL_GROW
-        * sizeof(void *)); /* Allocate starting increment */
-    memUsedPoolMax = MEM_POOL_GROW;
-  }
-/*E*/if(db9)getPoolStats(&i1,&j1,&k1); if(db9)print2("h: pool %ld stat %ld\n",poolTotalFree,i1+j1);
-  return;
-}
-    
 
-/* Leave at most twice the array size allocated for it. */
-void memUsedPoolHalfPurge(flag untilOK)
-{
-  void *ptr1;
-  void *ptr2;
-  long actualSize, allocSize, threshSize, i;
-  for (i = 0; i < memUsedPoolSize; i++) {
-    /* Reallocate to at most twice actual size */
-    ptr1 = memUsedPool[i];
-    actualSize = ((long *)ptr1)[-1]; /* Actual size */
-    allocSize = ((long *)ptr1)[-2]; /* Allocated size */
-    threshSize = actualSize + actualSize; /* Threshold */
-    if (allocSize > threshSize) {
-      ptr2 = realloc((long *)ptr1 - 3, 3 * sizeof(long) + threshSize);
-      if (!ptr2) bug(1308);
-      ptr2 = (long *)ptr2 + 3;
-      if (ptr1 != ptr2) bug(1309); /* realloc shouldn't change ptr when shrinking*/
-      poolTotalFree = poolTotalFree - ((long *)ptr2)[-2] + threshSize;
-      ((long *)ptr2)[-2] = threshSize; /* Allocated size = threshold size */
-      if (untilOK) {
-        /* If pool size is OK, return. */
-        if (poolTotalFree < poolAbsoluteMax) return;
-      }
-    }
-  }
-/*E*/if(db9)getPoolStats(&i1,&j1,&k1); if(db9)print2("j: pool %ld stat %ld\n",poolTotalFree,i1+j1);
-  return;
-}
-    
 
 /* Get statistics for SHOW MEMORY command */
 void getPoolStats(long *freeAlloc, long *usedAlloc, long *usedActual)
@@ -566,14 +398,14 @@ void initBigArrays(void)
   if (((long *)NULL_GENSTRING)[-1] != 8) bug(1312);
   if ((*NULL_GENSTRING).tokenNum != -1) bug(1313);
   if (sizeof(struct nullGenStruct) != 20) bug(1314);
-  
+
   /* Check for compiler-dependency of null nmbrString alignment */
   if (((long *)NULL_NMBRSTRING)[-3] != -1) bug(1315);
   if (((long *)NULL_NMBRSTRING)[-2] != 4) bug(1316);
   if (((long *)NULL_NMBRSTRING)[-1] != 4) bug(1317);
   if ((*NULL_NMBRSTRING) != -1) bug(1318);
   if (sizeof(struct nullNmbrStruct) != 16) bug(1319);
-  
+
   /* Check for compiler-dependency of null pntrString alignment */
   if (((long *)NULL_PNTRSTRING)[-3] != -1) bug(1320);
   if (((long *)NULL_PNTRSTRING)[-2] != 4) bug(1321);
@@ -581,7 +413,7 @@ void initBigArrays(void)
   if ((*NULL_PNTRSTRING) != NULL) bug(1323);
   if (sizeof(struct nullPntrStruct) != 16) bug(1324);
 #endif
-  
+
 /*??? This should all become obsolete. */
   statement = malloc(MAX_STATEMENTS * sizeof(struct statement_struct));
 /*E*//*db=db+MAX_STATEMENTS * sizeof(struct statement_struct);*/
@@ -663,22 +495,20 @@ void bug(int bugNum)
   print2("*** A PROGRAM BUG WAS DETECTED.\n");
   print2("Bug identifier (for technical support):  %ld\n",(long)bugNum);
   print2(
-"To get technical support, please send us a command file that reproduces\n");
+"To get technical support, please send Norm Megill a command file that\n");
   print2(
-"the bug, along with the source files that were used.  Note that a command\n");
+"reproduces this bug, along with the source files that were used.  See\n");
   print2(
-"file is simply an ASCII file with Metamath commands, and to run it you\n");
-  print2(
-"type \"SUBMIT <filename>\" at the \"MM>\" prompt.\n");
+"HELP SUBMIT for help on command files.\n");
   print2("\n");
   let(&tmpStr, "?");
-  while (strcmp(tmpStr, "continue at my own risk") && strcmp(tmpStr, "")) {
+  while (strcmp(tmpStr, "cont") && strcmp(tmpStr, "")) {
     let(&tmpStr, "");
     print2(
-      "Press <return> to abort program, or type 'continue at my own risk':\n");
-    tmpStr = cmdInput1("");
+"Press RETURN to abort program, or type 'cont' to continue at your own risk\n");
+    tmpStr = cmdInput1("?");
   }
-  if (!strcmp(tmpStr, "continue at my own risk")) {
+  if (!strcmp(tmpStr, "cont")) {
     print2(
     "Warning!!!  A bug was detected, but you are continuing anyway.\n");
     print2(
@@ -701,7 +531,7 @@ void bug(int bugNum)
   exit(0);
 }
 
-       
+
 #define M_MAX_ALLOC_STACK 100
 
 int genTempAllocStackTop=0;     /* Top of stack for genTempAlloc functon */
@@ -785,7 +615,7 @@ void genLet(struct genString **target,struct genString *source)
 
       if (targetAllocLen >= sourceLength) { /* Old string has room for new one */
         genCpy(*target,source); /* Re-use the old space to save CPU time */
-  
+
         /* Memory pool handling */
         /* Assign actual size of target string */
         poolDiff = ((long *)(*target))[-1] - ((long *)source)[-1];
@@ -810,7 +640,7 @@ void genLet(struct genString **target,struct genString *source)
             poolTotalFree = poolTotalFree + poolDiff;
           }
         }
-         
+
 
 /*E*/if(db9)getPoolStats(&i1,&j1,&k1); if(db9)print2("k0a: pool %ld stat %ld\n",poolTotalFree,i1+j1);
       } else {
@@ -890,7 +720,7 @@ struct genString *genCat(struct genString *string1,...) /* String concatenation 
   arg[0]=string1;       /* First argument */
 
   va_start(ap,string1); /* Begin the session */
-  while (arg[numArgs++]=va_arg(ap,struct genString *))
+  while ((arg[numArgs++]=va_arg(ap,struct genString *)))
         /* User-provided argument list must terminate with NULL */
     if (numArgs>=M_MAX_CAT_ARGS-1) {
       printf("*** FATAL ERROR ***  Too many cat() arguments\n");
@@ -932,7 +762,7 @@ long genLen(struct genString *s)
   /* Slower computation */
   return ((((long *)s)[-1] - 8) / sizeof(struct genString));
 #endif
-  
+
   /*???Old code:
   long i;
   i = 0;
@@ -974,7 +804,7 @@ void genZapLen(struct genString *s, long len) {
   ((long *)s)[-1] = (len + 1) * sizeof(struct genString);
 /*E*/if(db9)getPoolStats(&i1,&j1,&k1); if(db9)print2("l: pool %ld stat %ld\n",poolTotalFree,i1+j1);
 }
-  
+
 
 /* Copy a string to another (pre-allocated) string */
 void genCpy(struct genString *s,struct genString *t)
@@ -1089,7 +919,7 @@ struct genString *genSpace(long n)
   return (sout);
 }
 
-/* Allocate and return an "empty" string n "characters" long 
+/* Allocate and return an "empty" string n "characters" long
    with whiteSpace initialized to genStrings instead of vStrings */
 struct genString *genGSpace(long n)
 {
@@ -1156,7 +986,7 @@ vstring cvtMToVString(struct genString *s, flag whiteSpaceFlag)
 {
   long i;
   vstring tmpStr = "";
-  
+
   long saveTempAllocStack;
   saveTempAllocStack = startTempAllocStack; /* For let() stack cleanup */
   startTempAllocStack = tempAllocStackTop;
@@ -1197,7 +1027,7 @@ vstring cvtRToVString(struct genString *proof, flag xxx)
   genStartTempAllocStack = genTempAllocStackTop;
 
   plen = genLen(proof);
- 
+
   /* Find longest local label name */
   maxLocalLen = 0;
   i = plen;
@@ -1321,7 +1151,7 @@ struct genString *getProofStepNumbs(struct genString *reason)
       continue;
     }
     if (reason[i].tokenNum < 0 && reason[i].tokenNum != -(long)'?') continue;
-    if (reason[i - 1].tokenNum == -(long)'(' 
+    if (reason[i - 1].tokenNum == -(long)'('
         || reason[i - 1].tokenNum == -(long)'{'
         || reason[i - 1].tokenNum == -(long)'=') {
       step++;
@@ -1331,14 +1161,14 @@ struct genString *getProofStepNumbs(struct genString *reason)
   return (stepNumbs);
 }
 
-  
+
 /* Converts any genString to an ASCII string of numbers corresponding
    to the .tokenNum field -- used for debugging only. */
 vstring cvtAnyToVString(struct genString *s)
 {
   long i;
   vstring tmpStr = "";
-  
+
   long saveTempAllocStack;
   saveTempAllocStack = startTempAllocStack; /* For let() stack cleanup */
   startTempAllocStack = tempAllocStackTop;
@@ -1399,7 +1229,7 @@ long genElementIn(long start, struct genString *g, long element)
 /* Add a single string element to a genString - faster than genCat */
 struct genString *genAddElement(struct genString *g, long element)
 {
-  long i,j,len;
+  long len;
   struct genString *v;
   len = genLen(g);
   v=genTempAlloc(len+2);
@@ -1415,7 +1245,7 @@ struct genString *genAddElement(struct genString *g, long element)
 /* Add a single genString element to a genString - faster than genCat */
 struct genString *genAddGElement(struct genString *g, long element)
 {
-  long i,j,len;
+  long len;
   struct genString *v;
   len = genLen(g);
   v=genTempAlloc(len+2);
@@ -1594,7 +1424,7 @@ struct genString *getIndentation(struct genString *proof,
   struct genString *indentationLevel = NULL_GENSTRING;
   struct genString *subProof = NULL_GENSTRING;
   struct genString *genTmp = NULL_GENSTRING;
-  
+
   plen = genLen(proof);
   stmt = proof[plen - 1].tokenNum;
   genLet(&indentationLevel, genGSpace(plen));
@@ -1624,7 +1454,7 @@ struct genString *getIndentation(struct genString *proof,
     pos = pos - splen;
   }
   if (pos != -1) bug (372);
-    
+
   genLet(&subProof,NULL_GENSTRING); /* Deallocate */
   genLet(&genTmp, NULL_GENSTRING); /* Deallocate */
   genMakeTempAlloc(indentationLevel); /* Flag it for deallocation */
@@ -1645,7 +1475,7 @@ struct genString *getEssential(struct genString *proof)
   struct genString *subProof = NULL_GENSTRING;
   struct genString *genTmp = NULL_GENSTRING;
   struct genString *genTmp2 = NULL_GENSTRING;
-  
+
   plen = genLen(proof);
   stmt = proof[plen - 1].tokenNum;
   genLet(&essentialFlags, genGSpace(plen));
@@ -1683,7 +1513,7 @@ struct genString *getEssential(struct genString *proof)
     pos = pos - splen;
   }
   if (pos != -1) bug (377);
-    
+
   genLet(&subProof,NULL_GENSTRING); /* Deallocate */
   genLet(&genTmp, NULL_GENSTRING); /* Deallocate */
   genLet(&genTmp2, NULL_GENSTRING); /* Deallocate */
@@ -1694,7 +1524,7 @@ struct genString *getEssential(struct genString *proof)
 
 /* This function returns the target hypothesis vs. step number of a proof
    string.  This information is used for formatting proof displays.  The
-   function calls itself recursively.  
+   function calls itself recursively.
    statemNum is the statement being proved. */
 /* ???Optimization:  remove genString calls and use static variables
    to communicate to recursive calls */
@@ -1705,7 +1535,7 @@ struct genString *getTargetHyp(struct genString *proof, long statemNum)
   struct genString *targetHyp = NULL_GENSTRING;
   struct genString *subProof = NULL_GENSTRING;
   struct genString *genTmp = NULL_GENSTRING;
-  
+
   plen = genLen(proof);
   stmt = proof[plen - 1].tokenNum;
   genLet(&targetHyp, genGSpace(plen));
@@ -1749,7 +1579,7 @@ struct genString *getTargetHyp(struct genString *proof, long statemNum)
     pos = pos - splen;
   }
   if (pos != -1) bug (382);
-    
+
   genLet(&subProof,NULL_GENSTRING); /* Deallocate */
   genLet(&genTmp, NULL_GENSTRING); /* Deallocate */
   genMakeTempAlloc(targetHyp); /* Flag it for deallocation */
@@ -1771,7 +1601,7 @@ flag matches(vstring testString, vstring pattern, char wildCard) {
   }
   if (pattern[ppos] != wildCard) return (0); /* Mismatched */
   tpos = ppos;
-  
+
   /* Scan remainder of pattern */
   pctr = 0;
   i = 0;
@@ -1792,9 +1622,10 @@ flag matches(vstring testString, vstring pattern, char wildCard) {
     if (pattern[ppos + 1 + i] == 0) return(1); /* Matched */
     i++;
   }
+  return (0); /* Dummy return - never used */
 }
-    
-  
+
+
 
 
 /*******************************************************************/
@@ -1883,7 +1714,7 @@ void nmbrLet(nmbrString **target,nmbrString *source)
 
       if (targetAllocLen >= sourceLength) { /* Old string has room for new one */
         nmbrCpy(*target,source); /* Re-use the old space to save CPU time */
-  
+
         /* Memory pool handling */
         /* Assign actual size of target string */
         poolDiff = ((long *)(*target))[-1] - ((long *)source)[-1];
@@ -1908,7 +1739,7 @@ void nmbrLet(nmbrString **target,nmbrString *source)
             poolTotalFree = poolTotalFree + poolDiff;
           }
         }
-         
+
 
 /*E*/if(db9)getPoolStats(&i1,&j1,&k1); if(db9)print2("k0a: pool %ld stat %ld\n",poolTotalFree,i1+j1);
       } else {
@@ -1987,7 +1818,7 @@ nmbrString *nmbrCat(nmbrString *string1,...) /* String concatenation */
   arg[0]=string1;       /* First argument */
 
   va_start(ap,string1); /* Begin the session */
-  while (arg[numArgs++]=va_arg(ap,nmbrString *))
+  while ((arg[numArgs++]=va_arg(ap,nmbrString *)))
         /* User-provided argument list must terminate with NULL */
     if (numArgs>=M_MAX_CAT_ARGS-1) {
       printf("*** FATAL ERROR ***  Too many cat() arguments\n");
@@ -2063,7 +1894,7 @@ void nmbrZapLen(nmbrString *s, long len) {
   ((long *)s)[-1] = (len + 1) * sizeof(nmbrString);
 /*E*/if(db9)getPoolStats(&i1,&j1,&k1); if(db9)print2("l: pool %ld stat %ld\n",poolTotalFree,i1+j1);
 }
-  
+
 
 /* Copy a string to another (pre-allocated) string */
 /* Dangerous for general purpose use */
@@ -2143,8 +1974,8 @@ nmbrString *nmbrLeft(nmbrString *sin,long n)
 {
   nmbrString *sout;
   if (n < 0) n = 0;
-  sout=nmbrTempAlloc(n+1);
-  nmbrNCpy(sout,sin,n);
+  sout=nmbrTempAlloc(n + 1);
+  nmbrNCpy(sout, sin, n);
   sout[n] = *NULL_NMBRSTRING;
   return (sout);
 }
@@ -2159,7 +1990,7 @@ nmbrString *nmbrRight(nmbrString *sin,long n)
   i = nmbrLen(sin);
   if (n > i) return (NULL_NMBRSTRING);
   sout = nmbrTempAlloc(i - n + 2);
-  nmbrCpy(sout, &sin[n-1]);
+  nmbrCpy(sout, &sin[n - 1]);
   return (sout);
 }
 
@@ -2169,9 +2000,9 @@ nmbrString *nmbrSpace(long n)
 {
   nmbrString *sout;
   long j = 0;
-  if (n<0) bug(1327);
-  sout=nmbrTempAlloc(n+1);
-  while (j<n) {
+  if (n < 0) bug(1327);
+  sout = nmbrTempAlloc(n + 1);
+  while (j < n) {
     /* Initialize all fields */
     sout[j] = 0;
     j++;
@@ -2184,12 +2015,12 @@ nmbrString *nmbrSpace(long n)
 long nmbrInstr(long start_position,nmbrString *string1,
   nmbrString *string2)
 {
-   long ls1,ls2,i,j;
-   if (start_position<1) start_position=1;
-   ls1=nmbrLen(string1);
-   ls2=nmbrLen(string2);
-   for (i=start_position - 1; i <= ls1 - ls2; i++) {
-     for (j = 0; j<ls2; j++) {
+   long ls1, ls2, i, j;
+   if (start_position < 1) start_position = 1;
+   ls1 = nmbrLen(string1);
+   ls2 = nmbrLen(string2);
+   for (i = start_position - 1; i <= ls1 - ls2; i++) {
+     for (j = 0; j < ls2; j++) {
        if (string1[i+j] != string2[j])
          break;
      }
@@ -2204,16 +2035,16 @@ long nmbrInstr(long start_position,nmbrString *string1,
 long nmbrRevInstr(long start_position,nmbrString *string1,
     nmbrString *string2)
 {
-   long ls1,ls2;
+   long ls1, ls2;
    nmbrString *tmp = NULL_NMBRSTRING;
-   ls1=nmbrLen(string1);
-   ls2=nmbrLen(string2);
-   if (start_position>ls1-ls2+1) start_position=ls1-ls2+2;
+   ls1 = nmbrLen(string1);
+   ls2 = nmbrLen(string2);
+   if (start_position > ls1 - ls2 + 1) start_position = ls1 - ls2 + 2;
    if (start_position<1) return 0;
-   while (!nmbrEq(string2,nmbrMid(string1,start_position,ls2))) {
+   while (!nmbrEq(string2, nmbrMid(string1, start_position, ls2))) {
      start_position--;
-     nmbrLet(&tmp,NULL_NMBRSTRING);
-                /* Clear nmbrString buffer to prevent overflow caused by "mid" */
+     nmbrLet(&tmp, NULL_NMBRSTRING);
+              /* Clear nmbrString buffer to prevent overflow caused by "mid" */
      if (start_position < 1) return 0;
    }
    return (start_position);
@@ -2227,7 +2058,7 @@ vstring nmbrCvtMToVString(nmbrString *s)
   vstring tmpStr = "";
   vstring ptr;
   vstring ptr2;
-  
+
   long saveTempAllocStack;
   saveTempAllocStack = startTempAllocStack; /* For let() stack cleanup */
   startTempAllocStack = tempAllocStackTop;
@@ -2247,7 +2078,7 @@ vstring nmbrCvtMToVString(nmbrString *s)
     memcpy(ptr, ptr2, j);
     ptr = ptr + j + 1;
   }
-    
+
   startTempAllocStack = saveTempAllocStack;
   if (tmpStr[0]) makeTempAlloc(tmpStr); /* Flag it for deallocation */
   return (tmpStr);
@@ -2274,7 +2105,7 @@ vstring nmbrCvtRToVString(nmbrString *proof)
   nmbrStartTempAllocStack = nmbrTempAllocStackTop;
 
   plen = nmbrLen(proof);
- 
+
   /* Find longest local label name */
   maxLocalLen = 0;
   i = plen;
@@ -2398,7 +2229,7 @@ nmbrString *nmbrGetProofStepNumbs(nmbrString *reason)
       continue;
     }
     if (reason[i] < 0 && reason[i] != -(long)'?') continue;
-    if (reason[i - 1] == -(long)'(' 
+    if (reason[i - 1] == -(long)'('
         || reason[i - 1] == -(long)'{'
         || reason[i - 1] == -(long)'=') {
       step++;
@@ -2408,14 +2239,14 @@ nmbrString *nmbrGetProofStepNumbs(nmbrString *reason)
   return (stepNumbs);
 }
 
-  
+
 /* Converts any nmbrString to an ASCII string of numbers
    -- used for debugging only. */
 vstring nmbrCvtAnyToVString(nmbrString *s)
 {
   long i;
   vstring tmpStr = "";
-  
+
   long saveTempAllocStack;
   saveTempAllocStack = startTempAllocStack; /* For let() stack cleanup */
   startTempAllocStack = tempAllocStackTop;
@@ -2464,9 +2295,9 @@ nmbrString *nmbrExtractVars(nmbrString *m)
    is not checked in order to speed up search. */
 long nmbrElementIn(long start, nmbrString *g, long element)
 {
-  long i = start-1;
+  long i = start - 1;
   while (g[i] != -1) { /* End of string */
-    if (g[i] == element) return(i+1);
+    if (g[i] == element) return(i + 1);
     i++;
   }
   return(0);
@@ -2476,7 +2307,7 @@ long nmbrElementIn(long start, nmbrString *g, long element)
 /* Add a single number to end of a nmbrString - faster than nmbrCat */
 nmbrString *nmbrAddElement(nmbrString *g, long element)
 {
-  long i, j, len;
+  long len;
   nmbrString *v;
   len = nmbrLen(g);
   v = nmbrTempAlloc(len + 2); /* Allow for end of string */
@@ -2678,7 +2509,7 @@ nmbrString *nmbrGetIndentation(nmbrString *proof,
   nmbrString *indentationLevel = NULL_NMBRSTRING;
   nmbrString *subProof = NULL_NMBRSTRING;
   nmbrString *nmbrTmp = NULL_NMBRSTRING;
-  
+
   plen = nmbrLen(proof);
   stmt = proof[plen - 1];
   nmbrLet(&indentationLevel, nmbrSpace(plen));
@@ -2708,7 +2539,7 @@ nmbrString *nmbrGetIndentation(nmbrString *proof,
     pos = pos - splen;
   }
   if (pos != -1) bug (333);
-    
+
   nmbrLet(&subProof,NULL_NMBRSTRING); /* Deallocate */
   nmbrLet(&nmbrTmp, NULL_NMBRSTRING); /* Deallocate */
   nmbrMakeTempAlloc(indentationLevel); /* Flag it for deallocation */
@@ -2729,7 +2560,7 @@ nmbrString *nmbrGetEssential(nmbrString *proof)
   nmbrString *subProof = NULL_NMBRSTRING;
   nmbrString *nmbrTmp = NULL_NMBRSTRING;
   nmbrString *nmbrTmpPtr2;
-  
+
   plen = nmbrLen(proof);
   stmt = proof[plen - 1];
   nmbrLet(&essentialFlags, nmbrSpace(plen));
@@ -2767,7 +2598,7 @@ nmbrString *nmbrGetEssential(nmbrString *proof)
     pos = pos - splen;
   }
   if (pos != -1) bug (338);
-    
+
   nmbrLet(&subProof,NULL_NMBRSTRING); /* Deallocate */
   nmbrLet(&nmbrTmp, NULL_NMBRSTRING); /* Deallocate */
   nmbrMakeTempAlloc(essentialFlags); /* Flag it for deallocation */
@@ -2777,7 +2608,7 @@ nmbrString *nmbrGetEssential(nmbrString *proof)
 
 /* This function returns the target hypothesis vs. step number of a proof
    string.  This information is used for formatting proof displays.  The
-   function calls itself recursively.  
+   function calls itself recursively.
    statemNum is the statement being proved. */
 /* ???Optimization:  remove nmbrString calls and use static variables
    to communicate to recursive calls */
@@ -2788,7 +2619,7 @@ nmbrString *nmbrGetTargetHyp(nmbrString *proof, long statemNum)
   nmbrString *targetHyp = NULL_NMBRSTRING;
   nmbrString *subProof = NULL_NMBRSTRING;
   nmbrString *nmbrTmp = NULL_NMBRSTRING;
-  
+
   plen = nmbrLen(proof);
   stmt = proof[plen - 1];
   nmbrLet(&targetHyp, nmbrSpace(plen));
@@ -2831,7 +2662,7 @@ nmbrString *nmbrGetTargetHyp(nmbrString *proof, long statemNum)
     pos = pos - splen;
   }
   if (pos != -1) bug (343);
-    
+
   nmbrLet(&subProof,NULL_NMBRSTRING); /* Deallocate */
   nmbrLet(&nmbrTmp, NULL_NMBRSTRING); /* Deallocate */
   nmbrMakeTempAlloc(targetHyp); /* Flag it for deallocation */
@@ -2847,7 +2678,6 @@ nmbrString *nmbrGetTargetHyp(nmbrString *proof, long statemNum)
 vstring compressProof(nmbrString *proof, long statemNum)
 {
   vstring output = "";
-  char *outputPtr;
   long outputLen;
   long outputAllocated;
   nmbrString *saveProof = NULL_NMBRSTRING;
@@ -3022,7 +2852,7 @@ vstring compressProof(nmbrString *proof, long statemNum)
        to a shorter label */
     do {  /* Not a loop, just a block we can break out of */
 
-      break; /*??? BYPASS ALL CODE IN THIS BLOCK */
+      if (1) break; /*??? BYPASS ALL CODE IN THIS BLOCK */
       if (numchrs <= 1) break; /* We won't save anything by reassignment */
 
       breakFlag = 0;
@@ -3045,7 +2875,7 @@ vstring compressProof(nmbrString *proof, long statemNum)
         }
       }
       if (newnumchrs >= numchrs) break; /* No benefit */
-        
+
       /* See if the required number of later occurrences of this label are
          present.  If more than thresh, we will benefit by reassignment. */
       thresh = 1 + ((newnumchrs + 1) / (numchrs - newnumchrs));
@@ -3092,7 +2922,7 @@ vstring compressProof(nmbrString *proof, long statemNum)
       } /* Next i */
 
     } while (0); /* End of do block */
-    
+
 
 
 
@@ -3111,10 +2941,10 @@ vstring compressProof(nmbrString *proof, long statemNum)
     outputLen++;
 
 
-    
+
     /* See if an earlier label can be reused */
     /*??? THIS IS NOT USED ANYMORE */
-    continue;  /* BYPASS REMAINING CODE */
+    if (1) continue;  /* BYPASS REMAINING CODE */
     lab = nmbrElementIn(1, labelList, -1000 - step);
     if (!lab) bug(1353);
     lab--; /* labelList array starts at 0, not 1 */
@@ -3328,7 +3158,7 @@ void pntrLet(pntrString **target,pntrString *source)
 
       if (targetAllocLen >= sourceLength) { /* Old string has room for new one */
         pntrCpy(*target,source); /* Re-use the old space to save CPU time */
-  
+
         /* Memory pool handling */
         /* Assign actual size of target string */
         poolDiff = ((long *)(*target))[-1] - ((long *)source)[-1];
@@ -3353,7 +3183,7 @@ void pntrLet(pntrString **target,pntrString *source)
             poolTotalFree = poolTotalFree + poolDiff;
           }
         }
-         
+
 
 /*E*/if(db9)getPoolStats(&i1,&j1,&k1); if(db9)print2("k0a: pool %ld stat %ld\n",poolTotalFree,i1+j1);
       } else {
@@ -3432,7 +3262,7 @@ pntrString *pntrCat(pntrString *string1,...) /* String concatenation */
   arg[0]=string1;       /* First argument */
 
   va_start(ap,string1); /* Begin the session */
-  while (arg[numArgs++]=va_arg(ap,pntrString *))
+  while ((arg[numArgs++]=va_arg(ap,pntrString *)))
         /* User-provided argument list must terminate with NULL */
     if (numArgs>=M_MAX_CAT_ARGS-1) {
       printf("*** FATAL ERROR ***  Too many cat() arguments\n");
@@ -3507,7 +3337,7 @@ void pntrZapLen(pntrString *s, long len) {
   ((long *)s)[-1] = (len + 1) * sizeof(pntrString);
 /*E*/if(db9)getPoolStats(&i1,&j1,&k1); if(db9)print2("l: pool %ld stat %ld\n",poolTotalFree,i1+j1);
 }
-  
+
 
 /* Copy a string to another (pre-allocated) string */
 /* Dangerous for general purpose use */
@@ -3623,7 +3453,7 @@ pntrString *pntrSpace(long n)
   return (sout);
 }
 
-/* Allocate and return an "empty" string n "characters" long 
+/* Allocate and return an "empty" string n "characters" long
    initialized to nmbrStrings instead of vStrings */
 pntrString *pntrNSpace(long n)
 {
@@ -3640,7 +3470,7 @@ pntrString *pntrNSpace(long n)
   return (sout);
 }
 
-/* Allocate and return an "empty" string n "characters" long 
+/* Allocate and return an "empty" string n "characters" long
    initialized to pntrStrings instead of vStrings */
 pntrString *pntrPSpace(long n)
 {
@@ -3700,7 +3530,7 @@ long pntrRevInstr(long start_position,pntrString *string1,
 /* Add a single null string element to a pntrString - faster than pntrCat */
 pntrString *pntrAddElement(pntrString *g)
 {
-  long i,j,len;
+  long len;
   pntrString *v;
   len = pntrLen(g);
   v=pntrTempAlloc(len+2);
@@ -3715,7 +3545,7 @@ pntrString *pntrAddElement(pntrString *g)
 /* Add a single null pntrString element to a pntrString - faster than pntrCat */
 pntrString *pntrAddGElement(pntrString *g)
 {
-  long i,j,len;
+  long len;
   pntrString *v;
   len = pntrLen(g);
   v=pntrTempAlloc(len+2);

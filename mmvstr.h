@@ -1,10 +1,11 @@
 /*****************************************************************************/
-/*               Copyright (C) 1997, NORMAN D. MEGILL                        */
+/*       Copyright (C) 1999  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
+/*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-/*34567890123456 (79-character line to adjust text window width) 678901234567*/
 /*
-mmvstring.h - VMS-BASIC variable length string library routines header
+mmvstr.h - VMS-BASIC variable length string library routines header
 This is a collection of useful built-in string functions available in VMS BASIC.
 */
 
@@ -153,6 +154,11 @@ long instr(long start, vstring sin, vstring s);
 long ascii_(vstring c);
 double val(vstring s);
 
+/* Emulation of PROGRESS string functions added 11/25/98 */
+vstring entry(long element, vstring list);
+long lookup(vstring expression, vstring list);
+long numEntries(vstring list);
+long entryPosition(long element, vstring list);
 
 /* Routines may/may not be written (lowest priority):
 vstring place$(vstring sout);
@@ -163,10 +169,9 @@ vstring quo$(vstring sout);
 /******* Special pupose routines for better
       memory allocation (use with caution) *******/
 
-extern tempAllocStackTop;        /* Top of stack for tempAlloc functon */
-extern startTempAllocStack;      /* Where to start freeing temporary allocation
-                                    when let() is called (normally 0, except for
-                                    nested vstring functions) */
+extern int tempAllocStackTop;   /* Top of stack for tempAlloc functon */
+extern int startTempAllocStack; /* Where to start freeing temporary allocation
+    when let() is called (normally 0, except for nested vstring functions) */
 
 /* Make string have temporary allocation to be released by next let() */
 /* Warning:  after makeTempAlloc() is called, the vstring may NOT be
