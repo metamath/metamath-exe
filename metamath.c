@@ -1,32 +1,34 @@
 /*****************************************************************************/
-/*        Copyright (C) 2003  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2004  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.07r 8-Sep-03"
+#define MVERSION "0.07v 27-Feb-04"
 /* Metamath Proof Verifier - main program */
 /* See the book "Metamath" for description of Metamath and run instructions */
 
 /* The overall functionality of the modules is as follows:
     metamath.c - Contains main(); executes or calls commands
     mmcmdl.c - Command line interpreter
-    mmcmds.c - Executes SHOW and some other commands
+    mmcmds.c - Extends metamath.c command() to execute SHOW and other
+               commands; added after command() became too bloated (still is:)
     mmdata.c - Defines global data structures and manipulates arrays
                with functions similar to BASIC string functions;
                memory management; converts between proof formats
     mmhlpa.c - The help file, part 1.
     mmhlpb.c - The help file, part 2.
     mminou.c - Basic input and output interface
-    mmmaci.c - Macintosh interface (not used in this version)
+    mmmaci.c - THINK C Macintosh interface (probably obsolete now)
     mmpars.c - Parses the source file
     mmpfas.c - Proof Assistant
     mmunif.c - Unification algorithm for Proof Assistant
-    mmutil.c - Miscellaneous I/O utilities
+    mmutil.c - Miscellaneous I/O utilities for non-ANSI compilers (has become
+               obsolete and is now an empty shell)
     mmveri.c - Proof verifier for source file
     mmvstr.c - BASIC-like string functions
     mmwtex.c - LaTeX/HTML source generation
-    mmword.c - File revision utility (for TOOLS utility)
+    mmword.c - File revision utility (for TOOLS utility) (not generally useful)
 */
 
 /*****************************************************************************/
@@ -150,7 +152,7 @@ void command(int argc, char *argv[])
 
   /* The variables in command() are static so that they won't be destroyed
     by a longjmp return to setjmp. */
-  long i, j, k, m, n, p, q, s, t /*,tokenNum,i*/;
+  long i, j, k, m, l, n, p, q, s /*,tokenNum*/;
   vstring str1 = "", str2 = "", str3 = "", str4 = "";
   nmbrString *nmbrTmpPtr; /* Pointer only; not allocated directly */
   nmbrString *nmbrTmp = NULL_NMBRSTRING;
@@ -190,6 +192,7 @@ void command(int argc, char *argv[])
   flag texHeaderFlag; /* For OPEN TEX, CLOSE TEX */
   flag commentOnlyFlag; /* For SHOW STATEMENT */
   flag briefFlag; /* For SHOW STATEMENT */
+  flag linearFlag; /* For SHOW LABELS */
 
   /* toolsMode-specific variables */
   flag commandProcessedFlag = 0; /* Set when the first command line processed;
@@ -323,12 +326,18 @@ void command(int argc, char *argv[])
            for ensuring necessary quotes around arguments are passed in. */
         argsProcessed++;
         scrollMode = 0; /* Set continuous scrolling until completed */
+        let(&commandLine, cat(commandLine, argv[argsProcessed], NULL));
         if (argc == 2 && instr(1, argv[1], " ") == 0) {
           /* Assume the user intended a READ command.  This special mode allows
              invocation via "metamath xxx.mm". */
-          let(&commandLine, "READ ");
+          if (instr(1, commandLine, "\"") || instr(1, commandLine, "'")) {
+            /* If it already has quotes don't put quotes */
+            let(&commandLine, cat("READ ", commandLine, NULL));
+          } else {
+            /* Put quotes so / won't be interpreted as qualifier separator */
+            let(&commandLine, cat("READ \"", commandLine, "\"", NULL));
+          }
         }
-        let(&commandLine, cat(commandLine, argv[argsProcessed], NULL));
       }
       print2("%s\n", cat(commandPrompt, commandLine, NULL));
     } else {
@@ -1127,8 +1136,9 @@ void command(int argc, char *argv[])
         print2(
 "The first longest line (out of %ld) is line %ld and has %ld characters:\n",
             j, i, q);
-        print2("%s\n", str4);
-        print2("If each line is a number, their sum is %s\n", str(sum));
+        printLongLine(str4, "    "/*startNextLine*/, ""/*breakMatch*/);
+            /* breakMatch empty means break line anywhere */  /* 6-Dec-03 */
+        print2("If each line were a number, their sum would be %s\n", str(sum));
         fclose(list1_fp);
         continue;
       }
@@ -1245,7 +1255,7 @@ void command(int argc, char *argv[])
       }
 
       /* 10/21/02 - detect Microsoft bugs reported by several users, when the
-         HTML output files are named "con1.html" etc. */
+         HTML output files are named "con.html" etc. */
       /* If we want a standard error message underlining token, this could go
          in mmpars.c */
       /* From Microsoft's site:
@@ -1263,7 +1273,9 @@ void command(int argc, char *argv[])
       for (i = 1; i <= statements; i++) {
         let(&str2, cat(",", edit(statement[i].labelName, 32/*uppercase*/), ",",
             NULL));
-        if (instr(1, str1, str2)) {
+        if (instr(1, str1, str2) ||
+            /* 5-Jan-04 mm*.html is reserved for mmtheorems.html, etc. */
+            !strcmp(",MM", left(str2, 3))) {
           print2("\n");
           printLongLine(cat("?Error in statement \"",
               statement[i].labelName, "\" at line ", str(statement[i].lineNum),
@@ -1272,7 +1284,8 @@ void command(int argc, char *argv[])
               " the following reserved words cannot be used for label names:",
               " CON, PRN, AUX, CLOCK$, NUL, COM1, COM2, COM3, COM4, COM5,",
               " COM6, COM7, COM8, COM9, LPT1, LPT2, LPT3, LPT4, LPT5, LPT6,",
-              " LPT7, LPT8, and LPT9.  Use another name for this label.", NULL),
+              " LPT7, LPT8, and LPT9.  Also, \"mm*.html\" is reserved for",
+              " Metamath file names.  Use another name for this label.", NULL),
               "", " ");
           errorCount++;
         }
@@ -1283,7 +1296,7 @@ void command(int argc, char *argv[])
         let(&str1, "No errors were found.");
         if (!switchPos("/ VERIFY")) {
             let(&str1, cat(str1,
-       "  However, proofs were not checked.  Use VERIFY PROOFS *",
+       "  However, proofs were not checked.  Type VERIFY PROOF *",
        " if you want to check them.",
             NULL));
         }
@@ -1304,15 +1317,62 @@ void command(int argc, char *argv[])
       let(&output_fn, fullArg[2]);
       output_fp = fSafeOpen(output_fn, "w");
       if (!output_fp) continue; /* Couldn't open it (error msg was provided)*/
-      writeInput();
+
+      /* Added 24-Oct-03 nm */
+      if (switchPos("/ CLEAN") > 0) {
+        cmdMode = 1; /* Clean out any proof-in-progress (that user has flagged
+                        with a ? in its date comment field) */
+      } else {
+        cmdMode = 0; /* Output all proofs (normal) */
+      }
+
+      writeInput(cmdMode); /* Added argument 24-Oct-03 nm */
       fclose(output_fp);
-      sourceChanged = 0;
+      if (cmdMode == 0) sourceChanged = 0; /* Don't unset flag if CLEAN option
+                                    since some new proofs may not be saved. */
       continue;
-    }
+    } /* End of WRITE SOURCE */
+
+
+    if (cmdMatches("WRITE THEOREM_LIST")) {
+      /* 4-Dec-03 - Write out an HTML summary of the theorems to
+         mmtheorems.html, mmtheorems2.html,... */
+      /* THEOREMS_PER_PAGE is the default number of proof descriptions to output. */
+#define THEOREMS_PER_PAGE 100
+      /* i is the actual number of proof descriptions to output. */
+      /* See if the user overrode the default. */
+      i = switchPos("/ THEOREMS_PER_PAGE");
+      if (i) {
+        i = val(fullArg[i + 1]); /* Use user's value */
+      } else {
+        i = THEOREMS_PER_PAGE; /* Use the default value */
+      }
+
+      if (!texDefsRead) {
+        htmlFlag = 1;
+        print2("Reading definitions from $t statement of %s...\n", input_fn);
+        if (!readTexDefs()) {
+          tmpFlag = 1; /* Error flag to recover input file */
+          continue; /* An error occurred */
+        }
+      } else {
+        /* Current limitation - can only read def's from .mm file once */
+        if (!htmlFlag) {
+          print2("?You cannot use both LaTeX and HTML in the same session.\n");
+          print2(
+              "You must EXIT and restart Metamath to switch to the other.\n");
+          continue;
+        }
+      }
+      /* Output the theorem list */
+      writeTheoremList(i); /* (located in mmwtex.c) */
+      continue;
+    }  /* End of "WRITE THEOREM_LIST" */
+
 
     if (cmdMatches("WRITE BIBLIOGRAPHY")) {
       /* 10/10/02 -
-         This utility building the bibliographical cross-references to various
+         This utility builds the bibliographical cross-references to various
          textbooks and updates the user-specified file normally called
          mmbiblio.html.
        */
@@ -1379,6 +1439,7 @@ void command(int argc, char *argv[])
           if (!instr(1, str1, "[")) continue;
           for (j = 0; j < strlen(str1); j++) {
             if (str1[j] == '\n') str1[j] = ' '; /* Change newlines to spaces */
+            if (str1[j] == '\r') bug(1119);
           }
           let(&str1, edit(str1, 8 + 128 + 16)); /* Reduce & trim whitespace */
           /* Put spaces before page #s (up to 4 digits) for sorting */
@@ -1422,6 +1483,7 @@ void command(int argc, char *argv[])
                   || !strcmp(mid(str2, k, strlen("RULE")), "RULE")
                   || !strcmp(mid(str2, k, strlen("REMARK")), "REMARK")
                   || !strcmp(mid(str2, k, strlen("EXERCISE")), "EXERCISE")
+                  || !strcmp(mid(str2, k, strlen("PROBLEM")), "PROBLEM")
                   || !strcmp(mid(str2, k, strlen("NOTATION")), "NOTATION")
                   || !strcmp(mid(str2, k, strlen("EXAMPLE")), "EXAMPLE")
                   || !strcmp(mid(str2, k, strlen("PROPERTY")), "PROPERTY")
@@ -1518,7 +1580,6 @@ void command(int argc, char *argv[])
         p2++;    /* Increment from pass 1 to pass 2 */
       }
 
-/*D*/
       /* Sort */
       qsortKey = "";
       qsort(pntrTmp, lines, sizeof(void *), qsortStringCmp);
@@ -1585,6 +1646,7 @@ void command(int argc, char *argv[])
           break;
         }
 
+        /* Update the date stamp at the bottom of the HTML page. */
         /* This is just a nicety; no error check is done. */
         if (!strcmp("This page was last updated on ", left(str1, 30))) {
           let(&str1, cat(left(str1, 30), date(), ".", NULL));
@@ -1610,11 +1672,242 @@ void command(int argc, char *argv[])
         print2("?The file \"%s\" was not modified.\n", fullArg[2]);
       }
       continue;
-    }
+    }  /* End of "WRITE BIBLIOGRAPHY" */
+
+
+    if (cmdMatches("WRITE RECENT_ADDITIONS")) {
+      /* 18-Sep-03 -
+         This utility creates a list of recent proof descriptions and updates
+         the user-specified file normally called mmrecent.html.
+       */
+
+      /* RECENT_COUNT is the default number of proof descriptions to output. */
+#define RECENT_COUNT 100
+      /* i is the actual number of proof descriptions to output. */
+      /* See if the user overrode the default. */
+      i = switchPos("/ LIMIT");
+      if (i) {
+        i = val(fullArg[i + 1]); /* Use user's value */
+      } else {
+        i = RECENT_COUNT; /* Use the default value */
+      }
+
+      if (!texDefsRead) {
+        htmlFlag = 1;
+        print2("Reading definitions from $t statement of %s...\n", input_fn);
+        if (!readTexDefs()) {
+          tmpFlag = 1; /* Error flag to recover input file */
+          continue; /* An error occurred */
+        }
+      } else {
+        /* Current limitation - can only read def's from .mm file once */
+        if (!htmlFlag) {
+          print2("?You cannot use both LaTeX and HTML in the same session.\n");
+          print2(
+              "You must EXIT and restart Metamath to switch to the other.\n");
+          continue;
+        }
+      }
+
+      tmpFlag = 0; /* Error flag to recover input file */
+      list1_fp = fSafeOpen(fullArg[2], "r");
+      if (list1_fp == NULL) {
+        /* Couldn't open it (error msg was provided)*/
+        continue;
+      }
+      fclose(list1_fp);
+      /* This will rename the input mmrecent.html as mmrecent.html~1 */
+      list2_fp = fSafeOpen(fullArg[2], "w");
+      if (list2_fp == NULL) {
+          /* Couldn't open it (error msg was provided)*/
+        continue;
+      }
+      /* Note: in older versions the "~1" string was OS-dependent, but we
+         don't support VAX or THINK C anymore...  Anyway we reopen it
+         here with the renamed file in case the OS won't let us rename
+         an opened file during the fSafeOpen for write above. */
+      list1_fp = fSafeOpen(cat(fullArg[2], "~1", NULL), "r");
+      if (list1_fp == NULL) bug(1117);
+
+      /* Transfer the input file up to the special "<!-- #START# -->" comment */
+      while (1) {
+        if (!linput(list1_fp, NULL, &str1)) {
+          print2(
+"?Error: Could not find \"<!-- #START# -->\" line in input file \"%s\".\n",
+              fullArg[2]);
+          tmpFlag = 1; /* Error flag to recover input file */
+          break;
+        }
+        fprintf(list2_fp, "%s\n", str1);
+        if (!strcmp(str1, "<!-- #START# -->")) break;
+      }
+      if (tmpFlag) goto wrrecent_error;
+
+      /* Get and parse today's date */
+      let(&str1, date());
+      j = instr(1, str1, "-");
+      k = val(left(str1, j - 1)); /* Day */
+#define MONTHS "JanFebMarAprMayJunJulAugSepOctNovDec"
+      l = ((instr(1, MONTHS, mid(str1, j + 1, 3)) - 1) / 3) + 1; /* 1 = Jan */
+      m = val(mid(str1, j + 5, 2));  /* Year */
+#define START_YEAR 93 /* Earliest 19xx year in set.mm database */
+      if (m < START_YEAR) {
+        m = m + 2000;
+      } else {
+        m = m + 1900;
+      }
+
+      n = 0; /* Count of how many output so far */
+      while (n < i /*RECENT_COUNT*/ && m > START_YEAR + 1900 - 1) {
+        /* Build date string to match */
+        let(&str1, cat("$([", str(k), "-", mid(MONTHS, 3 * l - 2, 3), "-",
+            right(str(m), 3), "]$)", NULL));
+        for (s = statements; s >= 1; s--) {
+
+          if (statement[s].type != (char)p__) continue;
+
+          /* Get the comment section after the statement */
+          let(&str2, space(statement[s + 1].labelSectionLen));
+          memcpy(str2, statement[s + 1].labelSectionPtr,
+              statement[s + 1].labelSectionLen);
+          /* See if the date comment matches */
+          if (instr(1, str2, str1)) {
+            /* We have a match, so increment the match count */
+            n++;
+
+            let(&str3, "");
+            str3 = getDescription(s);
+            let(&str4, "");
+            str4 = pinkHTML(s); /* Get little pink number */
+            /* Output the description comment */
+            /* Break up long lines for text editors with printLongLine */
+            let(&printString, "");
+            outputToString = 1;
+            print2("\n"); /* Blank line for HTML human readability */
+            printLongLine(cat(
+                  (s < extHtmlStmt) ?
+                       "<TR>" :
+                       cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL),
+                  "<TD NOWRAP>",  /* IE breaks up the date */
+                  mid(str1, 4, strlen(str1) - 6), /* Date */
+                  "</TD><TD ALIGN=CENTER><A HREF=\"",
+                  statement[s].labelName, ".html\">",
+                  statement[s].labelName, "</A>",
+                  str4, "</TD><TD>", NULL),  /* Description */
+                " ",  /* Start continuation line with space */
+                "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+
+            showStatement = s; /* For printTexComment */
+            outputToString = 0; /* For printTexComment */
+            texFilePtr = list2_fp;
+            /* 18-Sep-03 ???Future - make this just return a string??? */
+            printTexComment(str3, 0); /* Sends result to texFilePtr */
+            texFilePtr = NULL;
+            outputToString = 1; /* Restore after printTexComment */
+
+            /* Get HTML hypotheses => assertion */
+            let(&str4, "");
+            str4 = getHTMLHypAndAssertion(s); /* In mmwtex.c */
+            printLongLine(cat("</TD></TR><TR",
+                  (s < extHtmlStmt) ?
+                       ">" :
+                       cat(" BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL),
+                /*** old
+                "<TD BGCOLOR=white>&nbsp;</TD><TD COLSPAN=2 ALIGN=CENTER>",
+                str4, "</TD></TR>", NULL),
+                ****/
+                /* 27-Oct-03 nm */
+                "<TD COLSPAN=3 ALIGN=CENTER>",
+                str4, "</TD></TR>", NULL),
+
+                " ",  /* Start continuation line with space */
+                "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+
+            outputToString = 0;
+            fprintf(list2_fp, "%s", printString);
+            let(&printString, "");
+
+            if (n >= i /*RECENT_COUNT*/) break; /* We're done */
+
+            /* 27-Oct-03 nm Put separator row if not last theorem */
+            outputToString = 1;
+            printLongLine(cat("<TR BGCOLOR=white><TD COLSPAN=3>",
+                "<FONT SIZE=-3>&nbsp;</FONT></TD></TR>", NULL),
+                " ",  /* Start continuation line with space */
+                "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+            outputToString = 0;
+            fprintf(list2_fp, "%s", printString);
+            let(&printString, "");
+
+          }
+        } /* Next s - statement number */
+        /* Decrement date */
+        if (k > 1) {
+          k--; /* Decrement day */
+        } else {
+          k = 31; /* Non-existent day 31's will never match, which is OK */
+          if (l > 1) {
+            l--; /* Decrement month */
+          } else {
+            l = 12; /* Dec */
+            m --; /* Decrement year */
+          }
+        }
+      } /* next while - Scan next date */
+
+
+      /* Discard the input file up to the special "<!-- #END# -->" comment */
+      while (1) {
+        if (!linput(list1_fp, NULL, &str1)) {
+          print2(
+"?Error: Could not find \"<!-- #END# -->\" line in input file \"%s\".\n",
+              fullArg[2]);
+          tmpFlag = 1; /* Error flag to recover input file */
+          break;
+        }
+        if (!strcmp(str1, "<!-- #END# -->")) {
+          fprintf(list2_fp, "%s\n", str1);
+          break;
+        }
+      }
+      if (tmpFlag) goto wrrecent_error;
+
+      /* Transfer the rest of the input file */
+      while (1) {
+        if (!linput(list1_fp, NULL, &str1)) {
+          break;
+        }
+
+        /* Update the date stamp at the bottom of the HTML page. */
+        /* This is just a nicety; no error check is done. */
+        if (!strcmp("This page was last updated on ", left(str1, 30))) {
+          let(&str1, cat(left(str1, 30), date(), ".", NULL));
+        }
+
+        fprintf(list2_fp, "%s\n", str1);
+      }
+
+      print2("The %ld most recent theorem(s) were written.\n", n);
+
+     wrrecent_error:
+      fclose(list1_fp);
+      fclose(list2_fp);
+      if (tmpFlag) {
+        /* Recover input files in case of error */
+        remove(fullArg[2]);  /* Delete output file */
+        rename(cat(fullArg[2], "~1", NULL), fullArg[2]);
+            /* Restore input file name */
+        print2("?The file \"%s\" was not modified.\n", fullArg[2]);
+      }
+      continue;
+    }  /* End of "WRITE RECENT_ADDITIONS" */
+
 
     if (cmdMatches("SHOW LABELS")) {
         texFlag = 0;
         if (switchPos("/ HTML")) texFlag = 1;
+        linearFlag = 0;
+        if (switchPos("/ LINEAR")) linearFlag = 1;
         if (switchPos("/ ALL")) {
           m = 1;  /* Include $e, $f statements */
           if (!(htmlFlag && texFlag)) print2(
@@ -1627,74 +1920,6 @@ void command(int argc, char *argv[])
         if (htmlFlag && texFlag) {
           printf(
             "?HTML qualifier is now implemented in SHOW STATEMENT * / HTML\n");
-#ifdef OBSOLETE
-          outputToString = 1;
-          print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=%s\n",
-              MINT_BACKGROUND_COLOR);
-          /* For bobby.cast.org approval */
-          print2("SUMMARY=\"List of %s\">\n",
-              (k == 0) ? "theorems" : "syntax, axioms and definitions");
-          print2("<CAPTION><B>List of \n");
-          if (m == 0) {
-            print2("Theorems\n");
-          } else {
-            printLongLine(cat(
-                /*"Syntax (not <FONT COLOR=\"#00CC00\">|-&nbsp;</FONT>), ",*/
-                /* 2/9/02 (in case |- suppressed) */
-                "Syntax, ",
-                "Axioms (<FONT COLOR=", GREEN_TITLE_COLOR, ">ax-</FONT>) and",
-                " Definitions (<FONT COLOR=", GREEN_TITLE_COLOR,
-                ">df-</FONT>)", NULL), "", "\"");
-          }
-          print2("</B></CAPTION>\n");
-          print2("<TR ALIGN=LEFT><TD><B>Ref</B>\n");
-          print2("</TD><TD><B>%s</B></TD></TR>\n",
-              (m == 1) ? "Expression" : "Description");
-          for (i = 1; i <= statements; i++) {
-            if ((m == 0 && statement[i].type != (char)p__) ||
-              (m == 1 && statement[i].type != (char)a__)) continue;
-            if (!matches(statement[i].labelName, fullArg[2], '*')) continue;
-            /* Count the number of essential hypotheses k */
-            k = 0;
-            j = nmbrLen(statement[i].reqHypList);
-            for (n = 0; n < j; n++) {
-              if (statement[statement[i].reqHypList[n]].type
-                  == (char)e__) k++;
-            }
-            if (k == k) { /* Set k == k here for Web site version,
-                             k == 0 for # hyp in parens. */
-              print2(
-                  "<TR ALIGN=LEFT><TD><A HREF=\"%s.html\">%s</A></TD><TD>\n",
-                  statement[i].labelName, statement[i].labelName);
-            } else {
-              /* Include number of ess. hypoth. in parens. after label */
-              print2(
-                  "<TR ALIGN=LEFT><TD><A HREF=\"%s.html\">%s</A> (%ld)</TD><TD>\n",
-                  statement[i].labelName, statement[i].labelName, k);
-            }
-
-            if (m == 1) { /* Set m == 1 here for Web site version,
-                             m == m for symbol version of theorem list */
-              printTexLongMath(statement[i].mathString, "", "", 0);
-              outputToString = 1; /* Is reset by printTexLongMath */
-            } else {
-              /* Theorems are listed w/ description; otherwise file too
-                 big for convenience */
-              let(&str1, "");
-              str1 = getDescription(i);
-              if (strlen(str1) > 29)
-                let(&str1, cat(left(str1, 26), "...", NULL));
-              let(&str1, cat(str1, "</TD></TR>", NULL));
-              printLongLine(str1, "", "\"");
-
-              /* Close out the string now to prevent overflow */
-              fprintf(texFilePtr, "%s", printString);
-              let(&printString, "");
-            }
-          }
-          print2("</TABLE></CENTER>\n");
-          outputToString = 0;  /* closing will write out the string */
-#endif
           continue;
         } /* if (htmlFlag && texFlag) */
         j = 0;
@@ -1707,12 +1932,13 @@ void command(int argc, char *argv[])
           let(&str1,cat(str(i)," ",
               statement[i].labelName," $",chr(statement[i].type)," ",NULL));
 #define COL 19 /* Characters per column */
-          if (j + strlen(str1) > MAX_LEN) {
+          if (j + strlen(str1) > MAX_LEN
+              || (linearFlag && j != 0)) { /* j != 0 to suppress 1st CR */
             print2("\n");
             j = 0;
             k = 0;
           }
-          if (strlen(str1) > COL) {
+          if (strlen(str1) > COL || linearFlag) {
             j = j + strlen(str1);
             k = k + strlen(str1) - COL;
             print2(str1);
@@ -2015,60 +2241,26 @@ void command(int argc, char *argv[])
                 fprintf(texFilePtr, "%s", printString);
                 let(&printString, "");
                 break;
-              case -1:
+              case -1: /* Falls through to next case */
               case 0:
                 /* Count the number of essential hypotheses k */
+                /* Not needed anymore??? since getHTMLHypAndAssertion() */
+                /*
                 k = 0;
                 j = nmbrLen(statement[i].reqHypList);
-                let(&str1, "");
                 for (n = 0; n < j; n++) {
                   if (statement[statement[i].reqHypList[n]].type
                       == (char)e__) {
                     k++;
-                    if (s == 0 || briefHtmlFlag) {
-                      if (str1[0]) {
-                        if (altHtmlFlag) {
-                          /* Hard-coded for set.mm! */
-                          let(&str1, cat(str1,
-                              /* 8/8/03 - Changed from Symbol to Unicode */
-  /* "&nbsp;&nbsp;&nbsp;<FONT FACE=\"Symbol\"> &#38;</FONT>&nbsp;&nbsp;&nbsp;" */
-                              "&nbsp;&nbsp;&nbsp; &amp;&nbsp;&nbsp;&nbsp;"
-                              ,NULL));
-                        } else {
-                          /* Hard-coded for set.mm! */
-                          let(&str1, cat(str1,
-           "&nbsp;&nbsp;&nbsp;<IMG SRC='amp.gif' WIDTH=12 HEIGHT=19 ALT='&amp;'"
-                              ," ALIGN=TOP>&nbsp;&nbsp;&nbsp;"
-                              ,NULL));
-                        }
-                      }
-                      /* Construct HTML hypothesis */
-                      nmbrTmpPtr = statement[statement[i].reqHypList[n]].mathString;
-                      for (t = 0; t < nmbrLen(nmbrTmpPtr); t++) {
-                        let(&str2, "");
-                        str2 = tokenToTex(mathToken[nmbrTmpPtr[t]].tokenName);
-                        let(&str1, cat(str1, str2, NULL));
-                      }
-                    }
                   }
                 }
+                */
+                let(&str1, "");
                 if (s == 0 || briefHtmlFlag) {
-                  if (k) {  /* Add big arrow if there were hypotheses */
-                    if (altHtmlFlag) {
-                      /* Hard-coded for set.mm! */
-                      let(&str1, cat(str1,
-                          /* 8/8/03 - Changed from Symbol to Unicode */
-  /* "&nbsp;&nbsp;&nbsp;<FONT FACE=\"Symbol\"> &#222;</FONT>&nbsp;&nbsp;&nbsp;" */
-                          "&nbsp;&nbsp;&nbsp; &#8658;&nbsp;&nbsp;&nbsp;"
-                          ,NULL));
-                    } else {
-                      /* Hard-coded for set.mm! */
-                      let(&str1, cat(str1,
-          "&nbsp;&nbsp;&nbsp;<IMG SRC='bigto.gif' WIDTH=15 HEIGHT=19 ALT='=&gt;'"
-                          ," ALIGN=TOP>&nbsp;&nbsp;&nbsp;"
-                          ,NULL));
-                    }
-                  }
+                  let(&str1, "");
+                  /* 18-Sep-03 Get HTML hypotheses => assertion */
+                  str1 = getHTMLHypAndAssertion(i); /* In mmwtex.c */
+                  let(&str1, cat(str1, "</TD></TR>", NULL));
                 }
                 let(&str2, cat("<TR ALIGN=LEFT><TD><A HREF=\"",
                     statement[i].labelName,
@@ -2089,8 +2281,10 @@ void command(int argc, char *argv[])
                 if (s == 0 || briefHtmlFlag) {
                               /* Set s == 0 here for Web site version,
                                  s == s for symbol version of theorem list */
-                  printTexLongMath(statement[i].mathString, "", "", 0);
-                  outputToString = 1; /* Is reset by printTexLongMath */
+                  /* The below has been replaced by getHTMLHypAndAssertion(i)
+                     above. */
+                  /*printTexLongMath(statement[i].mathString, "", "", 0, 0);*/
+                  /*outputToString = 1;*/ /* Is reset by printTexLongMath */
                 } else {
                   /* Theorems are listed w/ description; otherwise file is too
                      big for convenience */
@@ -2712,7 +2906,7 @@ void command(int argc, char *argv[])
             print2("\n");
             print2("\n");
           } else {
-            bug(1116);
+            bug(1118);
             /*???? The code below is obsolete - now down in show statement*/
             /*
             print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=%s>\n",
@@ -4375,7 +4569,7 @@ void command(int argc, char *argv[])
       continue;
     }
 
-    if (cmdMatches("VERIFY PROOFS")) {
+    if (cmdMatches("VERIFY PROOF")) {
       if (switchPos("/ SYNTAX_ONLY")) {
         verifyProofs(fullArg[2],0); /* Parse only */
       } else {

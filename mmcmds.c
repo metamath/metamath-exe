@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2003  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2004  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -42,12 +42,17 @@ void typeStatement(long showStatement,
   /* From HELP SHOW STATEMENT: Optional qualifiers:
     / TEX - This qualifier will write the statement information to the
         LaTeX file previously opened with OPEN TEX.
+            [Note:  texFlag=1 and htmlFlag=0 with this qualifier.]
+
     / HTML - This qualifier will write the statement information to the
         HTML file previously opened with OPEN HTML.
+            [Note:  texFlag=1 and htmlFlag=1 with this qualifier.]
+
     / COMMENT_ONLY - This qualifier will show only the comment that
         immediatley precedes the statement.  This is useful when you are
         using Metamath to preprocess LaTeX source you have created (see
         HELP TEX)
+
     / BRIEF - This qualifier shows the statement and its $e hypotheses
         only.
   */
@@ -163,7 +168,11 @@ void typeStatement(long showStatement,
               "</CENTER><BR>", NULL));
         }
         *******/
-        printTexComment(str1);
+        if (!htmlFlag) {  /* LaTeX */
+          /* 6-Dec-03 Add separation space between theorems */
+          let(&str1, cat("\n\\vspace{1ex}\n\n", str1, NULL));
+        }
+        printTexComment(str1, 1);
       }
     }
   }
@@ -301,9 +310,10 @@ void typeStatement(long showStatement,
     } /* if i(#$d's) > 0 */
   }
 
-  if (briefFlag || (texFlag && htmlFlag)) {
+  if (briefFlag || texFlag /*(texFlag && htmlFlag)*/) { /* 6-Dec-03 */
     /* For BRIEF mode, print $e hypotheses (only) before statement */
-    /* Also do it for html output */
+    /* Also do it for HTML output */
+    /* 6-Dec-03  For the LaTeX output, now print hypotheses before statement */
     j = nmbrLen(statement[showStatement].reqHypList);
     k = 0;
     for (i = 0; i < j; i++) {
@@ -321,7 +331,9 @@ void typeStatement(long showStatement,
 
     }
     if (k) {
-      if (texFlag) outputToString = 1;
+      if (texFlag) {
+        outputToString = 1;
+      }
       if (texFlag && htmlFlag) {
         print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=%s\n",
             MINT_BACKGROUND_COLOR);
@@ -359,12 +371,13 @@ void typeStatement(long showStatement,
           if (!(htmlFlag && texFlag)) {
             let(&str3, space(strlen(str2)));
             printTexLongMath(statement[k].mathString,
-                str2, str3, 0);
+                str2, str3, 0, 0);
           } else {
             outputToString = 1;
             print2("<TR ALIGN=LEFT><TD>%s</TD><TD>\n",
                 statement[k].labelName);
-            printTexLongMath(statement[k].mathString, "", "", 0);
+            /* Print hypothesis */
+            printTexLongMath(statement[k].mathString, "", "", 0, 0);
           }
         }
       } /* next i */
@@ -391,7 +404,7 @@ void typeStatement(long showStatement,
       let(&str3, space(strlen(str2))); /* 3rd argument of printTexLongMath
           cannot be temp allocated */
       printTexLongMath(statement[showStatement].mathString,
-          str2, str3, 0);
+          str2, str3, 0, 0);
     } else {
       outputToString = 1;
       print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=%s\n",
@@ -405,7 +418,7 @@ void typeStatement(long showStatement,
        "<TR ALIGN=LEFT><TD><FONT COLOR=%s><B>%s</B></FONT></TD><TD>\n",
           GREEN_TITLE_COLOR,
           statement[showStatement].labelName);
-      printTexLongMath(statement[showStatement].mathString, "", "", 0);
+      printTexLongMath(statement[showStatement].mathString, "", "", 0, 0);
       outputToString = 1;
       print2("</TABLE></CENTER>\n");
     }
@@ -413,17 +426,26 @@ void typeStatement(long showStatement,
 
   if (briefFlag) goto returnPoint;
 
+  /* 6-Dec-03 In the LaTeX output, the hypotheses used to be printed after the
+     statement.  Now they are printed before (see above 6-Dec-03 comments),
+     so some code below is commented out. */
   switch (type) {
     case a__:
     case p__:
-      if (texFlag) {
+      /* 6-Dec-03  This is not really needed but keeps output consistent
+         with previous version.  It puts a blank line before the HTML
+         "distinct variable" list. */
+      if (texFlag && htmlFlag) { /* 6-Dec-03 */
         outputToString = 1;
-        print2("\n"); /* New paragraph */
+        print2("\n");
+        outputToString = 0;
       }
-      if (!(htmlFlag && texFlag)) {
+
+      /*if (!(htmlFlag && texFlag)) {*/
+      if (!texFlag) {  /* 6-Dec-03 fix */
         print2("Its mandatory hypotheses in RPN order are:\n");
       }
-      if (texFlag) outputToString = 0;
+      /*if (texFlag) outputToString = 0;*/ /* 6-Dec-03 */
       j = nmbrLen(statement[showStatement].reqHypList);
       for (i = 0; i < j; i++) {
         k = statement[showStatement].reqHypList[i];
@@ -436,19 +458,24 @@ void typeStatement(long showStatement,
               nmbrCvtMToVString(statement[k].mathString), " $.", NULL),
               "      "," ");
         } else {
-          if (!(htmlFlag && texFlag)) {
-            let(&str3, space(strlen(str2)));
-            printTexLongMath(statement[k].mathString,
-                str2, str3, 0);
+          if (!(htmlFlag && texFlag)) {  /* LaTeX */
+            /*let(&str3, space(strlen(str2)));*/ /* 6-Dec-03 */
+            /* This clears out printString */
+            /*printTexLongMath(statement[k].mathString,
+                str2, str3, 0, 0);*/ /* 6-Dec-03 */
           }
         }
       }
-      if (texFlag) {
+      /* 6-Dec-03  This is not really needed but keeps output consistent
+         with previous version.  It puts a blank line before the HTML
+         "distinct variable" list. */
+      if (texFlag && htmlFlag) { /* 6-Dec-03 */
         outputToString = 1;
-        print2("\n"); /* New paragraph */
+        print2("\n");
+        outputToString = 0;
       }
-      if (j == 0 && !(htmlFlag && texFlag)) print2("  (None)\n");
-      if (texFlag) outputToString = 0;
+      /*if (j == 0 && !(htmlFlag && texFlag)) print2("  (None)\n");*/
+      if (j == 0 && !texFlag) print2("  (None)\n"); /* 6-Dec-03 fix */
       let(&str1, "");
       nmbrTmpPtr1 = statement[showStatement].reqDisjVarsA;
       nmbrTmpPtr2 = statement[showStatement].reqDisjVarsB;
@@ -1342,7 +1369,7 @@ void typeProof(long statemNum,
               NULL));
         }
         let(&contPrefix, space(strlen(startPrefix) + 4));
-      } else {
+      } else {  /* not noIndentFlag */
         let(&startPrefix, cat(
             space(maxStepNumLen - strlen(str(stepRenumber[step]))),
             str(stepRenumber[step]),
@@ -1407,10 +1434,16 @@ void typeProof(long statemNum,
         } else {  /* TeX or HTML */
           printTexLongMath(wrkProof.mathStringPtrs[step],
               cat(startPrefix, " $", chr(type), " ", NULL),
-              contPrefix, stmt);
+              contPrefix, stmt, indentationLevel[step]);
         }
 
       } else { /* pipFlag */
+        if (texFlag) {
+          /* nm 3-Feb-04  Added this bug check - it doesn't make sense to
+             do this and it hasn't been tested anyway */
+          printf("?Unsupported:  HTML or LaTeX proof for NEW_PROOF.\n");
+          bug(244);
+        }
 
         if (!nmbrEq(proofInProgress.target[step], proofInProgress.source[step])
             && nmbrLen(proofInProgress.source[step])) {
@@ -1429,10 +1462,10 @@ void typeProof(long statemNum,
           } else { /* TeX or HTML */
             printTexLongMath(proofInProgress.target[step],
                 cat(tgtPrefix, " $", chr(type), " ", NULL),
-                contPrefix, 0);
+                contPrefix, 0, 0);
             printTexLongMath(proofInProgress.source[step],
                 cat(srcPrefix, "  = ", NULL),
-                contPrefix, 0);
+                contPrefix, 0, 0);
           }
         } else {
           if (!texFlag) {
@@ -1444,7 +1477,7 @@ void typeProof(long statemNum,
           } else {  /* TeX or HTML */
             printTexLongMath(proofInProgress.target[step],
                 cat(startPrefix, " $", chr(type), " ", NULL),
-                contPrefix, 0);
+                contPrefix, 0, 0);
           }
 
         }
@@ -1459,7 +1492,7 @@ void typeProof(long statemNum,
           } else {
             printTexLongMath(proofInProgress.user[step],
                 cat(userPrefix, "  = ", NULL),
-                contPrefix, 0);
+                contPrefix, 0, 0);
           }
 
         }
@@ -2206,7 +2239,7 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
         if (!texFlag) {
           printLongLine(cat("\"", str1, "\"", NULL), "", " ");
         } else {
-          printTexComment(str1);
+          printTexComment(str1, 1);
         }
       }
 
@@ -2224,7 +2257,7 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
           } else {
             let(&str3, space(strlen(str2)));
             printTexLongMath(statement[k].mathString,
-                str2, str3, 0);
+                str2, str3, 0, 0);
           }
         }
       }
@@ -2241,7 +2274,7 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
       } else {
         let(&str3, space(strlen(str2)));
         printTexLongMath(statement[stmt].mathString,
-            str2, str3, 0);
+            str2, str3, 0, 0);
       }
 
     } /* End if (statementUsedFlag[stmt] == 'y') */
@@ -2314,7 +2347,7 @@ void traceProof(long statemNum,
 
   /* Print any unproved statements */
   if (nmbrLen(unprovedList)) {
-    print2("Warning:  the following traced statements were not proved:\n");
+    print2("Warning:  the following traced statement(s) were not proved:\n");
     let(&outputString, "");
     for (pos = 0; pos < nmbrLen(unprovedList); pos++) {
       let(&outputString, cat(outputString, " ", statement[unprovedList[
@@ -2979,25 +3012,127 @@ void readInput(void)
 
 }
 
-/* This implements the WRITE SOURCE command. */
-void writeInput(void)
+/* This function implements the WRITE SOURCE command. */
+void writeInput(flag cleanFlag)
 {
 
   /* Temporary variables and strings */
-  long i;
+  long i, p;
   vstring str1 = "";
+  vstring str2 = "";
+  long skippedCount = 0;
+
+  /* nm 24-Feb-04 I decided we don't really the xxx... placeholders if we
+     update the mirrors only once a week or so - because by then we will
+     almost certainly have added new theorems (which become new placeholders)
+     which defeat the purpose, since everything will get renumbered
+     anyway in that case.  The placeholders can make set.mm confusing. */
+  /* Comment out the following statement to enable it */
+  flag xxxFlag = 0; /* Change to 1 to enable xxx... statement placeholders */
 
   print2("Creating and writing \"%s\"...\n",output_fn);
 
   /* Process statements */
   for (i = 1; i <= statements + 1; i++) {
+
+    /* Added 24-Oct-03 nm */
+    if (cleanFlag && statement[i].type == (char)p__) {
+      /* Clean out any proof-in-progress (that user has flagged with a ? in its
+         date comment field) */
+      /* Get the comment section after the statement */
+      let(&str1, space(statement[i + 1].labelSectionLen));
+      memcpy(str1, statement[i + 1].labelSectionPtr,
+          statement[i + 1].labelSectionLen);
+      /* Make sure it's a date comment */
+      let(&str1, edit(str1, 2 + 4)); /* Discard whitespace + control chrs */
+      p = instr(1, str1, "]$)"); /* Get end of date comment */
+      let(&str1, left(str1, p)); /* Discard stuff after date comment */
+      if (instr(1, str1, "$([") == 0) {
+        printLongLine(cat(
+            "?Warning:  The proof for $p statement \"", statement[i].labelName,
+            "\" does not have a date comment after it.  It will not be",
+            " removed by the CLEAN qualifier.", NULL), " ", "  ");
+      } else {
+        /* See if the date comment has a "?" in it */
+        if (instr(1, str1, "?")) {
+          skippedCount++;
+          let(&str2, cat(str2, " ", statement[i].labelName, NULL));
+          /* Write at least the date from the _previous_ statement's
+             post-comment section so that WRITE RECENT can pick it up. */
+          let(&str1, space(statement[i].labelSectionLen));
+          memcpy(str1, statement[i].labelSectionPtr,
+              statement[i].labelSectionLen);
+          /* nm 19-Jan-04 Don't discard w.s. because string will be returned to
+             the source file */
+          /*let(&str1, edit(str1, 2 + 4));*/ /* Discard whitespace + ctrl chrs */
+          p = instr(1, str1, "]$)"); /* Get end of date comment */
+          if (p == 0) {
+            /* In the future, "] $)" may flag date end to conform with
+               space-around-keyword Metamath spec recommendation */
+            p = instr(1, str1, "] $)"); /* Get end of date comment */
+            if (p != 0) p++; /* Match what it would be for old standard */
+          }
+          if (p != 0) {  /* The previous statement has a date comment */
+            let(&str1, left(str1, p + 2)); /* Discard stuff after date cmnt */
+            if (xxxFlag || !instr(1, str1, "?"))
+              /* Don't bother to print $([?]$) of previous statement because
+                 the previous statement was skipped */
+              fprintf(output_fp, "%s\n", str1);
+                                             /* Output just the date comment */
+          }
+
+          /* Output a dummy xxx... statement below if xxxFlag */
+          /* Otherwise output nothing (i.e. suppress the statement) */
+          if (xxxFlag) {
+            /* nm 19-Jan-04 - output a dummy statement for use as a placeholder
+               so the numbers won't all shift by one when the real theorem is
+               finalized, to make incremental rsync site updates smaller */
+            p = getSourceIndentation(i);
+            /* ???Note:  the code below is custom for set.mm and won't work
+               with another formal system.  This is not a problem now because
+               currently this is only used with set.mm, but it may be a
+               problem in the future. */
+            let(&str1, cat("\n", space(p),
+                "$( Dummy placeholder for a possible future theorem. $)",
+                "\n",
+                /*space(p), "xxx", str(skippedCount),*/
+                space(p), "xxx", str(statement[i].pinkNumber),
+                " $p |- ( ph -> ph ) $=",
+                "\n",
+                space(p + 2), "wph xxxid $.", NULL));
+            fprintf(output_fp, "%s", str1);
+            /* nm 19-Jan-04 - end of outputting dummy statement */
+          } /* if (xxxFlag) */
+
+          /* Skip the normal output of this statement */
+          continue;
+        } /* if (instr(1, str1, "?")) */
+      } /* (else clause) if (instr(1, str1, "$([") == 0) */
+    } /* if cleanFlag */
+
+    let(&str1,""); /* Deallocate vstring */
     str1 = outputStatement(i);
     fprintf(output_fp, "%s", str1);
-    let(&str1,""); /* Deallocate vstring */
   }
-  print2("%ld source statements were written.\n",statements);
+  print2("%ld source statement(s) were written.\n",statements);
 
 
+  /* Added 24-Oct-03 nm */
+  if (cleanFlag) {
+    if (skippedCount == 0) {
+      print2("No statements were deleted by the CLEAN qualifier.\n");
+    } else {
+      printLongLine(cat("The following ", str(skippedCount), " statement",
+          (skippedCount == 1) ? " was" : "s were",
+          " deleted by the CLEAN qualifier: ", str2, ".",
+          "  You should ERASE, READ the new output file, and run VERIFY PROOF",
+          " to ensure that no proof dependencies were broken.",
+          NULL), " ", "  ");
+    }
+  }
+
+  let(&str1,""); /* Deallocate vstring */
+  let(&str2,""); /* Deallocate vstring */
 }
 
 void writeDict(void)
@@ -3161,7 +3296,7 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
       }
     }
     if (k == 1) {
-      let(&emptyProofList,cat(emptyProofList,", ",statement[i].labelName,
+      let(&emptyProofList, cat(emptyProofList, ", ", statement[i].labelName,
           NULL));
     }
   }
@@ -3171,17 +3306,17 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
 
   if (emptyProofList[0]) {
     printLongLine(cat(
-        "Warning:  The following $p statements were not proved:  ",
-        right(emptyProofList,3),NULL)," ","  ");
+        "Warning:  The following $p statement(s) were not proved:  ",
+        right(emptyProofList,3), NULL)," ","  ");
   }
-  if (!emptyProofList[0] && !errorFound && !strcmp("*",labelMatch)) {
+  if (!emptyProofList[0] && !errorFound && !strcmp("*", labelMatch)) {
     if (verifyFlag) {
       print2("All proofs in the database were verified.\n");
     } else {
       print2("All proofs in the database passed the syntax-only check.\n");
     }
   }
-  let(&emptyProofList,""); /* Deallocate */
+  let(&emptyProofList, ""); /* Deallocate */
 
 }
 
@@ -3209,12 +3344,27 @@ void outputMidi(long plen, nmbrString *indentationLevels,
 
   /* plen = length of proof
      indentationLevels[step] = indentation level in "show proof xxx /full"
+         where step varies from 0 to plen-1
      logicalFlags[step] = 0 for formula-building step, 1 for logical step
      midiParam = string passed by user in "midi xxx /parameter <midiParam>"
      statementLabel = label of statement whose proof is being scanned */
 
-  /* This function is called from inside a scan of the proof, where the proof
-     steps count successively from 0 to plen-1. */
+  /* This function is called when the user types "midi xxx /parameter
+     <midiParam>".  The proof steps of theorem xxx are numbered successively
+     from 0 to plen-1.  The arrays indentationLevels[] and logicalFlags[]
+     have already been populated for you.  */
+
+  /* The purpose of this function is to create an ASCII file called xxx.txt
+     that contains the ASCII format for a t2mf input file.  The mf2t package
+     is available at http://www.hitsquad.com/smm/programs/mf2t/download.shtml.
+     To convert xxx.txt to xxx.mid you type "t2mf sbth.txt sbth.mid". */
+
+  /* To experiment with this function, you can add your own local variables and
+     modify the algorithm as you see fit.  The algorithm is essentially
+     contained in the loop "for (step = 0; step < plen; step++)" and in the
+     initialization of the local variables that this loop uses.  No global
+     variables are used inside this function; the only data used is
+     that contained in the input parameters. */
 
 /* Larger TEMPO means faster speed */
 #define TEMPO 48
@@ -3223,9 +3373,9 @@ void outputMidi(long plen, nmbrString *indentationLevels,
 #define MIN_NOTE 28
 #define MAX_NOTE 103
 
-  /* Note: "flag" is just "char", "vstring" is just "char *" - except
-     that vstring allocation is controlled by string functions in
-     mmvstr.c, "nmbrString" is just "long *" */
+  /* Note: "flag" is just "char"; "vstring" is just "char *" - except
+     that by this program's convention vstring allocation is controlled
+     by string functions in mmvstr.c; and "nmbrString" is just "long *" */
 
   long step; /* Proof step from 0 to plen-1 */
   long midiNote; /* Current midi note to be output */

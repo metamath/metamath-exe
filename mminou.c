@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2003  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2004  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -607,30 +607,48 @@ vstring cmdInput(FILE *stream, vstring ask)
     the stream.  NULL is returned when end-of-file is encountered.
     New memory is allocated each time linput is called.  This space must
     be freed by the user if not needed. */
-  vstring g = "";
-#define CMD_BUFFER 2000
+  vstring g = ""; /* always init vstrings to "" for let(&...) to work */
+  long i;
+#define CMD_BUFFER_SIZE 2000
 
   while (1) { /* For "B" backup loop */
     if (ask) printf("%s",ask);
-    let(&g, space(CMD_BUFFER)); /* Allow for up to CMD_BUFFER characters */
-    if (!fgets(g, CMD_BUFFER, stream)) {
+    let(&g, space(CMD_BUFFER_SIZE)); /* Allocate CMD_BUFFER_SIZE characters */
+    if (g[CMD_BUFFER_SIZE]) bug(1520); /* Bug in let() (improbable) */
+    g[CMD_BUFFER_SIZE - 1] = 0; /* For overflow detection */
+    if (!fgets(g, CMD_BUFFER_SIZE, stream)) {
       /* End of file */
       return NULL;
     }
+    /*g[CMD_BUFFER_SIZE - 1] = 0;*/ /* Guarantee strlen will work */
+    /* Warning:  Don't call bug(), because it calls print2 which may call this. */
+    if (g[CMD_BUFFER_SIZE - 1]) {
+      /* Warning:  Don't call bug(), because it calls print2. */
+      /* Detect input overflow */
+      printf("***BUG #1508\n");
+    }
+    i = strlen(g);
+    /* Detect operating system bug of inputting no characters */
+    if (!i) printf("***BUG #1507\n");
     /* Warning:  Don't call bug(), because it calls print2. */
-    if (!strlen(g)) printf("*** BUG #1507\n");
-    /* Warning:  Don't call bug(), because it calls print2. */
-    if (strlen(g) > CMD_BUFFER - 1) printf("*** BUG #1508\n");
-/*E*/db = db - (CMD_BUFFER - strlen(g));
+    /* Detect input overflow - THIS MAY OR MAY NOT WORK; THE PROGRAM MAY
+       CRASH BEFORE IT EVER GETS TO THIS POINT */
+    /*if (i >= CMD_BUFFER_SIZE - 1) printf("*** BUG #1508\n");*/
+/*E*/db = db - (CMD_BUFFER_SIZE - i); /* track string space used to detect leaks */
     if (g[1]) {
-      g[strlen(g)-1]=0;   /* Eliminate new-line character */
+      i--;
+      if (g[i] != '\n') printf("***BUG #1519\n");
+      g[i]=0;   /* Eliminate new-line character by zapping it */
 /*E*/db = db - 1;
     } else {
-      let(&g, ""); /* Deallocate vstring space (otherwise empty string will
-                      trick let() into not doing it) */
+      if (g[0] != '\n') printf("***BUG #1521\n");
+      /* Eliminate new-line by deallocating vstring space (if we just zap
+         character [0], let() will later think g is an empty string constant
+         and will never deallocate g) */
+      let(&g, "");
     }
 
-    /* If user typed "B" (for backup), go back to the backup buffer to
+    /* If user typed "B" (for back), go back to the back buffer to
        let the user scroll through it */
     if ((!strcmp(g, "B") || !strcmp(g, "b")) /* User typed "B" */
         && pntrLen(backBuffer) > 1   /* The back-buffer still exists and
@@ -1085,6 +1103,8 @@ vstring readFileToString(vstring fileName, char verbose) {
   }
   fclose(input_fp);
 
+  fileBuf[charCount] = 0;
+
   /* See if it's Unicode */
   /* This only handles the case where all chars are in the ASCII subset */
   if (charCount > 1) {
@@ -1131,7 +1151,7 @@ vstring readFileToString(vstring fileName, char verbose) {
   /* Make sure the file has no carriage-returns */
   if (strchr(fileBuf, '\r') != NULL) {
     if (verbose) print2(
-        "?Warning: the file \"%s\" has carriage-returns.\n",
+       "?Warning: the file \"%s\" has carriage-returns.  Cleaning them up...\n",
         fileName);
     /* Clean up the file, e.g. DOS or Mac file on Unix */
     i = 0;
@@ -1150,6 +1170,7 @@ vstring readFileToString(vstring fileName, char verbose) {
       i++;
       j++;
     }
+    charCount = i - 1; /* nm 6-Feb-04 */
   }
 
   /* Make sure the last line is not a partial line */
@@ -1163,7 +1184,10 @@ vstring readFileToString(vstring fileName, char verbose) {
     fileBuf[charCount] = 0;
   }
 
-  fileBuf[charCount] = 0; /* End of string */
+  if (fileBuf[charCount] != 0) {  /* nm 6-Feb-04 */
+    bug(1522); /* Keeping track of charCount went wrong somewhere */
+  }
+
   /* Make sure there aren't null characters */
   i = strlen(fileBuf);
   if (charCount != i) {

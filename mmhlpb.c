@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2003  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2004  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -26,21 +26,22 @@ H("To make the most effective use of Metamath, you should become familiar");
 H("with the Metamath book.  In particular, you will need to learn");
 H("the syntax of the Metamath language.");
 H("");
-H("For a summary of the Metamath language, type HELP LANGUAGE.");
+H("For help using the command line, type HELP CLI.");
 H("For help invoking Metamath, type HELP INVOKE.");
-H("For help using the command line interpreter, type HELP CLI.");
+H("For a summary of the Metamath language, type HELP LANGUAGE.");
 H("For help getting started, type HELP DEMO.");
 H("For help exploring the data base, type HELP EXPLORE.");
 H("For help creating a LaTeX file, type HELP TEX.");
 H("For help creating Web pages, type HELP HTML.");
 H("For help using the Proof Assistant, type HELP PROOF_ASSISTANT.");
-H("For a list of help topics, type HELP ?.");
+H("For a list of help topics, type HELP ? (to force an error message).");
 H("For current program settings, type SHOW SETTINGS.");
+H("For a simple but general-purpose ASCII file manipulator, type TOOLS.");
 H("To exit Metamath, type EXIT (or its synonym QUIT).");
 H("");
 H(cat("If you need technical support, contact Norman Megill at nm",
     "@", "alum.mit.edu.", NULL));
-H("Copyright (C) 2003 Norman Megill");
+H("Copyright (C) 2004 Norman Megill");
 H("License terms:  GNU General Public License");
 H("");
 
@@ -59,33 +60,37 @@ H("");
 H("To use command-line arguments at invocation, the command-line arguments");
 H("should be a list of Metamath commands, surrounded by quotes if they");
 H("contain spaces.  In Windows DOS, the surrounding quotes must be double");
-H("(not single) quotes.  For example, to read the database set.mm verify");
+H("(not single) quotes.  For example, to read the database set.mm, verify");
 H("all proofs, and exit the program, type (under Unix)");
 H("");
-H("  bash$ ./metamath \"read set.mm\" \"verify proof *\" exit");
+H("  bash$ ./metamath 'read set.mm' 'verify proof *' exit");
 H("");
 H("Note that in Unix, any directory path with /'s must be surrounded by");
 H("quotes so Metamath will not interpret the / as a command qualifier.  So");
-H("if set.mm is in the \"/tmp\" directory, use for the above example");
+H("if set.mm is in the /tmp directory, use for the above example");
 H("");
-H("  bash$ ./metamath \"read '/tmp/set.mm'\" \"verify proof *\" exit");
+H("  bash$ ./metamath 'read \"/tmp/set.mm\"' 'verify proof *' exit");
 H("");
 H("For convenience, if the command-line has one argument and no spaces in");
-H("the argument, the command is implicitly assumed to be \"READ\".  Thus");
+H("the argument, the command is implicitly assumed to be READ.  In this");
+H("case, /'s are not interpreted as command qualifiers, so you don't need");
+H("quotes around a Unix file name.  Thus");
 H("");
-H("  bash$ ./metamath set.mm");
+H("  bash$ ./metamath /tmp/set.mm");
 H("");
 H("and");
 H("");
-H("  bash$ ./metamath \"read set.mm\"");
+H("  bash$ ./metamath \"read '/tmp/set.mm'\"");
 H("");
-H("are equivalent.  To read from the \"/tmp\" directory in Unix, the first");
-H("example would be");
-H("");
-H("  bash$ ./metamath \"'/tmp/set.mm'\"");
+H("are equivalent.");
 H("");
 
 printHelp = !strcmp(helpCmd, "HELP CLI");
+H("The Metamath program was first developed on a VAX/VMS system, and some");
+H("aspects of its command line behavior reflect this heritage.  Hopefully");
+H(
+"you will find it reasonably user-friendly once you get used to it.");
+H("");
 H("Each command line is a sequence of English-like words separated by");
 H("spaces, as in SHOW SETTINGS.  Command words are not case sensitive, and");
 H("only as many letters are needed as are necessary to eliminate ambiguity;");
@@ -132,13 +137,11 @@ H("");
 H("A command line enclosed in quotes is executed by your operating system.");
 H("See HELP SYSTEM.");
 H("");
-H("Some other commands you may want to review with HELP are:");
-H("    SET ECHO");
-H("    SET SCROLL");
-H("    SET SCREEN_WIDTH");
-H("    SUBMIT");
-H("    FILE SEARCH");
-H("    FILE TYPE");
+H("Some additional CLI-related features are explained by:");
+H("    HELP SET ECHO");
+H("    HELP SET SCROLL");
+H("    HELP SET SCREEN_WIDTH");
+H("    HELP SUBMIT");
 H("");
 
 
@@ -158,7 +161,7 @@ H("");
 
 
 printHelp = !strcmp(helpCmd, "HELP SHOW LABELS");
-H("Syntax:  SHOW LABELS <label-match> [/ ALL]");
+H("Syntax:  SHOW LABELS <label-match> [/ ALL] [/ LINEAR]");
 H("");
 H("This command shows the labels of $a and $p statements that match");
 H("<label-match>.  A * in <label-match> matches any zero or more characters.");
@@ -167,6 +170,8 @@ H("ending with \"def\".");
 H("");
 H("Optional qualifier:");
 H("    / ALL - Include matches for $e and $f statement labels.");
+H("    / LINEAR - Display only one label per line.  This can be useful for");
+H("        building scripts in conjunction with the TOOLS utility.");
 H("");
 
 
@@ -410,8 +415,8 @@ H("");
 printHelp = !strcmp(helpCmd, "HELP SET EMPTY_SUBSTITUTION");
 H("Syntax:  SET EMPTY_SUBSTITUTION ON or SET EMPTY_SUBSTITUTION OFF");
 H("");
-H("(This command affects the Proof Assistant only.  It may be issued)");
-H("outside of the Proof Assistant.");
+H("(This command affects the Proof Assistant only.  It may be issued");
+H("outside of the Proof Assistant.)");
 H("");
 H("The Metamath language allows variables to be substituted with empty");
 H("symbol sequences.  However, in most formal systems this will never happen");
@@ -419,7 +424,7 @@ H("in a valid proof.  Allowing for this possibility increases the likelihood");
 H("of ambiguous unifications during proof creation.  The default is that");
 H("empty substitutions are not allowed; for formal systems requiring them,");
 H("you must SET EMPTY_SUBSTITUTION ON.  Note that empty substitutions are");
-H("always permissable in proof verification (VERIFY PROOFS...) outside the");
+H("always permissable in proof verification (VERIFY PROOF...) outside the");
 H("Proof Assistant.  (See the MIU system in the Metamath book for an example");
 H("of a system needing empty substitutions; another example would be a");
 H("system that implements a Deduction Rule and in which deductions from");
@@ -461,8 +466,10 @@ H("");
 H("This command causes further command lines to be taken from the specified");
 H("file.  Note that any line beginning with an exclamation point (!) is");
 H("treated as a comment (i.e. ignored).  Also note that the scrolling");
-H("of the screen output is continuous, so you may have to open a log");
-H("file to record the results.");
+H("of the screen output is continuous, so you may want to open a log file");
+H("(see HELP OPEN LOG) to record the results that fly by on the screen.");
+H("After the lines in the file are exhausted, Metamath returns to its");
+H("normal user interface mode.");
 
 
 printHelp = !strcmp(helpCmd, "HELP SYSTEM");
@@ -511,12 +518,34 @@ H("");
 printHelp = !strcmp(helpCmd, "HELP WRITE SOURCE");
 H("Syntax:  WRITE SOURCE <filename>");
 H("");
+H("Optional qualifier:");
+H("");
+H("    / CLEAN - Suppresses the output of any theorem that has been flagged");
+H("        with a question mark (?) placed in the date comment field at the");
+H("        end of the proof, for example \"$([?31-Oct-00]$)\".  This lets you");
+H("        flag proofs under development so that a \"clean\" version can be");
+H("        generated for presentation or distribution purposes.  Note:");
+H("        Hypotheses are not suppressed, only $p statements.  Spurious date");
+H("        comment fields of the suppressed theorems may also remain.");
+H("");
 H("This command will write the contents of the Metamath database into a file.");
 H("Note:  The present version of Metamath will not split the database into");
 H("its constituent files included with $[ $] keywords.  Instead it will write");
 H("the entire database as one big file.");
 H("");
 
+printHelp = !strcmp(helpCmd, "HELP WRITE THEOREM_LIST");
+H("Syntax:  WRITE THEOREM_LIST");
+H("");
+H("Optional qualifier:");
+H("    / THEOREMs_PER_PAGE <number> - specifies the number of theorems to");
+H("        write per output file");
+H("");
+H("This command writes a list of the theorems in the database into files");
+H("called \"mmtheorems.html\", \"mmtheorems2.html\", \"mmtheorems3.html\",");
+H("etc.  If / THEOREMS_PER_PAGE is omitted, the number of theorems (and other");
+H("statements) per page defaults to 100.");
+H("");
 
 printHelp = !strcmp(helpCmd, "HELP WRITE BIBLIOGRAPHY");
 H("Syntax:  WRITE BIBLIOGRAPHY <filename>");
@@ -533,6 +562,20 @@ H("syntax is somewhat loose and subject to refinement.)  The original input");
 H("file is renamed to \"<filename>~1\"");
 H("");
 
+printHelp = !strcmp(helpCmd, "HELP WRITE RECENT_ADDITIONS");
+H("Syntax:  WRITE RECENT_ADDITIONS <filename>");
+H("");
+H("Optional qualifier:");
+H("    / LIMIT <number> - specifies the number of most recent theorems to");
+H("        write to the output file");
+H("");
+H("This command reads an HTML Recent Additions file, normally");
+H("called \"mmrecent.html\", and updates it with the descriptions of the");
+H("most recently added theorems to the database.  If / LIMIT is omitted, the");
+H("number of theorems written defaults to 100.  The file is updated between");
+H("the HTML comment lines \"<!-- #START# -->\" and \"<!-- #END# -->\".  The");
+H("original input file is renamed to \"<filename>~1\"");
+H("");
 
 printHelp = !strcmp(helpCmd, "HELP ASSIGN");
 H("Syntax:  ASSIGN <step> <label>");
@@ -772,10 +815,14 @@ printHelp = !strcmp(helpCmd, "HELP DEMO");
 H("For a quick demo that enables you to see Metamath do something, type");
 H("the following:");
 H("    READ set.mm");
-H("    SHOW STATEMENT id1");
+H("    SHOW STATEMENT id1 /COMMENT");
 H("    SHOW PROOF id1 /ESSENTIAL /RENUMBER /LEMMON");
-H("This will show you a proof of \"P implies P\" directly from the axioms");
+H("will show you a proof of \"P implies P\" directly from the axioms");
 H("of propositional calculus.");
+H("    SEARCH * \"distributive law\" /COMMENTS");
+H("will show all the distributive laws in the database.");
+H("    SEARCH * \"(_ $* u.\"");
+H("will show all statements with subset then union in them.");
 H("");
 
 }

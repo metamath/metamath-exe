@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2003  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2004  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -295,20 +295,23 @@ EDIT$
      1024     Tab the line (convert spaces to equivalent tabs)
      2048     Untab the line (convert tabs to equivalent spaces)
      4096     Convert VT220 screen print frame graphics to -,|,+ characters
+
+     (Added 10/24/03:)
+     8192     Discard CR only (to assist DOS-to-Unix conversion)
 */
   vstring sout;
   long i,j,k;
   int last_char_is_blank;
-  int trim_flag,discardcr_flag,bracket_flag,quote_flag,case_flag;
+  int trim_flag,discardctrl_flag,bracket_flag,quote_flag,case_flag;
   int alldiscard_flag,leaddiscard_flag,traildiscard_flag,reduce_flag;
   int processing_inside_quote=0;
-  int lowercase_flag, tab_flag, untab_flag, screen_flag;
+  int lowercase_flag, tab_flag, untab_flag, screen_flag, discardcr_flag;
   unsigned char graphicsChar;
 
   /* Set up the flags */
   trim_flag=control & 1;
   alldiscard_flag=control & 2;
-  discardcr_flag=control & 4;
+  discardctrl_flag=control & 4;
   leaddiscard_flag=control & 8;
   reduce_flag=control & 16;
   case_flag=control & 32;
@@ -322,6 +325,7 @@ EDIT$
   untab_flag = control & 2048;
   screen_flag = control & 4096; /* Convert VT220 screen prints to |,-,+
                                    format */
+  discardcr_flag=control & 8192; /* Discard CR's */
 
   /* Copy string */
   i = strlen(sin) + 1;
@@ -355,13 +359,18 @@ EDIT$
        sout[i]=sout[i] & 0x7F;
 
     /* Discard CR,LF,FF,ESC,BS */
-    if ((discardcr_flag) && (
+    if ((discardctrl_flag) && (
          (sout[i]=='\015') || /* CR  */
          (sout[i]=='\012') || /* LF  */
          (sout[i]=='\014') || /* FF  */
          (sout[i]=='\033') || /* ESC */
          /*(sout[i]=='\032') ||*/ /* ^Z */ /* DIFFERENCE won't work w/ this */
          (sout[i]=='\010')))  /* BS  */
+      sout[i]=0;
+
+    /* Discard CR */
+    if ((discardcr_flag) && (
+         (sout[i]=='\015')))  /* CR  */
       sout[i]=0;
 
     /* Convert lowercase to uppercase */

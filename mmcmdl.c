@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2003  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2004  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -103,7 +103,7 @@ flag processCommandLine(void)
       }
       if (cmdMatches("HELP WRITE")) {
         if (!getFullArg(2,
-            "SOURCE|BIBLIOGRAPHY|<SOURCE>"))
+            "SOURCE|THEOREM_LIST|BIBLIOGRAPHY|RECENT_ADDITIONS|<SOURCE>"))
             goto pclbad;
         goto pclgood;
       }
@@ -141,7 +141,9 @@ flag processCommandLine(void)
     }
 
     if (cmdMatches("WRITE")) {
-      if (!getFullArg(1,"SOURCE|BIBLIOGRAPHY|<SOURCE>")) goto pclbad;
+      if (!getFullArg(1,
+          "SOURCE|THEOREM_LIST|BIBLIOGRAPHY|RECENT_ADDITIONS|<SOURCE>"))
+        goto pclbad;
       if (cmdMatches("WRITE SOURCE")) {
         if (statements == 0) {
           print2("?No source file has been read in.  Use READ first.\n");
@@ -154,6 +156,52 @@ flag processCommandLine(void)
         if (!strcmp(input_fn, fullArg[2])) {
           print2(
           "The input file has been renamed %s~1.\n", input_fn);
+        }
+
+        /* Get any switches */
+        i = 2;
+        while (1) {
+          i++;
+          if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+          if (lastArgMatches("/")) {
+            i++;
+            if (!getFullArg(i,cat(
+                "CLEAN",
+                "|<CLEAN>",NULL)))
+              goto pclbad;
+          } else {
+            break;
+          }
+          break; /* Break if only 1 switch is allowed */
+        } /* End while for switch loop */
+
+        goto pclgood;
+      }
+      if (cmdMatches("WRITE THEOREM_LIST")) {
+        if (statements == 0) {
+          print2("?No source file has been read in.  Use READ first.\n");
+          goto pclbad;
+        }
+        /* Get any switches */
+        i = 1;
+        while (1) {
+          i++;
+          if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+          if (lastArgMatches("/")) {
+            i++;
+            if (!getFullArg(i,cat(
+                "THEOREMS_PER_PAGE",
+                "|<THEOREMS_PER_PAGE>",NULL)))
+              goto pclbad;
+            if (lastArgMatches("THEOREMS_PER_PAGE")) {
+              i++;
+              if (!getFullArg(i,"# How many theorems per page <100>? "))
+                goto pclbad;
+            }
+          } else {
+            break;
+          }
+          break; /* Break if only 1 switch is allowed */
         }
         goto pclgood;
       }
@@ -168,6 +216,41 @@ flag processCommandLine(void)
           goto pclbad;
         print2(
           "The old file will be renamed %s~1.\n", fullArg[2]);
+        goto pclgood;
+      }
+      if (cmdMatches("WRITE RECENT_ADDITIONS")) {
+        if (statements == 0) {
+          print2("?No source file has been read in.  Use READ first.\n");
+          goto pclbad;
+        }
+        if (!getFullArg(2,cat(
+            "* What is the Recent Additions HTML input/output file <",
+            "mmrecent.html", ">? ", NULL)))
+          goto pclbad;
+        print2(
+          "The old file will be renamed %s~1.\n", fullArg[2]);
+
+        /* Get any switches */
+        i = 2;
+        while (1) {
+          i++;
+          if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+          if (lastArgMatches("/")) {
+            i++;
+            if (!getFullArg(i,cat(
+                "LIMIT",
+                "|<LIMIT>",NULL)))
+              goto pclbad;
+            if (lastArgMatches("LIMIT")) {
+              i++;
+              if (!getFullArg(i,"# How many most recent theorems <100>? "))
+                goto pclbad;
+            }
+          } else {
+            break;
+          }
+          break; /* Break if only 1 switch is allowed */
+        }
         goto pclgood;
       }
     }
@@ -448,7 +531,7 @@ flag processCommandLine(void)
           if (!getFullArg(i,"/|$|<$>")) goto pclbad;
           if (lastArgMatches("/")) {
             i++;
-            if (!getFullArg(i,cat("ALL|HTML|<ALL>", NULL)))
+            if (!getFullArg(i,cat("ALL|LINEAR|HTML|<ALL>", NULL)))
               goto pclbad;
           } else {
             break;
@@ -1039,9 +1122,9 @@ flag processCommandLine(void)
 
     if (cmdMatches("VERIFY")) {
       if (!getFullArg(1,
-          "PROOFS|<PROOFS>"))
+          "PROOF|<PROOF>"))
         goto pclbad;
-      if (cmdMatches("VERIFY PROOFS")) {
+      if (cmdMatches("VERIFY PROOF")) {
         if (statements == 0) {
           print2("?No source file has been read in.  Use READ first.\n");
           goto pclbad;

@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2003  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2004  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -147,8 +147,8 @@ H("Syntax:  INSERT <iofile> <string> <column>");
 
 
 printHelp = !strcmp(helpCmd, "HELP BREAK");
-H("This command breaks up a file into tokens, one per line, using white");
-H("space and any special characters you specify as delimiters.");
+H("This command breaks up a file into tokens, one per line, breaking at");
+H("whitespace and any special characters you specify as delimiters.");
 H("Syntax:  BREAK <iofile> <specchars>");
 
 printHelp = !strcmp(helpCmd, "HELP BUILD");
@@ -221,9 +221,11 @@ H("Syntax:  COUNT <inpfile> <string>");
 
 
 printHelp = !strcmp(helpCmd, "HELP TYPE") || !strcmp(helpCmd, "HELP T");
-H("This command types the first n lines of a file on the terminal screen.");
-H("If n is not specified, it will default to 10.  If n is the string \"ALL\"");
-H("then the whole file will be typed.  T is an abbreviation for TYPE.");
+H("This command displays (i.e. types out) the first n lines of a file on the");
+H("terminal screen.  If n is not specified, it will default to 10.  If n is");
+H(
+"the string \"ALL\" then the whole file will be typed.  T is an abbreviation");
+H("for TYPE.");
 H("Syntax:  TYPE <inpfile> <n>");
 
 
@@ -234,12 +236,18 @@ H("the same name as an input file.  Any previous version of the output");
 H("file is renamed with a ~1 extension.  C is an abbreviation for COPY.");
 H("Syntax:  COPY <inpfile,inpfile,...> <outfile>");
 
-
 printHelp = !strcmp(helpCmd, "HELP TAG");
-H("This command tags edits made to a program.  Its purpose is to provide");
-H("traceability to the previous revision of the file for revision control.");
+H("This command tags edits made to a program source.  The idea is to keep");
+H("all past history of a file in the file itself, in the form of comments.");
+H("TAG was written for a proprietary language that allowed nested C-style");
+H("comments, and it may not be generally useful without some modification.");
+H("Essentially a (Unix) diff-like algorithm looks for changes between an");
+H("original and a revised file and puts the original lines into the revised");
+H("file in the form of comments.  Currently it is not well documented and it");
+H("may be easiest just to type TAG <return> and answer the questions.  Try");
+H("it on an original and edited version of a test file to see if you find it");
+H("useful.");
 H("Syntax:  TAG <originfile> <editedinfile> <editedoutfile> <tag> <match>");
-
 
 printHelp = !strcmp(helpCmd, "HELP CLI");
 H("Each command line is an English-like word followed by arguments separated");
@@ -312,7 +320,7 @@ printHelp = !strcmp(helpCmd, "HELP LANGUAGE");
 H("The language is best learned by reading the book and studying a few proofs");
 H("with the Metamath program.  This is a brief summary for reference.");
 H("");
-H("The database contains a series of tokens separated by white space (spaces,");
+H("The database contains a series of tokens separated by whitespace (spaces,");
 H("tabs, returns).  A token is a keyword, a <label>, or a <symbol>.");
 H("");
 H("The pure language keywords are:  $c $v $a $p $e $f $d ${ $} $. and $=");
@@ -331,9 +339,9 @@ H("       scope become inactive.  Note that $a and $p statements remain");
 H("       active forever.  Note that $c's may be used only in the outermost");
 H("       scope, so they are always active.  The outermost scope is not");
 H("       bracketed by ${...$} .  The scope of a $v, $e, $f, or $d statement");
-H("       starts where the statement occurs and ends with the next $} .  The");
-H("       scope of a $c, $a, or $p statement starts where the statement");
-H("       and ends at the end of the database.");
+H("       starts where it occurs and ends with the $} that matches the");
+H("       previous $}.  The scope of a $c, $a, or $p statement starts where");
+H("       the statement occurs and ends at the end of the database.");
 H("");
 H("Declarations:");
 H("");
@@ -345,12 +353,14 @@ H("       Syntax:  \"$v <symbol> ... <symbol> $.\"");
 H("");
 H("Hypotheses:");
 H("");
-H("  $f - Variable-type (or \"floating\") hypothesis (meaning it is required");
-H("         by a $p or $a statement in its scope only if it has variables in");
-H("         common with the $p or $a statement or the essential hypotheses");
-H("         of the $p or $a statement).  Every $d, $e, $p, and $a statement");
-H("         variable must have an earlier active $f statement to specify the");
-H("         variable type.");
+H("  $f - Variable-typing (or \"floating\") hypothesis (meaning it is");
+H("         \"required\" by a $p or $a statement in its scope only if its");
+H("         variable occurs in the $p or $a statement or in the essential");
+H("         hypotheses of the $p or $a statement).  Every $d, $e, $p, and $a");
+H("         statement variable must have an earlier active $f statement to");
+H("         specify the variable type.  Non-required i.e. \"optional\" $f");
+H("         statements may be referenced inside a proof when dummy variables");
+H("         are needed by the proof.");
 H("       Syntax:  \"<label> $f <constant> <variable> $.\" where both symbols");
 H("         are active");
 H("");
@@ -376,6 +386,8 @@ H("         \"$= <label> ... <label> $.\" is the proof; see the book for more");
 H("         information.  Proofs may be compressed for storage efficiency.  A");
 H("         compressed proof is a series of labels in parentheses followed by");
 H("         a string of capital letters; see book for compression algorithm.");
+H("         SAVE PROOF <label> /NORMAL will convert a compressed proof to");
+H("         its uncompressed form.");
 H("");
 H("  A substitution is the replacement of a variable with a <symbol> string");
 H("  throughout an assertion and its required hypotheses.");
@@ -411,12 +423,17 @@ H("  $(   Begin comment");
 H("  $)   End comment");
 H("       Inside of comments:");
 H("         ` <symbol> ` - use graphical <symbol> in LaTeX/HTML output;");
-H("             `` means literal `");
+H("             `` means literal `; several <symbol>s may occur inside");
+H("             ` ... ` if separated by whitespace");
 H("         ~ <label> - use typewriter font (URL link) in LaTeX (HTML) output");
 H("         [<author>] - link to bibliography; see HELP HTML and HELP WRITE");
 H("             BIBLIOGRAPHY");
 H("         $t - flags comment as containing LaTeX and/or HTML typesetting");
 H("             definitions; see HELP LATEX or HELP HTML");
+H("         _ - Italicize text from <space>_<non-space> to");
+H("             <non-space>_<space>");
+H("         _ - <non-space>_<non-space-string> will make <non-space-string>");
+H("             a subscript");
 H("       Note:  Comments may not be nested.");
 H("");
 H("  $[ <file-name> $] - place contents of file <file-name> here; a second,");
@@ -475,6 +492,19 @@ H("Metamath will allow only operations that are legal based on what is");
 H("known up to that point.  For example, it will not allow an ASSIGN of");
 H("a statement that cannot be unified with the proof step being assigned.");
 H("");
+H("IMPORTANT:  You should figure out your first few proofs completely and");
+H("write them down by hand, before using the Proof Assistant.  Otherwise you");
+H("will become extremely frustrated.  The Proof Assistant is NOT a tool to");
+H("help you discover proofs.  It is just a tool to help you add them to the");
+H("database.  For a tutorial read Section 2.4 of the Metamath book.  You may");
+H("also want to PROVE an existing theorem, then delete all steps with");
+H("DELETE ALL, then re-create it with the Proof Assistant while looking at");
+H("its proof display (before deletion).");
+H("");
+H("IMPORTANT:  Keep track of your work with a log file (OPEN LOG) and save it");
+H("frequently (SAVE NEW_PROOF, WRITE SOURCE), because currently there is no");
+H("undo command!  Hopefully an undo command will be in a future version.");
+H("");
 H("The commands available to help you create a proof are the following.");
 H("See the help for the individual commands for more detail.");
 H("    SHOW NEW_PROOF [/ ESSENTIAL,...] - Displays the proof in progress.");
@@ -484,15 +514,14 @@ H("        and / NOT_UNIFIED are useful for seeing the work remaining to be");
 H("        done.  Normally, / ESSENTIAL should always be used since Metamath");
 H("        can usually prove syntax statements (with no unknown variables)");
 H("        automatically.  Unknown variables are shown as $1, $2,...");
+H("        (Note: in recent versions of Metamath / ESSENTIAL is the default.");
+H("        To see the syntax constructions use / ALL.)");
 H("    ASSIGN <step> <label> - Assigns an unknown step with the statement");
 H("        specified by <label>.");
-H("    MATCH STEP <step> (or MATCH ALL) - Shows what statements are");
-H("        possibilities for the ASSIGN statement. (Rarely useful.  Instead,");
-H("        use the SEARCH statement for candidates matching specific math");
-H("        token combinations.)");
 H("    LET VARIABLE <variable> = \"<symbol sequence>\" - Forces a symbol");
 H("        sequence to replace an unknown variable in a proof.  It is useful");
-H("        for helping difficult unifications.");
+H("        for helping difficult unifications, and is necessary when you have");
+H("        dummy variables that must be specified.");
 H("    LET STEP <step> = \"<symbol sequence>\" - Forces a symbol sequence");
 H("        to replace the contents of a proof step, provided it can be");
 H("        unified with the existing step contents.  (Rarely useful.)");
@@ -513,14 +542,19 @@ H("    IMPROVE <step> (or ALL) - Automatically creates a proof for steps");
 H("        (with no unknown variables) whose proof requires no statements");
 H("        with $e hypotheses.  Useful for filling in proofs of $f");
 H("        hypotheses.  The / DEPTH qualifier will also try statements");
-H("        whose $e hypotheses contain no new variables, but save your");
-H("        proof before using / DEPTH = 1 or greater (the default is 0)");
-H("        since search time grows exponentially and may never terminate");
-H("        in a reasonable time, and you cannot interrupt the search.");
+H("        whose $e hypotheses contain no new variables.  WARNING: Save your");
+H("        work (SAVE NEW_PROOF, WRITE SOURCE) before using / DEPTH = 2 or");
+H("        greater, the search time grows exponentially and may never");
+H("        terminate in a reasonable time, and you cannot interrupt the");
+H("        search.  I have never found / DEPTH = 3 or greater to be useful.");
 H("    SAVE NEW_PROOF - Saves the proof in progress internally in the");
 H("        database buffer.  To save it permanently, use WRITE SOURCE after");
-H("        SAVE NEW_PROOF.  Warning: SAVE and WRITE your proof often since");
-H("        there is currently no undo command.");
+H("        SAVE NEW_PROOF.");
+H("    MATCH STEP <step> (or MATCH ALL) - Shows what statements are");
+H("        possibilities for the ASSIGN statement. (This command is not very");
+H("        useful in its present form and hopefully will be improved");
+H("        eventually.  In the meantime, use the SEARCH statement for");
+H("        candidates matching specific math token combinations.)");
 H("");
 H("The following commands set parameters that may be relevant to your proof:");
 H("    SET UNIFICATION_TIMEOUT");
@@ -634,7 +668,7 @@ H("    (Enter Metamath)");
 H("    READ set.mm");
 H("    OPEN TEX example.tex");
 H("    SHOW STATEMENT uneq2 / TEX");
-H("    SHOW PROOF uneq2 / TEX");
+H("    SHOW PROOF uneq2 / LEMMON / RENUMBER / TEX");
 H("    CLOSE TEX");
 H("");
 H("The LaTeX symbol definitions should be included in a special comment");
@@ -691,11 +725,21 @@ H("Note that the file name may be enclosed in single or double quotes;");
 H("this is useful if the file name contains slashes, as might be the case");
 H("under Unix.");
 H("");
+H("If you are getting an \"?Expected VERIFY or NOVERIFY\" error when trying");
+H("to read a Unix file name with slashes, you probably haven't quoted it.");
+H("");
+H("You need nested quotes when a Unix file name with slashes is a Metamath");
+H("invocation argument.  See HELP INVOKE for examples.");
+H("");
+H("If you are prompted for the file name (by pressing <return> after READ)");
+H("you should _not_ put quotes around it, even if it is a Unix file name.");
+H("with slashes.");
+H("");
 H("Optional qualifier:");
 H("    / VERIFY - Verify all proofs as the database is read in.  This");
 H("        qualifier will slow down reading in the file.");
 H("");
-H("See also ERASE.");
+H("See also HELP ERASE.");
 H("");
 
 
@@ -760,7 +804,9 @@ H("");
 printHelp = !strcmp(helpCmd, "HELP TOOLS");
 H("Syntax:  TOOLS");
 H("");
-H("This command invokes a utility to manipulate ASCII text files.");
+H("This command invokes a utility to manipulate ASCII text files.  Type TOOLS");
+H("to enter this utility, which has its own HELP commands.  Once inside you");
+H("are inside, EXIT will return to Metamath.");
 H("");
 
 

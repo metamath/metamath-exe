@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2003  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2004  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -495,7 +495,7 @@ void bug(int bugNum)
 
   /* 10/10/02 */
   long saveOutputToString = outputToString;
-  outputToString = 0; /* Make sure we print to screen and not string */
+  outputToString = 0; /* Make sure we print to screen and not to string */
 
   print2("*** A PROGRAM BUG WAS DETECTED.\n");
   print2("Bug identifier (for technical support):  %ld\n",(long)bugNum);
@@ -513,6 +513,10 @@ void bug(int bugNum)
     print2(
 "Press RETURN to abort program, or type 'cont' to continue at your own risk\n");
     tmpStr = cmdInput1("?");
+    /******* 8-Nov-03 This loop caused an infinite loop in a cron job when bug
+     detection was triggered.  Now, with this loop broken, if the user
+     types anything other than 'cont' the program will abort. *******/
+    break; /* Added 8-Nov-03 */
   }
   if (!strcmp(tmpStr, "cont")) {
     print2(
@@ -538,7 +542,7 @@ void bug(int bugNum)
     logFileOpenFlag = 0;
   }
 
-  exit(0);
+  exit(1); /* Use 1 instead of 0 to flag abnormal termination to scripts */
 }
 
 

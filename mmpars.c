@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2003  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2004  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -131,6 +131,33 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
   }
   fclose(input_fp);
   fileBuf[charCount] = 0; /* End of string */
+
+  /* nm 6-Feb-04 This was taken from readFileToString in mminou.c.
+     ? ? ? Future: make this whole thing call readFileToString */
+  /* Make sure the file has no carriage-returns */
+  if (strchr(fileBuf, '\r') != NULL) {
+    print2(
+      "?Warning: the source file has carriage-returns.  Cleaning them up...\n");
+    /* Clean up the file, e.g. DOS or Mac file on Unix */
+    i = 0;
+    j = 0;
+    while (j <= charCount) {
+      if (fileBuf[j] == '\r') {
+        if (fileBuf[j + 1] == '\n') {
+          /* DOS file - skip '\r' */
+          j++;
+        } else {
+          /* Mac file - change '\r' to '\n' */
+          fileBuf[j] = '\n';
+        }
+      }
+      fileBuf[i] = fileBuf[j];
+      i++;
+      j++;
+    }
+    charCount = i - 1; /* nm 6-Feb-04 */
+  }
+
 /*E*/if(db5)print2("In text mode the file has %ld bytes.\n",charCount);
   fileCharCount = charCount; /* Save file size for user message */
 
@@ -144,6 +171,8 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
         " or a carriage return on the Macintosh or a CR/LF in Windows.",NULL));
     charCount++;
   }
+
+  if (fileBuf[charCount] != 0) bug(1719);
 
   /* Look for $[ and $] 'include' statement start and end */
   fbPtr = fileBuf;
@@ -671,6 +700,11 @@ void parseKeywords(void)
       statement[i].pinkNumber = j;
     }
   }
+  /* 10-Jan-04  Also, put the largest pink number in the last statement, no
+     matter what it kind it is, so we can look up the largest number in
+     pinkHTML() in mmwtex.c */
+  statement[statements].pinkNumber = j;
+
 
 /*E*/if(db5){for (i=1; i<=statements; i++){
 /*E*/  if (i == 5) { print2("(etc.)\n");} else { if (i<5)
@@ -3642,6 +3676,16 @@ vstring outputStatement(long stmt)
        statement terminator, so that additional text may be added after
        the terminator if desired.  (I.e., date in SAVE NEW_PROOF command) */
     if (!newProofFlag) let(&output, cat(output, "$.", NULL));
+  }
+
+  /* Added 10/24/03 */
+  /* Make sure the line has no carriage-returns */
+  if (strchr(output, '\r') != NULL) {
+    /* This may happen with Cygwin's gcc, where DOS CR-LF becomes CR-CR-LF
+       in the output file */
+    /* Someday we should investigate the use of readFileToString() in
+       mminou.c for the main set.mm READ function, to solve this cleanly. */
+    let(&output, edit(output, 8192)); /* Discard CR's */
   }
 
   let(&labelSection, "");

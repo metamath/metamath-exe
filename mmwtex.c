@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2003  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2004  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -20,7 +20,7 @@
 #include "mmpars.h" /* For rawSourceError and mathSrchCmp */
 #include "mmwtex.h"
 #include "mmcmdl.h" /* For texFileName */
-#include "mmcmds.h" /* For pinkNumber */
+#include "mmcmds.h" /* For getDescription */
 
 /* 6/27/99 - Now, all LaTeX and HTML definitions are taken from the source
    file (read in the by READ... command).  In the source file, there should
@@ -1060,15 +1060,34 @@ void printTexHeader(flag texHeaderFlag)
     print2("%s%s\n", "<META HTTP-EQUIV=\"Content-Type\" ",
         "CONTENT=\"text/html; charset=iso-8859-1\">");
 
-    /* Print style sheet for pink number that goes after statement label */
     print2("<STYLE TYPE=\"text/css\">\n");
     print2("<!--\n");
+#ifndef RAINBOW_OPTION
+    /* Print style sheet for pink number that goes after statement label */
     print2(".p { font-family: \"Arial Narrow\";\n");
     print2("     font-size: x-small;\n");
     /* Strip off quotes from color (css doesn't like them) */
     printLongLine(cat("     color: ", seg(PINK_NUMBER_COLOR, 2,
         strlen(PINK_NUMBER_COLOR) - 1), ";", NULL), "", "&");
     print2("   }\n");
+#else
+    /* Print style sheet for rainbow-colored number that goes after
+       statement label */
+    print2(".r { font-family: \"Arial Narrow\";\n");
+    print2("     font-size: x-small;\n");
+    /* There is no color */
+    print2("   }\n");
+#endif
+
+#ifdef INDENT_HTML_PROOFS
+    /* nm 3-Feb-04 Experiment to indent web proof displays */
+    /* Print style sheet for HTML proof indentation number */
+    /* ??? Future - combine with above style sheet */
+    print2(".i { font-family: \"Arial Narrow\";\n");
+    print2("     font-size: x-small;\n");
+    print2("     color: gray;\n");
+    print2("   }\n");
+#endif
     print2("-->\n");
     print2("</STYLE>\n");
 
@@ -1137,8 +1156,13 @@ void printTexHeader(flag texHeaderFlag)
       j = 0;
       k = 0;
       for (i = showStatement - 1; i >= 1; i--) {
-        if (statement[i].type == (char)p__ ||
-            statement[i].type == (char)a__ ) {
+        if ((statement[i].type == (char)p__ ||
+            statement[i].type == (char)a__ )
+            /* Skip dummy "xxx..." statements.  We rely on lazy
+               evaluation to prevent array bound overflow. */
+            && (statement[i].labelName[0] != 'x' /* Skip "xxx.." */
+              || statement[i].labelName[1] != 'x'
+              || statement[i].labelName[2] != 'x')) {
           j = i;
           break;
         }
@@ -1147,8 +1171,13 @@ void printTexHeader(flag texHeaderFlag)
         k = 1; /* First statement flag */
         /* For the first statement, wrap to last one */
         for (i = statements; i >= 1; i--) {
-          if (statement[i].type == (char)p__ ||
-              statement[i].type == (char)a__ ) {
+          if ((statement[i].type == (char)p__ ||
+              statement[i].type == (char)a__ )
+              /* Skip dummy "xxx..." statements.  We rely on lazy
+                 evaluation to prevent array bound overflow. */
+              && (statement[i].labelName[0] != 'x' /* Skip "xxx.." */
+                || statement[i].labelName[1] != 'x'
+                || statement[i].labelName[2] != 'x')) {
             j = i;
             break;
           }
@@ -1166,8 +1195,13 @@ void printTexHeader(flag texHeaderFlag)
       j = 0;
       k = 0;
       for (i = showStatement + 1; i <= statements; i++) {
-        if (statement[i].type == (char)p__ ||
-            statement[i].type == (char)a__ ) {
+        if ((statement[i].type == (char)p__ ||
+            statement[i].type == (char)a__ )
+            /* Skip dummy "xxx..." statements.  We rely on lazy
+               evaluation to prevent array bound overflow. */
+            && (statement[i].labelName[0] != 'x' /* Skip "xxx.." */
+              || statement[i].labelName[1] != 'x'
+              || statement[i].labelName[2] != 'x')) {
           j = i;
           break;
         }
@@ -1176,8 +1210,13 @@ void printTexHeader(flag texHeaderFlag)
         k = 1; /* Last statement flag */
         /* For the last statement, wrap to first one */
         for (i = 1; i <= statements; i++) {
-          if (statement[i].type == (char)p__ ||
-              statement[i].type == (char)a__ ) {
+          if ((statement[i].type == (char)p__ ||
+              statement[i].type == (char)a__ )
+              /* Skip dummy "xxx..." statements.  We rely on lazy
+                 evaluation to prevent array bound overflow. */
+              && (statement[i].labelName[0] != 'x' /* Skip "xxx.." */
+                || statement[i].labelName[1] != 'x'
+                || statement[i].labelName[2] != 'x')) {
             j = i;
             break;
           }
@@ -1200,8 +1239,9 @@ void printTexHeader(flag texHeaderFlag)
       if (htmlDir[0]) {
         if (altHtmlFlag) {
           print2("</FONT></TD></TR><TR><TD ALIGN=RIGHT><FONT FACE=sans-serif\n");
-          print2("SIZE=-2>Symbols look wrong? <BR>Try the\n");
-          print2(" <A HREF=\"%s%s\">GIF version</A>.</FONT></TD>\n",
+          print2("SIZE=-2>Bad symbols?\n");
+          print2("Use <A HREF=\"http://mozilla.org\">Mozilla</A><BR>\n");
+          print2("(or <A HREF=\"%s%s\">GIF version</A> for IE).</FONT></TD>\n",
               htmlDir, texFileName);
         } else {
           print2("</FONT></TD></TR><TR><TD ALIGN=RIGHT><FONT FACE=sans-serif\n");
@@ -1262,8 +1302,12 @@ void printTexHeader(flag texHeaderFlag)
 /* Prints an embedded comment in TeX.  The commentPtr must point to the first
    character after the "$(" in the comment.  The printout ends when the first
    "$)" or null character is encountered.   commentPtr must not be a temporary
-   allocation.  */
-void printTexComment(vstring commentPtr)
+   allocation.   htmlCenterFlag, if 1, means to center the HTML and add a
+   "Description:" prefix. */
+/* Note: the global long "showStatement" is referenced to determine whether
+   to read bibliography from mmset.html or mmhilbert.html (or other
+   htmlBibliography or extHtmlBibliography file pair). */
+void printTexComment(vstring commentPtr, char htmlCenterFlag)
 {
   vstring cmtptr; /* Not allocated */
   vstring srcptr; /* Not allocated */
@@ -1295,6 +1339,8 @@ void printTexComment(vstring commentPtr)
 
   /* We must let this procedure handle switching output to string mode */
   if (outputToString) bug(2309);
+  /* The LaTeX (or HTML) file must be open */
+  if (!texFilePtr) bug(2321);
 
   cmtptr = commentPtr;
 
@@ -1344,21 +1390,88 @@ void printTexComment(vstring commentPtr)
     let(&tmpStr, ""); /* Deallocate */
 
     /* This used to be done in mmcmds.c */
-    let(&cmt, cat("<CENTER><TABLE><TR><TD ALIGN=LEFT><B>Description: </B>", cmt,
-        "</TD></TR></TABLE></CENTER>", NULL));
+    if (htmlCenterFlag) {
+      let(&cmt, cat("<CENTER><TABLE><TR><TD ALIGN=LEFT><B>Description: </B>",
+          cmt, "</TD></TR></TABLE></CENTER>", NULL));
+    }
   }
 
-  /* 10/10/02 Convert _abc_ emphasis in comments to <I>abc</I> in HTML for
-     book titles, etc. */
+  /* 5-Dec-03 Handle dollar signs in comments converted to LaTeX */
   /* This section is independent and can be removed without side effects */
-  if (htmlFlag) {
+  /* This must be done before the underscores below so subscript $'s */
+  /* won't be converted to \$'s */
+  if (!htmlFlag) {  /* LaTeX */
+    pos1 = 0;
+    while (1) {
+      pos1 = instr(pos1 + 1, cmt, "$");
+      if (!pos1) break;
+      /* Don't modify anything inside of <PRE>...</PRE> tags */
+      if (pos1 > instr(1, cmt, "<PRE>") && pos1 < instr(1, cmt, "</PRE>"))
+        continue;
+      let(&cmt, cat(left(cmt, pos1 - 1), "\\$", right(cmt, pos1 + 1),
+          NULL));
+      pos1 = pos1 + 1; /* Adjust for 2-1 extra chars in "let" above */
+    }
+  }
+
+  /* 10-Oct-02 Handle underscores in comments converted to HTML:  Convert _abc_
+     to <I>abc</I> for book titles, etc.; convert a_n to a<SUB>n</SUB> for
+     subscripts */
+  /* 5-Dec-03 Added LaTeX handling */
+  /* This section is independent and can be removed without side effects */
+  if (i == i /*htmlFlag*/) {  /* 5-Dec-03 */
     pos1 = 0;
     while (1) {
       pos1 = instr(pos1 + 1, cmt, "_");
       if (!pos1) break;
-      /* Opening "_" must be <nonalphanum>_<alphanum> */
+      /* Don't modify anything inside of <PRE>...</PRE> tags */
+      if (pos1 > instr(1, cmt, "<PRE>") && pos1 < instr(1, cmt, "</PRE>"))
+        continue;
+      /* Opening "_" must be <whitespace>_<alphanum> for <I> tag */
       if (pos1 > 1) {
-        if (isalnum(cmt[pos1 - 2])) continue;
+        /* Check for not whitespace and not opening punctuation */
+        if (!isspace(cmt[pos1 - 2]) && strchr("([", cmt[pos1 - 2]) == NULL) {
+          /* Check for not whitespace and not closing punctuation */
+          if (!isspace(cmt[pos1]) && strchr(".,;)?!:]", cmt[pos1]) == NULL) {
+
+            /* 28-Sep-03 - Added subscript handling */
+            /* Found <nonwhitespace>_<nonwhitespace> - assume subscript */
+            /* Locate the whitepace (or end of string) that closes subscript */
+            /* Note:  This algorithm is not perfect in that the subscript
+               is assumed to end at closing punctuation, which theoretically
+               could be part of the subscript itself, such as a subscript
+               with a comma in it. */
+            pos2 = pos1 + 1;
+            while (1) {
+              if (!cmt[pos2]) break; /* End of string */
+              /* Look for whitespace or closing punctuation */
+              if (isspace(cmt[pos2])
+                  || strchr(".,;)?!:]", cmt[pos2]) != NULL) break;
+              pos2++; /* Move forward through subscript */
+            }
+            pos2++; /* Adjust for left, seg, etc. that start at 1 not 0 */
+            if (htmlFlag) {  /* HTML */
+              /* Put <SUB>...</SUB> around subscript */
+              let(&cmt, cat(left(cmt, pos1 - 1), "<SUB><FONT SIZE=\"-1\">",
+                  seg(cmt, pos1 + 1, pos2 - 1),  /* Skip (delete) "_" */
+                  "</FONT></SUB>", right(cmt, pos2), NULL));
+              pos1 = pos2 + 33; /* Adjust for 34-1 extra chars in "let" above */
+            } else {  /* LaTeX */
+              /* Put _{...} around subscript */
+              let(&cmt, cat(left(cmt, pos1 - 1), "$_{",
+                  seg(cmt, pos1 + 1, pos2 - 1),  /* Skip (delete) "_" */
+                  "}$", right(cmt, pos2), NULL));
+              pos1 = pos2 + 4; /* Adjust for 5-1 extra chars in "let" above */
+            }
+            continue;
+            /* 23-Sep-03 - End of subscript handling */
+
+          } else {
+            /* Found <nonwhitespace>_<whitespace> - not an opening "_" */
+            /* Do nothing in this case */
+            continue;
+          }
+        }
       }
       if (!isalnum(cmt[pos1])) continue;
       pos2 = instr(pos1 + 1, cmt, "_");
@@ -1366,13 +1479,20 @@ void printTexComment(vstring commentPtr)
       /* Closing "_" must be <alphanum>_<nonalphanum> */
       if (!isalnum(cmt[pos2 - 2])) continue;
       if (isalnum(cmt[pos2])) continue;
-      let(&cmt, cat(left(cmt, pos1 - 1), "<I>", seg(cmt, pos1 + 1, pos2 - 1),
-          "</I>", right(cmt, pos2 + 1), NULL));
-      pos1 = pos2 + 5; /* Adjust for 5 extra chars in "let" above */
+      if (htmlFlag) {  /* HTML */
+        let(&cmt, cat(left(cmt, pos1 - 1), "<I>", seg(cmt, pos1 + 1, pos2 - 1),
+            "</I>", right(cmt, pos2 + 1), NULL));
+        pos1 = pos2 + 5; /* Adjust for 7-2 extra chars in "let" above */
+      } else {  /* LaTeX */
+        let(&cmt, cat(left(cmt, pos1 - 1), "{\\em ", seg(cmt, pos1 + 1, pos2 - 1),
+            "}", right(cmt, pos2 + 1), NULL));
+        pos1 = pos2 + 4; /* Adjust for 6-2 extra chars in "let" above */
+      }
     }
   }
 
-  /* 10/10/02 Added bibliography hyperlinks */
+  /* 10/10/02 Put bibliography hyperlinks in comments converted to HTML:
+        [Monk2] becomes <A HREF="mmset.html#monk2>[Monk2]</A> etc. */
   /* This section is independent and can be removed without side effects */
   if (htmlFlag) {
     /* Assign local tag list and local HTML file name */
@@ -1517,7 +1637,7 @@ void printTexComment(vstring commentPtr)
         i++;
 
         /* 10/10/02 */
-        /* If symbol is preceded by a space and opening punctuation, take out
+        /* If symbol is preceded by opening punctuation and a space, take out
            the space so it looks better. */
         if (mode == 'm') {
           let(&tmp, mid(cmt, i - 2, 2));
@@ -1723,7 +1843,7 @@ void printTexComment(vstring commentPtr)
           i = lookupLabel(tmpStr);
           if (i < 0) {
             outputToString = 0;
-            printLongLine(cat("?Error: The token \"", tmpStr,
+            printLongLine(cat("?Warning: The label token \"", tmpStr,
                 "\" (referenced in comment of statement \"",
                 statement[showStatement].labelName,
                 "\") is not a $a or $p statement label.", NULL), "", " ");
@@ -1735,9 +1855,18 @@ void printTexComment(vstring commentPtr)
                "}", NULL));
           } else {
             let(&tmp, "");
+            /* When the error above occurs, i < 0 will cause pinkHTML()
+               to issue "(future)" for pleasant readability */
             tmp = pinkHTML(i);
-            let(&outputLine, cat(outputLine, "<A HREF=\"", tmpStr,
-               ".html\">", tmpStr, "</A>", tmp, NULL));
+            if (i < 0) {
+              /* Error output - prevent broken link */
+              let(&outputLine, cat(outputLine, "<FONT COLOR=blue ",
+                  ">", tmpStr, "</FONT>", tmp, NULL));
+            } else {
+              /* Normal output - put hyperlink to the statement */
+              let(&outputLine, cat(outputLine, "<A HREF=\"", tmpStr,
+                  ".html\">", tmpStr, "</A>", tmp, NULL));
+            }
           }
           let(&tmpStr, ""); /* Deallocate */
           break;
@@ -1781,7 +1910,7 @@ void printTexComment(vstring commentPtr)
         let(&outputLine, cat(left(outputLine, pos1 - 1),
             "<P><CENTER><TABLE BORDER=0 CELLSPACING=0 CELLPADDING=10 BGCOLOR=",
             /* MINT_BACKGROUND_COLOR, */
-            "\"#F0F0F0\"", /* Very light grey */
+            "\"#F0F0F0\"", /* Very light gray */
             "><TR><TD ALIGN=LEFT>", right(outputLine, pos1), NULL));
       }
       pos1 = instr(1, outputLine, "</PRE>");
@@ -1791,6 +1920,29 @@ void printTexComment(vstring commentPtr)
             "</TD></TR></TABLE></CENTER>", right(outputLine, pos1 + 6), NULL));
       }
     }
+
+    if (!htmlFlag) { /* LaTeX */
+      /* Convert <PRE>...</PRE> HTML tags to LaTeX */
+      while (1) {
+        pos1 = instr(1, outputLine, "<PRE>");
+        if (pos1) {
+          let(&outputLine, cat(left(outputLine, pos1 - 1), "\\begin{verbatim} ",
+              right(outputLine, pos1 + 5), NULL));
+        } else {
+          break;
+        }
+      }
+      while (1) {
+        pos1 = instr(1, outputLine, "</PRE>");
+        if (pos1) {
+          let(&outputLine, cat(left(outputLine, pos1 - 1), "\\end{verbatim} ",
+              right(outputLine, pos1 + 6), NULL));
+        } else {
+          break;
+        }
+      }
+    }
+
     printLongLine(outputLine, "", htmlFlag ? "\"" : "\\");
     let(&tmp, ""); /* Clear temporary allocation stack */
 
@@ -1817,31 +1969,36 @@ void printTexComment(vstring commentPtr)
 } /* printTexComment */
 
 
-/* Warning:  contPrefix must not be temporarily allocated by caller */
-void printTexLongMath(nmbrString *mathString, vstring startPrefix,
-    vstring contPrefix, long hypStmt)
-    /* hypStmt, if non-zero, is the statement number to be referenced
-       next to the hypothesis link in html */
+
+void printTexLongMath(nmbrString *mathString,
+    vstring startPrefix, /* Start prefix in "screen display" mode e.g.
+         "abc $p"; it is converted to the appropriate format.  Non-zero
+         length means proof step in HTML mode, as opposed to assertion etc. */
+    vstring contPrefix, /* Prefix for continuation lines.  Not used in
+         HTML mode.  Warning:  contPrefix must not be temporarily allocated
+         (as cat, left, etc. direct result) by caller */
+    long hypStmt, /* hypStmt, if non-zero, is the statement number to be
+                     referenced next to the hypothesis link in html */
+    long indentationLevel) /* nm 3-Feb-04 Indentation amount of proof step */
 {
   long i;
   long pos;
-  vstring tex;
+  vstring tex = "";
   vstring texLine = "";
-  vstring lastTex = "";
   vstring sPrefix = ""; /* 7/3/98 */
   vstring htmStep = ""; /* 7/4/98 */
   vstring htmHyp = ""; /* 7/4/98 */
   vstring htmRef = ""; /* 7/4/98 */
   vstring tmp = "";  /* 10/10/02 */
-  flag alphnew, alphold, unknownnew, unknownold;
 
   let(&sPrefix, startPrefix); /* 7/3/98 Save it; it may be temp alloc */
 
-  if (!texDefsRead) return; /* TeX defs were not read (error was detected) */
+  if (!texDefsRead) return; /* TeX defs were not read (error was printed) */
   outputToString = 1; /* Redirect print2 and printLongLine to printString */
-  if (!htmlFlag)  /* May have stuff to be printed 7/4/98 */
-    let(&printString, "");
+  /* May have stuff to be printed 7/4/98 */
+  /*if (!htmlFlag) let(&printString, "");*/ /* Removed 6-Dec-03 */
 
+  let(&tex, "");
   tex = asciiToTt(sPrefix); /* asciiToTt allocates; we must deallocate */
   let(&texLine, "");
   if (!htmlFlag) {
@@ -1893,8 +2050,8 @@ void printTexLongMath(nmbrString *mathString, vstring startPrefix,
         let(&htmHyp, "&nbsp;");
       }
 
-      /* 2/8/02 Add a space after each comma so very long hypotheses lists will wrap in
-         an HTML table cell, e.g. gomaex3 in ql.mm */
+      /* 2/8/02 Add a space after each comma so very long hypotheses
+         lists will wrap in an HTML table cell, e.g. gomaex3 in ql.mm */
       pos = instr(1, htmHyp, ",");
       while (pos) {
         let(&htmHyp, cat(left(htmHyp, pos), " ", right(htmHyp, pos + 1), NULL));
@@ -1936,129 +2093,41 @@ void printTexLongMath(nmbrString *mathString, vstring startPrefix,
       let(&htmHyp, ""); /* Deallocate */
       let(&htmRef, ""); /* Deallocate */
       let(&tmp, ""); /* Deallocate */
+#ifdef INDENT_HTML_PROOFS
+      /* nm 3-Feb-04 Experiment to indent web proof displays */
+      let(&tmp, "");
+      for (i = 1; i <= indentationLevel; i++) {
+        let(&tmp, cat(tmp, ". ", NULL));
+      }
+      let(&tmp, cat("<SPAN CLASS=i>",
+          tmp,
+          str(indentationLevel), "</SPAN>",
+          NULL));
+      printLongLine(tmp, "", "\"");
+      let(&tmp, "");
+#endif
     } /* strlen(sPrefix) */
   }
   let(&tex, ""); /* Deallocate */
   let(&sPrefix, ""); /* Deallocate */
 
-  let(&lastTex, "");
-  for (pos = 0; pos < nmbrLen(mathString); pos++) {
-    tex = tokenToTex(mathToken[mathString[pos]].tokenName);
-              /* tokenToTex allocates tex; we must deallocate it */
-    if (!htmlFlag) {  /* LaTeX */
-      /* If this token and previous token begin with letter, add a thin
-           space between them */
-      /* Also, anything not in table will have space added */
-      alphnew = isalpha(tex[0]);
-      unknownnew = 0;
-      if (!strcmp(left(tex, 10), "\\mbox{\\rm ")) { /* Token not in table */
-        unknownnew = 1;
-      }
-      alphold = isalpha(lastTex[0]);
-      unknownold = 0;
-      if (!strcmp(left(lastTex, 10), "\\mbox{\\rm ")) { /* Token not in table*/
-        unknownold = 1;
-      }
-      /*if ((alphold && alphnew) || unknownold || (unknownnew && pos > 0)) {*/
-      /* Put thin space only between letters and/or unknowns  11/3/94 */
-      if ((alphold || unknownold) && (alphnew || unknownnew)) {
-        /* Put additional thin space between two letters */
-        let(&texLine, cat(texLine, "\\m{\\,", tex, "}", NULL));
-      } else {
-        let(&texLine, cat(texLine, "\\m{", tex, "}", NULL));
-      }
-    } else {  /* HTML */
+  let(&tex, "");
+  tex = getTexLongMath(mathString); /* 20-Sep-03 */
+  let(&texLine, cat(texLine, tex, NULL));
 
-      /* 7/27/03 When we have something like "E. x e. om x = y", the lack of
-         space between om and x looks ugly in HTML.  This kludge adds it in
-         for restricted quantifiers not followed by parenthesis, in order
-         to make the web page look a little nicer.  E.g. onminex. */
-      if (pos >=4) {
-        if (!strcmp(mathToken[mathString[pos - 2]].tokenName, "e.")
-            && (!strcmp(mathToken[mathString[pos - 4]].tokenName, "E.")
-              || !strcmp(mathToken[mathString[pos - 4]].tokenName, "A."))
-            && strcmp(mathToken[mathString[pos]].tokenName, "(")
-            /* It also shouldn't be restricted _to_ an expression in parens. */
-            && strcmp(mathToken[mathString[pos - 1]].tokenName, "(")) {
-          let(&texLine, cat(texLine, " ", NULL)); /* Add a space */
-        }
-      }
-      /* This one puts a space between the 2 x's in a case like
-         "E. x x = y".  E.g. cla4egf */
-      if (pos >=2) {
-        /* Match a token starting with a letter */
-        if (isalpha(mathToken[mathString[pos]].tokenName[0])) {
-          /* and make sure its length is 1 */
-          if (!(mathToken[mathString[pos]].tokenName[1])) {
-            /* See if it's 1st letter in a quantified expression */
-            if (!strcmp(mathToken[mathString[pos - 2]].tokenName, "E.")
-                || !strcmp(mathToken[mathString[pos - 2]].tokenName, "A.")) {
-              let(&texLine, cat(texLine, " ", NULL)); /* Add a space */
-            }
-          }
-        }
-      }
-      /* This one puts a space before any "-." that doesn't come after
-         a parentheses e.g. ax-6 has both cases */
-      if (pos >=1) {
-        /* See if we have a non-parenthesis followed by not */
-        if (strcmp(mathToken[mathString[pos - 1]].tokenName, "(")
-            && !strcmp(mathToken[mathString[pos]].tokenName, "-.")) {
-          let(&texLine, cat(texLine, " ", NULL)); /* Add a space */
-        }
-      }
-      /* 7/27/03 end */
-
-      let(&texLine, cat(texLine, tex, NULL));
-    } /* if !htmlFlag */
-    let(&lastTex, ""); /* Deallocate */
-    lastTex = tex; /* Pass deallocation responsibility for tex to lastTex */
-
-  } /* Next pos */
-  let(&lastTex, ""); /* Deallocate */
   if (!htmlFlag) {  /* LaTeX */
     printLongLine(texLine, "", "\\");
     print2("\\endm\n");
   } else {  /* HTML */
-    /* 8/9/03 Discard redundant white space to reduce HTML file size */
-    let(&texLine, edit(texLine, 8 + 16 + 128));
-
-    /* 4/22/01 The code below is optional but tries to eliminate redundant
-       symbol font specifications to make output shorter */
-    /* 8/8/03 Symbol font is finally obsolete; don't bother to do this
-       anymore.  (Some day delete this code that is skipped over.) */
-    if (pos == pos) /* Same as "if (1)" but prevents compiler warning */
-      goto skip_SymbolFont;
-    pos = 0;
-    while (1) {
-      /* Get to the start of a symbol font specification */
-      pos = instr(pos + 1, texLine, "<FONT FACE=\"Symbol\">");
-      if (pos == 0) break;
-      while (1) {   /* Anchoring at pos, scan rest of line */
-        i = instr(pos, texLine, "</FONT>"); /* End of specification */
-        if (i == 0) {
-          /* For whatever reason, there is no matching </FONT> - so skip it */
-          break;
-        }
-        /* See if an new symbol font spec starts immediately; if not
-           we are done (inefficient code but it works) */
-        if (i != instr(i, texLine, "</FONT><FONT FACE=\"Symbol\">")) break;
-        /* Chop out the redundant </FONT><FONT FACE="Symbol"> */
-        let(&texLine, cat(left(texLine, i - 1), right(texLine, i + 27), NULL));
-      }
-    }
-   skip_SymbolFont:  /* 8/8/03 */
-    /* End of 4/22/01 code */
-
     printLongLine(cat(texLine, "</TD></TR>", NULL), "", "\"");
   }
-
 
   outputToString = 0; /* Restore normal output */
   fprintf(texFilePtr, "%s", printString);
   let(&printString, "");
 
   let(&texLine, ""); /* Deallocate */
+  let(&tex, ""); /* Deallocate */
 } /* printTexLongMath */
 
 void printTexTrailer(flag texTrailerFlag) {
@@ -2096,11 +2165,411 @@ void printTexTrailer(flag texTrailerFlag) {
 } /* printTexTrailer */
 
 
+/* Added 4-Dec-03 - Write out theorem list into mmtheorems.html,
+   mmtheorems2.html,... */
+void writeTheoremList(long theoremsPerPage)
+{
+  nmbrString *nmbrStmtNmbr = NULL_NMBRSTRING;
+  long pages, page, assertion, assertions, lastAssertion;
+  long s, p, i1, i2;
+  vstring str1 = "";
+  vstring str3 = "";
+  vstring str4 = "";
+  vstring output_fn = "";
+  FILE *output_fp;
+
+  /* Populate the statement map */
+  /* ? ? ? Future:  is assertions same as statement[statements].pinkNumber? */
+  nmbrLet(&nmbrStmtNmbr, nmbrSpace(statements + 1));
+  assertions = 0; /* Number of $p's + $a's */
+  for (s = 1; s <= statements; s++) {
+    if (statement[s].type == a__ || statement[s].type == p__) {
+      assertions++; /* Corresponds to pink number */
+      nmbrStmtNmbr[assertions] = s;
+    }
+  }
+  if (assertions != statement[statements].pinkNumber) bug(2328);
+
+  pages = ( assertions / theoremsPerPage ) + 1;
+  for (page = 1; page <= pages; page++) {
+    /* Open file */
+    let(&output_fn,
+        cat("mmtheorems", (page > 1) ? str(page) : "", ".html", NULL));
+    print2("Creating %s\n", output_fn);
+    output_fp = fSafeOpen(output_fn, "w");
+    if (!output_fp) goto TL_ABORT; /* Couldn't open it (error msg was provided)*/
+
+    /* Output header */
+
+    outputToString = 1;
+    print2(
+        "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"\n");
+    print2(     "    \"http://www.w3.org/TR/html4/loose.dtd\">\n");
+    print2("<HTML LANG=\"EN-US\">\n");
+    print2("<HEAD>\n");
+    print2("%s%s\n", "<META HTTP-EQUIV=\"Content-Type\" ",
+        "CONTENT=\"text/html; charset=iso-8859-1\">");
+
+    print2("<STYLE TYPE=\"text/css\">\n");
+    print2("<!--\n");
+#ifndef RAINBOW_OPTION
+    /* Print style sheet for pink number that goes after statement label */
+    print2(".p { font-family: \"Arial Narrow\";\n");
+    print2("     font-size: x-small;\n");
+    /* Strip off quotes from color (css doesn't like them) */
+    printLongLine(cat("     color: ", seg(PINK_NUMBER_COLOR, 2,
+        strlen(PINK_NUMBER_COLOR) - 1), ";", NULL), "", "&");
+    print2("   }\n");
+#else
+    /* Print style sheet for colored number that goes after statement label */
+    print2(".r { font-family: \"Arial Narrow\";\n");
+    print2("     font-size: x-small;\n");
+    print2("   }\n");
+#endif
+    print2("-->\n");
+    print2("</STYLE>\n");
+
+    print2("%s\n", cat("<TITLE>", htmlTitle, " - ",
+        /* Strip off ".html" */
+        left(output_fn, strlen(output_fn) - 5),
+        "</TITLE>", NULL));
+    /* Icon for bookmark */
+    print2("%s%s\n", "<LINK REL=\"shortcut icon\" HREF=\"favicon.ico\" ",
+        "TYPE=\"image/x-icon\">");
+    print2("</HEAD>\n");
+    print2("<BODY BGCOLOR=\"#FFFFFF\">\n");
+    print2("<TABLE BORDER=0 WIDTH=\"100%s\"><TR>\n", "%");
+    print2("<TD ALIGN=LEFT VALIGN=TOP WIDTH=\"25%s\"\n", "%");
+    printLongLine(cat("ROWSPAN=2>", htmlHome, "</TD>", NULL), "", "\"");
+    printLongLine(cat(
+        "<TD NOWRAP ALIGN=CENTER ROWSPAN=2><FONT SIZE=\"+3\" COLOR=",
+        GREEN_TITLE_COLOR, "><B>", htmlTitle, "</B></FONT>", NULL), "", "\"");
+    /* Put Previous/Next links into web page */
+    print2("</TD><TD NOWRAP ALIGN=RIGHT VALIGN=TOP WIDTH=\"25%s\"><FONT\n", "%");
+    print2(" SIZE=-1 FACE=sans-serif>\n");
+
+    /* Output title with current page */
+    /* Output previous and next */
+
+    let(&str1, cat("<A HREF=\"mmtheorems",
+        (page > 1)
+            ? ((page - 1 > 1) ? str(page - 1) : "")
+            : ((pages > 1) ? str(pages) : ""),
+        ".html\">", NULL));
+    if (page > 1) {
+      print2("%s&lt; Previous</A>&nbsp;&nbsp;\n", str1);
+    } else {
+      print2("%s&lt; Last</A>&nbsp;&nbsp;\n", str1);
+    }
+    let(&str1, cat("<A HREF=\"mmtheorems",
+        (page < pages)
+            ? str(page + 1)
+            : "",
+        ".html\">", NULL));
+    if (page < pages) {
+      print2("%sNext &gt;</A>\n", str1);
+    } else {
+      print2("%sFirst &gt;</A>\n", str1);
+    }
+
+    /* Finish up header */
+    /* Print the GIF/Unicode Font choice, if directories are specified */
+    if (htmlDir[0]) {
+      if (altHtmlFlag) {
+        print2("</FONT></TD></TR><TR><TD ALIGN=RIGHT><FONT FACE=sans-serif\n");
+        print2("SIZE=-2>Bad symbols?\n");
+        print2("Use <A HREF=\"http://mozilla.org\">Mozilla</A><BR>\n");
+        print2("(or <A HREF=\"%s%s\">GIF version</A> for IE).</FONT></TD>\n",
+            htmlDir, output_fn);
+      } else {
+        print2("</FONT></TD></TR><TR><TD ALIGN=RIGHT><FONT FACE=sans-serif\n");
+        print2("SIZE=-2>Browser slow? Try the\n");
+        print2("<BR><A HREF=\"%s%s\">Unicode\n",
+            altHtmlDir, output_fn);
+        print2("version</A>.</FONT></TD>\n");
+      }
+    }
+    print2("</TR></TABLE>\n");
+    print2("<HR NOSHADE SIZE=1>\n");
+
+    /* Write out HTML page so far */
+    fprintf(output_fp, "%s", printString);
+    outputToString = 0;
+    let(&printString, "");
+
+    /* Output links to the other pages */
+    fprintf(output_fp, "Jump to page: \n");
+    for (p = 1; p <= pages; p++) {
+
+      /* Construct the pink number range */
+      let(&str3, "");
+      str3 = pinkHTML(nmbrStmtNmbr[(p - 1) * theoremsPerPage + 1]);
+      /*let(&str3, right(str3, strlen(PINK_NBSP) + 1));*/ /* Discard "&nbsp;" */
+      let(&str4, "");
+      str4 = pinkHTML((p < pages) ?
+          nmbrStmtNmbr[p * theoremsPerPage] :
+          nmbrStmtNmbr[assertions]);
+      let(&str4, right(str4, strlen(PINK_NBSP) + 1)); /* Discard "&nbsp;" */
+
+      if (p == page) {
+        let(&str1, str(p)); /* Current page shouldn't have link to self */
+      } else {
+        let(&str1, cat("<A HREF=\"mmtheorems",
+            (p > 1) ? str(p) : "", ".html\">", str(p), "</A>", NULL));
+      }
+      let(&str1, cat(str1, str3, "-", str4, NULL));
+      fprintf(output_fp, "%s\n", str1);
+    }
+
+    /* Put in color key */
+    outputToString = 1;
+    if (extHtmlStmt <= statements) { /* extHtmlStmt = statements + 1 in ql.mm */
+      /* ?? Currently this is customized for set.mm only!! */
+      print2("<P>\n");
+      print2("<CENTER><TABLE CELLSPACING=0 CELLPADDING=5\n");
+      print2("SUMMARY=\"Color key\"><TR>\n");
+      print2("\n");
+      print2("<TD>Color key:&nbsp;&nbsp;&nbsp; <TD BGCOLOR=\"#EEFFFA\" NOWRAP><A\n");
+      print2("HREF=\"mmset.html\"><IMG SRC=\"mm.gif\" BORDER=0 ALT=\"Metamath Proof\n");
+      print2("Explorer\" HEIGHT=32 WIDTH=32 ALIGN=MIDDLE> &nbsp;Metamath Proof\n");
+      print2("Explorer</A></TD>\n");
+      print2("\n");
+      print2("<TD WIDTH=10>&nbsp;</TD>\n");
+      print2("\n");
+      print2("<TD BGCOLOR=\"#FAEEFF\" NOWRAP><A HREF=\"mmhil.html\"><IMG SRC=\"atomic.gif\"\n");
+      print2("BORDER=0 ALT=\"Hilbert Space Explorer\" HEIGHT=32 WIDTH=32 ALIGN=MIDDLE>\n");
+      print2("&nbsp;Hilbert Space Explorer</A></TD>\n");
+      print2("\n");
+      print2("<TD WIDTH=10>&nbsp;</TD>\n");
+      print2("\n");
+      print2("</TR></TABLE></CENTER>\n");
+    }
+
+    /* Write out HTML page so far */
+    fprintf(output_fp, "%s", printString);
+    outputToString = 0;
+    let(&printString, "");
+
+    /* Write the main table header */
+    outputToString = 1;
+    print2("\n");
+    print2("<P><CENTER>\n");
+    print2("<TABLE BORDER CELLSPACING=0 CELLPADDING=3 BGCOLOR=\"#EEFFFA\"\n");
+    print2("SUMMARY=\"Statement List for %s\">\n", htmlTitle);
+    let(&str3, "");
+    str3 = pinkHTML(nmbrStmtNmbr[(page - 1) * theoremsPerPage + 1]);
+    let(&str3, right(str3, strlen(PINK_NBSP) + 1)); /* Discard "&nbsp;" */
+    let(&str4, "");
+    str4 = pinkHTML((page < pages) ?
+        nmbrStmtNmbr[page * theoremsPerPage] :
+        nmbrStmtNmbr[assertions]);
+    let(&str4, right(str4, strlen(PINK_NBSP) + 1)); /* Discard "&nbsp;" */
+    printLongLine(cat("<CAPTION><B>Statement List for ", htmlTitle,
+        " - </B>", str3, "<B>-</B>", str4,"<B>",
+        " - Page ",
+        str(page), " of ",
+        str(pages), "</B></CAPTION>",NULL),
+        " ",  /* Start continuation line with space */
+        "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+    print2("\n");
+    print2("<TR><TH>Type</TH><TH>Label</TH><TH>Description</TH></TR>\n");
+    print2("<TR><TH COLSPAN=3>Statement</TH></TR>\n");
+    print2("\n");
+    print2("<TR BGCOLOR=white><TD COLSPAN=3><FONT SIZE=-3>&nbsp;</FONT></TD></TR>\n");
+    print2("\n");
+    fprintf(output_fp, "%s", printString);
+    outputToString = 0;
+    let(&printString, "");
+
+    /* Find the last assertion that will be printed on the page, so
+       we will know when a separator between theorems is not needed */
+    lastAssertion = 0;
+    for (assertion = (page - 1) * theoremsPerPage + 1;
+        assertion <= page * theoremsPerPage; assertion++) {
+      if (assertion > assertions) break; /* We're beyond the end */
+      /* nm 22-Jan-04 Don't count statements whose names begin with "xxx"
+         because they will not be output */
+      if (strcmp("xxx", left(statement[s].labelName, 3))) {
+        lastAssertion = assertion;
+      }
+      let(&str1, ""); /* Purge string stack if too many left()'s */
+    }
+
+    /* Output theorems on the page */
+    for (assertion = (page - 1) * theoremsPerPage + 1;
+        assertion <= page * theoremsPerPage; assertion++) {
+      if (assertion > assertions) break; /* We're beyond the end */
+
+      s = nmbrStmtNmbr[assertion]; /* Statement number */
+      /* Output only $p's, not $a's */
+      /*if (statement[s].type != p__) continue;*/ /* Now do everything */
+
+      /* nm 22-Jan-04 Skip statements whose labels begin "xxx" - this
+         means they are temporary placeholders created by
+         WRITE SOURCE / CLEAN in writeInput() in mmcmds.c */
+      let(&str1, ""); /* Purge string stack if too many left()'s */
+      if (!strcmp("xxx", left(statement[s].labelName, 3))) continue;
+
+      /* Construct the statement type label */
+      if (statement[s].type == p__) {
+        let(&str1, "Theorem");
+      } else if (!strcmp("ax-", left(statement[s].labelName, 3))) {
+        let(&str1, "<B><FONT COLOR=red>Axiom</FONT></B>");
+      } else if (!strcmp("df-", left(statement[s].labelName, 3))) {
+        let(&str1, "<B><FONT COLOR=blue>Definition</FONT></B>");
+      } else {
+        let(&str1, "<B><FONT COLOR=\"#00CC00\">Syntax</FONT></B>");
+      }
+
+     if (s == s) goto skip_date;
+      /* OBSOLETE */
+      /* Get the date in the comment section after the statement */
+      let(&str1, space(statement[s + 1].labelSectionLen));
+      memcpy(str1, statement[s + 1].labelSectionPtr,
+          statement[s + 1].labelSectionLen);
+      let(&str1, edit(str1, 2)); /* Discard spaces and tabs */
+      i1 = instr(1, str1, "$([");
+      i2 = instr(i1, str1, "]$)");
+      if (i1 && i2) {
+        let(&str1, seg(str1, i1 + 3, i2 - 1));
+      } else {
+        let(&str1, "");
+      }
+     skip_date:
+
+      let(&str3, "");
+      str3 = getDescription(s);
+      let(&str4, "");
+      str4 = pinkHTML(s); /* Get little pink number */
+      /* Output the description comment */
+      /* Break up long lines for text editors with printLongLine */
+      let(&printString, "");
+      outputToString = 1;
+      print2("\n"); /* Blank line for HTML source human readability */
+      printLongLine(cat(
+            (s < extHtmlStmt) ?
+                 "<TR>" :
+                 cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL),
+            "<TD NOWRAP>",  /* IE breaks up the date */
+            str1, /* Date */
+            "</TD><TD ALIGN=CENTER><A HREF=\"",
+            statement[s].labelName, ".html\">",
+            statement[s].labelName, "</A>",
+            str4, "</TD><TD ALIGN=LEFT>", NULL),  /* Description */
+          " ",  /* Start continuation line with space */
+          "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+
+      showStatement = s; /* For printTexComment */
+      outputToString = 0; /* For printTexComment */
+      texFilePtr = output_fp; /* For printTexComment */
+      /* 18-Sep-03 ???Future - make this just return a string??? */
+      printTexComment(str3, 0); /* Sends result to output_fp */
+      texFilePtr = NULL;
+      outputToString = 1; /* Restore after printTexComment */
+
+      /* Get HTML hypotheses => assertion */
+      let(&str4, "");
+      str4 = getHTMLHypAndAssertion(s); /* In mmwtex.c */
+      printLongLine(cat("</TD></TR><TR",
+            (s < extHtmlStmt) ?
+                 ">" :
+                 cat(" BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL),
+          /*** old
+          "<TD BGCOLOR=white>&nbsp;</TD><TD COLSPAN=2 ALIGN=CENTER>",
+          str4, "</TD></TR>", NULL),
+          ****/
+          /* 27-Oct-03 nm */
+          "<TD COLSPAN=3 ALIGN=CENTER>",
+          str4, "</TD></TR>", NULL),
+
+          " ",  /* Start continuation line with space */
+          "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+
+      outputToString = 0;
+      fprintf(output_fp, "%s", printString);
+      let(&printString, "");
+
+      if (assertion != lastAssertion) {
+        /* Put separator row if not last theorem */
+        outputToString = 1;
+        printLongLine(cat("<TR BGCOLOR=white><TD COLSPAN=3>",
+            "<FONT SIZE=-3>&nbsp;</FONT></TD></TR>", NULL),
+            " ",  /* Start continuation line with space */
+            "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+        outputToString = 0;
+        fprintf(output_fp, "%s", printString);
+        let(&printString, "");
+      }
+    } /* next assertion */
+
+    /* Output trailer */
+    outputToString = 1;
+    print2("</TABLE></CENTER>\n");
+    print2("\n");
+    print2("<HR NOSHADE SIZE=1>\n");
+
+    /* nm 22-Jan-04 Take out date because it causes an unnecessary incremental
+       site update */
+    /*
+    print2(" <CENTER><I>\n");
+    print2("This page was last updated on %s.\n", date());
+    print2("</I></CENTER>\n");
+    */
+
+    /*
+    print2("<CENTER><FONT SIZE=-2 FACE=ARIAL>\n");
+    print2("<A HREF=\"http://metamath.org\">metamath.org</A>\n");
+    print2("</FONT></CENTER>\n");
+    */
+    /* Add a "Next" link to bottom of page for convenience */
+    let(&str1, cat("<A HREF=\"mmtheorems",
+        (page < pages)
+            ? str(page + 1)
+            : "",
+        ".html\">", NULL));
+    if (page < pages) {
+      let(&str1, cat(str1, "Next &gt;</A>", NULL));
+    } else {
+      let(&str1, cat(str1, "FIrst &gt;</A>", NULL));
+    }
+    print2("<TABLE BORDER=0 WIDTH=\"100%c\">\n", '%');
+    print2("  <TR>\n");
+    print2("    <TD ALIGN=LEFT VALIGN=TOP WIDTH=\"25%c\">&nbsp;</TD>\n", '%');
+    print2("    <TD NOWRAP ALIGN=CENTER><FONT SIZE=-2\n");
+    print2("      FACE=ARIAL>\n");
+    print2("      <A HREF=\"http://metamath.org\">metamath.org</A>\n");
+    print2("      </FONT></TD>\n");
+    print2("    <TD NOWRAP ALIGN=RIGHT VALIGN=TOP WIDTH=\"25%c\"><FONT\n", '%');
+    print2("      SIZE=-1 FACE=sans-serif>\n");
+    print2("      %s\n", str1);
+    print2("      </FONT></TD>\n");
+    print2("  </TR>\n");
+    print2("</TABLE>\n");
+
+    print2("</BODY></HTML>\n");
+    outputToString = 0;
+    fprintf(output_fp, "%s", printString);
+    let(&printString, "");
+
+    /* Close file */
+    fclose(output_fp);
+  } /* next page */
+
+ TL_ABORT:
+  /* Deallocate memory */
+  let(&str1, "");
+  let(&str3, "");
+  let(&str4, "");
+  let(&output_fn, "");
+} /* writeTheoremList */
+
+
 
 /* Returns the pink number printed next to statement labels in HTML output */
 /* The pink number only counts $a and $p statements, unlike the statement
    number which also counts $f, $e, $c, $v, ${, $} */
 /* 10/10/02 This is no longer used? */
+#ifdef DUMMY  /* For commenting it out */
 long pinkNumber(long statemNum)
 {
   long statemMap = 0;
@@ -2117,7 +2586,7 @@ long pinkNumber(long statemNum)
   }
   return statemMap;
 }
-
+#endif
 
 /* Added 10/10/02 */
 /* Returns HTML for the pink number to print after the statement labels
@@ -2129,6 +2598,7 @@ vstring pinkHTML(long statemNum)
 {
   long statemMap;
   vstring htmlCode = "";
+  vstring hexValue = "";
 
   /* The pink number only counts $a and $p statements, unlike the statement
      number which also counts $f, $e, $c, $v, ${, $} */
@@ -2140,20 +2610,376 @@ vstring pinkHTML(long statemNum)
       statemMap++;
   }
   */
-  statemMap = statement[statemNum].pinkNumber;
+  if (statemNum > 0) {
+    statemMap = statement[statemNum].pinkNumber;
+  } else {
+    /* -1 means the label wasn't found */
+    statemMap = -1;
+  }
+
+  /* Note: we put "(future)" when the label wasn't found (an error message
+     was also generated previously) */
 
   /* Without style sheet */
   /*
   let(&htmlCode, cat(PINK_NBSP,
       "<FONT FACE=\"Arial Narrow\" SIZE=-2 COLOR=", PINK_NUMBER_COLOR, ">",
-      str(statemMap), "</FONT>", NULL));
+      (statemMap != -1) ? str(statemMap) : "(future)", "</FONT>", NULL));
   */
 
+#ifndef RAINBOW_OPTION
   /* With style sheet */
   let(&htmlCode, cat(PINK_NBSP,
       "<SPAN CLASS=p>",
-      str(statemMap), "</SPAN>", NULL));
+      (statemMap != -1) ? str(statemMap) : "(future)", "</SPAN>", NULL));
+#endif
+
+#ifdef RAINBOW_OPTION
+  /* ndm 10-Jan-04 With style sheet and explicit color */
+  let(&hexValue, "");
+  hexValue = spectrumToRGB(statemMap, statement[statements].pinkNumber);
+  let(&htmlCode, cat(PINK_NBSP,
+      "<SPAN CLASS=r STYLE=\"color:#", hexValue, "\">",
+      (statemMap != -1) ? str(statemMap) : "(future)", "</SPAN>", NULL));
+#endif
+  let(&hexValue, "");
 
   return htmlCode;
 }
 
+
+#ifdef RAINBOW_OPTION
+/* This function converts a "spectrum" color (1 to maxColor) to an
+   RBG value in hex notation for HTML.  The caller must deallocate the
+   returned vstring.  color = 1 (red) to maxColor (violet). */
+/* ndm 10-Jan-04 */
+vstring spectrumToRGB(long color, long maxColor) {
+  vstring str1 = "";
+  double fraction, fractionInPartition;
+  long i, redMin, redMax, greenMin, greenMax, blueMin, blueMax,
+      red, green, blue, partition;
+/* #define OLD_COLORS */
+#ifdef OLD_COLORS
+#define PARTITIONS 12
+  double redLevel[PARTITIONS +  1];
+  double greenLevel[PARTITIONS +  1];
+  double blueLevel[PARTITIONS +  1];
+/*D*//*printf("color %ld max %ld\n",color,maxColor);*/
+
+  /* ? ? ? Future:  make this array static and assign once? */
+  i = -1;
+  i++; redLevel[i] = 1.0000; greenLevel[i] = 0.0000; blueLevel[i] = 0.0000;
+  /* 31-Jan-04 added (orange): */
+  /*i++; redLevel[i] = 1.0000; greenLevel[i] = 0.6484; blueLevel[i] = 0.0000;*/
+  /* 31-Jan-04 added (muted orange): */
+  i++; redLevel[i] = 0.9687; greenLevel[i] = 0.5820; blueLevel[i] = 0.1171;
+  /* 31-Jan-04 removed: */
+  /*i++; redLevel[i] = 0.7500; greenLevel[i] = 0.2500; blueLevel[i] = 0.0000;*/
+  i++; redLevel[i] = 0.5833; greenLevel[i] = 0.4167; blueLevel[i] = 0.0000;
+  /*i++; redLevel[i] = 0.5000; greenLevel[i] = 0.5000; blueLevel[i] = 0.0000;*/
+  i++; redLevel[i] = 0.4167; greenLevel[i] = 0.5853; blueLevel[i] = 0.0000;
+  i++; redLevel[i] = 0.2500; greenLevel[i] = 0.7500; blueLevel[i] = 0.0000;
+  i++; redLevel[i] = 0.0000; greenLevel[i] = 1.0000; blueLevel[i] = 0.0000;
+  i++; redLevel[i] = 0.0000; greenLevel[i] = 0.7500; blueLevel[i] = 0.2500;
+  i++; redLevel[i] = 0.0000; greenLevel[i] = 0.5000; blueLevel[i] = 0.5000;
+  i++; redLevel[i] = 0.0000; greenLevel[i] = 0.2500; blueLevel[i] = 0.7500;
+  i++; redLevel[i] = 0.0000; greenLevel[i] = 0.0000; blueLevel[i] = 1.0000;
+  i++; redLevel[i] = 0.2500; greenLevel[i] = 0.0000; blueLevel[i] = 0.7500;
+  i++; redLevel[i] = 0.5000; greenLevel[i] = 0.0000; blueLevel[i] = 0.5000;
+  i++; redLevel[i] = 0.5294; greenLevel[i] = 0.1764; blueLevel[i] = 0.2941;
+  /*i++; redLevel[i] = 0.7500; greenLevel[i] = 0.0000; blueLevel[i] = 0.2500;*/
+  redMin = 0; /* Red level must be g.e. to this */
+  redMax = 255; /* Red level must be l.e. to this */
+  greenMin = 0; /* Green level must be g.e. to this */
+  greenMax = 255; /* Green level must be l.e. to this */
+  blueMin = 0; /* Blue level must be g.e. to this */
+  blueMax = 255; /* Blue level must be l.e. to this */
+  fraction = 1.0 * (color - 1) / maxColor;
+                                   /* Fractional position in "spectrum" */
+  /*fraction = fraction * 0.9;*/ /* Prevent wrapping back to red */
+#else
+#define PARTITIONS 11
+  double redLevel[PARTITIONS +  1];
+  double greenLevel[PARTITIONS +  1];
+  double blueLevel[PARTITIONS +  1];
+  double max, frac, sum;
+/*D*//*printf("color %ld max %ld\n",color,maxColor);*/
+
+  /* ? ? ? Future:  make this array static and assign once? */
+  i = -1;
+  i++; redLevel[i] = 1.0000; greenLevel[i] = 0.0000; blueLevel[i] = 0.0000;
+  i++; redLevel[i] = 0.7500; greenLevel[i] = 0.5000; blueLevel[i] = 0.0000;
+  i++; redLevel[i] = 0.5000; greenLevel[i] = 0.7500; blueLevel[i] = 0.0000;
+  i++; redLevel[i] = 0.2500; greenLevel[i] = 0.7500; blueLevel[i] = 0.0000;
+  i++; redLevel[i] = 0.0000; greenLevel[i] = 1.0000; blueLevel[i] = 0.0000;
+  i++; redLevel[i] = 0.0000; greenLevel[i] = 0.7500; blueLevel[i] = 0.2500;
+  i++; redLevel[i] = 0.0000; greenLevel[i] = 0.5000; blueLevel[i] = 0.5000;
+  i++; redLevel[i] = 0.0000; greenLevel[i] = 0.2500; blueLevel[i] = 0.7500;
+  i++; redLevel[i] = 0.0000; greenLevel[i] = 0.0000; blueLevel[i] = 1.0000;
+  i++; redLevel[i] = 0.2500; greenLevel[i] = 0.0000; blueLevel[i] = 0.7500;
+  i++; redLevel[i] = 0.5000; greenLevel[i] = 0.0000; blueLevel[i] = 0.7000;
+  i++; redLevel[i] = 0.6500; greenLevel[i] = 0.0000; blueLevel[i] = 0.6000;
+  redMin = 0; /* Red level must be g.e. to this */
+  redMax = 300; /* Red level must be l.e. to this */
+  greenMin = 0; /* Green level must be g.e. to this */
+  greenMax = 150; /* Green level must be l.e. to this */
+  blueMin = 0; /* Blue level must be g.e. to this */
+  blueMax = 300; /* Blue level must be l.e. to this */
+  fraction = 1.0 * (color - 1) / maxColor;
+                                   /* Fractional position in "spectrum" */
+  /*fraction = fraction * 0.9;*/ /* Prevent wrapping back to red */
+#endif
+
+  if (i != PARTITIONS) { /* Double-check future edits */
+    print2("? %ld partitions but PARTITIONS = %ld\n", i, (long)PARTITIONS);
+    bug(2326); /* Don't go further in case of out-of-range zapping */
+  }
+
+  if (color == -1) {
+    let(&str1, "000000"); /* Return black for "future" color */
+    return str1;
+  }
+  if (color < 1 || color > maxColor) bug(2327);
+  partition = PARTITIONS * fraction;
+  if (partition >= PARTITIONS) bug(2325); /* Roundoff error? */
+  fractionInPartition = 1.0 * ( fraction - 1.0 * partition / PARTITIONS )
+      * PARTITIONS; /* The fraction of this partition it covers */
+  red = redMin + (redLevel[partition] +
+          fractionInPartition *
+              (redLevel[partition + 1] - redLevel[partition]))
+      * (redMax - redMin);
+  green = greenMin + (greenLevel[partition] +
+          fractionInPartition *
+              (greenLevel[partition + 1] - greenLevel[partition]))
+      * (greenMax - greenMin);
+  blue = blueMin + (blueLevel[partition] +
+          fractionInPartition *
+              (blueLevel[partition + 1] - blueLevel[partition]))
+      * (blueMax - blueMin);
+ /*D*/ /*printf("red %ld green %ld blue %ld\n", red, green, blue);*/
+
+#ifndef OLD_COLORS
+  /* Multiply colors by 1.5 to lighten */
+  /* If a color exceeds 255, distribute excess to others */
+  red *= 1.5; green *= 1.5; blue *= 1.5;
+  /* Get max color */
+  max = 0;
+  if (red > max) max = red;
+  if (green > max) max = green;
+  if (blue > max) max = blue;
+  if (max > 255) {
+    frac = 255.0 / max;
+    sum = red + green + blue;
+    red = red * frac + (255.0 - red * frac) * (1.0 - frac) * sum
+        / (3.0 * 255.0 - frac * sum);
+    green = green * frac + (255.0 - green * frac) * (1.0 - frac) * sum
+        / (3.0 * 255.0 - frac * sum);
+    blue = blue * frac + (255.0 - blue * frac) * (1.0 - frac) * sum
+        / (3.0 * 255.0 - frac * sum);
+    if (red < 0) red = 0;
+    if (blue < 0) blue = 0;
+    if (green < 0) green = 0;
+  }
+  /* End of lighten */
+#endif
+
+  if (red < 0 || green < 0 || blue < 0
+      || red > 255 || green > 255 || blue > 255) {
+    print2("%ld %ld %ld\n", red, green, blue);
+    bug(2323);
+  }
+  let(&str1, "      ");
+  i = sprintf(str1, "%02X%02X%02X", (unsigned int)red, (unsigned int)green,
+      (unsigned int)blue);
+  if (i != 6) bug(2324);
+  /*D*//*printf("<FONT COLOR='#%02X%02X%02X'>a </FONT>\n", red, green, blue);*/
+  return str1;
+}
+#endif
+
+
+/* Added 20-Sep-03 (broken out of printTexLongMath() for better
+   modularization) */
+/* Returns the HTML code for GIFs (!altHtmlFlag) or Unicode (altHtmlFlag),
+   or LaTeX when !htmlFlag, for the math string (hypothesis or conclusion) that
+   is passed in. */
+/* Warning: The caller must deallocate the returned vstring. */
+vstring getTexLongMath(nmbrString *mathString)
+{
+  long pos;
+  vstring tex = "";
+  vstring texLine = "";
+  vstring lastTex = "";
+  flag alphnew, alphold, unknownnew, unknownold;
+
+  if (!texDefsRead) bug(2322); /* TeX defs were not read */
+  let(&texLine, "");
+
+  let(&lastTex, "");
+  for (pos = 0; pos < nmbrLen(mathString); pos++) {
+    let(&tex, "");
+    tex = tokenToTex(mathToken[mathString[pos]].tokenName);
+              /* tokenToTex allocates tex; we must deallocate it */
+    if (!htmlFlag) {  /* LaTeX */
+      /* If this token and previous token begin with letter, add a thin
+           space between them */
+      /* Also, anything not in table will have space added */
+      alphnew = isalpha(tex[0]);
+      unknownnew = 0;
+      if (!strcmp(left(tex, 10), "\\mbox{\\rm ")) { /* Token not in table */
+        unknownnew = 1;
+      }
+      alphold = isalpha(lastTex[0]);
+      unknownold = 0;
+      if (!strcmp(left(lastTex, 10), "\\mbox{\\rm ")) { /* Token not in table*/
+        unknownold = 1;
+      }
+      /*if ((alphold && alphnew) || unknownold || (unknownnew && pos > 0)) {*/
+      /* Put thin space only between letters and/or unknowns  11/3/94 */
+      if ((alphold || unknownold) && (alphnew || unknownnew)) {
+        /* Put additional thin space between two letters */
+        let(&texLine, cat(texLine, "\\m{\\,", tex, "}", NULL));
+      } else {
+        let(&texLine, cat(texLine, "\\m{", tex, "}", NULL));
+      }
+    } else {  /* HTML */
+
+      /* 7/27/03 When we have something like "E. x e. om x = y", the lack of
+         space between om and x looks ugly in HTML.  This kludge adds it in
+         for restricted quantifiers not followed by parenthesis, in order
+         to make the web page look a little nicer.  E.g. onminex. */
+      if (pos >=4) {
+        if (!strcmp(mathToken[mathString[pos - 2]].tokenName, "e.")
+            && (!strcmp(mathToken[mathString[pos - 4]].tokenName, "E.")
+              || !strcmp(mathToken[mathString[pos - 4]].tokenName, "A.")
+              /* 23-Jan-04 nm - indexed union, intersection */
+              || !strcmp(mathToken[mathString[pos - 4]].tokenName, "U.")
+              || !strcmp(mathToken[mathString[pos - 4]].tokenName, "|^|"))
+            /* 23-Jan-04 nm - add space even for parenthesized arg */
+            /*&& strcmp(mathToken[mathString[pos]].tokenName, "(")*/
+            && strcmp(mathToken[mathString[pos]].tokenName, ")")
+            /* It also shouldn't be restricted _to_ an expression in parens. */
+            && strcmp(mathToken[mathString[pos - 1]].tokenName, "(")
+            /* ...or restricted _to_ an expression in braces */
+            && strcmp(mathToken[mathString[pos - 1]].tokenName, "{")) {
+          let(&texLine, cat(texLine, " ", NULL)); /* Add a space */
+        }
+      }
+      /* This one puts a space between the 2 x's in a case like
+         "E. x x = y".  E.g. cla4egf */
+      if (pos >=2) {
+        /* Match a token starting with a letter */
+        if (isalpha(mathToken[mathString[pos]].tokenName[0])) {
+          /* and make sure its length is 1 */
+          if (!(mathToken[mathString[pos]].tokenName[1])) {
+            /* See if it's 1st letter in a quantified expression */
+            if (!strcmp(mathToken[mathString[pos - 2]].tokenName, "E.")
+                || !strcmp(mathToken[mathString[pos - 2]].tokenName, "A.")) {
+              let(&texLine, cat(texLine, " ", NULL)); /* Add a space */
+            }
+          }
+        }
+      }
+      /* This one puts a space before any "-." that doesn't come after
+         a parentheses e.g. ax-6 has both cases */
+      if (pos >=1) {
+        /* See if we have a non-parenthesis followed by not */
+        if (strcmp(mathToken[mathString[pos - 1]].tokenName, "(")
+            && !strcmp(mathToken[mathString[pos]].tokenName, "-.")) {
+          let(&texLine, cat(texLine, " ", NULL)); /* Add a space */
+        }
+      }
+      /* nm 9-Feb-04 This one puts a space between "S" and "(" in df-iso. */
+      if (pos >=4) {
+        if (!strcmp(mathToken[mathString[pos - 4]].tokenName, "Isom")
+            && !strcmp(mathToken[mathString[pos - 2]].tokenName, ",")
+            && !strcmp(mathToken[mathString[pos]].tokenName, "(")) {
+          let(&texLine, cat(texLine, " ", NULL)); /* Add a space */
+        }
+      }
+      /* 7/27/03 end */
+
+      let(&texLine, cat(texLine, tex, NULL));
+    } /* if !htmlFlag */
+    let(&lastTex, tex); /* Save for next pass */
+  } /* Next pos */
+
+  /* 8/9/03 Discard redundant white space to reduce HTML file size */
+  let(&texLine, edit(texLine, 8 + 16 + 128));
+
+  let(&tex, "");
+  let(&lastTex, "");
+  return texLine;
+} /* getTexLongMath */
+
+
+/* Added 18-Sep-03 (broken out of metamath.c for better modularization) */
+/* Returns the HTML code, for GIFs (!altHtmlFlag) or Unicode (altHtmlFlag),
+   for a statement's hypotheses and assertion in the form
+   hyp & ... & hyp => assertion */
+/* Warning: The caller must deallocate the returned vstring (i.e. this
+   function cannot be used in let statements but must be assigned to
+   a local vstring for local deallocation) */
+vstring getHTMLHypAndAssertion(long statemNum)
+{
+  long reqHyps, essHyps, n;
+  nmbrString *nmbrTmpPtr; /* Pointer only; not allocated directly */
+  vstring htmlCode = "";
+  vstring str2 = "";
+  /* Count the number of essential hypotheses essHyps */
+  essHyps = 0;
+  reqHyps = nmbrLen(statement[statemNum].reqHypList);
+  let(&htmlCode, "");
+  for (n = 0; n < reqHyps; n++) {
+    if (statement[statement[statemNum].reqHypList[n]].type
+        == (char)e__) {
+      essHyps++;
+      if (htmlCode[0]) { /* Add '&' between hypotheses */
+        if (altHtmlFlag) {
+          /* Hard-coded for set.mm! */
+          let(&htmlCode, cat(htmlCode,
+              /* 8/8/03 - Changed from Symbol to Unicode */
+  /* "&nbsp;&nbsp;&nbsp;<FONT FACE=\"Symbol\"> &#38;</FONT>&nbsp;&nbsp;&nbsp;" */
+              "&nbsp;&nbsp;&nbsp; &amp;&nbsp;&nbsp;&nbsp;"
+              ,NULL));
+        } else {
+          /* Hard-coded for set.mm! */
+          let(&htmlCode, cat(htmlCode,
+         "&nbsp;&nbsp;&nbsp;<IMG SRC='amp.gif' WIDTH=12 HEIGHT=19 ALT='&amp;'"
+              ," ALIGN=TOP>&nbsp;&nbsp;&nbsp;"
+              ,NULL));
+        }
+      }
+      /* Construct HTML hypothesis */
+      nmbrTmpPtr = statement[statement[statemNum].reqHypList[n]].mathString;
+      let(&str2, "");
+      str2 = getTexLongMath(nmbrTmpPtr);
+      let(&htmlCode, cat(htmlCode, str2, NULL));
+    }
+  }
+  if (essHyps) {  /* Add big arrow if there were hypotheses */
+    if (altHtmlFlag) {
+      /* Hard-coded for set.mm! */
+      let(&htmlCode, cat(htmlCode,
+          /* 8/8/03 - Changed from Symbol to Unicode */
+  /* "&nbsp;&nbsp;&nbsp;<FONT FACE=\"Symbol\"> &#222;</FONT>&nbsp;&nbsp;&nbsp;" */
+          "&nbsp;&nbsp;&nbsp; &#8658;&nbsp;&nbsp;&nbsp;"
+          ,NULL));
+    } else {
+      /* Hard-coded for set.mm! */
+      let(&htmlCode, cat(htmlCode,
+        "&nbsp;&nbsp;&nbsp;<IMG SRC='bigto.gif' WIDTH=15 HEIGHT=19 ALT='=&gt;'"
+          ," ALIGN=TOP>&nbsp;&nbsp;&nbsp;"
+          ,NULL));
+    }
+  }
+  /* Construct HTML assertion */
+  nmbrTmpPtr = statement[statemNum].mathString;
+  let(&str2, "");
+  str2 = getTexLongMath(nmbrTmpPtr);
+  let(&htmlCode, cat(htmlCode, str2, NULL));
+
+  /* Deallocate memory */
+  let(&str2, "");
+  return htmlCode;
+}

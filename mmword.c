@@ -1,8 +1,11 @@
 /*****************************************************************************/
-/*        Copyright (C) 2003  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2004  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
+
+/* This file implements the TAG command of the TOOLS utility.  revise() is
+   the main external call; see the comments preceding it. */
 
 #include <string.h>
 #include <stdio.h>
@@ -24,6 +27,9 @@
 /*  gosub_7000(f1_name, f2_name, f3_name, &f3_fp, m); */
 
 
+/* These two functions emulate 2 GOSUBs in BASIC, that are part of a
+   translation of a very old BASIC program that implemented a
+   difference algorithm (like Unix diff). */
 void gosub_7320();
 void gosub_7330();
 char strcmpe(vstring s1, vstring s2);
@@ -52,6 +58,12 @@ flag printedAtLeastOne;
      vstring reserve2_[MAX_BUF];
 
 
+/* revise() is called by the TAG command of TOOLs.  The idea is to keep
+   all past history of a file in the file itself, in the form of comments.
+   In mmcmds.c, see the parsing of the TAG command for a partial explanation
+   of its arguments.  TAG was written for a proprietary language with C-style
+   comments (where nested comments were allowed) and it may not be generally
+   useful without some modification. */
 void revise(FILE *f1_fp, FILE *f2_fp, FILE *f3_fp, vstring addTag, long m)
 {
   /******** Figure out the differences (DO LIST subroutine) ******/

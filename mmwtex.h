@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2003  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2004  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -55,11 +55,16 @@ void printTexHeader(flag texHeaderFlag);
 /* Prints an embedded comment in TeX.  The commentPtr must point to the first
    character after the "$(" in the comment.  The printout ends when the first
    "$)" or null character is encountered.   commentPtr must not be a temporary
-   allocation.  */
-void printTexComment(vstring commentPtr);
+   allocation.  htmlCenterFlag, if 1, means to center the HTML and add a
+   "Description:" prefix.*/
+void printTexComment(vstring commentPtr, char htmlCenterFlag);
 void printTexLongMath(nmbrString *proofStep, vstring startPrefix,
-    vstring contPrefix, long hypStmt);
+    vstring contPrefix, long hypStmt, long indentationLevel);
 void printTexTrailer(flag texHeaderFlag);
+
+/* Added 4-Dec-03
+   Function implementing WRITE THEOREM_LIST / THEOREMS_PER_PAGE nn */
+void writeTheoremList(long theoremsPerPage);
 
 /* TeX symbol dictionary */
 extern FILE *tex_dict_fp;     /* File pointers */
@@ -71,11 +76,41 @@ extern FILE *texFilePtr;
 
 /* Pink statement number for HTML pages */
 /* 10/10/02 (This is no longer used?) */
+/*
 long pinkNumber(long statemNum);
+*/
 
 /* Pink statement number HTML code for HTML pages - added 10/10/02 */
 /* Warning: caller must deallocate returned string */
 vstring pinkHTML(long statemNum);
 #define PINK_NBSP "&nbsp;" /* Either "" or "&nbsp;" depending on taste, it is
-                   the separator between a statement href and its pink number */
+                  the separator between a statement href and its pink number */
 
+/* 30-Jan-04 nm Comment out the following line to go back to the pink-only
+   color for the little statement numbers on the HTML pages */
+#define RAINBOW_OPTION /* "Rainbow" instead of pink color for little numbers */
+
+#ifdef RAINBOW_OPTION
+/* This function converts a "spectrum" color (1 to maxColor) to an
+   RBG value in hex notation for HTML.  The caller must deallocate the
+   returned vstring.  color = 1 (red) to maxColor (violet). */
+/* ndm 10-Jan-04 */
+vstring spectrumToRGB(long color, long maxColor);
+#endif
+
+#define INDENT_HTML_PROOFS /* nm 3-Feb-04 - indentation experiment */
+
+/* Added 20-Sep-03 (broken out of printTexLongMath() for better
+   modularization) */
+/* Returns the HTML code for GIFs (!altHtmlFlag) or Unicode (altHtmlFlag),
+   or LaTeX when !htmlFlag, for the math string (hypothesis or conclusion) that
+   is passed in. */
+/* Warning: The caller must deallocate the returned vstring. */
+vstring getTexLongMath(nmbrString *mathString);
+
+/* Added 18-Sep-03 (transferred from metamath.c) */
+/* Returns the HTML code, for GIFs (!altHtmlFlag) or Unicode (altHtmlFlag),
+   for a statement's hypotheses and assertion in the form
+   hyp & ... & hyp => assertion */
+/* Warning: The caller must deallocate the returned vstring. */
+vstring getHTMLHypAndAssertion(long statemNum);
