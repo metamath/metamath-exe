@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*       Copyright (C) 2000  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*       Copyright (C) 2002  NORMAN D. MEGILL nm@alum.mit.edu                */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -465,7 +465,8 @@ flag processCommandLine(void)
           if (!getFullArg(i,"/|$|<$>")) goto pclbad;
           if (lastArgMatches("/")) {
             i++;
-            if (!getFullArg(i,cat("TEX|HTML|COMMENT|FULL|<TEX>", NULL)))
+            if (!getFullArg(i,cat(
+"FULL|COMMENT|TEX|HTML|ALT_HTML|BRIEF_HTML|BRIEF_ALT_HTML|<FULL>", NULL)))
               goto pclbad;
           } else {
             break;
@@ -1339,8 +1340,10 @@ flag processCommandLine(void)
 
   if (pntrLen(fullArg) > rawArgs) bug(1102);
   if (pntrLen(fullArg) < rawArgs) {
+    let(&tmpStr, cat("?Too many arguments.  Use quotes around arguments with special",
+        " characters and around Unix file names with \"/\"s.", NULL));
     printCommandError(cat(commandPrompt, commandLine, NULL), pntrLen(fullArg),
-"?Too many arguments.  Use quotes around arguments with special characters.");
+        tmpStr);
     goto pclbad;
   }
 
@@ -1955,19 +1958,18 @@ long switchPos(vstring swString)
 
 void printCommandError(vstring line1, long arg, vstring errorMsg)
 {
+  /* Warning: errorMsg should not a temporarily allocated string such
+     as the direct output of cat() */
   vstring errorPointer = "";
   vstring line = "";
-  vstring errorMsg1 = "";
   long column, tokenLength, j;
 
   let(&line,line1); /* Prevent deallocation in case line1 is
                        direct return from string function such as cat() */
-  let(&errorMsg1,errorMsg);
   if (!line[0]) {
     /* Empty line - don't print an error pointer */
-    print2("%s\n",errorMsg);
-    let(&line,"");
-    let(&errorMsg1,"");
+    print2("%s\n", errorMsg);
+    let(&line, "");
     return;
   }
   column = rawArgNmbr[arg];
@@ -1977,21 +1979,20 @@ void printCommandError(vstring line1, long arg, vstring errorMsg)
        that the error pointer lines up correctly */
     if (j >= len(line)) bug(1109);
     if (line[j] == '\t') {
-      let(&errorPointer,cat(errorPointer,"\t",NULL));
+      let(&errorPointer,cat(errorPointer, "\t", NULL));
     } else {
       if (line[j] == '\n') {
-        let(&errorPointer,"");
+        let(&errorPointer, "");
       } else {
-        let(&errorPointer,cat(errorPointer," ",NULL));
+        let(&errorPointer, cat(errorPointer, " ", NULL));
       }
     }
   }
   for (j = 0; j < tokenLength; j++)
-    let(&errorPointer,cat(errorPointer,"^",NULL));
-  print2("%s\n",errorPointer);
-  printLongLine(errorMsg1,""," ");
-  let(&errorPointer,"");
-  let(&line,"");
-  let(&errorMsg1,"");
+    let(&errorPointer,cat(errorPointer, "^", NULL));
+  print2("%s\n", errorPointer);
+  printLongLine(errorMsg, "", " ");
+  let(&errorPointer, "");
+  let(&line, "");
 }
 

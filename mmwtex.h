@@ -1,14 +1,26 @@
 /*****************************************************************************/
-/*       Copyright (C) 2000  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*       Copyright (C) 2002  NORMAN D. MEGILL nm@alum.mit.edu                */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-/* HTML flag */
-extern flag htmlFlag;
+/* HTML flags */
+extern flag htmlFlag;  /* HTML flag: 0 = TeX, 1 = HTML */
+extern flag altHtmlFlag;  /* Use "althtmldef" instead of "htmldef".  This is
+    intended to allow the generation of pages with the old Symbol font
+    instead of the individual GIF files. */
+extern flag briefHtmlFlag;  /* Output statement only, for statement display
+                in other HTML pages, such as the Proof Explorer home page */
+extern long extHtmlStmt; /* At this statement and above, use the exthtmlxxx
+    variables for title, links, etc.  This was put in to allow proper
+    generation of the Hilbert Space Explorer extension to the set.mm
+    database. */
+extern vstring extHtmlTitle; /* Title of extended section if any; set by
+    by exthtmltitle command in special $t comment of database source */
 
 /* TeX word-processor-specific routines */
-flag readTexDefs(vstring tex_def_fn, flag promptForFile); /* Returns 1=OK, 0=error */
+flag readTexDefs(vstring tex_def_fn, flag promptForFile);
+                                                    /* Returns 1=OK, 0=error */
 extern flag texDefsRead;
 long texDefWhiteSpaceLen(char *ptr);
 long texDefTokenLen(char *ptr);

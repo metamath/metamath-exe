@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*       Copyright (C) 1999  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*       Copyright (C) 2002  NORMAN D. MEGILL nm@alum.mit.edu                */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -271,6 +271,7 @@ flag print2(char* fmt,...)
   if (lineLen > screenWidth + 1) { /* The +1 ignores \n */
     /* Warning:  Don't call bug(), because it calls print2. */
     printf("*** PROGRAM BUG #1505\n");
+    printf("%ld %s\n", lineLen, printBuffer);
     /*printf(NULL);*/  /* Force crash on VAXC to see where it came from */
   }
   /* \n not allowed in middle of line */
@@ -297,7 +298,7 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
   vstring tmpStr1 = "";
   vstring tmpStr2 = "";
   vstring startNextLine1 = "";
-  long p;
+  long p, savep;
   long startNextLineLen;
   flag firstLine;
   flag tildeFlag = 0;
@@ -376,9 +377,24 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
           }
           /* Normal long line */
           /* p > 0 prevents infinite loop */
-          while (!instr(1,breakMatch,mid(tmpStr,p,1)) && p > 0) {
+          savep = p;
+          while (!instr(1, breakMatch, mid(tmpStr,p,1)) && p > 0) {
             p--;
             let(&tmp, ""); /* Clear temp alloc stack from 'mid' call */
+          }
+          /* 2/8/02 If a break point was not found, see if we can break just before a ">".
+             This partially fixes some very long HTML strings without spaces, such as
+             the hypothesis list of gomaex3 in ql.mm, preventing broken HTML tags.
+             This is not a guaranteed fix, but the case is rare (hopefully). */
+          /* 2/8/02 (later) - fixed another way for this case; see 2/8/02 comment
+             in mmwtex.c.  However leave it in case of some other future bizarre problem,
+             like the htmldefs in set.mm not having any spaces */
+          if (p <= 0 && breakMatch[0] == ' ') {
+            p = savep;
+            while (!instr(1, ">", mid(tmpStr,p,1)) && p > 0) {
+              p--;
+              let(&tmp, ""); /* Clear temp alloc stack from 'mid' call */
+            }
           }
           if (breakMatch[0] == '&') {
             /* Compressed proof */
@@ -571,7 +587,7 @@ vstring cmdInput1(vstring ask)
 
       if (listMode && listFile_fp != NULL) {
         /* Put line in list.tmp as comment */
-        fprintf(listFile_fp, "%s\n", commandLine);
+        fprintf(listFile_fp, "! %s\n", commandLine);
       }
 
     } else {

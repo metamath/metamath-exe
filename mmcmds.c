@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*       Copyright (C) 2000  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*       Copyright (C) 2002  NORMAN D. MEGILL nm@alum.mit.edu                */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -56,7 +56,8 @@ void typeStatement(long showStatement,
   flag q1, q2;
   flag type;
   flag subType;
-  long showStatementMap;
+  vstring htmlDistinctVars = ""; /* 12/23/01 */
+  char htmlDistinctVarsCommaFlag = 0; /* 12/23/01 */
 
   /* For syntax breakdown of definitions in HTML page */
   long zapStatement1stToken;
@@ -123,25 +124,14 @@ void typeStatement(long showStatement,
             bug(229);
         }
 
-        /* Statement map for number of showStatement - this makes the statement
-           number more meaningful, by counting only $a and
-           $p. */
-        /* ???This could be done once if we want to speed things up, but
-           be careful because it will have to be redone if ERASE then READ */
-        showStatementMap = 0;
-        for (i = 1; i <= showStatement; i++) {
-          if (statement[i].type == a__ || statement[i].type == p__)
-            showStatementMap++;
-        }
-
-        print2("<CENTER><B><FONT SIZE=+1>%s <FONT\n", str1);
+        print2("<CENTER><B><FONT SIZE=\"+1\">%s <FONT\n", str1);
         print2("COLOR=\"#006600\">%s</FONT></FONT></B>\n",
             statement[showStatement].labelName);
 
         /* Print a small pink statement number after the statement */
         printLongLine(
               cat("<FONT FACE=\"Arial Narrow\" SIZE=-2 COLOR=\"#FF6666\"> ",
-              str(showStatementMap), "</FONT>",NULL), "", " ");
+              str(pinkNumber(showStatement)), "</FONT>",NULL), "", " ");
 
         print2("</CENTER><BR>\n");
       } /* (htmlFlag && texFlag) */
@@ -172,9 +162,20 @@ void typeStatement(long showStatement,
   }
   if (commentOnlyFlag && !briefFlag) goto returnPoint;
 
-  if (briefFlag && !texFlag) {
+  if ((briefFlag && !texFlag) ||
+       (htmlFlag && texFlag) /* HTML page 12/23/01 */) {
     /* In BRIEF mode screen output, show $d's */
     /* This section was added 8/31/99 */
+
+    /* 12/23/01 - added algorithm to HTML pages also; the string to print out
+       is stored in htmlDistinctVars for later printing */
+
+    /* 12/23/01 */
+    if (htmlFlag && texFlag) {
+      let(&htmlDistinctVars, "");
+      htmlDistinctVarsCommaFlag = 0;
+    }
+
     let(&str1, "");
     nmbrTmpPtr1 = statement[showStatement].reqDisjVarsA;
     nmbrTmpPtr2 = statement[showStatement].reqDisjVarsB;
@@ -186,8 +187,17 @@ void typeStatement(long showStatement,
         if (!nmbrElementIn(1, nmbrDDList, nmbrTmpPtr1[k]) &&
             !nmbrElementIn(1, nmbrDDList, nmbrTmpPtr2[k])) {
           /* No, so close out the current list */
-          if (k == 0) let(&str1, "$d");
-          else let(&str1, cat(str1, " $.  $d", NULL));
+          if (!(htmlFlag && texFlag)) { /* 12/23/01 */
+            if (k == 0) let(&str1, "$d");
+            else let(&str1, cat(str1, " $.  $d", NULL));
+          } else {
+
+            /* 12/23/01 */
+            let(&htmlDistinctVars, cat(htmlDistinctVars, " &nbsp; ",
+                NULL));
+            htmlDistinctVarsCommaFlag = 0;
+
+          }
           nmbrLet(&nmbrDDList, NULL_NMBRSTRING);
         }
         /* Are both variables required to be distinct from all others
@@ -214,8 +224,17 @@ void typeStatement(long showStatement,
             if (!q1 || !q2) {
               /* One of the variables is not required to be distinct from
                 all others in the current list, so close out current list */
-              if (k == 0) let(&str1, "$d");
-              else let(&str1, cat(str1, " $.  $d", NULL));
+              if (!(htmlFlag && texFlag)) {
+                if (k == 0) let(&str1, "$d");
+                else let(&str1, cat(str1, " $.  $d", NULL));
+              } else {
+
+                /* 12/23/01 */
+                let(&htmlDistinctVars, cat(htmlDistinctVars, " &nbsp; ",
+                    NULL));
+                htmlDistinctVarsCommaFlag = 0;
+
+              }
               nmbrLet(&nmbrDDList, NULL_NMBRSTRING);
               break;
             }
@@ -223,19 +242,55 @@ void typeStatement(long showStatement,
         } /* Next n */
         /* If the variable is not already in current list, add it */
         if (!nmbrElementIn(1, nmbrDDList, nmbrTmpPtr1[k])) {
-          let(&str1, cat(str1, " ", mathToken[nmbrTmpPtr1[k]].tokenName,
-              NULL));
+          if (!(htmlFlag && texFlag)) {
+            let(&str1, cat(str1, " ", mathToken[nmbrTmpPtr1[k]].tokenName,
+                NULL));
+          } else {
+
+            /* 12/23/01 */
+            if (htmlDistinctVarsCommaFlag) {
+              let(&htmlDistinctVars, cat(htmlDistinctVars, ",", NULL));
+            }
+            htmlDistinctVarsCommaFlag = 1;
+            let(&str2, "");
+            str2 = tokenToTex(mathToken[nmbrTmpPtr1[k]].tokenName);
+                 /* tokenToTex allocates str2; we must deallocate it */
+            let(&htmlDistinctVars, cat(htmlDistinctVars, str2, NULL));
+
+          }
           nmbrLet(&nmbrDDList, nmbrAddElement(nmbrDDList, nmbrTmpPtr1[k]));
         }
         if (!nmbrElementIn(1, nmbrDDList, nmbrTmpPtr2[k])) {
-          let(&str1, cat(str1, " ", mathToken[nmbrTmpPtr2[k]].tokenName,
-              NULL));
+          if (!(htmlFlag && texFlag)) {
+            let(&str1, cat(str1, " ", mathToken[nmbrTmpPtr2[k]].tokenName,
+                NULL));
+          } else {
+
+            /* 12/23/01 */
+            if (htmlDistinctVarsCommaFlag) {
+              let(&htmlDistinctVars, cat(htmlDistinctVars, ",", NULL));
+            }
+            htmlDistinctVarsCommaFlag = 1;
+            let(&str2, "");
+            str2 = tokenToTex(mathToken[nmbrTmpPtr2[k]].tokenName);
+                 /* tokenToTex allocates str2; we must deallocate it */
+            let(&htmlDistinctVars, cat(htmlDistinctVars, str2, NULL));
+
+          }
           nmbrLet(&nmbrDDList, nmbrAddElement(nmbrDDList, nmbrTmpPtr2[k]));
         }
       } /* Next k */
       /* Close out entire list */
-      let(&str1, cat(str1, " $.", NULL));
-      printLongLine(str1, "  ", " ");
+      if (!(htmlFlag && texFlag)) {
+        let(&str1, cat(str1, " $.", NULL));
+        printLongLine(str1, "  ", " ");
+      } else {
+
+        /* 12/23/01 */
+        /* (do nothing) */
+        /*let(&htmlDistinctVars, cat(htmlDistinctVars, "<BR>", NULL));*/
+
+      }
     } /* if i(#$d's) > 0 */
   }
 
@@ -252,11 +307,13 @@ void typeStatement(long showStatement,
     if (k) {
       if (texFlag) outputToString = 1;
       if (texFlag && htmlFlag) {
-        print2("<CENTER><TABLE BORDER >\n");
+        print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=\"#EEFFFA\"\n");
+        /* For bobby.cast.org approval */
+        print2("SUMMARY=\"%s\">\n", (k == 1) ? "Hypothesis" : "Hypotheses");
         print2("<CAPTION><B>%s</B></CAPTION>\n",
             (k == 1) ? "Hypothesis" : "Hypotheses");
-        print2("<TR><TD><B>Ref</B>\n");
-        print2("</TD><TD><B>Expression</B></TD></TR>\n");
+        print2("<TR><TH>Ref\n");
+        print2("</TH><TH>Expression</TH></TR>\n");
       }
       for (i = 0; i < j; i++) {
         k = statement[showStatement].reqHypList[i];
@@ -310,10 +367,12 @@ void typeStatement(long showStatement,
           str2, str3, 0);
     } else {
       outputToString = 1;
-      print2("<CENTER><TABLE BORDER >\n");
+      print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=\"#EEFFFA\"\n");
+      /* For bobby.cast.org approval */
+      print2("SUMMARY=\"Assertion\">\n");
       print2("<CAPTION><B>Assertion</B></CAPTION>\n");
-      print2("<TR><TD><B>Ref</B>\n");
-      print2("</TD><TD><B>Expression</B></TD></TR>\n");
+      print2("<TR><TH>Ref\n");
+      print2("</TH><TH>Expression</TH></TR>\n");
       print2(
           "<TR><TD><FONT COLOR=\"#006600\"><B>%s</B></FONT></TD><TD>\n",
           statement[showStatement].labelName);
@@ -405,8 +464,10 @@ void typeStatement(long showStatement,
           let(&str1, "");
         } else {
           if (htmlFlag && texFlag) {
+            /*  12/1/01 don't output dummy variables
             let(&str1, cat(str1,
             " &nbsp; (Dummy variables for use in proof:) ", NULL));
+            */
           }
         }
         for (k = 0; k < i; k++) {
@@ -416,13 +477,15 @@ void typeStatement(long showStatement,
                 mathToken[nmbrTmpPtr2[k]].tokenName, ">", NULL));
           } else {
             if (htmlFlag && texFlag) {
+                   /* tokenToTex allocates str2; we must deallocate it */
+              /*  12/1/01 don't output dummy variables
               let(&str2, "");
               str2 = tokenToTex(mathToken[nmbrTmpPtr1[k]].tokenName);
-                   /* tokenToTex allocates str2; we must deallocate it */
               let(&str1, cat(str1, " &nbsp; ", str2, NULL));
               let(&str2, "");
               str2 = tokenToTex(mathToken[nmbrTmpPtr2[k]].tokenName);
               let(&str1, cat(str1, ",", str2, NULL));
+              */
             }
           }
         }
@@ -432,16 +495,31 @@ void typeStatement(long showStatement,
               right(str1,3),NULL),"  "," ");
         }
       }
+
+      /* Before 12/23/01 **********
+           Future: once stable, take out redundant code producing str1
       if (texFlag && htmlFlag && str1[0]) {
         outputToString = 1;
-        printLongLine(cat("<CENTER>Substitutions for these variable",
+        printLongLine(cat("<CENTER>Substitutions into these variable",
             " pairs may not have variables in common: ",
             str1, "</CENTER>", NULL), "", " ");
         outputToString = 0;
       }
+      ***********/
+
+
+      /* 12/23/01 */
+      if (texFlag && htmlFlag && htmlDistinctVars[0]) {
+        outputToString = 1;
+        printLongLine(cat(
+     "<CENTER><A HREF=\"mmset.html#distinct\">Distinct variable</A> group(s): ",
+            htmlDistinctVars, "</CENTER>", NULL), "", " ");
+        outputToString = 0;
+      }
+
       if (texFlag) {
         outputToString = 1;
-        if (htmlFlag && texFlag) print2("<HR>\n");
+        if (htmlFlag && texFlag) print2("<HR SIZE=1>\n");
         outputToString = 0; /* Restore normal output */
         /* will be done automatically at closing
         fprintf(texFilePtr, "%s", printString);
@@ -484,7 +562,7 @@ void typeStatement(long showStatement,
     */
   }
 
-  /* Start of finding defintion for syntax statement */
+  /* Start of finding definition for syntax statement */
   if (htmlFlag && texFlag) {
 
     /* For syntax declarations, find the first definition that follows
@@ -519,18 +597,18 @@ void typeStatement(long showStatement,
               let(&str1, left(statement[i].labelName, 3));
               if (!strcmp(str1, "ax-")) {
                 printLongLine(cat(
-                    "<FONT SIZE=-2 FACE=ARIAL>This syntax is primitive.",
+                    "<CENTER>This syntax is primitive.",
                     "  The first axiom using it is <A HREF=\"",
                     statement[i].labelName, ".html\">",
                     statement[i].labelName,
-                    "</A>.</FONT><BR>",
+                    "</A>.</CENTER><HR SIZE=1>",
                     NULL), "", " ");
               } else {
                 printLongLine(cat(
-                    "<FONT SIZE=-2 FACE=ARIAL>The definition <A HREF=\"",
+                    "<CENTER>See definition <A HREF=\"",
                     statement[i].labelName, ".html\">",
                     statement[i].labelName,
-                    "</A> uses this syntax.</FONT><BR>",
+                    "</A> for more information.</CENTER><HR SIZE=1>",
                     NULL), "", " ");
               }
               outputToString = 0;
@@ -678,7 +756,7 @@ void typeStatement(long showStatement,
           case THEOREM: let(&str3, "theorem"); break;
           default: bug(233);
         }
-        let(&str2, cat("<FONT SIZE=-2 FACE=ARIAL>This ", str3,
+        let(&str2, cat("<FONT SIZE=-1 FACE=sans-serif>This ", str3,
             " is referenced by: ", NULL));
         /* Convert str1 to trailing space after each label */
         let(&str1, cat(right(str1, 2), " ", NULL));
@@ -707,6 +785,7 @@ void typeStatement(long showStatement,
   let(&str1, "");
   let(&str2, "");
   let(&str3, "");
+  let(&htmlDistinctVars, "");
 } /* typeStatement */
 
 /* Displays a proof (or part of a proof, depending on arguments). */
@@ -801,18 +880,31 @@ void typeProof(long statemNum,
   nmbrString *hypPtr;
   long hyp, hypStep;
 
+  /* For statement syntax breakdown (see section below added 2/5/02 for better
+     syntax hints), we declare the following 3 variables. */
+  static long wffToken = -1; /* array index of the hard-coded token "wff" -
+      static so we only have to look it up once - set to -2 if not found */
+  nmbrString *nmbrTmpPtr1; /* Pointer only; not allocated directly */
+  nmbrString *nmbrTmpPtr2; /* Pointer only; not allocated directly */
+
   if (htmlFlag && texFlag) {
     outputToString = 1; /* Flag for print2 to add to printString */
-    print2("<CENTER><TABLE BORDER >\n");
+    print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=\"#EEFFFA\"\n");
     if (essentialFlag) {
+      /* For bobby.cast.org approval */
+      print2("SUMMARY=\"Proof of theorem\">\n");
       print2("<CAPTION><B>Proof of Theorem <FONT\n");
     } else {
       /* This is a syntax breakdown "proof" of a definition called
          from typeStatement */
 
       if (!strcmp("ax-", left(statement[showStatement].labelName, 3))) {
+        /* For bobby.cast.org approval */
+        print2("SUMMARY=\"Detailed syntax breakdown of axiom\">\n");
         print2("<CAPTION><B>Detailed syntax breakdown of Axiom <FONT\n");
       } else {
+        /* For bobby.cast.org approval */
+        print2("SUMMARY=\"Detailed syntax breakdown of definition\">\n");
         print2("<CAPTION><B>Detailed syntax breakdown of Definition <FONT\n");
       }
     }
@@ -820,8 +912,8 @@ void typeProof(long statemNum,
         asciiToTt(statement[statemNum].labelName),
         "</FONT></B></CAPTION>", NULL), "", " ");
     print2(
-        "<TR><TD><B>Step</B></TD><TD><B>Hyp</B></TD><TD><B>Ref</B>\n");
-    print2("</TD><TD><B>Expression</B></TD></TR>\n");
+        "<TR><TH>Step</TH><TH>Hyp</TH><TH>Ref\n");
+    print2("</TH><TH>Expression</TH></TR>\n");
     outputToString = 0;
     /* printTexLongMath in typeProof will do this
     fprintf(texFilePtr, "%s", printString);
@@ -1305,9 +1397,6 @@ void typeProof(long statemNum,
     if (essentialFlag) {  /* Means this is not a syntax breakdown of a
         definition which is called from typeStatement() */
 
-
-
-
       /* Create list of syntax statements used */
       let(&statementUsedFlags, string(statements + 1, 'n')); /* Init. to 'no' */
       for (step = 0; step < plen; step++) {
@@ -1322,16 +1411,96 @@ void typeProof(long statemNum,
           }
         }
       }
+
+      /******************************************************************/
+      /* Start of section added 2/5/02 - for a more complete syntax hints
+         list in the HTML pages, parse the wffs comprising the hypotheses
+         and the statement, and add their syntax to the hints list. */
+
+      /* Look up the token "wff" (hard-coded) if we haven't found it before */
+      if (wffToken == -1) { /* First time */
+        wffToken = -2; /* In case it's not found because the user's source
+            used a convention different for "wff" for wffs */
+        for (i = 0; i < mathTokens; i++) {
+          if (!strcmp("wff", mathToken[i].tokenName)) {
+            wffToken = i;
+            break;
+          }
+        }
+      }
+
+      if (wffToken >= 0) {
+
+        /* Scan the statement being proved and its essential hypotheses,
+           and find a proof for each of them expressed as a wff */
+        for (i = -1; i < statement[statemNum].numReqHyp; i++) {
+          /* i = -1 is the statement itself; i >= 0 is hypotheses i */
+          if (i == -1) {
+            /* If it's not a $p we shouldn't be here */
+            if (statement[statemNum].type != (char)p__) bug(234);
+            nmbrTmpPtr1 = NULL_NMBRSTRING;
+            nmbrLet(&nmbrTmpPtr1, statement[statemNum].mathString);
+          } else {
+            /* Ignore $f */
+            if (statement[statement[statemNum].reqHypList[i]].type
+                == (char)f__) continue;
+            /* Must therefore be a $e */
+            if (statement[statement[statemNum].reqHypList[i]].type
+                != (char)e__) bug(234);
+            nmbrTmpPtr1 = NULL_NMBRSTRING;
+            nmbrLet(&nmbrTmpPtr1,
+                statement[statement[statemNum].reqHypList[i]].mathString);
+          }
+          if (strcmp("|-", mathToken[nmbrTmpPtr1[0]].tokenName)) bug(235);
+          /* Turn "|-" assertion into a "wff" assertion */
+          nmbrTmpPtr1[0] = wffToken;
+
+          /* Find proof of formula or simple theorem (no new vars in $e's) */
+          /* maxEDepth is the maximum depth at which statements with $e
+             hypotheses are
+             considered.  A value of 0 means none are considered. */
+          nmbrTmpPtr2 = proveFloating(nmbrTmpPtr1 /*mString*/,
+              statemNum /*statemNum*/, 0 /*maxEDepth*/,
+              0 /* step; 0 = step 1 */ /*For messages*/);
+          if (!nmbrLen(nmbrTmpPtr2)) bug(236); /* Didn't find syntax proof */
+
+          /* Add to list of syntax statements used */
+          for (step = 0; step < nmbrLen(nmbrTmpPtr2); step++) {
+            stmt = nmbrTmpPtr2[step];
+            /* Convention: collect all $a's that don't begin with "|-" */
+            if (stmt > 0) {
+              if (statementUsedFlags[stmt] == 'n') { /* For slight speedup */
+                if (statement[stmt].type == a__) {
+                  if (strcmp("|-", mathToken[
+                      (statement[stmt].mathString)[0]].tokenName)) {
+                    statementUsedFlags[stmt] = 'y'; /* Flag to use it */
+                  } else {
+                    /* In a syntax proof there should be no |- */
+                    bug(237);
+                  }
+                }
+              }
+            } else {
+              /* This is not a compressed proof */
+              bug(238);
+            }
+          }
+
+          /* Deallocate memory */
+          nmbrLet(&nmbrTmpPtr2, NULL_NMBRSTRING);
+          nmbrLet(&nmbrTmpPtr1, NULL_NMBRSTRING);
+        } /* next i */
+      } /* if (wffToken >= 0) */
+      /* End of section added 2/5/02 */
+      /******************************************************************/
+
       let(&tmpStr, "");
       for (stmt = 1; stmt <= statements; stmt++) {
         if (statementUsedFlags[stmt] == 'y') {
           if (!tmpStr[0]) {
             let(&tmpStr,
-               "<FONT SIZE=-2><FONT FACE=ARIAL>Syntax hints:</FONT> ");
+               "<FONT SIZE=-1><FONT FACE=sans-serif>Syntax hints:</FONT> ");
           }
-          let(&tmpStr, cat(tmpStr, " <FONT FACE=ARIAL><A HREF=\"",
-              statement[stmt].labelName, ".html\">",
-              statement[stmt].labelName, "</A></FONT>", NULL));
 
           /* 10/6/99 - Get the main symbol in the syntax */
           /* This section can be deleted if not wanted - it is custom
@@ -1356,15 +1525,21 @@ void typeProof(long statemNum,
               }
             }
           } /* Next i */
-          /* Special cases */
+          /* Special cases hard-coded for set.mm */
           if (!strcmp(statement[stmt].labelName, "wbr"))
-            let(&tmpStr1, "[rel]");
+            let(&tmpStr1, "[relation]");
           if (!strcmp(statement[stmt].labelName, "cv"))
             let(&tmpStr1, "[set]");
           if (!strcmp(statement[stmt].labelName, "co"))
-            let(&tmpStr1, "[oper]");
+            let(&tmpStr1, "[operation]");
           let(&tmpStr, cat(tmpStr, " ", tmpStr1, NULL));
           /* End of 10/6/99 section - Get the main symbol in the syntax */
+
+
+          let(&tmpStr, cat(tmpStr, "<FONT FACE=sans-serif><A HREF=\"",
+              statement[stmt].labelName, ".html\">",
+              statement[stmt].labelName, "</A></FONT> &nbsp; ", NULL));
+
 
         }
       }
@@ -1390,7 +1565,7 @@ void typeProof(long statemNum,
           if (!strcmp(tmpStr1, "ax-")) {
             if (!tmpStr[0]) {
               let(&tmpStr,
- "<FONT SIZE=-2 FACE=ARIAL>The theorem was proved from these axioms: ");
+ "<FONT SIZE=-1 FACE=sans-serif>The theorem was proved from these axioms: ");
             }
             let(&tmpStr, cat(tmpStr, " <A HREF=\"",
                 statement[stmt].labelName, ".html\">",
@@ -2870,6 +3045,28 @@ void H(vstring helpLine)
 }
 
 
+/* Returns the pink number printed next to statement labels in HTML output */
+/* The pink number only counts $a and $p statements, unlike the statement
+   number which also counts $f, $e, $c, $v, ${, $} */
+long pinkNumber(long statemNum)
+{
+
+  long statemMap = 0;
+  long i;
+  /* Statement map for number of showStatement - this makes the statement
+     number more meaningful, by counting only $a and $p. */
+  /* ???This could be done once if we want to speed things up, but
+     be careful because it will have to be redone if ERASE then READ.
+     For the future it could be added to the statement[] structure. */
+  statemMap = 0;
+  for (i = 1; i <= statemNum; i++) {
+    if (statement[i].type == a__ || statement[i].type == p__)
+      statemMap++;
+  }
+  return statemMap;
+}
+
+
 
 /******** 8/28/00 ***********************************************************/
 /******** The MIDI output algorithm is in this function, outputMidi(). ******/
@@ -3003,7 +3200,7 @@ void outputMidi(long plen, nmbrString *indentationLevels,
   let(&tmpStr, left(tmpStr, 38));
   fprintf(midiFilePtr, "0 Meta Text \"%s\"\n", tmpStr);
   fprintf(midiFilePtr,
-      "0 Meta Copyright \"Copyright (C) 2000 nm@alum.mit.edu    \"\n");
+      "0 Meta Copyright \"Copyright (C) 2002 nm@alum.mit.edu    \"\n");
 
   /************** Scan the proof ************************/
 

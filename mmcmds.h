@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*       Copyright (C) 2000  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*       Copyright (C) 2002  NORMAN D. MEGILL nm@alum.mit.edu                */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -62,6 +62,9 @@ extern vstring mainFileName;
 /* For HELP processing */
 extern flag printHelp;
 void H(vstring helpLine);
+
+/* Pink statement number for HTML pages */
+long pinkNumber(long statemNum);
 
 /* For MIDI files - added 8/28/00 */
 extern flag midiFlag; /* Set to 1 if typeProof() is to output MIDI file */

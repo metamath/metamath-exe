@@ -1,10 +1,10 @@
 /*****************************************************************************/
-/*       Copyright (C) 2000  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*       Copyright (C) 2002  NORMAN D. MEGILL nm@alum.mit.edu                */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.07e 9-Dec-00"
+#define MVERSION "0.07i 10-Feb-02"
 /* Metamath Proof Verifier - main program */
 /* See the book "Metamath" for description of Metamath and run instructions */
 
@@ -120,7 +120,7 @@ console_options.title = (unsigned char*)"\pMetamath";
   if (!listMode) {
     print2("Metamath - Version %s\n", MVERSION);
     print2(
-     "Copyright (C) 2000 GPL Norman D. Megill nm@alum.mit.edu\n");
+     "Copyright (C) 2002 GPL Norman D. Megill nm@alum.mit.edu\n");
   }
   if (argc < 2) print2("Type HELP for help, EXIT to exit.\n");
 
@@ -148,7 +148,7 @@ void command(int argc, char *argv[])
 
   /* The variables in command() are static so that they won't be destroyed
     by a longjmp return to setjmp. */
-  long i, j, k, m, n, p, q, s /*,tokenNum,i*/;
+  long i, j, k, m, n, p, q, s, t /*,tokenNum,i*/;
   vstring str1 = "", str2 = "", str3 = "", str4 = "";
   nmbrString *nmbrTmpPtr; /* Pointer only; not allocated directly */
   nmbrString *nmbrTmp = NULL_NMBRSTRING;
@@ -1274,13 +1274,18 @@ void command(int argc, char *argv[])
             "?HTML qualifier is now implemented in SHOW STATEMENT * / HTML\n");
 #ifdef OBSOLETE
           outputToString = 1;
-          print2("<CENTER><TABLE BORDER >\n");
+          print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=\"#EEFFFA\"\n");
+          /* For bobby.cast.org approval */
+          print2("SUMMARY=\"List of %s\">\n",
+              (k == 0) ? "theorems" : "syntax, axioms and definitions");
           print2("<CAPTION><B>List of \n");
           if (m == 0) {
             print2("Theorems\n");
           } else {
             printLongLine(cat(
-                "Syntax (not <FONT COLOR=\"#00CC00\">|-&nbsp;</FONT>), ",
+                /*"Syntax (not <FONT COLOR=\"#00CC00\">|-&nbsp;</FONT>), ",*/
+                /* 2/9/02 (in case |- suppressed) */
+                "Syntax, ",
                 "Axioms (<FONT COLOR=\"#006600\">ax-</FONT>) and",
                 " Definitions (<FONT COLOR=\"#006600\">df-</FONT>)",
                 NULL), "", " ");
@@ -1400,36 +1405,82 @@ void command(int argc, char *argv[])
     } /* if (cmdMatches("SHOW SOURCE")) */
 
 
-    if (cmdMatches("SHOW STATEMENT") && switchPos("/ HTML")) {
-      /* Special processing for the / HTML qualifier - for each matching
+    if (cmdMatches("SHOW STATEMENT") && (
+        switchPos("/ HTML")
+        || switchPos("/ BRIEF_HTML")
+        || switchPos("/ ALT_HTML")
+        || switchPos("/ BRIEF_ALT_HTML"))) {
+      /* Special processing for the / HTML qualifiers - for each matching
          statement, a .html file is opened, the statement is output,
          and depending on statement type a proof or other information
          is output. */
 
       if (rawArgs != 5) {
-        print2("?The HTML qualifier may not be used with any other.\n");
+        print2("?The HTML qualifiers may not be combined with others.\n");
         continue;
+      }
+
+      if (texDefsRead) {
+        /* Current limitation - can only read def's from .mm file once */
+        if (!htmlFlag) {
+          print2("?You cannot use both LaTeX and HTML in the same session.\n");
+          print2(
+              "You must EXIT and restart Metamath to switch to the other.\n");
+          goto htmlDone;
+        } else {
+          if ((switchPos("/ ALT_HTML") || switchPos("/ BRIEF_ALT_HTML"))
+              == (altHtmlFlag == 0)) {
+            print2(
+              "?You cannot use both HTML and ALT_HTML in the same session.\n");
+            print2(
+              "You must EXIT and restart Metamath to switch to the other.\n");
+            goto htmlDone;
+          }
+        }
+      }
+
+      if (switchPos("/ BRIEF_HTML") || switchPos("/ BRIEF_ALT_HTML")) {
+        if (strcmp(fullArg[2], "*")) {
+          print2(
+              "?For BRIEF_HTML or BRIEF_ALT_HTML, the label must be \"*\"\n");
+          goto htmlDone;
+        }
+        briefHtmlFlag = 1;
+      } else {
+        briefHtmlFlag = 0;
+      }
+
+      if (switchPos("/ ALT_HTML") || switchPos("/ BRIEF_ALT_HTML")) {
+        altHtmlFlag = 1;
+      } else {
+        altHtmlFlag = 0;
       }
 
       q = 0;
 
       /* Special feature:  if the match statement has a "*" in it, we
-         will also output theorems.html and definitions.html.  So, with
+         will also output mmascii.html, mmtheorems.html, and mmdefinitions.html.
+         So, with
                  SHOW STATEMENT * / HTML
          these will be output plus all statements; with
                  SHOW STATEMENT ?* / HTML
          these will be output with no statements (since ? is illegal in a
          statement label) */
-      if (instr(1, fullArg[2], "*")) {
-        s = -1; /* -1 is for theorems; 0 is for definitions */
+      if (instr(1, fullArg[2], "*") || briefHtmlFlag) {
+        s = -2; /* -2 is for ASCII table; -1 is for theorems;
+                    0 is for definitions */
       } else {
         s = 1;
       }
 
       for (s = s; s <= statements; s++) {
 
-        /* s = -1:  theorems.html
-           s = 0:   definitions.html
+        if (s > 0 && briefHtmlFlag) break; /* Only do summaries */
+
+        /*
+           s = -2:  mmascii.html
+           s = -1:  mmtheorems.html
+           s = 0:   mmdefinitions.html
            s > 0:   normal statement
         */
 
@@ -1442,27 +1493,29 @@ void command(int argc, char *argv[])
 
         q = 1; /* Flag that at least one matching statement was found */
 
-        if (s > 0) showStatement = s;
+        if (s > 0) {
+          showStatement = s;
+        } else {
+          /* We set it to 1 here so we will output the Metamath Proof
+             Explorer and not the Hilbert Space Explorer header for
+             definitions and theorems lists, when showStatement is
+             compared to extHtmlStmt in printTexHeader in mmwtex.c */
+          showStatement = 1;
+        }
 
 
         /*** Open the html file ***/
-        if (texDefsRead) {
-          /* Current limitation - can only read def's from .mm file once */
-          if (!htmlFlag) {
-            print2("?You cannot use both LaTeX and HTML in the same session.\n");
-            print2(
-                "You must EXIT and restart Metamath to switch to the other.\n");
-            goto htmlDone;
-          }
-        }
         htmlFlag = 1;
         /* Open the html output file */
         switch (s) {
+          case -2:
+            let(&texFileName, "mmascii.html");
+            break;
           case -1:
-            let(&texFileName, "theorems.html");
+            let(&texFileName, "mmtheorems.html");
             break;
           case 0:
-            let(&texFileName, "definitions.html");
+            let(&texFileName, "mmdefinitions.html");
             break;
           default:
             let(&texFileName, cat(statement[showStatement].labelName, ".html",
@@ -1473,95 +1526,213 @@ void command(int argc, char *argv[])
         if (!texFilePtr) goto htmlDone; /* Couldn't open it (err msg was
             provided) */
         texFileOpenFlag = 1;
-        printTexHeader(1 /*texHeaderFlag*/);
+        printTexHeader((s > 0) ? 1 : 0 /*texHeaderFlag*/);
 
         if (s <= 0) {
-          p = 0; /* Set p=0 for old version with theorem description */
-
           outputToString = 1;
-          if (!(p == 1 && s == -1)) {
-            print2("<CENTER><TABLE BORDER >\n");
-            print2("<CAPTION><B>List of \n");
-            if (s == -1) {
-              print2("Theorems\n");
-            } else {
+          if (s == -2) {
+            printLongLine(cat("<CENTER><FONT COLOR=\"#006600\"><B>",
+                "Symbol to ASCII Correspondence for Text-Only Browsers",
+                " (in order of first appearance)",
+                "</B></FONT></CENTER><P>", NULL), "", " ");
+          }
+          print2(
+            "<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=\"#EEFFFA\"\n");
+          /* For bobby.cast.org approval */
+          switch (s) {
+            case -2:
+              print2("SUMMARY=\"Symbol to ASCII correspondences\">\n");
+              break;
+            case -1:
+              print2("SUMMARY=\"List of theorems\">\n");
+              break;
+            case 0:
+              print2("SUMMARY=\"List of syntax, axioms and definitions\">\n");
+              break;
+          }
+          switch (s) {
+            case -2:
+              print2("<TR><TD><B>\n");
+              break;
+            case -1:
+              print2("<CAPTION><B>List of Theorems</B></CAPTION><TR><TD><B>\n");
+              break;
+            case 0:
               printLongLine(cat(
-                  "Syntax (not <FONT COLOR=\"#00CC00\">|-&nbsp;</FONT>), ",
+/*"<CAPTION><B>List of Syntax (not <FONT COLOR=\"#00CC00\">|-&nbsp;</FONT>), ",*/
+                  /* 2/9/02 (in case |- suppressed) */
+                  "<CAPTION><B>List of Syntax, ",
                   "Axioms (<FONT COLOR=\"#006600\">ax-</FONT>) and",
                   " Definitions (<FONT COLOR=\"#006600\">df-</FONT>)",
+                  "</B></CAPTION><TR><TD><B>",
                   NULL), "", " ");
-            }
-            print2("</B></CAPTION>\n");
-            print2("<TR><TD><B>Ref</B>\n");
-            print2("</TD><TD><B>%s</B></TD></TR>\n",
-                (s == 0) ? "Expression" : "Description");
-          } else {
-            /* New compact version of theorem list */
-            print2("<CENTER><B>Theorems</B></CENTER><BR>\n");
+              break;
           }
+          switch (s) {
+            case -2:
+              print2("Symbol</B></TD><TD><B>ASCII\n");
+              break;
+            case -1:
+              print2(
+                  "Ref</B></TD><TD><B>Description\n");
+              break;
+            case 0:
+              printLongLine(cat(
+                  "Ref</B></TD><TD><B>",
+                "Expression (see link for any distinct variable requirements)",
+                NULL), "", " ");
+              break;
+          }
+          print2("</B></TD></TR>\n");
           m = 0; /* Statement number map */
+          let(&str3, ""); /* For storing ASCII token list in s=-2 mode */
           for (i = 1; i <= statements; i++) {
+            if (i == extHtmlStmt && s != -2) {
+              /* Print a row that identifies the start of the extended
+                 database (e.g. Hilbert Space Explorer) */
+              printLongLine(cat(
+                  "<TR><TD COLSPAN=2 ALIGN=CENTER>The ",
+                  "<B><FONT COLOR=\"#006600\">",
+                  extHtmlTitle,
+                  "</B></FONT> starts here</TD></TR>", NULL), "", " ");
+            }
             if (statement[i].type == (char)p__ ||
                 statement[i].type == (char)a__ ) m++;
-            if ((s == -1 && statement[i].type != (char)p__) ||
-                (s == 0 && statement[i].type != (char)a__) ) continue;
-            if (!(p == 1 && s == -1)) {
-              /* Count the number of essential hypotheses k */
-              k = 0;
-              j = nmbrLen(statement[i].reqHypList);
-              for (n = 0; n < j; n++) {
-                if (statement[statement[i].reqHypList[n]].type
-                    == (char)e__) k++;
-              }
-              if (k == k) { /* Set k == k here for Web site version,
-                               k == 0 for # hyp in parens. */
-                printLongLine(cat("<TR><TD><A HREF=\"", statement[i].labelName,
-                    ".html\">", statement[i].labelName,
-                    "</A>",
-                    "<FONT FACE=\"Arial Narrow\" SIZE=-2 COLOR=\"#FF6666\"> ",
-                    str(m), "</FONT></TD><TD>", NULL), "", " ");
-              } else {
-                /* Include number of ess. hypoth. in parens. after label */
-                print2(
-                    "<TR><TD><A HREF=\"%s.html\">%s</A> (%ld)</TD><TD>\n",
-                    statement[i].labelName, statement[i].labelName, k);
-              }
-
-              if (s == 0) { /* Set s == 0 here for Web site version,
-                               s == s for symbol version of theorem list */
-                printTexLongMath(statement[i].mathString, "", "", 0);
-                outputToString = 1; /* Is reset by printTexLongMath */
-              } else {
-                /* Theorems are listed w/ description; otherwise file too
-                   big for convenience */
-                let(&str1, "");
-                str1 = getDescription(i);
-                if (strlen(str1) > 29)
-                  let(&str1, cat(left(str1, 26), "...", NULL));
-                let(&str1, cat(str1, "</TD></TR>", NULL));
-                printLongLine(str1, "", " ");
-
-                /* Close out the string now to prevent overflow */
+            if ((s == -1 && statement[i].type != (char)p__)
+                || (s == 0 && statement[i].type != (char)a__)
+                || (s == -2 && statement[i].type != (char)c__
+                    && statement[i].type != (char)v__)
+                ) continue;
+            switch (s) {
+              case -2:
+                /* Print symbol to ASCII table entry */
+                /* It's a $c or $v statement, so each token generates a
+                   table row */
+                for (j = 0; j < statement[i].mathStringLen; j++) {
+                  let(&str1, mathToken[(statement[i].mathString)[j]].tokenName);
+                  /* Output each token only once in case of multiple decl. */
+                  if (!instr(1, str3, cat(" ", str1, " ", NULL))) {
+                    let(&str3, cat(str3, " ", str1, " ", NULL));
+                    let(&str2, "");
+                    str2 = tokenToTex(mathToken[(statement[i].mathString)[j]
+                        ].tokenName);
+                    /* 2/9/02  Skip any tokens (such as |-) that may be suppressed */
+                    if (!str2[0]) continue;
+                    /* Convert special characters to HTML entities */
+                    for (k = 0; k < strlen(str1); k++) {
+                      if (str1[k] == '&') {
+                        let(&str1, cat(left(str1, k), "&amp;",
+                            right(str1, k + 2), NULL));
+                        k = k + 4;
+                      }
+                      if (str1[k] == '<') {
+                        let(&str1, cat(left(str1, k), "&lt;",
+                            right(str1, k + 2), NULL));
+                        k = k + 3;
+                      }
+                      if (str1[k] == '>') {
+                        let(&str1, cat(left(str1, k), "&gt;",
+                            right(str1, k + 2), NULL));
+                        k = k + 3;
+                      }
+                    } /* next k */
+                    printLongLine(cat("<TR><TD>",
+                        str2,
+                        "</TD><TD><TT>",
+                        str1,
+                        "</TT></TD></TR>", NULL), "", " ");
+                  }
+                } /* next j */
+                /* Close out the string now to prevent memory overflow */
                 fprintf(texFilePtr, "%s", printString);
                 let(&printString, "");
-              }
-            } else {
-              /* New compact list for theorems */
-              /* Include step number reference.  The idea is that this will
-                 help the user to recognized "important" (vs. early trivial
-                 logic) steps.  This prints a small pink statement number
-                 after the hypothesis statement label. */
-              printLongLine(cat("&nbsp;&nbsp;<A HREF=\"",
-                  statement[i].labelName,
-                  ".html\">", statement[i].labelName,
-                  "</A>",
-                  "<FONT FACE=\"Arial Narrow\" SIZE=-2 COLOR=\"#FF6666\"> ",
-                  str(m), "</FONT>", NULL), "", " ");
-              /* Close out the string now to prevent overflow */
-              fprintf(texFilePtr, "%s", printString);
-              let(&printString, "");
-            }
-          }
+                break;
+              case -1:
+              case 0:
+                /* Count the number of essential hypotheses k */
+                k = 0;
+                j = nmbrLen(statement[i].reqHypList);
+                let(&str1, "");
+                for (n = 0; n < j; n++) {
+                  if (statement[statement[i].reqHypList[n]].type
+                      == (char)e__) {
+                    k++;
+                    if (s == 0 || briefHtmlFlag) {
+                      if (str1[0]) {
+                        if (altHtmlFlag) {
+                          /* Hard-coded for set.mm! */
+                          let(&str1, cat(str1,
+        "&nbsp;&nbsp;&nbsp;<FONT FACE=\"Symbol\"> &#38;</FONT>&nbsp;&nbsp;&nbsp;"
+                              ,NULL));
+                        } else {
+                          /* Hard-coded for set.mm! */
+                          let(&str1, cat(str1,
+           "&nbsp;&nbsp;&nbsp;<IMG SRC='amp.gif' WIDTH=12 HEIGHT=19 ALT='&amp;'"
+                              ," ALIGN=TOP>&nbsp;&nbsp;&nbsp;"
+                              ,NULL));
+                        }
+                      }
+                      /* Construct HTML hypothesis */
+                      nmbrTmpPtr = statement[statement[i].reqHypList[n]].mathString;
+                      for (t = 0; t < nmbrLen(nmbrTmpPtr); t++) {
+                        let(&str2, "");
+                        str2 = tokenToTex(mathToken[nmbrTmpPtr[t]].tokenName);
+                        let(&str1, cat(str1, str2, NULL));
+                      }
+                    }
+                  }
+                }
+                if (s == 0 || briefHtmlFlag) {
+                  if (k) {  /* Add big arrow if there were hypotheses */
+                    if (altHtmlFlag) {
+                      /* Hard-coded for set.mm! */
+                      let(&str1, cat(str1,
+       "&nbsp;&nbsp;&nbsp;<FONT FACE=\"Symbol\"> &#222;</FONT>&nbsp;&nbsp;&nbsp;"
+                          ,NULL));
+                    } else {
+                      /* Hard-coded for set.mm! */
+                      let(&str1, cat(str1,
+          "&nbsp;&nbsp;&nbsp;<IMG SRC='bigto.gif' WIDTH=15 HEIGHT=19 ALT='=&gt;'"
+                          ," ALIGN=TOP>&nbsp;&nbsp;&nbsp;"
+                          ,NULL));
+                    }
+                  }
+                }
+                let(&str2, cat("<TR><TD><A HREF=\"", statement[i].labelName,
+                    ".html\">", statement[i].labelName,
+                    "</A>", NULL));
+                if (!briefHtmlFlag) {
+                  /* Add little pink number */
+                  let(&str2, cat(str2,
+                    "<FONT FACE=\"Arial Narrow\" SIZE=-2 COLOR=\"#FF6666\"> ",
+                    str(m), "</FONT>", NULL));
+                }
+                let(&str1, cat(str2, "</TD><TD>", str1, NULL));
+                print2("\n");  /* New line for HTML source readability */
+                printLongLine(str1, "", " ");
+
+                if (s == 0 || briefHtmlFlag) {
+                              /* Set s == 0 here for Web site version,
+                                 s == s for symbol version of theorem list */
+                  printTexLongMath(statement[i].mathString, "", "", 0);
+                  outputToString = 1; /* Is reset by printTexLongMath */
+                } else {
+                  /* Theorems are listed w/ description; otherwise file too
+                     big for convenience */
+                  let(&str1, "");
+                  str1 = getDescription(i);
+                  if (strlen(str1) > 29)
+                    let(&str1, cat(left(str1, 26), "...", NULL));
+                  let(&str1, cat(str1, "</TD></TR>", NULL));
+                  printLongLine(str1, "", " ");
+
+                  /* Close out the string now to prevent overflow */
+                  fprintf(texFilePtr, "%s", printString);
+                  let(&printString, "");
+                }
+                break;
+            } /* end switch */
+          } /* next i (statement number) */
           print2("</TABLE></CENTER>\n");
           outputToString = 0;  /* closing will write out the string */
 
@@ -2165,7 +2336,7 @@ void command(int argc, char *argv[])
             bug(1116);
             /*???? The code below is obsolete - now down in show statement*/
             /*
-            print2("<CENTER><TABLE BORDER >\n");
+            print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=\"#EEFFFA\">\n");
             print2("<CAPTION><B>Proof of Theorem <FONT\n");
             printLongLine(cat("   COLOR=\"#006600\">",
                 asciiToTt(statement[i].labelName),
@@ -3373,6 +3544,9 @@ void command(int argc, char *argv[])
         let(&str1, left(str3, q + s));
 
         /* Change wildcard to ASCII 2 (to be different from printable chars) */
+        /* 1/3/02 (Why are we matching with and without space? I'm not sure.)*/
+        /*        For the future should we put this before the initial space */
+        /*        reduction? */
         while (1) {
           p = instr(1, str1, " $* ");
           if (!p) break;
@@ -3382,6 +3556,18 @@ void command(int argc, char *argv[])
           p = instr(1, str1, "$*");
           if (!p) break;
           let(&str1, cat(left(str1, p - 1), chr(2), right(str1, p + 2), NULL));
+        }
+        /* 1/3/02  Also allow a plain $ as a wildcard, for convenience */
+        /*         For the future should this be the only wildcard? */
+        while (1) {
+          p = instr(1, str1, " $ ");
+          if (!p) break;
+          let(&str1, cat(left(str1, p - 1), chr(2), right(str1, p + 2), NULL));
+        }
+        while (1) {
+          p = instr(1, str1, "$");
+          if (!p) break;
+          let(&str1, cat(left(str1, p - 1), chr(2), right(str1, p + 1), NULL));
         }
         /* Add wildcards to beginning and end to match middle of any string */
         let(&str1, cat(chr(2), " ", str1, " ", chr(2), NULL));

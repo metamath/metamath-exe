@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*       Copyright (C) 2000  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*       Copyright (C) 2002  NORMAN D. MEGILL nm@alum.mit.edu                */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -34,10 +34,11 @@ H("For help creating a LaTeX file, type HELP TEX.");
 H("For help creating Web pages, type HELP HTML.");
 H("For help using the Proof Assistant, type HELP PROOF_ASSISTANT.");
 H("For a list of help topics, type HELP ?.");
+H("For current program settings, type SHOW SETTINGS.");
 H("To exit Metamath, type EXIT.");
 H("");
 H("If you need technical support, contact Norman Megill at nm@alum.mit.edu.");
-H("Copyright (C) 2000 Norman D. Megill");
+H("Copyright (C) 2002 Norman D. Megill");
 H("License terms:  GNU General Public License");
 H("");
 
@@ -137,6 +138,8 @@ H("");
 printHelp = !strcmp(helpCmd, "HELP SHOW STATEMENT");
 H(
 "Syntax:  SHOW STATEMENT <label> [/ COMMENT] [/ FULL] [/ TEX] [/ HTML]");
+H("             [/ ALT_HTML] [/ BRIEF_HTML] [/ BRIEF_ALT_HTML]");
+H("");
 H("");
 H("This command provides information about a statement.  Only statements");
 H("that have labels ($f, $e, $a, and $p) may be specified.  If <label>");
@@ -146,9 +149,9 @@ H("");
 H("By default, only the statement and its $e hypotheses are shown, and if");
 H("the label has wildcards, only $a and $p statements are shown.");
 H("");
-H("Optional qualifiers:");
+H("Optional qualifiers (only one qualifier at a time is allowed):");
 H("    / COMMENT - This qualifier includes the comment that immediately");
-H("        precedes the statement.  Redundant if / FULL is used.");
+H("        precedes the statement.");
 H("    / FULL - Show complete information about each statement, and show all");
 H("        statements matching <label> (including $e and $f statements).");
 H("    / TEX - This qualifier will write the statement information to the");
@@ -156,6 +159,8 @@ H("        LaTeX file previously opened with OPEN TEX.");
 H("    / HTML - This qualifier invokes a special mode of SHOW STATEMENT which");
 H("        creates a Web page for the statement.  It may not be used with");
 H("        any other qualifier.  See HELP HTML for more information.");
+H("    / ALT_HTML, / BRIEF_HTML, / BRIEF_ALT_HTML - See HELP HTML for more");
+H("        information on these.");
 H("");
 
 

@@ -1,8 +1,10 @@
 /*****************************************************************************/
-/*       Copyright (C) 2000  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*       Copyright (C) 2002  NORMAN D. MEGILL nm@alum.mit.edu                */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
+
+/* This module processes LaTeX and HTML output. */
 
 #include <string.h>
 #include <stdio.h>
@@ -18,6 +20,7 @@
 #include "mmpars.h" /* For rawSourceError and mathSrchCmp */
 #include "mmwtex.h"
 #include "mmcmdl.h" /* For texFileName */
+#include "mmcmds.h" /* For pinkNumber */
 
 /* 6/27/99 - Now, all LaTeX and HTML definitions are taken from the source
    file (read in the by READ... command).  In the source file, there should
@@ -32,8 +35,18 @@ vstring graTokenDef[MAX_GRAPHIC_DEFS]; /* Graphics definition */
 int maxGraDef = 0; /* Number of tokens defined so far */
 int maxGraTokenLength = 0; /* Largest graTokenName length */
 
-/* HTML flag: 0 = TeX, 1 = HTML */
-flag htmlFlag = 0;
+flag htmlFlag = 0;  /* HTML flag: 0 = TeX, 1 = HTML */
+flag altHtmlFlag = 0;  /* Use "althtmldef" instead of "htmldef".  This is
+    intended to allow the generation of pages with the old Symbol font
+    instead of the individual GIF files. */
+flag briefHtmlFlag = 0;  /* Output statement lists only, for statement display
+                in other HTML pages, such as the Proof Explorer home page */
+long extHtmlStmt = 0; /* At this statement and above, use the exthtmlxxx
+    variables for title, links, etc.  This was put in to allow proper
+    generation of the Hilbert Space Explorer extension to the set.mm
+    database. */
+
+
 
 /* Tex output file */
 FILE *texFilePtr = NULL;
@@ -46,7 +59,7 @@ vstring tex_dict_fn = "";
 /* Global variables */
 flag texDefsRead = 0;
 
-/* Variables local to this module */
+/* Variables local to this module (except extHtmlTitle) */
 struct texDef_struct {
   vstring tokenName; /* ASCII token */
   vstring texEquiv; /* Converted to TeX */
@@ -59,6 +72,13 @@ char dollarSubst = 2;
 vstring htmlVarColors = ""; /* Set by htmlvarcolor commands */
 vstring htmlTitle = ""; /* Set by htmltitle command */
 vstring htmlHome = ""; /* Set by htmlhome command */
+vstring extHtmlVarColors = ""; /* Set by exthtmlvarcolor commands */
+vstring extHtmlTitle = ""; /* Set by exthtmltitle command (global!) */
+vstring extHtmlHome = ""; /* Set by exthtmlhome command */
+vstring extHtmlLabel = ""; /* Set by exthtmllabel command */
+vstring htmlDir = ""; /* Directory for GIF version, set by htmldir command */
+vstring altHtmlDir = ""; /* Directory for Symbol Font version, set by
+                            althtmldir command */
 
 flag readTexDefs(vstring tex_def_fn, flag promptForFile)
 {
@@ -84,7 +104,7 @@ flag readTexDefs(vstring tex_def_fn, flag promptForFile)
 
   /* Initial values below will be overridden if user command exists */
   let(&htmlTitle, "Metamath Proof Explorer"); /* Set by htmltitle command */
-  let(&htmlHome, "mmexplorer.html"); /* Set by htmlhome command */
+  let(&htmlHome, "mmset.html"); /* Set by htmlhome command */
 
   if (texDefsRead) bug(2301); /* Shouldn't read file twice */
 
@@ -181,6 +201,13 @@ flag readTexDefs(vstring tex_def_fn, flag promptForFile)
 #define HTMLVARCOLOR 3
 #define HTMLTITLE 4
 #define HTMLHOME 5
+/* Added 12/27/01 */
+#define ALTHTMLDEF 6
+#define EXTHTMLTITLE 7
+#define EXTHTMLHOME 8
+#define EXTHTMLLABEL 9
+#define HTMLDIR 10
+#define ALTHTMLDIR 11
 
 
     startPtr = fileBuf;
@@ -246,7 +273,9 @@ flag readTexDefs(vstring tex_def_fn, flag promptForFile)
       if (!tokenLen) break; /* End of file */
       zapChar = fbPtr[tokenLen]; /* Char to restore after zapping source */
       fbPtr[tokenLen] = 0; /* Create end of string */
-      cmd = lookup(fbPtr, "latexdef,htmldef,htmlvarcolor,htmltitle,htmlhome");
+      cmd = lookup(fbPtr,
+          "latexdef,htmldef,htmlvarcolor,htmltitle,htmlhome"
+        ",althtmldef,exthtmltitle,exthtmlhome,exthtmllabel,htmldir,althtmldir");
       fbPtr[tokenLen] = zapChar;
       if (cmd == 0) {
         lineNum = 1;
@@ -255,13 +284,18 @@ flag readTexDefs(vstring tex_def_fn, flag promptForFile)
         }
         rawSourceError(fileBuf, fbPtr, tokenLen, lineNum, tex_def_fn,
             cat("Expected \"latexdef\", \"htmldef\", \"htmlvarcolor\",",
-            " \"htmltitle\" or \"htmlhome\" here.", NULL));
+            " \"htmltitle\", \"htmlhome\", \"althtmldef\",",
+            " \"exthtmltitle\", \"exthtmlhome\", \"exthtmllabel\",",
+            " \"htmldir\", or \"althtmldir\" here.",
+            NULL));
         free(fileBuf);
         return (0);
       }
       fbPtr = fbPtr + tokenLen;
 
-      if (cmd != HTMLVARCOLOR && cmd != HTMLTITLE && cmd != HTMLHOME) {
+      if (cmd != HTMLVARCOLOR && cmd != HTMLTITLE && cmd != HTMLHOME
+          && cmd != EXTHTMLTITLE && cmd != EXTHTMLHOME && cmd != EXTHTMLLABEL
+          && cmd != HTMLDIR && cmd != ALTHTMLDIR) {
          /* Get next token - string in quotes */
         fbPtr = fbPtr + texDefWhiteSpaceLen(fbPtr);
         tokenLen = texDefTokenLen(fbPtr);
@@ -301,16 +335,20 @@ flag readTexDefs(vstring tex_def_fn, flag promptForFile)
             }
           }
 
-          if ((cmd == LATEXDEF && !htmlFlag) || (cmd == HTMLDEF && htmlFlag)) {
+          if ((cmd == LATEXDEF && !htmlFlag)
+              || (cmd == HTMLDEF && htmlFlag && !altHtmlFlag)
+              || (cmd == ALTHTMLDEF && htmlFlag && altHtmlFlag)) {
             texDefs[numSymbs].tokenName = "";
             let(&(texDefs[numSymbs].tokenName), token);
           }
         }
 
         fbPtr = fbPtr + tokenLen;
-      } /* if (cmd != HTMLVARCOLOR && cmd != HTMLTITLE && cmd != HTMLHOME) */
+      } /* if (cmd != HTMLVARCOLOR && cmd != HTMLTITLE && cmd != HTMLHOME...) */
 
-      if (cmd != HTMLVARCOLOR && cmd != HTMLTITLE && cmd != HTMLHOME) {
+      if (cmd != HTMLVARCOLOR && cmd != HTMLTITLE && cmd != HTMLHOME
+          && cmd != EXTHTMLTITLE && cmd != EXTHTMLHOME && cmd != EXTHTMLLABEL
+          && cmd != HTMLDIR && cmd != ALTHTMLDIR) {
         /* Get next token -- "as" */
         fbPtr = fbPtr + texDefWhiteSpaceLen(fbPtr);
         tokenLen = texDefTokenLen(fbPtr);
@@ -406,7 +444,9 @@ flag readTexDefs(vstring tex_def_fn, flag promptForFile)
           }
         }
 
-        if ((cmd == LATEXDEF && !htmlFlag) || (cmd == HTMLDEF && htmlFlag)) {
+        if ((cmd == LATEXDEF && !htmlFlag)
+            || (cmd == HTMLDEF && htmlFlag && !altHtmlFlag)
+            || (cmd == ALTHTMLDEF && htmlFlag && altHtmlFlag)) {
           texDefs[numSymbs].texEquiv = "";
           let(&(texDefs[numSymbs].texEquiv), token);
         }
@@ -419,9 +459,26 @@ flag readTexDefs(vstring tex_def_fn, flag promptForFile)
         if (cmd == HTMLHOME) {
           let(&htmlHome, token);
         }
+        if (cmd == EXTHTMLTITLE) {
+          let(&extHtmlTitle, token);
+        }
+        if (cmd == EXTHTMLHOME) {
+          let(&extHtmlHome, token);
+        }
+        if (cmd == EXTHTMLLABEL) {
+          let(&extHtmlLabel, token);
+        }
+        if (cmd == HTMLDIR) {
+          let(&htmlDir, token);
+        }
+        if (cmd == ALTHTMLDIR) {
+          let(&altHtmlDir, token);
+        }
       }
 
-      if ((cmd == LATEXDEF && !htmlFlag) || (cmd == HTMLDEF && htmlFlag)) {
+      if ((cmd == LATEXDEF && !htmlFlag)
+          || (cmd == HTMLDEF && htmlFlag && !altHtmlFlag)
+          || (cmd == ALTHTMLDEF && htmlFlag && altHtmlFlag)) {
         numSymbs++;
       }
 
@@ -439,7 +496,7 @@ flag readTexDefs(vstring tex_def_fn, flag promptForFile)
   } /* next parsePass */
 
 
-  /* Sort the labels for later lookup */
+  /* Sort the tokens for later lookup */
   qsort(texDefs, numSymbs, sizeof(struct texDef_struct), texSortCmp);
 
   /* Check for duplicate definitions */
@@ -476,6 +533,23 @@ flag readTexDefs(vstring tex_def_fn, flag promptForFile)
           htmlFlag ? "an htmldef" : "a latexdef", " statement.", NULL),
           "", " ");
     }
+  }
+
+  /* Look up the extended database start label */
+  if (extHtmlLabel[0]) {
+    for (i = 1; i <= statements; i++) {
+      if (!strcmp(extHtmlLabel,statement[i].labelName)) break;
+    }
+    if (i > statements) {
+      printLongLine(cat("?Error: There is no statement with label \"",
+          extHtmlLabel,
+          "\" (specified by exthtmllabel in the database source $t comment).  ",
+          "Use SHOW LABELS for a list of valid labels.", NULL), "", " ");
+    }
+    extHtmlStmt = i;
+  } else {
+    /* There is no extended database; set threshold to beyond end of db */
+    extHtmlStmt = statements + 1;
   }
 
   let(&token, ""); /* Deallocate */
@@ -863,8 +937,15 @@ vstring getCommentModeSection(vstring *srcptr, char *mode)
 } /* getCommentModeSection */
 
 
+/* The texHeaderFlag means this:
+    If !htmlFlag (i.e. TeX mode), then 1 means print header
+    If htmlFlag, then 1 means include "Previous Next" links on page,
+    based on the global showStatement variable
+*/
 void printTexHeader(flag texHeaderFlag)
 {
+
+  long i, j;
 
   if (!texDefsRead) {
     if (!readTexDefs("", 1)) {
@@ -948,31 +1029,152 @@ void printTexHeader(flag texHeaderFlag)
 "}\n");
     }
   } else { /* htmlFlag */
-    print2("<HTML>\n");
+
+    print2(
+        "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0 Transitional//EN\">\n");
+    print2("<HTML LANG=\"EN-US\">\n");
     print2("<HEAD>\n");
     print2("<META HTTP-EQUIV=\"Content-Type\"\n");
     print2(" CONTENT=\"text/html; charset=iso-8859-1\">\n");
+    /*
     print2("<META NAME=\"ROBOTS\" CONTENT=\"NONE\">\n");
     print2("<META NAME=\"GENERATOR\" CONTENT=\"Metamath\">\n");
-    print2("%s\n", cat(" <TITLE>", htmlTitle, " - ",
-        left(texFileName, instr(1, texFileName, ".htm") - 1),
-        "</TITLE>", NULL));
+    */
+    if (showStatement < extHtmlStmt) {
+      print2("%s\n", cat(" <TITLE>", htmlTitle, " - ",
+          left(texFileName, instr(1, texFileName, ".htm") - 1),
+          "</TITLE>", NULL));
+    } else {
+      print2("%s\n", cat(" <TITLE>", extHtmlTitle, " - ",
+          left(texFileName, instr(1, texFileName, ".htm") - 1),
+          "</TITLE>", NULL));
+    }
+    /*
     print2("<META HTML-EQUIV=\"Keywords\"\n");
-    print2("CONTENT=\"%s\"></HEAD>\n", htmlTitle);
+    print2("CONTENT=\"%s\">\n", htmlTitle);
+    */
+    print2("</HEAD>\n");
     /*print2("<BODY BGCOLOR=\"#D2FFFF\">\n");*/
-    print2("<BODY BGCOLOR=\"#EEFFFA\">\n");
+    /*print2("<BODY BGCOLOR=\"#EEFFFA\">\n");*/
+    print2("<BODY BGCOLOR=\"#FFFFFF\">\n");
+
+    print2("<TABLE BORDER=0 WIDTH=\"100%s\"><TR>\n", "%");
+    print2("<TD ALIGN=left VALIGN=top WIDTH=\"25%s\" ROWSPAN=2>\n", "%");
 
     /*
     print2("<A HREF=\"mmexplorer.html\">\n");
     print2("<IMG SRC=\"cowboy.gif\"\n");
     print2("ALT=\"[Image of cowboy]Home Page\"\n");
-    print2("WIDTH=27 HEIGHT=32 ALIGN=LEFT><FONT SIZE=-2 FACE=ARIAL>Home\n");
+    print2("WIDTH=27 HEIGHT=32 ALIGN=LEFT><FONT SIZE=-1 FACE=sans-serif>Home\n");
     print2("</FONT></A>");
     */
-    printLongLine(htmlHome, "", " ");
+    if (showStatement < extHtmlStmt) {
+      printLongLine(htmlHome, "", " ");
+    } else {
+      printLongLine(extHtmlHome, "", " ");
+    }
 
-    print2("<H1><CENTER><FONT\n");
-    print2("COLOR=\"#006600\">%s</FONT></CENTER></H1><HR>\n", htmlTitle);
+    if (showStatement < extHtmlStmt) {
+      printLongLine(cat(
+          "</TD><TD NOWRAP ALIGN=center ROWSPAN=2><FONT SIZE=\"+3\" COLOR=\"#006600\"><B>",
+          htmlTitle, "</B></FONT>", NULL), "", " ");
+    } else {
+      printLongLine(cat(
+          "</TD><TD NOWRAP ALIGN=center ROWSPAN=2><FONT SIZE=\"+3\" COLOR=\"#006600\"><B>",
+          extHtmlTitle, "</B></FONT>", NULL), "", " ");
+    }
+
+
+    if (texHeaderFlag) {
+      /* Put Previous/Next links into web page */
+      /*print2("</TD><TD ALIGN=right VALIGN=top><FONT SIZE=-1 FACE=sans-serif>\n");*/
+      print2("</TD><TD ALIGN=right VALIGN=top WIDTH=\"25%s\"><FONT \n", "%");
+      print2(" SIZE=-1 FACE=sans-serif>\n");
+      j = 0;
+      /* Find the previous statement with a web page */
+      for (i = showStatement - 1; i >= 1; i--) {
+        if (statement[i].type == (char)p__ ||
+            statement[i].type == (char)a__ ) {
+          j = i;
+          break;
+        }
+      }
+      if (j == 0) {
+        /* For the first statement, wrap to last one */
+        for (i = statements; i >= 1; i--) {
+          if (statement[i].type == (char)p__ ||
+              statement[i].type == (char)a__ ) {
+            j = i;
+            break;
+          }
+        }
+      }
+      if (j == 0) bug(2314);
+      print2("<A HREF=\"%s.html\">\n",
+          statement[j].labelName);
+      print2("&lt; Previous</A>&nbsp;&nbsp;\n");
+      j = 0;
+      /* Find the next statement with a web page */
+      for (i = showStatement + 1; i <= statements; i++) {
+        if (statement[i].type == (char)p__ ||
+            statement[i].type == (char)a__ ) {
+          j = i;
+          break;
+        }
+      }
+      if (j == 0) {
+        /* For the last statement, wrap to first one */
+        for (i = 1; i <= statements; i++) {
+          if (statement[i].type == (char)p__ ||
+              statement[i].type == (char)a__ ) {
+            j = i;
+            break;
+          }
+        }
+      }
+      if (j == 0) bug(2315);
+      /*print2("<A HREF=\"%s.html\">Next</A></FONT>\n",*/
+      print2("<A HREF=\"%s.html\">Next &gt;</A>\n",
+          statement[j].labelName);
+
+      /* Print the GIF/Symbol Font choice, if directories specified */
+      if (htmlDir[0]) {
+        if (altHtmlFlag) {
+          print2("</FONT></TD></TR><TR><TD ALIGN=right><FONT FACE=sans-serif\n");
+          print2("SIZE=-2>Symbols look wrong? <BR>Try the\n");
+          print2(" <A HREF=\"%s%s\">GIF version</A>.</FONT></TD>\n",
+              htmlDir, texFileName);
+        } else {
+          print2("</FONT></TD></TR><TR><TD ALIGN=right><FONT FACE=sans-serif\n");
+          print2("SIZE=-2>Browser slow? Try the\n");
+          print2("<BR><A HREF=\"%s%s\">Symbol\n",
+              altHtmlDir, texFileName);
+          print2("font version</A>.</FONT></TD>\n");
+        }
+      }
+
+    } else {
+      print2("</TD><TD ALIGN=right VALIGN=top\n");
+      print2(" WIDTH=\"25%s\">&nbsp;\n", "%");
+      print2("</TD></TR><TR><TD ALIGN=right VALIGN=top\n");
+      print2(" WIDTH=\"25%s\">&nbsp;</TD>\n", "%");
+    }
+
+    print2("</TR></TABLE>\n");
+
+    /*
+    print2("<CENTER><H1><FONT\n");
+    if (showStatement < extHtmlStmt) {
+      print2("COLOR=\"#006600\">%s</FONT></H1></CENTER>\n",
+          htmlTitle);
+    } else {
+      print2("COLOR=\"#006600\">%s</FONT></H1></CENTER>\n",
+          extHtmlTitle);
+    }
+    */
+
+    print2("<HR SIZE=1>\n");
+
   } /* htmlFlag */
   fprintf(texFilePtr, "%s", printString);
   outputToString = 0;
@@ -1236,17 +1438,6 @@ void printTexLongMath(nmbrString *mathString, vstring startPrefix,
   vstring htmHyp = ""; /* 7/4/98 */
   vstring htmRef = ""; /* 7/4/98 */
   flag alphnew, alphold, unknownnew, unknownold;
-  long hypStmtMap;
-
-  /* Statement map for number of hypStmt - this makes the statement number
-     next to the hypothesis link more meaningful, by counting only $a and
-     $p. */
-  /* ???This could be done once if we want to speed things up, but
-     be careful because it will have to be redone if ERASE then READ */
-  hypStmtMap = 0;
-  for (i = 1; i <= hypStmt; i++) {
-    if (statement[i].type == a__ || statement[i].type == p__) hypStmtMap++;
-  }
 
   let(&sPrefix, startPrefix); /* 7/3/98 Save it; it may be temp alloc */
 
@@ -1291,6 +1482,7 @@ void printTexLongMath(nmbrString *mathString, vstring startPrefix,
       while (pos) {
         pos = instr(1, tex, " ");
         if (pos) {
+          if (i > 3) bug(2316); /* 2/8/02 - added for extra safety for the future */
           if (i == 0) let(&htmStep, left(tex, pos - 1));
           if (i == 1) let(&htmHyp, left(tex, pos - 1));
           if (i == 2) let(&htmRef, left(tex, pos - 1));
@@ -1302,6 +1494,15 @@ void printTexLongMath(nmbrString *mathString, vstring startPrefix,
         let(&htmRef, htmHyp);
         let(&htmHyp, "&nbsp;");
       }
+
+      /* 2/8/02 Add a space after each comma so very long hypotheses lists will wrap in
+         an HTML table cell, e.g. gomaex3 in ql.mm */
+      pos = instr(1, htmHyp, ",");
+      while (pos) {
+        let(&htmHyp, cat(left(htmHyp, pos), " ", right(htmHyp, pos + 1), NULL));
+        pos = instr(pos + 1, htmHyp, ",");
+      }
+
       if (!strcmp(tex, "$e") || !strcmp(tex, "$f")) {
         /* A hypothesis - don't include link */
         printLongLine(cat("<TR><TD>", htmStep, "</TD><TD>",
@@ -1321,7 +1522,7 @@ void printTexLongMath(nmbrString *mathString, vstring startPrefix,
               htmHyp, "</TD><TD><A HREF=\"", htmRef, ".html\">", htmRef,
               "</A>",
               "<FONT FACE=\"Arial Narrow\" SIZE=-2 COLOR=\"#FF6666\"> ",
-              str(hypStmtMap), "</FONT>",
+              str(pinkNumber(hypStmt)), "</FONT>",
               "</TD><TD>", NULL), "", " ");
         }
       }
@@ -1371,6 +1572,29 @@ void printTexLongMath(nmbrString *mathString, vstring startPrefix,
     printLongLine(texLine, "", "\\");
     print2("\\endm\n");
   } else {
+
+    /* 4/22/01 The code below is optional but tries to eliminate redundant
+       symbol font specifications to make output shorter */
+    pos = 0;
+    while (1) {
+      /* Get to the start of a symbol font specification */
+      pos = instr(pos + 1, texLine, "<FONT FACE=\"Symbol\">");
+      if (pos == 0) break;
+      while (1) {   /* Anchoring at pos, scan rest of line */
+        i = instr(pos, texLine, "</FONT>"); /* End of specification */
+        if (i == 0) {
+          /* For whatever reason, there is no matching </FONT> - so skip it */
+          break;
+        }
+        /* See if an new symbol font spec starts immediately; if not
+           we are done (inefficient code but it works) */
+        if (i != instr(i, texLine, "</FONT><FONT FACE=\"Symbol\">")) break;
+        /* Chop out the redundant </FONT><FONT FACE="Symbol"> */
+        let(&texLine, cat(left(texLine, i - 1), right(texLine, i + 27), NULL));
+      }
+    }
+    /* End of 4/22/01 code */
+
     printLongLine(cat(texLine, "</TD></TR>", NULL), "", " ");
   }
 
@@ -1391,15 +1615,21 @@ void printTexTrailer(flag texTrailerFlag) {
     if (!htmlFlag) {
       print2("\\end{document}\n");
     } else {
-      print2("<FONT SIZE=-2 FACE=ARIAL>Colors of variables:\n");
-      printLongLine(cat(htmlVarColors, "</FONT><BR>", NULL), "", " ");
-      print2("<BR><CENTER><FONT SIZE=-2 FACE=ARIAL>\n");
+      print2("<FONT SIZE=-1 FACE=sans-serif>Colors of variables:\n");
+      printLongLine(cat(htmlVarColors, "</FONT>", NULL), "", " ");
+      print2("<BR><CENTER><FONT SIZE=-1 FACE=sans-serif>\n");
       /*
       print2("<A HREF=\"definitions.html\">Definition list</A> |\n");
       print2("<A HREF=\"theorems.html\">Theorem list</A><BR>\n");
       */
-      print2("Copyright (GPL) 2000 Norman D. Megill <A \n");
+      /*
+      print2("Copyright (GPL) 2002 Norman D. Megill <A \n");
       print2("HREF=\"mailto:nm@alum.mit.edu\">&lt;nm@alum.mit.edu></A>\n");
+      */
+      /*
+      print2("Copyright &copy; 2002 \n");
+      */
+      print2("<A HREF=\"http://metamath.org\">Metamath home</A>\n");
       print2("</FONT></CENTER>\n");
       print2("</BODY></HTML>\n");
     }

@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*       Copyright (C) 2001  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*       Copyright (C) 2002  NORMAN D. MEGILL nm@alum.mit.edu                */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -532,16 +532,16 @@ H("To create an HTML output file for a $a or $p statement, use");
 H("    SHOW STATEMENT <label> / HTML");
 H("When <label> has wildcard (*) characters, all statements with matching");
 H("labels will have HTML files produced for them.  Also, when <label> has a");
-H("wildcard (*) character, two additional files, theorems.html and");
-H("definitions.html, will be produced.  Thus:");
+H("wildcard (*) character, three additional files, mmtheorems.html,");
+H("mmdefinitions.html, and mmascii.html will be produced.  Thus:");
 H("    SHOW STATEMENT * / HTML");
 H("will output a complete HTML proof database in the current directory,");
-H("one file per $a and $p statement, along with theorems.html and");
-H("definitions.html.  The statement:");
+H("one file per $a and $p statement, along with mmtheorems.html and");
+H("mmdefinitions.html.  The statement:");
 H("    SHOW STATEMENT ?* / HTML");
-H("will produce only theorems.html and definitions.html, but no other");
-H("HTML files (since no labels can match \"?*\" because \"?\" is illegal");
-H("in a statement label).");
+H("will produce only mmtheorems.html, mmdefinitions.html, and mmascii.html,");
+H("but no other HTML files (since no labels can match \"?*\" because \"?\" is");
+H("illegal in a statement label).");
 H("");
 H("The HTML definitions for the symbols and and other features are");
 H("specified by statements in a special typesetting comment in the input");
@@ -569,6 +569,42 @@ H("broken with \"+\".");
 H("");
 H("The typesetting Metamath comment may also contain LaTeX definitions");
 H("(with \"latexdef\" statements) that are ignored for HTML output.");
+H("");
+H("Several other qualifiers exist.  The command");
+H("    SHOW STATEMENT <label> / ALT_HTML");
+H("does the same as SHOW STATEMENT <label> / HTML, except that the HTML code");
+H("for the symbols is taken from \"althtmldef\" statements instead of");
+H("\"htmldef\" statements in the $(...$t...$) comment.  This is useful when");
+H("an alternate representations of symbols is desired, for example one that");
+H("uses the Symbol font or Unicode entities instead of GIF images.  Associated");
+H("with althtmldef are the statements");
+H("    htmldir \"<directory for GIF HTML version>\" ;");
+H("    althtmldir \"<directory for Symbol font HTML version>\" ;");
+H("that produce links to the alternate version.  See the set.mm database for");
+H("examples of these statements.");
+H("");
+H("The command");
+H("    SHOW STATEMENT * / BRIEF_HTML");
+H("invokes a special mode that just produces definition and theorem lists");
+H("accompanied by their symbol strings, in a format suitable for copying and");
+H("pasting into another web page.");
+H("");
+H("Finally, the command");
+H("    SHOW STATEMENT * / BRIEF_ALT_HTML");
+H("does the same as SHOW STATEMENT * / BRIEF_HTML for the alternate HTML");
+H("symbol representation.");
+H("");
+H("When two different type of pages need to be produced from a single");
+H("database, such as the Hilbert Space Explorer that extends the Metamath");
+H("Proof Explorer, \"extended\" variables may be declared in the $t comment:");
+H("    exthtmltitle \"<HTML code for title>\" ;");
+H("    exthtmlhome \"<HTML code for home link>\" ;");
+H("When these are declared, you also must declare");
+H("    exthtmllabel \"<label>\" ;");
+H("When the output statement is the one declared with \"exthtmllabel\" or");
+H("a later one, the HTML code assigned to \"exthtmltitle\" and");
+H("\"exthtmlhome\" is used instead of that assigned to \"htmltitle\" and");
+H("\"htmlhome\" respectively.  See the set.mm database file for an example.");
 H("");
 
 printHelp = !strcmp(helpCmd, "HELP LATEX");
