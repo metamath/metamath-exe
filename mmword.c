@@ -11,7 +11,6 @@
 #include <ctype.h>
 #include <stdarg.h>
 #include <setjmp.h>
-#include "mmutil.h"
 #include "mmvstr.h"
 #include "mmdata.h"
 #include "mminou.h"
@@ -165,11 +164,11 @@ l7140:  if (strcmpe(line1_[i1_+t-m+1], line2_[i+t])) {
                 }
         }
 
-l7150:  i=i+1;
+        i=i+1;
         if (i<=i2-m+1) {
                 goto l7140;
         }
-l7160:  gosub_7330();
+        gosub_7330();
         i2=i2+1;
         if (i2 >= MAX_LINES) {printf("*** FATAL *** Overflow#2\n"); exit(0);}
         let(&line2_[i2],l2_);
@@ -191,18 +190,18 @@ l7170:
                         goto l7170;
                 }
         }
-l7180:  i=i+1;
+        i=i+1;
         if (i<=i1_-m+1) {
                 goto l7170;
         }
-l7190:  goto l7130;
+        goto l7130;
 l7200:  i=i+m-1;
         if (r2) {
           for (j=r2-1; j>=0; j--) {
                 let(&reserve2_[j+i2-i],reserve2_[j]);
           }
         }
-l7210:  for (j=1; j<=i2-i; j++) {
+        for (j=1; j<=i2-i; j++) {
           let(&reserve2_[j-1],line2_[j+i]);
         }
         r2=r2+i2-i;
@@ -215,7 +214,7 @@ l7220:  i=i+m-1;
                 let(&reserve1_[j+i1_-i],reserve1_[j]);
           }
         }
-l7230:
+
         for (j=1; j<=i1_-i; j++) {
           let(&reserve1_[j-1],line1_[j+i]);
         }
@@ -225,7 +224,7 @@ l7230:
         goto l7240;
 l7240: /* */
 
-l7250: printedAtLeastOne = 0;
+       printedAtLeastOne = 0;
        for (i=0; i<=i1_-m; i++) {
          if (strcmpe(line1_[i],ctlz_)) {
            if (!printedAtLeastOne) {
@@ -257,7 +256,7 @@ l7250: printedAtLeastOne = 0;
              ,0);
          fprintf(f3_fp_, "%s\n", tmpLine);
        }
-l7260: for (i=0; i<=i1_-m; i++) {
+       for (i=0; i<=i1_-m; i++) {
          if (i<=i2-m) {
            if (strcmpe(line2_[i],ctlz_)) {
              let(&tmpLine, "");
@@ -273,7 +272,7 @@ l7260: for (i=0; i<=i1_-m; i++) {
            }
          }
        }
-l7280: for (i=i1_-m+1; i<=i2-m; i++) {
+       for (i=i1_-m+1; i<=i2-m; i++) {
          if (strcmpe(line2_[i],ctlz_)) {
            let(&tmpLine, "");
            if (i == 0) {
@@ -287,16 +286,16 @@ l7280: for (i=i1_-m+1; i<=i2-m; i++) {
            /*let(&tmp_, "");*/ /* Clear vstring stack */
          }
        }
-l7290: for (i=0; i<=m-1; i++) {
+       for (i=0; i<=m-1; i++) {
          let(&l1_,line1_[i1_-m+1+i]);
          if (strcmpe(l1_,ctlz_)) {
            fprintf(f3_fp_,"%s\n",l1_);  /*  Print remaining matching lines */
          }
        }
 
-l7310:  let(&l1_,ctlz_);
-        let(&l2_,ctlz_);
-        goto l7100;
+       let(&l1_,ctlz_);
+       let(&l2_,ctlz_);
+       goto l7100;
 
 }
 

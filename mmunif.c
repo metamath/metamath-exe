@@ -334,6 +334,10 @@ char unify(
 /*E*/if(db5)printLongLine(cat("schemeB is ",
 /*E*/    nmbrCvtMToVString(schemeB),".",NULL),"    ","  ");
 
+  /* Initialization to avoid compiler warning (should not be theoretically
+     necessary) */
+  p = 0;
+
   /* Fast early exit -- first or last constants of schemes don't match */
   if (mathToken[schemeA[0]].tokenType == (char)con__) {
     if (mathToken[schemeB[0]].tokenType == (char)con__) {

@@ -14,7 +14,7 @@ long texDefTokenLen(char *ptr);
 /* Token comparison for qsort */
 int texSortCmp(const void *key1, const void *key2);
 /* Token comparison for bsearch */
-int texSrchCmp(/*const*/ void *key, /*const*/ void *data);
+int texSrchCmp(const void *key, const void *data);
 /* Convert ascii to a string of \tt tex */
 /* (The caller must surround it by {\tt }) */
 vstring asciiToTt(vstring s);
@@ -36,17 +36,6 @@ void printTexComment(vstring commentPtr);
 void printTexLongMath(nmbrString *proofStep, vstring startPrefix,
     vstring contPrefix);
 void printTexTrailer(flag texHeaderFlag);
-
-int errorCheck(vstring isString, vstring shouldBeString);
-void parseGraphicsDef(void);
-void outputHeader(void);
-void outputTrailer(void);
-void outputDefinitions(void);
-vstring outputMathToken(vstring mathToken);
-vstring outputTextString(vstring textString);
-void texOutputStatement(long statementNum, FILE *output_fp);
-vstring cvtTexMToVString(nmbrString *s);
-vstring cvtTexRToVString(nmbrString *s);
 
 /* TeX symbol dictionary */
 extern FILE *tex_dict_fp;     /* File pointers */

@@ -4,12 +4,6 @@
 
 /*34567890123456 (79-character line to adjust text window width) 678901234567*/
 
-void typeExpandedProof(nmbrString *reason,
-    pntrString *expansion,nmbrString *stepNumbers,
-    char displayModeFlag);
-void typeCompactProof(nmbrString *reason);
-void typeEnumProof(nmbrString *reason);
-void typeEnumProof2(nmbrString *reason);
 void typeProof(long statemNum,
   flag pipFlag, /* Type proofInProgress instead of source file proof */
   long startStep, long endStep,
@@ -21,7 +15,8 @@ void typeProof(long statemNum,
   flag reverseFlag,
   flag noIndentFlag,
   long startColumn,
-  flag texFlag);
+  flag texFlag,
+  flag htmlFlag);
 /* Show details of step */
 void showDetailStep(long statemNum, long detailStep);
 /* Summary of statements in proof */

@@ -12,7 +12,6 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdarg.h>
-#include "mmutil.h"
 #include "mmvstr.h"
 #include "mmdata.h"
 #include "mmcmds.h"
@@ -24,334 +23,6 @@
 
 vstring mainFileName = "";
 flag printHelp = 0;
-
-void typeExpandedProof(nmbrString *reason,
-    pntrString *expansion, nmbrString *stepNumbers,
-    char displayModeFlag)
-/* Prints out an expanded proof in a form that can be cut and pasted into
-   the source file. */
-/* reason[] is the proof; expansion[] points to the expanded
-   math token string for each step in reason[]. */
-/* If stepNumbers is not empty, its steps will be used instead of
-   the computed steps (used for partially displayed proofs) */
-/* If displayModeFlag is 1, only '?' (unknown) steps will be displayed. */
-/* If displayModeFlag is 2, only steps not unified will be displayed. */
-{
-  vstring str1 = "", str2 = "";
-  long pos,targpos,ilev,oldilev,srcpos,step,plen,i,tokenNum;
-  long max_proof_line = 0;
-  char pass;
-  flag splitFlag;
-  char srcType;
-  flag printedALine = 0;
-
-  /* Pass 0 gets the longest label assignment field (max_proof_line)
-     so that the printout can be adjusted for neatness.  Pass 1 does
-     the actual printout. */
-  for (pass = 0; pass < 2; pass++) {
-  /*??? Indent the stuff in this loop...*/
-
-  ilev = 0; /* Indentation level */
-  step = 0; /* Step number */
-#define INDENT_INC 2 /* Indentation increment */
-  plen = pntrLen(expansion); /* Length of reason */
-  for (pos = 0; pos < plen; pos++) {
-    if (stepNumbers[0] == -1) {
-      step++;
-    } else {
-      /* One of these will be zero, the other not */
-      step = stepNumbers[pos + 2] + stepNumbers[pos + 3];
-    }
-    let(&str1,str(step));
-    let(&str1,cat(str1,space(ilev * INDENT_INC + 1 - len(str1))," ",NULL));
-    tokenNum = reason[pos];
-    if (tokenNum < 0) bug(201);
-    let(&str1,cat(str1,statement[tokenNum].labelName,NULL));
-    targpos = pos; /* Assignment target */
-    pos++;
-    tokenNum = reason[pos];
-    if (tokenNum != -(long)'=') bug(202);
-    let(&str1,cat(str1,"=",NULL));
-    pos++;
-    tokenNum = reason[pos];
-    if (tokenNum != -(long)'?' && tokenNum != -(long)'(' && tokenNum < 0) {
-      bug(203);
-    }
-    oldilev = ilev;
-    if (tokenNum == -(long)'(') {
-      let(&str1,cat(str1,"(",NULL));
-      ilev++;
-      pos++;
-      tokenNum = reason[pos];
-    }
-    if (tokenNum == -(long)'?') {
-      let(&str1,cat(str1,"?",NULL));
-      srcType = '?';
-    } else {
-      let(&str1,cat(str1,statement[tokenNum].labelName,NULL));
-      srcType = statement[tokenNum].type;
-    }
-    srcpos = pos;
-    pos++;
-    tokenNum = reason[pos];
-    while (tokenNum == -(long)')') {
-      let(&str1,cat(str1,")",NULL));
-      ilev--;
-      if (ilev < 0) bug(204);
-      pos++;
-      tokenNum = reason[pos];
-    }
-    pos--;
-
-    if (pass == 0) {
-      /* Update the longest proof line if needed, then continue */
-      if (max_proof_line < len(str1) - oldilev * INDENT_INC + 4) {
-        max_proof_line = len(str1) - oldilev * INDENT_INC + 1;
-      }
-      continue; /* The first pass doesn't print anything */
-    }
-
-    if (displayModeFlag == 1 && srcType != '?') continue;
-                                              /* "Display unknown steps" flag */
-    splitFlag = 0;
-    /* Split the line if the target and the source are different */
-    if (reason[srcpos] != -(long)'?') {
-      if (strcmp(expansion[targpos],expansion[srcpos])) {
-        /* (The verify proof function will not assign target assumptions) */
-        if (len(expansion[targpos])) {
-          splitFlag = 1;
-          i = instr(1,str1,"=");
-          let(&str2,cat(space(i - 1),right(str1,i),NULL));
-          let(&str1,left(str1,i - 1));
-          let(&str1,cat(str1,space(len(str1) - len(str2)),NULL));
-        }
-      }
-    }
-    if (displayModeFlag == 2 && !splitFlag) continue;
-                                     /* "Display steps not yet unified" flag */
-    let(&str1,cat(str1,space(oldilev * INDENT_INC + max_proof_line - len(str1)),
-        " ",NULL));
-    if (!splitFlag) {
-      if (srcType == '?') {
-        printLongLine(cat(str1,"$",chr(srcType),
-            " ",expansion[targpos],NULL),
-            space(len(str1) + 3)," ");
-      } else {
-        printLongLine(cat(str1,"$",chr(srcType),
-            " ",expansion[srcpos],NULL),
-            space(len(str1) + 3)," ");
-      }
-    } else {
-      printLongLine(cat(str1,"   ",
-          expansion[targpos],NULL),
-          space(len(str1) + 3)," ");
-      let(&str2,cat(str2,space(oldilev * INDENT_INC + max_proof_line
-          - len(str2))," ",NULL));
-      printLongLine(cat(str2,"$",chr(srcType),
-          " ",expansion[srcpos],NULL),
-          space(len(str2) + 3)," ");
-    }
-    printedALine = 1;
-  } /* Next pos */
-
-  } /* Next pass */
-  if (!printedALine) {
-    if (displayModeFlag == 1) {
-      print2("The proof has no unknown steps.\n");
-    }
-    if (displayModeFlag == 2) {
-      print2("All assignments in the proof have been unified.\n");
-    }
-  }
-
-  let(&str1,"");
-  let(&str2,"");
-}
-
-
-void typeCompactProof(nmbrString *reason)
-/* Prints out a compact proof in a form that can be cut and pasted into
-   the source file.  The first two tokens in reason are removed, as
-   reason is assumed to be in the "internal" format "proveStatement = (...)". */
-/* reason[] is the proof. */
-{
-  vstring str1 = "";
-  long j;
-  nmbrString *squishedProof = NULL_NMBRSTRING;
-
-  /*squishedProof = nmbrSquishProof(nmbrRight(reason,3));*/
-  nmbrLet(&squishedProof, nmbrRight(reason,3));
-
-  let(&str1,nmbrCvtRToVString(squishedProof));
-  nmbrLet(&squishedProof,NULL_NMBRSTRING); /* Deallocate */
-  /* Remove spaces around '=' */
-  j = 1;
-  while (1) {
-    j = instr(j, str1, " = ");
-    if (!j) break;
-    let(&str1,cat(left(str1, j - 1), "=", right(str1, j + 3), NULL));
-  }
-  /* Remove space after '(' */
-  j = 1;
-  while (1) {
-    j = instr(j, str1, "( ");
-    if (!j) break;
-    let(&str1,cat(left(str1, j - 1), "(", right(str1, j + 2), NULL));
-  }
-  j = 1;
-  /* Remove space before ')' */
-  while (1) {
-    j = instr(j, str1, " )");
-    if (!j) break;
-    let(&str1,cat(left(str1, j - 1), ")", right(str1, j + 2), NULL));
-  }
-  /* Remove space after ')' */
-/*
-  j = 1;
-  while (1) {
-    j = instr(j, str1, ") ");
-    if (!j) break;
-    let(&str1,cat(left(str1, j - 1), ")", right(str1, j + 2), NULL));
-  }
-*/
-  /* Remove space after '{' */
-  j = 1;
-  while (1) {
-    j = instr(j, str1, "{ ");
-    if (!j) break;
-    let(&str1,cat(left(str1, j - 1), "{", right(str1, j + 2), NULL));
-  }
-  j = 1;
-  /* Remove space before '}' */
-  while (1) {
-    j = instr(j, str1, " }");
-    if (!j) break;
-    let(&str1,cat(left(str1, j - 1), "}", right(str1, j + 2), NULL));
-  }
-  /* Remove space after '}' */
-/*
-  j = 1;
-  while (1) {
-    j = instr(j, str1, "} ");
-    if (!j) break;
-    let(&str1,cat(left(str1, j - 1), "}", right(str1, j + 2), NULL));
-  }
-*/
-  printLongLine(str1,""," ()");
-  let(&str1,"");
-}
-
-
-void typeEnumProof(nmbrString *reason)
-{
-  /* This function types a compact proof with the step numbers listed below
-     it on each line. */
-  long i,rlen;
-  vstring oLine = "";
-  vstring rToken = "";
-  nmbrString *stepNumbs; /* Pointer only - not directly allocated */
-
-  long nmbrSaveTempAllocStack;
-  /* Change the stack allocation start to prevent arguments from being
-     deallocated */
-  nmbrSaveTempAllocStack = nmbrStartTempAllocStack;
-  nmbrStartTempAllocStack = nmbrTempAllocStackTop; /* For nmbrLet() stack cleanup*/
-
-  rlen = nmbrLen(reason);
-  stepNumbs = nmbrGetProofStepNumbs(reason);
-  for (i = 0; i < rlen; i++) {
-    if (reason[i] < 0) {
-      let(&rToken,chr(-reason[i]));
-    } else {
-      let(&rToken,statement[reason[i]].labelName);
-    }
-    if (i == 0) {
-      let(&oLine,rToken);
-    } else {
-      /* For most compact proof (commented out; harder to read): */
-      /* if ((reason[i - 1] >= 0 || reason[i] >=0)
-          || reason[i] == -(long)'?'
-          || stepNumbs[i - 1] != 0) { */
-      if (1) {
-        let(&oLine,cat(oLine," ",NULL));
-      }
-      let(&oLine,cat(oLine,rToken,NULL));
-    }
-    if (stepNumbs[i] != 0) {
-      let(&oLine,cat(oLine,"<",str(stepNumbs[i]),">",NULL));
-    }
-  }
-  printLongLine(oLine,""," ");
-
-  nmbrLet(&stepNumbs,NULL_NMBRSTRING); /* Deallocate */
-  let(&oLine,""); /* Deallocate */
-  let(&rToken,""); /* Deallocate */
-
-  nmbrStartTempAllocStack = nmbrSaveTempAllocStack;
-  return;
-}
-
-
-void typeEnumProof2(nmbrString *reason)
-{
-  /* This function types a compact proof with the step numbers listed below
-     it on each line. */
-  vstring rLine = "";
-  vstring sLine = "";
-  vstring tmpStr = "";
-  long i,j,p,q,rlen,rToken;
-  nmbrString *stepNumbs; /* Pointer only - not directly allocated */
-
-  long nmbrSaveTempAllocStack;
-  /* Change the stack allocation start to prevent arguments from being
-     deallocated */
-  nmbrSaveTempAllocStack = nmbrStartTempAllocStack;
-  nmbrStartTempAllocStack = nmbrTempAllocStackTop; /* For nmbrLet() stack cleanup*/
-
-  rlen = nmbrLen(reason);
-  stepNumbs = nmbrGetProofStepNumbs(reason);
-  let(&rLine,cat(nmbrCvtRToVString(reason)," ",NULL));
-  p = 1;
-  rToken = -1;
-  while (1) {
-    q = instr(p,rLine," ");
-    if (q) {
-      rToken++;
-      if (stepNumbs[rToken]) {
-        let(&tmpStr,str(stepNumbs[rToken]));
-      } else {
-        let(&tmpStr,"");
-      }
-      i = strlen(tmpStr); /* Length of step number */
-      j = q - p; /* Length of token name */
-      if (i <= j) {
-        let(&tmpStr,cat(tmpStr,space(j - i + 1),NULL));
-      } else {
-        let(&rLine,cat(left(rLine,q - 1),space(i - j),right(rLine,q),NULL));
-        q = q + i - j;
-      }
-      let(&sLine,cat(sLine,tmpStr,NULL));
-    } /* End if q */
-    if (q > MAX_LEN || !q) {
-      print2("%s\n",left(rLine,p - 1));
-      print2("%s\n",left(sLine,p - 1));
-      if (!q) break;
-      let(&rLine,right(rLine,p));
-      let(&sLine,right(sLine,p));
-      q = q - p + 1;
-      p = 1;
-    }
-    p = q + 1;
-  }
-
-  nmbrLet(&stepNumbs,NULL_NMBRSTRING);
-  let(&tmpStr,"");
-  let(&rLine,"");
-  let(&sLine,"");
-  nmbrStartTempAllocStack = nmbrSaveTempAllocStack;
-  return;
-}
-
 
 /* Displays a proof (or part of a proof, depending on arguments). */
 /* Note that parseProof() and verifyProof() are assumed to have been called,
@@ -366,12 +37,12 @@ void typeProof(long statemNum,
   flag unknownFlag,
   flag notUnifiedFlag,
   flag reverseFlag,
-  flag noIndentFlag,
+  flag noIndentFlag, /* Means Lemmon-style proof */
   long splitColumn,
-  flag texFlag)
+  flag texFlag,
+  flag htmlFlag /* htmlFlag added 6/27/99 */)
 {
   long i, plen, step, stmt, lens, lent, maxStepNum;
-  vstring proofStr = "";
   vstring tmpStr = "";
   vstring tmpStr1 = "";
   vstring locLabDecl = "";
@@ -408,6 +79,34 @@ void typeProof(long statemNum,
   }
   plen = nmbrLen(proof);
 
+  /* 6/27/99 - to reduce the number of steps displayed in an html proof,
+     we will use a local label to reference the 2nd or later reference to a
+     hypothesis, so the hypothesis won't have to be shown multiple times
+     in the proof. */
+  if (htmlFlag && !noIndentFlag /* Lemmon */) {
+    /* Only Lemmon-style proofs are implemented for html */
+    bug(218);
+  }
+  if (htmlFlag) {
+    for (step = 0; step < plen; step++) {
+      stmt = proof[step];
+      if (stmt < 0) continue;  /* Unknown or label ref */
+      type = statement[stmt].type;
+      if (type == f__ || type == e__  /* It's a hypothesis */
+          || statement[stmt].numReqHyp == 0) { /* A statement w/ no hyp */
+        for (i = 0; i < step; i++) {
+          if (stmt == proof[i]) {
+            /* The hypothesis at 'step' matches an earlier hypothesis at i,
+               so we will backreference 'step' to i with a local label */
+            proof[step] = -1000 - i;
+            break;
+          }
+        } /* next i */
+      }
+    } /* next step */
+  }
+
+
   /* Collect local labels */
   for (step = 0; step < plen; step++) {
     stmt = proof[step];
@@ -437,28 +136,31 @@ void typeProof(long statemNum,
   }
 
   /* Get the step renumbering */
-  nmbrLet(&stepRenumber, nmbrSpace(plen));
-  if (renumberFlag && essentialFlag) {
-    i = 0;
-    maxStepNum = 0; /* To compute maxStepNumLen below */
-    for (step = 0; step < plen; step++) {
-      if (essentialFlags[step]) {
-        i++;
-        stepRenumber[step] = i; /* Number essential steps only */
-        maxStepNum = i; /* To compute maxStepNumLen below */
-      }
+  nmbrLet(&stepRenumber, nmbrSpace(plen)); /* This initializes all step
+      renumbering to step 0.  Later, we will use (for html) the fact that
+      a step renumbered to 0 is a step to be skipped (6/27/99). */
+  i = 0;
+  maxStepNum = 0;
+  for (step = 0; step < plen; step++) {
+    stepPrintFlag = 1; /* Note: stepPrintFlag is reused below with a
+        slightly different meaning (i.e. it will be printed after
+        a filter such as notUnified is applied) */
+    if (renumberFlag && essentialFlag) {
+      if (!essentialFlags[step]) stepPrintFlag = 0;
     }
-  } else {
-    for (step = 0; step < plen; step++) {
-      stepRenumber[step] = step + 1; /* Standard numbering */
+    if (htmlFlag && proof[step] < 0) stepPrintFlag = 0;
+    /* For standard numbering, stepPrintFlag will be always be 1 here */
+    if (stepPrintFlag) {
+      i++;
+      stepRenumber[step] = i; /* Numbering for step to be printed */
+      maxStepNum = i; /* To compute maxStepNumLen below */
     }
-    maxStepNum = plen; /* To compute maxStepNumLen below */
   }
 
-  /* Get the printed length of the largest step number */
+  /* Get the printed character length of the largest step number */
   i = maxStepNum;
   while (i >= 10) {
-    i = i/10;
+    i = i/10; /* The number is printed in base 10 */
     maxStepNumLen++;
   }
 
@@ -491,10 +193,22 @@ void typeProof(long statemNum,
         /* stmt is now the step number a local label refers to */
         lens = strlen(str(localLabelNames[stmt]));
       } else {
-        lens = 1; /* '?' */
+        if (stmt != -(long)'?') bug (219); /* the only other possibility */
+        lens = 1; /* '?' (unknown step) */
       }
     } else {
       if (nmbrElementIn(1, localLabels, step)) {
+
+        /* 6/27/99 The new philosophy is to number all local labels with the
+           actual step number referenced, for better readability.  This means
+           that if a *.mm label is a pure number, there may be ambiguity in
+           the proof display, but this is felt to be too rare to be a serious
+           drawback. */
+        localLabelNames[step] = stepRenumber[step];
+        if (1) goto skip_local;
+
+        /* To be done:  remove the skipped code below */
+
         /* This statement declares a local label */
         /* First, get a name for the local label, using the next integer that
            does not match any integer used for a statement label. */
@@ -509,6 +223,9 @@ void typeProof(long statemNum,
         }
         localLabelNames[step] = nextLocLabNum;
         nextLocLabNum++; /* Prepare for next local label */
+
+       skip_local: ;
+
       }
       lens = strlen(statement[stmt].labelName);
     }
@@ -551,6 +268,11 @@ void typeProof(long statemNum,
       if (proof[step] != -(long)'?') stepPrintFlag = 0;
     }
 
+    /* 6/27/99 Skip steps that are local label references for html */
+    if (htmlFlag) {
+      if (stepRenumber[step] == 0) stepPrintFlag = 0;
+    }
+
     if (!stepPrintFlag) continue;
 
     if (noIndentFlag) {
@@ -563,6 +285,8 @@ void typeProof(long statemNum,
     if (stmt < 0) {
       if (stmt <= -1000) {
         stmt = -1000 - stmt;
+        if (htmlFlag) bug(220); /* If html, a step referencing a local
+            label will never be printed since it will be skipped above */
         /* stmt is now the step number a local label refers to */
         if (noIndentFlag) {
           let(&srcLabel, cat("@", str(localLabelNames[stmt]), NULL));
@@ -583,7 +307,9 @@ void typeProof(long statemNum,
       if (nmbrElementIn(1, localLabels, step)) {
         /* This statement declares a local label */
         if (noIndentFlag) {
-          let(&locLabDecl, cat("@", str(localLabelNames[step]), ":", NULL));
+          if (!htmlFlag) { /* No local label declaration is shown for html */
+            let(&locLabDecl, cat("@", str(localLabelNames[step]), ":", NULL));
+          }
         } else {
           let(&locLabDecl, cat(str(localLabelNames[step]), ":", NULL));
         }
@@ -598,10 +324,21 @@ void typeProof(long statemNum,
         hypPtr = statement[stmt].reqHypList;
         for (hyp = statement[stmt].numReqHyp - 1; hyp >=0; hyp--) {
           if (!essentialFlag || statement[hypPtr[hyp]].type == (char)e__) {
+            i = stepRenumber[hypStep];
+            if (i == 0) {
+              if (!htmlFlag) bug(221);
+              if (proof[hypStep] > -1000) bug(222);
+              if (localLabelNames[-1000 - proof[hypStep]] == 0) bug(223);
+              if (localLabelNames[-1000 - proof[hypStep]] !=
+                  stepRenumber[-1000 - proof[hypStep]]) bug(224);
+              /* Get the step number the hypothesis refers to */
+              i = stepRenumber[-1000 - proof[hypStep]];
+            }
             if (!hypStr[0]) {
-              let(&hypStr, str(stepRenumber[hypStep]));
+              let(&hypStr, str(i));
             } else {
-              let(&hypStr, cat(str(stepRenumber[hypStep]), ",", hypStr, NULL));
+              /* Put comma between more than one hypothesis reference */
+              let(&hypStr, cat(str(i), ",", hypStr, NULL));
             }
           }
           if (hyp < statement[stmt].numReqHyp) {
@@ -807,7 +544,6 @@ void typeProof(long statemNum,
 void showDetailStep(long statemNum, long detailStep) {
 
   long i, j, plen, step, stmt, sourceStmt, targetStmt;
-  vstring proofStr = "";
   vstring tmpStr = "";
   vstring tmpStr1 = "";
   nmbrString *proof = NULL_NMBRSTRING;
@@ -1589,6 +1325,10 @@ double countSteps(long statemNum, flag essentialFlag)
   long actualSteps, actualSubTheorems;
   long actualSteps2, actualSubTheorems2;
 
+  /* Initialization to avoid compiler warning (should not be theoretically
+     necessary) */
+  essentialplen = 0;
+
   /* If this is the top level of recursion, initialize things */
   if (!level) {
     stmtCount = malloc(sizeof(double) * (statements + 1));
@@ -1997,36 +1737,7 @@ void writeInput(void)
 
 void writeDict(void)
 {
-  /* Temporary variables and strings */
-  vstring str1=""; /* Remember to initialize all vstrings! */
-
-  /* Open the files */
-  inputDef_fp=vmc_fopen(&inputDef_fn,
-        "Name of LaTeX symbol definition input file",
-        "latex.def","r",0);
-
-  print2("Reading LaTeX symbol definitions from \"%s\"...\n",inputDef_fn);
-
-  /* Initialize the lexical analyzer */
-  vmc_lexSetup();
-
-  /*** Read in and parse the graphics symbol definition file ***/
-  parseGraphicsDef();
-
-
-  /* Put out a list of definitions */
-
-  print2("Creating and writing \"%s\"...\n",tex_dict_fn);
-
-  /*** Word-processor specific ***/
-  outputHeader();
-
-  /*** Word-processor specific ***/
-  outputDefinitions();
-
-  /*** Word-processor specific ***/
-  outputTrailer();
-
+  print2("This function has not been implemented yet.\n");
   return;
 }
 

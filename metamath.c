@@ -3,6 +3,8 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust text window width) 678901234567*/
 
+#define MVERSION "0.06d 27-Jun-99"
+#define TVERSION "0.02 27-Jun-99"
 /* Metamath Proof Verifier - main program */
 /* See the book "Metamath" for description of Metamath and run instructions */
 
@@ -427,7 +429,7 @@ void command(int argc, char *argv[]);
 int qsortStringCmp(const void *p1, const void *p2);
 vstring qsortKey; /* Pointer only; do not deallocate */
 
-main(int argc, char *argv[])
+int main(int argc, char *argv[])
 {
 
 vstring str = "";
@@ -494,12 +496,12 @@ console_options.title = (unsigned char*)"\pMetamath";
   }
 
   if (!listMode) {
-    print2("Metamath - Version 0.06c 20-Feb-99\n");
+    print2("Metamath - Version %s\n", MVERSION);
     print2(
      "Copyright (C) 1999 Norman D. Megill, 19 Locke Ln., Lexington MA 02173\n");
   }
   if (listMode && argc == 1) {
-    print2("Programming utility tools - Version 0.01 20-Feb-99\n");
+    print2("Programming utility tools - Version %s\n", TVERSION);
     print2(
      "Copyright (C) 1999 Production Services Corp.\n");
   }
@@ -512,6 +514,8 @@ console_options.title = (unsigned char*)"\pMetamath";
   if (listMode && listFile_fp != NULL) {
     fclose(listFile_fp);
   }
+
+  return 0;
 
 }
 
@@ -579,6 +583,13 @@ void command(int argc, char *argv[])
   double sum;
   vstring bufferedLine = "";
 
+  /* Initialization to avoid compiler warning (should not be theoretically
+     necessary) */
+  p = 0;
+  q = 0;
+  s = 0;
+  texHeaderFlag = 0;
+  firstChangedLine = 0;
 
   while (1) {
 
@@ -821,7 +832,7 @@ void command(int argc, char *argv[])
         }
 
         if (texFileOpenFlag) {
-          print2("The %s file \"%s\" has been closed.\n",
+          print2("The %s file \"%s\" was closed.\n",
               htmlFlag ? "HTML" : "LaTeX", texFileName);
           printTexTrailer(texHeaderFlag);
           fclose(texFilePtr);
@@ -857,6 +868,7 @@ void command(int argc, char *argv[])
 #define BREAK_MODE 7
 #define BUILD_MODE 8
 #define MATCH_MODE 9
+#define RIGHT_MODE 10
       cmdMode = 0;
       if (cmdMatches("ADD")) cmdMode = ADD_MODE;
       else if (cmdMatches("DELETE")) cmdMode = DELETE_MODE;
@@ -868,9 +880,18 @@ void command(int argc, char *argv[])
       else if (cmdMatches("BREAK")) cmdMode = BREAK_MODE;
       else if (cmdMatches("BUILD")) cmdMode = BUILD_MODE;
       else if (cmdMatches("MATCH")) cmdMode = MATCH_MODE;
+      else if (cmdMatches("RIGHT")) cmdMode = RIGHT_MODE;
       if (cmdMode) {
         list1_fp = fSafeOpen(fullArg[1], "r");
         if (!list1_fp) continue; /* Couldn't open it (error msg was provided) */
+        if (cmdMode == RIGHT_MODE) {
+          /* Find the longest line */
+          p = 0;
+          while (linput(list1_fp, NULL, &str1)) {
+            if (p < strlen(str1)) p = strlen(str1);
+          }
+          rewind(list1_fp);
+        }
         let(&list2_fname, fullArg[1]);
         if (list2_fname[strlen(list2_fname) - 2] == '~') {
           let(&list2_fname, left(list2_fname, strlen(list2_fname) - 2));
@@ -1105,6 +1126,10 @@ void command(int argc, char *argv[])
                 p = !p;
               }
               if (p) changedLines++;
+              break;
+            case RIGHT_MODE:
+              let(&str2, cat(space(p - strlen(str2)), str2, NULL));
+              if (strcmp(str1, str2)) changedLines++;
               break;
           } /* End switch(cmdMode) */
           if (lines == 1) let(&str3, left(str2, 79)); /* For msg */
@@ -1366,12 +1391,7 @@ void command(int argc, char *argv[])
         if (k > j) j = k;
         for (i = val(fullArg[2]); i <= val(fullArg[3]);
             i = i + val(fullArg[4])) {
-          if (((vstring)(fullArg[5]))[0] == 'n' ||
-              ((vstring)(fullArg[5]))[0] == 'N') {
-            let(&str1, str(i));
-          } else {
-            let(&str1, cat(space(j - strlen(str(i))), str(i), NULL));
-          }
+          let(&str1, str(i));
           fprintf(list1_fp, "%s\n", str1);
         }
         fclose(list1_fp);
@@ -2050,42 +2070,48 @@ void command(int argc, char *argv[])
     if (cmdMatches("SHOW SETTINGS")) {
       print2("Metamath settings on %s at %s:\n",date(),time_());
       if (commandEcho) {
-        print2("Command ECHO is ON.\n");
+        print2("(SET ECHO...) Command ECHO is ON.\n");
       } else {
-        print2("Command ECHO is OFF.\n");
+        print2("(SET ECHO...) Command ECHO is OFF.\n");
       }
       if (scrollMode) {
-        print2("SCROLLing mode is PROMPTED.\n");
+        print2("(SET SCROLL...) SCROLLing mode is PROMPTED.\n");
       } else {
-        print2("SCROLLing mode is CONTINUOUS.\n");
+        print2("(SET SCROLL...) SCROLLing mode is CONTINUOUS.\n");
       }
-      print2("SCREEN_WIDTH is %ld.\n", screenWidth);
+      print2("(SET SCREEN_WIDTH...) SCREEN_WIDTH is %ld.\n", screenWidth);
       if (strlen(input_fn)) {
-        print2("%ld statements have been read from '%s'.\n",statements,
-          input_fn);
+        print2("(READ...) %ld statements have been read from '%s'.\n",
+          statements, input_fn);
       } else {
-        print2("No source file has been read in yet.\n");
+        print2("(READ...) No source file has been read in yet.\n");
       }
       if (PFASmode) {
-        print2("The statement you are proving is '%s'.\n",
+        print2("(PROVE...) The statement you are proving is '%s'.\n",
             statement[proveStatement].labelName);
       }
-      print2("The unification timeout parameter is %ld.\n",
+      print2(
+   "(SET UNIFICATION_TIMEOUT...) The unification timeout parameter is %ld.\n",
           userMaxUnifTrials);
-      print2("The SEARCH_LIMIT for the IMPROVE command is %ld.\n",
+      print2(
+   "(SET SEARCH_LIMIT...) The SEARCH_LIMIT for the IMPROVE command is %ld.\n",
           userMaxProveFloat);
       if (minSubstLen) {
-        print2("EMPTY_SUBSTITUTION is not allowed (OFF).\n");
+        print2(
+    "(SET EMPTY_SUBSTITUTION...) EMPTY_SUBSTITUTION is not allowed (OFF).\n");
       } else {
-        print2("EMPTY_SUBSTITUTION is allowed (ON).\n");
+        print2(
+         "(SET EMPTY_SUBSTITUTION...) EMPTY_SUBSTITUTION is allowed (ON).\n");
       }
 
       if (showStatement) {
-        print2("The default statement for SHOW commands is '%s'.\n",
+        print2("(SHOW...) The default statement for SHOW commands is '%s'.\n",
             statement[showStatement].labelName);
       }
       if (logFileOpenFlag) {
-        print2("The log file '%s' is open.\n", logFileName);
+        print2("(OPEN LOG...) The log file '%s' is open.\n", logFileName);
+      } else {
+        print2("(OPEN LOG...) No log file is currently open.\n");
       }
       if (texFileOpenFlag) {
         print2("The %s file '%s' is open.\n", htmlFlag ? "HTML" : "LaTeX",
@@ -2455,7 +2481,8 @@ void command(int argc, char *argv[])
           reverseFlag,
           noIndentFlag,
           splitColumn,
-          texFlag);
+          texFlag,
+          htmlFlag);
       if (texFlag && htmlFlag) {
         outputToString = 1;
         print2("</TABLE></CENTER>\n");
@@ -2488,31 +2515,6 @@ void command(int argc, char *argv[])
 
         cleanWrkProof(); /* Deallocate verifyProof storage */
       } /* end debugging */
-
-      if (1) continue;  /*??? Disable code below */
-
-
-      /*??? Change the below for new proof format */
-      /* The result of the expansion is pointed to by
-         expandedProof[] */
-      /* Add "statement =" to beginning of the proof */
-      nmbrLet(&nmbrTmp,
-          nmbrCat(nmbrAddElement(NULL_NMBRSTRING,showStatement),
-          nmbrAddElement(NULL_NMBRSTRING,-(long)'='),NULL));
-      pntrLet(&expandedProof,pntrCat(pntrSpace(1),
-          expandedProof,NULL));
-      let((vstring *)(&expandedProof[0]),nmbrCvtMToVString(
-          statement[showStatement].mathString));
-      nmbrLet(&nmbrTmp,nmbrCat(nmbrTmp,statement[showStatement].proofString,NULL));
-      typeExpandedProof(nmbrTmp,expandedProof,NULL_NMBRSTRING,0);
-
-
-      /* Deallocate expandedProof */
-      k = pntrLen(expandedProof);
-      for (i = 0; i < k; i++) {
-        let((vstring *)(&expandedProof[i]),"");
-      }
-      pntrLet(&expandedProof,NULL_PNTRSTRING);
 
       continue;
     }
@@ -2679,7 +2681,8 @@ void command(int argc, char *argv[])
           0 /*reverseFlag*/,
           0 /*noIndentFlag*/,
           0 /*splitColumn*/,
-          0 /*texFlag*/);
+          0 /*texFlag*/,
+          0 /*htmlFlag*/);
       /* 6/14/98 end */
       continue;
     }
@@ -2832,7 +2835,8 @@ void command(int argc, char *argv[])
           0 /*reverseFlag*/,
           0 /*noIndentFlag*/,
           0 /*splitColumn*/,
-          0 /*texFlag*/);
+          0 /*texFlag*/,
+          0 /*htmlFlag*/);
       /* 6/14/98 end */
       continue;
     }
@@ -2936,7 +2940,8 @@ void command(int argc, char *argv[])
           0 /*reverseFlag*/,
           0 /*noIndentFlag*/,
           0 /*splitColumn*/,
-          0 /*texFlag*/);
+          0 /*texFlag*/,
+          0 /*htmlFlag*/);
       /* 6/14/98 end */
 
 
@@ -3229,7 +3234,8 @@ void command(int argc, char *argv[])
             0 /*reverseFlag*/,
             0 /*noIndentFlag*/,
             0 /*splitColumn*/,
-            0 /*texFlag*/);
+            0 /*texFlag*/,
+            0 /*htmlFlag*/);
       /* 6/14/98 end */
 
       continue;
@@ -3348,7 +3354,8 @@ void command(int argc, char *argv[])
           0 /*reverseFlag*/,
           0 /*noIndentFlag*/,
           0 /*splitColumn*/,
-          0 /*texFlag*/);
+          0 /*texFlag*/,
+          0 /*htmlFlag*/);
       /* 6/14/98 end */
 
       proofChangedFlag = 1;/* Flag for UNDO stack */
@@ -3406,7 +3413,8 @@ void command(int argc, char *argv[])
             0 /*reverseFlag*/,
             0 /*noIndentFlag*/,
             0 /*splitColumn*/,
-            0 /*texFlag*/);
+            0 /*texFlag*/,
+            0 /*htmlFlag*/);
         /* 6/14/98 end */
 
         proofChanged = 1; /* Cumulative flag */
@@ -3662,7 +3670,9 @@ void command(int argc, char *argv[])
       if (texDefsRead) {
         /* Current limitation - can only read .def once */
         if (cmdMatches("OPEN HTML") != htmlFlag) {
-          print2("?You cannot use both TeX or HTML in the same session");
+          print2("?You cannot use both LaTeX and HTML in the same session.");
+          print2(
+              "?You must EXIT and restart Metamath to switch to the other.");
           continue;
         }
       }

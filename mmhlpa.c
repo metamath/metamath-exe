@@ -39,16 +39,20 @@ H("  COUNT - Count the occurrences in a file of a specified string");
 H("  NUMBER - Create a list of numbers");
 H("  PARALLEL - Put two files in parallel");
 H("  REVERSE - Reverse the order of the lines in a file");
+H("  RIGHT - Right-justify lines in a file (useful before sorting numbers)");
 H("  TAG - Tag edit updates in a program for revision control");
 H("  SORT - Sort the lines in a file with key starting at specified string");
 H("  MATCH - Extract lines containing (or not) a specified string");
 /*H("  LEXTRACT - Extract lines containing (or not) strings from a list");*/
-H("  UNDUPLICATE - Remove duplicate lines from a file (file will be sorted)");
-H("  DUPLICATE - Extract all duplicate lines in a file");
-H("  UNIQUE - Extract all unique lines in a file");
+H("  UNDUPLICATE - Extract first occurrence of each line in a file");
+H("  DUPLICATE - Extract first occurrence of each line occurring more than");
+H("      once in a file");
+H("  UNIQUE - Extract lines occurring exactly once in a file");
+H("  (UNDUPLICATE, DUPLICATE, and UNIQUE also sort the lines.)");
 H("  TYPE (10 lines) - Similar to Unix head");
 /*H("  COPY, RENAME - Similar to Unix cat, mv but with backups created");*/
 H("  COPY - Similar to Unix cat but safe (same input & output names allowed)");
+H("  SUBMIT - Run a script containing Tools commands.");
 H("");
 H("Command syntax ([] means optional):");
 H("  From TOOLS prompt:  Tools> <command> [<arg1> <arg2>...]");
@@ -72,7 +76,8 @@ H("Therefore it is usually safe to hit ^C before a command is completed.");
 H("(3) The file \"zztools.tmp\", which is always created, can be used as a");
 H("command file to re-run the command sequence with the SUBMIT command.");
 H("(4) Previous versions of output files (except under VMS) are renamed with");
-H("~1 (most recent), ~2,...,~9. appended to file name.");
+H("~1 (most recent), ~2,...,~9 (oldest) appended to file name.  Purge them");
+H("periodically.");
 H("(5) The command B(EEP) will make the terminal beep.  It can be useful to");
 H("type it ahead to let you know when the current command is finished.");
 H("(6) It is suggested you use a \".tmp\" file extension for intermediate");
@@ -179,19 +184,31 @@ H("This command reverses the order of the lines in a file.");
 H("Syntax:  REVERSE <iofile>");
 
 
+printHelp = !strcmp(helpCmd, "HELP RIGHT");
+H("This command right-justifies the lines in a file by putting spaces in");
+H("front of them so that they end in the same column as the longest line");
+H("in the file.");
+H("Syntax:  RIGHT <iofile>");
+
+
 printHelp = !strcmp(helpCmd, "HELP PARALLEL");
 H("This command puts two files side-by-side.");
-H("The two files should have the same number of lines.");
+H("The two files should have the same number of lines; if not, a warning is");
+H("issued and the longer file paralleled with empty strings at the end.");
 H("Syntax:  PARALLEL <inpfile1> <inpfile2> <outfile> <btwnstr>");
 
 
 printHelp = !strcmp(helpCmd, "HELP NUMBER");
-H("This command creates a list of numbers.");
-H("Syntax:  NUMBER <outfile> <first> <last> <incr> <Y=right-just>");
+H("This command creates a list of numbers.  Hint:  Use the RIGHT command to");
+H("right-justify the list after creating it.");
+H("Syntax:  NUMBER <outfile> <first> <last> <incr>");
 
 
 printHelp = !strcmp(helpCmd, "HELP COUNT");
-H("This command counts the occurrences of a string in a file.");
+H("This command counts the occurrences of a string in a file and displays");
+H("some other statistics about the file.  The sum of the lines is obtained");
+H("by extracting digits and is only valid if the file consists of genuine");
+H("numbers.");
 H("Syntax:  COUNT <inpfile> <string>");
 
 
@@ -281,7 +298,7 @@ H("");
 
 } /* help0 */
 
-/* Note: help1 should contain all help common to both list & Metamath */
+/* Note: help1 should contain Metamath help */
 void help1(vstring helpCmd)
 {
 
@@ -680,4 +697,4 @@ H("See also OPEN HTML.");
 H("");
 
 
-}
+} /* help1 */

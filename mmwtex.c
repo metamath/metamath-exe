@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*               Copyright (C) 1998, NORMAN D. MEGILL                        */
+/*               Copyright (C) 1999, NORMAN D. MEGILL                        */
 /*****************************************************************************/
 
 /*34567890123456 (79-character line to adjust text window width) 678901234567*/
@@ -17,6 +17,12 @@
 #include "mmpars.h" /* For rawSourceError */
 #include "mmwtex.h"
 #include "mmcmdl.h" /* For texFileName */
+
+/* 6/27/99 - Now, all LaTeX and HTML definitions are taken from the source
+   file (read in the by READ... command).  In the source file, there should
+   be a single comment $( ... $) containing the keyword $t.  The definitions
+   start after the $t and end at the $).  Between $t and $), the definition
+   source should exist.  See the file set.mm for an example. */
 
 /* Storage of graphics for math tokens */
 vstring graTokenName[MAX_GRAPHIC_DEFS]; /* ASCII abbreviation of token */
@@ -48,23 +54,31 @@ struct texDef_struct *texDefs;
 long numSymbs;
 char dollarSubst = '$'; /* Subst for $ in converting to old $l,$m,$n comments */
                       /* Use '$' instead of 2 for debugging */
+vstring htmlVarColors = ""; /* Set by htmlvarcolor commands */
 
 flag readTexDefs(vstring tex_def_fn, flag promptForFile)
 {
 
   FILE *tex_def_fp;
   char *fileBuf;
+  char *startPtr;
   long fileBufSize;
   char *fbPtr;
+  char *tmpPtr;
   long charCount;
   long i, j;
   long lineNum;
   long tokenLen;
   char zapChar;
+  long cmd;
+  long parsePass;
+  vstring token = "";
 
   if (texDefsRead) bug(2301); /* Shouldn't read file twice */
 
   if (promptForFile) {
+
+    /******* obsolete 6/27/99
     if (!htmlFlag) {
       tex_def_fn = cmdInput1(
           "What is the name of the LaTeX definition file <latex.def>? ");
@@ -78,6 +92,23 @@ flag readTexDefs(vstring tex_def_fn, flag promptForFile)
         let(&tex_def_fn, "html.def");
       }
     }
+    *******/
+    if (!htmlFlag) {
+      tex_def_fn = cmdInput1(cat(
+          "What is the name of the file with LaTeX definitions <",
+          input_fn, ">? ", NULL));
+      if (!tex_def_fn[0]) {
+        let(&tex_def_fn, input_fn);
+      }
+    } else {
+      tex_def_fn = cmdInput1(cat(
+          "What is the name of the HTML definition file <",
+          input_fn, ">? ", NULL));
+      if (!tex_def_fn[0]) {
+        let(&tex_def_fn, input_fn);
+      }
+    }
+
   }
   tex_def_fp = fopen(tex_def_fn, "rb");
   if (!tex_def_fp) {
@@ -116,7 +147,7 @@ flag readTexDefs(vstring tex_def_fn, flag promptForFile)
   fileBuf[charCount] = 0; /* End of string */
 /*E*/if(db5)print2("In text mode the file has %ld bytes.\n",charCount);
 
-  /* See if last char is newline (needed for comment terminator); if not, add */
+  /* See if last chr is newline (needed for comment terminator); if not, add */
   if (fileBuf[charCount - 1] != '\n') {
     fileBuf[charCount] = '\n';
     fileBuf[charCount + 1] = 0;
@@ -127,205 +158,257 @@ flag readTexDefs(vstring tex_def_fn, flag promptForFile)
     charCount++;
   }
 
-  /* Count the number of symbols defined */
-  numSymbs = 0;
-  fbPtr = fileBuf;
-  lineNum = 1;
-  while (1) {
-    fbPtr = fbPtr + texDefWhiteSpaceLen(fbPtr);
-    tokenLen = texDefTokenLen(fbPtr);
-    if (!tokenLen) break; /* End of file */
+#define LATEXDEF 1
+#define HTMLDEF 2
+#define HTMLVARCOLOR 3
 
-    zapChar = fbPtr[tokenLen]; /* Character to restore after zapping source */
-    fbPtr[tokenLen] = 0; /* Create end of string */
-    if (strcmp(fbPtr, "define")) {
-      lineNum = 1;
-      for (i = 0; i < (fbPtr - fileBuf); i++) {
-        if (fileBuf[i] == '\n') lineNum++;
-      }
-      rawSourceError(fileBuf, fbPtr, tokenLen, lineNum, tex_def_fn,
-          "Expected the keyword \"define\" here.");
-      free (fileBuf);
-      return (0);
-    }
-    fbPtr[tokenLen] = zapChar;
-    fbPtr = fbPtr + tokenLen;
 
-    fbPtr = fbPtr + texDefWhiteSpaceLen(fbPtr);
-    tokenLen = texDefTokenLen(fbPtr);
-    if (fbPtr[0] != '\"' && fbPtr[0] != '\'') {
-      if (!tokenLen) { /* Abnormal end-of-file */
-        fbPtr--; /* Format for error message */
-        tokenLen++;
-      }
-      lineNum = 1;
-      for (i = 0; i < (fbPtr - fileBuf); i++) {
-        if (fileBuf[i] == '\n') lineNum++;
-      }
-      rawSourceError(fileBuf, fbPtr, tokenLen, lineNum, tex_def_fn,
-          "Expected a quoted string here.");
-      free (fileBuf);
-      return (0);
-    }
-    fbPtr = fbPtr + tokenLen;
+    startPtr = fileBuf;
 
-    fbPtr = fbPtr + texDefWhiteSpaceLen(fbPtr);
-    tokenLen = texDefTokenLen(fbPtr);
-    zapChar = fbPtr[tokenLen]; /* Character to restore after zapping source */
-    fbPtr[tokenLen] = 0; /* Create end of string */
-    if (strcmp(fbPtr, "as")) {
-      if (!tokenLen) { /* Abnormal end-of-file */
-        fbPtr--; /* Format for error message */
-        tokenLen++;
+    /* 6/27/99 Find $t command */
+    while (1) {
+      if (startPtr[0] == '$') {
+        if (startPtr[1] == 't') {
+          startPtr++;
+          break;
+        }
       }
-      lineNum = 1;
-      for (i = 0; i < (fbPtr - fileBuf); i++) {
-        if (fileBuf[i] == '\n') lineNum++;
-      }
-      rawSourceError(fileBuf, fbPtr, tokenLen, lineNum, tex_def_fn,
-          "Expected the keyword \"as\" here.");
-      free (fileBuf);
-      return (0);
+      if (startPtr[0] == 0) break;
+      startPtr++;
     }
-    fbPtr[tokenLen] = zapChar;
-    fbPtr = fbPtr + tokenLen;
+    if (startPtr[0] == 0) {
+      print2("?There is no $t command in the file \"%s\".\n", tex_def_fn);
+      print2("The file should have a comment of the form $(...$t...$) with\n");
+      print2("the LaTeX and HTML definitions between $t and $).\n");
+      free(fileBuf);
+      return 0;
+    }
+    startPtr++; /* Move to 1st char after $t */
+
+    /* 6/27/99 Search for the ending $) and zap the $) to be end-of-string */
+    tmpPtr = startPtr;
+    while (1) {
+      if (tmpPtr[0] == '$') {
+        if (tmpPtr[1] == ')') {
+          break;
+        }
+      }
+      if (tmpPtr[0] == 0) break;
+      tmpPtr++;
+    }
+    if (tmpPtr[0] == 0) {
+      print2(
+    "?There is no $) comment closure after the $t command in \"%s\".\n",
+          tex_def_fn);
+      free(fileBuf);
+      return 0;
+    }
+     /* Force end of string at the $ in $) */
+    tmpPtr[0] = '\n';
+    tmpPtr[1] = 0;
+
+    charCount = tmpPtr + 1 - fileBuf; /* For bugcheck */
+
+  for (parsePass = 1; parsePass <= 2; parsePass++) {
+    /* Pass 1 - Count the number of symbols defined and alloc texDefs array */
+    /* Pass 2 - Assign the texDefs array */
+    numSymbs = 0;
+    fbPtr = startPtr;
 
     while (1) {
 
+      /* Get next token */
       fbPtr = fbPtr + texDefWhiteSpaceLen(fbPtr);
       tokenLen = texDefTokenLen(fbPtr);
-      if (fbPtr[0] != '\"' && fbPtr[0] != '\'') {
-        if (!tokenLen) { /* Abnormal end-of-file */
-          fbPtr--; /* Format for error message */
-          tokenLen++;
-        }
+
+      /* Process token - command */
+      if (!tokenLen) break; /* End of file */
+      zapChar = fbPtr[tokenLen]; /* Char to restore after zapping source */
+      fbPtr[tokenLen] = 0; /* Create end of string */
+      cmd = lookup(fbPtr, "latexdef,htmldef,htmlvarcolor");
+      fbPtr[tokenLen] = zapChar;
+      if (cmd == 0) {
         lineNum = 1;
         for (i = 0; i < (fbPtr - fileBuf); i++) {
           if (fileBuf[i] == '\n') lineNum++;
         }
         rawSourceError(fileBuf, fbPtr, tokenLen, lineNum, tex_def_fn,
-            "Expected a quoted string here.");
-        free (fileBuf);
-       return (0);
+            "Expected \"latexdef\", \"htmldef\", or \"htmlvarcolor\" here.");
+        free(fileBuf);
+        return (0);
       }
       fbPtr = fbPtr + tokenLen;
 
-      fbPtr = fbPtr + texDefWhiteSpaceLen(fbPtr);
-      tokenLen = texDefTokenLen(fbPtr);
-      if (fbPtr[0] != '+' && fbPtr[0] != ';') {
-        if (!tokenLen) { /* Abnormal end-of-file */
-          fbPtr--; /* Format for error message */
-          tokenLen++;
+      if (cmd != HTMLVARCOLOR) {
+         /* Get next token - string in quotes */
+        fbPtr = fbPtr + texDefWhiteSpaceLen(fbPtr);
+        tokenLen = texDefTokenLen(fbPtr);
+
+        /* Process token - string in quotes */
+        if (fbPtr[0] != '\"' && fbPtr[0] != '\'') {
+          if (!tokenLen) { /* Abnormal end-of-file */
+            fbPtr--; /* Format for error message */
+            tokenLen++;
+          }
+          lineNum = 1;
+          for (i = 0; i < (fbPtr - fileBuf); i++) {
+            if (fileBuf[i] == '\n') lineNum++;
+          }
+          rawSourceError(fileBuf, fbPtr, tokenLen, lineNum, tex_def_fn,
+              "Expected a quoted string here.");
+          free (fileBuf);
+          return (0);
         }
-        lineNum = 1;
-        for (i = 0; i < (fbPtr - fileBuf); i++) {
-          if (fileBuf[i] == '\n') lineNum++;
+        if (parsePass == 2) {
+          zapChar = fbPtr[tokenLen - 1]; /* Chr to restore after zapping src */
+          fbPtr[tokenLen - 1] = 0; /* Create end of string */
+          let(&token, fbPtr + 1); /* Get ASCII token; note that leading and
+              trailing quotes are omitted. */
+          fbPtr[tokenLen - 1] = zapChar;
+
+          /* Change double internal quotes to single quotes */
+          j = strlen(token);
+          for (i = 0; i < j - 1; i++) {
+            if ((token[i] == '\"' &&
+                token[i + 1] == '\"') ||
+                (token[i] == '\'' &&
+                token[i + 1] == '\'')) {
+              let(&token, cat(left(token,
+                  i + 1), right(token, i + 3), NULL));
+              j--;
+            }
+          }
+
+          if ((cmd == LATEXDEF && !htmlFlag) || (cmd == HTMLDEF && htmlFlag)) {
+            texDefs[numSymbs].tokenName = "";
+            let(&(texDefs[numSymbs].tokenName), token);
+          }
         }
-        rawSourceError(fileBuf, fbPtr, tokenLen, lineNum, tex_def_fn,
-            "Expected \"+\" or \";\" here.");
-        free (fileBuf);
-       return (0);
+
+        fbPtr = fbPtr + tokenLen;
+      } /* if (cmd != HTMLVARCOLOR */
+
+      if (cmd != HTMLVARCOLOR) {
+        /* Get next token -- "as" */
+        fbPtr = fbPtr + texDefWhiteSpaceLen(fbPtr);
+        tokenLen = texDefTokenLen(fbPtr);
+        zapChar = fbPtr[tokenLen]; /* Char to restore after zapping source */
+        fbPtr[tokenLen] = 0; /* Create end of string */
+        if (strcmp(fbPtr, "as")) {
+          if (!tokenLen) { /* Abnormal end-of-file */
+            fbPtr--; /* Format for error message */
+            tokenLen++;
+          }
+          lineNum = 1;
+          for (i = 0; i < (fbPtr - fileBuf); i++) {
+            if (fileBuf[i] == '\n') lineNum++;
+          }
+          rawSourceError(fileBuf, fbPtr, tokenLen, lineNum, tex_def_fn,
+              "Expected the keyword \"as\" here.");
+          free (fileBuf);
+          return (0);
+        }
+        fbPtr[tokenLen] = zapChar;
+        fbPtr = fbPtr + tokenLen;
       }
 
-      if (fbPtr[0] == ';') break;
+      if (parsePass == 2) {
+        /* Initialize LaTeX/HTML equivalent */
+        let(&token, "");
+      }
 
-      fbPtr = fbPtr + tokenLen;
+      while (1) {
+
+        /* Get next token - string in quotes */
+        fbPtr = fbPtr + texDefWhiteSpaceLen(fbPtr);
+        tokenLen = texDefTokenLen(fbPtr);
+        if (fbPtr[0] != '\"' && fbPtr[0] != '\'') {
+          if (!tokenLen) { /* Abnormal end-of-file */
+            fbPtr--; /* Format for error message */
+            tokenLen++;
+          }
+          lineNum = 1;
+          for (i = 0; i < (fbPtr - fileBuf); i++) {
+            if (fileBuf[i] == '\n') lineNum++;
+          }
+          rawSourceError(fileBuf, fbPtr, tokenLen, lineNum, tex_def_fn,
+              "Expected a quoted string here.");
+          free (fileBuf);
+         return (0);
+        }
+        if (parsePass == 2) {
+          zapChar = fbPtr[tokenLen - 1]; /* Chr to restore after zapping src */
+          fbPtr[tokenLen - 1] = 0; /* Create end of string */
+          let(&token, cat(token, fbPtr + 1, NULL)); /* Append TeX equiv.; note
+              leading and trailing quotes are omitted. */
+          fbPtr[tokenLen - 1] = zapChar;
+        }
+        fbPtr = fbPtr + tokenLen;
+
+
+        /* Get next token - "+" or ";" */
+        fbPtr = fbPtr + texDefWhiteSpaceLen(fbPtr);
+        tokenLen = texDefTokenLen(fbPtr);
+        if ((fbPtr[0] != '+' && fbPtr[0] != ';') || tokenLen != 1) {
+          if (!tokenLen) { /* Abnormal end-of-file */
+            fbPtr--; /* Format for error message */
+            tokenLen++;
+          }
+          lineNum = 1;
+          for (i = 0; i < (fbPtr - fileBuf); i++) {
+            if (fileBuf[i] == '\n') lineNum++;
+          }
+          rawSourceError(fileBuf, fbPtr, tokenLen, lineNum, tex_def_fn,
+              "Expected \"+\" or \";\" here.");
+          free (fileBuf);
+         return (0);
+        }
+        fbPtr = fbPtr + tokenLen;
+
+        if (fbPtr[-1] == ';') break;
+
+      } /* End while */
+
+
+      if (parsePass == 2) {
+        /* Change double internal quotes to single quotes */
+        j = strlen(token);
+        for (i = 0; i < j - 1; i++) {
+          if ((token[i] == '\"' &&
+              token[i + 1] == '\"') ||
+              (token[i] == '\'' &&
+              token[i + 1] == '\'')) {
+            let(&token, cat(left(token,
+                i + 1), right(token, i + 3), NULL));
+            j--;
+          }
+        }
+
+        if ((cmd == LATEXDEF && !htmlFlag) || (cmd == HTMLDEF && htmlFlag)) {
+          texDefs[numSymbs].texEquiv = "";
+          let(&(texDefs[numSymbs].texEquiv), token);
+        }
+        if (cmd == HTMLVARCOLOR) {
+          let(&htmlVarColors, cat(htmlVarColors, " ", token, NULL));
+        }
+      }
+
+      if ((cmd == LATEXDEF && !htmlFlag) || (cmd == HTMLDEF && htmlFlag)) {
+        numSymbs++;
+      }
+
     } /* End while */
-    fbPtr = fbPtr + tokenLen;
 
-    numSymbs++;
-  } /* End while */
+    if (fbPtr != fileBuf + charCount) bug(2305);
 
-  if (fbPtr != fileBuf + charCount) bug(2305);
-
-  print2("%ld symbol definitions were read from \"%s\".\n",
-      numSymbs, tex_def_fn);
-
-  texDefs = malloc(numSymbs * sizeof(struct texDef_struct));
-  if (!texDefs) outOfMemory("#99 (TeX symbols)");
-
-  /* Second scan:  (assumed to be error-free)  Assign the
-     texDefs array */
-  numSymbs = 0;
-  fbPtr = fileBuf;
-  while (1) {
-
-    /* Skip "define" */
-    fbPtr = fbPtr + texDefWhiteSpaceLen(fbPtr);
-    tokenLen = texDefTokenLen(fbPtr);
-    if (!tokenLen) break; /* End of file */
-    fbPtr = fbPtr + tokenLen;
-
-    /* Get ASCII token; note that leading and trailing quotes are omitted. */
-    fbPtr = fbPtr + texDefWhiteSpaceLen(fbPtr);
-    tokenLen = texDefTokenLen(fbPtr);
-    zapChar = fbPtr[tokenLen - 1]; /* Char to restore after zapping source */
-    fbPtr[tokenLen - 1] = 0; /* Create end of string */
-    texDefs[numSymbs].tokenName = "";
-    let(&texDefs[numSymbs].tokenName, fbPtr + 1);
-    fbPtr[tokenLen - 1] = zapChar;
-    fbPtr = fbPtr + tokenLen;
-
-    /* Change double internal quotes to single quotes */
-    j = strlen(texDefs[numSymbs].tokenName);
-    for (i = 0; i < j - 1; i++) {
-      if ((texDefs[numSymbs].tokenName[i] == '\"' &&
-          texDefs[numSymbs].tokenName[i + 1] == '\"') ||
-          (texDefs[numSymbs].tokenName[i] == '\'' &&
-          texDefs[numSymbs].tokenName[i + 1] == '\'')) {
-        let(&texDefs[numSymbs].tokenName, cat(left(texDefs[numSymbs].tokenName,
-            i + 1), right(texDefs[numSymbs].tokenName, i + 3), NULL));
-        j--;
-      }
+    if (parsePass == 1 ) {
+      print2("%ld typesetting statements were read from \"%s\".\n",
+          numSymbs, tex_def_fn);
+      texDefs = malloc(numSymbs * sizeof(struct texDef_struct));
+      if (!texDefs) outOfMemory("#99 (TeX symbols)");
     }
 
-    /* Skip "as" */
-    fbPtr = fbPtr + texDefWhiteSpaceLen(fbPtr);
-    tokenLen = texDefTokenLen(fbPtr);
-    fbPtr = fbPtr + tokenLen;
-
-
-    /* Initialize TeX equiv. */
-    texDefs[numSymbs].texEquiv = "";
-
-    while (1) {
-
-      /* Append TeX equiv.; note leading and trailing quotes are omitted. */
-      fbPtr = fbPtr + texDefWhiteSpaceLen(fbPtr);
-      tokenLen = texDefTokenLen(fbPtr);
-      zapChar = fbPtr[tokenLen - 1]; /* Char to restore after zapping source */
-      fbPtr[tokenLen - 1] = 0; /* Create end of string */
-      let(&texDefs[numSymbs].texEquiv, cat(texDefs[numSymbs].texEquiv,
-          fbPtr + 1, NULL));
-      fbPtr[tokenLen - 1] = zapChar;
-      fbPtr = fbPtr + tokenLen;
-
-      /* Skip "+" or ";" */
-      fbPtr = fbPtr + texDefWhiteSpaceLen(fbPtr);
-      tokenLen = texDefTokenLen(fbPtr);
-      if (fbPtr[0] != '+' && fbPtr[0] != ';') bug(2306);
-
-      if (fbPtr[0] == ';') break;
-      fbPtr = fbPtr + tokenLen;
-    } /* End while */
-    fbPtr = fbPtr + tokenLen;
-
-
-    /* Change double internal quotes to single quotes */
-    j = strlen(texDefs[numSymbs].texEquiv);
-    for (i = 0; i < j - 1; i++) {
-      if ((texDefs[numSymbs].texEquiv[i] == '\"' &&
-          texDefs[numSymbs].texEquiv[i + 1] == '\"') ||
-          (texDefs[numSymbs].texEquiv[i] == '\'' &&
-          texDefs[numSymbs].texEquiv[i + 1] == '\'')) {
-        let(&texDefs[numSymbs].texEquiv, cat(left(texDefs[numSymbs].texEquiv,
-            i + 1), right(texDefs[numSymbs].texEquiv, i + 3), NULL));
-        j--;
-      }
-    }
-
-    numSymbs++;
-  } /* End while */
+  } /* next parsePass */
 
 
   /* Sort the labels for later lookup */
@@ -339,6 +422,7 @@ flag readTexDefs(vstring tex_def_fn, flag promptForFile)
     }
   }
 
+  let(&token, ""); /* Deallocate */
   free(fileBuf);  /* Deallocate file source buffer */
   texDefsRead = 1;  /* Set flag that it's been read in */
   return (1);
@@ -438,7 +522,7 @@ int texSortCmp(const void *key1, const void *key2)
 
 
 /* Token comparison for bsearch */
-int texSrchCmp(/*const*/ void *key, /*const*/ void *data)
+int texSrchCmp(const void *key, const void *data)
 {
   /* Returns -1 if key < data, 0 if equal, 1 if key > data */
   return (strcmp(key,
@@ -1132,10 +1216,10 @@ void printTexTrailer(flag texTrailerFlag) {
     } else {
       print2("<CENTER><FONT SIZE=-2 FACE=ARIAL>\n");
       print2("Colors of variables:\n");
-      print2("<FONT COLOR=\"#993300\">wff</FONT><BR>\n");
+      printLongLine(cat(htmlVarColors, "<BR>", NULL), "", " ");
       print2("<A HREF=\"definitions.html\">Definition list</A> |\n");
       print2("<A HREF=\"theorems.html\">Theorem list</A><BR>\n");
-      print2("Copyright (c) 1998 Norman D. Megill <A \n");
+      print2("Copyright (c) 1999 Norman D. Megill <A \n");
       print2("HREF=\"mailto:nm@alum.mit.edu\">&lt;nm@alum.mit.edu></A>\n");
       print2("</FONT></CENTER>\n");
       print2("</BODY></HTML>\n");
@@ -1146,501 +1230,4 @@ void printTexTrailer(flag texTrailerFlag) {
   }
 
 }
-
-
-
-
-/*???????????????OBSOLETE FROM HERE ON????????????????????????????????????*/
-int errorCheck(vstring isString, vstring shouldBeString)
-{
-  /*???? THIS FUNCTION SHOULD BECOME OBSOLETE ???*/
-  static int errorCount = 0;
-  if (strcmp(isString,shouldBeString)) {
-    printf("***ERROR*** Token found is %s, should be %s\n",
-        isString,shouldBeString);
-    errorCount++;
-    if (errorCount > 18) {
-      printf("***TOO MANY ERRORS***");
-      return 1;
-    }
-  }
-  return 0;
-}
-
-
-void parseGraphicsDef()
-/* This functions reads lines from file inputDef_fp and fills in
-   the arrays graTokenName, graTokenLength, and graTokenDef.
-   The number of array entries is assigned to maxGraDef.
-   The length of the longest graTokenName is assigned to maxGraTokenLength.
-*/
-
-
-{
-
-  int tokenLen;
-  char tokenBuffer[256];
-
-  /* Initialize control variables for token()
-      \ should be treated as a comment delimiter
-   */
-  vmc_lexControl.single=        ":+;";  /* Single character tokens */
-  vmc_lexControl.space=                 " \t\n"         ;/* Tokens delimiters */
-  vmc_lexControl.commentStart=          "!"             ;/* Start of comments */
-  vmc_lexControl.commentEnd=            "\n"            ;/* End of comments */
-  vmc_lexControl.enclosureStart=        "\"\'"          ;/* Start of special enclosure tokens */
-  vmc_lexControl.enclosureEnd=          "\"\'"          ;/* End of special enclosure tokens  */
-
-  while (1)     /* Process the definition file until EOF */
-  {
-
-    tokenLen=vmc_lexGetSymbol(tokenBuffer,inputDef_fp);
-    /* We are done if no token is returned */
-    if (!tokenLen) break;
-    if (errorCheck(tokenBuffer,"GraphicsDef")) return;
-
-    if (maxGraDef>=MAX_GRAPHIC_DEFS) {
-      printf("***ERROR*** More than %d GraphicDefs",MAX_GRAPHIC_DEFS);
-      return;
-    }
-
-    /* Initialize vstring arrays */
-    graTokenName[maxGraDef] = ""; /* Initialize */
-    graTokenDef[maxGraDef] = ""; /* Initialize */
-
-    tokenLen=vmc_lexGetSymbol(tokenBuffer,inputDef_fp);
-    /*let(&graTokenName[maxGraDef],tokenBuffer);*/
-
-    /* Strip quotes from quoted token */
-    let(&graTokenName[maxGraDef],right(left(tokenBuffer,len(tokenBuffer)-1),2));
-
-    /* Assign token length to length with quotes removed */
-    tokenLen = tokenLen-2;
-    graTokenLength[maxGraDef]=tokenLen;
-
-    /* Update maximum token length */
-    if (maxGraTokenLength < tokenLen) maxGraTokenLength = tokenLen;
-
-    tokenLen=vmc_lexGetSymbol(tokenBuffer,inputDef_fp);
-    if (errorCheck(tokenBuffer,"denotes")) return;
-
-    tokenLen=vmc_lexGetSymbol(tokenBuffer,inputDef_fp);
-    /*** Strip quotes from quoted token ***/
-    let(&graTokenDef[maxGraDef],right(left(tokenBuffer,len(tokenBuffer)-1),2));
-
-    tokenLen=vmc_lexGetSymbol(tokenBuffer,inputDef_fp);
-
-    /*** Add continuation lines ***/
-    while (!strcmp(tokenBuffer,"+")) {
-
-      tokenLen=vmc_lexGetSymbol(tokenBuffer,inputDef_fp);
-      /* Strip quotes from quoted token */
-      /* and concatenate to token buffer */
-      let(&graTokenDef[maxGraDef],cat(graTokenDef[maxGraDef],
-                right(left(tokenBuffer,len(tokenBuffer)-1),2),NULL));
-
-      tokenLen=vmc_lexGetSymbol(tokenBuffer,inputDef_fp);
-    }
-
-    maxGraDef++;
-    if (errorCheck(tokenBuffer,";")) return;
-    vmc_clearTokenBuffer();
-
-  }
-}
-
-
-
-void outputHeader()
-{
-  fprintf(tex_dict_fp, "\\input amssym.def\n");
-  fprintf(tex_dict_fp, "\\input amssym.tex\n");
-  return;
-}
-
-void outputTrailer()
-{
-
-    /* close the TeX format */
-    fprintf(tex_dict_fp,"\\end\n");
-
-  return;
-}
-
-
-void outputDefinitions()
-{
-/*???MUST BE REDONE */
-  int m,c,i,j,k;
-  vstring token="";
-  vstring tmp="";
-
-    c=4;        /* Number of columns */
-    m=maxGraDef/c+1;    /* Number of lines */
-    if ((m-1)*c == maxGraDef) m=m-1;
-    printf("The output file has %d lines with %d columns each.\n",
-        m,c);
-    for (i=1; i<=m; i++) {
-      for (j=0; j<c; j++) {
-
-        if (i+j*m-1 >= maxGraDef) break;
-        let(&token,graTokenName[i+j*m-1]);
-
-        /* Put "\" in front of reserved TeX characters */
-        for (k=0; k<len(token); k++) {
-          /*???see conversion in outputTextString*/
-          if (instr(1,"{}\\$%#~_^&",mid(token,k+1,1))) {
-
-            if (token[k] == '\\') {
-              let(&token,
-                  cat(left(token,k),"\\backslash ",right(token,k+1),NULL));
-              k = k + 11; /* Update loop counter */
-            } else {
-              let(&token,cat(left(token,k),"\\",right(token,k+1),NULL));
-              k++; /* Update loop counter */
-            }
-          }
-          let(&tmp,""); /*Free vstring allocation*/
-        }
-
-        /*??? tabs are wrong for TeX*/
-        fprintf(tex_dict_fp, "%s\\tab %s\n",token,graTokenDef[i+j*m-1]);
-        if (j<c-1) fprintf(tex_dict_fp,"\\tab \\tab ");
-      } /* next j */
-      fprintf(tex_dict_fp,"\\par \n");
-    } /* next i */
-  return;
-}
-
-vstring outputMathToken(vstring mathToken)
-{
-  int k;
-
-  for (k=0; k<maxGraDef; k++) {
-    if (!strcmp(mathToken,graTokenName[k])) break;
-  }
-  if (k==maxGraDef) {
-    /* Token does not have a graphics definition; put it out as is */
-    errorMessage("",0,0,0,cat(
-    /*??? ADD ERROR LINE, ETC. HERE */
-        "The symbol \"",mathToken,
-        "\" does not have a TeX definition in \"",inputDef_fn,
-        "\".\nIt will be output to as is to \"",tex_dict_fn,"\"",NULL),
-        input_fn,0,(char)_notice);
-    return (mathToken);
-  } else {
-    return (graTokenDef[k]);
-  }
-}
-
-vstring outputTextString(vstring textString)
-{
-  vstring line="";
-  vstring outputLine="";
-  int i,p;
-
-  long saveTempAllocStack;
-  saveTempAllocStack = startTempAllocStack;
-  startTempAllocStack = tempAllocStackTop; /* For let() stack cleanup */
-
-  let(&line,textString);
-
-    /* Convert reserved TeX characters */
-    p = strlen(line);
-    for (i = 0; i < p; i++) {
-      switch (line[i]) {
-        case ' ':
-          /* Only convert second or later space unless first on line */
-          if (i > 0) {
-            if (line[i-1] == ' ') {
-              let(&line,cat(left(line,i),"\\",right(line,i+1),NULL));
-              i++; /* Update loop counter */
-              p++;
-            }
-          } else {
-            let(&line,cat(left(line,i),"\\",right(line,i+1),NULL));
-            i++; /* Update loop counter */
-            p++;
-          }
-          break;
-        case '$':
-        case '%':
-        case '#':
-        case '_':
-        case '&':
-          let(&line,cat(left(line,i),"\\",right(line,i+1),NULL));
-          i++; /* Update loop counter */
-          p++;
-          break;
-        case '{':
-          let(&line,cat(left(line,i),"$\\{$",right(line,i+2),NULL));
-          i = i + 3; /* Update loop counter */
-          p = p + 3;
-          break;
-        case '}':
-          let(&line,cat(left(line,i),"$\\}$",right(line,i+2),NULL));
-          i = i + 3; /* Update loop counter */
-          p = p + 3;
-          break;
-        case '\\':
-          let(&line,cat(left(line,i),"$\\backslash$",right(line,i+2),NULL));
-          i = i + 11; /* Update loop counter */
-          p = p + 11;
-          break;
-        case '<':
-          let(&line,cat(left(line,i),"$<$",right(line,i+2),NULL));
-          i = i + 2; /* Update loop counter */
-          p = p + 2;
-          break;
-        case '>':
-          let(&line,cat(left(line,i),"$>$",right(line,i+2),NULL));
-          i = i + 2; /* Update loop counter */
-          p = p + 2;
-          break;
-        case '^':
-          let(&line,cat(left(line,i),"$\\^{ }$",right(line,i+2),NULL));
-          i = i + 4; /* Update loop counter */
-          p = p + 4;
-          break;
-      }
-    }
-
-    /* !!!!Change tabs to "\tab " (for TeX) */
-        /*??? tabs are wrong for TeX*/
-    for (i=0; i<len(line); i++) {
-      if (line[i] == '\t') {
-        let(&line,cat(left(line,i),"\\tab ",right(line,i+2),NULL));
-        i=i+4; /* Update loop counter */
-      }
-    }
-
-    /* !!!!Change carriage-return to new paragraph for Word TeX */
-    for (i=0; i<len(line); i++) {
-      if (line[i] == '\n') {
-        let(&line,cat(left(line,i),"\\par",right(line,i+1),NULL));
-        i=i+4; /* Update loop counter */
-      }
-    }
-
-    /* !!!!Output the line */
-    /*
-    while (len(line)>80) {
-      p = 80;
-      while (p > 1) {
-        if (line[p-1] == '\\') break;
-        p = p - 1;
-      }
-      if (p <= 1) p = len(line);
-      / * A carriage return is treated as an extra space * /
-      if (!strcmp(mid(line,p-2,2),"\\ ")) {
-        let(&outputLine,cat(outputLine,left(line,p-3),"\n",NULL));
-        let(&line,right(line,p));
-        continue;
-      }
-      if (!strcmp(mid(line,p,2),"\\ ")) {
-        let(&outputLine,cat(outputLine,left(line,p-1),"\n",NULL));
-        let(&line,right(line,p+2));
-        continue;
-      }
-      let(&outputLine,cat(outputLine,left(line,p-1),"\n",NULL));
-      let(&line,right(line,p));
-    }
-    */
-    let(&outputLine,cat(outputLine,line,NULL));
-    let(&line,""); /* Free allocated space */
-    /* ??? How do we free up temporary vstring allocation?  IN CALLING ROUTINE*/
-    /*if (outputLine[0])
-      let(&outputLine,cat("{\\tt",outputLine,"}","\n",NULL));*/
-
-  startTempAllocStack = saveTempAllocStack;
-  if (outputLine[0]) makeTempAlloc(outputLine); /* Flag it for deletion */
-  return (outputLine);
-
-}
-
-
-
-void texOutputStatement(long statementNum,FILE *output_fp)
-/* Print out the complete contents of a statement, including all white
-   space and comments, from first token through all white space and
-   comments after last token.  The output is printed to output_fp. */
-/* This allows us to modify the input file with MetaMath and is also
-   useful for debugging the getStatement() function. */
-{
-  vstring tmpStr = "";
-  vstring tmpStr1 = "";
-  vstring tmpStr3;
-  vstring tmpStr4;
-  /* Some frequently referenced entries in statement[] structure */
-  char type; /* statement[statementNum].type */
-  long j,k;
-
-  type = statement[statementNum].type;
-
-  if (statement[statementNum].labelName[0]) {
-    /* There is an explicit label */
-
-    /*??? Convert to cvtTexRToVString... call */
-      let(&tmpStr1,statement[statementNum].labelName);
-      k = strlen(tmpStr1);
-      /* Scan for characters that must be converted */
-      /* (Only digits, letters, *, ., -, and _ allowed in labels) */
-      for (j = 0; j < k; j++) {
-        switch (tmpStr1[j]) {
-          case '_':
-            let(&tmpStr1,cat(left(tmpStr1,j),"\\",right(tmpStr1,j+1),NULL));
-            j++; /* Update loop counter */
-            break;
-        }
-      }
-
-    tmpStr4 = outputTextString( ""/*statement[statementNum].whiteSpaceL*/);
-    let(&tmpStr,cat("{\\tt ",tmpStr1,
-        "}",tmpStr4,NULL));
-  }
-
-  switch (type) {
-    case (char)lb_: /* ${ */
-    case (char)rb_: /* $} */
-      tmpStr4 = outputTextString( /* Don't use let to free up alloc */
-          cat(tmpStr,"{\\tt\\bf\\","$",chr(statement[statementNum].type),"}",
-          ""/*statement[statementNum].whiteSpaceS*/,NULL));
-      let(&tmpStr,cat(tmpStr,tmpStr4,NULL));
-      break;
-    case (char)v__: /* $v */
-    case (char)c__: /* $c */
-    case (char)d__: /* $d */
-    case (char)e__: /* $e */
-    case (char)f__: /* $f */
-    case (char)a__: /* $a */
-      tmpStr4 = outputTextString(
-          cat("{\\tt\\bf\\","$",chr(statement[statementNum].type),"}",
-          ""/*statement[statementNum].whiteSpaceS*/,NULL));
-      let(&tmpStr,cat(tmpStr,tmpStr4,
-          cvtTexMToVString(statement[statementNum].mathString),NULL));
-      tmpStr4 = outputTextString(
-             ""/*statement[statementNum].whiteSpaceSc*/);
-      let(&tmpStr,cat(tmpStr,"{\\tt\\bf\\$.}",tmpStr4,NULL));
-      break;
-    case (char)p__: /* $p */
-      tmpStr4 = outputTextString(cat(
-          "$",chr(statement[statementNum].type),
-        ""/*statement[statementNum].whiteSpaceS*/,NULL));
-      tmpStr3 = cvtTexMToVString(statement[statementNum].mathString);
-      let(&tmpStr,cat(tmpStr,tmpStr4,
-        tmpStr3,NULL));
-      tmpStr4 = outputTextString(cat("{\\tt\\bf\\$=}",
-          ""/*statement[statementNum].whiteSpaceEq*/,NULL));
-      let(&tmpStr,cat(tmpStr,tmpStr4,
-          cvtTexRToVString(statement[statementNum].proofString),NULL));
-      tmpStr4 = outputTextString(cat(
-          "{\\tt\\bf\\$.}",""/*statement[statementNum].whiteSpaceSc*/,NULL));
-      let(&tmpStr,cat(tmpStr,tmpStr4,NULL));
-      break;
-    case (char)illegal_: /* anything else */
-      tmpStr4 = outputTextString(cat(
-        "$",chr(statement[statementNum].type),
-        ""/*statement[statementNum].whiteSpaceS*/,NULL));
-      let(&tmpStr,cat(tmpStr,tmpStr4,NULL));
-      tmpStr4 = outputTextString(cat(
-          "{\\tt\\bf\\$.}",""/*statement[statementNum].whiteSpaceSc*/,NULL));
-      let(&tmpStr,cat(tmpStr,tmpStr4,NULL));
-      break;
-  }
-
-  fprintf(output_fp,tmpStr);
-  let (&tmpStr,"");
-  let (&tmpStr1,"");
-  return;
-}
-
-
-/* Converts nmbrString to a vstring with correct white space between tokens */
-/* Put actual white space between tokens */
-vstring cvtTexMToVString(nmbrString *s)
-{
-  long i;
-  vstring tmpStr = "";
-  vstring tmpStr2 = "";
-
-  long saveTempAllocStack;
-  saveTempAllocStack = startTempAllocStack;
-  startTempAllocStack = tempAllocStackTop; /* For let() stack cleanup */
-
-  for (i = 1; i <= nmbrLen(s); i++) {
-    let(&tmpStr2,outputMathToken(mathToken[s[i-1]].tokenName));
-    /* Add space after backslashed tokens */
-    if (tmpStr2[0] == '\\') let(&tmpStr2,cat(tmpStr2," ",NULL));
-    let(&tmpStr,cat(tmpStr,
-        tmpStr2,NULL));
-    let(&tmpStr2,""/*s[i-1].whiteSpace*/);
-    if (i == nmbrLen(s)) {
-      let(&tmpStr,cat(tmpStr,"$",outputTextString(tmpStr2),NULL));
-    } else {
-      /* Ignore first space, if any, after token */
-      if (strlen(tmpStr2)) {
-        if (tmpStr2[0] == ' ') {
-          let(&tmpStr2,right(tmpStr2,2));
-        }
-      }
-      if (strlen(tmpStr2)) {
-        let(&tmpStr,cat(tmpStr,"$",outputTextString(tmpStr2),"$",NULL));
-      }
-    }
-  }
-  let(&tmpStr,cat(" $",tmpStr,NULL));
-  let(&tmpStr2,"");
-
-  startTempAllocStack = saveTempAllocStack;
-  if (tmpStr[0]) makeTempAlloc(tmpStr); /* Flag it for deletion */
-  return (tmpStr);
-}
-
-/* Converts rString to a vstring with correct white space between tokens */
-/* Put actual white space between tokens */
-vstring cvtTexRToVString(nmbrString *s)
-{
-  long i,j,k;
-  vstring tmpStr = "";
-  vstring tmpStr1 = "";
-
-  long saveTempAllocStack;
-  saveTempAllocStack = startTempAllocStack;
-  startTempAllocStack = tempAllocStackTop; /* For let() stack cleanup */
-
-  for (i = 1; i <= nmbrLen(s); i++) {
-    if (s[i-1] >= 0) {
-      /* A label */
-      let(&tmpStr1,statement[s[i-1]].labelName);
-      k = strlen(tmpStr1);
-      /* Scan for characters that must be converted */
-      /* (Only digits, letters, *, ., -, and _ allowed in labels) */
-      for (j = 0; j < k; j++) {
-        switch (tmpStr1[j]) {
-          case '_':
-            let(&tmpStr1,cat(left(tmpStr1,j),"\\",right(tmpStr1,j+1),NULL));
-            j++; /* Update loop counter */
-            break;
-        }
-      }
-      let(&tmpStr,cat(tmpStr,"{\\tt ",tmpStr1,
-          "}",NULL));
-    } else {
-      if (s[i-1] < -2) {
-        /* A 1-character keyword */
-        let(&tmpStr,cat(tmpStr,chr(-s[i-1]),NULL));
-      } else {
-        /* -2, which means an illegal token */
-        let(&tmpStr,cat(tmpStr,"?",NULL));
-      }
-    }
-    let(&tmpStr,cat(tmpStr,outputTextString(""/*s[i-1].whiteSpace*/),NULL));
-  }
-  let(&tmpStr1,"");
-
-  startTempAllocStack = saveTempAllocStack;
-  if (tmpStr[0]) makeTempAlloc(tmpStr); /* Flag it for deletion */
-  return (tmpStr);
-}
-
 

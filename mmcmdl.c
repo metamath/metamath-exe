@@ -12,7 +12,6 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdarg.h>
-#include "mmutil.h"
 #include "mmvstr.h"
 #include "mmdata.h"
 #include "mmcmdl.h"
@@ -1068,17 +1067,17 @@ flag processCommandLine(void)
     let(&tmpStr,cat(
           "HELP|SUBMIT|",
           "ADD|DELETE|SUBSTITUTE|S|SWAP|CLEAN|INSERT|BREAK|BUILD|MATCH|SORT|",
-          "UNDUPLICATE|DUPLICATE|UNIQUE|REVERSE|PARALLEL|NUMBER|COUNT|COPY|C|",
-          "TYPE|T|TAG|BEEP|B|EXIT|QUIT|<HELP>",NULL));
+          "UNDUPLICATE|DUPLICATE|UNIQUE|REVERSE|RIGHT|PARALLEL|NUMBER|COUNT|",
+          "COPY|C|TYPE|T|TAG|BEEP|B|EXIT|QUIT|<HELP>",NULL));
     if (!getFullArg(0,tmpStr))
       goto pclbad;
 
     if (cmdMatches("HELP")) {
       if (!getFullArg(1, cat(
           "ADD|DELETE|SUBSTITUTE|S|SWAP|CLEAN|INSERT|BREAK|BUILD|MATCH|SORT|",
-          "UNDUPLICATE|DUPLICATE|UNIQUE|REVERSE|PARALLEL|NUMBER|COUNT|COPY|C|",
+          "UNDUPLICATE|DUPLICATE|UNIQUE|REVERSE|RIGHT|PARALLEL|NUMBER|COUNT|",
           "TYPE|T|TAG|BEEP|B|EXIT|QUIT|",
-          "SUBMIT|SYSTEM|CLI|",
+          "COPY|C|SUBMIT|SYSTEM|CLI|",
           "$|<$>", NULL))) goto pclbad;
       goto pclgood;
     }
@@ -1171,7 +1170,8 @@ flag processCommandLine(void)
       goto pclgood;
     }
     if (cmdMatches("UNDUPLICATE") || cmdMatches("DUPLICATE") ||
-        cmdMatches("UNIQUE") || cmdMatches("REVERSE") || cmdMatches("BUILD")) {
+        cmdMatches("UNIQUE") || cmdMatches("REVERSE") || cmdMatches("BUILD")
+        || cmdMatches("RIGHT")) {
       if (!getFullArg(1,"& Input/output file? "))
         goto pclbad;
       goto pclgood;
@@ -1203,8 +1203,6 @@ flag processCommandLine(void)
       if (!getFullArg(3,"# Last number <10>? "))
         goto pclbad;
       if (!getFullArg(4,"# Increment <1>? "))
-        goto pclbad;
-      if (!getFullArg(5,"* Do you want right-justifed output (Y,N) <N>? "))
         goto pclbad;
       goto pclgood;
     }
@@ -1416,22 +1414,24 @@ flag getFullArg(long arg, vstring cmdList1)
       queryMode = 1;
       tmpArg = cmdInput1(right(cmdList,3));
 
-      /* Strip off any quotes around it */
+      /* Strip off any quotes around it
+         and tolerate lack of trailing quote */
+      /******* (This is no longer done - it is confusing to the user.)
       if (tmpArg[0] == '\'' || tmpArg[0] == '\"') {
         if (tmpArg[0] == tmpArg[len(tmpArg) - 1]) {
           let(&tmpArg, right(left(tmpArg, len(tmpArg) - 1), 2));
         } else {
-          /* Tolerate lack of trailing quote */
           let(&tmpArg, right(tmpArg, 2));
         }
       }
+      *******/
 
       let(&errorLine,right(cmdList,3));
       if (tmpArg[0] == 0) { /* Use default argument */
         let(&tmpArg, seg(defaultCmd,2,len(defaultCmd) - 1));
       }
       let((vstring *)(&rawArgPntr[arg]), tmpArg);
-      rawArgNmbr[arg] = len(cmdList) - 1;/* Line position for error msgs */
+      rawArgNmbr[arg] = len(cmdList) - 1; /* Line position for error msgs */
 
     } /* End of asking user for additional argument */
 
@@ -1660,6 +1660,11 @@ void parseCommandLine(vstring line)
   long tokenStart, i, p, lineLen;
 
   vstring specialOneCharTokens = "";
+
+  /* Initialization to avoid compiler warning (should not be theoretically
+     necessary) */
+  tokenStart = 0;
+
   if (!listMode) {
     let(&specialOneCharTokens, "()/,=:"); /* List of special one-char tokens */
   } else {

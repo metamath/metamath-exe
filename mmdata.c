@@ -73,16 +73,6 @@ pntrString *pntrTempAlloc(long size);
 void pntrCpy(pntrString *sout, pntrString *sin);
 void pntrNCpy(pntrString *s, pntrString *t, long n);
 
-/* Work around VAX c bugs */
-/*
-#ifdef VAXC
-#include "mmutil.h"
-#define malloc(a) vmc_malloc(a)
-#define free(a) vmc_free(a)
-#endif
-*/
-/* End of working around VAX c bugs */
-
 
 /* Memory pools are used to reduce the number of malloc and alloc calls that
    allocate arrays (strings or genStrings typically).   The "free" pool contains
@@ -892,7 +882,7 @@ struct genString *genCat(struct genString *string1,...) /* String concatenation 
   arg[0]=string1;       /* First argument */
 
   va_start(ap,string1); /* Begin the session */
-  while (arg[numArgs++]=va_arg(ap,struct genString *))
+  while ((arg[numArgs++]=va_arg(ap,struct genString *)))
         /* User-provided argument list must terminate with NULL */
     if (numArgs>=M_MAX_CAT_ARGS-1) {
       printf("*** FATAL ERROR ***  Too many cat() arguments\n");
@@ -1990,7 +1980,7 @@ nmbrString *nmbrCat(nmbrString *string1,...) /* String concatenation */
   arg[0]=string1;       /* First argument */
 
   va_start(ap,string1); /* Begin the session */
-  while (arg[numArgs++]=va_arg(ap,nmbrString *))
+  while ((arg[numArgs++]=va_arg(ap,nmbrString *)))
         /* User-provided argument list must terminate with NULL */
     if (numArgs>=M_MAX_CAT_ARGS-1) {
       printf("*** FATAL ERROR ***  Too many cat() arguments\n");
@@ -3434,7 +3424,7 @@ pntrString *pntrCat(pntrString *string1,...) /* String concatenation */
   arg[0]=string1;       /* First argument */
 
   va_start(ap,string1); /* Begin the session */
-  while (arg[numArgs++]=va_arg(ap,pntrString *))
+  while ((arg[numArgs++]=va_arg(ap,pntrString *)))
         /* User-provided argument list must terminate with NULL */
     if (numArgs>=M_MAX_CAT_ARGS-1) {
       printf("*** FATAL ERROR ***  Too many cat() arguments\n");

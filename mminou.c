@@ -628,7 +628,7 @@ FILE *fSafeOpen(vstring fileName, vstring mode)
           bakName, "\".", NULL), "  ", " ");
       ***/
     } /* End if file already exists */
-   skip_backup:
+   /*skip_backup:*/
 
     fp = fopen(fileName, "w");
     if (!fp) {

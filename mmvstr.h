@@ -153,6 +153,11 @@ long instr(long start, vstring sin, vstring s);
 long ascii_(vstring c);
 double val(vstring s);
 
+/* Emulation of PROGRESS string functions added 11/25/98 */
+vstring entry(long element, vstring list);
+long lookup(vstring expression, vstring list);
+long numEntries(vstring list);
+long entryPosition(long element, vstring list);
 
 /* Routines may/may not be written (lowest priority):
 vstring place$(vstring sout);

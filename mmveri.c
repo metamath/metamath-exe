@@ -275,6 +275,18 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
   nmbrString *nmbrTmp = NULL_NMBRSTRING; /* Used to force tmp stack dealloc */
 
   long nmbrSaveTempAllocStack;
+
+  /* Initialization to avoid compiler warnings (should not be theoretically
+     necessary) */
+  dILenR = 0;
+  dILenO = 0;
+  optStart = 0;
+  reqStart = 0;
+  nmbrTmpPtrAIR = NULL_NMBRSTRING;
+  nmbrTmpPtrBIR = NULL_NMBRSTRING;
+  nmbrTmpPtrAIO = NULL_NMBRSTRING;
+  nmbrTmpPtrBIO = NULL_NMBRSTRING;
+
   nmbrSaveTempAllocStack = nmbrStartTempAllocStack;
   nmbrStartTempAllocStack = nmbrTempAllocStackTop; /* For nmbrLet() stack cleanup*/
 

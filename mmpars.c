@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*               Copyright (C) 1998, NORMAN D. MEGILL                        */
+/*               Copyright (C) 1999, NORMAN D. MEGILL                        */
 /*****************************************************************************/
 
 /*3456789012345678901234567890123456789012345678901234567890123456789012345678*/
@@ -46,6 +46,7 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
 {
   FILE *input_fp;
   long charCount = 0;
+  long fileCharCount; /* charCount for user message */
   long startIncludeCalls;
   long saveIncludeCalls;
   long i, j;
@@ -65,6 +66,11 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
   static char* fileNameBufStrt; /* For file-not-found error msg */
   static char* fileNamePtr; /* For file-not-found error msg */
   static long fileNameLen; /* For file-not-found error msg */
+
+  /* Initialization to avoid compiler warning (should not be theoretically
+     necessary) */
+  startSection = "";
+  tmpPtr = "";
 
   startIncludeCalls = includeCalls;
   if (!startIncludeCalls) {
@@ -125,6 +131,7 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
   fclose(input_fp);
   fileBuf[charCount] = 0; /* End of string */
 /*E*/if(db5)print2("In text mode the file has %ld bytes.\n",charCount);
+  fileCharCount = charCount; /* Save file size for user message */
 
   /* See if last char is newline (needed for comment terminator); if not, add */
   if (fileBuf[charCount - 1] != '\n') {
@@ -133,7 +140,7 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
     rawSourceError(fileBuf, &fileBuf[charCount - 1], 1, 0, input_fn,cat(
         "The last line in the file does not end with a \"line break\"",
         " character.  The \"line break\" character is a line feed in Unix",
-        " and a carriage return on the Macintosh.",NULL));
+        " or a carriage return on the Macintosh or a CR/LF in Windows.",NULL));
     charCount++;
   }
 
@@ -368,7 +375,7 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
 
   if (fbPtr != fileBuf + charCount) bug(1704);
 
-  let(&tmpStr, cat(str(lineNum - 1), " lines (", str(charCount),
+  let(&tmpStr, cat(str(lineNum - 1), " lines (", str(fileCharCount),
       " characters) were read from \"", input_fn, NULL));
   if (startIncludeCalls == 0) {
     print2("%s",cat(tmpStr, "\".\n", NULL));
@@ -410,6 +417,11 @@ void parseKeywords(void)
   char *nextInclPtr;
   long lineNum;
   vstring fileName;
+
+  /* Initialization to avoid compiler warning (should not be theoretically
+     necessary) */
+  type = 0;
+
 /*E*/if(db5)print2("The total source length is %ld bytes.\n",sourceLen);
 /*E*/if(db5){ print2("Include call table:\n");
 
@@ -629,7 +641,7 @@ void parseKeywords(void)
 
   if (fbPtr != sourcePtr + sourceLen) bug(1706);
 
-  print2("The source file has %ld statements; %ld are $a and %ld are $p.\n",
+  print2("The source has %ld statements; %ld are $a and %ld are $p.\n",
        statements, dollarACount, dollarPCount);
 
   /* Put chars after the last $. into the label section of a dummy statement */
@@ -991,6 +1003,11 @@ void parseStatements(void)
 
   long maxSymbolLen; /* Longest math symbol (for speedup) */
   flag *symbolLenExists; /* A symbol with this length exists (for speedup) */
+
+  /* Initialization to avoid compiler warning (should not be theoretically
+     necessary) */
+  mathStringLen = 0;
+  tokenNum = 0;
 
   /* Initialize flags for mathKey array that identify math symbols as
      unique (when 0) or, if not unique, the flag is a number identifying a group
@@ -2594,6 +2611,9 @@ char parseCompressedProof(long statemNum)
   static long lettersLen;
   static long digitsLen;
 
+  /* Initialization to avoid compiler warning (should not be theoretically
+     necessary) */
+  labelStart = "";
 
   /* Do one-time initialization */
   if (!chrTablesInited) {
@@ -2617,18 +2637,18 @@ char parseCompressedProof(long statemNum)
     }
     j = lettersLen;
     for (i = 0; i < j; i++) {
-      chrWeight[letters[i]] = i;
-      chrType[letters[i]] = 0; /* Letter */
+      chrWeight[(long)(letters[i])] = i;
+      chrType[(long)(letters[i])] = 0; /* Letter */
     }
     j = digitsLen;
     for (i = 0; i < j; i++) {
-      chrWeight[digits[i]] = i;
-      chrType[digits[i]] = 1; /* Digit */
+      chrWeight[(long)(digits[i])] = i;
+      chrType[(long)(digits[i])] = 1; /* Digit */
     }
     for (i = 0; i < 256; i++) {
       if (isspace(i)) chrType[i] = 3; /* White space */
     } /* Next i */
-    chrType[labelChar] = 2; /* Colon */
+    chrType[(long)(labelChar)] = 2; /* Colon */
     chrType['$'] = 4; /* Dollar */
     chrType['?'] = 5; /* Question mark */
   }
@@ -2877,7 +2897,7 @@ char parseCompressedProof(long statemNum)
   breakFlag = 0;
   labelMapIndex = 0;
   while (1) {
-    switch (chrType[fbPtr[0]]) {
+    switch (chrType[(long)(fbPtr[0])]) {
       case 0: /* Letter */
         if (!labelMapIndex) labelStart = fbPtr; /* Save for error msg */
 
@@ -2886,7 +2906,8 @@ char parseCompressedProof(long statemNum)
         wrkProof.stepSrcPtrNmbr[wrkProof.numSteps] = tokenLen;
         wrkProof.stepSrcPtrPntr[wrkProof.numSteps] = labelStart; /* Token ptr */
 
-        labelMapIndex = labelMapIndex * lettersLen + chrWeight[fbPtr[0]];
+        labelMapIndex = labelMapIndex * lettersLen +
+            chrWeight[(long)(fbPtr[0])];
         if (labelMapIndex >= wrkProof.compressedPfNumLabels) {
           if (!wrkProof.errorCount) {
             sourceError(labelStart, tokenLen, statemNum, cat(
@@ -2996,10 +3017,10 @@ char parseCompressedProof(long statemNum)
       case 1: /* Digit */
         if (!labelMapIndex) {
           /* First digit; mod digitsLen+1 */
-          labelMapIndex = chrWeight[fbPtr[0]] + 1;
+          labelMapIndex = chrWeight[(long)(fbPtr[0])] + 1;
           labelStart = fbPtr; /* Save label start for error msg */
         } else {
-          labelMapIndex = labelMapIndex * digitsLen + chrWeight[fbPtr[0]];
+          labelMapIndex = labelMapIndex * digitsLen + chrWeight[(long)(fbPtr[0])];
         }
         break;
 
@@ -3211,6 +3232,11 @@ void sourceError(char *ptr, long tokenLen, long stmtNum, vstring errMsg)
   long lineNum;
   long i, j;
   vstring errorMsg = "";
+
+  /* Initialization to avoid compiler warning (should not be theoretically
+     necessary) */
+  i = 0;
+
   let(&errorMsg, errMsg); /* Prevent deallocation of errMsg */
 
   if (!stmtNum) {
@@ -3660,6 +3686,10 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
   nmbrStartTempAllocStack = nmbrTempAllocStackTop;
   saveTempAllocStack = startTempAllocStack;
   startTempAllocStack = tempAllocStackTop;
+
+  /* Initialization to avoid compiler warning (should not be theoretically
+     necessary) */
+  tokenNum = 0;
 
   /* Add a newline before user text for sourceError() */
   let(&nlUserText, cat("\n", userText, NULL));

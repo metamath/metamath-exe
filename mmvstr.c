@@ -39,7 +39,6 @@ vstring tempAlloc(long size)    /* String memory allocation/deallocation */
   if (size) {
     if (tempAllocStackTop>=(MAX_ALLOC_STACK-1)) {
       printf("*** FATAL ERROR ***  Temporary string stack overflow\n");
-/*E*/printf("%s",NULL);
       bug(2201);
     }
     if (!(tempAllocStack[tempAllocStackTop++]=malloc(size))) {
@@ -68,7 +67,6 @@ void makeTempAlloc(vstring s)
 {
     if (tempAllocStackTop>=(MAX_ALLOC_STACK-1)) {
       printf("*** FATAL ERROR ***  Temporary string stack overflow\n");
-/*E*/printf("%s",NULL);
       bug(2203);
     }
     tempAllocStack[tempAllocStackTop++]=s;
@@ -151,7 +149,7 @@ vstring cat(vstring string1,...)        /* String concatenation */
   arg[0]=string1;       /* First argument */
 
   va_start(ap,string1); /* Begin the session */
-  while (arg[numArgs++]=va_arg(ap,char *))
+  while ((arg[numArgs++]=va_arg(ap,char *)))
         /* User-provided argument list must terminate with 0 */
     if (numArgs>=MAX_CAT_ARGS-1) {
       printf("*** FATAL ERROR ***  Too many cat() arguments\n");
@@ -385,6 +383,7 @@ EDIT$
       if (graphicsChar >= 234 && graphicsChar <= 237) sout[i] = '+';
       if (graphicsChar == 241) sout[i] = '-';
       if (graphicsChar == 248) sout[i] = '|';
+      if (graphicsChar == 166) sout[i] = '|';
       /* vt100 */
       if (graphicsChar == 218 /*up left*/ || graphicsChar == 217 /*lo r*/
           || graphicsChar == 191 /*up r*/ || graphicsChar == 192 /*lo l*/)
@@ -718,6 +717,137 @@ vstring num1(double f)
 vstring num(double f)
 {
   return (cat(" ",str(f)," ",NULL));
+}
+
+
+
+/*** NEW FUNCTIONS ADDED 11/25/98 ***/
+
+/* Emulate PROGRESS "entry" and related string functions */
+/* (PROGRESS is a 4-GL database language) */
+
+/* A "list" is a string of comma-separated elements.  Example:
+   "a,b,c" has 3 elements.  "a,b,c," has 4 elements; the last element is
+   an empty string.  ",," has 3 elements; each is an empty string.
+   In "a,b,c", the entry numbers of the elements are 1, 2 and 3 (i.e.
+   the entry numbers start a 1, not 0). */
+
+/* Returns a character string entry from a comma-separated
+   list based on an integer position. */
+/* If element is less than 1 or greater than number of elements
+   in the list, a null string is returned. */
+vstring entry(long element, vstring list)
+{
+  vstring sout;
+  long commaCount, lastComma, i, len;
+  if (element < 1) return ("");
+  lastComma = -1;
+  commaCount = 0;
+  i = 0;
+  while (list[i] != 0) {
+    if (list[i] == ',') {
+      commaCount++;
+      if (commaCount == element) {
+        break;
+      }
+      lastComma = i;
+    }
+    i++;
+  }
+  if (list[i] == 0) commaCount++;
+  if (element > commaCount) return ("");
+  len = i - lastComma - 1;
+  if (len < 1) return ("");
+  sout = tempAlloc(len + 1);
+  strncpy(sout, list + lastComma + 1, len);
+  sout[len] = 0;
+  return (sout);
+}
+
+/* Emulate PROGRESS lookup function */
+/* Returns an integer giving the first position of an expression
+   in a comma-separated list. Returns a 0 if the expression
+   is not in the list. */
+long lookup(vstring expression, vstring list)
+{
+  long i, exprNum, exprPos;
+  char match;
+
+  match = 1;
+  i = 0;
+  exprNum = 0;
+  exprPos = 0;
+  while (list[i] != 0) {
+    if (list[i] == ',') {
+      exprNum++;
+      if (match) {
+        if (expression[exprPos] == 0) return exprNum;
+      }
+      exprPos = 0;
+      match = 1;
+      i++;
+      continue;
+    }
+    if (match) {
+      if (expression[exprPos] != list[i]) match = 0;
+    }
+    i++;
+    exprPos++;
+  }
+  exprNum++;
+  if (match) {
+    if (expression[exprPos] == 0) return exprNum;
+  }
+  return 0;
+}
+
+
+/* Emulate PROGRESS num-entries function */
+/* Returns the number of items in a comma-separated list. */
+long numEntries(vstring list)
+{
+  long i, commaCount;
+  i = 0;
+  commaCount = 0;
+  while (list[i] != 0) {
+    if (list[i] == ',') commaCount++;
+    i++;
+  }
+  return (commaCount + 1);
+}
+
+/* Returns the character position of the start of the
+   element in a list - useful for manipulating
+   the list string directly.  1 means the first string
+   character. */
+/* If element is less than 1 or greater than number of elements
+   in the list, a 0 is returned.  If entry is null, a 0 is
+   returned. */
+long entryPosition(long element, vstring list)
+{
+  long commaCount, lastComma, i;
+  if (element < 1) return 0;
+  lastComma = -1;
+  commaCount = 0;
+  i = 0;
+  while (list[i] != 0) {
+    if (list[i] == ',') {
+      commaCount++;
+      if (commaCount == element) {
+        break;
+      }
+      lastComma = i;
+    }
+    i++;
+  }
+  if (list[i] == 0) {
+    if (i == 0) return 0;
+    if (list[i - 1] == ',') return 0;
+    commaCount++;
+  }
+  if (element > commaCount) return (0);
+  if (list[lastComma + 1] == ',') return 0;
+  return (lastComma + 2);
 }
 
 

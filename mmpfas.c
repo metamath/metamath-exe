@@ -277,6 +277,10 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
   nmbrString *hypTestPtr; /* Points to what we are testing hyp. against */
   flag hypOrSubproofFlag; /* 0 means testing against hyp., 1 against subproof*/
 
+  /* Initialization to avoid compiler warning (should not be theoretically
+     necessary) */
+  substep = 0;
+
 
   mString = proofInProgress.target[step];
   mStringLen = nmbrLen(mString);
@@ -1837,6 +1841,11 @@ void autoUnify(flag congrats)
   nmbrString *schemeBPtr; /* Pointer only; not allocated */
   pntrString *stateVector = NULL_PNTRSTRING;
   flag somethingNotUnified = 0;
+
+  /* Initialization to avoid compiler warning (should not be theoretically
+     necessary) */
+  schemeAPtr = NULL_NMBRSTRING;
+  schemeBPtr = NULL_NMBRSTRING;
 
   plen = nmbrLen(proofInProgress.proof);
 
