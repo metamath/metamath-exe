@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*       Copyright (C) 2002  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*        Copyright (C) 2002  NORMAN MEGILL  nm@alum.mit.edu                 */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -104,7 +104,7 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
     return ("");
   }
 #ifndef SEEK_END
-/* The GCC compiler doesn't have this ANSII standard constant defined. */
+/* An older GCC compiler didn't have this ANSI standard constant defined. */
 #define SEEK_END 2
 #endif
   if (fseek(input_fp, 0, SEEK_END)) bug(1701);
@@ -404,7 +404,7 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
    includeCall[] array is assumed to be created with readRawInput. */
 void parseKeywords(void)
 {
-  long i;
+  long i, j;
   char *fbPtr;
   flag insideComment;
   char mode, type;
@@ -475,6 +475,7 @@ void parseKeywords(void)
   statement[i].optDisjVarsA = NULL_NMBRSTRING;
   statement[i].optDisjVarsB = NULL_NMBRSTRING;
   statement[i].optDisjVarsStmt = NULL_NMBRSTRING;
+  statement[i].pinkNumber = 0;
   for (i = 1; i < potentialStatements; i++) {
     statement[i] = statement[0];
   }
@@ -650,11 +651,26 @@ void parseKeywords(void)
        statements, dollarACount, dollarPCount);
 
   /* Put chars after the last $. into the label section of a dummy statement */
-  statement[statements + 1].lineNum = lineNum - 1;
+  /* statement[statements + 1].lineNum = lineNum - 1; */
+  /* 10/14/02 Changed this to lineNum so mmwtex $t error msgs will be correct */
+  /* Here, lineNum will be one plus the number of lines in the file */
+  statement[statements + 1].lineNum = lineNum;
   statement[statements + 1].fileName = fileName;
   statement[statements + 1].type = illegal_;
   statement[statements + 1].labelSectionPtr = startSection;
   statement[statements + 1].labelSectionLen = fbPtr - startSection;
+
+  /* 10/25/02 Initialize the pink number to print after the statement labels
+   in HTML output. */
+  /* The pink number only counts $a and $p statements, unlike the statement
+     number which also counts $f, $e, $c, $v, ${, $} */
+  j = 0;
+  for (i = 1; i <= statements; i++) {
+    if (statement[i].type == a__ || statement[i].type == p__) {
+      j++;
+      statement[i].pinkNumber = j;
+    }
+  }
 
 /*E*/if(db5){for (i=1; i<=statements; i++){
 /*E*/  if (i == 5) { print2("(etc.)\n");} else { if (i<5)
@@ -878,8 +894,8 @@ void parseMathDecl(void)
           sourceError(fbPtr, 2, stmt,
            "At least one math symbol should be declared.");
         }
-    }
-  }
+    } /* end switch (statement[stmt].type) */
+  } /* next stmt */
 
 /*E*/if(db5)print2("%ld math symbols were declared.\n",mathTokens);
   /* Reallocate from potential to actual to reduce memory space */
@@ -1517,7 +1533,7 @@ void parseStatements(void)
                   str(labelKey[j]),
                   ", line ", str(statement[labelKey[j]].lineNum),
                   ", file \"", statement[labelKey[j]].fileName,
-                  "\".  Use another name for this label.",NULL));
+                  "\".  Use another name for this label.", NULL));
               break;
             }
           }
@@ -3366,6 +3382,26 @@ vstring shortDumpRPNStack(void) {
   if (wrkProof.RPNStackPtr == 0) let(&tmpStr2,"RPN stack is empty");
   let(&tmpStr,"");
   return(tmpStr2);
+}
+
+/* 10/10/02 */
+/* ???Todo:  use this elsewhere in mmpars.c to modularize this lookup */
+/* Lookup $a or $p label and return statement number.
+   Return -1 if not found. */
+long lookupLabel(vstring label)
+{
+  void *voidPtr; /* bsearch returned value */
+  long statemNum;
+  /* Find the statement number */
+  voidPtr = (void *)bsearch(label, labelKeyBase, numLabelKeys, sizeof(long),
+      labelSrchCmp);
+  if (!voidPtr) {
+    return (-1);
+  }
+  statemNum = (*(long *)voidPtr); /* Statement number */
+  if (statement[statemNum].type != a__ && statement[statemNum].type != p__)
+      bug(1718);
+  return (statemNum);
 }
 
 

@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*       Copyright (C) 2002  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*        Copyright (C) 2002  NORMAN MEGILL  nm@alum.mit.edu                 */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -48,11 +48,12 @@ H("  TAG - Tag edit updates in a program for revision control");
 H("  SORT - Sort the lines in a file with key starting at specified string");
 H("  MATCH - Extract lines containing (or not) a specified string");
 /*H("  LEXTRACT - Extract lines containing (or not) strings from a list");*/
-H("  UNDUPLICATE - Extract first occurrence of each line in a file");
-H("  DUPLICATE - Extract first occurrence of each line occurring more than");
-H("      once in a file");
+H("  UNDUPLICATE - Eliminate duplicate occurrences of lines in a file");
+H("  DUPLICATE - Extract first occurrence of any line occurring more than");
+H("      once in a file, discarding lines occurring exactly once");
 H("  UNIQUE - Extract lines occurring exactly once in a file");
-H("  (UNDUPLICATE, DUPLICATE, and UNIQUE also sort the lines.)");
+H(
+"  (UNDUPLICATE, DUPLICATE, and UNIQUE also sort the lines as a side effect.)");
 H("  TYPE (10 lines) - Similar to Unix \"head\"");
 /*H("  COPY, RENAME - Similar to Unix cat, mv but with backups created");*/
 H(
@@ -373,9 +374,8 @@ H("         information.  Proofs may be compressed for storage efficiency.  A");
 H("         compressed proof is a series of labels in parentheses followed by");
 H("         a string of capital letters; see book for compression algorithm.");
 H("");
-H("  A substitution is the simultaneous replacement of all occurrences of");
-H("  each variable with a <symbol> string in an assertion and all of its");
-H("  required hypotheses.");
+H("  A substitution is the replacement of a variable with a <symbol> string");
+H("  throughout an assertion and its required hypotheses.");
 H("");
 H("  In a proof, the label of a hypothesis ($e or $f) pushes the stack, and");
 H("  the label of an assertion ($a or $p) pops from the stack a number of");
@@ -414,7 +414,7 @@ H("         $t - flags comment as containing LaTeX and/or HTML typesetting");
 H("             definitions; see HELP LATEX or HELP HTML for more information");
 H("       Note:  Comments may not be nested.");
 H("");
-H("  $[ <file-name> $] - place contents of file <file-name> here; second,");
+H("  $[ <file-name> $] - place contents of file <file-name> here; a second,");
 H("       recursive, or self reference to a file is ignored");
 H("");
 
@@ -662,6 +662,11 @@ H("");
 H("(In Proof Assistant mode) The EXIT command will return to the MM> prompt.");
 H("If there were changes to the proof, you will be given an opportunity to");
 H("SAVE NEW_PROOF.");
+H("");
+H("The QUIT command is a synonym for EXIT.");
+H("");
+H("**Warning**  Pressing CTRL-C will abort the Metamath program");
+H("unconditionally.  This means any unsaved work will be lost.");
 H("");
 
 

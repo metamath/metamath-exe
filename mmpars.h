@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*       Copyright (C) 2002  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*        Copyright (C) 2002  NORMAN MEGILL  nm@alum.mit.edu                 */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -97,12 +97,12 @@ struct wrkProof_struct {
                                    vs. step number - label src ptrs */
   flag *localLabelFlag; /* 1 means step has a local label declaration */
   struct sortHypAndLoc *hypAndLocLabel;
-                         /* Sorted ptrs to hyp and local label names + token# */
+                        /* Sorted ptrs to hyp and local label names + token# */
   char *localLabelPool; /* String pool to hold local labels */
   nmbrString *proofString; /* The proof in RPN - statement # if > 0
-                              or -(step # + 1000) of local label decl if < -1 */
+                             or -(step # + 1000) of local label decl if < -1 */
   pntrString *mathStringPtrs; /* Ptr to math string vs. each step */
-                        /* (Allocated in verifyProof() as needed by nmbrLet()) */
+                      /* (Allocated in verifyProof() as needed by nmbrLet()) */
   nmbrString *RPNStack; /* Stack for RPN parsing */
 
   /* For compressed proof parsing */
@@ -117,6 +117,11 @@ extern struct wrkProof_struct wrkProof;
 nmbrString *parseMathTokens(vstring userText, long statemNum);
 
 vstring outputStatement(long stmt);
+
+/* 10/10/02 */
+/* Lookup $a or $p label and return statement number.
+   Return -1 if not found. */
+long lookupLabel(vstring label);
 
 /* Obsolete */
 void statementError(vstring msg,vstring statementSoFar);

@@ -1,8 +1,14 @@
 /*****************************************************************************/
-/*       Copyright (C) 2002  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*        Copyright (C) 2002  NORMAN MEGILL  nm@alum.mit.edu                 */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
+
+/* Colors for HTML pages. */
+#define GREEN_TITLE_COLOR "\"#006600\""
+#define MINT_BACKGROUND_COLOR "\"#EEFFFA\""
+#define PINK_NUMBER_COLOR "\"#FF6666\""
+#define PURPLISH_BIBLIO_COLOR "\"#FAEEFF\""
 
 /* HTML flags */
 extern flag htmlFlag;  /* HTML flag: 0 = TeX, 1 = HTML */
@@ -17,9 +23,14 @@ extern long extHtmlStmt; /* At this statement and above, use the exthtmlxxx
     database. */
 extern vstring extHtmlTitle; /* Title of extended section if any; set by
     by exthtmltitle command in special $t comment of database source */
+extern vstring htmlVarColors; /* Set by htmlvarcolor commands */
+/* Added 10/13/02 for use in metamath.c bibliography cross-reference */
+extern vstring htmlBibliography; /* Optional; set by htmlbibliography command */
+extern vstring extHtmlBibliography; /* Optional; set by exthtmlbibliography
+                                       command */
 
 /* TeX word-processor-specific routines */
-flag readTexDefs(vstring tex_def_fn, flag promptForFile);
+flag readTexDefs(void);
                                                     /* Returns 1=OK, 0=error */
 extern flag texDefsRead;
 long texDefWhiteSpaceLen(char *ptr);
@@ -58,13 +69,13 @@ extern vstring tex_dict_fn;   /* File names */
 extern flag texFileOpenFlag;
 extern FILE *texFilePtr;
 
+/* Pink statement number for HTML pages */
+/* 10/10/02 (This is no longer used?) */
+long pinkNumber(long statemNum);
 
-#define MAX_GRAPHIC_DEFS 1000 /* Maximum number of defined math tokens */
-#define MAX_LINE_LENGTH 64 /* Maximum output file line length */
+/* Pink statement number HTML code for HTML pages - added 10/10/02 */
+/* Warning: caller must deallocate returned string */
+vstring pinkHTML(long statemNum);
+#define PINK_NBSP "&nbsp;" /* Either "" or "&nbsp;" depending on taste, it is
+                   the separator between a statement href and its pink number */
 
-/* Storage of graphics for math tokens */
-extern vstring graTokenName[MAX_GRAPHIC_DEFS]; /* ASCII abbreviation of token */
-extern int graTokenLength[MAX_GRAPHIC_DEFS];    /* length of graTokenName */
-extern vstring graTokenDef[MAX_GRAPHIC_DEFS]; /* Graphics definition */
-extern int maxGraDef; /* Number of tokens defined so far */
-extern int maxGraTokenLength; /* Largest graTokenName length */

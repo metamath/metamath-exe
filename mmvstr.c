@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*       Copyright (C) 2002  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*        Copyright (C) 2002  NORMAN MEGILL  nm@alum.mit.edu                 */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -138,7 +138,7 @@ void let(vstring *target,vstring source)        /* String assignment */
 
 
 vstring cat(vstring string1,...)        /* String concatenation */
-#define MAX_CAT_ARGS 30
+#define MAX_CAT_ARGS 50
 {
   va_list ap;   /* Declare list incrementer */
   vstring arg[MAX_CAT_ARGS];    /* Array to store arguments */
@@ -153,7 +153,7 @@ vstring cat(vstring string1,...)        /* String concatenation */
   va_start(ap,string1); /* Begin the session */
   while ((arg[numArgs++]=va_arg(ap,char *)))
         /* User-provided argument list must terminate with 0 */
-    if (numArgs>=MAX_CAT_ARGS-1) {
+    if (numArgs >= MAX_CAT_ARGS - 1) {
       printf("*** FATAL ERROR ***  Too many cat() arguments\n");
       bug(2206);
     }

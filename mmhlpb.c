@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*       Copyright (C) 2002  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*        Copyright (C) 2002  NORMAN MEGILL  nm@alum.mit.edu                 */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -27,6 +27,7 @@ H("with the Metamath book.  In particular, you will need to learn");
 H("the syntax of the Metamath language.");
 H("");
 H("For a summary of the Metamath language, type HELP LANGUAGE.");
+H("For help invoking Metamath, type HELP INVOKE.");
 H("For help using the command line interpreter, type HELP CLI.");
 H("For help getting started, type HELP DEMO.");
 H("For help exploring the data base, type HELP EXPLORE.");
@@ -35,13 +36,53 @@ H("For help creating Web pages, type HELP HTML.");
 H("For help using the Proof Assistant, type HELP PROOF_ASSISTANT.");
 H("For a list of help topics, type HELP ?.");
 H("For current program settings, type SHOW SETTINGS.");
-H("To exit Metamath, type EXIT.");
+H("To exit Metamath, type EXIT (or its synonym QUIT).");
 H("");
 H("If you need technical support, contact Norman Megill at nm@alum.mit.edu.");
-H("Copyright (C) 2002 Norman D. Megill");
+H("Copyright (C) 2002 Norman Megill");
 H("License terms:  GNU General Public License");
 H("");
 
+printHelp = !strcmp(helpCmd, "HELP INVOKE");
+H("To invoke Metamath from a Unix/Linux/MacOSX prompt, assuming that the");
+H("Metamath program is in the current directory, type");
+H("");
+H("  bash$ ./metamath");
+H("");
+H("To invoke Metamath from a Windows DOS or Command Prompt, assuming that");
+H("the Metamath program is in the current directory (or in a directory");
+H("included in the Path system environment variable), type");
+H("");
+H("  C:\\metamath>metamath");
+H("");
+H("To use command-line arguments at invocation, the command-line arguments");
+H("should be a list of Metamath commands, surrounded by quotes if they");
+H("contain spaces.  In Windows DOS, the surrounding quotes must be double");
+H("(not single) quotes.  For example, to read the database set.mm verify");
+H("all proofs, and exit the program, type (under Unix)");
+H("");
+H("  bash$ ./metamath \"read set.mm\" \"verify proof *\" exit");
+H("");
+H("Note that in Unix, any directory path with /'s must be surrounded by");
+H("quotes so Metamath will not interpret the / as a command qualifier.  So");
+H("if set.mm is in the \"/tmp\" directory, use for the above example");
+H("");
+H("  bash$ ./metamath \"read '/tmp/set.mm'\" \"verify proof *\" exit");
+H("");
+H("For convenience, if the command-line has one argument and no spaces in");
+H("the argument, the command is implicitly assumed to be \"READ\".  Thus");
+H("");
+H("  bash$ ./metamath set.mm");
+H("");
+H("and");
+H("");
+H("  bash$ ./metamath \"read set.mm\"");
+H("");
+H("are equivalent.  To read from the \"/tmp\" directory in Unix, the first");
+H("example would be");
+H("");
+H("  bash$ ./metamath \"'/tmp/set.mm'\"");
+H("");
 
 printHelp = !strcmp(helpCmd, "HELP CLI");
 H("Each command line is a sequence of English-like words separated by");
@@ -83,6 +124,9 @@ H("\"MM>\" prompt.  After the first screen, you are also presented with B");
 H("to go back a screenful.  Note that B may also be entered at the \"MM>\"");
 H("prompt immediately after a command to scroll back through the output of");
 H("that command.");
+H("");
+H("**Warning**  Pressing CTRL-C will abort the Metamath program");
+H("unconditionally.  This means any unsaved work will be lost.");
 H("");
 H("A command line enclosed in quotes is executed by your operating system.");
 H("See HELP SYSTEM.");
@@ -462,7 +506,8 @@ H("Syntax:  WRITE SOURCE <filename>");
 H("");
 H("This command will write the contents of the Metamath database into a file.");
 H("Note:  The present version of Metamath will not split the database into");
-H("its constituent files included with $[ $] keywords.");
+H("its constituent files included with $[ $] keywords.  Instead it will write");
+H("the entire database as one big file.");
 H("");
 
 
@@ -480,7 +525,9 @@ H("If LAST is specified instead of <step> number, the last step that is shown");
 H("by SHOW NEW_PROOF /ESSENTIAL /UNKNOWN will be used.  This can be useful for");
 H("building a proof with a command file (see HELP SUBMIT).  Note that");
 H("interactive unification is not done after ASSIGN LAST, so the UNIFY ALL");
-H("/INTERACTIVE may have to used after ASSIGN LAST.");
+H("/INTERACTIVE may have to used after ASSIGN LAST.  (The reason is to");
+H("provide predictable responses when SUBMIT command files are run using");
+H("ASSIGN LAST to reconstruct parts of proofs.)");
 H("");
 
 printHelp = !strcmp(helpCmd, "HELP REPLACE");

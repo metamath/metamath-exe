@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*       Copyright (C) 2002  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*        Copyright (C) 2002  NORMAN MEGILL  nm@alum.mit.edu                 */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -72,8 +72,8 @@ flag processCommandLine(void)
           "READ|ERASE|",
           "OPEN|CLOSE|SHOW|SEARCH|SET|VERIFY|SUBMIT|SYSTEM|PROVE|FILE|WRITE|",
           "ASSIGN|REPLACE|MATCH|UNIFY|LET|INITIALIZE|DELETE|IMPROVE|",
-          "MINIMIZE_WITH|SAVE|DEMO|CLI|EXPLORE|TEX|LATEX|HTML|TOOLS|MIDI|",
-          "$|<$>", NULL))) goto pclbad;
+          "MINIMIZE_WITH|SAVE|DEMO|INVOKE|CLI|EXPLORE|TEX|LATEX|HTML|TOOLS|",
+          "MIDI|$|<$>", NULL))) goto pclbad;
       if (cmdMatches("HELP OPEN")) {
         if (!getFullArg(2, "LOG|TEX|HTML|<LOG>")) goto pclbad;
         goto pclgood;

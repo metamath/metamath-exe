@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*       Copyright (C) 2002  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*        Copyright (C) 2002  NORMAN MEGILL  nm@alum.mit.edu                 */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -803,7 +803,10 @@ char unify(
      the 2nd constant of some earlier $a statement (e.g. "<" matches
      "class <", "Ord (/)" matches "class Ord A").  Same applies to
      last symbol. */
-  if (j/*subst len*/ > 0) {
+  /* 10/12/02 - This prefilter is too aggressive when empty substitutions
+     are allowed.  Therefore added "minSubstLen > 0" to fix miu.mm theorem1
+     Proof Assistant failure reported by Josh Purinton. */
+  if (j/*subst len*/ > 0 && minSubstLen > 0) {
     impossible = 0;
     if (mathToken[substitution[0]].tokenType == (char)con__) {
       if (!firstConst[substitution[0]]

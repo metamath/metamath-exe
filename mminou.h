@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*       Copyright (C) 2002  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*        Copyright (C) 2002  NORMAN MEGILL  nm@alum.mit.edu                 */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -55,3 +55,11 @@ int fSafeRename(vstring oldFileName, vstring newFileName);
    nnn + ".tmp" that does not exist.  THE CALLER MUST DEALLOCATE
    THE RETURNED STRING. */
 vstring fGetTmpName(vstring filePrefix);
+
+/* This function returns a character string containing the entire contents of
+   an ASCII file, or Unicode file with only ASCII characters.   On some
+   systems it is faster than reading the file line by line.  THE CALLER
+   MUST DEALLOCATE THE RETURNED STRING.  If a NULL is returned, the file
+   could not be opened or had a non-ASCII Unicode character or some other
+   problem.   If verbose is 0, error and warning messages are suppressed. */
+vstring readFileToString(vstring fileName, char verbose);

@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*       Copyright (C) 2002  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*        Copyright (C) 2002  NORMAN MEGILL  nm@alum.mit.edu                 */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -1384,7 +1384,6 @@ void minimizeProof(long repStatemNum, long prvStatemNum,
         continue;
       }
 
-
       /* Get the subproof at step s */
       sublen = subProofLen(proofInProgress.proof, step);
       if (sublen > nmbrLen(newSubProofPtr) || allowGrowthFlag) {
@@ -1554,9 +1553,14 @@ void assignKnownSteps(long startStep, long sbProofLen)
   stackPtr = 0;
   for (pos = startStep; pos < startStep + sbProofLen; pos++) {
     stmt = proofInProgress.proof[pos];
-    if (stmt <= 0) bug(1810); /* Compact proofs are not handled (yet?) */
+
+    if (stmt <= 0) {
+      if (stmt != -(long)'?') bug(1810); /* Compact proofs are not handled (yet?) */
+      if (stmt == -(long)'?') bug(1830); /* Unknown proofs are not handled (yet?) */
+    }
+
     if (statement[stmt].type == (char)e__ || statement[stmt].type == (char)f__){
-      /* It's a hypothesis; assign step; push the stack */
+      /* It's a hypothesis or unknown step; assign step; push the stack */
       nmbrLet((nmbrString **)(&(proofInProgress.source[pos])),
           statement[stmt].mathString);
       stack[stackPtr] = pos;

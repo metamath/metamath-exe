@@ -1,10 +1,10 @@
 /*****************************************************************************/
-/*       Copyright (C) 2002  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*        Copyright (C) 2002  NORMAN MEGILL  nm@alum.mit.edu                 */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.07i 10-Feb-02"
+#define MVERSION "0.07m 17-Nov-02"
 /* Metamath Proof Verifier - main program */
 /* See the book "Metamath" for description of Metamath and run instructions */
 
@@ -118,11 +118,14 @@ console_options.title = (unsigned char*)"\pMetamath";
   toolsMode = listMode;
 
   if (!listMode) {
-    print2("Metamath - Version %s\n", MVERSION);
+    /*print2("Metamath - Version %s\n", MVERSION);*/
+    print2("Metamath - Version %s%s", MVERSION, space(25 - strlen(MVERSION)));
+    /*
     print2(
-     "Copyright (C) 2002 GPL Norman D. Megill nm@alum.mit.edu\n");
+     "Copyright (C) 2002 GPL Norman Megill nm@alum.mit.edu\n");
+    */
   }
-  if (argc < 2) print2("Type HELP for help, EXIT to exit.\n");
+  /* if (argc < 2) */ print2("Type HELP for help, EXIT to exit.\n");
 
   /* Allocate big arrays */
   initBigArrays();
@@ -143,8 +146,11 @@ console_options.title = (unsigned char*)"\pMetamath";
 
 void command(int argc, char *argv[])
 {
-  /* Command line user interface -- fetches and processes a command; returns 1
-    if the command is 'EXIT' and never returns otherwise. */
+  /* Command line user interface -- this is an infinite loop; it fetches and
+     processes a command; returns only if the command is 'EXIT' or 'QUIT' and
+     never returns otherwise. */
+  long argsProcessed = 0;  /* Number of argv initial command-line
+                                     arguments processed so far */
 
   /* The variables in command() are static so that they won't be destroyed
     by a longjmp return to setjmp. */
@@ -259,8 +265,6 @@ void command(int argc, char *argv[])
     let(&labelMatch, "");
     /* (End of space deallocation) */
 
-    let(&commandLine,""); /* Deallocate previous contents */
-
     midiFlag = 0; /* 8/28/00 Initialize here in case SHOW PROOF exits early */
 
     if (memoryStatus) {
@@ -289,34 +293,64 @@ void command(int argc, char *argv[])
         let(&commandPrompt,"TOOLS> ");
       }
     }
-    if (!commandProcessedFlag && argc > 1) {
-      if (!listMode && argc == 2) {
-        /* Assume the user intended a READ command */
-        let(&commandLine, "READ ");
-      }
-      for (i = 1; i < argc; i++) {
-        /* Put quotes around an argument with spaces or tabs or quotes
-           or empty string */
-        if (instr(1, argv[i], " ") || instr(1, argv[i], "\t")
-            || instr(1, argv[i], "\"") || instr(1, argv[i], "'")
-            || (argv[i])[0] == 0) {
-          /* If it contains a double quote, use a single quote */
-          if (instr(1, argv[i], "\"")) {
-            let(&str1, cat("'", argv[i], "'", NULL));
+
+    let(&commandLine,""); /* Deallocate previous contents */
+
+    if (!commandProcessedFlag && argc > 1 && argsProcessed < argc - 1
+        && !commandFileOpenFlag) {
+      if (toolsMode) {
+        /* If program was compiled in TOOLS mode, the command-line argument
+           is assumed to be a single TOOLS command; build the equivalent
+           TOOLS command */
+        for (i = 1; i < argc; i++) {
+          argsProcessed++;
+          /* Put quotes around an argument with spaces or tabs or quotes
+             or empty string */
+          if (instr(1, argv[i], " ") || instr(1, argv[i], "\t")
+              || instr(1, argv[i], "\"") || instr(1, argv[i], "'")
+              || (argv[i])[0] == 0) {
+            /* If it contains a double quote, use a single quote */
+            if (instr(1, argv[i], "\"")) {
+              let(&str1, cat("'", argv[i], "'", NULL));
+            } else {
+              /* (??? (TODO)Case of both ' and " is not handled) */
+              let(&str1, cat("\"", argv[i], "\"", NULL));
+            }
           } else {
-            /* (???Case of both ' and " is not handled) */
-            let(&str1, cat("\"", argv[i], "\"", NULL));
+            let(&str1, argv[i]);
           }
-        } else {
-          let(&str1, argv[i]);
+          let(&commandLine, cat(commandLine, (i == 1) ? "" : " ", str1, NULL));
         }
-        let(&commandLine, cat(commandLine, (i == 1) ? "" : " ", str1, NULL));
+      } else {
+        /* If program was compiled in default (Metamath) mode, each command-line
+           argument is considered a full Metamath command.  User is responsible
+           for ensuring necessary quotes around arguments are passed in. */
+        argsProcessed++;
+        scrollMode = 0; /* Set continuous scrolling until completed */
+        if (argc == 2 && instr(1, argv[1], " ") == 0) {
+          /* Assume the user intended a READ command.  This special mode allows
+             invocation via "metamath xxx.mm". */
+          let(&commandLine, "READ ");
+        }
+        let(&commandLine, cat(commandLine, argv[argsProcessed], NULL));
       }
       print2("%s\n", cat(commandPrompt, commandLine, NULL));
     } else {
+      /* Get command from user input or SUBMIT script file */
       commandLine = cmdInput1(commandPrompt);
     }
-    commandProcessedFlag = 1;
+    if (argsProcessed == argc && !commandProcessedFlag) {
+      commandProcessedFlag = 1;
+      scrollMode = 1; /* Set prompted (default) scroll mode */
+    }
+    if (argsProcessed == argc - 1) {
+      argsProcessed++; /* Indicates restore scroll mode next time around */
+      if (toolsMode) {
+        /* If program was compiled in TOOLS mode, we're only going to execute
+           one command; set flag to exit next time around */
+        commandProcessedFlag = 1;
+      }
+    }
 
     /* See if it's an operating system command */
     /* (This is a command line that begins with a quote) */
@@ -486,7 +520,7 @@ void command(int argc, char *argv[])
           fclose(logFilePtr);
           logFileOpenFlag = 0;
         }
-        return; /* Exit */
+        return; /* Exit from program */
       }
     }
 
@@ -1214,6 +1248,41 @@ void command(int argc, char *argv[])
         /* verifyProofs("*",0); */ /* Parse only (for gross error checking) */
       }
 
+      /* 10/21/02 - detect Microsoft bugs reported by several users, when the
+         HTML output files are named "con1.html" etc. */
+      /* If we want a standard error message underlining token, this could go
+         in mmpars.c */
+      /* From Microsoft's site:
+         "The following reserved words cannot be used as the name of a file:
+         CON, PRN, AUX, CLOCK$, NUL, COM1, COM2, COM3, COM4, COM5, COM6, COM7,
+         COM8, COM9, LPT1, LPT2, LPT3, LPT4, LPT5, LPT6, LPT7, LPT8, and LPT9.
+         Also, reserved words followed by an extension - for example,
+         NUL.tx7 - are invalid file names." */
+      /* Check for labels that will lead to illegal Microsoft file names for
+         Windows users.  Don't bother checking CLOCK$ since $ is already
+         illegal */
+      let(&str1, cat(
+         ",CON,PRN,AUX,NUL,COM1,COM2,COM3,COM4,COM5,COM6,COM7,",
+         "COM8,COM9,LPT1,LPT2,LPT3,LPT4,LPT5,LPT6,LPT7,LPT8,LPT9,", NULL));
+      for (i = 1; i <= statements; i++) {
+        let(&str2, cat(",", edit(statement[i].labelName, 32/*uppercase*/), ",",
+            NULL));
+        if (instr(1, str1, str2)) {
+          print2("\n");
+          printLongLine(cat("?Error in statement \"",
+              statement[i].labelName, "\" at line ", str(statement[i].lineNum),
+              " in file \"", statement[i].fileName,
+              "\".  To workaround a Microsoft operating system limitation, the",
+              " the following reserved words cannot be used for label names:",
+              " CON, PRN, AUX, CLOCK$, NUL, COM1, COM2, COM3, COM4, COM5,",
+              " COM6, COM7, COM8, COM9, LPT1, LPT2, LPT3, LPT4, LPT5, LPT6,",
+              " LPT7, LPT8, and LPT9.  Use another name for this label.", NULL),
+              "", " ");
+          errorCount++;
+        }
+      }
+      /* 10/21/02 end */
+
       if (!errorCount) {
         let(&str1, "No errors were found.");
         if (!switchPos("/ VERIFY")) {
@@ -1236,25 +1305,25 @@ void command(int argc, char *argv[])
     }
 
     if (cmdMatches("WRITE SOURCE")) {
-        let(&output_fn, fullArg[2]);
-        output_fp = fSafeOpen(output_fn, "w");
-        if (!output_fp) continue; /* Couldn't open it (error msg was provided)*/
-        writeInput();
-        fclose(output_fp);
-        sourceChanged = 0;
-        continue;
+      let(&output_fn, fullArg[2]);
+      output_fp = fSafeOpen(output_fn, "w");
+      if (!output_fp) continue; /* Couldn't open it (error msg was provided)*/
+      writeInput();
+      fclose(output_fp);
+      sourceChanged = 0;
+      continue;
     }
 
     if (cmdMatches("WRITE DICTIONARY")) {
-        print2("?This command has not been implemented.\n");
-        if (0) { /*???NOT IMPLEMENTED YET*/
+      print2("?This command has not been implemented.\n");
+      if (0) { /*???NOT IMPLEMENTED YET*/
         let(&tex_dict_fn, fullArg[2]);
         tex_dict_fp = fSafeOpen(tex_dict_fn, "w");
         if (!tex_dict_fp) continue; /* Couldn't open (err msg was provided)*/
         writeDict();
         fclose(tex_dict_fp);
-        } /*???*/
-        continue;
+      } /*???*/
+     continue;
     }
 
     if (cmdMatches("SHOW LABELS")) {
@@ -1274,7 +1343,8 @@ void command(int argc, char *argv[])
             "?HTML qualifier is now implemented in SHOW STATEMENT * / HTML\n");
 #ifdef OBSOLETE
           outputToString = 1;
-          print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=\"#EEFFFA\"\n");
+          print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=%s\n",
+              MINT_BACKGROUND_COLOR);
           /* For bobby.cast.org approval */
           print2("SUMMARY=\"List of %s\">\n",
               (k == 0) ? "theorems" : "syntax, axioms and definitions");
@@ -1286,12 +1356,12 @@ void command(int argc, char *argv[])
                 /*"Syntax (not <FONT COLOR=\"#00CC00\">|-&nbsp;</FONT>), ",*/
                 /* 2/9/02 (in case |- suppressed) */
                 "Syntax, ",
-                "Axioms (<FONT COLOR=\"#006600\">ax-</FONT>) and",
-                " Definitions (<FONT COLOR=\"#006600\">df-</FONT>)",
-                NULL), "", " ");
+                "Axioms (<FONT COLOR=", GREEN_TITLE_COLOR, ">ax-</FONT>) and",
+                " Definitions (<FONT COLOR=", GREEN_TITLE_COLOR,
+                ">df-</FONT>)", NULL), "", "\"");
           }
           print2("</B></CAPTION>\n");
-          print2("<TR><TD><B>Ref</B>\n");
+          print2("<TR ALIGN=LEFT><TD><B>Ref</B>\n");
           print2("</TD><TD><B>%s</B></TD></TR>\n",
               (m == 1) ? "Expression" : "Description");
           for (i = 1; i <= statements; i++) {
@@ -1308,12 +1378,12 @@ void command(int argc, char *argv[])
             if (k == k) { /* Set k == k here for Web site version,
                              k == 0 for # hyp in parens. */
               print2(
-                  "<TR><TD><A HREF=\"%s.html\">%s</A></TD><TD>\n",
+                  "<TR ALIGN=LEFT><TD><A HREF=\"%s.html\">%s</A></TD><TD>\n",
                   statement[i].labelName, statement[i].labelName);
             } else {
               /* Include number of ess. hypoth. in parens. after label */
               print2(
-                  "<TR><TD><A HREF=\"%s.html\">%s</A> (%ld)</TD><TD>\n",
+                  "<TR ALIGN=LEFT><TD><A HREF=\"%s.html\">%s</A> (%ld)</TD><TD>\n",
                   statement[i].labelName, statement[i].labelName, k);
             }
 
@@ -1329,7 +1399,7 @@ void command(int argc, char *argv[])
               if (strlen(str1) > 29)
                 let(&str1, cat(left(str1, 26), "...", NULL));
               let(&str1, cat(str1, "</TD></TR>", NULL));
-              printLongLine(str1, "", " ");
+              printLongLine(str1, "", "\"");
 
               /* Close out the string now to prevent overflow */
               fprintf(texFilePtr, "%s", printString);
@@ -1531,13 +1601,15 @@ void command(int argc, char *argv[])
         if (s <= 0) {
           outputToString = 1;
           if (s == -2) {
-            printLongLine(cat("<CENTER><FONT COLOR=\"#006600\"><B>",
+            printLongLine(cat("<CENTER><FONT COLOR=", GREEN_TITLE_COLOR,
+                "><B>",
                 "Symbol to ASCII Correspondence for Text-Only Browsers",
                 " (in order of first appearance)",
-                "</B></FONT></CENTER><P>", NULL), "", " ");
+                "</B></FONT></CENTER><P>", NULL), "", "\"");
           }
           print2(
-            "<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=\"#EEFFFA\"\n");
+              "<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=%s\n",
+              MINT_BACKGROUND_COLOR);
           /* For bobby.cast.org approval */
           switch (s) {
             case -2:
@@ -1552,20 +1624,21 @@ void command(int argc, char *argv[])
           }
           switch (s) {
             case -2:
-              print2("<TR><TD><B>\n");
+              print2("<TR ALIGN=LEFT><TD><B>\n");
               break;
             case -1:
-              print2("<CAPTION><B>List of Theorems</B></CAPTION><TR><TD><B>\n");
+              print2(
+         "<CAPTION><B>List of Theorems</B></CAPTION><TR ALIGN=LEFT><TD><B>\n");
               break;
             case 0:
               printLongLine(cat(
 /*"<CAPTION><B>List of Syntax (not <FONT COLOR=\"#00CC00\">|-&nbsp;</FONT>), ",*/
                   /* 2/9/02 (in case |- suppressed) */
                   "<CAPTION><B>List of Syntax, ",
-                  "Axioms (<FONT COLOR=\"#006600\">ax-</FONT>) and",
-                  " Definitions (<FONT COLOR=\"#006600\">df-</FONT>)",
-                  "</B></CAPTION><TR><TD><B>",
-                  NULL), "", " ");
+                  "Axioms (<FONT COLOR=", GREEN_TITLE_COLOR, ">ax-</FONT>) and",
+                  " Definitions (<FONT COLOR=", GREEN_TITLE_COLOR,
+                  ">df-</FONT>)", "</B></CAPTION><TR ALIGN=LEFT><TD><B>",
+                  NULL), "", "\"");
               break;
           }
           switch (s) {
@@ -1580,7 +1653,7 @@ void command(int argc, char *argv[])
               printLongLine(cat(
                   "Ref</B></TD><TD><B>",
                 "Expression (see link for any distinct variable requirements)",
-                NULL), "", " ");
+                NULL), "", "\"");
               break;
           }
           print2("</B></TD></TR>\n");
@@ -1592,9 +1665,9 @@ void command(int argc, char *argv[])
                  database (e.g. Hilbert Space Explorer) */
               printLongLine(cat(
                   "<TR><TD COLSPAN=2 ALIGN=CENTER>The ",
-                  "<B><FONT COLOR=\"#006600\">",
+                  "<B><FONT COLOR=", GREEN_TITLE_COLOR, ">",
                   extHtmlTitle,
-                  "</B></FONT> starts here</TD></TR>", NULL), "", " ");
+                  "</FONT></B> starts here</TD></TR>", NULL), "", "\"");
             }
             if (statement[i].type == (char)p__ ||
                 statement[i].type == (char)a__ ) m++;
@@ -1636,11 +1709,11 @@ void command(int argc, char *argv[])
                         k = k + 3;
                       }
                     } /* next k */
-                    printLongLine(cat("<TR><TD>",
+                    printLongLine(cat("<TR ALIGN=LEFT><TD>",
                         str2,
                         "</TD><TD><TT>",
                         str1,
-                        "</TT></TD></TR>", NULL), "", " ");
+                        "</TT></TD></TR>", NULL), "", "\"");
                   }
                 } /* next j */
                 /* Close out the string now to prevent memory overflow */
@@ -1698,18 +1771,21 @@ void command(int argc, char *argv[])
                     }
                   }
                 }
-                let(&str2, cat("<TR><TD><A HREF=\"", statement[i].labelName,
+                let(&str2, cat("<TR ALIGN=LEFT><TD><A HREF=\"",
+                    statement[i].labelName,
                     ".html\">", statement[i].labelName,
                     "</A>", NULL));
                 if (!briefHtmlFlag) {
                   /* Add little pink number */
-                  let(&str2, cat(str2,
-                    "<FONT FACE=\"Arial Narrow\" SIZE=-2 COLOR=\"#FF6666\"> ",
-                    str(m), "</FONT>", NULL));
+                  let(&str4, "");
+                  str4 = pinkHTML(i);
+                  let(&str2, cat(str2, str4, NULL));
+                  /* Note: the variable m is the same as the pink statement
+                     number here, if we ever need it */
                 }
                 let(&str1, cat(str2, "</TD><TD>", str1, NULL));
                 print2("\n");  /* New line for HTML source readability */
-                printLongLine(str1, "", " ");
+                printLongLine(str1, "", "\"");
 
                 if (s == 0 || briefHtmlFlag) {
                               /* Set s == 0 here for Web site version,
@@ -1717,14 +1793,14 @@ void command(int argc, char *argv[])
                   printTexLongMath(statement[i].mathString, "", "", 0);
                   outputToString = 1; /* Is reset by printTexLongMath */
                 } else {
-                  /* Theorems are listed w/ description; otherwise file too
+                  /* Theorems are listed w/ description; otherwise file is too
                      big for convenience */
                   let(&str1, "");
                   str1 = getDescription(i);
                   if (strlen(str1) > 29)
                     let(&str1, cat(left(str1, 26), "...", NULL));
                   let(&str1, cat(str1, "</TD></TR>", NULL));
-                  printLongLine(str1, "", " ");
+                  printLongLine(str1, "", "\"");
 
                   /* Close out the string now to prevent overflow */
                   fprintf(texFilePtr, "%s", printString);
@@ -1767,9 +1843,11 @@ void command(int argc, char *argv[])
          (non-html) below. */
      htmlDone:
       continue;
-    } /* if (cmdMatches("SHOW STATEMENT") && switchPos("/ HTML")) */
+    } /* if (cmdMatches("SHOW STATEMENT") && switchPos("/ HTML")...) */
 
 
+    /* If we get here, the user did not specify one of the qualifiers /HTML,
+       /BRIEF_HTML, /ALT_HTML, or /BRIEF_ALT_HTML */
     if (cmdMatches("SHOW STATEMENT") && !switchPos("/ HTML")) {
 
       texFlag = 0;
@@ -2336,11 +2414,12 @@ void command(int argc, char *argv[])
             bug(1116);
             /*???? The code below is obsolete - now down in show statement*/
             /*
-            print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=\"#EEFFFA\">\n");
+            print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=%s>\n",
+                MINT_BACKGROUND_COLOR);
             print2("<CAPTION><B>Proof of Theorem <FONT\n");
-            printLongLine(cat("   COLOR=\"#006600\">",
+            printLongLine(cat("   COLOR=", GREEN_TITLE_COLOR, ">",
                 asciiToTt(statement[i].labelName),
-                "</FONT></B></CAPTION>", NULL), "", " ");
+                "</FONT></B></CAPTION>", NULL), "", "\"");
             print2(
                 "<TR><TD><B>Step</B></TD><TD><B>Hyp</B></TD><TD><B>Ref</B>\n");
             print2("</TD><TD><B>Expression</B></TD></TR>\n");
@@ -2440,7 +2519,237 @@ void command(int argc, char *argv[])
     if (cmdMatches("DBG")) {
       print2("DEBUGGING MODE IS FOR DEVELOPER'S USE ONLY!\n");
       print2("Argument:  %s\n", fullArg[1]);
+      /* 10/10/02 -
+         This utility assists manually building cross-references to various
+         textbooks.
+         Assumes log file is open, and writes them there.
+       */
+      /*******/
+      if (!logFilePtr) {
+        printLongLine("?Error: You must open a log file with OPEN LOG before"
+            " using the bibliograpy cross-reference generator.  The HTML code"
+            " will be written to the log file.  Afterwards, close"
+            " the log file with CLOSE LOG.", "", " ");
+        continue;
+      }
+      if (!texDefsRead) {
+        print2("Reading definitions from $t statement of %s...\n", input_fn);
+        if (!readTexDefs()) continue; /* An error occurred */
+      }
+      p2 = 1; /* Pass 1 or 2 flag */
+      lines = 0;
+      while (1) {
 
+        if (p2 == 2) {  /* Pass 2 */
+          /* Allocate memory for sorting */
+          pntrLet(&pntrTmp, pntrSpace(lines));
+          lines = 0;
+        }
+
+        /* Scan all $a and $p statements */
+        for (i = 1; i <= statements; i++) {
+          if (statement[i].type != (char)p__ &&
+            statement[i].type != (char)a__) continue;
+          /* Omit ...OBS (obsolete) and ...NEW (to be implemented) statements */
+          if (instr(1, statement[i].labelName, "NEW")) continue;
+          if (instr(1, statement[i].labelName, "OBS")) continue;
+          let(&str1, "");
+          str1 = getDescription(i); /* Get the statement's comment */
+          if (!instr(1, str1, "[")) continue;
+          for (j = 0; j < strlen(str1); j++) {
+            if (str1[j] == '\n') str1[j] = ' '; /* Change newlines to spaces */
+          }
+          let(&str1, edit(str1, 8 + 128 + 16)); /* Reduce & trim whitespace */
+          /* Put spaces before page #s (up to 4 digits) for sorting */
+          j = 0;
+          while (1) {
+            j = instr(j + 1, str1, " p. "); /* Heuristic - match " p. " */
+            if (!j) break;
+            if (j) {
+              for (k = j + 4; k <= strlen(str1) + 1; k++) {
+                if (!isdigit(str1[k - 1])) {
+                  let(&str1, cat(left(str1, j + 2),
+                      space(4 - (k - (j + 4))), right(str1, j + 3), NULL));
+                  /* Add ### after page number as marker */
+                  let(&str1, cat(left(str1, j + 7), "###", right(str1, j + 8),
+                      NULL));
+                  break;
+                }
+              }
+            }
+          }
+          /* Process any bibliographic references in comment */
+          j = 0;
+          n = 0;
+          while (1) {
+            j = instr(j + 1, str1, "["); /* Find reference (not robust) */
+            if (!j) break;
+            if (!isalnum(str1[j])) continue; /* Not start of reference */
+            n++;
+            /* Backtrack from [reference] to a starting keyword */
+            m = 0;
+            let(&str2, edit(str1, 32)); /* to uppercase */
+            for (k = j - 1; k >= 1; k--) {
+              if (0
+                  || !strcmp(mid(str2, k, strlen("COMPARE")), "COMPARE")
+                  || !strcmp(mid(str2, k, strlen("DEFINITION")), "DEFINITION")
+                  || !strcmp(mid(str2, k, strlen("THEOREM")), "THEOREM")
+                  || !strcmp(mid(str2, k, strlen("PROPOSITION")), "PROPOSITION")
+                  || !strcmp(mid(str2, k, strlen("LEMMA")), "LEMMA")
+                  || !strcmp(mid(str2, k, strlen("COROLLARY")), "COROLLARY")
+                  || !strcmp(mid(str2, k, strlen("AXIOM")), "AXIOM")
+                  || !strcmp(mid(str2, k, strlen("RULE")), "RULE")
+                  || !strcmp(mid(str2, k, strlen("REMARK")), "REMARK")
+                  || !strcmp(mid(str2, k, strlen("EXERCISE")), "EXERCISE")
+                  || !strcmp(mid(str2, k, strlen("NOTATION")), "NOTATION")
+                  || !strcmp(mid(str2, k, strlen("EXAMPLE")), "EXAMPLE")
+                  || !strcmp(mid(str2, k, strlen("PROPERTY")), "PROPERTY")
+                  || !strcmp(mid(str2, k, strlen("FIGURE")), "FIGURE")
+                  || !strcmp(mid(str2, k, strlen("POSTULATE")), "POSTULATE")
+                  || !strcmp(mid(str2, k, strlen("EQUATION")), "EQUATION")
+                  || !strcmp(mid(str2, k, strlen("SCHEME")), "SCHEME")
+                  || !strcmp(mid(str2, k, strlen("CHAPTER")), "CHAPTER")
+                  ) {
+                m = k;
+                break;
+              }
+              let(&str3, ""); /* Clear tmp alloc stack created by "mid" */
+            }
+            if (!m) {
+              if (p == 0) print2("Skipped (no keyword match): %s\n",
+                  statement[i].labelName);
+              continue; /* Not a bib ref - ignore */
+            }
+            /* m is at the start of a keyword */
+            p = instr(m, str1, "["); /* Start of bibliograpy reference */
+            q = instr(p, str1, "]"); /* End of bibliography reference */
+            if (!q) {
+              if (p == 0) print2("Skipped (not a valid reference): %s\n",
+                  statement[i].labelName);
+              continue; /* Not a bib ref - ignore */
+            }
+            s = instr(q, str1, "###"); /* Page number marker */
+            if (!s) {
+              if (p == 0) print2("Skipped (no page number): %s\n",
+                  statement[i].labelName);
+              continue; /* No page number given - ignore */
+            }
+            /* Now we have a real reference; increment reference count */
+            lines++;
+            if (p2 == 1) continue; /* In 1st pass, we just count refs */
+
+            let(&str2, seg(str1, m, p - 1));     /* "Theorem #" */
+            let(&str3, seg(str1, p + 1, q - 1));  /* "[bibref]" w/out [] */
+            let(&str4, seg(str1, q + 1, s - 1)); /* " p. nnnn" */
+            str2[0] = toupper(str2[0]);
+            /* Eliminate noise like "of" in "Theorem 1 of [bibref]" */
+            for (k = strlen(str2); k >=1; k--) {
+              if (0
+                  || !strcmp(mid(str2, k, strlen(" of ")), " of ")
+                  || !strcmp(mid(str2, k, strlen(" in ")), " in ")
+                  || !strcmp(mid(str2, k, strlen(" from ")), " from ")
+                  ) {
+                let(&str2, left(str2, k - 1));
+                break;
+              }
+              let(&str2, str2);
+            }
+
+            let(&newstr, "");
+            newstr = pinkHTML(i); /* Get little pink number */
+            let(&oldstr, cat(
+                /* Construct the sorting key */
+                /* The space() helps Th. 9 sort before Th. 10 on same page */
+                str3, " ", str4, space(20 - strlen(str2)), str2,
+                "|||",  /* ||| means end of sort key */
+                /* Construct just the statement href for combining dup refs */
+                "<A HREF=\"", statement[i].labelName,
+                ".html\">", statement[i].labelName, "</A>",
+                newstr,
+                "&&&",  /* &&& means end of statement href */
+                /* Construct actual HTML table row (without ending tag
+                   so duplicate references can be added) */
+                (i < extHtmlStmt) ?
+                   "<TR>" :
+                   cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL),
+                "<TD NOWRAP>[<A HREF=\"",
+                (i < extHtmlStmt) ?
+                   htmlBibliography :
+                   extHtmlBibliography,
+                "#",
+                str3,
+                "\">", str3, "</A>]", str4,
+                "</TD><TD>", str2, "</TD><TD><A HREF=\"",
+                statement[i].labelName,
+                ".html\">", statement[i].labelName, "</A>",
+                newstr, NULL));
+            /* Put construction into string array for sorting */
+            let((vstring *)(&pntrTmp[lines - 1]), oldstr);
+          }
+        }
+        /* 'lines' should be the same in both passes */
+        print2("Pass %ld finished.  %ld references were processed.\n", p2, lines);
+        if (p2 == 2) break;
+        p2++;    /* Increment from pass 1 to pass 2 */
+      }
+
+      /* Sort */
+      qsortKey = "";
+      qsort(pntrTmp, lines, sizeof(void *), qsortStringCmp);
+
+      /* Combine duplicate references */
+      let(&str1, "");  /* Last biblio ref */
+      for (i = 0; i < lines; i++) {
+        j = instr(1, (vstring)(pntrTmp[i]), "|||");
+        let(&str2, left((vstring)(pntrTmp[i]), j - 1));
+        if (!strcmp(str1, str2)) {
+          n++;
+          /* Combine last with this */
+          k = instr(j, (vstring)(pntrTmp[i]), "&&&");
+          /* Extract statement href */
+          let(&str3, seg((vstring)(pntrTmp[i]), j + 3, k -1));
+          let((vstring *)(&pntrTmp[i]),
+              cat((vstring)(pntrTmp[i - 1]), " &nbsp;", str3, NULL));
+          let((vstring *)(&pntrTmp[i - 1]), ""); /* Clear previous line */
+        }
+        let(&str1, str2);
+      }
+
+      /* Write output */
+      /* Print some blank lines for user */
+      fprintf(logFilePtr, "\n\n");
+      n = 0;
+      for (i = 0; i < lines; i++) {
+        j = instr(1, (vstring)(pntrTmp[i]), "&&&");
+        if (j) {  /* Don't print blanked out combined lines */
+          n++;
+          /* Take off prefixes and reduce spaces */
+          let(&str1, edit(right((vstring)(pntrTmp[i]), j + 3), 16));
+          j = 1;
+          /* Break up long lines for text editors */
+          let(&printString, "");
+          outputToString = 1;
+          printLongLine(cat(str1, "</TD></TR>", NULL),
+              " ",  /* Start continuation line with space */
+              "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+          outputToString = 0;
+          fprintf(logFilePtr, "%s", printString);
+          let(&printString, "");
+        }
+      }
+      /* Print some blank lines for user */
+      fprintf(logFilePtr, "\n\n");
+      print2("%ld table rows were written to log file \"%s\".\n", n,
+          logFileName);
+      /* Deallocate string array */
+      for (i = 0; i < lines; i++) let((vstring *)(&pntrTmp[i]), "");
+      pntrLet(&pntrTmp,NULL_PNTRSTRING);
+
+      if (i == i) continue;  /* i == i prevents lcc compiler warning */
+      /*******/
+
+
+      /* Skip this stuff for now */
       nmbrLet(&nmbrTmp, parseMathTokens(fullArg[1], proveStatement));
       for (j = 0; j < 3; j++) {
         print2("Trying depth %ld\n", j);
@@ -2516,7 +2825,7 @@ void command(int argc, char *argv[])
       assignKnownSubProofs();
 
       /* Initialize remaining steps */
-      for (j = 0; j < i; j++) {
+      for (j = 0; j < i/*proof length*/; j++) {
         if (!nmbrLen(proofInProgress.source[j])) {
           initStep(j);
         }
@@ -2943,6 +3252,15 @@ void command(int argc, char *argv[])
     if (cmdMatches("REPLACE")) {
       s = val(fullArg[1]); /* Step number */
 
+      /* This limitation is due to the assignKnownSteps call below which
+         does not tolerate unknown steps. */
+      /******* 10/20/02  Limitation removed
+      if (nmbrElementIn(1, proofInProgress.proof, -(long)'?')) {
+        print2("?The proof must be complete before you can use REPLACE.\n");
+        continue;
+      }
+      *******/
+
       for (i = 1; i <= statements; i++) {
         if (!strcmp(fullArg[2], statement[i].labelName)) {
           /* If a $e or $f, it must be a hypothesis of the statement
@@ -2984,6 +3302,14 @@ void command(int argc, char *argv[])
         continue;
       }
 
+      /* 10/20/02  Set a flag that proof has unknown steps (for autoUnify()
+         call below) */
+      if (nmbrElementIn(1, proofInProgress.proof, -(long)'?')) {
+        p = 1;
+      } else {
+        p = 0;
+      }
+
       /* Check to see if the statement selected is allowed */
       if (!checkStmtMatch(k, s - 1)) {
         print2("?Statement \"%s\" cannot be unified with step %ld.\n",
@@ -3005,7 +3331,26 @@ void command(int argc, char *argv[])
       q = subProofLen(proofInProgress.proof, s - 1);
       deleteSubProof(s - 1);
       addSubProof(nmbrTmpPtr, s - q);
-      assignKnownSteps(s - q, nmbrLen(nmbrTmpPtr));
+
+      /* 10/20/02 Replaced "assignKnownSteps" with code from entry of PROVE
+         command so REPLACE can be done in partial proofs */
+      /*assignKnownSteps(s - q, nmbrLen(nmbrTmpPtr));*/  /* old code */
+      /* Assign known subproofs */
+      assignKnownSubProofs();
+      /* Initialize remaining steps */
+      i = nmbrLen(proofInProgress.proof);
+      for (j = 0; j < i; j++) {
+        if (!nmbrLen(proofInProgress.source[j])) {
+          initStep(j);
+        }
+      }
+      /* Unify whatever can be unified */
+      /* If proof wasn't complete before (p = 1), but is now, print congrats
+         for user */
+      autoUnify(p); /* 0 means no "congrats" message */
+      /* end 10/20/02 */
+
+
       nmbrLet(&nmbrTmpPtr, NULL_NMBRSTRING);
 
       n = nmbrLen(proofInProgress.proof); /* New proof length */
@@ -3028,7 +3373,7 @@ void command(int argc, char *argv[])
               "", " ");
         }
       }
-      autoUnify(1);
+      /*autoUnify(1);*/
 
       /* Automatically interact with user if step not unified */
       /* ???We might want to add a setting to defeat this if user doesn't
@@ -3315,6 +3660,13 @@ void command(int argc, char *argv[])
               "Proof length of \"%s\" remained at %ld using \"%s\".\n",
               statement[proveStatement].labelName,
               m, statement[k].labelName);
+          /* Distinct variable warning (??? future - add $d to Proof Assis.) */
+          if (nmbrLen(statement[k].reqDisjVarsA)) {
+            printLongLine(cat("Note: \"", statement[k].labelName,
+                "\" has $d constraints.",
+                "  SAVE NEW_PROOF then VERIFY PROOF to check them.",
+                NULL), "", " ");
+          }
           q = 0; /* Line length for label list */
           s = 2; /* Found one */
           proofChangedFlag = 1;

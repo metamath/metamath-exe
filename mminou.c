@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*       Copyright (C) 2002  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*        Copyright (C) 2002  NORMAN MEGILL  nm@alum.mit.edu                 */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -32,6 +32,8 @@ extern int cprintf(const char *f__mt,...);
 #ifdef THINK_C
 #include <console.h>
 #endif
+
+#define QUOTED_SPACE 3
 
 
 int errorCount = 0;
@@ -79,7 +81,10 @@ flag print2(char* fmt,...)
   int ii, jj;
 #endif
   char printBuffer[PRINTBUFFERSIZE];
+  long i;
 
+/*E*/flag savedb9=0;
+/*E*/if(db9) savedb9=1; db9=0; /* recursive call to print2 crashes - gcc bug? */
   if (backBufferPos == 0) {
     /* Initialize backBuffer - 1st time in program */
     /* Warning:  Don't call bug(), because it calls print2. */
@@ -153,7 +158,8 @@ flag print2(char* fmt,...)
       }
       while (c != '\n') c = getchar();
     } /* While 1 */
-    if (backFromCmdInput) return (!quitPrint);
+    if (backFromCmdInput)
+      goto PRINT2_RETURN;
     printedLines = 0; /* Reset the number of lines printed on the screen */
     if (!quitPrint) {
       backBufferPos++;
@@ -163,7 +169,8 @@ flag print2(char* fmt,...)
 
 
 
-  if (quitPrint && !outputToString) return (!quitPrint); /* User typed 'q'
+  if (quitPrint && !outputToString)
+    goto PRINT2_RETURN;    /* User typed 'q'
       above or earlier; 8/27/99: don't return if we're outputting to
       a string since we want to complete the writing to the string. */
 
@@ -194,6 +201,13 @@ flag print2(char* fmt,...)
 
   nlpos = instr(1, printBuffer, "\n");
   lineLen = strlen(printBuffer);
+
+  /* 10/14/02 Change any ASCII 3's back to spaces, where they were set in
+     printLongLine to handle the broken quote problem */
+  for (i = 0; i < lineLen; i++) {
+    if (printBuffer[i] == QUOTED_SPACE) printBuffer[i] = ' ';
+  }
+
   if ((lineLen > screenWidth + 1) /* && (screenWidth != MAX_LEN) */
          && !outputToString  /* for HTML 7/3/98 */ ) {
     /* Force wrapping of lines that are too long by recursively calling
@@ -205,7 +219,7 @@ flag print2(char* fmt,...)
     } else {
       printLongLine(left(printBuffer, lineLen - 1), "", "");
     }
-    return (!quitPrint);
+    goto PRINT2_RETURN;
   }
 
   if (!outputToString) {
@@ -277,6 +291,9 @@ flag print2(char* fmt,...)
   /* \n not allowed in middle of line */
   /* Warning:  Don't call bug(), because it calls print2. */
   if (nlpos != 0 && nlpos != lineLen) printf("*** PROGRAM BUG #1506\n");
+
+ PRINT2_RETURN:
+/*E*/if (savedb9) db9=1;
   return (!quitPrint);
 }
 
@@ -291,184 +308,297 @@ flag print2(char* fmt,...)
              justify continuation lines); 1 is changed to space for
              break matching */
 /* Special:  if breakMatch is \, then put % at end of previous line for LaTeX*/
+/* Special:  if breakMatch is " (quote), treat as if space but don't break
+             quotes, and also let lines grow long - use this call for all HTML
+             code */ /* Added 10/14/02 */
 void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
 {
-  vstring tmp = "";
-  vstring tmpStr = "";
-  vstring tmpStr1 = "";
-  vstring tmpStr2 = "";
+  vstring longLine = "";
+  vstring multiLine = "";
+  vstring prefix = "";
   vstring startNextLine1 = "";
-  long p, savep;
+  vstring breakMatch1 = "";
+  long i, j, p;
   long startNextLineLen;
   flag firstLine;
   flag tildeFlag = 0;
   flag treeIndentationFlag = 0;
 
+  /* 10/14/02 added for HTML handling */
+  flag htmlFlag = 0; /* 1 means printLongLine was called with "\"" as
+                        breakMatch argument (for HTML code) */
+  flag quoteMode = 0; /* 1 means inside quote */
+  char quoteChar = '"'; /* Current quote character */
+  long quoteStartPos = 0; /* Start of quote */
+  long saveScreenWidth; /* To let screenWidth grow temporarily */
+
   long saveTempAllocStack;
 
-  /* Blank line (the rest of algorithm would ignored it, so output & return) */
+  /* Blank line (the rest of algorithm would ignore it; output and return) */
   if (!line[0]) {
+    /* 10/14/02 Do a dummy let() so caller can always depend on printLongLine
+       to empty the tempalloc string stack (for the rest of this code, the
+       first let() will do this) */
+    let(&longLine, "");
     print2("\n");
     return;
   }
 
-  /* Flag to right justify continuation lines */
-  if (breakMatch[0] == 1) {
-    treeIndentationFlag = 1;
-    breakMatch[0] = ' '; /* Change to a space (the real break character) */
-  }
-
-
   /* Change the stack allocation start to prevent arguments from being
-     deallocated */
+     deallocated.  We need to do this because more than one argument
+     may be passed in with cat(), chr(), etc. and let() can only grab
+     one, destroying the others  */
   saveTempAllocStack = startTempAllocStack;
   startTempAllocStack = tempAllocStackTop; /* For let() stack cleanup */
+  /* Added 10/14/02 */
+  /* Grab the input arguments */
+  let(&multiLine, line);
+  let(&startNextLine1, startNextLine);
+  let(&breakMatch1, breakMatch);
+  /* Now relax - back to normal; we can let temporary allocation stack die. */
+  startTempAllocStack = saveTempAllocStack;
 
-  let(&tmpStr1,line);
+  /* 10/14/02 */
+  /* We must copy input argument breakMatch to a variable string because we
+     will be zapping one of its characters, and ordinarily breakMatch is
+     passed in as a constant string.  However, this is now done with argument
+     grabbing above so we're OK. */
 
-   /* The tilde is a special flag for printLongLine to print a
-      tilde before the carriage return in a split line, not after */
-  if (startNextLine[0] == '~') {
-    tildeFlag = 1;
-    let(&startNextLine1," ");
-  } else {
-    let(&startNextLine1,startNextLine);
+  /* Flag to right justify continuation lines */
+  if (breakMatch1[0] == 1) {
+    treeIndentationFlag = 1;
+    breakMatch1[0] = ' '; /* Change to a space (the real break character) */
+  }
+
+  /* HTML mode */   /* Added 10/14/02 */
+  /* The HTML mode is intended not to break inside quoted HTML tag
+     strings.  All HTML output should be called with this mode.
+     Since we don't parse HTML this method is not perfect.  Only double
+     quotes are inspected, so all HTML strings with spaces must be
+     surrounded by double quotes.  If text quotes surround a tag
+     with a quoted string, this code will not work and must be
+     enhanced. */
+  /* Whenever we are inside of a quote, we change a space to ASCII 3 to
+     prevent matching it.  The reverse is done in the print2() function,
+     where all ASCII 3's are converted back to space. */
+  /* Note added 10/20/02: tidy.exe breaks HREF quotes with new line.
+     Check HTML spec - do we really need this code? */
+  j = strlen(multiLine);
+  /* Do a bug check to make sure no real ASCII 3's are ever printed */
+  for (i = 0; i < j; i++) {
+    if (multiLine[i] == QUOTED_SPACE) bug(1514); /* Should never be the case */
+  }
+  if (breakMatch1[0] == '\"') {
+    htmlFlag = 1;
+    breakMatch1[0] = ' '; /* Change to a space (the real break character) */
+    /* Scan string for quoted strings */
+    quoteMode = 0;
+    for (i = 0; i < j; i++) {
+
+      /* 10/24/02 - This code has problems with SHOW STATEMENT/ALT_HTML
+         It is bypassed completely now. */
+      if (i == i) break;
+
+      /* Special case: ignore ALT='"' in set.mm */
+      if (multiLine[i] == '"' && i >= 5
+          && !strncmp("ALT='\"'\"", multiLine + i - 5, 7))
+        continue;
+      if (!quoteMode) {
+        /* If we wanted to handle double and single nested quotes: */
+        /* if (multiLine[i] == '\'' || multiLine[i] == '"') { */
+        /* But since single quotes are ambiguous with apostrophes, we will
+           demand that only double quotes be used around HTML tag strings
+           that have spaces such as <FONT FACE="Arial Narrow">. */
+        if (multiLine[i] == '"') {
+          quoteMode = 1;
+          quoteStartPos = i;
+          quoteChar = multiLine[i];
+        }
+      } else {
+        if (multiLine[i] == quoteChar) {
+          quoteMode = 0;
+        }
+      }
+      if (quoteMode == 1 && multiLine[i] == ' ') {
+        /* Zap the space with ASCII 3 */
+        multiLine[i] = QUOTED_SPACE;
+      }
+    }
+    /* If we ended in quoteMode, it wasn't a real quote.  Revert the
+       space zapping. */
+    if (quoteMode == 1) {
+      for (i = quoteStartPos; i < j; i++) {
+        if (multiLine[i] == QUOTED_SPACE) multiLine[i] = ' ';
+      }
+    }
+    /* As a special case for more safety, we'll zap the ubiquitous
+       "Arial Narrow" used for the little pink numbers. */
+    i = 0;
+    while (1) {
+      i = instr(i + 1, multiLine, "Arial Narrow");
+      if (i) multiLine[i + 4] = QUOTED_SPACE;
+      else break;
+    }
   }
 
 
-  while (tmpStr1[0]) {
+  /* The tilde is a special flag for printLongLine to print a
+     tilde before the carriage return in a split line, not after */
+  if (startNextLine1[0] == '~') {
+    tildeFlag = 1;
+    let(&startNextLine1, " ");
+  }
+
+
+  while (multiLine[0]) { /* While there are multi caller-inserted newlines */
 
     /* Process caller-inserted newlines */
-    p = instr(1, tmpStr1, "\n");
+    p = instr(1, multiLine, "\n");
     if (p) {
-      let(&tmpStr, left(tmpStr1, p - 1));
-      let(&tmpStr1, right(tmpStr1, p + 1));
+      /* Get the next caller's line */
+      let(&longLine, left(multiLine, p - 1));
+      /* Postpone the remaining lines to multiLine for next time around */
+      let(&multiLine, right(multiLine, p + 1));
     } else {
-      let(&tmpStr, tmpStr1);
-      let(&tmpStr1, "");
+      let(&longLine, multiLine);
+      let(&multiLine, "");
     }
+
+    saveScreenWidth = screenWidth;
+   HTML_RESTART:
+    /* Now we will break up one caller's line */
     firstLine = 1;
 
     startNextLineLen = strlen(startNextLine1);
-    /* Prevent infinite loop if next line prefix is longer that screen */
+    /* Prevent infinite loop if next line prefix is longer than screen */
     if (startNextLineLen > screenWidth - 4) {
       startNextLineLen = screenWidth - 4;
       let(&startNextLine1, left(startNextLine1, screenWidth - 4));
     }
-    while (strlen(tmpStr) + (1 - firstLine) * startNextLineLen >
-        screenWidth - (long)tildeFlag - (long)(breakMatch[0] == '\\')) {
-      p = screenWidth - (long)tildeFlag - (long)(breakMatch[0] == '\\') + 1;
+    while (strlen(longLine) + (1 - firstLine) * startNextLineLen >
+        screenWidth - (long)tildeFlag - (long)(breakMatch1[0] == '\\')) {
+      p = screenWidth - (long)tildeFlag - (long)(breakMatch1[0] == '\\') + 1;
       if (!firstLine) p = p - startNextLineLen;
 
-      /* Assume compressed proof if 1st char of breakMatch is "&" */
-      if (breakMatch[0] == '&'
-          && !instr(p, left(tmpStr, strlen(tmpStr) - 3), " ")
-          && tmpStr[p - 3] != ' ') /* Don't split trailing "$." */ {
+      /* Assume compressed proof if 1st char of breakMatch1 is "&" */
+      if (breakMatch1[0] == '&'
+          && !instr(p, left(longLine, strlen(longLine) - 3), " ")
+          && longLine[p - 3] != ' ') /* Don't split trailing "$." */ {
         /* We're in the compressed proof section; break line anywhere */
         p = p;
       } else {
-        if (!breakMatch[0]) {
+        if (!breakMatch1[0]) {
           p = p; /* Break line anywhere */
         } else {
-          if (breakMatch[0] == '&') {
+          if (breakMatch1[0] == '&') {
             /* Compressed proof */
             p = p - 1; /* We will add a trailing space to line for easier
                           label searches by the user during editing */
           }
-          /* Normal long line */
-          /* p > 0 prevents infinite loop */
-          savep = p;
-          while (!instr(1, breakMatch, mid(tmpStr,p,1)) && p > 0) {
+          if (p <= 0) bug(1518);
+          /*while (!instr(1, breakMatch1, mid(longLine,p,1)) && p > 0) {*/
+          /* Speedup */
+          while (strchr(breakMatch1, longLine[p - 1]) == NULL) {
             p--;
-            let(&tmp, ""); /* Clear temp alloc stack from 'mid' call */
+            if (!p) break;
           }
-          /* 2/8/02 If a break point was not found, see if we can break just before a ">".
-             This partially fixes some very long HTML strings without spaces, such as
-             the hypothesis list of gomaex3 in ql.mm, preventing broken HTML tags.
-             This is not a guaranteed fix, but the case is rare (hopefully). */
-          /* 2/8/02 (later) - fixed another way for this case; see 2/8/02 comment
-             in mmwtex.c.  However leave it in case of some other future bizarre problem,
-             like the htmldefs in set.mm not having any spaces */
-          if (p <= 0 && breakMatch[0] == ' ') {
-            p = savep;
-            while (!instr(1, ">", mid(tmpStr,p,1)) && p > 0) {
-              p--;
-              let(&tmp, ""); /* Clear temp alloc stack from 'mid' call */
+          if (p <= 0 && htmlFlag) {
+            /* The line couldn't be broken.  Since it's an HTML line, we
+               can increase screenWidth until it will fit. */
+            screenWidth++;
+            /******* for debugging screen width change
+            if (outputToString){
+              outputToString = 0;
+              print2("debug: screenWidth = %ld\n", screenWidth);
+              outputToString = 1;
             }
+            ********* end debug */
+            /* If this bug happens, we'll have to increase PRINTBUFFERSIZE
+               or change the HTML code being printed. */
+            if (screenWidth >= PRINTBUFFERSIZE - 1) bug(1517);
+            goto HTML_RESTART; /* Ugly but another while loop nesting would
+                                  be even more confusing */
           }
-          if (breakMatch[0] == '&') {
+
+          if (breakMatch1[0] == '&') {
             /* Compressed proof */
             p = p + 1; /* We will add a trailing space to line for easier
                           label searches by the user during editing */
           }
-        }
-      }
+        } /* end if (!breakMatch1[0]) else */
+      } /* end if (breakMatch1[0] == '&' &&... else */
 
       if (p <= 0) {
         /* Break character not found; give up at
-           screenWidth - (long)tildeFlag  - (long)(breakMatch[0] == '\\')+ 1 */
-        p = screenWidth - (long)tildeFlag  - (long)(breakMatch[0] == '\\')+ 1;
+           screenWidth - (long)tildeFlag  - (long)(breakMatch1[0] == '\\')+ 1 */
+        p = screenWidth - (long)tildeFlag  - (long)(breakMatch1[0] == '\\')+ 1;
         if (!firstLine) p = p - startNextLineLen;
         if (p <= 0) p = 1; /* If startNextLine too long */
       }
+      if (!p) bug(1515); /* p should never be 0 by this point */
+      /* If we broke at a non-space 1st char, line length won't get reduced */
+      /* Hopefully this will never happen with the breakMatch's we use,
+         otherwise the code will require a rework. */
+      if (p == 1 && longLine[0] != ' ') bug(1516);
       if (firstLine) {
         firstLine = 0;
-        let(&tmpStr2, "");
+        let(&prefix, "");
       } else {
-        let(&tmpStr2, startNextLine1);
+        let(&prefix, startNextLine1);
         if (treeIndentationFlag) {
           if (startNextLineLen + p - 1 < screenWidth) {
             /* Right justify output for continuation lines */
-            let(&tmpStr2, cat(tmpStr2, space(screenWidth - startNextLineLen
+            let(&prefix, cat(prefix, space(screenWidth - startNextLineLen
                 - p + 1), NULL));
           }
         }
       }
       if (!tildeFlag) {
-        if (breakMatch[0] == '\\') {
+        if (breakMatch1[0] == '\\') {
           /* Add LaTeX comment char to ignore carriage return */
-          print2("%s\n",cat(tmpStr2, left(tmpStr,p - 1), "%", NULL));
+          print2("%s\n",cat(prefix, left(longLine,p - 1), "%", NULL));
         } else {
-          print2("%s\n",cat(tmpStr2, left(tmpStr,p - 1), NULL));
+          print2("%s\n",cat(prefix, left(longLine,p - 1), NULL));
         }
       } else {
-        print2("%s\n",cat(tmpStr2, left(tmpStr,p - 1), "~", NULL));
+        print2("%s\n",cat(prefix, left(longLine,p - 1), "~", NULL));
       }
-      if (tmpStr[p - 1] == ' ' &&
-          breakMatch[0] /* But not "break anywhere" line */) {
+      if (longLine[p - 1] == ' ' &&
+          breakMatch1[0] /* But not "break anywhere" line */) {
         /* Remove leading space for neatness */
-        if (tmpStr[p] == ' ') {
+        if (longLine[p] == ' ') {
           /* There could be 2 spaces at the end of a sentence. */
-          let(&tmpStr, right(tmpStr, p + 2));
+          let(&longLine, right(longLine, p + 2));
         } else {
-          let(&tmpStr, right(tmpStr,p + 1));
+          let(&longLine, right(longLine,p + 1));
         }
       } else {
-        let(&tmpStr, right(tmpStr,p));
+        let(&longLine, right(longLine,p));
       }
-    } /* end while tmpStr too long */
+    } /* end while longLine too long */
     if (!firstLine) {
       if (treeIndentationFlag) {
         /* Right justify output for continuation lines */
         print2("%s\n",cat(startNextLine1, space(screenWidth
-              - startNextLineLen - strlen(tmpStr)), tmpStr, NULL));
+              - startNextLineLen - strlen(longLine)), longLine, NULL));
       } else {
-        print2("%s\n",cat(startNextLine1, tmpStr, NULL));
+        print2("%s\n",cat(startNextLine1, longLine, NULL));
       }
     } else {
-      print2("%s\n",tmpStr);
+      print2("%s\n",longLine);
     }
+    screenWidth = saveScreenWidth; /* Restore to normal */
 
-  } /* end while tmpStr1 != "" */
+  } /* end while multiLine != "" */
 
-  let(&tmpStr, ""); /* Deallocate */
-  let(&tmpStr2, ""); /* Deallocate */
+  let(&multiLine, ""); /* Deallocate */
+  let(&longLine, ""); /* Deallocate */
+  let(&prefix, ""); /* Deallocate */
   let(&startNextLine1, ""); /* Deallocate */
+  let(&breakMatch1, ""); /* Deallocate */
 
-
-  startTempAllocStack = saveTempAllocStack;
   return;
-}
+} /* printLongLine */
 
 
 vstring cmdInput(FILE *stream, vstring ask)
@@ -604,6 +734,7 @@ vstring cmdInput1(vstring ask)
     break;
   }
 
+  let(&ask1, ""); /* 10/20/02 Deallocate */
   return commandLine;
 }
 
@@ -895,4 +1026,161 @@ vstring fGetTmpName(vstring filePrefix)
     }
   }
   return fname; /* Caller must deallocate! */
+}
+
+
+/* Added 10/10/02 */
+/* This function returns a character string containing the entire contents of
+   an ASCII file, or Unicode file with only ASCII characters.   On some
+   systems it is faster than reading the file line by line.  The caller
+   must deallocate the returned string.  If a NULL is returned, the file
+   could not be opened or had a non-ASCII Unicode character or some other
+   problem.   If verbose is 0, error and warning messages are suppressed. */
+vstring readFileToString(vstring fileName, char verbose) {
+  FILE *input_fp;
+  long fileBufSize;
+  long charCount;
+  char *fileBuf;
+  long i, j;
+
+  /* Find out the upper limit of the number of characters in the file. */
+  /* Do this by opening the file in binary and seeking to the end. */
+  input_fp = fopen(fileName, "rb");
+  if (!input_fp) {
+    if (verbose) print2("?Sorry, couldn't open the file \"%s\".\n", fileName);
+    return (NULL);
+  }
+#ifndef SEEK_END
+/* An older GCC compiler didn't have this ANSI standard constant defined. */
+#define SEEK_END 2
+#endif
+  if (fseek(input_fp, 0, SEEK_END)) bug(1511);
+  fileBufSize = ftell(input_fp);
+
+  /* Close and reopen the input file in text mode */
+  /* Text mode is needed for VAX, DOS, etc. with non-Unix end-of-lines */
+  fclose(input_fp);
+  input_fp = fopen(fileName, "r");
+  if (!input_fp) bug(1512);
+
+  /* Allocate space for the entire input file */
+  fileBufSize = fileBufSize + 10;
+            /* Add a factor for unknown text formats (just a guess) */
+  fileBuf = malloc(fileBufSize * sizeof(char));
+  if (!fileBuf) {
+    if (verbose) print2(
+        "?Sorry, there was not enough memory to read the file \"%s\".\n",
+        fileName);
+    fclose(input_fp);
+    return (NULL);
+  }
+
+  /* Put the entire input file into the buffer as a giant character string */
+  charCount = fread(fileBuf, sizeof(char), fileBufSize - 2, input_fp);
+  if (!feof(input_fp)) {
+    print2("Note:  This bug will occur if there is a disk file read error.\n");
+    /* If this bug occurs (due to obscure future format such as compressed
+       text files) we'll have to add a realloc statement. */
+    bug(1513);
+  }
+  fclose(input_fp);
+
+  /* See if it's Unicode */
+  /* This only handles the case where all chars are in the ASCII subset */
+  if (charCount > 1) {
+    if (fileBuf[0] == '\377' && fileBuf[1] == '\376') {
+      /* Yes, so strip out null high-order bytes */
+      if (2 * (charCount / 2) != charCount) {
+        if (verbose) print2(
+"?Sorry, there are an odd number of characters (%ld) %s \"%s\".\n",
+            charCount, "in Unicode file", fileName);
+        free(fileBuf);
+        return (NULL);
+      }
+      i = 0; /* ASCII character position */
+      j = 2; /* Unicode character position */
+      while (j < charCount) {
+        if (fileBuf[j + 1] != 0) {
+          if (verbose) print2(
+              "?Sorry, the Unicode file \"%s\" %s %ld at byte %ld.\n",
+              fileName, "has a non-ASCII \ncharacter code",
+              (long)(fileBuf[j]) + ((long)(fileBuf[j + 1]) * 256), j);
+          free(fileBuf);
+          return (NULL);
+        }
+        if (fileBuf[j] == 0) {
+          if (verbose) print2(
+              "?Sorry, the Unicode file \"%s\" %s at byte %ld.\n",
+              fileName, "has a null character", j);
+          free(fileBuf);
+          return (NULL);
+        }
+        fileBuf[i] = fileBuf[j];
+        /* Suppress any carriage-returns */
+        if (fileBuf[i] == '\r') {
+          i--;
+        }
+        i++;
+        j = j + 2;
+      }
+      fileBuf[i] = 0; /* ASCII string terminator */
+      charCount = i;
+    }
+  }
+
+  /* Make sure the file has no carriage-returns */
+  if (strchr(fileBuf, '\r') != NULL) {
+    if (verbose) print2(
+        "?Warning: the file \"%s\" has carriage-returns.\n",
+        fileName);
+    /* Clean up the file, e.g. DOS or Mac file on Unix */
+    i = 0;
+    j = 0;
+    while (j <= charCount) {
+      if (fileBuf[j] == '\r') {
+        if (fileBuf[j + 1] == '\n') {
+          /* DOS file - skip '\r' */
+          j++;
+        } else {
+          /* Mac file - change '\r' to '\n' */
+          fileBuf[j] = '\n';
+        }
+      }
+      fileBuf[i] = fileBuf[j];
+      i++;
+      j++;
+    }
+  }
+
+  /* Make sure the last line is not a partial line */
+  if (fileBuf[charCount - 1] != '\n') {
+    if (verbose) print2(
+        "?Warning: the last line in file \"%s\" is incomplete.\n",
+        fileName);
+    /* Add the end-of-line */
+    fileBuf[charCount] = '\n';
+    charCount++;
+    fileBuf[charCount] = 0;
+  }
+
+  fileBuf[charCount] = 0; /* End of string */
+  /* Make sure there aren't null characters */
+  i = strlen(fileBuf);
+  if (charCount != i) {
+    if (verbose) {
+      print2(
+          "?Warning: the file \"%s\" is not an ASCII file.\n",
+          fileName);
+      print2(
+          "Its size is %ld characters with null at character %ld.\n",
+          charCount, strlen(fileBuf));
+    }
+  }
+/*E*/db = db + i;  /* For memory usage tracking (ignore stuff after null) */
+
+  /******* For debugging
+  print2("In binary mode the file has %ld bytes.\n", fileBufSize - 10);
+  print2("In text mode the file has %ld bytes.\n", charCount);
+  *******/
+  return ((char *)fileBuf);
 }

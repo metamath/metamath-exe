@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*       Copyright (C) 2002  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*        Copyright (C) 2002  NORMAN MEGILL  nm@alum.mit.edu                 */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -19,11 +19,14 @@
 #include "mminou.h"
 #include "mmpars.h"
 #include "mmveri.h"
-#include "mmwtex.h"
+#include "mmwtex.h" /* For htmlVarColors,... */
 #include "mmpfas.h"
 
 vstring mainFileName = "";
 flag printHelp = 0;
+
+/* For HTML output */
+vstring printStringForReferencedBy = "";
 
 /* For MIDI */
 flag midiFlag = 0;
@@ -58,6 +61,7 @@ void typeStatement(long showStatement,
   flag subType;
   vstring htmlDistinctVars = ""; /* 12/23/01 */
   char htmlDistinctVarsCommaFlag = 0; /* 12/23/01 */
+  vstring str4 = ""; /* 10/10/02 */
 
   /* For syntax breakdown of definitions in HTML page */
   long zapStatement1stToken;
@@ -124,16 +128,13 @@ void typeStatement(long showStatement,
             bug(229);
         }
 
-        print2("<CENTER><B><FONT SIZE=\"+1\">%s <FONT\n", str1);
-        print2("COLOR=\"#006600\">%s</FONT></FONT></B>\n",
-            statement[showStatement].labelName);
-
         /* Print a small pink statement number after the statement */
-        printLongLine(
-              cat("<FONT FACE=\"Arial Narrow\" SIZE=-2 COLOR=\"#FF6666\"> ",
-              str(pinkNumber(showStatement)), "</FONT>",NULL), "", " ");
-
-        print2("</CENTER><BR>\n");
+        let(&str2, "");
+        str2 = pinkHTML(showStatement);
+        printLongLine(cat("<CENTER><B><FONT SIZE=\"+1\">", str1,
+            " <FONT COLOR=", GREEN_TITLE_COLOR,
+            ">", statement[showStatement].labelName,
+            "</FONT></FONT></B>", str2, "</CENTER>", NULL), "", "\"");
       } /* (htmlFlag && texFlag) */
       outputToString = 0;
     } /* texFlag */
@@ -152,10 +153,16 @@ void typeStatement(long showStatement,
       if (!texFlag) {
         printLongLine(cat("\"", str1, "\"", NULL), "", " ");
       } else {
+        /* 10/10/02 This is now done in mmwtex.c printTexComment */
+        /* Although it will affect the 2nd (and only other) call to
+           printTexComment below, that call is obsolete and there should
+           be no side effect. */
+        /*******
         if (htmlFlag && texFlag) {
           let(&str1, cat("<CENTER><B>Description: </B>", str1,
               "</CENTER><BR>", NULL));
         }
+        *******/
         printTexComment(str1);
       }
     }
@@ -307,7 +314,8 @@ void typeStatement(long showStatement,
     if (k) {
       if (texFlag) outputToString = 1;
       if (texFlag && htmlFlag) {
-        print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=\"#EEFFFA\"\n");
+        print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=%s\n",
+            MINT_BACKGROUND_COLOR);
         /* For bobby.cast.org approval */
         print2("SUMMARY=\"%s\">\n", (k == 1) ? "Hypothesis" : "Hypotheses");
         print2("<CAPTION><B>%s</B></CAPTION>\n",
@@ -336,7 +344,8 @@ void typeStatement(long showStatement,
                 str2, str3, 0);
           } else {
             outputToString = 1;
-            print2("<TR><TD>%s</TD><TD>\n", statement[k].labelName);
+            print2("<TR ALIGN=LEFT><TD>%s</TD><TD>\n",
+                statement[k].labelName);
             printTexLongMath(statement[k].mathString, "", "", 0);
           }
         }
@@ -367,14 +376,16 @@ void typeStatement(long showStatement,
           str2, str3, 0);
     } else {
       outputToString = 1;
-      print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=\"#EEFFFA\"\n");
+      print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=%s\n",
+          MINT_BACKGROUND_COLOR);
       /* For bobby.cast.org approval */
       print2("SUMMARY=\"Assertion\">\n");
       print2("<CAPTION><B>Assertion</B></CAPTION>\n");
       print2("<TR><TH>Ref\n");
       print2("</TH><TH>Expression</TH></TR>\n");
       print2(
-          "<TR><TD><FONT COLOR=\"#006600\"><B>%s</B></FONT></TD><TD>\n",
+       "<TR ALIGN=LEFT><TD><FONT COLOR=%s><B>%s</B></FONT></TD><TD>\n",
+          GREEN_TITLE_COLOR,
           statement[showStatement].labelName);
       printTexLongMath(statement[showStatement].mathString, "", "", 0);
       outputToString = 1;
@@ -513,13 +524,13 @@ void typeStatement(long showStatement,
         outputToString = 1;
         printLongLine(cat(
      "<CENTER><A HREF=\"mmset.html#distinct\">Distinct variable</A> group(s): ",
-            htmlDistinctVars, "</CENTER>", NULL), "", " ");
+            htmlDistinctVars, "</CENTER>", NULL), "", "\"");
         outputToString = 0;
       }
 
       if (texFlag) {
         outputToString = 1;
-        if (htmlFlag && texFlag) print2("<HR SIZE=1>\n");
+        if (htmlFlag && texFlag) print2("<HR NOSHADE SIZE=1>\n");
         outputToString = 0; /* Restore normal output */
         /* will be done automatically at closing
         fprintf(texFilePtr, "%s", printString);
@@ -595,22 +606,32 @@ void typeStatement(long showStatement,
               /* Successful - use this definition or axiom as the reference */
               outputToString = 1;
               let(&str1, left(statement[i].labelName, 3));
+              let(&str2, "");
+              str2 = pinkHTML(i);
               if (!strcmp(str1, "ax-")) {
                 printLongLine(cat(
                     "<CENTER>This syntax is primitive.",
                     "  The first axiom using it is <A HREF=\"",
                     statement[i].labelName, ".html\">",
                     statement[i].labelName,
-                    "</A>.</CENTER><HR SIZE=1>",
-                    NULL), "", " ");
+                    "</A>", str2, ".</CENTER><HR NOSHADE SIZE=1>",
+                    NULL), "", "\"");
               } else {
                 printLongLine(cat(
                     "<CENTER>See definition <A HREF=\"",
                     statement[i].labelName, ".html\">",
-                    statement[i].labelName,
-                    "</A> for more information.</CENTER><HR SIZE=1>",
-                    NULL), "", " ");
+                    statement[i].labelName, "</A>", str2,
+                    " for more information.</CENTER><HR NOSHADE SIZE=1>",
+                    NULL), "", "\"");
               }
+
+              /* 10/10/02 Moved here from mmwtex.c */
+              /*print2("<FONT SIZE=-1 FACE=sans-serif>Colors of variables:\n");*/
+              printLongLine(cat(
+                  "<CENTER><TABLE CELLSPACING=7><TR><TD ALIGN=LEFT><FONT SIZE=-1>",
+                  "<B>Colors of variables:</B> ",
+                  htmlVarColors, "</FONT></TD></TR>",
+                  NULL), "", "\"");
               outputToString = 0;
               break; /* Out of i loop */
             }
@@ -716,8 +737,88 @@ void typeStatement(long showStatement,
   /* End of finding definition for syntax statement */
 
 
+
+  /* 10/6/99 - Start of creating used-by list for html page */
+  if (htmlFlag && texFlag) {
+    /* 10/25/02 Clear out any previous printString accumulation
+       for printStringForReferencedBy case below */
+    fprintf(texFilePtr, "%s", printString);
+    let(&printString, "");
+    /* Start outputting to printString */
+    if (outputToString != 0) bug(242);
+    outputToString = 1;
+    if (subType != SYNTAX) { /* Only do this for
+        definitions and axioms, not syntax statements */
+      let(&str1, "");
+      str1 = traceUsage(showStatement, 0 /* recursiveFlag */);
+      if (str1[0]) { /* Used by at least one */
+        /* str1 will have a leading space before each label */
+        /* Convert usage list to html links */
+        switch (subType) {
+          case AXIOM:  let(&str3, "axiom"); break;
+          case DEFINITION: let(&str3, "definition"); break;
+          case THEOREM: let(&str3, "theorem"); break;
+          default: bug(233);
+        }
+        /******* pre 10/10/02
+        let(&str2, cat("<FONT SIZE=-1 FACE=sans-serif>This ", str3,
+            " is referenced by: ", NULL));
+        *******/
+        /* 10/10/02 */
+        let(&str2, cat("<TR><TD ALIGN=LEFT><FONT SIZE=-1><B>This ", str3,
+            " is referenced by:</B>", NULL));
+        /* Convert str1 to trailing space after each label */
+        let(&str1, cat(right(str1, 2), " ", NULL));
+        i = 0;
+        while (1) {
+          j = i + 1;
+          i = instr(j, str1, " ");
+          if (!i) break;
+          /* Extract the label */
+          let(&str3, seg(str1, j, i - 1));
+          /* Find the statement number */
+          m = lookupLabel(str3);
+          if (m < 0) {
+            /* The lookup should never fail */
+            bug(240);
+            continue;
+          }
+          /* It should be a $p */
+          if (statement[m].type != p__) bug(241);
+          /* Get the pink number */
+          let(&str4, "");
+          str4 = pinkHTML(m);
+          /* Assemble the href */
+          let(&str2, cat(str2, " &nbsp;<A HREF=\"",
+              str3, ".html\">",
+              str3, "</A>", str4, NULL));
+        }
+        let(&str2, cat(str2, "</FONT></TD></TR>", NULL));
+        printLongLine(str2, "", "\"");
+      }
+    }
+    if (subType == THEOREM) {
+      /* 10/25/02 The "referenced by" does not show up after the proof
+         because we moved the typeProof() to below.  Therefore, we save
+         printString into a temporary global holding variable to print
+         at the proper place inside of typeProof().  Ugly but necessary
+         with present design. */
+      let(&printStringForReferencedBy, printString);
+      let(&printString, "");
+    }
+
+    /* Printing of the trailer in mmwtex.c will close out string later */
+    outputToString = 0;
+  } /* if (htmlFlag && texFlag) */
+  /* 10/6/99 - End of used-by list for html page */
+
+
+  /* 10/25/02  Moved this to after the block above, so referenced statements
+     show up first for convenience */
   if (htmlFlag && texFlag) {
     /*** Output the html proof for $p statements ***/
+    /* Note that we also output the axiom and definition usage
+       lists inside this function */
     if (statement[showStatement].type == (char)p__) {
       typeProof(showStatement,
           0 /*pipFlag*/,
@@ -738,46 +839,8 @@ void typeStatement(long showStatement,
   } /* if (htmlFlag && texFlag) */
   /* End of html proof for $p statements */
 
-
-
-  /* 10/6/99 - Start of creating used-by list for html page */
-  if (htmlFlag && texFlag) {
-    outputToString = 1;
-    if (subType != SYNTAX) { /* Only do this for
-        definitions and axioms, not syntax statements */
-      let(&str1, "");
-      str1 = traceUsage(showStatement, 0 /* recursiveFlag */);
-      if (str1[0]) { /* Used by at least one */
-        /* str1 will have a leading space before each label */
-        /* Convert usage list to html links */
-        switch (subType) {
-          case AXIOM:  let(&str3, "axiom"); break;
-          case DEFINITION: let(&str3, "definition"); break;
-          case THEOREM: let(&str3, "theorem"); break;
-          default: bug(233);
-        }
-        let(&str2, cat("<FONT SIZE=-1 FACE=sans-serif>This ", str3,
-            " is referenced by: ", NULL));
-        /* Convert str1 to trailing space after each label */
-        let(&str1, cat(right(str1, 2), " ", NULL));
-        while (1) {
-          i = instr(1, str1, " ");
-          if (!i) break;
-          let(&str2, cat(str2, " <A HREF=\"",
-              left(str1, i - 1), ".html\">",
-              left(str1, i - 1), "</A>", NULL));
-          let(&str1, right(str1, i + 1)); /* Consume str1 */
-        }
-        let(&str2, cat(str2, " ", "</FONT><BR>", NULL));
-        printLongLine(str2, "", " ");
-      }
-    }
-    /* Printing of the trailer in mmwtex.c will close out string later */
-    outputToString = 0;
-  } /* if (htmlFlag && texFlag) */
-  /* 10/6/99 - End of used-by list for html page */
-
-
+  /* typeProof should have cleared this out */
+  if (printStringForReferencedBy[0]) bug(243);
 
  returnPoint:
   /* Deallocate strings */
@@ -785,6 +848,7 @@ void typeStatement(long showStatement,
   let(&str1, "");
   let(&str2, "");
   let(&str3, "");
+  let(&str4, "");
   let(&htmlDistinctVars, "");
 } /* typeStatement */
 
@@ -889,7 +953,8 @@ void typeProof(long statemNum,
 
   if (htmlFlag && texFlag) {
     outputToString = 1; /* Flag for print2 to add to printString */
-    print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=\"#EEFFFA\"\n");
+    print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=%s\n",
+        MINT_BACKGROUND_COLOR);
     if (essentialFlag) {
       /* For bobby.cast.org approval */
       print2("SUMMARY=\"Proof of theorem\">\n");
@@ -908,9 +973,9 @@ void typeProof(long statemNum,
         print2("<CAPTION><B>Detailed syntax breakdown of Definition <FONT\n");
       }
     }
-    printLongLine(cat("   COLOR=\"#006600\">",
+    printLongLine(cat("   COLOR=", GREEN_TITLE_COLOR, ">",
         asciiToTt(statement[statemNum].labelName),
-        "</FONT></B></CAPTION>", NULL), "", " ");
+        "</FONT></B></CAPTION>", NULL), "", "\"");
     print2(
         "<TR><TH>Step</TH><TH>Hyp</TH><TH>Ref\n");
     print2("</TH><TH>Expression</TH></TR>\n");
@@ -1394,6 +1459,14 @@ void typeProof(long statemNum,
     outputToString = 1;
     print2("</TABLE></CENTER>\n");
 
+    /* 10/10/02 Moved here from mmwtex.c */
+    /*print2("<FONT SIZE=-1 FACE=sans-serif>Colors of variables:\n");*/
+    printLongLine(cat(
+        "<CENTER><TABLE CELLSPACING=5><TR><TD ALIGN=LEFT><FONT SIZE=-1>",
+        "<B>Colors of variables:</B> ",
+        htmlVarColors, "</FONT></TD></TR>",
+        NULL), "", "\"");
+
     if (essentialFlag) {  /* Means this is not a syntax breakdown of a
         definition which is called from typeStatement() */
 
@@ -1499,7 +1572,9 @@ void typeProof(long statemNum,
         if (statementUsedFlags[stmt] == 'y') {
           if (!tmpStr[0]) {
             let(&tmpStr,
-               "<FONT SIZE=-1><FONT FACE=sans-serif>Syntax hints:</FONT> ");
+               /* 10/10/02 */
+               /*"<FONT SIZE=-1><FONT FACE=sans-serif>Syntax hints:</FONT> ");*/
+               "<TR><TD ALIGN=LEFT><FONT SIZE=-1><B>Syntax hints:</B> ");
           }
 
           /* 10/6/99 - Get the main symbol in the syntax */
@@ -1509,6 +1584,7 @@ void typeProof(long statemNum,
           for (i = 1 /* Skip |- */; i < statement[stmt].mathStringLen; i++) {
             if (mathToken[(statement[stmt].mathString)[i]].tokenType ==
                 (char)con__) {
+              /* Skip parentheses, commas, etc. */
               if (strcmp(mathToken[(statement[stmt].mathString)[i]
                       ].tokenName, "(")
                   && strcmp(mathToken[(statement[stmt].mathString)[i]
@@ -1526,56 +1602,102 @@ void typeProof(long statemNum,
             }
           } /* Next i */
           /* Special cases hard-coded for set.mm */
-          if (!strcmp(statement[stmt].labelName, "wbr"))
-            let(&tmpStr1, "[relation]");
+          if (!strcmp(statement[stmt].labelName, "wbr")) /* binary relation */
+            let(&tmpStr1, "<i> class class class </i>");
           if (!strcmp(statement[stmt].labelName, "cv"))
-            let(&tmpStr1, "[set]");
-          if (!strcmp(statement[stmt].labelName, "co"))
-            let(&tmpStr1, "[operation]");
-          let(&tmpStr, cat(tmpStr, " ", tmpStr1, NULL));
+            let(&tmpStr1, "[set variable]");
+          /* 10/10/02 Let's don't do cv - confusing to reader */
+          if (!strcmp(statement[stmt].labelName, "cv"))
+            continue;
+          if (!strcmp(statement[stmt].labelName, "co")) /* operation */
+            let(&tmpStr1, "(<i>class class class</i>)");
+          let(&tmpStr, cat(tmpStr, " &nbsp;", tmpStr1, NULL));
           /* End of 10/6/99 section - Get the main symbol in the syntax */
 
-
+          let(&tmpStr1, "");
+          tmpStr1 = pinkHTML(stmt);
+          /******* 10/10/02
           let(&tmpStr, cat(tmpStr, "<FONT FACE=sans-serif><A HREF=\"",
               statement[stmt].labelName, ".html\">",
               statement[stmt].labelName, "</A></FONT> &nbsp; ", NULL));
+          *******/
+          let(&tmpStr, cat(tmpStr, "<A HREF=\"",
+              statement[stmt].labelName, ".html\">",
+              statement[stmt].labelName, "</A>", tmpStr1, NULL));
 
 
         }
       }
       if (tmpStr[0]) {
-        let(&tmpStr, cat(tmpStr, " ", "</FONT><BR>", NULL));
-        printLongLine(tmpStr, "", " ");
+        let(&tmpStr, cat(tmpStr,
+            "</FONT></TD></TR>", NULL));
+        printLongLine(tmpStr, "", "\"");
       }
-      /* End of syntax statement list */
+      /* End of syntax hints list */
 
 
+      /* 10/25/02 Output "referenced by" list here */
+      if (printStringForReferencedBy[0]) {
+        printLongLine(printStringForReferencedBy, "", "\"");
+        let(&printStringForReferencedBy, "");
+      }
 
-      /* Get list of axioms assumed by proof */
-      let(&tmpStr, "");
+
+      /* Get list of axioms and definitions assumed by proof */
       let(&statementUsedFlags, "");
       traceProofWork(statemNum,
           1 /*essentialFlag*/,
           &statementUsedFlags, /*&statementUsedFlags*/
           &unprovedList /* &unprovedList */);
       if (strlen(statementUsedFlags) != statements + 1) bug(227);
+
+      /* First get axioms */
+      let(&tmpStr, "");
       for (stmt = 1; stmt <= statements; stmt++) {
         if (statementUsedFlags[stmt] == 'y' && statement[stmt].type == a__) {
           let(&tmpStr1, left(statement[stmt].labelName, 3));
           if (!strcmp(tmpStr1, "ax-")) {
             if (!tmpStr[0]) {
               let(&tmpStr,
+ /******* 10/10/02
  "<FONT SIZE=-1 FACE=sans-serif>The theorem was proved from these axioms: ");
+ *******/
+ "<TR><TD ALIGN=LEFT><FONT SIZE=-1><B>This theorem was proved from axioms:</B>");
             }
-            let(&tmpStr, cat(tmpStr, " <A HREF=\"",
+            let(&tmpStr1, "");
+            tmpStr1 = pinkHTML(stmt);
+            let(&tmpStr, cat(tmpStr, " &nbsp;<A HREF=\"",
                 statement[stmt].labelName, ".html\">",
-                statement[stmt].labelName, "</A>", NULL));
+                statement[stmt].labelName, "</A>", tmpStr1, NULL));
           }
         }
       } /* next stmt */
       if (tmpStr[0]) {
-        let(&tmpStr, cat(tmpStr, " ", "</FONT><BR>", NULL));
-        printLongLine(tmpStr, "", " ");
+        let(&tmpStr, cat(tmpStr, "</FONT></TD></TR>", NULL));
+        printLongLine(tmpStr, "", "\"");
+      }
+
+      /* 10/10/02 Then get definitions */
+      let(&tmpStr, "");
+      for (stmt = 1; stmt <= statements; stmt++) {
+        if (statementUsedFlags[stmt] == 'y' && statement[stmt].type == a__) {
+          let(&tmpStr1, left(statement[stmt].labelName, 3));
+          if (!strcmp(tmpStr1, "df-")) {
+            if (!tmpStr[0]) {
+              let(&tmpStr,
+ "<TR><TD ALIGN=LEFT><FONT SIZE=-1><B>This theorem depends on definitions:</B>");
+            }
+            let(&tmpStr1, "");
+            tmpStr1 = pinkHTML(stmt);
+            let(&tmpStr, cat(tmpStr, " &nbsp;<A HREF=\"",
+                statement[stmt].labelName, ".html\">",
+                statement[stmt].labelName, "</A>", tmpStr1, NULL));
+          }
+        }
+      } /* next stmt */
+      if (tmpStr[0]) {
+        let(&tmpStr, cat(tmpStr, "</FONT></TD></TR>", NULL));
+        printLongLine(tmpStr, "", "\"");
       }
 
       /* Print any unproved statements */
@@ -1587,13 +1709,15 @@ void typeProof(long statemNum,
              was traced, it means the statement traced has no
              proof (or it has a proof, but is incomplete and all earlier
              ones do have complete proofs). */
-          print2(
-              "<B><FONT COLOR=\"#FF6600\">WARNING: This theorem has an\n");
-          print2(" incomplete proof.</FONT></B><BR>\n");
+          printLongLine(cat(
+"<TR><TD ALIGN=left >&nbsp;<B><FONT COLOR=\"#FF6600\">WARNING: This theorem has an",
+              " incomplete proof.</FONT></B><BR></TD></TR>", NULL), "", "\"");
 
         } else {
-          print2("<B><FONT COLOR=\"#FF6600\">WARNING: This proof depends\n");
-          print2(" on the following unproved theorem(s): </FONT>\n");
+          printLongLine(cat(
+"<TR><TD ALIGN=left >&nbsp;</TD><TD><B><FONT COLOR=\"#FF6600\">WARNING: This proof depends",
+              " on the following unproved theorem(s): ",
+              NULL), "", "\"");
           let(&tmpStr, "");
           for (i = 0; i < nmbrLen(unprovedList); i++) {
             let(&tmpStr, cat(tmpStr, " <A HREF=\"",
@@ -1601,8 +1725,8 @@ void typeProof(long statemNum,
                 statement[unprovedList[i]].labelName, "</A>",
                 NULL));
           }
+          printLongLine(cat(tmpStr, "</B></FONT></TD></TR>", NULL), "", "\"");
         }
-        printLongLine(cat(tmpStr, "</B><BR>", NULL), "", " ");
       }
 
       /* End of axiom list */
@@ -1952,6 +2076,11 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
   nmbrString *proof = NULL_NMBRSTRING;
   nmbrString *essentialFlags = NULL_NMBRSTRING;
 
+  /* 10/10/02 This section is never called in HTML mode anymore.  The code is
+     left in though just in case we somehow get here and the user continues
+     through the bug. */
+  if (texFlag && htmlFlag) bug(239);
+
   if (!texFlag) {
     print2("Summary of statements used in the proof of \"%s\":\n",
         statement[statemNum].labelName);
@@ -1968,7 +2097,7 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
       printLongLine(cat("Summary of statements used in the proof of ",
           "<B>",
           asciiToTt(statement[statemNum].labelName),
-          "</B>:", NULL), "", " ");
+          "</B>:", NULL), "", "\"");
     }
     outputToString = 0;
     fprintf(texFilePtr, "%s", printString);
@@ -2045,7 +2174,7 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
               asciiToTt(statement[stmt].labelName), "</B> ",
               str1, " <B>",
               asciiToTt(statement[stmt].fileName),
-              "</B> ", NULL), "", " ");
+              "</B> ", NULL), "", "\"");
         }
         outputToString = 0;
         fprintf(texFilePtr, "%s", printString);
@@ -2302,14 +2431,16 @@ void traceProofTreeRec(long statemNum,
   }
 
 #define INDENT_INCR 3
+#define MAX_LINE_LEN 79
 
-  if ((recursDepth * INDENT_INCR - indentShift) > 50) {
-    indentShift = indentShift + 40;
+  if ((recursDepth * INDENT_INCR - indentShift) >
+      (screenWidth - MAX_LINE_LEN) + 50) {
+    indentShift = indentShift + 40 + (screenWidth - MAX_LINE_LEN);
     print2("****** Shifting indentation.  Total shift is now %ld.\n",
       (long)indentShift);
   }
   if ((recursDepth * INDENT_INCR - indentShift) < 1 && indentShift != 0) {
-    indentShift = indentShift - 40;
+    indentShift = indentShift - 40 - (screenWidth - MAX_LINE_LEN);
     print2("****** Shifting indentation.  Total shift is now %ld.\n",
       (long)indentShift);
   }
@@ -2318,9 +2449,9 @@ void traceProofTreeRec(long statemNum,
       statement[statemNum].labelName, " $", chr(statement[statemNum].type),
       "  \"", edit(outputStr, 8 + 128), "\"", NULL));
 
-#define MAX_LINE_LEN 79
-  if (len(outputStr) > MAX_LINE_LEN) {
-    let(&outputStr, cat(left(outputStr, MAX_LINE_LEN - 3), "...", NULL));
+  if (len(outputStr) > MAX_LINE_LEN + (screenWidth - MAX_LINE_LEN)) {
+    let(&outputStr, cat(left(outputStr,
+        MAX_LINE_LEN + (screenWidth - MAX_LINE_LEN) - 3), "...", NULL));
   }
 
   if (statement[statemNum].type == p__ || statement[statemNum].type == a__) {
@@ -2807,6 +2938,8 @@ long getSourceIndentation(long statemNum) {
 }
 
 
+/* This implements the READ command (although the / VERIFY qualifier is
+   processed separately in metamath.c). */
 void readInput(void)
 {
 
@@ -2828,6 +2961,7 @@ void readInput(void)
 
 }
 
+/* This implements the WRITE SOURCE command. */
 void writeInput(void)
 {
 
@@ -3042,28 +3176,6 @@ void H(vstring helpLine)
   if (printHelp) {
     print2("%s\n", helpLine);
   }
-}
-
-
-/* Returns the pink number printed next to statement labels in HTML output */
-/* The pink number only counts $a and $p statements, unlike the statement
-   number which also counts $f, $e, $c, $v, ${, $} */
-long pinkNumber(long statemNum)
-{
-
-  long statemMap = 0;
-  long i;
-  /* Statement map for number of showStatement - this makes the statement
-     number more meaningful, by counting only $a and $p. */
-  /* ???This could be done once if we want to speed things up, but
-     be careful because it will have to be redone if ERASE then READ.
-     For the future it could be added to the statement[] structure. */
-  statemMap = 0;
-  for (i = 1; i <= statemNum; i++) {
-    if (statement[i].type == a__ || statement[i].type == p__)
-      statemMap++;
-  }
-  return statemMap;
 }
 
 

@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*       Copyright (C) 2002  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*        Copyright (C) 2002  NORMAN MEGILL  nm@alum.mit.edu                 */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -82,6 +82,7 @@ struct statement_struct { /* Array index is statement number, starting at 1 */
   nmbrString *optDisjVarsA; /* Optional disjoint variables, 1st of pair */
   nmbrString *optDisjVarsB; /* Optional disjoint variables, 2nd of pair */
   nmbrString *optDisjVarsStmt; /* Opt disjoint variables, statem number */
+  long pinkNumber; /* 25-Oct-02 The $a/$p sequence number for web pages */
   };
 
 /* Sort keys for statement labels (allocated by parseLabels) */

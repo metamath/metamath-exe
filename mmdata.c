@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*       Copyright (C) 2002  NORMAN D. MEGILL nm@alum.mit.edu                */
+/*        Copyright (C) 2002  NORMAN MEGILL  nm@alum.mit.edu                 */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -492,14 +492,19 @@ void outOfMemory(vstring msg)
 void bug(int bugNum)
 {
   vstring tmpStr = "";
+
+  /* 10/10/02 */
+  long saveOutputToString = outputToString;
+  outputToString = 0; /* Make sure we print to screen and not string */
+
   print2("*** A PROGRAM BUG WAS DETECTED.\n");
   print2("Bug identifier (for technical support):  %ld\n",(long)bugNum);
   print2(
-"To get technical support, please send Norm Megill a command file that\n");
+"To get technical support, please send Norm Megill (nm@alum.mit.edu) a\n");
   print2(
-"reproduces this bug, along with the source files that were used.  See\n");
+"command file that reproduces this bug, along with the source files that\n");
   print2(
-"HELP SUBMIT for help on command files.\n");
+"were used.  See HELP SUBMIT for help on command files.\n");
   print2("\n");
   let(&tmpStr, "?");
   while (strcmp(tmpStr, "cont") && strcmp(tmpStr, "")) {
@@ -515,6 +520,10 @@ void bug(int bugNum)
     "The program may be corrupted, so you are proceeding at your own risk.\n");
     print2("\n");
     let(&tmpStr, "");
+
+    /* 10/10/02 */
+    outputToString = saveOutputToString; /* Restore for continuation */
+
     return;
   }
   let(&tmpStr, "");
@@ -1237,7 +1246,7 @@ struct genString *genAddElement(struct genString *g, long element)
   v[len].tokenNum = element;
   v[len].whiteSpace = "";
   v[len + 1] = *NULL_GENSTRING;
-/*E*/if(db9)getPoolStats(&i1,&j1,&k1); if(db9)print2("bbg: pool %ld stat %ld\n",poolTotalFree,i1+j1);
+/*E*/if(db9)getPoolStats(&i1,&j1,&k1); if(db9)print2("bbg1: pool %ld stat %ld\n",poolTotalFree,i1+j1);
   return(v);
 }
 
@@ -2314,7 +2323,7 @@ nmbrString *nmbrAddElement(nmbrString *g, long element)
   nmbrCpy(v, g);
   v[len] = element;
   v[len + 1] = *NULL_NMBRSTRING; /* End of string */
-/*E*/if(db9)getPoolStats(&i1,&j1,&k1); if(db9)print2("bbg: pool %ld stat %ld\n",poolTotalFree,i1+j1);
+/*E*/if(db9)getPoolStats(&i1,&j1,&k1); if(db9)print2("bbg2: pool %ld stat %ld\n",poolTotalFree,i1+j1);
   return(v);
 }
 
@@ -2852,7 +2861,9 @@ vstring compressProof(nmbrString *proof, long statemNum)
        to a shorter label */
     do {  /* Not a loop, just a block we can break out of */
 
-      if (1) break; /*??? BYPASS ALL CODE IN THIS BLOCK */
+      /*if (1) break;*/  /*??? BYPASS ALL CODE IN THIS BLOCK */
+      if (i == i) break;  /*??? BYPASS ALL CODE IN THIS BLOCK */
+                          /* i == i prevents lcc compiler warning */
       if (numchrs <= 1) break; /* We won't save anything by reassignment */
 
       breakFlag = 0;
@@ -2944,7 +2955,9 @@ vstring compressProof(nmbrString *proof, long statemNum)
 
     /* See if an earlier label can be reused */
     /*??? THIS IS NOT USED ANYMORE */
-    if (1) continue;  /* BYPASS REMAINING CODE */
+    /*if (1) continue;*/   /* BYPASS REMAINING CODE */
+    if (i == i) continue;  /* BYPASS REMAINING CODE */
+                           /* i == i prevents lcc compiler warning */
     lab = nmbrElementIn(1, labelList, -1000 - step);
     if (!lab) bug(1353);
     lab--; /* labelList array starts at 0, not 1 */
@@ -3537,7 +3550,7 @@ pntrString *pntrAddElement(pntrString *g)
   pntrCpy(v,g);
   v[len] = "";
   v[len + 1] = *NULL_PNTRSTRING;
-/*E*/if(db9)getPoolStats(&i1,&j1,&k1); if(db9)print2("bbg: pool %ld stat %ld\n",poolTotalFree,i1+j1);
+/*E*/if(db9)getPoolStats(&i1,&j1,&k1); if(db9)print2("bbg3: pool %ld stat %ld\n",poolTotalFree,i1+j1);
   return(v);
 }
 
