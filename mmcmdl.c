@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*               Copyright (C) 1998, NORMAN D. MEGILL                        */
+/*               Copyright (C) 1999, NORMAN D. MEGILL                        */
 /*****************************************************************************/
 
 /*34567890123456 (79-character line to adjust text window width) 678901234567*/
@@ -148,8 +148,14 @@ flag processCommandLine(void)
           print2("?No source file has been read in.  Use READ first.\n");
           goto pclbad;
         }
-        if (!getFullArg(2,"* What is the name of the source output file? "))
+        if (!getFullArg(2,cat(
+            "* What is the name of the source output file <",
+            input_fn, ">? ", NULL)))
           goto pclbad;
+        if (!strcmp(input_fn, fullArg[2])) {
+          print2(
+          "The input file will be renamed %s~1.\n", input_fn);
+        }
         goto pclgood;
       }
       if (cmdMatches("WRITE DICTIONARY")) {
@@ -1160,7 +1166,7 @@ flag processCommandLine(void)
       if (!getFullArg(1,"& Input/output file? "))
         goto pclbad;
       if (!getFullArg(2,
-          "* String to use as key on each line (null string = column 1) <>? "))
+          "* String to start key on each line (null string = column 1) <>? "))
         goto pclbad;
       goto pclgood;
     }
@@ -1231,8 +1237,8 @@ flag processCommandLine(void)
 "The input file will be renamed %s~1.\n", fullArg[2]);
       }
       if (!getFullArg(4,
-          cat("* Revision tag for added lines </*", str(highestRevision(
-              fullArg[1]) + 1), "*/>? ", NULL)))
+          cat("* Revision tag for added lines </* #", str(highestRevision(
+              fullArg[1]) + 1), " */>? ", NULL)))
         goto pclbad;
       if (!getFullArg(5,
 "# Successive lines required for match (more = better sync) <3>? "))
@@ -1664,6 +1670,8 @@ void parseCommandLine(vstring line)
   /* mode: 0 means look for start of token, 1 means look for end of
      token, 2 means look for trailing single quote, 3 means look for
      trailing double quote */
+  /* 2/20/99 - only "!" at beginning of line now acts as comment
+     - This was done because sometimes ! might be legal as part of a command */
   mode = 0;
   for (p = 0; p < lineLen; p++) {
     let(&tmpStr, ""); /* Clean up temp alloc stack to prevent overflow */
@@ -1673,7 +1681,7 @@ void parseCommandLine(vstring line)
         continue;
       }
       /* If character is comment, we're done */
-      if (instr(1,tokenComment,chr(line[p]))) {
+      if (p == 0 && /* 2/20/99 */ instr(1,tokenComment,chr(line[p]))) {
         break;
       }
       /* If character is a special token, get it but don't change mode */
@@ -1713,15 +1721,16 @@ void parseCommandLine(vstring line)
         continue;
       }
       /* If character is comment, we're done */
+      /* 2/20/99 - see above
       if (instr(1,tokenComment,chr(line[p]))) {
         pntrLet(&rawArgPntr, pntrAddElement(rawArgPntr));
         nmbrLet(&rawArgNmbr, nmbrAddElement(rawArgNmbr, tokenStart));
-                                                          /* Save token start */
         let((vstring *)(&rawArgPntr[rawArgs]), seg(line,tokenStart,p));
         rawArgs++;
         mode = 0;
         break;
       }
+      2/20/99 */
       /* If character is a special token, get it and change mode */
       if (instr(1,specialOneCharTokens,chr(line[p]))) {
         pntrLet(&rawArgPntr, pntrAddElement(rawArgPntr));

@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*               Copyright (C) 1998, NORMAN D. MEGILL                        */
+/*               Copyright (C) 1999, NORMAN D. MEGILL                        */
 /*****************************************************************************/
 
 /*34567890123456 (79-character line to adjust text window width) 678901234567*/
@@ -10,9 +10,6 @@
 /*??? To work on:
    (20) Add a command line editor (compiler-specific - some may not have it)
         - handle arrows & recall buffer
-   (21) Add selected DO LIST functions - PROCESS LINES or LINE PROCESSOR?
-        Commands:  ADD, CLEAN?, DELETE, SUBSTITUTE, SWAP, COUNT, DIFFERENCE
-        (general DIFF), DUPLICATE, PARALLEL, SPLIT, COPY, TYPE, RENAME?
    (23) When near completion:  Verify that each of the error messages
         works with an actual error
 */

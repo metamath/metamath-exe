@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*               Copyright (C) 1998, NORMAN D. MEGILL                        */
+/*               Copyright (C) 1999, NORMAN D. MEGILL                        */
 /*****************************************************************************/
 
 /*3456789012345678901234567890123456789012345678901234567890123456789012345678*/
@@ -350,13 +350,14 @@ vstring cmdInput(FILE *stream, vstring ask)
     be freed by the user if not needed. */
   vstring g = "";
   if (ask) print2("%s",ask);
+#define CMD_BUFFER 2000
 
-  let(&g, space(256)); /* Allow for up to 256 characters */
-  if (!fgets(g, 256, stream)) {
+  let(&g, space(CMD_BUFFER)); /* Allow for up to CMD_BUFFER characters */
+  if (!fgets(g, CMD_BUFFER, stream)) {
     /* End of file */
     return NULL;
   }
-/*E*/db = db - (256 - strlen(g));
+/*E*/db = db - (CMD_BUFFER - strlen(g));
   if (g[1]) {
     g[strlen(g)-1]=0;   /* Eliminate new-line character */
 /*E*/db = db - 1;

@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*               Copyright (C) 1998, NORMAN D. MEGILL                        */
+/*               Copyright (C) 1999, NORMAN D. MEGILL                        */
 /*****************************************************************************/
 
 /*34567890123456 (79-character line to adjust text window width) 678901234567*/
@@ -1280,11 +1280,17 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
 void minimizeProof(long repStatemNum, long prvStatemNum,
     flag allowGrowthFlag)
 {
+  /* repStatemNum is the statement number we're trying to use
+     in the proof to shorten it */
+  /* prvStatemNum is the statement number we're proving */
+  /* allowGrowthFlag means to make the replacement when possible,
+     even if it doesn't shorten the proof length */
 
   long plen, step, mlen, sym, sublen;
   flag foundFlag, breakFlag;
-  nmbrString *mString; /* Pointer only */
-  nmbrString *newSubProofPtr; /* Pointer only */
+  nmbrString *mString; /* Pointer only; not allocated */
+  nmbrString *newSubProofPtr = NULL_NMBRSTRING; /* Pointer only; not allocated;
+                however initialize for nmbrLen function before it's assigned */
 
   while (1) {
     plen = nmbrLen(proofInProgress.proof);

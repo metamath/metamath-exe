@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*               Copyright (C) 1998, NORMAN D. MEGILL                        */
+/*               Copyright (C) 1999, NORMAN D. MEGILL                        */
 /*****************************************************************************/
 
 /*34567890123456 (79-character line to adjust text window width) 678901234567*/
@@ -17,7 +17,8 @@
 #include "mminou.h"
 #include "mmword.h"
 
-
+/* Set to 79, 80, etc. - length of line after tag is added */
+#define LINE_LENGTH 80
 
 
    /* 7000 ! ***** "DIFF" Option ***** from DO LIST */
@@ -459,7 +460,7 @@ vstring stripAndTag(vstring line, vstring tag, flag tagBlankLines)
 {
   long i, j, k, n;
   vstring line1 = "", comment = "";
-  long lineLength = 79;
+  long lineLength = LINE_LENGTH;
   flag validTag;
   i = 0;
   let(&line1, edit(line, 128 + 2048)); /* Trim trailing spaces and untab */
@@ -494,6 +495,12 @@ vstring stripAndTag(vstring line, vstring tag, flag tagBlankLines)
           space(lineLength - 1 - strlen(tag) - strlen(line1) + n),
           NULL));
     let(&line1, cat(line1, " ", tag, NULL));
+    if (strlen(line1) - n > lineLength) {
+      print2(
+"Warning: The following line has > %ld characters after tag is added:\n",
+          lineLength);
+      print2("%s\n", line1);
+    }
   }
 
   /* Add tags to blank lines if tagBlankLines is set */

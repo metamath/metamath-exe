@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*               Copyright (C) 1998  NORMAN D. MEGILL                        */
+/*               Copyright (C) 1999  NORMAN D. MEGILL                        */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust text window width) 678901234567*/
 
@@ -457,7 +457,7 @@ console_options.title = (unsigned char*)"\pMetamath";
 #endif
 
   if (argc > 0) {
-    if (instr(1, edit(argv[0], 32), "LIST")) {
+    if (instr(1, edit(argv[0], 32), "UT")) {
       listMode = 1;
     }
     if (instr(1, edit(argv[0], 32), "TOOL")) {
@@ -494,14 +494,14 @@ console_options.title = (unsigned char*)"\pMetamath";
   }
 
   if (!listMode) {
-    print2("Metamath - Version 0.06b 30-Jun-98\n");
+    print2("Metamath - Version 0.06c 20-Feb-99\n");
     print2(
-     "Copyright (C) 1998 Norman D. Megill, 19 Locke Ln., Lexington MA 02173\n");
+     "Copyright (C) 1999 Norman D. Megill, 19 Locke Ln., Lexington MA 02173\n");
   }
   if (listMode && argc == 1) {
-    print2("Programming utility tools - Version 0.01 10-Aug-98\n");
+    print2("Programming utility tools - Version 0.01 20-Feb-99\n");
     print2(
-     "Copyright (C) 1998 Production Services Corp.\n");
+     "Copyright (C) 1999 Production Services Corp.\n");
   }
   if (argc < 2) print2("Type HELP for help, EXIT to exit.\n");
 
@@ -576,6 +576,8 @@ void command(int argc, char *argv[])
   long lines, changedLines, oldChangedLines, twoMatches, p1, p2;
   long firstChangedLine;
   flag cmdMode, changedFlag, outMsgFlag;
+  double sum;
+  vstring bufferedLine = "";
 
 
   while (1) {
@@ -914,8 +916,12 @@ void command(int argc, char *argv[])
               if (q == 0) q = 1;    /* The occurrence # of string to subst */
             }
             s = 0;
+            /*
             if (!strcmp(fullArg[2], "\\n")) {
-              s = 1; /* Replace lf flag */
+            */
+            s = instr(1, fullArg[2], "\\n");
+            if (s) {
+              /*s = 1;*/ /* Replace lf flag */
               q = 1; /* Only 1st occurrence makes sense in this mode */
             }
             if (!strcmp(fullArg[3], "\\n")) {
@@ -937,7 +943,18 @@ void command(int argc, char *argv[])
           case MATCH_MODE:
             outMsgFlag = 1;
         } /* End switch */
+        let(&bufferedLine, "");
+        /*
         while (linput(list1_fp, NULL, &str1)) {
+        */
+        while (1) {
+          if (bufferedLine[0]) {
+            /* Get input from buffered line (from rejected \n replacement) */
+            let(&str1, bufferedLine);
+            let(&bufferedLine, "");
+          } else {
+            if (!linput(list1_fp, NULL, &str1)) break;
+          }
           lines++;
           oldChangedLines = changedLines;
           let(&str2, str1);
@@ -979,8 +996,19 @@ void command(int argc, char *argv[])
 
               if (s && k) { /* We're asked to replace a newline char */
                 /* Read in the next line */
+                /*
                 if (linput(list1_fp, NULL, &str4)) {
                   let(&str2, cat(str1, "\\n", str4, NULL));
+                */
+                if (linput(list1_fp, NULL, &bufferedLine)) {
+                  /* Join the next line and see if the string matches */
+                  if (instr(1, cat(str1, "\\n", bufferedLine, NULL),
+                      fullArg[2])) {
+                    let(&str2, cat(str1, "\\n", bufferedLine, NULL));
+                    let(&bufferedLine, "");
+                  } else {
+                    k = 0; /* No match - leave bufferedLine for next pass */
+                  }
                 } else { /* EOF reached */
                   print2("Warning: file %s has an odd number of lines\n",
                       fullArg[1]);
@@ -1149,6 +1177,7 @@ void command(int argc, char *argv[])
       if (cmdMatches("SORT")) cmdMode = SORT_MODE;
       else if (cmdMatches("UNDUPLICATE")) cmdMode = UNDUPLICATE_MODE;
       else if (cmdMatches("DUPLICATE")) cmdMode = DUPLICATE_MODE;
+      else if (cmdMatches("UNIQUE")) cmdMode = UNIQUE_MODE;
       else if (cmdMatches("REVERSE")) cmdMode = REVERSE_MODE;
       if (cmdMode) {
         list1_fp = fSafeOpen(fullArg[1], "r");
@@ -1358,6 +1387,7 @@ void command(int argc, char *argv[])
         q = 0; /* Longest line length */
         i = 0; /* First longest line */
         j = 0; /* Number of longest lines */
+        sum = 0.0; /* Sum of numeric content of lines */
         firstChangedLine = 0;
         while (linput(list1_fp, NULL, &str1)) {
           lines++;
@@ -1387,6 +1417,7 @@ void command(int argc, char *argv[])
               p2++;
             }
           }
+          sum = sum + val(str1);
         }
         print2(
 "The file has %ld lines.  The string \"%s\" occurs %ld times on %ld lines.\n",
@@ -1399,6 +1430,8 @@ void command(int argc, char *argv[])
 "The first longest line (out of %ld) is line %ld and has %ld characters:\n",
             j, i, q);
         print2("%s\n", str4);
+        print2("If each line is a number, their sum is %s\n", str(sum));
+        fclose(list1_fp);
         continue;
       }
 
@@ -2631,6 +2664,23 @@ void command(int argc, char *argv[])
           }
         } /* End while (1) */
       }
+      /* 6/14/98 - Automatically display new unknown steps
+         ???Future - add switch to enable/defeat this */
+      typeProof(proveStatement,
+          1 /*pipFlag*/,
+          0 /*startStep*/,
+          0 /*endStep*/,
+          0 /*startIndent*/, /* Not used */
+          0 /*endIndent*/,
+          1 /*essentialFlag*/,
+          0 /*renumberFlag*/,
+          1 /*unknownFlag*/,
+          0 /*notUnifiedFlag*/,
+          0 /*reverseFlag*/,
+          0 /*noIndentFlag*/,
+          0 /*splitColumn*/,
+          0 /*texFlag*/);
+      /* 6/14/98 end */
       continue;
     }
 

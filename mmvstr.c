@@ -587,7 +587,31 @@ long ascii_(vstring c)
 /* Returns the floating-point value of a numeric string */
 double val(vstring s)
 {
+  double v = 0;
+  char signFound = 0;
+  double power = 1.0;
+  long i;
+  for (i = strlen(s); i >= 0; i--) {
+    switch (s[i]) {
+      case '.':
+        v = v / power;
+        power = 1.0;
+        break;
+      case '-':
+        signFound = 1;
+        break;
+      case '0': case '1': case '2': case '3': case '4':
+      case '5': case '6': case '7': case '8': case '9':
+        v = v + ((double)(s[i] - '0')) * power;
+        power = 10.0 * power;
+        break;
+    }
+  }
+  if (signFound) v = - v;
+  return v;
+  /*
   return (atof(s));
+  */
 }
 
 
