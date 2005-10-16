@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2004  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -117,8 +117,13 @@ Note:  i = 0 through hentyFilterSize-1 below.
 /*long minSubstLen = 0;*/ /* User-settable value - 0 or 1 */
 long minSubstLen = 1; /* It was decided to disallow empty subst. by default
                          since most formal systems don't need it */
-long userMaxUnifTrials = 1000; /* Initial value */
+long userMaxUnifTrials = 100000; /* Initial value */
            /* User-defined upper limit (# backtracks) for unification trials */
+           /* 1-Jun-04 nm Changed userMaxUnifTrials from 1000 to 100000, which
+              is not a problem with today's faster computers.  This results in
+              fewer annoying "Unification timed out" messages, but the drawback
+              is that (rarely) there may be hundreds of unification
+              choices for the user (which the user can quit from though). */
 long unifTrialCount = 0;
                     /* 0 means don't time out; 1 means start counting trials */
 long unifTimeouts = 0; /* Number of timeouts so far for this command */

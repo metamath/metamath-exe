@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2004  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -644,7 +644,7 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
           saveUnifTrialCount = unifTrialCount; /* Save unification timeout */
           hypProofPtr =
               proveFloating(hypMakeSubstList[hypListMap[hyp]],
-              provStmtNum, 0, step);
+              provStmtNum, 0, step, 0/*not noDistinct*/);
           unifTrialCount = saveUnifTrialCount; /* Restore unif. timeout */
           if (nmbrLen(hypProofPtr)) {
             nmbrLet((nmbrString **)(&hypProofList[hypListMap[hyp]]),
@@ -951,7 +951,8 @@ char checkMStringMatch(nmbrString *mString, long step)
    considered.  A value of 0 means none are considered. */
 /* The caller must deallocate the returned nmbrString. */
 nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
-    long step /* 0 means step 1; used for messages */)
+    long step, /* 0 means step 1; used for messages */
+    flag noDistinct /* 1 means don't try statements with $d's  16-Aug-04 */)
 {
 
   long reqHyps, optHyps;
@@ -1085,6 +1086,17 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
 
     if (statement[stmt].type != (char)a__ &&
         statement[stmt].type != (char)p__) continue; /* Not $a or $p */
+
+    /* 16-Aug-04 nm  noDistinct is set by NO_DISTICT qualifier in IMPROVE */
+    if (noDistinct) {
+      /* Skip the statement if it has a $d requirement.  This option
+         prevents illegal minimizations that would violate $d requirements
+         since the Proof Assistant does not check for $d violations. */
+      if (nmbrLen(statement[stmt].reqDisjVarsA)) {
+        continue;
+      }
+    }
+
     stmtMathPtr = statement[stmt].mathString;
 
     /* Speedup:  if first or last tokens in instance and scheme are constants,
@@ -1253,7 +1265,8 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
                             /*??? Implement an error check for this in parser */
 
         saveUnifTrialCount = unifTrialCount; /* Save unification timeout */
-        hypProofPtr = proveFloating(makeSubstPtr, statemNum, maxEDepth, step);
+        hypProofPtr = proveFloating(makeSubstPtr, statemNum, maxEDepth, step,
+            noDistinct);
         unifTrialCount = saveUnifTrialCount; /* Restore unification timeout */
 
         nmbrLet(&makeSubstPtr, NULL_NMBRSTRING); /* Deallocate */
@@ -1660,6 +1673,7 @@ void assignKnownSteps(long startStep, long sbProofLen)
             "\n(The $|$ tokens are internal statement separation markers)",
             "\nZapping targets so we can procede (but you should exit the ",
             "Proof Assistant and fix this problem)",
+            "\n(This may take a while; please wait...)",
             NULL), "", " ");
         purgeStateVector(&stateVector);
         goto returnPoint;
@@ -1882,9 +1896,10 @@ char interactiveUnify(nmbrString *schemeA, nmbrString *schemeB,
     goto returnPoint;
   }
   if (unifCount > 1) {
-    print2(
-"There are %ld possible unifications.  Please select the correct one.\n",
-      unifCount);
+    printLongLine(cat("There are ", str(unifCount),
+      " possible unifications.  Please select the correct one or QUIT if",
+      " you want to UNIFY later.", NULL),
+        "    ", " ");
     printLongLine(cat("Unify:  ", nmbrCvtMToVString(schemeA), NULL),
         "    ", " ");
     printLongLine(cat(" with:  ", nmbrCvtMToVString(schemeB), NULL),
@@ -2061,7 +2076,10 @@ void autoUnify(flag congrats)
               makeSubstAll(stateVector);
               somethingChanged = 1;
               proofChangedFlag = 1; /* Flag for undo stack */
+              /* 8-Apr-05 nm This message can be annoying. */
+              /*
               print2("Step %ld was successfully unified.\n", (long)(step + 1));
+              */
             }
           }
         }

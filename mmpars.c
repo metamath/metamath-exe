@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2004  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -92,6 +92,10 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
   /* Do this by opening the file in binary and seeking to the end. */
   input_fp = fopen(input_fn, "rb");
   if (!input_fp) {
+    /* If this is the top-level source, file-not-found should have been
+       detected earlier; if detected here, the rawSourceError below will
+       cause a crash since fileNamePtr has not been assigned. */
+    if (includeCalls == 0) bug(1720);
     /* This error call will not be invoked for the original file. */
     /* (The command line takes care of it.) */
     rawSourceError(fileNameBufStrt, fileNamePtr, fileNameLen,
@@ -186,11 +190,11 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
     tmpch = fbPtr[0];
     if (!tmpch) { /* End of file */
       if (insideComment) {
-        rawSourceError(fileBuf, fbPtr - 1, 2, lineNum -1, input_fn,
+        rawSourceError(fileBuf, fbPtr - 1, 2, lineNum - 1, input_fn,
          "The last comment in the file is incomplete.  \"$)\" was expected.");
       } else {
         if (mode != 0) {
-        rawSourceError(fileBuf, fbPtr - 1, 2, lineNum -1, input_fn,
+          rawSourceError(fileBuf, fbPtr - 1, 2, lineNum - 1, input_fn,
    "The last include statement in the file is incomplete.  \"$]\" was expected."
            );
         }
@@ -199,7 +203,7 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
     }
     if (tmpch != '$') {
       if (tmpch == '\n') {
-        insideLineComment = 0;
+        insideLineComment = 0; /* ??? OBSOLETE */
         lineNum++;
       } else {
         /* if (!insideComment && !insideLineComment) { */
@@ -230,7 +234,7 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
         }
         insideComment = 0;
         continue;
-      case '!': /* Comment to end-of-line */
+      case '!': /* Comment to end-of-line */  /* ??? OBSOLETE */
         if (!insideComment) {
           insideLineComment = 1;
           fbPtr++;
@@ -406,13 +410,14 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
   if (fbPtr != fileBuf + charCount) bug(1704);
 
   let(&tmpStr, cat(str(lineNum - 1), " lines (", str(fileCharCount),
-      " characters) were read from \"", input_fn, NULL));
+      " characters) were read from \"", input_fn, "\"", NULL));
   if (startIncludeCalls == 0) {
-    print2("%s",cat(tmpStr, "\".\n", NULL));
+    printLongLine(cat(tmpStr, ".", NULL),
+        "    ", " ");
   } else {
-    printLongLine(cat(tmpStr, "\" (included at line ",
+    printLongLine(cat(tmpStr, " (included at line ",
         str(includeCall[startIncludeCalls].calledBy_line), " of \"",
-        includeCall[startIncludeCalls].calledBy_fn, "\").\n", NULL),
+        includeCall[startIncludeCalls].calledBy_fn, "\").", NULL),
         "    ", " ");
   }
   let(&tmpStr, ""); /* Deallocate temporary strings */
@@ -723,6 +728,7 @@ void parseLabels(void)
   char *fbPtr;
   char type;
   long stmt;
+  flag dupFlag;
 
   /* Define the legal label characters */
   for (i = 0; i < 256; i++) {
@@ -822,30 +828,31 @@ void parseLabels(void)
 
   /* Now back to the regular label stuff. */
   /* Check for duplicate labels */
-  /*??? This will go away if local labels on hypotheses are allowed */
-/*
-  tmpflag = 0;
+  /* (This will go away if local labels on hypotheses are allowed.) */
+  /* 17-Sep-2005 nm - This code was reinstated to conform to strict spec.
+     The old check for duplicate active labels (see other comment for this
+     date below) was removed since it becomes redundant . */
+  dupFlag = 0;
   for (i = 0; i < numLabelKeys; i++) {
-    if (tmpflag) {
-      / * This "if" condition causes the 2nd in a pair of duplicate labels to
-         have an error message. * /
-      tmpflag = 0;
+    if (dupFlag) {
+      /* This "if" condition causes only the 2nd in a pair of duplicate labels
+         to have an error message. */
+      dupFlag = 0;
       if (!strcmp(statement[labelKeyBase[i]].labelName,
-          statement[labelKeyBase[i - 1]].labelName)) tmpflag = 1;
+          statement[labelKeyBase[i - 1]].labelName)) dupFlag = 1;
     }
     if (i < numLabelKeys - 1) {
       if (!strcmp(statement[labelKeyBase[i]].labelName,
-          statement[labelKeyBase[i + 1]].labelName)) tmpflag = 1;
+          statement[labelKeyBase[i + 1]].labelName)) dupFlag = 1;
     }
-    if (tmpflag) {
+    if (dupFlag) {
       fbPtr = statement[labelKeyBase[i]].labelSectionPtr;
       k = whiteSpaceLen(fbPtr);
       j = tokenLen(fbPtr + k);
       sourceError(fbPtr + k, j, labelKeyBase[i],
-          "This label is declared more than once.  All labels must be unique.");
+         "This label is declared more than once.  All labels must be unique.");
     }
   }
-*/
 
 
 }
@@ -1435,7 +1442,16 @@ void parseStatements(void)
                stray pointer to active variable stack. */
             undeclErrorCount++;
             tokenNum = mathTokens + undeclErrorCount;
-            if (tokenNum >= MAX_MATHTOKENS) outOfMemory("#33 (too many errors)");
+            if (tokenNum >= MAX_MATHTOKENS) {
+              /* 21-Aug-04 nm */
+              /* There are current 100 places for bad tokens */
+              print2(
+"?Error: The temporary space for holding bad tokens has run out, because\n");
+              print2(
+"there are too many errors.  Therefore we will force an \"out of memory\"\n");
+              print2("program abort:\n");
+              outOfMemory("#33 (too many errors)");
+            }
             mathToken[tokenNum].tokenName = "";
             let(&mathToken[tokenNum].tokenName, left(fbPtr,symbolLen));
             mathToken[tokenNum].length = symbolLen;
@@ -1543,9 +1559,13 @@ void parseStatements(void)
         /* These types have labels.  Make the label active, and make sure that
            there is no other identical label that is also active. */
         /* (If the label name is unique, we don't have to worry about this.) */
+        /* 17-Sep-05 nm - This check is no longer needed since all labels
+           must now be unique according to strict spec (see the other comment
+           for this date above).  So the code below was commented out. */
+        /*
         if (labelTokenSameAs[reverseLabelKey[stmt]]) {
-          /* The label is not unique.  Find out if there's a
-             conflict with the others. */
+          /@ The label is not unique.  Find out if there's a
+             conflict with the others. @/
           lowerKey = reverseLabelKey[stmt];
           upperKey = lowerKey;
           j = labelTokenSameAs[lowerKey];
@@ -1572,6 +1592,7 @@ void parseStatements(void)
             }
           }
         }
+        */
 
         /* Flag the label as active */
         labelActiveFlag[stmt] = 1;
@@ -2113,6 +2134,7 @@ char parseProof(long statemNum)
   vstring tmpStrPtr;
 
   if (statement[statemNum].type != p__) {
+    bug(1723); /* 13-Oct-05 nm - should never get here */
     wrkProof.errorSeverity = 4;
     return (4); /* Do nothing if not $p */
   }
@@ -2666,6 +2688,11 @@ char parseCompressedProof(long statemNum)
   static long lettersLen;
   static long digitsLen;
 
+  /* 15-Oct-05 nm - Used to detect old buggy compression */
+  long bggyProofLen;
+  char bggyZapSave;
+  flag bggyAlgo;
+
   /* Initialization to avoid compiler warning (should not be theoretically
      necessary) */
   labelStart = "";
@@ -2709,7 +2736,10 @@ char parseCompressedProof(long statemNum)
   }
 
 
-  if (statement[statemNum].type != p__) return (4); /* Do nothing if not $p */
+  if (statement[statemNum].type != p__) {
+    bug(1724); /* 13-Oct-05 nm - should never get here */
+    return (4); /* Do nothing if not $p */
+  }
   fbPtr = statement[statemNum].proofSectionPtr; /* Start of proof section */
   if (fbPtr[0] == 0) { /* The proof was never assigned (could be a $p statement
                           with no $=; this would have been detected earlier) */
@@ -2947,6 +2977,28 @@ char parseCompressedProof(long statemNum)
   wrkProof.RPNStackPtr = 0;
 
   /******* Parse the compressed part of the proof *****/
+
+  /* 15-Oct-05 nm - Check to see if the old buggy compression is used.  If so,
+     warn the user to reformat, and switch to the buggy algorithm so that
+     parsing can procede. */
+  bggyProofLen = statement[statemNum].proofSectionLen -
+             (fbPtr - statement[statemNum].proofSectionPtr);
+  /* Zap a zero at the end of the proof so we can use C string operations */
+  bggyZapSave = fbPtr[bggyProofLen];
+  fbPtr[bggyProofLen] = 0;
+  /* If the proof has "UVA" but doesn't have "UUA", it means the buggy
+     algorithm was used. */
+  bggyAlgo = 0;
+  if (strstr(fbPtr, "UV") != NULL) {
+    if (strstr(fbPtr, "UU") == NULL) {
+      bggyAlgo = 1;
+      print2("?Warning: the proof of \"%s\" uses obsolete compression.\n",
+          statement[statemNum].labelName);
+      print2(" Please SAVE PROOF * / COMPRESSED to reformat your proofs.\n");
+    }
+  }
+  fbPtr[bggyProofLen] = bggyZapSave;
+
   /* (Build the proof string and check the RPN stack) */
   fbPtr = fbStartProof;
   breakFlag = 0;
@@ -2961,6 +3013,17 @@ char parseCompressedProof(long statemNum)
         wrkProof.stepSrcPtrNmbr[wrkProof.numSteps] = tokenLen;
         wrkProof.stepSrcPtrPntr[wrkProof.numSteps] = labelStart; /* Token ptr */
 
+        /* 15-Oct-05 nm - Obsolete (skips from YT to UVA, missing UUA) */
+        /* (actually, this part is coincidentally the same:)
+        labelMapIndex = labelMapIndex * lettersLen +
+            chrWeight[(long)(fbPtr[0])];
+        */
+        /* 15-Oct-05 nm - Corrected algorithm provided by Marnix Klooster. */
+        /* Decoding can be done as follows:
+             * n := 0
+             * for each character c:
+                * if c in ['U'..'Y']: n := n * 5 + (c - 'U' + 1)
+                * if c in ['A'..'T']: n := n * 20 + (c - 'A' + 1) */
         labelMapIndex = labelMapIndex * lettersLen +
             chrWeight[(long)(fbPtr[0])];
         if (labelMapIndex >= wrkProof.compressedPfNumLabels) {
@@ -2986,7 +3049,7 @@ char parseCompressedProof(long statemNum)
         } else {
           if (statement[stmt].type != (char)a__ &&
               statement[stmt].type != (char)p__) hypLocUnkFlag = 1;
-                                                                /* Hypothesis */
+                                                               /* Hypothesis */
         }
         if (hypLocUnkFlag) { /* Hypothesis, local label ref, or unknown step */
           wrkProof.RPNStack[wrkProof.RPNStackPtr] = wrkProof.numSteps;
@@ -3070,12 +3133,30 @@ char parseCompressedProof(long statemNum)
         break;
 
       case 1: /* Digit */
+        /* 15-Oct-05 nm - Obsolete (skips from YT to UVA, missing UUA) */
+        /*
         if (!labelMapIndex) {
-          /* First digit; mod digitsLen+1 */
+          / * First digit; mod digitsLen+1 * /
+          labelMapIndex = chrWeight[(long)(fbPtr[0])] + 1;
+          labelStart = fbPtr; / * Save label start for error msg * /
+        } else {
+          labelMapIndex = labelMapIndex * digitsLen +
+              chrWeight[(long)(fbPtr[0])];
+        }
+        */
+        /* 15-Oct-05 nm - Corrected algorithm provided by Marnix Klooster. */
+        /* Decoding can be done as follows:
+             * n := 0
+             * for each character c:
+                * if c in ['U'..'Y']: n := n * 5 + (c - 'U' + 1)
+                * if c in ['A'..'T']: n := n * 20 + (c - 'A' + 1) */
+        if (!labelMapIndex) {
           labelMapIndex = chrWeight[(long)(fbPtr[0])] + 1;
           labelStart = fbPtr; /* Save label start for error msg */
         } else {
-          labelMapIndex = labelMapIndex * digitsLen + chrWeight[(long)(fbPtr[0])];
+          labelMapIndex = labelMapIndex * digitsLen +
+              chrWeight[(long)(fbPtr[0])] + 1;
+          if (bggyAlgo) labelMapIndex--; /* Adjust for buggy algorithm */
         }
         break;
 
@@ -3160,7 +3241,11 @@ char parseCompressedProof(long statemNum)
         wrkProof.stepSrcPtrPntr[wrkProof.numSteps] = fbPtr; /* Token ptr */
 
         wrkProof.proofString[wrkProof.numSteps] = -(long)'?';
-        returnFlag = 1; /* Flag that proof has unknown steps */
+        /* returnFlag = 1 means that proof has unknown steps */
+        /* 6-Oct-05 nm Ensure that a proof with unknown steps doesn't
+           reset the severe error flag if returnFlag > 1 */
+        /* returnFlag = 1; */ /*bad - resets severe error flag*/
+        if (returnFlag < 1) returnFlag = 1; /* 6-Oct-05 */
 
         /* Update stack */
         wrkProof.RPNStack[wrkProof.RPNStackPtr] = wrkProof.numSteps;
@@ -3212,6 +3297,7 @@ char parseCompressedProof(long statemNum)
     wrkProof.stepSrcPtrPntr[wrkProof.numSteps] = fbPtr; /* Token ptr */
 
     wrkProof.proofString[wrkProof.numSteps] = -(long)'?';
+    if (returnFlag > 0) bug(1722); /* 13-Oct-05 nm */
     returnFlag = 1; /* Flag that proof has unknown steps */
 
     /* Update stack */
@@ -3219,7 +3305,8 @@ char parseCompressedProof(long statemNum)
     wrkProof.RPNStackPtr++;
 
     wrkProof.numSteps++;
-    if (returnFlag < 1) returnFlag = 1; /* Flag for proof with unknown steps */
+    /* 13-Oct-05 nm The line below is redundant */
+    /*if (returnFlag < 1) returnFlag = 1;*/ /* Flag for proof with unknown steps */
   }
 
   wrkProof.proofString[wrkProof.numSteps] = -1; /* End of proof */
@@ -3261,13 +3348,16 @@ void rawSourceError(char *startFile, char *ptr, long tokenLen, long lineNum,
   while (startLine[0] != '\n' && startLine > startFile) {
     startLine--;
   }
-  if (startLine[0] == '\n') startLine++;
+  if (startLine[0] == '\n'
+      && startLine != ptr) /* 8/20/04 nm In case of 0-length line */
+    startLine++; /* Go to 1st char on line */
   endLine = ptr;
   while (endLine[0] != '\n' && endLine[0] != 0) {
     endLine++;
   }
   endLine--;
   let(&errLine, space(endLine - startLine + 1));
+  if (endLine - startLine + 1 < 0) bug(1721);
   memcpy(errLine, startLine, endLine - startLine + 1);
   errorMessage(errLine, lineNum, ptr - startLine + 1, tokenLen, errorMsg,
       fileName, 0, (char)_error);

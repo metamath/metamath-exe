@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2004  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -27,6 +27,8 @@
    be a single comment $( ... $) containing the keyword $t.  The definitions
    start after the $t and end at the $).  Between $t and $), the definition
    source should exist.  See the file set.mm for an example. */
+
+flag simpleTexFlag = 0; /* No macros in output for easier manual edits */
 
 flag htmlFlag = 0;  /* HTML flag: 0 = TeX, 1 = HTML */
 flag altHtmlFlag = 0;  /* Use "althtmldef" instead of "htmldef".  This is
@@ -532,7 +534,7 @@ flag readTexDefs(void)
   /* Look up the extended database start label */
   if (extHtmlLabel[0]) {
     for (i = 1; i <= statements; i++) {
-      if (!strcmp(extHtmlLabel,statement[i].labelName)) break;
+      if (!strcmp(extHtmlLabel, statement[i].labelName)) break;
     }
     if (i > statements) {
       printLongLine(cat("?Error: There is no statement with label \"",
@@ -705,10 +707,15 @@ vstring asciiToTt(vstring s)
     } else {
       switch (ttstr[i]) {
         /* For all unspecified cases, HTML will accept the character 'as is' */
+        /* 1-Oct-04 Don't convert to &amp; anymore but leave as is.  This
+           will allow the user to insert HTML entities for Unicode etc.
+           directly in the database source. */
+        /*
         case '&':
           let(&ttstr,cat(left(ttstr,i),"&amp;",right(ttstr,i+2),NULL));
           k = 5;
           break;
+        */
         case '<':
           /* 11/15/02 Leave in some special HTML tags (case must match) */
           /* This was done specially for the set.mm inf3 comment */
@@ -967,6 +974,7 @@ void printTexHeader(flag texHeaderFlag)
 {
 
   long i, j, k;
+  vstring tmpStr = "";
 
   if (!texDefsRead) {
     if (!readTexDefs()) {
@@ -1150,7 +1158,8 @@ void printTexHeader(flag texHeaderFlag)
     if (texHeaderFlag) {
       /* Put Previous/Next links into web page */
       /*print2("</TD><TD ALIGN=RIGHT VALIGN=TOP><FONT SIZE=-1 FACE=sans-serif>\n");*/
-      print2("</TD><TD NOWRAP ALIGN=RIGHT VALIGN=TOP WIDTH=\"25%s\"><FONT\n", "%");
+      print2(
+"</TD><TD NOWRAP ALIGN=RIGHT VALIGN=TOP WIDTH=\"25%s\" ROWSPAN=2><FONT\n", "%");
       print2(" SIZE=-1 FACE=sans-serif>\n");
       /* Find the previous statement with a web page */
       j = 0;
@@ -1235,45 +1244,72 @@ void printTexHeader(flag texHeaderFlag)
       /* ??? Is the closing </FONT> printed if there is no altHtml?
          This should be tested.  8/9/03 ndm */
 
+      /* 15-Aug-04 nm Compute the theorem list page number.  ??? Temporarily
+         we assume it to be 100 (hardcoded).  Todo: This should be fixed to use
+         the same as the THEOREMS_PER_PAGE in WRITE THEOREMS (have a SET
+         global variable in place of THEOREMS_PER_PAGE?) */
+      i = ((statement[showStatement].pinkNumber - 1) / 100) + 1; /* Page # */
+      let(&tmpStr, cat("mmtheorems", (i == 1) ? "" : str(i), ".html#",
+             /* Note that page 1 has no number after mmtheorems */
+          statement[showStatement].labelName, NULL)); /* Link to page/stmt */
+
       /* Print the GIF/Unicode Font choice, if directories are specified */
       if (htmlDir[0]) {
+
+        /*print2("</FONT></TD></TR><TR><TD ALIGN=RIGHT><FONT FACE=sans-serif\n");*/
+        print2("</FONT><FONT FACE=sans-serif SIZE=-2>\n");
+        print2("<BR><A HREF=\"%s\">Related theorems</A>\n",
+              tmpStr);     /* 15-Aug-04 */
+
         if (altHtmlFlag) {
-          print2("</FONT></TD></TR><TR><TD ALIGN=RIGHT><FONT FACE=sans-serif\n");
+
+          /*
           print2("SIZE=-2>Bad symbols?\n");
           print2("Use <A HREF=\"http://mozilla.org\">Mozilla</A><BR>\n");
           print2("(or <A HREF=\"%s%s\">GIF version</A> for IE).</FONT></TD>\n",
               htmlDir, texFileName);
-        } else {
-          print2("</FONT></TD></TR><TR><TD ALIGN=RIGHT><FONT FACE=sans-serif\n");
-          print2("SIZE=-2>Browser slow? Try the\n");
-          /* 8/8/03 Symbol font is obsolete
-          print2("<BR><A HREF=\"%s%s\">Symbol\n",
-              altHtmlDir, texFileName);
-          print2("font version</A>.</FONT></TD>\n");
           */
+          /* 15-Aug-04 */
+          print2("<BR><A HREF=\"%s%s\">GIF version</A></FONT></TD>\n",
+              htmlDir, texFileName);
+
+        } else {
+
+          /*
+          print2("SIZE=-2>Browser slow? Try the\n");
           print2("<BR><A HREF=\"%s%s\">Unicode\n",
               altHtmlDir, texFileName);
           print2("version</A>.</FONT></TD>\n");
+          */
+          /* 15-Aug-04 */
+         print2("<BR><A HREF=\"%s%s\">Unicode version</A></FONT></TD>\n",
+              altHtmlDir, texFileName);
+
         }
       }
 
     } else {
-      print2("</TD><TD ALIGN=RIGHT VALIGN=TOP\n");
-      print2(" WIDTH=\"25%s\">&nbsp;\n", "%");
+      print2("</TD><TD ALIGN=RIGHT VALIGN=MIDDLE\n");
+      print2(" WIDTH=\"25%s\"><FONT FACE=sans-serif SIZE=-2>\n", "%");
 
       /* Print the GIF/Unicode Font choice, if directories are specified */
       if (htmlDir[0]) {
-        print2("<FONT FACE=sans-serif SIZE=-2>\n");
+        print2("\n");
         if (altHtmlFlag) {
-          print2("<A HREF=\"%s%s\">GIF version</A></FONT>\n",
+          print2("This is the Unicode version.<BR>\n");
+          print2("<A HREF=\"%s%s\">Change to GIF version</A>\n",
               htmlDir, texFileName);
         } else {
-          print2("<A HREF=\"%s%s\">Unicode version</A></FONT>\n",
+          print2("This is the GIF version.<BR>\n");
+          print2("<A HREF=\"%s%s\">Change to Unicode version</A>\n",
               altHtmlDir, texFileName);
         }
       }
+      else {
+        print2("&nbsp;\n");
+      }
 
-      print2("</TD></TR><TR><TD ALIGN=RIGHT VALIGN=TOP\n");
+      print2("</FONT></TD></TR><TR><TD ALIGN=RIGHT VALIGN=TOP\n");
       print2(" WIDTH=\"25%s\">&nbsp;</TD>\n", "%");
     }
 
@@ -1296,6 +1332,9 @@ void printTexHeader(flag texHeaderFlag)
   fprintf(texFilePtr, "%s", printString);
   outputToString = 0;
   let(&printString, "");
+
+  /* Deallocate strings */
+  let(&tmpStr, "");
 
 } /* printTexHeader */
 
@@ -1699,6 +1738,13 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
           }
         } else {
           /* This really should never happen */
+          /* 1-Oct-04 If you see this bug, the most likely cause is a tilde
+             character in a comment that does not prefix a label or hyperlink.
+             The most common problem is the "~" inside a hyperlink that
+             specifies a user's directory.  To fix it, use a double tilde
+             "~~" to escape it, which will become a single tilde on output.
+             (At some future point this bug should be converted to a
+             meaningful error message that doesn't abort the program.) */
           bug(2310);
           mode = 'n';
         }
@@ -1838,36 +1884,44 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
           }
           *******/
 
-          /* 10/10/02 Do binary search through just $a's and $p's (there are no
-             html pages for local labels) */
-          i = lookupLabel(tmpStr);
-          if (i < 0) {
-            outputToString = 0;
-            printLongLine(cat("?Warning: The label token \"", tmpStr,
-                "\" (referenced in comment of statement \"",
-                statement[showStatement].labelName,
-                "\") is not a $a or $p statement label.", NULL), "", " ");
-            outputToString = 1;
-          }
-
-          if (!htmlFlag) {
-            let(&outputLine, cat(outputLine, "{\\tt ", tmpStr,
-               "}", NULL));
+          if (!strcmp("http://", left(tmpStr, 7))) {
+            /* 4/13/04 nm - If the "label" begins with 'http://', then
+               assume it is an external hyperlink and not a real label.
+               This is kind of a syntax kludge but it is easy to do. */
+            let(&outputLine, cat(outputLine, "<A HREF=\"", tmpStr,
+                "\">", tmpStr, "</A>", tmp, NULL));
           } else {
-            let(&tmp, "");
-            /* When the error above occurs, i < 0 will cause pinkHTML()
-               to issue "(future)" for pleasant readability */
-            tmp = pinkHTML(i);
+            /* 10/10/02 Do binary search through just $a's and $p's (there
+               are no html pages for local labels) */
+            i = lookupLabel(tmpStr);
             if (i < 0) {
-              /* Error output - prevent broken link */
-              let(&outputLine, cat(outputLine, "<FONT COLOR=blue ",
-                  ">", tmpStr, "</FONT>", tmp, NULL));
-            } else {
-              /* Normal output - put hyperlink to the statement */
-              let(&outputLine, cat(outputLine, "<A HREF=\"", tmpStr,
-                  ".html\">", tmpStr, "</A>", tmp, NULL));
+              outputToString = 0;
+              printLongLine(cat("?Warning: The label token \"", tmpStr,
+                  "\" (referenced in comment of statement \"",
+                  statement[showStatement].labelName,
+                  "\") is not a $a or $p statement label.", NULL), "", " ");
+              outputToString = 1;
             }
-          }
+
+            if (!htmlFlag) {
+              let(&outputLine, cat(outputLine, "{\\tt ", tmpStr,
+                 "}", NULL));
+            } else {
+              let(&tmp, "");
+              /* When the error above occurs, i < 0 will cause pinkHTML()
+                 to issue "(future)" for pleasant readability */
+              tmp = pinkHTML(i);
+              if (i < 0) {
+                /* Error output - prevent broken link */
+                let(&outputLine, cat(outputLine, "<FONT COLOR=blue ",
+                    ">", tmpStr, "</FONT>", tmp, NULL));
+              } else {
+                /* Normal output - put hyperlink to the statement */
+                let(&outputLine, cat(outputLine, "<A HREF=\"", tmpStr,
+                    ".html\">", tmpStr, "</A>", tmp, NULL));
+              }
+            }
+          } /* if (!strcmp("http://", left(tmpStr, 7))) ... else */
           let(&tmpStr, ""); /* Deallocate */
           break;
         case 'm': /* Math mode */
@@ -1979,8 +2033,13 @@ void printTexLongMath(nmbrString *mathString,
          (as cat, left, etc. direct result) by caller */
     long hypStmt, /* hypStmt, if non-zero, is the statement number to be
                      referenced next to the hypothesis link in html */
-    long indentationLevel) /* nm 3-Feb-04 Indentation amount of proof step */
+    long indentationLevel) /* nm 3-Feb-04 Indentation amount of proof step -
+                              note that this is 0 for last step of proof */
 {
+/* 23-Apr-04 nm Changed "top" level from 0 to 1 - hopefully slightly less
+   confusing since before user had to scroll to bottom to know that it
+   started at 0 and not 1 */
+#define INDENTATION_OFFSET 1
   long i;
   long pos;
   vstring tex = "";
@@ -2003,28 +2062,37 @@ void printTexLongMath(nmbrString *mathString,
   let(&texLine, "");
   if (!htmlFlag) {
 
-    /* 9/2/99 Trim down long start prefixes so they won't overflow line,
-       by putting their tokens into \m macros */
+    /* 27-Jul-05 nm Added SIMPLE_TEX */
+    if (simpleTexFlag) {
+      printLongLine(cat("\\texttt{", tex, "}", NULL), "", " ");
+      let(&tex, ""); /* Deallocate */
+      tex = asciiToTt(contPrefix);
+      printLongLine(cat("\\texttt{", tex, "}", NULL), "", " ");
+      print2("\\begin{eqnarray}\n");
+    } else {
+      /* 9/2/99 Trim down long start prefixes so they won't overflow line,
+         by putting their tokens into \m macros */
 #define TRIMTHRESHOLD 60
-    i = strlen(tex);
-    while (i > TRIMTHRESHOLD) {
-      if (tex[i] == '\\') {
-        /* Move to math part */
-        let(&texLine, cat("\\m{\\mbox{\\tt", right(tex, i + 1), "}}",
-            texLine, NULL));
-        /* Take off of prefix part */
-        let(&tex, left(tex, i));
+      i = strlen(tex);
+      while (i > TRIMTHRESHOLD) {
+        if (tex[i] == '\\') {
+          /* Move to math part */
+          let(&texLine, cat("\\m{\\mbox{\\tt", right(tex, i + 1), "}}",
+              texLine, NULL));
+          /* Take off of prefix part */
+          let(&tex, left(tex, i));
+        }
+        i--;
       }
-      i--;
-    }
 
-    printLongLine(cat(
-        "\\setbox\\startprefix=\\hbox{\\tt ", tex, "}", NULL), "", "\\");
-    let(&tex, ""); /* Deallocate */
-    tex = asciiToTt(contPrefix);
-    printLongLine(cat(
-        "\\setbox\\contprefix=\\hbox{\\tt ", tex, "}", NULL), "", "\\");
-    print2("\\startm\n");
+      printLongLine(cat(
+          "\\setbox\\startprefix=\\hbox{\\tt ", tex, "}", NULL), "", "\\");
+      let(&tex, ""); /* Deallocate */
+      tex = asciiToTt(contPrefix);
+      printLongLine(cat(
+          "\\setbox\\contprefix=\\hbox{\\tt ", tex, "}", NULL), "", "\\");
+      print2("\\startm\n");
+    }
   } else { /* htmlFlag */
     if (strlen(sPrefix)) { /* It's a proof step */
       /* Make each token a separate table column */
@@ -2101,7 +2169,7 @@ void printTexLongMath(nmbrString *mathString,
       }
       let(&tmp, cat("<SPAN CLASS=i>",
           tmp,
-          str(indentationLevel), "</SPAN>",
+          str(indentationLevel + INDENTATION_OFFSET), "</SPAN>",
           NULL));
       printLongLine(tmp, "", "\"");
       let(&tmp, "");
@@ -2116,8 +2184,14 @@ void printTexLongMath(nmbrString *mathString,
   let(&texLine, cat(texLine, tex, NULL));
 
   if (!htmlFlag) {  /* LaTeX */
-    printLongLine(texLine, "", "\\");
-    print2("\\endm\n");
+    /* 27-Jul-05 nm Added SIMPLE_TEX */
+    if (simpleTexFlag) {
+      printLongLine(texLine, "", " ");
+      print2("\\end{eqnarray}\n");
+    } else {
+      printLongLine(texLine, "", "\\");
+      print2("\\endm\n");
+    }
   } else {  /* HTML */
     printLongLine(cat(texLine, "</TD></TR>", NULL), "", "\"");
   }
@@ -2151,8 +2225,8 @@ void printTexTrailer(flag texTrailerFlag) {
       */
       /*
       print2("Copyright &copy; 2002 \n");
-      */
       print2("The Metamath Home Page is\n");
+      */
       print2("<A HREF=\"http://metamath.org\">metamath.org</A>\n");
       print2("</FONT></CENTER>\n");
       print2("</BODY></HTML>\n");
@@ -2259,7 +2333,7 @@ void writeTheoremList(long theoremsPerPage)
     if (page > 1) {
       print2("%s&lt; Previous</A>&nbsp;&nbsp;\n", str1);
     } else {
-      print2("%s&lt; Last</A>&nbsp;&nbsp;\n", str1);
+      print2("%s&lt; Wrap</A>&nbsp;&nbsp;\n", str1);
     }
     let(&str1, cat("<A HREF=\"mmtheorems",
         (page < pages)
@@ -2269,7 +2343,7 @@ void writeTheoremList(long theoremsPerPage)
     if (page < pages) {
       print2("%sNext &gt;</A>\n", str1);
     } else {
-      print2("%sFirst &gt;</A>\n", str1);
+      print2("%sWrap &gt;</A>\n", str1);
     }
 
     /* Finish up header */
@@ -2303,13 +2377,11 @@ void writeTheoremList(long theoremsPerPage)
 
       /* Construct the pink number range */
       let(&str3, "");
-      str3 = pinkHTML(nmbrStmtNmbr[(p - 1) * theoremsPerPage + 1]);
-      /*let(&str3, right(str3, strlen(PINK_NBSP) + 1));*/ /* Discard "&nbsp;" */
-      let(&str4, "");
-      str4 = pinkHTML((p < pages) ?
-          nmbrStmtNmbr[p * theoremsPerPage] :
-          nmbrStmtNmbr[assertions]);
-      let(&str4, right(str4, strlen(PINK_NBSP) + 1)); /* Discard "&nbsp;" */
+      str3 = pinkRangeHTML(
+          nmbrStmtNmbr[(p - 1) * theoremsPerPage + 1],
+          (p < pages) ?
+            nmbrStmtNmbr[p * theoremsPerPage] :
+            nmbrStmtNmbr[assertions]);
 
       if (p == page) {
         let(&str1, str(p)); /* Current page shouldn't have link to self */
@@ -2317,7 +2389,7 @@ void writeTheoremList(long theoremsPerPage)
         let(&str1, cat("<A HREF=\"mmtheorems",
             (p > 1) ? str(p) : "", ".html\">", str(p), "</A>", NULL));
       }
-      let(&str1, cat(str1, str3, "-", str4, NULL));
+      let(&str1, cat(str1, PINK_NBSP, str3, NULL));
       fprintf(output_fp, "%s\n", str1);
     }
 
@@ -2329,16 +2401,36 @@ void writeTheoremList(long theoremsPerPage)
       print2("<CENTER><TABLE CELLSPACING=0 CELLPADDING=5\n");
       print2("SUMMARY=\"Color key\"><TR>\n");
       print2("\n");
-      print2("<TD>Color key:&nbsp;&nbsp;&nbsp; <TD BGCOLOR=\"#EEFFFA\" NOWRAP><A\n");
+      print2("<TD>Color key:&nbsp;&nbsp;&nbsp;</TD>\n");
+      print2("<TD BGCOLOR=%s NOWRAP><A\n", MINT_BACKGROUND_COLOR);
       print2("HREF=\"mmset.html\"><IMG SRC=\"mm.gif\" BORDER=0 ALT=\"Metamath Proof\n");
       print2("Explorer\" HEIGHT=32 WIDTH=32 ALIGN=MIDDLE> &nbsp;Metamath Proof\n");
-      print2("Explorer</A></TD>\n");
+      print2("Explorer</A>\n");
+
+      let(&str3, "");
+      str3 = pinkRangeHTML(nmbrStmtNmbr[1],
+          nmbrStmtNmbr[statement[extHtmlStmt].pinkNumber - 1]);
+      printLongLine(cat("(", str3, ")", NULL),
+        " ",  /* Start continuation line with space */
+        "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+
+      print2("</TD>\n");
       print2("\n");
       print2("<TD WIDTH=10>&nbsp;</TD>\n");
       print2("\n");
-      print2("<TD BGCOLOR=\"#FAEEFF\" NOWRAP><A HREF=\"mmhil.html\"><IMG SRC=\"atomic.gif\"\n");
-      print2("BORDER=0 ALT=\"Hilbert Space Explorer\" HEIGHT=32 WIDTH=32 ALIGN=MIDDLE>\n");
-      print2("&nbsp;Hilbert Space Explorer</A></TD>\n");
+      print2("<TD BGCOLOR=\"#FAEEFF\" NOWRAP><A\n");
+      print2(" HREF=\"mmhil.html\"><IMG SRC=\"atomic.gif\"\n");
+      print2(
+ "BORDER=0 ALT=\"Hilbert Space Explorer\" HEIGHT=32 WIDTH=32 ALIGN=MIDDLE>\n");
+      print2("&nbsp;Hilbert Space Explorer</A>\n");
+
+      let(&str3, "");
+      str3 = pinkRangeHTML(extHtmlStmt, nmbrStmtNmbr[assertions]);
+      printLongLine(cat("(", str3, ")", NULL),
+        " ",  /* Start continuation line with space */
+        "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+
+      print2("</TD>\n");
       print2("\n");
       print2("<TD WIDTH=10>&nbsp;</TD>\n");
       print2("\n");
@@ -2354,7 +2446,8 @@ void writeTheoremList(long theoremsPerPage)
     outputToString = 1;
     print2("\n");
     print2("<P><CENTER>\n");
-    print2("<TABLE BORDER CELLSPACING=0 CELLPADDING=3 BGCOLOR=\"#EEFFFA\"\n");
+    print2("<TABLE BORDER CELLSPACING=0 CELLPADDING=3 BGCOLOR=%s\n",
+        MINT_BACKGROUND_COLOR);
     print2("SUMMARY=\"Statement List for %s\">\n", htmlTitle);
     let(&str3, "");
     str3 = pinkHTML(nmbrStmtNmbr[(page - 1) * theoremsPerPage + 1]);
@@ -2455,7 +2548,12 @@ void writeTheoremList(long theoremsPerPage)
             "</TD><TD ALIGN=CENTER><A HREF=\"",
             statement[s].labelName, ".html\">",
             statement[s].labelName, "</A>",
-            str4, "</TD><TD ALIGN=LEFT>", NULL),  /* Description */
+            str4, "</TD><TD ALIGN=LEFT>",
+
+            /* 15-Aug-04 nm - Add a tag for hyperlinking to the table row */
+            "<A NAME=\"", statement[s].labelName, "\"></A>",
+
+            NULL),  /* Description */
           " ",  /* Start continuation line with space */
           "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
 
@@ -2470,20 +2568,29 @@ void writeTheoremList(long theoremsPerPage)
       /* Get HTML hypotheses => assertion */
       let(&str4, "");
       str4 = getHTMLHypAndAssertion(s); /* In mmwtex.c */
-      printLongLine(cat("</TD></TR><TR",
-            (s < extHtmlStmt) ?
-                 ">" :
-                 cat(" BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL),
-          /*** old
-          "<TD BGCOLOR=white>&nbsp;</TD><TD COLSPAN=2 ALIGN=CENTER>",
-          str4, "</TD></TR>", NULL),
-          ****/
-          /* 27-Oct-03 nm */
-          "<TD COLSPAN=3 ALIGN=CENTER>",
-          str4, "</TD></TR>", NULL),
 
-          " ",  /* Start continuation line with space */
-          "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+      /* 19-Aug-05 nm Suppress the math content of lemmas, which can
+         be very big and not interesting */
+      if (!strcmp(left(str3, 10), "Lemma for ")) {
+        /* Suppress the table row with the math content */
+        print2("</TD></TR>\n");
+      } else {
+        /* Output the table row with the math content */
+        printLongLine(cat("</TD></TR><TR",
+              (s < extHtmlStmt) ?
+                   ">" :
+                   cat(" BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL),
+            /*** old
+            "<TD BGCOLOR=white>&nbsp;</TD><TD COLSPAN=2 ALIGN=CENTER>",
+            str4, "</TD></TR>", NULL),
+            ****/
+            /* 27-Oct-03 nm */
+            "<TD COLSPAN=3 ALIGN=CENTER>",
+            str4, "</TD></TR>", NULL),
+
+            " ",  /* Start continuation line with space */
+            "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+      }
 
       outputToString = 0;
       fprintf(output_fp, "%s", printString);
@@ -2521,8 +2628,18 @@ void writeTheoremList(long theoremsPerPage)
     print2("<A HREF=\"http://metamath.org\">metamath.org</A>\n");
     print2("</FONT></CENTER>\n");
     */
-    /* Add a "Next" link to bottom of page for convenience */
+    /* Add a "Previous" and "Next" links to bottom of page for convenience */
     let(&str1, cat("<A HREF=\"mmtheorems",
+        (page > 1)
+            ? ((page - 1 > 1) ? str(page - 1) : "")
+            : ((pages > 1) ? str(pages) : ""),
+        ".html\">", NULL));
+    if (page > 1) {
+      let(&str1, cat(str1, "&lt; Previous</A>&nbsp;&nbsp;", NULL));
+    } else {
+      let(&str1, cat(str1, "&lt; Wrap</A>&nbsp;&nbsp;", NULL));
+    }
+    let(&str1, cat(str1, "<A HREF=\"mmtheorems",
         (page < pages)
             ? str(page + 1)
             : "",
@@ -2530,7 +2647,7 @@ void writeTheoremList(long theoremsPerPage)
     if (page < pages) {
       let(&str1, cat(str1, "Next &gt;</A>", NULL));
     } else {
-      let(&str1, cat(str1, "FIrst &gt;</A>", NULL));
+      let(&str1, cat(str1, "Wrap &gt;</A>", NULL));
     }
     print2("<TABLE BORDER=0 WIDTH=\"100%c\">\n", '%');
     print2("  <TR>\n");
@@ -2541,7 +2658,9 @@ void writeTheoremList(long theoremsPerPage)
     print2("      </FONT></TD>\n");
     print2("    <TD NOWRAP ALIGN=RIGHT VALIGN=TOP WIDTH=\"25%c\"><FONT\n", '%');
     print2("      SIZE=-1 FACE=sans-serif>\n");
-    print2("      %s\n", str1);
+    printLongLine(cat("      ", str1, NULL),
+        " ",  /* Start continuation line with space */
+        "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
     print2("      </FONT></TD>\n");
     print2("  </TR>\n");
     print2("</TABLE>\n");
@@ -2644,6 +2763,31 @@ vstring pinkHTML(long statemNum)
 #endif
   let(&hexValue, "");
 
+  return htmlCode;
+}
+
+
+/* Added 25-Aug-04 */
+/* Returns HTML for a range of pink numbers separated by a "-". */
+/* Warning: The caller must deallocate the returned vstring (i.e. this
+   function cannot be used in let statements but must be assigned to
+   a local vstring for local deallocation) */
+vstring pinkRangeHTML(long statemNum1, long statemNum2)
+{
+  vstring htmlCode = "";
+  vstring str3 = "";
+  vstring str4 = "";
+
+  /* Construct the HTML for a pink number range */
+  let(&str3, "");
+  str3 = pinkHTML(statemNum1);
+  let(&str3, right(str3, strlen(PINK_NBSP) + 1)); /* Discard "&nbsp;" */
+  let(&str4, "");
+  str4 = pinkHTML(statemNum2);
+  let(&str4, right(str4, strlen(PINK_NBSP) + 1)); /* Discard "&nbsp;" */
+  let(&htmlCode, cat(str3, "-", str4, NULL));
+  let(&str3, ""); /* Deallocate */
+  let(&str4, ""); /* Deallocate */
   return htmlCode;
 }
 
@@ -2838,9 +2982,19 @@ vstring getTexLongMath(nmbrString *mathString)
       /* Put thin space only between letters and/or unknowns  11/3/94 */
       if ((alphold || unknownold) && (alphnew || unknownnew)) {
         /* Put additional thin space between two letters */
-        let(&texLine, cat(texLine, "\\m{\\,", tex, "}", NULL));
+        /* 27-Jul-05 nm Added SIMPLE_TEX */
+        if (simpleTexFlag) {
+          let(&texLine, cat(texLine, "\\,", tex, " ", NULL));
+        } else {
+          let(&texLine, cat(texLine, "\\m{\\,", tex, "}", NULL));
+        }
       } else {
-        let(&texLine, cat(texLine, "\\m{", tex, "}", NULL));
+        /* 27-Jul-05 nm Added SIMPLE_TEX */
+        if (simpleTexFlag) {
+          let(&texLine, cat(texLine, "", tex, " ", NULL));
+        } else {
+          let(&texLine, cat(texLine, "\\m{", tex, "}", NULL));
+        }
       }
     } else {  /* HTML */
 
@@ -2848,18 +3002,24 @@ vstring getTexLongMath(nmbrString *mathString)
          space between om and x looks ugly in HTML.  This kludge adds it in
          for restricted quantifiers not followed by parenthesis, in order
          to make the web page look a little nicer.  E.g. onminex. */
+      /* Note that the space is put between the pos-1 and the pos tokens */
       if (pos >=4) {
         if (!strcmp(mathToken[mathString[pos - 2]].tokenName, "e.")
             && (!strcmp(mathToken[mathString[pos - 4]].tokenName, "E.")
               || !strcmp(mathToken[mathString[pos - 4]].tokenName, "A.")
+              /* 6-Apr-04 nm - indexed E! */
+              || !strcmp(mathToken[mathString[pos - 4]].tokenName, "E!")
               /* 23-Jan-04 nm - indexed union, intersection */
-              || !strcmp(mathToken[mathString[pos - 4]].tokenName, "U.")
-              || !strcmp(mathToken[mathString[pos - 4]].tokenName, "|^|"))
+              || !strcmp(mathToken[mathString[pos - 4]].tokenName, "U_")
+              || !strcmp(mathToken[mathString[pos - 4]].tokenName, "|^|_"))
             /* 23-Jan-04 nm - add space even for parenthesized arg */
             /*&& strcmp(mathToken[mathString[pos]].tokenName, "(")*/
             && strcmp(mathToken[mathString[pos]].tokenName, ")")
             /* It also shouldn't be restricted _to_ an expression in parens. */
             && strcmp(mathToken[mathString[pos - 1]].tokenName, "(")
+            /* ...or restricted _to_ a union or intersection 1-Feb-05 */
+            && strcmp(mathToken[mathString[pos - 1]].tokenName, "U.")
+            && strcmp(mathToken[mathString[pos - 1]].tokenName, "|^|")
             /* ...or restricted _to_ an expression in braces */
             && strcmp(mathToken[mathString[pos - 1]].tokenName, "{")) {
           let(&texLine, cat(texLine, " ", NULL)); /* Add a space */
@@ -2874,7 +3034,24 @@ vstring getTexLongMath(nmbrString *mathString)
           if (!(mathToken[mathString[pos]].tokenName[1])) {
             /* See if it's 1st letter in a quantified expression */
             if (!strcmp(mathToken[mathString[pos - 2]].tokenName, "E.")
-                || !strcmp(mathToken[mathString[pos - 2]].tokenName, "A.")) {
+                || !strcmp(mathToken[mathString[pos - 2]].tokenName, "A.")
+                /* 6-Apr-04 nm added E!, E* */
+                || !strcmp(mathToken[mathString[pos - 2]].tokenName, "E!")
+                || !strcmp(mathToken[mathString[pos - 2]].tokenName, "E*")) {
+              let(&texLine, cat(texLine, " ", NULL)); /* Add a space */
+            }
+          }
+        }
+      }
+      /* This one puts a space after a letter followed by a word token
+         e.g. "A" and "suc" in "A. x e. U. A suc" in limuni2  1-Feb-05 */
+      if (pos >= 1) {
+        /* See if the next token is "suc" */
+        if (!strcmp(mathToken[mathString[pos]].tokenName, "suc")) {
+          /* Match a token starting with a letter for the current token */
+          if (isalpha(mathToken[mathString[pos - 1]].tokenName[0])) {
+            /* and make sure its length is 1 */
+            if (!(mathToken[mathString[pos - 1]].tokenName[1])) {
               let(&texLine, cat(texLine, " ", NULL)); /* Add a space */
             }
           }
@@ -2893,6 +3070,15 @@ vstring getTexLongMath(nmbrString *mathString)
       if (pos >=4) {
         if (!strcmp(mathToken[mathString[pos - 4]].tokenName, "Isom")
             && !strcmp(mathToken[mathString[pos - 2]].tokenName, ",")
+            && !strcmp(mathToken[mathString[pos]].tokenName, "(")) {
+          let(&texLine, cat(texLine, " ", NULL)); /* Add a space */
+        }
+      }
+      /* nm 11-Aug-04 This one puts a space between "}" and "(" in
+         funcnvuni proof. */
+      if (pos >=1) {
+        /* See if we have "}" followed by "(" */
+        if (!strcmp(mathToken[mathString[pos - 1]].tokenName, "}")
             && !strcmp(mathToken[mathString[pos]].tokenName, "(")) {
           let(&texLine, cat(texLine, " ", NULL)); /* Add a space */
         }

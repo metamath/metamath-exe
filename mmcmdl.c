@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2004  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -56,13 +56,14 @@ flag processCommandLine(void)
       /* Normal mode */
       let(&tmpStr,cat("DBG|",
           "HELP|READ|WRITE|PROVE|SHOW|SEARCH|SAVE|SUBMIT|OPEN|CLOSE|",
-          "SET|FILE|BEEP|EXIT|QUIT|ERASE|VERIFY|TOOLS|MIDI|<HELP>",NULL));
+          "SET|FILE|BEEP|EXIT|QUIT|ERASE|VERIFY|MORE|TOOLS|MIDI|<HELP>",NULL));
     } else {
       /* Proof assistant mode */
       let(&tmpStr,cat("DBG|",
           "HELP|WRITE|SHOW|SEARCH|SAVE|SUBMIT|OPEN|CLOSE|",
           "SET|FILE|BEEP|EXIT|QUIT|VERIFY|INITIALIZE|ASSIGN|REPLACE|",
-        "LET|UNIFY|IMPROVE|MINIMIZE_WITH|MATCH|DELETE|TOOLS|MIDI|<HELP>",NULL));
+        "LET|UNIFY|IMPROVE|MINIMIZE_WITH|MATCH|DELETE|MORE|TOOLS|MIDI|<HELP>",
+        NULL));
     }
     if (!getFullArg(0,tmpStr))
       goto pclbad;
@@ -72,8 +73,8 @@ flag processCommandLine(void)
           "READ|ERASE|",
           "OPEN|CLOSE|SHOW|SEARCH|SET|VERIFY|SUBMIT|SYSTEM|PROVE|FILE|WRITE|",
           "ASSIGN|REPLACE|MATCH|UNIFY|LET|INITIALIZE|DELETE|IMPROVE|",
-          "MINIMIZE_WITH|SAVE|DEMO|INVOKE|CLI|EXPLORE|TEX|LATEX|HTML|TOOLS|",
-          "MIDI|$|<$>", NULL))) goto pclbad;
+          "MINIMIZE_WITH|SAVE|DEMO|INVOKE|CLI|EXPLORE|TEX|LATEX|HTML|MORE|",
+          "TOOLS|MIDI|$|<$>", NULL))) goto pclbad;
       if (cmdMatches("HELP OPEN")) {
         if (!getFullArg(2, "LOG|TEX|HTML|<LOG>")) goto pclbad;
         goto pclgood;
@@ -96,8 +97,7 @@ flag processCommandLine(void)
         goto pclgood;
       }
       if (cmdMatches("HELP VERIFY")) {
-        if (!getFullArg(2,
-            "PROOF"))
+        if (!getFullArg(2, "PROOF"))
             goto pclbad;
         goto pclgood;
       }
@@ -108,8 +108,7 @@ flag processCommandLine(void)
         goto pclgood;
       }
       if (cmdMatches("HELP FILE")) {
-        if (!getFullArg(2,
-            "TYPE|SEARCH|<TYPE>"))
+        if (!getFullArg(2, "SEARCH"))
             goto pclbad;
         goto pclgood;
       }
@@ -132,11 +131,12 @@ flag processCommandLine(void)
         if (!getFullArg(i,"/|$|<$>")) goto pclbad;
         if (lastArgMatches("/")) {
           i++;
-          if (!getFullArg(i,"VERIFY|NOVERIFY|<NOVERIFY>")) goto pclbad;
+          if (!getFullArg(i,"VERIFY|<VERIFY>")) goto pclbad;
         } else {
           break;
         }
-      }
+        break; /* Break if only 1 switch is allowed */
+      } /* End while for switch loop */
       goto pclgood;
     }
 
@@ -291,9 +291,9 @@ flag processCommandLine(void)
           if (!getFullArg(i,"/|$|<$>")) goto pclbad;
           if (lastArgMatches("/")) {
             i++;
-              if (!getFullArg(i,cat(
-                  "NO_HEADER|<NO_HEADER>",NULL)))
-                goto pclbad;
+            if (!getFullArg(i,cat(
+                "NO_HEADER|<NO_HEADER>",NULL)))
+              goto pclbad;
           } else {
             break;
           }
@@ -320,9 +320,9 @@ flag processCommandLine(void)
           if (!getFullArg(i,"/|$|<$>")) goto pclbad;
           if (lastArgMatches("/")) {
             i++;
-              if (!getFullArg(i,cat(
-                  "NO_HEADER|<NO_HEADER>",NULL)))
-                goto pclbad;
+            if (!getFullArg(i,cat(
+                "NO_HEADER|<NO_HEADER>",NULL)))
+              goto pclbad;
           } else {
             break;
           }
@@ -339,50 +339,7 @@ flag processCommandLine(void)
     }
 
     if (cmdMatches("FILE")) {
-      if (!getFullArg(1,cat(
-          "ADD|CLEAN|DELETE|SUBSTITUTE|SWAP|COUNT|REVISE|DUPLICATE|",
-          "PARALLEL|SPLIT|SORT|COPY|TYPE|SEARCH|RENAME",NULL))) goto pclbad;
-
-      if (cmdMatches("FILE TYPE")) {
-        if (!getFullArg(2,"& What is the name of the file to type? "))
-          goto pclbad;
-
-        /* Get any switches */
-        i = 2;
-        while (1) {
-          i++;
-          if (!getFullArg(i,"/|$|<$>")) goto pclbad;
-          if (lastArgMatches("/")) {
-            i++;
-            if (i == 3) {
-              if (!getFullArg(i,cat(
-                  "FROM_LINE|TO_LINE|<FROM_LINE>",NULL)))
-                goto pclbad;
-            } else {
-              if (!getFullArg(i,cat(
-                  "FROM_LINE|TO_LINE|<TO_LINE>",NULL)))
-                goto pclbad;
-            }
-            if (lastArgMatches("FROM_LINE")) {
-              i++;
-              if (!getFullArg(i,"# From what line number <1>? "))
-                goto pclbad;
-            }
-            if (lastArgMatches("TO_LINE")) {
-              i++;
-              if (!getFullArg(i,"# To what line number <999999>? "))
-                goto pclbad;
-            }
-          } else {
-            break;
-          }
-          /* break; */ /* Break if only 1 switch is allowed */
-        } /* End while for switch loop */
-
-
-        goto pclgood;
-      } /* End if (cmdMatches("FILE TYPE")) */
-
+      if (!getFullArg(1,cat("SEARCH",NULL))) goto pclbad;
 
       if (cmdMatches("FILE SEARCH")) {
         if (!getFullArg(2,"& What is the name of the file to search? "))
@@ -531,7 +488,7 @@ flag processCommandLine(void)
           if (!getFullArg(i,"/|$|<$>")) goto pclbad;
           if (lastArgMatches("/")) {
             i++;
-            if (!getFullArg(i,cat("ALL|LINEAR|HTML|<ALL>", NULL)))
+            if (!getFullArg(i,cat("ALL|LINEAR|<ALL>", NULL)))
               goto pclbad;
           } else {
             break;
@@ -556,7 +513,8 @@ flag processCommandLine(void)
           if (lastArgMatches("/")) {
             i++;
             if (!getFullArg(i,cat(
-"FULL|COMMENT|TEX|HTML|ALT_HTML|BRIEF_HTML|BRIEF_ALT_HTML|<FULL>", NULL)))
+                "FULL|COMMENT|TEX|SIMPLE_TEX|",
+                "HTML|ALT_HTML|BRIEF_HTML|BRIEF_ALT_HTML|<FULL>", NULL)))
               goto pclbad;
           } else {
             break;
@@ -895,7 +853,7 @@ flag processCommandLine(void)
           if (lastArgMatches("/")) {
             i++;
             if (!getFullArg(i,
-                "DEPTH|<DEPTH>")
+                "DEPTH|NO_DISTINCT<DEPTH>")
                 ) goto pclbad;
             if (lastArgMatches("DEPTH")) {
               i++;
@@ -999,6 +957,21 @@ flag processCommandLine(void)
     if (cmdMatches("ASSIGN")) {
       if (!getFullArg(1,"* What step number, or LAST <LAST>? ")) goto pclbad;
       if (!getFullArg(2,"* With what statement label? ")) goto pclbad;
+      /* Get any switches */
+      i = 2;
+      while (1) {
+        i++;
+        if (!getFullArg(i, "/|$|<$>")) goto pclbad;
+        if (lastArgMatches("/")) {
+          i++;
+          if (!getFullArg(i,cat(
+              "NO_UNIFY|<NO_UNIFY>", NULL)))
+            goto pclbad;
+        } else {
+          break;
+        }
+        break;  /* Break if only 1 switch is allowed */
+      }
       goto pclgood;
     }
 
@@ -1116,6 +1089,13 @@ flag processCommandLine(void)
       goto pclgood;
     }
 
+    if (cmdMatches("MORE")) {
+      if (!getFullArg(1,
+         "* What is the name of the file to display? "))
+        goto pclbad;
+      goto pclgood;
+    }
+
     if (cmdMatches("TOOLS")) {
       goto pclgood;
     }
@@ -1168,7 +1148,7 @@ flag processCommandLine(void)
         goto pclbad;
       }
       if (!getFullArg(1,
-          "* What are the labels to match (* = wildcard) <*>?"))
+         "* Statement label to create MIDI for (* matches any substring) <*>?"))
         goto pclbad;
       /* Get any switches */
       i = 1;
@@ -1188,6 +1168,27 @@ flag processCommandLine(void)
         }
         break; /* Break if only 1 switch is allowed */
       }
+      goto pclgood;
+    }
+
+    if (cmdMatches("EXIT") || cmdMatches("QUIT")) {
+
+      /* Get any switches */
+      i = 0;
+      while (1) {
+        i++;
+        if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+        if (lastArgMatches("/")) {
+          i++;
+          if (!getFullArg(i,cat(
+              "FORCE|<FORCE>",NULL)))
+            goto pclbad;
+        } else {
+          break;
+        }
+        break; /* Break if only 1 switch is allowed */
+      } /* End while for switch loop */
+
       goto pclgood;
     }
 
@@ -1387,6 +1388,11 @@ flag processCommandLine(void)
       goto pclgood;
     }
 
+    /* toolsMode - no qualifiers for EXIT */
+    if (cmdMatches("EXIT") || cmdMatches("QUIT")) {
+      goto pclgood;
+    }
+
 
   } /* if !toolsMode ... else ... */
 
@@ -1403,10 +1409,6 @@ flag processCommandLine(void)
   }
 
   if (cmdMatches("BEEP") || cmdMatches("B")) {
-    goto pclgood;
-  }
-
-  if (cmdMatches("EXIT") || cmdMatches("QUIT")) {
     goto pclgood;
   }
 

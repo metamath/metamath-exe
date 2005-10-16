@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2004  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -33,7 +33,7 @@ extern int cprintf(const char *f__mt,...);
 #include <console.h>
 #endif
 
-#define QUOTED_SPACE 3
+#define QUOTED_SPACE 3 /*ASCII 3 that temporarily zaps a space */
 
 
 int errorCount = 0;
@@ -135,8 +135,13 @@ flag print2(char* fmt,...)
 
           if (backBufferPos < pntrLen(backBuffer)) {
             /* Print rest of buffer to screen */
+            /*
             for (backBufferPos = backBufferPos + 1; backBufferPos <=
                 pntrLen(backBuffer); backBufferPos++) {
+            */
+            /* 11-Sep-04 Don't use global var as loop var */
+            while (backBufferPos + 1 <= pntrLen(backBuffer)) {
+              backBufferPos++;
               printf("%s", (vstring)(backBuffer[backBufferPos - 1]));
             }
           }
@@ -666,8 +671,14 @@ vstring cmdInput(FILE *stream, vstring ask)
       /* If the command line is empty (at main prompt), let user still
          type "B" for convenience in case too many
          returns where hit while scrolling */
-      if (g[0] ||  /* Command line not empty */
-          /* Or user entered empty command line but not at a prompt */
+      if (commandFileOpenFlag) break; /* 23-Aug-04 We're taking from a SUBMIT
+                              file so break out of loop that looks for "B" */
+      if (ask == NULL) printf("***BUG #1523\n"); /* 23-Aug-04 In non-SUBMIT
+          mode 'ask' won't be NULL, so flag non-fatal bug here just in case */
+      if (g[0]) break; /* 23-Aug-04 Command line not empty so break out of loop
+                          that looks for "B" */
+      if (ask != NULL &&
+          /* User entered empty command line but not at a prompt */
           /* commandPrompt is assigned in metamath.c and declared in
              mmcmdl.h */
           strcmp(ask, commandPrompt)) {
@@ -688,7 +699,8 @@ vstring cmdInput1(vstring ask)
   vstring ask1 = "";
   long p, i;
 
-  let(&ask1, ask);
+  let(&ask1, ask); /* In case ask is temporarily allocated (i.e will become
+                      deallocated at next let() */
   /* Look for lines too long */
   while (strlen(ask1) > screenWidth) {
     p = screenWidth - 1;
@@ -738,7 +750,7 @@ vstring cmdInput1(vstring ask)
         fprintf(listFile_fp, "! %s\n", commandLine);
       }
 
-    } else {
+    } else { /* Get line from SUBMIT file */
       commandLine = cmdInput(commandFilePtr, NULL);
       if (!commandLine) { /* EOF found */
         fclose(commandFilePtr);

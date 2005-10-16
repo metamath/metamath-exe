@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2004  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -7,12 +7,6 @@
 /* mmdata.h - includes for some principal data structures and data-string handling */
 
 /*E*/extern long db,db0,db1,db2,db3,db4,db5,db6,db7,db8,db9;/* debugging flags & variables */
-/*??? To work on:
-   (20) Add a command line editor (compiler-specific - some may not have it)
-        - handle arrows & recall buffer
-   (23) When near completion:  Verify that each of the error messages
-        works with an actual error
-*/
 typedef char flag; /* A "flag" is simply a character intended for use as a
                       yes/no logical Boolean; 0 = no and 1 = yes */
 
@@ -22,18 +16,6 @@ extern flag toolsMode; /* In metamath mode:  0 = metamath, 1 = tools */
 typedef long nmbrString; /* String of numbers */
 typedef void* pntrString; /* String of pointers */
 
-/* Structure for generalized string handling
-  - treats structure strings similarly to vstrings in vstring.h */
-struct genString {
-  long tokenNum; /* A -1 here denotes end-of-string */
-  void *whiteSpace; /* White space and comments following token */
-        /* whiteSpace is non-null only for mStrings and rStrings */
-        /* that are read from the user's input file */
-        /* (except, it is used as a genString pointer in mmveri.c;
-            this is why it is void instead of vstring */
-};
-/* Each genString "character" is a structure */
-
 
 
 enum mTokenType { var__, con__ };
@@ -42,9 +24,9 @@ enum mTokenType { var__, con__ };
 #define v__ 'v' /* $v */
 #define c__ 'c' /* $c */
 #define a__ 'a' /* $a */
-#define d__ 'd' /* $e */
+#define d__ 'd' /* $d */
 #define e__ 'e' /* $e */
-#define f__ 'f' /* $e */
+#define f__ 'f' /* $f */
 #define p__ 'p' /* $p */
 #define eq_ '=' /* $= */
 #define sc_ '.' /* $. (historically, used to be $; (semicolon) ) */
@@ -159,16 +141,6 @@ void outOfMemory(vstring msg);
 void bug(int bugNum);
 
 
-/* Null genString -- -1 flags the end of an genString */
-struct nullGenStruct {
-    long poolLoc;
-    long allocSize;
-    long actualSize;
-    struct genString nullElement; };
-extern struct nullGenStruct genNull;
-#define NULL_GENSTRING &(genNull.nullElement)
-/*extern struct genString genNullString;*/ /* old */
-
 /* Null nmbrString -- -1 flags the end of a nmbrString */
 struct nullNmbrStruct {
     long poolLoc;
@@ -187,140 +159,6 @@ struct nullPntrStruct {
 extern struct nullPntrStruct pntrNull;
 #define NULL_PNTRSTRING &(pntrNull.nullElement)
 
-/* Make string have temporary allocation to be released by next genLet() */
-/* Warning:  after genMakeTempAlloc() is called, the genString may NOT be
-   assigned again with genLet() */
-void genMakeTempAlloc(struct genString *s);
-
-
-/******* Special pupose routines for better
-      memory allocation (use with caution) *******/
-
-extern int genTempAllocStackTop;   /* Top of stack for genTempAlloc function */
-extern int genStartTempAllocStack; /* Where to start freeing temporary
-    allocation when genLet() is called (normally 0, except for
-    nested genString functions) */
-
-/* Make string have temporary allocation to be released by next genLet() */
-/* Warning:  after genMakeTempAlloc() is called, the genString may NOT be
-   assigned again with genLet() */
-void genMakeTempAlloc(struct genString *s);
-                                    /* Make string have temporary allocation to be
-                                    released by next genLet() */
-
-/**************************************************/
-
-
-/* String assignment - MUST be used to assign vstrings */
-void genLet(struct genString **target,struct genString *source);
-
-/* String concatenation - last argument MUST be NULL */
-struct genString *genCat(struct genString *string1,...);
-
-/* Emulation of genString functions similar to BASIC string functions */
-struct genString *genSeg(struct genString *sin, long p1, long p2);
-struct genString *genMid(struct genString *sin, long p, long l);
-struct genString *genLeft(struct genString *sin, long n);
-struct genString *genRight(struct genString *sin, long n);
-
-/* Allocate and return an "empty" string n "characters" long */
-struct genString *genSpace(long n);
-
-/* Allocate and return an "empty" string n "characters" long
-   with whiteSpace initialized to genStrings instead of vStrings */
-struct genString *genGSpace(long n);
-
-long genLen(struct genString *s);
-long genAllocLen(struct genString *s);
-void genZapLen(struct genString *s, long len);
-
-/* Search for string2 in string 1 starting at start_position */
-long genInstr(long start, struct genString *sin, struct genString *s);
-
-/* Search for string2 in string 1 in reverse starting at start_position */
-/* (Reverse genInstr) */
-long genRevInstr(long start_position,struct genString *string1,
-    struct genString *string2);
-
-/* 1 if strings are equal, 0 otherwise */
-int genEq(struct genString *sout,struct genString *sin);
-
-/* Converts mString to a vstring with correct white space between tokens */
-/* If whiteSpaceFlag is 1, put actual white space between tokens, otherwise
-   put a single space (for error messages) */
-vstring cvtMToVString(struct genString *s, flag whiteSpaceFlag);
-
-/* Converts rString to a vstring with correct white space between tokens */
-/* If whiteSpaceFlag is 1, put actual white space between tokens, otherwise
-   put a single space (for error messages) */
-vstring cvtRToVString(struct genString *s, flag whiteSpaceFlag);
-
-/* Get step numbers in an rString - needed by cvtRToVString & elsewhere */
-struct genString *getProofStepNumbs(struct genString *reason);
-
-/* Converts any genString to an ASCII string of numbers corresponding
-   to the .tokenNum field -- used for debugging only. */
-vstring cvtAnyToVString(struct genString *s);
-
-/* Extract variables from a math token string */
-struct genString *genExtractVars(struct genString *m);
-
-/* Determine if an element is in a genString; return position if it is */
-long genElementIn(long start, struct genString *g, long element);
-
-/* Add a single string element to a genString - faster than genCat */
-struct genString *genAddElement(struct genString *g, long element);
-
-/* Add a single genString element to a genString - faster than genCat */
-struct genString *genAddGElement(struct genString *g, long element);
-
-/* Get the set union of two math token strings (presumably
-   variable lists) */
-struct genString *genUnion(struct genString *m1,struct genString *m2);
-
-/* Get the set intersection of two math token strings (presumably
-   variable lists) */
-struct genString *genIntersection(struct genString *m1,struct genString *m2);
-
-/* Get the set difference m1-m2 of two math token strings (presumably
-   variable lists) */
-struct genString *genSetMinus(struct genString *m1,struct genString *m2);
-
-
-
-/* This is a utility function that returns the length of a subproof that
-   ends at step */
-long getSubProofLen(struct genString *proof, long step);
-
-/* This function returns a "squished" proof, putting in {} references
-   to previous subproofs. */
-struct genString *squishProof(struct genString *proof);
-
-/* This function unsquishes a "squished" proof, replacing {} references
-   to previous subproofs by the subproofs themselvs.  The returned genString
-   must be deallocated by the caller. */
-struct genString *unsquishProof(struct genString *proof);
-
-/* This function returns the indentation level vs. step number of a proof
-   string.  This information is used for formatting proof displays.  The
-   function calls itself recursively, but the first call should be with
-   startingLevel = 0.  The caller is responsible for deallocating the
-   result. */
-struct genString *getIndentation(struct genString *proof,
-  long startingLevel);
-
-/* This function returns essential (1) or floating (0) vs. step number of a
-   proof string.  This information is used for formatting proof displays.  The
-   function calls itself recursively, but the first call should be with
-   startingLevel = 0.  The caller is responsible for deallocating the
-   result. */
-struct genString *getEssential(struct genString *proof);
-
-/* This function returns the target hypothesis vs. step number of a proof
-   string.  This information is used for formatting proof displays.  The
-   function calls itself recursively.  The caller is responsible for
-   deallocating the result.  statemNum is the statement being proved. */
-struct genString *getTargetHyp(struct genString *proof, long statemNum);
 
 /* This function returns a 1 if the first argument matches the pattern of
    the second argument.  The second argument may have '*' wildcard characters.*/
@@ -462,15 +300,6 @@ nmbrString *nmbrGetTargetHyp(nmbrString *proof, long statemNum);
 /* The statement number is needed because required hypotheses are
    implicit in the compressed proof. */
 vstring compressProof(nmbrString *proof, long statemNum);
-
-/* Converts genString to nmbrString */
-nmbrString *genToNmbr(struct genString *sin);
-
-/* Converts genString to pntrString */
-pntrString *genToPntr(struct genString *sin);
-
-/* Converts nmbrString to genString */
-struct genString *nmbrToGGen(nmbrString *sin);
 
 
 /*******************************************************************/

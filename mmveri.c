@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2004  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -753,8 +753,18 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
                 /* Put missing $d requirement in new line so grep can find
                    them easily in log file */
                 printLongLine(cat("Variables \"",
-                    mathToken[aToken].tokenName, "\" and \"",
-                    mathToken[bToken].tokenName,
+                    /* 30-Apr-04 nm Put in alphabetic order for easier use if
+                       user sorts the list of errors */
+                    /* strcmp returns <0 if 1st<2nd */
+                    (strcmp(mathToken[aToken].tokenName,
+                        mathToken[bToken].tokenName) < 0)
+                      ? mathToken[aToken].tokenName
+                      : mathToken[bToken].tokenName,
+                    "\" and \"",
+                    (strcmp(mathToken[aToken].tokenName,
+                        mathToken[bToken].tokenName) < 0)
+                      ? mathToken[bToken].tokenName
+                      : mathToken[aToken].tokenName,
                     "\" do not have a disjoint variable requirement in the ",
                     "assertion being proved, \"",
                     statement[statementNum].labelName,

@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2004  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -9,6 +9,10 @@
 #define MINT_BACKGROUND_COLOR "\"#EEFFFA\""
 #define PINK_NUMBER_COLOR "\"#FA8072\""      /* =salmon; was FF6666 */
 #define PURPLISH_BIBLIO_COLOR "\"#FAEEFF\""
+
+/* TeX flags */
+extern flag simpleTexFlag; /* Don't use macros in output, for easier
+                              manual editing by user */
 
 /* HTML flags */
 extern flag htmlFlag;  /* HTML flag: 0 = TeX, 1 = HTML */
@@ -83,6 +87,12 @@ long pinkNumber(long statemNum);
 /* Pink statement number HTML code for HTML pages - added 10/10/02 */
 /* Warning: caller must deallocate returned string */
 vstring pinkHTML(long statemNum);
+
+/* Pink statement number range HTML code for HTML pages, separated by a
+   "-" - added 24-Aug-04 */
+/* Warning: caller must deallocate returned string */
+vstring pinkRangeHTML(long statemNum1, long statemNum2);
+
 #define PINK_NBSP "&nbsp;" /* Either "" or "&nbsp;" depending on taste, it is
                   the separator between a statement href and its pink number */
 

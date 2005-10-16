@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2004  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -59,7 +59,7 @@ char checkMStringMatch(nmbrString *mString, long step);
 /* maxEDepth is the maximum depth at which statements with $e hypotheses are
    considered.  A value of 0 means none are considered. */
 nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
-    long step);
+    long step, flag noDistinct);
 
 /* Shorten proof by using specified statement. */
 void minimizeProof(long repStatemNum, long prvStatemNum, flag

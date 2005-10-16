@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2004  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdarg.h>
+#include <time.h>  /* 28-May-04 nm For clock() */
 #include "mmvstr.h"
 #include "mmdata.h"
 #include "mmcmdl.h" /* For texFileName */
@@ -149,7 +150,9 @@ void typeStatement(long showStatement,
     let(&str1, "");
     str1 = getDescription(showStatement);
     if (!str1[0]    /* No comment */
-        || (str1[0] == '[' && str1[strlen(str1) - 1] == ']')) { /* Date stamp
+        || (str1[0] == '[' && str1[strlen(str1) - 1] == ']')
+        /* 7-Sep-04 Allow both "$([<date>])$" and "$( [<date>] )$" */
+        || (str1[1] == '[' && str1[strlen(str1) - 2] == ']')) { /* Date stamp
             from previous proof */
       print2("?Warning:  Statement \"%s\" has no comment\n",
           statement[showStatement].labelName);
@@ -192,6 +195,16 @@ void typeStatement(long showStatement,
       htmlDistinctVarsCommaFlag = 0;
     }
 
+    /* Note added 22-Aug-04:  This algorithm is used to re-merge $d pairs
+       into groups of 3 or more when possible, for a more compact display.
+       The algorithm does not merge groups optimally, but it should be
+       adequate.  For example, in set.mm (e.g. old r19.23aivv):
+         $d x ps $.  $d y ps $.  $d y A $.  $d x y $.
+       produces in SHOW STATEMENT (note redundant 3rd $d):
+         $d ps x y $.  $d y A $.  $d x y $.
+       However, in set.mm the equivalent (and better anyway):
+         $d x y ps $.  $d y A $.
+       produces the same thing when remerged in SHOW STATEMENT. */
     let(&str1, "");
     nmbrTmpPtr1 = statement[showStatement].reqDisjVarsA;
     nmbrTmpPtr2 = statement[showStatement].reqDisjVarsB;
@@ -414,10 +427,10 @@ void typeStatement(long showStatement,
       print2("<CAPTION><B>Assertion</B></CAPTION>\n");
       print2("<TR><TH>Ref\n");
       print2("</TH><TH>Expression</TH></TR>\n");
-      print2(
-       "<TR ALIGN=LEFT><TD><FONT COLOR=%s><B>%s</B></FONT></TD><TD>\n",
-          GREEN_TITLE_COLOR,
-          statement[showStatement].labelName);
+      printLongLine(cat(
+       "<TR ALIGN=LEFT><TD><FONT COLOR=",
+          GREEN_TITLE_COLOR, "><B>", statement[showStatement].labelName,
+          "</B></FONT></TD><TD>", NULL), "      ", " ");
       printTexLongMath(statement[showStatement].mathString, "", "", 0, 0);
       outputToString = 1;
       print2("</TABLE></CENTER>\n");
@@ -723,7 +736,8 @@ void typeStatement(long showStatement,
            considered.  A value of 0 means none are considered. */
         nmbrTmpPtr2 = proveFloating(nmbrTmpPtr1 /*mString*/,
             showStatement /*statemNum*/, 0 /*maxEDepth*/,
-            0 /*step - 0 = step 1 */ /*For messages*/);
+            0, /*step - 0 = step 1 */ /*For messages*/
+            0  /*not noDistinct*/);
 
         if (nmbrLen(nmbrTmpPtr2)) {
           /* A proof for the step was found. */
@@ -1441,7 +1455,7 @@ void typeProof(long statemNum,
         if (texFlag) {
           /* nm 3-Feb-04  Added this bug check - it doesn't make sense to
              do this and it hasn't been tested anyway */
-          printf("?Unsupported:  HTML or LaTeX proof for NEW_PROOF.\n");
+          print2("?Unsupported:  HTML or LaTeX proof for NEW_PROOF.\n");
           bug(244);
         }
 
@@ -1561,7 +1575,7 @@ void typeProof(long statemNum,
           /* i = -1 is the statement itself; i >= 0 is hypotheses i */
           if (i == -1) {
             /* If it's not a $p we shouldn't be here */
-            if (statement[statemNum].type != (char)p__) bug(234);
+            if (statement[statemNum].type != (char)p__) bug(245);
             nmbrTmpPtr1 = NULL_NMBRSTRING;
             nmbrLet(&nmbrTmpPtr1, statement[statemNum].mathString);
           } else {
@@ -1575,7 +1589,13 @@ void typeProof(long statemNum,
             nmbrLet(&nmbrTmpPtr1,
                 statement[statement[statemNum].reqHypList[i]].mathString);
           }
-          if (strcmp("|-", mathToken[nmbrTmpPtr1[0]].tokenName)) bug(235);
+          if (strcmp("|-", mathToken[nmbrTmpPtr1[0]].tokenName)) {
+            /* 1-Oct-05 nm Since non-standard logics may not have this,
+               just break out of this section gracefully */
+            nmbrTmpPtr2 = NULL_NMBRSTRING; /* To be known after break */
+            break;
+            /* bug(235); */  /* 1-Oct-05 nm No longer a bug */
+          }
           /* Turn "|-" assertion into a "wff" assertion */
           nmbrTmpPtr1[0] = wffToken;
 
@@ -1585,8 +1605,14 @@ void typeProof(long statemNum,
              considered.  A value of 0 means none are considered. */
           nmbrTmpPtr2 = proveFloating(nmbrTmpPtr1 /*mString*/,
               statemNum /*statemNum*/, 0 /*maxEDepth*/,
-              0 /* step; 0 = step 1 */ /*For messages*/);
-          if (!nmbrLen(nmbrTmpPtr2)) bug(236); /* Didn't find syntax proof */
+              0, /* step; 0 = step 1 */ /*For messages*/
+              0  /*not noDistinct*/);
+          if (!nmbrLen(nmbrTmpPtr2)) {
+            /* 1-Oct-05 nm Since a proof may not be found for non-standard
+               logics, just break out of this section gracefully */
+            break;
+            /* bug(236); */ /* Didn't find syntax proof */
+          }
 
           /* Add to list of syntax statements used */
           for (step = 0; step < nmbrLen(nmbrTmpPtr2); step++) {
@@ -1600,12 +1626,15 @@ void typeProof(long statemNum,
                     statementUsedFlags[stmt] = 'y'; /* Flag to use it */
                   } else {
                     /* In a syntax proof there should be no |- */
+                    /* (In the future, we may want to break instead of
+                       calling it a bug, if it's a problem for non-standard
+                       logics.) */
                     bug(237);
                   }
                 }
               }
             } else {
-              /* This is not a compressed proof */
+              /* proveFloating never returns a compressed proof */
               bug(238);
             }
           }
@@ -1614,6 +1643,9 @@ void typeProof(long statemNum,
           nmbrLet(&nmbrTmpPtr2, NULL_NMBRSTRING);
           nmbrLet(&nmbrTmpPtr1, NULL_NMBRSTRING);
         } /* next i */
+        /* 1-Oct-05 nm Deallocate memory in case we broke out above */
+        nmbrLet(&nmbrTmpPtr2, NULL_NMBRSTRING);
+        nmbrLet(&nmbrTmpPtr1, NULL_NMBRSTRING);
       } /* if (wffToken >= 0) */
       /* End of section added 2/5/02 */
       /******************************************************************/
@@ -2671,6 +2703,9 @@ double countSteps(long statemNum, flag essentialFlag)
   }
   essentialplen = 0;
   for (step = 0; step < plen; step++) {
+  /* 12-May-04 nm Use the following loop instead to get an alternate maximum
+     path */
+  /*for (step = plen-1; step >= 0; step--) {*/
     if (essentialFlag) {
       if (!essentialFlags[step]) continue;     /* Ignore floating hypotheses */
     }
@@ -2774,8 +2809,11 @@ double countSteps(long statemNum, flag essentialFlag)
            str(actualSubTheorems2), " subtheorems, and ",
        "the statement and subtheorems would have a total of ",
            str(actualSteps2), " steps.  ",
+       /* 27-May-05 nm stepCount is inaccurate for over 16 or so digits due
+          to roundoff errors.
        "The proof would have ", str(stepCount),
        " steps if fully expanded.  ",
+       */
        /*
        "The proof tree has ", str(stmtNodeCount[statemNum])," nodes.  ",
        "A random backtrack path has an average path length of ",
@@ -3013,7 +3051,7 @@ void readInput(void)
 }
 
 /* This function implements the WRITE SOURCE command. */
-void writeInput(flag cleanFlag)
+void writeInput(flag cleanFlag /* 1 = "/ CLEAN" qualifier was chosen */)
 {
 
   /* Temporary variables and strings */
@@ -3069,6 +3107,7 @@ void writeInput(flag cleanFlag)
           if (p == 0) {
             /* In the future, "] $)" may flag date end to conform with
                space-around-keyword Metamath spec recommendation */
+            /* 7-Sep-04 The future is now */
             p = instr(1, str1, "] $)"); /* Get end of date comment */
             if (p != 0) p++; /* Match what it would be for old standard */
           }
@@ -3081,6 +3120,7 @@ void writeInput(flag cleanFlag)
                                              /* Output just the date comment */
           }
 
+          /* ??? 7-Sep-04 This is probably obsolete - take it out someday */
           /* Output a dummy xxx... statement below if xxxFlag */
           /* Otherwise output nothing (i.e. suppress the statement) */
           if (xxxFlag) {
@@ -3229,6 +3269,9 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
   long lineLen = 0;
   vstring header = "";
   flag errorFound;
+#ifdef CLOCKS_PER_SEC
+  clock_t clockStart;  /* 28-May-04 nm */
+#endif
 
 #ifdef __WATCOMC__
   vstring tmpStr="";
@@ -3238,6 +3281,9 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
   vstring tmpStr="";
 #endif
 
+#ifdef CLOCKS_PER_SEC
+  clockStart = clock();  /* 28-May-04 nm Retrieve start time */
+#endif
   if (!strcmp("*", labelMatch) && verifyFlag) {
     /* Use status bar */
     let(&header, "0 10%  20%  30%  40%  50%  60%  70%  80%  90% 100%");
@@ -3311,7 +3357,13 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
   }
   if (!emptyProofList[0] && !errorFound && !strcmp("*", labelMatch)) {
     if (verifyFlag) {
+#ifdef CLOCKS_PER_SEC    /* 28-May-04 nm */
+      print2("All proofs in the database were verified in %1.2f s.\n",
+           (double)((1.0 * (clock() - clockStart)) / CLOCKS_PER_SEC));
+#else
       print2("All proofs in the database were verified.\n");
+#endif
+
     } else {
       print2("All proofs in the database passed the syntax-only check.\n");
     }
@@ -3342,22 +3394,26 @@ void H(vstring helpLine)
 void outputMidi(long plen, nmbrString *indentationLevels,
   nmbrString *logicalFlags, vstring midiParam, vstring statementLabel) {
 
-  /* plen = length of proof
-     indentationLevels[step] = indentation level in "show proof xxx /full"
-         where step varies from 0 to plen-1
-     logicalFlags[step] = 0 for formula-building step, 1 for logical step
-     midiParam = string passed by user in "midi xxx /parameter <midiParam>"
-     statementLabel = label of statement whose proof is being scanned */
+  /* The parameters have the following meanings.  You should treat them as
+     read-only input parameters and should not modify the contents of the
+     arrays or strings they point to.
+
+       plen = length of proof
+       indentationLevels[step] = indentation level in "show proof xxx /full"
+           where step varies from 0 to plen-1
+       logicalFlags[step] = 0 for formula-building step, 1 for logical step
+       midiParam = string passed by user in "midi xxx /parameter <midiParam>"
+       statementLabel = label of statement whose proof is being scanned */
 
   /* This function is called when the user types "midi xxx /parameter
      <midiParam>".  The proof steps of theorem xxx are numbered successively
      from 0 to plen-1.  The arrays indentationLevels[] and logicalFlags[]
-     have already been populated for you.  */
+     have already been populated for you. */
 
   /* The purpose of this function is to create an ASCII file called xxx.txt
      that contains the ASCII format for a t2mf input file.  The mf2t package
      is available at http://www.hitsquad.com/smm/programs/mf2t/download.shtml.
-     To convert xxx.txt to xxx.mid you type "t2mf sbth.txt sbth.mid". */
+     To convert xxx.txt to xxx.mid you type "t2mf xxx.txt xxx.mid". */
 
   /* To experiment with this function, you can add your own local variables and
      modify the algorithm as you see fit.  The algorithm is essentially
@@ -3370,6 +3426,7 @@ void outputMidi(long plen, nmbrString *indentationLevels,
 #define TEMPO 48
 /* The minimum and maximum notes for the dynamic range we allow: */
 /* (MIDI notes range from 1 to 127, but 28 to 103 seems reasonably pleasant) */
+/* MIDI note number 60 is middle C. */
 #define MIN_NOTE 28
 #define MAX_NOTE 103
 
@@ -3378,7 +3435,8 @@ void outputMidi(long plen, nmbrString *indentationLevels,
      by string functions in mmvstr.c; and "nmbrString" is just "long *" */
 
   long step; /* Proof step from 0 to plen-1 */
-  long midiNote; /* Current midi note to be output */
+  long midiKey; /* Current keyboard key to be output */
+  long midiNote; /* Current midi note to be output, mapped from midiKey */
   long midiTime; /* Midi time stamp */
   long midiPreviousFormulaStep; /* Note saved from previous step */
   long midiPreviousLogicalStep; /* Note saved from previous step */
@@ -3386,14 +3444,69 @@ void outputMidi(long plen, nmbrString *indentationLevels,
   FILE *midiFilePtr; /* Output file pointer */
   long midiBaseline; /* Baseline note */
   long midiMaxIndent; /* Maximum indentation (to find dyn range of notes) */
-  long midiMinNote; /* Smallest note in output */
-  long midiMaxNote; /* Largest note in output */
-  long midiNoteInc; /* Note increment per proof indentation level */
+  long midiMinKey; /* Smallest keyboard key in output */
+  long midiMaxKey; /* Largest keyboard key in output */
+  long midiKeyInc; /* Keyboard key increment per proof indentation level */
   flag midiSyncopate; /* 1 = syncopate the output */
   flag midiHesitate; /* 1 = silence all repeated notes */
   long midiTempo; /* larger = faster */
   vstring midiLocalParam = ""; /* To manipulate user's parameter string */
   vstring tmpStr = ""; /* Temporary string */
+#define ALLKEYSFLAG 1
+#define WHITEKEYSFLAG 2
+#define BLACKKEYSFLAG 3
+  flag keyboardType; /* ALLKEYSFLAG, WHITEKEYSFLAG, or BLACKKEYSFLAG */
+  long absMinKey; /* The smallest note we ever want */
+  long absMaxKey; /* The largest note we ever want */
+  long key2MidiMap[128]; /* Maps keyboard (possiblty with black or
+                    white notes missing) to midi notes */
+  long keyboardOctave; /* The number of keys spanning an octave */
+  long i;
+
+  /******** Define the keyboard to midi maps (added 5/17/04 nm) *************/
+  /* The idea here is to map the proof step to pressing "keyboard" keys
+     on keyboards that have all keys, or only the white keys, or only the
+     black keys.   The default is all keys, the parameter b means black,
+     and the parameter w means white. */
+#define ALLKEYS 128
+#define WHITEKEYS 75
+#define BLACKKEYS 53
+  long allKeys[ALLKEYS] =
+      {  0,   1,   2,   3,   4,   5,   6,   7,   8,   9,  10,  11,
+        12,  13,  14,  15,  16,  17,  18,  19,  20,  21,  22,  23,
+        24,  25,  26,  27,  28,  29,  30,  31,  32,  33,  34,  35,
+        36,  37,  38,  39,  40,  41,  42,  43,  44,  45,  46,  47,
+        48,  49,  50,  51,  52,  53,  54,  55,  56,  57,  58,  59,
+        60,  61,  62,  63,  64,  65,  66,  67,  68,  69,  70,  71,
+        72,  73,  74,  75,  76,  77,  78,  79,  80,  81,  82,  83,
+        84,  85,  86,  87,  88,  89,  90,  91,  92,  93,  94,  95,
+        96,  97,  98,  99, 100, 101, 102, 103, 104, 105, 106, 107,
+       108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119,
+       120, 121, 122, 123, 124, 125, 126, 127};
+  long whiteKeys[WHITEKEYS] =
+      {  0,   2,   4,   5,   7,   9,  11,
+        12,  14,  16,  17,  19,  21,  23,
+        24,  26,  28,  29,  31,  33,  35,
+        36,  38,  40,  41,  43,  45,  47,
+        48,  50,  52,  53,  55,  57,  59,
+        60,  62,  64,  65,  67,  69,  71,
+        72,  74,  76,  77,  79,  81,  83,
+        84,  86,  88,  89,  91,  93,  95,
+        96,  98, 100, 101, 103, 105, 107,
+       108, 110, 112, 113, 115, 117, 119,
+       120, 122, 124, 125, 127};
+  long blackKeys[BLACKKEYS] =
+      {  1,   3,   6,   8,  10,
+        13,  15,  18,  20,  22,
+        25,  27,  30,  32,  34,
+        37,  39,  42,  44,  46,
+        49,  51,  54,  56,  58,
+        61,  63,  66,  68,  70,
+        73,  75,  78,  80,  82,
+        85,  87,  90,  92,  94,
+        97,  99, 102, 104, 106,
+       109, 111, 114, 116, 118,
+       121, 123, 126};
 
   /************* Initialization ***************/
 
@@ -3418,13 +3531,89 @@ void outputMidi(long plen, nmbrString *indentationLevels,
   } else {
     midiHesitate = 0; /* Silence only every other one in a repeated sequence */
   }
-  /* Set the tempo: 96=fast, 48=slow */
+  /* Set the tempo: 96=fast, 72=medium, 48=slow */
   if (strchr(midiLocalParam, 'F') != NULL) {
-    midiTempo = 2 * TEMPO;
+    midiTempo = 2 * TEMPO;  /* Fast */
   } else {
-    midiTempo = TEMPO;
+    if (strchr(midiLocalParam, 'M') != NULL) {
+      midiTempo = 3 * TEMPO / 2;  /* Medium */
+    } else {
+      midiTempo = TEMPO; /* Slow */
+    }
   }
+  /* Get the keyboard type */
+  if (strchr(midiLocalParam, 'W') != NULL) {
+    keyboardType = WHITEKEYSFLAG;
+  } else {
+    if (strchr(midiLocalParam, 'B') != NULL) {
+      keyboardType = BLACKKEYSFLAG;
+    } else {
+      keyboardType = ALLKEYSFLAG;
+    }
+  }
+  /* Set the tempo: 96=fast, 48=slow */
+  if (strchr(midiLocalParam, 'I') != NULL) {
+    /* Do not skip any notes */
+    midiKeyInc = 1 + 1;
+  } else {
+    /* Allow an increment of up to 4 */
+    midiKeyInc = 4 + 1;
+  }
+
   /* End of parsing user's parameter string */
+
+
+  /* Map keyboard key numbers to MIDI notes */
+  absMinKey = MIN_NOTE; /* Initialize for ALLKEYSFLAG case */
+  absMaxKey = MAX_NOTE;
+  keyboardOctave = 12; /* Keyboard keys per octave with no notes skipped */
+  switch (keyboardType) {
+    case ALLKEYSFLAG:
+      for (i = 0; i < 128; i++) key2MidiMap[i] = allKeys[i];
+     break;
+    case WHITEKEYSFLAG:
+      for (i = 0; i < WHITEKEYS; i++) key2MidiMap[i] = whiteKeys[i];
+      keyboardOctave = 7;
+      /* Get keyboard key for smallest midi note we want */
+      for (i = 0; i < WHITEKEYS; i++) {
+        if (key2MidiMap[i] >= absMinKey) {
+          absMinKey = i;
+          break;
+        }
+      }
+      /* Get keyboard key for largest midi note we want */
+      for (i = WHITEKEYS - 1; i >= 0; i--) {
+        if (key2MidiMap[i] <= absMinKey) {
+          absMinKey = i;
+          break;
+        }
+      }
+      /* Redundant array bound check for safety */
+      if (absMaxKey >= WHITEKEYS) absMaxKey = WHITEKEYS - 1;
+      if (absMinKey >= WHITEKEYS) absMinKey = WHITEKEYS - 1;
+      break;
+    case BLACKKEYSFLAG:
+      for (i = 0; i < BLACKKEYS; i++) key2MidiMap[i] = blackKeys[i];
+      keyboardOctave = 5;
+      /* Get keyboard key for smallest midi note we want */
+      for (i = 0; i < BLACKKEYS; i++) {
+        if (key2MidiMap[i] >= absMinKey) {
+          absMinKey = i;
+          break;
+        }
+      }
+      /* Get keyboard key for largest midi note we want */
+      for (i = BLACKKEYS - 1; i >= 0; i--) {
+        if (key2MidiMap[i] <= absMinKey) {
+          absMinKey = i;
+          break;
+        }
+      }
+      /* Redundant array bound check for safety */
+      if (absMaxKey >= BLACKKEYS) absMaxKey = BLACKKEYS - 1;
+      if (absMinKey >= BLACKKEYS) absMinKey = BLACKKEYS - 1;
+      break;
+  }
 
   /* Get max indentation, so we can determine the scale factor
      to make midi output fit within dynamic range */
@@ -3442,19 +3631,20 @@ void outputMidi(long plen, nmbrString *indentationLevels,
      flat sequence of repeating notes and therefore useless, but at least it
      won't crash the MIDI converter.  */
 
-  midiNoteInc = 5; /* Starting note increment, plus 1 */
+  /*midiKeyInc = 5;*/ /* Starting note increment, plus 1 */
+        /* (This is now set with the I parameter; see above) */
   do { /* Decrement note incr until song will fit MIDI dyn range */
-    midiNoteInc--;
+    midiKeyInc--;
     /* Compute the baseline note to which add the proof indentation
-      times the midiNoteInc.  The "12" is to allow for the shift
+      times the midiKeyInc.  The "12" is to allow for the shift
       of one octave down of the sustained notes on "essential"
       (i.e. logical, not formula-building) steps. */
-    midiBaseline = ((MAX_NOTE + MIN_NOTE) / 2) -
-      (((midiMaxIndent * midiNoteInc) - 12) / 2);
-    midiMinNote = midiBaseline - 12;
-    midiMaxNote = midiBaseline + (midiMaxIndent * midiNoteInc);
-  } while ((midiMinNote < MIN_NOTE || midiMaxNote > MAX_NOTE) &&
-      midiNoteInc > 0);
+    midiBaseline = ((absMaxKey + absMinKey) / 2) -
+      (((midiMaxIndent * midiKeyInc) - keyboardOctave/*12*/) / 2);
+    midiMinKey = midiBaseline - keyboardOctave/*12*/;
+    midiMaxKey = midiBaseline + (midiMaxIndent * midiKeyInc);
+  } while ((midiMinKey < absMinKey || midiMaxKey > absMaxKey) &&
+      midiKeyInc > 0);
 
   /* Open the output file */
   let(&midiFileName, cat(statement[showStatement].labelName,
@@ -3489,7 +3679,13 @@ void outputMidi(long plen, nmbrString *indentationLevels,
     if (!logicalFlags[step]) {
 
       /*** Process the higher fast notes for formula-building steps ***/
-      midiNote = (midiNoteInc * indentationLevels[step]) + midiBaseline;
+      /* Get the "keyboard" key number */
+      midiKey = (midiKeyInc * indentationLevels[step]) + midiBaseline;
+      /* Redundant prevention of array bound violation */
+      if (midiKey < 0) midiKey = 0;
+      if (midiKey > absMaxKey) midiKey = absMaxKey;
+      /* Map "keyboard" key to MIDI note */
+      midiNote = key2MidiMap[midiKey];
       if (midiPreviousFormulaStep != midiNote || !midiSyncopate) {
         /* Turn note on at the current MIDI time stamp */
         fprintf(midiFilePtr, "%ld On ch=2 n=%ld v=75\n", midiTime, midiNote);
@@ -3515,9 +3711,15 @@ void outputMidi(long plen, nmbrString *indentationLevels,
       /* The idea here is to shift the note down 1 octave before
          outputting it, so it is distinguished from formula-
          building notes */
-      midiNote = (midiNoteInc * indentationLevels[step])
-          + midiBaseline;
+      /* Get the "keyboard" key number */
+      midiKey = (midiKeyInc * indentationLevels[step]) + midiBaseline;
+      /* Redundant prevention of array bound violation */
+      if (midiKey < 0) midiKey = 0;
+      if (midiKey > absMaxKey) midiKey = absMaxKey;
+      /* Map "keyboard" key to MIDI note */
+      midiNote = key2MidiMap[midiKey];
       midiNote = midiNote - 12; /* Down 1 octave */
+      if (midiNote < 0) midiNote = 0; /* For safety but should be redundant */
       if (midiPreviousLogicalStep) { /* If 0, it's the first time */
         /* Turn off the previous sustained note */
         fprintf(midiFilePtr, "%ld On ch=1 n=%ld v=0\n", midiTime,

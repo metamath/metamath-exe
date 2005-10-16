@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2004  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -41,7 +41,7 @@ H("To exit Metamath, type EXIT (or its synonym QUIT).");
 H("");
 H(cat("If you need technical support, contact Norman Megill at nm",
     "@", "alum.mit.edu.", NULL));
-H("Copyright (C) 2004 Norman Megill");
+H("Copyright (C) 2005 Norman Megill");
 H("License terms:  GNU General Public License");
 H("");
 
@@ -72,9 +72,9 @@ H("");
 H("  bash$ ./metamath 'read \"/tmp/set.mm\"' 'verify proof *' exit");
 H("");
 H("For convenience, if the command-line has one argument and no spaces in");
-H("the argument, the command is implicitly assumed to be READ.  In this");
-H("case, /'s are not interpreted as command qualifiers, so you don't need");
-H("quotes around a Unix file name.  Thus");
+H("the argument, the command is implicitly assumed to be READ.  In this one");
+H("special case, /'s are not interpreted as command qualifiers, so you don't");
+H("need quotes around a Unix file name.  Thus");
 H("");
 H("  bash$ ./metamath /tmp/set.mm");
 H("");
@@ -186,9 +186,10 @@ H("");
 
 
 printHelp = !strcmp(helpCmd, "HELP SHOW STATEMENT");
+/* 27-Jul-05 nm Added SIMPLE_TEX */
 H(
-"Syntax:  SHOW STATEMENT <label> [/ COMMENT] [/ FULL] [/ TEX] [/ HTML]");
-H("             [/ ALT_HTML] [/ BRIEF_HTML] [/ BRIEF_ALT_HTML]");
+"Syntax:  SHOW STATEMENT <label> [/ COMMENT] [/ FULL] [/ TEX] [/ SIMPLE_TEX]");
+H("             [/ HTML] [/ ALT_HTML] [/ BRIEF_HTML] [/ BRIEF_ALT_HTML]");
 H("");
 H("");
 H("This command provides information about a statement.  Only statements");
@@ -206,6 +207,10 @@ H("    / FULL - Show complete information about each statement, and show all");
 H("        statements matching <label> (including $e and $f statements).");
 H("    / TEX - This qualifier will write the statement information to the");
 H("        LaTeX file previously opened with OPEN TEX.");
+/* 27-Jul-05 nm Added SIMPLE_TEX */
+H("    / SIMPLE_TEX - The same as / TEX, except that LaTeX macros are not");
+H("        used for formatting equations, allowing easier manual edits of");
+H("        the output.");
 H("    / HTML - This qualifier invokes a special mode of SHOW STATEMENT which");
 H("        creates a Web page for the statement.  It may not be used with");
 H("        any other qualifier.  See HELP HTML for more information.");
@@ -283,9 +288,32 @@ H("   http://www.hitsquad.com/smm/programs/mf2t/download.shtml");
 H("Note: the MS-DOS version t2mf.exe only handles old-style 8.3 file names,");
 H("so files such as pm2.11.txt are rejected and must be renamed to");
 H("e.g. pm2_11.txt.");
-H("The parameter string characters currently defined are: f - fast speed,");
-H("s - syncopation, h - turn on hesitation feature of syncopation.  Quotes");
-H("around the parameter string are optional if it has no spaces.");
+H("");
+H("The parameters are:");
+H("");
+H("  f = make the tempo fast (default is slow).");
+H("  m = make the tempo medium (default is slow).");
+H("      Both \"f\" and \"m\" should not be specified simultaneously.");
+H("  s = syncopate the melody by silencing repeated notes, using");
+H("      a method selected by whether the \"h\" parameter below is also");
+H("      present (default is no syncopation).");
+H("  h = allow syncopation to hesitate i.e. all notes in a");
+H("      sequence of repeated notes are silenced except the first (default");
+H("      is no hesitation, which means that every other note in a repeated");
+H("      sequence is silenced - this makes it sound slightly more rhythmic).");
+H("      The \"h\" parameter is meaningful only if the \"s\" parameter above");
+H("      is also present.");
+H("  w = use only the white keys on the piano keyboard (default");
+H("      is potentially to use all keys).");
+H("  b = use only the black keys on the piano keyboard (default");
+H("      is all keys).  Both \"w\" and \"b\" should not be specified");
+H("      simultaneously.");
+H("  i = use an increment of one keyboard note per proof");
+H("      indentation level.  The default is to use an automatic increment of");
+H("      up to four notes per level based on the dynamic range of the whole");
+H("      song.");
+H("");
+H("Quotes around the parameter string are optional if it has no spaces.");
 H("");
 
 
@@ -315,7 +343,7 @@ printHelp = !strcmp(helpCmd, "HELP SHOW USAGE");
 H("Syntax:  SHOW USAGE <label> [/ RECURSIVE]");
 H("");
 H("This command lists the statements whose proofs make direct reference to");
-H("the statement specified.");
+H("the statement specified by <label>.");
 H("");
 H("Optional qualifier:");
 H("    / RECURSIVE - Also include include statements whose proof ultimately");
@@ -458,6 +486,10 @@ H("    / SYNTAX_ONLY - This qualifier will perform a check of syntax and RPN");
 H("        stack violations only.  It will not verify that the proof is");
 H("        correct.");
 H("");
+H("Note: READ, followed by VERIFY PROOF *, will ensure the database is free");
+H("from errors in Metamath language but will not check the markup language");
+H("in comments.  One way to check the markup language is WRITE THEOREM_LIST.");
+H("");
 
 
 printHelp = !strcmp(helpCmd, "HELP SUBMIT");
@@ -473,13 +505,15 @@ H("normal user interface mode.");
 
 
 printHelp = !strcmp(helpCmd, "HELP SYSTEM");
-H("A line enclosed in quotes will be executed by your computer's operating");
-H("system, if it has such a feature.  For example, on a VAX/VMS system,");
-H("    MM> 'dir'");
-H("will print disk directory contents.  Note that this feature will not work");
-H("on the Macintosh, which does not have a command line interface.");
+H("A line enclosed in single or double quotes will be executed by your");
+H("computer's operating system, if it has such a feature.  For example, on a");
+H("Unix system,");
+H("    MM> 'ls | more'");
+H("will list disk directory contents.  Note that this feature will not work");
+H("on the pre-OSX Macintosh, which does not have a command line interface.");
 H("");
-H("For your convenience, the trailing quote is optional.");
+H("For your convenience, the trailing quote is optional, for example:");
+H("    MM> 'ls | more");
 H("");
 
 
@@ -493,13 +527,13 @@ H("See also:  HELP PROOF_ASSISTANT and HELP EXIT");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP FILE TYPE");
-H("Syntax:  FILE TYPE <filename> [/ FROM_LINE <number>] [/ TO_LINE <number>]");
+printHelp = !strcmp(helpCmd, "HELP MORE");
+H("Syntax:  MORE <filename>");
 H("");
 H("This command will type (i.e. display) the contents of an ASCII file on");
-H("your screen, within an optional range of line numbers.  (This command");
-H("is deprecated.  See HELP SYSTEM to invoke your operating system's");
-H("equivalent command, such as \"less\" in Linux.)");
+H("your screen.  (This command is provided for convenience but is not very");
+H("powerful.  See HELP SYSTEM to invoke your operating system's command to");
+H("do this, such as \"less\" in Linux.)");
 H("");
 
 
@@ -522,11 +556,12 @@ H("Optional qualifier:");
 H("");
 H("    / CLEAN - Suppresses the output of any theorem that has been flagged");
 H("        with a question mark (?) placed in the date comment field at the");
-H("        end of the proof, for example \"$([?31-Oct-00]$)\".  This lets you");
-H("        flag proofs under development so that a \"clean\" version can be");
-H("        generated for presentation or distribution purposes.  Note:");
-H("        Hypotheses are not suppressed, only $p statements.  Spurious date");
-H("        comment fields of the suppressed theorems may also remain.");
+H("        end of its proof, for example \"$( [?31-Oct-00] $)\".  This lets");
+H("        you strip out proofs under development so that a \"clean\"");
+H("        version of the database can be generated for official release.");
+H("        Note:  Hypotheses are not stripped, only $p statements.");
+H("        Spurious date comment fields of the suppressed theorems may also");
+H("        remain.");
 H("");
 H("This command will write the contents of the Metamath database into a file.");
 H("Note:  The present version of Metamath will not split the database into");
@@ -538,13 +573,16 @@ printHelp = !strcmp(helpCmd, "HELP WRITE THEOREM_LIST");
 H("Syntax:  WRITE THEOREM_LIST");
 H("");
 H("Optional qualifier:");
-H("    / THEOREMs_PER_PAGE <number> - specifies the number of theorems to");
+H("    / THEOREMS_PER_PAGE <number> - specifies the number of theorems to");
 H("        write per output file");
 H("");
 H("This command writes a list of the theorems in the database into files");
 H("called \"mmtheorems.html\", \"mmtheorems2.html\", \"mmtheorems3.html\",");
 H("etc.  If / THEOREMS_PER_PAGE is omitted, the number of theorems (and other");
 H("statements) per page defaults to 100.");
+H("[Note:  As of 15-Aug-04, do not use THEOREMS_PER_PAGE because the list");
+H("will become out of sync with the individual page \"Theorem List\" links.");
+H("A to-do item is to fix this.]");
 H("");
 
 printHelp = !strcmp(helpCmd, "HELP WRITE BIBLIOGRAPHY");
@@ -554,7 +592,7 @@ H("This command reads an HTML bibliographic cross-reference file, normally");
 H("called \"mmbiblio.html\", and updates it per the bibliographic links in");
 H("the database comments.  The file is updated between the HTML comment");
 H("lines \"<!-- #START# -->\" and \"<!-- #END# -->\".  A name in brackets");
-H("in the database comments is assumed to be a bibliographic reference, and");
+H("in a database comment is assumed to be a bibliographic reference, and");
 H("this command searches backwards in the comment for a keyword such as");
 H(" \"Theorem\" and forwards for a page number.  Example: \"Theorem 3.1 of");
 H("[Monk] p. 22\". (See the \"set.mm\" database file for examples.  The");
@@ -581,19 +619,21 @@ printHelp = !strcmp(helpCmd, "HELP ASSIGN");
 H("Syntax:  ASSIGN <step> <label>");
 H("         ASSIGN LAST <label>");
 H("");
+H("Optional qualifier:");
+H("    / NO_UNIFY - do not prompt user to select a unification if there is");
+H("        more than one possibility.  This is useful for noninteractive");
+H("        command files.  Later, the user can UNIFY ALL / INTERACTIVE.  (The");
+H("        assignment will still be automatically unified if there is only");
+H("        possibility.)");
+H("");
 H("This command, available in the Proof Assistant only, assigns an unknown");
 H("step (one with ? in the SHOW NEW_PROOF listing) with the statement");
 H("specified by <label>.  The assignment will not be allowed if the");
-H("statement cannot be unified with the step.  To see what statements may be");
-H("unified with the step, you may use the MATCH command.");
+H("statement cannot be unified with the step.");
 H("");
 H("If LAST is specified instead of <step> number, the last step that is shown");
-H("by SHOW NEW_PROOF /ESSENTIAL /UNKNOWN will be used.  This can be useful for");
-H("building a proof with a command file (see HELP SUBMIT).  Note that");
-H("interactive unification is not done after ASSIGN LAST, so the UNIFY ALL");
-H("/INTERACTIVE may have to used after ASSIGN LAST.  (The reason is to");
-H("provide predictable responses when SUBMIT command files are run using");
-H("ASSIGN LAST to reconstruct parts of proofs.)");
+H("by SHOW NEW_PROOF / UNKNOWN will be used.  This can be useful for building");
+H("a proof with a command file (see HELP SUBMIT).");
 H("");
 
 printHelp = !strcmp(helpCmd, "HELP REPLACE");
@@ -664,21 +704,23 @@ H("    / INTERACTIVE - You will be prompted to select among the unifications");
 H("        that are possible for any steps that do not have unique");
 H("        unifications.");
 H("");
-H("See also SET UNIFICATION_TIMEOUT.  The default is 1000, but increasing it");
-H("to 10000 can help difficult cases.  The LET VARIABLE command to manually");
-H("assign unknown variables also helps difficult cases.");
+H("See also SET UNIFICATION_TIMEOUT.  The default is 100000, but increasing");
+H("it to 1000000 can help difficult cases.  The LET VARIABLE command to");
+H("manually assign unknown variables also helps difficult cases.");
 H("");
 
 
 printHelp = !strcmp(helpCmd, "HELP INITIALIZE");
-H("Syntax:  INITIALIZE STEP <step>");
-H("         INITIALIZE ALL");
+H("Syntax:  INITIALIZE ALL");
+H("         INITIALIZE STEP <step>");
 H("");
 H("These commands, available in the Proof Assistant only, \"de-unify\" the");
 H("target and source of a step (or all steps), as well as the hypotheses of");
-H("the source, and makes all variables in the source and the source's");
-H("hypotheses unknown.  This command is useful to help recover when a");
-H("mistake resulted in incorrect unifications.");
+H("the source, and make all variables in the source and the source's");
+H("hypotheses unknown.  This command is useful to help recover when an");
+H("ASSIGN mistake resulted in incorrect unifications.  After you DELETE the");
+H("incorrect ASSIGN, use INITIALIZE ALL then UNIFY ALL / INTERACTIVE to");
+H("recover the state before the mistake.");
 H("");
 H("See also:  UNIFY and DELETE");
 H("");
@@ -701,16 +743,18 @@ H("an INITIALIZE command to recover from an error.  Note that once a proof");
 H("step with a $f hypothesis as the target is completely known, the IMPROVE");
 H("command can usually fill in the proof for that step.");
 H("");
+H("Warning:  There is currently no \"undo\" from DELETE.  Save your work!");
+H("");
 
 
 printHelp = !strcmp(helpCmd, "HELP IMPROVE");
-H("Syntax:  IMPROVE STEP <step> [/ DEPTH <number>]");
-H("         IMPROVE ALL [/ DEPTH <number>]");
-H("         IMPROVE LAST [/ DEPTH <number>]");
+H("Syntax:  IMPROVE STEP <step> [/ DEPTH <number>] [/ NO_DISTINCT]");
+H("         IMPROVE ALL [/ DEPTH <number>] [/ NO_DISTINCT]");
+H("         IMPROVE LAST [/ DEPTH <number>] [/ NO_DISTINCT]");
 H("");
 H("These commands, available in the Proof Assistant only, try to");
-H("automatically find proofs for unknown steps whose symbol sequences are");
-H("completely known.  It is primarily useful for filling in proofs of $f");
+H("find proofs automatically for unknown steps whose symbol sequences are");
+H("completely known.  They are primarily useful for filling in proofs of $f");
 H("hypotheses.  The search will be restricted to statements having no $e");
 H("hypotheses.");
 H("");
@@ -724,6 +768,9 @@ H("        hypotheses), provided that the backtracking has not exceeded the");
 H("        specified depth.  **WARNING**:  Try DEPTH 1, then 2, then 3, etc");
 H("        in sequence because of possible exponential blowups.  Save your");
 H("        work before trying DEPTH greater than 1!!!");
+H("    / NO_DISTINCT - Skip trial statements that have $d requirements.");
+H("        This qualifier will prevent assignments that might violate $d");
+H("        requirements but it also could miss possible legal assignments.");
 H("");
 H("Note:  If memory is limited, IMPROVE ALL on a large proof may overflow");
 H("memory.  If you use SET UNIFICATION_TIMEOUT 1 before IMPROVE ALL,");
@@ -740,9 +787,9 @@ printHelp = !strcmp(helpCmd, "HELP MINIMIZE_WITH");
 H("Syntax:  MINIMIZE_WITH <label> [/ BRIEF] [/ ALLOW_GROWTH] [/ NO_DISTINCT]");
 H("");
 H("This command, available in the Proof Assistant only, checks whether");
-H("the proof can be shortened by using statements matching <label>, and");
-H("if so, shortens the proof.  <label> can contain wildcards (*) to test");
-H("more than one statement, but each statement is still tested");
+H("the proof can be shortened by using earlier $p or $a statements matching");
+H("<label>, and if so, shortens the proof.  <label> can contain wildcards");
+H("(*) to test more than one statement, but each statement is still tested");
 H("independently from the others.  Warning:  MINIMIZE_WITH does not check");
 H("for $d violations, so SAVE PROOF then VERIFY PROOF should be run");
 H("afterwards to check for them.");
