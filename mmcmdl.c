@@ -91,8 +91,9 @@ flag processCommandLine(void)
       }
       if (cmdMatches("HELP SET")) {
         if (!getFullArg(2, cat(
-            "ECHO|SCROLL|SCREEN_WIDTH|UNIFICATION_TIMEOUT|",
-            "EMPTY_SUBSTITUTION|SEARCH_LIMIT|<ECHO>",NULL)))
+            "ECHO|SCROLL|WIDTH|HEIGHT|UNIFICATION_TIMEOUT|",
+            "EMPTY_SUBSTITUTION|SEARCH_LIMIT|JEROME_HENTY_FILTER|<ECHO>",
+            NULL)))
             goto pclbad;
         goto pclgood;
       }
@@ -982,9 +983,9 @@ flag processCommandLine(void)
     if (cmdMatches("SET")) {
       let(&tmpStr, cat(
           /*"ECHO|SCROLL|UNIVERSE|",*/
-          "SCREEN_WIDTH|ECHO|SCROLL|",
+          "WIDTH|HEIGHT|ECHO|SCROLL|",
           "DEBUG|MEMORY_STATUS|SEARCH_LIMIT|UNIFICATION_TIMEOUT|",
-          "EMPTY_SUBSTITUTION|HENTY_FILTER|<SCREEN_WIDTH>",NULL));
+          "EMPTY_SUBSTITUTION|JEROME_HENTY_FILTER|<WIDTH>",NULL));
       if (!getFullArg(1,tmpStr)) goto pclbad;
       if (cmdMatches("SET DEBUG")) {
         if (!getFullArg(2,"FLAG|OFF|<OFF>")) goto pclbad;
@@ -1022,7 +1023,7 @@ flag processCommandLine(void)
       }
 
 
-      if (cmdMatches("SET HENTY_FILTER")) {
+      if (cmdMatches("SET JEROME_HENTY_FILTER")) {
         if (hentyFilter) {
           if (!getFullArg(2,"ON|OFF|<OFF>")) goto pclbad;
         } else {
@@ -1048,10 +1049,18 @@ flag processCommandLine(void)
         goto pclgood;
       }
 
-      if (cmdMatches("SET SCREEN_WIDTH")) {
+      if (cmdMatches("SET WIDTH")) {
         if (!getFullArg(2, cat(
            "# What is maximum line length on your screen <",
             str(screenWidth), ">? ", NULL)))
+          goto pclbad;
+        goto pclgood;
+      }
+
+      if (cmdMatches("SET HEIGHT")) {
+        if (!getFullArg(2, cat(
+           "# What is number of lines your screen displays <",
+            str(screenHeight), ">? ", NULL)))
           goto pclbad;
         goto pclgood;
       }

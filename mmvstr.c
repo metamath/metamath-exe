@@ -16,8 +16,19 @@ This is a collection of useful built-in string functions available in VMS BASIC.
 #include <time.h>
 #include <ctype.h>
 #include "mmvstr.h"
-/*E*/ /*Next line is need to declare "db" for debugging only:*/
+/*E*/ /*Next line is need to declare "db" for debugging*/
 #include "mmdata.h"
+/* 1-Dec-05 nm
+   mmdata.h is also used to declare the bug() function that is called in
+   several places by mmvstr.c.  To make mmvstr.c and mmvstr.h completely
+   independent of the other programs, for use with another project, do the
+   following:
+     (1) Remove all lines beginning with the "/ *E* /" comment.
+     (2) Remove all calls to the bug() function (6 places).
+   To see an example of stand-alone usage of the mmvstr.c functions, see
+   the program lattice.c and several others included in
+     http://us.metamath.org/downloads/quantum-logic.tar.gz
+*/
 
 /* Remaining prototypes (outside of mmvstr.h) */
 char *tempAlloc(long size);     /* String memory allocation/deallocation */

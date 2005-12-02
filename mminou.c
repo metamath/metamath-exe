@@ -53,7 +53,10 @@ vstring commandFileName = "";
 FILE *inputDef_fp,*input_fp,*output_fp; /* File pointers */
 vstring inputDef_fn="",input_fn="",output_fn="";        /* File names */
 
-long screenWidth = 79; /* Screen width */
+long screenWidth = MAX_LEN; /* Width default = 79 */
+/* screenHeight is one less than the physical screen to account for the
+   prompt line after pausing. */
+long screenHeight = SCREEN_HEIGHT; /* Default = 23 */ /* 18-Nov-05 nm */
 int printedLines = 0; /* Lines printed since last user input (mod scrn hght) */
 flag scrollMode = 1; /* Flag for continuous (0) or prompted (1) scroll */
 flag quitPrint = 0; /* Flag that user quit the output */
@@ -95,7 +98,8 @@ flag print2(char* fmt,...)
 
   if ((!quitPrint && !commandFileOpenFlag && (scrollMode == 1
            && localScrollMode == 1)
-      && printedLines >= SCREEN_HEIGHT && !outputToString)
+      /* 18-Nov-05 nm - now a variable settable with SET HEIGHT */
+      && printedLines >= /*SCREEN_HEIGHT*/ screenHeight && !outputToString)
       || backFromCmdInput) {
     /* It requires a scrolling prompt */
     while(1) {
@@ -259,7 +263,8 @@ flag print2(char* fmt,...)
         /* Even in non-scroll (continuous output) mode, still put paged-mode
            lines into backBuffer in case user types a "B" command later,
            so user can page back from end. */
-        if (printedLines > SCREEN_HEIGHT) {
+        /* 18-Nov-05 nm - now a variable settable with SET HEIGHT */
+        if (printedLines > /*SCREEN_HEIGHT*/ screenHeight) {
           printedLines = 1;
           backBufferPos++;
           pntrLet(&backBuffer, pntrAddElement(backBuffer));

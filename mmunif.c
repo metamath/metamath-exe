@@ -770,7 +770,10 @@ char unify(
     mToken = mathToken[substitution[k]].tokenName;
     if (mToken[0] == '(' && mToken[1] == 0 ) pairingMismatches++;
     else
-      if (mToken[0] == ')' && mToken[1] == 0 ) pairingMismatches--;
+      if (mToken[0] == ')' && mToken[1] == 0 ) {
+        pairingMismatches--;
+        if (pairingMismatches < 0) break; /* 15-Nov-05 nm Detect wrong order */
+      }
   } /* Next k */
   if (pairingMismatches) {
     goto backtrack;
@@ -782,22 +785,60 @@ char unify(
     mToken = mathToken[substitution[k]].tokenName;
     if (mToken[0] == '{' && mToken[1] == 0 ) pairingMismatches++;
     else
-      if (mToken[0] == '}' && mToken[1] == 0 ) pairingMismatches--;
+      if (mToken[0] == '}' && mToken[1] == 0 ) {
+        pairingMismatches--;
+        if (pairingMismatches < 0) break; /* 15-Nov-05 nm Detect wrong order */
+      }
+  } /* Next k */
+  if (pairingMismatches) {
+    goto backtrack;
+  }
+
+  /* Make sure left and right brackets match */  /* Added 12-Nov-05 nm */
+  pairingMismatches = 0; /* Counter of brackets: + for "[" and - for "]" */
+  for (k = 0; k < j; k++) {
+    mToken = mathToken[substitution[k]].tokenName;
+    if (mToken[0] == '[' && mToken[1] == 0 )
+      pairingMismatches++;
+    else
+      if (mToken[0] == ']' && mToken[1] == 0 ) {
+        pairingMismatches--;
+        if (pairingMismatches < 0) break; /* 15-Nov-05 nm Detect wrong order */
+      }
   } /* Next k */
   if (pairingMismatches) {
     goto backtrack;
   }
 
   /* Make sure left and right triangle brackets match */
-  pairingMismatches = 0; /* Counter of parentheses: + for "<." and - for ">." */
+  pairingMismatches = 0; /* Counter of brackets: + for "<.", - for ">." */
   for (k = 0; k < j; k++) {
     mToken = mathToken[substitution[k]].tokenName;
     if (mToken[1] == 0) continue;
     if (mToken[0] == '<' && mToken[1] == '.' && mToken[2] == 0 )
         pairingMismatches++;
     else
-      if (mToken[0] == '>' && mToken[1] == '.' && mToken[2] == 0 )
-          pairingMismatches--;
+      if (mToken[0] == '>' && mToken[1] == '.' && mToken[2] == 0 ) {
+        pairingMismatches--;
+        if (pairingMismatches < 0) break; /* 15-Nov-05 nm Detect wrong order */
+      }
+  } /* Next k */
+  if (pairingMismatches) {
+    goto backtrack;
+  }
+
+  /* Make sure underlined brackets match */  /* Added 12-Nov-05 nm */
+  pairingMismatches = 0; /* Counter of brackets: + for "[_", - for "]_" */
+  for (k = 0; k < j; k++) {
+    mToken = mathToken[substitution[k]].tokenName;
+    if (mToken[1] == 0) continue;
+    if (mToken[0] == '[' && mToken[1] == '_' && mToken[2] == 0 )
+        pairingMismatches++;
+    else
+      if (mToken[0] == ']' && mToken[1] == '_' && mToken[2] == 0 ) {
+        pairingMismatches--;
+        if (pairingMismatches < 0) break; /* 15-Nov-05 nm Detect wrong order */
+      }
   } /* Next k */
   if (pairingMismatches) {
     goto backtrack;

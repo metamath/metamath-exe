@@ -140,7 +140,8 @@ H("");
 H("Some additional CLI-related features are explained by:");
 H("    HELP SET ECHO");
 H("    HELP SET SCROLL");
-H("    HELP SET SCREEN_WIDTH");
+H("    HELP SET WIDTH");  /* 18-Nov-05 nm Was SCREEN_WIDTH */
+H("    HELP SET HEIGHT"); /* 18-Nov-05 nm New */
 H("    HELP SUBMIT");
 H("");
 
@@ -413,16 +414,27 @@ H("scrolled without pausing.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP SET SCREEN_WIDTH");
-H("Syntax:  SET SCREEN_WIDTH <number>");
+printHelp = !strcmp(helpCmd, "HELP SET WIDTH"); /* 18-Nov-05 nm Revised */
+H("Syntax:  SET WIDTH <number>");
 H("");
 H("Metamath assumes the width of your screen is 79 characters.  If your");
-H("screen is wider or narrower, this command allows you to change the screen");
+H("screen is wider or narrower, this command lets you to change the screen");
 H("width.  A larger width is advantageous for logging proofs to an output");
 H("file to be printed on a wide printer.  A smaller width may be necessary");
 H("on some terminals; in this case, the wrapping of the information");
 H("messages may sometimes seem somewhat unnatural, however.  In LaTeX, there");
 H("is normally a maximum of 61 characters per line with typewriter font.");
+H("");
+H("Note:  This command was SET SCREEN_WIDTH prior to Version 0.07.9.");
+H("");
+
+
+printHelp = !strcmp(helpCmd, "HELP SET HEIGHT"); /* 18-Nov-05 nm New */
+H("Syntax:  SET HEIGHT <number>");
+H("");
+H("Metamath assumes your screen height is 24 lines of characters.  If your");
+H("screen is taller or shorter, this command lets you to change the number");
+H("of lines at which the display pauses and prompts you to continue.");
 H("");
 
 
@@ -469,6 +481,18 @@ H("This command sets a parameter that determines when the IMPROVE command");
 H("in Proof Assistant mode gives up.  If you want IMPROVE to search harder,");
 H("you may increase it.  The SHOW SETTINGS command tells you its current");
 H("value.");
+H("");
+
+
+printHelp = !strcmp(helpCmd, "HELP SET JEROME_HENTY_FILTER");
+H("Syntax:  SET JEROME_HENTY_FILTER ON or SET JEROME_HENTY_FILTER OFF");
+H("");
+H("(This command affects the Proof Assistant only.)");
+H("");
+H("The \"Henty filter\" is an ingenious algorithm suggested by Jerome Henty");
+H("that reduces the number of ambiguous unifications by eliminating");
+H("\"equivalent\" ones in a sense defined by Henty.  Normally this filter");
+H("is ON, and the only reason to turn it off would be for debugging.");
 H("");
 
 

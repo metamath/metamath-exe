@@ -4,7 +4,17 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.07.6 15-Oct-05"
+#define MVERSION "0.07.9 1-Dec-05"
+/* 0.07.9 1-Dec-05 nm mmvstr.c - added comment on how to make portable */
+/* 0.07.9 18-Nov-05 nm metamath.c, mminou.c, mminou.h, mmcmdl.c, mmhlpb.c -
+   added SET HEIGHT command; changed SET SCREEN_WIDTH to SET WIDTH; changed
+   SET HENTY_FILTER to SET JEROME_HENTY_FILTER (to make H for HEIGHT
+   unambiguous); added HELP for SET JEROME_HENTY_FILTER */
+/* 0.07.8 15-Nov-05 nm mmunif.c - now detects wrong order in bracket matching
+   to further reduce ambiguous unifications in Proof Assistant */
+/* 0.07.7 12-Nov-05 nm mmunif.c - add "[","]" and "[_","]_" bracket matching
+   heuristic to reduce ambiguous unifications in Proof Assistant.
+   mmwtex.c - added heuristic for HTML spacing after "sum_" token. */
 /* 0.07.6 15-Oct-05 nm mmcmds.c,mmpars.c - fixed compressed proof algorithm
    to match spec in book (with new algorithm due to Marnix Klooster).
    Users are warned to convert proofs when the old compression is found. */
@@ -2518,7 +2528,9 @@ void command(int argc, char *argv[])
       } else {
         print2("(SET SCROLL...) SCROLLing mode is CONTINUOUS.\n");
       }
-      print2("(SET SCREEN_WIDTH...) SCREEN_WIDTH is %ld.\n", screenWidth);
+      print2("(SET WIDTH...) Screen display WIDTH is %ld.\n", screenWidth);
+      print2("(SET HEIGHT...) Screen display HEIGHT is %ld.\n",
+          screenHeight + 1);
       if (strlen(input_fn)) {
         print2("(READ...) %ld statements have been read from '%s'.\n",
           statements, input_fn);
@@ -2530,19 +2542,25 @@ void command(int argc, char *argv[])
             statement[proveStatement].labelName);
       }
       print2(
-   "(SET UNIFICATION_TIMEOUT...) The unification timeout parameter is %ld.\n",
+    "(SET UNIFICATION_TIMEOUT...) The unification timeout parameter is %ld.\n",
           userMaxUnifTrials);
       print2(
-   "(SET SEARCH_LIMIT...) The SEARCH_LIMIT for the IMPROVE command is %ld.\n",
+    "(SET SEARCH_LIMIT...) The SEARCH_LIMIT for the IMPROVE command is %ld.\n",
           userMaxProveFloat);
       if (minSubstLen) {
         print2(
-    "(SET EMPTY_SUBSTITUTION...) EMPTY_SUBSTITUTION is not allowed (OFF).\n");
+     "(SET EMPTY_SUBSTITUTION...) EMPTY_SUBSTITUTION is not allowed (OFF).\n");
       } else {
         print2(
-         "(SET EMPTY_SUBSTITUTION...) EMPTY_SUBSTITUTION is allowed (ON).\n");
+          "(SET EMPTY_SUBSTITUTION...) EMPTY_SUBSTITUTION is allowed (ON).\n");
       }
-
+      if (hentyFilter) { /* 18-Nov-05 nm Added to the SHOW listing */
+        print2(
+              "(SET JEROME_HENTY_FILTER...) The Henty filter is turned ON.\n");
+      } else {
+        print2(
+             "(SET JEROME_HENTY_FILTER...) The Henty filter is turned OFF.\n");
+      }
       if (showStatement) {
         print2("(SHOW...) The default statement for SHOW commands is '%s'.\n",
             statement[showStatement].labelName);
@@ -4402,8 +4420,8 @@ void command(int argc, char *argv[])
     }
 
 
-    if (cmdMatches("SET HENTY_FILTER")) {
-      if (cmdMatches("SET HENTY_FILTER ON")) {
+    if (cmdMatches("SET JEROME_HENTY_FILTER")) {
+      if (cmdMatches("SET JEROME_HENTY_FILTER ON")) {
         print2("The unification equivalence filter has been turned on.\n");
         print2("This command is intended for debugging purposes only.\n");
         hentyFilter = 1;
@@ -4442,7 +4460,7 @@ void command(int argc, char *argv[])
       continue;
     }
 
-    if (cmdMatches("SET SCREEN_WIDTH")) {
+    if (cmdMatches("SET WIDTH")) { /* 18-Nov-85 nm Was SCREEN_WIDTH */
       s = val(fullArg[2]); /* Screen width value */
       if (s >= PRINTBUFFERSIZE - 1) {
         print2(
@@ -4454,6 +4472,18 @@ void command(int argc, char *argv[])
       print2("Screen width has been changed from %ld to %ld\n",
           screenWidth, s);
       screenWidth = s;
+      continue;
+    }
+
+
+    if (cmdMatches("SET HEIGHT")) {  /* 18-Nov-05 nm Added */
+      s = val(fullArg[2]); /* Screen height value */
+      if (s < 2) s = 2;  /* Less than 2 makes no sense */
+      print2("Screen height has been changed from %ld to %ld\n",
+          screenHeight + 1, s);
+      /* screenHeight is one less than the physical screen to account for the
+         prompt line after pausing. */
+      screenHeight = s - 1;
       continue;
     }
 

@@ -2403,9 +2403,9 @@ void writeTheoremList(long theoremsPerPage)
       print2("\n");
       print2("<TD>Color key:&nbsp;&nbsp;&nbsp;</TD>\n");
       print2("<TD BGCOLOR=%s NOWRAP><A\n", MINT_BACKGROUND_COLOR);
-      print2("HREF=\"mmset.html\"><IMG SRC=\"mm.gif\" BORDER=0 ALT=\"Metamath Proof\n");
-      print2("Explorer\" HEIGHT=32 WIDTH=32 ALIGN=MIDDLE> &nbsp;Metamath Proof\n");
-      print2("Explorer</A>\n");
+      print2("HREF=\"mmset.html\"><IMG SRC=\"mm.gif\" BORDER=0\n");
+      print2("ALT=\"Metamath Proof Explorer\" HEIGHT=32 WIDTH=32\n");
+      print2("ALIGN=MIDDLE> &nbsp;Metamath Proof Explorer</A>\n");
 
       let(&str3, "");
       str3 = pinkRangeHTML(nmbrStmtNmbr[1],
@@ -3009,6 +3009,8 @@ vstring getTexLongMath(nmbrString *mathString)
               || !strcmp(mathToken[mathString[pos - 4]].tokenName, "A.")
               /* 6-Apr-04 nm - indexed E! */
               || !strcmp(mathToken[mathString[pos - 4]].tokenName, "E!")
+              /* 12-Nov-05 nm - finite sums */
+              || !strcmp(mathToken[mathString[pos - 4]].tokenName, "sum_")
               /* 23-Jan-04 nm - indexed union, intersection */
               || !strcmp(mathToken[mathString[pos - 4]].tokenName, "U_")
               || !strcmp(mathToken[mathString[pos - 4]].tokenName, "|^|_"))

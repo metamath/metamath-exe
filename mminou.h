@@ -28,9 +28,10 @@ extern vstring inputDef_fn,input_fn,output_fn;  /* File names */
 /* Warning:  never call print2 with string longer than PRINTBUFFERSIZE - 1 */
 /* print2 returns 0 if the user has quit the printout. */
 flag print2(char* fmt,...);
+extern long screenHeight; /* Height of screen */ /* 18-Nov-05 nm Added */
 extern long screenWidth; /* Width of screen */
 #define MAX_LEN 79 /* Default width of screen */
-#define SCREEN_HEIGHT 23 /* Lines on screen */
+#define SCREEN_HEIGHT 23 /* Lines on screen, minus 1 to account for prompt */
 extern flag scrollMode; /* Flag for continuous or prompted scroll */
 extern flag quitPrint; /* Flag that user typed 'q' to last scrolling prompt */
 
