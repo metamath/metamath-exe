@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2006  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -161,8 +161,11 @@ extern struct nullPntrStruct pntrNull;
 
 
 /* This function returns a 1 if the first argument matches the pattern of
-   the second argument.  The second argument may have '*' wildcard characters.*/
-flag matches(vstring testString, vstring pattern, char wildCard);
+   the second argument.  The second argument may have 0-or-more and
+   exactly-1 character match wildcards, typically '*' and '?'.*/
+/* 30-Jan-06 nm Added single-character-match argument */
+flag matches(vstring testString, vstring pattern, char wildCard,
+    char oneCharWildCard);
 
 
 

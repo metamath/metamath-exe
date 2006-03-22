@@ -1,11 +1,25 @@
 /*****************************************************************************/
-/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2006  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
 /* This file implements the TAG command of the TOOLS utility.  revise() is
    the main external call; see the comments preceding it. */
+
+/* The TAG command of TOOLS (mmword.c) was custom-written in accordance
+   with the version control requirements of a company that used it.  It
+   documents the differences between two versions of a program as C-style
+   comments embedded in the newer version.  The best way to determine whether
+   it suits your similar needs is just to run it and look at its output. */
+
+/* Very old history: this was called mmword.c because it was intended to
+   produce RTF output for Word, analogous to the existing LaTeX output.
+   Microsoft never responded to a request for the RTF specification, as they
+   promised in the circa 1990 manual accompanying Word.  Thus it remained an
+   empty shell.  When the need for TAG arose, the mmword.c shell was used in
+   order to avoid the nuisance of changing some compilation setups and scripts
+   existing at that time. */
 
 #include <string.h>
 #include <stdio.h>
@@ -28,7 +42,7 @@
 
 
 /* These two functions emulate 2 GOSUBs in BASIC, that are part of a
-   translation of a very old BASIC program that implemented a
+   translation of a very old BASIC program (by nm) that implemented a
    difference algorithm (like Unix diff). */
 void gosub_7320();
 void gosub_7330();

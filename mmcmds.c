@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2006  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -23,7 +23,7 @@
 #include "mmwtex.h" /* For htmlVarColors,... */
 #include "mmpfas.h"
 
-vstring mainFileName = "";
+/* vstring mainFileName = ""; */ /* 28-Dec-05 nm Obsolete */
 flag printHelp = 0;
 
 /* For HTML output */
@@ -2810,10 +2810,10 @@ double countSteps(long statemNum, flag essentialFlag)
        "the statement and subtheorems would have a total of ",
            str(actualSteps2), " steps.  ",
        /* 27-May-05 nm stepCount is inaccurate for over 16 or so digits due
-          to roundoff errors.
-       "The proof would have ", str(stepCount),
+          to roundoff errors. */
+       "The proof would have ",
+         stepCount > 1000000000 ? ">1000000000" : str(stepCount),
        " steps if fully expanded.  ",
-       */
        /*
        "The proof tree has ", str(stmtNodeCount[statemNum])," nodes.  ",
        "A random backtrack path has an average path length of ",
@@ -3032,12 +3032,14 @@ long getSourceIndentation(long statemNum) {
 void readInput(void)
 {
 
-  /* Temporary variables and strings */
+/* 28-Dec-05 nm Obsolete---
+  /@ Temporary variables and strings @/
   long p;
 
   p = instr(1,input_fn,".") - 1;
   if (p == -1) p = len(input_fn);
   let(&mainFileName,left(input_fn,p));
+--- 28-Dec-05 nm End obsolete */
 
   print2("Reading source file \"%s\"...\n",input_fn);
 
@@ -3322,7 +3324,8 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
     }
 
     if (statement[i].type != p__) continue;
-    if (!matches(statement[i].labelName, labelMatch, '*')) continue;
+    /* 30-Jan-06 nm Added single-character-match argument */
+    if (!matches(statement[i].labelName, labelMatch, '*', '?')) continue;
     if (strcmp("*",labelMatch) && verifyFlag) {
       /* If not *, print individual labels */
       lineLen = lineLen + strlen(statement[i].labelName) + 1;

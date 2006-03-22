@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2006  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -834,14 +834,14 @@ flag processCommandLine(void)
 
     if (cmdMatches("IMPROVE")) {
       if (!getFullArg(1,
-          "STEP|ALL|LAST|<ALL>")) goto pclbad;
+          "STEP|ALL|FIRST|LAST|<ALL>")) goto pclbad;
 
       if (cmdMatches("IMPROVE STEP")) {
         if (!getFullArg(2,"# What step number? ")) goto pclbad;
       }
       if (cmdMatches("IMPROVE STEP") || cmdMatches("IMPROVE ALL")
-          || cmdMatches("IMPROVE LAST")) {
-
+          || cmdMatches("IMPROVE LAST") || cmdMatches("IMPROVE FIRST")) {
+                                                            /* 11-Dec-05 nm */
         /* Get switches */
         if (cmdMatches("IMPROVE STEP")) {
           i = 2;
@@ -881,8 +881,16 @@ flag processCommandLine(void)
         if (lastArgMatches("/")) {
           i++;
           if (!getFullArg(i,cat(
-              "BRIEF|ALLOW_GROWTH|NO_DISTINCT|<BRIEF>", NULL)))
+              "BRIEF|ALLOW_GROWTH|NO_DISTINCT|EXCEPT|<BRIEF>", NULL)))
+                                       /* 7-Jan-06 nm Added EXCEPT */
             goto pclbad;
+
+          /* 7-Jan-06 nm Added EXCEPT */
+          if (lastArgMatches("EXCEPT")) {
+            i++;
+            if (!getFullArg(i,"* What statement label? "))
+              goto pclbad;
+          }
         } else {
           break;
         }
@@ -956,7 +964,9 @@ flag processCommandLine(void)
     }
 
     if (cmdMatches("ASSIGN")) {
-      if (!getFullArg(1,"* What step number, or LAST <LAST>? ")) goto pclbad;
+      if (!getFullArg(1,
+          "* What step number, or FIRST, or LAST <LAST>? ")) goto pclbad;
+                                                             /* 11-Dec-05 nm */
       if (!getFullArg(2,"* With what statement label? ")) goto pclbad;
       /* Get any switches */
       i = 2;

@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2006  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -518,18 +518,30 @@ void bug(int bugNum)
 
 
 /* This function returns a 1 if the first argument matches the pattern of
-   the second argument.  The second argument may have '*' wildcard characters.*/
-flag matches(vstring testString, vstring pattern, char wildCard) {
+   the second argument.  The second argument may have wildcard characters.
+   wildCard matches 0 or more characters; oneCharWildCard matches any
+   single character. */
+/* 30-Jan-06 nm Added single-character-match wildcard argument */
+flag matches(vstring testString, vstring pattern, char wildCard,
+    char oneCharWildCard) {
 
   long i, ppos, pctr, tpos;
   /* Get to first wild card character */
   ppos = 0;
-  while (pattern[ppos] == testString[ppos] && pattern[ppos] != 0) ppos++;
+  /*if (wildCard!='*') printf("'%s' vs. '%s'\n", pattern, testString);*/
+  while ((pattern[ppos] == testString[ppos] ||
+          (pattern[ppos] == oneCharWildCard && testString[ppos] != 0))
+      && pattern[ppos] != 0) ppos++;
   if (pattern[ppos] == 0) {
-    if (testString[ppos] != 0) return (0); /* No wildcards; mismatched */
-    else return (1); /* No wildcards; matched */
+    if (testString[ppos] != 0) {
+      return (0); /* No wildcards; mismatched */
+    } else {
+      return (1); /* No wildcards; matched */
+    }
   }
-  if (pattern[ppos] != wildCard) return (0); /* Mismatched */
+  if (pattern[ppos] != wildCard) {
+    return (0); /* Mismatched */
+  }
   tpos = ppos;
 
   /* Scan remainder of pattern */
@@ -543,15 +555,22 @@ flag matches(vstring testString, vstring pattern, char wildCard) {
       pctr = 0;
       continue;
     }
-    if (pattern[ppos + 1 + i] != testString[tpos + pctr + i]) {
-      if (testString[tpos + pctr + i] == 0) return (0);
+    if (pattern[ppos + 1 + i] != testString[tpos + pctr + i]
+          && (pattern[ppos + 1 + i] != oneCharWildCard
+              || testString[tpos + pctr + i] == 0)) {
+      if (testString[tpos + pctr + i] == 0) {
+        return (0);
+      }
       pctr++;
       i = 0;
       continue;
     }
-    if (pattern[ppos + 1 + i] == 0) return(1); /* Matched */
+    if (pattern[ppos + 1 + i] == 0) {
+      return(1); /* Matched */
+    }
     i++;
   }
+  bug(1375);
   return (0); /* Dummy return - never used */
 }
 

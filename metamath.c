@@ -1,17 +1,28 @@
 /*****************************************************************************/
-/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
-/*            License terms:  GNU General Public License                     */
+/* Program name:  Metamath                                                   */
+/* Copyright (C) 2006 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
+/* License terms:  GNU General Public License Version 2 or any later version */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.07.9 1-Dec-05"
+#define MVERSION "0.07.14 21-Mar-06"
+/* 0.07.14 21-Mar-06 nm mmpars.c - fix bug 1722 when compressed proof has
+   "Z" at beginning of proof instead of after a proof step. */
+/* 0.07.13 3-Feb-06 nm mmpfas.c - minor improvement to MINIMIZE_WITH */
+/* 0.07.12 30-Jan-06 nm metamath.c, mmcmds.c, mmdata.c, mmdata.h, mmhlpa.c,
+   mmhlpb.c - added "?" wildcard to match single character. See HELP SEARCH. */
+/* 0.07.11 7-Jan-06 nm metamath.c, mmcmdl.c, mmhlpb.c - added EXCEPT qualifier
+   to MINIMIZE_WITH */
+/* 0.07.10 28-Dec-05 nm metamath.c, mmcmds.c - cosmetic tweaks */
+/* 0.07.10 11-Dec-05 nm metamath.c, mmcmdl.c, mmhlpb.c - added ASSIGN FIRST
+   and IMPROVE FIRST commands.  Also enhanced READ error message */
 /* 0.07.9 1-Dec-05 nm mmvstr.c - added comment on how to make portable */
 /* 0.07.9 18-Nov-05 nm metamath.c, mminou.c, mminou.h, mmcmdl.c, mmhlpb.c -
    added SET HEIGHT command; changed SET SCREEN_WIDTH to SET WIDTH; changed
    SET HENTY_FILTER to SET JEROME_HENTY_FILTER (to make H for HEIGHT
    unambiguous); added HELP for SET JEROME_HENTY_FILTER */
 /* 0.07.8 15-Nov-05 nm mmunif.c - now detects wrong order in bracket matching
-   to further reduce ambiguous unifications in Proof Assistant */
+   heuristic to further reduce ambiguous unifications in Proof Assistant */
 /* 0.07.7 12-Nov-05 nm mmunif.c - add "[","]" and "[_","]_" bracket matching
    heuristic to reduce ambiguous unifications in Proof Assistant.
    mmwtex.c - added heuristic for HTML spacing after "sum_" token. */
@@ -19,7 +30,7 @@
    to match spec in book (with new algorithm due to Marnix Klooster).
    Users are warned to convert proofs when the old compression is found. */
 /* 0.07.5 6-Oct-05 nm mmpars.c - fixed bug that reset "severe error in
-   proof" flag when proof also had unknown steps */
+   proof" flag when a proof with severe error also had unknown steps */
 /* 0.07.4 1-Oct-05 nm mmcmds.c - ignored bug 235, which could happen for
    non-standard logics */
 /* 0.07.3 17-Sep-05 nm mmpars.c - reinstated duplicate local label checking to
@@ -62,14 +73,18 @@
 /* ------------- Compilation Instructions ---------------------------------- */
 /*****************************************************************************/
 
-/* These are the instructions for the gcc compiler (standard under Linux, and
-   available on the web as the djgpp package for Windows).
-   1. Make sure each .c file is present in the compilation directory, and that
-      each .c file (except metamath.c) has its corresponding .h file present.
+/* These are the instructions for the gcc compiler (standard in Linux and
+   Cygwin for Windows).
+   1. Make sure each .c file above is present in the compilation directory and
+      that each .c file (except metamath.c) has its corresponding .h file
+      present.
    2. In the directory where these files are present, type:
-      For Linux:  gcc metamath.c mm*.c -o metamath
-      For Windows (in a DOS box):  gcc metamath.c mm*.c -o metamath.exe
-   3. For better speed, you may optionally include the -O switch after gcc.
+         gcc metamath.c m*.c -o metamath
+   3. For better speed and error checking, use these gcc options:
+         gcc m*.c -o metamath -O3 -funroll-loops -finline-functions \
+             -fomit-frame-pointer -Wall -ansi -pedantic
+   4. The Windows version in the download was compiled with LCC-Win32:
+         lc -O m*.c -o metamath.exe
 */
 
 
@@ -141,6 +156,13 @@ console_options.title = (unsigned char*)"\pMetamath";
 
   /****** If listMode is set to 1 here, the startup will be Text Tools
           utilities, and Metamath will be disabled ***************************/
+  /* (Historically, this mode was used for the creation of a stand-alone
+     "TOOLS>" utility for people not interested in Metamath.  This utility
+     was named "LIST.EXE", "tools.exe", and "tools" on VMS, DOS, and Unix
+     platforms respectively.  The TAG command of TOOLS (mmword.c) was custom-
+     written in accordance with the version control requirements of a company
+     that used it; it documents the differences between two versions of a
+     program as C-style comments embedded in the newer version.) */
   listMode = 0; /* Force Metamath mode as startup */
 
 
@@ -179,7 +201,7 @@ void command(int argc, char *argv[])
 
   /* The variables in command() are static so that they won't be destroyed
     by a longjmp return to setjmp. */
-  long i, j, k, m, l, n, p, q, s /*,tokenNum*/;
+  long e, i, j, k, m, l, n, p, q, s /*,tokenNum*/;
   vstring str1 = "", str2 = "", str3 = "", str4 = "";
   nmbrString *nmbrTmpPtr; /* Pointer only; not allocated directly */
   nmbrString *nmbrTmp = NULL_NMBRSTRING;
@@ -202,7 +224,7 @@ void command(int argc, char *argv[])
   flag reverseFlag;
   long detailStep;
   flag noIndentFlag; /* Flag to use non-indented display */
-  long splitColumn; /* Column at which formula starts in non-indented display */
+  long splitColumn; /* Column at which formula starts in nonindented display */
   flag texFlag; /* Flag for TeX */
   flag saveFlag; /* Flag to save in source */
   long indentation; /* Number of spaces to indent proof */
@@ -214,7 +236,8 @@ void command(int argc, char *argv[])
   long searchWindow; /* For SEARCH */
   FILE *type_fp; /* For TYPE, SEARCH */
   long maxEssential; /* For MATCH */
-  nmbrString *essentialFlags = NULL_NMBRSTRING; /* For ASSIGN/IMPROVE LAST */
+  nmbrString *essentialFlags = NULL_NMBRSTRING;
+                                            /* For ASSIGN/IMPROVE FIRST/LAST */
 
   flag texHeaderFlag; /* For OPEN TEX, CLOSE TEX */
   flag commentOnlyFlag; /* For SHOW STATEMENT */
@@ -498,7 +521,9 @@ void command(int argc, char *argv[])
       if (PFASmode) {
 
         if (proofChanged) {
-          print2("Warning:  You have not saved changes to the proof.\n");
+          print2(
+              "Warning:  You have not saved changes to the proof of \"%s\".\n",
+              statement[proveStatement].labelName); /* 21-Jan-06 nm */
           /* 17-Aug-04 nm Added / FORCE qualifier */
           if (switchPos("/ FORCE") == 0) {
             str1 = cmdInput1("Do you want to EXIT anyway (Y, N) <N>? ");
@@ -1276,8 +1301,11 @@ void command(int argc, char *argv[])
       if (statements) {
         printLongLine(cat(
             "?Sorry, reading of more than one source file is not allowed.  ",
+            "The file \"", input_fn, "\" has already been READ in.  ",
+                                                             /* 11-Dec-05 nm */
             "You may type ERASE to start over.  Note that additional source ",
-            "files may be included in the source file with \"$[ $]\".",
+        "files may be included in the source file with \"$[ <filename> $]\".",
+                                                             /* 11-Dec-05 nm */
             NULL),"  "," ");
         continue;
       }
@@ -1852,7 +1880,8 @@ void command(int argc, char *argv[])
                   "</TD><TD ALIGN=CENTER><A HREF=\"",
                   statement[s].labelName, ".html\">",
                   statement[s].labelName, "</A>",
-                  str4, "</TD><TD>", NULL),  /* Description */
+                  str4, "</TD><TD ALIGN=LEFT>", NULL),  /* Description */
+                              /* 28-Dec-05 nm Added ALIGN=LEFT for IE */
                 " ",  /* Start continuation line with space */
                 "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
 
@@ -2010,7 +2039,8 @@ void command(int argc, char *argv[])
           if (!statement[i].labelName[0]) continue; /* No label */
           if (!m && statement[i].type != (char)p__ &&
               statement[i].type != (char)a__) continue; /* No /ALL switch */
-          if (!matches(statement[i].labelName, fullArg[2], '*')) continue;
+          /* 30-Jan-06 nm Added single-character-match wildcard argument */
+          if (!matches(statement[i].labelName, fullArg[2], '*', '?')) continue;
           let(&str1,cat(str(i)," ",
               statement[i].labelName," $",chr(statement[i].type)," ",NULL));
 #define COL 19 /* Characters per column */
@@ -2150,7 +2180,8 @@ void command(int argc, char *argv[])
 
         if (s > 0) {
           if (!statement[s].labelName[0]) continue; /* No label */
-          if (!matches(statement[s].labelName, fullArg[2], '*')) continue;
+          /* 30-Jan-06 nm Added single-character-match wildcard argument */
+          if (!matches(statement[s].labelName, fullArg[2], '*', '?')) continue;
           if (statement[s].type != (char)a__
               && statement[s].type != (char)p__) continue;
         }
@@ -2471,12 +2502,15 @@ void command(int argc, char *argv[])
 
       for (s = 1; s <= statements; s++) {
         if (!statement[s].labelName[0]) continue; /* No label */
-        if (!matches(statement[s].labelName, fullArg[2], '*')) continue;
+        /* 30-Jan-06 nm Added single-character-match wildcard argument */
+        if (!matches(statement[s].labelName, fullArg[2], '*', '?')) continue;
         if (briefFlag || commentOnlyFlag || texFlag) {
           /* For brief or comment qualifier, if label has wildcards,
              show only $p and $a's */
+          /* 30-Jan-06 nm Added single-character-match wildcard argument */
           if (statement[s].type != (char)p__
-              && statement[s].type != (char)a__ && instr(1, fullArg[2], "*"))
+              && statement[s].type != (char)a__ && (instr(1, fullArg[2], "*")
+                  || instr(1, fullArg[2], "?")))
             continue;
         }
 
@@ -2828,7 +2862,8 @@ void command(int argc, char *argv[])
         /* If !pipFlag, get the next statement: */
         if (!pipFlag) {
           if (statement[s].type != (char)p__) continue; /* Not $p */
-          if (!matches(statement[s].labelName, labelMatch, '*')) continue;
+          /* 30-Jan-06 nm Added single-character-match wildcard argument */
+          if (!matches(statement[s].labelName, labelMatch, '*', '?')) continue;
           showStatement = s;
         }
 
@@ -3050,7 +3085,8 @@ void command(int argc, char *argv[])
         } else {
           /* Terminal output - display the statement if wildcard is used */
           if (!pipFlag) {
-            if (instr(1, labelMatch, "*")) {
+            /* 30-Jan-06 nm Added single-character-match wildcard argument */
+            if (instr(1, labelMatch, "*") || instr(1, labelMatch, "?")) {
               if (!print2("Proof of \"%s\":\n", statement[i].labelName))
                 break; /* Break for speedup if user quit */
             }
@@ -3497,13 +3533,18 @@ void command(int argc, char *argv[])
 
       /* 10/4/99 - Added LAST - this means the last unknown step shown
          with SHOW NEW_PROOF/ESSENTIAL/UNKNOWN */
+      /* 11-Dec-05 nm - Added FIRST - this means the first unknown step shown
+         with SHOW NEW_PROOF/ESSENTIAL/UNKNOWN */
       let(&str1, fullArg[1]); /* To avoid void pointer problems with fullArg */
-      if (toupper(str1[0]) == 'L') { /* "ASSIGN LAST" */
+      if (toupper(str1[0]) == 'L' || toupper(str1[0]) == 'F') {
+                                          /* "ASSIGN LAST" or "ASSIGN FIRST" */
+                                                             /* 11-Dec-05 nm */
         s = 1; /* Temporary until we figure out which step */
       } else {
         s = val(fullArg[1]); /* Step number */
         if (strcmp(fullArg[1], str(s))) {
-          print2("?Expected either a number or LAST after ASSIGN.\n");
+          print2("?Expected either a number or FIRST or LAST after ASSIGN.\n");
+                                                             /* 11-Dec-05 nm */
           continue;
         }
       }
@@ -3542,21 +3583,35 @@ void command(int argc, char *argv[])
         continue;
       }
 
-      /* 10/4/99 - For ASSIGN LAST command, figure out the last unknown
-         essential step */
-      if (toupper(str1[0]) == 'L') { /* "ASSIGN LAST" */
+      /* 10/4/99 - For ASSIGN FIRST/LAST command, figure out the last unknown
+         essential step */                      /* 11-Dec-05 nm - Added LAST */
+      if (toupper(str1[0]) == 'L' || toupper(str1[0]) == 'F') {
+                                /* "ASSIGN LAST or FIRST" */ /* 11-Dec-05 nm */
         /* Get the essential step flags */
-        nmbrLet(&essentialFlags, nmbrGetEssential(proofInProgress.proof));
-        /* Scan proof backwards until last essential unknown step is found */
         s = 0; /* Use as flag that step was found */
-        for (i = m; i >= 1; i--) {
-          if (essentialFlags[i - 1]
-              && proofInProgress.proof[i - 1] == -(long)'?') {
-            /* Found it */
-            s = i;
-            break;
-          }
-        } /* Next i */
+        nmbrLet(&essentialFlags, nmbrGetEssential(proofInProgress.proof));
+        if (toupper(str1[0]) == 'L') {
+          /* Scan proof backwards until last essential unknown step is found */
+          for (i = m; i >= 1; i--) {
+            if (essentialFlags[i - 1]
+                && proofInProgress.proof[i - 1] == -(long)'?') {
+              /* Found it */
+              s = i;
+              break;
+            }
+          } /* Next i */
+        } else {
+          /* 11-Dec-05 nm Added ASSIGN FIRST */
+          /* Scan proof forwards until first essential unknown step is found */
+          for (i = 1; i <= m; i++) {
+            if (essentialFlags[i - 1]
+                && proofInProgress.proof[i - 1] == -(long)'?') {
+              /* Found it */
+              s = i;
+              break;
+            }
+          } /* Next i */
+        }
         if (s == 0) {
           print2("?There are no unknown essential steps.\n");
           continue;
@@ -3795,11 +3850,13 @@ void command(int argc, char *argv[])
       if (switchPos("/ NO_DISTINCT")) p = 1; else p = 0;
                         /* p = 1 means don't try to use statements with $d's */
 
-      if (cmdMatches("IMPROVE STEP") || cmdMatches("IMPROVE LAST")) {
+      if (cmdMatches("IMPROVE STEP") || cmdMatches("IMPROVE LAST") ||
+          cmdMatches("IMPROVE FIRST")) {                     /* 11-Dec-05 nm */
 
         /* 10/4/99 - Added LAST - this means the last unknown step shown
            with SHOW NEW_PROOF/ESSENTIAL/UNKNOWN */
-        if (cmdMatches("IMPROVE LAST")) { /* "ASSIGN LAST" */
+        if (cmdMatches("IMPROVE LAST") || cmdMatches("IMPROVE FIRST")) {
+                               /* "IMPROVE LAST or FIRST" */ /* 11-Dec-05 nm */
           s = 1; /* Temporary until we figure out which step */
         } else {
           s = val(fullArg[2]); /* Step number */
@@ -3811,21 +3868,36 @@ void command(int argc, char *argv[])
           continue;
         }
 
-        /* 10/4/99 - For IMPROVE LAST command, figure out the last unknown
-           essential step */
-        if (cmdMatches("IMPROVE LAST")) {
+
+        /* 10/4/99 - For IMPROVE FIRST/LAST command, figure out the last
+           unknown essential step */           /* 11-Dec-05 nm - Added FIRST */
+        if (cmdMatches("IMPROVE LAST") || cmdMatches("IMPROVE FIRST")) {
+                               /* "IMPROVE LAST or FIRST" */ /* 11-Dec-05 nm */
           /* Get the essential step flags */
-          nmbrLet(&essentialFlags, nmbrGetEssential(proofInProgress.proof));
-          /* Scan proof backwards until last essential unknown step is found */
           s = 0; /* Use as flag that step was found */
-          for (i = m; i >= 1; i--) {
-            if (essentialFlags[i - 1]
-                && proofInProgress.proof[i - 1] == -(long)'?') {
-              /* Found it */
-              s = i;
-              break;
-            }
-          } /* Next i */
+          nmbrLet(&essentialFlags, nmbrGetEssential(proofInProgress.proof));
+          if (cmdMatches("IMPROVE LAST")) {
+            /* Scan proof backwards until last essential unknown step found */
+            for (i = m; i >= 1; i--) {
+              if (essentialFlags[i - 1]
+                  && proofInProgress.proof[i - 1] == -(long)'?') {
+                /* Found it */
+                s = i;
+                break;
+              }
+            } /* Next i */
+          } else {
+            /* 11-Dec-05 nm Added ASSIGN FIRST */
+            /* Scan proof forwards until first essential unknown step found */
+            for (i = 1; i <= m; i++) {
+              if (essentialFlags[i - 1]
+                  && proofInProgress.proof[i - 1] == -(long)'?') {
+                /* Found it */
+                s = i;
+                break;
+              }
+            } /* Next i */
+          }
           if (s == 0) {
             print2("?There are no unknown essential steps.\n");
             continue;
@@ -4003,29 +4075,42 @@ void command(int argc, char *argv[])
       q = 0; /* Line length */
       s = 0; /* Status flag */
       i = switchPos("/ BRIEF"); /* Non-verbose mode */
-      if (!instr(1, fullArg[1], "*")) i = 1;
+      /* 30-Jan-06 nm Added single-character-match wildcard argument */
+      if (!(instr(1, fullArg[1], "*") || instr(1, fullArg[1], "?"))) i = 1;
           /* 16-Feb-05 If no wildcard was used, switch to non-verbose mode
              since there is no point to it and an annoying extra blank line
              results */
       j = switchPos("/ ALLOW_GROWTH"); /* Mode to replace even if
                                        if doesn't reduce proof length */
       p = switchPos("/ NO_DISTINCT"); /* Skip trying statements with $d */
+      e = switchPos("/ EXCEPT"); /* Statement match to skip */ /* 7-Jan-06 */
       if (j) j = 1; /* Make sure it's a char value for minimizeProof call */
       for (k = 1; k < proveStatement; k++) {
 
         if (statement[k].type != (char)p__ && statement[k].type != (char)a__)
           continue;
-        if (!matches(statement[k].labelName, fullArg[1], '*')) continue;
+        /* 30-Jan-06 nm Added single-character-match wildcard argument */
+        if (!matches(statement[k].labelName, fullArg[1], '*', '?')) continue;
         if (p) {
           /* Skip the statement if it has a $d requirement.  This option
              prevents illegal minimizations that would violate $d requirements
              since MINIMIZE_WITH does not check for $d violations. */
           if (nmbrLen(statement[k].reqDisjVarsA)) {
-            if (!instr(1, fullArg[1], "*"))
+            /* 30-Jan-06 nm Added single-character-match wildcard argument */
+            if (!(instr(1, fullArg[1], "*") || instr(1, fullArg[1], "?")))
               print2("?\"%s\" has a $d requirement\n", fullArg[1]);
             continue;
           }
         }
+
+        /* 7-Jan-06 nm - Added EXCEPT switch */
+        if (e) {
+          /* Skip any match to the EXCEPT argument */
+          /* 30-Jan-06 nm Added single-character-match wildcard argument */
+          if (matches(statement[k].labelName, fullArg[e + 1], '*', '?'))
+            continue;
+        }
+
         /* Print individual labels */
         if (s == 0) s = 1; /* Matched at least one */
         if (!i) {
@@ -4086,7 +4171,8 @@ void command(int argc, char *argv[])
       if (!s && !p) print2("?No earlier $p or $a label matches \"%s\".\n",
         fullArg[1]);
       if (!s && p) {
-        if (instr(1, fullArg[1], "*"))
+        /* 30-Jan-06 nm Added single-character-match wildcard argument */
+        if (instr(1, fullArg[1], "*") || instr(1, fullArg[1], "?"))
           print2("?No earlier $p or $a label (without $d) matches \"%s\".\n",
               fullArg[1]);
      }
@@ -4299,32 +4385,59 @@ void command(int argc, char *argv[])
         }
         let(&str1, left(str3, q + s));
 
+        /* 30-Jan-06 nm Added single-character-match wildcard argument "$?"
+           (or "?" for convenience).  Use ASCII 3 for the exactly-1-char
+           wildcard character.  This is a single-character
+           match, not a single-token match:  we need "??" to match "ph". */
+        while (1) {
+          p = instr(1, str1, "$?");
+          if (!p) break;
+          let(&str1, cat(left(str1, p - 1), chr(3), right(str1, p + 2), NULL));
+        }
+        /* Allow just "?" for convenience. */
+        while (1) {
+          p = instr(1, str1, "?");
+          if (!p) break;
+          let(&str1, cat(left(str1, p - 1), chr(3), right(str1, p + 1), NULL));
+        }
+        /* End of 30-Jan-06 addition */
+
         /* Change wildcard to ASCII 2 (to be different from printable chars) */
         /* 1/3/02 (Why are we matching with and without space? I'm not sure.)*/
-        /*        For the future should we put this before the initial space */
-        /*        reduction? */
+        /* 30-Jan-06 nm Answer:  We need the double-spacing, and the removal
+           of space in the "with spaces" case, so that "ph $ ph" will match
+           "ph  ph" (0-token case) - "ph  $  ph" won't match this in the
+           (character-based, not token-based) matches().  The "with spaces"
+           case is for matching whole tokens, whereas the "without spaces"
+           case is for matching part of a token. */
         while (1) {
           p = instr(1, str1, " $* ");
           if (!p) break;
+          /* This removes the space before and after the $* */
           let(&str1, cat(left(str1, p - 1), chr(2), right(str1, p + 4), NULL));
         }
         while (1) {
           p = instr(1, str1, "$*");
           if (!p) break;
+          /* This simply replaces $* with chr(2) */
           let(&str1, cat(left(str1, p - 1), chr(2), right(str1, p + 2), NULL));
         }
-        /* 1/3/02  Also allow a plain $ as a wildcard, for convenience */
-        /*         For the future should this be the only wildcard? */
+        /* 1/3/02  Also allow a plain $ as a wildcard, for convenience. */
         while (1) {
           p = instr(1, str1, " $ ");
           if (!p) break;
-          let(&str1, cat(left(str1, p - 1), chr(2), right(str1, p + 2), NULL));
+          /* 30-Jan-06 nm Bug fix - changed "2" to "3" below in order to
+             properly match 0 tokens */
+          let(&str1, cat(left(str1, p - 1), chr(2), right(str1, p + 3), NULL));
         }
         while (1) {
+          /* Note: the "$" shortcut must be done last to avoid picking up
+             "$*" and "$?". */
           p = instr(1, str1, "$");
           if (!p) break;
           let(&str1, cat(left(str1, p - 1), chr(2), right(str1, p + 1), NULL));
         }
+
         /* Add wildcards to beginning and end to match middle of any string */
         let(&str1, cat(chr(2), " ", str1, " ", chr(2), NULL));
       } /* End no COMMENTS switch */
@@ -4333,7 +4446,8 @@ void command(int argc, char *argv[])
         if (!statement[i].labelName[0]) continue; /* No label */
         if (!m && statement[i].type != (char)p__ &&
             statement[i].type != (char)a__) continue; /* No /ALL switch */
-        if (!matches(statement[i].labelName, fullArg[1], '*')) continue;
+        /* 30-Jan-06 nm Added single-character-match wildcard argument */
+        if (!matches(statement[i].labelName, fullArg[1], '*', '?')) continue;
         if (n) { /* COMMENTS switch */
           let(&str2, "");
           str2 = getDescription(i); /* str2 must be deallocated here */
@@ -4383,7 +4497,10 @@ void command(int argc, char *argv[])
           let(&str2, left(str3, q + s));
 
           let(&str2, cat(" ", str2, " ", NULL));
-          if (!matches(str2, str1, 2/* ascii 2 match char*/)) continue;
+          /* 30-Jan-06 nm Added single-character-match wildcard argument */
+          if (!matches(str2, str1, 2/* ascii 2 0-or-more-token match char*/,
+              3/* ascii 3 single-token-match char*/))
+            continue;
           let(&str2, edit(str2, 8 + 16 + 128)); /* Trim leading, trailing
               spaces; reduce white space to space */
           printLongLine(cat(str(i)," ",
@@ -4642,10 +4759,10 @@ void command(int argc, char *argv[])
       } else {
         if (m == 1) {
           print2("There was %ld matching line in the file %s.\n", m,
-              fullArg[1]);
+              fullArg[2]);
         } else {
           print2("There were %ld matching lines in the file %s.\n", m,
-              fullArg[1]);
+              fullArg[2]);
         }
       }
 

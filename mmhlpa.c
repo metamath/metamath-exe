@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2006  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -458,17 +458,18 @@ H("You may want to look over the contents of the source file with a text");
 H("editor, to get an idea of what's in it, before starting to use Metamath.");
 H("");
 H("The following commands will help you study the source file statements");
-H("and their proofs.  Use the help for the individual commands to get");
+H("and their proofs.  Use the HELP for the individual commands to get");
 H("more information about them.");
 H("    SEARCH <label-match> \"<symbol-match>\" - Displays statements whose");
 H("        labels match <label-match> and that contain <symbol-match>.");
 H("    SEARCH <label-match> \"<search-string>\" / COMMENTS - Shows statements");
 H("        whose preceding comment contains <search-string>");
 H("    SHOW LABELS <label-match> - Lists all labels matching <label-match>,");
-H("        in which * may be used as a wildcard:  for example, \"*abc*def\"");
-H("        will match all labels containing \"abc\" and ending with \"def\".");
-H("    SHOW STATEMENT <label> - Shows the comment, contents, and relevant");
-H("        hypotheses associated with a statement.");
+H("        with * and ? wildcards:  for example \"abc?def*\" will match all");
+H("        labels beginning with \"abc\" followed by any single character");
+H("        followed by \"def\".");
+H("    SHOW STATEMENT <label> / COMMENT - Shows the comment, contents, and");
+H("        logical hypotheses associated with a statement.");
 H("    SHOW PROOF <label> - Shows the proof of a $p statement in various");
 H("        formats, depending on what qualifiers you select.  One of the");
 H("        qualifiers, / TEX, lets you create LaTeX source for the proof.");
@@ -590,18 +591,21 @@ H("Note: See HELP LANGUAGE for the HTML markup syntax in comments.");
 H("");
 H("To create an HTML output file for a $a or $p statement, use");
 H("    SHOW STATEMENT <label> / HTML");
-H("When <label> has wildcard (*) characters, all statements with matching");
-H("labels will have HTML files produced for them.  Also, when <label> has a");
-H("wildcard (*) character, three additional files, mmtheorems.html,");
-H("mmdefinitions.html, and mmascii.html will be produced.  Thus:");
+H("When <label> has wildcard (* and ?) characters, all statements with");
+H("matching labels will have HTML files produced for them.  Also, when");
+H("<label> has a * wildcard character, three additional files,");
+H("mmtheorems.html, mmdefinitions.html, and mmascii.html will be produced.");
+H("Thus:");
 H("    SHOW STATEMENT * / HTML");
 H("will output a complete HTML proof database in the current directory,");
 H("one file per $a and $p statement, along with mmtheorems.html,");
 H("mmdefinitions.html, and mmascii.html.  The statement:");
-H("    SHOW STATEMENT ?* / HTML");
+H("    SHOW STATEMENT &* / HTML");
 H("will produce only mmtheorems.html, mmdefinitions.html, and mmascii.html,");
-H("but no other HTML files (since no labels can match \"?*\" because \"?\" is");
-H("illegal in a statement label).");
+H("but no other HTML files (because no labels can match \"&*\" since \"&\"");
+H("is illegal in a statement label).  Note added 30-Jan-06:  The");
+H("mmtheorems.html file produced by this command is obsolete and should be");
+H("overwritten with the output of WRITE THEOREM_LIST.");
 H("");
 H("The HTML definitions for the symbols and and other features are");
 H("specified by statements in a special typesetting comment in the input");
@@ -623,13 +627,14 @@ H("    htmlbibliography \"<HTML file>\" ;");
 H("        (This <HTML file> is assumed to have a <A NAME=...> tag for each");
 H("        bibiographic reference in the database comments.  For example");
 H("        if \"[Monk]\" occurs in a comment, then \"<A NAME='Monk'>\" must");
-H("        be present in the <HTML file>; if not, a warning message is given.");
+H("        be present in the <HTML file>; if not, a warning message is");
+H("        given.)");
 H("Single or double quotes surround the field strings, and fields too long");
 H("for a line may be broken up into multiple quoted strings connected with");
 H("(whitespace-surrounded) \"+\" signs (no quotes around them).  Inside");
 H("quoted strings, the opposite kind of quote may appear.  If both kinds of");
 H("quotes are needed, use separate quoted strings connected by \"+\".");
-H("Note that a \"$)\" character sequence will flag the end of the");
+H("Note that the \"$)\" character sequence will flag the end of the");
 H("typesetting Metamath comment even if embedded in quotes (which are not");
 H("meaningful for the Metamath language parser), so such a sequence must be");
 H("broken with \"+\".");

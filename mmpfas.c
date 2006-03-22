@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2006  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -1379,9 +1379,15 @@ void minimizeProof(long repStatemNum, long prvStatemNum,
       if (!checkStmtMatch(repStatemNum, step)) continue;
 
       /* Try the replacement */
-      if (proofInProgress.proof[step] != repStatemNum) {
-                                   /* Don't replace a step with itself (will
-                                   cause infinite loop in ALLOW_GROWTH mode) */
+      /* Don't replace a step with itself (will cause infinite loop in
+         ALLOW_GROWTH mode) */
+      if (proofInProgress.proof[step] != repStatemNum
+          /* 3-Feb-06 nm */
+          /* When not in ALLOW_GROWTH mode i.e. when an infinite loop can't
+             occur, we _do_ let a label be tested against itself so that e.g. a
+             do-nothing chain of bitr's/pm4.2's will be trimmed off with a
+             better bitr match. */
+          || !allowGrowthFlag) {
         newSubProofPtr = replaceStatement(repStatemNum, step,
             prvStatemNum);
       }

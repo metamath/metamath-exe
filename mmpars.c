@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2006  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -3005,7 +3005,7 @@ char parseCompressedProof(long statemNum)
   labelMapIndex = 0;
   while (1) {
     switch (chrType[(long)(fbPtr[0])]) {
-      case 0: /* Letter */
+      case 0: /* "Letter" (i.e. A...T) */
         if (!labelMapIndex) labelStart = fbPtr; /* Save for error msg */
 
         /* Save pointer to source file vs. step for error messages */
@@ -3132,7 +3132,7 @@ char parseCompressedProof(long statemNum)
         labelMapIndex = 0; /* Reset it for next label */
         break;
 
-      case 1: /* Digit */
+      case 1: /* "Digit" (i.e. U...Y) */
         /* 15-Oct-05 nm - Obsolete (skips from YT to UVA, missing UUA) */
         /*
         if (!labelMapIndex) {
@@ -3160,7 +3160,7 @@ char parseCompressedProof(long statemNum)
         }
         break;
 
-      case 2: /* Colon */
+      case 2: /* "Colon" (i.e. Z) */
         if (labelMapIndex) { /* In the middle of some digits */
           if (!wrkProof.errorCount) {
             sourceError(fbPtr, 1, statemNum,
@@ -3177,6 +3177,22 @@ char parseCompressedProof(long statemNum)
         wrkProof.compressedPfNumLabels++;
 
         hypLocUnkFlag = 0;
+
+        /* 21-Mar-06 nm Fix bug reported by o'cat */
+        if (wrkProof.numSteps == 0) {
+          /* This will happen if labelChar (Z) is in 1st char pos of
+             compressed proof */
+          if (!wrkProof.errorCount) {
+            sourceError(fbPtr, 1, statemNum, cat(
+              "A local label character must occur after a proof step.",NULL));
+          }
+          wrkProof.errorCount++;
+          if (returnFlag < 2) returnFlag = 2;
+          /* We want to break here to prevent out of bound wrkProof.proofString
+             index below. */
+          break;
+        }
+
         stmt = wrkProof.proofString[wrkProof.numSteps - 1];
         if (stmt < 0) { /* Local label or '?' */
           hypLocUnkFlag = 1;
@@ -3297,8 +3313,11 @@ char parseCompressedProof(long statemNum)
     wrkProof.stepSrcPtrPntr[wrkProof.numSteps] = fbPtr; /* Token ptr */
 
     wrkProof.proofString[wrkProof.numSteps] = -(long)'?';
-    if (returnFlag > 0) bug(1722); /* 13-Oct-05 nm */
-    returnFlag = 1; /* Flag that proof has unknown steps */
+    /* 21-Mar-06 nm Deleted 2 lines below; added 3rd - there could be a
+       previous error; see 21-Mar-06 entry above */
+    /* if (returnFlag > 0) bug(1722); */ /* 13-Oct-05 nm */
+    /* returnFlag = 1; */ /* Flag that proof has unknown steps */
+    if (returnFlag < 1) returnFlag = 1; /* Flag that proof has unknown steps */
 
     /* Update stack */
     wrkProof.RPNStack[wrkProof.RPNStackPtr] = wrkProof.numSteps;
