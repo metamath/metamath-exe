@@ -1,13 +1,15 @@
 /*****************************************************************************/
-/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2006  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
 /*
 mmvstr.c - VMS-BASIC variable length string library routines header
-This is a collection of useful built-in string functions available in VMS BASIC.
+This is an emulation of the string functions available in VMS BASIC.
 */
+
+/*** See the comments in mmvstr.h for an explanation of these functions ******/
 
 #include <stdarg.h>
 #include <stdlib.h>
@@ -663,10 +665,12 @@ vstring date()
         time_structure=localtime(&time_val); /* Translate to time structure */
         sout=tempAlloc(12);
         /* "%02d" means leading zeros with min. field width of 2 */
-        sprintf(sout,"%d-%s-%02d",
+        /* sprintf(sout,"%d-%s-%02d", */
+        sprintf(sout,"%d-%s-%04d",             /* 10-Apr-06 nm */
                 time_structure->tm_mday,
                 month[time_structure->tm_mon],
-                (int)((time_structure->tm_year) % 100)); /* Y2K */
+                /* (int)((time_structure->tm_year) % 100)); */ /* Y2K */
+                (int)((time_structure->tm_year) + 1900)); /* 10-Apr-06 nm */
         return(sout);
 }
 
@@ -826,7 +830,8 @@ long lookup(vstring expression, vstring list)
 
 
 /* Emulate PROGRESS num-entries function */
-/* Returns the number of items in a comma-separated list. */
+/* Returns the number of items in a comma-separated list.  If the
+   list is the empty string, return 0. */
 long numEntries(vstring list)
 {
   long i, commaCount;
@@ -836,6 +841,7 @@ long numEntries(vstring list)
     if (list[i] == ',') commaCount++;
     i++;
   }
+  if (list[i] == 0) commaCount--; /* 12-Apr-06 nm Return 0 if list is empty */
   return (commaCount + 1);
 }
 

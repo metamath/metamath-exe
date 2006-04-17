@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2006  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -153,13 +153,15 @@ nmbrString *oneConst = NULL_NMBRSTRING;
 
 
 /* Typical call:
-    nmbrStringXxx = makeSubstUnif(&newVarFlag,trialScheme,
-            stateVector);
-    Call this after calling unify().
-    trialScheme should have the same unknown variable names as were in
-       the schemes given to unify().
-    nmbrStringXxx will have these unknown variables substituted with
-       the result of the unification.
+     nmbrStringXxx = makeSubstUnif(&newVarFlag,trialScheme,
+         stateVector);
+     Call this after calling unify().
+     trialScheme should have the same unknown variable names as were in
+         the schemes given to unify().
+     nmbrStringXxx will have these unknown variables substituted with
+         the result of the unification.
+     newVarFlag is 1 if there are new $nn variables in nmbrStringXxx.
+   The caller must deallocate the returned nmbrString.
 */
 nmbrString *makeSubstUnif(flag *newVarFlag,
     nmbrString *trialScheme, pntrString *stateVector)
@@ -198,7 +200,7 @@ nmbrString *makeSubstUnif(flag *newVarFlag,
   /* Make the substitutions into trialScheme. */
   /* First, calculate the length of the final result */
   q = 0;
-  *newVarFlag = 0; /* Flag that there are new variables in assumption */
+  *newVarFlag = 0; /* Flag that there are new variables in the output string */
 /*E*/if(db7)print2("schemeLen is %ld.\n",schemeLen);
   for (p = 0; p < schemeLen; p++) {
 /*E*/if(db7)print2("p is %ld.\n",p);

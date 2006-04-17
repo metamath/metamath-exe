@@ -5,7 +5,13 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.07.14 21-Mar-06"
+#define MVERSION "0.07.16 16-Apr-06"
+/* 0.07.16 16-Apr-06 nm metamath.c, mmcmdl.c, mmpfas.c, mmhlpb.c - allow step
+   to be negative (relative to end of proof) for ASSIGN, UNIFY, and LET STEP
+   (see their HELPs).  Added INITIALIZE USER to delete LET STEP assignments
+   (see HELP INITIALIZE).  Fixed bug in LET STEP (mmpfas.c).
+/* 0.07.15 10-Apr-06 nm metamath.c, mmvstr.c - change dates from 2-digit to
+   4-digit year; make compatible with older 2-digit year. */
 /* 0.07.14 21-Mar-06 nm mmpars.c - fix bug 1722 when compressed proof has
    "Z" at beginning of proof instead of after a proof step. */
 /* 0.07.13 3-Feb-06 nm mmpfas.c - minor improvement to MINIMIZE_WITH */
@@ -202,7 +208,7 @@ void command(int argc, char *argv[])
   /* The variables in command() are static so that they won't be destroyed
     by a longjmp return to setjmp. */
   long e, i, j, k, m, l, n, p, q, s /*,tokenNum*/;
-  vstring str1 = "", str2 = "", str3 = "", str4 = "";
+  vstring str1 = "", str2 = "", str3 = "", str4 = "", str5= "";
   nmbrString *nmbrTmpPtr; /* Pointer only; not allocated directly */
   nmbrString *nmbrTmp = NULL_NMBRSTRING;
   nmbrString *nmbrSaveProof = NULL_NMBRSTRING;
@@ -238,6 +244,7 @@ void command(int argc, char *argv[])
   long maxEssential; /* For MATCH */
   nmbrString *essentialFlags = NULL_NMBRSTRING;
                                             /* For ASSIGN/IMPROVE FIRST/LAST */
+  long offset; /* For ASSIGN/IMPROVE/LET w/ negative step number */
 
   flag texHeaderFlag; /* For OPEN TEX, CLOSE TEX */
   flag commentOnlyFlag; /* For SHOW STATEMENT */
@@ -283,6 +290,7 @@ void command(int argc, char *argv[])
     let(&str2,"");
     let(&str3,"");
     let(&str4,"");
+    let(&str5,"");
     nmbrLet(&nmbrTmp, NULL_NMBRSTRING);
     pntrLet(&pntrTmp, NULL_PNTRSTRING);
     nmbrLet(&nmbrSaveProof, NULL_NMBRSTRING);
@@ -559,7 +567,6 @@ void command(int argc, char *argv[])
         PFASmode = 0;
         continue;
       } else {
-
         if (sourceChanged) {
           print2("Warning:  You have not saved changes to the source.\n");
           /* 17-Aug-04 nm Added / FORCE qualifier */
@@ -1834,19 +1841,30 @@ void command(int argc, char *argv[])
       k = val(left(str1, j - 1)); /* Day */
 #define MONTHS "JanFebMarAprMayJunJulAugSepOctNovDec"
       l = ((instr(1, MONTHS, mid(str1, j + 1, 3)) - 1) / 3) + 1; /* 1 = Jan */
-      m = val(mid(str1, j + 5, 2));  /* Year */
+      m = str1[j + 6]; /* Character after 2-digit year */  /* nm 10-Apr-06 */
+      if (m == ' ' || m == ']') {                          /* nm 10-Apr-06 */
+        /* Handle 2-digit year */
+        m = val(mid(str1, j + 5, 2));  /* Year */
 #define START_YEAR 93 /* Earliest 19xx year in set.mm database */
-      if (m < START_YEAR) {
-        m = m + 2000;
-      } else {
-        m = m + 1900;
-      }
+        if (m < START_YEAR) {
+          m = m + 2000;
+        } else {
+          m = m + 1900;
+        }
+      } else {                                            /* nm 10-Apr-06 */
+        /* Handle 4-digit year */                         /* nm 10-Apr-06 */
+        m = val(mid(str1, j + 5, 4));  /* Year */         /* nm 10-Apr-06 */
+      }                                                   /* nm 10-Apr-06 */
 
       n = 0; /* Count of how many output so far */
       while (n < i /*RECENT_COUNT*/ && m > START_YEAR + 1900 - 1) {
         /* Build date string to match */
+        /* Match for 2-digit year */
         let(&str1, cat("$([", str(k), "-", mid(MONTHS, 3 * l - 2, 3), "-",
             right(str(m), 3), "]$)", NULL));
+        /* Match for 2-digit year */  /* nm 10-Apr-06 */
+        let(&str5, cat("$([", str(k), "-", mid(MONTHS, 3 * l - 2, 3), "-",
+            str(m), "]$)", NULL));
         for (s = statements; s >= 1; s--) {
 
           if (statement[s].type != (char)p__) continue;
@@ -1859,7 +1877,7 @@ void command(int argc, char *argv[])
           let(&str2, left(str2, p + 1)); /* Get 1st comment (if any) */
           let(&str2, edit(str2, 2)); /* Discard spaces */
           /* See if the date comment matches */
-          if (instr(1, str2, str1)) {
+          if (instr(1, str2, str1) || instr(1, str2, str5)) { /* 10-Apr-06 */
             /* We have a match, so increment the match count */
             n++;
             let(&str3, "");
@@ -1876,7 +1894,9 @@ void command(int argc, char *argv[])
                        "<TR>" :
                        cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL),
                   "<TD NOWRAP>",  /* IE breaks up the date */
-                  mid(str1, 4, strlen(str1) - 6), /* Date */
+                  /* mid(str1, 4, strlen(str1) - 6), */ /* Date */
+                  /* Use 4-digit year */   /* 10-Apr-06 */
+                  mid(str5, 4, strlen(str5) - 6), /* Date */  /* 10-Apr-06 */
                   "</TD><TD ALIGN=CENTER><A HREF=\"",
                   statement[s].labelName, ".html\">",
                   statement[s].labelName, "</A>",
@@ -3465,7 +3485,7 @@ void command(int argc, char *argv[])
       if (cmdMatches("LET VARIABLE")) {
         if (((vstring)(fullArg[2]))[0] != '$') {
           print2(
-    "?The target variable must be of the form \"$<integer>\", e.g. \"$23\".\n");
+   "?The target variable must be of the form \"$<integer>\", e.g. \"$23\".\n");
           continue;
         }
         n = val(right(fullArg[2], 2));
@@ -3487,11 +3507,57 @@ void command(int argc, char *argv[])
       if (cmdMatches("LET STEP")) {
 
         s = val(fullArg[2]); /* Step number */
+
+        /* 16-Apr-06 nm Added LET STEP n where n <= 0: 0 = last,
+           -1 = penultimate, etc. _unknown_ step */
+        /* Unlike ASSIGN LAST/FIRST and IMPROVE LAST/FIRST, it probably
+           doesn't make sense to add LAST/FIRST to LET STEP since known
+           steps can also be LET.  The main purpose of LET STEP n, n<=0, is
+           to use with scripting for mmj2 imports. */
+        offset = 0;
+        if (s <= 0) {
+          offset = - s + 1;
+          s = 1; /* Temp. until we figure out which step */
+        }
+        /* End of 16-Apr-06 */
+
         m = nmbrLen(proofInProgress.proof); /* Original proof length */
         if (s > m || s < 1) {
           print2("?The step must be in the range from 1 to %ld.\n", m);
           continue;
         }
+
+        /* 16-Apr-06 nm Added LET STEP n where n <= 0: 0 = last,
+           1 = penultimate, etc. _unknown_ step */
+        if (offset > 0) {  /* step <= 0 */
+          /* Get the essential step flags */
+          s = 0; /* Use as flag that step was found */
+          nmbrLet(&essentialFlags, nmbrGetEssential(proofInProgress.proof));
+          /* Scan proof backwards until last essential unknown step found */
+          /* 16-Apr-06 - count back 'offset' unknown steps */
+          j = offset;
+          for (i = m; i >= 1; i--) {
+            if (essentialFlags[i - 1]
+                && proofInProgress.proof[i - 1] == -(long)'?') {
+              j--;
+              if (j == 0) {
+                /* Found it */
+                s = i;
+                break;
+              }
+            }
+          } /* Next i */
+          if (s == 0) {
+            if (offset == 1) {
+              print2("?There are no unknown essential steps.\n");
+            } else {
+              print2("?There are not at least %ld unknown essential steps.\n",
+                offset);
+            }
+            continue;
+          }
+        } /* if offset > 0 */
+        /* End of 16-Apr-06 */
 
         /* Check to see if the statement selected is allowed */
         if (!checkMStringMatch(nmbrTmp, s - 1)) {
@@ -3535,11 +3601,15 @@ void command(int argc, char *argv[])
          with SHOW NEW_PROOF/ESSENTIAL/UNKNOWN */
       /* 11-Dec-05 nm - Added FIRST - this means the first unknown step shown
          with SHOW NEW_PROOF/ESSENTIAL/UNKNOWN */
+      /* 16-Apr-06 nm - Handle nonpositive step number: 0 = last,
+         -1 = penultimate, etc.*/
+      offset = 0; /* 16-Apr-06 */
       let(&str1, fullArg[1]); /* To avoid void pointer problems with fullArg */
       if (toupper(str1[0]) == 'L' || toupper(str1[0]) == 'F') {
                                           /* "ASSIGN LAST" or "ASSIGN FIRST" */
-                                                             /* 11-Dec-05 nm */
+                                          /* 11-Dec-05 nm */
         s = 1; /* Temporary until we figure out which step */
+        offset = 1;          /* 16-Apr-06 */
       } else {
         s = val(fullArg[1]); /* Step number */
         if (strcmp(fullArg[1], str(s))) {
@@ -3547,6 +3617,10 @@ void command(int argc, char *argv[])
                                                              /* 11-Dec-05 nm */
           continue;
         }
+        if (s <= 0) {         /* 16-Apr-06 */
+          offset = - s + 1;   /* 16-Apr-06 */
+          s = 1; /* Temporary until we figure out which step */ /* 16-Apr-06 */
+        }                     /* 16-Apr-06 */
       }
 
       for (i = 1; i <= statements; i++) {
@@ -3585,19 +3659,26 @@ void command(int argc, char *argv[])
 
       /* 10/4/99 - For ASSIGN FIRST/LAST command, figure out the last unknown
          essential step */                      /* 11-Dec-05 nm - Added LAST */
-      if (toupper(str1[0]) == 'L' || toupper(str1[0]) == 'F') {
+      /*if (toupper(str1[0]) == 'L' || toupper(str1[0]) == 'F') {*/
                                 /* "ASSIGN LAST or FIRST" */ /* 11-Dec-05 nm */
+      if (offset > 0) {  /* LAST, FIRST, or step <= 0 */ /* 16-Apr-06 */
         /* Get the essential step flags */
         s = 0; /* Use as flag that step was found */
         nmbrLet(&essentialFlags, nmbrGetEssential(proofInProgress.proof));
-        if (toupper(str1[0]) == 'L') {
+        /* if (toupper(str1[0]) == 'L') { */
+        if (toupper(str1[0]) != 'F') {   /* 16-Apr-06 */
           /* Scan proof backwards until last essential unknown step is found */
+          /* 16-Apr-06 - count back 'offset' unknown steps */
+          j = offset;      /* 16-Apr-06 */
           for (i = m; i >= 1; i--) {
             if (essentialFlags[i - 1]
                 && proofInProgress.proof[i - 1] == -(long)'?') {
-              /* Found it */
-              s = i;
-              break;
+              j--;          /* 16-Apr-06 */
+              if (j == 0) {  /* 16-Apr-06 */
+                /* Found it */
+                s = i;
+                break;
+              }             /* 16-Apr-06 */
             }
           } /* Next i */
         } else {
@@ -3613,7 +3694,12 @@ void command(int argc, char *argv[])
           } /* Next i */
         }
         if (s == 0) {
-          print2("?There are no unknown essential steps.\n");
+          if (offset == 1) {                                /* 16-Apr-06 */
+            print2("?There are no unknown essential steps.\n");
+          } else {                                          /* 16-Apr-06 */
+            print2("?There are not at least %ld unknown essential steps.\n",
+              offset);                                      /* 16-Apr-06 */
+          }                                                 /* 16-Apr-06 */
           continue;
         }
       }
@@ -3853,15 +3939,22 @@ void command(int argc, char *argv[])
       if (cmdMatches("IMPROVE STEP") || cmdMatches("IMPROVE LAST") ||
           cmdMatches("IMPROVE FIRST")) {                     /* 11-Dec-05 nm */
 
+        /* 16-Apr-06 nm - Handle nonpositive step number: 0 = last,
+           -1 = penultimate, etc.*/
+        offset = 0; /* 16-Apr-06 */
         /* 10/4/99 - Added LAST - this means the last unknown step shown
            with SHOW NEW_PROOF/ESSENTIAL/UNKNOWN */
         if (cmdMatches("IMPROVE LAST") || cmdMatches("IMPROVE FIRST")) {
                                /* "IMPROVE LAST or FIRST" */ /* 11-Dec-05 nm */
           s = 1; /* Temporary until we figure out which step */
+          offset = 1;          /* 16-Apr-06 */
         } else {
           s = val(fullArg[2]); /* Step number */
+          if (s <= 0) {         /* 16-Apr-06 */
+            offset = - s + 1;   /* 16-Apr-06 */
+            s = 1; /* Temp. until we figure out which step */ /* 16-Apr-06 */
+          }                     /* 16-Apr-06 */
         }
-
         m = nmbrLen(proofInProgress.proof); /* Original proof length */
         if (s > m || s < 1) {
           print2("?The step must be in the range from 1 to %ld.\n", m);
@@ -3871,19 +3964,26 @@ void command(int argc, char *argv[])
 
         /* 10/4/99 - For IMPROVE FIRST/LAST command, figure out the last
            unknown essential step */           /* 11-Dec-05 nm - Added FIRST */
-        if (cmdMatches("IMPROVE LAST") || cmdMatches("IMPROVE FIRST")) {
-                               /* "IMPROVE LAST or FIRST" */ /* 11-Dec-05 nm */
+        /*if (cmdMatches("IMPROVE LAST") || cmdMatches("IMPROVE FIRST")) {*/
+                               /* IMPROVE LAST or FIRST */ /* 11-Dec-05 nm */
+        if (offset > 0) {  /* LAST, FIRST, or step <= 0 */ /* 16-Apr-06 */
           /* Get the essential step flags */
           s = 0; /* Use as flag that step was found */
           nmbrLet(&essentialFlags, nmbrGetEssential(proofInProgress.proof));
-          if (cmdMatches("IMPROVE LAST")) {
+          /*if (cmdMatches("IMPROVE LAST")) {*/
+          if (!cmdMatches("IMPROVE FIRST")) {   /* 16-Apr-06 */
             /* Scan proof backwards until last essential unknown step found */
+            /* 16-Apr-06 - count back 'offset' unknown steps */
+            j = offset;      /* 16-Apr-06 */
             for (i = m; i >= 1; i--) {
               if (essentialFlags[i - 1]
                   && proofInProgress.proof[i - 1] == -(long)'?') {
-                /* Found it */
-                s = i;
-                break;
+                j--;           /* 16-Apr-06 */
+                if (j == 0) {  /* 16-Apr-06 */
+                  /* Found it */
+                  s = i;
+                  break;
+                }              /* 16-Apr-06 */
               }
             } /* Next i */
           } else {
@@ -3899,10 +3999,15 @@ void command(int argc, char *argv[])
             } /* Next i */
           }
           if (s == 0) {
-            print2("?There are no unknown essential steps.\n");
+            if (offset == 1) {                                /* 16-Apr-06 */
+              print2("?There are no unknown essential steps.\n");
+            } else {                                          /* 16-Apr-06 */
+              print2("?There are not at least %ld unknown essential steps.\n",
+                offset);                                      /* 16-Apr-06 */
+            }                                                 /* 16-Apr-06 */
             continue;
           }
-        }
+        } /* if offset > 0 */
 
         /* Get the subproof at step s */
         q = subProofLen(proofInProgress.proof, s - 1);
@@ -4331,6 +4436,21 @@ void command(int argc, char *argv[])
         continue;
       }
 
+        /* Added 16-Apr-06 nm */
+      if (cmdMatches("INITIALIZE USER")) {
+        i = nmbrLen(proofInProgress.proof);
+        /* Delete all LET STEP assignments */
+        for (j = 0; j < i; j++) {
+          nmbrLet((nmbrString **)(&(proofInProgress.user[j])),
+              NULL_NMBRSTRING);
+        }
+        print2(
+      "All LET STEP user assignments have been initialized (i.e. deleted).\n");
+        proofChanged = 1; /* Cumulative flag */
+        continue;
+      }
+      /* End 16-Apr-06 */
+
       /* cmdMatches("INITIALIZE STEP") */
       s = val(fullArg[2]); /* Step number */
       if (s > nmbrLen(proofInProgress.proof) || s < 1) {
@@ -4340,6 +4460,11 @@ void command(int argc, char *argv[])
       }
 
       initStep(s - 1);
+
+      /* Also delete LET STEPs, per HELP INITIALIZE */          /* 16-Apr-06 */
+      nmbrLet((nmbrString **)(&(proofInProgress.user[s - 1])),  /* 16-Apr-06 */
+              NULL_NMBRSTRING);                                 /* 16-Apr-06 */
+
       print2(
           "Step %ld and its hypotheses have been initialized.\n",
           s);

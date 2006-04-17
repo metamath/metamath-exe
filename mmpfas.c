@@ -2139,8 +2139,8 @@ void makeSubstAll(pntrString *stateVector) {
 
     nmbrTmpPtr = proofInProgress.user[step];
     if (nmbrLen(nmbrTmpPtr)) {
-      proofInProgress.source[step] = makeSubstUnif(&tmpFlag, nmbrTmpPtr,
-        stateVector);
+      proofInProgress.user[step] = makeSubstUnif(&tmpFlag, nmbrTmpPtr,
+        stateVector); /* 16-Apr-06 nm Fixed bug here */
       nmbrLet(&nmbrTmpPtr, NULL_NMBRSTRING);
     }
 

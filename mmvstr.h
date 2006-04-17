@@ -6,41 +6,51 @@
 
 /*
 mmvstr.h - VMS-BASIC variable length string library routines header
-This is a collection of useful built-in string functions available in VMS BASIC.
+This is an emulation of the string functions available in VMS BASIC.
 */
 
-/**************************************************************************
+/******************************************************************************
 
 Variable-length string handler
 ------------------------------
 
      This collection of string-handling functions emulate most of the
-string functions of VMS BASIC.  The objects manipulated by these functions
-are strings of a special type called 'vstring' which
-have no pre-defined upper length limit but are dynamically allocated
-and deallocated as needed.  To use the vstring functions within a program,
+string functions of VMS BASIC.  The objects manipulated by these
+functions are strings of a special type called 'vstring' which have no
+pre-defined upper length limit but are dynamically allocated and
+deallocated as needed.  To use the vstring functions within a program,
 all vstrings must be initially set to the null string when declared or
 before first used, for example:
 
         vstring string1 = "";
-        vstring stringArray[] = {"","",""};
+        vstring stringArray[] = {"", "", ""};
 
         vstring bigArray[100][10]; /- Must be initialized before using -/
-        int i,j;
-        for (i=0; i<100; i++)
-          for (j=0; j<10; j++)
+        int i, j;
+        for (i = 0; i < 100; i++)
+          for (j = 0; j < 10; j++)
             bigArray[i][j] = ""; /- Initialize -/
 
 
      After initialization, vstrings should be assigned with the 'let(&'
 function only; for example the statements
 
-        let(&string1,"abc");
-        let(&string1,string2);
-        let(&string1,left(string2,3));
+        let(&string1, "abc");
+        let(&string1, string2);
+        let(&string1, left(string2, 3));
 
 all assign the second argument to 'string1'.  The 'let(&' function must
-not be used to initialize a vstring for the first time.
+_not_ be used to initialize a vstring the first time.
+
+     Any local vstrings in a function must be deallocated before returning
+from the function, otherwise there will be memory leakage and eventual
+memory overflow.  To deallocate, assign the vstring to "" with 'let(&':
+
+        void abc(void) {
+          vstring xyz = "";
+          ...
+          let(&xyz, "");
+        }
 
      The 'cat' function emulates the '+' concatenation operator in BASIC.
 It has a variable number of arguments, and the last argument should always
@@ -71,7 +81,7 @@ itself (which is a char * pointer) is not modified and no attempt is made to
 increase the length of a vstring.  Caution must be excercised when
 assigning standard c string pointers to vstrings or the results of
 vstring functions, as the memory space may be deallocated when the
-'le(&t' function is next executed.  For example,
+'let(&' function is next executed.  For example,
 
         char *stdstr; /- A standard c string pointer -/
          ...
@@ -93,7 +103,7 @@ made.  The user should be aware of this when using vstring functions
 outside of 'let(&' assignments; for example
 
         for (i=0; i<10000; i++)
-          printf("%s\n",left(string1,70));
+          print2("%s\n",left(string1,70));
 
 will allocate another 70 bytes or so of memory each pass through the loop.
 If necessary, dummy 'let(&' assignments can be made periodically to clear
@@ -101,14 +111,14 @@ this temporary memory:
 
         for (i=0; i<10000; i++)
           {
-          printf("%s\n",left(string1,70));
+          print2("%s\n",left(string1,70));
           let(&dummy,"");
           }
 
 It should be noted that the 'linput' function assigns its target string
 with 'let(&' and thus has the same effect as 'let(&'.
 
-************************************************************************/
+******************************************************************************/
 
 
 

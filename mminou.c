@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2006  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -738,7 +738,7 @@ vstring cmdInput1(vstring ask)
       if (logFileOpenFlag) fprintf(logFilePtr, "%s%s\n", ask1, commandLine);
 
       /* Clear backBuffer from previous scroll session */
-        for (i = 0; i < pntrLen(backBuffer); i++) {
+      for (i = 0; i < pntrLen(backBuffer); i++) {
         let((vstring *)(&(backBuffer[i])), "");
       }
       backBufferPos = 1;

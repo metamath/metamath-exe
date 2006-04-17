@@ -825,7 +825,7 @@ flag processCommandLine(void)
 
     if (cmdMatches("INITIALIZE")) {
       if (!getFullArg(1,
-          "STEP|ALL|<ALL>")) goto pclbad;
+          "STEP|ALL|USER|<ALL>")) goto pclbad;  /* 16-Apr-06 nm Added USER */
       if (cmdMatches("INITIALIZE STEP")) {
         if (!getFullArg(2,"# What step number? ")) goto pclbad;
       }
