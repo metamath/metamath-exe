@@ -54,7 +54,7 @@ H("      once in a file, discarding lines occurring exactly once");
 H("  UNIQUE - Extract lines occurring exactly once in a file");
 H(
 "  (UNDUPLICATE, DUPLICATE, and UNIQUE also sort the lines as a side effect.)");
-H("  TYPE (10 lines) - Similar to Unix \"head\"");
+H("  TYPE (10 lines) - Display 10 lines of a file; similar to Unix \"head\"");
 /*H("  COPY, RENAME - Similar to Unix cat, mv but with backups created");*/
 H(
 "  COPY - Similar to Unix \"cat\" but safe (same input & output name allowed)");
@@ -234,6 +234,9 @@ H("This command copies (concatenates) all input files in a comma-separated");
 H("list (no blanks allowed) to an output file.  The output file may have");
 H("the same name as an input file.  Any previous version of the output");
 H("file is renamed with a ~1 extension.  C is an abbreviation for COPY.");
+H("Example: \"COPY 1.tmp,1.tmp,2.tmp 1.tmp\" followed by \"UNIQUE 1.tmp\"");
+H("will result in 1.tmp containing those lines of 2.tmp that didn't");
+H("previously exist in 1.tmp.");
 H("Syntax:  COPY <inpfile,inpfile,...> <outfile>");
 
 printHelp = !strcmp(helpCmd, "HELP TAG");
@@ -485,9 +488,9 @@ H("");
 
 
 printHelp = !strcmp(helpCmd, "HELP PROOF_ASSISTANT");
-H("Before using the Proof Assistant, you must include the statement you want");
-H("to prove in a $p statement in your source file.  Its proof should consist");
-H("of a single ?, meaning \"unknown step\".  Example:");
+H("Before using the Proof Assistant, you must add a $p to your source file");
+H("(using a text editor) containing the statement you want to prove.  Its");
+H("proof should consist of a single ?, meaning \"unknown step.\"  Example:");
 H("    eqid $p x = x $= ? $.");
 H("");
 H("To enter the Proof Assistant, type PROVE <label>, e.g. PROVE eqid.");

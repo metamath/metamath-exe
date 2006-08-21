@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2006  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -1103,17 +1103,35 @@ void printTexHeader(flag texHeaderFlag)
     print2("<META NAME=\"ROBOTS\" CONTENT=\"NONE\">\n");
     print2("<META NAME=\"GENERATOR\" CONTENT=\"Metamath\">\n");
     */
+    /*
     if (showStatement < extHtmlStmt) {
       print2("%s\n", cat("<TITLE>", htmlTitle, " - ",
-          /* Strip off ".html" */
+          / * Strip off ".html" * /
           left(texFileName, strlen(texFileName) - 5),
-          /*left(texFileName, instr(1, texFileName, ".htm") - 1),*/
+          / *left(texFileName, instr(1, texFileName, ".htm") - 1),* /
           "</TITLE>", NULL));
     } else {
       print2("%s\n", cat("<TITLE>", extHtmlTitle, " - ",
+          / * Strip off ".html" * /
+          left(texFileName, strlen(texFileName) - 5),
+          / *left(texFileName, instr(1, texFileName, ".htm") - 1),* /
+          "</TITLE>", NULL));
+    }
+    */
+    /* 4-Jun-06 nm - Put theorem name before "Metamath Proof Explorer" etc. */
+    if (showStatement < extHtmlStmt) {
+      print2("%s\n", cat("<TITLE>",
           /* Strip off ".html" */
           left(texFileName, strlen(texFileName) - 5),
           /*left(texFileName, instr(1, texFileName, ".htm") - 1),*/
+          " - ", htmlTitle,
+          "</TITLE>", NULL));
+    } else {
+      print2("%s\n", cat("<TITLE>",
+          /* Strip off ".html" */
+          left(texFileName, strlen(texFileName) - 5),
+          /*left(texFileName, instr(1, texFileName, ".htm") - 1),*/
+          " - ", extHtmlTitle,
           "</TITLE>", NULL));
     }
     /* Icon for bookmark */
@@ -1465,6 +1483,11 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
       if (!pos1) break;
       /* Don't modify anything inside of <PRE>...</PRE> tags */
       if (pos1 > instr(1, cmt, "<PRE>") && pos1 < instr(1, cmt, "</PRE>"))
+        continue;
+      /* 23-Jul-2006 nm Don't modify anything inside of math symbol strings
+         (imperfect - only works if `...` is not split across lines) */
+      if (pos1 > instr(1, cmt, "`") && pos1 < instr(instr(1, cmt, "`") + 1,
+          cmt, "`"))
         continue;
       /* Opening "_" must be <whitespace>_<alphanum> for <I> tag */
       if (pos1 > 1) {
@@ -2252,6 +2275,14 @@ void writeTheoremList(long theoremsPerPage)
   vstring output_fn = "";
   FILE *output_fp;
 
+  /* 31-Jul-2006 for table of contents mod */
+  vstring bigHdr = "";
+  vstring smallHdr = "";
+  vstring labelStr = "";
+  long stmt, i, pos, pos2;
+  pntrString *pntrBigHdr = NULL_PNTRSTRING;
+  pntrString *pntrSmallHdr = NULL_PNTRSTRING;
+
   /* Populate the statement map */
   /* ? ? ? Future:  is assertions same as statement[statements].pinkNumber? */
   nmbrLet(&nmbrStmtNmbr, nmbrSpace(statements + 1));
@@ -2263,6 +2294,11 @@ void writeTheoremList(long theoremsPerPage)
     }
   }
   if (assertions != statement[statements].pinkNumber) bug(2328);
+
+  /* 31-Jul-2006 nm Table of contents mod */
+  /* Allocate array for section headers found */
+  pntrLet(&pntrBigHdr, pntrSpace(statements + 1));
+  pntrLet(&pntrSmallHdr, pntrSpace(statements + 1));
 
   pages = ( assertions / theoremsPerPage ) + 1;
   for (page = 1; page <= pages; page++) {
@@ -2303,9 +2339,17 @@ void writeTheoremList(long theoremsPerPage)
     print2("-->\n");
     print2("</STYLE>\n");
 
+    /*
     print2("%s\n", cat("<TITLE>", htmlTitle, " - ",
-        /* Strip off ".html" */
+        / * Strip off ".html" * /
         left(output_fn, strlen(output_fn) - 5),
+        "</TITLE>", NULL));
+    */
+    /* 4-Jun-06 nm - Put page name before "Metamath Proof Explorer" etc. */
+    print2("%s\n", cat("<TITLE>",
+        /* Strip off ".html" */
+        left(output_fn, strlen(output_fn) - 5), " - ",
+        htmlTitle,
         "</TITLE>", NULL));
     /* Icon for bookmark */
     print2("%s%s\n", "<LINK REL=\"shortcut icon\" HREF=\"favicon.ico\" ",
@@ -2383,11 +2427,16 @@ void writeTheoremList(long theoremsPerPage)
             nmbrStmtNmbr[p * theoremsPerPage] :
             nmbrStmtNmbr[assertions]);
 
+      /* 31-Jul-2006 nm Change "1" to "Contents + 1" */
       if (p == page) {
-        let(&str1, str(p)); /* Current page shouldn't have link to self */
+        let(&str1,
+            (p == 1) ? "Contents + 1" : str(p) /* 31-Jul-2006 nm */
+            ); /* Current page shouldn't have link to self */
       } else {
         let(&str1, cat("<A HREF=\"mmtheorems",
-            (p > 1) ? str(p) : "", ".html\">", str(p), "</A>", NULL));
+            (p > 1) ? str(p) : "", ".html\">",
+            (p == 1) ? "Contents + 1" : str(p) /* 31-Jul-2006 nm */
+            , "</A>", NULL));
       }
       let(&str1, cat(str1, PINK_NBSP, str3, NULL));
       fprintf(output_fp, "%s\n", str1);
@@ -2441,6 +2490,103 @@ void writeTheoremList(long theoremsPerPage)
     fprintf(output_fp, "%s", printString);
     outputToString = 0;
     let(&printString, "");
+
+    /* 31-Jul-2006 nm Add table of contents to first WRITE THEOREM page */
+    if (page == 1) {  /* We're on page 1 */
+
+      outputToString = 1;
+      print2("<P><CENTER><B>Table of Contents</B></CENTER>\n");
+      fprintf(output_fp, "%s", printString);
+      outputToString = 0;
+      let(&printString, "");
+
+      let(&bigHdr, "");
+      let(&smallHdr, "");
+      for (stmt = 1; stmt <= statements; stmt++) {
+        /* Get headers from comment section between statements */
+        let(&labelStr, space(statement[stmt].labelSectionLen));
+        memcpy(labelStr, statement[stmt].labelSectionPtr,
+            statement[stmt].labelSectionLen);
+        pos = 0;
+        pos2 = 0;
+        while (1) {  /* Find last "big" header, if any */
+          pos = instr(pos + 1, labelStr, "$(\n#*#*");
+          if (!pos) break;
+          if (pos) pos2 = pos;
+        }
+        if (pos2) { /* Extract "big" header */
+          pos = instr(pos2 + 4, labelStr, "\n");
+          pos2 = instr(pos + 1, labelStr, "\n");
+          let(&bigHdr, seg(labelStr, pos + 1, pos2 - 1));
+          let(&bigHdr, edit(bigHdr, 8 + 128)); /* Trim leading, trailing sp */
+        }
+        pos = 0;
+        pos2 = 0;
+        while (1) {  /* Find last "small" header, if any */
+          pos = instr(pos + 1, labelStr, "$(\n=-=-");
+          if (!pos) break;
+          if (pos) pos2 = pos;
+        }
+        if (pos2) { /* Extract "small" header */
+          pos = instr(pos2 + 4, labelStr, "\n");
+          pos2 = instr(pos + 1, labelStr, "\n");
+          let(&smallHdr, seg(labelStr, pos + 1, pos2 - 1));
+          let(&smallHdr, edit(smallHdr, 8 + 128)); /* Trim lead, trail sp */
+        }
+        /* Output the headers for $a and $p statements */
+        if (statement[stmt].type == p__ || statement[stmt].type == a__) {
+          if (bigHdr[0] || smallHdr[0]) {
+            /* Write to the table of contents */
+            outputToString = 1;
+            i = ((statement[stmt].pinkNumber - 1) / theoremsPerPage)
+                + 1; /* Page # */
+            let(&str3, cat("mmtheorems", (i == 1) ? "" : str(i), ".html#",
+                          /* Note that page 1 has no number after mmtheorems */
+                /* statement[stmt].labelName, NULL)); */
+                "mm", str(statement[stmt].pinkNumber), NULL));
+                   /* Link to page/location - no theorem can be named "mm*" */
+            let(&str4, "");
+            str4 = pinkHTML(stmt);
+            /*let(&str4, right(str4, strlen(PINK_NBSP) + 1));*/
+                                                         /* Discard "&nbsp;" */
+            if (bigHdr[0]) {
+              printLongLine(cat(" <A HREF=\"", str3, "b\"><B>",
+                  bigHdr, "</B></A>",
+                  /*
+                  " &nbsp; <A HREF=\"",
+                  statement[stmt].labelName, ".html\">",
+                  statement[stmt].labelName, "</A>",
+                  str4,
+                  */
+                  "<BR>", NULL),
+                  " ",  /* Start continuation line with space */
+                  "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+              /* Assign to array for use during theorem output */
+              let((vstring *)(&pntrBigHdr[stmt]), bigHdr);
+              let(&bigHdr, "");
+            }
+            if (smallHdr[0]) {
+              printLongLine(cat("&nbsp; &nbsp; <A HREF=\"", str3, "s\">",
+                  smallHdr, "</A>",
+                  " &nbsp; <A HREF=\"",
+                  statement[stmt].labelName, ".html\">",
+                  statement[stmt].labelName, "</A>",
+                  str4,
+                  "<BR>", NULL),
+                  " ",  /* Start continuation line with space */
+                  "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+              /* Assign to array for use during theorem output */
+              let((vstring *)(&pntrSmallHdr[stmt]), smallHdr);
+              let(&smallHdr, "");
+            }
+            fprintf(output_fp, "%s", printString);
+            outputToString = 0;
+            let(&printString, "");
+          } /* if big or small header */
+        } /* if $a or $p */
+      } /* next stmt */
+    } /* if page 1 */
+    /* End of 31-Jul-2006 added code for table of contents mod */
 
     /* Write the main table header */
     outputToString = 1;
@@ -2539,6 +2685,38 @@ void writeTheoremList(long theoremsPerPage)
       let(&printString, "");
       outputToString = 1;
       print2("\n"); /* Blank line for HTML source human readability */
+
+      /* 31-Jul-2006 nm Table of contents mod */
+      if (((vstring)(pntrBigHdr[s]))[0]) { /* There is a major section break */
+        printLongLine(cat(
+                 /* The header */
+                 "<TR BGCOLOR=\"#FFFFF2\"><TD COLSPAN=3",
+                 " ALIGN=CENTER><FONT SIZE=\"+1\"><B>",
+                 "<A NAME=\"mm", str(statement[s].pinkNumber), "b\"></A>",
+                                             /* Anchor for table of contents */
+                 (vstring)(pntrBigHdr[s]), "</B></FONT></TD></TR>",
+                 /* Separator row */
+                 "<TR BGCOLOR=white><TD COLSPAN=3>",
+                 "<FONT SIZE=-3>&nbsp;</FONT></TD></TR>",
+                 NULL),
+            " ",  /* Start continuation line with space */
+            "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+      }
+      if (((vstring)(pntrSmallHdr[s]))[0]) { /* There is a minor sec break */
+        printLongLine(cat(
+                 /* The header */
+                 "<TR BGCOLOR=\"#FFFFF2\"><TD COLSPAN=3 ALIGN=CENTER><B>",
+                 "<A NAME=\"mm", str(statement[s].pinkNumber), "s\"></A>",
+                                             /* Anchor for table of contents */
+                 (vstring)(pntrSmallHdr[s]), "</B></TD></TR>",
+                 /* Separator row */
+                 "<TR BGCOLOR=white><TD COLSPAN=3>",
+                 "<FONT SIZE=-3>&nbsp;</FONT></TD></TR>",
+                 NULL),
+            " ",  /* Start continuation line with space */
+            "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+      }
+
       printLongLine(cat(
             (s < extHtmlStmt) ?
                  "<TR>" :
@@ -2550,7 +2728,7 @@ void writeTheoremList(long theoremsPerPage)
             statement[s].labelName, "</A>",
             str4, "</TD><TD ALIGN=LEFT>",
 
-            /* 15-Aug-04 nm - Add a tag for hyperlinking to the table row */
+            /* 15-Aug-04 nm - Add anchor for hyperlinking to the table row */
             "<A NAME=\"", statement[s].labelName, "\"></A>",
 
             NULL),  /* Description */
@@ -2680,6 +2858,14 @@ void writeTheoremList(long theoremsPerPage)
   let(&str3, "");
   let(&str4, "");
   let(&output_fn, "");
+  let(&bigHdr, "");
+  let(&smallHdr, "");
+  let(&labelStr, "");
+  for (i = 0; i <= statements; i++) let((vstring *)(&pntrBigHdr[i]), "");
+  pntrLet(&pntrBigHdr, NULL_PNTRSTRING);
+  for (i = 0; i <= statements; i++) let((vstring *)(&pntrSmallHdr[i]), "");
+  pntrLet(&pntrSmallHdr, NULL_PNTRSTRING);
+
 } /* writeTheoremList */
 
 
@@ -2793,139 +2979,212 @@ vstring pinkRangeHTML(long statemNum1, long statemNum2)
 
 
 #ifdef RAINBOW_OPTION
+/* 20-Aug-2006 nm This section was revised so that all colors have
+   the same grayscale brightness. */
+
 /* This function converts a "spectrum" color (1 to maxColor) to an
    RBG value in hex notation for HTML.  The caller must deallocate the
-   returned vstring.  color = 1 (red) to maxColor (violet). */
+   returned vstring to prevent memory leaks.  color = 1 (red) to maxColor
+   (violet).  A special case is the color -1, which just returns black. */
 /* ndm 10-Jan-04 */
 vstring spectrumToRGB(long color, long maxColor) {
   vstring str1 = "";
   double fraction, fractionInPartition;
-  long i, redMin, redMax, greenMin, greenMax, blueMin, blueMax,
-      red, green, blue, partition;
-/* #define OLD_COLORS */
-#ifdef OLD_COLORS
-#define PARTITIONS 12
-  double redLevel[PARTITIONS +  1];
-  double greenLevel[PARTITIONS +  1];
-  double blueLevel[PARTITIONS +  1];
-/*D*//*printf("color %ld max %ld\n",color,maxColor);*/
+  long j, red, green, blue, partition;
+/* Change PARTITIONS whenever the table below has entries added or removed! */
+#define PARTITIONS 28
+  static double redRef[PARTITIONS +  1];    /* 20-Aug-2006 nm Made these */
+  static double greenRef[PARTITIONS +  1];  /*                static for */
+  static double blueRef[PARTITIONS +  1];   /*                speedup */
+  static long i = -1;                       /*                below */
 
-  /* ? ? ? Future:  make this array static and assign once? */
-  i = -1;
-  i++; redLevel[i] = 1.0000; greenLevel[i] = 0.0000; blueLevel[i] = 0.0000;
-  /* 31-Jan-04 added (orange): */
-  /*i++; redLevel[i] = 1.0000; greenLevel[i] = 0.6484; blueLevel[i] = 0.0000;*/
-  /* 31-Jan-04 added (muted orange): */
-  i++; redLevel[i] = 0.9687; greenLevel[i] = 0.5820; blueLevel[i] = 0.1171;
-  /* 31-Jan-04 removed: */
-  /*i++; redLevel[i] = 0.7500; greenLevel[i] = 0.2500; blueLevel[i] = 0.0000;*/
-  i++; redLevel[i] = 0.5833; greenLevel[i] = 0.4167; blueLevel[i] = 0.0000;
-  /*i++; redLevel[i] = 0.5000; greenLevel[i] = 0.5000; blueLevel[i] = 0.0000;*/
-  i++; redLevel[i] = 0.4167; greenLevel[i] = 0.5853; blueLevel[i] = 0.0000;
-  i++; redLevel[i] = 0.2500; greenLevel[i] = 0.7500; blueLevel[i] = 0.0000;
-  i++; redLevel[i] = 0.0000; greenLevel[i] = 1.0000; blueLevel[i] = 0.0000;
-  i++; redLevel[i] = 0.0000; greenLevel[i] = 0.7500; blueLevel[i] = 0.2500;
-  i++; redLevel[i] = 0.0000; greenLevel[i] = 0.5000; blueLevel[i] = 0.5000;
-  i++; redLevel[i] = 0.0000; greenLevel[i] = 0.2500; blueLevel[i] = 0.7500;
-  i++; redLevel[i] = 0.0000; greenLevel[i] = 0.0000; blueLevel[i] = 1.0000;
-  i++; redLevel[i] = 0.2500; greenLevel[i] = 0.0000; blueLevel[i] = 0.7500;
-  i++; redLevel[i] = 0.5000; greenLevel[i] = 0.0000; blueLevel[i] = 0.5000;
-  i++; redLevel[i] = 0.5294; greenLevel[i] = 0.1764; blueLevel[i] = 0.2941;
-  /*i++; redLevel[i] = 0.7500; greenLevel[i] = 0.0000; blueLevel[i] = 0.2500;*/
-  redMin = 0; /* Red level must be g.e. to this */
-  redMax = 255; /* Red level must be l.e. to this */
-  greenMin = 0; /* Green level must be g.e. to this */
-  greenMax = 255; /* Green level must be l.e. to this */
-  blueMin = 0; /* Blue level must be g.e. to this */
-  blueMax = 255; /* Blue level must be l.e. to this */
-  fraction = 1.0 * (color - 1) / maxColor;
-                                   /* Fractional position in "spectrum" */
-  /*fraction = fraction * 0.9;*/ /* Prevent wrapping back to red */
-#else
-#define PARTITIONS 11
-  double redLevel[PARTITIONS +  1];
-  double greenLevel[PARTITIONS +  1];
-  double blueLevel[PARTITIONS +  1];
-  double max, frac, sum;
-/*D*//*printf("color %ld max %ld\n",color,maxColor);*/
+  if (i > -1) goto SKIP_INIT; /* 20-Aug-2006 nm - Speedup */
+  i = -1; /* For safety */
 
-  /* ? ? ? Future:  make this array static and assign once? */
-  i = -1;
-  i++; redLevel[i] = 1.0000; greenLevel[i] = 0.0000; blueLevel[i] = 0.0000;
-  i++; redLevel[i] = 0.7500; greenLevel[i] = 0.5000; blueLevel[i] = 0.0000;
-  i++; redLevel[i] = 0.5000; greenLevel[i] = 0.7500; blueLevel[i] = 0.0000;
-  i++; redLevel[i] = 0.2500; greenLevel[i] = 0.7500; blueLevel[i] = 0.0000;
-  i++; redLevel[i] = 0.0000; greenLevel[i] = 1.0000; blueLevel[i] = 0.0000;
-  i++; redLevel[i] = 0.0000; greenLevel[i] = 0.7500; blueLevel[i] = 0.2500;
-  i++; redLevel[i] = 0.0000; greenLevel[i] = 0.5000; blueLevel[i] = 0.5000;
-  i++; redLevel[i] = 0.0000; greenLevel[i] = 0.2500; blueLevel[i] = 0.7500;
-  i++; redLevel[i] = 0.0000; greenLevel[i] = 0.0000; blueLevel[i] = 1.0000;
-  i++; redLevel[i] = 0.2500; greenLevel[i] = 0.0000; blueLevel[i] = 0.7500;
-  i++; redLevel[i] = 0.5000; greenLevel[i] = 0.0000; blueLevel[i] = 0.7000;
-  i++; redLevel[i] = 0.6500; greenLevel[i] = 0.0000; blueLevel[i] = 0.6000;
-  redMin = 0; /* Red level must be g.e. to this */
-  redMax = 300; /* Red level must be l.e. to this */
-  greenMin = 0; /* Green level must be g.e. to this */
-  greenMax = 150; /* Green level must be l.e. to this */
-  blueMin = 0; /* Blue level must be g.e. to this */
-  blueMax = 300; /* Blue level must be l.e. to this */
-  fraction = 1.0 * (color - 1) / maxColor;
-                                   /* Fractional position in "spectrum" */
-  /*fraction = fraction * 0.9;*/ /* Prevent wrapping back to red */
+#define L53empirical
+#ifdef L53empirical
+  /* Here, we use the maximum saturation possible for a fixed L*a*b color L
+     (lightness) value of 53, which corresponds to 50% gray scale.
+     Each pure color had either brightness reduced or saturation reduced,
+     as required, to achieve L = 53.
+
+     The partitions in the 'ifdef L53obsolete' below were divided into 1000
+     subpartitions, then new partitions were determined by reselecting
+     partition boundaries based on where their color difference was
+     distinguishable (i.e. could semi-comfortably read letters of one color
+     with the other as a background, on an LCD display).  Some human judgment
+     was involved, and it is probably not completely uniform or optimal.
+
+     A Just Noticeable Difference (JND) algorithm for spacing might be more
+     accurate, especially if averaged over several subjects and different
+     monitors.  I wrote a program for that - asking the user to identify a word
+     in one hue with an adjacent hue as a background, in order to score a
+     point - but it was taking too much time, and I decided life is too short.
+     I think this is "good enough" though, perhaps not even noticeably
+     non-optimum.
+
+     The comment at the end of each line is the hue 0-360 mapped linearly
+     to 1-1043 (345 = 1000, i.e. "extreme" purple or almost red).  Partitions
+     at the end can be commented out if we want to stop at violet instead of
+     almost wrapping around to red via the purples, in order to more accurately
+     emulate the color spectrum.  Be sure to update the PARTITIONS constant
+     above if a partition is commented out, to avoid a bug trap. */
+  i++; redRef[i] = 251; greenRef[i] = 0; blueRef[i] = 0;       /* 1 */
+  i++; redRef[i] = 247; greenRef[i] = 12; blueRef[i] = 0;      /* 10 */
+  i++; redRef[i] = 238; greenRef[i] = 44; blueRef[i] = 0;      /* 34 */
+  i++; redRef[i] = 222; greenRef[i] = 71; blueRef[i] = 0;      /* 58 */
+  i++; redRef[i] = 203; greenRef[i] = 89; blueRef[i] = 0;      /* 79 */
+  i++; redRef[i] = 178; greenRef[i] = 108; blueRef[i] = 0;     /* 109 */
+  i++; redRef[i] = 154; greenRef[i] = 122; blueRef[i] = 0;     /* 140 */
+  i++; redRef[i] = 127; greenRef[i] = 131; blueRef[i] = 0;     /* 181 */
+  i++; redRef[i] = 110; greenRef[i] = 136; blueRef[i] = 0;     /* 208 */
+  i++; redRef[i] = 86; greenRef[i] = 141; blueRef[i] = 0;      /* 242 */
+  i++; redRef[i] = 60; greenRef[i] = 144; blueRef[i] = 0;      /* 276 */
+  i++; redRef[i] = 30; greenRef[i] = 147; blueRef[i] = 0;      /* 313 */
+  i++; redRef[i] = 0; greenRef[i] = 148; blueRef[i] = 22;      /* 375 */
+  i++; redRef[i] = 0; greenRef[i] = 145; blueRef[i] = 61;      /* 422 */
+  i++; redRef[i] = 0; greenRef[i] = 145; blueRef[i] = 94;      /* 462 */
+  i++; redRef[i] = 0; greenRef[i] = 143; blueRef[i] = 127;     /* 504 */
+  i++; redRef[i] = 0; greenRef[i] = 140; blueRef[i] = 164;     /* 545 */
+  i++; redRef[i] = 0; greenRef[i] = 133; blueRef[i] = 218;     /* 587 */
+  i++; redRef[i] = 3; greenRef[i] = 127; blueRef[i] = 255;     /* 612 */
+  i++; redRef[i] = 71; greenRef[i] = 119; blueRef[i] = 255;    /* 652 */
+  i++; redRef[i] = 110; greenRef[i] = 109; blueRef[i] = 255;   /* 698 */
+  i++; redRef[i] = 137; greenRef[i] = 99; blueRef[i] = 255;    /* 740 */
+  i++; redRef[i] = 169; greenRef[i] = 78; blueRef[i] = 255;    /* 786 */
+  i++; redRef[i] = 186; greenRef[i] = 57; blueRef[i] = 255;    /* 808 */
+  i++; redRef[i] = 204; greenRef[i] = 33; blueRef[i] = 249;    /* 834 */
+  i++; redRef[i] = 213; greenRef[i] = 16; blueRef[i] = 235;    /* 853 */
+  i++; redRef[i] = 221; greenRef[i] = 0; blueRef[i] = 222;     /* 870 */
+  i++; redRef[i] = 233; greenRef[i] = 0; blueRef[i] = 172;     /* 916 */
+  i++; redRef[i] = 239; greenRef[i] = 0; blueRef[i] = 132;     /* 948 */
+  /*i++; redRef[i] = 242; greenRef[i] = 0; blueRef[i] = 98;*/  /* 973 */
+  /*i++; redRef[i] = 244; greenRef[i] = 0; blueRef[i] = 62;*/  /* 1000 */
+#endif
+
+#ifdef L53obsolete
+  /* THIS IS OBSOLETE AND FOR HISTORICAL REFERENCE ONLY; IT MAY BE DELETED. */
+  /* Here, we use the maximum saturation possible for a given L value of 53.
+     Each pure color has either brightness reduced or saturation reduced,
+     as appropriate, until the LAB color L (lightness) value is 53.  The
+     comment at the end of each line is the hue (0 to 360).
+
+     Unfortunately, equal hue differences are not equally distinguishable.
+     The commented-out lines were an unsuccessful attempt to make them more
+     uniform before the final empirical table above was determined. */
+  i++; redRef[i] = 251; greenRef[i] = 0; blueRef[i] = 0; /* 0 r */
+  i++; redRef[i] = 234; greenRef[i] = 59; blueRef[i] = 0; /* 15 */
+  i++; redRef[i] = 196; greenRef[i] = 98; blueRef[i] = 0; /* 30 */
+  i++; redRef[i] = 160; greenRef[i] = 120; blueRef[i] = 0; /* 45 */
+  /*i++; redRef[i] = 131; greenRef[i] = 131; blueRef[i] = 0;*/ /* 60 */
+  i++; redRef[i] = 104; greenRef[i] = 138; blueRef[i] = 0; /* 75 */
+  /*i++; redRef[i] = 72; greenRef[i] = 144; blueRef[i] = 0;*/ /* 90 */
+  /*i++; redRef[i] = 37; greenRef[i] = 147; blueRef[i] = 0;*/ /* 105 */
+  i++; redRef[i] = 0; greenRef[i] = 148; blueRef[i] = 0; /* 120 g */
+  /*i++; redRef[i] = 0; greenRef[i] = 148; blueRef[i] = 37;*/ /* 135 */
+  /*i++; redRef[i] = 0; greenRef[i] = 145; blueRef[i] = 73;*/ /* 150 */
+  i++; redRef[i] = 0; greenRef[i] = 145; blueRef[i] = 109; /* 165 */
+  /*i++; redRef[i] = 0; greenRef[i] = 142; blueRef[i] = 142;*/ /* 180 */
+  /*i++; redRef[i] = 0; greenRef[i] = 139; blueRef[i] = 185;*/ /* 195 */
+  i++; redRef[i] = 0; greenRef[i] = 128; blueRef[i] = 255; /* 210 */
+  /*i++; redRef[i] = 73; greenRef[i] = 119; blueRef[i] = 255;*/ /* 225 */
+  i++; redRef[i] = 110; greenRef[i] = 110; blueRef[i] = 255; /* 240 b */
+  i++; redRef[i] = 138; greenRef[i] = 99; blueRef[i] = 255; /* 255 */
+  i++; redRef[i] = 168; greenRef[i] = 81; blueRef[i] = 255; /* 270 */
+  i++; redRef[i] = 201; greenRef[i] = 40; blueRef[i] = 255; /* 285 */
+  i++; redRef[i] = 222; greenRef[i] = 0; blueRef[i] = 222; /* 300 */
+  i++; redRef[i] = 233; greenRef[i] = 0; blueRef[i] = 175; /* 315 */
+  i++; redRef[i] = 241; greenRef[i] = 0; blueRef[i] = 120; /* 330 */
+  /*i++; redRef[i] = 245; greenRef[i] = 0; blueRef[i] = 61;*/ /* 345 */
+#endif
+
+#ifdef L68obsolete
+  /* THIS IS OBSOLETE AND FOR HISTORICAL REFERENCE ONLY; IT MAY BE DELETED. */
+  /* Each pure color has either brightness reduced or saturation reduced,
+     as appropriate, until the LAB color L (lightness) value is 68.
+
+     L = 68 was for the original pink color #FA8072, but the purples end
+     up too light to be seen easily on some monitors */
+  i++; redRef[i] = 255; greenRef[i] = 122; blueRef[i] = 122; /* 0 r */
+  i++; redRef[i] = 255; greenRef[i] = 127; blueRef[i] = 0; /* 30 */
+  i++; redRef[i] = 207; greenRef[i] = 155; blueRef[i] = 0; /* 45 */
+  i++; redRef[i] = 170; greenRef[i] = 170; blueRef[i] = 0; /* 60 */
+  i++; redRef[i] = 93; greenRef[i] = 186; blueRef[i] = 0; /* 90 */
+  i++; redRef[i] = 0; greenRef[i] = 196; blueRef[i] = 0; /* 120 g */
+  i++; redRef[i] = 0; greenRef[i] = 190; blueRef[i] = 94; /* 150 */
+  i++; redRef[i] = 0; greenRef[i] = 185; blueRef[i] = 185; /* 180 */
+  i++; redRef[i] = 87; greenRef[i] = 171; blueRef[i] = 255; /* 210 */
+  i++; redRef[i] = 156; greenRef[i] = 156; blueRef[i] = 255; /* 240 b */
+  i++; redRef[i] = 197; greenRef[i] = 140; blueRef[i] = 255; /* 270 */
+  /*i++; redRef[i] = 223; greenRef[i] = 126; blueRef[i] = 255;*/ /* 285 */
+  i++; redRef[i] = 255; greenRef[i] = 100; blueRef[i] = 255; /* 300 */
+  i++; redRef[i] = 255; greenRef[i] = 115; blueRef[i] = 185; /* 330 */
+#endif
+
+#ifdef L53S57obsolete
+  /* THIS IS OBSOLETE AND FOR HISTORICAL REFERENCE ONLY; IT MAY BE DELETED. */
+  /* Saturation is constant 57%; LAB color L (lightness) is constant 53.
+     This looks nice - colors are consistent pastels due to holding saturation
+     constant (the maximum possible due to blue) - but we lose some of the
+     distinguishability provided by saturated colors */
+  i++; redRef[i] = 206; greenRef[i] = 89; blueRef[i] = 89; /* 0 r */
+  i++; redRef[i] = 184; greenRef[i] = 105; blueRef[i] = 79; /* 15 */
+  i++; redRef[i] = 164; greenRef[i] = 117; blueRef[i] = 71; /* 30 */
+  i++; redRef[i] = 145; greenRef[i] = 124; blueRef[i] = 62; /* 45 */
+  /*i++; redRef[i] = 130; greenRef[i] = 130; blueRef[i] = 56;*/ /* 60 */
+  /*i++; redRef[i] = 116; greenRef[i] = 135; blueRef[i] = 58;*/ /* 75 */
+  i++; redRef[i] = 98; greenRef[i] = 137; blueRef[i] = 59; /* 90 */
+  /*i++; redRef[i] = 80; greenRef[i] = 140; blueRef[i] = 60;*/ /* 105 */
+  i++; redRef[i] = 62; greenRef[i] = 144; blueRef[i] = 62; /* 120 g */
+  /*i++; redRef[i] = 61; greenRef[i] = 143; blueRef[i] = 82;*/ /* 135 */
+  i++; redRef[i] = 61; greenRef[i] = 142; blueRef[i] = 102; /* 150 */
+  /*i++; redRef[i] = 60; greenRef[i] = 139; blueRef[i] = 119;*/ /* 165 */
+  /*i++; redRef[i] = 60; greenRef[i] = 140; blueRef[i] = 140;*/ /* 180 */
+  /*i++; redRef[i] = 68; greenRef[i] = 136; blueRef[i] = 159;*/ /* 195 */
+  i++; redRef[i] = 80; greenRef[i] = 132; blueRef[i] = 185; /* 210 */
+  /*i++; redRef[i] = 93; greenRef[i] = 124; blueRef[i] = 216;*/ /* 225 */
+  i++; redRef[i] = 110; greenRef[i] = 110; blueRef[i] = 255; /* 240 b */
+  i++; redRef[i] = 139; greenRef[i] = 104; blueRef[i] = 242; /* 255 */
+  i++; redRef[i] = 159; greenRef[i] = 96; blueRef[i] = 223; /* 270 */
+  i++; redRef[i] = 178; greenRef[i] = 89; blueRef[i] = 207; /* 285 */
+  i++; redRef[i] = 191; greenRef[i] = 82; blueRef[i] = 191; /* 300 */
+  i++; redRef[i] = 194; greenRef[i] = 83; blueRef[i] = 166; /* 315 */
+  i++; redRef[i] = 199; greenRef[i] = 86; blueRef[i] = 142; /* 330 */
+  /*i++; redRef[i] = 202; greenRef[i] = 87; blueRef[i] = 116;*/ /* 345 */
 #endif
 
   if (i != PARTITIONS) { /* Double-check future edits */
     print2("? %ld partitions but PARTITIONS = %ld\n", i, (long)PARTITIONS);
-    bug(2326); /* Don't go further in case of out-of-range zapping */
+    bug(2326); /* Don't go further to prevent out-of-range references */
   }
 
+ SKIP_INIT:
   if (color == -1) {
-    let(&str1, "000000"); /* Return black for "future" color */
+    let(&str1, "000000"); /* Return black for "(future)" color for labels with
+                             missing theorems in comments */
     return str1;
   }
-  if (color < 1 || color > maxColor) bug(2327);
-  partition = PARTITIONS * fraction;
-  if (partition >= PARTITIONS) bug(2325); /* Roundoff error? */
-  fractionInPartition = 1.0 * ( fraction - 1.0 * partition / PARTITIONS )
-      * PARTITIONS; /* The fraction of this partition it covers */
-  red = redMin + (redLevel[partition] +
-          fractionInPartition *
-              (redLevel[partition + 1] - redLevel[partition]))
-      * (redMax - redMin);
-  green = greenMin + (greenLevel[partition] +
-          fractionInPartition *
-              (greenLevel[partition + 1] - greenLevel[partition]))
-      * (greenMax - greenMin);
-  blue = blueMin + (blueLevel[partition] +
-          fractionInPartition *
-              (blueLevel[partition + 1] - blueLevel[partition]))
-      * (blueMax - blueMin);
- /*D*/ /*printf("red %ld green %ld blue %ld\n", red, green, blue);*/
 
-#ifndef OLD_COLORS
-  /* Multiply colors by 1.5 to lighten */
-  /* If a color exceeds 255, distribute excess to others */
-  red *= 1.5; green *= 1.5; blue *= 1.5;
-  /* Get max color */
-  max = 0;
-  if (red > max) max = red;
-  if (green > max) max = green;
-  if (blue > max) max = blue;
-  if (max > 255) {
-    frac = 255.0 / max;
-    sum = red + green + blue;
-    red = red * frac + (255.0 - red * frac) * (1.0 - frac) * sum
-        / (3.0 * 255.0 - frac * sum);
-    green = green * frac + (255.0 - green * frac) * (1.0 - frac) * sum
-        / (3.0 * 255.0 - frac * sum);
-    blue = blue * frac + (255.0 - blue * frac) * (1.0 - frac) * sum
-        / (3.0 * 255.0 - frac * sum);
-    if (red < 0) red = 0;
-    if (blue < 0) blue = 0;
-    if (green < 0) green = 0;
-  }
-  /* End of lighten */
-#endif
+  if (color < 1 || color > maxColor) bug(2327);
+  fraction = (1.0 * (color - 1)) / maxColor;
+                                   /* Fractional position in "spectrum" */
+  partition = PARTITIONS * fraction;  /* Partition number (integer) */
+  if (partition >= PARTITIONS) bug(2325); /* Roundoff error? */
+  fractionInPartition = 1.0 * (fraction - (1.0 * partition) / PARTITIONS)
+      * PARTITIONS; /* The fraction of this partition it covers */
+  red = 1.0 * (redRef[partition] +
+          fractionInPartition *
+              (redRef[partition + 1] - redRef[partition]));
+  green = 1.0 * (greenRef[partition] +
+          fractionInPartition *
+              (greenRef[partition + 1] - greenRef[partition]));
+  blue = 1.0 * (blueRef[partition] +
+          fractionInPartition *
+              (blueRef[partition + 1] - blueRef[partition]));
+  /* debug */
+  /* i=1;if (outputToString==0) {i=0;outputToString=1;} */
+  /*   print2("p%ldc%ld\n", partition, color); outputToString=i; */
+  /*printf("red %ld green %ld blue %ld\n", red, green, blue);*/
 
   if (red < 0 || green < 0 || blue < 0
       || red > 255 || green > 255 || blue > 255) {
@@ -2933,13 +3192,14 @@ vstring spectrumToRGB(long color, long maxColor) {
     bug(2323);
   }
   let(&str1, "      ");
-  i = sprintf(str1, "%02X%02X%02X", (unsigned int)red, (unsigned int)green,
+  j = sprintf(str1, "%02X%02X%02X", (unsigned int)red, (unsigned int)green,
       (unsigned int)blue);
-  if (i != 6) bug(2324);
-  /*D*//*printf("<FONT COLOR='#%02X%02X%02X'>a </FONT>\n", red, green, blue);*/
+  if (j != 6) bug(2324);
+  /* debug */
+  /*printf("<FONT COLOR='#%02X%02X%02X'>a </FONT>\n", red, green, blue);*/
   return str1;
 }
-#endif
+#endif    /* #ifdef RAINBOW_OPTION */
 
 
 /* Added 20-Sep-03 (broken out of printTexLongMath() for better
@@ -3039,6 +3299,9 @@ vstring getTexLongMath(nmbrString *mathString)
                 || !strcmp(mathToken[mathString[pos - 2]].tokenName, "A.")
                 /* 6-Apr-04 nm added E!, E* */
                 || !strcmp(mathToken[mathString[pos - 2]].tokenName, "E!")
+  /* 4-Jun-06 nm added dom, ran for space btwn A,x in "E! x e. dom A x A y" */
+                || !strcmp(mathToken[mathString[pos - 2]].tokenName, "ran")
+                || !strcmp(mathToken[mathString[pos - 2]].tokenName, "dom")
                 || !strcmp(mathToken[mathString[pos - 2]].tokenName, "E*")) {
               let(&texLine, cat(texLine, " ", NULL)); /* Add a space */
             }

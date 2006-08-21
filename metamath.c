@@ -5,11 +5,23 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.07.16 16-Apr-06"
+#define MVERSION "0.07.21 20-Aug-2006"
+/* 0.07.21 20-Aug-2006 nm mmwtex.c - Revised small colored numbers so that all
+   colors have the same grayscale brightness.. */
+/* 0.07.20 19-Aug-2006 nm mmpars.c - Made the error "Required hypotheses may
+   not be explicitly declared" in a compressed proof non-severe, so that we
+   can still SAVE the proof to reformat and recover it. */
+/* 0.07.19 11-Aug-06 nm mmcmds.c - "Distinct variable group(s)" is now
+   "group" or "groups" as appropriate. */
+/* 0.07.18 31-Jul-06 nm mmwtex.c - added table to contents to p.1 of output of
+   WRITE THEOREM_LIST command. */
+/* 0.07.17 4-Jun-06 nm mmpars.c - do not allow labels to match math symbols
+   (new spec proposed by O'Cat).   mmwtex.c - made theorem name 1st in title,
+   for readability in Firefox tabs. */
 /* 0.07.16 16-Apr-06 nm metamath.c, mmcmdl.c, mmpfas.c, mmhlpb.c - allow step
    to be negative (relative to end of proof) for ASSIGN, UNIFY, and LET STEP
    (see their HELPs).  Added INITIALIZE USER to delete LET STEP assignments
-   (see HELP INITIALIZE).  Fixed bug in LET STEP (mmpfas.c).
+   (see HELP INITIALIZE).  Fixed bug in LET STEP (mmpfas.c). */
 /* 0.07.15 10-Apr-06 nm metamath.c, mmvstr.c - change dates from 2-digit to
    4-digit year; make compatible with older 2-digit year. */
 /* 0.07.14 21-Mar-06 nm mmpars.c - fix bug 1722 when compressed proof has

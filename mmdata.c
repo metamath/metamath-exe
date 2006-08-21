@@ -970,6 +970,9 @@ long nmbrInstr(long start_position,nmbrString *string1,
 
 /* Search for string2 in string 1 in reverse starting at start_position */
 /* (Reverse nmbrInstr) */
+/* Warning:  This has 'let' inside of it and is not safe for use inside
+   of 'let' statements.  (To make it safe, it must be rewritten to expand
+   the 'mid' and remove the 'let'.) */
 long nmbrRevInstr(long start_position,nmbrString *string1,
     nmbrString *string2)
 {
@@ -2219,6 +2222,7 @@ pntrString *pntrRight(pntrString *sin,long n)
 
 
 /* Allocate and return an "empty" string n "characters" long */
+/* Each entry in the allocated array points to an empty vString. */
 pntrString *pntrSpace(long n)
 {
   pntrString *sout;

@@ -129,7 +129,7 @@ H("the next \"MM>\" prompt.  S will suppress further pausing until the next");
 H("\"MM>\" prompt.  After the first screen, you can also choose B to go back");
 H("a screenful.  Note that B may also be entered at the \"MM>\" prompt");
 H("immediately after a command to scroll back through the output of that");
-H("command.");
+H("command.  Scrolling can be disabled with SET SCROLL CONTINUOUS.");
 H("");
 H("**Warning**  Pressing CTRL-C will abort the Metamath program");
 H("unconditionally.  This means any unsaved work will be lost.");
@@ -554,6 +554,8 @@ H("of the screen output is continuous, so you may want to open a log file");
 H("(see HELP OPEN LOG) to record the results that fly by on the screen.");
 H("After the lines in the file are exhausted, Metamath returns to its");
 H("normal user interface mode.");
+H("");
+H("SUBMIT commands are not allowed inside of a command file.");
 
 
 printHelp = !strcmp(helpCmd, "HELP SYSTEM");
@@ -630,11 +632,18 @@ H("        write per output file");
 H("");
 H("This command writes a list of the theorems in the database into files");
 H("called \"mmtheorems.html\", \"mmtheorems2.html\", \"mmtheorems3.html\",");
-H("etc.  If / THEOREMS_PER_PAGE is omitted, the number of theorems (and other");
-H("statements) per page defaults to 100.");
+H("etc.  If / THEOREMS_PER_PAGE is omitted, the number of theorems (and");
+H("other statements) per page defaults to 100.");
 H("[Note:  As of 15-Aug-04, do not use THEOREMS_PER_PAGE because the list");
 H("will become out of sync with the individual page \"Theorem List\" links.");
 H("A to-do item is to fix this.]");
+H("");
+H("The \"mmtheorems.html\" output file includes a table of contents.  An");
+H("entry is identified in the database by \"$(\" immediately followed on the");
+H("next line by either \"#*#*\" (for a section break) or \"=-=-\" (for a");
+H("subsection break).  The line after that will be used for the table of");
+H("contents entry, after trimming spaces.  See the set.mm database file for");
+H("examples.");
 H("");
 
 printHelp = !strcmp(helpCmd, "HELP WRITE BIBLIOGRAPHY");

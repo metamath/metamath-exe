@@ -68,6 +68,7 @@ void typeStatement(long showStatement,
   vstring htmlDistinctVars = ""; /* 12/23/01 */
   char htmlDistinctVarsCommaFlag = 0; /* 12/23/01 */
   vstring str4 = ""; /* 10/10/02 */
+  long distVarGrps = 0;  /* 11-Aug-2006 nm */
 
   /* For syntax breakdown of definitions in HTML page */
   long zapStatement1stToken;
@@ -225,6 +226,7 @@ void typeStatement(long showStatement,
             let(&htmlDistinctVars, cat(htmlDistinctVars, " &nbsp; ",
                 NULL));
             htmlDistinctVarsCommaFlag = 0;
+            distVarGrps++;  /* 11-Aug-2006 nm */
 
           }
           nmbrLet(&nmbrDDList, NULL_NMBRSTRING);
@@ -262,6 +264,7 @@ void typeStatement(long showStatement,
                 let(&htmlDistinctVars, cat(htmlDistinctVars, " &nbsp; ",
                     NULL));
                 htmlDistinctVarsCommaFlag = 0;
+                distVarGrps++;  /* 11-Aug-2006 nm */
 
               }
               nmbrLet(&nmbrDDList, NULL_NMBRSTRING);
@@ -581,8 +584,15 @@ void typeStatement(long showStatement,
       if (texFlag && htmlFlag && htmlDistinctVars[0]) {
         outputToString = 1;
         printLongLine(cat(
+     "<CENTER><A HREF=\"mmset.html#distinct\">Distinct variable</A> group",
+            /* 11-Aug-2006 nm Determine whether "group" or "groups". */
+            distVarGrps > 1 ? "s" : "",  /* 11-Aug-2006 */
+            ": ", htmlDistinctVars, "</CENTER>", NULL), "", "\"");
+        /* original code:
+        printLongLine(cat(
      "<CENTER><A HREF=\"mmset.html#distinct\">Distinct variable</A> group(s): ",
             htmlDistinctVars, "</CENTER>", NULL), "", "\"");
+        */
         outputToString = 0;
       }
 

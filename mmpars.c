@@ -854,7 +854,6 @@ void parseLabels(void)
     }
   }
 
-
 }
 
 /* This functions retrieves all possible math symbols from $c and $v
@@ -864,10 +863,11 @@ void parseMathDecl(void)
   long potentialSymbols;
   long stmt;
   char *fbPtr;
-  long i, j;
+  long i, j, k;
   char *tmpPtr;
   nmbrString *nmbrTmpPtr;
   long oldMathTokens;
+  void *voidPtr; /* bsearch returned value */  /* 4-Jun-06 nm */
 
   /* Find the upper limit of the number of symbols declared for
      pre-allocation:  at most, the number of symbols is half the number of
@@ -971,6 +971,30 @@ void parseMathDecl(void)
 /*E*/    if (i >= mathTokens) break;
 /*E*/    print2("%s ",mathToken[mathKey[i]].tokenName);
 /*E*/  } print2("\n");}
+
+
+  /* 4-Jun-06 nm Check for labels with the same name as math tokens */
+  /* (This section implements the Metamath spec change proposed by O'Cat that
+     lets labels and math tokens occupy the same namespace and thus forbids
+     them from having common names.) */
+  /* For maximum speed, we scan M math tokens and look each up in the list
+     of L labels.  The we have M * log L comparisons, which is optimal when
+     (as in most cases) M << L. */
+  for (i = 0; i < mathTokens; i++) {
+    /* See if the math token is in the list of labels */
+    voidPtr = (void *)bsearch(mathToken[i].tokenName, labelKeyBase,
+        numLabelKeys, sizeof(long), labelSrchCmp);
+    if (voidPtr) { /* A label matching the token was found */
+      stmt = (*(long *)voidPtr); /* Statement number */
+      fbPtr = statement[stmt].labelSectionPtr;
+      k = whiteSpaceLen(fbPtr);
+      j = tokenLen(fbPtr + k);
+      sourceError(fbPtr + k, j, stmt, cat(
+         "This label has the same name as the math token declared on line ",
+         str(statement[mathToken[i].statement].lineNum), NULL));
+    }
+  }
+  /* End of 4-Jun-06 */
 
 
 }
@@ -2905,7 +2929,10 @@ char parseCompressedProof(long statemNum)
               "Required hypotheses may not be explicitly declared.");
         }
         wrkProof.errorCount++;
-        if (returnFlag < 2) returnFlag = 2;
+        /* if (returnFlag < 2) returnFlag = 2; */
+        /* 19-Aug-2006 nm Tolerate this error so we can continue to work
+           on proof in Proof Assistant */
+        if (returnFlag < 1) returnFlag = 1;
       }
 
       wrkProof.proofString[step] = j; /* Proof string */
