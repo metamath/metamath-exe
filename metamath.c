@@ -5,7 +5,12 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.07.21 20-Aug-2006"
+#define MVERSION "0.07.23 31-Aug-2006"
+/* 0.07.23 31-Aug-2006 nm mmwtex.c Added Home and Contents links to bottom of
+   WRITE THEOREM_LIST pages */
+/* 0.07.22 26-Aug-2006 nm metamath.c, mmcmdl.c, mmhlpb.c - Changed "IMPROVE
+   STEP <step>" to "IMPROVE <step>" for user convenience and to be consistent
+   with "ASSIGN <step>" */
 /* 0.07.21 20-Aug-2006 nm mmwtex.c - Revised small colored numbers so that all
    colors have the same grayscale brightness.. */
 /* 0.07.20 19-Aug-2006 nm mmpars.c - Made the error "Required hypotheses may
@@ -3948,25 +3953,59 @@ void command(int argc, char *argv[])
       if (switchPos("/ NO_DISTINCT")) p = 1; else p = 0;
                         /* p = 1 means don't try to use statements with $d's */
 
-      if (cmdMatches("IMPROVE STEP") || cmdMatches("IMPROVE LAST") ||
-          cmdMatches("IMPROVE FIRST")) {                     /* 11-Dec-05 nm */
-
+      /* 26-Aug-2006 nm Changed "IMPROVE STEP <step>" to "IMPROVE <step>" */
+      let(&str1, fullArg[1]); /* To avoid void pointer problems with fullArg */
+      if (toupper(str1[0]) != 'A') {
         /* 16-Apr-06 nm - Handle nonpositive step number: 0 = last,
            -1 = penultimate, etc.*/
         offset = 0; /* 16-Apr-06 */
         /* 10/4/99 - Added LAST - this means the last unknown step shown
            with SHOW NEW_PROOF/ESSENTIAL/UNKNOWN */
-        if (cmdMatches("IMPROVE LAST") || cmdMatches("IMPROVE FIRST")) {
-                               /* "IMPROVE LAST or FIRST" */ /* 11-Dec-05 nm */
+        if (toupper(str1[0]) == 'L' || toupper(str1[0]) == 'F') {
+                                        /* "IMPROVE LAST" or "IMPROVE FIRST" */
           s = 1; /* Temporary until we figure out which step */
           offset = 1;          /* 16-Apr-06 */
         } else {
-          s = val(fullArg[2]); /* Step number */
+          if (toupper(str1[0]) == 'S') {
+            print2(
+           "?\"IMPROVE STEP <step>\" is obsolete.  Use \"IMPROVE <step>\".\n");
+            continue;
+          }
+          s = val(fullArg[1]); /* Step number */
+          if (strcmp(fullArg[1], str(s))) {
+            print2(
+                "?Expected a number or FIRST or LAST or ALL after IMPROVE.\n");
+            continue;
+          }
           if (s <= 0) {         /* 16-Apr-06 */
             offset = - s + 1;   /* 16-Apr-06 */
-            s = 1; /* Temp. until we figure out which step */ /* 16-Apr-06 */
+            s = 1; /* Temporary until we figure out step */ /* 16-Apr-06 */
           }                     /* 16-Apr-06 */
         }
+        /* End of 26-Aug-2006 change */
+
+      /* ------- Old code before 26-Aug-2006 -------
+      if (cmdMatches("IMPROVE STEP") || cmdMatches("IMPROVE LAST") ||
+          cmdMatches("IMPROVE FIRST")) {                     /@ 11-Dec-05 nm @/
+
+        /@ 16-Apr-06 nm - Handle nonpositive step number: 0 = last,
+           -1 = penultimate, etc.@/
+        offset = 0; /@ 16-Apr-06 @/
+        /@ 10/4/99 - Added LAST - this means the last unknown step shown
+           with SHOW NEW_PROOF/ESSENTIAL/UNKNOWN @/
+        if (cmdMatches("IMPROVE LAST") || cmdMatches("IMPROVE FIRST")) {
+                               /@ "IMPROVE LAST or FIRST" @/ /@ 11-Dec-05 nm @/
+          s = 1; /@ Temporary until we figure out which step @/
+          offset = 1;          /@ 16-Apr-06 @/
+        } else {
+          s = val(fullArg[2]); /@ Step number @/
+          if (s <= 0) {         /@ 16-Apr-06 @/
+            offset = - s + 1;   /@ 16-Apr-06 @/
+            s = 1; /@ Temp. until we figure out which step @/ /@ 16-Apr-06 @/
+          }                     /@ 16-Apr-06 @/
+        }
+        ------- End of old code ------- */
+
         m = nmbrLen(proofInProgress.proof); /* Original proof length */
         if (s > m || s < 1) {
           print2("?The step must be in the range from 1 to %ld.\n", m);
@@ -3983,7 +4022,8 @@ void command(int argc, char *argv[])
           s = 0; /* Use as flag that step was found */
           nmbrLet(&essentialFlags, nmbrGetEssential(proofInProgress.proof));
           /*if (cmdMatches("IMPROVE LAST")) {*/
-          if (!cmdMatches("IMPROVE FIRST")) {   /* 16-Apr-06 */
+          /*if (!cmdMatches("IMPROVE FIRST")) {*/   /* 16-Apr-06 */
+          if (toupper(str1[0]) != 'F') { /* 26-Aug-2006 */
             /* Scan proof backwards until last essential unknown step found */
             /* 16-Apr-06 - count back 'offset' unknown steps */
             j = offset;      /* 16-Apr-06 */
@@ -3999,7 +4039,7 @@ void command(int argc, char *argv[])
               }
             } /* Next i */
           } else {
-            /* 11-Dec-05 nm Added ASSIGN FIRST */
+            /* 11-Dec-05 nm Added IMPROVE FIRST */
             /* Scan proof forwards until first essential unknown step found */
             for (i = 1; i <= m; i++) {
               if (essentialFlags[i - 1]
@@ -4088,7 +4128,8 @@ void command(int argc, char *argv[])
       } /* End if IMPROVE STEP */
 
 
-      if (cmdMatches("IMPROVE ALL")) {
+      /*if (cmdMatches("IMPROVE ALL")) {*/
+      if (toupper(str1[0]) == 'A') { /* 26-Aug-2006 */
 
         m = nmbrLen(proofInProgress.proof); /* Original proof length */
 

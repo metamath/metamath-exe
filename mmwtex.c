@@ -2250,7 +2250,7 @@ void printTexTrailer(flag texTrailerFlag) {
       print2("Copyright &copy; 2002 \n");
       print2("The Metamath Home Page is\n");
       */
-      print2("<A HREF=\"http://metamath.org\">metamath.org</A>\n");
+      print2("<A HREF=\"http://metamath.org\">metamath.org mirrors</A>\n");
       print2("</FONT></CENTER>\n");
       print2("</BODY></HTML>\n");
     }
@@ -2434,7 +2434,8 @@ void writeTheoremList(long theoremsPerPage)
             ); /* Current page shouldn't have link to self */
       } else {
         let(&str1, cat("<A HREF=\"mmtheorems",
-            (p > 1) ? str(p) : "", ".html\">",
+            (p == 1) ? "" : str(p),
+            (p == 1) ? ".html#mmtc\">" : ".html\">", /* 31-Aug-2006 nm */
             (p == 1) ? "Contents + 1" : str(p) /* 31-Jul-2006 nm */
             , "</A>", NULL));
       }
@@ -2495,7 +2496,8 @@ void writeTheoremList(long theoremsPerPage)
     if (page == 1) {  /* We're on page 1 */
 
       outputToString = 1;
-      print2("<P><CENTER><B>Table of Contents</B></CENTER>\n");
+      print2(
+        "<P><CENTER><A NAME=\"mmtc\"></A><B>Table of Contents</B></CENTER>\n");
       fprintf(output_fp, "%s", printString);
       outputToString = 0;
       let(&printString, "");
@@ -2803,7 +2805,7 @@ void writeTheoremList(long theoremsPerPage)
 
     /*
     print2("<CENTER><FONT SIZE=-2 FACE=ARIAL>\n");
-    print2("<A HREF=\"http://metamath.org\">metamath.org</A>\n");
+    print2("<A HREF=\"http://metamath.org\">metamath.org mirrors</A>\n");
     print2("</FONT></CENTER>\n");
     */
     /* Add a "Previous" and "Next" links to bottom of page for convenience */
@@ -2829,10 +2831,15 @@ void writeTheoremList(long theoremsPerPage)
     }
     print2("<TABLE BORDER=0 WIDTH=\"100%c\">\n", '%');
     print2("  <TR>\n");
-    print2("    <TD ALIGN=LEFT VALIGN=TOP WIDTH=\"25%c\">&nbsp;</TD>\n", '%');
+  /*print2("    <TD ALIGN=LEFT VALIGN=TOP WIDTH=\"25%c\">&nbsp;</TD>\n", '%');*/
+    /* 31-Aug-2006 nm Changed above line to the 4 following lines: */
+    print2("    <TD ALIGN=LEFT VALIGN=TOP WIDTH=\"25%c\">\n", '%');
+    print2("      <FONT SIZE=-1 FACE=sans-serif>\n");
+    print2("      <A HREF=\"mmset.html\">MPE Home</A>&nbsp;&nbsp;\n");
+    print2("      <A HREF=\"mmtheorems.html#mmtc\">Contents</A></FONT></TD>\n");
     print2("    <TD NOWRAP ALIGN=CENTER><FONT SIZE=-2\n");
     print2("      FACE=ARIAL>\n");
-    print2("      <A HREF=\"http://metamath.org\">metamath.org</A>\n");
+    print2("      <A HREF=\"http://metamath.org\">metamath.org mirrors</A>\n");
     print2("      </FONT></TD>\n");
     print2("    <TD NOWRAP ALIGN=RIGHT VALIGN=TOP WIDTH=\"25%c\"><FONT\n", '%');
     print2("      SIZE=-1 FACE=sans-serif>\n");

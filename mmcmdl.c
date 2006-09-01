@@ -69,8 +69,8 @@ flag processCommandLine(void)
       goto pclbad;
 
     if (cmdMatches("HELP")) {
-      if (!getFullArg(1, cat("LANGUAGE|PROOF_ASSISTANT|BEEP|EXIT|QUIT|",
-          "READ|ERASE|",
+      if (!getFullArg(1, cat("LANGUAGE|PROOF_ASSISTANT|MM-PA|",
+          "BEEP|EXIT|QUIT|READ|ERASE|",
           "OPEN|CLOSE|SHOW|SEARCH|SET|VERIFY|SUBMIT|SYSTEM|PROVE|FILE|WRITE|",
           "ASSIGN|REPLACE|MATCH|UNIFY|LET|INITIALIZE|DELETE|IMPROVE|",
           "MINIMIZE_WITH|SAVE|DEMO|INVOKE|CLI|EXPLORE|TEX|LATEX|HTML|MORE|",
@@ -832,6 +832,37 @@ flag processCommandLine(void)
       goto pclgood;
     }
 
+    /* 26-Aug-2006 nm Changed "IMPROVE STEP <step>" to just "IMPROVE <step>"
+       for user convenience (and consistency with "ASSIGN" command) */
+    if (cmdMatches("IMPROVE")) {
+      if (!getFullArg(1,
+        "* What step number, or FIRST, or LAST, or ALL <ALL>? ")) goto pclbad;
+                                                             /* 11-Dec-05 nm */
+      /* Get any switches */
+      i = 1;
+      while (1) {
+        i++;
+        if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+        if (lastArgMatches("/")) {
+          i++;
+          if (!getFullArg(i,
+              "DEPTH|NO_DISTINCT<DEPTH>")
+              ) goto pclbad;
+          if (lastArgMatches("DEPTH")) {
+            i++;
+            if (!getFullArg(i,
+  "# What is maximum depth for searching statements with $e hypotheses <0>? "))
+              goto pclbad;
+          }
+        } else {
+          break;
+        }
+        /*break;*/ /* Do this if only 1 switch is allowed */
+      } /* end while */
+      goto pclgood;
+    } /* end if IMPROVE */
+
+    /* ------- Old version before 26-Aug-2006 -------
     if (cmdMatches("IMPROVE")) {
       if (!getFullArg(1,
           "STEP|ALL|FIRST|LAST|<ALL>")) goto pclbad;
@@ -841,8 +872,8 @@ flag processCommandLine(void)
       }
       if (cmdMatches("IMPROVE STEP") || cmdMatches("IMPROVE ALL")
           || cmdMatches("IMPROVE LAST") || cmdMatches("IMPROVE FIRST")) {
-                                                            /* 11-Dec-05 nm */
-        /* Get switches */
+                                                            /@ 11-Dec-05 nm @/
+        /@ Get switches @/
         if (cmdMatches("IMPROVE STEP")) {
           i = 2;
         } else {
@@ -865,11 +896,12 @@ flag processCommandLine(void)
           } else {
             break;
           }
-          /*break;*/ /* Do this if only 1 switch is allowed */
-        } /* end while */
+          /@break;@/ /@ Do this if only 1 switch is allowed @/
+        } /@ end while @/
         goto pclgood;
-      } /* end if IMPROVE STEP or IMPROVE ALL */
+      } /@ end if IMPROVE STEP or IMPROVE ALL @/
     }
+    ------- End of old version ------- */
 
     if (cmdMatches("MINIMIZE_WITH")) {
       if (!getFullArg(1,"* What statement label? ")) goto pclbad;

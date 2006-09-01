@@ -336,9 +336,10 @@ H("Also, the following additional qualifiers are available:");
 H("    / UNKNOWN - Shows only steps that have no statement assigned.");
 H("    / NOT_UNIFIED - Shows only steps that have not been unified.");
 H("");
-H("Note that / ESSENTIAL, / DEPTH, / UNKNOWN, and / NOT_UNIFIED may");
-H("be used in any combination; each of them effectively filters out");
-H("additional steps from the proof display.");
+H("Note that / ALL, / DEPTH, / UNKNOWN, and / NOT_UNIFIED may");
+H("be used in any combination; each of them effectively filters out (or");
+H("\"unfilters\" in the case of / ALL) additional steps from the proof");
+H("display.");
 H("");
 H("See also:  SHOW PROOF");
 H("");
@@ -581,6 +582,11 @@ H("See also:  HELP PROOF_ASSISTANT and HELP EXIT");
 H("");
 
 
+printHelp = !strcmp(helpCmd, "HELP MM-PA");
+H("See HELP PROOF_ASSISTANT");
+H("");
+
+
 printHelp = !strcmp(helpCmd, "HELP MORE");
 H("Syntax:  MORE <filename>");
 H("");
@@ -630,20 +636,21 @@ H("Optional qualifier:");
 H("    / THEOREMS_PER_PAGE <number> - specifies the number of theorems to");
 H("        write per output file");
 H("");
-H("This command writes a list of the theorems in the database into files");
-H("called \"mmtheorems.html\", \"mmtheorems2.html\", \"mmtheorems3.html\",");
-H("etc.  If / THEOREMS_PER_PAGE is omitted, the number of theorems (and");
-H("other statements) per page defaults to 100.");
-H("[Note:  As of 15-Aug-04, do not use THEOREMS_PER_PAGE because the list");
-H("will become out of sync with the individual page \"Theorem List\" links.");
-H("A to-do item is to fix this.]");
+H("This command writes a list of the $a and $p statements in the database");
+H("into web page files called \"mmtheorems.html\", \"mmtheorems2.html\",");
+H("\"mmtheorems3.html\", etc.  If / THEOREMS_PER_PAGE is omitted, the number");
+H("of theorems (and other statements) per page defaults to 100.");
+H("[Warning:  A value other than 100 for THEOREMS_PER_PAGE will cause the");
+H("list to become out of sync with the \"Related theorems\" links on the");
+H("web pages for individual theorems.  This may be corrected in a future");
+H("version.]");
 H("");
-H("The \"mmtheorems.html\" output file includes a table of contents.  An");
-H("entry is identified in the database by \"$(\" immediately followed on the");
-H("next line by either \"#*#*\" (for a section break) or \"=-=-\" (for a");
-H("subsection break).  The line after that will be used for the table of");
-H("contents entry, after trimming spaces.  See the set.mm database file for");
-H("examples.");
+H("The first output file, \"mmtheorems.html\", includes a Table of Contents.");
+H("An entry is triggered in the database by \"$(\" immediately followed by a");
+H("new line starting with either \"#*#*\" (for a section break) or \"=-=-\"");
+H("(for a subsection break).  The line following that one that will be used");
+H("for the table of contents entry, after trimming spaces.  See the set.mm");
+H("database file for examples.");
 H("");
 
 printHelp = !strcmp(helpCmd, "HELP WRITE BIBLIOGRAPHY");
@@ -726,8 +733,7 @@ H("Optional qualifiers:");
 H("    / MAX_ESSENTIAL_HYP <number> - filters out of the list any statements");
 H("        with more than the specified number of $e hypotheses");
 H("    / ESSENTIAL_ONLY - in the MATCH ALL statement, only the steps that");
-H("        would be listed in SHOW NEW_PROOF / ESSENTIAL display are");
-H("        matched.");
+H("        would be listed in SHOW NEW_PROOF display are matched.");
 H("");
 
 
@@ -840,7 +846,8 @@ H("");
 
 
 printHelp = !strcmp(helpCmd, "HELP IMPROVE");
-H("Syntax:  IMPROVE STEP <step> [/ DEPTH <number>] [/ NO_DISTINCT]");
+H("Syntax:  IMPROVE <step> [/ DEPTH <number>] [/ NO_DISTINCT]");
+                                                           /* 26-Aug-2006 nm */
 H("         IMPROVE ALL [/ DEPTH <number>] [/ NO_DISTINCT]");
 H("         IMPROVE FIRST [/ DEPTH <number>] [/ NO_DISTINCT]");
                                                              /* 11-Dec-05 nm */
@@ -852,17 +859,16 @@ H("completely known.  They are primarily useful for filling in proofs of $f");
 H("hypotheses.  The search will be restricted to statements having no $e");
 H("hypotheses.");
 H("");
-H("IMPROVE FIRST is the same as IMPROVE STEP using the first step that is");
-H("shown by SHOW NEW_PROOF /ESSENTIAL /UNKNOWN.");
+H("IMPROVE FIRST is the same as IMPROVE <step> using the first step that is");
+H("shown by SHOW NEW_PROOF / UNKNOWN.");
 H("");
-H("IMPROVE LAST is the same as IMPROVE STEP using the last step that is shown");
-H("by SHOW NEW_PROOF /ESSENTIAL /UNKNOWN.");
+H("IMPROVE LAST is the same as IMPROVE <step> using the last step that is");
+H("shown by SHOW NEW_PROOF / UNKNOWN.");
 H("");
 H("If the <step> is zero or negative, the -<step>th from last unknown step,");
-H("as shown by SHOW NEW_PROOF / UNKNOWN, will be used.  IMPROVE -1 <label>");
-H("will use the penultimate unknown step,  IMPROVE -2 <label> the");
-H("antepenultimate, and IMPROVE 0 <label> is the same as");
-H("IMPROVE LAST <label>.");
+H("as shown by SHOW NEW_PROOF / UNKNOWN, will be used.  IMPROVE -1 will use");
+H("the penultimate unknown step,  IMPROVE -2 the antepenultimate, and");
+H("IMPROVE 0 is the same as IMPROVE LAST.");
 H("");
 H("Optional qualifier:");
 H("    / DEPTH <number> - This qualifier will cause the search to include");
@@ -970,7 +976,7 @@ H("For a quick demo that enables you to see Metamath do something, type");
 H("the following:");
 H("    READ set.mm");
 H("    SHOW STATEMENT id1 /COMMENT");
-H("    SHOW PROOF id1 /ESSENTIAL /RENUMBER /LEMMON");
+H("    SHOW PROOF id1 /RENUMBER /LEMMON");
 H("will show you a proof of \"P implies P\" directly from the axioms");
 H("of propositional calculus.");
 H("    SEARCH * \"distributive law\" /COMMENTS");
