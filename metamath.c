@@ -5,8 +5,15 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.07.23 31-Aug-2006"
-/* 0.07.23 31-Aug-2006 nm mmwtex.c Added Home and Contents links to bottom of
+#define MVERSION "0.07.27 23-Oct-2006"
+/* 0.07.27 23-Oct-2006 nm metamath.c, mminou.c, mmhlpa.c, mmhlpb.c - Added
+   / SILENT qualifier to SUBMIT command */
+/* 0.07.26 12-Oct-2006 nm mminou.c - Fixed bug when SUBMIT file was missing
+   a new-line at end of file (reported by Marnix Klooster) */
+/* 0.07.25 10-Oct-2006 nm metamath.c - Fixed bug invoking TOOLS as a ./metamath
+   command-line argument */
+/* 0.07.24 25-Sep-2006 nm mmcmdl.c Fixed bug in SHOW NEW_PROOF/COLUMN nn/LEM */
+/* 0.07.23 31-Aug-2006 nm mmwtex.c - Added Home and Contents links to bottom of
    WRITE THEOREM_LIST pages */
 /* 0.07.22 26-Aug-2006 nm metamath.c, mmcmdl.c, mmhlpb.c - Changed "IMPROVE
    STEP <step>" to "IMPROVE <step>" for user convenience and to be consistent
@@ -372,7 +379,8 @@ void command(int argc, char *argv[])
 
     if (!commandProcessedFlag && argc > 1 && argsProcessed < argc - 1
         && !commandFileOpenFlag) {
-      if (toolsMode) {
+      /* if (toolsMode) { */  /* 10-Oct-2006 nm Fix bug: changed to listMode */
+      if (listMode) {
         /* If program was compiled in TOOLS mode, the command-line argument
            is assumed to be a single TOOLS command; build the equivalent
            TOOLS command */
@@ -625,8 +633,17 @@ void command(int argc, char *argv[])
       let(&commandFileName, fullArg[1]);
       commandFilePtr = fSafeOpen(commandFileName, "r");
       if (!commandFilePtr) continue; /* Couldn't open (err msg was provided) */
-      print2("Taking command lines from file \"%s\"...\n",commandFileName);
       commandFileOpenFlag = 1;
+
+      /* 23-Oct-2006 nm Added / SILENT */
+      if (switchPos("/ SILENT") == 0) {
+        commandFileSilentFlag = 0;
+      } else {
+        commandFileSilentFlag = 1;
+      }
+      if (!commandFileSilentFlag)
+        print2("Taking command lines from file \"%s\"...\n",commandFileName);
+
       continue;
     }
 
@@ -2210,7 +2227,7 @@ void command(int argc, char *argv[])
 
         /*
            s = -2:  mmascii.html
-           s = -1:  mmtheorems.html
+           s = -1:  mmtheoremsall.html (used to be mmtheorems.html)
            s = 0:   mmdefinitions.html
            s > 0:   normal statement
         */
@@ -2244,7 +2261,7 @@ void command(int argc, char *argv[])
             let(&texFileName, "mmascii.html");
             break;
           case -1:
-            let(&texFileName, "mmtheorems.html");
+            let(&texFileName, "mmtheoremsall.html");
             break;
           case 0:
             let(&texFileName, "mmdefinitions.html");
@@ -2278,8 +2295,9 @@ void command(int argc, char *argv[])
                 " (in order of first appearance)",
                 "</B></FONT></CENTER><P>", NULL), "", "\"");
           }
-          print2(
-              "<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=%s\n",
+          /* 13-Oct-2006 nm todo - </CENTER> still appears - where is it? */
+          if (!briefHtmlFlag) print2("<CENTER>\n");
+          print2("<TABLE BORDER CELLSPACING=0 BGCOLOR=%s\n",
               MINT_BACKGROUND_COLOR);
           /* For bobby.cast.org approval */
           switch (s) {
@@ -2413,19 +2431,35 @@ void command(int argc, char *argv[])
                   str1 = getHTMLHypAndAssertion(i); /* In mmwtex.c */
                   let(&str1, cat(str1, "</TD></TR>", NULL));
                 }
-                let(&str2, cat("<TR ALIGN=LEFT><TD><A HREF=\"",
-                    statement[i].labelName,
-                    ".html\">", statement[i].labelName,
-                    "</A>", NULL));
-                if (!briefHtmlFlag) {
-                  /* Add little pink number */
+
+                /* 13-Oct-2006 nm Made some changes to BRIEF_HTML/_ALT_HTML
+                   to use its mmtheoremsall.html output for the Palm PDA */
+                if (briefHtmlFlag) {
+                  /* Get page number in mmtheorems*.html of WRITE THEOREMS */
+                  k = ((statement[i].pinkNumber - 1) /
+                      THEOREMS_PER_PAGE) + 1; /* Page # */
+                  let(&str2, cat("<TR ALIGN=LEFT><TD ALIGN=LEFT>",
+                      /*"<FONT COLOR=\"#FA8072\">",*/
+                      "<FONT COLOR=ORANGE>",
+                      str(statement[i].pinkNumber), "</FONT> ",
+                      "<FONT COLOR=GREEN><A HREF=\"",
+                      "mmtheorems", (k == 1) ? "" : str(k), ".html#",
+                      statement[i].labelName,
+                      "\">", statement[i].labelName,
+                      "</A></FONT>", NULL));
+                  let(&str1, cat(str2, " ", str1, NULL));
+                } else {
+                  /* Get little pink (or rainbow-colored) number */
                   let(&str4, "");
                   str4 = pinkHTML(i);
-                  let(&str2, cat(str2, str4, NULL));
-                  /* Note: the variable m is the same as the pink statement
-                     number here, if we ever need it */
+                  let(&str2, cat("<TR ALIGN=LEFT><TD><A HREF=\"",
+                      statement[i].labelName,
+                      ".html\">", statement[i].labelName,
+                      "</A>", str4, NULL));
+                  let(&str1, cat(str2, "</TD><TD>", str1, NULL));
                 }
-                let(&str1, cat(str2, "</TD><TD>", str1, NULL));
+                /* End of 13-Oct-2006 changed section */
+
                 print2("\n");  /* New line for HTML source readability */
                 printLongLine(str1, "", "\"");
 
@@ -3151,7 +3185,8 @@ void command(int argc, char *argv[])
             htmlFlag);
         if (texFlag && htmlFlag) {
           outputToString = 1;
-          print2("</TABLE></CENTER>\n");
+          print2("</TABLE>\n");
+          print2("</CENTER>\n");
           /* print trailer will close out string later */
           outputToString = 0;
         }

@@ -33,7 +33,7 @@ extern int cprintf(const char *f__mt,...);
 #include <console.h>
 #endif
 
-#define QUOTED_SPACE 3 /*ASCII 3 that temporarily zaps a space */
+#define QUOTED_SPACE 3 /* ASCII 3 that temporarily zaps a space */
 
 
 int errorCount = 0;
@@ -49,6 +49,7 @@ vstring printString = "";
 flag commandFileOpenFlag = 0;
 FILE *commandFilePtr;
 vstring commandFileName = "";
+flag commandFileSilentFlag = 0; /* 23-Oct-2006 nm For SUBMIT ... /SILENT */
 
 FILE *inputDef_fp,*input_fp,*output_fp; /* File pointers */
 vstring inputDef_fn="",input_fn="",output_fn="";        /* File names */
@@ -231,7 +232,9 @@ flag print2(char* fmt,...)
     goto PRINT2_RETURN;
   }
 
-  if (!outputToString) {
+  if (!outputToString && !commandFileSilentFlag) {
+           /* 22-Oct-2006 nm Added commandFileSilentFlag for SUBMIT /SILENT,
+              here and elsewhere in mminou.c */
     if (nlpos == 0) { /* Partial line (usu. status bar) - print immediately */
 
 #ifdef __WATCOMC__
@@ -278,7 +281,7 @@ flag print2(char* fmt,...)
         (vstring)(backBuffer[backBufferPos - 1]), printBuffer, NULL));
   } /* End if !outputToString */
 
-  if (logFileOpenFlag && !outputToString) {
+  if (logFileOpenFlag && !outputToString /* && !commandFileSilentFlag */) {
     fprintf(logFilePtr, "%s", printBuffer);  /* Print to log file */
   }
 
@@ -614,37 +617,49 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
 vstring cmdInput(FILE *stream, vstring ask)
 {
   /* This function prints a prompt (if 'ask' is not NULL) and gets a line from
-    the stream.  NULL is returned when end-of-file is encountered.
+    the input stream.  NULL is returned when end-of-file is encountered.
     New memory is allocated each time linput is called.  This space must
-    be freed by the user if not needed. */
-  vstring g = ""; /* always init vstrings to "" for let(&...) to work */
+    be freed by the caller. */
+  vstring g = ""; /* Always init vstrings to "" for let(&...) to work */
   long i;
 #define CMD_BUFFER_SIZE 2000
 
   while (1) { /* For "B" backup loop */
-    if (ask) printf("%s",ask);
-    let(&g, space(CMD_BUFFER_SIZE)); /* Allocate CMD_BUFFER_SIZE characters */
+    if (ask != NULL && !commandFileSilentFlag) printf("%s",ask);
+    let(&g, space(CMD_BUFFER_SIZE)); /* Allocate CMD_BUFFER_SIZE+1 bytes */
     if (g[CMD_BUFFER_SIZE]) bug(1520); /* Bug in let() (improbable) */
     g[CMD_BUFFER_SIZE - 1] = 0; /* For overflow detection */
     if (!fgets(g, CMD_BUFFER_SIZE, stream)) {
       /* End of file */
+      let(&g, ""); /* Deallocate memory */
       return NULL;
     }
-    /*g[CMD_BUFFER_SIZE - 1] = 0;*/ /* Guarantee strlen will work */
-    /* Warning:  Don't call bug(), because it calls print2 which may call this. */
     if (g[CMD_BUFFER_SIZE - 1]) {
-      /* Warning:  Don't call bug(), because it calls print2. */
       /* Detect input overflow */
+      /* Warning:  Don't call bug() - it calls print2 which may call this. */
       printf("***BUG #1508\n");
     }
     i = strlen(g);
+/*E*/db = db - (CMD_BUFFER_SIZE - i); /* Adjust string usage to detect leaks */
     /* Detect operating system bug of inputting no characters */
-    if (!i) printf("***BUG #1507\n");
-    /* Warning:  Don't call bug(), because it calls print2. */
-    /* Detect input overflow - THIS MAY OR MAY NOT WORK; THE PROGRAM MAY
-       CRASH BEFORE IT EVER GETS TO THIS POINT */
-    /*if (i >= CMD_BUFFER_SIZE - 1) printf("*** BUG #1508\n");*/
-/*E*/db = db - (CMD_BUFFER_SIZE - i); /* track string space used to detect leaks */
+    if (!i) {
+      printf("***BUG #1507\n");
+
+    /* 12-Oct-2006 Fix bug that occurs when the last line in the file has
+       no new-line (reported by Marnix Klooster) */
+    } else {
+      if (g[i - 1] != '\n') {
+        /* Warning:  Don't call bug() - it calls print2 which may call this. */
+        if (!feof(stream)) printf("***BUG #1524\n");
+        /* Add a new-line so processing below will behave correctly. */
+        let(&g, cat(g, chr('\n'), NULL));
+/*E*/db = db + (CMD_BUFFER_SIZE - i); /* Cancel extra piece of string */
+        i++;
+      }
+    /* 12-Oct-2006 End of new code */
+
+    }
+
     if (g[1]) {
       i--;
       if (g[i] != '\n') printf("***BUG #1519\n");
@@ -762,6 +777,7 @@ vstring cmdInput1(vstring ask)
         print2("%s[End of command file \"%s\".]\n", ask1, commandFileName);
         commandFileOpenFlag = 0;
         commandLine = "";
+        commandFileSilentFlag = 0; /* 23-Oct-2006 nm Added SUBMIT / SILENT */
         break; /*continue;*/
       }
       print2("%s%s\n", ask1, commandLine);

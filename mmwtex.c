@@ -3278,6 +3278,8 @@ vstring getTexLongMath(nmbrString *mathString)
               || !strcmp(mathToken[mathString[pos - 4]].tokenName, "E!")
               /* 12-Nov-05 nm - finite sums */
               || !strcmp(mathToken[mathString[pos - 4]].tokenName, "sum_")
+              /* 30-Sep-06 nm - infinite cartesian product */
+              || !strcmp(mathToken[mathString[pos - 4]].tokenName, "X_")
               /* 23-Jan-04 nm - indexed union, intersection */
               || !strcmp(mathToken[mathString[pos - 4]].tokenName, "U_")
               || !strcmp(mathToken[mathString[pos - 4]].tokenName, "|^|_"))

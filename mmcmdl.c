@@ -630,6 +630,13 @@ flag processCommandLine(void)
               if (!getFullArg(i,"# How many indentation levels <999>? "))
                 goto pclbad;
             }
+            if (lastArgMatches("COLUMN")) {
+              i++;
+              if (!getFullArg(i, cat(
+                  "# At what column should the formula start <",
+                  str(DEFAULT_COLUMN), ">? ", NULL)))
+                goto pclbad;
+            }
           } else {
             break;
           }
@@ -1449,13 +1456,32 @@ flag processCommandLine(void)
 
   if (cmdMatches("SUBMIT")) {
     if (toolsMode) {
-      let(&tmpStr, " <list.cmd>");
+      let(&tmpStr, " <tools.cmd>");
     } else {
-      let(&tmpStr, "");
+      let(&tmpStr, " <mm.cmd>");
     }
     if (!getFullArg(1,cat("& What is the name of command file to run",
         tmpStr, "? ", NULL)))
       goto pclbad;
+
+      /* 23-Oct-2006 nm Added / SILENT qualifier */
+      /* Get any switches */
+      i = 1; /* Number of command words before switch */
+      while (1) {
+        i++;
+        if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+        if (lastArgMatches("/")) {
+          i++;
+          if (!getFullArg(i,cat(
+              "SILENT",
+              "|<SILENT>",NULL)))
+            goto pclbad;
+        } else {
+          break;
+        }
+        break; /* Break if only 1 switch is allowed */
+      } /* End while for switch loop */
+
     goto pclgood;
   }
 

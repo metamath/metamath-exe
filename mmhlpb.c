@@ -258,8 +258,8 @@ H("    / LEMMON - The proof is displayed in a non-indented format known");
 H("        as Lemmon style, with explicit previous step number references.");
 H("        If this qualifier is omitted, steps are indented in a tree format.");
 H("    / COLUMN <number> - Overrides the default column at which");
-H("        the formula display starts in a Lemmon style display.  May be");
-H("        used only in conjuction with / LEMMON.");
+H("        the formula display starts in a Lemmon style display.  Affects");
+H("        only displays using the / LEMMON qualifier.");
 H("    / NORMAL - The proof is displayed in normal format suitable for");
 H("        inclusion in a source file.  May not be used with any other");
 H("        qualifier.");
@@ -546,17 +546,25 @@ H("");
 
 
 printHelp = !strcmp(helpCmd, "HELP SUBMIT");
-H("Syntax:  SUBMIT <filename>");
+H("Syntax:  SUBMIT <filename> [/ SILENT]");
 H("");
 H("This command causes further command lines to be taken from the specified");
-H("file.  Note that any line beginning with an exclamation point (!) is");
-H("treated as a comment (i.e. ignored).  Also note that the scrolling");
+H("command file.  Note that any line beginning with an exclamation point (!)");
+H("is treated as a comment (i.e. ignored).  Also note that the scrolling");
 H("of the screen output is continuous, so you may want to open a log file");
 H("(see HELP OPEN LOG) to record the results that fly by on the screen.");
-H("After the lines in the file are exhausted, Metamath returns to its");
-H("normal user interface mode.");
+H("After the lines in the command file are exhausted, Metamath returns to");
+H("its normal user interface mode.");
 H("");
-H("SUBMIT commands are not allowed inside of a command file.");
+H("SUBMIT commands are not allowed inside of the command file, i.e. SUBMIT");
+H("is not recursive.");
+H("");
+H("Optional qualifier:");
+H("    / SILENT - This qualifier suppresses the screen output of the SUBMIT");
+H("        command.  The output will still be recorded in any log file that");
+H("        has been opened with OPEN LOG (or is opened inside the command");
+H("        file itself).  The screen output of any operating system commands");
+H("        inside the command file (see HELP SYSTEM) is not suppressed.");
 
 
 printHelp = !strcmp(helpCmd, "HELP SYSTEM");
