@@ -2250,7 +2250,11 @@ void printTexTrailer(flag texTrailerFlag) {
       print2("Copyright &copy; 2002 \n");
       print2("The Metamath Home Page is\n");
       */
+      /*
       print2("<A HREF=\"http://metamath.org\">metamath.org mirrors</A>\n");
+      */
+      print2("Copyright terms:\n");
+      print2("<A HREF=\"../copyright.html#pd\">Public domain</A>\n");
       print2("</FONT></CENTER>\n");
       print2("</BODY></HTML>\n");
     }
@@ -2839,7 +2843,11 @@ void writeTheoremList(long theoremsPerPage)
     print2("      <A HREF=\"mmtheorems.html#mmtc\">Contents</A></FONT></TD>\n");
     print2("    <TD NOWRAP ALIGN=CENTER><FONT SIZE=-2\n");
     print2("      FACE=ARIAL>\n");
+    /*
     print2("      <A HREF=\"http://metamath.org\">metamath.org mirrors</A>\n");
+    */
+    print2("Copyright terms:\n");
+    print2("<A HREF=\"../copyright.html#pd\">Public domain</A>\n");
     print2("      </FONT></TD>\n");
     print2("    <TD NOWRAP ALIGN=RIGHT VALIGN=TOP WIDTH=\"25%c\"><FONT\n", '%');
     print2("      SIZE=-1 FACE=sans-serif>\n");

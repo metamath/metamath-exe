@@ -5,7 +5,8 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.07.27 23-Oct-2006"
+#define MVERSION "0.07.28 22-Dec-2006"
+/* 0.07.28 22-Dec-2006 nm mmhlpb.c - Added info on quotes to HELP LET */
 /* 0.07.27 23-Oct-2006 nm metamath.c, mminou.c, mmhlpa.c, mmhlpb.c - Added
    / SILENT qualifier to SUBMIT command */
 /* 0.07.26 12-Oct-2006 nm mminou.c - Fixed bug when SUBMIT file was missing
