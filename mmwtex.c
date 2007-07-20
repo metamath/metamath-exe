@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2006  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2007  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -1283,13 +1283,13 @@ void printTexHeader(flag texHeaderFlag)
 
           /*
           print2("SIZE=-2>Bad symbols?\n");
-          print2("Use <A HREF=\"http://mozilla.org\">Mozilla</A><BR>\n");
+          print2("Use <A HREF=\"http://mozilla.org\">Firefox</A><BR>\n");
           print2("(or <A HREF=\"%s%s\">GIF version</A> for IE).</FONT></TD>\n",
               htmlDir, texFileName);
           */
           /* 15-Aug-04 */
-          print2("<BR><A HREF=\"%s%s\">GIF version</A></FONT></TD>\n",
-              htmlDir, texFileName);
+          print2("<BR><A HREF=\"%s%s\">GIF\n", htmlDir, texFileName);
+          print2("version</A></FONT></TD>\n");
 
         } else {
 
@@ -1300,8 +1300,8 @@ void printTexHeader(flag texHeaderFlag)
           print2("version</A>.</FONT></TD>\n");
           */
           /* 15-Aug-04 */
-         print2("<BR><A HREF=\"%s%s\">Unicode version</A></FONT></TD>\n",
-              altHtmlDir, texFileName);
+          print2("<BR><A HREF=\"%s%s\">Unicode\n", altHtmlDir, texFileName);
+          print2("version</A></FONT></TD>\n");
 
         }
       }
@@ -1488,6 +1488,10 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
          (imperfect - only works if `...` is not split across lines) */
       if (pos1 > instr(1, cmt, "`") && pos1 < instr(instr(1, cmt, "`") + 1,
           cmt, "`"))
+        continue;
+      /* 5-Apr-2007 nm Don't modify external hyperlinks (imperfect - assumes
+         hyperlink is only thing on the line, which is usually be the case) */
+      if (instr(1, cmt, "http://"))
         continue;
       /* Opening "_" must be <whitespace>_<alphanum> for <I> tag */
       if (pos1 > 1) {
@@ -2256,6 +2260,15 @@ void printTexTrailer(flag texTrailerFlag) {
       print2("Copyright terms:\n");
       print2("<A HREF=\"../copyright.html#pd\">Public domain</A>\n");
       print2("</FONT></CENTER>\n");
+
+      print2("<SCRIPT SRC=\"http://www.google-analytics.com/urchin.js\"\n");
+      print2("  TYPE=\"text/javascript\">\n");
+      print2("</SCRIPT>\n");
+      print2("<SCRIPT TYPE=\"text/javascript\">\n");
+      print2("  _uacct = \"UA-1862729-1\";\n");
+      print2("  urchinTracker();\n");
+      print2("</SCRIPT>\n");
+
       print2("</BODY></HTML>\n");
     }
     outputToString = 0; /* Restore normal output */
@@ -2400,7 +2413,7 @@ void writeTheoremList(long theoremsPerPage)
       if (altHtmlFlag) {
         print2("</FONT></TD></TR><TR><TD ALIGN=RIGHT><FONT FACE=sans-serif\n");
         print2("SIZE=-2>Bad symbols?\n");
-        print2("Use <A HREF=\"http://mozilla.org\">Mozilla</A><BR>\n");
+        print2("Use <A HREF=\"http://mozilla.org\">Firefox</A><BR>\n");
         print2("(or <A HREF=\"%s%s\">GIF version</A> for IE).</FONT></TD>\n",
             htmlDir, output_fn);
       } else {
@@ -2439,7 +2452,11 @@ void writeTheoremList(long theoremsPerPage)
       } else {
         let(&str1, cat("<A HREF=\"mmtheorems",
             (p == 1) ? "" : str(p),
-            (p == 1) ? ".html#mmtc\">" : ".html\">", /* 31-Aug-2006 nm */
+            /* (p == 1) ? ".html#mmtc\">" : ".html\">", */ /* 31-Aug-2006 nm */
+            ".html\">", /* 8-Feb-2007 nm Friendlier, because you can start
+                  scrolling through the page before it finishes loading,
+                  without its jumping to #mmtc (start of Table of Contents)
+                  when it's done. */
             (p == 1) ? "Contents + 1" : str(p) /* 31-Jul-2006 nm */
             , "</A>", NULL));
       }
@@ -2857,6 +2874,14 @@ void writeTheoremList(long theoremsPerPage)
     print2("      </FONT></TD>\n");
     print2("  </TR>\n");
     print2("</TABLE>\n");
+
+    print2("<SCRIPT SRC=\"http://www.google-analytics.com/urchin.js\"\n");
+    print2("  TYPE=\"text/javascript\">\n");
+    print2("</SCRIPT>\n");
+    print2("<SCRIPT TYPE=\"text/javascript\">\n");
+    print2("  _uacct = \"UA-1862729-1\";\n");
+    print2("  urchinTracker();\n");
+    print2("</SCRIPT>");
 
     print2("</BODY></HTML>\n");
     outputToString = 0;

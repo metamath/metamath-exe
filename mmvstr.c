@@ -54,10 +54,16 @@ vstring tempAlloc(long size)    /* String memory allocation/deallocation */
   if (size) {
     if (tempAllocStackTop>=(MAX_ALLOC_STACK-1)) {
       printf("*** FATAL ERROR ***  Temporary string stack overflow\n");
+#ifdef __STDC__
+      fflush(stdout);
+#endif
       bug(2201);
     }
     if (!(tempAllocStack[tempAllocStackTop++]=malloc(size))) {
       printf("*** FATAL ERROR ***  Temporary string allocation failed\n");
+#ifdef __STDC__
+      fflush(stdout);
+#endif
       bug(2202);
     }
 /*E*/db1=db1+(size)*sizeof(char);
@@ -82,6 +88,9 @@ void makeTempAlloc(vstring s)
 {
     if (tempAllocStackTop>=(MAX_ALLOC_STACK-1)) {
       printf("*** FATAL ERROR ***  Temporary string stack overflow\n");
+#ifdef __STDC__
+      fflush(stdout);
+#endif
       bug(2203);
     }
     tempAllocStack[tempAllocStackTop++]=s;
@@ -121,6 +130,9 @@ void let(vstring *target,vstring source)        /* String assignment */
         *target=malloc(sourceLength+1); /* Allocate new space */
         if (!*target) {
           printf("*** FATAL ERROR ***  String memory couldn't be allocated\n");
+#ifdef __STDC__
+          fflush(stdout);
+#endif
           bug(2204);
         }
         strcpy(*target,source);
@@ -135,6 +147,9 @@ void let(vstring *target,vstring source)        /* String assignment */
       *target=malloc(sourceLength+1);   /* Allocate new space */
       if (!*target) {
         printf("*** FATAL ERROR ***  Could not allocate string memory\n");
+#ifdef __STDC__
+        fflush(stdout);
+#endif
         bug(2205);
       }
       strcpy(*target,source);
@@ -168,6 +183,9 @@ vstring cat(vstring string1,...)        /* String concatenation */
         /* User-provided argument list must terminate with 0 */
     if (numArgs >= MAX_CAT_ARGS - 1) {
       printf("*** FATAL ERROR ***  Too many cat() arguments\n");
+#ifdef __STDC__
+      fflush(stdout);
+#endif
       bug(2206);
     }
   va_end(ap);           /* End var args session */
@@ -210,7 +228,12 @@ vstring linput(FILE *stream,vstring ask,vstring *target)
     *target MUST be initialized to "" or previously assigned by let(&...)
     before using it in linput. */
   char f[10001]; /* Allow up to 10000 characters */
-  if (ask) printf("%s",ask);
+  if (ask) {
+    printf("%s",ask);
+#ifdef __STDC__
+    fflush(stdout);
+#endif
+  }
   if (stream == NULL) stream = stdin;
   if (!fgets(f,10000,stream)) {
     /* End of file */

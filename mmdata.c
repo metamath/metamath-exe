@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2006  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2007  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -624,6 +624,9 @@ void nmbrMakeTempAlloc(nmbrString *s)
     if (nmbrTempAllocStackTop>=(M_MAX_ALLOC_STACK-1)) {
       printf(
       "*** FATAL ERROR ***  Temporary nmbrString stack overflow in nmbrMakeTempAlloc()\n");
+#ifdef __STDC__
+      fflush(stdout);
+#endif
       bug(1368);
     }
     if (s[0] != -1) { /* End of string */
@@ -772,6 +775,9 @@ nmbrString *nmbrCat(nmbrString *string1,...) /* String concatenation */
         /* User-provided argument list must terminate with NULL */
     if (numArgs>=M_MAX_CAT_ARGS-1) {
       printf("*** FATAL ERROR ***  Too many cat() arguments\n");
+#ifdef __STDC__
+      fflush(stdout);
+#endif
       bug(1369);
     }
   va_end(ap);           /* End var args session */
@@ -1918,6 +1924,9 @@ void pntrMakeTempAlloc(pntrString *s)
     if (pntrTempAllocStackTop>=(M_MAX_ALLOC_STACK-1)) {
       printf(
       "*** FATAL ERROR ***  Temporary pntrString stack overflow in pntrMakeTempAlloc()\n");
+#ifdef __STDC__
+      fflush(stdout);
+#endif
       bug(1370);
     }
     if (s[0] != NULL) { /* Don't do it if pntrString is empty */
@@ -2064,6 +2073,9 @@ pntrString *pntrCat(pntrString *string1,...) /* String concatenation */
         /* User-provided argument list must terminate with NULL */
     if (numArgs>=M_MAX_CAT_ARGS-1) {
       printf("*** FATAL ERROR ***  Too many cat() arguments\n");
+#ifdef __STDC__
+      fflush(stdout);
+#endif
       bug(1371);
     }
   va_end(ap);           /* End var args session */

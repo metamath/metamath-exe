@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2006  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2007  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -92,7 +92,12 @@ flag print2(char* fmt,...)
   if (backBufferPos == 0) {
     /* Initialize backBuffer - 1st time in program */
     /* Warning:  Don't call bug(), because it calls print2. */
-    if (pntrLen(backBuffer)) printf("*** BUG #1501\n");
+    if (pntrLen(backBuffer)) {
+      printf("*** BUG #1501\n");
+#ifdef __STDC__
+      fflush(stdout);
+#endif
+    }
     backBufferPos = 1;
     pntrLet(&backBuffer, pntrAddElement(backBuffer));
   }
@@ -106,17 +111,27 @@ flag print2(char* fmt,...)
     while(1) {
       if (backFromCmdInput && backBufferPos == pntrLen(backBuffer))
         break; /* Exhausted buffer */
-      if (backBufferPos < 1 || backBufferPos > pntrLen(backBuffer))
+      if (backBufferPos < 1 || backBufferPos > pntrLen(backBuffer)) {
         /* Warning:  Don't call bug(), because it calls print2. */
         printf("*** BUG #1502 %ld\n", backBufferPos);
+#ifdef __STDC__
+        fflush(stdout);
+#endif
+      }
       if (backBufferPos == 1) {
         printf(
 "Press <return> for more, Q <return> to quit, S <return> to scroll to end... "
           );
+#ifdef __STDC__
+        fflush(stdout);
+#endif
       } else {
         printf(
 "Press <return> for more, Q <ret> quit, S <ret> scroll, B <ret> back up... "
          );
+#ifdef __STDC__
+        fflush(stdout);
+#endif
       }
       c = getchar();
       if (c == '\n') {
@@ -127,6 +142,9 @@ flag print2(char* fmt,...)
           /* Get output from buffer */
           backBufferPos++;
           printf("%s", (vstring)(backBuffer[backBufferPos - 1]));
+#ifdef __STDC__
+          fflush(stdout);
+#endif
           continue;
         }
       }
@@ -148,6 +166,9 @@ flag print2(char* fmt,...)
             while (backBufferPos + 1 <= pntrLen(backBuffer)) {
               backBufferPos++;
               printf("%s", (vstring)(backBuffer[backBufferPos - 1]));
+#ifdef __STDC__
+              fflush(stdout);
+#endif
             }
           }
           if (!backFromCmdInput)
@@ -159,11 +180,17 @@ flag print2(char* fmt,...)
           if (c == 'b' || c == 'B') {
             backBufferPos--;
             printf("%s", (vstring)(backBuffer[backBufferPos - 1]));
+#ifdef __STDC__
+            fflush(stdout);
+#endif
             continue;
           }
         }
 
         printf("%c", 7); /* Bell */
+#ifdef __STDC__
+        fflush(stdout);
+#endif
         continue;
       }
       while (c != '\n') c = getchar();
@@ -207,6 +234,9 @@ flag print2(char* fmt,...)
     printf("?Memory may now be corrupted.\n");
     printf("?Save your work, exit, and verify output files.\n");
     printf("?You should recompile with increased PRINTBUFFERSIZE.\n");
+#ifdef __STDC__
+    fflush(stdout);
+#endif
   }
 
   nlpos = instr(1, printBuffer, "\n");
@@ -261,6 +291,9 @@ flag print2(char* fmt,...)
 
     } else {
       printf("%s", printBuffer); /* Normal line */
+#ifdef __STDC__
+      fflush(stdout);
+#endif
       printedLines++;
       if (!(scrollMode == 1 && localScrollMode == 1)) {
         /* Even in non-scroll (continuous output) mode, still put paged-mode
@@ -276,7 +309,12 @@ flag print2(char* fmt,...)
     }
     /* Add line to backBuffer string array */
     /* Warning:  Don't call bug(), because it calls print2. */
-    if (backBufferPos < 1) printf("*** PROGRAM BUG #1504\n");
+    if (backBufferPos < 1) {
+      printf("*** PROGRAM BUG #1504\n");
+#ifdef __STDC__
+      fflush(stdout);
+#endif
+    }
     let((vstring *)(&(backBuffer[backBufferPos - 1])), cat(
         (vstring)(backBuffer[backBufferPos - 1]), printBuffer, NULL));
   } /* End if !outputToString */
@@ -300,10 +338,18 @@ flag print2(char* fmt,...)
     printf("*** PROGRAM BUG #1505\n");
     printf("%ld %s\n", lineLen, printBuffer);
     /*printf(NULL);*/  /* Force crash on VAXC to see where it came from */
+#ifdef __STDC__
+    fflush(stdout);
+#endif
   }
   /* \n not allowed in middle of line */
   /* Warning:  Don't call bug(), because it calls print2. */
-  if (nlpos != 0 && nlpos != lineLen) printf("*** PROGRAM BUG #1506\n");
+  if (nlpos != 0 && nlpos != lineLen) {
+    printf("*** PROGRAM BUG #1506\n");
+#ifdef __STDC__
+    fflush(stdout);
+#endif
+  }
 
  PRINT2_RETURN:
 /*E*/if (savedb9) db9=1;
@@ -625,7 +671,12 @@ vstring cmdInput(FILE *stream, vstring ask)
 #define CMD_BUFFER_SIZE 2000
 
   while (1) { /* For "B" backup loop */
-    if (ask != NULL && !commandFileSilentFlag) printf("%s",ask);
+    if (ask != NULL && !commandFileSilentFlag) {
+      printf("%s",ask);
+#ifdef __STDC__
+      fflush(stdout);
+#endif
+    }
     let(&g, space(CMD_BUFFER_SIZE)); /* Allocate CMD_BUFFER_SIZE+1 bytes */
     if (g[CMD_BUFFER_SIZE]) bug(1520); /* Bug in let() (improbable) */
     g[CMD_BUFFER_SIZE - 1] = 0; /* For overflow detection */
@@ -638,19 +689,30 @@ vstring cmdInput(FILE *stream, vstring ask)
       /* Detect input overflow */
       /* Warning:  Don't call bug() - it calls print2 which may call this. */
       printf("***BUG #1508\n");
+#ifdef __STDC__
+      fflush(stdout);
+#endif
     }
     i = strlen(g);
 /*E*/db = db - (CMD_BUFFER_SIZE - i); /* Adjust string usage to detect leaks */
     /* Detect operating system bug of inputting no characters */
     if (!i) {
       printf("***BUG #1507\n");
+#ifdef __STDC__
+      fflush(stdout);
+#endif
 
     /* 12-Oct-2006 Fix bug that occurs when the last line in the file has
        no new-line (reported by Marnix Klooster) */
     } else {
       if (g[i - 1] != '\n') {
         /* Warning:  Don't call bug() - it calls print2 which may call this. */
-        if (!feof(stream)) printf("***BUG #1524\n");
+        if (!feof(stream)) {
+          printf("***BUG #1524\n");
+#ifdef __STDC__
+          fflush(stdout);
+#endif
+        }
         /* Add a new-line so processing below will behave correctly. */
         let(&g, cat(g, chr('\n'), NULL));
 /*E*/db = db + (CMD_BUFFER_SIZE - i); /* Cancel extra piece of string */
@@ -662,11 +724,21 @@ vstring cmdInput(FILE *stream, vstring ask)
 
     if (g[1]) {
       i--;
-      if (g[i] != '\n') printf("***BUG #1519\n");
+      if (g[i] != '\n') {
+        printf("***BUG #1519\n");
+#ifdef __STDC__
+        fflush(stdout);
+#endif
+      }
       g[i]=0;   /* Eliminate new-line character by zapping it */
 /*E*/db = db - 1;
     } else {
-      if (g[0] != '\n') printf("***BUG #1521\n");
+      if (g[0] != '\n') {
+        printf("***BUG #1521\n");
+#ifdef __STDC__
+        fflush(stdout);
+#endif
+      }
       /* Eliminate new-line by deallocating vstring space (if we just zap
          character [0], let() will later think g is an empty string constant
          and will never deallocate g) */
@@ -684,6 +756,9 @@ vstring cmdInput(FILE *stream, vstring ask)
       /* Set variables so only backup buffer will be looked at in print2() */
       backBufferPos = pntrLen(backBuffer) - 1;
       printf("%s", (vstring)(backBuffer[backBufferPos - 1]));
+#ifdef __STDC__
+      fflush(stdout);
+#endif
       backFromCmdInput = 1; /* Flag for print2() */
       print2(""); /* Only the backup buffer will be looked at */
       backFromCmdInput = 0;
@@ -693,8 +768,13 @@ vstring cmdInput(FILE *stream, vstring ask)
          returns where hit while scrolling */
       if (commandFileOpenFlag) break; /* 23-Aug-04 We're taking from a SUBMIT
                               file so break out of loop that looks for "B" */
-      if (ask == NULL) printf("***BUG #1523\n"); /* 23-Aug-04 In non-SUBMIT
+      if (ask == NULL) {
+        printf("***BUG #1523\n"); /* 23-Aug-04 In non-SUBMIT
           mode 'ask' won't be NULL, so flag non-fatal bug here just in case */
+#ifdef __STDC__
+        fflush(stdout);
+#endif
+      }
       if (g[0]) break; /* 23-Aug-04 Command line not empty so break out of loop
                           that looks for "B" */
       if (ask != NULL &&
@@ -898,6 +978,7 @@ FILE *fSafeOpen(vstring fileName, vstring mode)
   vstring bakName = "";
   vstring newBakName = "";
   long v;
+  long lastVersion; /* Last version before gap */ /* nm 29-Apr-2007 */
 
   if (!strcmp(mode, "r")) {
     fp = fopen(fileName, "r");
@@ -959,17 +1040,30 @@ FILE *fSafeOpen(vstring fileName, vstring mode)
       fp = fopen(bakName, "r");
       if (fp) {
         fclose(fp);
-        /* The lowest version already exists; rename all to lower versions. */
+        /* The lowest version already exists; rename all to higher versions. */
 
-        /* If version VERSIONS exists, delete it. */
-        let(&bakName, cat(prefix, str(VERSIONS), postfix, NULL));
-        fp = fopen(bakName, "r");
-        if (fp) {
+        /* Find last version before gap, if any */ /* 29-Apr-2007 nm */
+        lastVersion = 0;
+        for (v = 1; v <= VERSIONS; v++) {
+          let(&bakName, cat(prefix, str(v), postfix, NULL));
+          fp = fopen(bakName, "r");
+          if (!fp) break; /* Version gap found; skip rest of scan */
           fclose(fp);
-          remove(bakName);
+          lastVersion = v;
         }
 
-        for (v = VERSIONS - 1; v >= 1; v--) {
+        /* If there are no gaps before version VERSIONS, delete it. */
+        if (lastVersion == VERSIONS) {  /* 29-Apr-2007 nm */
+          let(&bakName, cat(prefix, str(VERSIONS), postfix, NULL));
+          fp = fopen(bakName, "r");
+          if (fp) {
+            fclose(fp);
+            remove(bakName);
+          }
+          lastVersion--;  /* 29-Apr-2007 nm */
+        }
+
+        for (v = lastVersion; v >= 1; v--) {  /* 29-Apr-2007 nm */
           let(&bakName, cat(prefix, str(v), postfix, NULL));
           fp = fopen(bakName, "r");
           if (!fp) continue;

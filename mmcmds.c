@@ -86,7 +86,13 @@ void typeStatement(long showStatement,
     if (!texFlag) {
       printLongLine(cat(str1,
         "\"", statement[showStatement].fileName,
-        "\".",NULL), "", " ");
+        "\".",
+        /* 8-Feb-2007 nm Added HTML page info to SHOW STATEMENT ... /FULL */
+        (statement[showStatement].pinkNumber == 0) ?   /* !=0 means $a or $p */
+           "" :
+           cat("  Its statement number for HTML pages is ",
+               str(statement[showStatement].pinkNumber), ".", NULL),
+        NULL), "", " ");
     } else {
       if (!htmlFlag) let(&printString, "");
       outputToString = 1; /* Flag for print2 to add to printString */
@@ -2633,6 +2639,7 @@ void traceProofTreeRec(long statemNum,
 }
 
 
+/* Called by SHOW TRACE_BACK <label> / COUNT_STEPS */
 /* Counts the number of steps a completely exploded proof would require */
 /* (Recursive) */
 /* 0 is returned if some assertions have incomplete proofs. */

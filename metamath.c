@@ -1,11 +1,20 @@
 /*****************************************************************************/
 /* Program name:  Metamath                                                   */
-/* Copyright (C) 2006 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
+/* Copyright (C) 2007 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
 /* License terms:  GNU General Public License Version 2 or any later version */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.07.28 22-Dec-2006"
+#define MVERSION "0.07.33 19-Jul-2007"
+/* 0.07.33 19-Jul-2007 nm mminou.c, mmvstr.c, mmdata.c, mmword.c - added fflush
+   after each printf() call for proper behavior inside emacs */
+/* 0.07.32 29-Apr-2007 nm mminou.c - fSafeOpen now stops at gap; e.g. if ~2
+   doesn't exist, ~1 will be renamed to ~2, but any ~3, etc. are not touched */
+/* 0.07.31 5-Apr-2007 nm mmwtex.c - Don't make "_" in hyperlink a subscript */
+/* 0.07.30 8-Feb-2007 nm mmcmds.c, mmwtex.c Added HTML statement number info to
+   SHOW STATEMENT.../FULL; friendlier "Contents+1" link in mmtheorems*.html */
+/* 0.07.29 6-Feb-2007 Jason Orendorff mmpfas.c - Patch to eliminate the
+   duplicate "Exceeded trial limit at step n" messages */
 /* 0.07.28 22-Dec-2006 nm mmhlpb.c - Added info on quotes to HELP LET */
 /* 0.07.27 23-Oct-2006 nm metamath.c, mminou.c, mmhlpa.c, mmhlpb.c - Added
    / SILENT qualifier to SUBMIT command */

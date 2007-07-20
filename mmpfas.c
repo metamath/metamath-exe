@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2006  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2007  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -1285,6 +1285,22 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
       }
       if (breakFlag) {
        /* Proof is not possible for some hypothesis. */
+
+       /* 6-Feb-2007 Jason Orendorff - Patch to eliminate the duplicate
+          "Exceeded trial limit at step n" messages when the limit is
+          reached. */
+       /* Perhaps the search limit was reached. */
+       if (trials > userMaxProveFloat) {
+         /* Deallocate hypothesis schemes and proofs */
+         for (hyp = 0; hyp < schReqHyps; hyp++) {
+           nmbrLet((nmbrString **)(&hypList[hyp]), NULL_NMBRSTRING);
+           nmbrLet((nmbrString **)(&hypProofList[hyp]), NULL_NMBRSTRING);
+         }
+         /* The error message has already been printed. */
+         nmbrLet(&proof, NULL_NMBRSTRING);
+         goto returnPoint;
+       }
+       /* End of 6-Feb-2007 patch */
 
        /* Speedup:  Move the hypothesis for which the proof was not found
           to the beginning of the hypothesis list, so it will be tried

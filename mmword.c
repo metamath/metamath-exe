@@ -170,7 +170,13 @@ l7100:  /*
         }
 l7130:  gosub_7320();
         i1_=i1_+1;
-        if (i1_ >= MAX_LINES) {printf("*** FATAL *** Overflow#1\n"); exit(0);}
+        if (i1_ >= MAX_LINES) {
+          printf("*** FATAL *** Overflow#1\n");
+#ifdef __STDC__
+          fflush(stdout);
+#endif
+          exit(0);
+        }
         let(&line1_[i1_],l1_);
         t=0;
         i=0;
@@ -196,7 +202,13 @@ l7140:  if (strcmpe(line1_[i1_+t-m+1], line2_[i+t])) {
         }
         gosub_7330();
         i2=i2+1;
-        if (i2 >= MAX_LINES) {printf("*** FATAL *** Overflow#2\n"); exit(0);}
+        if (i2 >= MAX_LINES) {
+          printf("*** FATAL *** Overflow#2\n");
+#ifdef __STDC__
+          fflush(stdout);
+#endif
+          exit(0);
+        }
         let(&line2_[i2],l2_);
         t=0;
         i=0;
@@ -231,7 +243,13 @@ l7200:  i=i+m-1;
           let(&reserve2_[j-1],line2_[j+i]);
         }
         r2=r2+i2-i;
-        if (r2 >= MAX_BUF) {printf("*** FATAL *** Overflow#3\n"); exit(0);}
+        if (r2 >= MAX_BUF) {
+          printf("*** FATAL *** Overflow#3\n");
+#ifdef __STDC__
+          fflush(stdout);
+#endif
+          exit(0);
+        }
         i2=i;
         goto l7240;
 l7220:  i=i+m-1;
@@ -245,7 +263,13 @@ l7220:  i=i+m-1;
           let(&reserve1_[j-1],line1_[j+i]);
         }
         r1=r1+i1_-i;
-        if (r1 >= MAX_BUF) {printf("*** FATAL *** Overflow#4\n"); exit(0);}
+        if (r1 >= MAX_BUF) {
+          printf("*** FATAL *** Overflow#4\n");
+#ifdef __STDC__
+          fflush(stdout);
+#endif
+          exit(0);
+        }
         i1_=i;
         goto l7240;
 l7240: /* */
