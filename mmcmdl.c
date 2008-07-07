@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2006  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2008  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -92,7 +92,7 @@ flag processCommandLine(void)
       if (cmdMatches("HELP SET")) {
         if (!getFullArg(2, cat(
             "ECHO|SCROLL|WIDTH|HEIGHT|UNIFICATION_TIMEOUT|",
-            "EMPTY_SUBSTITUTION|SEARCH_LIMIT|JEROME_HENTY_FILTER|<ECHO>",
+            "EMPTY_SUBSTITUTION|SEARCH_LIMIT|JEREMY_HENTY_FILTER|<ECHO>",
             NULL)))
             goto pclbad;
         goto pclgood;
@@ -461,13 +461,13 @@ flag processCommandLine(void)
           if (lastArgMatches("/")) {
             i++;
             if (!getFullArg(i,cat(
-                "DIRECT|RECURSIVE",
+                "DIRECT|RECURSIVE|ALL",
                 "|<DIRECT>",NULL)))
               goto pclbad;
           } else {
             break;
           }
-          break;  /* Break if only 1 switch is allowed */
+          /* break; */  /* Break if only 1 switch is allowed */
         }
 
         goto pclgood;
@@ -514,8 +514,8 @@ flag processCommandLine(void)
           if (lastArgMatches("/")) {
             i++;
             if (!getFullArg(i,cat(
-                "FULL|COMMENT|TEX|SIMPLE_TEX|",
-                "HTML|ALT_HTML|BRIEF_HTML|BRIEF_ALT_HTML|<FULL>", NULL)))
+                "FULL|COMMENT|TEX|SIMPLE_TEX|HTML|ALT_HTML|BRIEF_HTML",
+                "|BRIEF_ALT_HTML|NO_VERSIONING|<FULL>", NULL)))
               goto pclbad;
           } else {
             break;
@@ -554,10 +554,10 @@ flag processCommandLine(void)
             i++;
             if (!getFullArg(i,cat(
                 "ESSENTIAL|ALL|UNKNOWN|FROM_STEP|TO_STEP|DEPTH",
-                /*"|REVERSE|LANGUAGE_MODE|VERBOSE|NORMAL|COMPACT|COMPRESSED",*/
+                /*"|REVERSE|LANGUAGE_MODE|VERBOSE|NORMAL|PACKED|COMPRESSED",*/
                 "|REVERSE|LANGUAGE_MODE|VERBOSE|NORMAL|COMPRESSED",
                 "|STATEMENT_SUMMARY|DETAILED_STEP|TEX|HTML|SAVE",
-                "|LEMMON|COLUMN|RENUMBER|<ESSENTIAL>",NULL)))
+                "|LEMMON|START_COLUMN|RENUMBER|<ESSENTIAL>",NULL)))
               goto pclbad;
             if (lastArgMatches("FROM_STEP")) {
               i++;
@@ -579,7 +579,7 @@ flag processCommandLine(void)
               if (!getFullArg(i,"# Display details of what step <1>? "))
                 goto pclbad;
             }
-            if (lastArgMatches("COLUMN")) {
+            if (lastArgMatches("START_COLUMN")) {
               i++;
               if (!getFullArg(i, cat(
                   "# At what column should the formula start <",
@@ -610,10 +610,10 @@ flag processCommandLine(void)
             i++;
             if (!getFullArg(i,cat(
                 "ESSENTIAL|ALL|UNKNOWN|FROM_STEP|TO_STEP|DEPTH",
-                /*"|REVERSE|LANGUAGE_MODE|VERBOSE|NORMAL|COMPACT|COMPRESSED",*/
+                /*"|REVERSE|LANGUAGE_MODE|VERBOSE|NORMAL|PACKED|COMPRESSED",*/
                 "|REVERSE|LANGUAGE_MODE|VERBOSE|NORMAL|COMPRESSED",
                 "|NOT_UNIFIED|TEX|HTML",
-                "|LEMMON|COLUMN|RENUMBER|<ESSENTIAL>",NULL)))
+                "|LEMMON|START_COLUMN|RENUMBER|<ESSENTIAL>",NULL)))
               goto pclbad;
             if (lastArgMatches("FROM_STEP")) {
               i++;
@@ -630,7 +630,7 @@ flag processCommandLine(void)
               if (!getFullArg(i,"# How many indentation levels <999>? "))
                 goto pclbad;
             }
-            if (lastArgMatches("COLUMN")) {
+            if (lastArgMatches("START_COLUMN")) {
               i++;
               if (!getFullArg(i, cat(
                   "# At what column should the formula start <",
@@ -666,7 +666,7 @@ flag processCommandLine(void)
         if (!getFullArg(i,"/|$|<$>")) goto pclbad;
         if (lastArgMatches("/")) {
           i++;
-          if (!getFullArg(i,cat("ALL|COMMENTS|<ALL>", NULL)))
+          if (!getFullArg(i,cat("ALL|COMMENTS|JOIN|<ALL>", NULL)))
             goto pclbad;
         } else {
           break;
@@ -713,7 +713,7 @@ flag processCommandLine(void)
           if (lastArgMatches("/")) {
             i++;
             if (!getFullArg(i,cat(
-                "NORMAL|COMPACT|COMPRESSED",
+                "NORMAL|PACKED|COMPRESSED",
                 "|<NORMAL>",NULL)))
               goto pclbad;
           } else {
@@ -739,7 +739,7 @@ flag processCommandLine(void)
           if (lastArgMatches("/")) {
             i++;
             if (!getFullArg(i,cat(
-                "NORMAL|COMPACT|COMPRESSED",
+                "NORMAL|PACKED|COMPRESSED",
                 "|<NORMAL>",NULL)))
               goto pclbad;
           } else {
@@ -1034,7 +1034,7 @@ flag processCommandLine(void)
           /*"ECHO|SCROLL|UNIVERSE|",*/
           "WIDTH|HEIGHT|ECHO|SCROLL|",
           "DEBUG|MEMORY_STATUS|SEARCH_LIMIT|UNIFICATION_TIMEOUT|",
-          "EMPTY_SUBSTITUTION|JEROME_HENTY_FILTER|<WIDTH>",NULL));
+          "EMPTY_SUBSTITUTION|JEREMY_HENTY_FILTER|<WIDTH>",NULL));
       if (!getFullArg(1,tmpStr)) goto pclbad;
       if (cmdMatches("SET DEBUG")) {
         if (!getFullArg(2,"FLAG|OFF|<OFF>")) goto pclbad;
@@ -1072,7 +1072,7 @@ flag processCommandLine(void)
       }
 
 
-      if (cmdMatches("SET JEROME_HENTY_FILTER")) {
+      if (cmdMatches("SET JEREMY_HENTY_FILTER")) {
         if (hentyFilter) {
           if (!getFullArg(2,"ON|OFF|<OFF>")) goto pclbad;
         } else {

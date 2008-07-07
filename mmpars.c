@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2006  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2008  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -820,7 +820,7 @@ void parseLabels(void)
 
 
   /* Copy the keys for all possible labels for lookup by the
-     squishProof command when local labels are generated in compact proofs. */
+     squishProof command when local labels are generated in packed proofs. */
   allLabelKeyBase = malloc(numLabelKeys * sizeof(long));
   if (!allLabelKeyBase) outOfMemory("#60 (allLabelKeyBase)");
   memcpy(allLabelKeyBase, labelKeyBase, numLabelKeys * sizeof(long));
@@ -3764,7 +3764,7 @@ void statementError(vstring msg,vstring statementSoFar)
 /* Return (for output) the complete contents of a statement, including all white
    space and comments, from first token through all white space and
    comments after last token. */
-/* This allows us to modify the input file with MetaMath. */
+/* This allows us to modify the input file with Metamath. */
 /* Note: the text near end of file is obtained from statement[statements
    + 1] */
 /* ???This does not yet implement restoration of the various input files;

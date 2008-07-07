@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2006  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2008  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -159,6 +159,12 @@ struct nullPntrStruct {
 extern struct nullPntrStruct pntrNull;
 #define NULL_PNTRSTRING &(pntrNull.nullElement)
 
+
+/* 26-Apr-2008 nm Added */
+/* This function returns a 1 if any entry in a comma-separated list
+   matches using the matches() function. */
+flag matchesList(vstring testString, vstring pattern, char wildCard,
+    char oneCharWildCard);
 
 /* This function returns a 1 if the first argument matches the pattern of
    the second argument.  The second argument may have 0-or-more and

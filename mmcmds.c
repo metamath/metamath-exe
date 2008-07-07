@@ -757,7 +757,7 @@ void typeStatement(long showStatement,
 
         if (nmbrLen(nmbrTmpPtr2)) {
           /* A proof for the step was found. */
-          /* Get compact form of proof for shorter display */
+          /* Get packed form of proof for shorter display */
           nmbrLet(&nmbrTmpPtr2, nmbrSquishProof(nmbrTmpPtr2));
           /* Temporarily zap proof into statement structure */
           /* (The bug check makes sure there is no proof attached to the
@@ -971,7 +971,7 @@ void typeProof(long statemNum,
     / LEMMON - The proof is displayed in a non-indented format known
         as Lemmon style, with explicit previous step number references.
         If this qualifier is omitted, steps are indented in a tree format.
-    / COLUMN <number> - Overrides the default column at which
+    / START_COLUMN <number> - Overrides the default column at which
         the formula display starts in a Lemmon style display.  May be
         used only in conjuction with / LEMMON.
     / NORMAL - The proof is displayed in normal format suitable for
@@ -3106,9 +3106,9 @@ void writeInput(flag cleanFlag /* 1 = "/ CLEAN" qualifier was chosen */)
       let(&str1, left(str1, p)); /* Discard stuff after date comment */
       if (instr(1, str1, "$([") == 0) {
         printLongLine(cat(
-            "?Warning:  The proof for $p statement \"", statement[i].labelName,
-            "\" does not have a date comment after it.  It will not be",
-            " removed by the CLEAN qualifier.", NULL), " ", "  ");
+            "?Warning: The proof for $p statement \"", statement[i].labelName,
+            "\" does not have a date comment after it and will not be",
+            " removed by the CLEAN qualifier.", NULL), " ", " ");
       } else {
         /* See if the date comment has a "?" in it */
         if (instr(1, str1, "?")) {
@@ -3183,10 +3183,12 @@ void writeInput(flag cleanFlag /* 1 = "/ CLEAN" qualifier was chosen */)
     } else {
       printLongLine(cat("The following ", str(skippedCount), " statement",
           (skippedCount == 1) ? " was" : "s were",
-          " deleted by the CLEAN qualifier: ", str2, ".",
-          "  You should ERASE, READ the new output file, and run VERIFY PROOF",
-          " to ensure that no proof dependencies were broken.",
-          NULL), " ", "  ");
+          " deleted by the CLEAN qualifier:", NULL), "", " ");
+      printLongLine(cat(" ", str2, NULL), "  ", " ");
+      printLongLine(cat(
+          "You should ERASE, READ the new output file, and run VERIFY PROOF",
+          " to ensure that no proof dependencies were broken.", NULL),
+          "", " ");
     }
   }
 
@@ -3342,7 +3344,7 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
 
     if (statement[i].type != p__) continue;
     /* 30-Jan-06 nm Added single-character-match argument */
-    if (!matches(statement[i].labelName, labelMatch, '*', '?')) continue;
+    if (!matchesList(statement[i].labelName, labelMatch, '*', '?')) continue;
     if (strcmp("*",labelMatch) && verifyFlag) {
       /* If not *, print individual labels */
       lineLen = lineLen + strlen(statement[i].labelName) + 1;

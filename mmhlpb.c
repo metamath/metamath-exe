@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2006  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2008  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -101,7 +101,9 @@ H("some operating systems).");
 H("");
 H("A command line is entered by typing it in then pressing the <return> key.");
 H("");
-H("To find out what commands are available, type ? at the MM> prompt.");
+H("To find out what commands are available, type ? at the MM> prompt,");
+H("followed by <return>. (This is actually just a trick to force an error");
+H("message, since ? is not a legal command.)");
 H("");
 H("To find out the choices at any point in a command, press <return> and you");
 H("will be prompted for them.  The default choice (the one selected if you");
@@ -112,11 +114,12 @@ H("you what the choices are.  The ? method won't work, though, if a");
 H("non-keyword argument such as a file name is expected at that point,");
 H("because the CLI will think the ? is the argument.");
 H("");
-H("Some commands have one or more optional qualifiers which modify the");
+H("Some commands have one or more optional qualifiers that modify the");
 H("behavior of the command.  Qualifiers are indicated by a slash (/), such as");
-H("in READ set.mm / VERIFY.  Spaces are optional around the /.  If you need");
-H("to use a slash in a command argument, as in a Unix file name, put single");
-H("or double quotes around the command argument.");
+H("in READ set.mm / VERIFY.  Spaces are optional around / and =.  If you need");
+H("to use / or = in a command argument, as in a Unix file name, put single");
+H("or double quotes around the command argument.  See the last section of");
+H("HELP LET for more information on special characters in arguments.");
 H("");
 H("The OPEN LOG command will save everything you see on the screen, and is");
 H("useful to help you recover should something go wrong in a proof, or if");
@@ -136,9 +139,6 @@ H("unconditionally.  This means any unsaved work will be lost.");
 H("");
 H("A command line enclosed in quotes is executed by your operating system.");
 H("See HELP SYSTEM.");
-H("");
-H("See the last section of HELP LET for how to handle quotes and special");
-H("characters in command-line arguments.");
 H("");
 H("Some additional CLI-related features are explained by:");
 H("    HELP SET ECHO");
@@ -168,10 +168,8 @@ printHelp = !strcmp(helpCmd, "HELP SHOW LABELS");
 H("Syntax:  SHOW LABELS <label-match> [/ ALL] [/ LINEAR]");
 H("");
 H("This command shows the labels of $a and $p statements that match");
-H("<label-match>.  <label-match> may contain * and ? wildcard characters to");
-H("match zero or more characters and exactly one character respectively;");
-H("for example \"abc?def*\" will match all labels beginning with \"abc\"");
-H("followed by any single character followed by \"def\".");
+H("<label-match>.  <label-match> may contain * and ? wildcard characters;");
+H("see HELP SEARCH for wildcard matching rules.");
 H("");
 H("Optional qualifier:");
 H("    / ALL - Include matches for $e and $f statement labels.");
@@ -223,6 +221,9 @@ H("        creates a Web page for the statement.  It may not be used with");
 H("        any other qualifier.  See HELP HTML for more information.");
 H("    / ALT_HTML, / BRIEF_HTML, / BRIEF_ALT_HTML - See HELP HTML for more");
 H("        information on these.");
+H("    / NO_VERSIONING - When used with / HTML or the 3 HTML qualifiers");
+H("        above, a backup file suffixed with ~1 is not created (i.e. the");
+H("        previous version is overwritten).");
 H("");
 
 
@@ -260,14 +261,14 @@ H("        with OPEN TEX.");
 H("    / LEMMON - The proof is displayed in a non-indented format known");
 H("        as Lemmon style, with explicit previous step number references.");
 H("        If this qualifier is omitted, steps are indented in a tree format.");
-H("    / COLUMN <number> - Overrides the default column at which");
+H("    / START_COLUMN <number> - Overrides the default column at which");
 H("        the formula display starts in a Lemmon style display.  Affects");
 H("        only displays using the / LEMMON qualifier.");
 H("    / NORMAL - The proof is displayed in normal format suitable for");
 H("        inclusion in a source file.  May not be used with any other");
 H("        qualifier.");
 /*
-H("    / COMPACT - The proof is displayed in compact format suitable for");
+H("    / PACKED - The proof is displayed in packed format suitable for");
 H("        inclusion in a source file.  May not be used with any other");
 H("        qualifier.");
 */
@@ -349,23 +350,28 @@ H("");
 
 
 printHelp = !strcmp(helpCmd, "HELP SHOW USAGE");
-H("Syntax:  SHOW USAGE <label> [/ RECURSIVE]");
+H("Syntax:  SHOW USAGE <label-match> [/ RECURSIVE]");
 H("");
 H("This command lists the statements whose proofs make direct reference to");
-H("the statement specified by <label>.");
+H("the statement(s) specified by <label-match>.  <label-match> may contain *");
+H("and ? wildcard characters; see HELP SEARCH for wildcard matching rules.");
 H("");
-H("Optional qualifier:");
+H("Optional qualifiers:");
 H("    / RECURSIVE - Also include include statements whose proof ultimately");
 H("        depend on the statement specified.");
+H("    / ALL - Include $e and $f statements.  Without / ALL, $e and $f");
+H("        statements are excluded when <label-match> contains wildcard");
+H("        characters.");
 H("");
 
 
 printHelp = !strcmp(helpCmd, "HELP SHOW TRACE_BACK");
-H("Syntax:  SHOW TRACE_BACK <label> [/ ESSENTIAL] [/ AXIOMS] [/ TREE]");
+H("Syntax:  SHOW TRACE_BACK <label-match> [/ ESSENTIAL] [/ AXIOMS] [/ TREE]");
 H("             [/ DEPTH <number>] [/ COUNT_STEPS]");
 H("");
-H("This command lists all statements that the proof of the $p statement");
-H("specified by <label> depends on.");
+H("This command lists all statements that the proof of the $p statement(s)");
+H("specified by <label-match> depends on.  <label-match> may contain *");
+H("and ? wildcard characters; see HELP SEARCH for wildcard matching rules.");
 H("");
 H("Optional qualifiers:");
 H("    / ESSENTIAL - Restrict the trace-back to $e hypotheses of proof");
@@ -382,6 +388,7 @@ H("");
 
 printHelp = !strcmp(helpCmd, "HELP SEARCH");
 H("Syntax:  SEARCH <label-match> \"<symbol-match>\" [/ ALL] [/ COMMENTS]");
+H("             [/ JOIN]");
 H("");
 H("This command searches all $a and $p statements matching <label-match>");
 H("for occurrences of <symbol-match>.");
@@ -401,12 +408,16 @@ H("\"E. x A. y ph -> A. y E. x ph\".  As this example shows, $? is");
 H("particularly useful when you don't know the variable names used in a");
 H("theorem of interest.");
 H("");
-H("Note 1. The first and last characters of <label-match>, if they are not");
+H("Note 1. Multiple statements (and wildcard patterns) may be specified");
+H("using a comma-separated list for <label-match>, with no spaces around");
+H("the commas.  Example:  SEARCH ax-*,df-* 'E. x'.");
+H("");
+H("Note 2. The first and last characters of <label-match>, if they are not");
 H("wildcards, will be matched against the first and last characters of the");
 H("label.  In contrast, <symbol-match> is a substring match, i.e. it has");
 H("implicit $* wildcards before and after it.");
 H("");
-H("Note 2. An \"unofficial\" <symbol-match> feature is that $ and ? can be");
+H("Note 3. An \"unofficial\" <symbol-match> feature is that $ and ? can be");
 H("used instead of $* and $? for brevity.  The drawback is that matching a");
 H("math symbol containing a ? character may yield additional unwanted");
 H("matches, but this was felt to be a minor nuisance outweighed by the");
@@ -422,6 +433,9 @@ H("        label-matched statement for <symbol-match>, instead of searching");
 H("        the statement's math string.  In this mode, <symbol-match> is an");
 H("        arbitrary, non-case-sensitive character string.  Wildcards in");
 H("        <symbol-match> are not implemented in this mode.");
+H("    / JOIN - In the case of a $a or $p statement, prepend its $e");
+H("        hypotheses for searching.  / JOIN has no effect in / COMMENTS");
+H("        mode.");
 H("");
 H("See the last section of HELP LET for how to handle quotes and special");
 H("characters.");
@@ -459,6 +473,9 @@ H("file to be printed on a wide printer.  A smaller width may be necessary");
 H("on some terminals; in this case, the wrapping of the information");
 H("messages may sometimes seem somewhat unnatural, however.  In LaTeX, there");
 H("is normally a maximum of 61 characters per line with typewriter font.");
+H("");
+H("Note:  The default width is 79 because Windows Command Prompt issues a");
+H("spurious blank line after an 80-character line (try it!).");
 H("");
 H("Note:  This command was SET SCREEN_WIDTH prior to Version 0.07.9.");
 H("");
@@ -519,12 +536,12 @@ H("value.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP SET JEROME_HENTY_FILTER");
-H("Syntax:  SET JEROME_HENTY_FILTER ON or SET JEROME_HENTY_FILTER OFF");
+printHelp = !strcmp(helpCmd, "HELP SET JEREMY_HENTY_FILTER");
+H("Syntax:  SET JEREMY_HENTY_FILTER ON or SET JEREMY_HENTY_FILTER OFF");
 H("");
 H("(This command affects the Proof Assistant only.)");
 H("");
-H("The \"Henty filter\" is an ingenious algorithm suggested by Jerome Henty");
+H("The \"Henty filter\" is an ingenious algorithm suggested by Jeremy Henty");
 H("that reduces the number of ambiguous unifications by eliminating");
 H("\"equivalent\" ones in a sense defined by Henty.  Normally this filter");
 H("is ON, and the only reason to turn it off would be for debugging.");
@@ -576,13 +593,13 @@ H("        inside the command file (see HELP SYSTEM) is not suppressed.");
 printHelp = !strcmp(helpCmd, "HELP SYSTEM");
 H("A line enclosed in single or double quotes will be executed by your");
 H("computer's operating system, if it has such a feature.  For example, on a");
-H("Unix system,");
-H("    MM> 'ls | more'");
+H("GNU/Linux system,");
+H("    MM> 'ls | less -EX'");
 H("will list disk directory contents.  Note that this feature will not work");
 H("on the pre-OSX Macintosh, which does not have a command line interface.");
 H("");
 H("For your convenience, the trailing quote is optional, for example:");
-H("    MM> 'ls | more");
+H("    MM> 'ls | less -EX");
 H("");
 
 
@@ -607,7 +624,7 @@ H("");
 H("This command will type (i.e. display) the contents of an ASCII file on");
 H("your screen.  (This command is provided for convenience but is not very");
 H("powerful.  See HELP SYSTEM to invoke your operating system's command to");
-H("do this, such as \"less\" in Linux.)");
+H("do this, such as \"less -EX\" in Linux.)");
 H("");
 
 
@@ -669,6 +686,10 @@ H("statements), only the last section and/or subsection break will be used,");
 H("and any subsection break before a section break will be ignored.  See the");
 H("set.mm database file for examples.");
 H("");
+H("[Warning: For matching, white space is NOT ignored.  There should be no");
+H("spaces between \"$(\" and the end of the line.  This may be allowed in");
+H("a future version, if a request is made to N. Megill.]");
+H("");
 
 printHelp = !strcmp(helpCmd, "HELP WRITE BIBLIOGRAPHY");
 H("Syntax:  WRITE BIBLIOGRAPHY <filename>");
@@ -698,6 +719,11 @@ H("most recently added theorems to the database.  If / LIMIT is omitted, the");
 H("number of theorems written defaults to 100.  The file is updated between");
 H("the HTML comment lines \"<!-- #START# -->\" and \"<!-- #END# -->\".  The");
 H("original input file is renamed to \"<filename>~1\"");
+H("");
+H("Recent theorems are identified using the date in the first comment");
+H("immediately following the proof, which is expected to be in the format");
+H("\"$( [dd-mmm-yyyy] $)\", where \"dd\" may be 1 or 2 digits, e.g.");
+H("\"$( [31-Dec-2007] $)\".");
 H("");
 
 printHelp = !strcmp(helpCmd, "HELP ASSIGN");
@@ -959,8 +985,9 @@ H("        This qualifier is useful when <label> has wildcards, to prevent");
 H("        illegal shortenings that would violate $d requirements.");
 /* 7-Jan-06 nm - Added EXCEPT */
 H("    / EXCEPT <skiplabel> - Skip trial statements matching <skiplabel>,");
-H("        which may contain wildcards.  Note:  Only one EXCEPT qualifier is");
-H("        recognized; additional ones will be ignored silently.");
+H("        which may contain * and ? wildcard characters; see HELP SEARCH");
+H("        for wildcard matching rules.  Note:  Multiple EXCEPT qualifiers");
+H("        are not allowed; use wildcards instead.");
 H("");
 
 
@@ -979,7 +1006,7 @@ H("        of labels, which is the defined format of the basic Metamath");
 H("        language).  This is the default format which is used if a");
 H("        qualifier is omitted.");
 /*
-H("    / COMPACT - The proof is saved in the compact format, which uses");
+H("    / PACKED - The proof is saved in the packed format, which uses");
 H("        local labels to avoid repetition of identical subproofs.");
 */
 H("    / COMPRESSED - The proof is saved in the compressed format which");
@@ -1008,7 +1035,7 @@ H("        sequence of labels, which is the defined format of the basic");
 H("        Metamath language).  This is the default format which is used if a");
 H("        qualifier is omitted.");
 /*
-H("    / COMPACT - The proof is saved in the compact format which uses");
+H("    / PACKED - The proof is saved in the packed format, which uses");
 H("        local labels to avoid repetition of identical subproofs.");
 */
 H("    / COMPRESSED - The proof is saved in the compressed format which");

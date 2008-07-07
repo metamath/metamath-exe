@@ -1489,10 +1489,17 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
       if (pos1 > instr(1, cmt, "`") && pos1 < instr(instr(1, cmt, "`") + 1,
           cmt, "`"))
         continue;
-      /* 5-Apr-2007 nm Don't modify external hyperlinks (imperfect - assumes
-         hyperlink is only thing on the line, which is usually be the case) */
-      if (instr(1, cmt, "http://"))
+
+      /* 5-Apr-2007 nm Don't modify external hyperlinks containing "_" */
+      pos2 = pos1 - 1;
+      while (1) { /* Get to previous whitespace */
+        if (pos2 == 0 || isspace(cmt[pos2])) break;
+        pos2--;
+      }
+      if (!strcmp(mid(cmt, pos2 + 2, 7), "http://")) {
         continue;
+      }
+
       /* Opening "_" must be <whitespace>_<alphanum> for <I> tag */
       if (pos1 > 1) {
         /* Check for not whitespace and not opening punctuation */
@@ -2057,7 +2064,7 @@ void printTexLongMath(nmbrString *mathString,
          length means proof step in HTML mode, as opposed to assertion etc. */
     vstring contPrefix, /* Prefix for continuation lines.  Not used in
          HTML mode.  Warning:  contPrefix must not be temporarily allocated
-         (as cat, left, etc. direct result) by caller */
+         (as a cat, left, etc. argument) by caller */
     long hypStmt, /* hypStmt, if non-zero, is the statement number to be
                      referenced next to the hypothesis link in html */
     long indentationLevel) /* nm 3-Feb-04 Indentation amount of proof step -
@@ -2076,6 +2083,7 @@ void printTexLongMath(nmbrString *mathString,
   vstring htmHyp = ""; /* 7/4/98 */
   vstring htmRef = ""; /* 7/4/98 */
   vstring tmp = "";  /* 10/10/02 */
+  vstring descr = ""; /* 19-Nov-2007 nm */
 
   let(&sPrefix, startPrefix); /* 7/3/98 Save it; it may be temp alloc */
 
@@ -2178,12 +2186,44 @@ void printTexLongMath(nmbrString *mathString,
           /*******
           let(&tmp, cat(" ", right(tmp, strlen(PINK_NBSP) + 1), NULL));
           *******/
+
+#define TOOLTIP
+#ifdef TOOLTIP
+          /* 19-Nov-2007 nm Get description for mod below */
+          let(&descr, ""); /* Deallocate previous description */
+          descr = getDescription(hypStmt);
+          let(&descr, edit(descr, 4 + 16)); /* Discard lf/cr; reduce spaces */
+#define MAX_DESCR_LEN 87
+          if (strlen(descr) > MAX_DESCR_LEN) { /* Truncate long lines */
+            i = MAX_DESCR_LEN - 3;
+            while (i >= 0) { /* Get to previous word boundary */
+              if (descr[i] == ' ') break;
+              i--;
+            }
+            let(&descr, cat(left(descr, i), "...", NULL));
+          }
+          i = 0;
+          while (descr[i] != 0) { /* Convert double quote to single */
+            descr[i] = (descr[i] == '"' ? '\'' : descr[i]);
+            i++;
+          }
+#endif
+
           printLongLine(cat("<TR ALIGN=LEFT><TD>", htmStep, "</TD><TD>",
-              htmHyp, "</TD><TD><A HREF=\"", htmRef, ".html\">", htmRef,
+              htmHyp, "</TD><TD><A HREF=\"", htmRef, ".html\"",
+
+#ifdef TOOLTIP
+              /* 19-Nov-2007 nm Put in a TITLE entry for mouseover tooltip,
+                 as suggested by Reinder Verlinde */
+              " TITLE=\"", descr, "\"",
+#endif
+
+              ">", htmRef,
               "</A>", tmp,
               "</TD><TD>", NULL), "", "\"");
         }
       }
+      let(&descr, ""); /*Deallocate */  /* 17-Nov-2007 nm */
       let(&htmStep, ""); /* Deallocate */
       let(&htmHyp, ""); /* Deallocate */
       let(&htmRef, ""); /* Deallocate */
@@ -2296,7 +2336,7 @@ void writeTheoremList(long theoremsPerPage)
   vstring bigHdr = "";
   vstring smallHdr = "";
   vstring labelStr = "";
-  long stmt, i, pos, pos2;
+  long stmt, i, pos, pos1, pos2;
   pntrString *pntrBigHdr = NULL_PNTRSTRING;
   pntrString *pntrSmallHdr = NULL_PNTRSTRING;
 
@@ -2317,7 +2357,7 @@ void writeTheoremList(long theoremsPerPage)
   pntrLet(&pntrBigHdr, pntrSpace(statements + 1));
   pntrLet(&pntrSmallHdr, pntrSpace(statements + 1));
 
-  pages = ( assertions / theoremsPerPage ) + 1;
+  pages = ((assertions - 1) / theoremsPerPage) + 1;
   for (page = 1; page <= pages; page++) {
     /* Open file */
     let(&output_fn,
@@ -2533,7 +2573,22 @@ void writeTheoremList(long theoremsPerPage)
         pos = 0;
         pos2 = 0;
         while (1) {  /* Find last "big" header, if any */
+          /* nm 4-Nov-2007:  Obviously, the match below will not work if the
+             $( line has a trailing space, which some editors might insert.
+             The symptom is a missing table of contents entry.  But to detect
+             this (and for the =-=- match below) would take a little work and
+             perhaps slow things down, and I don't think it is worth it.  I
+             put a note in HELP WRITE THEOREM_LIST. */
+          pos1 = pos; /* 23-May-2008 */
           pos = instr(pos + 1, labelStr, "$(\n#*#*");
+
+          /* 23-May-2008 nm Tolerate one space after "$(", to handle case of
+            one space added to the end of each line with TOOLS to make global
+            label changes are easier (still a kludge; this should be made
+            white-space insensitive some day) */
+          pos1 = instr(pos1 + 1, labelStr, "$( \n#*#*");
+          if (pos1 > pos) pos = pos1;
+
           if (!pos) break;
           if (pos) pos2 = pos;
         }
@@ -2543,10 +2598,20 @@ void writeTheoremList(long theoremsPerPage)
           let(&bigHdr, seg(labelStr, pos + 1, pos2 - 1));
           let(&bigHdr, edit(bigHdr, 8 + 128)); /* Trim leading, trailing sp */
         }
-        pos = 0;
+        /* pos = 0; */ /* Start with "big" header pos, to ignore any earlier
+                          "small" header */
         pos2 = 0;
         while (1) {  /* Find last "small" header, if any */
+          pos1 = pos; /* 23-May-2008 */
           pos = instr(pos + 1, labelStr, "$(\n=-=-");
+
+          /* 23-May-2008 nm Tolerate one space after "$(", to handle case of
+            one space added to the end of each line with TOOLS to make global
+            label changes are easier (still a kludge; this should be made
+            white-space insensitive some day) */
+          pos1 = instr(pos1 + 1, labelStr, "$( \n=-=-");
+          if (pos1 > pos) pos = pos1;
+
           if (!pos) break;
           if (pos) pos2 = pos;
         }
@@ -2589,7 +2654,14 @@ void writeTheoremList(long theoremsPerPage)
               let(&bigHdr, "");
             }
             if (smallHdr[0]) {
-              printLongLine(cat("&nbsp; &nbsp; <A HREF=\"", str3, "s\">",
+              printLongLine(cat("&nbsp; &nbsp; ",
+
+                  /* 23-May-2008 nm Add an anchor to the "sandbox" theorem
+                     for use by mmrecent.html */
+                  !strcmp(statement[stmt].labelName, "sandbox") ?
+                      "<A NAME=\"sandbox\"></A>" : "",
+
+                  "<A HREF=\"", str3, "s\">",
                   smallHdr, "</A>",
                   " &nbsp; <A HREF=\"",
                   statement[stmt].labelName, ".html\">",

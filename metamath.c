@@ -1,13 +1,36 @@
 /*****************************************************************************/
-/* Program name:  Metamath                                                   */
-/* Copyright (C) 2007 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
+/* Program name:  metamath                                                   */
+/* Copyright (C) 2008 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
 /* License terms:  GNU General Public License Version 2 or any later version */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.07.33 19-Jul-2007"
+#define MVERSION "0.07.40 6-Jul-2008"
+/* 0.07.40 6-Jul-2008 nm metamath.c, mmcmdl.c, mmhlpa.c, mmhlpb.c - Added
+   / NO_VERSIONING qualifier for SHOW STATEMENT, so website can be regenerated
+   in place with less temporary space required.  Also, the wildcard trigger
+   for mmdefinitions.html, etc. is more flexible (see HELP HTML). */
+/* 0.07.39 21-May-2008 nm metamath.c, mmhlpb.c - Added wildcard handling to
+   statement label in SHOW TRACE_BACK.  All wildcards now allow
+   comma-separated lists [i.e. matchesList() instead of matches()] */
+/* 0.07.38 26-Apr-2008 nm metamath.c, mmdata.h, mmdata.c, mmvstr.c, mmhlpb.c -
+   Enhanced / EXCLUDE qualifier for MINIMIZE_WITH to handle comma-separated
+   wildcard list. */
+/* 0.07.37 14-Apr-2008 nm metamath.c, mmcmdl.c, mmhlpb.c - Added / JOIN
+   qualifier to SEARCH. */
+/* 0.07.36 7-Jan-2008 nm metamath.c, mmcmdl.c, mmhlpb.c - Added wildcard
+   handling for labels in SHOW USAGE. */
+/* 0.07.35 2-Jan-2008 nm mmcmdl.c, metamath.c, mmhlpb.c - Changed keywords
+   COMPACT to PACKED and COLUMN to START_COLUMN so that SAVE/SHOW proof can use
+   C to abbreviate COMPRESSED.  (PACKED format is supported but "unofficial,"
+   used mainly for debugging purposes, and is not listed in HELP SAVE
+   PROOF.) */
+/* 0.07.34 19-Nov-2007 nm mmwtex.c, mminou.c - Added tooltips to proof step
+   hyperlinks in SHOW STATEMENT.../HTML,ALT_HTML output (suggested by Reinder
+   Verlinde) */
 /* 0.07.33 19-Jul-2007 nm mminou.c, mmvstr.c, mmdata.c, mmword.c - added fflush
-   after each printf() call for proper behavior inside emacs */
+   after each printf() call for proper behavior inside emacs (suggested by
+   Frederic Line) */
 /* 0.07.32 29-Apr-2007 nm mminou.c - fSafeOpen now stops at gap; e.g. if ~2
    doesn't exist, ~1 will be renamed to ~2, but any ~3, etc. are not touched */
 /* 0.07.31 5-Apr-2007 nm mmwtex.c - Don't make "_" in hyperlink a subscript */
@@ -22,7 +45,8 @@
    a new-line at end of file (reported by Marnix Klooster) */
 /* 0.07.25 10-Oct-2006 nm metamath.c - Fixed bug invoking TOOLS as a ./metamath
    command-line argument */
-/* 0.07.24 25-Sep-2006 nm mmcmdl.c Fixed bug in SHOW NEW_PROOF/COLUMN nn/LEM */
+/* 0.07.24 25-Sep-2006 nm mmcmdl.c Fixed bug in
+   SHOW NEW_PROOF/START_COLUMN nn/LEM */
 /* 0.07.23 31-Aug-2006 nm mmwtex.c - Added Home and Contents links to bottom of
    WRITE THEOREM_LIST pages */
 /* 0.07.22 26-Aug-2006 nm metamath.c, mmcmdl.c, mmhlpb.c - Changed "IMPROVE
@@ -59,8 +83,8 @@
 /* 0.07.9 1-Dec-05 nm mmvstr.c - added comment on how to make portable */
 /* 0.07.9 18-Nov-05 nm metamath.c, mminou.c, mminou.h, mmcmdl.c, mmhlpb.c -
    added SET HEIGHT command; changed SET SCREEN_WIDTH to SET WIDTH; changed
-   SET HENTY_FILTER to SET JEROME_HENTY_FILTER (to make H for HEIGHT
-   unambiguous); added HELP for SET JEROME_HENTY_FILTER */
+   SET HENTY_FILTER to SET JEREMY_HENTY_FILTER (to make H for HEIGHT
+   unambiguous); added HELP for SET JEREMY_HENTY_FILTER */
 /* 0.07.8 15-Nov-05 nm mmunif.c - now detects wrong order in bracket matching
    heuristic to further reduce ambiguous unifications in Proof Assistant */
 /* 0.07.7 12-Nov-05 nm mmunif.c - add "[","]" and "[_","]_" bracket matching
@@ -273,6 +297,7 @@ void command(int argc, char *argv[])
   flag axiomFlag; /* For SHOW TRACE_BACK */
   flag recursiveFlag; /* For SHOW USAGE */
   long fromLine, toLine; /* For TYPE, SEARCH */
+  flag joinFlag; /* For SEARCH */
   long searchWindow; /* For SEARCH */
   FILE *type_fp; /* For TYPE, SEARCH */
   long maxEssential; /* For MATCH */
@@ -939,9 +964,10 @@ void command(int argc, char *argv[])
             changedFlag = 1;
             let(&str3, left(str2, 79)); /* For msg */
             firstChangedLine = lines;
-            if ((SUBSTITUTE_MODE && newstr[0] == '\n')
-                || BUILD_MODE) /* Joining lines */
+            if ((cmdMode == SUBSTITUTE_MODE && newstr[0] == '\n')
+                || cmdMode == BUILD_MODE) /* Joining lines */ {
               firstChangedLine = 1; /* Better message */
+            }
           }
           if (((cmdMode != BUILD_MODE && cmdMode != BREAK_MODE)
               || str2[0] != 0)
@@ -973,7 +999,7 @@ void command(int argc, char *argv[])
             }
           } else {
             print2(
-"The file %s has %ld lines; %ld were changed.  First change is on line %ld:\n",
+"The file %s has %ld lines; %ld were changed.  First changed line is %ld:\n",
                 list2_fname, lines, changedLines, firstChangedLine);
             print2("%s\n", str3);
           }
@@ -1596,6 +1622,7 @@ void command(int argc, char *argv[])
               if (0
                   || !strcmp(mid(str2, k, strlen("THEOREM")), "THEOREM")
                   || !strcmp(mid(str2, k, strlen("LEMMA")), "LEMMA")
+                  || !strcmp(mid(str2, k, strlen("LEMMAS")), "LEMMAS")
                   || !strcmp(mid(str2, k, strlen("DEFINITION")), "DEFINITION")
                   || !strcmp(mid(str2, k, strlen("COMPARE")), "COMPARE")
                   || !strcmp(mid(str2, k, strlen("PROPOSITION")), "PROPOSITION")
@@ -2104,7 +2131,8 @@ void command(int argc, char *argv[])
           if (!m && statement[i].type != (char)p__ &&
               statement[i].type != (char)a__) continue; /* No /ALL switch */
           /* 30-Jan-06 nm Added single-character-match wildcard argument */
-          if (!matches(statement[i].labelName, fullArg[2], '*', '?')) continue;
+          if (!matchesList(statement[i].labelName, fullArg[2], '*', '?'))
+            continue;
           let(&str1,cat(str(i)," ",
               statement[i].labelName," $",chr(statement[i].type)," ",NULL));
 #define COL 19 /* Characters per column */
@@ -2172,9 +2200,11 @@ void command(int argc, char *argv[])
          statement, a .html file is opened, the statement is output,
          and depending on statement type a proof or other information
          is output. */
-
-      if (rawArgs != 5) {
-        print2("?The HTML qualifiers may not be combined with others.\n");
+      /* if (rawArgs != 5) { */  /* obsolete */
+      if (rawArgs != (switchPos("/ NO_VERSIONING") ? 7 : 5)) {
+                                                            /* 6-Jul-2008 nm */
+        printLongLine(cat("?The HTML qualifiers may not be combined with",
+            " others except / NO_VERSIONING.\n", NULL), "  ", " ");
         continue;
       }
 
@@ -2216,15 +2246,19 @@ void command(int argc, char *argv[])
 
       q = 0;
 
-      /* Special feature:  if the match statement has a "*" in it, we
-         will also output mmascii.html, mmtheorems.html, and mmdefinitions.html.
-         So, with
+      /* Special feature:  if the match statement starts with "*", we
+         will also output mmascii.html, mmtheoremsall.html, and
+         mmdefinitions.html.  So, with
                  SHOW STATEMENT * / HTML
          these will be output plus all statements; with
+                 SHOW STATEMENT *! / HTML
+         these will be output with no statements (since ! is illegal in a
+         statement label); with
                  SHOW STATEMENT ?* / HTML
-         these will be output with no statements (since ? is illegal in a
-         statement label) */
-      if (instr(1, fullArg[2], "*") || briefHtmlFlag) {
+         all statements will be output, but without mmascii.html etc. */
+      /* if (instr(1, fullArg[2], "*") || briefHtmlFlag) { */  /* obsolete */
+      if (((char *)(fullArg[2]))[0] == '*' || briefHtmlFlag) {
+                                                            /* 6-Jul-2008 nm */
         s = -2; /* -2 is for ASCII table; -1 is for theorems;
                     0 is for definitions */
       } else {
@@ -2245,7 +2279,8 @@ void command(int argc, char *argv[])
         if (s > 0) {
           if (!statement[s].labelName[0]) continue; /* No label */
           /* 30-Jan-06 nm Added single-character-match wildcard argument */
-          if (!matches(statement[s].labelName, fullArg[2], '*', '?')) continue;
+          if (!matchesList(statement[s].labelName, fullArg[2], '*', '?'))
+            continue;
           if (statement[s].type != (char)a__
               && statement[s].type != (char)p__) continue;
         }
@@ -2281,7 +2316,15 @@ void command(int argc, char *argv[])
                 NULL));
         }
         print2("Creating HTML file \"%s\"...\n", texFileName);
-        texFilePtr = fSafeOpen(texFileName, "w");
+        if (switchPos("/ NO_VERSIONING") == 0) {
+          texFilePtr = fSafeOpen(texFileName, "w");
+        } else {
+          /* 6-Jul-2008 nm Added / NO_VERSIONING */
+          /* Don't create the backup versions ~1, ~2,... */
+          texFilePtr = fopen(texFileName, "w");
+          if (!texFilePtr) print2("?Could not open the file \"%s\".\n",
+              texFileName);
+        }
         if (!texFilePtr) goto htmlDone; /* Couldn't open it (err msg was
             provided) */
         texFileOpenFlag = 1;
@@ -2584,7 +2627,8 @@ void command(int argc, char *argv[])
       for (s = 1; s <= statements; s++) {
         if (!statement[s].labelName[0]) continue; /* No label */
         /* 30-Jan-06 nm Added single-character-match wildcard argument */
-        if (!matches(statement[s].labelName, fullArg[2], '*', '?')) continue;
+        if (!matchesList(statement[s].labelName, fullArg[2], '*', '?'))
+          continue;
         if (briefFlag || commentOnlyFlag || texFlag) {
           /* For brief or comment qualifier, if label has wildcards,
              show only $p and $a's */
@@ -2671,10 +2715,10 @@ void command(int argc, char *argv[])
       }
       if (hentyFilter) { /* 18-Nov-05 nm Added to the SHOW listing */
         print2(
-              "(SET JEROME_HENTY_FILTER...) The Henty filter is turned ON.\n");
+              "(SET JEREMY_HENTY_FILTER...) The Henty filter is turned ON.\n");
       } else {
         print2(
-             "(SET JEROME_HENTY_FILTER...) The Henty filter is turned OFF.\n");
+             "(SET JEREMY_HENTY_FILTER...) The Henty filter is turned OFF.\n");
       }
       if (showStatement) {
         print2("(SHOW...) The default statement for SHOW commands is '%s'.\n",
@@ -2709,6 +2753,9 @@ void command(int argc, char *argv[])
     }
 
     if (cmdMatches("SHOW TRACE_BACK")) {
+
+
+      /* Pre-21-May-2008
         for (i = 1; i <= statements; i++) {
           if (!strcmp(fullArg[2],statement[i].labelName)) break;
         }
@@ -2719,22 +2766,35 @@ void command(int argc, char *argv[])
           showStatement = 0;
           continue;
         }
+       */
+
+      essentialFlag = 0;
+      axiomFlag = 0;
+      endIndent = 0;
+      i = switchPos("/ ESSENTIAL");
+      if (i) essentialFlag = 1; /* Limit trace to essential steps only */
+      i = switchPos("/ ALL");
+      if (i) essentialFlag = 0;
+      i = switchPos("/ AXIOMS");
+      if (i) axiomFlag = 1; /* Limit trace printout to axioms */
+      i = switchPos("/ DEPTH"); /* Limit depth of printout */
+      if (i) endIndent = val(fullArg[i + 1]);
+
+      /* 21-May-2008 nm Added wildcard handling */
+      showStatement = 0;
+      for (i = 1; i <= statements; i++) {
+        if (statement[i].type != (char)p__)
+          continue; /* Not a $p statement; skip it */
+        /* Wildcard matching */
+        if (!matchesList(statement[i].labelName, fullArg[2], '*', '?'))
+          continue;
+
         showStatement = i;
 
-        essentialFlag = 0;
-        axiomFlag = 0;
-        endIndent = 0;
-        i = switchPos("/ ESSENTIAL");
-        if (i) essentialFlag = 1; /* Limit trace to essential steps only */
-        i = switchPos("/ ALL");
-        if (i) essentialFlag = 0;
-        i = switchPos("/ AXIOMS");
-        if (i) axiomFlag = 1; /* Limit trace printout to axioms */
-        i = switchPos("/ DEPTH"); /* Limit depth of printout */
-        if (i) endIndent = val(fullArg[i + 1]);
-
-        i = switchPos("/ TREE");
-        if (i) {
+        /* ??? Future - move /TREE and /COUNT_STEPS to outside loop,
+           assigning new variables, for cleaner code. */
+        j = switchPos("/ TREE");
+        if (j) {
           if (axiomFlag) {
             print2(
                 "(Note:  The AXIOMS switch is ignored in TREE mode.)\n");
@@ -2750,79 +2810,105 @@ void command(int argc, char *argv[])
 "(Note:  The DEPTH is ignored if the TREE switch is not used.)\n");
           }
 
-          i = switchPos("/ COUNT_STEPS");
-          if (i) {
+          j = switchPos("/ COUNT_STEPS");
+          if (j) {
             countSteps(showStatement, essentialFlag);
           } else {
             traceProof(showStatement, essentialFlag, axiomFlag);
           }
         }
 
-        continue;
+      /* 21-May-2008 nm Added wildcard handling */
+      } /* next i */
+      if (showStatement == 0) {
+        printLongLine(cat("?There are no labels matching \"",
+            fullArg[2], "\".  ",
+            "See HELP SHOW TRACE_BACK for matching rules.", NULL), "", " ");
+      }
 
+      continue;
     }
 
 
     if (cmdMatches("SHOW USAGE")) {
-      for (i = 1; i <= statements; i++) {
-        if (!strcmp(fullArg[2],statement[i].labelName)) break;
+
+      /* 7-Jan-2008 nm Added / ALL qualifier */
+      if (switchPos("/ ALL")) {
+        m = 1;  /* Always include $e, $f statements */
+      } else {
+        m = 0;  /* If wildcards are used, show $a, $p only */
       }
-      if (i > statements) {
-        printLongLine(cat("?There is no statement with label \"",
+
+      showStatement = 0;
+      for (i = 1; i <= statements; i++) { /* 7-Jan-2008 */
+
+        /* 7-Jan-2008 nm Added wildcard handling */
+        if (!statement[i].labelName[0]) continue; /* No label */
+        if (!m && statement[i].type != (char)p__ &&
+            statement[i].type != (char)a__
+            /* A wildcard-free user-specified statement is always matched even
+               if it's a $e, i.e. it overrides omission of / ALL */
+            && (instr(1, fullArg[2], "*")
+              || instr(1, fullArg[2], "?")))
+          continue; /* No /ALL switch and wildcard and not $p, $a */
+        /* Wildcard matching */
+        if (!matchesList(statement[i].labelName, fullArg[2], '*', '?'))
+          continue;
+
+        showStatement = i;
+        recursiveFlag = 0;
+        j = switchPos("/ RECURSIVE");
+        if (j) recursiveFlag = 1; /* Recursive (indirect) usage */
+        j = switchPos("/ DIRECT");
+        if (j) recursiveFlag = 0; /* Direct references only */
+
+        let(&str1, "");
+        str1 = traceUsage(showStatement, recursiveFlag);
+
+        /* Count the number of statements = # of spaces */
+        k = strlen(str1) - strlen(edit(str1, 2));
+
+        if (!k) {
+          printLongLine(cat("Statement \"",
+              statement[showStatement].labelName,
+              "\" is not referenced in the proof of any statement.", NULL),
+              "", " ");
+        } else {
+          if (recursiveFlag) {
+            let(&str2, "\" directly or indirectly affects");
+          } else {
+            let(&str2, "\" is directly referenced in");
+          }
+          if (k == 1) {
+            printLongLine(cat("Statement \"",
+                statement[showStatement].labelName,
+                str2, " the proof of ",
+                str(k), " statement:", NULL), "", " ");
+          } else {
+            printLongLine(cat("Statement \"",
+                statement[showStatement].labelName,
+                str2, " the proofs of ",
+                str(k), " statements:", NULL), "", " ");
+          }
+        }
+
+        if (k) {
+          let(&str1, cat(" ", str1, NULL));
+        } else {
+          let(&str1, "  (None)");
+        }
+
+        /* Print the output */
+        printLongLine(str1, "  ", " ");
+      } /* next i */
+
+      if (showStatement == 0) {
+        printLongLine(cat("?There are no labels matching \"",
             fullArg[2], "\".  ",
-            "Use SHOW LABELS for a list of valid labels.", NULL), "", " ");
-        showStatement = 0;
-        continue;
+            "See HELP SHOW USAGE for matching rules.", NULL), "", " ");
       }
-      showStatement = i;
-
-      recursiveFlag = 0;
-      i = switchPos("/ RECURSIVE");
-      if (i) recursiveFlag = 1; /* Recursive (indirect) usage */
-      i = switchPos("/ DIRECT");
-      if (i) recursiveFlag = 0; /* Direct references only */
-
-      let(&str1, "");
-      str1 = traceUsage(showStatement, recursiveFlag);
-
-      /* Count the number of statements = # of spaces */
-      j = strlen(str1) - strlen(edit(str1, 2));
-
-      if (!j) {
-        printLongLine(cat("Statement \"",
-            statement[showStatement].labelName,
-            "\" is not referenced in the proof of any statement.", NULL), "", " ");
-      } else {
-        if (recursiveFlag) {
-          let(&str2, "\" directly or indirectly affects");
-        } else {
-          let(&str2, "\" is directly referenced in");
-        }
-        if (j == 1) {
-          printLongLine(cat("Statement \"",
-              statement[showStatement].labelName,
-              str2, " the proof of ",
-              str(j), " statement:", NULL), "", " ");
-        } else {
-          printLongLine(cat("Statement \"",
-              statement[showStatement].labelName,
-              str2, " the proofs of ",
-              str(j), " statements:", NULL), "", " ");
-        }
-      }
-
-      if (j) {
-        let(&str1, cat(" ", str1, NULL));
-      } else {
-        let(&str1, "  (None)");
-      }
-
-      /* Print the output */
-      printLongLine(str1, "  ", " ");
-
       continue;
-
-    }
+    } /* cmdMatches("SHOW USAGE") */
 
 
     if (cmdMatches("SHOW PROOF")
@@ -2889,7 +2975,7 @@ void command(int argc, char *argv[])
       if (i) reverseFlag = 1;
       i = switchPos("/ LEMMON");
       if (i) noIndentFlag = 1;
-      i = switchPos("/ COLUMN");
+      i = switchPos("/ START_COLUMN");
       if (i) splitColumn = val(fullArg[i + 1]);
       i = switchPos("/ TEX") || switchPos("/ HTML");
       if (i) texFlag = 1;
@@ -2944,7 +3030,8 @@ void command(int argc, char *argv[])
         if (!pipFlag) {
           if (statement[s].type != (char)p__) continue; /* Not $p */
           /* 30-Jan-06 nm Added single-character-match wildcard argument */
-          if (!matches(statement[s].labelName, labelMatch, '*', '?')) continue;
+          if (!matchesList(statement[s].labelName, labelMatch, '*', '?'))
+            continue;
           showStatement = s;
         }
 
@@ -2962,7 +3049,7 @@ void command(int argc, char *argv[])
           continue;
         }
 
-        if (switchPos("/ COMPACT") || switchPos("/ NORMAL") ||
+        if (switchPos("/ PACKED") || switchPos("/ NORMAL") ||
             switchPos("/ COMPRESSED") || saveFlag) {
           /*??? Add error msg if other switches were specified. (Ignore them.)*/
 
@@ -2989,7 +3076,7 @@ void command(int argc, char *argv[])
           } else {
             nmbrLet(&nmbrSaveProof, proofInProgress.proof);
           }
-          if (switchPos("/ COMPACT")  || switchPos("/ COMPRESSED")) {
+          if (switchPos("/ PACKED")  || switchPos("/ COMPRESSED")) {
             nmbrLet(&nmbrSaveProof, nmbrSquishProof(nmbrSaveProof));
           }
 
@@ -3116,7 +3203,7 @@ void command(int argc, char *argv[])
           nmbrLet(&nmbrSaveProof, NULL_NMBRSTRING);
           if (pipFlag) break; /* Only one iteration for NEW_PROOF stuff */
           continue;  /* to next s iteration */
-        } /* end if (switchPos("/ COMPACT") || switchPos("/ NORMAL") ||
+        } /* end if (switchPos("/ PACKED") || switchPos("/ NORMAL") ||
             switchPos("/ COMPRESSED") || saveFlag) */
 
         if (saveFlag) bug(1112); /* Shouldn't get here */
@@ -3305,7 +3392,7 @@ void command(int argc, char *argv[])
       }
       cleanWrkProof(); /* Deallocate verifyProof storage */
 
-      /* Right now, only non-compact proofs are handled. */
+      /* Right now, only non-packed proofs are handled. */
       nmbrLet(&nmbrSaveProof, nmbrUnsquishProof(nmbrSaveProof));
 
       /* Assign initial proof structure */
@@ -3818,7 +3905,7 @@ void command(int argc, char *argv[])
       */
       /* 8-Apr-05 nm Added: */
       printLongLine(cat("To undo the assignment, DELETE STEP ",
-              str(s - m + n), " and INITIALIZE, UNIFY if needed.",
+              str(s - m + n), " and if needed INITIALIZE, UNIFY.",
               NULL),
               "", " ");
 
@@ -4293,7 +4380,8 @@ void command(int argc, char *argv[])
         if (statement[k].type != (char)p__ && statement[k].type != (char)a__)
           continue;
         /* 30-Jan-06 nm Added single-character-match wildcard argument */
-        if (!matches(statement[k].labelName, fullArg[1], '*', '?')) continue;
+        if (!matchesList(statement[k].labelName, fullArg[1], '*', '?'))
+          continue;
         if (p) {
           /* Skip the statement if it has a $d requirement.  This option
              prevents illegal minimizations that would violate $d requirements
@@ -4310,7 +4398,7 @@ void command(int argc, char *argv[])
         if (e) {
           /* Skip any match to the EXCEPT argument */
           /* 30-Jan-06 nm Added single-character-match wildcard argument */
-          if (matches(statement[k].labelName, fullArg[e + 1], '*', '?'))
+          if (matchesList(statement[k].labelName, fullArg[e + 1], '*', '?'))
             continue;
         }
 
@@ -4579,6 +4667,14 @@ void command(int argc, char *argv[])
       } else {
         m = 0;  /* Show $a, $p only */
       }
+
+      /* 14-Apr-2008 nm added */
+      if (switchPos("/ JOIN")) {
+        joinFlag = 1;  /* Join $e's to $a,$p for matching */
+      } else {
+        joinFlag = 0;  /* Search $a,$p by themselves */
+      }
+
       if (switchPos("/ COMMENTS")) {
         n = 1;  /* Search comments */
       } else {
@@ -4668,9 +4764,12 @@ void command(int argc, char *argv[])
       for (i = 1; i <= statements; i++) {
         if (!statement[i].labelName[0]) continue; /* No label */
         if (!m && statement[i].type != (char)p__ &&
-            statement[i].type != (char)a__) continue; /* No /ALL switch */
+            statement[i].type != (char)a__) {
+          continue; /* No /ALL switch */
+        }
         /* 30-Jan-06 nm Added single-character-match wildcard argument */
-        if (!matches(statement[i].labelName, fullArg[1], '*', '?')) continue;
+        if (!matchesList(statement[i].labelName, fullArg[1], '*', '?'))
+          continue;
         if (n) { /* COMMENTS switch */
           let(&str2, "");
           str2 = getDescription(i); /* str2 must be deallocated here */
@@ -4706,6 +4805,24 @@ void command(int argc, char *argv[])
         } else { /* No COMMENTS switch */
           let(&str2,nmbrCvtMToVString(statement[i].mathString));
 
+          /* 14-Apr-2008 nm JOIN flag */
+          tmpFlag = 0; /* Flag that $p or $a is already in string */
+          if (joinFlag && (statement[i].type == (char)p__ ||
+              statement[i].type == (char)a__)) {
+            /* If $a or $p, prepend $e's to string to match */
+            k = nmbrLen(statement[i].reqHypList);
+            for (j = k - 1; j >= 0; j--) {
+              p = statement[i].reqHypList[j];
+              if (statement[p].type == (char)e__) {
+                let(&str2, cat("$e ",
+                    nmbrCvtMToVString(statement[p].mathString),
+                    tmpFlag ? "" : cat(" $", chr(statement[i].type), NULL),
+                    " ", str2, NULL));
+                tmpFlag = 1; /* Flag that a $p or $a was added */
+              }
+            }
+          }
+
           /* Change all spaces to double spaces */
           q = strlen(str2);
           let(&str3, space(q + q));
@@ -4721,13 +4838,17 @@ void command(int argc, char *argv[])
 
           let(&str2, cat(" ", str2, " ", NULL));
           /* 30-Jan-06 nm Added single-character-match wildcard argument */
+          /* We should use matches() and not matchesList() here, because
+             commas can be legal token characters in math symbols */
           if (!matches(str2, str1, 2/* ascii 2 0-or-more-token match char*/,
               3/* ascii 3 single-token-match char*/))
             continue;
           let(&str2, edit(str2, 8 + 16 + 128)); /* Trim leading, trailing
               spaces; reduce white space to space */
           printLongLine(cat(str(i)," ",
-              statement[i].labelName, " $", chr(statement[i].type), " ", str2,
+              statement[i].labelName,
+              tmpFlag ? "" : cat(" $", chr(statement[i].type), NULL),
+              " ", str2,
               NULL), "    ", " ");
         } /* End no COMMENTS switch */
       } /* Next i */
@@ -4760,8 +4881,8 @@ void command(int argc, char *argv[])
     }
 
 
-    if (cmdMatches("SET JEROME_HENTY_FILTER")) {
-      if (cmdMatches("SET JEROME_HENTY_FILTER ON")) {
+    if (cmdMatches("SET JEREMY_HENTY_FILTER")) {
+      if (cmdMatches("SET JEREMY_HENTY_FILTER ON")) {
         print2("The unification equivalence filter has been turned on.\n");
         print2("This command is intended for debugging purposes only.\n");
         hentyFilter = 1;

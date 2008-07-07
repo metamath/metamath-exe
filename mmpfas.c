@@ -1458,7 +1458,7 @@ void initStep(long step)
           NULL_NMBRSTRING);
     } else {
 /*E*/print2("step %ld stmt %ld\n",step,stmt);
-      bug(1809); /* Compact proof not handled (yet?) */
+      bug(1809); /* Packed ("squished") proof not handled (yet?) */
     }
     return;
   }
@@ -1590,8 +1590,10 @@ void assignKnownSteps(long startStep, long sbProofLen)
     stmt = proofInProgress.proof[pos];
 
     if (stmt <= 0) {
-      if (stmt != -(long)'?') bug(1810); /* Compact proofs are not handled (yet?) */
-      if (stmt == -(long)'?') bug(1830); /* Unknown proofs are not handled (yet?) */
+      if (stmt != -(long)'?') bug(1810);
+                                     /* Packed proofs are not handled (yet?) */
+      if (stmt == -(long)'?') bug(1830);
+                                    /* Unknown proofs are not handled (yet?) */
     }
 
     if (statement[stmt].type == (char)e__ || statement[stmt].type == (char)f__){

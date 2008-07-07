@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2007  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2008  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -387,8 +387,8 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
   flag htmlFlag = 0; /* 1 means printLongLine was called with "\"" as
                         breakMatch argument (for HTML code) */
   flag quoteMode = 0; /* 1 means inside quote */
-  char quoteChar = '"'; /* Current quote character */
-  long quoteStartPos = 0; /* Start of quote */
+  /*char quoteChar = '"';*/ /* Current quote character */
+  /*long quoteStartPos = 0;*/ /* Start of quote */
   long saveScreenWidth; /* To let screenWidth grow temporarily */
 
   long saveTempAllocStack;
@@ -452,6 +452,27 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
     breakMatch1[0] = ' '; /* Change to a space (the real break character) */
     /* Scan string for quoted strings */
     quoteMode = 0;
+
+    /* 19-Nov-2007 nm  New algorithm:  don't put line breaks in anything inside
+       _double_ quotes that follows an = sign, such as TITLE="abc def".  Ignore
+       _single_ quotes (which could be apostrophes).  The HTML output code
+       must be (and so far is) written to conform to this. */
+    i = 0;
+    while (multiLine[i]) {
+      if (multiLine[i] == '"' && i > 0) {
+        if (!quoteMode && multiLine[i - 1] == '=')
+          quoteMode = 1;
+        else
+          quoteMode = 0;
+      }
+      if (multiLine[i] == ' ' && quoteMode)
+        multiLine[i] = QUOTED_SPACE;
+      i++;
+    }
+
+/* 19-Nov-2007 nm  Bypass old complex code that doesn't work right */
+/**************** THE CODE BELOW IS OBSOLETE AND WILL BE DELETED. ********/
+#ifdef OBSOLETE_QUOTE_HANDLING_CODE
     for (i = 0; i < j; i++) {
 
       /* 10/24/02 - This code has problems with SHOW STATEMENT/ALT_HTML
@@ -498,6 +519,9 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
       if (i) multiLine[i + 4] = QUOTED_SPACE;
       else break;
     }
+#endif
+/**************** END OF OBSOLETE SECTION ********/
+
   }
 
 
@@ -950,12 +974,12 @@ void errorMessage(vstring line, long lineNum, short column, short tokenLength,
 
   /* ???Should there be a limit? */
   /* if (errorCount > 1000) {
-    print2("\n"); print2("?Too many errors - aborting MetaMath.\n");
+    print2("\n"); print2("?Too many errors - aborting Metamath.\n");
     exit(0);
   } */
 
   if (severity == 3) {
-    print2("Aborting MetaMath.\n");
+    print2("Aborting Metamath.\n");
     exit(0);
   }
   let(&errorPointer,"");

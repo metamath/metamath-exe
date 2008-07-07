@@ -516,6 +516,30 @@ void bug(int bugNum)
 
 #define M_MAX_ALLOC_STACK 100
 
+/* 26-Apr-2008 nm Added */
+/* This function returns a 1 if any entry in a comma-separated list
+   matches using the matches() function. */
+flag matchesList(vstring testString, vstring pattern, char wildCard,
+    char oneCharWildCard) {
+  long entries, i;
+  flag matchVal = 0;
+  vstring entryPattern = "";
+
+  long saveTempAllocStack;
+  saveTempAllocStack = startTempAllocStack; /* For let() stack cleanup */
+  startTempAllocStack = tempAllocStackTop;
+
+  entries = numEntries(pattern);
+  for (i = 1; i <= entries; i++) {
+    let(&entryPattern, entry(i, pattern));
+    matchVal = matches(testString, entryPattern, wildCard, oneCharWildCard);
+    if (matchVal) break;
+  }
+
+  startTempAllocStack = saveTempAllocStack;
+  return (matchVal);
+}
+
 
 /* This function returns a 1 if the first argument matches the pattern of
    the second argument.  The second argument may have wildcard characters.
@@ -1362,8 +1386,8 @@ long nmbrGetSubProofLen(nmbrString *proof, long step)
 
 
 
-/* This function returns a "squished" proof, putting in local label references
-   to previous subproofs. */
+/* This function returns a packed or "squished" proof, putting in local label
+   references to previous subproofs. */
 nmbrString *nmbrSquishProof(nmbrString *proof)
 {
   nmbrString *newProof = NULL_NMBRSTRING;
@@ -1415,7 +1439,7 @@ nmbrString *nmbrSquishProof(nmbrString *proof)
 }
 
 
-/* This function unsquishes a "squished" proof, replacing local label references
+/* This function unpacks a "squished" proof, replacing local label references
    to previous subproofs by the subproofs themselves. */
 nmbrString *nmbrUnsquishProof(nmbrString *proof)
 {
@@ -1618,8 +1642,9 @@ nmbrString *nmbrGetTargetHyp(nmbrString *proof, long statemNum)
 
 
 /* Converts a proof string to a compressed-proof-format ASCII string.
-   Normally, the proof string would be compacted with nmbrSquishProof first,
-   although it's not a requirement. */
+   Normally, the proof string would be packed with nmbrSquishProof first,
+   although it's not a requirement (in which case the compressed proof will
+   be much longer of course). */
 /* The statement number is needed because required hypotheses are
    implicit in the compressed proof. */
 vstring compressProof(nmbrString *proof, long statemNum)

@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2006  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2008  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -858,13 +858,16 @@ long lookup(vstring expression, vstring list)
 long numEntries(vstring list)
 {
   long i, commaCount;
-  i = 0;
-  commaCount = 0;
-  while (list[i] != 0) {
-    if (list[i] == ',') commaCount++;
-    i++;
+  if (list[0] == 0) {
+    commaCount = -1; /* 26-Apr-2006 nm Return 0 if list empty */
+  } else {
+    commaCount = 0;
+    i = 0;
+    while (list[i] != 0) {
+      if (list[i] == ',') commaCount++;
+      i++;
+    }
   }
-  if (list[i] == 0) commaCount--; /* 12-Apr-06 nm Return 0 if list is empty */
   return (commaCount + 1);
 }
 
