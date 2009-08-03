@@ -1,11 +1,25 @@
 /*****************************************************************************/
 /* Program name:  metamath                                                   */
-/* Copyright (C) 2008 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
+/* Copyright (C) 2009 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
 /* License terms:  GNU General Public License Version 2 or any later version */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.07.40 6-Jul-2008"
+#define MVERSION "0.07.47 2-Aug-2009"
+/* 0.07.47 2-Aug-2009 nm mmwtex.c, mmwtex.h - added user name to mathbox
+   pages */
+/* 0.07.46 24-Jul-2009 nm metamath.c, mmwtex.c - changed name of sandbox
+   to "mathbox" */
+/* 0.07.45 15-Jun-2009 nm metamath.c, mmhlpb.c - put "!" before each line of
+   SET ECHO ON output to make them easy to identity for creating scripts */
+/* 0.07.44 12-May-2009 Stefan Allan, nm metamath.c, mmcmdl.c, mmmmwtex.c -
+   added SHOW STATEMENT / MNEMONICS - see HELP SHOW STATEMENT */
+/* 0.07.43 29-Aug-2008 nm mmwtex.c - workaround for Unicode huge font bug in
+   FireFox 3 */
+/* 0.07.42 8-Aug-2008 nm metamath.c - added sandbox, Hilbert Space colors to
+   Definition List */
+/* 0.07.41 29-Jul-2008 nm metamath.c, mmwtex.h, mmwtex.c - Added handling of
+   sandbox section of Metamath Proof Explorer web pages */
 /* 0.07.40 6-Jul-2008 nm metamath.c, mmcmdl.c, mmhlpa.c, mmhlpb.c - Added
    / NO_VERSIONING qualifier for SHOW STATEMENT, so website can be regenerated
    in place with less temporary space required.  Also, the wildcard trigger
@@ -266,6 +280,8 @@ void command(int argc, char *argv[])
   /* The variables in command() are static so that they won't be destroyed
     by a longjmp return to setjmp. */
   long e, i, j, k, m, l, n, p, q, s /*,tokenNum*/;
+  int subType = 0;
+#define SYNTAX 4
   vstring str1 = "", str2 = "", str3 = "", str4 = "", str5= "";
   nmbrString *nmbrTmpPtr; /* Pointer only; not allocated directly */
   nmbrString *nmbrTmp = NULL_NMBRSTRING;
@@ -309,6 +325,7 @@ void command(int argc, char *argv[])
   flag commentOnlyFlag; /* For SHOW STATEMENT */
   flag briefFlag; /* For SHOW STATEMENT */
   flag linearFlag; /* For SHOW LABELS */
+  vstring bgcolor = ""; /* 8-Aug-2008 nm For SHOW STATEMENT definition list */
 
   /* toolsMode-specific variables */
   flag commandProcessedFlag = 0; /* Set when the first command line processed;
@@ -524,14 +541,19 @@ void command(int argc, char *argv[])
         }
       }
       let(&str1, left(str1,strlen(str1) - 1)); /* Trim trailing space */
-      /* The tilde is a special flag for printLongLine to print a
-         tilde before the carriage return in a split line, not after */
-      if (commandEcho) printLongLine(str1, "~", " ");
       if (toolsMode && listFile_fp != NULL) {
         /* Put line in list.tmp as command */
         fprintf(listFile_fp, "%s\n", str1);  /* Print to list command file */
       }
-
+      if (commandEcho) {
+        /* 15-Jun-2009 nm Added code line below */
+        /* Put special character "!" before line for easier extraction to
+           build SUBMIT files; see also SET ECHO ON output below */
+        let(&str1, cat("!", str1, NULL));
+        /* The tilde is a special flag for printLongLine to print a
+           tilde before the carriage return in a split line, not after */
+        printLongLine(str1, "~", " ");
+      }
     }
 
     if (cmdMatches("BEEP") || cmdMatches("B")) {
@@ -677,7 +699,7 @@ void command(int argc, char *argv[])
         commandFileSilentFlag = 1;
       }
       if (!commandFileSilentFlag)
-        print2("Taking command lines from file \"%s\"...\n",commandFileName);
+        print2("Taking command lines from file \"%s\"...\n", commandFileName);
 
       continue;
     }
@@ -1711,13 +1733,37 @@ void command(int argc, char *argv[])
                 "&&&",  /* &&& means end of statement href */
                 /* Construct actual HTML table row (without ending tag
                    so duplicate references can be added) */
+
+                /*
                 (i < extHtmlStmt) ?
                    "<TR>" :
                    cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL),
+                */
+
+                /* 29-Jul-2008 nm Sandbox stuff */
+                (i < extHtmlStmt)
+                   ? "<TR>"
+                   : (i < sandboxStmt)
+                       ? cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL)
+                       : cat("<TR BGCOLOR=", SANDBOX_COLOR, ">", NULL),
+
                 "<TD NOWRAP>[<A HREF=\"",
+
+                /*
                 (i < extHtmlStmt) ?
                    htmlBibliography :
                    extHtmlBibliography,
+                */
+
+                /* 29-Jul-2008 nm Sandbox stuff */
+                (i < extHtmlStmt)
+                   ? htmlBibliography
+                   : (i < sandboxStmt)
+                       ? extHtmlBibliography
+                       /* Note that the sandbox uses the mmset.html
+                          bibliography */
+                       : htmlBibliography,
+
                 "#",
                 str3,
                 "\">", str3, "</A>]", str4,
@@ -1961,9 +2007,21 @@ void command(int argc, char *argv[])
             outputToString = 1;
             print2("\n"); /* Blank line for HTML human readability */
             printLongLine(cat(
+
+                  /*
                   (s < extHtmlStmt) ?
                        "<TR>" :
                        cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL),
+                  */
+
+                  /* 29-Jul-2008 nm Sandbox stuff */
+                  (s < extHtmlStmt)
+                     ? "<TR>"
+                     : (s < sandboxStmt)
+                         ? cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">",
+                             NULL)
+                         : cat("<TR BGCOLOR=", SANDBOX_COLOR, ">", NULL),
+
                   "<TD NOWRAP>",  /* IE breaks up the date */
                   /* mid(str1, 4, strlen(str1) - 6), */ /* Date */
                   /* Use 4-digit year */   /* 10-Apr-06 */
@@ -1988,9 +2046,21 @@ void command(int argc, char *argv[])
             let(&str4, "");
             str4 = getHTMLHypAndAssertion(s); /* In mmwtex.c */
             printLongLine(cat("</TD></TR><TR",
+
+                  /*
                   (s < extHtmlStmt) ?
                        ">" :
                        cat(" BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL),
+                  */
+
+                  /* 29-Jul-2008 nm Sandbox stuff */
+                  (s < extHtmlStmt)
+                     ? ">"
+                     : (s < sandboxStmt)
+                         ? cat(" BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">",
+                             NULL)
+                         : cat(" BGCOLOR=", SANDBOX_COLOR, ">", NULL),
+
                 /*** old
                 "<TD BGCOLOR=white>&nbsp;</TD><TD COLSPAN=2 ALIGN=CENTER>",
                 str4, "</TD></TR>", NULL),
@@ -2345,7 +2415,8 @@ void command(int argc, char *argv[])
             printLongLine(cat("<CENTER><FONT COLOR=", GREEN_TITLE_COLOR,
                 "><B>",
                 "Symbol to ASCII Correspondence for Text-Only Browsers",
-                " (in order of first appearance)",
+                " (in order of appearance in $c and $v statements",
+                     " in the database)",
                 "</B></FONT></CENTER><P>", NULL), "", "\"");
           }
           /* 13-Oct-2006 nm todo - </CENTER> still appears - where is it? */
@@ -2401,10 +2472,14 @@ void command(int argc, char *argv[])
           print2("</B></TD></TR>\n");
           m = 0; /* Statement number map */
           let(&str3, ""); /* For storing ASCII token list in s=-2 mode */
+          let(&bgcolor, MINT_BACKGROUND_COLOR); /* 8-Aug-2008 nm Initialize */
           for (i = 1; i <= statements; i++) {
+
+            /* 8-Aug-2008 nm Commented out: */
+            /*
             if (i == extHtmlStmt && s != -2) {
-              /* Print a row that identifies the start of the extended
-                 database (e.g. Hilbert Space Explorer) */
+              / * Print a row that identifies the start of the extended
+                 database (e.g. Hilbert Space Explorer) * /
               printLongLine(cat(
                   "<TR><TD COLSPAN=2 ALIGN=CENTER><A NAME=\"startext\"></A>",
                   "The list of syntax, axioms (ax-) and definitions (df-) for",
@@ -2412,6 +2487,30 @@ void command(int argc, char *argv[])
                   extHtmlTitle,
                   "</FONT></B> starts here</TD></TR>", NULL), "", "\"");
             }
+            */
+
+            /* 8-Aug-2008 nm */
+            if (s != -2 && (i == extHtmlStmt || i == sandboxStmt)) {
+              /* Print a row that identifies the start of the extended
+                 database (e.g. Hilbert Space Explorer) or the user
+                 sandboxes */
+              if (i == extHtmlStmt) {
+                let(&bgcolor, PURPLISH_BIBLIO_COLOR);
+              } else {
+                let(&bgcolor, SANDBOX_COLOR);
+              }
+              printLongLine(cat("<TR BGCOLOR=", bgcolor,
+                  "><TD COLSPAN=2 ALIGN=CENTER><A NAME=\"startext\"></A>",
+                  "The list of syntax, axioms (ax-) and definitions (df-) for",
+                  " the <B><FONT COLOR=", GREEN_TITLE_COLOR, ">",
+                  (i == extHtmlStmt) ?
+                    extHtmlTitle :
+                    /*"User Sandboxes",*/
+                    /* 24-Jul-2009 nm Changed name of sandbox to "mathbox" */
+                    "User Mathboxes",
+                  "</FONT></B> starts here</TD></TR>", NULL), "", "\"");
+            }
+
             if (statement[i].type == (char)p__ ||
                 statement[i].type == (char)a__ ) m++;
             if ((s == -1 && statement[i].type != (char)p__)
@@ -2505,7 +2604,8 @@ void command(int argc, char *argv[])
                   /* Get little pink (or rainbow-colored) number */
                   let(&str4, "");
                   str4 = pinkHTML(i);
-                  let(&str2, cat("<TR ALIGN=LEFT><TD><A HREF=\"",
+                  let(&str2, cat("<TR BGCOLOR=", bgcolor, /* 8-Aug-2008 nm */
+                      " ALIGN=LEFT><TD><A HREF=\"",
                       statement[i].labelName,
                       ".html\">", statement[i].labelName,
                       "</A>", str4, NULL));
@@ -2542,6 +2642,7 @@ void command(int argc, char *argv[])
           /* print2("</TABLE></CENTER>\n"); */ /* 8/8/03 Removed - already
               done somewhere else, causing validator.w3.org to fail */
           outputToString = 0;  /* closing will write out the string */
+          let(&bgcolor, ""); /* Deallocate (to improve fragmentation) */
 
         } else { /* s > 0 */
 
@@ -2577,6 +2678,122 @@ void command(int argc, char *argv[])
       continue;
     } /* if (cmdMatches("SHOW STATEMENT") && switchPos("/ HTML")...) */
 
+
+    /******* Section for / MNEMONICS added 12-May-2009 by Stefan Allan *****/
+    /* Write mnemosyne.txt */
+    if (cmdMatches("SHOW STATEMENT") && switchPos("/ MNEMONICS")) {
+
+      if (!texDefsRead) {
+        htmlFlag = 1;     /* Use HTML, not TeX section */
+        altHtmlFlag = 1;  /* Use Unicode, not GIF */
+        print2("Reading definitions from $t statement of %s...\n", input_fn);
+        if (!readTexDefs()) {
+          print2(
+          "?There was an error in the $t comment's Latex/HTML definitions.\n");
+          print2("?HTML generation was aborted due to the error above.\n");
+          continue; /* An error occurred */
+        }
+      } else {
+        /* Current limitation - can only read def's from .mm file once */
+        if (!htmlFlag) {
+          print2("?You cannot use both LaTeX and HTML in the same session.\n");
+          print2(
+              "You must EXIT and restart Metamath to switch to the other.\n");
+          continue;
+        } else {
+          if (!altHtmlFlag) {
+            print2(
+              "?You cannot use both HTML and ALT_HTML in the same session.\n");
+            print2(
+              "You must EXIT and restart Metamath to switch to the other.\n");
+            continue;
+          }
+        }
+      }
+
+      let(&texFileName,"mnemosyne.txt");
+      texFilePtr = fSafeOpen(texFileName, "w");
+      if (!texFilePtr) {
+        /* Couldn't open file; error message was provided by fSafeOpen */
+        continue;
+      }
+      print2("Creating Mnemosyne file \"%s\"...\n", texFileName);
+
+      for (s = 1; s <= statements; s++) {
+        showStatement = s;
+/*
+        if (strcmp("|-", mathToken[
+         (statement[showStatement].mathString)[0]].tokenName)) {
+           subType = SYNTAX;
+        }
+*/
+        if (!statement[s].labelName[0]) continue; /* No label */
+        /* 30-Jan-06 nm Added single-character-match wildcard argument */
+        if (!matchesList(statement[s].labelName, fullArg[2], '*', '?'))
+          continue;
+        if (statement[s].type != (char)a__
+            && statement[s].type != (char)p__)
+          continue;
+
+        let(&str1, cat("<CENTER><B><FONT SIZE=\"+1\">",
+            " <FONT COLOR=", GREEN_TITLE_COLOR,
+            " SIZE = \"+3\">", statement[showStatement].labelName,
+            "</FONT></FONT></B>", "</CENTER>", NULL));
+        fprintf(texFilePtr, "%s", str1);
+
+        let(&str1, cat("<TABLE>",NULL));
+        fprintf(texFilePtr, "%s", str1);
+
+        j = nmbrLen(statement[showStatement].reqHypList);
+        for (i = 0; i < j; i++) {
+          k = statement[showStatement].reqHypList[i];
+          if (statement[k].type != (char)e__
+              && !(subType == SYNTAX
+              && statement[k].type == (char)f__))
+            continue;
+
+          let(&str1, cat("<TR ALIGN=LEFT><TD><FONT SIZE=\"+2\">",
+              statement[k].labelName, "</FONT></TD><TD><FONT SIZE=\"+2\">",
+              NULL));
+          fprintf(texFilePtr, "%s", str1);
+
+          /* Print hypothesis */
+          let(&str1, ""); /* Free any previous allocation to str1 */
+          /* getTexLongMath does not return a temporary allocation; must
+             assign str1 directly, not with let().  It will be deallocated
+             with the next let(&str1,...). */
+          str1 = getTexLongMath(statement[k].mathString);
+          fprintf(texFilePtr, "%s</FONT></TD>", str1);
+        }
+
+
+        let(&str1, "</TABLE>");
+        fprintf(texFilePtr, "%s", str1);
+
+        let(&str1, "<BR><FONT SIZE=\"+2\">What is the conclusion?</FONT>");
+        fprintf(texFilePtr, "%s\n", str1);
+
+        let(&str1, "<FONT SIZE=\"+3\">");
+        fprintf(texFilePtr, "%s", str1);
+
+        let(&str1, ""); /* Free any previous allocation to str1 */
+        /* getTexLongMath does not return a temporary allocation */
+        str1 = getTexLongMath(statement[s].mathString);
+        fprintf(texFilePtr, "%s", str1);
+
+        let(&str1, "</FONT>");
+        fprintf(texFilePtr, "%s\n",str1);
+      } /*  for(s=1;s<statements;++s) */
+
+      fclose(texFilePtr);
+      texFileOpenFlag = 0;
+      let(&texFileName,"");
+      let(&str1,"");
+      let(&str2,"");
+
+      continue;
+    } /* if (cmdMatches("SHOW STATEMENT") && switchPos("/ MNEMONICS")) */
+    /** End of section for / MNEMONICS added 12-May-2009 by Stefan Allan *****/
 
     /* If we get here, the user did not specify one of the qualifiers /HTML,
        /BRIEF_HTML, /ALT_HTML, or /BRIEF_ALT_HTML */
@@ -4859,7 +5076,8 @@ void command(int argc, char *argv[])
     if (cmdMatches("SET ECHO")) {
       if (cmdMatches("SET ECHO ON")) {
         commandEcho = 1;
-        print2("SET ECHO ON\n");
+        /* 15-Jun-2009 nm Added "!" (see 15-Jun-2009 note above) */
+        print2("!SET ECHO ON\n");
         print2("Command line echoing is now turned on.\n");
       } else {
         commandEcho = 0;

@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2008  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -125,12 +125,17 @@ with 'let(&' and thus has the same effect as 'let(&'.
 typedef char* vstring;
 #define vstringdef(x) vstring x = ""
 
-/* String assignment - MUST be used to assign vstrings */
-void let(vstring *target,vstring source);
-/* String concatenation - last argument MUST be NULL */
+/* Emulation of BASIC string assignment */
+/* 'let' MUST be used to assign vstrings, e.g. 'let(&abc, "Hello"); */
+/* Empty string deallocates memory, e.g. 'let(&abc, ""); */
+void let(vstring *target, vstring source);
+
+/* Emulation of BASIC string concatenation - last argument MUST be NULL */
+/* vstring cat(vstring string1, ..., stringN, NULL); */
+/* e.g. 'let(&abc, cat("Hello", " ", left("worldx", 5), "!", NULL);' */
 vstring cat(vstring string1,...);
 
-/* Emulate BASIC linput statement; returns NULL if EOF */
+/* Emulation of BASIC linput (line input) statement; returns NULL if EOF */
 /* Note that linput assigns target string with let(&target,...) */
   /*
     BASIC:  linput "what";a$
@@ -157,14 +162,12 @@ vstring time_(void);
 vstring num(double x);
 vstring num1(double x);
 vstring str(double x);
-
-
 long len(vstring s);
 long instr(long start, vstring sin, vstring s);
 long ascii_(vstring c);
 double val(vstring s);
 
-/* Emulation of PROGRESS string functions added 11/25/98 */
+/* Emulation of Progress 4GL string functions, added 11/25/98 */
 vstring entry(long element, vstring list);
 long lookup(vstring expression, vstring list);
 long numEntries(vstring list);
@@ -176,7 +179,7 @@ vstring prod$(vstring sout);
 vstring quo$(vstring sout);
 */
 
-/******* Special pupose routines for better
+/******* Special purpose routines for better
       memory allocation (use with caution) *******/
 
 extern int tempAllocStackTop;   /* Top of stack for tempAlloc functon */

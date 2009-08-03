@@ -867,6 +867,17 @@ void typeStatement(long showStatement,
           let(&str2, cat(str2, " &nbsp;<A HREF=\"",
               str3, ".html\">",
               str3, "</A>", str4, NULL));
+          /* 8-Aug-2008 nm If line is very long, print it out and reset
+             it to speed up program (SHOW STATEMENT syl/HTML is very slow) */
+          /* 8-Aug-2008 nm This doesn't solve problem, because the bottleneck
+             is printing printStringForReferencedBy below.  This whole
+             code section needs to be redesigned to solve the speed problem. */
+          /*
+          if (strlen(str2) > 500) {
+            printLongLine(str2, "", "\"");
+            let(&str2, "");
+          }
+          */
         }
         let(&str2, cat(str2, "</FONT></TD></TR>", NULL));
         printLongLine(str2, "", "\"");
@@ -3692,7 +3703,7 @@ void outputMidi(long plen, nmbrString *indentationLevels,
   let(&tmpStr, left(tmpStr, 38));
   fprintf(midiFilePtr, "0 Meta Text \"%s\"\n", tmpStr);
   fprintf(midiFilePtr,
-      "0 Meta Copyright \"Copyright (C) 2002 nm at alum.mit.edu \"\n");
+      "0 Meta Copyright \"Released to Public Domain by N. Megill\"\n");
 
   /************** Scan the proof ************************/
 

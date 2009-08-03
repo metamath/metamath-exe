@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2008  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2009  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -193,6 +193,7 @@ printHelp = !strcmp(helpCmd, "HELP SHOW STATEMENT");
 H(
 "Syntax:  SHOW STATEMENT <label> [/ COMMENT] [/ FULL] [/ TEX] [/ SIMPLE_TEX]");
 H("             [/ HTML] [/ ALT_HTML] [/ BRIEF_HTML] [/ BRIEF_ALT_HTML]");
+H("             [/ MNEMONICS]");
 H("");
 H("");
 H("This command provides information about a statement.  Only statements");
@@ -200,7 +201,8 @@ H("that have labels ($f, $e, $a, and $p) may be specified.  If <label>");
 H("contains wildcard characters, all matching statements will be displayed");
 H("displayed in the order they occur in the database.  The wildcard \"*\"");
 H("matches 0 or more characters, and the wildcard \"?\" matches any single");
-H("character.");
+H("character.  Multiple statement labels (with or without wildcards) may be");
+H("separated by commas (with no spaces) in <label>.");
 H("");
 H("By default, only the statement and its $e hypotheses are shown, and if");
 H("the label has wildcards, only $a and $p statements are shown.");
@@ -224,6 +226,10 @@ H("        information on these.");
 H("    / NO_VERSIONING - When used with / HTML or the 3 HTML qualifiers");
 H("        above, a backup file suffixed with ~1 is not created (i.e. the");
 H("        previous version is overwritten).");
+/* 12-May-2009 nm  Added MNEMONICS */
+H("    / MNEMONICS - Produces the output file mnemosyne.txt for use with");
+H("        Mnemosyne http://www.mnemosyne-proj.org/principles.php.  Should");
+H("        not be used with any other qualifier.");
 H("");
 
 
@@ -449,7 +455,9 @@ H("The SET ECHO ON command will cause command lines to be echoed with any");
 H("abbreviations expanded.  While learning the Metamath commands, this");
 H("feature will show you the exact command that your abbreviated input");
 H("corresponds to.  This is also useful to assist creating robust command");
-H("files (see HELP SUBMIT) from your log file (see HELP OPEN LOG).");
+H("files (see HELP SUBMIT) from your log file (see HELP OPEN LOG).  To make");
+H("it easier to extract these lines, \"!\" (which you will discard) is");
+H("prepended to each echoed command line.");
 H("");
 
 

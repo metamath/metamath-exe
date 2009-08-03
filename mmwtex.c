@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2007  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2009  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -41,6 +41,10 @@ long extHtmlStmt = 0; /* At this statement and above, use the exthtmlxxx
     generation of the Hilbert Space Explorer extension to the set.mm
     database. */
 
+/* 29-Jul-2008 nm Sandbox stuff */
+long sandboxStmt = 0; /* At this statement and above, use SANDBOX_COLOR
+    background for theorem, mmrecent, & mmbiblio lists */
+
 
 
 /* Tex output file */
@@ -79,6 +83,10 @@ vstring extHtmlBibliography = ""; /* Optional; set by exthtmlbibliography comman
 vstring htmlDir = ""; /* Directory for GIF version, set by htmldir command */
 vstring altHtmlDir = ""; /* Directory for Unicode Font version, set by
                             althtmldir command */
+
+/* 29-Jul-2008 nm Sandbox stuff */
+vstring sandboxHome = "";
+vstring sandboxTitle = "";
 
 /* Variables holding all HTML <a name..> tags from bibiography pages  */
 vstring htmlBibliographyTags = "";
@@ -548,6 +556,31 @@ flag readTexDefs(void)
     extHtmlStmt = statements + 1;
   }
 
+  /* 29-Jul-2008 nm Sandbox stuff */
+  sandboxStmt = statements + 1;  /* Default beyond db end if none */
+  for (i = 1; i <= statements; i++) {
+    /* For now (and probably forever) the sandbox start theorem is
+       hardcoded to "sandbox", like in set.mm */
+    /* if (!strcmp("sandbox", statement[i].labelName)) { */
+    /* 24-Jul-2009 nm Changed name of sandbox to "mathbox" */
+    if (!strcmp("mathbox", statement[i].labelName)) {
+      sandboxStmt = i;
+      break;
+    }
+  }
+  /* In case there is not extended (Hilbert Space Explorer) section,
+     but there is a sandbox section, make the extended section "empty". */
+  if (extHtmlStmt == statements + 1) extHtmlStmt = sandboxStmt;
+  let(&sandboxHome, cat("<A HREF=\"mmtheorems.html#sandbox:bighdr\">",
+    "<FONT SIZE=-2 FACE=sans-serif>",
+    "<IMG SRC=\"_sandbox.gif\" BORDER=0 ALT=",
+    "\"Table of Contents\" HEIGHT=32 WIDTH=32 ALIGN=MIDDLE>",
+    "Table of Contents</FONT></A>", NULL));
+  /*let(&sandboxTitle, "User Sandbox");*/
+  /* 24-Jul-2009 nm Changed name of sandbox to "mathbox" */
+  let(&sandboxTitle, "Users' Mathboxes");
+
+
   let(&token, ""); /* Deallocate */
   let(&fileBuf, "");  /* was: free(fileBuf); */
   texDefsRead = 1;  /* Set global flag that it's been read in */
@@ -976,6 +1009,11 @@ void printTexHeader(flag texHeaderFlag)
   long i, j, k;
   vstring tmpStr = "";
 
+  /* 2-Aug-2009 nm - "Mathbox for <username>" mod */
+  vstring localSandboxTitle = "";
+  vstring bigHdr = "";
+  vstring smallHdr = "";
+
   if (!texDefsRead) {
     if (!readTexDefs()) {
       print2(
@@ -1126,13 +1164,45 @@ void printTexHeader(flag texHeaderFlag)
           /*left(texFileName, instr(1, texFileName, ".htm") - 1),*/
           " - ", htmlTitle,
           "</TITLE>", NULL));
-    } else {
+    /*} else {*/
+    } else if (showStatement < sandboxStmt) { /* 29-Jul-2008 nm Sandbox stuff */
       print2("%s\n", cat("<TITLE>",
           /* Strip off ".html" */
           left(texFileName, strlen(texFileName) - 5),
           /*left(texFileName, instr(1, texFileName, ".htm") - 1),*/
           " - ", extHtmlTitle,
           "</TITLE>", NULL));
+
+    /* 29-Jul-2008 nm Sandbox stuff */
+    } else {
+
+      /* 2-Aug-2009 nm - "Mathbox for <username>" mod */
+      /* Scan from this statement backwards until a big header is found */
+      for (i = showStatement; i > sandboxStmt; i--) {
+        getSectionHeadings(i, &bigHdr, &smallHdr);
+        if (bigHdr[0] != 0) break;
+      } /* next i */
+      if (bigHdr[0]) {
+        /* A big header was found; use it for the page title */
+        let(&localSandboxTitle, bigHdr);
+      } else {
+        /* A big header was not found (should not happen if set.mm is
+           formatted right, but use default just in case) */
+        let(&localSandboxTitle, sandboxTitle);
+      }
+      let(&bigHdr, "");   /* Deallocate memory */
+      let(&smallHdr, ""); /* Deallocate memory */
+      /* 2-Aug-2009 nm - end of "Mathbox for <username>" mod */
+
+      print2("%s\n", cat("<TITLE>",
+          /* Strip off ".html" */
+          left(texFileName, strlen(texFileName) - 5),
+          /*left(texFileName, instr(1, texFileName, ".htm") - 1),*/
+          /*" - ", sandboxTitle,*/
+          /* 2-Aug-2009 nm - "Mathbox for <username>" mod */
+          " - ", localSandboxTitle,
+          "</TITLE>", NULL));
+
     }
     /* Icon for bookmark */
     print2("%s%s\n", "<LINK REL=\"shortcut icon\" HREF=\"favicon.ico\" ",
@@ -1158,18 +1228,36 @@ void printTexHeader(flag texHeaderFlag)
     */
     if (showStatement < extHtmlStmt) {
       printLongLine(cat("ROWSPAN=2>", htmlHome, "</TD>", NULL), "", "\"");
-    } else {
+    /*} else {*/
+    } else if (showStatement < sandboxStmt) { /* 29-Jul-2008 nm Sandbox stuff */
       printLongLine(cat("ROWSPAN=2>", extHtmlHome, "</TD>", NULL), "", "\"");
+
+    /* 29-Jul-2008 nm Sandbox stuff */
+    } else {
+      printLongLine(cat("ROWSPAN=2>", sandboxHome, "</TD>", NULL), "", "\"");
+
     }
 
     if (showStatement < extHtmlStmt) {
       printLongLine(cat(
           "<TD NOWRAP ALIGN=CENTER ROWSPAN=2><FONT SIZE=\"+3\" COLOR=",
           GREEN_TITLE_COLOR, "><B>", htmlTitle, "</B></FONT>", NULL), "", "\"");
-    } else {
+    /*} else {*/
+    } else if (showStatement < sandboxStmt) { /* 29-Jul-2008 nm Sandbox stuff */
       printLongLine(cat(
           "<TD NOWRAP ALIGN=CENTER ROWSPAN=2><FONT SIZE=\"+3\" COLOR=",
           GREEN_TITLE_COLOR, "><B>", extHtmlTitle, "</B></FONT>", NULL), "", "\"");
+
+    /* 29-Jul-2008 nm Sandbox stuff */
+    } else {
+      printLongLine(cat(
+          "<TD NOWRAP ALIGN=CENTER ROWSPAN=2><FONT SIZE=\"+3\" COLOR=",
+          GREEN_TITLE_COLOR, "><B>",
+          /*sandboxTitle,*/
+          /* 2-Aug-2009 nm - "Mathbox for <username>" mod */
+          localSandboxTitle,
+           "</B></FONT>", NULL), "", "\"");
+
     }
 
 
@@ -1572,9 +1660,16 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
     if (showStatement < extHtmlStmt) {
       let(&bibTags, htmlBibliographyTags);
       let(&bibFileName, htmlBibliography);
-    } else {
+    /*} else {*/
+    } else if (showStatement < sandboxStmt) { /* 29-Jul-2008 nm Sandbox stuff */
       let(&bibTags, extHtmlBibliographyTags);
       let(&bibFileName, extHtmlBibliography);
+
+    /* 29-Jul-2008 nm Sandbox stuff */
+    } else {
+      let(&bibTags, htmlBibliographyTags);  /* Go back to Mm Prf Explorer */
+      let(&bibFileName, htmlBibliography);
+
     }
     if (bibFileName[0]) {
       /* The user specified a bibliography file in the xxx.mm $t comment
@@ -1657,8 +1752,15 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
           /* Assign to permanent tag list for next time */
           if (showStatement < extHtmlStmt) {
             let(&htmlBibliographyTags, bibTags);
-          } else {
+          /*} else {*/
+          } else if (showStatement < sandboxStmt) {
+                                             /* 29-Jul-2008 nm Sandbox stuff */
             let(&extHtmlBibliographyTags, bibTags);
+
+          /* 29-Jul-2008 nm Sandbox stuff */
+          } else {
+            let(&htmlBibliographyTags, bibTags);
+
           }
           /* Done reading in HTML file with bibliography */
         } /* end if (!bibTags[0]) */
@@ -2335,8 +2437,7 @@ void writeTheoremList(long theoremsPerPage)
   /* 31-Jul-2006 for table of contents mod */
   vstring bigHdr = "";
   vstring smallHdr = "";
-  vstring labelStr = "";
-  long stmt, i, pos, pos1, pos2;
+  long stmt, i;
   pntrString *pntrBigHdr = NULL_PNTRSTRING;
   pntrString *pntrSmallHdr = NULL_PNTRSTRING;
 
@@ -2521,7 +2622,7 @@ void writeTheoremList(long theoremsPerPage)
       let(&str3, "");
       str3 = pinkRangeHTML(nmbrStmtNmbr[1],
           nmbrStmtNmbr[statement[extHtmlStmt].pinkNumber - 1]);
-      printLongLine(cat("(", str3, ")", NULL),
+      printLongLine(cat("<BR>(", str3, ")", NULL),
         " ",  /* Start continuation line with space */
         "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
 
@@ -2529,15 +2630,19 @@ void writeTheoremList(long theoremsPerPage)
       print2("\n");
       print2("<TD WIDTH=10>&nbsp;</TD>\n");
       print2("\n");
-      print2("<TD BGCOLOR=\"#FAEEFF\" NOWRAP><A\n");
+
+      /* Hilbert Space Explorer */
+      print2("<TD BGCOLOR=%s NOWRAP><A\n", PURPLISH_BIBLIO_COLOR);
       print2(" HREF=\"mmhil.html\"><IMG SRC=\"atomic.gif\"\n");
       print2(
  "BORDER=0 ALT=\"Hilbert Space Explorer\" HEIGHT=32 WIDTH=32 ALIGN=MIDDLE>\n");
       print2("&nbsp;Hilbert Space Explorer</A>\n");
 
       let(&str3, "");
-      str3 = pinkRangeHTML(extHtmlStmt, nmbrStmtNmbr[assertions]);
-      printLongLine(cat("(", str3, ")", NULL),
+      /* str3 = pinkRangeHTML(extHtmlStmt, nmbrStmtNmbr[assertions]); */
+      str3 = pinkRangeHTML(extHtmlStmt,
+         nmbrStmtNmbr[statement[sandboxStmt].pinkNumber - 1]);
+      printLongLine(cat("<BR>(", str3, ")", NULL),
         " ",  /* Start continuation line with space */
         "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
 
@@ -2545,6 +2650,34 @@ void writeTheoremList(long theoremsPerPage)
       print2("\n");
       print2("<TD WIDTH=10>&nbsp;</TD>\n");
       print2("\n");
+
+
+      /* 29-Jul-2008 nm Sandbox stuff */
+      print2("<TD BGCOLOR=%s NOWRAP><A\n", SANDBOX_COLOR);
+      print2(
+   /*" HREF=\"mmtheorems.html#sandbox:bighdr\"><IMG SRC=\"_sandbox.gif\"\n");*/
+      /* 24-Jul-2009 nm Changed name of sandbox to "mathbox" */
+       " HREF=\"mathbox.html\"><IMG SRC=\"_sandbox.gif\"\n");
+      print2(
+     /*"BORDER=0 ALT=\"User Sandboxes\" HEIGHT=32 WIDTH=32 ALIGN=MIDDLE>\n");*/
+         /* 24-Jul-2009 nm Changed name of sandbox to "mathbox" */
+         "BORDER=0 ALT=\"Users' Mathboxes\" HEIGHT=32 WIDTH=32 ALIGN=MIDDLE>\n");
+      /*print2("&nbsp;User Sandboxes</A>\n");*/
+      /* 24-Jul-2009 nm Changed name of sandbox to "mathbox" */
+      print2("&nbsp;Users' Mathboxes</A>\n");
+
+      let(&str3, "");
+      str3 = pinkRangeHTML(sandboxStmt, nmbrStmtNmbr[assertions]);
+      printLongLine(cat("<BR>(", str3, ")", NULL),
+        " ",  /* Start continuation line with space */
+        "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+
+      print2("</TD>\n");
+      print2("\n");
+      print2("<TD WIDTH=10>&nbsp;</TD>\n");
+      print2("\n");
+
+
       print2("</TR></TABLE></CENTER>\n");
     }
 
@@ -2566,61 +2699,7 @@ void writeTheoremList(long theoremsPerPage)
       let(&bigHdr, "");
       let(&smallHdr, "");
       for (stmt = 1; stmt <= statements; stmt++) {
-        /* Get headers from comment section between statements */
-        let(&labelStr, space(statement[stmt].labelSectionLen));
-        memcpy(labelStr, statement[stmt].labelSectionPtr,
-            statement[stmt].labelSectionLen);
-        pos = 0;
-        pos2 = 0;
-        while (1) {  /* Find last "big" header, if any */
-          /* nm 4-Nov-2007:  Obviously, the match below will not work if the
-             $( line has a trailing space, which some editors might insert.
-             The symptom is a missing table of contents entry.  But to detect
-             this (and for the =-=- match below) would take a little work and
-             perhaps slow things down, and I don't think it is worth it.  I
-             put a note in HELP WRITE THEOREM_LIST. */
-          pos1 = pos; /* 23-May-2008 */
-          pos = instr(pos + 1, labelStr, "$(\n#*#*");
-
-          /* 23-May-2008 nm Tolerate one space after "$(", to handle case of
-            one space added to the end of each line with TOOLS to make global
-            label changes are easier (still a kludge; this should be made
-            white-space insensitive some day) */
-          pos1 = instr(pos1 + 1, labelStr, "$( \n#*#*");
-          if (pos1 > pos) pos = pos1;
-
-          if (!pos) break;
-          if (pos) pos2 = pos;
-        }
-        if (pos2) { /* Extract "big" header */
-          pos = instr(pos2 + 4, labelStr, "\n");
-          pos2 = instr(pos + 1, labelStr, "\n");
-          let(&bigHdr, seg(labelStr, pos + 1, pos2 - 1));
-          let(&bigHdr, edit(bigHdr, 8 + 128)); /* Trim leading, trailing sp */
-        }
-        /* pos = 0; */ /* Start with "big" header pos, to ignore any earlier
-                          "small" header */
-        pos2 = 0;
-        while (1) {  /* Find last "small" header, if any */
-          pos1 = pos; /* 23-May-2008 */
-          pos = instr(pos + 1, labelStr, "$(\n=-=-");
-
-          /* 23-May-2008 nm Tolerate one space after "$(", to handle case of
-            one space added to the end of each line with TOOLS to make global
-            label changes are easier (still a kludge; this should be made
-            white-space insensitive some day) */
-          pos1 = instr(pos1 + 1, labelStr, "$( \n=-=-");
-          if (pos1 > pos) pos = pos1;
-
-          if (!pos) break;
-          if (pos) pos2 = pos;
-        }
-        if (pos2) { /* Extract "small" header */
-          pos = instr(pos2 + 4, labelStr, "\n");
-          pos2 = instr(pos + 1, labelStr, "\n");
-          let(&smallHdr, seg(labelStr, pos + 1, pos2 - 1));
-          let(&smallHdr, edit(smallHdr, 8 + 128)); /* Trim lead, trail sp */
-        }
+        getSectionHeadings(stmt, &bigHdr, &smallHdr);
         /* Output the headers for $a and $p statements */
         if (statement[stmt].type == p__ || statement[stmt].type == a__) {
           if (bigHdr[0] || smallHdr[0]) {
@@ -2638,7 +2717,17 @@ void writeTheoremList(long theoremsPerPage)
             /*let(&str4, right(str4, strlen(PINK_NBSP) + 1));*/
                                                          /* Discard "&nbsp;" */
             if (bigHdr[0]) {
-              printLongLine(cat(" <A HREF=\"", str3, "b\"><B>",
+              printLongLine(cat(
+
+                  /* 29-Jul-2008 nm Add an anchor to the "sandbox" theorem
+                     for use by mmrecent.html */
+                  stmt == sandboxStmt ?
+                      /* Note the colon so it won't conflict w/ theorem
+                         name anchor */
+                      "<A NAME=\"sandbox:bighdr\"></A>" : "",
+
+
+                  " <A HREF=\"", str3, "b\"><B>",
                   bigHdr, "</B></A>",
                   /*
                   " &nbsp; <A HREF=\"",
@@ -2658,8 +2747,10 @@ void writeTheoremList(long theoremsPerPage)
 
                   /* 23-May-2008 nm Add an anchor to the "sandbox" theorem
                      for use by mmrecent.html */
+                  /*
                   !strcmp(statement[stmt].labelName, "sandbox") ?
-                      "<A NAME=\"sandbox\"></A>" : "",
+                      "<A NAME=\"sandbox:smallhdr\"></A>" : "",
+                  */
 
                   "<A HREF=\"", str3, "s\">",
                   smallHdr, "</A>",
@@ -2813,9 +2904,12 @@ void writeTheoremList(long theoremsPerPage)
       }
 
       printLongLine(cat(
-            (s < extHtmlStmt) ?
-                 "<TR>" :
-                 cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL),
+            (s < extHtmlStmt)
+               ? "<TR>"
+               : (s < sandboxStmt)
+                   ? cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL)
+                   /* 29-Jul-2008 nm Sandbox stuff */
+                   : cat("<TR BGCOLOR=", SANDBOX_COLOR, ">", NULL),
             "<TD NOWRAP>",  /* IE breaks up the date */
             str1, /* Date */
             "</TD><TD ALIGN=CENTER><A HREF=\"",
@@ -2850,9 +2944,21 @@ void writeTheoremList(long theoremsPerPage)
       } else {
         /* Output the table row with the math content */
         printLongLine(cat("</TD></TR><TR",
+
+              /*
               (s < extHtmlStmt) ?
                    ">" :
                    cat(" BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL),
+              */
+
+              /* 29-Jul-2008 nm Sandbox stuff */
+              (s < extHtmlStmt)
+                 ? ">"
+                 : (s < sandboxStmt)
+                     ? cat(" BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL)
+                     : cat(" BGCOLOR=", SANDBOX_COLOR, ">", NULL),
+
+
             /*** old
             "<TD BGCOLOR=white>&nbsp;</TD><TD COLSPAN=2 ALIGN=CENTER>",
             str4, "</TD></TR>", NULL),
@@ -2972,7 +3078,6 @@ void writeTheoremList(long theoremsPerPage)
   let(&output_fn, "");
   let(&bigHdr, "");
   let(&smallHdr, "");
-  let(&labelStr, "");
   for (i = 0; i <= statements; i++) let((vstring *)(&pntrBigHdr[i]), "");
   pntrLet(&pntrBigHdr, NULL_PNTRSTRING);
   for (i = 0; i <= statements; i++) let((vstring *)(&pntrSmallHdr[i]), "");
@@ -2980,6 +3085,80 @@ void writeTheoremList(long theoremsPerPage)
 
 } /* writeTheoremList */
 
+
+/* 2-Aug-2009 nm - broke this function out from writeTheoremList() */
+/* This function extracts any section headers in the comment sections
+   prior to the label of statement stmt.   If a big (=#=#...) header isn't
+   found, *bigHdrAddr will be set to the empty string.  If a small
+   (=-=-...) header isn't found (or isn't after the last big header),
+   *smallHdrAddr will be set to the empty string.  In both cases, only
+   the last occurrence of a header is considered. */
+void getSectionHeadings(long stmt, vstring *bigHdrAddr,
+    vstring *smallHdrAddr) {
+
+  /* 31-Jul-2006 for table of contents mod */
+  vstring labelStr = "";
+  long pos, pos1, pos2;
+
+  /* Get headers from comment section between statements */
+  let(&labelStr, space(statement[stmt].labelSectionLen));
+  memcpy(labelStr, statement[stmt].labelSectionPtr,
+      statement[stmt].labelSectionLen);
+  pos = 0;
+  pos2 = 0;
+  while (1) {  /* Find last "big" header, if any */
+    /* nm 4-Nov-2007:  Obviously, the match below will not work if the
+       $( line has a trailing space, which some editors might insert.
+       The symptom is a missing table of contents entry.  But to detect
+       this (and for the =-=- match below) would take a little work and
+       perhaps slow things down, and I don't think it is worth it.  I
+       put a note in HELP WRITE THEOREM_LIST. */
+    pos1 = pos; /* 23-May-2008 */
+    pos = instr(pos + 1, labelStr, "$(\n#*#*");
+
+    /* 23-May-2008 nm Tolerate one space after "$(", to handle case of
+      one space added to the end of each line with TOOLS to make global
+      label changes are easier (still a kludge; this should be made
+      white-space insensitive some day) */
+    pos1 = instr(pos1 + 1, labelStr, "$( \n#*#*");
+    if (pos1 > pos) pos = pos1;
+
+    if (!pos) break;
+    if (pos) pos2 = pos;
+  }
+  if (pos2) { /* Extract "big" header */
+    pos = instr(pos2 + 4, labelStr, "\n");
+    pos2 = instr(pos + 1, labelStr, "\n");
+    let(&(*bigHdrAddr), seg(labelStr, pos + 1, pos2 - 1));
+    let(&(*bigHdrAddr), edit((*bigHdrAddr), 8 + 128)); /* Trim leading, trailing sp */
+  }
+  /* pos = 0; */ /* Start with "big" header pos, to ignore any earlier
+                    "small" header */
+  pos2 = 0;
+  while (1) {  /* Find last "small" header, if any */
+    pos1 = pos; /* 23-May-2008 */
+    pos = instr(pos + 1, labelStr, "$(\n=-=-");
+
+    /* 23-May-2008 nm Tolerate one space after "$(", to handle case of
+      one space added to the end of each line with TOOLS to make global
+      label changes are easier (still a kludge; this should be made
+      white-space insensitive some day) */
+    pos1 = instr(pos1 + 1, labelStr, "$( \n=-=-");
+    if (pos1 > pos) pos = pos1;
+
+    if (!pos) break;
+    if (pos) pos2 = pos;
+  }
+  if (pos2) { /* Extract "small" header */
+    pos = instr(pos2 + 4, labelStr, "\n");
+    pos2 = instr(pos + 1, labelStr, "\n");
+    let(&(*smallHdrAddr), seg(labelStr, pos + 1, pos2 - 1));
+    let(&(*smallHdrAddr), edit((*smallHdrAddr), 8 + 128));
+                   /* Trim lead, trail sp */
+  }
+  let(&labelStr, "");
+  return;
+} /* getSectionHeadings */
 
 
 /* Returns the pink number printed next to statement labels in HTML output */
@@ -3527,8 +3706,11 @@ vstring getHTMLHypAndAssertion(long statemNum)
       /* Hard-coded for set.mm! */
       let(&htmlCode, cat(htmlCode,
           /* 8/8/03 - Changed from Symbol to Unicode */
-  /* "&nbsp;&nbsp;&nbsp;<FONT FACE=\"Symbol\"> &#222;</FONT>&nbsp;&nbsp;&nbsp;" */
-          "&nbsp;&nbsp;&nbsp; &#8658;&nbsp;&nbsp;&nbsp;"
+/* "&nbsp;&nbsp;&nbsp;<FONT FACE=\"Symbol\"> &#222;</FONT>&nbsp;&nbsp;&nbsp;" */
+ /* 29-Aug-2008 nm - added sans-serif to work around FF3 bug that produces
+    huge character heights otherwise */
+        /*  "&nbsp;&nbsp;&nbsp; &#8658;&nbsp;&nbsp;&nbsp;" */
+    "&nbsp;&nbsp;&nbsp; <FONT FACE=sans-serif>&#8658;</FONT>&nbsp;&nbsp;&nbsp;"
           ,NULL));
     } else {
       /* Hard-coded for set.mm! */

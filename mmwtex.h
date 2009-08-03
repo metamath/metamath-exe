@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2009  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -9,6 +9,10 @@
 #define MINT_BACKGROUND_COLOR "\"#EEFFFA\""
 #define PINK_NUMBER_COLOR "\"#FA8072\""      /* =salmon; was FF6666 */
 #define PURPLISH_BIBLIO_COLOR "\"#FAEEFF\""
+
+
+/* 29-Jul-2008 nm Sandbox stuff */
+#define SANDBOX_COLOR "\"#FFFFD9\""
 
 /* TeX flags */
 extern flag simpleTexFlag; /* Don't use macros in output, for easier
@@ -32,6 +36,9 @@ extern vstring htmlVarColors; /* Set by htmlvarcolor commands */
 extern vstring htmlBibliography; /* Optional; set by htmlbibliography command */
 extern vstring extHtmlBibliography; /* Optional; set by exthtmlbibliography
                                        command */
+
+/* 29-Jul-2008 nm Sandbox stuff */
+extern long sandboxStmt; /* At this statement and above, use sandbox stuff */
 
 /* TeX word-processor-specific routines */
 flag readTexDefs(void);
@@ -69,6 +76,10 @@ void printTexTrailer(flag texHeaderFlag);
 /* Added 4-Dec-03
    Function implementing WRITE THEOREM_LIST / THEOREMS_PER_PAGE nn */
 void writeTheoremList(long theoremsPerPage);
+
+/* 2-Aug-2009 nm - broke this function out from writeTheoremList() */
+void getSectionHeadings(long stmt, vstring *bigHdrAddr,
+    vstring *smallHdrAddr);
 
 /* TeX symbol dictionary */
 extern FILE *tex_dict_fp;     /* File pointers */
