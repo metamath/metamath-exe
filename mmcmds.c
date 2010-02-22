@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2006  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2010  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -1029,6 +1029,7 @@ void typeProof(long statemNum,
   vstring hypStr = "";
   nmbrString *hypPtr;
   long hyp, hypStep;
+  flag skipRepeatedSteps; /* 31-Jan-2010 nm */
 
   /* For statement syntax breakdown (see section below added 2/5/02 for better
      syntax hints), we declare the following 3 variables. */
@@ -1036,6 +1037,16 @@ void typeProof(long statemNum,
       static so we only have to look it up once - set to -2 if not found */
   nmbrString *nmbrTmpPtr1; /* Pointer only; not allocated directly */
   nmbrString *nmbrTmpPtr2; /* Pointer only; not allocated directly */
+
+  /* 31-Jan-2010 nm */
+  skipRepeatedSteps = 0;
+  if (htmlFlag && texFlag) skipRepeatedSteps = 1; /* Keep old behavior */
+  /* Comment out the following line if you want to revert to the old
+     Lemmon-style behavior with local label references for reused compressed
+     proof steps is desired.  The only reason for doing this is to obtain
+     the same steps and step numbers as the indented proof, rather than
+     those on the HTML pages. */
+  if (noIndentFlag) skipRepeatedSteps = 1; /* New - for all Lemmon-style pfs */
 
   if (htmlFlag && texFlag) {
     outputToString = 1; /* Flag for print2 to add to printString */
@@ -1092,12 +1103,15 @@ void typeProof(long statemNum,
   /* 6/27/99 - to reduce the number of steps displayed in an html proof,
      we will use a local label to reference the 2nd or later reference to a
      hypothesis, so the hypothesis won't have to be shown multiple times
-     in the proof. */
+     in the proof.
+     31-Jan-2010 - do this for all Lemmon-style proofs */
   if (htmlFlag && texFlag && !noIndentFlag /* Lemmon */) {
     /* Only Lemmon-style proofs are implemented for html */
     bug(218);
   }
-  if (htmlFlag && texFlag) {
+  /*if (htmlFlag && texFlag) {*/   /* pre-31-Jan-2010 */
+  /* 31-Jan-2010 nm Do this for all Lemmon-style proofs */
+  if (skipRepeatedSteps) {
     for (step = 0; step < plen; step++) {
       stmt = proof[step];
       if (stmt < 0) continue;  /* Unknown or label ref */
@@ -1166,7 +1180,9 @@ void typeProof(long statemNum,
     if (renumberFlag && essentialFlag) {
       if (!essentialFlags[step]) stepPrintFlag = 0;
     }
-    if (htmlFlag && texFlag && proof[step] < 0) stepPrintFlag = 0;
+    /* if (htmlFlag && texFlag && proof[step] < 0) stepPrintFlag = 0; */
+    /* 31-Jan-2010 nm changed to: */
+    if (skipRepeatedSteps && proof[step] < 0) stepPrintFlag = 0;
     /* For standard numbering, stepPrintFlag will be always be 1 here */
     if (stepPrintFlag) {
       i++;
@@ -1270,7 +1286,9 @@ void typeProof(long statemNum,
     }
 
     /* 6/27/99 Skip steps that are local label references for html */
-    if (htmlFlag && texFlag) {
+    /* if (htmlFlag && texFlag) { */
+    /* 31-Jan-2010 nm changed to: */
+    if (skipRepeatedSteps) {
       if (stepRenumber[step] == 0) stepPrintFlag = 0;
     }
 
@@ -1289,7 +1307,9 @@ void typeProof(long statemNum,
     if (stmt < 0) {
       if (stmt <= -1000) {
         stmt = -1000 - stmt;
-        if (htmlFlag && texFlag) bug(220); /* If html, a step referencing a
+        /* if (htmlFlag && texFlag) bug(220); */
+        /* 31-Jan-2010 nm Changed to: */
+        if (skipRepeatedSteps) bug(220); /* If html, a step referencing a
             local label will never be printed since it will be skipped above */
         /* stmt is now the step number a local label refers to */
         if (noIndentFlag) {
@@ -1311,7 +1331,9 @@ void typeProof(long statemNum,
       if (nmbrElementIn(1, localLabels, step)) {
         /* This statement declares a local label */
         if (noIndentFlag) {
-          if (!(htmlFlag && texFlag)) { /* No local label declaration is
+          /* if (!(htmlFlag && texFlag)) { */
+          /* 31-Jan-2010 nm Changed to: */
+          if (!(skipRepeatedSteps)) { /* No local label declaration is
               shown for html */
             let(&locLabDecl, cat("@", str(localLabelNames[step]), ":", NULL));
           }
@@ -1331,7 +1353,9 @@ void typeProof(long statemNum,
           if (!essentialFlag || statement[hypPtr[hyp]].type == (char)e__) {
             i = stepRenumber[hypStep];
             if (i == 0) {
-              if (!(htmlFlag && texFlag)) bug(221);
+              /* if (!(htmlFlag && texFlag)) bug(221); */
+              /* 31-Jan-2010 nm Changed to: */
+              if (!(skipRepeatedSteps)) bug(221);
               if (proof[hypStep] != -(long)'?') {
                 if (proof[hypStep] > -1000) bug(222);
                 if (localLabelNames[-1000 - proof[hypStep]] == 0) bug(223);

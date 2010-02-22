@@ -217,8 +217,35 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
       fbPtr++;
       continue;
     }
-    fbPtr++;
-    if (insideLineComment) continue;
+
+
+    /* 11-Sep-2009 nm Detect missing whitespace around keywords (per current
+       Metamath language spec) */
+    if (fbPtr > fileBuf) {  /* If this '$' is not the 1st file character */
+      if (isgraph((unsigned char)(fbPtr[-1]))) {
+        /* The character before the '$' is not white space */
+        if (!insideComment || fbPtr[1] == ')') {
+          /* Inside comments, we only care about the "$)" keyword */
+          rawSourceError(fileBuf, fbPtr, 2, lineNum, input_fn,
+              "A keyword must be preceded by white space.");
+        }
+      }
+    }
+    fbPtr++; /* (This line was already here before 11-Sep-2009 mod) */
+    if (fbPtr[0]) {  /* If the character after '$' is not end of file (which
+                        would be an error anyway, but detected elsewhere) */
+      if (isgraph((unsigned char)(fbPtr[1]))) {
+        /* The character after the character after the '$' is not white
+           space (nor end of file) */
+        if (!insideComment || fbPtr[0] == ')') {
+          /* Inside comments, we only care about the "$)" keyword */
+          rawSourceError(fileBuf, fbPtr + 1, 1, lineNum, input_fn,
+              "A keyword must be followed by white space.");
+          }
+      }
+    }
+    /* End of 11-Sep-2009 mod */
+
     switch (fbPtr[0]) {
       case '(': /* Start of comment */
         if (insideComment) {

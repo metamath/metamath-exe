@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2008  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2010  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -852,7 +852,20 @@ vstring cmdInput1(vstring ask)
       commandLine = cmdInput(stdin,ask1);
       if (!commandLine) {
         commandLine = ""; /* Init vstring (was NULL) */
-        let(&commandLine, "^Z"); /* ^Z found */
+        /* 21-Feb-2010 nm Allow ^D to exit */
+        /* 21-Feb-2010 Removed line: */
+        /* let(&commandLine, "^Z"); */
+        /* 21-Feb-2010 Added lines: */
+        if (strcmp(left(ask1, 2), "Do")) {
+          /* ^Z or ^D found at MM>, MM-PA>, or TOOLS> prompt */
+          let(&commandLine, "exit");
+        } else {
+          /* Detected the question "Do you want to EXIT anyway (Y, N) <N>?" */
+          /* Force exit with Y, to prevent infinite loop */
+          let(&commandLine, "Y");
+        }
+        printf("%s\n", commandLine);  /* Let user see what's happening */
+        /* 21-Feb-2010 end of change */
       }
       if (logFileOpenFlag) fprintf(logFilePtr, "%s%s\n", ask1, commandLine);
 

@@ -309,7 +309,8 @@ vstring right(vstring sin,long n)
 
 /* Emulate VMS BASIC edit$ command */
 vstring edit(vstring sin,long control)
-#define isblank(c) ((c==' ') || (c=='\t'))
+#define isblank_(c) ((c==' ') || (c=='\t'))
+    /* 11-Sep-2009 nm Added _ to fix '"isblank" redefined' compiler warning */
 {
 /*
 EDIT$
@@ -372,7 +373,7 @@ EDIT$
   /* Discard leading space/tab */
   i=0;
   if (leaddiscard_flag)
-    while ((sout[i]!=0) && isblank(sout[i]))
+    while ((sout[i]!=0) && isblank_(sout[i]))
       sout[i++]=0;
 
   /* Main processing loop */
@@ -387,7 +388,7 @@ EDIT$
     }
 
     /* Discard all space/tab */
-    if ((alldiscard_flag) && isblank(sout[i]))
+    if ((alldiscard_flag) && isblank_(sout[i]))
         sout[i]=0;
 
     /* Trim parity (eighth?) bit */
@@ -410,8 +411,15 @@ EDIT$
       sout[i]=0;
 
     /* Convert lowercase to uppercase */
+    /*
     if ((case_flag) && (islower(sout[i])))
        sout[i]=toupper(sout[i]);
+    */
+    /* 13-Jun-2009 nm The upper/lower case C functions have odd behavior
+       with characters > 127, at least in lcc.  So this was rewritten to
+       not use them. */
+    if ((case_flag) && (sout[i] >= 'a' && sout[i] <= 'z'))
+       sout[i]=sout[i] - ('a' - 'A');
 
     /* Convert [] to () */
     if ((bracket_flag) && (sout[i]=='['))
@@ -420,8 +428,15 @@ EDIT$
        sout[i]=')';
 
     /* Convert uppercase to lowercase */
+    /*
     if ((lowercase_flag) && (isupper(sout[i])))
        sout[i]=tolower(sout[i]);
+    */
+    /* 13-Jun-2009 nm The upper/lower case C functions have odd behavior
+       with characters > 127, at least in lcc.  So this was rewritten to
+       not use them. */
+    if ((lowercase_flag) && (sout[i] >= 'A' && sout[i] <= 'Z'))
+       sout[i]=sout[i] + ('a' - 'A');
 
     /* Convert VT220 screen print frame graphics to +,|,- */
     if (screen_flag) {
@@ -453,7 +468,7 @@ EDIT$
   /* Discard trailing space/tab */
   if (traildiscard_flag) {
     --k;
-    while ((k>=0) && isblank(sout[k])) --k;
+    while ((k>=0) && isblank_(sout[k])) --k;
     sout[++k]=0;
   }
 
@@ -461,7 +476,7 @@ EDIT$
   if (reduce_flag) {
     i=j=last_char_is_blank=0;
     while (i<=k-1) {
-      if (!isblank(sout[i])) {
+      if (!isblank_(sout[i])) {
         sout[j++]=sout[i++];
         last_char_is_blank=0;
       } else {

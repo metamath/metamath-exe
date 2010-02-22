@@ -1,11 +1,20 @@
 /*****************************************************************************/
 /* Program name:  metamath                                                   */
-/* Copyright (C) 2009 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
+/* Copyright (C) 2010 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
 /* License terms:  GNU General Public License Version 2 or any later version */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.07.47 2-Aug-2009"
+#define MVERSION "0.07.50 21-Feb-2010"
+/* 0.07.50 21-Feb-2010 nm mminou.c - ^D now exits metamath, to fix infinite
+   loop bug reported by Cai Yufei */
+/* 0.07.49 31-Jan-2010 nm mmcmds.c - Lemmon-style proofs (SHOW PROOF xxx
+   /LEMON/RENUMBER) no longer have steps with dummy labels; instead, steps
+   are now the same as in HTML page proofs.  (There is a line to comment
+   out if you want to revert to old behavior.) */
+/* 0.07.48 11-Sep-2009 nm mmpars.c, mm, mmvstr.c, mmdata.c - Added detection of
+   non-whitespace around keywords (mmpars.c); small changes to eliminate
+   warnings in gcc 3.4.4 (mmvstr.c, mmdata.c) */
 /* 0.07.47 2-Aug-2009 nm mmwtex.c, mmwtex.h - added user name to mathbox
    pages */
 /* 0.07.46 24-Jul-2009 nm metamath.c, mmwtex.c - changed name of sandbox
