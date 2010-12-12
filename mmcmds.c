@@ -22,6 +22,7 @@
 #include "mmveri.h"
 #include "mmwtex.h" /* For htmlVarColors,... */
 #include "mmpfas.h"
+#include "mmunif.h" /* 26-Sep-2010 nm For bracketMatchInit, minSubstLen */
 
 /* vstring mainFileName = ""; */ /* 28-Dec-05 nm Obsolete */
 flag printHelp = 0;
@@ -159,12 +160,17 @@ void typeStatement(long showStatement,
     if (!str1[0]    /* No comment */
         || (str1[0] == '[' && str1[strlen(str1) - 1] == ']')
         /* 7-Sep-04 Allow both "$([<date>])$" and "$( [<date>] )$" */
-        || (str1[1] == '[' && str1[strlen(str1) - 2] == ']')) { /* Date stamp
+        || (strlen(str1) > 1 &&
+            str1[1] == '[' && str1[strlen(str1) - 2] == ']')) { /* Date stamp
             from previous proof */
       print2("?Warning:  Statement \"%s\" has no comment\n",
           statement[showStatement].labelName);
-    /*if (str1[0]) {*/ /*old*/
-    } else {
+      /* 14-Sep-2010 nm We must print a blank comment to have \begin{lemma} */
+      if (texFlag && !htmlFlag && !oldTexFlag) {
+        let(&str1, "TO DO: PUT DESCRIPTION HERE");
+      }
+    }
+    if (str1[0]) {
       if (!texFlag) {
         printLongLine(cat("\"", str1, "\"", NULL), "", " ");
       } else {
@@ -179,8 +185,14 @@ void typeStatement(long showStatement,
         }
         *******/
         if (!htmlFlag) {  /* LaTeX */
-          /* 6-Dec-03 Add separation space between theorems */
-          let(&str1, cat("\n\\vspace{1ex}\n\n", str1, NULL));
+          if (!oldTexFlag) {
+            /* 14-Sep-2010 */
+            let(&str1, cat("\\begin{lemma}\\label{lem:",
+                statement[showStatement].labelName, "} ", str1, NULL));
+          } else {
+            /* 6-Dec-03 Add separation space between theorems */
+            let(&str1, cat("\n\\vspace{1ex} %2\n\n", str1, NULL));
+          }
         }
         printTexComment(str1, 1);
       }
@@ -354,6 +366,7 @@ void typeStatement(long showStatement,
     }
     if (k) {
       if (texFlag) {
+        /* Note that printTexLongMath resets it to 0 */
         outputToString = 1;
       }
       if (texFlag && htmlFlag) {
@@ -389,11 +402,17 @@ void typeStatement(long showStatement,
           printLongLine(cat(str2,
               nmbrCvtMToVString(statement[k].mathString), " $.", NULL),
               "      "," ");
-        } else {
+        } else { /* if texFlag */
+          /* texFlag was (misleadingly) included below to facilitate search
+             for "htmlFlag && texFlag". */
           if (!(htmlFlag && texFlag)) {
-            let(&str3, space(strlen(str2)));
-            printTexLongMath(statement[k].mathString,
-                str2, str3, 0, 0);
+            if (!oldTexFlag) {  /* 14-Sep-2010 nm */
+              /* Do nothing */
+            } else {
+              let(&str3, space(strlen(str2)));
+              printTexLongMath(statement[k].mathString,
+                  str2, str3, 0, 0);
+            }
           } else {
             outputToString = 1;
             print2("<TR ALIGN=LEFT><TD>%s</TD><TD>\n",
@@ -413,8 +432,10 @@ void typeStatement(long showStatement,
   let(&str1, "");
   type = statement[showStatement].type;
   if (type == p__) let(&str1, " $= ...");
-  if (!texFlag) let(&str2, cat(str(showStatement), " ", NULL));
-  else let(&str2, "  ");
+  if (!texFlag)
+    let(&str2, cat(str(showStatement), " ", NULL));
+  else
+    let(&str2, "  ");
   let(&str2, cat(str2, statement[showStatement].labelName,
       " $",chr(type), " ", NULL));
   if (!texFlag) {
@@ -422,12 +443,35 @@ void typeStatement(long showStatement,
         nmbrCvtMToVString(statement[showStatement].mathString),
         str1, " $.", NULL), "      ", " ");
   } else {
-    if (!(htmlFlag && texFlag)) {
-      let(&str3, space(strlen(str2))); /* 3rd argument of printTexLongMath
-          cannot be temp allocated */
-      printTexLongMath(statement[showStatement].mathString,
-          str2, str3, 0, 0);
-    } else {
+    if (!(htmlFlag && texFlag)) {  /* really !htmlFlag & texFlag */
+      if (!oldTexFlag) {
+        /* 14-Sep-2010 nm new LaTeX code: */
+        outputToString = 1;
+        print2("\\begin{align}\n");
+        let(&str3, "");
+        /* Get HTML hypotheses => assertion */
+        str3 = getTexOrHtmlHypAndAssertion(showStatement); /* In mmwtex.c */
+        printLongLine(cat(str3,
+              /* No space before \label to make it easier to find last
+                 parenthesis in a post-processing script */
+              "\\label{eq:",
+              statement[showStatement].labelName,
+              "}",
+              NULL), "    ", " ");
+       /* print2("    \\label{eq:%s}\n",statement[showStatement].labelName); */
+        print2("\\end{align}\n");
+        print2("\\end{lemma}\n");
+        fprintf(texFilePtr, "%s", printString);
+        let(&printString, "");
+        outputToString = 0;
+
+      } else { /* old TeX code */
+        let(&str3, space(strlen(str2))); /* 3rd argument of printTexLongMath
+            cannot be temp allocated */
+        printTexLongMath(statement[showStatement].mathString,
+            str2, str3, 0, 0);
+      }
+    } else { /* (htmlFlag && texFlag) */
       outputToString = 1;
       print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=%s\n",
           MINT_BACKGROUND_COLOR);
@@ -2222,7 +2266,7 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
     outputToString = 1; /* Flag for print2 to add to printString */
     if (!htmlFlag) {
       print2("\n");
-      print2("\\vspace{1ex}\n");
+      print2("\\vspace{1ex} %%3\n");
       printLongLine(cat("Summary of statements used in the proof of ",
           "{\\tt ",
           asciiToTt(statement[statemNum].labelName),
@@ -2296,7 +2340,7 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
         if (!htmlFlag) {
           print2("\n");
           print2("\n");
-          print2("\\vspace{1ex}\n");
+          print2("\\vspace{1ex} %%4\n");
           printLongLine(cat("Statement {\\tt ",
               asciiToTt(statement[stmt].labelName), "} ",
               str1, "{\\tt ",
@@ -2371,7 +2415,7 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
   nmbrLet(&proof, NULL_NMBRSTRING);
   nmbrLet(&essentialFlags, NULL_NMBRSTRING);
 
-}
+} /* proofStmtSumm */
 
 
 /* Traces back the statements used by a proof, recursively. */
@@ -3314,6 +3358,9 @@ void eraseSource(void)
 
   /* Allocate big arrays */
   initBigArrays();
+
+  bracketMatchInit = 0; /* Clear to force mmunif.c to scan $a's again */
+  minSubstLen = 1; /* Initialize to the default SET EMPTY_SUBSTITUTION OFF */
 }
 
 

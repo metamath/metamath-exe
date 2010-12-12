@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2008  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2010  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -17,7 +17,7 @@
 #include "mmcmdl.h"
 #include "mminou.h"
 #include "mmpfas.h"
-#include "mmunif.h"
+#include "mmunif.h" /* For hentyFilter, userMaxUnifTrials, minSubstLen */
 #include "mmwtex.h"
 #include "mmword.h"
 
@@ -293,7 +293,7 @@ flag processCommandLine(void)
           if (lastArgMatches("/")) {
             i++;
             if (!getFullArg(i,cat(
-                "NO_HEADER|<NO_HEADER>",NULL)))
+                "NO_HEADER|OLD_TEX|<NO_HEADER>",NULL)))
               goto pclbad;
           } else {
             break;
@@ -514,8 +514,9 @@ flag processCommandLine(void)
           if (lastArgMatches("/")) {
             i++;
             if (!getFullArg(i,cat(
-                "FULL|COMMENT|TEX|SIMPLE_TEX|HTML|ALT_HTML|BRIEF_HTML",
-                "|BRIEF_ALT_HTML|NO_VERSIONING|<FULL>", NULL)))
+                "FULL|COMMENT|TEX|OLD_TEX|HTML|ALT_HTML|BRIEF_HTML",
+                /* 12-May-2009 sa Added MNEMONICS */
+                "|BRIEF_ALT_HTML|MNEMONICS|NO_VERSIONING|<FULL>", NULL)))
               goto pclbad;
           } else {
             break;
@@ -556,7 +557,8 @@ flag processCommandLine(void)
                 "ESSENTIAL|ALL|UNKNOWN|FROM_STEP|TO_STEP|DEPTH",
                 /*"|REVERSE|LANGUAGE_MODE|VERBOSE|NORMAL|PACKED|COMPRESSED",*/
                 "|REVERSE|LANGUAGE_MODE|VERBOSE|NORMAL|COMPRESSED",
-                "|STATEMENT_SUMMARY|DETAILED_STEP|TEX|HTML|SAVE",
+                /* 14-Sep-2010 nm Added OLD_TEX */
+                "|STATEMENT_SUMMARY|DETAILED_STEP|TEX|OLD_TEX|HTML|SAVE",
                 "|LEMMON|START_COLUMN|RENUMBER|<ESSENTIAL>",NULL)))
               goto pclbad;
             if (lastArgMatches("FROM_STEP")) {
@@ -1313,7 +1315,7 @@ flag processCommandLine(void)
       if (!getFullArg(3,"* Replace it with <>? "))
         goto pclbad;
       if (!getFullArg(4,
-"* Which occurrence in the line (1,2,... or ALL) <1>? "))
+"* Which occurrence in the line (1,2,... or ALL or EACH) <1>? "))
         goto pclbad;
       if (!getFullArg(5,
 "* Additional match required on line (null = match all) <>? "))

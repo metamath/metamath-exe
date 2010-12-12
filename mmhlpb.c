@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2009  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2010  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -41,7 +41,7 @@ H("To exit Metamath, type EXIT (or its synonym QUIT).");
 H("");
 H(cat("If you need technical support, contact Norman Megill at nm",
     "@", "alum.mit.edu.", NULL));
-H("Copyright (C) 2006 Norman Megill");
+H("Copyright (C) 2010 Norman Megill");
 H("License terms:  GNU General Public License");
 H("");
 
@@ -189,9 +189,9 @@ H("");
 
 
 printHelp = !strcmp(helpCmd, "HELP SHOW STATEMENT");
-/* 27-Jul-05 nm Added SIMPLE_TEX */
+/* 14-Sep-2010 nm Added OLD_TEX */
 H(
-"Syntax:  SHOW STATEMENT <label> [/ COMMENT] [/ FULL] [/ TEX] [/ SIMPLE_TEX]");
+"Syntax:  SHOW STATEMENT <label> [/ COMMENT] [/ FULL] [/ TEX] [/ OLD_TEX]");
 H("             [/ HTML] [/ ALT_HTML] [/ BRIEF_HTML] [/ BRIEF_ALT_HTML]");
 H("             [/ MNEMONICS]");
 H("");
@@ -214,10 +214,10 @@ H("    / FULL - Show complete information about each statement, and show all");
 H("        statements matching <label> (including $e and $f statements).");
 H("    / TEX - This qualifier will write the statement information to the");
 H("        LaTeX file previously opened with OPEN TEX.");
-/* 27-Jul-05 nm Added SIMPLE_TEX */
-H("    / SIMPLE_TEX - The same as / TEX, except that LaTeX macros are not");
-H("        used for formatting equations, allowing easier manual edits of");
-H("        the output.");
+/* 14-Sep-2010 nm Added OLD_TEX */
+H("    / OLD_TEX - Same as / TEX, except that LaTeX macros are used to fit");
+H("        equations into line.  This mode is obsolete and will be");
+H("        removed eventually.");
 H("    / HTML - This qualifier invokes a special mode of SHOW STATEMENT which");
 H("        creates a Web page for the statement.  It may not be used with");
 H("        any other qualifier.  See HELP HTML for more information.");
@@ -263,7 +263,10 @@ H("    / REVERSE - the steps are displayed in reverse order.");
 H("    / RENUMBER - when used with / ESSENTIAL, the steps are renumbered");
 H("        to correspond only to the essential steps.");
 H("    / TEX - the proof is converted to LaTeX and stored in the file opened");
-H("        with OPEN TEX.");
+H("        with OPEN TEX.  Tip:  SET WIDTH 120 (or so) to to fit equations");
+H("        to LaTeX line.  Then use SHOW PROOF / TEX / LEMMON / RENUMBER.");
+H("    / OLD_TEX - same as TEX but uses macros to fit line.  Obsolete and");
+H("        will be removed eventually.");
 H("    / LEMMON - The proof is displayed in a non-indented format known");
 H("        as Lemmon style, with explicit previous step number references.");
 H("        If this qualifier is omitted, steps are indented in a tree format.");
@@ -694,9 +697,12 @@ H("statements), only the last section and/or subsection break will be used,");
 H("and any subsection break before a section break will be ignored.  See the");
 H("set.mm database file for examples.");
 H("");
-H("[Warning: For matching, white space is NOT ignored.  There should be no");
-H("spaces between \"$(\" and the end of the line.  This may be allowed in");
-H("a future version, if a request is made to N. Megill.]");
+H("[Warning: For the above matching, white space is NOT ignored.  There");
+H("should be no spaces between \"$(\" and the end of the line.  This may be");
+H("allowed in a future version, if a request is made to N. Megill.]");
+H("");
+H("Note:  To create the files mmdefinitions.html and mmascii.html, use");
+H("SHOW STATEMENT *! / HTML.  See HELP HTML.");
 H("");
 
 printHelp = !strcmp(helpCmd, "HELP WRITE BIBLIOGRAPHY");

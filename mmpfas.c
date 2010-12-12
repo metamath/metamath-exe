@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2007  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2010  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -24,7 +24,9 @@
 long proveStatement = 0; /* The statement to be proved - global */
 flag proofChangedFlag; /* Flag to push 'undo' stack - global */
 
-long userMaxProveFloat = 10000; /* Upper limit for proveFloating */
+/* 11-Dec-2010 nm Changed from 10000 to 25000 to accomodate df-plig in set.mm
+   (which needs >= 23884 to generate with 'show statement / html'). */
+long userMaxProveFloat = /*10000*/ 25000; /* Upper limit for proveFloating */
 
 long dummyVars = 0; /* Total number of dummy variables declared */
 long pipDummyVars = 0; /* Number of dummy variables used by proof in progress */
@@ -2090,9 +2092,11 @@ void autoUnify(flag congrats)
               print2(
               "Step %ld cannot be unified.  THERE IS AN ERROR IN THE PROOF.\n",
                   (long)(step + 1));
+              /* 27-Sep-2010 nm No longer needed since this is now automatic
               print2(
 "If your axioms allow empty substitutions, see HELP SET EMPTY_SUBSTITUTION.\n"
                  );
+              */
               continue;
             }
             if (unifFlag == 1) {

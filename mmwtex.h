@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2009  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2010  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -15,8 +15,8 @@
 #define SANDBOX_COLOR "\"#FFFFD9\""
 
 /* TeX flags */
-extern flag simpleTexFlag; /* Don't use macros in output, for easier
-                              manual editing by user */
+/* 14-Sep-2010 nm Removed simpleTexFlag; added oldTexFlag */
+extern flag oldTexFlag; /* Use macros in output; obsolete; take out someday */
 
 /* HTML flags */
 extern flag htmlFlag;  /* HTML flag: 0 = TeX, 1 = HTML */
@@ -130,8 +130,9 @@ vstring spectrumToRGB(long color, long maxColor);
 vstring getTexLongMath(nmbrString *mathString);
 
 /* Added 18-Sep-03 (transferred from metamath.c) */
-/* Returns the HTML code, for GIFs (!altHtmlFlag) or Unicode (altHtmlFlag),
-   for a statement's hypotheses and assertion in the form
+/* Returns the TeX, or HTML code for GIFs (!altHtmlFlag) or Unicode
+   (altHtmlFlag), for a statement's hypotheses and assertion in the form
    hyp & ... & hyp => assertion */
 /* Warning: The caller must deallocate the returned vstring. */
-vstring getHTMLHypAndAssertion(long statemNum);
+/* 14-Sep-2010 nm Changed name from getHTMLHypAndAssertion() */
+vstring getTexOrHtmlHypAndAssertion(long statemNum);

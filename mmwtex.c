@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2009  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2010  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -28,7 +28,7 @@
    start after the $t and end at the $).  Between $t and $), the definition
    source should exist.  See the file set.mm for an example. */
 
-flag simpleTexFlag = 0; /* No macros in output for easier manual edits */
+flag oldTexFlag = 0; /* Use TeX macros in output (obsolete) */
 
 flag htmlFlag = 0;  /* HTML flag: 0 = TeX, 1 = HTML */
 flag altHtmlFlag = 0;  /* Use "althtmldef" instead of "htmldef".  This is
@@ -600,7 +600,7 @@ long texDefWhiteSpaceLen(char *ptr)
   while (1) {
     tmpchr = ptr[i];
     if (!tmpchr) return (i); /* End of string */
-    if (isalnum(tmpchr)) return (i); /* Alphanumeric string */
+    if (isalnum((unsigned char)(tmpchr))) return (i); /* Alphanumeric string */
     if (ptr[i] == '!') { /* Comment to end-of-line */
       ptr1 = strchr(ptr + i + 1, '\n');
       if (!ptr1) bug(2306);
@@ -810,6 +810,7 @@ vstring tokenToTex(vstring mtoken)
     /* 9/5/99 If it wasn't found, give user a warning... */
     saveOutputToString = outputToString;
     outputToString = 0;
+    /* TODO Tell user what statement (may need 2nd tokenToTex() arg.?) */
     printLongLine(cat("?Error: Math symbol token \"", mtoken,
         "\" does not have a LaTeX and/or an HTML definition.", NULL),
         "", " ");
@@ -823,7 +824,7 @@ vstring tokenToTex(vstring mtoken)
     /* If so, remove the tilde.  (This is actually obsolete.) */
     /* (The tilde was an escape in the obsolete syntax.) */
     if (tex[0] == '~') {
-      if (isalpha(tex[1])) {
+      if (isalpha((unsigned char)(tex[1]))) {
         let(&tex, right(tex, 2)); /* Remove tilde */
       }
     }
@@ -831,7 +832,7 @@ vstring tokenToTex(vstring mtoken)
     /* Next, convert punctuation characters to tt font */
     j = strlen(tex);
     for (i = 0; i < j; i++) {
-      if (ispunct(tex[i])) {
+      if (ispunct((unsigned char)(tex[i]))) {
         tmpStr = asciiToTt(chr(tex[i]));
         if (!htmlFlag)
           let(&tmpStr, cat("{\\tt ", tmpStr, "}", NULL));
@@ -888,12 +889,12 @@ vstring asciiMathToTex(vstring mathComment)
       /* If this token and previous token begin with letter, add a thin
            space between them */
       /* Also, anything not in table will have space added */
-      alphnew = isalpha(tex[0]);
+      alphnew = isalpha((unsigned char)(tex[0]));
       unknownnew = 0;
       if (!strcmp(left(tex, 10), "\\mbox{\\rm ")) { /* Token not in table */
         unknownnew = 1;
       }
-      alphold = isalpha(lastTex[0]);
+      alphold = isalpha((unsigned char)(lastTex[0]));
       unknownold = 0;
       if (!strcmp(left(lastTex, 10), "\\mbox{\\rm ")) { /* Token not in table*/
         unknownold = 1;
@@ -1028,7 +1029,24 @@ void printTexHeader(flag texHeaderFlag)
     print2("%s This LaTeX file was created by Metamath on %s %s.\n",
        "%", date(), time_());
 
-    if (texHeaderFlag) {
+    /* 14-Sep-2010 nm Added OLD_TEX (oldTexFlag) */
+    if (texHeaderFlag && !oldTexFlag) {
+      print2("\\documentclass{article}\n");
+      print2("\\usepackage{amssymb}\n");
+      print2("\\usepackage{amsmath}\n"); /* For \begin{align}... */
+      print2("\\usepackage{amsthm}\n");
+      print2("\\theoremstyle{plain}\n");
+      print2("\\newtheorem{theorem}{Theorem}[section]\n");
+      print2("\\newtheorem{definition}[theorem]{Definition}\n");
+      print2("\\newtheorem{lemma}[theorem]{Lemma}\n");
+      print2("\\newtheorem{axiom}{Axiom}\n");
+      print2("\\allowdisplaybreaks[1]\n");  /* Allow page breaks in {align} */
+      print2("\\usepackage[plainpages=false,pdfpagelabels]{hyperref}\n");
+      print2("\\begin{document}\n");
+      print2("\n");
+    }
+
+    if (texHeaderFlag && oldTexFlag) {
       /******* LaTeX 2.09
       print2(
 "\\documentstyle[leqno]{article}\n");
@@ -1581,7 +1599,7 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
       /* 5-Apr-2007 nm Don't modify external hyperlinks containing "_" */
       pos2 = pos1 - 1;
       while (1) { /* Get to previous whitespace */
-        if (pos2 == 0 || isspace(cmt[pos2])) break;
+        if (pos2 == 0 || isspace((unsigned char)(cmt[pos2]))) break;
         pos2--;
       }
       if (!strcmp(mid(cmt, pos2 + 2, 7), "http://")) {
@@ -1591,9 +1609,11 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
       /* Opening "_" must be <whitespace>_<alphanum> for <I> tag */
       if (pos1 > 1) {
         /* Check for not whitespace and not opening punctuation */
-        if (!isspace(cmt[pos1 - 2]) && strchr("([", cmt[pos1 - 2]) == NULL) {
+        if (!isspace((unsigned char)(cmt[pos1 - 2]))
+            && strchr("([", cmt[pos1 - 2]) == NULL) {
           /* Check for not whitespace and not closing punctuation */
-          if (!isspace(cmt[pos1]) && strchr(".,;)?!:]", cmt[pos1]) == NULL) {
+          if (!isspace((unsigned char)(cmt[pos1]))
+            && strchr(".,;)?!:]", cmt[pos1]) == NULL) {
 
             /* 28-Sep-03 - Added subscript handling */
             /* Found <nonwhitespace>_<nonwhitespace> - assume subscript */
@@ -1606,7 +1626,7 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
             while (1) {
               if (!cmt[pos2]) break; /* End of string */
               /* Look for whitespace or closing punctuation */
-              if (isspace(cmt[pos2])
+              if (isspace((unsigned char)(cmt[pos2]))
                   || strchr(".,;)?!:]", cmt[pos2]) != NULL) break;
               pos2++; /* Move forward through subscript */
             }
@@ -1634,12 +1654,12 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
           }
         }
       }
-      if (!isalnum(cmt[pos1])) continue;
+      if (!isalnum((unsigned char)(cmt[pos1]))) continue;
       pos2 = instr(pos1 + 1, cmt, "_");
       if (!pos2) break;
       /* Closing "_" must be <alphanum>_<nonalphanum> */
-      if (!isalnum(cmt[pos2 - 2])) continue;
-      if (isalnum(cmt[pos2])) continue;
+      if (!isalnum((unsigned char)(cmt[pos2 - 2]))) continue;
+      if (isalnum((unsigned char)(cmt[pos2]))) continue;
       if (htmlFlag) {  /* HTML */
         let(&cmt, cat(left(cmt, pos1 - 1), "<I>", seg(cmt, pos1 + 1, pos2 - 1),
             "</I>", right(cmt, pos2 + 1), NULL));
@@ -1868,7 +1888,7 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
              whitespace is now allowed between the ~ and the label, which
              makes it easier to do global substitutions of labels in a
              text editor. */
-          while (isspace(cmt[i + 1]) && clen > i + 1) {
+          while (isspace((unsigned char)(cmt[i + 1])) && clen > i + 1) {
             let(&cmt, cat(left(cmt, i + 1), right(cmt, i + 3), NULL));
             clen--;
           }
@@ -1902,7 +1922,7 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
 
       }
     }
-    if (isspace(cmt[i]) && mode == 'l') {
+    if (isspace((unsigned char)(cmt[i])) && mode == 'l') {
       /* Whitespace exits label mode */
       mode = 'n';
       let(&cmt, cat(left(cmt, i), chr(DOLLAR_SUBST) /*$*/, chr(mode),
@@ -2139,7 +2159,17 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
     if (lastLineFlag) break; /* Done */
   } /* end while(1) */
 
-  print2("\n");
+  if (htmlFlag) {
+    print2("\n");
+  } else {
+    if (!oldTexFlag) {
+      /* 14-Sep-2010 nm Suppress blank line for LaTeX */
+      /* print2("\n"); */
+    } else {
+      print2("\n");
+    }
+  }
+
   outputToString = 0; /* Restore normal output */
   fprintf(texFilePtr, "%s", printString);
 
@@ -2186,6 +2216,7 @@ void printTexLongMath(nmbrString *mathString,
   vstring htmRef = ""; /* 7/4/98 */
   vstring tmp = "";  /* 10/10/02 */
   vstring descr = ""; /* 19-Nov-2007 nm */
+  char refType = '?'; /* 14-Sep-2010 nm  'e' means $e, etc. */
 
   let(&sPrefix, startPrefix); /* 7/3/98 Save it; it may be temp alloc */
 
@@ -2194,18 +2225,64 @@ void printTexLongMath(nmbrString *mathString,
   /* May have stuff to be printed 7/4/98 */
   /*if (!htmlFlag) let(&printString, "");*/ /* Removed 6-Dec-03 */
 
+  /* Note that the "tex" assignment below will be used only when !htmlFlag
+     and oldTexFlag, or when htmlFlag and len(sPrefix)>0 */
   let(&tex, "");
   tex = asciiToTt(sPrefix); /* asciiToTt allocates; we must deallocate */
+      /* Example: sPrefix = " 4 2,3 ax-mp  $a " */
+      /*          tex = "\ 4\ 2,3\ ax-mp\ \ \$a\ " in !htmlFlag mode */
+      /*          tex = " 4 2,3 ax-qmp  $a " in htmlFlag mode */
   let(&texLine, "");
+
+  /* 14-Sep-2010 nm Get statement type of proof step reference */
+  i = instr(1, sPrefix, "$");
+  if (i) refType = sPrefix[i]; /* Character after the "$" */
+
+  /* 14-Sep-2010 nm Moved this code from below to use for !oldTexFlag */
+  if (htmlFlag || !oldTexFlag) {
+    if (strlen(sPrefix)) { /* It's a proof step */
+      /* Make each token a separate table column */
+      /* This is a kludge that only works with /LEMMON style proofs! */
+      /* 14-Sep-2010 nm Note that asciiToTt() above puts "\ " when not in
+         htmlFlag mode, so use sPrefix instead of tex so it will work in
+         !oldTexFlag mode */
+      /* let(&tex, edit(tex, 8 + 16 + 128)); */
+      let(&tex, edit(sPrefix, 8 + 16 + 128));
+      /* Example: tex = "4 2,3 ax-mp $a" here */
+      i = 0;
+      pos = 1;
+      while (pos) {
+        pos = instr(1, tex, " ");
+        if (pos) {
+          if (i > 3) { /* 2/8/02 - added for extra safety for the future */
+            bug(2316);
+          }
+          if (i == 0) let(&htmStep, left(tex, pos - 1));
+          if (i == 1) let(&htmHyp, left(tex, pos - 1));
+          if (i == 2) let(&htmRef, left(tex, pos - 1));
+          let(&tex, right(tex, pos + 1));
+          i++;
+        }
+      }
+      if (i < 3) {
+        /* The referenced statement has no hypotheses e.g.
+           "4 ax-1 $a" */
+        let(&htmRef, htmHyp);
+        let(&htmHyp, "");
+      }
+    }
+  }
+
   if (!htmlFlag) {
 
     /* 27-Jul-05 nm Added SIMPLE_TEX */
-    if (simpleTexFlag) {
-      printLongLine(cat("\\texttt{", tex, "}", NULL), "", " ");
-      let(&tex, ""); /* Deallocate */
-      tex = asciiToTt(contPrefix);
-      printLongLine(cat("\\texttt{", tex, "}", NULL), "", " ");
-      print2("\\begin{eqnarray}\n");
+    if (!oldTexFlag) {
+      /* 14-Sep-2010 nm Old 27-Jul-05 version commented out: */
+      /* printLongLine(cat("\\texttt{", tex, "}", NULL), "", " ");  */
+      /* let(&tex, ""); */ /* Deallocate */
+      /* tex = asciiToTt(contPrefix); */
+      /* printLongLine(cat("\\texttt{", tex, "}", NULL), "", " "); */
+      /* print2("\\begin{eqnarray}\n"); */
     } else {
       /* 9/2/99 Trim down long start prefixes so they won't overflow line,
          by putting their tokens into \m macros */
@@ -2232,28 +2309,34 @@ void printTexLongMath(nmbrString *mathString,
     }
   } else { /* htmlFlag */
     if (strlen(sPrefix)) { /* It's a proof step */
-      /* Make each token a separate table column */
-      /* This is a kludge that only works with /LEMMON style proofs! */
-      let(&tex, edit(tex, 8 + 16 + 128));
-      i = 0;
+
+      if (htmHyp[0] == 0)
+        let(&htmHyp, "&nbsp;");  /* Insert blank field for Lemmon ref w/out hyp */
+
+      /*** Start of 9-Sep-2010 ***/
+      /* 9-Sep-2010 Stefan Allen - put hyperlinks on hypothesis
+         label references in SHOW STATEMENT * /HTML, ALT_HTML output */
+      /*Add hyperlink references to the proof */
+      let(&htmStep,cat("<A NAME=\"",htmStep,"\">",htmStep,"</A>",NULL));
+      i = 1;
       pos = 1;
-      while (pos) {
-        pos = instr(1, tex, " ");
-        if (pos) {
-          if (i > 3) { /* 2/8/02 - added for extra safety for the future */
-            bug(2316);
-          }
-          if (i == 0) let(&htmStep, left(tex, pos - 1));
-          if (i == 1) let(&htmHyp, left(tex, pos - 1));
-          if (i == 2) let(&htmRef, left(tex, pos - 1));
-          let(&tex, right(tex, pos + 1));
-          i++;
-        }
+      while (pos && strcmp(htmHyp, "&nbsp;")) {
+        pos = instr(i,htmHyp, ",");
+        if (!pos) pos = len(htmHyp) + 1;
+        let(&htmHyp, cat(left(htmHyp, i - 1),
+            "<A HREF=\"#",
+            seg(htmHyp, i, pos - 1),
+            "\">",
+            seg(htmHyp, i, pos - 1),
+            "</A>",
+            right(htmHyp, pos),
+            NULL));
+        /* Break out of loop if we hit the end */
+        pos += 16 + len(seg(htmHyp, i, pos - 1)) + 1;
+        if (!instr(i, htmHyp, ",")) break;
+        i = pos;
       }
-      if (i < 3) { /* Insert blank field for Lemmon ref w/out hyp */
-        let(&htmRef, htmHyp);
-        let(&htmHyp, "&nbsp;");
-      }
+      /*** End of 9-Sep-2010 ***/
 
       /* 2/8/02 Add a space after each comma so very long hypotheses
          lists will wrap in an HTML table cell, e.g. gomaex3 in ql.mm */
@@ -2263,7 +2346,8 @@ void printTexLongMath(nmbrString *mathString,
         pos = instr(pos + 1, htmHyp, ",");
       }
 
-      if (!strcmp(tex, "$e") || !strcmp(tex, "$f")) {
+      /* if (!strcmp(tex, "$e") || !strcmp(tex, "$f")) { */ /* Old */
+      if (refType == 'e' || refType == 'f') { /* 14-Sep-2010 nm Speedup */
         /* A hypothesis - don't include link */
         printLongLine(cat("<TR ALIGN=LEFT><TD>", htmStep, "</TD><TD>",
             htmHyp, "</TD><TD>", htmRef,
@@ -2344,7 +2428,7 @@ void printTexLongMath(nmbrString *mathString,
       let(&tmp, "");
 #endif
     } /* strlen(sPrefix) */
-  }
+  } /* htmlFlag */
   let(&tex, ""); /* Deallocate */
   let(&sPrefix, ""); /* Deallocate */
 
@@ -2353,10 +2437,46 @@ void printTexLongMath(nmbrString *mathString,
   let(&texLine, cat(texLine, tex, NULL));
 
   if (!htmlFlag) {  /* LaTeX */
-    /* 27-Jul-05 nm Added SIMPLE_TEX */
-    if (simpleTexFlag) {
-      printLongLine(texLine, "", " ");
-      print2("\\end{eqnarray}\n");
+    /* 27-Jul-05 nm Added for new LaTeX (!oldTexFlag) */
+    if (!oldTexFlag) {
+      /* 14-Sep-2010 nm */
+      if (refType == 'e' || refType == 'f') {
+        /* A hypothesis - don't include \ref{} */
+        printLongLine(cat("  ",
+            /* If not first step, so print "\\" LaTeX line break */
+            !strcmp(htmStep, "1") ? "" : "\\\\ ",
+            htmStep,  /* Step number */
+            " && & ",
+            texLine,
+            /* Don't put space to help prevent bad line break */
+            "&\\text{Hyp~",
+            /* The following puts a hypothesis number such as "2" if
+               $e label is "abc.2"; if no ".", will be whole label */
+            right(htmRef, instr(1, htmRef, ".") + 1),
+            "}\\notag%",
+            /* Add full label as LaTeX comment - note lack of space after
+               "%" above to prevent bad line break */
+            htmRef, NULL),
+            "    \\notag \\\\ && & \\qquad ",  /* Continuation line prefix */
+            " ");
+      } else {
+        printLongLine(cat("  ",
+            /* If not first step, so print "\\" LaTeX line break */
+            !strcmp(htmStep, "1") ? "" : "\\\\ ",
+            htmStep,  /* Step number */
+            " && & ",
+            texLine,
+            /* Don't put space to help prevent bad line break */
+            "&", htmHyp, htmHyp[0] ? "," : "",
+            "(\\ref{eq:", htmRef, "})\\notag", NULL),
+            "    \\notag \\\\ && & \\qquad ",  /* Continuation line prefix */
+            " ");
+      }
+      /* 14-Sep-2010 nm - commented out below */
+      /* printLongLine(texLine, "", " "); */
+      /* print2("\\end{eqnarray}\n"); */
+      /* 6 && \vdash& ( B \ton_3 B ) \ton_3 A & (\ref{eq:q2}),4,5 \notag \\ */
+      /*print2(" & (\\ref{eq:%s}%s \\notag\n",???,??? );*/
     } else {
       printLongLine(texLine, "", "\\");
       print2("\\endm\n");
@@ -2934,7 +3054,7 @@ void writeTheoremList(long theoremsPerPage)
 
       /* Get HTML hypotheses => assertion */
       let(&str4, "");
-      str4 = getHTMLHypAndAssertion(s); /* In mmwtex.c */
+      str4 = getTexOrHtmlHypAndAssertion(s); /* In mmwtex.c */
 
       /* 19-Aug-05 nm Suppress the math content of lemmas, which can
          be very big and not interesting */
@@ -3088,7 +3208,7 @@ void writeTheoremList(long theoremsPerPage)
 
 /* 2-Aug-2009 nm - broke this function out from writeTheoremList() */
 /* This function extracts any section headers in the comment sections
-   prior to the label of statement stmt.   If a big (=#=#...) header isn't
+   prior to the label of statement stmt.   If a big (#*#*...) header isn't
    found, *bigHdrAddr will be set to the empty string.  If a small
    (=-=-...) header isn't found (or isn't after the last big header),
    *smallHdrAddr will be set to the empty string.  In both cases, only
@@ -3519,12 +3639,12 @@ vstring getTexLongMath(nmbrString *mathString)
       /* If this token and previous token begin with letter, add a thin
            space between them */
       /* Also, anything not in table will have space added */
-      alphnew = isalpha(tex[0]);
+      alphnew = isalpha((unsigned char)(tex[0]));
       unknownnew = 0;
       if (!strcmp(left(tex, 10), "\\mbox{\\rm ")) { /* Token not in table */
         unknownnew = 1;
       }
-      alphold = isalpha(lastTex[0]);
+      alphold = isalpha((unsigned char)(lastTex[0]));
       unknownold = 0;
       if (!strcmp(left(lastTex, 10), "\\mbox{\\rm ")) { /* Token not in table*/
         unknownold = 1;
@@ -3533,15 +3653,15 @@ vstring getTexLongMath(nmbrString *mathString)
       /* Put thin space only between letters and/or unknowns  11/3/94 */
       if ((alphold || unknownold) && (alphnew || unknownnew)) {
         /* Put additional thin space between two letters */
-        /* 27-Jul-05 nm Added SIMPLE_TEX */
-        if (simpleTexFlag) {
+        /* 27-Jul-05 nm Added for new LaTeX output */
+        if (!oldTexFlag) {
           let(&texLine, cat(texLine, "\\,", tex, " ", NULL));
         } else {
           let(&texLine, cat(texLine, "\\m{\\,", tex, "}", NULL));
         }
       } else {
-        /* 27-Jul-05 nm Added SIMPLE_TEX */
-        if (simpleTexFlag) {
+        /* 27-Jul-05 nm Added for new LaTeX output */
+        if (!oldTexFlag) {
           let(&texLine, cat(texLine, "", tex, " ", NULL));
         } else {
           let(&texLine, cat(texLine, "\\m{", tex, "}", NULL));
@@ -3584,7 +3704,7 @@ vstring getTexLongMath(nmbrString *mathString)
          "E. x x = y".  E.g. cla4egf */
       if (pos >=2) {
         /* Match a token starting with a letter */
-        if (isalpha(mathToken[mathString[pos]].tokenName[0])) {
+        if (isalpha((unsigned char)(mathToken[mathString[pos]].tokenName[0]))) {
           /* and make sure its length is 1 */
           if (!(mathToken[mathString[pos]].tokenName[1])) {
             /* See if it's 1st letter in a quantified expression */
@@ -3607,7 +3727,8 @@ vstring getTexLongMath(nmbrString *mathString)
         /* See if the next token is "suc" */
         if (!strcmp(mathToken[mathString[pos]].tokenName, "suc")) {
           /* Match a token starting with a letter for the current token */
-          if (isalpha(mathToken[mathString[pos - 1]].tokenName[0])) {
+          if (isalpha(
+              (unsigned char)(mathToken[mathString[pos - 1]].tokenName[0]))) {
             /* and make sure its length is 1 */
             if (!(mathToken[mathString[pos - 1]].tokenName[1])) {
               let(&texLine, cat(texLine, " ", NULL)); /* Add a space */
@@ -3658,75 +3779,89 @@ vstring getTexLongMath(nmbrString *mathString)
 
 
 /* Added 18-Sep-03 (broken out of metamath.c for better modularization) */
-/* Returns the HTML code, for GIFs (!altHtmlFlag) or Unicode (altHtmlFlag),
-   for a statement's hypotheses and assertion in the form
+/* Returns the TeX, or HTML code for GIFs (!altHtmlFlag) or Unicode
+   (altHtmlFlag), for a statement's hypotheses and assertion in the form
    hyp & ... & hyp => assertion */
 /* Warning: The caller must deallocate the returned vstring (i.e. this
    function cannot be used in let statements but must be assigned to
    a local vstring for local deallocation) */
-vstring getHTMLHypAndAssertion(long statemNum)
+vstring getTexOrHtmlHypAndAssertion(long statemNum)
 {
   long reqHyps, essHyps, n;
   nmbrString *nmbrTmpPtr; /* Pointer only; not allocated directly */
-  vstring htmlCode = "";
+  vstring texOrHtmlCode = "";
   vstring str2 = "";
   /* Count the number of essential hypotheses essHyps */
   essHyps = 0;
   reqHyps = nmbrLen(statement[statemNum].reqHypList);
-  let(&htmlCode, "");
+  let(&texOrHtmlCode, "");
   for (n = 0; n < reqHyps; n++) {
     if (statement[statement[statemNum].reqHypList[n]].type
         == (char)e__) {
       essHyps++;
-      if (htmlCode[0]) { /* Add '&' between hypotheses */
-        if (altHtmlFlag) {
+      if (texOrHtmlCode[0]) { /* Add '&' between hypotheses */
+        if (!htmlFlag) {
           /* Hard-coded for set.mm! */
-          let(&htmlCode, cat(htmlCode,
-              /* 8/8/03 - Changed from Symbol to Unicode */
-  /* "&nbsp;&nbsp;&nbsp;<FONT FACE=\"Symbol\"> &#38;</FONT>&nbsp;&nbsp;&nbsp;" */
-              "&nbsp;&nbsp;&nbsp; &amp;&nbsp;&nbsp;&nbsp;"
+          let(&texOrHtmlCode, cat(texOrHtmlCode,
+                 "\\quad\\&\\quad "
               ,NULL));
         } else {
-          /* Hard-coded for set.mm! */
-          let(&htmlCode, cat(htmlCode,
-         "&nbsp;&nbsp;&nbsp;<IMG SRC='amp.gif' WIDTH=12 HEIGHT=19 ALT='&amp;'"
-              ," ALIGN=TOP>&nbsp;&nbsp;&nbsp;"
-              ,NULL));
+          if (altHtmlFlag) {
+            /* Hard-coded for set.mm! */
+            let(&texOrHtmlCode, cat(texOrHtmlCode,
+                /* 8/8/03 - Changed from Symbol to Unicode */
+/* "&nbsp;&nbsp;&nbsp;<FONT FACE=\"Symbol\"> &#38;</FONT>&nbsp;&nbsp;&nbsp;" */
+                "&nbsp;&nbsp;&nbsp; &amp;&nbsp;&nbsp;&nbsp;"
+                ,NULL));
+          } else {
+            /* Hard-coded for set.mm! */
+            let(&texOrHtmlCode, cat(texOrHtmlCode,
+          "&nbsp;&nbsp;&nbsp;<IMG SRC='amp.gif' WIDTH=12 HEIGHT=19 ALT='&amp;'"
+                ," ALIGN=TOP>&nbsp;&nbsp;&nbsp;"
+                ,NULL));
+          }
         }
-      }
+      } /* if texOrHtmlCode[0] */
       /* Construct HTML hypothesis */
       nmbrTmpPtr = statement[statement[statemNum].reqHypList[n]].mathString;
       let(&str2, "");
       str2 = getTexLongMath(nmbrTmpPtr);
-      let(&htmlCode, cat(htmlCode, str2, NULL));
+      let(&texOrHtmlCode, cat(texOrHtmlCode, str2, NULL));
     }
   }
   if (essHyps) {  /* Add big arrow if there were hypotheses */
-    if (altHtmlFlag) {
+    if (!htmlFlag) {
       /* Hard-coded for set.mm! */
-      let(&htmlCode, cat(htmlCode,
-          /* 8/8/03 - Changed from Symbol to Unicode */
-/* "&nbsp;&nbsp;&nbsp;<FONT FACE=\"Symbol\"> &#222;</FONT>&nbsp;&nbsp;&nbsp;" */
- /* 29-Aug-2008 nm - added sans-serif to work around FF3 bug that produces
-    huge character heights otherwise */
-        /*  "&nbsp;&nbsp;&nbsp; &#8658;&nbsp;&nbsp;&nbsp;" */
-    "&nbsp;&nbsp;&nbsp; <FONT FACE=sans-serif>&#8658;</FONT>&nbsp;&nbsp;&nbsp;"
+      let(&texOrHtmlCode, cat(texOrHtmlCode,
+                 "\\quad\\Rightarrow\\quad "
           ,NULL));
     } else {
-      /* Hard-coded for set.mm! */
-      let(&htmlCode, cat(htmlCode,
-        "&nbsp;&nbsp;&nbsp;<IMG SRC='bigto.gif' WIDTH=15 HEIGHT=19 ALT='=&gt;'"
-          ," ALIGN=TOP>&nbsp;&nbsp;&nbsp;"
-          ,NULL));
+      if (altHtmlFlag) {
+        /* Hard-coded for set.mm! */
+        let(&texOrHtmlCode, cat(texOrHtmlCode,
+            /* 8/8/03 - Changed from Symbol to Unicode */
+/* "&nbsp;&nbsp;&nbsp;<FONT FACE=\"Symbol\"> &#222;</FONT>&nbsp;&nbsp;&nbsp;" */
+ /* 29-Aug-2008 nm - added sans-serif to work around FF3 bug that produces
+      huge character heights otherwise */
+          /*  "&nbsp;&nbsp;&nbsp; &#8658;&nbsp;&nbsp;&nbsp;" */
+      "&nbsp;&nbsp;&nbsp; <FONT FACE=sans-serif>&#8658;</FONT>&nbsp;&nbsp;&nbsp;"
+            ,NULL));
+      } else {
+        /* Hard-coded for set.mm! */
+        let(&texOrHtmlCode, cat(texOrHtmlCode,
+          "&nbsp;&nbsp;&nbsp;<IMG SRC='bigto.gif' WIDTH=15 HEIGHT=19 ALT='=&gt;'"
+            ," ALIGN=TOP>&nbsp;&nbsp;&nbsp;"
+            ,NULL));
+      }
     }
   }
-  /* Construct HTML assertion */
+  /* Construct TeX or HTML assertion */
   nmbrTmpPtr = statement[statemNum].mathString;
   let(&str2, "");
   str2 = getTexLongMath(nmbrTmpPtr);
-  let(&htmlCode, cat(htmlCode, str2, NULL));
+  let(&texOrHtmlCode, cat(texOrHtmlCode, str2, NULL));
 
   /* Deallocate memory */
   let(&str2, "");
-  return htmlCode;
+  return texOrHtmlCode;
 }

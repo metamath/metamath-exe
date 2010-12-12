@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2008  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2010  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -11,6 +11,9 @@ extern long unifTrialCount;
                      /* 0 means don't time out; 1 means start counting trials */
 extern long unifTimeouts; /* Number of timeouts so far for this command */
 extern flag hentyFilter; /* Turns Henty filter on or off */
+
+/* 26-Sep-2010 nm */
+extern flag bracketMatchInit; /* So eraseSource() (mmcmds.c) can clr it */
 
 
 nmbrString *makeSubstUnif(flag *newVarFlag,

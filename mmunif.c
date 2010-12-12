@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2006  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2010  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -128,6 +128,7 @@ long unifTrialCount = 0;
                     /* 0 means don't time out; 1 means start counting trials */
 long unifTimeouts = 0; /* Number of timeouts so far for this command */
 flag hentyFilter = 1; /* Default to ON (turn OFF for debugging). */
+flag bracketMatchInit = 0; /* Global so eraseSource() (mmcmds.c) can clr it */
 
 /* Additional prototypes */
 void hentyNormalize(nmbrString **hentyVars, nmbrString **hentyVarStart,
@@ -343,6 +344,13 @@ char unify(
   flag impossible;
   long stmt;
 
+  /* 26-Sep-2010 nm For bracket matching heuristic for set.mm */
+  static char bracketMatchOn; /* 26-Sep-2010 nm Default is 'on' */
+  /* static char bracketMatchInit = 0; */ /* Global so ERASE can init it */
+  long bracketScanStart, bracketScanStop; /* For one-time $a scan */
+  flag bracketMismatchFound;
+
+
 /*E*/long d;
 /*E*/vstring tmpStr = "";
 /*E*/let(&tmpStr,tmpStr);
@@ -356,6 +364,7 @@ char unify(
   /* Initialization to avoid compiler warning (should not be theoretically
      necessary) */
   p = 0;
+  bracketMismatchFound = 0;
 
   /* Fast early exit -- first or last constants of schemes don't match */
   if (mathToken[schemeA[0]].tokenType == (char)con__) {
@@ -763,88 +772,150 @@ char unify(
     goto backtrack;
   }
 
+  /************* Start of 26-Sep-2010 *************/
+  /* Bracket matching is customized to set.mm to result in fewer ambiguous
+     unifications. */
+  /* 26-Sep-2010 nm Automatically disable bracket matching if any $a has
+     unmatched brackets */
+  /* The static variable bracketMatchInit tells us to check all $a's
+     if it is 0; if 1, skip the $a checking.  Make sure that the RESET
+     command sets bracketMatchInit=0. */
+  /* ???  To do:  put individual bracket type checks into a loop or
+     function call for code efficiency (but don't slow down program); maybe
+     read the bracket types to check from a list; maybe refine so that only
+     the mismatched bracket types found in the $a scan are skipped, but
+     matched one are not */
+  for (i = bracketMatchInit; i <= 1; i++) {
+    /* This loop has 2 passes (0 and 1) if bracketMatchInit=0 to set
+       bracketMatchOn = 0 or 1, and 1 pass otherwise */
+    bracketMismatchFound = 0;  /* Don't move down; needed for break below */
+    if (bracketMatchInit == 0) {  /* Initialization pass */
+      if (i != 0) bug(1908);
+      /* Scan all ($a) statements */
+      bracketScanStart = 1;
+      bracketScanStop = statements;
+    } else {    /* Normal pass */
+      if (i != 1) bug(1909);
+      if (!bracketMatchOn) break; /* Skip the whole bracket check because a
+          mismatched bracket was found in some $a in the initialization pass */
+      /* Set dummy parameters to force a single loop pass */
+      bracketScanStart = 0;
+      bracketScanStop = 0;
+    }
+    for (m = bracketScanStart; m <= bracketScanStop; m++) {
+      if (bracketMatchInit == 0) {  /* Initialization pass */
+        if (statement[m].type != a__) continue;
+        nmbrTmpPtr = statement[m].mathString;
+      } else {  /* Normal pass */
+        nmbrTmpPtr = substitution;
+      }
+      j = nmbrLen(nmbrTmpPtr);
+
+      /* Make sure left and right parentheses match */
+      pairingMismatches = 0; /* Counter of parens: + for "(" and - for ")" */
+      for (k = 0; k < j; k++) {
+        mToken = mathToken[nmbrTmpPtr[k]].tokenName;
+        if (mToken[0] == '(' && mToken[1] == 0 ) {
+          pairingMismatches++;
+        } else if (mToken[0] == ')' && mToken[1] == 0 ) {
+          pairingMismatches--;
+          if (pairingMismatches < 0) break; /* Detect wrong order */
+        }
+      } /* Next k */
+      if (pairingMismatches != 0) {
+        bracketMismatchFound = 1;
+        break;
+      }
+
+      /* Make sure left and right braces match */
+      pairingMismatches = 0; /* Counter of braces: + for "{" and - for "}" */
+      for (k = 0; k < j; k++) {
+        mToken = mathToken[nmbrTmpPtr[k]].tokenName;
+        if (mToken[0] == '{' && mToken[1] == 0 ) pairingMismatches++;
+        else
+          if (mToken[0] == '}' && mToken[1] == 0 ) {
+            pairingMismatches--;
+            if (pairingMismatches < 0) break; /* Detect wrong order */
+          }
+      } /* Next k */
+      if (pairingMismatches != 0) {
+        bracketMismatchFound = 1;
+        break;
+      }
+
+      /* Make sure left and right brackets match */  /* Added 12-Nov-05 nm */
+      pairingMismatches = 0; /* Counter of brackets: + for "[" and - for "]" */
+      for (k = 0; k < j; k++) {
+        mToken = mathToken[nmbrTmpPtr[k]].tokenName;
+        if (mToken[0] == '[' && mToken[1] == 0 )
+          pairingMismatches++;
+        else
+          if (mToken[0] == ']' && mToken[1] == 0 ) {
+            pairingMismatches--;
+            if (pairingMismatches < 0) break; /* Detect wrong order */
+          }
+      } /* Next k */
+      if (pairingMismatches != 0) {
+        bracketMismatchFound = 1;
+        break;
+      }
+
+      /* Make sure left and right triangle brackets match */
+      pairingMismatches = 0; /* Counter of brackets: + for "<.", - for ">." */
+      for (k = 0; k < j; k++) {
+        mToken = mathToken[nmbrTmpPtr[k]].tokenName;
+        if (mToken[1] == 0) continue;
+        if (mToken[0] == '<' && mToken[1] == '.' && mToken[2] == 0 )
+            pairingMismatches++;
+        else
+          if (mToken[0] == '>' && mToken[1] == '.' && mToken[2] == 0 ) {
+            pairingMismatches--;
+            if (pairingMismatches < 0) break; /* Detect wrong order */
+          }
+      } /* Next k */
+      if (pairingMismatches != 0) {
+        bracketMismatchFound = 1;
+        break;
+      }
+
+      /* Make sure underlined brackets match */  /* Added 12-Nov-05 nm */
+      pairingMismatches = 0; /* Counter of brackets: + for "[_", - for "]_" */
+      for (k = 0; k < j; k++) {
+        mToken = mathToken[nmbrTmpPtr[k]].tokenName;
+        if (mToken[1] == 0) continue;
+        if (mToken[0] == '[' && mToken[1] == '_' && mToken[2] == 0 )
+            pairingMismatches++;
+        else
+          if (mToken[0] == ']' && mToken[1] == '_' && mToken[2] == 0 ) {
+            pairingMismatches--;
+            if (pairingMismatches < 0) break; /* Detect wrong order */
+          }
+      } /* Next k */
+      if (pairingMismatches != 0) {
+        bracketMismatchFound = 1;
+        break;
+      }
+    } /* next m */
+
+    if (bracketMatchInit == 0) {   /* Initialization pass */
+      /* We've finished the one-time $a scan.  Set flags accordingly. */
+      if (bracketMismatchFound) { /* Some $a has a bracket mismatch */
+        printLongLine(cat("The bracket matching unification heuristic was",
+           " turned off for this database.", NULL),
+           "    ", " ");
+        bracketMatchOn = 0; /* Turn off static flag for this database */
+      } else {    /* Normal pass */
+        bracketMatchOn = 1; /* Turn it on */
+      }
+/*E*/if(db6)print2("bracketMatchOn = %ld\n", (long)bracketMatchOn);
+      bracketMatchInit = 1; /* We're done with the one-time $a scan */
+    }
+  } /* next i */
+
+  if (bracketMismatchFound) goto backtrack;
+  /************* End of 26-Sep-2010 *************/
+
   j = nmbrLen(substitution);
-
-  /*???MATCHING PARENTHESES HEURISTIC - MAKE THIS USER-SETTABLE???*/
-  /* Make sure left and right parentheses match */
-  pairingMismatches = 0; /* Counter of parentheses: + for "(" and - for ")" */
-  for (k = 0; k < j; k++) {
-    mToken = mathToken[substitution[k]].tokenName;
-    if (mToken[0] == '(' && mToken[1] == 0 ) pairingMismatches++;
-    else
-      if (mToken[0] == ')' && mToken[1] == 0 ) {
-        pairingMismatches--;
-        if (pairingMismatches < 0) break; /* 15-Nov-05 nm Detect wrong order */
-      }
-  } /* Next k */
-  if (pairingMismatches) {
-    goto backtrack;
-  }
-
-  /* Make sure left and right braces match */
-  pairingMismatches = 0; /* Counter of braces: + for "{" and - for "}" */
-  for (k = 0; k < j; k++) {
-    mToken = mathToken[substitution[k]].tokenName;
-    if (mToken[0] == '{' && mToken[1] == 0 ) pairingMismatches++;
-    else
-      if (mToken[0] == '}' && mToken[1] == 0 ) {
-        pairingMismatches--;
-        if (pairingMismatches < 0) break; /* 15-Nov-05 nm Detect wrong order */
-      }
-  } /* Next k */
-  if (pairingMismatches) {
-    goto backtrack;
-  }
-
-  /* Make sure left and right brackets match */  /* Added 12-Nov-05 nm */
-  pairingMismatches = 0; /* Counter of brackets: + for "[" and - for "]" */
-  for (k = 0; k < j; k++) {
-    mToken = mathToken[substitution[k]].tokenName;
-    if (mToken[0] == '[' && mToken[1] == 0 )
-      pairingMismatches++;
-    else
-      if (mToken[0] == ']' && mToken[1] == 0 ) {
-        pairingMismatches--;
-        if (pairingMismatches < 0) break; /* 15-Nov-05 nm Detect wrong order */
-      }
-  } /* Next k */
-  if (pairingMismatches) {
-    goto backtrack;
-  }
-
-  /* Make sure left and right triangle brackets match */
-  pairingMismatches = 0; /* Counter of brackets: + for "<.", - for ">." */
-  for (k = 0; k < j; k++) {
-    mToken = mathToken[substitution[k]].tokenName;
-    if (mToken[1] == 0) continue;
-    if (mToken[0] == '<' && mToken[1] == '.' && mToken[2] == 0 )
-        pairingMismatches++;
-    else
-      if (mToken[0] == '>' && mToken[1] == '.' && mToken[2] == 0 ) {
-        pairingMismatches--;
-        if (pairingMismatches < 0) break; /* 15-Nov-05 nm Detect wrong order */
-      }
-  } /* Next k */
-  if (pairingMismatches) {
-    goto backtrack;
-  }
-
-  /* Make sure underlined brackets match */  /* Added 12-Nov-05 nm */
-  pairingMismatches = 0; /* Counter of brackets: + for "[_", - for "]_" */
-  for (k = 0; k < j; k++) {
-    mToken = mathToken[substitution[k]].tokenName;
-    if (mToken[1] == 0) continue;
-    if (mToken[0] == '[' && mToken[1] == '_' && mToken[2] == 0 )
-        pairingMismatches++;
-    else
-      if (mToken[0] == ']' && mToken[1] == '_' && mToken[2] == 0 ) {
-        pairingMismatches--;
-        if (pairingMismatches < 0) break; /* 15-Nov-05 nm Detect wrong order */
-      }
-  } /* Next k */
-  if (pairingMismatches) {
-    goto backtrack;
-  }
 
   /* 8/29/99 - Quick scan to reject some impossible unifications: If the
      first symbol in a substitution is a constant, it must match

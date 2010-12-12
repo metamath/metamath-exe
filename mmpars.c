@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2008  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2010  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -16,6 +16,7 @@
 #include "mminou.h"
 #include "mmpars.h"
 #include "mmpfas.h" /* Needed for parseMathTokens */
+#include "mmunif.h" /* Needed for minSubstLen */
 
 long potentialStatements; /* Potential statements in source file (upper
                                  limit) for memory allocation purposes */
@@ -208,7 +209,9 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
       } else {
         /* if (!insideComment && !insideLineComment) { */
           if (!isgraph((unsigned char)tmpch) && !isspace((unsigned char)tmpch)) {
-            rawSourceError(fileBuf, fbPtr, 1, lineNum++, input_fn,
+            /* 19-Oct-2010 nm Used to bypass "lineNum++" below, which messed up
+               line numbering. */
+            rawSourceError(fileBuf, fbPtr, 1, lineNum, input_fn,
                 cat("Illegal character (ASCII code ",str((unsigned char)tmpch),
                 " decimal).",NULL));
         /* } */
@@ -1344,6 +1347,24 @@ void parseStatements(void)
                 }
               }
             }
+
+
+            /************** Start of 9-Dec-2010 ****************/
+            /* 9-Dec-2010 nm Make sure that no constant has the same name
+               as a variable or vice-versa */
+            k = 0; /* Flag for $c */
+            m = 0; /* Flag for $v */
+            for (j = lowerKey; j <= upperKey; j++) {
+              if (mathToken[mathKey[j]].tokenType == (char)con__) k = 1;
+              if (mathToken[mathKey[j]].tokenType == (char)var__) m = 1;
+            }
+            if ((k == 1 && mathToken[tokenNum].tokenType == (char)var__) ||
+                (m == 1 && mathToken[tokenNum].tokenType == (char)con__)) {
+               mathTokenError(i, nmbrTmpPtr, stmt,
+                   "A symbol may not be both a constant and a variable.");
+            }
+            /************** End of 9-Dec-2010 ****************/
+
           }
 
           /* Flag the token as active */
@@ -2093,6 +2114,115 @@ void parseStatements(void)
 
         break;  /* Switch case break */
     }
+
+    type = statement[stmt].type;
+
+    /************** Start of 27-Sep-2010 ****************/
+    /* 27-Sep-2010 nm If a $a statement consists of a single constant,
+       e.g. "$a wff $.", it means an empty expression (wff) is allowed.
+       Before the user had to allow this manually with
+       SET EMPTY_SUBSTITUTION ON; now it is done automatically. */
+    type = statement[stmt].type;
+    if (type == a__) {
+      if (minSubstLen) {
+        if (statement[stmt].mathStringLen == 1) {
+          minSubstLen = 0;
+          printLongLine(cat("SET EMPTY_SUBSTITUTION was",
+             " turned ON (allowed) for this database.", NULL),
+             "    ", " ");
+          /* More detailed but more distracting message:
+          printLongLine(cat("Statement \"", statement[stmt].labelName,
+             "\"  line ", str(statement[stmt].lineNum),
+             " allows empty expressions, so SET EMPTY_SUBSTITUTION was",
+             " turned ON (allowed) for this database.", NULL),
+             "    ", " ");
+          */
+        }
+      }
+    }
+    /************** End of 27-Sep-2010 ****************/
+
+    /************** Start of 25-Sep-2010 ****************/
+    /* 25-Sep-2010 nm Ensure the current Metamath spec is met:  "There may
+       not be be two active $f statements containing the same variable.  Each
+       variable in a $e, $a, or $p statement must exist in an active $f
+       statement."  (Metamath book, p. 94) */
+    /* This section of code is stand-alone and may be removed without side
+       effects (other than less stringent error checking). */
+    /* ??? To do (maybe):  This might be better placed in-line with the scan
+       above, for faster speed and to get the pointer to the token for the
+       error message, but it would require a careful code analysis above. */
+    if (type == a__ || type == p__) {
+      /* Scan each hypothesis (and the statement itself in last pass) */
+      reqHyps = nmbrLen(statement[stmt].reqHypList);
+      for (i = 0; i <= reqHyps; i++) {
+        if (i < reqHyps) {
+          m = (statement[stmt].reqHypList)[i];
+        } else {
+          m = stmt;
+        }
+        if (statement[m].type != f__) { /* Check $e,$a,$p */
+          /* This block implements: "Each variable in a $e, $a, or $p
+             statement must exist in an active $f statement" (Metamath
+             book p. 94). */
+          nmbrTmpPtr = statement[m].mathString;
+          /* Scan all the vars in the $e (i<reqHyps) or $a/$p (i=reqHyps) */
+          for (j = 0; j < statement[m].mathStringLen; j++) {
+            tokenNum = nmbrTmpPtr[j];
+            if (mathToken[tokenNum].tokenType == (char)con__) continue;
+                                            /* Ignore constants */
+            p = 0;  /* Initialize flag that we found a $f with the variable */
+            /* Scan all the mandatory $f's before this $e,$a,$p */
+            for (k = 0; k < i; k++) {
+              n = (statement[stmt].reqHypList)[k];
+              if (statement[n].type != f__) continue; /* Only check $f */
+              if (statement[n].mathStringLen != 2) continue; /* This was
+                  already verified earlier; but if there was an error, don't
+                  cause memory violation by going out of bounds */
+              if ((statement[n].mathString)[1] == tokenNum) {
+                p = 1;  /* Set flag that we found a $f with the variable */
+                break;
+              }
+            } /* next k ($f hyp scan) */
+            if (!p) {
+              sourceError(statement[m].mathSectionPtr/*fbPtr*/,
+                  0/*tokenLen*/,
+                  m/*stmt*/, cat(
+                  "The variable \"", mathToken[tokenNum].tokenName,
+                  "\" does not appear in an active \"$f\" statement.", NULL));
+            }
+          } /* next j (variable scan) */
+        } else { /* statement[m].type == f__ */
+          /* This block implements: "There may not be be two active $f
+             statements containing the same variable" (Metamath book p. 94). */
+          /* Check for duplicate vars in active $f's */
+          if (statement[m].mathStringLen != 2) continue;  /* This was
+                  already verified earlier; but if there was an error, don't
+                  cause memory violation by going out of bounds */
+          tokenNum = (statement[m].mathString)[1];
+          /* Scan all the mandatory $f's before this $f */
+          for (k = 0; k < i; k++) {
+            n = (statement[stmt].reqHypList)[k];
+            if (statement[n].type != f__) continue; /* Only check $f */
+            if (statement[n].mathStringLen != 2) continue;  /* This was
+                  already verified earlier; but if there was an error, don't
+                  cause memory violation by going out of bounds */
+            if ((statement[n].mathString)[1] == tokenNum) {
+              /* We found 2 $f's with the same variable */
+              sourceError(statement[m].mathSectionPtr/*fbPtr*/,
+                  0/*tokenLen*/,
+                  m/*stmt*/, cat(
+                  "The variable \"", mathToken[tokenNum].tokenName,
+                "\" already appears in the earlier active \"$f\" statement \"",
+                  statement[n].labelName, "\" on line ",
+                  str(statement[n].lineNum), ".", NULL));
+              break; /* Optional: suppresses add'l error msgs for this stmt */
+            }
+          } /* next k ($f hyp scan) */
+        } /* if not $f else is $f */
+      } /* next i ($e hyp scan of this statement, or its $a/$p) */
+    } /* if stmt is $a or $p */
+    /************** End of 25-Sep-2010 ****************/
 
   } /* Next stmt */
 

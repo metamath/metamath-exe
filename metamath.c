@@ -5,9 +5,37 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.07.50 21-Feb-2010"
-/* 0.07.50 21-Feb-2010 nm mminou.c - ^D now exits metamath, to fix infinite
-   loop bug reported by Cai Yufei */
+#define MVERSION "0.07.59 11-Dec-2010"
+/* 0.07.59 11-Dec-2010 nm mmpfas.c - increased default SET SEARCH_LIMIT from
+   10000 to 25000 to accomodate df-plig web page in set.mm */
+/* 0.07.58 9-Dec-2010 nm mmpars.c - detect if same symbol is used with both
+   $c and $v, in order to conform with Metamath spec */
+/* 0.07.57 19-Oct-2010 nm mmpars.c - fix bug causing incorrect line count
+   for error messages when non-ASCII character was found; mminou.h -
+   increase SET WIDTH maximum from 999 to 9999 */
+/* 0.07.56 27-Sep-2010 nm mmpars.c, mmpfas.c - check for $a's with
+   one token e.g. "$a wff $."; if found, turn SET EMPTY_SUBSTITUTION ON
+   automatically.  (Suggested by Mel O'Cat; patent pending.) */
+/* 0.07.55 26-Sep-2010 nm mmunif.c, mmcmds.c, mmunif.h - check for mismatched
+   brackets in all $a's, so that if there are any, the bracket matching
+   algorithm (for fewer ambiguous unifications) in mmunif.c will be turned
+   off. */
+/* 0.07.54 25-Sep-2010 nm mmpars.c - added $f checking to conform to the
+   current Metamath spec, so footnote 2 on p. 92 of Metamath book is
+   no longer applicable. */
+/* 0.07.53 24-Sep-2010 nm mmveri.c - fixed bug(2106), reported by Michal
+   Burger */
+/* 0.07.52 14-Sep-2010 nm metamath.c, mmwtex.h, mmwtex.c, mmcmds.c,
+   mmcmdl.c, mmhlpb.c - rewrote the LaTeX output for easier hand-editing
+   and embedding in LaTeX documents.  The old LaTeX output is still
+   available with /OLD_TEX on OPEN TEX, SHOW STATEMENT, and SHOW PROOF,
+   but it is obsolete and will be deleted eventually if no one objects.  The
+   new /TEX output also replaces the old /SIMPLE_TEX, which was removed. */
+/* 0.07.51 9-Sep-2010 Stefan Allen mmwtex.c - put hyperlinks on hypothesis
+   label references in SHOW STATEMENT * /HTML, ALT_HTML output */
+/* 0.07.50 21-Feb-2010 nm mminou.c - "./metamath < empty", where "empty" is a
+   0-byte file, now exits metamath instead of producing an infinite loop.
+   Also, ^D now exits metamath.  Reported by Cai Yufei */
 /* 0.07.49 31-Jan-2010 nm mmcmds.c - Lemmon-style proofs (SHOW PROOF xxx
    /LEMON/RENUMBER) no longer have steps with dummy labels; instead, steps
    are now the same as in HTML page proofs.  (There is a line to comment
@@ -904,7 +932,11 @@ void command(int argc, char *argv[])
                     lines++;
                     changedLines++;
                   }
-                  p1 = p1 - strlen(fullArg[2]) + strlen(newstr);
+                  /* 14-Sep-2010 nm Continue the search after the replacement
+                     string, so that "SUBST 1.tmp abbb ab a ''" will change
+                     "abbbab" to "abba" rather than "aa" */
+                  p1 = p1 + strlen(newstr) - 1;
+                  /* p1 = p1 - strlen(fullArg[2]) + strlen(newstr); */ /* bad */
                   if (q != -1) break;
                 }
               }
@@ -1625,7 +1657,7 @@ void command(int argc, char *argv[])
             if (!j) break;
             if (j) {
               for (k = j + 4; k <= strlen(str1) + 1; k++) {
-                if (!isdigit(str1[k - 1])) {
+                if (!isdigit((unsigned char)(str1[k - 1]))) {
                   let(&str1, cat(left(str1, j + 2),
                       space(4 - (k - (j + 4))), right(str1, j + 3), NULL));
                   /* Add ### after page number as marker */
@@ -1642,7 +1674,7 @@ void command(int argc, char *argv[])
           while (1) {
             j = instr(j + 1, str1, "["); /* Find reference (not robust) */
             if (!j) break;
-            if (!isalnum(str1[j])) continue; /* Not start of reference */
+            if (!isalnum((unsigned char)(str1[j]))) continue; /* Not start of reference */
             n++;
             /* Backtrack from [reference] to a starting keyword */
             m = 0;
@@ -1713,7 +1745,7 @@ void command(int argc, char *argv[])
             let(&str2, seg(str1, m, p - 1));     /* "Theorem #" */
             let(&str3, seg(str1, p + 1, q - 1));  /* "[bibref]" w/out [] */
             let(&str4, seg(str1, q + 1, s - 1)); /* " p. nnnn" */
-            str2[0] = toupper(str2[0]);
+            str2[0] = toupper((unsigned char)(str2[0]));
             /* Eliminate noise like "of" in "Theorem 1 of [bibref]" */
             for (k = strlen(str2); k >=1; k--) {
               if (0
@@ -2053,7 +2085,7 @@ void command(int argc, char *argv[])
 
             /* Get HTML hypotheses => assertion */
             let(&str4, "");
-            str4 = getHTMLHypAndAssertion(s); /* In mmwtex.c */
+            str4 = getTexOrHtmlHypAndAssertion(s); /* In mmwtex.c */
             printLongLine(cat("</TD></TR><TR",
 
                   /*
@@ -2574,7 +2606,7 @@ void command(int argc, char *argv[])
               case -1: /* Falls through to next case */
               case 0:
                 /* Count the number of essential hypotheses k */
-                /* Not needed anymore??? since getHTMLHypAndAssertion() */
+                /* Not needed anymore??? since getTexOrHtmlHypAndAssertion() */
                 /*
                 k = 0;
                 j = nmbrLen(statement[i].reqHypList);
@@ -2589,7 +2621,8 @@ void command(int argc, char *argv[])
                 if (s == 0 || briefHtmlFlag) {
                   let(&str1, "");
                   /* 18-Sep-03 Get HTML hypotheses => assertion */
-                  str1 = getHTMLHypAndAssertion(i); /* In mmwtex.c */
+                  str1 = getTexOrHtmlHypAndAssertion(i);
+                                                /* In mmwtex.c */
                   let(&str1, cat(str1, "</TD></TR>", NULL));
                 }
 
@@ -2628,8 +2661,8 @@ void command(int argc, char *argv[])
                 if (s == 0 || briefHtmlFlag) {
                               /* Set s == 0 here for Web site version,
                                  s == s for symbol version of theorem list */
-                  /* The below has been replaced by getHTMLHypAndAssertion(i)
-                     above. */
+                  /* The below has been replaced by
+                     getTexOrHtmlHypAndAssertion(i) above. */
                   /*printTexLongMath(statement[i].mathString, "", "", 0, 0);*/
                   /*outputToString = 1;*/ /* Is reset by printTexLongMath */
                 } else {
@@ -2809,17 +2842,17 @@ void command(int argc, char *argv[])
     if (cmdMatches("SHOW STATEMENT") && !switchPos("/ HTML")) {
 
       texFlag = 0;
-      /* 27-Jul-05 nm Added SIMPLE_TEX */
-      if (switchPos("/ TEX") || switchPos("/ SIMPLE_TEX")
+      /* 14-Sep-2010 nm Added OLD_TEX */
+      if (switchPos("/ TEX") || switchPos("/ OLD_TEX")
           || switchPos("/ HTML"))
         texFlag = 1;
 
       briefFlag = 1;
-      simpleTexFlag = 0;
+      oldTexFlag = 0;
       if (switchPos("/ TEX")) briefFlag = 0;
-      /* 27-Jul-05 nm Added SIMPLE_TEX */
-      if (switchPos("/ SIMPLE_TEX")) briefFlag = 0;
-      if (switchPos("/ SIMPLE_TEX")) simpleTexFlag = 1;
+      /* 14-Sep-2010 nm Added OLD_TEX */
+      if (switchPos("/ OLD_TEX")) briefFlag = 0;
+      if (switchPos("/ OLD_TEX")) oldTexFlag = 1;
       if (switchPos("/ FULL")) briefFlag = 0;
 
       commentOnlyFlag = 0;
@@ -2895,8 +2928,8 @@ void command(int argc, char *argv[])
 
       if (texFlag && !htmlFlag) {
         print2("The LaTeX source was written to \"%s\".\n", texFileName);
-        /* 27-Jul-05 nm Added SIMPLE_TEX */
-        simpleTexFlag = 0;
+        /* 14-Sep-2010 nm Added OLD_TEX */
+        oldTexFlag = 0;
       }
       continue;
     } /* (cmdMatches("SHOW STATEMENT") && !switchPos("/ HTML")) */
@@ -3203,9 +3236,14 @@ void command(int argc, char *argv[])
       if (i) noIndentFlag = 1;
       i = switchPos("/ START_COLUMN");
       if (i) splitColumn = val(fullArg[i + 1]);
-      i = switchPos("/ TEX") || switchPos("/ HTML");
+      i = switchPos("/ TEX") || switchPos("/ HTML")
+          /* 14-Sep-2010 nm Added OLDE_TEX */
+          || switchPos("/ OLD_TEX");
       if (i) texFlag = 1;
 
+      /* 14-Sep-2010 nm Added OLD_TEX */
+      oldTexFlag = 0;
+      if (switchPos("/ OLD_TEX")) oldTexFlag = 1;
 
       if (cmdMatches("MIDI")) { /* 8/28/00 */
         midiFlag = 1;
@@ -3442,15 +3480,21 @@ void command(int argc, char *argv[])
         if (texFlag) {
           outputToString = 1; /* Flag for print2 to add to printString */
           if (!htmlFlag) {
-            print2("\n");
-            print2("\\vspace{1ex}\n");
-            printLongLine(cat("Proof of ",
-                "{\\tt ",
-                asciiToTt(statement[i].labelName),
-                "}:", NULL), "", " ");
-            print2("\n");
-            print2("\n");
-          } else {
+            if (!oldTexFlag) {
+              /* 14-Sep-2010 nm */
+              print2("\\begin{proof}\n");
+              print2("\\begin{align}\n");
+            } else {
+              print2("\n");
+              print2("\\vspace{1ex} %%1\n");
+              printLongLine(cat("Proof of ",
+                  "{\\tt ",
+                  asciiToTt(statement[i].labelName),
+                  "}:", NULL), "", " ");
+              print2("\n");
+              print2("\n");
+            }
+          } else { /* htmlFlag */
             bug(1118);
             /*???? The code below is obsolete - now down in show statement*/
             /*
@@ -3476,7 +3520,7 @@ void command(int argc, char *argv[])
              printString ourselves here */
           fprintf(texFilePtr, "%s", printString);
           let(&printString, ""); /* We'll clr it anyway */
-        } else {
+        } else { /* !texFlag */
           /* Terminal output - display the statement if wildcard is used */
           if (!pipFlag) {
             /* 30-Jan-06 nm Added single-character-match wildcard argument */
@@ -3506,12 +3550,26 @@ void command(int argc, char *argv[])
             splitColumn,
             texFlag,
             htmlFlag);
-        if (texFlag && htmlFlag) {
-          outputToString = 1;
-          print2("</TABLE>\n");
-          print2("</CENTER>\n");
-          /* print trailer will close out string later */
-          outputToString = 0;
+        if (texFlag) {
+          if (!htmlFlag) {
+            /* 14-Sep-2010 nm */
+            if (!oldTexFlag) {
+              outputToString = 1;
+              print2("\\end{align}\n");
+              print2("\\end{proof}\n");
+              print2("\n");
+              outputToString = 0;
+              fprintf(texFilePtr, "%s", printString);
+              let(&printString, "");
+            } else {
+            }
+          } else { /* htmlFlag */
+            outputToString = 1;
+            print2("</TABLE>\n");
+            print2("</CENTER>\n");
+            /* print trailer will close out string later */
+            outputToString = 0;
+          }
         }
 
         /*???CLEAN UP */
@@ -3551,6 +3609,8 @@ void command(int argc, char *argv[])
         }
         if (texFlag) {
           print2("The LaTeX source was written to \"%s\".\n", texFileName);
+         /* 14-Sep-2010 nm Added OLD_TEX */
+         oldTexFlag = 0;
         }
       }
 
@@ -3980,7 +4040,8 @@ void command(int argc, char *argv[])
          -1 = penultimate, etc.*/
       offset = 0; /* 16-Apr-06 */
       let(&str1, fullArg[1]); /* To avoid void pointer problems with fullArg */
-      if (toupper(str1[0]) == 'L' || toupper(str1[0]) == 'F') {
+      if (toupper((unsigned char)(str1[0])) == 'L'
+          || toupper((unsigned char)(str1[0])) == 'F') {
                                           /* "ASSIGN LAST" or "ASSIGN FIRST" */
                                           /* 11-Dec-05 nm */
         s = 1; /* Temporary until we figure out which step */
@@ -4040,8 +4101,8 @@ void command(int argc, char *argv[])
         /* Get the essential step flags */
         s = 0; /* Use as flag that step was found */
         nmbrLet(&essentialFlags, nmbrGetEssential(proofInProgress.proof));
-        /* if (toupper(str1[0]) == 'L') { */
-        if (toupper(str1[0]) != 'F') {   /* 16-Apr-06 */
+        /* if (toupper((unsigned char)(str1[0])) == 'L') { */
+        if (toupper((unsigned char)(str1[0])) != 'F') {   /* 16-Apr-06 */
           /* Scan proof backwards until last essential unknown step is found */
           /* 16-Apr-06 - count back 'offset' unknown steps */
           j = offset;      /* 16-Apr-06 */
@@ -4313,18 +4374,19 @@ void command(int argc, char *argv[])
 
       /* 26-Aug-2006 nm Changed "IMPROVE STEP <step>" to "IMPROVE <step>" */
       let(&str1, fullArg[1]); /* To avoid void pointer problems with fullArg */
-      if (toupper(str1[0]) != 'A') {
+      if (toupper((unsigned char)(str1[0])) != 'A') {
         /* 16-Apr-06 nm - Handle nonpositive step number: 0 = last,
            -1 = penultimate, etc.*/
         offset = 0; /* 16-Apr-06 */
         /* 10/4/99 - Added LAST - this means the last unknown step shown
            with SHOW NEW_PROOF/ESSENTIAL/UNKNOWN */
-        if (toupper(str1[0]) == 'L' || toupper(str1[0]) == 'F') {
+        if (toupper((unsigned char)(str1[0])) == 'L'
+            || toupper((unsigned char)(str1[0])) == 'F') {
                                         /* "IMPROVE LAST" or "IMPROVE FIRST" */
           s = 1; /* Temporary until we figure out which step */
           offset = 1;          /* 16-Apr-06 */
         } else {
-          if (toupper(str1[0]) == 'S') {
+          if (toupper((unsigned char)(str1[0])) == 'S') {
             print2(
            "?\"IMPROVE STEP <step>\" is obsolete.  Use \"IMPROVE <step>\".\n");
             continue;
@@ -4381,7 +4443,7 @@ void command(int argc, char *argv[])
           nmbrLet(&essentialFlags, nmbrGetEssential(proofInProgress.proof));
           /*if (cmdMatches("IMPROVE LAST")) {*/
           /*if (!cmdMatches("IMPROVE FIRST")) {*/   /* 16-Apr-06 */
-          if (toupper(str1[0]) != 'F') { /* 26-Aug-2006 */
+          if (toupper((unsigned char)(str1[0])) != 'F') { /* 26-Aug-2006 */
             /* Scan proof backwards until last essential unknown step found */
             /* 16-Apr-06 - count back 'offset' unknown steps */
             j = offset;      /* 16-Apr-06 */
@@ -4487,7 +4549,7 @@ void command(int argc, char *argv[])
 
 
       /*if (cmdMatches("IMPROVE ALL")) {*/
-      if (toupper(str1[0]) == 'A') { /* 26-Aug-2006 */
+      if (toupper((unsigned char)(str1[0])) == 'A') { /* 26-Aug-2006 */
 
         m = nmbrLen(proofInProgress.proof); /* Original proof length */
 
@@ -5233,12 +5295,19 @@ void command(int argc, char *argv[])
       } else {
         texHeaderFlag = 1;
       }
+      /* 14-Sep-2010 nm Added OLD_TEX */
+      if (switchPos("/ OLD_TEX")) {
+        oldTexFlag = 1;
+      } else {
+        oldTexFlag = 0;
+      }
       texFilePtr = fSafeOpen(texFileName,"w");
       if (!texFilePtr) continue; /* Couldn't open it (err msg was provided) */
       texFileOpenFlag = 1;
       print2("Created %s output file \"%s\".\n",
           htmlFlag ? "HTML" : "LaTeX", texFileName);
       printTexHeader(texHeaderFlag);
+      oldTexFlag = 0;
       continue;
     }
 

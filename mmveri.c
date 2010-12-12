@@ -461,6 +461,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
 /*E*/if(db7)print2("GOT TO DUMMY TOKEN\n");
               v--;
               contFlag = 1;
+              continue; /* 24-Sep-2010 nm Added missing trap to fix bug(2106) */
             }
             if (q >= bigSubstInstLen) {
               /* It overflowed the end of bigSubstInstAss; pop back a variable */
