@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2010  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2011  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -14,10 +14,13 @@ extern FILE *listFile_fp;
 extern flag outputToString;
 extern vstring printString;
 /* Global variables used by cmdInput() */
-extern flag commandFileOpenFlag;
-extern FILE *commandFilePtr;
-extern vstring commandFileName;
-extern flag commandFileSilentFlag; /* 23-Oct-2006 nm For SUBMIT ... /SILENT */
+#define MAX_COMMAND_FILE_NESTING 10
+extern long commandFileNestingLevel;
+extern FILE *commandFilePtr[MAX_COMMAND_FILE_NESTING + 1];
+extern vstring commandFileName[MAX_COMMAND_FILE_NESTING + 1];
+extern flag commandFileSilent[MAX_COMMAND_FILE_NESTING + 1];
+extern flag commandFileSilentFlag;
+                                    /* 23-Oct-2006 nm For SUBMIT ... /SILENT */
 
 extern FILE *inputDef_fp,*input_fp,*output_fp;  /* File pointers */
 extern vstring inputDef_fn,input_fn,output_fn;  /* File names */

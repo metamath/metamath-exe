@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2006  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2011  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -33,6 +33,7 @@ H("  CLEAN - Trim spaces and tabs on each line in a file; convert characters");
 H("  DELETE - Delete a section of each line in a file");
 H("  INSERT - Insert a string at a specified column in each line of a file");
 H("  SUBSTITUTE - Make a simple substitution on each line of the file");
+H("  TAG - Like ADD, but restricted to a range of lines");
 /*H("  LSUBSTITUTE - Substitute according to a match-and-substitute list");*/
 H("  SWAP - Swap the two halves of each line in a file");
 H("Other file processing commands:");
@@ -44,7 +45,6 @@ H("  NUMBER - Create a list of numbers");
 H("  PARALLEL - Put two files in parallel");
 H("  REVERSE - Reverse the order of the lines in a file");
 H("  RIGHT - Right-justify lines in a file (useful before sorting numbers)");
-H("  TAG - Tag edit updates in a program for revision control");
 H("  SORT - Sort the lines in a file with key starting at specified string");
 H("  MATCH - Extract lines containing (or not) a specified string");
 /*H("  LEXTRACT - Extract lines containing (or not) strings from a list");*/
@@ -52,6 +52,7 @@ H("  UNDUPLICATE - Eliminate duplicate occurrences of lines in a file");
 H("  DUPLICATE - Extract first occurrence of any line occurring more than");
 H("      once in a file, discarding lines occurring exactly once");
 H("  UNIQUE - Extract lines occurring exactly once in a file");
+H("  UPDATE - Update a C program for revision control");
 H(
 "  (UNDUPLICATE, DUPLICATE, and UNIQUE also sort the lines as a side effect.)");
 H("  TYPE (10 lines) - Display 10 lines of a file; similar to Unix \"head\"");
@@ -98,6 +99,28 @@ printHelp = !strcmp(helpCmd, "HELP ADD");
 H("This command adds a character string prefix and/or suffix to each");
 H("line in a file.");
 H("Syntax:  ADD <iofile> <begstr> <endstr>");
+
+/* 2-Jul-2011 nm Added TAG command */
+printHelp = !strcmp(helpCmd, "HELP TAG");
+H("TAG is the same as ADD but has 4 additional arguments that let you");
+H("specify a range of lines.  Syntax:");
+H("  TAG <iofile> <begstr> <endstr> <startmatch> <s#> <endmatch> <e#>");
+H("where");
+H("  <iofile> = input/output file");
+H("  <begstr> = string to add to beginning of each line");
+H("  <endstr> = string to add to end of each line");
+H("  <startmatch> = a string to match; if empty, match any line");
+H("  <s#> = the 1st, 2nd, etc. occurrence of <startmatch> to start the range");
+H("  <endmatch> = a string to match; if empty, match any line");
+H("  <e#> = the 1st, 2nd, etc. occurrence of <endmatch> from the");
+H("      start of range line (inclusive) after which to end the range");
+H("Example:  To add \"!\" to the end of lines 51 through 60 inclusive:");
+H("  TAG \"a.txt\" \"\" \"!\" \"\" 51 \"\" 10");
+H("Example:  To add \"@@@\" to the beginning of each line in theorem");
+H("\"abc\" through the end of its proof:");
+H("  TAG \"set.mm\" \"@@@\" \"\" \"abc $p\" 1 \"$.\" 1");
+H("so that later, SUBSTITUTE can be used to affect only those lines.  You");
+H("can remove the \"@@@\" tags with SUBSTITUTE when done.");
 
 printHelp = !strcmp(helpCmd, "HELP DELETE");
 H("This command deletes the part of a line between (and including)");
@@ -239,18 +262,18 @@ H("previously exist in 1.tmp.");
 H("Syntax:  COPY <inpfile,inpfile,...> <outfile>");
 H("Note: The COPY command may be abbreviated by C.");
 
-printHelp = !strcmp(helpCmd, "HELP TAG");
+printHelp = !strcmp(helpCmd, "HELP UPDATE");
 H("This command tags edits made to a program source.  The idea is to keep");
 H("all past history of a file in the file itself, in the form of comments.");
-H("TAG was written for a proprietary language that allowed nested C-style");
+H("UPDATE was written for a proprietary language that allowed nested C-style");
 H("comments, and it may not be generally useful without some modification.");
 H("Essentially a (Unix) diff-like algorithm looks for changes between an");
 H("original and a revised file and puts the original lines into the revised");
 H("file in the form of comments.  Currently it is not well documented and it");
-H("may be easiest just to type TAG <return> and answer the questions.  Try");
-H("it on an original and edited version of a test file to see if you find it");
-H("useful.");
-H("Syntax:  TAG <originfile> <editedinfile> <editedoutfile> <tag> <match>");
+H("may be easiest just to type UPDATE <return> and answer the questions.");
+H("Try it on an original and edited version of a test file to see if you");
+H("find it useful.");
+H("Syntax:  UPDATE <originfile> <editedinfile> <editedoutfile> <tag> <match>");
 
 printHelp = !strcmp(helpCmd, "HELP CLI");
 H("Each command line is an English-like word followed by arguments separated");
@@ -859,6 +882,10 @@ H("");
 H("Optional qualifier:");
 H("    / NO_HEADER - This qualifier prevents a standard LaTeX header and");
 H("        trailer from being included with the output LaTeX code.");
+H("Optional qualifier:");
+H("    / OLD_TEX - This qualifier produces a header with macro definitions");
+H("        for use with / OLD_TEX qualifiers of SHOW STATEMENT and SHOW");
+H("        PROOF.  It is obsolete and will be removed eventually.");
 H("");
 H("See also CLOSE TEX.");
 H("");
@@ -882,4 +909,4 @@ H("are inside, EXIT will return to Metamath.");
 H("");
 
 
-} /* help1 */
+} /* help0 */

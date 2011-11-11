@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2010  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2011  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -44,9 +44,9 @@ struct wrkProof_struct wrkProof;
    The file input_fn is assumed to be opened when this is called.
    The includeCall[] structure array is updated.  includeCalls is 0 for
    the initial call. */
-char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
+char *readRawSource(vstring inputFn, long bufOffsetSoFar, long *size)
 {
-  FILE *input_fp;
+  FILE *inputFp;
   long charCount = 0;
   long fileCharCount; /* charCount for user message */
   long startIncludeCalls;
@@ -83,16 +83,16 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
     includeCall[startIncludeCalls].alreadyIncluded = 0;
     includeCall[startIncludeCalls].pushOrPop = 1;
     includeCall[startIncludeCalls].current_fn = "";
-    let(&includeCall[startIncludeCalls].current_fn, input_fn);
+    let(&includeCall[startIncludeCalls].current_fn, inputFn);
     includeCall[startIncludeCalls].current_line = 1;
     potentialStatements = 0;
   }
 
-/*E*/if(db5)print2("Opening file %s in binary mode.\n",input_fn);
+/*E*/if(db5)print2("Opening file %s in binary mode.\n",inputFn);
   /* Find out the upper limit of the number of characters in the file. */
   /* Do this by opening the file in binary and seeking to the end. */
-  input_fp = fopen(input_fn, "rb");
-  if (!input_fp) {
+  inputFp = fopen(inputFn, "rb");
+  if (!inputFp) {
     /* If this is the top-level source, file-not-found should have been
        detected earlier; if detected here, the rawSourceError below will
        cause a crash since fileNamePtr has not been assigned. */
@@ -103,7 +103,7 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
         includeCall[startIncludeCalls].calledBy_line,
         includeCall[startIncludeCalls].calledBy_fn,
         cat(
-        "The included file \"",input_fn,"\" does not exist or cannot be opened."
+        "The included file \"",inputFn,"\" does not exist or cannot be opened."
         ,NULL));
     *size = 0;
     return ("");
@@ -112,14 +112,14 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
 /* An older GCC compiler didn't have this ANSI standard constant defined. */
 #define SEEK_END 2
 #endif
-  if (fseek(input_fp, 0, SEEK_END)) bug(1701);
-  fileBufSize = ftell(input_fp);
+  if (fseek(inputFp, 0, SEEK_END)) bug(1701);
+  fileBufSize = ftell(inputFp);
 /*E*/if(db5)print2("In binary mode the file has %ld bytes.\n",fileBufSize);
 
   /* Close and reopen the input file in text mode */
-  fclose(input_fp);
-  input_fp = fopen(input_fn, "r");
-  if (!input_fp) bug(1702);
+  fclose(inputFp);
+  inputFp = fopen(inputFn, "r");
+  if (!inputFp) bug(1702);
 
   /* Allocate space for the entire input file */
   fileBufSize = fileBufSize + 10; /* Add a factor for unknown text formats */
@@ -127,14 +127,14 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
   if (!fileBuf) outOfMemory("#1 (fileBuf)");
 
   /* Put the entire input file into the buffer as a giant character string */
-  charCount = fread(fileBuf, sizeof(char), fileBufSize - 2, input_fp);
-  if (!feof(input_fp)) {
+  charCount = fread(fileBuf, sizeof(char), fileBufSize - 2, inputFp);
+  if (!feof(inputFp)) {
     print2("Note:  This bug will occur if there is a disk file read error.\n");
     /* If this bug occurs (due to obscure future format such as compressed
        text files) we'll have to add a realloc statement. */
     bug(1703);
   }
-  fclose(input_fp);
+  fclose(inputFp);
   fileBuf[charCount] = 0; /* End of string */
 
   /* nm 6-Feb-04 This was taken from readFileToString in mminou.c.
@@ -170,7 +170,7 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
   if (fileBuf[charCount - 1] != '\n') {
     fileBuf[charCount] = '\n';
     fileBuf[charCount + 1] = 0;
-    rawSourceError(fileBuf, &fileBuf[charCount - 1], 1, 0, input_fn,cat(
+    rawSourceError(fileBuf, &fileBuf[charCount - 1], 1, 0, inputFn,cat(
         "The last line in the file does not end with a \"line break\"",
         " character.  The \"line break\" character is a line feed in Unix",
         " or a carriage return on the Macintosh or a CR/LF in Windows.",NULL));
@@ -191,11 +191,11 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
     tmpch = fbPtr[0];
     if (!tmpch) { /* End of file */
       if (insideComment) {
-        rawSourceError(fileBuf, fbPtr - 1, 2, lineNum - 1, input_fn,
+        rawSourceError(fileBuf, fbPtr - 1, 2, lineNum - 1, inputFn,
          "The last comment in the file is incomplete.  \"$)\" was expected.");
       } else {
         if (mode != 0) {
-          rawSourceError(fileBuf, fbPtr - 1, 2, lineNum - 1, input_fn,
+          rawSourceError(fileBuf, fbPtr - 1, 2, lineNum - 1, inputFn,
    "The last include statement in the file is incomplete.  \"$]\" was expected."
            );
         }
@@ -211,7 +211,7 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
           if (!isgraph((unsigned char)tmpch) && !isspace((unsigned char)tmpch)) {
             /* 19-Oct-2010 nm Used to bypass "lineNum++" below, which messed up
                line numbering. */
-            rawSourceError(fileBuf, fbPtr, 1, lineNum, input_fn,
+            rawSourceError(fileBuf, fbPtr, 1, lineNum, inputFn,
                 cat("Illegal character (ASCII code ",str((unsigned char)tmpch),
                 " decimal).",NULL));
         /* } */
@@ -229,7 +229,7 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
         /* The character before the '$' is not white space */
         if (!insideComment || fbPtr[1] == ')') {
           /* Inside comments, we only care about the "$)" keyword */
-          rawSourceError(fileBuf, fbPtr, 2, lineNum, input_fn,
+          rawSourceError(fileBuf, fbPtr, 2, lineNum, inputFn,
               "A keyword must be preceded by white space.");
         }
       }
@@ -242,7 +242,7 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
            space (nor end of file) */
         if (!insideComment || fbPtr[0] == ')') {
           /* Inside comments, we only care about the "$)" keyword */
-          rawSourceError(fileBuf, fbPtr + 1, 1, lineNum, input_fn,
+          rawSourceError(fileBuf, fbPtr + 1, 1, lineNum, inputFn,
               "A keyword must be followed by white space.");
           }
       }
@@ -253,13 +253,13 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
       case '(': /* Start of comment */
         if (insideComment) {
           rawSourceError(fileBuf, fbPtr - 1, 2, lineNum,
-              input_fn, "Nested comments are not allowed.");
+              inputFn, "Nested comments are not allowed.");
         }
         insideComment = 1;
         continue;
       case ')': /* End of comment */
         if (!insideComment) {
-          rawSourceError(fileBuf, fbPtr - 1, 2, lineNum, input_fn,
+          rawSourceError(fileBuf, fbPtr - 1, 2, lineNum, inputFn,
               "A comment terminator was found outside of a comment.");
         }
         insideComment = 0;
@@ -275,7 +275,7 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
     switch (fbPtr[0]) {
       case '[':
         if (mode != 0) {
-          rawSourceError(fileBuf, fbPtr - 1, 2, lineNum, input_fn,
+          rawSourceError(fileBuf, fbPtr - 1, 2, lineNum, inputFn,
               "Nested include statements are not allowed.");
           continue;
         }
@@ -285,7 +285,7 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
         continue;
       case ']':
         if (mode == 0) {
-          rawSourceError(fileBuf, fbPtr - 1, 2, lineNum, input_fn,
+          rawSourceError(fileBuf, fbPtr - 1, 2, lineNum, inputFn,
               "A \"$[\" is required before \"$]\".");
           continue;
         }
@@ -309,7 +309,7 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
         includeCall[includeCalls].bufOffset = startSection - fileBuf
             + bufOffsetSoFar;
         includeCall[includeCalls].calledBy_fn = "";
-        let(&includeCall[includeCalls].calledBy_fn, input_fn);
+        let(&includeCall[includeCalls].calledBy_fn, inputFn);
         includeCall[includeCalls].calledBy_line = lineNum;
         includeCall[includeCalls].alreadyIncluded = 0;
         includeCall[includeCalls].pushOrPop = 1;
@@ -327,7 +327,7 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
         i = i + whiteSpaceLen(startSection + 2 + i + j);
         if (i + j != fbPtr - startSection - 3) {
           rawSourceError(fileBuf, startSection + 2 + i + j, tokenLen(
-               startSection + 2 + i + j), lineNum, input_fn,
+               startSection + 2 + i + j), lineNum, inputFn,
                "Expected only one file name between \"$[\" and \"$]\".");
         }
         saveIncludeCalls = includeCalls; /* recursive call to readRawSource
@@ -358,7 +358,7 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
             if (!strcmp(edit(includeCall[i].current_fn,32),
                 edit(includeCall[saveIncludeCalls].current_fn,32))) {
               rawSourceError(fileBuf, fileNamePtr, fileNameLen, lineNum,
-                  input_fn, cat("Included file \"",
+                  inputFn, cat("Included file \"",
                   includeCall[saveIncludeCalls].current_fn,
                   "\" has the same name as earlier included file \"",
                   includeCall[i].current_fn,"\" except for upper/lower case.",
@@ -417,7 +417,7 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
         includeCalls++;
         includeCall[includeCalls].bufOffset = fbPtr - fileBuf + bufOffsetSoFar;
         includeCall[includeCalls].current_fn = "";
-        let(&includeCall[includeCalls].current_fn,input_fn);
+        let(&includeCall[includeCalls].current_fn,inputFn);
         includeCall[includeCalls].current_line = lineNum;
         includeCall[includeCalls].calledBy_fn = "";  /* Not used */
         includeCall[includeCalls].calledBy_line = 0; /* Not used */
@@ -440,7 +440,7 @@ char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size)
   if (fbPtr != fileBuf + charCount) bug(1704);
 
   let(&tmpStr, cat(str(lineNum - 1), " lines (", str(fileCharCount),
-      " characters) were read from \"", input_fn, "\"", NULL));
+      " characters) were read from \"", inputFn, "\"", NULL));
   if (startIncludeCalls == 0) {
     printLongLine(cat(tmpStr, ".", NULL),
         "    ", " ");
@@ -1341,7 +1341,10 @@ void parseStatements(void)
             }
             for (j = lowerKey; j <= upperKey; j++) {
               if (mathToken[mathKey[j]].active) {
-                if (mathToken[mathKey[j]].scope == currentScope) {
+                /* 18-Jun-2011 nm Detect conflicting active vars declared
+                   in multiple scopes */
+                if (mathToken[mathKey[j]].scope <= currentScope) {
+                /* if (mathToken[mathKey[j]].scope == currentScope) { bad */
                   mathTokenError(i, nmbrTmpPtr, stmt,
                       "This symbol has already been declared in this scope.");
                 }
@@ -2303,7 +2306,7 @@ char parseProof(long statemNum)
 
   long i, j, k, m, tok, step;
   char *fbPtr;
-  long tokenLen;
+  long tokLength;
   long numReqHyp;
   long numOptHyp;
   long numActiveHyp;
@@ -2398,12 +2401,12 @@ char parseProof(long statemNum)
 
   /* First break up proof section of source into tokens */
   while (1) {
-    tokenLen = proofTokenLen(fbPtr);
-    if (!tokenLen) break;
+    tokLength = proofTokenLen(fbPtr);
+    if (!tokLength) break;
     wrkProof.tokenSrcPtrPntr[wrkProof.numTokens] = fbPtr;
-    wrkProof.tokenSrcPtrNmbr[wrkProof.numTokens] = tokenLen;
+    wrkProof.tokenSrcPtrNmbr[wrkProof.numTokens] = tokLength;
     wrkProof.numTokens++;
-    fbPtr = fbPtr + tokenLen;
+    fbPtr = fbPtr + tokLength;
     fbPtr = fbPtr + whiteSpaceLen(fbPtr);
   }
 
@@ -2497,10 +2500,10 @@ char parseProof(long statemNum)
 
     wrkProof.numSteps = wrkProof.numSteps - 2;
     fbPtr = wrkProof.tokenSrcPtrPntr[tok - 1]; /* The local label */
-    tokenLen = wrkProof.tokenSrcPtrNmbr[tok - 1]; /* Its length */
+    tokLength = wrkProof.tokenSrcPtrNmbr[tok - 1]; /* Its length */
 
     /* Check for illegal characters */
-    for (j = 0; j < tokenLen; j++) {
+    for (j = 0; j < tokLength; j++) {
       if (illegalLabelChar[(unsigned char)fbPtr[j]]) {
         if (!wrkProof.errorCount) {
           sourceError(fbPtr + j, 1, statemNum,cat(
@@ -2516,8 +2519,8 @@ char parseProof(long statemNum)
     }
 
     /* Add the label to the local label pool and hypAndLocLabel table */
-    memcpy(wrkProof.localLabelPoolPtr, fbPtr, tokenLen);
-    wrkProof.localLabelPoolPtr[tokenLen] = 0; /* String terminator */
+    memcpy(wrkProof.localLabelPoolPtr, fbPtr, tokLength);
+    wrkProof.localLabelPoolPtr[tokLength] = 0; /* String terminator */
     wrkProof.hypAndLocLabel[wrkProof.numHypAndLoc].labelTokenNum =
        -wrkProof.numSteps - 1000; /* offset of -1000 is flag for local label*/
     wrkProof.hypAndLocLabel[wrkProof.numHypAndLoc].labelName
@@ -2530,7 +2533,7 @@ char parseProof(long statemNum)
       j = *(long *)voidPtr; /* Statement number */
       if (j <= statemNum) {
         if (!wrkProof.errorCount) {
-          sourceError(fbPtr, tokenLen, statemNum,cat(
+          sourceError(fbPtr, tokLength, statemNum,cat(
               "The local label at proof step ",
               str(wrkProof.numSteps + 1),
               " is the same as the label of statement ",
@@ -2554,7 +2557,7 @@ char parseProof(long statemNum)
     if (voidPtr) { /* It was found */
       j = ( (struct sortHypAndLoc *)voidPtr)->labelTokenNum; /* Statement number */
       if (!wrkProof.errorCount) {
-        sourceError(fbPtr, tokenLen, statemNum,cat(
+        sourceError(fbPtr, tokLength, statemNum,cat(
             "The local label at proof step ",
             str(wrkProof.numSteps + 1),
             " is the same as the label of statement ",
@@ -2572,7 +2575,7 @@ char parseProof(long statemNum)
     }
 
     wrkProof.numHypAndLoc++;
-    wrkProof.localLabelPoolPtr = &wrkProof.localLabelPoolPtr[tokenLen + 1];
+    wrkProof.localLabelPoolPtr = &wrkProof.localLabelPoolPtr[tokLength + 1];
 
   } /* Next i */
 
@@ -2618,7 +2621,7 @@ char parseProof(long statemNum)
      /* Zap mem pool actual length (because nmbrLen will be used later on this)*/
 
   for (step = 0; step < wrkProof.numSteps; step++) {
-    tokenLen = wrkProof.stepSrcPtrNmbr[step];
+    tokLength = wrkProof.stepSrcPtrNmbr[step];
     fbPtr = wrkProof.stepSrcPtrPntr[step];
 
     /* Handle unknown proof steps */
@@ -2633,14 +2636,14 @@ char parseProof(long statemNum)
     }
 
     /* Temporarily zap the token's end with a null for string comparisons */
-    zapSave = fbPtr[tokenLen];
-    fbPtr[tokenLen] = 0; /* Zap source */
+    zapSave = fbPtr[tokLength];
+    fbPtr[tokLength] = 0; /* Zap source */
 
     /* See if the proof token is a hypothesis or local label ref. */
     voidPtr = (void *)bsearch(fbPtr, wrkProof.hypAndLocLabel,
         wrkProof.numHypAndLoc, sizeof(struct sortHypAndLoc), hypAndLocSrchCmp);
     if (voidPtr) {
-      fbPtr[tokenLen] = zapSave; /* Unzap source */
+      fbPtr[tokLength] = zapSave; /* Unzap source */
       j = ((struct sortHypAndLoc *)voidPtr)->labelTokenNum; /* Label lookup number */
       wrkProof.proofString[step] = j; /* Proof string */
 
@@ -2654,7 +2657,7 @@ char parseProof(long statemNum)
         /* Make sure we don't reference a later step */
         if (i > step) {
           if (!wrkProof.errorCount) {
-            sourceError(fbPtr, tokenLen, statemNum,cat("Proof step ",
+            sourceError(fbPtr, tokLength, statemNum,cat("Proof step ",
                 str(step + 1),
                 " references a local label before it is declared.",
                 NULL));
@@ -2668,7 +2671,7 @@ char parseProof(long statemNum)
           if (!wrkProof.errorCount) {
             /* Chained labels not allowed because it complicates the language
                but doesn't buy anything */
-            sourceError(fbPtr, tokenLen, statemNum, cat(
+            sourceError(fbPtr, tokLength, statemNum, cat(
                 "The local label reference at proof step ",
                 str(step + 1),
                 " declares a local label.  Only \"$a\" and \"$p\" statement",
@@ -2682,7 +2685,7 @@ char parseProof(long statemNum)
           /* Not allowed because it complicates the language but doesn't
              buy anything; would make $e to $f assignments harder to detect */
           if (!wrkProof.errorCount) {
-            sourceError(fbPtr, tokenLen, statemNum, cat(
+            sourceError(fbPtr, tokLength, statemNum, cat(
                 "The hypothesis reference at proof step ",
                 str(step + 1),
                 " declares a local label.  Only \"$a\" and \"$p\" statement",
@@ -2699,10 +2702,10 @@ char parseProof(long statemNum)
     /* See if token is an assertion label */
     voidPtr = (void *)bsearch(fbPtr, labelKeyBase, numLabelKeys, sizeof(long),
         labelSrchCmp);
-    fbPtr[tokenLen] = zapSave; /* Unzap source */
+    fbPtr[tokLength] = zapSave; /* Unzap source */
     if (!voidPtr) {
       if (!wrkProof.errorCount) {
-        sourceError(fbPtr, tokenLen, statemNum, cat(
+        sourceError(fbPtr, tokLength, statemNum, cat(
             "The token at proof step ",
             str(step + 1),
             " is not an active statement label or a local label.",NULL));
@@ -2724,14 +2727,14 @@ char parseProof(long statemNum)
     if (j >= statemNum) { /* Error */
       if (!wrkProof.errorCount) {
         if (j == statemNum) {
-          sourceError(fbPtr, tokenLen, statemNum, cat(
+          sourceError(fbPtr, tokLength, statemNum, cat(
               "The label at proof step ",
               str(step + 1),
               " is the label of this statement.  A statement may not be used to",
               " prove itself.",NULL));
         } else {
-          sourceError(fbPtr, tokenLen, statemNum, cat(
-              "The label at proof step ",
+          sourceError(fbPtr, tokLength, statemNum, cat(
+              "The label \"", statement[j].labelName, "\" at proof step ",
               str(step + 1),
               " is the label of a future statement (at line ",
               str(statement[j].lineNum),
@@ -2763,7 +2766,7 @@ char parseProof(long statemNum)
           let(&tmpStrPtr,cat(str(numReqHyp)," hypotheses but the ",tmpStrPtr,
               NULL));
         }
-        sourceError(fbPtr, tokenLen, statemNum, cat(
+        sourceError(fbPtr, tokLength, statemNum, cat(
             "At proof step ",
             str(step + 1),", statement \"",
             statement[j].labelName,"\" requires ",
@@ -2790,7 +2793,7 @@ char parseProof(long statemNum)
         if (k > 0) {
           if (statement[k].type == f__) {
             if (!wrkProof.errorCount) {
-              sourceError(fbPtr, tokenLen, statemNum, cat(
+              sourceError(fbPtr, tokLength, statemNum, cat(
                   "Statement \"",statement[j].labelName,"\" (proof step ",
                   str(step + 1),
                   ") has its \"$e\" hypothesis \"",
@@ -2848,7 +2851,7 @@ char parseCompressedProof(long statemNum)
   char *fbPtr;
   char *fbStartProof;
   char *labelStart;
-  long tokenLen;
+  long tokLength;
   long numReqHyp;
   long numOptHyp;
   char zapSave;
@@ -3003,8 +3006,8 @@ char parseCompressedProof(long statemNum)
   /* First break up the label section of proof into tokens */
   while (1) {
     fbPtr = fbPtr + whiteSpaceLen(fbPtr);
-    tokenLen = proofTokenLen(fbPtr);
-    if (!tokenLen) {
+    tokLength = proofTokenLen(fbPtr);
+    if (!tokLength) {
       if (!wrkProof.errorCount) {
         sourceError(fbPtr, 2, statemNum,
             "A \")\" which ends the label list is not present.");
@@ -3018,9 +3021,9 @@ char parseCompressedProof(long statemNum)
       break;
     }
     wrkProof.stepSrcPtrPntr[wrkProof.numSteps] = fbPtr;
-    wrkProof.stepSrcPtrNmbr[wrkProof.numSteps] = tokenLen;
+    wrkProof.stepSrcPtrNmbr[wrkProof.numSteps] = tokLength;
     wrkProof.numSteps++;
-    fbPtr = fbPtr + tokenLen;
+    fbPtr = fbPtr + tokLength;
   }
 
   fbStartProof = fbPtr; /* Save pointer to start of compressed proof */
@@ -3061,19 +3064,19 @@ char parseCompressedProof(long statemNum)
   /* Scan proof string with the label list (not really proof steps; we're just
      using the structure for convenience) */
   for (step = 0; step < wrkProof.numSteps; step++) {
-    tokenLen = wrkProof.stepSrcPtrNmbr[step];
+    tokLength = wrkProof.stepSrcPtrNmbr[step];
     fbPtr = wrkProof.stepSrcPtrPntr[step];
 
     /* Temporarily zap the token's end with a null for string comparisons */
-    zapSave = fbPtr[tokenLen];
-    fbPtr[tokenLen] = 0; /* Zap source */
+    zapSave = fbPtr[tokLength];
+    fbPtr[tokLength] = 0; /* Zap source */
 
     /* See if the proof token is a hypothesis */
     voidPtr = (void *)bsearch(fbPtr, wrkProof.hypAndLocLabel,
         wrkProof.numHypAndLoc, sizeof(struct sortHypAndLoc), hypAndLocSrchCmp);
     if (voidPtr) {
       /* It's a hypothesis reference */
-      fbPtr[tokenLen] = zapSave; /* Unzap source */
+      fbPtr[tokLength] = zapSave; /* Unzap source */
       j = ((struct sortHypAndLoc *)voidPtr)->labelTokenNum;
                                                        /* Label lookup number */
 
@@ -3082,7 +3085,7 @@ char parseCompressedProof(long statemNum)
       if (j < 0) { /* Minus is used as flag for required hypothesis */
         j = -1000 - j; /* Restore it to prevent side effects of the error */
         if (!wrkProof.errorCount) {
-          sourceError(fbPtr, tokenLen, statemNum,
+          sourceError(fbPtr, tokLength, statemNum,
               "Required hypotheses may not be explicitly declared.");
         }
         wrkProof.errorCount++;
@@ -3100,10 +3103,10 @@ char parseCompressedProof(long statemNum)
     /* See if token is an assertion label */
     voidPtr = (void *)bsearch(fbPtr, labelKeyBase, numLabelKeys, sizeof(long),
         labelSrchCmp);
-    fbPtr[tokenLen] = zapSave; /* Unzap source */
+    fbPtr[tokLength] = zapSave; /* Unzap source */
     if (!voidPtr) {
       if (!wrkProof.errorCount) {
-        sourceError(fbPtr, tokenLen, statemNum,
+        sourceError(fbPtr, tokLength, statemNum,
          "This token is not the label of an assertion or optional hypothesis.");
       }
       wrkProof.errorCount++;
@@ -3120,14 +3123,14 @@ char parseCompressedProof(long statemNum)
     if (j >= statemNum) { /* Error */
       if (!wrkProof.errorCount) {
         if (j == statemNum) {
-          sourceError(fbPtr, tokenLen, statemNum, cat(
+          sourceError(fbPtr, tokLength, statemNum, cat(
               "The label at proof step ",
               str(step + 1),
              " is the label of this statement.  A statement may not be used to",
               " prove itself.",NULL));
         } else {
-          sourceError(fbPtr, tokenLen, statemNum, cat(
-              "The label at proof step ",
+          sourceError(fbPtr, tokLength, statemNum, cat(
+              "The label \"", statement[j].labelName, "\" at proof step ",
               str(step + 1),
               " is the label of a future statement (at line ",
               str(statement[j].lineNum),
@@ -3193,8 +3196,8 @@ char parseCompressedProof(long statemNum)
         if (!labelMapIndex) labelStart = fbPtr; /* Save for error msg */
 
         /* Save pointer to source file vs. step for error messages */
-        tokenLen = fbPtr - labelStart + 1; /* Token length */
-        wrkProof.stepSrcPtrNmbr[wrkProof.numSteps] = tokenLen;
+        tokLength = fbPtr - labelStart + 1; /* Token length */
+        wrkProof.stepSrcPtrNmbr[wrkProof.numSteps] = tokLength;
         wrkProof.stepSrcPtrPntr[wrkProof.numSteps] = labelStart; /* Token ptr */
 
         /* 15-Oct-05 nm - Obsolete (skips from YT to UVA, missing UUA) */
@@ -3212,7 +3215,7 @@ char parseCompressedProof(long statemNum)
             chrWeight[(long)(fbPtr[0])];
         if (labelMapIndex >= wrkProof.compressedPfNumLabels) {
           if (!wrkProof.errorCount) {
-            sourceError(labelStart, tokenLen, statemNum, cat(
+            sourceError(labelStart, tokLength, statemNum, cat(
      "This compressed label reference is outside the range of the label list.",
                 "  The compressed label value is ", str(labelMapIndex),
                 " but the largest label defined is ",
@@ -3259,7 +3262,7 @@ char parseCompressedProof(long statemNum)
                 let(&tmpStrPtr,cat(str(numReqHyp)," hypotheses but the ",tmpStrPtr,
                     NULL));
               }
-              sourceError(fbPtr, tokenLen, statemNum, cat(
+              sourceError(fbPtr, tokLength, statemNum, cat(
                   "At proof step ",
                   str(wrkProof.numSteps + 1),", statement \"",
                   statement[stmt].labelName,"\" requires ",
@@ -3286,7 +3289,7 @@ char parseCompressedProof(long statemNum)
               if (k > 0) {
                 if (statement[k].type == f__) {
                   if (!wrkProof.errorCount) {
-                    sourceError(fbPtr, tokenLen, statemNum, cat(
+                    sourceError(fbPtr, tokLength, statemNum, cat(
                         "Statement \"", statement[stmt].labelName,
                         "\" (proof step ",
                         str(wrkProof.numSteps + 1),
@@ -3533,11 +3536,11 @@ char parseCompressedProof(long statemNum)
   wrkProof.errorSeverity = returnFlag;
   return (returnFlag);
 
-}
+} /* parseProof */
 
 
 
-void rawSourceError(char *startFile, char *ptr, long tokenLen, long lineNum,
+void rawSourceError(char *startFile, char *ptr, long tokLen, long lineNum,
     vstring fileName, vstring errMsg)
 {
   char *startLine;
@@ -3562,17 +3565,17 @@ void rawSourceError(char *startFile, char *ptr, long tokenLen, long lineNum,
   let(&errLine, space(endLine - startLine + 1));
   if (endLine - startLine + 1 < 0) bug(1721);
   memcpy(errLine, startLine, endLine - startLine + 1);
-  errorMessage(errLine, lineNum, ptr - startLine + 1, tokenLen, errorMsg,
+  errorMessage(errLine, lineNum, ptr - startLine + 1, tokLen, errorMsg,
       fileName, 0, (char)_error);
   print2("\n");
   let(&errLine,"");
   let(&errorMsg,"");
-}
+} /* rawSourceError */
 
 /*   sourcePtr is assumed to point to the raw input buffer.
      sourceLen is assumed to be length of the raw input buffer.
      The includeCall array is referenced. */
-void sourceError(char *ptr, long tokenLen, long stmtNum, vstring errMsg)
+void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
 {
   char *startLine;
   char *endLine;
@@ -3643,15 +3646,15 @@ void sourceError(char *ptr, long tokenLen, long stmtNum, vstring errMsg)
 
   if (!lineNum) {
     /* Not a source file parse */
-    errorMessage(errLine, lineNum, ptr - startLine + 1, tokenLen, errorMsg,
+    errorMessage(errLine, lineNum, ptr - startLine + 1, tokLen, errorMsg,
         NULL, stmtNum, (char)_error);
   } else {
-    errorMessage(errLine, lineNum, ptr - startLine + 1, tokenLen, errorMsg,
+    errorMessage(errLine, lineNum, ptr - startLine + 1, tokLen, errorMsg,
         includeCall[i].current_fn, stmtNum, (char)_error);
   }
   let(&errLine,"");
   let(&errorMsg,"");
-}
+} /* sourceError */
 
 
 void mathTokenError(long tokenNum /* 0 is 1st one */,
@@ -3670,7 +3673,7 @@ void mathTokenError(long tokenNum /* 0 is 1st one */,
   }
   sourceError(fbPtr, mathToken[tokenList[tokenNum]].length,
       stmtNum, errMsg);
-}
+} /* mathTokenError */
 
 vstring shortDumpRPNStack(void) {
   /* The caller must deallocate the returned string. */
@@ -3709,7 +3712,7 @@ vstring shortDumpRPNStack(void) {
   if (wrkProof.RPNStackPtr == 0) let(&tmpStr2,"RPN stack is empty");
   let(&tmpStr,"");
   return(tmpStr2);
-}
+} /* shortDumpRPNStack */
 
 /* 10/10/02 */
 /* ???Todo:  use this elsewhere in mmpars.c to modularize this lookup */
@@ -3729,7 +3732,7 @@ long lookupLabel(vstring label)
   if (statement[statemNum].type != a__ && statement[statemNum].type != p__)
       bug(1718);
   return (statemNum);
-}
+} /* lookupLabel */
 
 
 /* Label comparison for qsort */
@@ -3738,7 +3741,7 @@ int labelSortCmp(const void *key1, const void *key2)
   /* Returns -1 if key1 < key2, 0 if equal, 1 if key1 > key2 */
   return (strcmp(statement[ *((long *)key1) ].labelName,
       statement[ *((long *)key2) ].labelName));
-}
+} /* labelSortCmp */
 
 
 /* Label comparison for bsearch */
@@ -3747,7 +3750,7 @@ int labelSrchCmp(const void *key, const void *data)
   /* Returns -1 if key < data, 0 if equal, 1 if key > data */
   return (strcmp(key,
       statement[ *((long *)data) ].labelName));
-}
+} /* labelSrchCmp */
 
 
 /* Math symbol comparison for qsort */
@@ -3909,17 +3912,8 @@ long proofTokenLen(char *ptr)
 }
 
 
-/*??? Obsolete from here on... */
-void statementError(vstring msg,vstring statementSoFar)
-/* This is a utility function used by getStatement() only */
-/* Put the statement into whiteSpaceS, including current token,
-   so that text content of statement can be reproduced in output file */
-{
-}
-
-
-/* Return (for output) the complete contents of a statement, including all white
-   space and comments, from first token through all white space and
+/* Return (for output) the complete contents of a statement, including all
+   white space and comments, from first token through all white space and
    comments after last token. */
 /* This allows us to modify the input file with Metamath. */
 /* Note: the text near end of file is obtained from statement[statements
@@ -3927,19 +3921,51 @@ void statementError(vstring msg,vstring statementSoFar)
 /* ???This does not yet implement restoration of the various input files;
       all included files are merged into one. */
 /* Caller must deallocated returned string. */
-vstring outputStatement(long stmt)
+/* cleanFlag = 1: User is removing theorems with $( [?] $) dates */
+/* reformatFlag= 0: WRITE SOURCE, 1: WRITE SOURCE / REFORMAT,
+   2: WRITE SOURCE / WRAP */
+vstring outputStatement(long stmt, flag cleanFlag,
+    flag reformatFlag)
 {
   vstring labelSection = "";
   vstring mathSection = "";
   vstring proofSection = "";
   vstring output = "";
   flag newProofFlag;
+  /* For reformatting: */
+  long pos;
+  long indent;
+  static long dollarDpos = 0;
+  static char previousType = illegal_;  /* '?' in mmdata.h */
+  long commentStart;
+  long commentEnd;
+  vstring comment = "";
+  vstring str1 = "";
+  long length;
+
 
   let(&labelSection, space(statement[stmt].labelSectionLen));
   memcpy(labelSection, statement[stmt].labelSectionPtr,
       statement[stmt].labelSectionLen);
 
   if (stmt == statements + 1) return labelSection; /* Special case - EOF */
+
+  /* 1-Jul-2011 nm */
+  if (cleanFlag) {
+    /* Most of the WRITE SOURCE / CLEAN processing is done in the
+       writeInput() that calls this.  Here, we just remove any
+       $( [?} $) date comment missed by that algorithm. */
+    if (labelSection[0] == '\n') { /* True unless user edited source */
+      pos = instr(1, labelSection, "$( [?] $)");
+      if (pos != 0) {
+        pos = instr(pos + 9, labelSection, "\n");
+        if (pos != 0) {
+          /* Use pos instead of pos + 1 so that we include the \n */
+          let(&labelSection, right(labelSection, pos));
+        }
+      }
+    }
+  }
 
   let(&mathSection, space(statement[stmt].mathSectionLen));
   memcpy(mathSection, statement[stmt].mathSectionPtr,
@@ -3948,6 +3974,276 @@ vstring outputStatement(long stmt)
   let(&proofSection, space(statement[stmt].proofSectionLen));
   memcpy(proofSection, statement[stmt].proofSectionPtr,
       statement[stmt].proofSectionLen);
+
+
+  /* 12-Jun-2011 nm Added this section to reformat statements to match the
+     current set.mm convention */
+  if (reformatFlag > 0) {  /* 1 = WRITE SOURCE / FORMAT or 2 = / REWRAP */
+    /* Put standard indentation before the ${, etc. */
+#define INDENT_FIRST 2
+#define INDENT_INCR 2
+    indent = INDENT_FIRST + (INDENT_INCR * statement[stmt].scope);
+    /* statement[stmt].scope is at start of stmt not end; adjust $} */
+    if (statement[stmt].type == rb_) indent = indent - INDENT_INCR;
+
+    /* 9-Jul-2011 nm Added */
+    /* Untab the label section */
+    if (strchr(labelSection, '\t') != NULL) { /* Only if has tab (speedup) */
+      let(&labelSection, edit(labelSection, 2048/*untab*/));
+    }
+    /* Untab the math section */
+    if (strchr(mathSection, '\t') != NULL) { /* Only if has tab (speedup) */
+      let(&mathSection, edit(mathSection, 2048/*untab*/));
+    }
+
+    /* Reformat the label section */
+
+    /* Remove spaces a end of line */
+    /* This is a pretty inefficient loop, but hopefully lots of spaces
+       at end of lines is a rare occurrence */
+    while (1) {
+      pos = instr(1, labelSection, " \n");
+      if (pos == 0) break;
+      let(&labelSection, cat(left(labelSection, pos - 1),
+          right(labelSection, pos + 1), NULL));
+    }
+
+    /* Don't allow more than 2 consecutive blank lines */
+    while (1) {
+      pos = instr(1, labelSection, "\n\n\n\n");
+      if (pos == 0) break;
+      let(&labelSection, cat(left(labelSection, pos - 1),
+          right(labelSection, pos + 1), NULL));
+    }
+
+    switch (statement[stmt].type) {
+      case lb_: /* ${ */
+      case rb_: /* $} */
+      case v__: /* $v */
+      case c__: /* $c */
+      case d__: /* $d */
+        /* Get the last newline */
+        pos = rinstr(labelSection, "\n");
+        /* If there is none, insert it (unless first line in file) */
+        if (pos == 0 && stmt > 1) {
+          let(&labelSection, cat(edit(labelSection, 128 /* trailing spaces */),
+              "\n", NULL));
+          pos = strlen(labelSection) + 1;
+        }
+        /* Put a blank line between $} and ${ if there is none */
+        if (stmt > 1) {
+          if (pos == 1 && statement[stmt].type == lb_
+              && statement[stmt - 1].type == rb_) {
+            let(&labelSection, "\n\n");
+            pos = 2;
+          }
+        }
+        let(&labelSection, cat(left(labelSection, pos),
+            space(indent), NULL));
+        if (statement[stmt].type == d__) {
+          let(&mathSection, edit(mathSection,
+              4 /* discard LF */ + 16 /* reduce spaces */));
+          if (previousType == d__) {
+            /* See if the $d can be added to the current line */
+            if (dollarDpos + 2 + (signed)(strlen(mathSection)) + 4
+                <= screenWidth) {
+              let(&labelSection, "  ");  /* 2 spaces between $d's */
+              dollarDpos = dollarDpos + 2 + strlen(mathSection) + 4;
+            } else {
+              /* Add 4 = '$d' length + '$.' length */
+              dollarDpos = indent + strlen(mathSection) + 4;
+            }
+          } else {
+            dollarDpos = indent + strlen(mathSection) + 4;
+          }
+        }
+        break;
+      case a__:    /* $a */
+      case p__:    /* $p */
+        /* Get last $( */
+        commentStart = rinstr(labelSection,  "$(");
+        /* Get last $) */
+        commentEnd = rinstr(labelSection, "$)") + 1;
+        if (commentEnd < commentStart) bug(1725);
+        if (commentStart != 0) {
+          let(&comment, seg(labelSection, commentStart, commentEnd));
+        } else {
+          /* If there is no comment before $a or $p, add dummy comment */
+          let(&comment, "$( PLEASE PUT DESCRIPTION HERE. $)");
+        }
+        let(&labelSection, left(labelSection, commentStart - 1));
+        /* Get the last newline before the comment */
+        pos = rinstr(labelSection, "\n");
+
+        /* 9-Jul-2011 nm Added */
+        /* If previous statement was $e, take out any blank line */
+        if (previousType == e__ && pos == 2 && labelSection[0] == '\n') {
+          let(&labelSection, right(labelSection, 2));
+          pos = 1;
+        }
+
+        /* If there is no '\n', insert it (unless first line in file) */
+        if (pos == 0 && stmt > 1) {
+          let(&labelSection, cat(edit(labelSection, 128 /* trailing spaces */),
+              "\n", NULL));
+          pos = strlen(labelSection) + 1;
+        }
+        let(&labelSection, left(labelSection, pos));
+
+        /* If / REWRAP was specified, unwrap and rewrap the line */
+        if (reformatFlag == 2) {
+          let(&str1, "");
+          str1 = rewrapComment(comment);
+          let(&comment, str1);
+        }
+
+        /* Make sure that start of new lines inside the comment have no
+           trailing space (because printLongLine doesn't do this after
+           explict break) */
+        pos = 0;
+        while (1) {
+          pos = instr(pos + 1, comment, "\n");
+          if (pos == 0) break;
+          length = 0;
+          while (1) {  /* Get past any existing leading blanks */
+            if (comment[pos + length] != ' ') break;
+            length++;
+          }
+          let(&comment, cat(left(comment, pos),
+              (comment[pos + length] != '\n')
+                  ? space(indent + 3)
+                  : "",  /* Don't add indentation if line is blank */
+              right(comment, pos + length + 1), NULL));
+        }
+
+        /* Reformat the comment to wrap if necessary */
+        if (outputToString == 1) bug(1726);
+        outputToString = 1;
+        let(&printString, "");
+        printLongLine(cat(space(indent), comment, NULL),
+            space(indent + 3), " ");
+        let(&comment, printString);
+        let(&printString, "");
+        outputToString = 0;
+#define ASCII_4 4
+        /* Restore ASCII_4 characters put in by rewrapComment() to space */
+        length = strlen(comment);
+        for (pos = 2; pos < length - 2; pos++) {
+           /* For debugging: */
+           /* if (comment[pos] == ASCII_4) comment[pos] = '#'; */
+           if (comment[pos] == ASCII_4) comment[pos] = ' ';
+        }
+        /* Remove any trailing spaces */
+        pos = 2;
+        while(1) {
+          pos = instr(pos + 1, comment, " \n");
+          if (!pos) break;
+          let(&comment, cat(left(comment, pos - 1), right(comment, pos + 1),
+              NULL));
+          pos = pos - 2;
+        }
+
+        /* Complete the label section */
+        let(&labelSection, cat(labelSection, comment,
+            space(indent), statement[stmt].labelName, " ", NULL));
+        break;
+      case e__:    /* $e */
+      case f__:    /* $f */
+        pos = rinstr(labelSection, statement[stmt].labelName);
+        let(&labelSection, left(labelSection, pos - 1));
+        pos = rinstr(labelSection, "\n");
+        /* If there is none, insert it (unless first line in file) */
+        if (pos == 0 && stmt > 1) {
+          let(&labelSection, cat(edit(labelSection, 128 /* trailing spaces */),
+              "\n", NULL));
+          pos = strlen(labelSection) + 1;
+        }
+        let(&labelSection, left(labelSection, pos));
+        /* If previous statement is $d or $e and there is no comment after it,
+           discard entire rest of label to get rid of redundant blank lines */
+        if (stmt > 1) {
+          if ((statement[stmt - 1].type == d__
+                || statement[stmt - 1].type == e__)
+              && instr(1, labelSection, "$(") == 0) {
+            let(&labelSection, "\n");
+          }
+        }
+        /* Complete the label section */
+        let(&labelSection, cat(labelSection,
+            space(indent), statement[stmt].labelName, " ", NULL));
+        break;
+      default: bug(1727);
+    }
+
+    /* Reformat the math section */
+    switch (statement[stmt].type) {
+      case lb_: /* ${ */
+      case rb_: /* $} */
+      case v__: /* $v */
+      case c__: /* $c */
+      case d__: /* $d */
+      case a__: /* $a */
+      case p__: /* $p */
+      case e__: /* $e */
+      case f__: /* $f */
+        /* Remove blank lines */
+        while (1) {
+          pos = instr(1, mathSection, "\n\n");
+          if (pos == 0) break;
+          let(&mathSection, cat(left(mathSection, pos),
+              right(mathSection, pos + 2), NULL));
+        }
+        /* Remove leading and trailing space and trailing new lines */
+        while(1) {
+          let(&mathSection, edit(mathSection,
+              8 /* leading sp */ + 128 /* trailing sp */));
+          if (mathSection[strlen(mathSection) - 1] != '\n') break;
+          let(&mathSection, left(mathSection, strlen(mathSection) - 1));
+        }
+        let(&mathSection, cat(" ", mathSection, " ", NULL));
+                   /* Restore standard leading/trailing space stripped above */
+        /* Reduce multiple in-line spaces to single space */
+        pos = 0;
+        while(1) {
+          pos = instr(pos + 1, mathSection, "  ");
+          if (pos == 0) break;
+          if (pos > 1) {
+            if (mathSection[pos - 2] != '\n' && mathSection[pos - 2] != ' ') {
+              /* It's not at the start of a line, so reduce it */
+              let(&mathSection, cat(left(mathSection, pos),
+                  right(mathSection, pos + 2), NULL));
+              pos--;
+            }
+          }
+        }
+        /* Wrap long lines */
+        length = indent + 2 /* Prefix length - add 2 for keyword ${, etc. */
+            /* Add 1 for space after label, if $e, $f, $a, $p */
+            + (((statement[stmt].labelName)[0]) ?
+                (strlen(statement[stmt].labelName) + 1) : 0);
+        if (outputToString == 1) bug(1728);
+        outputToString = 1;
+        let(&printString, "");
+        printLongLine(cat(space(length), mathSection, "$.", NULL),
+            space(indent + 4), " ");
+        outputToString = 0;
+        let(&mathSection, left(printString, strlen(printString) - 3));
+            /* Trim off "$." plus "\n" */
+        let(&mathSection, right(mathSection, length + 1));
+        let(&printString, "");
+        break;
+      default: bug(1729);
+    }
+
+    /* Set previous state for next statement */
+    if (statement[stmt].type == d__) {
+      /* dollarDpos is computed in the processing above */
+    } else {
+      dollarDpos = 0; /* Reset it */
+    }
+    previousType = statement[stmt].type;
+    /* let(&comment, ""); */  /* Deallocate string memory */ /* (done below) */
+  } /* if reformatFlag */
 
   let(&output, labelSection);
 
@@ -3984,34 +4280,228 @@ vstring outputStatement(long stmt)
   let(&labelSection, "");
   let(&mathSection, "");
   let(&proofSection, "");
+  let(&comment, "");
+  let(&str1, "");
   return output; /* The calling routine must deallocate this vstring */
-}
+} /* outputStatement */
 
-
-void reasonError(long statementNum,long reasonPosition,vstring errorMsg)
-/* This function reconstructs the ASCII line containing a $p <reason> token,
-   finds the line number and position, and prints the error message.
-   By reconstructing the original line in this fashion, we eliminate the
-   necessity of storing the original input text twice.
-   reasonPosition is the "character" position in the
-   statement[].proofString rString. */
+/* 12-Jun-2011 nm */
+/* Unwrap the lines in a comment then re-wrap them according to set.mm
+   conventions.  This may be overly aggressive, and user should do a
+   diff to see if result is as desired.  Called by WRITE SOURCE / REWRAP.
+   Caller must deallocate returned vstring. */
+vstring rewrapComment(vstring comment1)
 {
-}
+  /* Punctuation from mmwtex.c */
+#define OPENING_PUNCTUATION "(['\""
+/* #define CLOSING_PUNCTUATION ".,;)?!:]'\"_-" */
+#define CLOSING_PUNCTUATION ".,;)?!:]'\""
+#define SENTENCE_END_PUNCTUATION ")'\""
+  vstring comment = "";
+  vstring commentTemplate = ""; /* Non-breaking space template */
+  long length, pos, i;
+  vstring ch; /* Pointer only; do not allocate */
+  flag mathmode = 0;
+
+  let(&comment, comment1); /* Grab arg so it can be reassigned */
+
+  /* Ignore pre-formatted comments */
+  if (instr(1, comment, "<PRE>") != 0) return comment;
+
+  /* Make sure back quotes are surrounded by space */
+  pos = 2;
+  mathmode = 0;
+  while (1) {
+    pos = instr(pos + 1, comment, "`");
+    if (pos == 0) break;
+    mathmode = 1 - mathmode;
+    if (comment[pos - 2] == '`' || comment[pos] == '`') continue;
+            /* See if previous or next char is "`"; ignore "``" escape */
+    if (comment[pos] != ' ' && comment[pos] != '\n') {
+      /* Currently, mmwtex.c doesn't correctly handle broken subscript (_)
+         or broken hyphen (-) in the CLOSING_PUNCTUATION, so allow these two as
+         exceptions until that is fixed.   E.g. ` a ` _2 doesn't yield
+         HTML subscript; instead we need ` a `_2. */
+      if (mathmode == 1 || (comment[pos] != '_' && comment[pos] != '-')) {
+        /* Add a space after back quote if none */
+        let(&comment, cat(left(comment, pos), " ",
+            right(comment, pos + 1), NULL));
+      }
+    }
+    if (comment[pos - 2] != ' ') {
+      /* Add a space before back quote if none */
+      let(&comment, cat(left(comment, pos - 1), " ",
+          right(comment, pos), NULL));
+      pos++; /* Go past the "`" */
+    }
+  }
+
+  /* Make sure "~" for labels are surrounded by space */
+  if (instr(2, comment, "`") == 0) {  /* For now, just process comments
+         not containing math symbols.  More complicated code is needed
+         to ignore ~ in math symbols; maybe add it someday. */
+    pos = 2;
+    while (1) {
+      pos = instr(pos + 1, comment, "~");
+      if (pos == 0) break;
+      if (comment[pos - 2] == '~' || comment[pos] == '~') continue;
+              /* See if previous or next char is "~"; ignore "~~" escape */
+      if (comment[pos] != ' ') {
+        /* Add a space after tilde if none */
+        let(&comment, cat(left(comment, pos), " ",
+            right(comment, pos + 1), NULL));
+      }
+      if (comment[pos - 2] != ' ') {
+        /* Add a space before tilde if none */
+        let(&comment, cat(left(comment, pos - 1), " ",
+            right(comment, pos), NULL));
+        pos++; /* Go past the "~" */
+      }
+    }
+  }
+
+  /* Change all newlines to space unless double newline */
+  /* Note:  it is assumed that blank lines have no spaces
+     for this to work; the user must ensure that. */
+  length = strlen(comment);
+  for (pos = 2; pos < length - 2; pos++) {
+    if (comment[pos] == '\n' && comment[pos - 1] != '\n'
+        && comment[pos + 1] != '\n')
+      comment[pos] = ' ';
+  }
+  let(&comment, edit(comment, 16 /* reduce spaces */));
+
+  /* Remove spaces and blank lines at end of comment */
+  while (1) {
+    length = strlen(comment);
+    if (comment[length - 3] != ' ') bug(1730);
+            /* Should have been syntax err (no space before "$)") */
+    if (comment[length - 4] != ' ' && comment[length - 4] != '\n') break;
+    let(&comment, cat(left(comment, length - 4),
+        right(comment, length - 2), NULL));
+  }
+
+  /* Put period at end of comment ending with lowercase letter */
+  /* Note:  This will not detect a '~ label' at end of comment.
+     A diff by the user is needed to verify it doesn't happen.
+     (We could enhace the code here to do that if it becomes a problem.) */
+  length = strlen(comment);
+  if (islower((unsigned char)(comment[length - 4]))) {
+    let(&comment, cat(left(comment, length - 3), ". $)", NULL));
+  }
+
+  /* Change to ASCII 4 those spaces where the line shouldn't be
+     broken */
+  mathmode = 0;
+  for (pos = 3; pos < length - 2; pos++) {
+    if (comment[pos] == '`') { /* Start or end of math string */
+/*
+      if (mathmode == 0) {
+        if (comment[pos - 1] == ' '
+            && strchr(OPENING_PUNCTUATION, comment[pos - 2]) != NULL)
+          /@ Keep opening punctuation on same line @/
+          comment[pos - 1] = ASCII_4;
+      } else {
+        if (comment[pos + 1] == ' '
+            && strchr(CLOSING_PUNCTUATION, comment[pos + 2]) != NULL)
+          /@ Keep closing punctuation on same line @/
+          comment[pos + 1] = ASCII_4;
+      }
+*/
+      mathmode = 1 - mathmode;
+    }
+    if ( mathmode == 1 && comment[pos] == ' ')
+      /* We assign comment[] rather than commentTemplate to avoid confusion of
+         math with punctuation.  Also, commentTemplate would be misaligned
+         anyway due to adding of spaces below. */
+      comment[pos] = ASCII_4;
+  }
 
 
-void mathTokenError1(long statementNum,long mathTokenPosition,vstring errorMsg)
-/* This function reconstructs the ASCII line containing a <math token string>
-   in the FIRST field after the statement keyword,
-   finds the line number and position, and prints the error message.
-   It is currently implemented for "$p <math token string> $= <reason> $."
-   statements only.
-   By reconstructing the original line in this fashion, we eliminate the
-   necessity of storing the original input text twice.
-   reasonPosition is the "character" position in the
-   statement[].mathTokenS mString. */
-{
-}
+  /* Put two spaces after end of sentence and colon */
+  ch = ""; /* Prevent compiler warning */
+  for (i = 0; i < 4; i++) {
+    switch (i) {
+      case 0: ch = "."; break;
+      case 1: ch = "?"; break;
+      case 2: ch = "!"; break;
+      case 3: ch = ":";
+    }
+    pos = 2;
+    while (1) {
+      pos = instr(pos + 1, comment, ch);
+      if (pos == 0) break;
+      if (ch[0] == '.' && comment[pos - 2] >= 'A' && comment[pos - 2] <= 'Z')
+        continue;  /* Ignore initials of names */
+      if (strchr(SENTENCE_END_PUNCTUATION, comment[pos]) != NULL)
+        pos++;
+      if (comment[pos] != ' ') continue;
+      if ((comment[pos + 1] >= 'A' && comment[pos + 1] <= 'Z')
+          || strchr(OPENING_PUNCTUATION, comment[pos + 1]) != NULL) {
+        comment[pos] = ASCII_4; /* Prevent break so next line won't have
+                                   leading space; instead, break at 2nd space */
+        let(&comment, cat(left(comment, pos + 1), " ",
+            right(comment, pos + 2), NULL));
+      }
+    } /* end while */
+  } /* next i */
 
+  length = strlen(comment);
+  let(&commentTemplate, space(length));
+  for (pos = 3; pos < length - 2; pos++) {
+    if (comment[pos] == ' ') {
+      if (comment[pos - 1] == '~' && comment[pos - 2] != '~') {
+        /* Don't break "~ <label>" */
+        commentTemplate[pos] = ASCII_4;
+      } else if ((comment[pos - 2] == ' '
+            || strchr(OPENING_PUNCTUATION, comment[pos - 2]) != NULL)
+          && strchr(OPENING_PUNCTUATION, comment[pos - 1]) != NULL) {
+        /* Don't break space after opening punctuation */
+        commentTemplate[pos] = ASCII_4;
+      } else if ((comment[pos + 2] == ' '
+            || comment[pos + 2] == '\n' /* Period etc. before line break */
+            || comment[pos + 2] == ASCII_4 /* 2-space sentence break
+                              done above where 1st space is ASCII_4 */
+            || strchr(CLOSING_PUNCTUATION, comment[pos + 2]) != NULL)
+          && strchr(CLOSING_PUNCTUATION, comment[pos + 1]) != NULL) {
+        /* Don't break space before closing punctuation */
+        commentTemplate[pos] = ASCII_4;
+/*
+      } else if (comment[pos + 2] == ' '
+          && strchr(CLOSING_PUNCTUATION, comment[pos + 1]) != NULL) {
+        /@ Don't break space after "~ <label>" if followed by punctuation @/
+        commentTemplate[pos] = ASCII_4;
+      } else if (comment[pos - 2] == ' '
+          && strchr(OPENING_PUNCTUATION, comment[pos - 1]) != NULL) {
+        /@ Don't break space before "~ <label>" if preceded by punctuation @/
+        commentTemplate[pos] = ASCII_4;
+      } else if (comment[pos + 1] == '`'
+          && strchr(OPENING_PUNCTUATION, comment[pos - 1]) != NULL) {
+        /@ Don't break space between punctuation and math start '`' @/
+        commentTemplate[pos] = ASCII_4;
+      } else if (comment[pos - 1] == '`'
+          && strchr(CLOSING_PUNCTUATION, comment[pos + 1]) != NULL) {
+        /@ Don't break space between punctuation and math end '`' @/
+        commentTemplate[pos] = ASCII_4;
+*/
+      } else if (comment[pos - 3] == ' ' && comment[pos - 2] == 'p'
+          && comment[pos - 1] == '.') {
+        /* Don't break " p. nnn" */
+        commentTemplate[pos] = ASCII_4;
+      }
+    }
+  }
+  commentTemplate[length - 3] = ASCII_4; /* Last space in comment */
+
+  for (pos = 3; pos < length - 2; pos++) {
+    /* Transfer the non-breaking spaces from the template to the comment */
+    if (commentTemplate[pos] == ASCII_4) comment[pos] = ASCII_4;
+  }
+
+  let(&commentTemplate, "");
+
+  return(comment);
+} /* rewrapComment */
 
 /* This is a general-purpose function to parse a math token string,
    typically input by the user at the keyboard.  The statemNum is
@@ -4038,7 +4528,7 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
   void *mathKeyPtr; /* bsearch returned value */
   int maxScope;
   flag errorFlag = 0; /* Prevents bad token from being added to output */
-  int errorCount = 0; /* Cumulative error count */
+  int errCount = 0; /* Cumulative error count */
   vstring tmpStr = "";
   vstring nlUserText = "";
 
@@ -4191,8 +4681,8 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
               }
               if (maxScope == -1) {
                 tokenNum = mathKey[mathKeyNum]; /* Pick an arbitrary one */
-                errorCount++;
-                if (errorCount <= 1) { /* Print 1st error only */
+                errCount++;
+                if (errCount <= 1) { /* Print 1st error only */
                   sourceError(fbPtr, symbolLen, /*stmt*/ 0,
        "This math symbol is not active (i.e. was not declared in this scope).");
                 }
@@ -4202,8 +4692,8 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
               tokenNum = *((long *)mathKeyPtr);
                   /* Same as: tokenNum = mathKey[mathKeyNum]; but faster */
               if (!mathToken[tokenNum].active) {
-                errorCount++;
-                if (errorCount <= 1) { /* Print 1st error only */
+                errCount++;
+                if (errCount <= 1) { /* Print 1st error only */
                   sourceError(fbPtr, symbolLen, /*stmt*/ 0,
        "This math symbol is not active (i.e. was not declared in this scope).");
                 }
@@ -4238,8 +4728,8 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
 
           if (symbolLen == 0) { /* Symbol was not found */
             symbolLen = tokenLen(fbPtr);
-            errorCount++;
-            if (errorCount <= 1) { /* Print 1st error only */
+            errCount++;
+            if (errCount <= 1) { /* Print 1st error only */
               sourceError(fbPtr, symbolLen, /*stmt*/ 0,
       "This math symbol was not declared (with a \"$c\" or \"$v\" statement).");
             }
@@ -4287,7 +4777,7 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
 
   return (mathString);
 
-}
+} /* parseMathTokens */
 
 
 

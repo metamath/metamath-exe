@@ -1,13 +1,13 @@
 /*****************************************************************************/
-/*        Copyright (C) 2006  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2011  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-/* This file implements the TAG command of the TOOLS utility.  revise() is
+/* This file implements the UPDATE command of the TOOLS utility.  revise() is
    the main external call; see the comments preceding it. */
 
-/* The TAG command of TOOLS (mmword.c) was custom-written in accordance
+/* The UPDATE command of TOOLS (mmword.c) was custom-written in accordance
    with the version control requirements of a company that used it.  It
    documents the differences between two versions of a program as C-style
    comments embedded in the newer version.  The best way to determine whether
@@ -17,7 +17,7 @@
    produce RTF output for Word, analogous to the existing LaTeX output.
    Microsoft never responded to a request for the RTF specification, as they
    promised in the circa 1990 manual accompanying Word.  Thus it remained an
-   empty shell.  When the need for TAG arose, the mmword.c shell was used in
+   empty shell.  When the need for UPDATE arose, the mmword.c shell was used in
    order to avoid the nuisance of changing some compilation setups and scripts
    existing at that time. */
 
@@ -49,7 +49,7 @@ void gosub_7330();
 char strcmpe(vstring s1, vstring s2);
 vstring stripAndTag(vstring line, vstring tag, flag tagBlankLines);
 
-long r0,r1,r2,i0,i1_,i2,d,t,i,j,i9;
+long r0,r1,r2,i0,i1_,i2_,d,t,i9;
 FILE *f1_fp_;
 FILE *f2_fp_;
 FILE *f3_fp_;
@@ -72,17 +72,18 @@ flag printedAtLeastOne;
      vstring reserve2_[MAX_BUF];
 
 
-/* revise() is called by the TAG command of TOOLs.  The idea is to keep
-   all past history of a file in the file itself, in the form of comments.
-   In mmcmds.c, see the parsing of the TAG command for a partial explanation
-   of its arguments.  TAG was written for a proprietary language with C-style
-   comments (where nested comments were allowed) and it may not be generally
-   useful without some modification. */
+/* revise() is called by the UPDATE command of TOOLs.  The idea is to
+   keep all past history of a file in the file itself, in the form of
+   comments.  In mmcmds.c, see the parsing of the UPDATE command for a
+   partial explanation of its arguments.  UPDATE was written for a
+   proprietary language with C-style comments (where nested comments were
+   allowed) and it may not be generally useful without some modification. */
 void revise(FILE *f1_fp, FILE *f2_fp, FILE *f3_fp, vstring addTag, long m)
 {
   /******** Figure out the differences (DO LIST subroutine) ******/
   vstring blanksPrefix = "";
   long tmpi;
+  long i, j;
 
   f1_fp_ = f1_fp;
   f2_fp_ = f2_fp;
@@ -104,7 +105,7 @@ void revise(FILE *f1_fp, FILE *f2_fp, FILE *f3_fp, vstring addTag, long m)
 
   if (m < 1) m = 1;
 
-  r0=r1=r2=i0=i1_=i2=d=t=i=j=i9=0;
+  r0=r1=r2=i0=i1_=i2_=d=t=i=j=i9=0;
 
 
   let(&ctlz_,chr(26));  /* End-of-file character */
@@ -157,7 +158,7 @@ l7100:  /*
         }
         d=d+1;  /* Number of difference sections found so far
                          (For user information only) */
-        i1_=i2=m-1;
+        i1_=i2_=m-1;
         let(&line1_[0],l1_);
         let(&line2_[0],l2_);
         for (i0 = 1; i0 < m; i0++) {
@@ -197,29 +198,29 @@ l7140:  if (strcmpe(line1_[i1_+t-m+1], line2_[i+t])) {
         }
 
         i=i+1;
-        if (i<=i2-m+1) {
+        if (i<=i2_-m+1) {
                 goto l7140;
         }
         gosub_7330();
-        i2=i2+1;
-        if (i2 >= MAX_LINES) {
+        i2_=i2_+1;
+        if (i2_ >= MAX_LINES) {
           printf("*** FATAL *** Overflow#2\n");
 #ifdef __STDC__
           fflush(stdout);
 #endif
           exit(0);
         }
-        let(&line2_[i2],l2_);
+        let(&line2_[i2_],l2_);
         t=0;
         i=0;
 l7170:
-        if (strcmpe(line1_[i+t], line2_[i2+t-m+1])) {
+        if (strcmpe(line1_[i+t], line2_[i2_+t-m+1])) {
                 t=0;
         } else {
 
                 /* If lines "match", ensure we use the EDITED version for the
                    final output */
-                let(&line1_[i+t], line2_[i2+t-m+1]);
+                let(&line1_[i+t], line2_[i2_+t-m+1]);
 
                 t=t+1;
                 if (t==m) {
@@ -236,13 +237,13 @@ l7170:
 l7200:  i=i+m-1;
         if (r2) {
           for (j=r2-1; j>=0; j--) {
-                let(&reserve2_[j+i2-i],reserve2_[j]);
+                let(&reserve2_[j+i2_-i],reserve2_[j]);
           }
         }
-        for (j=1; j<=i2-i; j++) {
+        for (j=1; j<=i2_-i; j++) {
           let(&reserve2_[j-1],line2_[j+i]);
         }
-        r2=r2+i2-i;
+        r2=r2+i2_-i;
         if (r2 >= MAX_BUF) {
           printf("*** FATAL *** Overflow#3\n");
 #ifdef __STDC__
@@ -250,7 +251,7 @@ l7200:  i=i+m-1;
 #endif
           exit(0);
         }
-        i2=i;
+        i2_=i;
         goto l7240;
 l7220:  i=i+m-1;
         if (r1) {
@@ -307,7 +308,7 @@ l7240: /* */
          fprintf(f3_fp_, "%s\n", tmpLine);
        }
        for (i=0; i<=i1_-m; i++) {
-         if (i<=i2-m) {
+         if (i<=i2_-m) {
            if (strcmpe(line2_[i],ctlz_)) {
              let(&tmpLine, "");
              if (i == 0) {
@@ -322,7 +323,7 @@ l7240: /* */
            }
          }
        }
-       for (i=i1_-m+1; i<=i2-m; i++) {
+       for (i=i1_-m+1; i<=i2_-m; i++) {
          if (strcmpe(line2_[i],ctlz_)) {
            let(&tmpLine, "");
            if (i == 0) {
@@ -354,7 +355,7 @@ l7240: /* */
 void gosub_7320()
 {
         /* Subroutine:  get next L1_ from original file */
-  vstring tmpLine = "";
+  vstring tmpLin = "";
   if (r1) {     /*  Get next line from save array */
     let(&l1_,reserve1_[0]);
     r1=r1-1;
@@ -371,24 +372,24 @@ void gosub_7320()
         /* Note that we will discard any blank lines before EOF; this
            should be OK though */
         let(&l1_,ctlz_);
-        let(&tmpLine, ""); /* Deallocate */
+        let(&tmpLin, ""); /* Deallocate */
         return;
       }
       let(&l1_, edit(l1_, 4 + 128 + 2048)); /* Trim garb, trail space; untab */
       if (!l1_[0]) { /* Ignore blank lines for comparison */
-        let(&tmpLine, cat(tmpLine, "\n", NULL)); /* Blank line */
+        let(&tmpLin, cat(tmpLin, "\n", NULL)); /* Blank line */
         goto next_l1;
       }
     }
   }
-  let(&l1_, cat(tmpLine, l1_, NULL)); /* Add any blank lines */
-  let(&tmpLine, ""); /* Deallocate */
+  let(&l1_, cat(tmpLin, l1_, NULL)); /* Add any blank lines */
+  let(&tmpLin, ""); /* Deallocate */
   return;
 }
 
 void gosub_7330() {
         /*  Subroutine:  get next L2_ from edited file */
-  vstring tmpLine = "";
+  vstring tmpLin = "";
   vstring tmpStrPtr; /* pointer only */
   flag stripDeletedSectionMode;
   if (r2) {     /*  Get next line from save array */
@@ -408,7 +409,7 @@ void gosub_7330() {
         /* Note that we will discard any blank lines before EOF; this
            should be OK though */
         let(&l2_, ctlz_);
-        let(&tmpLine, ""); /* Deallocate */
+        let(&tmpLin, ""); /* Deallocate */
         return;
       }
       let(&l2_, edit(l2_, 4 + 128 + 2048)); /* Trim garb, trail space; untab */
@@ -439,13 +440,13 @@ void gosub_7330() {
       }
 
       if (!l2_[0]) { /* Ignore blank lines for comparison */
-        let(&tmpLine, cat(tmpLine, "\n", NULL)); /* Blank line */
+        let(&tmpLin, cat(tmpLin, "\n", NULL)); /* Blank line */
         goto next_l2;
       }
     }
   }
-  let(&l2_, cat(tmpLine, l2_, NULL)); /* Add any blank lines */
-  let(&tmpLine, ""); /* Deallocate */
+  let(&l2_, cat(tmpLin, l2_, NULL)); /* Add any blank lines */
+  let(&tmpLin, ""); /* Deallocate */
   return;
 
 }
@@ -520,10 +521,10 @@ vstring stripAndTag(vstring line, vstring tag, flag tagBlankLines)
     i = j;
   }
   j = instr(i, line1, "*/");
-  if (i && j == strlen(line1) - 1) {
+  if (i && j == (signed)(strlen(line1)) - 1) {
     let(&comment, seg(line1, i + 2, j - 1));
     validTag = 1;
-    for (k = 0; k < strlen(comment); k++) {
+    for (k = 0; k < (signed)(strlen(comment)); k++) {
       /* Check for valid characters that can appear in a tag */
       if (instr(1, " 1234567890#", mid(comment, k + 1, 1))) continue;
       validTag = 0;
@@ -544,7 +545,7 @@ vstring stripAndTag(vstring line, vstring tag, flag tagBlankLines)
           space(lineLength - 1 - strlen(tag) - strlen(line1) + n),
           NULL));
     let(&line1, cat(line1, " ", tag, NULL));
-    if (strlen(line1) - n > lineLength) {
+    if ((signed)(strlen(line1)) - n > lineLength) {
       print2(
 "Warning: The following line has > %ld characters after tag is added:\n",
           lineLength);

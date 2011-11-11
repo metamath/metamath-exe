@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2010  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2011  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -167,7 +167,7 @@ flag processCommandLine(void)
           if (lastArgMatches("/")) {
             i++;
             if (!getFullArg(i,cat(
-                "CLEAN",
+                "CLEAN|FORMAT|REWRAP",
                 "|<CLEAN>",NULL)))
               goto pclbad;
           } else {
@@ -922,8 +922,11 @@ flag processCommandLine(void)
         if (lastArgMatches("/")) {
           i++;
           if (!getFullArg(i,cat(
-              "BRIEF|ALLOW_GROWTH|NO_DISTINCT|EXCEPT|<BRIEF>", NULL)))
-                                       /* 7-Jan-06 nm Added EXCEPT */
+              "BRIEF|ALLOW_GROWTH|NO_DISTINCT|EXCEPT|",
+              "REVERSE|INCLUDE_MATHBOXES|<BRIEF>", NULL)))
+                                   /* 7-Jan-06 nm Added EXCEPT */
+                                   /* 28-Jun-2011 nm Added INCLUDE_MATHBOXES */
+                                   /* 10-Nov-2011 nm Added REVERSE */
             goto pclbad;
 
           /* 7-Jan-06 nm Added EXCEPT */
@@ -1258,7 +1261,7 @@ flag processCommandLine(void)
           "HELP|SUBMIT|",
           "ADD|DELETE|SUBSTITUTE|S|SWAP|CLEAN|INSERT|BREAK|BUILD|MATCH|SORT|",
           "UNDUPLICATE|DUPLICATE|UNIQUE|REVERSE|RIGHT|PARALLEL|NUMBER|COUNT|",
-          "COPY|C|TYPE|T|TAG|BEEP|B|EXIT|QUIT|<HELP>",NULL));
+          "COPY|C|TYPE|T|TAG|UPDATE|BEEP|B|EXIT|QUIT|<HELP>",NULL));
     if (!getFullArg(0,tmpStr))
       goto pclbad;
 
@@ -1266,18 +1269,32 @@ flag processCommandLine(void)
       if (!getFullArg(1, cat(
           "ADD|DELETE|SUBSTITUTE|S|SWAP|CLEAN|INSERT|BREAK|BUILD|MATCH|SORT|",
           "UNDUPLICATE|DUPLICATE|UNIQUE|REVERSE|RIGHT|PARALLEL|NUMBER|COUNT|",
-          "TYPE|T|TAG|BEEP|B|EXIT|QUIT|",
+          "TYPE|T|TAG|UPDATE|BEEP|B|EXIT|QUIT|",
           "COPY|C|SUBMIT|SYSTEM|CLI|",
           "$|<$>", NULL))) goto pclbad;
       goto pclgood;
     }
-    if (cmdMatches("ADD")) {
+    if (cmdMatches("ADD") || cmdMatches("TAG")) {
       if (!getFullArg(1,"& Input/output file? "))
         goto pclbad;
       if (!getFullArg(2,"* String to add to beginning of each line <>? "))
         goto pclbad;
       if (!getFullArg(3,"* String to add to end of each line <>? "))
         goto pclbad;
+      if (cmdMatches("TAG")) {
+        if (!getFullArg(4,
+            "* String to match to start range (null = any line) <>? "))
+          goto pclbad;
+        if (!getFullArg(5,
+            "# Which occurrence of start match to start range <1>? "))
+          goto pclbad;
+        if (!getFullArg(6,
+            "* String to match to end range (null = any line) <>? "))
+          goto pclbad;
+        if (!getFullArg(7,
+            "# Which occurrence of end match to end range <1>? "))
+          goto pclbad;
+      }
       goto pclgood;
     }
     if (cmdMatches("DELETE")) {
@@ -1405,11 +1422,11 @@ flag processCommandLine(void)
     }
 
 
-    if (cmdMatches("TAG")) {
+    if (cmdMatches("UPDATE")) {
       print2(
-"Warning: Do not comment out code - delete it before running TAG!  If\n");
+"Warning: Do not comment out code - delete it before running UPDATE!  If\n");
       print2(
-"rerunning TAG, do not tamper with \"start/end of deleted section\" comments!\n");
+"rerunning UPDATE, do not tamper with \"start/end of deleted section\" comments!\n");
       print2(
 "Edit out tag on header comment line!  Review the output file!\n");
       if (!getFullArg(1,"& Original (reference) program input file? "))

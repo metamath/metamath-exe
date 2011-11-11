@@ -1,11 +1,37 @@
 /*****************************************************************************/
 /* Program name:  metamath                                                   */
-/* Copyright (C) 2010 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
+/* Copyright (C) 2011 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
 /* License terms:  GNU General Public License Version 2 or any later version */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.07.59 11-Dec-2010"
+#define MVERSION "0.07.71 10-Nov-2011"
+/* 0.07.71 10-Nov-2011 nm metamath.c, mmcmdl.c - added /REV to MINIMIZE_WITH */
+/* 0.07.70 6-Aug-2011 nm mmwtex.c - fix handling of double quotes inside
+   of htmldef strings to match spec in Metamath book Appendix A p. 156 */
+/* 0.07.69 9-Jul-2011 nm mmpars.c, mmvstr.c - Untab file in WRITE SOURCE
+   ... /REWRAP */
+/* 0.07.68 3-Jul-2011 nm metamath.c, mminou.h, mminou.c - Nested SUBMIT calls
+   (SUBMIT calls inside of a SUBMIT command file) are now allowed.
+   Also, mmdata.c - fix memory leak. */
+/* 0.07.67 2-Jul-2011 nm metamath.c, mmcmdl.c, mmhlpa.c - Added TAG command
+   to TOOLS.  See HELP TAG under TOOLS.  (The old special-purpose TAG command
+   was renamed to UPDATE.) */
+/* 0.07.66 1-Jul-2011 nm metamath.c, mmcmds.c, mmpars.c, mmpars.h - Added code
+   to strip spurious "$( [?] $)" in WRITE SOURCE ... /CLEAN output */
+/* 0.07.65 30-Jun-2011 nm mmwtex.c - Prevent processing [...] bibliography
+   brackets inside of `...` math strings in comments. */
+/* 0.07.64 28-Jun-2011 nm metamath.c, mmcmdl.c - Added /INCLUDE_MATHBOXES
+   qualifier to MINIMIZE_WITH; without it, MINIMIZE_WITH * will skip
+   checking user mathboxes. */
+/* 0.07.63 26-Jun-2011 nm mmwtex.c - check that .gifs exist for htmldefs */
+/* 0.07.62 18-Jun-2011 nm mmpars.c - fixed bug where redeclaration of active
+   $v was not detected */
+/* 0.07.61 12-Jun-2011 nm mmpfas.c, mmcmds.c, metamath.c, mmhlpb.c - added
+   /FORMAT and /REWRAP qualifiers to WRITE SOURCE to format according to set.mm
+   conventions - set HELP WRITE SOURCE */
+/* 0.07.60 7-Jun-2011 nm mmpfas.c - fixed bug 1805 which occurred when doing
+   MINIMIZE_WITH weq/ALLOW_GROWTH after DELETE DELETE FLOATING_HYPOTHESES */
 /* 0.07.59 11-Dec-2010 nm mmpfas.c - increased default SET SEARCH_LIMIT from
    10000 to 25000 to accomodate df-plig web page in set.mm */
 /* 0.07.58 9-Dec-2010 nm mmpars.c - detect if same symbol is used with both
@@ -181,7 +207,7 @@
     mmveri.c - Proof verifier for source file
     mmvstr.c - BASIC-like string functions
     mmwtex.c - LaTeX/HTML source generation
-    mmword.c - File revision utility (for TOOLS> TAG) (not generally useful)
+    mmword.c - File revision utility (for TOOLS> UPDATE) (not generally useful)
 */
 
 /*****************************************************************************/
@@ -274,10 +300,10 @@ console_options.title = (unsigned char*)"\pMetamath";
   /* (Historically, this mode was used for the creation of a stand-alone
      "TOOLS>" utility for people not interested in Metamath.  This utility
      was named "LIST.EXE", "tools.exe", and "tools" on VMS, DOS, and Unix
-     platforms respectively.  The TAG command of TOOLS (mmword.c) was custom-
-     written in accordance with the version control requirements of a company
-     that used it; it documents the differences between two versions of a
-     program as C-style comments embedded in the newer version.) */
+     platforms respectively.  The UPDATE command of TOOLS (mmword.c) was
+     custom-written in accordance with the version control requirements of a
+     company that used it; it documents the differences between two versions
+     of a program as C-style comments embedded in the newer version.) */
   listMode = 0; /* Force Metamath mode as startup */
 
 
@@ -316,7 +342,7 @@ void command(int argc, char *argv[])
 
   /* The variables in command() are static so that they won't be destroyed
     by a longjmp return to setjmp. */
-  long e, i, j, k, m, l, n, p, q, s /*,tokenNum*/;
+  long c, e, i, j, k, m, l, n, p, q, r, s /*,tokenNum*/;
   int subType = 0;
 #define SYNTAX 4
   vstring str1 = "", str2 = "", str3 = "", str4 = "", str5= "";
@@ -362,7 +388,10 @@ void command(int argc, char *argv[])
   flag commentOnlyFlag; /* For SHOW STATEMENT */
   flag briefFlag; /* For SHOW STATEMENT */
   flag linearFlag; /* For SHOW LABELS */
-  vstring bgcolor = ""; /* 8-Aug-2008 nm For SHOW STATEMENT definition list */
+  vstring bgcolor = ""; /* For SHOW STATEMENT definition list */
+                                                            /* 8-Aug-2008 nm */
+  flag mathboxFlag; /* For MINIMIZE_WITH */ /* 28-Jun-2011 nm */
+  flag revFlag; /* For MINIMIZE_WITH */ /* 11-Nov-2011 nm */
 
   /* toolsMode-specific variables */
   flag commandProcessedFlag = 0; /* Set when the first command line processed;
@@ -378,6 +407,12 @@ void command(int argc, char *argv[])
   flag cmdMode, changedFlag, outMsgFlag;
   double sum;
   vstring bufferedLine = "";
+  vstring tagStartMatch = "";  /* 2-Jul-2011 nm For TAG command */
+  long tagStartCount = 0;      /* 2-Jul-2011 nm For TAG command */
+  vstring tagEndMatch = "";    /* 2-Jul-2011 nm For TAG command */
+  long tagEndCount = 0;        /* 2-Jul-2011 nm For TAG command */
+  long tagStartCounter = 0;    /* 2-Jul-2011 nm For TAG command */
+  long tagEndCounter = 0;      /* 2-Jul-2011 nm For TAG command */
 
   /* Initialization to avoid compiler warning (should not be theoretically
      necessary) */
@@ -386,6 +421,10 @@ void command(int argc, char *argv[])
   s = 0;
   texHeaderFlag = 0;
   firstChangedLine = 0;
+  tagStartCount = 0;           /* 2-Jul-2011 nm For TAG command */
+  tagEndCount = 0;             /* 2-Jul-2011 nm For TAG command */
+  tagStartCounter = 0;         /* 2-Jul-2011 nm For TAG command */
+  tagEndCounter = 0;           /* 2-Jul-2011 nm For TAG command */
 
   while (1) {
 
@@ -393,7 +432,8 @@ void command(int argc, char *argv[])
       /* If called from the OS shell with arguments, do one command
          then exit program. */
       /* (However, let a SUBMIT job complete) */
-      if (argc > 1 && commandProcessedFlag && !commandFileOpenFlag) return;
+      if (argc > 1 && commandProcessedFlag &&
+             commandFileNestingLevel == 0) return;
     }
 
     errorCount = 0; /* Reset error count before each read or proof parse. */
@@ -467,7 +507,7 @@ void command(int argc, char *argv[])
     let(&commandLine,""); /* Deallocate previous contents */
 
     if (!commandProcessedFlag && argc > 1 && argsProcessed < argc - 1
-        && !commandFileOpenFlag) {
+        && commandFileNestingLevel == 0) {
       /* if (toolsMode) { */  /* 10-Oct-2006 nm Fix bug: changed to listMode */
       if (listMode) {
         /* If program was compiled in TOOLS mode, the command-line argument
@@ -720,23 +760,29 @@ void command(int argc, char *argv[])
     }
 
     if (cmdMatches("SUBMIT")) {
-      if (commandFileOpenFlag) {
-        printf("?You may not nest SUBMIT commands.\n");
+      if (commandFileNestingLevel == MAX_COMMAND_FILE_NESTING) {
+        printf("?The SUBMIT nesting level has been exceeded.\n");
         continue;
       }
-      let(&commandFileName, fullArg[1]);
-      commandFilePtr = fSafeOpen(commandFileName, "r");
-      if (!commandFilePtr) continue; /* Couldn't open (err msg was provided) */
-      commandFileOpenFlag = 1;
+      commandFilePtr[commandFileNestingLevel + 1] = fSafeOpen(fullArg[1], "r");
+      if (!commandFilePtr[commandFileNestingLevel + 1]) continue;
+                                      /* Couldn't open (err msg was provided) */
+      commandFileNestingLevel++;
+      commandFileName[commandFileNestingLevel] = ""; /* Initialize if nec. */
+      let(&commandFileName[commandFileNestingLevel], fullArg[1]);
 
       /* 23-Oct-2006 nm Added / SILENT */
-      if (switchPos("/ SILENT") == 0) {
-        commandFileSilentFlag = 0;
+      commandFileSilent[commandFileNestingLevel] = 0;
+      if (switchPos("/ SILENT")
+          || commandFileSilentFlag /* Propagate silence from outer level */) {
+        commandFileSilent[commandFileNestingLevel] = 1;
       } else {
-        commandFileSilentFlag = 1;
+        commandFileSilent[commandFileNestingLevel] = 0;
       }
+      commandFileSilentFlag = commandFileSilent[commandFileNestingLevel];
       if (!commandFileSilentFlag)
-        print2("Taking command lines from file \"%s\"...\n", commandFileName);
+        print2("Taking command lines from file \"%s\"...\n",
+            commandFileName[commandFileNestingLevel]);
 
       continue;
     }
@@ -753,6 +799,7 @@ void command(int argc, char *argv[])
 #define BUILD_MODE 8
 #define MATCH_MODE 9
 #define RIGHT_MODE 10
+#define TAG_MODE 11  /* 2-Jul-2011 nm Added TAG command */
       cmdMode = 0;
       if (cmdMatches("ADD")) cmdMode = ADD_MODE;
       else if (cmdMatches("DELETE")) cmdMode = DELETE_MODE;
@@ -765,6 +812,7 @@ void command(int argc, char *argv[])
       else if (cmdMatches("BUILD")) cmdMode = BUILD_MODE;
       else if (cmdMatches("MATCH")) cmdMode = MATCH_MODE;
       else if (cmdMatches("RIGHT")) cmdMode = RIGHT_MODE;
+      else if (cmdMatches("TAG")) cmdMode = TAG_MODE;
       if (cmdMode) {
         list1_fp = fSafeOpen(fullArg[1], "r");
         if (!list1_fp) continue; /* Couldn't open it (error msg was provided) */
@@ -772,7 +820,7 @@ void command(int argc, char *argv[])
           /* Find the longest line */
           p = 0;
           while (linput(list1_fp, NULL, &str1)) {
-            if (p < strlen(str1)) p = strlen(str1);
+            if (p < (signed)(strlen(str1))) p = strlen(str1);
           }
           rewind(list1_fp);
         }
@@ -792,6 +840,16 @@ void command(int argc, char *argv[])
         outMsgFlag = 0;
         switch (cmdMode) {
           case ADD_MODE:
+            break;
+          case TAG_MODE:  /* 2-Jul-2011 nm Added TAG command */
+            let(&tagStartMatch, fullArg[4]);
+            tagStartCount = val(fullArg[5]);
+            if (tagStartCount == 0) tagStartCount = 1; /* Default */
+            let(&tagEndMatch, fullArg[6]);
+            tagEndCount = val(fullArg[7]);
+            if (tagEndCount == 0) tagEndCount = 1; /* Default */
+            tagStartCounter = 0;
+            tagEndCounter = 0;
             break;
           case DELETE_MODE:
             break;
@@ -867,6 +925,17 @@ void command(int argc, char *argv[])
             case ADD_MODE:
               let(&str2, cat(fullArg[2], str1, fullArg[3], NULL));
               if (strcmp(str1, str2)) changedLines++;
+              break;
+            case TAG_MODE:   /* 2-Jul-2011 nm Added TAG command */
+              if (tagStartCounter < tagStartCount) {
+                if (instr(1, str1, tagStartMatch)) tagStartCounter++;
+              }
+              if (tagStartCounter == tagStartCount &&
+                  tagEndCounter < tagEndCount) { /* We're in tagging range */
+                let(&str2, cat(fullArg[2], str1, fullArg[3], NULL));
+                if (strcmp(str1, str2)) changedLines++;
+                if (instr(1, str1, tagEndMatch)) tagEndCounter++;
+              }
               break;
             case DELETE_MODE:
               p1 = instr(1, str1, fullArg[2]);
@@ -953,7 +1022,7 @@ void command(int argc, char *argv[])
               }
               break;
             case INSERT_MODE:
-              if (strlen(str2) < p - 1)
+              if ((signed)(strlen(str2)) < p - 1)
                 let(&str2, cat(str2, space(p - 1 - strlen(str2)), NULL));
               let(&str2, cat(left(str2, p - 1), fullArg[2],
                   right(str2, p), NULL));
@@ -962,7 +1031,7 @@ void command(int argc, char *argv[])
             case BREAK_MODE:
               let(&str2, str1);
               changedLines++;
-              for (i = 0; i < strlen(fullArg[2]); i++) {
+              for (i = 0; i < (signed)(strlen(fullArg[2])); i++) {
                 p = 0;
                 while (1) {
                   p = instr(p + 1, str2, chr(((vstring)(fullArg[2]))[i]));
@@ -1047,42 +1116,52 @@ void command(int argc, char *argv[])
             }
           }
         }
-        /* Convert any lf's to 1st line in string for readability of msg */
+        /* Remove any lines after lf for readability of msg */
         p = instr(1, str3, "\n");
         if (p) let(&str3, left(str3, p - 1));
         if (!outMsgFlag) {
+          /* 18-Aug-2011 nm Make message depend on line counts */
           if (!changedFlag) {
             if (!lines) {
               print2("The file %s has no lines.\n", fullArg[1]);
             } else {
               print2(
-"The file %s has %ld lines; none were changed.  First line:\n",
-                list2_fname, lines);
+"The file %s has %ld line%s; none were changed.  First line:\n",
+                list2_fname, lines, (lines == 1) ? "" : "s");
               print2("%s\n", str3);
             }
           } else {
             print2(
-"The file %s has %ld lines; %ld were changed.  First changed line is %ld:\n",
-                list2_fname, lines, changedLines, firstChangedLine);
+"The file %s has %ld line%s; %ld w%s changed.  First changed line is %ld:\n",
+                list2_fname,
+                lines,  (lines == 1) ? "" : "s",
+                changedLines,  (changedLines == 1) ? "as" : "ere",
+                firstChangedLine);
             print2("%s\n", str3);
           }
-          if (twoMatches) {
+          if (twoMatches > 0) {
+            /* For SWAP command */
             print2(
-"Warning:  %ld lines has more than one \"%s\".  The first one was used.\n",
-                 twoMatches, fullArg[2]);
+"Warning:  %ld line%s more than one \"%s\".  The first one was used.\n",
+                twoMatches, (twoMatches == 1) ? " has" : "s have", fullArg[2]);
           }
         } else {
-          if (changedLines == 0) let(&str3, "");
+          /* if (changedLines == 0) let(&str3, ""); */
           print2(
-"The input had %ld lines, the output has %ld lines.  First output line:\n",
-              lines, changedLines);
-          print2("%s\n", str3);
+"The input had %ld line%s, the output has %ld line%s.%s\n",
+              lines, (lines == 1) ? "" : "s",
+              changedLines, (changedLines == 1) ? "" : "s",
+              (changedLines == 0) ? "" : " First output line:");
+          if (changedLines != 0) print2("%s\n", str3);
         }
         fclose(list1_fp);
         fclose(list2_fp);
         fSafeRename(list2_ftmpname, list2_fname);
+        /* Deallocate string memory */
+        let(&tagStartMatch, "");  /* 2-Jul-2011 nm Added TAG command */
+        let(&tagEndMatch, "");  /* 2-Jul-2011 nm Added TAG command */
         continue;
-      } /* end if cmdMode */
+      } /* end if cmdMode for ADD, etc. */
 
 #define SORT_MODE 1
 #define UNDUPLICATE_MODE 2
@@ -1216,7 +1295,7 @@ void command(int argc, char *argv[])
         fclose(list2_fp);
         fSafeRename(list2_ftmpname, list2_fname);
         continue;
-      } /* end if cmdMode */
+      } /* end if cmdMode for SORT, etc. */
 
       if (cmdMatches("PARALLEL")) {
         list1_fp = fSafeOpen(fullArg[1], "r");
@@ -1304,14 +1383,14 @@ void command(int argc, char *argv[])
           lines++;
 
           /* Longest line */
-          if (q < strlen(str1)) {
+          if (q < (signed)(strlen(str1))) {
             q = strlen(str1);
             let(&str4, str1);
             i = lines;
             j = 0;
           }
 
-          if (q == strlen(str1)) {
+          if (q == (signed)(strlen(str1))) {
             j++;
           }
 
@@ -1342,7 +1421,10 @@ void command(int argc, char *argv[])
             j, i, q);
         printLongLine(str4, "    "/*startNextLine*/, ""/*breakMatch*/);
             /* breakMatch empty means break line anywhere */  /* 6-Dec-03 */
-        print2("If each line were a number, their sum would be %s\n", str(sum));
+ /* print2("If each line were a number, their sum would be %s\n", str(sum)); */
+        printLongLine(cat(
+            "Stripping all but digits, \".\", and \"-\", the sum of lines is ",
+            str(sum), NULL), "    ", " ");
         fclose(list1_fp);
         continue;
       }
@@ -1368,7 +1450,7 @@ void command(int argc, char *argv[])
         continue;
       } /* end TYPE */
 
-      if (cmdMatches("TAG")) {
+      if (cmdMatches("UPDATE")) {
         list1_fp = fSafeOpen(fullArg[1], "r");
         list2_fp = fSafeOpen(fullArg[2], "r");
         if (!list1_fp) continue; /* Couldn't open it (error msg was provided) */
@@ -1527,15 +1609,24 @@ void command(int argc, char *argv[])
 
       /* Added 24-Oct-03 nm */
       if (switchPos("/ CLEAN") > 0) {
-        cmdMode = 1; /* Clean out any proof-in-progress (that user has flagged
+        c = 1; /* Clean out any proof-in-progress (that user has flagged
                         with a ? in its date comment field) */
       } else {
-        cmdMode = 0; /* Output all proofs (normal) */
+        c = 0; /* Output all proofs (normal) */
       }
 
-      writeInput(cmdMode); /* Added argument 24-Oct-03 nm */
+      /* Added 12-Jun-2011 nm */
+      if (switchPos("/ REWRAP") > 0) {
+        r = 2; /* Re-wrap then format (more aggressive than / FORMAT) */
+      } else if (switchPos("/ FORMAT") > 0) {
+        r = 1; /* Format output according to set.mm standard */
+      } else {
+        r = 0; /* Keep formatting as-is */
+      }
+
+      writeInput(c, r); /* Added argument 24-Oct-03 nm 12-Jun-2011 nm */
       fclose(output_fp);
-      if (cmdMode == 0) sourceChanged = 0; /* Don't unset flag if CLEAN option
+      if (c == 0) sourceChanged = 0; /* Don't unset flag if CLEAN option
                                     since some new proofs may not be saved. */
       continue;
     } /* End of WRITE SOURCE */
@@ -1645,7 +1736,7 @@ void command(int argc, char *argv[])
           let(&str1, "");
           str1 = getDescription(i); /* Get the statement's comment */
           if (!instr(1, str1, "[")) continue;
-          for (j = 0; j < strlen(str1); j++) {
+          for (j = 0; j < (signed)(strlen(str1)); j++) {
             if (str1[j] == '\n') str1[j] = ' '; /* Change newlines to spaces */
             if (str1[j] == '\r') bug(1119);
           }
@@ -1656,7 +1747,7 @@ void command(int argc, char *argv[])
             j = instr(j + 1, str1, " p. "); /* Heuristic - match " p. " */
             if (!j) break;
             if (j) {
-              for (k = j + 4; k <= strlen(str1) + 1; k++) {
+              for (k = j + 4; k <= (signed)(strlen(str1)) + 1; k++) {
                 if (!isdigit((unsigned char)(str1[k - 1]))) {
                   let(&str1, cat(left(str1, j + 2),
                       space(4 - (k - (j + 4))), right(str1, j + 3), NULL));
@@ -1702,6 +1793,7 @@ void command(int argc, char *argv[])
                   || !strcmp(mid(str2, k, strlen("POSTULATE")), "POSTULATE")
                   || !strcmp(mid(str2, k, strlen("EQUATION")), "EQUATION")
                   || !strcmp(mid(str2, k, strlen("SCHEME")), "SCHEME")
+                  || !strcmp(mid(str2, k, strlen("ITEM")), "ITEM")
                   /* Don't use SCHEMA since we may have THEOREM SCHEMA
                   || !strcmp(mid(str2, k, strlen("SCHEMA")), "SCHEMA")
                   */
@@ -2242,8 +2334,9 @@ void command(int argc, char *argv[])
           if (!m && statement[i].type != (char)p__ &&
               statement[i].type != (char)a__) continue; /* No /ALL switch */
           /* 30-Jan-06 nm Added single-character-match wildcard argument */
-          if (!matchesList(statement[i].labelName, fullArg[2], '*', '?'))
+          if (!matchesList(statement[i].labelName, fullArg[2], '*', '?')) {
             continue;
+          }
           let(&str1,cat(str(i)," ",
               statement[i].labelName," $",chr(statement[i].type)," ",NULL));
 #define COL 19 /* Characters per column */
@@ -2292,7 +2385,8 @@ void command(int argc, char *argv[])
       showStatement = i;
 
       let(&str1, "");
-      str1 = outputStatement(showStatement);
+      str1 = outputStatement(showStatement, 0 /* cleanFlag */,
+          0 /* reformatFlag */);
       let(&str1,edit(str1,128)); /* Trim trailing spaces */
       if (str1[strlen(str1)-1] == '\n') let(&str1, left(str1,
           strlen(str1) - 1));
@@ -2575,7 +2669,7 @@ void command(int argc, char *argv[])
                     /* 2/9/02  Skip any tokens (such as |-) that may be suppressed */
                     if (!str2[0]) continue;
                     /* Convert special characters to HTML entities */
-                    for (k = 0; k < strlen(str1); k++) {
+                    for (k = 0; k < (signed)(strlen(str1)); k++) {
                       if (str1[k] == '&') {
                         let(&str1, cat(left(str1, k), "&amp;",
                             right(str1, k + 2), NULL));
@@ -3379,7 +3473,9 @@ void command(int argc, char *argv[])
             let(&str2, space(statement[i + 1].labelSectionLen));
             memcpy(str2, statement[i + 1].labelSectionPtr,
                 statement[i + 1].labelSectionLen);
-            if (pipFlag && !instr(1, str2, "$([")
+            /* 12-Jun-2011 nm Removed pipFlag condition so that a date
+               stamp will always be created if it doesn't exist */
+            if ( /* pipFlag && */ !instr(1, str2, "$([")
                 /* 7-Sep-04 Allow both "$([<date>])$" and "$( [<date>] )$" */
                 && !instr(1, str2, "$( [")) {
             /* 6/13/98 end */
@@ -3448,6 +3544,7 @@ void command(int argc, char *argv[])
             statement[i].proofSectionPtr = printString + 1;
             /* Subtr 1 char for ASCII 1 at beg, 1 char for "\n" */
             statement[i].proofSectionLen = strlen(printString) - 2;
+            /* Reset printString without deallocating */
             printString = "";
             outputToString = 0;
             if (!pipFlag) {
@@ -3539,7 +3636,6 @@ void command(int argc, char *argv[])
             pipFlag,
             startStep,
             endStep,
-            startIndent, /* Not used */
             endIndent,
             essentialFlag,
             renumberFlag,
@@ -3733,7 +3829,6 @@ void command(int argc, char *argv[])
             1 /*pipFlag*/,
             0 /*startStep*/,
             0 /*endStep*/,
-            0 /*startIndent*/, /* Not used */
             0 /*endIndent*/,
             1 /*essentialFlag*/,
             0 /*renumberFlag*/,
@@ -3814,7 +3909,6 @@ void command(int argc, char *argv[])
           1 /*pipFlag*/,
           0 /*startStep*/,
           0 /*endStep*/,
-          0 /*startIndent*/, /* Not used */
           0 /*endIndent*/,
           1 /*essentialFlag*/,
           0 /*renumberFlag*/,
@@ -4014,7 +4108,6 @@ void command(int argc, char *argv[])
           1 /*pipFlag*/,
           0 /*startStep*/,
           0 /*endStep*/,
-          0 /*startIndent*/, /* Not used */
           0 /*endIndent*/,
           1 /*essentialFlag*/,
           0 /*renumberFlag*/,
@@ -4202,7 +4295,6 @@ void command(int argc, char *argv[])
           1 /*pipFlag*/,
           0 /*startStep*/,
           0 /*endStep*/,
-          0 /*startIndent*/, /* Not used */
           0 /*endIndent*/,
           1 /*essentialFlag*/,
           0 /*renumberFlag*/,
@@ -4631,7 +4723,6 @@ void command(int argc, char *argv[])
             1 /*pipFlag*/,
             0 /*startStep*/,
             0 /*endStep*/,
-            0 /*startIndent*/, /* Not used */
             0 /*endIndent*/,
             1 /*essentialFlag*/,
             0 /*renumberFlag*/,
@@ -4662,8 +4753,26 @@ void command(int argc, char *argv[])
                                        if doesn't reduce proof length */
       p = switchPos("/ NO_DISTINCT"); /* Skip trying statements with $d */
       e = switchPos("/ EXCEPT"); /* Statement match to skip */ /* 7-Jan-06 */
+      mathboxFlag = (switchPos("/ INCLUDE_MATHBOXES") != 0); /* 28-Jun-2011 */
+      revFlag = (switchPos("/ REVERSE") != 0); /* 10-Nov-2011 nm */
+      if (sandboxStmt == 0) { /* Look up "mathbox" label if it hasn't been */
+        sandboxStmt = lookupLabel("mathbox");
+        if (sandboxStmt == -1)
+          sandboxStmt = statements + 1;  /* Default beyond db end if none */
+      }
       if (j) j = 1; /* Make sure it's a char value for minimizeProof call */
-      for (k = 1; k < proveStatement; k++) {
+      /* for (k = 1; k < proveStatement; k++) { */
+      /* 10-Nov-2011 nm */
+      /* We use bottom-up scanning as the default (revFlag=0) since empirically
+         it seems to lead to shorter proofs */
+      /* If revFlag is 0, scan from proveStatement-1 to 1
+         If revFlag is 1, scan from 1 to proveStatement-1 */
+      for (k = revFlag ? 1 : (proveStatement - 1);
+           k * (revFlag ? 1 : -1) < (revFlag ? proveStatement : 0);
+           k = k + (revFlag ? 1 : -1)) {
+        /* 28-Jun-2011 */
+        /* Scan mathbox statements only if INCLUDE_MATHBOXES specified */
+        if (!mathboxFlag && k >= sandboxStmt) continue;
 
         if (statement[k].type != (char)p__ && statement[k].type != (char)a__)
           continue;
@@ -4754,8 +4863,12 @@ void command(int argc, char *argv[])
         if (instr(1, fullArg[1], "*") || instr(1, fullArg[1], "?"))
           print2("?No earlier $p or $a label (without $d) matches \"%s\".\n",
               fullArg[1]);
-     }
-
+      }
+      /* 28-Jun-2011 nm */
+      if (!mathboxFlag && proveStatement >= sandboxStmt) {
+        print2(
+  "(Mathboxes were not checked.  Use / INCLUDE_MATHBOXES to include them.)\n");
+      }
       continue;
 
     } /* End if MINIMIZE_WITH */
@@ -4808,7 +4921,6 @@ void command(int argc, char *argv[])
           1 /*pipFlag*/,
           0 /*startStep*/,
           0 /*endStep*/,
-          0 /*startIndent*/, /* Not used */
           0 /*endIndent*/,
           1 /*essentialFlag*/,
           0 /*renumberFlag*/,
@@ -4867,7 +4979,6 @@ void command(int argc, char *argv[])
             1 /*pipFlag*/,
             0 /*startStep*/,
             0 /*endStep*/,
-            0 /*startIndent*/, /* Not used */
             0 /*endIndent*/,
             1 /*essentialFlag*/,
             0 /*renumberFlag*/,
@@ -5431,12 +5542,12 @@ void command(int argc, char *argv[])
       print2("Notice:  The DEBUG mode is intended for development use only.\n");
       print2("The printout will not be meaningful to the user.\n");
       i = val(fullArg[3]);
-      if (i == 4) db4 = 1;
-      if (i == 5) db5 = 1;
-      if (i == 6) db6 = 1;
-      if (i == 7) db7 = 1;
-      if (i == 8) db8 = 1;
-      if (i == 9) db9 = 1;
+      if (i == 4) db4 = 1;  /* Not used */
+      if (i == 5) db5 = 1;  /* mmpars.c statistics; mmunif.c overview */
+      if (i == 6) db6 = 1;  /* mmunif.c details */
+      if (i == 7) db7 = 1;  /* mmunif.c more details; mmveri.c */
+      if (i == 8) db8 = 1;  /* mmpfas.c unification calls */
+      if (i == 9) db9 = 1;  /* memory */ /* use SET MEMORY_STATUS ON instead */
       continue;
     }
     if (cmdMatches("SET DEBUG OFF")) {

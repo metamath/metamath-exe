@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2008  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2011  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -164,6 +164,7 @@ vstring num1(double x);
 vstring str(double x);
 long len(vstring s);
 long instr(long start, vstring sin, vstring s);
+long rinstr(vstring string1, vstring string2);
 long ascii_(vstring c);
 double val(vstring s);
 

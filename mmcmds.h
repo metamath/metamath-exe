@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2011  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -9,12 +9,12 @@ void typeStatement(long statemNum,
   flag briefFlag,
   flag commentOnlyFlag,
   flag texFlag,
-  flag htmlFlag);
+  flag htmlFlg);
 /* Type (i.e. print) a proof */
 void typeProof(long statemNum,
   flag pipFlag, /* Type proofInProgress instead of source file proof */
   long startStep, long endStep,
-  long startIndent, long endIndent,
+  long endIndent,
   flag essentialFlag,
   flag renumberFlag,
   flag unknownFlag,
@@ -23,7 +23,7 @@ void typeProof(long statemNum,
   flag noIndentFlag,
   long startColumn,
   flag texFlag,
-  flag htmlFlag);
+  flag htmlFlg);
 /* Show details of step */
 void showDetailStep(long statemNum, long detailStep);
 /* Summary of statements in proof */
@@ -52,7 +52,7 @@ vstring traceUsage(long statemNum,
 vstring getDescription(long statemNum);
 long getSourceIndentation(long statemNum);
 void readInput(void);
-void writeInput(flag cleanFlag);
+void writeInput(flag cleanFlag, flag reformatFlag);
 void writeDict(void);
 void eraseSource(void);
 void verifyProofs(vstring labelMatch, flag verifyFlag);
@@ -67,4 +67,4 @@ void H(vstring helpLine);
 extern flag midiFlag; /* Set to 1 if typeProof() is to output MIDI file */
 extern vstring midiParam; /* Parameter string for MIDI file */
 void outputMidi(long plen, nmbrString *indentationLevels,
-  nmbrString *logicalFlags, vstring midiParam, vstring statementLabel);
+  nmbrString *logicalFlags, vstring midiParameter, vstring statementLabel);

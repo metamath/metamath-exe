@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2010  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2011  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -135,7 +135,7 @@ void hentyNormalize(nmbrString **hentyVars, nmbrString **hentyVarStart,
     nmbrString **hentyVarLen, nmbrString **hentySubstList,
     pntrString **stateVector);
 flag hentyMatch(nmbrString *hentyVars, nmbrString *hentyVarStart,
-    nmbrString *hentyVarLen, nmbrString *hentySubstList,
+    /*nmbrString *hentyVarLen,*/ nmbrString *hentySubstList,
     pntrString **stateVector);
 void hentyAdd(nmbrString *hentyVars, nmbrString *hentyVarStart,
     nmbrString *hentyVarLen, nmbrString *hentySubstList,
@@ -900,9 +900,19 @@ char unify(
     if (bracketMatchInit == 0) {   /* Initialization pass */
       /* We've finished the one-time $a scan.  Set flags accordingly. */
       if (bracketMismatchFound) { /* Some $a has a bracket mismatch */
+        if (m < 1 || m > statements) bug(1910);
+        printLongLine(cat("The bracket matching unification heuristic was",
+           " turned off for this database because of a bracket mismatch in",
+           " statement \"",
+           /* (m should be accurate due to break above) */
+           statement[m].labelName,
+           "\".", NULL),
+           "    ", " ");
+        /*
         printLongLine(cat("The bracket matching unification heuristic was",
            " turned off for this database.", NULL),
            "    ", " ");
+        */
         bracketMatchOn = 0; /* Turn off static flag for this database */
       } else {    /* Normal pass */
         bracketMatchOn = 1; /* Turn it on */
@@ -1511,7 +1521,7 @@ char unifyH(
             &hentySubstList, stateVector);
 
         /* Scan the Henty filter to see if this substitution is in it */
-        if (!hentyMatch(hentyVars, hentyVarStart, hentyVarLen,
+        if (!hentyMatch(hentyVars, hentyVarStart, /*hentyVarLen,*/
             hentySubstList, stateVector)) {
 
           /* If it's not in there, this is a new unification so add it
@@ -1669,7 +1679,7 @@ void hentyNormalize(nmbrString **hentyVars, nmbrString **hentyVarStart,
 
 /* Check to see if an equivalent unification exists in the Henty filter */
 flag hentyMatch(nmbrString *hentyVars, nmbrString *hentyVarStart,
-    nmbrString *hentyVarLen, nmbrString *hentySubstList,
+    /*nmbrString *hentyVarLen,*/ nmbrString *hentySubstList,
     pntrString **stateVector)
 {
   long i, size;

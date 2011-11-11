@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2010  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2011  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -17,7 +17,7 @@
 #include "mmvstr.h"
 #include "mmdata.h"
 #include "mminou.h"
-#include "mmpars.h" /* For rawSourceError and mathSrchCmp */
+#include "mmpars.h" /* For rawSourceError and mathSrchCmp and lookupLabel */
 #include "mmwtex.h"
 #include "mmcmdl.h" /* For texFileName */
 #include "mmcmds.h" /* For getDescription */
@@ -44,8 +44,15 @@ long extHtmlStmt = 0; /* At this statement and above, use the exthtmlxxx
 /* 29-Jul-2008 nm Sandbox stuff */
 long sandboxStmt = 0; /* At this statement and above, use SANDBOX_COLOR
     background for theorem, mmrecent, & mmbiblio lists */
+    /* 0 means it hasn't been looked up yet; statements + 1 means
+       there is no mathbox */
 
-
+/* This is the list of characters causing the space before the opening "`"
+   in a math string in a comment to be removed for HTML output. */
+#define OPENING_PUNCTUATION "(['\""
+/* This is the list of characters causing the space after the closing "`"
+   in a math string in a comment to be removed for HTML output. */
+#define CLOSING_PUNCTUATION ".,;)?!:]'\"_-"
 
 /* Tex output file */
 FILE *texFilePtr = NULL;
@@ -102,13 +109,15 @@ flag readTexDefs(void)
   char *tmpPtr;
   char *tmpPtr2;
   long charCount;
-  long i, j;
+  long i, j, k;
   long lineNum;
-  long tokenLen;
+  long tokenLength;
   char zapChar;
   long cmd;
   long parsePass;
   vstring token = "";
+  vstring partialToken = ""; /* 6-Aug-2011 nm */
+  FILE *tmpFp;
 
   /* bsearch returned values for use in error-checking */
   void *mathKeyPtr; /* bsearch returned value for math symbol lookup */
@@ -158,7 +167,7 @@ flag readTexDefs(void)
       /* break; */ /* Continue to end to detect double $t */
     }
     tmpPtr[j] = zapChar; /* Restore the xxx.mm input file buffer */
-  }
+  } /* next i */
   /* If the $t wasn't found, fileBuf will be "", causing error message below. */
   /* Compute line number offset of beginning of statement[i].labelSection for
      use in error messages */
@@ -259,23 +268,23 @@ flag readTexDefs(void)
 
       /* Get next token */
       fbPtr = fbPtr + texDefWhiteSpaceLen(fbPtr);
-      tokenLen = texDefTokenLen(fbPtr);
+      tokenLength = texDefTokenLen(fbPtr);
 
       /* Process token - command */
-      if (!tokenLen) break; /* End of file */
-      zapChar = fbPtr[tokenLen]; /* Char to restore after zapping source */
-      fbPtr[tokenLen] = 0; /* Create end of string */
+      if (!tokenLength) break; /* End of file */
+      zapChar = fbPtr[tokenLength]; /* Char to restore after zapping source */
+      fbPtr[tokenLength] = 0; /* Create end of string */
       cmd = lookup(fbPtr,
           "latexdef,htmldef,htmlvarcolor,htmltitle,htmlhome"
         ",althtmldef,exthtmltitle,exthtmlhome,exthtmllabel,htmldir,althtmldir"
         ",htmlbibliography,exthtmlbibliography");
-      fbPtr[tokenLen] = zapChar;
+      fbPtr[tokenLength] = zapChar;
       if (cmd == 0) {
         lineNum = lineNumOffset;
         for (i = 0; i < (fbPtr - fileBuf); i++) {
           if (fileBuf[i] == '\n') lineNum++;
         }
-        rawSourceError(fileBuf, fbPtr, tokenLen, lineNum, input_fn,
+        rawSourceError(fileBuf, fbPtr, tokenLength, lineNum, input_fn,
             cat("Expected \"latexdef\", \"htmldef\", \"htmlvarcolor\",",
             " \"htmltitle\", \"htmlhome\", \"althtmldef\",",
             " \"exthtmltitle\", \"exthtmlhome\", \"exthtmllabel\",",
@@ -285,7 +294,7 @@ flag readTexDefs(void)
         let(&fileBuf, "");  /* was: free(fileBuf); */
         return (0);
       }
-      fbPtr = fbPtr + tokenLen;
+      fbPtr = fbPtr + tokenLength;
 
       if (cmd != HTMLVARCOLOR && cmd != HTMLTITLE && cmd != HTMLHOME
           && cmd != EXTHTMLTITLE && cmd != EXTHTMLHOME && cmd != EXTHTMLLABEL
@@ -293,37 +302,38 @@ flag readTexDefs(void)
           && cmd != HTMLBIBLIOGRAPHY && cmd != EXTHTMLBIBLIOGRAPHY) {
          /* Get next token - string in quotes */
         fbPtr = fbPtr + texDefWhiteSpaceLen(fbPtr);
-        tokenLen = texDefTokenLen(fbPtr);
+        tokenLength = texDefTokenLen(fbPtr);
 
         /* Process token - string in quotes */
         if (fbPtr[0] != '\"' && fbPtr[0] != '\'') {
-          if (!tokenLen) { /* Abnormal end-of-file */
+          if (!tokenLength) { /* Abnormal end-of-file */
             fbPtr--; /* Format for error message */
-            tokenLen++;
+            tokenLength++;
           }
           lineNum = lineNumOffset;
           for (i = 0; i < (fbPtr - fileBuf); i++) {
             if (fileBuf[i] == '\n') lineNum++;
           }
-          rawSourceError(fileBuf, fbPtr, tokenLen, lineNum, input_fn,
+          rawSourceError(fileBuf, fbPtr, tokenLength, lineNum, input_fn,
               "Expected a quoted string here.");
           let(&fileBuf, "");  /* was: free(fileBuf); */
           return (0);
         }
         if (parsePass == 2) {
-          zapChar = fbPtr[tokenLen - 1]; /* Chr to restore after zapping src */
-          fbPtr[tokenLen - 1] = 0; /* Create end of string */
+          zapChar = fbPtr[tokenLength - 1]; /* Chr to restore after zapping src */
+          fbPtr[tokenLength - 1] = 0; /* Create end of string */
           let(&token, fbPtr + 1); /* Get ASCII token; note that leading and
               trailing quotes are omitted. */
-          fbPtr[tokenLen - 1] = zapChar;
+          fbPtr[tokenLength - 1] = zapChar;
 
           /* Change double internal quotes to single quotes */
+          /* 6-Aug-2011 nm Do this only for double quotes matching the
+             outer quotes.  fbPtr[0] is the quote character. */
+          if (fbPtr[0] != '\"' && fbPtr[0] != '\'') bug(2329);
           j = strlen(token);
           for (i = 0; i < j - 1; i++) {
-            if ((token[i] == '\"' &&
-                token[i + 1] == '\"') ||
-                (token[i] == '\'' &&
-                token[i + 1] == '\'')) {
+            if (token[i] == fbPtr[0] &&
+                token[i + 1] == fbPtr[0]) {
               let(&token, cat(left(token,
                   i + 1), right(token, i + 3), NULL));
               j--;
@@ -336,9 +346,9 @@ flag readTexDefs(void)
             texDefs[numSymbs].tokenName = "";
             let(&(texDefs[numSymbs].tokenName), token);
           }
-        }
+        } /* if (parsePass == 2) */
 
-        fbPtr = fbPtr + tokenLen;
+        fbPtr = fbPtr + tokenLength;
       } /* if (cmd != HTMLVARCOLOR && cmd != HTMLTITLE && cmd != HTMLHOME...) */
 
       if (cmd != HTMLVARCOLOR && cmd != HTMLTITLE && cmd != HTMLHOME
@@ -347,68 +357,102 @@ flag readTexDefs(void)
           && cmd != HTMLBIBLIOGRAPHY && cmd != EXTHTMLBIBLIOGRAPHY) {
         /* Get next token -- "as" */
         fbPtr = fbPtr + texDefWhiteSpaceLen(fbPtr);
-        tokenLen = texDefTokenLen(fbPtr);
-        zapChar = fbPtr[tokenLen]; /* Char to restore after zapping source */
-        fbPtr[tokenLen] = 0; /* Create end of string */
+        tokenLength = texDefTokenLen(fbPtr);
+        zapChar = fbPtr[tokenLength]; /* Char to restore after zapping source */
+        fbPtr[tokenLength] = 0; /* Create end of string */
         if (strcmp(fbPtr, "as")) {
-          if (!tokenLen) { /* Abnormal end-of-file */
+          if (!tokenLength) { /* Abnormal end-of-file */
             fbPtr--; /* Format for error message */
-            tokenLen++;
+            tokenLength++;
           }
           lineNum = lineNumOffset;
           for (i = 0; i < (fbPtr - fileBuf); i++) {
             if (fileBuf[i] == '\n') lineNum++;
           }
-          rawSourceError(fileBuf, fbPtr, tokenLen, lineNum, input_fn,
+          rawSourceError(fileBuf, fbPtr, tokenLength, lineNum, input_fn,
               "Expected the keyword \"as\" here.");
           let(&fileBuf, "");  /* was: free(fileBuf); */
           return (0);
         }
-        fbPtr[tokenLen] = zapChar;
-        fbPtr = fbPtr + tokenLen;
-      }
+        fbPtr[tokenLength] = zapChar;
+        fbPtr = fbPtr + tokenLength;
+      } /* if (cmd != HTMLVARCOLOR && ... */
 
       if (parsePass == 2) {
         /* Initialize LaTeX/HTML equivalent */
         let(&token, "");
       }
 
+      /* Scan   "<string>" + "<string>" + ...   until ";" found */
       while (1) {
 
         /* Get next token - string in quotes */
         fbPtr = fbPtr + texDefWhiteSpaceLen(fbPtr);
-        tokenLen = texDefTokenLen(fbPtr);
+        tokenLength = texDefTokenLen(fbPtr);
         if (fbPtr[0] != '\"' && fbPtr[0] != '\'') {
-          if (!tokenLen) { /* Abnormal end-of-file */
+          if (!tokenLength) { /* Abnormal end-of-file */
             fbPtr--; /* Format for error message */
-            tokenLen++;
+            tokenLength++;
           }
           lineNum = lineNumOffset;
           for (i = 0; i < (fbPtr - fileBuf); i++) {
             if (fileBuf[i] == '\n') lineNum++;
           }
-          rawSourceError(fileBuf, fbPtr, tokenLen, lineNum, input_fn,
+          rawSourceError(fileBuf, fbPtr, tokenLength, lineNum, input_fn,
               "Expected a quoted string here.");
           let(&fileBuf, "");  /* was: free(fileBuf); */
          return (0);
         }
         if (parsePass == 2) {
-          zapChar = fbPtr[tokenLen - 1]; /* Chr to restore after zapping src */
-          fbPtr[tokenLen - 1] = 0; /* Create end of string */
-          let(&token, cat(token, fbPtr + 1, NULL)); /* Append TeX equiv.; note
-              leading and trailing quotes are omitted. */
-          fbPtr[tokenLen - 1] = zapChar;
-        }
-        fbPtr = fbPtr + tokenLen;
+          zapChar = fbPtr[tokenLength - 1]; /* Chr to restore after zapping src */
+          fbPtr[tokenLength - 1] = 0; /* Create end of string */
+          /* let(&token, cat(token, fbPtr + 1, NULL)); old before 6-Aug-2011 */
+           /* 6-Aug-2011 nm */
+          let(&partialToken, fbPtr + 1); /* Get ASCII token; note that leading
+              and trailing quotes are omitted. */
+          fbPtr[tokenLength - 1] = zapChar;
+
+          /* 6-Aug-2011 nm */
+          /* Change double internal quotes to single quotes */
+          /* Do this only for double quotes matching the
+             outer quotes.  fbPtr[0] is the quote character. */
+          if (fbPtr[0] != '\"' && fbPtr[0] != '\'') bug(2330);
+          j = strlen(partialToken);
+          for (i = 0; i < j - 1; i++) {
+            if (token[i] == fbPtr[0] &&
+                token[i + 1] == fbPtr[0]) {
+              let(&partialToken, cat(left(partialToken,
+                  i + 1), right(token, i + 3), NULL));
+              j--;
+            }
+          }
+
+          /* 6-Aug-2011 nm */
+          /* Check that string is on a single line */
+          tmpPtr2 = strchr(partialToken, '\n');
+          if (tmpPtr2 != NULL) {
+            rawSourceError(fileBuf, fbPtr,
+                tmpPtr2 - partialToken + 1 /*tokenLength on current line*/,
+                lineNum, input_fn,
+                "String should be on a single line.");
+          }
+
+          /* 6-Aug-2011 nm */
+          /* Combine the string part to the main token we're building */
+          let(&token, cat(token, partialToken, NULL));
+
+        } /* (parsePass == 2) */
+
+        fbPtr = fbPtr + tokenLength;
 
 
         /* Get next token - "+" or ";" */
         fbPtr = fbPtr + texDefWhiteSpaceLen(fbPtr);
-        tokenLen = texDefTokenLen(fbPtr);
-        if ((fbPtr[0] != '+' && fbPtr[0] != ';') || tokenLen != 1) {
-          if (!tokenLen) { /* Abnormal end-of-file */
+        tokenLength = texDefTokenLen(fbPtr);
+        if ((fbPtr[0] != '+' && fbPtr[0] != ';') || tokenLength != 1) {
+          if (!tokenLength) { /* Abnormal end-of-file */
             fbPtr--; /* Format for error message */
-            tokenLen++;
+            tokenLength++;
           }
           lineNum = lineNumOffset;
           for (i = 0; i < (fbPtr - fileBuf); i++) {
@@ -416,12 +460,12 @@ flag readTexDefs(void)
               lineNum++;
             }
           }
-          rawSourceError(fileBuf, fbPtr, tokenLen, lineNum, input_fn,
+          rawSourceError(fileBuf, fbPtr, tokenLength, lineNum, input_fn,
               "Expected \"+\" or \";\" here.");
           let(&fileBuf, "");  /* was: free(fileBuf); */
          return (0);
         }
-        fbPtr = fbPtr + tokenLen;
+        fbPtr = fbPtr + tokenLength;
 
         if (fbPtr[-1] == ';') break;
 
@@ -429,7 +473,13 @@ flag readTexDefs(void)
 
 
       if (parsePass == 2) {
+
+        /* 6-Aug-2011 nm This was moved above (and modified) because
+           each string part may have different outer quotes, so we can't
+           do the whole string at once like the attempt below. */
+        /* old before 6-Aug-2011 */
         /* Change double internal quotes to single quotes */
+        /*
         j = strlen(token);
         for (i = 0; i < j - 1; i++) {
           if ((token[i] == '\"' &&
@@ -441,6 +491,8 @@ flag readTexDefs(void)
             j--;
           }
         }
+        */
+        /* end of old before 6-Aug-2011 */
 
         if ((cmd == LATEXDEF && !htmlFlag)
             || (cmd == HTMLDEF && htmlFlag && !altHtmlFlag)
@@ -539,6 +591,40 @@ flag readTexDefs(void)
     }
   }
 
+  /* 26-Jun-2011 nm Added this check */
+  /* Check to make sure all GIFs are present */
+  if (htmlFlag) {
+    for (i = 0; i < numSymbs; i++) {
+      tmpPtr = texDefs[i].texEquiv;
+      k = 0;
+      while (1) {
+        j = instr(k + 1, tmpPtr, "IMG SRC=");
+                   /* Note that only an exact match with
+                      "IMG SRC=" is currently handled */
+        if (j == 0) break;
+        k = instr(j + 9, texDefs[i].texEquiv, mid(tmpPtr, j + 8, 1));
+                                           /* Get position of trailing quote */
+                                    /* Future:  use strchr instead of mid()
+                                       for efficiency? */
+        let(&token, seg(tmpPtr, j + 9, k - 1));  /* Get name of .gif (.png) */
+        if (k == 0) break;  /* Future: we may want to issue "missing
+                                     trailing quote" warning */
+           /* (We test k after the let() so that the temporary string stack
+              entry created by mid() is emptied and won't overflow */
+        tmpFp = fopen(token, "r"); /* See if it exists */
+        if (!tmpFp) {
+          printLongLine(cat("?Warning:  The file \"", token,
+              "\", which is referenced in an htmldef",
+              " statement, was not found.", NULL),
+              "", " ");
+        } else {
+          fclose(tmpFp);
+        }
+      }
+    }
+  }
+
+
   /* Look up the extended database start label */
   if (extHtmlLabel[0]) {
     for (i = 1; i <= statements; i++) {
@@ -557,17 +643,25 @@ flag readTexDefs(void)
   }
 
   /* 29-Jul-2008 nm Sandbox stuff */
-  sandboxStmt = statements + 1;  /* Default beyond db end if none */
+  /* 24-Jul-2009 nm Changed name of sandbox to "mathbox" */
+  /* 28-Jun-2011 nm Use lookupLabel for speedup */
+  if (sandboxStmt == 0) {
+    sandboxStmt = lookupLabel("mathbox");
+    if (sandboxStmt == -1)
+      sandboxStmt = statements + 1;  /* Default beyond db end if none */
+  }
+  /*
   for (i = 1; i <= statements; i++) {
-    /* For now (and probably forever) the sandbox start theorem is
-       hardcoded to "sandbox", like in set.mm */
-    /* if (!strcmp("sandbox", statement[i].labelName)) { */
-    /* 24-Jul-2009 nm Changed name of sandbox to "mathbox" */
+    /@ For now (and probably forever) the sandbox start theorem is
+       hardcoded to "sandbox", like in set.mm @/
+    /@ if (!strcmp("sandbox", statement[i].labelName)) { @/
+    /@ 24-Jul-2009 nm Changed name of sandbox to "mathbox" @/
     if (!strcmp("mathbox", statement[i].labelName)) {
       sandboxStmt = i;
       break;
     }
   }
+  */
   /* In case there is not extended (Hilbert Space Explorer) section,
      but there is a sandbox section, make the extended section "empty". */
   if (extHtmlStmt == statements + 1) extHtmlStmt = sandboxStmt;
@@ -582,6 +676,7 @@ flag readTexDefs(void)
 
 
   let(&token, ""); /* Deallocate */
+  let(&partialToken, ""); /* Deallocate */  /* 6-Aug-2011 nm */
   let(&fileBuf, "");  /* was: free(fileBuf); */
   texDefsRead = 1;  /* Set global flag that it's been read in */
   return (1); /* Return indicator that parsing passed */
@@ -601,12 +696,17 @@ long texDefWhiteSpaceLen(char *ptr)
     tmpchr = ptr[i];
     if (!tmpchr) return (i); /* End of string */
     if (isalnum((unsigned char)(tmpchr))) return (i); /* Alphanumeric string */
-    if (ptr[i] == '!') { /* Comment to end-of-line */
+
+    /* 6-Aug-2011 nm Removed this undocumented feature */
+    /*
+    if (ptr[i] == '!') { /@ Comment to end-of-line @/
       ptr1 = strchr(ptr + i + 1, '\n');
       if (!ptr1) bug(2306);
       i = ptr1 - ptr + 1;
       continue;
     }
+    */
+
     if (tmpchr == '/') { /* Embedded c-style comment - used to ignore
         comments inside of Metamath comment for LaTeX/HTML definitions */
       if (ptr[i + 1] == '*') {
@@ -1610,10 +1710,10 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
       if (pos1 > 1) {
         /* Check for not whitespace and not opening punctuation */
         if (!isspace((unsigned char)(cmt[pos1 - 2]))
-            && strchr("([", cmt[pos1 - 2]) == NULL) {
+            && strchr(OPENING_PUNCTUATION, cmt[pos1 - 2]) == NULL) {
           /* Check for not whitespace and not closing punctuation */
           if (!isspace((unsigned char)(cmt[pos1]))
-            && strchr(".,;)?!:]", cmt[pos1]) == NULL) {
+            && strchr(CLOSING_PUNCTUATION, cmt[pos1]) == NULL) {
 
             /* 28-Sep-03 - Added subscript handling */
             /* Found <nonwhitespace>_<nonwhitespace> - assume subscript */
@@ -1627,7 +1727,7 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
               if (!cmt[pos2]) break; /* End of string */
               /* Look for whitespace or closing punctuation */
               if (isspace((unsigned char)(cmt[pos2]))
-                  || strchr(".,;)?!:]", cmt[pos2]) != NULL) break;
+                  || strchr(CLOSING_PUNCTUATION, cmt[pos2]) != NULL) break;
               pos2++; /* Move forward through subscript */
             }
             pos2++; /* Adjust for left, seg, etc. that start at 1 not 0 */
@@ -1702,9 +1802,21 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
         if (!pos1) break;
         pos2 = instr(pos1 + 1, cmt, "]");
         if (!pos2) break;
+
+        /* 30-Jun-2011 nm */
+        /* See if we are in math mode */
+        clen = strlen(cmt);
+        mode = 0; /* 0 = normal, 1 = math */
+        for (i = 0; i < pos1; i++) {
+          if (cmt[i] == '`' && cmt[i + 1] != '`') {
+            mode = 1 - mode;
+          }
+        }
+        if (mode) continue; /* Don't process [...] brackets in math mode */
+
         let(&bibTag, seg(cmt, pos1, pos2));
         /* There should be no white space in the tag */
-        if (strcspn(bibTag, " \n\r\t\f") < pos2 - pos1 + 1) continue;
+        if ((signed)(strcspn(bibTag, " \n\r\t\f")) < pos2 - pos1 + 1) continue;
         /* OK, we have a good tag.  If the file with bibliography has not been
            read in yet, let's do so here for error-checking. */
 
@@ -1855,7 +1967,7 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
           /* (Why must it be i + 2 here but i + 1 in label version below?
              Didn't investigate but seems strange.) */
           let(&tmp, mid(cmt, i + 2, 2));
-          if (tmp[0] == ' ' && strchr(".,;)?!:]", tmp[1]) != NULL) {
+          if (tmp[0] == ' ' && strchr(CLOSING_PUNCTUATION, tmp[1]) != NULL) {
             let(&cmt, cat(left(cmt, i + 1), right(cmt, i + 3), NULL));
             clen = clen - 1;
           }
@@ -1864,7 +1976,7 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
           if (strlen(tmp) < 8)
               let(&tmp, cat(tmp, space(8 - strlen(tmp)), NULL));
           if (!strcmp(" &quot;", left(tmp, 7))
-              && strchr(".,;)?!:] ", tmp[7]) != NULL) {
+              && strchr(CLOSING_PUNCTUATION, tmp[7]) != NULL) {
             let(&cmt, cat(left(cmt, i + 1), right(cmt, i + 3), NULL));
             clen = clen - 1;
           }
@@ -1934,7 +2046,7 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
       /* If label is followed by space and end punctuation, take out the space
          so it looks better. */
       let(&tmp, mid(cmt, i + 1, 2));
-      if (tmp[0] == ' ' && strchr(".,;)?!:]", tmp[1]) != NULL) {
+      if (tmp[0] == ' ' && strchr(CLOSING_PUNCTUATION, tmp[1]) != NULL) {
         let(&cmt, cat(left(cmt, i), right(cmt, i + 2), NULL));
         clen = clen - 1;
       }
@@ -1942,7 +2054,7 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
 
     }
     /* clen should always remain comment length - do a sanity check here */
-    if (strlen(cmt) != clen) {
+    if ((signed)(strlen(cmt)) != clen) {
       bug(2311);
     }
   } /* Next i */
@@ -2551,8 +2663,8 @@ void writeTheoremList(long theoremsPerPage)
   vstring str1 = "";
   vstring str3 = "";
   vstring str4 = "";
-  vstring output_fn = "";
-  FILE *output_fp;
+  vstring outputFileName = "";
+  FILE *outputFilePtr;
 
   /* 31-Jul-2006 for table of contents mod */
   vstring bigHdr = "";
@@ -2581,11 +2693,11 @@ void writeTheoremList(long theoremsPerPage)
   pages = ((assertions - 1) / theoremsPerPage) + 1;
   for (page = 1; page <= pages; page++) {
     /* Open file */
-    let(&output_fn,
+    let(&outputFileName,
         cat("mmtheorems", (page > 1) ? str(page) : "", ".html", NULL));
-    print2("Creating %s\n", output_fn);
-    output_fp = fSafeOpen(output_fn, "w");
-    if (!output_fp) goto TL_ABORT; /* Couldn't open it (error msg was provided)*/
+    print2("Creating %s\n", outputFileName);
+    outputFilePtr = fSafeOpen(outputFileName, "w");
+    if (!outputFilePtr) goto TL_ABORT; /* Couldn't open it (error msg was provided)*/
 
     /* Output header */
 
@@ -2620,13 +2732,13 @@ void writeTheoremList(long theoremsPerPage)
     /*
     print2("%s\n", cat("<TITLE>", htmlTitle, " - ",
         / * Strip off ".html" * /
-        left(output_fn, strlen(output_fn) - 5),
+        left(outputFileName, strlen(outputFileName) - 5),
         "</TITLE>", NULL));
     */
     /* 4-Jun-06 nm - Put page name before "Metamath Proof Explorer" etc. */
     print2("%s\n", cat("<TITLE>",
         /* Strip off ".html" */
-        left(output_fn, strlen(output_fn) - 5), " - ",
+        left(outputFileName, strlen(outputFileName) - 5), " - ",
         htmlTitle,
         "</TITLE>", NULL));
     /* Icon for bookmark */
@@ -2676,12 +2788,12 @@ void writeTheoremList(long theoremsPerPage)
         print2("SIZE=-2>Bad symbols?\n");
         print2("Use <A HREF=\"http://mozilla.org\">Firefox</A><BR>\n");
         print2("(or <A HREF=\"%s%s\">GIF version</A> for IE).</FONT></TD>\n",
-            htmlDir, output_fn);
+            htmlDir, outputFileName);
       } else {
         print2("</FONT></TD></TR><TR><TD ALIGN=RIGHT><FONT FACE=sans-serif\n");
         print2("SIZE=-2>Browser slow? Try the\n");
         print2("<BR><A HREF=\"%s%s\">Unicode\n",
-            altHtmlDir, output_fn);
+            altHtmlDir, outputFileName);
         print2("version</A>.</FONT></TD>\n");
       }
     }
@@ -2689,12 +2801,12 @@ void writeTheoremList(long theoremsPerPage)
     print2("<HR NOSHADE SIZE=1>\n");
 
     /* Write out HTML page so far */
-    fprintf(output_fp, "%s", printString);
+    fprintf(outputFilePtr, "%s", printString);
     outputToString = 0;
     let(&printString, "");
 
     /* Output links to the other pages */
-    fprintf(output_fp, "Jump to page: \n");
+    fprintf(outputFilePtr, "Jump to page: \n");
     for (p = 1; p <= pages; p++) {
 
       /* Construct the pink number range */
@@ -2722,7 +2834,7 @@ void writeTheoremList(long theoremsPerPage)
             , "</A>", NULL));
       }
       let(&str1, cat(str1, PINK_NBSP, str3, NULL));
-      fprintf(output_fp, "%s\n", str1);
+      fprintf(outputFilePtr, "%s\n", str1);
     }
 
     /* Put in color key */
@@ -2802,7 +2914,7 @@ void writeTheoremList(long theoremsPerPage)
     }
 
     /* Write out HTML page so far */
-    fprintf(output_fp, "%s", printString);
+    fprintf(outputFilePtr, "%s", printString);
     outputToString = 0;
     let(&printString, "");
 
@@ -2812,7 +2924,7 @@ void writeTheoremList(long theoremsPerPage)
       outputToString = 1;
       print2(
         "<P><CENTER><A NAME=\"mmtc\"></A><B>Table of Contents</B></CENTER>\n");
-      fprintf(output_fp, "%s", printString);
+      fprintf(outputFilePtr, "%s", printString);
       outputToString = 0;
       let(&printString, "");
 
@@ -2885,7 +2997,7 @@ void writeTheoremList(long theoremsPerPage)
               let((vstring *)(&pntrSmallHdr[stmt]), smallHdr);
               let(&smallHdr, "");
             }
-            fprintf(output_fp, "%s", printString);
+            fprintf(outputFilePtr, "%s", printString);
             outputToString = 0;
             let(&printString, "");
           } /* if big or small header */
@@ -2922,7 +3034,7 @@ void writeTheoremList(long theoremsPerPage)
     print2("\n");
     print2("<TR BGCOLOR=white><TD COLSPAN=3><FONT SIZE=-3>&nbsp;</FONT></TD></TR>\n");
     print2("\n");
-    fprintf(output_fp, "%s", printString);
+    fprintf(outputFilePtr, "%s", printString);
     outputToString = 0;
     let(&printString, "");
 
@@ -3046,9 +3158,9 @@ void writeTheoremList(long theoremsPerPage)
 
       showStatement = s; /* For printTexComment */
       outputToString = 0; /* For printTexComment */
-      texFilePtr = output_fp; /* For printTexComment */
+      texFilePtr = outputFilePtr; /* For printTexComment */
       /* 18-Sep-03 ???Future - make this just return a string??? */
-      printTexComment(str3, 0); /* Sends result to output_fp */
+      printTexComment(str3, 0); /* Sends result to outputFilePtr */
       texFilePtr = NULL;
       outputToString = 1; /* Restore after printTexComment */
 
@@ -3092,7 +3204,7 @@ void writeTheoremList(long theoremsPerPage)
       }
 
       outputToString = 0;
-      fprintf(output_fp, "%s", printString);
+      fprintf(outputFilePtr, "%s", printString);
       let(&printString, "");
 
       if (assertion != lastAssertion) {
@@ -3103,7 +3215,7 @@ void writeTheoremList(long theoremsPerPage)
             " ",  /* Start continuation line with space */
             "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
         outputToString = 0;
-        fprintf(output_fp, "%s", printString);
+        fprintf(outputFilePtr, "%s", printString);
         let(&printString, "");
       }
     } /* next assertion */
@@ -3183,11 +3295,11 @@ void writeTheoremList(long theoremsPerPage)
 
     print2("</BODY></HTML>\n");
     outputToString = 0;
-    fprintf(output_fp, "%s", printString);
+    fprintf(outputFilePtr, "%s", printString);
     let(&printString, "");
 
     /* Close file */
-    fclose(output_fp);
+    fclose(outputFilePtr);
   } /* next page */
 
  TL_ABORT:
@@ -3195,7 +3307,7 @@ void writeTheoremList(long theoremsPerPage)
   let(&str1, "");
   let(&str3, "");
   let(&str4, "");
-  let(&output_fn, "");
+  let(&outputFileName, "");
   let(&bigHdr, "");
   let(&smallHdr, "");
   for (i = 0; i <= statements; i++) let((vstring *)(&pntrBigHdr[i]), "");
@@ -3301,7 +3413,7 @@ long pinkNumber(long statemNum)
       statemMap++;
   }
   return statemMap;
-}
+} /* pinkNumber */
 #endif
 
 /* Added 10/10/02 */
@@ -3361,7 +3473,7 @@ vstring pinkHTML(long statemNum)
   let(&hexValue, "");
 
   return htmlCode;
-}
+} /* pinkHTML */
 
 
 /* Added 25-Aug-04 */
@@ -3386,7 +3498,7 @@ vstring pinkRangeHTML(long statemNum1, long statemNum2)
   let(&str3, ""); /* Deallocate */
   let(&str4, ""); /* Deallocate */
   return htmlCode;
-}
+} /* pinkRangeHTML */
 
 
 #ifdef RAINBOW_OPTION
@@ -3609,7 +3721,7 @@ vstring spectrumToRGB(long color, long maxColor) {
   /* debug */
   /*printf("<FONT COLOR='#%02X%02X%02X'>a </FONT>\n", red, green, blue);*/
   return str1;
-}
+} /* spectrumToRGB */
 #endif    /* #ifdef RAINBOW_OPTION */
 
 
@@ -3864,4 +3976,4 @@ vstring getTexOrHtmlHypAndAssertion(long statemNum)
   /* Deallocate memory */
   let(&str2, "");
   return texOrHtmlCode;
-}
+}  /* getTexOrHtmlHypAndAssertion */

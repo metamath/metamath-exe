@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2009  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2011  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -539,6 +539,8 @@ flag matchesList(vstring testString, vstring pattern, char wildCard,
     if (matchVal) break;
   }
 
+  let(&entryPattern, ""); /* Deallocate */ /* 3-Jul-2011 nm Added to fix
+                                              memory leak */
   startTempAllocStack = saveTempAllocStack;
   return (matchVal);
 }
@@ -856,13 +858,13 @@ long nmbrAllocLen(nmbrString *s)
    done on purpose so the caller can know what free space is left.) */
 /* ???Note that nmbrZapLen's not moving string to used pool wastes potential
    space when called by the routines in this module.  Effect should be minor. */
-void nmbrZapLen(nmbrString *s, long len) {
+void nmbrZapLen(nmbrString *s, long length) {
   if (((long *)s)[-3] != -1) {
     /* It's already in the used pool, so adjust free space tally */
     poolTotalFree = poolTotalFree + ((long *)s)[-1]
-        - (len + 1) * sizeof(nmbrString);
+        - (length + 1) * sizeof(nmbrString);
   }
-  ((long *)s)[-1] = (len + 1) * sizeof(nmbrString);
+  ((long *)s)[-1] = (length + 1) * sizeof(nmbrString);
 /*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("l: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
 }
 
@@ -914,29 +916,29 @@ int nmbrEq(nmbrString *s,nmbrString *t)
 
 
 /* Extract sin from character position start to stop into sout */
-nmbrString *nmbrSeg(nmbrString *sin,long start,long stop)
+nmbrString *nmbrSeg(nmbrString *sin, long start, long stop)
 {
   nmbrString *sout;
-  long len;
-  if (start<1) start=1;
-  if (stop<1) stop = 0;
-  len=stop-start+1;
-  if (len<0) len = 0;
-  sout=nmbrTempAlloc(len+1);
-  nmbrNCpy(sout,sin+start-1,len);
-  sout[len] = *NULL_NMBRSTRING;
+  long length;
+  if (start < 1) start = 1;
+  if (stop < 1) stop = 0;
+  length=stop - start + 1;
+  if (length < 0) length = 0;
+  sout = nmbrTempAlloc(length + 1);
+  nmbrNCpy(sout, sin + start - 1, length);
+  sout[length] = *NULL_NMBRSTRING;
   return (sout);
 }
 
 /* Extract sin from character position start for length len */
-nmbrString *nmbrMid(nmbrString *sin,long start,long len)
+nmbrString *nmbrMid(nmbrString *sin, long start, long length)
 {
   nmbrString *sout;
-  if (start<1) start=1;
-  if (len<0) len = 0;
-  sout=nmbrTempAlloc(len+1);
-  nmbrNCpy(sout,sin+start-1,len);
-  sout[len] = *NULL_NMBRSTRING;
+  if (start < 1) start = 1;
+  if (length < 0) length = 0;
+  sout = nmbrTempAlloc(length + 1);
+  nmbrNCpy(sout, sin + start - 1, length);
+  sout[length] = *NULL_NMBRSTRING;
   return (sout);
 }
 
@@ -1100,7 +1102,7 @@ vstring nmbrCvtRToVString(nmbrString *proof)
       }
     } else {
       if (stmt > 0) {
-        if (strlen(statement[stmt].labelName) > maxLabelLen) {
+        if ((signed)(strlen(statement[stmt].labelName)) > maxLabelLen) {
           maxLabelLen = strlen(statement[stmt].labelName);
         }
       }
@@ -1238,19 +1240,19 @@ vstring nmbrCvtAnyToVString(nmbrString *s)
 /* Extract variables from a math token string */
 nmbrString *nmbrExtractVars(nmbrString *m)
 {
-  long i,j,len;
+  long i, j, length;
   nmbrString *v;
-  len = nmbrLen(m);
-  v=nmbrTempAlloc(len+1); /* Pre-allocate maximum possible space */
+  length = nmbrLen(m);
+  v=nmbrTempAlloc(length + 1); /* Pre-allocate maximum possible space */
   v[0] = *NULL_NMBRSTRING;
   j = 0; /* Length of output string */
-  for (i = 0; i < len; i++) {
+  for (i = 0; i < length; i++) {
     /*if (m[i] < 0 || m[i] >= mathTokens) {*/
     /* Changed >= to > because tokenNum=mathTokens is used by mmveri.c for
        dummy token */
     if (m[i] < 0 || m[i] > mathTokens) bug(1328);
     if (mathToken[m[i]].tokenType == (char)var__) {
-      if (!nmbrElementIn(1,v,m[i])) { /* Don't duplicate variable */
+      if (!nmbrElementIn(1, v, m[i])) { /* Don't duplicate variable */
         v[j] = m[i];
         j++;
         v[j] = *NULL_NMBRSTRING; /* Add temp. end-of-string for getElementOf() */
@@ -1258,7 +1260,7 @@ nmbrString *nmbrExtractVars(nmbrString *m)
     }
   }
   nmbrZapLen(v, j); /* Zap mem pool fields */
-/*E*/db2=db2-(len-nmbrLen(v))*sizeof(nmbrString);
+/*E*/db2=db2-(length-nmbrLen(v))*sizeof(nmbrString);
   return v;
 }
 
@@ -1281,13 +1283,13 @@ long nmbrElementIn(long start, nmbrString *g, long element)
 /* Add a single number to end of a nmbrString - faster than nmbrCat */
 nmbrString *nmbrAddElement(nmbrString *g, long element)
 {
-  long len;
+  long length;
   nmbrString *v;
-  len = nmbrLen(g);
-  v = nmbrTempAlloc(len + 2); /* Allow for end of string */
+  length = nmbrLen(g);
+  v = nmbrTempAlloc(length + 2); /* Allow for end of string */
   nmbrCpy(v, g);
-  v[len] = element;
-  v[len + 1] = *NULL_NMBRSTRING; /* End of string */
+  v[length] = element;
+  v[length + 1] = *NULL_NMBRSTRING; /* End of string */
 /*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("bbg2: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
   return(v);
 }
@@ -2152,13 +2154,13 @@ long pntrAllocLen(pntrString *s)
    done on purpose so the caller can know what free space is left.) */
 /* ???Note that pntrZapLen's not moving string to used pool wastes potential
    space when called by the routines in this module.  Effect should be minor. */
-void pntrZapLen(pntrString *s, long len) {
+void pntrZapLen(pntrString *s, long length) {
   if (((long *)s)[-3] != -1) {
     /* It's already in the used pool, so adjust free space tally */
     poolTotalFree = poolTotalFree + ((long *)s)[-1]
-        - (len + 1) * sizeof(pntrString);
+        - (length + 1) * sizeof(pntrString);
   }
-  ((long *)s)[-1] = (len + 1) * sizeof(pntrString);
+  ((long *)s)[-1] = (length + 1) * sizeof(pntrString);
 /*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("l: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
 }
 
@@ -2209,29 +2211,29 @@ int pntrEq(pntrString *s,pntrString *t)
 
 
 /* Extract sin from character position start to stop into sout */
-pntrString *pntrSeg(pntrString *sin,long start,long stop)
+pntrString *pntrSeg(pntrString *sin, long start, long stop)
 {
   pntrString *sout;
-  long len;
-  if (start<1) start=1;
-  if (stop<1) stop = 0;
-  len=stop-start+1;
-  if (len<0) len = 0;
-  sout=pntrTempAlloc(len+1);
-  pntrNCpy(sout,sin+start-1,len);
-  sout[len] = *NULL_PNTRSTRING;
+  long length;
+  if (start < 1 ) start = 1;
+  if (stop < 1 ) stop = 0;
+  length = stop - start + 1;
+  if (length < 0) length = 0;
+  sout = pntrTempAlloc(length + 1);
+  pntrNCpy(sout, sin + start - 1, length);
+  sout[length] = *NULL_PNTRSTRING;
   return (sout);
 }
 
 /* Extract sin from character position start for length len */
-pntrString *pntrMid(pntrString *sin,long start,long len)
+pntrString *pntrMid(pntrString *sin, long start, long length)
 {
   pntrString *sout;
-  if (start<1) start=1;
-  if (len<0) len = 0;
-  sout=pntrTempAlloc(len+1);
-  pntrNCpy(sout,sin+start-1,len);
-  sout[len] = *NULL_PNTRSTRING;
+  if (start < 1) start = 1;
+  if (length < 0) length = 0;
+  sout = pntrTempAlloc(length + 1);
+  pntrNCpy(sout, sin + start-1, length);
+  sout[length] = *NULL_PNTRSTRING;
   return (sout);
 }
 
@@ -2355,27 +2357,27 @@ long pntrRevInstr(long start_position,pntrString *string1,
 /* Add a single null string element to a pntrString - faster than pntrCat */
 pntrString *pntrAddElement(pntrString *g)
 {
-  long len;
+  long length;
   pntrString *v;
-  len = pntrLen(g);
-  v=pntrTempAlloc(len+2);
-  pntrCpy(v,g);
-  v[len] = "";
-  v[len + 1] = *NULL_PNTRSTRING;
+  length = pntrLen(g);
+  v = pntrTempAlloc(length + 2);
+  pntrCpy(v, g);
+  v[length] = "";
+  v[length + 1] = *NULL_PNTRSTRING;
 /*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("bbg3: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
   return(v);
 }
 
 
-/* Add a single null pntrString element to a pntrString - faster than pntrCat */
+/* Add a single null pntrString element to a pntrString -faster than pntrCat */
 pntrString *pntrAddGElement(pntrString *g)
 {
-  long len;
+  long length;
   pntrString *v;
-  len = pntrLen(g);
-  v=pntrTempAlloc(len+2);
-  pntrCpy(v,g);
-  v[len] = NULL_PNTRSTRING;
-  v[len + 1] = *NULL_PNTRSTRING;
+  length = pntrLen(g);
+  v = pntrTempAlloc(length + 2);
+  pntrCpy(v, g);
+  v[length] = NULL_PNTRSTRING;
+  v[length + 1] = *NULL_PNTRSTRING;
   return(v);
 }

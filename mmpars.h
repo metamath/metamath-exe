@@ -1,10 +1,10 @@
 /*****************************************************************************/
-/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2011  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-char *readRawSource(vstring input_fn, long bufOffsetSoFar, long *size);
+char *readRawSource(vstring inputFn, long bufOffsetSoFar, long *size);
 void parseKeywords(void);
 void parseLabels(void);
 void parseMathDecl(void);
@@ -116,14 +116,13 @@ extern struct wrkProof_struct wrkProof;
    provides the context for the parse (to get correct active symbols) */
 nmbrString *parseMathTokens(vstring userText, long statemNum);
 
-vstring outputStatement(long stmt);
+/* 12-Jun-2011 nm Added reformatFlag */
+vstring outputStatement(long stmt, flag cleanFlag, flag reformatFlag);
+/* 12-Jun-2011 nm */
+/* Caller must deallocate return string */
+vstring rewrapComment(vstring comment);
 
 /* 10/10/02 */
 /* Lookup $a or $p label and return statement number.
    Return -1 if not found. */
 long lookupLabel(vstring label);
-
-/* Obsolete */
-void statementError(vstring msg,vstring statementSoFar);
-void reasonError(long statementNum,long reasonPosition,vstring errorMsg);
-void mathTokenError1(long statementNum,long mathTokenPosition,vstring errorMsg);

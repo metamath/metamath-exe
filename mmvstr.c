@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2008  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2011  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -240,7 +240,10 @@ vstring linput(FILE *stream,vstring ask,vstring *target)
     return NULL;
   }
   f[10000]=0;     /* Just in case */
-  f[strlen(f)-1]=0;     /* Eliminate new-line character */
+  if (f[strlen(f) - 1] == '\n' ) { /* 9-Jul-2011 nm Don't do this unless line
+       ends with '\n' (which might not be the case for the last line in file */
+    f[strlen(f) - 1] = 0;     /* Eliminate new-line character */
+  }
   /* Assign the user's input line */
   let(target,f);
   return *target;
@@ -255,30 +258,30 @@ long len(vstring s)
 
 
 /* Extract sin from character position start to stop into sout */
-vstring seg(vstring sin,long start,long stop)
+vstring seg(vstring sin, long start, long stop)
 {
   vstring sout;
-  long len;
-  if (start<1) start=1;
-  if (stop<1) stop=0;
-  len=stop-start+1;
-  if (len<0) len=0;
-  sout=tempAlloc(len+1);
-  strncpy(sout,sin+start-1,len);
-  sout[len]=0;
+  long length;
+  if (start < 1) start = 1;
+  if (stop < 1) stop = 0;
+  length = stop - start + 1;
+  if (length < 0) length = 0;
+  sout=tempAlloc(length + 1);
+  strncpy(sout, sin + start - 1, length);
+  sout[length] = 0;
   return (sout);
 }
 
 /* Extract sin from character position start for length len */
-vstring mid(vstring sin,long start,long len)
+vstring mid(vstring sin, long start, long length)
 {
   vstring sout;
-  if (start<1) start=1;
-  if (len<0) len=0;
-  sout=tempAlloc(len+1);
-  strncpy(sout,sin+start-1,len);
-/*??? Should db be substracted from if len > end of string? */
-  sout[len]=0;
+  if (start < 1) start = 1;
+  if (length < 0) length = 0;
+  sout=tempAlloc(length + 1);
+  strncpy(sout,sin + start - 1, length);
+/*??? Should db be substracted from if length > end of string? */
+  sout[length] = 0;
   return (sout);
 }
 
@@ -337,10 +340,10 @@ EDIT$
      8192     Discard CR only (to assist DOS-to-Unix conversion)
 */
   vstring sout;
-  long i,j,k;
+  long i, j, k, m;
   int last_char_is_blank;
-  int trim_flag,discardctrl_flag,bracket_flag,quote_flag,case_flag;
-  int alldiscard_flag,leaddiscard_flag,traildiscard_flag,reduce_flag;
+  int trim_flag, discardctrl_flag, bracket_flag, quote_flag, case_flag;
+  int alldiscard_flag, leaddiscard_flag, traildiscard_flag, reduce_flag;
   int processing_inside_quote=0;
   int lowercase_flag, tab_flag, untab_flag, screen_flag, discardcr_flag;
   unsigned char graphicsChar;
@@ -366,7 +369,7 @@ EDIT$
 
   /* Copy string */
   i = strlen(sin) + 1;
-  if (untab_flag) i = i * 7;
+  if (untab_flag) i = i * 7; /* Allow for max possible length */
   sout=tempAlloc(i);
   strcpy(sout,sin);
 
@@ -504,6 +507,7 @@ EDIT$
     FNEND
     */
 
+    /***** old code (doesn't handle multiple lines)
     k = strlen(sout);
     for (i = 1; i <= k; i++) {
       if (sout[i - 1] != '\t') continue;
@@ -515,9 +519,31 @@ EDIT$
       }
       k = k + 8 - ((i - 1) & 7);
     }
+    *****/
+
+    /* Untab string containing multiple lines */ /* 9-Jul-2011 nm */
+    /* (Currently this is needed by outputStatement() in mmpars.c) */
+    k = strlen(sout);
+    m = 0;  /* Position on line relative to last '\n' */
+    for (i = 1; i <= k; i++) {
+      if (sout[i - 1] == '\n') {
+        m = 0;
+        continue;
+      }
+      m++; /* Should equal i for one-line string */
+      if (sout[i - 1] != '\t') continue;
+      for (j = k; j >= i; j--) {
+        sout[j + 8 - ((m - 1) & 7) - 1] = sout[j];
+      }
+      for (j = i; j < i + 8 - ((m - 1) & 7); j++) {
+        sout[j - 1] = ' ';
+      }
+      k = k + 8 - ((m - 1) & 7);
+    }
   }
 
   /* Tab the line */
+  /* (Note that this does not [yet?] handle string with multiple lines) */
   if (tab_flag) {
 
     /*
@@ -593,25 +619,46 @@ vstring chr(long n)
 }
 
 
-/* Search for string2 in string 1 starting at start_position */
-long instr(long start_position,vstring string1,vstring string2)
+/* Search for string2 in string1 starting at start_position */
+/* If there is no match, 0 is returned */
+/* If string2 is "", (length of the string) + 1 is returned */
+long instr(long start_position, vstring string1, vstring string2)
 {
-   char *sp1,*sp2;
-   long ls1,ls2;
-   long found=0;
-   if (start_position<1) start_position=1;
+   char *sp1, *sp2;
+   long ls1, ls2;
+   long found = 0;
+   if (start_position < 1) start_position = 1;
    ls1=strlen(string1);
    ls2=strlen(string2);
-   if (start_position>ls1) start_position=ls1+1;
-   sp1=string1+start_position-1;
-   while ((sp2=strchr(sp1,string2[0]))!=0) {
-     if (strncmp(sp2,string2,ls2)==0) {
-        found=sp2-string1+1;
+   if (start_position > ls1) start_position = ls1 + 1;
+   sp1 = string1 + start_position - 1;
+   while ((sp2 = strchr(sp1, string2[0])) != 0) {
+     if (strncmp(sp2, string2, ls2) == 0) {
+        found = sp2 - string1 + 1;
         break;
      } else
-        sp1=sp2+1;
+        sp1 = sp2 + 1;
    }
    return (found);
+}
+
+
+/* 12-Jun-2011 nm Added rinstr */
+/* Search for _last_ occurrence of string2 in string1 */
+/* 1 = 1st string character; 0 = not found */
+/* ??? Future - this could be made more efficient by searching directly,
+   backwards from end of string1 */
+long rinstr(vstring string1, vstring string2)
+{
+   long pos = 0;
+   long savePos = 0;
+
+   while (1) {  /* Scan until substring no longer found */
+     pos = instr(pos + 1, string1, string2);
+     if (!pos) break;
+     savePos = pos;
+   }
+   return (savePos);
 }
 
 
@@ -804,7 +851,7 @@ vstring num(double f)
 vstring entry(long element, vstring list)
 {
   vstring sout;
-  long commaCount, lastComma, i, len;
+  long commaCount, lastComma, i, length;
   if (element < 1) return ("");
   lastComma = -1;
   commaCount = 0;
@@ -821,11 +868,11 @@ vstring entry(long element, vstring list)
   }
   if (list[i] == 0) commaCount++;
   if (element > commaCount) return ("");
-  len = i - lastComma - 1;
-  if (len < 1) return ("");
-  sout = tempAlloc(len + 1);
-  strncpy(sout, list + lastComma + 1, len);
-  sout[len] = 0;
+  length = i - lastComma - 1;
+  if (length < 1) return ("");
+  sout = tempAlloc(length + 1);
+  strncpy(sout, list + lastComma + 1, length);
+  sout[length] = 0;
   return (sout);
 }
 

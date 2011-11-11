@@ -220,7 +220,7 @@ nmbrString *nmbrSpace(long n);
 
 long nmbrLen(nmbrString *s);
 long nmbrAllocLen(nmbrString *s);
-void nmbrZapLen(nmbrString *s, long len);
+void nmbrZapLen(nmbrString *s, long length);
 
 /* Search for string2 in string 1 starting at start_position */
 long nmbrInstr(long start, nmbrString *sin, nmbrString *s);
@@ -347,7 +347,7 @@ pntrString *pntrCat(pntrString *string1,...);
 
 /* Emulation of pntrString functions similar to BASIC string functions */
 pntrString *pntrSeg(pntrString *sin, long p1, long p2);
-pntrString *pntrMid(pntrString *sin, long p, long l);
+pntrString *pntrMid(pntrString *sin, long p, long length);
 pntrString *pntrLeft(pntrString *sin, long n);
 pntrString *pntrRight(pntrString *sin, long n);
 
@@ -364,7 +364,7 @@ pntrString *pntrPSpace(long n);
 
 long pntrLen(pntrString *s);
 long pntrAllocLen(pntrString *s);
-void pntrZapLen(pntrString *s, long len);
+void pntrZapLen(pntrString *s, long length);
 
 /* Search for string2 in string 1 starting at start_position */
 long pntrInstr(long start, pntrString *sin, pntrString *s);

@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2010  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2011  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -24,9 +24,11 @@
 long proveStatement = 0; /* The statement to be proved - global */
 flag proofChangedFlag; /* Flag to push 'undo' stack - global */
 
+/* 4-Aug-2011 nm Changed from 25000 to 50000 */
 /* 11-Dec-2010 nm Changed from 10000 to 25000 to accomodate df-plig in set.mm
    (which needs >= 23884 to generate with 'show statement / html'). */
-long userMaxProveFloat = /*10000*/ 25000; /* Upper limit for proveFloating */
+/* userMaxProveFloat can be overridden by user with SET SEARCH_LIMIT */
+long userMaxProveFloat = /*10000*/ 50000; /* Upper limit for proveFloating */
 
 long dummyVars = 0; /* Total number of dummy variables declared */
 long pipDummyVars = 0; /* Number of dummy variables used by proof in progress */
@@ -1400,6 +1402,7 @@ void minimizeProof(long repStatemNum, long prvStatemNum,
       /* Don't replace a step with itself (will cause infinite loop in
          ALLOW_GROWTH mode) */
       if (proofInProgress.proof[step] != repStatemNum
+          /* || 1 */  /* For special replacement with same label; also below */
           /* 3-Feb-06 nm */
           /* When not in ALLOW_GROWTH mode i.e. when an infinite loop can't
              occur, we _do_ let a label be tested against itself so that e.g. a
@@ -1425,7 +1428,14 @@ void minimizeProof(long repStatemNum, long prvStatemNum,
       sublen = subProofLen(proofInProgress.proof, step);
       if (sublen > nmbrLen(newSubProofPtr) || allowGrowthFlag) {
         /* Success - proof length was reduced */
-        deleteSubProof(step);
+        /* 7-Jun-2011 nm Delete the old subproof only if it is not an unknown
+           step (since if it is an unknown step, it is already deleted) */
+        if (proofInProgress.proof[step] == -(long)'?') {
+          /* 7-Jun-2011 nm This can only occur in / ALLOW_GROWTH mode */
+          if (!allowGrowthFlag) bug(1831);
+        } else {
+          deleteSubProof(step);
+        }
         addSubProof(newSubProofPtr, step - sublen + 1);
         assignKnownSteps(step - sublen + 1, nmbrLen(newSubProofPtr));
         foundFlag = 1;
@@ -1437,6 +1447,8 @@ void minimizeProof(long repStatemNum, long prvStatemNum,
     } /* next step */
 
     if (!foundFlag) break; /* Done */
+    /* break; */  /* For special replacement with same label: always break
+                      to prevent inf loop */
   } /* end while */
 
 }

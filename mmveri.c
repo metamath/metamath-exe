@@ -35,7 +35,7 @@ char verifyProof(long statemNum)
   long i, j, step;
   char type;
   char *fbPtr;
-  long tokenLen;
+  long tokenLength;
   long numReqHyp;
   char returnFlag = 0;
   nmbrString *nmbrTmpPtr;
@@ -208,9 +208,9 @@ char verifyProof(long statemNum)
         wrkProof.mathStringPtrs[wrkProof.numSteps - 1])) {
       if (!wrkProof.errorCount) {
         fbPtr = wrkProof.stepSrcPtrPntr[wrkProof.numSteps - 1];
-        tokenLen = wrkProof.stepSrcPtrNmbr[wrkProof.numSteps - 1];
+        tokenLength = wrkProof.stepSrcPtrNmbr[wrkProof.numSteps - 1];
         /*??? Make sure suggested commands are correct. */
-        sourceError(fbPtr, tokenLen, statemNum, cat(
+        sourceError(fbPtr, tokenLength, statemNum, cat(
             "The result of the proof (step ",str(wrkProof.numSteps),
             ") does not match the statement being proved.  The result is \"",
             nmbrCvtMToVString(
@@ -229,7 +229,7 @@ char verifyProof(long statemNum)
 
   return (returnFlag);
 
-}
+} /* verifyProof */
 
 
 

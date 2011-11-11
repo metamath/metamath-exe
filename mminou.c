@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2010  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2011  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -46,10 +46,12 @@ FILE *listFile_fp = NULL;
 flag outputToString = 0;
 vstring printString = "";
 /* Global variables used by cmdInput() */
-flag commandFileOpenFlag = 0;
-FILE *commandFilePtr;
-vstring commandFileName = "";
-flag commandFileSilentFlag = 0; /* 23-Oct-2006 nm For SUBMIT ... /SILENT */
+long commandFileNestingLevel = 0;
+FILE *commandFilePtr[MAX_COMMAND_FILE_NESTING + 1];
+vstring commandFileName[MAX_COMMAND_FILE_NESTING + 1];
+flag commandFileSilent[MAX_COMMAND_FILE_NESTING + 1];
+flag commandFileSilentFlag = 0;
+                                   /* 23-Oct-2006 nm For SUBMIT ... /SILENT */
 
 FILE *inputDef_fp,*input_fp,*output_fp; /* File pointers */
 vstring inputDef_fn="",input_fn="",output_fn="";        /* File names */
@@ -102,7 +104,7 @@ flag print2(char* fmt,...)
     pntrLet(&backBuffer, pntrAddElement(backBuffer));
   }
 
-  if ((!quitPrint && !commandFileOpenFlag && (scrollMode == 1
+  if ((!quitPrint && commandFileNestingLevel == 0 && (scrollMode == 1
            && localScrollMode == 1)
       /* 18-Nov-05 nm - now a variable settable with SET HEIGHT */
       && printedLines >= /*SCREEN_HEIGHT*/ screenHeight && !outputToString)
@@ -541,7 +543,15 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
       /* Get the next caller's line */
       let(&longLine, left(multiLine, p - 1));
       /* Postpone the remaining lines to multiLine for next time around */
-      let(&multiLine, right(multiLine, p + 1));
+      /* /@ 12-Jun-2011 nm Put continuation line start (normally spaces) at
+         the beginning of explicit new line, removing spaces that may
+         already be there - for use after blank line in outputStatement()
+         in mmpars.c @/
+      let(&multiLine, cat(startNextLine1,
+          edit(right(multiLine, p + 1), 8 /@ Discard leading spaces @/),
+          NULL)); */
+     /* The above is bad, because it doesn't allow flexible user indentation */
+      /* OLD */ let(&multiLine, right(multiLine, p + 1));
     } else {
       let(&longLine, multiLine);
       let(&multiLine, "");
@@ -558,7 +568,7 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
       startNextLineLen = screenWidth - 4;
       let(&startNextLine1, left(startNextLine1, screenWidth - 4));
     }
-    while (strlen(longLine) + (1 - firstLine) * startNextLineLen >
+    while ((signed)(strlen(longLine)) + (1 - firstLine) * startNextLineLen >
         screenWidth - (long)tildeFlag - (long)(breakMatch1[0] == '\\')) {
       p = screenWidth - (long)tildeFlag - (long)(breakMatch1[0] == '\\') + 1;
       if (!firstLine) p = p - startNextLineLen;
@@ -581,7 +591,11 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
           if (p <= 0) bug(1518);
           /*while (!instr(1, breakMatch1, mid(longLine,p,1)) && p > 0) {*/
           /* Speedup */
-          while (strchr(breakMatch1, longLine[p - 1]) == NULL) {
+          /* while (strchr(breakMatch1, longLine[p - 1]) == NULL) { */
+          /* 24-Feb-2010 nm For LaTeX, match space, not backslash */
+          /* (Todo:  is backslash match mode really needed?) */
+          while (strchr(breakMatch1[0] != '\\' ? breakMatch1 : " ",
+              longLine[p - 1]) == NULL) {
             p--;
             if (!p) break;
           }
@@ -637,12 +651,20 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
         }
       }
       if (!tildeFlag) {
+        /* 7-Sep-2010 nm - Don't do this anymore with new (24-Feb-2010) LaTeX
+           output, since it isn't needed, and worse, it causes words in the
+           description to be joined together without space.  (It might be better
+           to analyze if breakMatch1[0] == '\\' is needed at all.) */
+        /*** start of 7-Sep-2010 commented out code
         if (breakMatch1[0] == '\\') {
-          /* Add LaTeX comment char to ignore carriage return */
+          /@ Add LaTeX comment char to ignore carriage return @/
           print2("%s\n",cat(prefix, left(longLine,p - 1), "%", NULL));
         } else {
+        *** end of 7-Sep-2010 commented out code */
           print2("%s\n",cat(prefix, left(longLine,p - 1), NULL));
+        /*** start of 7-Sep-2010 commented out code
         }
+        *** end of 7-Sep-2010 commented out code */
       } else {
         print2("%s\n",cat(prefix, left(longLine,p - 1), "~", NULL));
       }
@@ -774,7 +796,7 @@ vstring cmdInput(FILE *stream, vstring ask)
     if ((!strcmp(g, "B") || !strcmp(g, "b")) /* User typed "B" */
         && pntrLen(backBuffer) > 1   /* The back-buffer still exists and
                                          there was a previous page */
-        && !commandFileOpenFlag
+        && commandFileNestingLevel == 0
         && (scrollMode == 1 && localScrollMode == 1)
         && !outputToString) {
       /* Set variables so only backup buffer will be looked at in print2() */
@@ -790,7 +812,8 @@ vstring cmdInput(FILE *stream, vstring ask)
       /* If the command line is empty (at main prompt), let user still
          type "B" for convenience in case too many
          returns where hit while scrolling */
-      if (commandFileOpenFlag) break; /* 23-Aug-04 We're taking from a SUBMIT
+      if (commandFileNestingLevel > 0) break;
+                            /* 23-Aug-04 We're taking from a SUBMIT
                               file so break out of loop that looks for "B" */
       if (ask == NULL) {
         printf("***BUG #1523\n"); /* 23-Aug-04 In non-SUBMIT
@@ -812,21 +835,21 @@ vstring cmdInput(FILE *stream, vstring ask)
   } /* while 1 */
 
   return g;
-}
+} /* cmdInput */
 
 vstring cmdInput1(vstring ask)
 {
   /* This function gets a line from either the terminal or the command file
-    stream depending on commandFileOpenFlag.  It calls cmdInput(). */
+    stream depending on commandFileNestingLevel > 0.  It calls cmdInput(). */
   /* Warning: the calling program must deallocate the returned string. */
-  vstring commandLine = "";
+  vstring commandLn = "";
   vstring ask1 = "";
   long p, i;
 
   let(&ask1, ask); /* In case ask is temporarily allocated (i.e will become
                       deallocated at next let() */
   /* Look for lines too long */
-  while (strlen(ask1) > screenWidth) {
+  while ((signed)(strlen(ask1)) > screenWidth) {
     p = screenWidth - 1;
     while (ask1[p] != ' ' && p > 0) p--;
     if (!p) p = screenWidth - 1;
@@ -834,7 +857,7 @@ vstring cmdInput1(vstring ask)
     let(&ask1, right(ask1, p + 1));
   }
   /* Allow 10 characters for answer */
-  if (strlen(ask1) > screenWidth - 10) {
+  if ((signed)(strlen(ask1)) > screenWidth - 10) {
     p = screenWidth - 11;
     while (ask1[p] != ' ' && p > 0) p--;
     if (p) {  /* (Give up if no spaces) */
@@ -848,26 +871,26 @@ vstring cmdInput1(vstring ask)
   localScrollMode = 1; /* Reset to prompted scroll */
 
   while (1) {
-    if (!commandFileOpenFlag) {
-      commandLine = cmdInput(stdin,ask1);
-      if (!commandLine) {
-        commandLine = ""; /* Init vstring (was NULL) */
+    if (commandFileNestingLevel == 0) {
+      commandLn = cmdInput(stdin,ask1);
+      if (!commandLn) {
+        commandLn = ""; /* Init vstring (was NULL) */
         /* 21-Feb-2010 nm Allow ^D to exit */
         /* 21-Feb-2010 Removed line: */
-        /* let(&commandLine, "^Z"); */
+        /* let(&commandLn, "^Z"); */
         /* 21-Feb-2010 Added lines: */
         if (strcmp(left(ask1, 2), "Do")) {
           /* ^Z or ^D found at MM>, MM-PA>, or TOOLS> prompt */
-          let(&commandLine, "exit");
+          let(&commandLn, "EXIT");
         } else {
           /* Detected the question "Do you want to EXIT anyway (Y, N) <N>?" */
           /* Force exit with Y, to prevent infinite loop */
-          let(&commandLine, "Y");
+          let(&commandLn, "Y");
         }
-        printf("%s\n", commandLine);  /* Let user see what's happening */
+        printf("%s\n", commandLn); /* Let user see what's happening */
         /* 21-Feb-2010 end of change */
       }
-      if (logFileOpenFlag) fprintf(logFilePtr, "%s%s\n", ask1, commandLine);
+      if (logFileOpenFlag) fprintf(logFilePtr, "%s%s\n", ask1, commandLn);
 
       /* Clear backBuffer from previous scroll session */
       for (i = 0; i < pntrLen(backBuffer); i++) {
@@ -880,31 +903,39 @@ vstring cmdInput1(vstring ask)
       /* Add user's typing to the backup buffer for display on 1st screen */
       let((vstring *)(&(backBuffer[backBufferPos - 1])), cat(
           (vstring)(backBuffer[backBufferPos - 1]), ask1,
-          commandLine, "\n", NULL));
+          commandLn, "\n", NULL));
 
       if (listMode && listFile_fp != NULL) {
         /* Put line in list.tmp as comment */
-        fprintf(listFile_fp, "! %s\n", commandLine);
+        fprintf(listFile_fp, "! %s\n", commandLn);
       }
 
     } else { /* Get line from SUBMIT file */
-      commandLine = cmdInput(commandFilePtr, NULL);
-      if (!commandLine) { /* EOF found */
-        fclose(commandFilePtr);
-        print2("%s[End of command file \"%s\".]\n", ask1, commandFileName);
-        commandFileOpenFlag = 0;
-        commandLine = "";
-        commandFileSilentFlag = 0; /* 23-Oct-2006 nm Added SUBMIT / SILENT */
+      commandLn = cmdInput(commandFilePtr[commandFileNestingLevel], NULL);
+      if (!commandLn) { /* EOF found */
+        fclose(commandFilePtr[commandFileNestingLevel]);
+        print2("%s[End of command file \"%s\".]\n", ask1,
+            commandFileName[commandFileNestingLevel]);
+        let(&(commandFileName[commandFileNestingLevel]), "");
+                                                        /* Deallocate string */
+        commandFileNestingLevel--;
+        commandLn = "";
+        if (commandFileNestingLevel == 0) {
+          commandFileSilentFlag = 0; /* 23-Oct-2006 nm Added SUBMIT / SILENT */
+        } else {
+          commandFileSilentFlag = commandFileSilent[commandFileNestingLevel];
+               /* Revert to previous nesting level's silent flag */
+        }
         break; /*continue;*/
       }
-      print2("%s%s\n", ask1, commandLine);
+      print2("%s%s\n", ask1, commandLn);
     }
     break;
   }
 
   let(&ask1, ""); /* 10/20/02 Deallocate */
-  return commandLine;
-}
+  return commandLn;
+} /* cmdInput1 */
 
 
 void errorMessage(vstring line, long lineNum, short column, short tokenLength,
@@ -1219,7 +1250,7 @@ vstring fGetTmpName(vstring filePrefix)
    could not be opened or had a non-ASCII Unicode character or some other
    problem.   If verbose is 0, error and warning messages are suppressed. */
 vstring readFileToString(vstring fileName, char verbose) {
-  FILE *input_fp;
+  FILE *inputFp;
   long fileBufSize;
   long charCount;
   char *fileBuf;
@@ -1227,8 +1258,8 @@ vstring readFileToString(vstring fileName, char verbose) {
 
   /* Find out the upper limit of the number of characters in the file. */
   /* Do this by opening the file in binary and seeking to the end. */
-  input_fp = fopen(fileName, "rb");
-  if (!input_fp) {
+  inputFp = fopen(fileName, "rb");
+  if (!inputFp) {
     if (verbose) print2("?Sorry, couldn't open the file \"%s\".\n", fileName);
     return (NULL);
   }
@@ -1236,14 +1267,14 @@ vstring readFileToString(vstring fileName, char verbose) {
 /* An older GCC compiler didn't have this ANSI standard constant defined. */
 #define SEEK_END 2
 #endif
-  if (fseek(input_fp, 0, SEEK_END)) bug(1511);
-  fileBufSize = ftell(input_fp);
+  if (fseek(inputFp, 0, SEEK_END)) bug(1511);
+  fileBufSize = ftell(inputFp);
 
   /* Close and reopen the input file in text mode */
   /* Text mode is needed for VAX, DOS, etc. with non-Unix end-of-lines */
-  fclose(input_fp);
-  input_fp = fopen(fileName, "r");
-  if (!input_fp) bug(1512);
+  fclose(inputFp);
+  inputFp = fopen(fileName, "r");
+  if (!inputFp) bug(1512);
 
   /* Allocate space for the entire input file */
   fileBufSize = fileBufSize + 10;
@@ -1253,19 +1284,19 @@ vstring readFileToString(vstring fileName, char verbose) {
     if (verbose) print2(
         "?Sorry, there was not enough memory to read the file \"%s\".\n",
         fileName);
-    fclose(input_fp);
+    fclose(inputFp);
     return (NULL);
   }
 
   /* Put the entire input file into the buffer as a giant character string */
-  charCount = fread(fileBuf, sizeof(char), fileBufSize - 2, input_fp);
-  if (!feof(input_fp)) {
+  charCount = fread(fileBuf, sizeof(char), fileBufSize - 2, inputFp);
+  if (!feof(inputFp)) {
     print2("Note:  This bug will occur if there is a disk file read error.\n");
     /* If this bug occurs (due to obscure future format such as compressed
        text files) we'll have to add a realloc statement. */
     bug(1513);
   }
-  fclose(input_fp);
+  fclose(inputFp);
 
   fileBuf[charCount] = 0;
 
@@ -1371,4 +1402,4 @@ vstring readFileToString(vstring fileName, char verbose) {
   print2("In text mode the file has %ld bytes.\n", charCount);
   *******/
   return ((char *)fileBuf);
-}
+} /* readFileToString */

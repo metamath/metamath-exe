@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2010  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2011  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -590,8 +590,8 @@ H("(see HELP OPEN LOG) to record the results that fly by on the screen.");
 H("After the lines in the command file are exhausted, Metamath returns to");
 H("its normal user interface mode.");
 H("");
-H("SUBMIT commands are not allowed inside of the command file, i.e. SUBMIT");
-H("is not recursive.");
+H("SUBMIT commands can occur inside of a SUBMIT command file, up to 10 levels");
+H("deep (determined by MAX_COMMAND_FILE_NESTING in mminou.h.");
 H("");
 H("Optional qualifier:");
 H("    / SILENT - This qualifier suppresses the screen output of the SUBMIT");
@@ -652,10 +652,18 @@ H("");
 
 
 printHelp = !strcmp(helpCmd, "HELP WRITE SOURCE");
-H("Syntax:  WRITE SOURCE <filename>");
+H("Syntax:  WRITE SOURCE <filename> [/ FORMAT] [/ REWRAP] [/ CLEAN]");
 H("");
-H("Optional qualifier:");
+H("Optional qualifiers:");
 H("");
+H("    / FORMAT - Reformats statements and comments according to the");
+H("        convention used in the set.mm database.  Proofs are not");
+H("        reformatted; use SAVE PROOF * / COMPRESSED to do that.");
+H("    / REWRAP - Same as / FORMAT but more aggressive.  It unwraps the");
+H("        lines in the comment before each $a and $p statement, then");
+H("        rewraps the line.  You should compare the output to the original");
+H("        to make sure that the desired effect results; if not, go back to");
+H("        the original source.");
 H("    / CLEAN - Suppresses the output of any theorem that has been flagged");
 H("        with a question mark (?) placed in the date comment field at the");
 H("        end of its proof, for example \"$( [?31-Oct-00] $)\".  This lets");
@@ -978,15 +986,17 @@ H("");
 
 
 printHelp = !strcmp(helpCmd, "HELP MINIMIZE_WITH");
-H("Syntax:  MINIMIZE_WITH <label> [/ BRIEF] [/ ALLOW_GROWTH] [/ NO_DISTINCT]");
+H("Syntax:  MINIMIZE_WITH <label-match> [/ BRIEF] [/ ALLOW_GROWTH]");
+H("             [/ NO_DISTINCT] [/ EXCEPT <label-match>]");
+H("             [/ REVERSE] [/ INCLUDE_MATHBOXES]");
 H("");
 H("This command, available in the Proof Assistant only, checks whether");
 H("the proof can be shortened by using earlier $p or $a statements matching");
-H("<label>, and if so, shortens the proof.  <label> can contain wildcards");
-H("(* and ?) to test more than one statement, but each statement is still");
-H("tested independently from the others.  Warning:  MINIMIZE_WITH does not");
-H("check for $d violations, so SAVE PROOF then VERIFY PROOF should be run");
-H("afterwards to check for them.");
+H("<label-match>, and if so, shortens the proof.  <label-match> can contain");
+H("wildcards (* and ?) to test more than one statement, but each statement");
+H("is tested independently from the others.  Warning:  MINIMIZE_WITH does");
+H("not check for $d violations, so SAVE PROOF then VERIFY PROOF should be");
+H("run afterwards to check for them if you don't use / NO_DISTINCT.");
 H("");
 H("Optional qualifiers:");
 H("    / BRIEF - The labels of statements that were tested but didn't reduce");
@@ -998,10 +1008,20 @@ H("    / NO_DISTINCT - Skip the trial statement if it has a $d requirement.");
 H("        This qualifier is useful when <label> has wildcards, to prevent");
 H("        illegal shortenings that would violate $d requirements.");
 /* 7-Jan-06 nm - Added EXCEPT */
-H("    / EXCEPT <skiplabel> - Skip trial statements matching <skiplabel>,");
+H("    / EXCEPT <label-match> - Skip trial statements matching <label-match>,");
 H("        which may contain * and ? wildcard characters; see HELP SEARCH");
 H("        for wildcard matching rules.  Note:  Multiple EXCEPT qualifiers");
 H("        are not allowed; use wildcards instead.");
+/* 10-Nov-2011 nm - Added REVERSE */
+H("    / REVERSE - Reverse the order of statement scanning.  By default,");
+H("        statements are scanned from last to first, since empirically this");
+H("        usually leads to better results.  With this qualifier they are");
+H("        scanned from first to last.  You may wish to try both ways");
+H("        (from the same starting proof) and choose the shorter result.");
+/* 28-Jun-2011 nm - Added INCLUDE_MATHBOXES */
+H("    / INCLUDE_MATHBOXES - By default, statements beyond the one with");
+H("        label \"mathbox\" are skipped.  This qualifier allows them to be");
+H("        included.");
 H("");
 
 
