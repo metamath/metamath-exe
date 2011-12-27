@@ -4306,7 +4306,8 @@ vstring rewrapComment(vstring comment1)
   let(&comment, comment1); /* Grab arg so it can be reassigned */
 
   /* Ignore pre-formatted comments */
-  if (instr(1, comment, "<PRE>") != 0) return comment;
+  /* if (instr(1, comment, "<PRE>") != 0) return comment; */
+  if (instr(1, comment, "<HTML>") != 0) return comment;  /* 26-Dec-2011 nm */
 
   /* Make sure back quotes are surrounded by space */
   pos = 2;

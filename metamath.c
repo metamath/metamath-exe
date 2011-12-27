@@ -5,7 +5,11 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.07.71 10-Nov-2011"
+#define MVERSION "0.07.73 26-Dec-2011"
+/* 0.07.73 26-Dec-2011 nm mmwtex.c, mmpars.c - added <HTML>...</HTML> in
+   comments for passing through raw HTML code into HTML files generated with
+   SHOw STATEMENT xxx / HTML */
+/* 0.07.72 25-Dec-2011 nm (obsolete) */
 /* 0.07.71 10-Nov-2011 nm metamath.c, mmcmdl.c - added /REV to MINIMIZE_WITH */
 /* 0.07.70 6-Aug-2011 nm mmwtex.c - fix handling of double quotes inside
    of htmldef strings to match spec in Metamath book Appendix A p. 156 */

@@ -401,7 +401,7 @@ flag readTexDefs(void)
           rawSourceError(fileBuf, fbPtr, tokenLength, lineNum, input_fn,
               "Expected a quoted string here.");
           let(&fileBuf, "");  /* was: free(fileBuf); */
-         return (0);
+          return (0);
         }
         if (parsePass == 2) {
           zapChar = fbPtr[tokenLength - 1]; /* Chr to restore after zapping src */
@@ -431,6 +431,13 @@ flag readTexDefs(void)
           /* Check that string is on a single line */
           tmpPtr2 = strchr(partialToken, '\n');
           if (tmpPtr2 != NULL) {
+
+            /* 26-Dec-2011 nm - added to initialize lineNum */
+            lineNum = lineNumOffset;
+            for (i = 0; i < (fbPtr - fileBuf); i++) {
+              if (fileBuf[i] == '\n') lineNum++;
+            }
+
             rawSourceError(fileBuf, fbPtr,
                 tmpPtr2 - partialToken + 1 /*tokenLength on current line*/,
                 lineNum, input_fn,
@@ -852,14 +859,27 @@ vstring asciiToTt(vstring s)
         case '<':
           /* 11/15/02 Leave in some special HTML tags (case must match) */
           /* This was done specially for the set.mm inf3 comment */
+          /*
           if (!strcmp(mid(ttstr, i + 1, 5), "<PRE>")) {
-            let(&ttstr, ttstr); /* Purge stack to prevent overflow by 'mid' */
+            let(&ttstr, ttstr); /@ Purge stack to prevent overflow by 'mid' @/
             i = i + 5;
             break;
           }
           if (!strcmp(mid(ttstr, i + 1, 6), "</PRE>")) {
+            let(&ttstr, ttstr); /@ Purge stack to prevent overflow by 'mid' @/
+            i = i + 6;
+            break;
+          }
+          */
+          /* 26-Dec-2011 nm - changed <PRE> to more general <HTML> */
+          if (!strcmp(mid(ttstr, i + 1, 6), "<HTML>")) {
             let(&ttstr, ttstr); /* Purge stack to prevent overflow by 'mid' */
             i = i + 6;
+            break;
+          }
+          if (!strcmp(mid(ttstr, i + 1, 7), "</HTML>")) {
+            let(&ttstr, ttstr); /* Purge stack to prevent overflow by 'mid' */
+            i = i + 7;
             break;
           }
           let(&ttstr,cat(left(ttstr,i),"&lt;",right(ttstr,i+2),NULL));
@@ -1584,7 +1604,9 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
   vstring tmpComment = ""; /* Added 10/10/02 */
   /* 11/15/02 A comment section with <PRE>...</PRE> is formatted into a
               monospaced text table */
-  flag preMode = 0; /* HTML <PRE> preformatted mode */
+  /* 26-Dec-2011 nm - changed <PRE> to more general <HTML> */
+  /*flag preformattedMode = 0; /@ HTML <PRE> preformatted mode @/ */
+  flag preformattedMode = 0; /* HTML <HTML> preformatted mode */
 
   /* 10/10/02 For bibliography hyperlinks */
   vstring bibTag = "";
@@ -1592,7 +1614,7 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
   vstring bibFileContents = "";
   vstring bibFileContentsUpper = ""; /* Uppercase version */
   vstring bibTags = "";
-  long pos1, pos2, htmlpos1, htmlpos2;
+  long pos1, pos2, htmlpos1, htmlpos2, saveScreenWidth;
 
   /* Variables for converting ` ` and ~ to old $m,$n and $l,$n formats in
      order to re-use the old code */
@@ -1623,6 +1645,9 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
   if (htmlFlag) {
     /* Convert special characters <, &, etc. to HTML entities */
     /* But skip converting math symbols inside ` ` */
+    /* 26-Dec-2011 nm Detect preformatted HTML (this is crude, since it
+       will apply to whole comment - perhaps fine-tune this later) */
+    if (instr(1, cmt, "<HTML>")) preformattedMode = 1;
     pos1 = 0;
     mode = 1; /* 1 normal, -1 math token */
     let(&tmp, "");
@@ -1638,7 +1663,7 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
         break;
       }
       if (!pos1) pos1 = strlen(cmt) + 1;
-      if (mode == 1) {
+      if (mode == 1 && preformattedMode == 0) {
         let(&tmpStr, "");
         tmpStr = asciiToTt(left(cmt, pos1));
       } else {
@@ -1668,8 +1693,13 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
     while (1) {
       pos1 = instr(pos1 + 1, cmt, "$");
       if (!pos1) break;
-      /* Don't modify anything inside of <PRE>...</PRE> tags */
+      /*
+      /@ Don't modify anything inside of <PRE>...</PRE> tags @/
       if (pos1 > instr(1, cmt, "<PRE>") && pos1 < instr(1, cmt, "</PRE>"))
+        continue;
+      */
+      /* Don't modify anything inside of <HTML>...</HTML> tags */
+      if (pos1 > instr(1, cmt, "<HTML>") && pos1 < instr(1, cmt, "</HTML>"))
         continue;
       let(&cmt, cat(left(cmt, pos1 - 1), "\\$", right(cmt, pos1 + 1),
           NULL));
@@ -1687,8 +1717,13 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
     while (1) {
       pos1 = instr(pos1 + 1, cmt, "_");
       if (!pos1) break;
-      /* Don't modify anything inside of <PRE>...</PRE> tags */
+      /*
+      /@ Don't modify anything inside of <PRE>...</PRE> tags @/
       if (pos1 > instr(1, cmt, "<PRE>") && pos1 < instr(1, cmt, "</PRE>"))
+        continue;
+      */
+      /* Don't modify anything inside of <HTML>...</HTML> tags */
+      if (pos1 > instr(1, cmt, "<HTML>") && pos1 < instr(1, cmt, "</HTML>"))
         continue;
       /* 23-Jul-2006 nm Don't modify anything inside of math symbol strings
          (imperfect - only works if `...` is not split across lines) */
@@ -2219,32 +2254,50 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
     let(&outputLine, edit(outputLine, 128)); /* remove trailing spaces */
 
     if (htmlFlag) {
-      /* Change blank lines into paragraph breaks except in <PRE> mode */
+      /* Change blank lines into paragraph breaks except in <HTML> mode */
       if (!outputLine[0]) { /* Blank line */
-        if (!preMode) let(&outputLine, "<P>"); /* Make it a paragraph break */
+        if (preformattedMode == 0) let(&outputLine, "<P>");
+                                                /* Make it a paragraph break */
       }
       /* 11/15/02 If a statement comment has a section embedded in
          <PRE>...</PRE>, we make it a table with monospaced text and a
          background color */
-      pos1 = instr(1, outputLine, "<PRE>");
+      /* pos1 = instr(1, outputLine, "<PRE>"); */
+      /* 26-Dec-2011 nm - changed <PRE> to more general <HTML> */
+      pos1 = instr(1, outputLine, "<HTML>");
       if (pos1) {
-        preMode = 1; /* So we don't put <P> for blank lines */
+        /* 26-Dec-2011 nm - The line below is probably redundant since we
+           set preformattedMode ealier.  Maybe add a bug check to make sure
+           it is 1 here. */
+        preformattedMode = 1; /* So we don't put <P> for blank lines */
+        /* 26-Dec-2011 nm - Took out fancy table for simplicity
         let(&outputLine, cat(left(outputLine, pos1 - 1),
             "<P><CENTER><TABLE BORDER=0 CELLSPACING=0 CELLPADDING=10 BGCOLOR=",
-            /* MINT_BACKGROUND_COLOR, */
-            "\"#F0F0F0\"", /* Very light gray */
+            /@ MINT_BACKGROUND_COLOR, @/
+            "\"#F0F0F0\"", /@ Very light gray @/
             "><TR><TD ALIGN=LEFT>", right(outputLine, pos1), NULL));
+        */
+        /* 26-Dec-2011 nm - Strip out the "<HTML>" string */
+        let(&outputLine, cat(left(outputLine, pos1 - 1),
+            right(outputLine, pos1 + 6), NULL));
       }
-      pos1 = instr(1, outputLine, "</PRE>");
+      /* pos1 = instr(1, outputLine, "</PRE>"); */
+      pos1 = instr(1, outputLine, "</HTML>");
       if (pos1) {
-        preMode = 0;
+        preformattedMode = 0;
+        /* 26-Dec-2011 nm - Took out fancy table for simplicity
         let(&outputLine, cat(left(outputLine, pos1 + 5),
             "</TD></TR></TABLE></CENTER>", right(outputLine, pos1 + 6), NULL));
+        */
+        /* 26-Dec-2011 nm - Strip out the "</HTML>" string */
+        let(&outputLine, cat(left(outputLine, pos1 - 1),
+            right(outputLine, pos1 + 7), NULL));
       }
     }
 
     if (!htmlFlag) { /* LaTeX */
       /* Convert <PRE>...</PRE> HTML tags to LaTeX */
+      /* 26-Dec-2011 nm - leave this in for now */
       while (1) {
         pos1 = instr(1, outputLine, "<PRE>");
         if (pos1) {
@@ -2263,9 +2316,36 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
           break;
         }
       }
+      /* 26-Dec-2011 nm - strip out <HTML>, </HTML> */
+      /* The HTML part may screw up LaTeX; maybe we should just take out
+         any HTML code completely in the future? */
+      while (1) {
+        pos1 = instr(1, outputLine, "<HTML>");
+        if (pos1) {
+          let(&outputLine, cat(left(outputLine, pos1 - 1),
+              right(outputLine, pos1 + 6), NULL));
+        } else {
+          break;
+        }
+      }
+      while (1) {
+        pos1 = instr(1, outputLine, "</HTML>");
+        if (pos1) {
+          let(&outputLine, cat(left(outputLine, pos1 - 1),
+              right(outputLine, pos1 + 7), NULL));
+        } else {
+          break;
+        }
+      }
     }
 
+    saveScreenWidth = screenWidth;
+    /* 26-Dec-2011 nm - in <PRE> mode, we don't want to wrap the HTML
+       output with spurious newlines */
+    if (preformattedMode) screenWidth = PRINTBUFFERSIZE - 2;
     printLongLine(outputLine, "", htmlFlag ? "\"" : "\\");
+    screenWidth = saveScreenWidth;
+
     let(&tmp, ""); /* Clear temporary allocation stack */
 
     if (lastLineFlag) break; /* Done */
