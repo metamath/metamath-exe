@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2011  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2012  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -18,7 +18,17 @@
 /* help0 is for toolsMode */
 void help0(vstring helpCmd)
 {
-printHelp = !strcmp(helpCmd, "HELP");
+
+/* 5-Sep-2012 nm */
+vstring saveHelpCmd = "";
+/* help0() may be called with a temporarily allocated argument (left(),
+   cat(), etc.), and the let()s in the eventual print2() calls will
+   deallocate and possibly corrupt helpCmd.  So, we grab a non-temporarily
+   allocated copy here.  (And after this let(), helpCmd will become invalid
+   for the same reason.)  */
+let(&saveHelpCmd, helpCmd);
+
+printHelp = !strcmp(saveHelpCmd, "HELP");
 H("This utility assists with some common file manipulations.");
 H("Most commands will perform an identical operation on each line of a file.");
 H("Use HELP ? to see list of help topics.");
@@ -95,13 +105,13 @@ H("Please see NDM if you have any suggestions for this program.");
 } /* if listMode */
 
 
-printHelp = !strcmp(helpCmd, "HELP ADD");
+printHelp = !strcmp(saveHelpCmd, "HELP ADD");
 H("This command adds a character string prefix and/or suffix to each");
 H("line in a file.");
 H("Syntax:  ADD <iofile> <begstr> <endstr>");
 
 /* 2-Jul-2011 nm Added TAG command */
-printHelp = !strcmp(helpCmd, "HELP TAG");
+printHelp = !strcmp(saveHelpCmd, "HELP TAG");
 H("TAG is the same as ADD but has 4 additional arguments that let you");
 H("specify a range of lines.  Syntax:");
 H("  TAG <iofile> <begstr> <endstr> <startmatch> <s#> <endmatch> <e#>");
@@ -122,12 +132,12 @@ H("  TAG \"set.mm\" \"@@@\" \"\" \"abc $p\" 1 \"$.\" 1");
 H("so that later, SUBSTITUTE can be used to affect only those lines.  You");
 H("can remove the \"@@@\" tags with SUBSTITUTE when done.");
 
-printHelp = !strcmp(helpCmd, "HELP DELETE");
+printHelp = !strcmp(saveHelpCmd, "HELP DELETE");
 H("This command deletes the part of a line between (and including)");
 H("two specified strings for all lines in a file.");
 H("Syntax:  DELETE <iofile> <startstr> <endstr>");
 
-printHelp = !strcmp(helpCmd, "HELP CLEAN");
+printHelp = !strcmp(saveHelpCmd, "HELP CLEAN");
 H("This command processes spaces and tabs in each line of a file");
 H("according to the following subcommands:");
 H("  D - Delete all spaces and tabs");
@@ -146,7 +156,7 @@ H("  V - Convert VT220 screen print frame graphics to -,|,+ characters");
 H("Subcommands may be joined with commas (but no spaces), e.g., \"B,E,R,Q\"");
 H("Syntax:  CLEAN <iofile> <subcmd,subcmd,...>");
 
-printHelp = !strcmp(helpCmd, "HELP SUBSTITUTE")
+printHelp = !strcmp(saveHelpCmd, "HELP SUBSTITUTE")
     || !strcmp(helpCmd, "HELP S");
 H("This command performs a simple string substitution in each line of a file.");
 H("If the string to be replaced is \"\\n\", then every other line will");
@@ -157,85 +167,85 @@ H("before the substitution takes place; null means match any line.");
 H("Syntax:  SUBSTITUTE <iofile> <oldstr> <newstr> <occurrence> <matchstr>");
 H("Note: The SUBSTITUTE command may be abbreviated by S.");
 
-printHelp = !strcmp(helpCmd, "HELP SWAP");
+printHelp = !strcmp(saveHelpCmd, "HELP SWAP");
 H("This command swaps the parts of each line before and after a");
 H("specified string.");
 
 
-printHelp = !strcmp(helpCmd, "HELP INSERT");
+printHelp = !strcmp(saveHelpCmd, "HELP INSERT");
 H("This command inserts a string at a specifed column in each line");
 H("in a file.  It is intended to aid further processing of column-");
 H("sensitive files.");
 H("Syntax:  INSERT <iofile> <string> <column>");
 
 
-printHelp = !strcmp(helpCmd, "HELP BREAK");
+printHelp = !strcmp(saveHelpCmd, "HELP BREAK");
 H("This command breaks up a file into tokens, one per line, breaking at");
 H("whitespace and any special characters you specify as delimiters.");
 H("Syntax:  BREAK <iofile> <specchars>");
 
-printHelp = !strcmp(helpCmd, "HELP BUILD");
+printHelp = !strcmp(saveHelpCmd, "HELP BUILD");
 H("This command combines a list of tokens into multiple tokens per line,");
 H("as many as will fit per line, separating them with spaces.");
 H("Syntax:  BUILD <iofile>");
 
 
-printHelp = !strcmp(helpCmd, "HELP MATCH");
+printHelp = !strcmp(saveHelpCmd, "HELP MATCH");
 H("This command extracts from a file those lines containing (Y) or not");
 H("containing (N) a specified string.");
 H("Syntax:  MATCH <iofile> <matchstr> <Y/N>");
 
 
-printHelp = !strcmp(helpCmd, "HELP SORT");
+printHelp = !strcmp(saveHelpCmd, "HELP SORT");
 H("This command sorts a file, comparing lines starting at a key string.");
 H("If the key string is blank, the line is compared starting at column 1.");
 H("If a line doesn't contain the key, it is compared starting at column 1.");
 H("Syntax:  SORT <iofile> <key>");
 
 
-printHelp = !strcmp(helpCmd, "HELP UNDUPLICATE");
+printHelp = !strcmp(saveHelpCmd, "HELP UNDUPLICATE");
 H("This command sorts a file then removes any duplicate lines from the output.");
 H("Syntax:  UNDUPLICATE <iofile>");
 
 
-printHelp = !strcmp(helpCmd, "HELP DUPLICATE");
+printHelp = !strcmp(saveHelpCmd, "HELP DUPLICATE");
 H("This command finds all duplicate lines in a file and places them, in");
 H("sorted order, into the output file.");
 H("Syntax:  DUPLICATE <iofile>");
 
 
-printHelp = !strcmp(helpCmd, "HELP UNIQUE");
+printHelp = !strcmp(saveHelpCmd, "HELP UNIQUE");
 H("This command finds all unique lines in a file and places them, in");
 H("sorted order, into the output file.");
 H("Syntax:  UNIQUE <iofile>");
 
 
-printHelp = !strcmp(helpCmd, "HELP REVERSE");
+printHelp = !strcmp(saveHelpCmd, "HELP REVERSE");
 H("This command reverses the order of the lines in a file.");
 H("Syntax:  REVERSE <iofile>");
 
 
-printHelp = !strcmp(helpCmd, "HELP RIGHT");
+printHelp = !strcmp(saveHelpCmd, "HELP RIGHT");
 H("This command right-justifies the lines in a file by putting spaces in");
 H("front of them so that they end in the same column as the longest line");
 H("in the file.");
 H("Syntax:  RIGHT <iofile>");
 
 
-printHelp = !strcmp(helpCmd, "HELP PARALLEL");
+printHelp = !strcmp(saveHelpCmd, "HELP PARALLEL");
 H("This command puts two files side-by-side.");
 H("The two files should have the same number of lines; if not, a warning is");
 H("issued and the longer file paralleled with empty strings at the end.");
 H("Syntax:  PARALLEL <inpfile1> <inpfile2> <outfile> <btwnstr>");
 
 
-printHelp = !strcmp(helpCmd, "HELP NUMBER");
+printHelp = !strcmp(saveHelpCmd, "HELP NUMBER");
 H("This command creates a list of numbers.  Hint:  Use the RIGHT command to");
 H("right-justify the list after creating it.");
 H("Syntax:  NUMBER <outfile> <first> <last> <incr>");
 
 
-printHelp = !strcmp(helpCmd, "HELP COUNT");
+printHelp = !strcmp(saveHelpCmd, "HELP COUNT");
 H("This command counts the occurrences of a string in a file and displays");
 H("some other statistics about the file.  The sum of the lines is obtained");
 H("by extracting digits and is only valid if the file consists of genuine");
@@ -243,7 +253,7 @@ H("numbers.");
 H("Syntax:  COUNT <inpfile> <string>");
 
 
-printHelp = !strcmp(helpCmd, "HELP TYPE") || !strcmp(helpCmd, "HELP T");
+printHelp = !strcmp(saveHelpCmd, "HELP TYPE") || !strcmp(helpCmd, "HELP T");
 H("This command displays (i.e. types out) the first n lines of a file on the");
 H("terminal screen.  If n is not specified, it will default to 10.  If n is");
 H("the string \"ALL\", then the whole file will be typed.");
@@ -251,7 +261,7 @@ H("Syntax:  TYPE <inpfile> <n>");
 H("Note: The TYPE command may be abbreviated by T.");
 
 
-printHelp = !strcmp(helpCmd, "HELP COPY") || !strcmp(helpCmd, "HELP C");
+printHelp = !strcmp(saveHelpCmd, "HELP COPY") || !strcmp(helpCmd, "HELP C");
 H("This command copies (concatenates) all input files in a comma-separated");
 H("list (no blanks allowed) to an output file.  The output file may have");
 H("the same name as an input file.  Any previous version of the output");
@@ -262,7 +272,7 @@ H("previously exist in 1.tmp.");
 H("Syntax:  COPY <inpfile,inpfile,...> <outfile>");
 H("Note: The COPY command may be abbreviated by C.");
 
-printHelp = !strcmp(helpCmd, "HELP UPDATE");
+printHelp = !strcmp(saveHelpCmd, "HELP UPDATE");
 H("This command tags edits made to a program source.  The idea is to keep");
 H("all past history of a file in the file itself, in the form of comments.");
 H("UPDATE was written for a proprietary language that allowed nested C-style");
@@ -275,7 +285,7 @@ H("Try it on an original and edited version of a test file to see if you");
 H("find it useful.");
 H("Syntax:  UPDATE <originfile> <editedinfile> <editedoutfile> <tag> <match>");
 
-printHelp = !strcmp(helpCmd, "HELP CLI");
+printHelp = !strcmp(saveHelpCmd, "HELP CLI");
 H("Each command line is an English-like word followed by arguments separated");
 H("by spaces, as in SUBMIT abc.cmd.  Commands are not case sensitive, and");
 H("only as many letters are needed as are necessary to eliminate ambiguity;");
@@ -315,7 +325,7 @@ H("Some other commands you may want to review with HELP are:");
 H("    SUBMIT");
 H("");
 
-printHelp = !strcmp(helpCmd, "HELP SUBMIT");
+printHelp = !strcmp(saveHelpCmd, "HELP SUBMIT");
 H("Syntax:  SUBMIT <filename> [/ SILENT]");
 H("");
 H("This command causes further command lines to be taken from the specified");
@@ -327,18 +337,11 @@ H("Optional qualifier:");
 H("    / SILENT - This qualifier suppresses the screen output of the SUBMIT");
 H("        command.");
 H("");
-H("SUBMIT commands are not allowed inside of a command file.");
-
-printHelp = !strcmp(helpCmd, "HELP SUBMIT");
-H("Syntax:  SUBMIT <filename>");
-H("");
-H("This command causes further command lines to be taken from the specified");
-H("file.  Note that any line beginning with an exclamation point (!) is");
-H("treated as a comment (i.e. ignored).  Also note that the scrolling");
-H("of the screen output is continuous.");
+H("SUBMIT can be called recursively, i.e., SUBMIT commands are allowed");
+H("inside of a command file.");
 
 
-printHelp = !strcmp(helpCmd, "HELP SYSTEM");
+printHelp = !strcmp(saveHelpCmd, "HELP SYSTEM");
 H("A line enclosed in single or double quotes will be executed by your");
 H("computer's operating system, if it has such a feature.  For example, on a");
 H("Unix system,");
@@ -350,15 +353,26 @@ H("For your convenience, the trailing quote is optional, for example:");
 H("    Tools> 'ls | more");
 H("");
 
+let(&saveHelpCmd, ""); /* Deallocate memory */
 
+return;
 } /* help0 */
+
 
 /* Note: help1 should contain Metamath help */
 void help1(vstring helpCmd)
 {
 
+/* 5-Sep-2012 nm */
+vstring saveHelpCmd = "";
+/* help1() may be called with a temporarily allocated argument (left(),
+   cat(), etc.), and the let()s in the eventual print2() calls will
+   deallocate and possibly corrupt helpCmd.  So, we grab a non-temporarily
+   allocated copy here.  (And after this let(), helpCmd will become invalid
+   for the same reason.)  */
+let(&saveHelpCmd, helpCmd);
 
-printHelp = !strcmp(helpCmd, "HELP LANGUAGE");
+printHelp = !strcmp(saveHelpCmd, "HELP LANGUAGE");
 H("The language is best learned by reading the book and studying a few proofs");
 H("with the Metamath program.  This is a brief summary for reference.");
 H("");
@@ -493,7 +507,7 @@ H("       recursive, or self reference to a file is ignored");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP EXPLORE");
+printHelp = !strcmp(saveHelpCmd, "HELP EXPLORE");
 H("When you first enter Metamath, you will first want to READ in a Metamath");
 H("source file.  The source file provided for set theory is called set.mm;");
 H("to read it type");
@@ -529,7 +543,7 @@ H("        statement.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP PROOF_ASSISTANT");
+printHelp = !strcmp(saveHelpCmd, "HELP PROOF_ASSISTANT");
 H("Before using the Proof Assistant, you must add a $p to your source file");
 H("(using a text editor) containing the statement you want to prove.  Its");
 H("proof should consist of a single ?, meaning \"unknown step.\"  Example:");
@@ -637,7 +651,7 @@ H("Another EXIT will then get you out of Metamath.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP HTML");
+printHelp = !strcmp(saveHelpCmd, "HELP HTML");
 H("To create an HTML output file for a $a or $p statement, use");
 H("    SHOW STATEMENT <label> / HTML");
 H("The created web page will include a Description taken from the comment");
@@ -739,11 +753,11 @@ H("\"exthtmlhome\" is used instead of that assigned to \"htmltitle\" and");
 H("\"htmlhome\" respectively.");
 H("");
 
-printHelp = !strcmp(helpCmd, "HELP LATEX");
+printHelp = !strcmp(saveHelpCmd, "HELP LATEX");
 H("See HELP TEX.");
 H("");
 
-printHelp = !strcmp(helpCmd, "HELP TEX");
+printHelp = !strcmp(saveHelpCmd, "HELP TEX");
 H("Metamath will create a \"turn-key\" LaTeX source file which can be");
 H("immediately compiled and printed using a TeX program.  The TeX program");
 H("must have the following minimum requirements:  the LaTeX style option and");
@@ -763,7 +777,7 @@ H("containing a $t token.  See the set.mm file for an example.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP BEEP") || !strcmp(helpCmd, "HELP B");
+printHelp = !strcmp(saveHelpCmd, "HELP BEEP") || !strcmp(helpCmd, "HELP B");
 H("Syntax:  BEEP");
 H("");
 H("This command will produce a beep.  By typing it ahead after a long-");
@@ -777,14 +791,14 @@ H("command.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP QUIT");
+printHelp = !strcmp(saveHelpCmd, "HELP QUIT");
 H("Syntax:  QUIT [/ FORCE]");
 H("");
 H("This command is a synonym for EXIT.  See HELP EXIT.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP EXIT");
+printHelp = !strcmp(saveHelpCmd, "HELP EXIT");
 H("Syntax:  EXIT [/ FORCE]");
 H("");
 H("This command exits from Metamath.  If there have been changes to the");
@@ -807,7 +821,7 @@ H("unconditionally.  This means any unsaved work will be lost.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP READ");
+printHelp = !strcmp(saveHelpCmd, "HELP READ");
 H("Syntax:  READ <file> [/ VERIFY]");
 H("");
 H("This command will read in a Metamath language source file and any included");
@@ -835,7 +849,7 @@ H("See also HELP ERASE.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP ERASE");
+printHelp = !strcmp(saveHelpCmd, "HELP ERASE");
 H("Syntax:  ERASE");
 H("");
 H("This command will reset Metamath to its starting state, deleting any");
@@ -843,7 +857,7 @@ H("database that was READ in.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP OPEN LOG");
+printHelp = !strcmp(saveHelpCmd, "HELP OPEN LOG");
 H("Syntax:  OPEN LOG <file>");
 H("");
 H("This command will open a log file that will store everything you see on");
@@ -858,7 +872,7 @@ H("closed upon exiting Metamath.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP CLOSE LOG");
+printHelp = !strcmp(saveHelpCmd, "HELP CLOSE LOG");
 H("Syntax:  CLOSE LOG");
 H("");
 H("The CLOSE LOG command closes a log file if one is open.  See also OPEN");
@@ -866,7 +880,7 @@ H("LOG.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP OPEN TEX");
+printHelp = !strcmp(saveHelpCmd, "HELP OPEN TEX");
 H("Syntax:  OPEN TEX <file>");
 H("");
 H("This command opens a file for writing LaTeX source and writes a LaTeX");
@@ -891,7 +905,7 @@ H("See also CLOSE TEX.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP CLOSE TEX");
+printHelp = !strcmp(saveHelpCmd, "HELP CLOSE TEX");
 H("Syntax:  CLOSE TEX");
 H("");
 H("This command writes a trailer to any LaTeX file that was opened with OPEN");
@@ -900,7 +914,8 @@ H("");
 H("See also OPEN TEX.");
 H("");
 
-printHelp = !strcmp(helpCmd, "HELP TOOLS");
+
+printHelp = !strcmp(saveHelpCmd, "HELP TOOLS");
 H("Syntax:  TOOLS");
 H("");
 H("This command invokes a utility to manipulate ASCII text files.  Type TOOLS");
@@ -908,5 +923,7 @@ H("to enter this utility, which has its own HELP commands.  Once inside you");
 H("are inside, EXIT will return to Metamath.");
 H("");
 
+let(&saveHelpCmd, ""); /* Deallocate memory */
+return;
 
-} /* help0 */
+} /* help1 */

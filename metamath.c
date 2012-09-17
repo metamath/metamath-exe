@@ -1,11 +1,29 @@
 /*****************************************************************************/
 /* Program name:  metamath                                                   */
-/* Copyright (C) 2011 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
+/* Copyright (C) 2012 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
 /* License terms:  GNU General Public License Version 2 or any later version */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.07.73 26-Dec-2011"
+#define MVERSION "0.07.82 16-Sep-2012"
+/* 0.07.82 16-Sep-2012 nm metamath.c, mmpfas.c - fixed REPLACE infinite loop;
+   improved REPLACE message for shared dummy variables */
+/* 0.07.81 14-Sep-2012 nm metamath.c, mmcmds.c, mmcmds.h, mmcmdl.c, mmhlpb.c
+   - added FIRST, LAST, +nn, -nn where missing from ASSIGN, REPLACE,
+   IMPROVE, LET STEP.  Wildcards are allowed for PROVE, ASSIGN, REPLACE
+   labels provided there is a unique match. */
+/* 0.07.80 4-Sep-2012 nm metamath.c, mmpfas.c, mmpfas.h, mmcmdl.c, mmhlpb.c
+   - added / 1, / 2, / 3, / SUBPROOFS to IMPROVE to specify search level */
+/* 0.07.79 31-Aug-2012 nm m*.c - clean up some gcc warnings */
+/* 0.07.78 28-Aug-2012 nm mmpfas.c - fix bug in 0.07.77. */
+/* 0.07.77 25-Aug-2012 nm metamath.c, mmpfas.c - Enhanced IMPROVE algorithm to
+   allow non-shared dummy variables in unknown steps */
+/* 0.07.76 22-Aug-2012 nm metamath.c, mmpfas.c, mmcmdl.c, mmhlpb.c -
+   Enhanced IMPROVE algorithm to also try REPLACE algorithm */
+/* 0.07.75 14-Aug-2012 nm metamath.c - MINIMIZE_WITH now checks current
+   mathbox (but not other mathboxes) even if /INCLUDE_MATHBOXES is omitted */
+/* 0.07.74 18-Mar-2012 nm mmwtex.c, mmcmds.c, metamath.c - improved texToken()
+   error message */
 /* 0.07.73 26-Dec-2011 nm mmwtex.c, mmpars.c - added <HTML>...</HTML> in
    comments for passing through raw HTML code into HTML files generated with
    SHOw STATEMENT xxx / HTML */
@@ -132,7 +150,7 @@
    WRITE THEOREM_LIST pages */
 /* 0.07.22 26-Aug-2006 nm metamath.c, mmcmdl.c, mmhlpb.c - Changed "IMPROVE
    STEP <step>" to "IMPROVE <step>" for user convenience and to be consistent
-   with "ASSIGN <step>" */
+   with ASSIGN <step> */
 /* 0.07.21 20-Aug-2006 nm mmwtex.c - Revised small colored numbers so that all
    colors have the same grayscale brightness.. */
 /* 0.07.20 19-Aug-2006 nm mmpars.c - Made the error "Required hypotheses may
@@ -315,7 +333,7 @@ console_options.title = (unsigned char*)"\pMetamath";
 
   if (!listMode) {
     /*print2("Metamath - Version %s\n", MVERSION);*/
-    print2("Metamath - Version %s%s", MVERSION, space(27 - strlen(MVERSION)));
+    print2("Metamath - Version %s%s", MVERSION, space(27 - (long)strlen(MVERSION)));
   }
   /* if (argc < 2) */ print2("Type HELP for help, EXIT to exit.\n");
 
@@ -333,6 +351,7 @@ console_options.title = (unsigned char*)"\pMetamath";
   return 0;
 
 }
+
 
 
 
@@ -363,7 +382,8 @@ void command(int argc, char *argv[])
   /* Variables for SHOW PROOF */
   flag pipFlag; /* Proof-in-progress flag */
   long startStep; long endStep;
-  long startIndent; long endIndent; /* Also for SHOW TRACE_BACK */
+  /* long startIndent; */
+  long endIndent; /* Also for SHOW TRACE_BACK */
   flag essentialFlag; /* Also for SHOW TRACE_BACK */
   flag renumberFlag; /* Flag to use essential step numbering */
   flag unknownFlag;
@@ -386,7 +406,12 @@ void command(int argc, char *argv[])
   long maxEssential; /* For MATCH */
   nmbrString *essentialFlags = NULL_NMBRSTRING;
                                             /* For ASSIGN/IMPROVE FIRST/LAST */
-  long offset; /* For ASSIGN/IMPROVE/LET w/ negative step number */
+  long improveDepth; /* For IMPROVE */
+  flag searchAlg; /* For IMPROVE */ /* 22-Aug-2012 nm */
+  flag searchUnkSubproofs;  /* For IMPROVE */ /* 4-Sep-2012 nm */
+  flag dummyVarIsoFlag; /* For IMPROVE */ /* 25-Aug-2012 nm */
+  long improveAllIter; /* For IMPROVE ALL */ /* 25-Aug-2012 nm */
+  flag proofStepUnk; /* For IMPROVE ALL */ /* 25-Aug-2012 nm */
 
   flag texHeaderFlag; /* For OPEN TEX, CLOSE TEX */
   flag commentOnlyFlag; /* For SHOW STATEMENT */
@@ -395,6 +420,7 @@ void command(int argc, char *argv[])
   vstring bgcolor = ""; /* For SHOW STATEMENT definition list */
                                                             /* 8-Aug-2008 nm */
   flag mathboxFlag; /* For MINIMIZE_WITH */ /* 28-Jun-2011 nm */
+  long thisMathboxStmt; /* For MINIMIZE_WITH */ /* 14-Aug-2012 nm */
   flag revFlag; /* For MINIMIZE_WITH */ /* 11-Nov-2011 nm */
 
   /* toolsMode-specific variables */
@@ -585,7 +611,7 @@ void command(int argc, char *argv[])
         let(&str1, right(commandLine, 2));
         if (commandLine[0]) { /* (Prevent stray pointer if empty string) */
           if (commandLine[0] == commandLine[strlen(commandLine) - 1]) {
-            let(&str1, left(str1, strlen(str1) - 1));
+            let(&str1, left(str1, (long)(strlen(str1)) - 1));
           }
         }
         /* Do the operating system command */
@@ -598,8 +624,12 @@ void command(int argc, char *argv[])
     }
 
     parseCommandLine(commandLine);
-    if (rawArgs == 0) continue; /* Empty or comment line */
-    if (!processCommandLine()) continue;
+    if (rawArgs == 0) {
+      continue; /* Empty or comment line */
+    }
+    if (!processCommandLine()) {
+      continue;
+    }
 
     if (commandEcho || (toolsMode && listFile_fp != NULL)) {
       /* Build the complete command and print it for the user */
@@ -621,7 +651,7 @@ void command(int argc, char *argv[])
           let(&str1, cat(str1, fullArg[i], " ", NULL));
         }
       }
-      let(&str1, left(str1,strlen(str1) - 1)); /* Trim trailing space */
+      let(&str1, left(str1, (long)(strlen(str1)) - 1)); /* Trim trailing spc */
       if (toolsMode && listFile_fp != NULL) {
         /* Put line in list.tmp as command */
         fprintf(listFile_fp, "%s\n", str1);  /* Print to list command file */
@@ -651,12 +681,13 @@ void command(int argc, char *argv[])
       for (i = 0; i < k; i++) {
         let(&str1, cat(str1, fullArg[i], " ", NULL));
       }
+      let(&str1, left(str1, (long)(strlen(str1)) - 1));
       if (toolsMode) {
-        help0(left(str1, strlen(str1) - 1));
-        help1(left(str1, strlen(str1) - 1));
+        help0(str1);
+        help1(str1);
       } else {
-        help1(left(str1, strlen(str1) - 1));
-        help2(left(str1, strlen(str1) - 1));
+        help1(str1);
+        help2(str1);
       }
       continue;
     }
@@ -716,11 +747,11 @@ void command(int argc, char *argv[])
         i = nmbrLen(proofInProgress.proof);
         nmbrLet(&proofInProgress.proof, NULL_NMBRSTRING);
         for (j = 0; j < i; j++) {
-          nmbrLet((nmbrString **)(&(proofInProgress.target[j])),
+          nmbrLet((nmbrString **)(&((proofInProgress.target)[j])),
               NULL_NMBRSTRING);
-          nmbrLet((nmbrString **)(&(proofInProgress.source[j])),
+          nmbrLet((nmbrString **)(&((proofInProgress.source)[j])),
               NULL_NMBRSTRING);
-          nmbrLet((nmbrString **)(&(proofInProgress.user[j])),
+          nmbrLet((nmbrString **)(&((proofInProgress.user)[j])),
               NULL_NMBRSTRING);
         }
         pntrLet(&proofInProgress.target, NULL_PNTRSTRING);
@@ -824,13 +855,13 @@ void command(int argc, char *argv[])
           /* Find the longest line */
           p = 0;
           while (linput(list1_fp, NULL, &str1)) {
-            if (p < (signed)(strlen(str1))) p = strlen(str1);
+            if (p < (signed)(strlen(str1))) p = (long)(strlen(str1));
           }
           rewind(list1_fp);
         }
         let(&list2_fname, fullArg[1]);
         if (list2_fname[strlen(list2_fname) - 2] == '~') {
-          let(&list2_fname, left(list2_fname, strlen(list2_fname) - 2));
+          let(&list2_fname, left(list2_fname, (long)(strlen(list2_fname)) - 2));
           print2("The output file will be called %s.\n", list2_fname);
         }
         let(&list2_ftmpname, "");
@@ -847,10 +878,10 @@ void command(int argc, char *argv[])
             break;
           case TAG_MODE:  /* 2-Jul-2011 nm Added TAG command */
             let(&tagStartMatch, fullArg[4]);
-            tagStartCount = val(fullArg[5]);
+            tagStartCount = (long)val(fullArg[5]);
             if (tagStartCount == 0) tagStartCount = 1; /* Default */
             let(&tagEndMatch, fullArg[6]);
-            tagEndCount = val(fullArg[7]);
+            tagEndCount = (long)val(fullArg[7]);
             if (tagEndCount == 0) tagEndCount = 1; /* Default */
             tagStartCounter = 0;
             tagEndCounter = 0;
@@ -879,7 +910,7 @@ void command(int argc, char *argv[])
                 ((vstring)(fullArg[4]))[0] == 'a') { /* ALL */
               q = -1;
             } else {
-              q = val(fullArg[4]);
+              q = (long)val(fullArg[4]);
               if (q == 0) q = 1;    /* The occurrence # of string to subst */
             }
             s = 0;
@@ -898,7 +929,7 @@ void command(int argc, char *argv[])
           case SWAP_MODE:
             break;
           case INSERT_MODE:
-            p = val(fullArg[3]);
+            p = (long)val(fullArg[3]);
             break;
           case BREAK_MODE:
             outMsgFlag = 1;
@@ -945,10 +976,10 @@ void command(int argc, char *argv[])
               p1 = instr(1, str1, fullArg[2]);
               if (strlen(fullArg[2]) == 0) p1 = 1;
               p2 = instr(p1, str1, fullArg[3]);
-              if (strlen(fullArg[3]) == 0) p2 = strlen(str1) + 1;
+              if (strlen(fullArg[3]) == 0) p2 = (long)strlen(str1) + 1;
               if (p1 != 0 && p2 != 0) {
-                let(&str2, cat(left(str1, p1 - 1), right(str1, p2 + strlen(
-                    fullArg[3])), NULL));
+                let(&str2, cat(left(str1, p1 - 1), right(str1, p2
+                    + (long)strlen(fullArg[3])), NULL));
                 changedLines++;
               }
               break;
@@ -999,7 +1030,7 @@ void command(int argc, char *argv[])
                 p++;
                 if (p == q || q == -1) {
                   let(&str2, cat(left(str2, p1 - 1), newstr,
-                      right(str2, p1 + strlen(fullArg[2])), NULL));
+                      right(str2, p1 + (long)strlen(fullArg[2])), NULL));
                   if (newstr[0] == '\n') {
                     /* Replacement string is an lf */
                     lines++;
@@ -1008,8 +1039,8 @@ void command(int argc, char *argv[])
                   /* 14-Sep-2010 nm Continue the search after the replacement
                      string, so that "SUBST 1.tmp abbb ab a ''" will change
                      "abbbab" to "abba" rather than "aa" */
-                  p1 = p1 + strlen(newstr) - 1;
-                  /* p1 = p1 - strlen(fullArg[2]) + strlen(newstr); */ /* bad */
+                  p1 = p1 + (long)strlen(newstr) - 1;
+                  /* p1 = p1 - (long)strlen(fullArg[2]) + (long)strlen(newstr); */ /* bad */
                   if (q != -1) break;
                 }
               }
@@ -1020,14 +1051,14 @@ void command(int argc, char *argv[])
               if (p1) {
                 p2 = instr(p1 + 1, str1, fullArg[2]);
                 if (p2) twoMatches++;
-                let(&str2, cat(right(str1, p1) + strlen(fullArg[2]),
+                let(&str2, cat(right(str1, p1) + (long)strlen(fullArg[2]),
                     fullArg[2], left(str1, p1 - 1), NULL));
                 if (strcmp(str1, str2)) changedLines++;
               }
               break;
             case INSERT_MODE:
               if ((signed)(strlen(str2)) < p - 1)
-                let(&str2, cat(str2, space(p - 1 - strlen(str2)), NULL));
+                let(&str2, cat(str2, space(p - 1 - (long)strlen(str2)), NULL));
               let(&str2, cat(left(str2, p - 1), fullArg[2],
                   right(str2, p), NULL));
               if (strcmp(str1, str2)) changedLines++;
@@ -1048,7 +1079,7 @@ void command(int argc, char *argv[])
                 }
               }
               let(&str2, edit(str2, 8 + 16 + 128)); /* Reduce & trim spaces */
-              for (p = strlen(str2) - 1; p >= 0; p--) {
+              for (p = (long)strlen(str2) - 1; p >= 0; p--) {
                 if (str2[p] == ' ') {
                   str2[p] = '\n';
                   changedLines++;
@@ -1061,7 +1092,7 @@ void command(int argc, char *argv[])
                 if (str4[0] == 0) {
                   let(&str4, str2);
                 } else {
-                  if (strlen(str4) + strlen(str2) > 72) {
+                  if ((long)strlen(str4) + (long)strlen(str2) > 72) {
                     let(&str4, cat(str4, "\n", str2, NULL));
                     changedLines++;
                   } else {
@@ -1091,7 +1122,7 @@ void command(int argc, char *argv[])
               if (p) changedLines++;
               break;
             case RIGHT_MODE:
-              let(&str2, cat(space(p - strlen(str2)), str2, NULL));
+              let(&str2, cat(space(p - (long)strlen(str2)), str2, NULL));
               if (strcmp(str1, str2)) changedLines++;
               break;
           } /* End switch(cmdMode) */
@@ -1183,7 +1214,7 @@ void command(int argc, char *argv[])
         if (!list1_fp) continue; /* Couldn't open it (error msg was provided) */
         let(&list2_fname, fullArg[1]);
         if (list2_fname[strlen(list2_fname) - 2] == '~') {
-          let(&list2_fname, left(list2_fname, strlen(list2_fname) - 2));
+          let(&list2_fname, left(list2_fname, (long)strlen(list2_fname) - 2));
           print2("The output file will be called %s.\n", list2_fname);
         }
         let(&list2_ftmpname, "");
@@ -1214,7 +1245,7 @@ void command(int argc, char *argv[])
           } else {
             qsortKey = "";
           }
-          qsort(pntrTmp, lines, sizeof(void *), qsortStringCmp);
+          qsort(pntrTmp, (size_t)lines, sizeof(void *), qsortStringCmp);
         } else { /* Reverse the lines */
           for (i = lines / 2; i < lines; i++) {
             qsortKey = pntrTmp[i]; /* Use qsortKey as handy tmp var here */
@@ -1360,11 +1391,11 @@ void command(int argc, char *argv[])
       if (cmdMatches("NUMBER")) {
         list1_fp = fSafeOpen(fullArg[1], "w");
         if (!list1_fp) continue; /* Couldn't open it (error msg was provided) */
-        j = strlen(str(val(fullArg[2])));
-        k = strlen(str(val(fullArg[3])));
+        j = (long)strlen(str(val(fullArg[2])));
+        k = (long)strlen(str(val(fullArg[3])));
         if (k > j) j = k;
-        for (i = val(fullArg[2]); i <= val(fullArg[3]);
-            i = i + val(fullArg[4])) {
+        for (i = (long)val(fullArg[2]); i <= val(fullArg[3]);
+            i = i + (long)val(fullArg[4])) {
           let(&str1, str(i));
           fprintf(list1_fp, "%s\n", str1);
         }
@@ -1388,7 +1419,7 @@ void command(int argc, char *argv[])
 
           /* Longest line */
           if (q < (signed)(strlen(str1))) {
-            q = strlen(str1);
+            q = (long)strlen(str1);
             let(&str4, str1);
             i = lines;
             j = 0;
@@ -1411,7 +1442,7 @@ void command(int argc, char *argv[])
               p2++;
             }
           }
-          sum = sum + val(str1);
+          sum = sum + (long)val(str1);
         }
         print2(
 "The file has %ld lines.  The string \"%s\" occurs %ld times on %ld lines.\n",
@@ -1443,7 +1474,7 @@ void command(int argc, char *argv[])
               ((vstring)(fullArg[2]))[0] == 'a') { /* ALL */
             n = -1;
           } else {
-            n = val(fullArg[2]);
+            n = (long)val(fullArg[2]);
           }
         }
         for (i = 0; i < n || n == -1; i++) {
@@ -1628,7 +1659,7 @@ void command(int argc, char *argv[])
         r = 0; /* Keep formatting as-is */
       }
 
-      writeInput(c, r); /* Added argument 24-Oct-03 nm 12-Jun-2011 nm */
+      writeInput((char)c, (char)r); /* Added arg 24-Oct-03 nm 12-Jun-2011 nm */
       fclose(output_fp);
       if (c == 0) sourceChanged = 0; /* Don't unset flag if CLEAN option
                                     since some new proofs may not be saved. */
@@ -1645,7 +1676,7 @@ void command(int argc, char *argv[])
       /* See if the user overrode the default. */
       i = switchPos("/ THEOREMS_PER_PAGE");
       if (i) {
-        i = val(fullArg[i + 1]); /* Use user's value */
+        i = (long)val(fullArg[i + 1]); /* Use user's value */
       } else {
         i = THEOREMS_PER_PAGE; /* Use the default value */
       }
@@ -1778,30 +1809,30 @@ void command(int argc, char *argv[])
               /* ??? Future: make this a loop from a list that can be
                  printed in the error message if not found */
               if (0
-                  || !strcmp(mid(str2, k, strlen("THEOREM")), "THEOREM")
-                  || !strcmp(mid(str2, k, strlen("LEMMA")), "LEMMA")
-                  || !strcmp(mid(str2, k, strlen("LEMMAS")), "LEMMAS")
-                  || !strcmp(mid(str2, k, strlen("DEFINITION")), "DEFINITION")
-                  || !strcmp(mid(str2, k, strlen("COMPARE")), "COMPARE")
-                  || !strcmp(mid(str2, k, strlen("PROPOSITION")), "PROPOSITION")
-                  || !strcmp(mid(str2, k, strlen("COROLLARY")), "COROLLARY")
-                  || !strcmp(mid(str2, k, strlen("AXIOM")), "AXIOM")
-                  || !strcmp(mid(str2, k, strlen("RULE")), "RULE")
-                  || !strcmp(mid(str2, k, strlen("REMARK")), "REMARK")
-                  || !strcmp(mid(str2, k, strlen("EXERCISE")), "EXERCISE")
-                  || !strcmp(mid(str2, k, strlen("PROBLEM")), "PROBLEM")
-                  || !strcmp(mid(str2, k, strlen("NOTATION")), "NOTATION")
-                  || !strcmp(mid(str2, k, strlen("EXAMPLE")), "EXAMPLE")
-                  || !strcmp(mid(str2, k, strlen("PROPERTY")), "PROPERTY")
-                  || !strcmp(mid(str2, k, strlen("FIGURE")), "FIGURE")
-                  || !strcmp(mid(str2, k, strlen("POSTULATE")), "POSTULATE")
-                  || !strcmp(mid(str2, k, strlen("EQUATION")), "EQUATION")
-                  || !strcmp(mid(str2, k, strlen("SCHEME")), "SCHEME")
-                  || !strcmp(mid(str2, k, strlen("ITEM")), "ITEM")
+                  || !strcmp(mid(str2, k, (long)strlen("THEOREM")), "THEOREM")
+                  || !strcmp(mid(str2, k, (long)strlen("LEMMA")), "LEMMA")
+                  || !strcmp(mid(str2, k, (long)strlen("LEMMAS")), "LEMMAS")
+                  || !strcmp(mid(str2, k, (long)strlen("DEFINITION")), "DEFINITION")
+                  || !strcmp(mid(str2, k, (long)strlen("COMPARE")), "COMPARE")
+                  || !strcmp(mid(str2, k, (long)strlen("PROPOSITION")), "PROPOSITION")
+                  || !strcmp(mid(str2, k, (long)strlen("COROLLARY")), "COROLLARY")
+                  || !strcmp(mid(str2, k, (long)strlen("AXIOM")), "AXIOM")
+                  || !strcmp(mid(str2, k, (long)strlen("RULE")), "RULE")
+                  || !strcmp(mid(str2, k, (long)strlen("REMARK")), "REMARK")
+                  || !strcmp(mid(str2, k, (long)strlen("EXERCISE")), "EXERCISE")
+                  || !strcmp(mid(str2, k, (long)strlen("PROBLEM")), "PROBLEM")
+                  || !strcmp(mid(str2, k, (long)strlen("NOTATION")), "NOTATION")
+                  || !strcmp(mid(str2, k, (long)strlen("EXAMPLE")), "EXAMPLE")
+                  || !strcmp(mid(str2, k, (long)strlen("PROPERTY")), "PROPERTY")
+                  || !strcmp(mid(str2, k, (long)strlen("FIGURE")), "FIGURE")
+                  || !strcmp(mid(str2, k, (long)strlen("POSTULATE")), "POSTULATE")
+                  || !strcmp(mid(str2, k, (long)strlen("EQUATION")), "EQUATION")
+                  || !strcmp(mid(str2, k, (long)strlen("SCHEME")), "SCHEME")
+                  || !strcmp(mid(str2, k, (long)strlen("ITEM")), "ITEM")
                   /* Don't use SCHEMA since we may have THEOREM SCHEMA
-                  || !strcmp(mid(str2, k, strlen("SCHEMA")), "SCHEMA")
+                  || !strcmp(mid(str2, k, (long)strlen("SCHEMA")), "SCHEMA")
                   */
-                  || !strcmp(mid(str2, k, strlen("CHAPTER")), "CHAPTER")
+                  || !strcmp(mid(str2, k, (long)strlen("CHAPTER")), "CHAPTER")
                   ) {
                 m = k;
                 break;
@@ -1843,12 +1874,12 @@ void command(int argc, char *argv[])
             let(&str4, seg(str1, q + 1, s - 1)); /* " p. nnnn" */
             str2[0] = toupper((unsigned char)(str2[0]));
             /* Eliminate noise like "of" in "Theorem 1 of [bibref]" */
-            for (k = strlen(str2); k >=1; k--) {
+            for (k = (long)strlen(str2); k >=1; k--) {
               if (0
-                  || !strcmp(mid(str2, k, strlen(" of ")), " of ")
-                  || !strcmp(mid(str2, k, strlen(" in ")), " in ")
-                  || !strcmp(mid(str2, k, strlen(" from ")), " from ")
-                  || !strcmp(mid(str2, k, strlen(" on ")), " on ")
+                  || !strcmp(mid(str2, k, (long)strlen(" of ")), " of ")
+                  || !strcmp(mid(str2, k, (long)strlen(" in ")), " in ")
+                  || !strcmp(mid(str2, k, (long)strlen(" from ")), " from ")
+                  || !strcmp(mid(str2, k, (long)strlen(" on ")), " on ")
                   ) {
                 let(&str2, left(str2, k - 1));
                 break;
@@ -1861,7 +1892,7 @@ void command(int argc, char *argv[])
             let(&oldstr, cat(
                 /* Construct the sorting key */
                 /* The space() helps Th. 9 sort before Th. 10 on same page */
-                str3, " ", str4, space(20 - strlen(str2)), str2,
+                str3, " ", str4, space(20 - (long)strlen(str2)), str2,
                 "|||",  /* ||| means end of sort key */
                 /* Construct just the statement href for combining dup refs */
                 "<A HREF=\"", statement[i].labelName,
@@ -1920,7 +1951,7 @@ void command(int argc, char *argv[])
 
       /* Sort */
       qsortKey = "";
-      qsort(pntrTmp, lines, sizeof(void *), qsortStringCmp);
+      qsort(pntrTmp, (size_t)lines, sizeof(void *), qsortStringCmp);
 
       /* Combine duplicate references */
       let(&str1, "");  /* Last biblio ref */
@@ -2025,7 +2056,7 @@ void command(int argc, char *argv[])
       /* See if the user overrode the default. */
       i = switchPos("/ LIMIT");
       if (i) {
-        i = val(fullArg[i + 1]); /* Use user's value */
+        i = (long)val(fullArg[i + 1]); /* Use user's value */
       } else {
         i = RECENT_COUNT; /* Use the default value */
       }
@@ -2092,13 +2123,13 @@ void command(int argc, char *argv[])
       /* Get and parse today's date */
       let(&str1, date());
       j = instr(1, str1, "-");
-      k = val(left(str1, j - 1)); /* Day */
+      k = (long)val(left(str1, j - 1)); /* Day */
 #define MONTHS "JanFebMarAprMayJunJulAugSepOctNovDec"
       l = ((instr(1, MONTHS, mid(str1, j + 1, 3)) - 1) / 3) + 1; /* 1 = Jan */
       m = str1[j + 6]; /* Character after 2-digit year */  /* nm 10-Apr-06 */
       if (m == ' ' || m == ']') {                          /* nm 10-Apr-06 */
         /* Handle 2-digit year */
-        m = val(mid(str1, j + 5, 2));  /* Year */
+        m = (long)val(mid(str1, j + 5, 2));  /* Year */
 #define START_YEAR 93 /* Earliest 19xx year in set.mm database */
         if (m < START_YEAR) {
           m = m + 2000;
@@ -2107,7 +2138,7 @@ void command(int argc, char *argv[])
         }
       } else {                                            /* nm 10-Apr-06 */
         /* Handle 4-digit year */                         /* nm 10-Apr-06 */
-        m = val(mid(str1, j + 5, 4));  /* Year */         /* nm 10-Apr-06 */
+        m = (long)val(mid(str1, j + 5, 4));  /* Year */         /* nm 10-Apr-06 */
       }                                                   /* nm 10-Apr-06 */
 
       n = 0; /* Count of how many output so far */
@@ -2126,7 +2157,7 @@ void command(int argc, char *argv[])
           /* Get the comment section after the statement */
           let(&str2, space(statement[s + 1].labelSectionLen));
           memcpy(str2, statement[s + 1].labelSectionPtr,
-              statement[s + 1].labelSectionLen);
+              (size_t)(statement[s + 1].labelSectionLen));
           p = instr(1, str2, "$)");
           let(&str2, left(str2, p + 1)); /* Get 1st comment (if any) */
           let(&str2, edit(str2, 2)); /* Discard spaces */
@@ -2160,9 +2191,9 @@ void command(int argc, char *argv[])
                          : cat("<TR BGCOLOR=", SANDBOX_COLOR, ">", NULL),
 
                   "<TD NOWRAP>",  /* IE breaks up the date */
-                  /* mid(str1, 4, strlen(str1) - 6), */ /* Date */
+                  /* mid(str1, 4, (long)strlen(str1) - 6), */ /* Date */
                   /* Use 4-digit year */   /* 10-Apr-06 */
-                  mid(str5, 4, strlen(str5) - 6), /* Date */  /* 10-Apr-06 */
+                  mid(str5, 4, (long)strlen(str5) - 6), /* Date */  /* 10-Apr-06 */
                   "</TD><TD ALIGN=CENTER><A HREF=\"",
                   statement[s].labelName, ".html\">",
                   statement[s].labelName, "</A>",
@@ -2344,27 +2375,27 @@ void command(int argc, char *argv[])
           let(&str1,cat(str(i)," ",
               statement[i].labelName," $",chr(statement[i].type)," ",NULL));
 #define COL 19 /* Characters per column */
-          if (j + strlen(str1) > MAX_LEN
+          if (j + (long)strlen(str1) > MAX_LEN
               || (linearFlag && j != 0)) { /* j != 0 to suppress 1st CR */
             print2("\n");
             j = 0;
             k = 0;
           }
           if (strlen(str1) > COL || linearFlag) {
-            j = j + strlen(str1);
-            k = k + strlen(str1) - COL;
+            j = j + (long)strlen(str1);
+            k = k + (long)strlen(str1) - COL;
             print2(str1);
           } else {
             if (k == 0) {
               j = j + COL;
-              print2("%s%s",str1,space(COL - strlen(str1)));
+              print2("%s%s",str1,space(COL - (long)strlen(str1)));
             } else {
-              k = k - (COL - strlen(str1));
+              k = k - (COL - (long)strlen(str1));
               if (k > 0) {
                 print2(str1);
-                j = j + strlen(str1);
+                j = j + (long)strlen(str1);
               } else {
-                print2("%s%s",str1,space(COL - strlen(str1)));
+                print2("%s%s",str1,space(COL - (long)strlen(str1)));
                 j = j + COL;
                 k = 0;
               }
@@ -2376,6 +2407,24 @@ void command(int argc, char *argv[])
     }
 
     if (cmdMatches("SHOW SOURCE")) {
+
+      /* 14-Sep-2012 nm */
+      /* Currently, SHOW SOURCE only handles one statement at a time,
+         so use getStatementNum().  Eventually, SHOW SOURCE may become
+         obsolete; I don't think anyone uses it. */
+      s = getStatementNum(fullArg[2],
+          statements + 1  /*maxStmt*/,
+          1/*aAllowed*/,
+          1/*pAllowed*/,
+          1/*eAllowed*/,
+          1/*fAllowed*/,
+          0/*efOnlyForMaxStmt*/);
+      if (s == -1) {
+        continue; /* Error msg was provided */
+      }
+      showStatement = s; /* Update for future defaults */
+
+      /*********** 14-Sep-2012 replaced by getStatementNum()
       for (i = 1; i <= statements; i++) {
         if (!strcmp(fullArg[2],statement[i].labelName)) break;
       }
@@ -2387,13 +2436,14 @@ void command(int argc, char *argv[])
         continue;
       }
       showStatement = i;
+      ************** end 14-Sep-2012 *******/
 
       let(&str1, "");
       str1 = outputStatement(showStatement, 0 /* cleanFlag */,
           0 /* reformatFlag */);
       let(&str1,edit(str1,128)); /* Trim trailing spaces */
       if (str1[strlen(str1)-1] == '\n') let(&str1, left(str1,
-          strlen(str1) - 1));
+          (long)strlen(str1) - 1));
       printLongLine(str1, "", "");
       let(&str1,""); /* Deallocate vstring */
       continue;
@@ -2669,7 +2719,7 @@ void command(int argc, char *argv[])
                     let(&str3, cat(str3, " ", str1, " ", NULL));
                     let(&str2, "");
                     str2 = tokenToTex(mathToken[(statement[i].mathString)[j]
-                        ].tokenName);
+                        ].tokenName, i/*stmt# for error msgs*/);
                     /* 2/9/02  Skip any tokens (such as |-) that may be suppressed */
                     if (!str2[0]) continue;
                     /* Convert special characters to HTML entities */
@@ -2902,7 +2952,8 @@ void command(int argc, char *argv[])
           /* getTexLongMath does not return a temporary allocation; must
              assign str1 directly, not with let().  It will be deallocated
              with the next let(&str1,...). */
-          str1 = getTexLongMath(statement[k].mathString);
+          str1 = getTexLongMath(statement[k].mathString,
+              k/*stmt# for err msgs*/);
           fprintf(texFilePtr, "%s</FONT></TD>", str1);
         }
 
@@ -2918,7 +2969,7 @@ void command(int argc, char *argv[])
 
         let(&str1, ""); /* Free any previous allocation to str1 */
         /* getTexLongMath does not return a temporary allocation */
-        str1 = getTexLongMath(statement[s].mathString);
+        str1 = getTexLongMath(statement[s].mathString, s);
         fprintf(texFilePtr, "%s", str1);
 
         let(&str1, "</FONT>");
@@ -3135,7 +3186,7 @@ void command(int argc, char *argv[])
       i = switchPos("/ AXIOMS");
       if (i) axiomFlag = 1; /* Limit trace printout to axioms */
       i = switchPos("/ DEPTH"); /* Limit depth of printout */
-      if (i) endIndent = val(fullArg[i + 1]);
+      if (i) endIndent = (long)val(fullArg[i + 1]);
 
       /* 21-May-2008 nm Added wildcard handling */
       showStatement = 0;
@@ -3223,7 +3274,7 @@ void command(int argc, char *argv[])
         str1 = traceUsage(showStatement, recursiveFlag);
 
         /* Count the number of statements = # of spaces */
-        k = strlen(str1) - strlen(edit(str1, 2));
+        k = (long)strlen(str1) - (long)strlen(edit(str1, 2));
 
         if (!k) {
           printLongLine(cat("Statement \"",
@@ -3291,7 +3342,7 @@ void command(int argc, char *argv[])
       /* Establish defaults for omitted qualifiers */
       startStep = 0;
       endStep = 0;
-      startIndent = 0; /* Not used */
+      /* startIndent = 0; */ /* Not used */
       endIndent = 0;
       /*essentialFlag = 0;*/
       essentialFlag = 1; /* 10/9/99 - friendlier default */
@@ -3305,11 +3356,11 @@ void command(int argc, char *argv[])
       texFlag = 0;
 
       i = switchPos("/ FROM_STEP");
-      if (i) startStep = val(fullArg[i + 1]);
+      if (i) startStep = (long)val(fullArg[i + 1]);
       i = switchPos("/ TO_STEP");
-      if (i) endStep = val(fullArg[i + 1]);
+      if (i) endStep = (long)val(fullArg[i + 1]);
       i = switchPos("/ DEPTH");
-      if (i) endIndent = val(fullArg[i + 1]);
+      if (i) endIndent = (long)val(fullArg[i + 1]);
       /* 10/9/99 - ESSENTIAL is retained for downwards compatibility, but is
          now the default, so we ignore it. */
       /*
@@ -3333,7 +3384,7 @@ void command(int argc, char *argv[])
       i = switchPos("/ LEMMON");
       if (i) noIndentFlag = 1;
       i = switchPos("/ START_COLUMN");
-      if (i) splitColumn = val(fullArg[i + 1]);
+      if (i) splitColumn = (long)val(fullArg[i + 1]);
       i = switchPos("/ TEX") || switchPos("/ HTML")
           /* 14-Sep-2010 nm Added OLDE_TEX */
           || switchPos("/ OLD_TEX");
@@ -3376,7 +3427,7 @@ void command(int argc, char *argv[])
 
       i = switchPos("/ DETAILED_STEP"); /* non-pip mode only */
       if (i) {
-        detailStep = val(fullArg[i + 1]);
+        detailStep = (long)val(fullArg[i + 1]);
         if (!detailStep) detailStep = -1; /* To use as flag; error message
                                              will occur in showDetailStep() */
       }
@@ -3476,7 +3527,7 @@ void command(int argc, char *argv[])
                labelSectionXxx structure members. */
             let(&str2, space(statement[i + 1].labelSectionLen));
             memcpy(str2, statement[i + 1].labelSectionPtr,
-                statement[i + 1].labelSectionLen);
+                (size_t)(statement[i + 1].labelSectionLen));
             /* 12-Jun-2011 nm Removed pipFlag condition so that a date
                stamp will always be created if it doesn't exist */
             if ( /* pipFlag && */ !instr(1, str2, "$([")
@@ -3547,7 +3598,7 @@ void command(int argc, char *argv[])
             }
             statement[i].proofSectionPtr = printString + 1;
             /* Subtr 1 char for ASCII 1 at beg, 1 char for "\n" */
-            statement[i].proofSectionLen = strlen(printString) - 2;
+            statement[i].proofSectionLen = (long)strlen(printString) - 2;
             /* Reset printString without deallocating */
             printString = "";
             outputToString = 0;
@@ -3736,7 +3787,23 @@ void command(int argc, char *argv[])
 /*E*/ /*???????? DEBUG command for debugging only */
 
     if (cmdMatches("PROVE")) {
-      /*??? Make sure only $p statements are allowed. */
+
+      /* 14-Sep-2012 nm */
+      /* Get the unique statement matching the fullArg[1] pattern */
+      i = getStatementNum(fullArg[1],
+          statements + 1  /*maxStmt*/,
+          0/*aAllowed*/,
+          1/*pAllowed*/,
+          0/*eAllowed*/,
+          0/*fAllowed*/,
+          0/*efOnlyForMaxStmt*/);
+      if (i == -1) {
+        continue; /* Error msg was provided if not unique */
+      }
+      proveStatement = i;
+
+      /*********** 14-Sep-2012 replaced by getStatementNum()
+      /@??? Make sure only $p statements are allowed. @/
       for (i = 1; i <= statements; i++) {
         if (!strcmp(fullArg[1],statement[i].labelName)) break;
       }
@@ -3754,6 +3821,8 @@ void command(int argc, char *argv[])
         proveStatement = 0;
         continue;
       }
+      ************** end of 14-Sep-2012 deletion ************/
+
       print2(
 "Entering the Proof Assistant.  HELP PROOF_ASSISTANT for help, EXIT to exit.\n");
 
@@ -3788,7 +3857,7 @@ void command(int argc, char *argv[])
       pntrLet(&proofInProgress.target, pntrNSpace(i));
       pntrLet(&proofInProgress.source, pntrNSpace(i));
       pntrLet(&proofInProgress.user, pntrNSpace(i));
-      nmbrLet((nmbrString **)(&(proofInProgress.target[i - 1])),
+      nmbrLet((nmbrString **)(&((proofInProgress.target)[i - 1])),
           statement[proveStatement].mathString);
       pipDummyVars = 0;
 
@@ -3797,7 +3866,7 @@ void command(int argc, char *argv[])
 
       /* Initialize remaining steps */
       for (j = 0; j < i/*proof length*/; j++) {
-        if (!nmbrLen(proofInProgress.source[j])) {
+        if (!nmbrLen((proofInProgress.source)[j])) {
           initStep(j);
         }
       }
@@ -3856,7 +3925,7 @@ void command(int argc, char *argv[])
       proofChangedFlag = 0;
       if (cmdMatches("UNIFY STEP")) {
 
-        s = val(fullArg[2]); /* Step number */
+        s = (long)val(fullArg[2]); /* Step number */
         if (s > m || s < 1) {
           print2("?The step must be in the range from 1 to %ld.\n", m);
           continue;
@@ -3931,17 +4000,17 @@ void command(int argc, char *argv[])
 
       maxEssential = -1; /* Default:  no maximum */
       i = switchPos("/ MAX_ESSENTIAL_HYP");
-      if (i) maxEssential = val(fullArg[i + 1]);
+      if (i) maxEssential = (long)val(fullArg[i + 1]);
 
       if (cmdMatches("MATCH STEP")) {
 
-        s = val(fullArg[2]); /* Step number */
+        s = (long)val(fullArg[2]); /* Step number */
         m = nmbrLen(proofInProgress.proof); /* Original proof length */
         if (s > m || s < 1) {
           print2("?The step must be in the range from 1 to %ld.\n", m);
           continue;
         }
-        if (proofInProgress.proof[s - 1] != -(long)'?') {
+        if ((proofInProgress.proof)[s - 1] != -(long)'?') {
           print2(
     "?Step %ld is already assigned.  Only unknown steps can be matched.\n", s);
           continue;
@@ -3981,7 +4050,7 @@ void command(int argc, char *argv[])
 
         for (s = m; s > 0; s--) {
           /* Match only unknown steps */
-          if (proofInProgress.proof[s - 1] != -(long)'?') continue;
+          if ((proofInProgress.proof)[s - 1] != -(long)'?') continue;
           /* Match only essential steps if specified */
           if (switchPos("/ ESSENTIAL")) {
             if (!nmbrTmp[s - 1]) continue;
@@ -4021,7 +4090,7 @@ void command(int argc, char *argv[])
    "?The target variable must be of the form \"$<integer>\", e.g. \"$23\".\n");
           continue;
         }
-        n = val(right(fullArg[2], 2));
+        n = (long)val(right(fullArg[2], 2));
         if (n < 1 || n > pipDummyVars) {
           print2("?The target variable must be between $1 and $%ld.\n",
               pipDummyVars);
@@ -4039,47 +4108,53 @@ void command(int argc, char *argv[])
       }
       if (cmdMatches("LET STEP")) {
 
-        s = val(fullArg[2]); /* Step number */
+        /* 14-Sep-2012 nm */
+        s = getStepNum(fullArg[1], proofInProgress.proof,
+            0 /* ALL not allowed */);
+        if (s == -1) continue;  /* Error; message was provided already */
 
-        /* 16-Apr-06 nm Added LET STEP n where n <= 0: 0 = last,
-           -1 = penultimate, etc. _unknown_ step */
-        /* Unlike ASSIGN LAST/FIRST and IMPROVE LAST/FIRST, it probably
+        /************** 14-Sep-2012 replaced by getStepNum()
+        s = (long)val(fullArg[2]); /@ Step number @/
+
+        /@ 16-Apr-06 nm Added LET STEP n where n <= 0: 0 = last,
+           -1 = penultimate, etc. _unknown_ step @/
+        /@ Unlike ASSIGN LAST/FIRST and IMPROVE LAST/FIRST, it probably
            doesn't make sense to add LAST/FIRST to LET STEP since known
            steps can also be LET.  The main purpose of LET STEP n, n<=0, is
-           to use with scripting for mmj2 imports. */
+           to use with scripting for mmj2 imports. @/
         offset = 0;
         if (s <= 0) {
           offset = - s + 1;
-          s = 1; /* Temp. until we figure out which step */
+          s = 1; /@ Temp. until we figure out which step @/
         }
-        /* End of 16-Apr-06 */
+        /@ End of 16-Apr-06 @/
 
-        m = nmbrLen(proofInProgress.proof); /* Original proof length */
+        m = nmbrLen(proofInProgress.proof); /@ Original proof length @/
         if (s > m || s < 1) {
           print2("?The step must be in the range from 1 to %ld.\n", m);
           continue;
         }
 
-        /* 16-Apr-06 nm Added LET STEP n where n <= 0: 0 = last,
-           1 = penultimate, etc. _unknown_ step */
-        if (offset > 0) {  /* step <= 0 */
-          /* Get the essential step flags */
-          s = 0; /* Use as flag that step was found */
+        /@ 16-Apr-06 nm Added LET STEP n where n <= 0: 0 = last,
+           1 = penultimate, etc. _unknown_ step @/
+        if (offset > 0) {  /@ step <= 0 @/
+          /@ Get the essential step flags @/
+          s = 0; /@ Use as flag that step was found @/
           nmbrLet(&essentialFlags, nmbrGetEssential(proofInProgress.proof));
-          /* Scan proof backwards until last essential unknown step found */
-          /* 16-Apr-06 - count back 'offset' unknown steps */
+          /@ Scan proof backwards until last essential unknown step found @/
+          /@ 16-Apr-06 - count back 'offset' unknown steps @/
           j = offset;
           for (i = m; i >= 1; i--) {
             if (essentialFlags[i - 1]
-                && proofInProgress.proof[i - 1] == -(long)'?') {
+                && (proofInProgress.proof)[i - 1] == -(long)'?') {
               j--;
               if (j == 0) {
-                /* Found it */
+                /@ Found it @/
                 s = i;
                 break;
               }
             }
-          } /* Next i */
+          } /@ Next i @/
           if (s == 0) {
             if (offset == 1) {
               print2("?There are no unknown essential steps.\n");
@@ -4089,8 +4164,9 @@ void command(int argc, char *argv[])
             }
             continue;
           }
-        } /* if offset > 0 */
-        /* End of 16-Apr-06 */
+        } /@ if offset > 0 @/
+        /@ End of 16-Apr-06 @/
+        ******************** end 14-Sep-2012 deletion ********/
 
         /* Check to see if the statement selected is allowed */
         if (!checkMStringMatch(nmbrTmp, s - 1)) {
@@ -4100,7 +4176,7 @@ void command(int argc, char *argv[])
         }
 
         /* Assign the user string */
-        nmbrLet((nmbrString **)(&(proofInProgress.user[s - 1])), nmbrTmp);
+        nmbrLet((nmbrString **)(&((proofInProgress.user)[s - 1])), nmbrTmp);
 
         autoUnify(1);
         proofChangedFlag = 1; /* Flag to push 'undo' stack */
@@ -4135,31 +4211,53 @@ void command(int argc, char *argv[])
          with SHOW NEW_PROOF/ESSENTIAL/UNKNOWN */
       /* 16-Apr-06 nm - Handle nonpositive step number: 0 = last,
          -1 = penultimate, etc.*/
-      offset = 0; /* 16-Apr-06 */
-      let(&str1, fullArg[1]); /* To avoid void pointer problems with fullArg */
+      /* 14-Sep-2012 nm All the above now done by getStepNum() */
+      s = getStepNum(fullArg[1], proofInProgress.proof,
+          0 /* ALL not allowed */);
+      if (s == -1) continue;  /* Error; message was provided already */
+
+
+      /****** replaced by getStepNum()  nm 14-Sep-2012
+      offset = 0; /@ 16-Apr-06 @/
+      let(&str1, fullArg[1]); /@ To avoid void pointer problems with fullArg @/
       if (toupper((unsigned char)(str1[0])) == 'L'
           || toupper((unsigned char)(str1[0])) == 'F') {
-                                          /* "ASSIGN LAST" or "ASSIGN FIRST" */
-                                          /* 11-Dec-05 nm */
-        s = 1; /* Temporary until we figure out which step */
-        offset = 1;          /* 16-Apr-06 */
+                                          /@ "ASSIGN LAST" or "ASSIGN FIRST" @/
+                                          /@ 11-Dec-05 nm @/
+        s = 1; /@ Temporary until we figure out which step @/
+        offset = 1;          /@ 16-Apr-06 @/
       } else {
-        s = val(fullArg[1]); /* Step number */
+        s = (long)val(fullArg[1]); /@ Step number @/
         if (strcmp(fullArg[1], str(s))) {
           print2("?Expected either a number or FIRST or LAST after ASSIGN.\n");
-                                                             /* 11-Dec-05 nm */
+                                                             /@ 11-Dec-05 nm @/
           continue;
         }
-        if (s <= 0) {         /* 16-Apr-06 */
-          offset = - s + 1;   /* 16-Apr-06 */
-          s = 1; /* Temporary until we figure out which step */ /* 16-Apr-06 */
-        }                     /* 16-Apr-06 */
+        if (s <= 0) {         /@ 16-Apr-06 @/
+          offset = - s + 1;   /@ 16-Apr-06 @/
+          s = 1; /@ Temporary until we figure out which step @/ /@ 16-Apr-06 @/
+        }                     /@ 16-Apr-06 @/
+      }
+      ******************** end 14-Sep-2012 deletion ********/
+
+      /* 14-Sep-2012 nm */
+      /* Get the unique statement matching the fullArg[2] pattern */
+      k = getStatementNum(fullArg[2],
+          proveStatement  /*maxStmt*/,
+          1/*aAllowed*/,
+          1/*pAllowed*/,
+          1/*eAllowed*/,
+          1/*fAllowed*/,
+          1/*efOnlyForMaxStmt*/);
+      if (k == -1) {
+        continue; /* Error msg was provided if not unique */
       }
 
+      /*********** 14-Sep-2012 replaced by getStatementNum()
       for (i = 1; i <= statements; i++) {
         if (!strcmp(fullArg[2], statement[i].labelName)) {
-          /* If a $e or $f, it must be a hypothesis of the statement
-             being proved */
+          /@ If a $e or $f, it must be a hypothesis of the statement
+             being proved @/
           if (statement[i].type == (char)e__ || statement[i].type == (char)f__){
             if (!nmbrElementIn(1, statement[proveStatement].reqHypList, i) &&
                 !nmbrElementIn(1, statement[proveStatement].optHypList, i))
@@ -4183,62 +4281,67 @@ void command(int argc, char *argv[])
    "?You must specify a statement that occurs earlier the one being proved.\n");
         continue;
       }
+      ***************** end of 14-Sep-2012 deletion ************/
 
       m = nmbrLen(proofInProgress.proof); /* Original proof length */
+
+
+      /****** replaced by getStepNum()  nm 14-Sep-2012
       if (s > m || s < 1) {
         print2("?The step must be in the range from 1 to %ld.\n", m);
         continue;
       }
 
-      /* 10/4/99 - For ASSIGN FIRST/LAST command, figure out the last unknown
-         essential step */                      /* 11-Dec-05 nm - Added LAST */
-      /*if (toupper(str1[0]) == 'L' || toupper(str1[0]) == 'F') {*/
-                                /* "ASSIGN LAST or FIRST" */ /* 11-Dec-05 nm */
-      if (offset > 0) {  /* LAST, FIRST, or step <= 0 */ /* 16-Apr-06 */
-        /* Get the essential step flags */
-        s = 0; /* Use as flag that step was found */
+      /@ 10/4/99 - For ASSIGN FIRST/LAST command, figure out the last unknown
+         essential step @/                      /@ 11-Dec-05 nm - Added LAST @/
+      /@if (toupper(str1[0]) == 'L' || toupper(str1[0]) == 'F') {@/
+                                /@ "ASSIGN LAST or FIRST" @/ /@ 11-Dec-05 nm @/
+      if (offset > 0) {  /@ LAST, FIRST, or step <= 0 @/ /@ 16-Apr-06 @/
+        /@ Get the essential step flags @/
+        s = 0; /@ Use as flag that step was found @/
         nmbrLet(&essentialFlags, nmbrGetEssential(proofInProgress.proof));
-        /* if (toupper((unsigned char)(str1[0])) == 'L') { */
-        if (toupper((unsigned char)(str1[0])) != 'F') {   /* 16-Apr-06 */
-          /* Scan proof backwards until last essential unknown step is found */
-          /* 16-Apr-06 - count back 'offset' unknown steps */
-          j = offset;      /* 16-Apr-06 */
+        /@ if (toupper((unsigned char)(str1[0])) == 'L') { @/
+        if (toupper((unsigned char)(str1[0])) != 'F') {   /@ 16-Apr-06 @/
+          /@ Scan proof backwards until last essential unknown step is found @/
+          /@ 16-Apr-06 - count back 'offset' unknown steps @/
+          j = offset;      /@ 16-Apr-06 @/
           for (i = m; i >= 1; i--) {
             if (essentialFlags[i - 1]
-                && proofInProgress.proof[i - 1] == -(long)'?') {
-              j--;          /* 16-Apr-06 */
-              if (j == 0) {  /* 16-Apr-06 */
-                /* Found it */
+                && (proofInProgress.proof)[i - 1] == -(long)'?') {
+              j--;          /@ 16-Apr-06 @/
+              if (j == 0) {  /@ 16-Apr-06 @/
+                /@ Found it @/
                 s = i;
                 break;
-              }             /* 16-Apr-06 */
+              }             /@ 16-Apr-06 @/
             }
-          } /* Next i */
+          } /@ Next i @/
         } else {
-          /* 11-Dec-05 nm Added ASSIGN FIRST */
-          /* Scan proof forwards until first essential unknown step is found */
+          /@ 11-Dec-05 nm Added ASSIGN FIRST @/
+          /@ Scan proof forwards until first essential unknown step is found @/
           for (i = 1; i <= m; i++) {
             if (essentialFlags[i - 1]
-                && proofInProgress.proof[i - 1] == -(long)'?') {
-              /* Found it */
+                && (proofInProgress.proof)[i - 1] == -(long)'?') {
+              /@ Found it @/
               s = i;
               break;
             }
-          } /* Next i */
+          } /@ Next i @/
         }
         if (s == 0) {
-          if (offset == 1) {                                /* 16-Apr-06 */
+          if (offset == 1) {                                /@ 16-Apr-06 @/
             print2("?There are no unknown essential steps.\n");
-          } else {                                          /* 16-Apr-06 */
+          } else {                                          /@ 16-Apr-06 @/
             print2("?There are not at least %ld unknown essential steps.\n",
-              offset);                                      /* 16-Apr-06 */
-          }                                                 /* 16-Apr-06 */
+              offset);                                      /@ 16-Apr-06 @/
+          }                                                 /@ 16-Apr-06 @/
           continue;
         }
       }
+      ******************** end 14-Sep-2012 deletion ********/
 
       /* Check to see that the step is an unknown step */
-      if (proofInProgress.proof[s - 1] != -(long)'?') {
+      if ((proofInProgress.proof)[s - 1] != -(long)'?') {
         print2(
         "?Step %ld is already assigned.  You can only assign unknown steps.\n"
             , s);
@@ -4265,7 +4368,8 @@ void command(int argc, char *argv[])
       if (switchPos("/ NO_UNIFY") == 0) {
         interactiveUnifyStep(s - m + n - 1, 2); /* 2nd arg. means print msg if
                                                  already unified */
-      }
+      } /* if NO_UNIFY flag not set */
+
       /* 8-Apr-05 nm Commented out:
       if (m == n) {
         print2("Step %ld was assigned statement %s.\n",
@@ -4312,7 +4416,7 @@ void command(int argc, char *argv[])
       /* 6/14/98 end */
 
 
-      proofChangedFlag = 1; /* Flag to push 'undo' stack */
+      proofChangedFlag = 1; /* Flag to push 'undo' stack (future) */
       proofChanged = 1; /* Cumulative flag */
       continue;
 
@@ -4320,7 +4424,13 @@ void command(int argc, char *argv[])
 
 
     if (cmdMatches("REPLACE")) {
-      s = val(fullArg[1]); /* Step number */
+
+      /* s = (long)val(fullArg[1]);  obsolete */ /* Step number */
+
+      /* 14-Sep-2012 nm */
+      s = getStepNum(fullArg[1], proofInProgress.proof,
+          0 /* ALL not allowed */);
+      if (s == -1) continue;  /* Error; message was provided already */
 
       /* This limitation is due to the assignKnownSteps call below which
          does not tolerate unknown steps. */
@@ -4331,10 +4441,32 @@ void command(int argc, char *argv[])
       }
       *******/
 
+      /* 14-Sep-2012 nm */
+      /* Get the unique statement matching the fullArg[2] pattern */
+      k = getStatementNum(fullArg[2],
+          proveStatement  /*maxStmt*/,
+          1/*aAllowed*/,
+          1/*pAllowed*/,
+          1/*eAllowed*/,
+          1/*fAllowed*/,
+          1/*efOnlyForMaxStmt*/);
+      if (k == -1) {
+        continue; /* Error msg was provided if not unique */
+      }
+
+      /* 16-Sep-2012 nm */
+      if (statement[k].type != (char)p__ &&
+          statement[k].type != (char)a__) { /* Not $a or $p */
+        print2(
+   "?REPLACE currently allows $p and $a only.  Please use ASSIGN instead.\n");
+        continue;
+      }
+
+      /*********** 14-Sep-2012 replaced by getStatementNum()
       for (i = 1; i <= statements; i++) {
         if (!strcmp(fullArg[2], statement[i].labelName)) {
-          /* If a $e or $f, it must be a hypothesis of the statement
-             being proved */
+          /@ If a $e or $f, it must be a hypothesis of the statement
+             being proved @/
           if (statement[i].type == (char)e__ || statement[i].type == (char)f__){
             if (!nmbrElementIn(1, statement[proveStatement].reqHypList, i) &&
                 !nmbrElementIn(1, statement[proveStatement].optHypList, i))
@@ -4358,19 +4490,27 @@ void command(int argc, char *argv[])
    "?You must specify a statement that occurs earlier the one being proved.\n");
         continue;
       }
+      ****************************** end of 14-Sep-2012 deletion *********/
 
       m = nmbrLen(proofInProgress.proof); /* Original proof length */
+
+      /************** 14-Sep-2012 replaced by getStepNum()
       if (s > m || s < 1) {
         print2("?The step must be in the range from 1 to %ld.\n", m);
         continue;
       }
+      ************* end of 14-Sep-2012 deletion **************/
+
       /* Check to see that the step is a known step */
-      if (proofInProgress.proof[s - 1] == -(long)'?') {
+      /* 22-Aug-2012 nm This check was deleted because it is unnecessary  */
+      /*
+      if ((proofInProgress.proof)[s - 1] == -(long)'?') {
         print2(
         "?Step %ld is unknown.  You can only replace known steps.\n"
             , s);
         continue;
       }
+      */
 
       /* 10/20/02  Set a flag that proof has unknown steps (for autoUnify()
          call below) */
@@ -4387,9 +4527,20 @@ void command(int argc, char *argv[])
         continue;
       }
 
+      /* 16-Sep-2012 nm */
+      /* Check dummy variable status of step */
+      /* For use in message later */
+      dummyVarIsoFlag = checkDummyVarIsolation(s - 1);
+            /* 0=no dummy vars, 1=isolated dummy vars, 2=not isolated*/
+
       /* Do the replacement */
-      nmbrTmpPtr = replaceStatement(k /*statement#*/, s - 1 /*step*/,
-          proveStatement);
+      nmbrTmpPtr = replaceStatement(k /*statement#*/,
+          s - 1 /*step*/,
+          proveStatement,
+          0,/*scan whole proof to maximize chance of a match*/
+          0/*noDistinct*/,
+          1/* try to prove $e's */,
+          1/*improveDepth*/);
       if (!nmbrLen(nmbrTmpPtr)) {
         print2(
            "?Hypotheses of statement \"%s\" do not match known proof steps.\n",
@@ -4410,37 +4561,39 @@ void command(int argc, char *argv[])
       /* Initialize remaining steps */
       i = nmbrLen(proofInProgress.proof);
       for (j = 0; j < i; j++) {
-        if (!nmbrLen(proofInProgress.source[j])) {
+        if (!nmbrLen((proofInProgress.source)[j])) {
           initStep(j);
         }
       }
       /* Unify whatever can be unified */
       /* If proof wasn't complete before (p = 1), but is now, print congrats
          for user */
-      autoUnify(p); /* 0 means no "congrats" message */
+      autoUnify((char)p); /* 0 means no "congrats" message */
       /* end 10/20/02 */
 
-
-      nmbrLet(&nmbrTmpPtr, NULL_NMBRSTRING);
+      nmbrLet(&nmbrTmpPtr, NULL_NMBRSTRING); /* Deallocate memory */
 
       n = nmbrLen(proofInProgress.proof); /* New proof length */
-      if (m == n) {
-        print2("Step %ld was replaced with statement %s.\n",
-          s, statement[k].labelName);
-      } else {
-        if (s != m) {
-          printLongLine(cat("Step ", str(s),
-              " was replaced with statement ", statement[k].labelName,
-              ".  Steps ", str(s), ":",
-              str(m), " are now ", str(s - m + n), ":", str(n), ".",
-              NULL),
-              "", " ");
+      if (nmbrElementIn(1, proofInProgress.proof, -(long)'?')) {
+        /* The proof is not complete, so print step numbers that changed */
+        if (m == n) {
+          print2("Step %ld was replaced with statement %s.\n",
+            s, statement[k].labelName);
         } else {
-          printLongLine(cat("Step ", str(s),
-              " was replaced with statement ", statement[k].labelName,
-              ".  Step ", str(m), " is now step ", str(n), ".",
-              NULL),
-              "", " ");
+          if (s != m) {
+            printLongLine(cat("Step ", str(s),
+                " was replaced with statement ", statement[k].labelName,
+                ".  Steps ", str(s), ":",
+                str(m), " are now ", str(s - m + n), ":", str(n), ".",
+                NULL),
+                "", " ");
+          } else {
+            printLongLine(cat("Step ", str(s),
+                " was replaced with statement ", statement[k].labelName,
+                ".  Step ", str(m), " is now step ", str(n), ".",
+                NULL),
+                "", " ");
+          }
         }
       }
       /*autoUnify(1);*/
@@ -4455,6 +4608,40 @@ void command(int argc, char *argv[])
 
       proofChangedFlag = 1; /* Flag to push 'undo' stack */
       proofChanged = 1; /* Cumulative flag */
+
+      /* 16-Sep-2012 nm */
+      if (dummyVarIsoFlag == 2 && proofChangedFlag) {
+        printLongLine(cat(
+     "Assignments to shared working variables ($nn) are guesses.  If "
+     "incorrect, to undo DELETE STEP ",
+              str(s - m + n),
+      ", INITIALIZE, UNIFY, then assign them manually with LET ",
+      "and try REPLACE again.",
+              NULL),
+              "", " ");
+      }
+
+
+      /* 14-Sep-2012 nm - Automatically display new unknown steps
+         ???Future - add switch to enable/defeat this */
+      if (proofChangedFlag)
+        typeProof(proveStatement,
+            1 /*pipFlag*/,
+            0 /*startStep*/,
+            0 /*endStep*/,
+            0 /*endIndent*/,
+            1 /*essentialFlag*/,
+            0 /*renumberFlag*/,
+            1 /*unknownFlag*/,
+            0 /*notUnifiedFlag*/,
+            0 /*reverseFlag*/,
+            0 /*noIndentFlag*/,
+            0 /*splitColumn*/,
+            0 /*texFlag*/,
+            0 /*htmlFlag*/);
+      /* 14-Sep-2012 end */
+
+
       continue;
 
     } /* REPLACE */
@@ -4462,120 +4649,141 @@ void command(int argc, char *argv[])
 
     if (cmdMatches("IMPROVE")) {
 
-      k = 0; /* Depth */
+      improveDepth = 0; /* Depth */
       i = switchPos("/ DEPTH");
-      if (i) k = val(fullArg[i + 1]);
+      if (i) improveDepth = (long)val(fullArg[i + 1]);
       if (switchPos("/ NO_DISTINCT")) p = 1; else p = 0;
                         /* p = 1 means don't try to use statements with $d's */
+      /* 22-Aug-2012 nm Added */
+      searchAlg = 1; /* Default */
+      if (switchPos("/ 1")) searchAlg = 1;
+      if (switchPos("/ 2")) searchAlg = 2;
+      if (switchPos("/ 3")) searchAlg = 3;
+      /* 4-Sep-2012 nm Added */
+      searchUnkSubproofs = 0;
+      if (switchPos("/ SUBPROOFS")) searchUnkSubproofs = 1;
 
-      /* 26-Aug-2006 nm Changed "IMPROVE STEP <step>" to "IMPROVE <step>" */
-      let(&str1, fullArg[1]); /* To avoid void pointer problems with fullArg */
+      /* 14-Sep-2012 nm */
+      s = getStepNum(fullArg[1], proofInProgress.proof,
+          1 /* ALL not allowed */);
+      if (s == -1) continue;  /* Error; message was provided already */
+
+      if (s != 0) {  /* s=0 means ALL */
+
+      /**************** 14-Sep-2012 nm replaced with getStepNum()
+      /@ 26-Aug-2006 nm Changed "IMPROVE STEP <step>" to "IMPROVE <step>" @/
+      let(&str1, fullArg[1]); /@ To avoid void pointer problems with fullArg @/
       if (toupper((unsigned char)(str1[0])) != 'A') {
-        /* 16-Apr-06 nm - Handle nonpositive step number: 0 = last,
-           -1 = penultimate, etc.*/
-        offset = 0; /* 16-Apr-06 */
-        /* 10/4/99 - Added LAST - this means the last unknown step shown
-           with SHOW NEW_PROOF/ESSENTIAL/UNKNOWN */
+        /@ 16-Apr-06 nm - Handle nonpositive step number: 0 = last,
+           -1 = penultimate, etc.@/
+        offset = 0; /@ 16-Apr-06 @/
+        /@ 10/4/99 - Added LAST - this means the last unknown step shown
+           with SHOW NEW_PROOF/ESSENTIAL/UNKNOWN @/
         if (toupper((unsigned char)(str1[0])) == 'L'
             || toupper((unsigned char)(str1[0])) == 'F') {
-                                        /* "IMPROVE LAST" or "IMPROVE FIRST" */
-          s = 1; /* Temporary until we figure out which step */
-          offset = 1;          /* 16-Apr-06 */
+                                        /@ "IMPROVE LAST" or "IMPROVE FIRST" @/
+          s = 1; /@ Temporary until we figure out which step @/
+          offset = 1;          /@ 16-Apr-06 @/
         } else {
           if (toupper((unsigned char)(str1[0])) == 'S') {
             print2(
            "?\"IMPROVE STEP <step>\" is obsolete.  Use \"IMPROVE <step>\".\n");
             continue;
           }
-          s = val(fullArg[1]); /* Step number */
+          s = (long)val(fullArg[1]); /@ Step number @/
           if (strcmp(fullArg[1], str(s))) {
             print2(
                 "?Expected a number or FIRST or LAST or ALL after IMPROVE.\n");
             continue;
           }
-          if (s <= 0) {         /* 16-Apr-06 */
-            offset = - s + 1;   /* 16-Apr-06 */
-            s = 1; /* Temporary until we figure out step */ /* 16-Apr-06 */
-          }                     /* 16-Apr-06 */
-        }
-        /* End of 26-Aug-2006 change */
-
-      /* ------- Old code before 26-Aug-2006 -------
-      if (cmdMatches("IMPROVE STEP") || cmdMatches("IMPROVE LAST") ||
-          cmdMatches("IMPROVE FIRST")) {                     /@ 11-Dec-05 nm @/
-
-        /@ 16-Apr-06 nm - Handle nonpositive step number: 0 = last,
-           -1 = penultimate, etc.@/
-        offset = 0; /@ 16-Apr-06 @/
-        /@ 10/4/99 - Added LAST - this means the last unknown step shown
-           with SHOW NEW_PROOF/ESSENTIAL/UNKNOWN @/
-        if (cmdMatches("IMPROVE LAST") || cmdMatches("IMPROVE FIRST")) {
-                               /@ "IMPROVE LAST or FIRST" @/ /@ 11-Dec-05 nm @/
-          s = 1; /@ Temporary until we figure out which step @/
-          offset = 1;          /@ 16-Apr-06 @/
-        } else {
-          s = val(fullArg[2]); /@ Step number @/
           if (s <= 0) {         /@ 16-Apr-06 @/
             offset = - s + 1;   /@ 16-Apr-06 @/
-            s = 1; /@ Temp. until we figure out which step @/ /@ 16-Apr-06 @/
+            s = 1; /@ Temporary until we figure out step @/ /@ 16-Apr-06 @/
           }                     /@ 16-Apr-06 @/
         }
-        ------- End of old code ------- */
+        /@ End of 26-Aug-2006 change @/
+
+      /@ ------- Old code before 26-Aug-2006 -------
+      if (cmdMatches("IMPROVE STEP") || cmdMatches("IMPROVE LAST") ||
+          cmdMatches("IMPROVE FIRST")) {                     /# 11-Dec-05 nm #/
+
+        /# 16-Apr-06 nm - Handle nonpositive step number: 0 = last,
+           -1 = penultimate, etc.#/
+        offset = 0; /# 16-Apr-06 #/
+        /# 10/4/99 - Added LAST - this means the last unknown step shown
+           with SHOW NEW_PROOF/ESSENTIAL/UNKNOWN #/
+        if (cmdMatches("IMPROVE LAST") || cmdMatches("IMPROVE FIRST")) {
+                               /# "IMPROVE LAST or FIRST" #/ /# 11-Dec-05 nm #/
+          s = 1; /# Temporary until we figure out which step #/
+          offset = 1;          /# 16-Apr-06 #/
+        } else {
+          s = val(fullArg[2]); /# Step number #/
+          if (s <= 0) {         /# 16-Apr-06 #/
+            offset = - s + 1;   /# 16-Apr-06 #/
+            s = 1; /# Temp. until we figure out which step #/ /# 16-Apr-06 #/
+          }                     /# 16-Apr-06 #/
+        }
+        ------- End of old code ------- @/
+        **************** end of 14-Sep-2012 nm ************/
 
         m = nmbrLen(proofInProgress.proof); /* Original proof length */
+
+
+        /**************** 14-Sep-2012 nm replaced with getStepNum()
         if (s > m || s < 1) {
           print2("?The step must be in the range from 1 to %ld.\n", m);
           continue;
         }
 
 
-        /* 10/4/99 - For IMPROVE FIRST/LAST command, figure out the last
-           unknown essential step */           /* 11-Dec-05 nm - Added FIRST */
-        /*if (cmdMatches("IMPROVE LAST") || cmdMatches("IMPROVE FIRST")) {*/
-                               /* IMPROVE LAST or FIRST */ /* 11-Dec-05 nm */
-        if (offset > 0) {  /* LAST, FIRST, or step <= 0 */ /* 16-Apr-06 */
-          /* Get the essential step flags */
-          s = 0; /* Use as flag that step was found */
+        /@ 10/4/99 - For IMPROVE FIRST/LAST command, figure out the last
+           unknown essential step @/           /@ 11-Dec-05 nm - Added FIRST @/
+        /@if (cmdMatches("IMPROVE LAST") || cmdMatches("IMPROVE FIRST")) {@/
+                               /@ IMPROVE LAST or FIRST @/ /@ 11-Dec-05 nm @/
+        if (offset > 0) {  /@ LAST, FIRST, or step <= 0 @/ /@ 16-Apr-06 @/
+          /@ Get the essential step flags @/
+          s = 0; /@ Use as flag that step was found @/
           nmbrLet(&essentialFlags, nmbrGetEssential(proofInProgress.proof));
-          /*if (cmdMatches("IMPROVE LAST")) {*/
-          /*if (!cmdMatches("IMPROVE FIRST")) {*/   /* 16-Apr-06 */
-          if (toupper((unsigned char)(str1[0])) != 'F') { /* 26-Aug-2006 */
-            /* Scan proof backwards until last essential unknown step found */
-            /* 16-Apr-06 - count back 'offset' unknown steps */
-            j = offset;      /* 16-Apr-06 */
+          /@if (cmdMatches("IMPROVE LAST")) {@/
+          /@if (!cmdMatches("IMPROVE FIRST")) {@/   /@ 16-Apr-06 @/
+          if (toupper((unsigned char)(str1[0])) != 'F') { /@ 26-Aug-2006 @/
+            /@ Scan proof backwards until last essential unknown step found @/
+            /@ 16-Apr-06 - count back 'offset' unknown steps @/
+            j = offset;      /@ 16-Apr-06 @/
             for (i = m; i >= 1; i--) {
               if (essentialFlags[i - 1]
-                  && proofInProgress.proof[i - 1] == -(long)'?') {
-                j--;           /* 16-Apr-06 */
-                if (j == 0) {  /* 16-Apr-06 */
-                  /* Found it */
+                  && (proofInProgress.proof)[i - 1] == -(long)'?') {
+                j--;           /@ 16-Apr-06 @/
+                if (j == 0) {  /@ 16-Apr-06 @/
+                  /@ Found it @/
                   s = i;
                   break;
-                }              /* 16-Apr-06 */
+                }              /@ 16-Apr-06 @/
               }
-            } /* Next i */
+            } /@ Next i @/
           } else {
-            /* 11-Dec-05 nm Added IMPROVE FIRST */
-            /* Scan proof forwards until first essential unknown step found */
+            /@ 11-Dec-05 nm Added IMPROVE FIRST @/
+            /@ Scan proof forwards until first essential unknown step found @/
             for (i = 1; i <= m; i++) {
               if (essentialFlags[i - 1]
-                  && proofInProgress.proof[i - 1] == -(long)'?') {
-                /* Found it */
+                  && (proofInProgress.proof)[i - 1] == -(long)'?') {
+                /@ Found it @/
                 s = i;
                 break;
               }
-            } /* Next i */
+            } /@ Next i @/
           }
           if (s == 0) {
-            if (offset == 1) {                                /* 16-Apr-06 */
+            if (offset == 1) {                                /@ 16-Apr-06 @/
               print2("?There are no unknown essential steps.\n");
-            } else {                                          /* 16-Apr-06 */
+            } else {                                          /@ 16-Apr-06 @/
               print2("?There are not at least %ld unknown essential steps.\n",
-                offset);                                      /* 16-Apr-06 */
-            }                                                 /* 16-Apr-06 */
+                offset);                                      /@ 16-Apr-06 @/
+            }                                                 /@ 16-Apr-06 @/
             continue;
           }
-        } /* if offset > 0 */
+        } /@ if offset > 0 @/
+        **************** end of 14-Sep-2012 nm ************/
 
         /* Get the subproof at step s */
         q = subProofLen(proofInProgress.proof, s - 1);
@@ -4590,10 +4798,22 @@ void command(int argc, char *argv[])
           continue;
         }
 
-        /* Check to see that the step has no dummy variables. */
-        j = 0; /* Break flag */
-        for (i = 0; i < nmbrLen(proofInProgress.target[s - 1]); i++) {
-          if (((nmbrString *)(proofInProgress.target[s - 1]))[i] > mathTokens) {
+        /* 25-Aug-2012 nm */
+        /* Check dummy variable status of step */
+        dummyVarIsoFlag = checkDummyVarIsolation(s - 1);
+              /* 0=no dummy vars, 1=isolated dummy vars, 2=not isolated*/
+        if (dummyVarIsoFlag == 2) {
+          print2(
+  "?Step %ld target has shared dummy variables and cannot be improved.\n", s);
+          continue; /* Don't try to improve
+                                 dummy variables that aren't isolated */
+        }
+
+        /********* Deleted old code 25-Aug-2012 nm
+        /@ Check to see that the step has no dummy variables. @/
+        j = 0; /@ Break flag @/
+        for (i = 0; i < nmbrLen((proofInProgress.target)[s - 1]); i++) {
+          if (((nmbrString @)((proofInProgress.target)[s - 1]))[i] > mathTokens) {
             j = 1;
             break;
           }
@@ -4603,13 +4823,36 @@ void command(int argc, char *argv[])
    "?Step %ld target has dummy variables and cannot be improved.\n", s);
           continue;
         }
+        ********/
 
-        nmbrTmpPtr = proveFloating(proofInProgress.target[s - 1],
-            proveStatement, k, s - 1, p/*NO_DISTINCT*/);
-        if (!nmbrLen(nmbrTmpPtr)) {
-          print2("A proof for step %ld was not found.\n", s);
-          continue;
+
+        if (dummyVarIsoFlag == 0) { /* No dummy vars */ /* 25-Aug-2012 nm */
+          /* Only use proveFloating if no dummy vars */
+          nmbrTmpPtr = proveFloating((proofInProgress.target)[s - 1],
+              proveStatement, improveDepth, s - 1, (char)p/*NO_DISTINCT*/);
+        } else {
+          nmbrTmpPtr = NULL_NMBRSTRING; /* Initialize */ /* 25-Aug-2012 nm */
         }
+        if (!nmbrLen(nmbrTmpPtr)) {
+          /* A proof for the step was not found with proveFloating(). */
+
+          /* 22-Aug-2012 nm Next, try REPLACE algorithm */
+          if (searchAlg == 2 || searchAlg == 3) {
+            nmbrTmpPtr = proveByReplacement(proveStatement,
+              s - 1/*prfStep*/, /* 0 means step 1 */
+              (char)p/*NO_DISTINCT*/, /* 1 means don't try stmts with $d's */
+              dummyVarIsoFlag,
+              (char)(searchAlg - 2), /*0=proveFloat for $fs, 1=$e's also */
+              improveDepth                         /* 4-Sep-2012 */
+              );
+          }
+          if (!nmbrLen(nmbrTmpPtr)) {
+            print2("A proof for step %ld was not found.\n", s);
+            /* REPLACE algorithm also failed */
+            continue;
+          }
+        }
+
         /* If q=1, subproof must be an unknown step, so don't bother to
            delete it */
         /*???Won't q always be 1 here?*/
@@ -4641,81 +4884,180 @@ void command(int argc, char *argv[])
         autoUnify(1); /* To get 'congrats' message if proof complete */
         proofChanged = 1; /* Cumulative flag */
 
-      } /* End if IMPROVE STEP */
+        /* End if s != 0 i.e. not IMPROVE ALL */   /* 14-Sep-2012 nm */
+      } else {
+        /* Here, getStepNum() returned 0, meaning ALL */  /* 14-Sep-2012 nm */
 
+        /*if (cmdMatches("IMPROVE ALL")) {*/  /* obsolete */
 
-      /*if (cmdMatches("IMPROVE ALL")) {*/
-      if (toupper((unsigned char)(str1[0])) == 'A') { /* 26-Aug-2006 */
-
-        m = nmbrLen(proofInProgress.proof); /* Original proof length */
+        if (!nmbrElementIn(1, proofInProgress.proof, -(long)'?')) {
+          print2("The proof is already complete.\n");
+          continue;
+        }
 
         n = 0; /* Earliest step that changed */
+
         proofChangedFlag = 0;
 
-        for (s = m; s > 0; s--) {
-
-          /*???Shouldn't this be just known?*/
-          /* If the step is known and unified, don't do it, since nothing
-             would be accomplished. */
-          if (proofInProgress.proof[s - 1] != -(long)'?') {
-            if (nmbrEq(proofInProgress.target[s - 1],
-                proofInProgress.source[s - 1])) continue;
-          }
-
-          /*???Won't q always be 1 here?*/
-          /* Get the subproof at step s */
-          q = subProofLen(proofInProgress.proof, s - 1);
-          nmbrLet(&nmbrTmp, nmbrSeg(proofInProgress.proof, s - q + 1, s));
-
-          /* Improve only subproofs with unknown steps */
-          if (!nmbrElementIn(1, nmbrTmp, -(long)'?')) continue;
-
-          nmbrLet(&nmbrTmp, NULL_NMBRSTRING); /* No longer needed - deallocate */
-
-          /* Check to see that the step has no dummy variables. */
-          j = 0; /* Break flag */
-          for (i = 0; i < nmbrLen(proofInProgress.target[s - 1]); i++) {
-            if (((nmbrString *)(proofInProgress.target[s - 1]))[i] >
-                mathTokens) {
-              j = 1;
-              break;
+        for (improveAllIter = 1; improveAllIter <= 4; improveAllIter++) {
+                                                           /* 25-Aug-2012 nm */
+          if (improveAllIter == 1 && (searchAlg == 2 || searchAlg == 3))
+            print2("Pass 1:  Trying to match cut-free statements...\n");
+          if (improveAllIter == 2) {
+            if (searchAlg == 2) {
+              print2("Pass 2:  Trying to match all statements...\n");
+            } else {
+              print2(
+"Pass 2:  Trying to match all statements, with cut-free hypothesis matches...\n"
+                  );
             }
           }
-          if (j) {
-            /* Step has dummy variables and cannot be improved. */
-            continue;
+          if (improveAllIter == 3 && searchUnkSubproofs)
+            print2("Pass 3:  Trying to replace incomplete subproofs...\n");
+          if (improveAllIter == 4) {
+            if (searchUnkSubproofs) {
+              print2("Pass 4:  Repeating pass 1...\n");
+            } else {
+              print2("Pass 3:  Repeating pass 1...\n");
+            }
+          }
+          /* improveAllIter = 1: run proveFloating only */
+          /* improveAllIter = 2: run proveByReplacement on unknown steps */
+          /* improveAllIter = 3: run proveByReplacement on steps with
+                                   incomplete subproofs */
+          /* improveAllIter = 4: if something changed, run everything again */
+
+          if (improveAllIter == 3 && !searchUnkSubproofs) continue;
+
+          m = nmbrLen(proofInProgress.proof); /* Original proof length */
+
+          for (s = m; s > 0; s--) {
+
+            proofStepUnk = ((proofInProgress.proof)[s - 1] == -(long)'?')
+                ? 1 : 0;   /* 25-Aug-2012 nm Added for clearer code */
+
+            /* 22-Aug-2012 nm I think this is really too conservative, even
+               with the old algorithm, but keep it to imitate the old one */
+            if (improveAllIter == 1 || searchAlg == 1) { /* 22-Aug-2012 nm */
+              /* If the step is known and unified, don't do it, since nothing
+                 would be accomplished. */
+              if (!proofStepUnk) {
+                if (nmbrEq((proofInProgress.target)[s - 1],
+                    (proofInProgress.source)[s - 1])) continue;
+              }
+            }
+
+            /* Get the subproof at step s */
+            q = subProofLen(proofInProgress.proof, s - 1);
+            if (proofStepUnk && q != 1) {
+              bug(1120); /* 25-Aug-2012 nm Consistency check */
+            }
+            nmbrLet(&nmbrTmp, nmbrSeg(proofInProgress.proof, s - q + 1, s));
+
+            /* Improve only subproofs with unknown steps */
+            if (!nmbrElementIn(1, nmbrTmp, -(long)'?')) continue;
+
+            nmbrLet(&nmbrTmp, NULL_NMBRSTRING); /* No longer needed - dealloc */
+
+            /* 25-Aug-2012 nm */
+            /* Check dummy variable status of step */
+            dummyVarIsoFlag = checkDummyVarIsolation(s - 1);
+                  /* 0=no dummy vars, 1=isolated dummy vars, 2=not isolated*/
+            if (dummyVarIsoFlag == 2) continue; /* Don't try to improve
+                                     dummy variables that aren't isolated */
+
+            /********* Deleted old code now done by checkDummyVarIsolation()
+                       25-Aug-2012 nm
+            /@ Check to see that the step has no dummy variables. @/
+            j = 0; /@ Break flag @/
+            for (i = 0; i < nmbrLen((proofInProgress.target)[s - 1]); i++) {
+              if (((nmbrString @)((proofInProgress.target)[s - 1]))[i] >
+                  mathTokens) {
+                j = 1;
+                break;
+              }
+            }
+            if (j) {
+              /@ Step has dummy variables and cannot be improved. @/
+              continue;
+            }
+            ********/
+
+            if (dummyVarIsoFlag == 0
+                && (improveAllIter == 1
+                  || improveAllIter == 4)) {
+                /* No dummy vars */ /* 25-Aug-2012 nm */
+              /* Only use proveFloating if no dummy vars */
+              nmbrTmpPtr = proveFloating((proofInProgress.target)[s - 1],
+                  proveStatement, improveDepth, s - 1, (char)p/*NO_DISTINCT*/);
+            } else {
+              nmbrTmpPtr = NULL_NMBRSTRING; /* Init */ /* 25-Aug-2012 nm */
+            }
+            if (!nmbrLen(nmbrTmpPtr)) {
+              /* A proof for the step was not found with proveFloating(). */
+
+              /* 22-Aug-2012 nm Next, try REPLACE algorithm */
+              if ((searchAlg == 2 || searchAlg == 3)
+                  && ((improveAllIter == 2 && proofStepUnk)
+                    || (improveAllIter == 3 && !proofStepUnk)
+                    /*|| improveAllIter == 4*/)) {
+                nmbrTmpPtr = proveByReplacement(proveStatement,
+                  s - 1/*prfStep*/, /* 0 means step 1 */
+                  (char)p/*NO_DISTINCT*/, /* 1 means don't try stmts w/ $d's */
+                  dummyVarIsoFlag,
+                  (char)(searchAlg - 2),/*searchMethod: 0 or 1*/
+                  improveDepth                         /* 4-Sep-2012 */
+                  );
+
+              }
+              if (!nmbrLen(nmbrTmpPtr)) {
+                /* REPLACE algorithm also failed */
+                continue;
+              }
+            }
+
+            /* If q=1, subproof must be an unknown step, so don't bother to
+               delete it */
+            if (q > 1) deleteSubProof(s - 1);
+            addSubProof(nmbrTmpPtr, s - q);
+            assignKnownSteps(s - q, nmbrLen(nmbrTmpPtr));
+            print2("A proof of length %ld was found for step %ld.\n",
+                nmbrLen(nmbrTmpPtr), s);
+            if (nmbrLen(nmbrTmpPtr) || q != 1) n = s - q + 1;
+                                               /* Save earliest step changed */
+            nmbrLet(&nmbrTmpPtr, NULL_NMBRSTRING);
+            proofChangedFlag = 1;
+            s = s - q + 1; /* Adjust step position to account for deleted subpr */
+          } /* Next step s */
+
+          if (proofChangedFlag) {
+            autoUnify(0); /* 0 = No 'Congrats' if done */
           }
 
-          nmbrTmpPtr = proveFloating(proofInProgress.target[s - 1],
-              proveStatement, k, s - 1, p/*NO_DISTINCT*/);
-          if (!nmbrLen(nmbrTmpPtr)) {
-            /* A proof for the step was not found. */
-            continue;
+          if (!proofChangedFlag
+              && ( (improveAllIter == 2 && !searchUnkSubproofs)
+                 || improveAllIter == 3
+                 || searchAlg == 1)) {
+            print2("No new subproofs were found.\n");
+            break; /* out of improveAllIter loop */
+          }
+          if (proofChangedFlag) proofChanged = 1; /* Cumulative flag */
+
+          if (!nmbrElementIn(1, proofInProgress.proof, -(long)'?')) {
+            break; /* Proof is complete */
           }
 
-          /* If q=1, subproof must be an unknown step, so don't bother to
-             delete it */
-          /*???Won't q always be 1 here?*/
-          if (q > 1) deleteSubProof(s - 1);
-          addSubProof(nmbrTmpPtr, s - q);
-          assignKnownSteps(s - q, nmbrLen(nmbrTmpPtr));
-          print2("A proof of length %ld was found for step %ld.\n",
-              nmbrLen(nmbrTmpPtr), s);
-          if (nmbrLen(nmbrTmpPtr) || q != 1) n = s - q + 1;
-                                                /* Save earliest step changed */
-          nmbrLet(&nmbrTmpPtr, NULL_NMBRSTRING);
-          proofChangedFlag = 1;
-          s = s - q + 1; /* Adjust step position to account for deleted subpr */
-        } /* Next step s */
-        if (n) {
+          if (searchAlg == 1) break; /* Old algorithm does just 1st pass */
+
+        } /* Next improveAllIter */
+
+        if (n > 0 && proofChangedFlag) {
           print2("Steps %ld and above have been renumbered.\n", n);
         }
-        autoUnify(1); /* To get 'congrats' msg if done */
-
-        if (!proofChangedFlag) {
-          print2("No new subproofs were found.\n");
-        } else {
-          proofChanged = 1; /* Cumulative flag */
+        if (!nmbrElementIn(1, proofInProgress.proof, -(long)'?')) {
+          /* This is a redundant call; its purpose is just to give
+             the message if the proof is complete */
+          autoUnify(1); /* 1 = 'Congrats' if done */
         }
 
       } /* End if IMPROVE ALL */
@@ -4764,6 +5106,26 @@ void command(int argc, char *argv[])
         if (sandboxStmt == -1)
           sandboxStmt = statements + 1;  /* Default beyond db end if none */
       }
+
+      /* Added 14-Aug-2012 nm */
+      /* Always scan statements in current mathbox, even if
+         "/ INCLUDE_MATHBOXES" is omitted */
+      thisMathboxStmt = sandboxStmt;
+                /* Will become start of current (proveStatement's) mathbox */
+      if (proveStatement > sandboxStmt) {
+        /* We're in a mathbox */
+        for (k = proveStatement; k >= sandboxStmt; k--) {
+          let(&str1, left(statement[k].labelSectionPtr,
+              statement[k].labelSectionLen));
+          /* Heuristic to match beginning of mathbox */
+          if (instr(1, str1, "Mathbox for") != 0) {
+             /* Found beginning of current mathbox */
+             thisMathboxStmt = k;
+             break;
+          }
+        }
+      }
+
       if (j) j = 1; /* Make sure it's a char value for minimizeProof call */
       /* for (k = 1; k < proveStatement; k++) { */
       /* 10-Nov-2011 nm */
@@ -4776,7 +5138,9 @@ void command(int argc, char *argv[])
            k = k + (revFlag ? 1 : -1)) {
         /* 28-Jun-2011 */
         /* Scan mathbox statements only if INCLUDE_MATHBOXES specified */
-        if (!mathboxFlag && k >= sandboxStmt) continue;
+        /*if (!mathboxFlag && k >= sandboxStmt) continue;*/
+        /* 14-Aug-2012 nm */
+        if (!mathboxFlag && k >= sandboxStmt && k < thisMathboxStmt) continue;
 
         if (statement[k].type != (char)p__ && statement[k].type != (char)a__)
           continue;
@@ -4807,9 +5171,9 @@ void command(int argc, char *argv[])
         if (s == 0) s = 1; /* Matched at least one */
         if (!i) {
           /* Verbose mode */
-          q = q + strlen(statement[k].labelName) + 1;
+          q = q + (long)strlen(statement[k].labelName) + 1;
           if (q > 72) {
-            q = strlen(statement[k].labelName) + 1;
+            q = (long)strlen(statement[k].labelName) + 1;
             print2("\n");
           }
           print2("%s ",statement[k].labelName);
@@ -4818,7 +5182,7 @@ void command(int argc, char *argv[])
         m = nmbrLen(proofInProgress.proof); /* Original proof length */
         nmbrLet(&nmbrTmp, proofInProgress.proof);
 
-        minimizeProof(k, proveStatement, j);
+        minimizeProof(k, proveStatement, (char)j);
 
         n = nmbrLen(proofInProgress.proof); /* New proof length */
         if (!nmbrEq(nmbrTmp, proofInProgress.proof)) {
@@ -4871,7 +5235,7 @@ void command(int argc, char *argv[])
       /* 28-Jun-2011 nm */
       if (!mathboxFlag && proveStatement >= sandboxStmt) {
         print2(
-  "(Mathboxes were not checked.  Use / INCLUDE_MATHBOXES to include them.)\n");
+  "(Other mathboxes were not checked.  Use / INCLUDE_MATHBOXES to include them.)\n");
       }
       continue;
 
@@ -4888,11 +5252,11 @@ void command(int argc, char *argv[])
     if (cmdMatches("DELETE STEP") || (cmdMatches("DELETE ALL"))) {
 
       if (cmdMatches("DELETE STEP")) {
-        s = val(fullArg[2]); /* Step number */
+        s = (long)val(fullArg[2]); /* Step number */
       } else {
         s = nmbrLen(proofInProgress.proof);
       }
-      if (proofInProgress.proof[s - 1] == -(long)'?') {
+      if ((proofInProgress.proof)[s - 1] == -(long)'?') {
         print2("?Step %ld is unknown and cannot be deleted.\n", s);
         continue;
       }
@@ -4958,7 +5322,7 @@ void command(int argc, char *argv[])
 
         /* Skip essential steps and unknown steps */
         if (nmbrTmp[s - 1] == 1) continue; /* Not floating */
-        if (proofInProgress.proof[s - 1] == -(long)'?') continue; /* Unknown */
+        if ((proofInProgress.proof)[s - 1] == -(long)'?') continue; /* Unknown */
 
         /* Get the subproof length at step s */
         q = subProofLen(proofInProgress.proof, s - 1);
@@ -5030,7 +5394,7 @@ void command(int argc, char *argv[])
         i = nmbrLen(proofInProgress.proof);
         /* Delete all LET STEP assignments */
         for (j = 0; j < i; j++) {
-          nmbrLet((nmbrString **)(&(proofInProgress.user[j])),
+          nmbrLet((nmbrString **)(&((proofInProgress.user)[j])),
               NULL_NMBRSTRING);
         }
         print2(
@@ -5041,7 +5405,7 @@ void command(int argc, char *argv[])
       /* End 16-Apr-06 */
 
       /* cmdMatches("INITIALIZE STEP") */
-      s = val(fullArg[2]); /* Step number */
+      s = (long)val(fullArg[2]); /* Step number */
       if (s > nmbrLen(proofInProgress.proof) || s < 1) {
         print2("?The step must be in the range from 1 to %ld.\n",
             nmbrLen(proofInProgress.proof));
@@ -5051,7 +5415,7 @@ void command(int argc, char *argv[])
       initStep(s - 1);
 
       /* Also delete LET STEPs, per HELP INITIALIZE */          /* 16-Apr-06 */
-      nmbrLet((nmbrString **)(&(proofInProgress.user[s - 1])),  /* 16-Apr-06 */
+      nmbrLet((nmbrString **)(&((proofInProgress.user)[s - 1])),  /* 16-Apr-06 */
               NULL_NMBRSTRING);                                 /* 16-Apr-06 */
 
       print2(
@@ -5095,7 +5459,7 @@ void command(int argc, char *argv[])
         let(&str1, edit(str1, 8 + 16 + 128));
 
         /* Change all spaces to double spaces */
-        q = strlen(str1);
+        q = (long)strlen(str1);
         let(&str3, space(q + q));
         s = 0;
         for (p = 0; p < q; p++) {
@@ -5184,10 +5548,10 @@ void command(int argc, char *argv[])
           }
           /* Strip linefeeds and reduce spaces */
           let(&str2, edit(str2, 4 + 8 + 16 + 128));
-          j = j + (strlen(str1) / 2); /* Center of match location */
-          p = screenWidth - 7 - strlen(str(i)) - strlen(statement[i].labelName);
+          j = j + ((long)strlen(str1) / 2); /* Center of match location */
+          p = screenWidth - 7 - (long)strlen(str(i)) - (long)strlen(statement[i].labelName);
                         /* Longest comment portion that will fit in one line */
-          q = strlen(str2); /* Length of comment */
+          q = (long)strlen(str2); /* Length of comment */
           if (q <= p) { /* Use entire comment */
             let(&str3, str2);
           } else {
@@ -5227,7 +5591,7 @@ void command(int argc, char *argv[])
           }
 
           /* Change all spaces to double spaces */
-          q = strlen(str2);
+          q = (long)strlen(str2);
           let(&str3, space(q + q));
           s = 0;
           for (p = 0; p < q; p++) {
@@ -5318,7 +5682,7 @@ void command(int argc, char *argv[])
 
 
     if (cmdMatches("SET SEARCH_LIMIT")) {
-      s = val(fullArg[2]); /* Timeout value */
+      s = (long)val(fullArg[2]); /* Timeout value */
       print2("IMPROVE search limit has been changed from %ld to %ld\n",
           userMaxProveFloat, s);
       userMaxProveFloat = s;
@@ -5326,7 +5690,7 @@ void command(int argc, char *argv[])
     }
 
     if (cmdMatches("SET WIDTH")) { /* 18-Nov-85 nm Was SCREEN_WIDTH */
-      s = val(fullArg[2]); /* Screen width value */
+      s = (long)val(fullArg[2]); /* Screen width value */
       if (s >= PRINTBUFFERSIZE - 1) {
         print2(
 "?Maximum screen width is %ld.  Recompile with larger PRINTBUFFERSIZE in\n",
@@ -5342,7 +5706,7 @@ void command(int argc, char *argv[])
 
 
     if (cmdMatches("SET HEIGHT")) {  /* 18-Nov-05 nm Added */
-      s = val(fullArg[2]); /* Screen height value */
+      s = (long)val(fullArg[2]); /* Screen height value */
       if (s < 2) s = 2;  /* Less than 2 makes no sense */
       print2("Screen height has been changed from %ld to %ld\n",
           screenHeight + 1, s);
@@ -5354,7 +5718,7 @@ void command(int argc, char *argv[])
 
 
     if (cmdMatches("SET UNIFICATION_TIMEOUT")) {
-      s = val(fullArg[2]); /* Timeout value */
+      s = (long)val(fullArg[2]); /* Timeout value */
       print2("Unification timeout has been changed from %ld to %ld\n",
           userMaxUnifTrials,s);
       userMaxUnifTrials = s;
@@ -5469,11 +5833,11 @@ void command(int argc, char *argv[])
       toLine = 0;
       searchWindow = 0;
       i = switchPos("/ FROM_LINE");
-      if (i) fromLine = val(fullArg[i + 1]);
+      if (i) fromLine = (long)val(fullArg[i + 1]);
       i = switchPos("/ TO_LINE");
-      if (i) toLine = val(fullArg[i + 1]);
+      if (i) toLine = (long)val(fullArg[i + 1]);
       i = switchPos("/ WINDOW");
-      if (i) searchWindow = val(fullArg[i + 1]);
+      if (i) searchWindow = (long)val(fullArg[i + 1]);
       /*??? Implement SEARCH /WINDOW */
       if (i) print2("Sorry, WINDOW has not be implemented yet.\n");
 
@@ -5500,7 +5864,7 @@ void command(int argc, char *argv[])
             }
             m++;
             if (!print2("%ld:  %s\n", j, left(str1,
-                MAX_LEN - strlen(str(j)) - 3))) break;
+                MAX_LEN - (long)strlen(str(j)) - 3))) break;
           }
         }
         for (k = 1; k < searchWindow; k++) {
@@ -5545,7 +5909,7 @@ void command(int argc, char *argv[])
     if (cmdMatches("SET DEBUG FLAG")) {
       print2("Notice:  The DEBUG mode is intended for development use only.\n");
       print2("The printout will not be meaningful to the user.\n");
-      i = val(fullArg[3]);
+      i = (long)val(fullArg[3]);
       if (i == 4) db4 = 1;  /* Not used */
       if (i == 5) db5 = 1;  /* mmpars.c statistics; mmunif.c overview */
       if (i == 6) db6 = 1;  /* mmunif.c details */

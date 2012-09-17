@@ -45,7 +45,7 @@ vstring cmdInput(FILE *stream,vstring ask);
 vstring cmdInput1(vstring ask);
 
 enum severity {_notice,_warning,_error,_fatal};
-void errorMessage(vstring line, long lineNum, short column, short tokenLength,
+void errorMessage(vstring line, long lineNum, long column, long tokenLength,
   vstring error, vstring fileName, long statementNum, flag warnFlag);
 
 /* Opens files with error message; opens output files with

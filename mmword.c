@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2011  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2012  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -41,11 +41,6 @@
 /*  gosub_7000(f1_name, f2_name, f3_name, &f3_fp, m); */
 
 
-/* These two functions emulate 2 GOSUBs in BASIC, that are part of a
-   translation of a very old BASIC program (by nm) that implemented a
-   difference algorithm (like Unix diff). */
-void gosub_7320();
-void gosub_7330();
 char strcmpe(vstring s1, vstring s2);
 vstring stripAndTag(vstring line, vstring tag, flag tagBlankLines);
 
@@ -414,7 +409,7 @@ void gosub_7330() {
       }
       let(&l2_, edit(l2_, 4 + 128 + 2048)); /* Trim garb, trail space; untab */
       if (!strcmp(edit(delStartTag_, 2), left(edit(l2_, 2 + 4),
-          strlen(edit(delStartTag_, 2))))) {
+          (long)strlen(edit(delStartTag_, 2))))) {
         if (getRevision(l2_) == getRevision(addTag_)) {
           /* We should strip out deleted section from previous run */
           /* (The diff algorithm will put them back from orig. file) */
@@ -424,7 +419,7 @@ void gosub_7330() {
       }
       if (stripDeletedSectionMode) {
         if (!strcmp(edit(delEndTag_, 2), left(edit(l2_, 2 + 4),
-            strlen(edit(delEndTag_, 2))))  &&
+            (long)strlen(edit(delEndTag_, 2))))  &&
             getRevision(l2_) == getRevision(addTag_) ) {
           stripDeletedSectionMode = 0;
         }
@@ -497,7 +492,7 @@ char strcmpe(vstring s1, vstring s2)
     }
   }
 
-  cmpflag = strcmp(tmps1, tmps2);
+  cmpflag = !!strcmp(tmps1, tmps2);
   let(&tmps1, ""); /* Deallocate string */
   let(&tmps2, ""); /* Deallocate string */
   return (cmpflag);
@@ -540,9 +535,9 @@ vstring stripAndTag(vstring line, vstring tag, flag tagBlankLines)
 
   /* Add the tag */
   if (tag[0]) { /* Non-blank tag */
-    if (strlen(line1) - n < lineLength - 1 - strlen(tag))
+    if ((long)strlen(line1) - n < lineLength - 1 - (long)strlen(tag))
       let(&line1, cat(line1,
-          space(lineLength - 1 - strlen(tag) - strlen(line1) + n),
+          space(lineLength - 1 - (long)strlen(tag) - (long)strlen(line1) + n),
           NULL));
     let(&line1, cat(line1, " ", tag, NULL));
     if ((signed)(strlen(line1)) - n > lineLength) {
@@ -558,7 +553,7 @@ vstring stripAndTag(vstring line, vstring tag, flag tagBlankLines)
   if (tagBlankLines && n > 0) {
     let(&line1, right(line1, n + 1));
     for (i = 1; i <= n; i++) {
-      let(&line1, cat(space(lineLength - strlen(tag)), tag, "\n",
+      let(&line1, cat(space(lineLength - (long)strlen(tag)), tag, "\n",
           line1, NULL));
     }
   }
@@ -604,9 +599,10 @@ long getRevision(vstring line)
   if (!strcmp(str1, str2)) {
     revision = 0;  /* No tag */
   } else {
-    let(&tag, edit(seg(str1, strlen(str2) + 3, strlen(str1) - 2), 2));
+    let(&tag, edit(seg(str1, (long)strlen(str2) + 3,
+        (long)strlen(str1) - 2), 2));
     if (tag[0] == '#') let(&tag, right(tag, 2)); /* Remove any # */
-    revision = val(tag);
+    revision = (long)(val(tag));
   }
   let(&tag, "");
   let(&str1, "");

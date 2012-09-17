@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2008  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2012  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -179,12 +179,6 @@ flag matches(vstring testString, vstring pattern, char wildCard,
 /*********** Number string functions *******************************/
 /*******************************************************************/
 
-/* Make string have temporary allocation to be released by next nmbrLet() */
-/* Warning:  after nmbrMakeTempAlloc() is called, the nmbrString may NOT be
-   assigned again with nmbrLet() */
-void nmbrMakeTempAlloc(nmbrString *s);
-
-
 /******* Special pupose routines for better
       memory allocation (use with caution) *******/
 
@@ -314,12 +308,6 @@ vstring compressProof(nmbrString *proof, long statemNum);
 /*******************************************************************/
 /*********** Pointer string functions ******************************/
 /*******************************************************************/
-
-/* Make string have temporary allocation to be released by next pntrLet() */
-/* Warning:  after pntrMakeTempAlloc() is called, the pntrString may NOT be
-   assigned again with pntrLet() */
-void pntrMakeTempAlloc(pntrString *s);
-
 
 /******* Special pupose routines for better
       memory allocation (use with caution) *******/

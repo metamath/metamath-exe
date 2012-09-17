@@ -57,6 +57,29 @@ void writeDict(void);
 void eraseSource(void);
 void verifyProofs(vstring labelMatch, flag verifyFlag);
 
+/* 14-Sep-2012 nm */
+/* Take a relative step FIRST, LAST, +nn, -nn (relative to the unknown
+   essential steps) or ALL, and return the actual step for use by ASSIGN,
+   IMPROVE, REPLACE, LET (or 0 in case of ALL, used by IMPROVE).  In case
+   stepStr is an unsigned integer nn, it is assumed to already be an actual
+   step and is returned as is.  If format is illegal, -1 is returned.  */
+long getStepNum(vstring relStep, /* User's argument */
+   nmbrString *pfInProgress, /* proofInProgress.proof */
+   flag allFlag /* 1 = "ALL" is permissable */);
+
+/* 14-Sep-2012 nm */
+/* This procedure finds the (unique) statement number whose label matches
+   stmtName.  Wildcards are allowed in stmtName for user convenience, but
+   there must be exactly one match, otherwise an error message is printed,
+   and -1 is returned.  For use by PROVE, REPLACE, ASSIGN. */
+long getStatementNum(vstring stmtName, /* Possibly with wildcards */
+    long maxStmt, /* Must be less than this statement number */
+    flag aAllowed, /* 1 means $a is allowed */
+    flag pAllowed, /* 1 means $p is allowed */
+    flag eAllowed, /* 1 means $e is allowed */
+    flag fAllowed, /* 1 means $f is allowed */
+    flag efOnlyForMaxStmt); /* If 1, $e and $f must belong to maxStmt */
+
 extern vstring mainFileName;
 
 /* For HELP processing */

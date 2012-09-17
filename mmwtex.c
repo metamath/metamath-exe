@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2011  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2012  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -171,7 +171,7 @@ flag readTexDefs(void)
   /* If the $t wasn't found, fileBuf will be "", causing error message below. */
   /* Compute line number offset of beginning of statement[i].labelSection for
      use in error messages */
-  j = strlen(fileBuf);
+  j = (long)strlen(fileBuf);
   for (i = 0; i < j; i++) {
     if (fileBuf[i] == '\n') lineNumOffset--;
   }
@@ -330,7 +330,7 @@ flag readTexDefs(void)
           /* 6-Aug-2011 nm Do this only for double quotes matching the
              outer quotes.  fbPtr[0] is the quote character. */
           if (fbPtr[0] != '\"' && fbPtr[0] != '\'') bug(2329);
-          j = strlen(token);
+          j = (long)strlen(token);
           for (i = 0; i < j - 1; i++) {
             if (token[i] == fbPtr[0] &&
                 token[i + 1] == fbPtr[0]) {
@@ -417,7 +417,7 @@ flag readTexDefs(void)
           /* Do this only for double quotes matching the
              outer quotes.  fbPtr[0] is the quote character. */
           if (fbPtr[0] != '\"' && fbPtr[0] != '\'') bug(2330);
-          j = strlen(partialToken);
+          j = (long)strlen(partialToken);
           for (i = 0; i < j - 1; i++) {
             if (token[i] == fbPtr[0] &&
                 token[i + 1] == fbPtr[0]) {
@@ -487,7 +487,7 @@ flag readTexDefs(void)
         /* old before 6-Aug-2011 */
         /* Change double internal quotes to single quotes */
         /*
-        j = strlen(token);
+        j = (long)strlen(token);
         for (i = 0; i < j - 1; i++) {
           if ((token[i] == '\"' &&
               token[i + 1] == '\"') ||
@@ -552,7 +552,7 @@ flag readTexDefs(void)
     if (parsePass == 1 ) {
       print2("%ld typesetting statements were read from \"%s\".\n",
           numSymbs, input_fn);
-      texDefs = malloc(numSymbs * sizeof(struct texDef_struct));
+      texDefs = malloc((size_t)numSymbs * sizeof(struct texDef_struct));
       if (!texDefs) outOfMemory("#99 (TeX symbols)");
     }
 
@@ -560,7 +560,7 @@ flag readTexDefs(void)
 
 
   /* Sort the tokens for later lookup */
-  qsort(texDefs, numSymbs, sizeof(struct texDef_struct), texSortCmp);
+  qsort(texDefs, (size_t)numSymbs, sizeof(struct texDef_struct), texSortCmp);
 
   /* Check for duplicate definitions */
   for (i = 1; i < numSymbs; i++) {
@@ -576,8 +576,8 @@ flag readTexDefs(void)
   for (i = 0; i < numSymbs; i++) {
     /* Note:  mathKey, mathTokens, and mathSrchCmp are assigned or defined
        in mmpars.c. */
-    mathKeyPtr = (void *)bsearch(texDefs[i].tokenName, mathKey, mathTokens,
-        sizeof(long), mathSrchCmp);
+    mathKeyPtr = (void *)bsearch(texDefs[i].tokenName, mathKey,
+        (size_t)mathTokens, sizeof(long), mathSrchCmp);
     if (!mathKeyPtr) {
       printLongLine(cat("?Error:  The token \"", texDefs[i].tokenName,
           "\", which was defined in ", htmlFlag ? "an htmldef" : "a latexdef",
@@ -588,8 +588,8 @@ flag readTexDefs(void)
 
   /* Check to make sure all math tokens have typesetting definitions */
   for (i = 0; i < mathTokens; i++) {
-    texDefsPtr = (void *)bsearch(mathToken[i].tokenName, texDefs, numSymbs,
-        sizeof(struct texDef_struct), texSrchCmp);
+    texDefsPtr = (void *)bsearch(mathToken[i].tokenName, texDefs,
+        (size_t)numSymbs, sizeof(struct texDef_struct), texSrchCmp);
     if (!texDefsPtr) {
       printLongLine(cat("?Error:  The token \"", mathToken[i].tokenName,
        "\", which was defined in a $v or $c statement, was not declared in ",
@@ -720,7 +720,7 @@ long texDefWhiteSpaceLen(char *ptr)
         while (1) {
           ptr1 = strchr(ptr + i + 2, '*');
           if (!ptr1) {
-            return(i + strlen(&ptr[i])); /* Unterminated comment - goto EOF */
+            return(i + (long)strlen(&ptr[i])); /* Unterminated comment - goto EOF */
           }
           if (ptr1[1] == '/') break;
           i = ptr1 - ptr;
@@ -755,7 +755,7 @@ long texDefTokenLen(char *ptr)
     while (1) {
       ptr1 = strchr(ptr + i + 1, '\"');
       if (!ptr1) {
-        return(i + strlen(&ptr[i])); /* Unterminated quote - goto EOF */
+        return(i + (long)strlen(&ptr[i])); /* Unterminated quote - goto EOF */
       }
       if (ptr1[1] != '\"') return(ptr1 - ptr + 1); /* Double quote is literal */
       i = ptr1 - ptr + 1;
@@ -765,7 +765,7 @@ long texDefTokenLen(char *ptr)
     while (1) {
       ptr1 = strchr(ptr + i + 1, '\'');
       if (!ptr1) {
-        return(i + strlen(&ptr[i])); /* Unterminated quote - goto EOF */
+        return(i + (long)strlen(&ptr[i])); /* Unterminated quote - goto EOF */
       }
       if (ptr1[1] != '\'') return(ptr1 - ptr + 1); /* Double quote is literal */
       i = ptr1 - ptr + 1;
@@ -809,7 +809,7 @@ vstring asciiToTt(vstring s)
   long i, j, k;
 
   let(&ttstr, s); /* In case the input s is temporarily allocated */
-  j = strlen(ttstr);
+  j = (long)strlen(ttstr);
 
   /* Put special \tt font characters in a form that TeX can understand */
   for (i = 0; i < j; i++) {
@@ -910,7 +910,7 @@ vstring asciiToTt(vstring s)
 /* Convert ascii token to TeX equivalent */
 /* The "$" math delimiter is not placed around the returned arg. here */
 /* *** Note: The caller must deallocate the returned string */
-vstring tokenToTex(vstring mtoken)
+vstring tokenToTex(vstring mtoken, long statemNum /*for error msgs*/)
 {
   vstring tex = "";
   vstring tmpStr;
@@ -922,7 +922,7 @@ vstring tokenToTex(vstring mtoken)
     bug(2320); /* This shouldn't be called if definitions weren't read */
   }
 
-  texDefsPtr = (void *)bsearch(mtoken, texDefs, numSymbs,
+  texDefsPtr = (void *)bsearch(mtoken, texDefs, (size_t)numSymbs,
       sizeof(struct texDef_struct), texSrchCmp);
   if (texDefsPtr) { /* Found it */
     let(&tex, ((struct texDef_struct *)texDefsPtr)->texEquiv);
@@ -930,8 +930,10 @@ vstring tokenToTex(vstring mtoken)
     /* 9/5/99 If it wasn't found, give user a warning... */
     saveOutputToString = outputToString;
     outputToString = 0;
-    /* TODO Tell user what statement (may need 2nd tokenToTex() arg.?) */
-    printLongLine(cat("?Error: Math symbol token \"", mtoken,
+    if (statemNum <= 0 || statemNum > statements) bug(2331);
+    printLongLine(cat("?Error: In the comment for statement \"",
+        statement[statemNum].labelName,
+        "\", math symbol token \"", mtoken,
         "\" does not have a LaTeX and/or an HTML definition.", NULL),
         "", " ");
     outputToString = saveOutputToString;
@@ -950,13 +952,13 @@ vstring tokenToTex(vstring mtoken)
     }
 
     /* Next, convert punctuation characters to tt font */
-    j = strlen(tex);
+    j = (long)strlen(tex);
     for (i = 0; i < j; i++) {
       if (ispunct((unsigned char)(tex[i]))) {
         tmpStr = asciiToTt(chr(tex[i]));
         if (!htmlFlag)
           let(&tmpStr, cat("{\\tt ", tmpStr, "}", NULL));
-        k = strlen(tmpStr);
+        k = (long)strlen(tmpStr);
         let(&tex,
             cat(left(tex, i), tmpStr, right(tex, i + 2), NULL));
         i = i + k - 1; /* Adjust iteration */
@@ -977,7 +979,7 @@ vstring tokenToTex(vstring mtoken)
 
 /* Converts a comment section in math mode to TeX.  Each math token
    MUST be separated by white space.   TeX "$" does not surround the output. */
-vstring asciiMathToTex(vstring mathComment)
+vstring asciiMathToTex(vstring mathComment, long statemNum)
 {
 
   vstring tex;
@@ -985,7 +987,7 @@ vstring asciiMathToTex(vstring mathComment)
   vstring lastTex = "";
   vstring token = "";
   flag alphnew, alphold, unknownnew, unknownold;
-  flag firstToken;
+  /* flag firstToken; */  /* Not used */
   long i;
   vstring srcptr;
 
@@ -993,28 +995,31 @@ vstring asciiMathToTex(vstring mathComment)
 
   let(&texLine, "");
   let(&lastTex, "");
-  firstToken = 1;
+  /* firstToken = 1; */
   while(1) {
     i = whiteSpaceLen(srcptr);
     srcptr = srcptr + i;
     i = tokenLen(srcptr);
     if (!i) break; /* Done */
     let(&token, space(i));
-    memcpy(token, srcptr, i);
+    memcpy(token, srcptr, (size_t)i);
     srcptr = srcptr + i;
-    tex = tokenToTex(token); /* Convert token to TeX */
+    tex = tokenToTex(token, statemNum); /* Convert token to TeX */
               /* tokenToTex allocates tex; we must deallocate it */
 
     if (!htmlFlag) {
       /* If this token and previous token begin with letter, add a thin
            space between them */
       /* Also, anything not in table will have space added */
-      alphnew = isalpha((unsigned char)(tex[0]));
+      alphnew = !!isalpha((unsigned char)(tex[0])); /* 31-Aug-2012 nm Added
+            "!!" here and below because isalpha returns an integer, whose
+            unspecified non-zero value could be truncated to 0 when
+            converted to char.  Thanks to Wolf Lammen for pointing this out. */
       unknownnew = 0;
       if (!strcmp(left(tex, 10), "\\mbox{\\rm ")) { /* Token not in table */
         unknownnew = 1;
       }
-      alphold = isalpha((unsigned char)(lastTex[0]));
+      alphold = !!isalpha((unsigned char)(lastTex[0]));
       unknownold = 0;
       if (!strcmp(left(lastTex, 10), "\\mbox{\\rm ")) { /* Token not in table*/
         unknownold = 1;
@@ -1033,7 +1038,7 @@ vstring asciiMathToTex(vstring mathComment)
     let(&lastTex, ""); /* Deallocate */
     lastTex = tex; /* Pass deallocation responsibility for tex to lastTex */
 
-    firstToken = 0;
+    /* firstToken = 0; */
 
   } /* End while (1) */
   let(&lastTex, ""); /* Deallocate */
@@ -1092,7 +1097,7 @@ vstring getCommentModeSection(vstring *srcptr, char *mode)
         case ')':  /* Obsolete (will never happen) */
           if (ptr[1] == ')') bug(2318);
           let(&modeSection, space(ptr - (*srcptr)));
-          memcpy(modeSection, *srcptr, ptr - (*srcptr));
+          memcpy(modeSection, *srcptr, (size_t)(ptr - (*srcptr)));
           if (addMode) {
             let(&modeSection, cat(chr(DOLLAR_SUBST), "n", /*"$n"*/ modeSection,
                 NULL));
@@ -1104,7 +1109,7 @@ vstring getCommentModeSection(vstring *srcptr, char *mode)
     } else {
       if (ptr[0] == 0) {
           let(&modeSection, space(ptr - (*srcptr)));
-          memcpy(modeSection, *srcptr, ptr - (*srcptr));
+          memcpy(modeSection, *srcptr, (size_t)(ptr - (*srcptr)));
           if (addMode) {
             let(&modeSection, cat(chr(DOLLAR_SUBST), "n", /*"$n"*/ modeSection,
                 NULL));
@@ -1252,7 +1257,7 @@ void printTexHeader(flag texHeaderFlag)
     print2("     font-size: x-small;\n");
     /* Strip off quotes from color (css doesn't like them) */
     printLongLine(cat("     color: ", seg(PINK_NUMBER_COLOR, 2,
-        strlen(PINK_NUMBER_COLOR) - 1), ";", NULL), "", "&");
+        (long)strlen(PINK_NUMBER_COLOR) - 1), ";", NULL), "", "&");
     print2("   }\n");
 #else
     /* Print style sheet for rainbow-colored number that goes after
@@ -1283,13 +1288,13 @@ void printTexHeader(flag texHeaderFlag)
     if (showStatement < extHtmlStmt) {
       print2("%s\n", cat("<TITLE>", htmlTitle, " - ",
           / * Strip off ".html" * /
-          left(texFileName, strlen(texFileName) - 5),
+          left(texFileName, (long)strlen(texFileName) - 5),
           / *left(texFileName, instr(1, texFileName, ".htm") - 1),* /
           "</TITLE>", NULL));
     } else {
       print2("%s\n", cat("<TITLE>", extHtmlTitle, " - ",
           / * Strip off ".html" * /
-          left(texFileName, strlen(texFileName) - 5),
+          left(texFileName, (long)strlen(texFileName) - 5),
           / *left(texFileName, instr(1, texFileName, ".htm") - 1),* /
           "</TITLE>", NULL));
     }
@@ -1298,7 +1303,7 @@ void printTexHeader(flag texHeaderFlag)
     if (showStatement < extHtmlStmt) {
       print2("%s\n", cat("<TITLE>",
           /* Strip off ".html" */
-          left(texFileName, strlen(texFileName) - 5),
+          left(texFileName, (long)strlen(texFileName) - 5),
           /*left(texFileName, instr(1, texFileName, ".htm") - 1),*/
           " - ", htmlTitle,
           "</TITLE>", NULL));
@@ -1306,7 +1311,7 @@ void printTexHeader(flag texHeaderFlag)
     } else if (showStatement < sandboxStmt) { /* 29-Jul-2008 nm Sandbox stuff */
       print2("%s\n", cat("<TITLE>",
           /* Strip off ".html" */
-          left(texFileName, strlen(texFileName) - 5),
+          left(texFileName, (long)strlen(texFileName) - 5),
           /*left(texFileName, instr(1, texFileName, ".htm") - 1),*/
           " - ", extHtmlTitle,
           "</TITLE>", NULL));
@@ -1334,7 +1339,7 @@ void printTexHeader(flag texHeaderFlag)
 
       print2("%s\n", cat("<TITLE>",
           /* Strip off ".html" */
-          left(texFileName, strlen(texFileName) - 5),
+          left(texFileName, (long)strlen(texFileName) - 5),
           /*left(texFileName, instr(1, texFileName, ".htm") - 1),*/
           /*" - ", sandboxTitle,*/
           /* 2-Aug-2009 nm - "Mathbox for <username>" mod */
@@ -1636,7 +1641,7 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
      instead of "$") - the old syntax is obsolete but we do this conversion
      to re-use some old code */
   i = instr(1, cmtptr, "$)");      /* If it points to source buffer */
-  if (!i) i = strlen(cmtptr) + 1;  /* If it's a stand-alone string */
+  if (!i) i = (long)strlen(cmtptr) + 1;  /* If it's a stand-alone string */
   let(&cmt, left(cmtptr, i - 1));
 
   /* 10/10/02 Add leading and trailing HTML markup to comment here
@@ -1662,7 +1667,7 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
         }
         break;
       }
-      if (!pos1) pos1 = strlen(cmt) + 1;
+      if (!pos1) pos1 = (long)strlen(cmt) + 1;
       if (mode == 1 && preformattedMode == 0) {
         let(&tmpStr, "");
         tmpStr = asciiToTt(left(cmt, pos1));
@@ -1672,7 +1677,7 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
       let(&tmp, cat(tmp, tmpStr, NULL));
       let(&cmt, right(cmt, pos1 + 1));
       if (!cmt[0]) break;
-      mode = -mode;
+      mode = (char)(-mode);
     }
     let(&cmt, tmp);
     let(&tmpStr, ""); /* Deallocate */
@@ -1840,11 +1845,11 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
 
         /* 30-Jun-2011 nm */
         /* See if we are in math mode */
-        clen = strlen(cmt);
+        clen = (long)strlen(cmt);
         mode = 0; /* 0 = normal, 1 = math */
         for (i = 0; i < pos1; i++) {
           if (cmt[i] == '`' && cmt[i + 1] != '`') {
-            mode = 1 - mode;
+            mode = (char)(1 - mode);
           }
         }
         if (mode) continue; /* Don't process [...] brackets in math mode */
@@ -1951,14 +1956,14 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
             seg(bibTag, 2, pos2 - pos1), "</A>]", NULL));
         let(&cmt, cat(left(cmt, pos1 - 1), tmp, right(cmt,
             pos2 + 1), NULL));
-        pos1 = pos1 + strlen(tmp) - strlen(bibTag); /* Adjust comment position */
+        pos1 = pos1 + (long)strlen(tmp) - (long)strlen(bibTag); /* Adjust comment position */
       } /* end while(1) */
     } /* end if (bibFileName[0]) */
   } /* end of if (htmlFlag) */
   /* 10/10/02 End of bibliography hyperlinks */
 
 
-  clen = strlen(cmt);
+  clen = (long)strlen(cmt);
   mode = 'n';
   for (i = 0; i < clen; i++) {
     if (cmt[i] == '`') {
@@ -2009,7 +2014,7 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
           /* We include quotes since symbols are often enclosed in them. */
           let(&tmp, mid(cmt, i + 2, 8));
           if (strlen(tmp) < 8)
-              let(&tmp, cat(tmp, space(8 - strlen(tmp)), NULL));
+              let(&tmp, cat(tmp, space(8 - (long)strlen(tmp)), NULL));
           if (!strcmp(" &quot;", left(tmp, 7))
               && strchr(CLOSING_PUNCTUATION, tmp[7]) != NULL) {
             let(&cmt, cat(left(cmt, i + 1), right(cmt, i + 3), NULL));
@@ -2129,14 +2134,14 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
       cmtptr++;
     }
     let(&sourceLine, space(cmtptr - lineStart));
-    memcpy(sourceLine, lineStart, cmtptr - lineStart);
+    memcpy(sourceLine, lineStart, (size_t)(cmtptr - lineStart));
     cmtptr++;  /* Get past new-line to prepare for next line's scan */
 
     /* If the line contains only math mode text, use TeX display mode. */
     displayMode = 0;
     let(&tmpStr, edit(sourceLine, 8 + 128)); /* Trim spaces */
-    if (!strcmp(right(tmpStr, strlen(tmpStr) - 1), cat(chr(DOLLAR_SUBST), "n",
-        NULL))) let(&tmpStr, left(tmpStr, strlen(tmpStr) - 2)); /* Strip $n */
+    if (!strcmp(right(tmpStr, (long)strlen(tmpStr) - 1), cat(chr(DOLLAR_SUBST), "n",
+        NULL))) let(&tmpStr, left(tmpStr, (long)strlen(tmpStr) - 2)); /* Strip $n */
     srcptr = tmpStr;
     modeSection = getCommentModeSection(&srcptr, &mode);
     let(&modeSection, ""); /* Deallocate */
@@ -2229,7 +2234,7 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
           break;
         case 'm': /* Math mode */
           let(&tmpStr, "");
-          tmpStr = asciiMathToTex(modeSection);
+          tmpStr = asciiMathToTex(modeSection, showStatement);
           if (!htmlFlag) {
             if (displayMode) {
               /* It the user's responsibility to establish equation environment
@@ -2479,7 +2484,7 @@ void printTexLongMath(nmbrString *mathString,
       /* 9/2/99 Trim down long start prefixes so they won't overflow line,
          by putting their tokens into \m macros */
 #define TRIMTHRESHOLD 60
-      i = strlen(tex);
+      i = (long)strlen(tex);
       while (i > TRIMTHRESHOLD) {
         if (tex[i] == '\\') {
           /* Move to math part */
@@ -2562,7 +2567,7 @@ void printTexLongMath(nmbrString *mathString,
              breaks. */
           /* 10/14/02 I decided I don't like it so I took it out. */
           /*******
-          let(&tmp, cat(" ", right(tmp, strlen(PINK_NBSP) + 1), NULL));
+          let(&tmp, cat(" ", right(tmp, (long)strlen(PINK_NBSP) + 1), NULL));
           *******/
 
 #define TOOLTIP
@@ -2582,7 +2587,7 @@ void printTexLongMath(nmbrString *mathString,
           }
           i = 0;
           while (descr[i] != 0) { /* Convert double quote to single */
-            descr[i] = (descr[i] == '"' ? '\'' : descr[i]);
+            descr[i] = (char)(descr[i] == '"' ? '\'' : descr[i]);
             i++;
           }
 #endif
@@ -2625,7 +2630,7 @@ void printTexLongMath(nmbrString *mathString,
   let(&sPrefix, ""); /* Deallocate */
 
   let(&tex, "");
-  tex = getTexLongMath(mathString); /* 20-Sep-03 */
+  tex = getTexLongMath(mathString, hypStmt); /* 20-Sep-03 */
   let(&texLine, cat(texLine, tex, NULL));
 
   if (!htmlFlag) {  /* LaTeX */
@@ -2798,7 +2803,7 @@ void writeTheoremList(long theoremsPerPage)
     print2("     font-size: x-small;\n");
     /* Strip off quotes from color (css doesn't like them) */
     printLongLine(cat("     color: ", seg(PINK_NUMBER_COLOR, 2,
-        strlen(PINK_NUMBER_COLOR) - 1), ";", NULL), "", "&");
+        (long)strlen(PINK_NUMBER_COLOR) - 1), ";", NULL), "", "&");
     print2("   }\n");
 #else
     /* Print style sheet for colored number that goes after statement label */
@@ -2812,13 +2817,13 @@ void writeTheoremList(long theoremsPerPage)
     /*
     print2("%s\n", cat("<TITLE>", htmlTitle, " - ",
         / * Strip off ".html" * /
-        left(outputFileName, strlen(outputFileName) - 5),
+        left(outputFileName, (long)strlen(outputFileName) - 5),
         "</TITLE>", NULL));
     */
     /* 4-Jun-06 nm - Put page name before "Metamath Proof Explorer" etc. */
     print2("%s\n", cat("<TITLE>",
         /* Strip off ".html" */
-        left(outputFileName, strlen(outputFileName) - 5), " - ",
+        left(outputFileName, (long)strlen(outputFileName) - 5), " - ",
         htmlTitle,
         "</TITLE>", NULL));
     /* Icon for bookmark */
@@ -3026,7 +3031,7 @@ void writeTheoremList(long theoremsPerPage)
                    /* Link to page/location - no theorem can be named "mm*" */
             let(&str4, "");
             str4 = pinkHTML(stmt);
-            /*let(&str4, right(str4, strlen(PINK_NBSP) + 1));*/
+            /*let(&str4, right(str4, (long)strlen(PINK_NBSP) + 1));*/
                                                          /* Discard "&nbsp;" */
             if (bigHdr[0]) {
               printLongLine(cat(
@@ -3095,12 +3100,12 @@ void writeTheoremList(long theoremsPerPage)
     print2("SUMMARY=\"Statement List for %s\">\n", htmlTitle);
     let(&str3, "");
     str3 = pinkHTML(nmbrStmtNmbr[(page - 1) * theoremsPerPage + 1]);
-    let(&str3, right(str3, strlen(PINK_NBSP) + 1)); /* Discard "&nbsp;" */
+    let(&str3, right(str3, (long)strlen(PINK_NBSP) + 1)); /* Discard "&nbsp;" */
     let(&str4, "");
     str4 = pinkHTML((page < pages) ?
         nmbrStmtNmbr[page * theoremsPerPage] :
         nmbrStmtNmbr[assertions]);
-    let(&str4, right(str4, strlen(PINK_NBSP) + 1)); /* Discard "&nbsp;" */
+    let(&str4, right(str4, (long)strlen(PINK_NBSP) + 1)); /* Discard "&nbsp;" */
     printLongLine(cat("<CAPTION><B>Statement List for ", htmlTitle,
         " - </B>", str3, "<B>-</B>", str4,"<B>",
         " - Page ",
@@ -3163,7 +3168,7 @@ void writeTheoremList(long theoremsPerPage)
       /* Get the date in the comment section after the statement */
       let(&str1, space(statement[s + 1].labelSectionLen));
       memcpy(str1, statement[s + 1].labelSectionPtr,
-          statement[s + 1].labelSectionLen);
+          (size_t)(statement[s + 1].labelSectionLen));
       let(&str1, edit(str1, 2)); /* Discard spaces and tabs */
       i1 = instr(1, str1, "$([");
       i2 = instr(i1, str1, "]$)");
@@ -3415,7 +3420,7 @@ void getSectionHeadings(long stmt, vstring *bigHdrAddr,
   /* Get headers from comment section between statements */
   let(&labelStr, space(statement[stmt].labelSectionLen));
   memcpy(labelStr, statement[stmt].labelSectionPtr,
-      statement[stmt].labelSectionLen);
+      (size_t)(statement[stmt].labelSectionLen));
   pos = 0;
   pos2 = 0;
   while (1) {  /* Find last "big" header, if any */
@@ -3570,10 +3575,10 @@ vstring pinkRangeHTML(long statemNum1, long statemNum2)
   /* Construct the HTML for a pink number range */
   let(&str3, "");
   str3 = pinkHTML(statemNum1);
-  let(&str3, right(str3, strlen(PINK_NBSP) + 1)); /* Discard "&nbsp;" */
+  let(&str3, right(str3, (long)strlen(PINK_NBSP) + 1)); /* Discard "&nbsp;" */
   let(&str4, "");
   str4 = pinkHTML(statemNum2);
-  let(&str4, right(str4, strlen(PINK_NBSP) + 1)); /* Discard "&nbsp;" */
+  let(&str4, right(str4, (long)strlen(PINK_NBSP) + 1)); /* Discard "&nbsp;" */
   let(&htmlCode, cat(str3, "-", str4, NULL));
   let(&str3, ""); /* Deallocate */
   let(&str4, ""); /* Deallocate */
@@ -3771,19 +3776,19 @@ vstring spectrumToRGB(long color, long maxColor) {
   if (color < 1 || color > maxColor) bug(2327);
   fraction = (1.0 * (color - 1)) / maxColor;
                                    /* Fractional position in "spectrum" */
-  partition = PARTITIONS * fraction;  /* Partition number (integer) */
+  partition = (long)(PARTITIONS * fraction);  /* Partition number (integer) */
   if (partition >= PARTITIONS) bug(2325); /* Roundoff error? */
   fractionInPartition = 1.0 * (fraction - (1.0 * partition) / PARTITIONS)
       * PARTITIONS; /* The fraction of this partition it covers */
-  red = 1.0 * (redRef[partition] +
+  red = (long)(1.0 * (redRef[partition] +
           fractionInPartition *
-              (redRef[partition + 1] - redRef[partition]));
-  green = 1.0 * (greenRef[partition] +
+              (redRef[partition + 1] - redRef[partition])));
+  green = (long)(1.0 * (greenRef[partition] +
           fractionInPartition *
-              (greenRef[partition + 1] - greenRef[partition]));
-  blue = 1.0 * (blueRef[partition] +
+              (greenRef[partition + 1] - greenRef[partition])));
+  blue = (long)(1.0 * (blueRef[partition] +
           fractionInPartition *
-              (blueRef[partition + 1] - blueRef[partition]));
+              (blueRef[partition + 1] - blueRef[partition])));
   /* debug */
   /* i=1;if (outputToString==0) {i=0;outputToString=1;} */
   /*   print2("p%ldc%ld\n", partition, color); outputToString=i; */
@@ -3811,7 +3816,7 @@ vstring spectrumToRGB(long color, long maxColor) {
    or LaTeX when !htmlFlag, for the math string (hypothesis or conclusion) that
    is passed in. */
 /* Warning: The caller must deallocate the returned vstring. */
-vstring getTexLongMath(nmbrString *mathString)
+vstring getTexLongMath(nmbrString *mathString, long statemNum)
 {
   long pos;
   vstring tex = "";
@@ -3825,18 +3830,18 @@ vstring getTexLongMath(nmbrString *mathString)
   let(&lastTex, "");
   for (pos = 0; pos < nmbrLen(mathString); pos++) {
     let(&tex, "");
-    tex = tokenToTex(mathToken[mathString[pos]].tokenName);
+    tex = tokenToTex(mathToken[mathString[pos]].tokenName, statemNum);
               /* tokenToTex allocates tex; we must deallocate it */
     if (!htmlFlag) {  /* LaTeX */
       /* If this token and previous token begin with letter, add a thin
            space between them */
       /* Also, anything not in table will have space added */
-      alphnew = isalpha((unsigned char)(tex[0]));
+      alphnew = !!isalpha((unsigned char)(tex[0]));
       unknownnew = 0;
       if (!strcmp(left(tex, 10), "\\mbox{\\rm ")) { /* Token not in table */
         unknownnew = 1;
       }
-      alphold = isalpha((unsigned char)(lastTex[0]));
+      alphold = !!isalpha((unsigned char)(lastTex[0]));
       unknownold = 0;
       if (!strcmp(left(lastTex, 10), "\\mbox{\\rm ")) { /* Token not in table*/
         unknownold = 1;
@@ -4017,7 +4022,7 @@ vstring getTexOrHtmlHypAndAssertion(long statemNum)
       /* Construct HTML hypothesis */
       nmbrTmpPtr = statement[statement[statemNum].reqHypList[n]].mathString;
       let(&str2, "");
-      str2 = getTexLongMath(nmbrTmpPtr);
+      str2 = getTexLongMath(nmbrTmpPtr, statemNum);
       let(&texOrHtmlCode, cat(texOrHtmlCode, str2, NULL));
     }
   }
@@ -4050,7 +4055,7 @@ vstring getTexOrHtmlHypAndAssertion(long statemNum)
   /* Construct TeX or HTML assertion */
   nmbrTmpPtr = statement[statemNum].mathString;
   let(&str2, "");
-  str2 = getTexLongMath(nmbrTmpPtr);
+  str2 = getTexLongMath(nmbrTmpPtr, statemNum);
   let(&texOrHtmlCode, cat(texOrHtmlCode, str2, NULL));
 
   /* Deallocate memory */

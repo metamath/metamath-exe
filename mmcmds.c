@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2011  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2012  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -303,7 +303,7 @@ void typeStatement(long showStmt,
             }
             htmlDistinctVarsCommaFlag = 1;
             let(&str2, "");
-            str2 = tokenToTex(mathToken[nmbrTmpPtr1[k]].tokenName);
+            str2 = tokenToTex(mathToken[nmbrTmpPtr1[k]].tokenName, showStmt);
                  /* tokenToTex allocates str2; we must deallocate it */
             let(&htmlDistinctVars, cat(htmlDistinctVars, str2, NULL));
 
@@ -322,7 +322,7 @@ void typeStatement(long showStmt,
             }
             htmlDistinctVarsCommaFlag = 1;
             let(&str2, "");
-            str2 = tokenToTex(mathToken[nmbrTmpPtr2[k]].tokenName);
+            str2 = tokenToTex(mathToken[nmbrTmpPtr2[k]].tokenName, showStmt);
                  /* tokenToTex allocates str2; we must deallocate it */
             let(&htmlDistinctVars, cat(htmlDistinctVars, str2, NULL));
 
@@ -409,7 +409,7 @@ void typeStatement(long showStmt,
             if (!oldTexFlag) {  /* 14-Sep-2010 nm */
               /* Do nothing */
             } else {
-              let(&str3, space(strlen(str2)));
+              let(&str3, space((long)strlen(str2)));
               printTexLongMath(statement[k].mathString,
                   str2, str3, 0, 0);
             }
@@ -466,7 +466,7 @@ void typeStatement(long showStmt,
         outputToString = 0;
 
       } else { /* old TeX code */
-        let(&str3, space(strlen(str2))); /* 3rd argument of printTexLongMath
+        let(&str3, space((long)strlen(str2))); /* 3rd argument of printTexLongMath
             cannot be temp allocated */
         printTexLongMath(statement[showStmt].mathString,
             str2, str3, 0, 0);
@@ -525,7 +525,7 @@ void typeStatement(long showStmt,
               "      "," ");
         } else {
           if (!(htmlFlg && texFlag)) {  /* LaTeX */
-            /*let(&str3, space(strlen(str2)));*/ /* 6-Dec-03 */
+            /*let(&str3, space((long)strlen(str2)));*/ /* 6-Dec-03 */
             /* This clears out printString */
             /*printTexLongMath(statement[k].mathString,
                 str2, str3, 0, 0);*/ /* 6-Dec-03 */
@@ -555,11 +555,11 @@ void typeStatement(long showStmt,
           } else {
             if (htmlFlg && texFlag) {
               let(&str2, "");
-              str2 = tokenToTex(mathToken[nmbrTmpPtr1[k]].tokenName);
+              str2 = tokenToTex(mathToken[nmbrTmpPtr1[k]].tokenName, showStmt);
                    /* tokenToTex allocates str2; we must deallocate it */
               let(&str1, cat(str1, " &nbsp; ", str2, NULL));
               let(&str2, "");
-              str2 = tokenToTex(mathToken[nmbrTmpPtr2[k]].tokenName);
+              str2 = tokenToTex(mathToken[nmbrTmpPtr2[k]].tokenName, showStmt);
               let(&str1, cat(str1, ",", str2, NULL));
             }
           }
@@ -602,10 +602,10 @@ void typeStatement(long showStmt,
                    /* tokenToTex allocates str2; we must deallocate it */
               /*  12/1/01 don't output dummy variables
               let(&str2, "");
-              str2 = tokenToTex(mathToken[nmbrTmpPtr1[k]].tokenName);
+              str2 = tokenToTex(mathToken[nmbrTmpPtr1[k]].tokenName, showStmt);
               let(&str1, cat(str1, " &nbsp; ", str2, NULL));
               let(&str2, "");
-              str2 = tokenToTex(mathToken[nmbrTmpPtr2[k]].tokenName);
+              str2 = tokenToTex(mathToken[nmbrTmpPtr2[k]].tokenName, showStmt);
               let(&str1, cat(str1, ",", str2, NULL));
               */
             }
@@ -811,7 +811,7 @@ void typeStatement(long showStmt,
           let(&str1, nmbrCvtRToVString(nmbrTmpPtr2));
           /* Temporarily zap proof into the $a statement */
           statement[showStmt].proofSectionPtr = str1;
-          statement[showStmt].proofSectionLen = strlen(str1) - 1;
+          statement[showStmt].proofSectionLen = (long)strlen(str1) - 1;
 
           /* Display the HTML proof of syntax breakdown */
           typeProof(showStmt,
@@ -1270,13 +1270,13 @@ void typeProof(long statemNum,
   /* Get local labels and maximum label length */
   /* lent = target length, lens = source length */
   for (step = 0; step < plen; step++) {
-    lent = strlen(statement[targetHyps[step]].labelName);
+    lent = (long)strlen(statement[targetHyps[step]].labelName);
     stmt = proof[step];
     if (stmt < 0) {
       if (stmt <= -1000) {
         stmt = -1000 - stmt;
         /* stmt is now the step number a local label refers to */
-        lens = strlen(str(localLabelNames[stmt]));
+        lens = (long)strlen(str(localLabelNames[stmt]));
         let(&tmpStr1, ""); /* Clear temp alloc stack for str function */
       } else {
         if (stmt != -(long)'?') bug (219); /* the only other possibility */
@@ -1293,7 +1293,7 @@ void typeProof(long statemNum,
         localLabelNames[step] = stepRenumber[step];
 
       }
-      lens = strlen(statement[stmt].labelName);
+      lens = (long)strlen(statement[stmt].labelName);
     }
     /* Find longest label assignment, excluding local label declaration */
     if (maxLabelLen < lent + 1 + lens) {
@@ -1458,74 +1458,74 @@ void typeProof(long statemNum,
 
       if (noIndentFlag) {
         let(&startPrefix, cat(
-            space(maxStepNumLen - strlen(str(stepRenumber[step]))),
+            space(maxStepNumLen - (long)strlen(str(stepRenumber[step]))),
             str(stepRenumber[step]),
             " ",
             srcLabel,
-            space(splitColumn - strlen(srcLabel) - strlen(locLabDecl) - 1
+            space(splitColumn - (long)strlen(srcLabel) - (long)strlen(locLabDecl) - 1
                 - maxStepNumLen - 1),
             " ", locLabDecl,
             NULL));
         if (pipFlag) {
           let(&tgtPrefix, startPrefix);
           let(&srcPrefix, cat(
-              space(maxStepNumLen - strlen(str(stepRenumber[step]))),
-              space(strlen(str(stepRenumber[step]))),
+              space(maxStepNumLen - (long)strlen(str(stepRenumber[step]))),
+              space((long)strlen(str(stepRenumber[step]))),
               " ",
               space(splitColumn - 1
                   - maxStepNumLen),
               NULL));
           let(&userPrefix, cat(
-              space(maxStepNumLen - strlen(str(stepRenumber[step]))),
-              space(strlen(str(stepRenumber[step]))),
+              space(maxStepNumLen - (long)strlen(str(stepRenumber[step]))),
+              space((long)strlen(str(stepRenumber[step]))),
               " ",
               "(User)",
-              space(splitColumn - strlen("(User)") - 1
+              space(splitColumn - (long)strlen("(User)") - 1
                   - maxStepNumLen),
               NULL));
         }
-        let(&contPrefix, space(strlen(startPrefix) + 4));
+        let(&contPrefix, space((long)strlen(startPrefix) + 4));
       } else {  /* not noIndentFlag */
         let(&startPrefix, cat(
-            space(maxStepNumLen - strlen(str(stepRenumber[step]))),
+            space(maxStepNumLen - (long)strlen(str(stepRenumber[step]))),
             str(stepRenumber[step]),
             " ",
-            space(indentationLevel[step] * PF_INDENT_INC - strlen(locLabDecl)),
+            space(indentationLevel[step] * PF_INDENT_INC - (long)strlen(locLabDecl)),
             locLabDecl,
             tgtLabel,
             srcLabel,
-            space(maxLabelLen - strlen(tgtLabel) - strlen(srcLabel)),
+            space(maxLabelLen - (long)strlen(tgtLabel) - (long)strlen(srcLabel)),
             NULL));
         if (pipFlag) {
           let(&tgtPrefix, cat(
-              space(maxStepNumLen - strlen(str(stepRenumber[step]))),
+              space(maxStepNumLen - (long)strlen(str(stepRenumber[step]))),
               str(stepRenumber[step]),
               " ",
-              space(indentationLevel[step] * PF_INDENT_INC - strlen(locLabDecl)),
+              space(indentationLevel[step] * PF_INDENT_INC - (long)strlen(locLabDecl)),
               locLabDecl,
               tgtLabel,
-              space(strlen(srcLabel)),
-              space(maxLabelLen - strlen(tgtLabel) - strlen(srcLabel)),
+              space((long)strlen(srcLabel)),
+              space(maxLabelLen - (long)strlen(tgtLabel) - (long)strlen(srcLabel)),
               NULL));
           let(&srcPrefix, cat(
-              space(maxStepNumLen - strlen(str(stepRenumber[step]))),
-              space(strlen(str(stepRenumber[step]))),
+              space(maxStepNumLen - (long)strlen(str(stepRenumber[step]))),
+              space((long)strlen(str(stepRenumber[step]))),
               " ",
-              space(indentationLevel[step] * PF_INDENT_INC - strlen(locLabDecl)),
-              space(strlen(locLabDecl)),
-              space(strlen(tgtLabel)),
+              space(indentationLevel[step] * PF_INDENT_INC - (long)strlen(locLabDecl)),
+              space((long)strlen(locLabDecl)),
+              space((long)strlen(tgtLabel)),
               srcLabel,
-              space(maxLabelLen - strlen(tgtLabel) - strlen(srcLabel)),
+              space(maxLabelLen - (long)strlen(tgtLabel) - (long)strlen(srcLabel)),
               NULL));
           let(&userPrefix, cat(
-              space(maxStepNumLen - strlen(str(stepRenumber[step]))),
-              space(strlen(str(stepRenumber[step]))),
+              space(maxStepNumLen - (long)strlen(str(stepRenumber[step]))),
+              space((long)strlen(str(stepRenumber[step]))),
               " ",
-              space(indentationLevel[step] * PF_INDENT_INC - strlen(locLabDecl)),
-              space(strlen(locLabDecl)),
-              space(strlen(tgtLabel)),
+              space(indentationLevel[step] * PF_INDENT_INC - (long)strlen(locLabDecl)),
+              space((long)strlen(locLabDecl)),
+              space((long)strlen(tgtLabel)),
               "=(User)",
-              space(maxLabelLen - strlen(tgtLabel) - strlen("=(User)")),
+              space(maxLabelLen - (long)strlen(tgtLabel) - (long)strlen("=(User)")),
               NULL));
         }
         /*
@@ -1781,7 +1781,7 @@ void typeProof(long statemNum,
                   ) {
                 tmpStr1 =
                     tokenToTex(mathToken[(statement[stmt].mathString)[i]
-                    ].tokenName);
+                    ].tokenName, stmt);
                 break;
               }
             }
@@ -2014,7 +2014,7 @@ void showDetailStep(long statemNum, long detailStep) {
         let(&tmpStr1,str(nextLocLabNum));
         while (1) {
           voidPtr = (void *)bsearch(tmpStr,
-              allLabelKeyBase, numAllLabelKeys,
+              allLabelKeyBase, (size_t)numAllLabelKeys,
               sizeof(long), labelSrchCmp);
           if (!voidPtr) break; /* It does not conflict */
           nextLocLabNum++; /* Try the next one */
@@ -2178,7 +2178,7 @@ void showDetailStep(long statemNum, long detailStep) {
         for (i = 0; i < j; i++) {
           printLongLine(cat("     ",
               mathToken[getStep.sourceSubstsNmbr[i]].tokenName," ",
-              space(9 - strlen(
+              space(9 - (long)strlen(
                 mathToken[getStep.sourceSubstsNmbr[i]].tokenName)),
               nmbrCvtMToVString(getStep.sourceSubstsPntr[i]), NULL),
               "                ", " ");
@@ -2210,7 +2210,7 @@ void showDetailStep(long statemNum, long detailStep) {
       for (i = 0; i < j; i++) {
         printLongLine(cat("     ",
             mathToken[getStep.targetSubstsNmbr[i]].tokenName, " ",
-            space(9 - strlen(
+            space(9 - (long)strlen(
               mathToken[getStep.targetSubstsNmbr[i]].tokenName)),
             nmbrCvtMToVString(getStep.targetSubstsPntr[i]), NULL),
             "                ", " ");
@@ -2389,7 +2389,7 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
                 nmbrCvtMToVString(statement[k].mathString), " $.", NULL),
                 "      "," ");
           } else {
-            let(&str3, space(strlen(str2)));
+            let(&str3, space((long)strlen(str2)));
             printTexLongMath(statement[k].mathString,
                 str2, str3, 0, 0);
           }
@@ -2406,7 +2406,7 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
             nmbrCvtMToVString(statement[stmt].mathString),
             str1, " $.", NULL), "      ", " ");
       } else {
-        let(&str3, space(strlen(str2)));
+        let(&str3, space((long)strlen(str2)));
         printTexLongMath(statement[stmt].mathString,
             str2, str3, 0, 0);
       }
@@ -2495,7 +2495,7 @@ void traceProof(long statemNum,
   let(&outputString, "");
   let(&statementUsedFlags, "");
   nmbrLet(&unprovedList, NULL_NMBRSTRING);
-}
+} /* traceProof */
 
 /* Traces back the statements used by a proof, recursively.  Returns
    a nmbrString with a list of statements and unproved statements */
@@ -2562,7 +2562,7 @@ void traceProofWork(long statemNum,
   nmbrLet(&statementList, NULL_NMBRSTRING);
   return;
 
-}
+} /* traceProofWork */
 
 nmbrString *stmtFoundList = NULL_NMBRSTRING;
 long indentShift = 0;
@@ -2589,7 +2589,7 @@ void traceProofTree(long statemNum,
   indentShift = 0;
   traceProofTreeRec(statemNum, essentialFlag, endIndent, 0);
   nmbrLet(&stmtFoundList, NULL_NMBRSTRING);
-}
+} /* traceProofTree */
 
 
 void traceProofTreeRec(long statemNum,
@@ -2722,7 +2722,7 @@ void traceProofTreeRec(long statemNum,
   nmbrLet(&proof, NULL_NMBRSTRING);
   nmbrLet(&essentialFlags, NULL_NMBRSTRING);
 
-}
+} /* traceProofTreeRec */
 
 
 /* Called by SHOW TRACE_BACK <label> / COUNT_STEPS */
@@ -2758,13 +2758,13 @@ double countSteps(long statemNum, flag essentialFlag)
 
   /* If this is the top level of recursion, initialize things */
   if (!level) {
-    stmtCount = malloc(sizeof(double) * (statements + 1));
-    stmtNodeCount = malloc(sizeof(double) * (statements + 1));
-    stmtDist = malloc(sizeof(long) * (statements + 1));
-    stmtMaxPath = malloc(sizeof(long) * (statements + 1));
-    stmtAveDist = malloc(sizeof(double) * (statements + 1));
-    stmtProofLen = malloc(sizeof(long) * (statements + 1));
-    stmtUsage = malloc(sizeof(long) * (statements + 1));
+    stmtCount = malloc((sizeof(double) * ((size_t)statements + 1)));
+    stmtNodeCount = malloc(sizeof(double) * ((size_t)statements + 1));
+    stmtDist = malloc(sizeof(long) * ((size_t)statements + 1));
+    stmtMaxPath = malloc(sizeof(long) * ((size_t)statements + 1));
+    stmtAveDist = malloc(sizeof(double) * ((size_t)statements + 1));
+    stmtProofLen = malloc(sizeof(long) * ((size_t)statements + 1));
+    stmtUsage = malloc(sizeof(long) * ((size_t)statements + 1));
     if (!stmtCount || !stmtNodeCount || !stmtDist || !stmtMaxPath ||
         !stmtAveDist || !stmtProofLen || !stmtUsage) {
       print2("?Memory overflow.  Step count will be wrong.\n");
@@ -2940,7 +2940,7 @@ double countSteps(long statemNum, flag essentialFlag)
 
   return(stepCount);
 
-}
+} /* countSteps */
 
 
 /* Traces what statements require the use of a given statement */
@@ -3057,7 +3057,7 @@ vstring traceUsage(long statemNum,
 
   return (outputString);
 
-}
+} /* traceUsage */
 
 
 
@@ -3094,7 +3094,8 @@ vstring getDescription(long statemNum) {
     fbPtr--;
   }
   let(&description, space(endDescription - startDescription));
-  memcpy(description, startDescription, endDescription - startDescription);
+  memcpy(description, startDescription,
+      (size_t)(endDescription - startDescription));
   if (description[endDescription - startDescription - 1] == '\n') {
     /* Trim trailing new line */
     let(&description, left(description, endDescription - startDescription - 1));
@@ -3102,7 +3103,7 @@ vstring getDescription(long statemNum) {
   /* Discard leading and trailing blanks */
   let(&description, edit(description, 8 + 128));
   return (description);
-}
+} /* getDescription */
 
 
 /* Returns the amount of indentation of a statement label.  Used to
@@ -3127,7 +3128,7 @@ long getSourceIndentation(long statemNum) {
     fbPtr--;
   }
   return indentation;
-}
+} /* getSourceIndentation */
 
 
 /* This implements the READ command (although the / VERIFY qualifier is
@@ -3153,7 +3154,7 @@ void readInput(void)
   parseMathDecl();
   parseStatements();
 
-}
+} /* readInput */
 
 /* This function implements the WRITE SOURCE command. */
 void writeInput(flag cleanFlag, /* 1 = "/ CLEAN" qualifier was chosen */
@@ -3178,7 +3179,7 @@ void writeInput(flag cleanFlag, /* 1 = "/ CLEAN" qualifier was chosen */
       /* Get the comment section after the statement */
       let(&str1, space(statement[i + 1].labelSectionLen));
       memcpy(str1, statement[i + 1].labelSectionPtr,
-          statement[i + 1].labelSectionLen);
+          (size_t)(statement[i + 1].labelSectionLen));
       /* Make sure it's a date comment */
       let(&str1, edit(str1, 2 + 4)); /* Discard whitespace + control chrs */
       p = instr(1, str1, "]$)"); /* Get end of date comment */
@@ -3197,7 +3198,7 @@ void writeInput(flag cleanFlag, /* 1 = "/ CLEAN" qualifier was chosen */
              post-comment section so that WRITE RECENT can pick it up. */
           let(&str1, space(statement[i].labelSectionLen));
           memcpy(str1, statement[i].labelSectionPtr,
-              statement[i].labelSectionLen);
+              (size_t)(statement[i].labelSectionLen));
           /* nm 19-Jan-04 Don't discard w.s. because string will be returned to
              the source file */
           /*let(&str1, edit(str1, 2 + 4));*/ /* Discard whitespace + ctrl chrs */
@@ -3249,13 +3250,13 @@ void writeInput(flag cleanFlag, /* 1 = "/ CLEAN" qualifier was chosen */
 
   let(&str1,""); /* Deallocate vstring */
   let(&str2,""); /* Deallocate vstring */
-}
+} /* writeInput */
 
 void writeDict(void)
 {
   print2("This function has not been implemented yet.\n");
   return;
-}
+} /* writeDict */
 
 /* Free up all memory space and initialize all variables */
 void eraseSource(void)
@@ -3337,7 +3338,7 @@ void eraseSource(void)
 
   bracketMatchInit = 0; /* Clear to force mmunif.c to scan $a's again */
   minSubstLen = 1; /* Initialize to the default SET EMPTY_SUBSTITUTION OFF */
-}
+} /* eraseSource */
 
 
 /* If verify = 0, parse the proofs only for gross error checking.
@@ -3369,7 +3370,7 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
 #ifdef XXX /*__WATCOMC__*/
     /* The vsprintf function discards text after "%" in 3rd argument string. */
     /* This is a workaround. */
-    for (i = 1; i <= strlen(header); i++) {
+    for (i = 1; i <= (long)strlen(header); i++) {
       let(&tmpStr, mid(header, i, 1));
       if (tmpStr[0] == '%') let(&tmpStr, "%%");
       print2("%s", tmpStr);
@@ -3379,7 +3380,7 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
 #ifdef XXX /*VAXC*/
     /* The vsprintf function discards text after "%" in 3rd argument string. */
     /* This is a workaround. */
-    for (i = 1; i <= strlen(header); i++) {
+    for (i = 1; i <= (long)strlen(header); i++) {
       let(&tmpStr, mid(header, i, 1));
       if (tmpStr[0] == '%') let(&tmpStr, "%%");
       print2("%s", tmpStr);
@@ -3405,9 +3406,9 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
     if (!matchesList(statement[i].labelName, labelMatch, '*', '?')) continue;
     if (strcmp("*",labelMatch) && verifyFlag) {
       /* If not *, print individual labels */
-      lineLen = lineLen + strlen(statement[i].labelName) + 1;
+      lineLen = lineLen + (long)strlen(statement[i].labelName) + 1;
       if (lineLen > 72) {
-        lineLen = strlen(statement[i].labelName) + 1;
+        lineLen = (long)strlen(statement[i].labelName) + 1;
         print2("\n");
       }
       print2("%s ",statement[i].labelName);
@@ -3450,7 +3451,231 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
   }
   let(&emptyProofList, ""); /* Deallocate */
 
-}
+} /* verifyProofs */
+
+
+/* Added 14-Sep-2012 nm */
+/* Take a relative step FIRST, LAST, +nn, -nn (relative to the unknown
+   essential steps) or ALL, and return the actual step for use by ASSIGN,
+   IMPROVE, REPLACE, LET (or 0 in case of ALL, used by IMPROVE).  In case
+   stepStr is an unsigned integer nn, it is assumed to already be an actual
+   step and is returned as is.  If format is illegal, -1 is returned.  */
+long getStepNum(vstring relStep, /* User's argument */
+   nmbrString *pfInProgress, /* proofInProgress.proof */
+   flag allFlag /* 1 = "ALL" is permissable */)
+{
+  long pfLen, i, j, relStepVal, actualStepVal;
+  flag negFlag = 0;
+  nmbrString *essentialFlags = NULL_NMBRSTRING;
+  vstring relStepCaps = "";
+
+  let(&relStepCaps, edit(relStep, 32/*upper case*/));
+  pfLen = nmbrLen(pfInProgress); /* Proof length */
+  relStepVal = (long)(val(relStepCaps)); /* val() tolerates ill-formed numbers */
+
+  if (relStepVal >= 0 && !strcmp(relStepCaps, str(relStepVal))) {
+    /* User's argument is an unsigned positive integer */
+    actualStepVal = relStepVal;
+    if (actualStepVal > pfLen || actualStepVal < 1) {
+      print2("?The step must be in the range from 1 to %ld.\n", pfLen);
+      actualStepVal = -1;  /* Flag the error */
+    }
+    goto RETURN_POINT;  /* Already actual step; just return it */
+  } else if (!strcmp(relStepCaps, left("FIRST", (long)(strlen(relStepCaps))))) {
+    negFlag = 0; /* Scan forwards */
+    relStepVal = 0;
+  } else if (!strcmp(relStepCaps, left("LAST", (long)(strlen(relStepCaps))))) {
+    negFlag = 1; /* Scan backwards */
+    relStepVal = 0;
+  } else if (relStepCaps[0] == '+') {
+    negFlag = 0;
+    if (strcmp(right(relStepCaps, 2), str(relStepVal))) {
+      print2("?The characters after '+' are not a number.\n");
+      actualStepVal = -1; /* Error - not a number after the '+' */
+      goto RETURN_POINT;
+    }
+  } else if (relStepCaps[0] == '-') {
+    negFlag = 1;
+    if (strcmp(right(relStepCaps, 2), str(- relStepVal))) {
+      print2("?The characters after '-' are not a number.\n");
+      actualStepVal = -1; /* Error - not a number after the '-' */
+      goto RETURN_POINT;
+    }
+    relStepVal = - relStepVal;
+  } else if (!strcmp(relStepCaps, left("ALL", (long)(strlen(relStepCaps))))) {
+    if (!allFlag) {
+      /* ALL is illegal */
+      print2("?You must specify FIRST, LAST, nn, +nn, or -nn.\n");
+      actualStepVal = -1; /* Flag that there was an error */
+      goto RETURN_POINT;
+    }
+    actualStepVal = 0; /* 0 is special, meaning "ALL" */
+    goto RETURN_POINT;
+  } else {
+    if (allFlag) {
+      print2("?You must specify FIRST, LAST, nn, +nn, -nn, or ALL.\n");
+    } else {
+      print2("?You must specify FIRST, LAST, nn, +nn, or -nn.\n");
+    }
+    actualStepVal = -1; /* Flag that there was an error */
+    goto RETURN_POINT;
+  }
+
+  nmbrLet(&essentialFlags, nmbrGetEssential(pfInProgress));
+
+  /* Get the essential step flags */
+  actualStepVal = 0; /* Use zero as flag that step wasn't found */
+  if (negFlag) {
+    /* Scan proof backwards */
+    /* Count back 'relStepVal' unknown steps */
+    j = relStepVal + 1;
+    for (i = pfLen; i >= 1; i--) {
+      if (essentialFlags[i - 1]
+          && pfInProgress[i - 1] == -(long)'?') {
+        j--;
+        if (j == 0) {
+          /* Found it */
+          actualStepVal = i;
+          break;
+        }             /* 16-Apr-06 */
+      }
+    } /* Next i */
+  } else {
+    /* Scan proof forwards */
+    /* Count forward 'relStepVal' unknown steps */
+    j = relStepVal + 1;
+    for (i = 1; i <= pfLen; i++) {
+      if (essentialFlags[i - 1]
+          && pfInProgress[i - 1] == -(long)'?') {
+        j--;
+        if (j == 0) {
+          /* Found it */
+          actualStepVal = i;
+          break;
+        }             /* 16-Apr-06 */
+      }
+    } /* Next i */
+  }
+  if (actualStepVal == 0) {
+    if (relStepVal == 0) {
+      print2("?There are no unknown essential steps.\n");
+    } else {
+      print2("?There are not at least %ld unknown essential steps.\n",
+        relStepVal + 1);
+    }
+    actualStepVal = -1; /* Flag that there was an error */
+    goto RETURN_POINT;
+  }
+
+ RETURN_POINT:
+  /* Deallocate memory */
+  let(&relStepCaps, "");
+  nmbrLet(&essentialFlags, NULL_NMBRSTRING);
+
+  return actualStepVal;
+} /* getStepNum */
+
+
+
+/* This procedure finds the (unique) statement number whose label matches
+   stmtName.  Wildcards are allowed in stmtName for user convenience, but
+   there must be exactly one match, otherwise an error message is printed,
+   and -1 is returned.  Used by PROVE, REPLACE, ASSIGN. */
+long getStatementNum(vstring stmtName, /* Possibly with wildcards */
+    long maxStmt, /* Must be less than this statement number */
+    flag aAllowed, /* 1 means $a is allowed */
+    flag pAllowed, /* 1 means $p is allowed */
+    flag eAllowed, /* 1 means $e is allowed */
+    flag fAllowed, /* 1 means $f is allowed */
+    flag efOnlyForMaxStmt) /* If 1, $e and $f must belong to maxStmt */
+{
+  flag hasWildcard;
+  long matchesFound, matchStmt, matchStmt2, stmt;
+  char typ;
+
+  hasWildcard = 0;
+  if (instr(1, stmtName, "*") || instr(1, stmtName, "?"))
+    hasWildcard = 1;
+  matchesFound = 0;
+  matchStmt = 1; /* Set to a legal value in case of bug */
+  matchStmt2 = 1; /* Set to a legal value in case of bug */
+
+  for (stmt = 1; stmt < maxStmt; stmt++) {
+    if (!statement[stmt].labelName[0]) continue; /* No label */
+    typ = statement[stmt].type;
+
+    if ((!aAllowed && typ == (char)a__)
+        ||(!pAllowed && typ == (char)p__)
+        ||(!eAllowed && typ == (char)e__)
+        ||(!fAllowed && typ == (char)f__)) {
+      continue; /* Statement type is not allowed */
+    }
+
+    if (hasWildcard) {
+      if (!matchesList(statement[stmt].labelName, stmtName, '*', '?')) {
+        continue;
+      }
+    } else {
+      if (strcmp(stmtName, statement[stmt].labelName)) {
+        continue;
+      }
+    }
+
+    if (efOnlyForMaxStmt) {
+      if (maxStmt > statements) bug(247); /* Don't set efOnlyForMaxStmt
+                                             in case of PROVE call */
+      /* If a $e or $f, it must be a hypothesis of the statement
+         being proved */
+      if (typ == (char)e__ || typ == (char)f__){
+        if (!nmbrElementIn(1, statement[maxStmt].reqHypList, stmt) &&
+            !nmbrElementIn(1, statement[maxStmt].optHypList, stmt))
+            continue;
+      }
+    }
+
+    if (matchesFound == 0) {
+      /* This is the first match found; save it */
+      matchStmt = stmt;
+    }
+    if (matchesFound == 1) {
+      /* This is the 2nd match found; save it for error message */
+      matchStmt2 = stmt;
+    }
+    matchesFound++;
+    if (!hasWildcard) break; /* Since there can only be 1 match, don't
+                                bother to continue */
+  }
+
+  if (matchesFound == 0) {
+    if (aAllowed && pAllowed && eAllowed && fAllowed && !efOnlyForMaxStmt) {
+      print2("?No statement label matches \"%s\".\n", stmtName);
+    } else if (!aAllowed && pAllowed && !eAllowed && !fAllowed) {
+      print2("?No $p statement label matches \"%s\".\n", stmtName);
+    } else {
+      printLongLine(cat("?A statement label matching \"",
+          stmtName,
+          "\" was not found or is not a hypothesis of the statement ",
+          "being proved.  ",
+          "Use SHOW LABELS for a list of valid labels.", NULL), "", " ");
+    }
+  } else if (matchesFound == 2) {
+    printLongLine(cat("?This command requires a unique label, but there are ",
+        " 2 matches for \"",
+        stmtName, "\":  \"", statement[matchStmt].labelName,
+        "\" and \"", statement[matchStmt2].labelName, "\".",
+        NULL), "", " ");
+  } else if (matchesFound > 2) {
+    printLongLine(cat("?This command requires a unique label, but there are ",
+        str(matchesFound), " (allowed) matches for \"",
+        stmtName, "\".  The first 2 are \"", statement[matchStmt].labelName,
+        "\" and \"", statement[matchStmt2].labelName, "\".",
+        "  Use SHOW LABELS \"", stmtName, "\" to see all matches.",
+        NULL), "", " ");
+  }
+  if (matchesFound != 1) matchStmt = -1; /* Error - no unique match */
+  return matchStmt;
+} /* getStatementNum */
+
 
 
 
@@ -3461,7 +3686,7 @@ void H(vstring helpLine)
   if (printHelp) {
     print2("%s\n", helpLine);
   }
-}
+} /* H */
 
 
 
@@ -3835,4 +4060,4 @@ void outputMidi(long plen, nmbrString *indentationLevels,
   let(&tmpStr, "");
   let(&midiLocalParam, "");
 
-} /* outputMidi() */
+} /* outputMidi */

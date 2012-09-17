@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2011  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2012  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -59,19 +59,19 @@ vstring tempAlloc(long size)    /* String memory allocation/deallocation */
 #endif
       bug(2201);
     }
-    if (!(tempAllocStack[tempAllocStackTop++]=malloc(size))) {
+    if (!(tempAllocStack[tempAllocStackTop++]=malloc((size_t)size))) {
       printf("*** FATAL ERROR ***  Temporary string allocation failed\n");
 #ifdef __STDC__
       fflush(stdout);
 #endif
       bug(2202);
     }
-/*E*/db1=db1+(size)*sizeof(char);
+/*E*/db1=db1+(size)*(long)(sizeof(char));
 /*E* /printf("%ld adding\n",db1);*/
     return (tempAllocStack[tempAllocStackTop-1]);
   } else {
     for (i=startTempAllocStack; i<tempAllocStackTop; i++) {
-/*E*/db1=db1-(strlen(tempAllocStack[i])+1)*sizeof(char);
+/*E*/db1=db1-((long)strlen(tempAllocStack[i])+1)*(long)(sizeof(char));
 /*E* /printf("%ld removing [%s]\n",db1,tempAllocStack[i]);*/
       free(tempAllocStack[i]);
     }
@@ -94,8 +94,8 @@ void makeTempAlloc(vstring s)
       bug(2203);
     }
     tempAllocStack[tempAllocStackTop++]=s;
-/*E*/db1=db1+(strlen(s)+1)*sizeof(char);
-/*E*/db=db-(strlen(s)+1)*sizeof(char);
+/*E*/db1=db1+((long)strlen(s)+1)*(long)(sizeof(char));
+/*E*/db=db-((long)strlen(s)+1)*(long)(sizeof(char));
 /*E* /printf("%ld temping[%s]\n",db1,s);*/
 }
 
@@ -109,14 +109,14 @@ void let(vstring *target,vstring source)        /* String assignment */
 {
   long targetLength,sourceLength;
 
-  sourceLength=strlen(source);  /* Save its length */
-  targetLength=strlen(*target); /* Save its length */
+  sourceLength = (long)strlen(source);  /* Save its length */
+  targetLength = (long)strlen(*target); /* Save its length */
 /*E*/if (targetLength) {
-/*E*/  db = db - (targetLength+1)*sizeof(char);
+/*E*/  db = db - (targetLength+1)*(long)(sizeof(char));
 /*E*/  /* printf("%ld Deleting %s\n",db,*target); */
 /*E*/}
 /*E*/if (sourceLength) {
-/*E*/  db = db + (sourceLength+1)*sizeof(char);
+/*E*/  db = db + (sourceLength+1)*(long)(sizeof(char));
 /*E*/  /* printf("%ld Adding %s\n",db,source); */
 /*E*/}
   if (targetLength) {
@@ -127,7 +127,7 @@ void let(vstring *target,vstring source)        /* String assignment */
       } else {
         /* Free old string space and allocate new space */
         free(*target);  /* Free old space */
-        *target=malloc(sourceLength+1); /* Allocate new space */
+        *target=malloc((size_t)sourceLength+1); /* Allocate new space */
         if (!*target) {
           printf("*** FATAL ERROR ***  String memory couldn't be allocated\n");
 #ifdef __STDC__
@@ -144,7 +144,7 @@ void let(vstring *target,vstring source)        /* String assignment */
     }
   } else {
     if (sourceLength) { /* target is 0 length, source is not */
-      *target=malloc(sourceLength+1);   /* Allocate new space */
+      *target=malloc((size_t)sourceLength+1);   /* Allocate new space */
       if (!*target) {
         printf("*** FATAL ERROR ***  Could not allocate string memory\n");
 #ifdef __STDC__
@@ -193,10 +193,10 @@ vstring cat(vstring string1,...)        /* String concatenation */
   numArgs--;    /* The last argument (0) is not a string */
 
   /* Find out the total string length needed */
-  j=0;
-  for (i=0; i<numArgs; i++) {
-    argLength[i]=strlen(arg[i]);
-    j=j+argLength[i];
+  j = 0;
+  for (i = 0; i < numArgs; i++) {
+    argLength[i] = (long)strlen(arg[i]);
+    j = j + argLength[i];
   }
   /* Allocate the memory for it */
   ptr=tempAlloc(j+1);
@@ -240,9 +240,9 @@ vstring linput(FILE *stream,vstring ask,vstring *target)
     return NULL;
   }
   f[10000]=0;     /* Just in case */
-  if (f[strlen(f) - 1] == '\n' ) { /* 9-Jul-2011 nm Don't do this unless line
+  if (f[(long)strlen(f) - 1] == '\n' ) { /* 9-Jul-2011 nm Don't do this unless line
        ends with '\n' (which might not be the case for the last line in file */
-    f[strlen(f) - 1] = 0;     /* Eliminate new-line character */
+    f[(long)strlen(f) - 1] = 0;     /* Eliminate new-line character */
   }
   /* Assign the user's input line */
   let(target,f);
@@ -253,7 +253,7 @@ vstring linput(FILE *stream,vstring ask,vstring *target)
 /* Find out the length of a string */
 long len(vstring s)
 {
-  return (strlen(s));
+  return ((long)strlen(s));
 }
 
 
@@ -267,7 +267,7 @@ vstring seg(vstring sin, long start, long stop)
   length = stop - start + 1;
   if (length < 0) length = 0;
   sout=tempAlloc(length + 1);
-  strncpy(sout, sin + start - 1, length);
+  strncpy(sout, sin + start - 1, (size_t)length);
   sout[length] = 0;
   return (sout);
 }
@@ -279,7 +279,7 @@ vstring mid(vstring sin, long start, long length)
   if (start < 1) start = 1;
   if (length < 0) length = 0;
   sout=tempAlloc(length + 1);
-  strncpy(sout,sin + start - 1, length);
+  strncpy(sout,sin + start - 1, (size_t)length);
 /*??? Should db be substracted from if length > end of string? */
   sout[length] = 0;
   return (sout);
@@ -290,9 +290,9 @@ vstring left(vstring sin,long n)
 {
   vstring sout;
   if (n < 0) n = 0;
-  sout=tempAlloc(n+1);
-  strncpy(sout,sin,n);
-  sout[n]=0;
+  sout=tempAlloc(n + 1);
+  strncpy(sout, sin, (size_t)n);
+  sout[n] = 0;
   return (sout);
 }
 
@@ -303,7 +303,7 @@ vstring right(vstring sin,long n)
   vstring sout;
   long i;
   if (n<1) n=1;
-  i = strlen(sin);
+  i = (long)strlen(sin);
   if (n>i) return ("");
   sout = tempAlloc(i - n + 2);
   strcpy(sout,&sin[n-1]);
@@ -368,7 +368,7 @@ EDIT$
   discardcr_flag=control & 8192; /* Discard CR's */
 
   /* Copy string */
-  i = strlen(sin) + 1;
+  i = (long)strlen(sin) + 1;
   if (untab_flag) i = i * 7; /* Allow for max possible length */
   sout=tempAlloc(i);
   strcpy(sout,sin);
@@ -422,7 +422,7 @@ EDIT$
        with characters > 127, at least in lcc.  So this was rewritten to
        not use them. */
     if ((case_flag) && (sout[i] >= 'a' && sout[i] <= 'z'))
-       sout[i]=sout[i] - ('a' - 'A');
+       sout[i] = (char)(sout[i] - ('a' - 'A'));
 
     /* Convert [] to () */
     if ((bracket_flag) && (sout[i]=='['))
@@ -439,11 +439,11 @@ EDIT$
        with characters > 127, at least in lcc.  So this was rewritten to
        not use them. */
     if ((lowercase_flag) && (sout[i] >= 'A' && sout[i] <= 'Z'))
-       sout[i]=sout[i] + ('a' - 'A');
+       sout[i] = (char)(sout[i] + ('a' - 'A'));
 
     /* Convert VT220 screen print frame graphics to +,|,- */
     if (screen_flag) {
-      graphicsChar = sout[i]; /* Need unsigned char for >127 */
+      graphicsChar = (unsigned char)sout[i]; /* Need unsigned char for >127 */
       /* vt220 */
       if (graphicsChar >= 234 && graphicsChar <= 237) sout[i] = '+';
       if (graphicsChar == 241) sout[i] = '-';
@@ -508,7 +508,7 @@ EDIT$
     */
 
     /***** old code (doesn't handle multiple lines)
-    k = strlen(sout);
+    k = (long)strlen(sout);
     for (i = 1; i <= k; i++) {
       if (sout[i - 1] != '\t') continue;
       for (j = k; j >= i; j--) {
@@ -523,7 +523,7 @@ EDIT$
 
     /* Untab string containing multiple lines */ /* 9-Jul-2011 nm */
     /* (Currently this is needed by outputStatement() in mmpars.c) */
-    k = strlen(sout);
+    k = (long)strlen(sout);
     m = 0;  /* Position on line relative to last '\n' */
     for (i = 1; i <= k; i++) {
       if (sout[i - 1] == '\n') {
@@ -562,7 +562,7 @@ EDIT$
     */
 
     i = 0;
-    k = strlen(sout);
+    k = (long)strlen(sout);
     for (i = 8; i < k; i = i + 8) {
       j = i;
       while (sout[j - 1] == ' ' && j > i - 8) j--;
@@ -613,7 +613,7 @@ vstring chr(long n)
 {
   vstring sout;
   sout=tempAlloc(2);
-  sout[0]= n & 0xFF;
+  sout[0]= (char)(n & 0xFF);
   sout[1]=0;
   return(sout);
 }
@@ -628,12 +628,12 @@ long instr(long start_position, vstring string1, vstring string2)
    long ls1, ls2;
    long found = 0;
    if (start_position < 1) start_position = 1;
-   ls1=strlen(string1);
-   ls2=strlen(string2);
+   ls1=(long)strlen(string1);
+   ls2=(long)strlen(string2);
    if (start_position > ls1) start_position = ls1 + 1;
    sp1 = string1 + start_position - 1;
    while ((sp2 = strchr(sp1, string2[0])) != 0) {
-     if (strncmp(sp2, string2, ls2) == 0) {
+     if (strncmp(sp2, string2, (size_t)ls2) == 0) {
         found = sp2 - string1 + 1;
         break;
      } else
@@ -671,8 +671,8 @@ vstring xlate(vstring sin,vstring table)
   long i,j;
   long table_entry;
   char m;
-  len_sin=strlen(sin);
-  len_table=strlen(table);
+  len_sin=(long)strlen(sin);
+  len_table=(long)strlen(table);
   sout=tempAlloc(len_sin+1);
   for (i=j=0; i<len_sin; i++)
   {
@@ -699,7 +699,7 @@ double val(vstring s)
   char signFound = 0;
   double power = 1.0;
   long i;
-  for (i = strlen(s); i >= 0; i--) {
+  for (i = (long)strlen(s); i >= 0; i--) {
     switch (s[i]) {
       case '.':
         v = v / power;
@@ -807,12 +807,12 @@ vstring str(double f)
   s=tempAlloc(50);
   sprintf(s,"%f",f);
   if (strchr(s,'.')!=0) {               /* the string has a period in it */
-    for (i=strlen(s)-1; i>0; i--) {     /* scan string backwards */
+    for (i=(long)strlen(s)-1; i>0; i--) {     /* scan string backwards */
       if (s[i]!='0') break;             /* 1st non-zero digit */
       s[i]=0;                           /* delete the trailing 0 */
     }
     if (s[i]=='.') s[i]=0;              /* delete trailing period */
-/*E*/db1 = db1 - (49 - strlen(s));
+/*E*/db1 = db1 - (49 - (long)strlen(s));
   }
   return (s);
 }
@@ -871,7 +871,7 @@ vstring entry(long element, vstring list)
   length = i - lastComma - 1;
   if (length < 1) return ("");
   sout = tempAlloc(length + 1);
-  strncpy(sout, list + lastComma + 1, length);
+  strncpy(sout, list + lastComma + 1, (size_t)length);
   sout[length] = 0;
   return (sout);
 }

@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2011  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2012  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -19,7 +19,16 @@
 void help2(vstring helpCmd)
 {
 
-printHelp = !strcmp(helpCmd, "HELP");
+/* 5-Sep-2012 nm */
+vstring saveHelpCmd = "";
+/* help2() may be called with a temporarily allocated argument (left(),
+   cat(), etc.), and the let()s in the eventual print2() calls will
+   deallocate and possibly corrupt helpCmd.  So, we grab a non-temporarily
+   allocated copy here.  (And after this let(), helpCmd will become invalid
+   for the same reason.)  */
+let(&saveHelpCmd, helpCmd);
+
+printHelp = !strcmp(saveHelpCmd, "HELP");
 H("Welcome to Metamath.  Here are some general guidelines.");
 H("");
 H("To make the most effective use of Metamath, you should become familiar");
@@ -45,7 +54,7 @@ H("Copyright (C) 2010 Norman Megill");
 H("License terms:  GNU General Public License");
 H("");
 
-printHelp = !strcmp(helpCmd, "HELP INVOKE");
+printHelp = !strcmp(saveHelpCmd, "HELP INVOKE");
 H("To invoke Metamath from a Unix/Linux/MacOSX prompt, assuming that the");
 H("Metamath program is in the current directory, type");
 H("");
@@ -85,7 +94,7 @@ H("");
 H("are equivalent.");
 H("");
 
-printHelp = !strcmp(helpCmd, "HELP CLI");
+printHelp = !strcmp(saveHelpCmd, "HELP CLI");
 H("The Metamath program was first developed on a VAX/VMS system, and some");
 H("aspects of its command line behavior reflect this heritage.  Hopefully");
 H(
@@ -149,7 +158,7 @@ H("    HELP SUBMIT");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP SHOW MEMORY");
+printHelp = !strcmp(saveHelpCmd, "HELP SHOW MEMORY");
 H("Syntax:  SHOW MEMORY");
 H("");
 H("This command shows the available memory left.  It may not be meaningful");
@@ -157,14 +166,14 @@ H("on machines with virtual memory.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP SHOW SETTINGS");
+printHelp = !strcmp(saveHelpCmd, "HELP SHOW SETTINGS");
 H("Syntax:  SHOW SETTINGS");
 H("");
 H("This command shows the state of various parameters.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP SHOW LABELS");
+printHelp = !strcmp(saveHelpCmd, "HELP SHOW LABELS");
 H("Syntax:  SHOW LABELS <label-match> [/ ALL] [/ LINEAR]");
 H("");
 H("This command shows the labels of $a and $p statements that match");
@@ -178,7 +187,7 @@ H("        building scripts in conjunction with the TOOLS utility.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP SHOW SOURCE");
+printHelp = !strcmp(saveHelpCmd, "HELP SHOW SOURCE");
 H("Syntax:  SHOW SOURCE <label>");
 H("");
 H("This command shows the ASCII source code associated with a statement.");
@@ -188,7 +197,7 @@ H("and to see the exact content of the Metamath database.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP SHOW STATEMENT");
+printHelp = !strcmp(saveHelpCmd, "HELP SHOW STATEMENT");
 /* 14-Sep-2010 nm Added OLD_TEX */
 H(
 "Syntax:  SHOW STATEMENT <label> [/ COMMENT] [/ FULL] [/ TEX] [/ OLD_TEX]");
@@ -233,7 +242,7 @@ H("        not be used with any other qualifier.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP SHOW PROOF");
+printHelp = !strcmp(saveHelpCmd, "HELP SHOW PROOF");
 H("Syntax:  SHOW PROOF <label> [<qualifiers (see below)>]");
 H("");
 H("This command displays the proof of the specified $p statement various");
@@ -292,7 +301,7 @@ H("        a specific proof step.  May not be used with any other qualifier.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP MIDI");
+printHelp = !strcmp(saveHelpCmd, "HELP MIDI");
 H("Syntax:  MIDI <label> [/ PARAMETER \"<parameter string>\"]");
 H("");
 H("This will create a MIDI sound file for the proof of <label>, where <label>");
@@ -335,7 +344,7 @@ H("Quotes around the parameter string are optional if it has no spaces.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP SHOW NEW_PROOF");
+printHelp = !strcmp(saveHelpCmd, "HELP SHOW NEW_PROOF");
 H("Syntax:  SHOW NEW_PROOF [<qualifiers (see below)]");
 H("");
 H("This command (available only in Proof Assistant mode) displays the proof");
@@ -358,7 +367,7 @@ H("See also:  SHOW PROOF");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP SHOW USAGE");
+printHelp = !strcmp(saveHelpCmd, "HELP SHOW USAGE");
 H("Syntax:  SHOW USAGE <label-match> [/ RECURSIVE]");
 H("");
 H("This command lists the statements whose proofs make direct reference to");
@@ -374,7 +383,7 @@ H("        characters.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP SHOW TRACE_BACK");
+printHelp = !strcmp(saveHelpCmd, "HELP SHOW TRACE_BACK");
 H("Syntax:  SHOW TRACE_BACK <label-match> [/ ESSENTIAL] [/ AXIOMS] [/ TREE]");
 H("             [/ DEPTH <number>] [/ COUNT_STEPS]");
 H("");
@@ -395,7 +404,7 @@ H("        expansions of floating hypotheses are not counted.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP SEARCH");
+printHelp = !strcmp(saveHelpCmd, "HELP SEARCH");
 H("Syntax:  SEARCH <label-match> \"<symbol-match>\" [/ ALL] [/ COMMENTS]");
 H("             [/ JOIN]");
 H("");
@@ -451,7 +460,7 @@ H("characters.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP SET ECHO");
+printHelp = !strcmp(saveHelpCmd, "HELP SET ECHO");
 H("Syntax:  SET ECHO ON or SET ECHO OFF");
 H("");
 H("The SET ECHO ON command will cause command lines to be echoed with any");
@@ -464,7 +473,7 @@ H("prepended to each echoed command line.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP SET SCROLL");
+printHelp = !strcmp(saveHelpCmd, "HELP SET SCROLL");
 H("Syntax:  SET SCROLL PROMPTED or SET SCROLL CONTINUOUS");
 H("");
 H("The Metamath command line interface starts off in the PROMPTED mode,");
@@ -474,7 +483,7 @@ H("scrolled without pausing.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP SET WIDTH"); /* 18-Nov-05 nm Revised */
+printHelp = !strcmp(saveHelpCmd, "HELP SET WIDTH"); /* 18-Nov-05 nm Revised */
 H("Syntax:  SET WIDTH <number>");
 H("");
 H("Metamath assumes the width of your screen is 79 characters.  If your");
@@ -492,7 +501,7 @@ H("Note:  This command was SET SCREEN_WIDTH prior to Version 0.07.9.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP SET HEIGHT"); /* 18-Nov-05 nm New */
+printHelp = !strcmp(saveHelpCmd, "HELP SET HEIGHT"); /* 18-Nov-05 nm New */
 H("Syntax:  SET HEIGHT <number>");
 H("");
 H("Metamath assumes your screen height is 24 lines of characters.  If your");
@@ -501,7 +510,7 @@ H("of lines at which the display pauses and prompts you to continue.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP SET UNIFICATION_TIMEOUT");
+printHelp = !strcmp(saveHelpCmd, "HELP SET UNIFICATION_TIMEOUT");
 H("Syntax:  SET UNIFICATION_TIMEOUT <number>");
 H("");
 H("(This command affects the Proof Assistant only.)");
@@ -513,9 +522,13 @@ H("exponentially with the number of variables.  If you want Metamath to try");
 H("harder (and you're willing to wait longer) you may increase this");
 H("parameter.  SHOW SETTINGS will show you the current value.");
 H("");
+H("Often, a better solution to resolve a unification timeout is to manually");
+H("assign some or all of the unknowns (see HELP LET) then try to unify");
+H("again.");
+H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP SET EMPTY_SUBSTITUTION");
+printHelp = !strcmp(saveHelpCmd, "HELP SET EMPTY_SUBSTITUTION");
 H("Syntax:  SET EMPTY_SUBSTITUTION ON or SET EMPTY_SUBSTITUTION OFF");
 H("");
 H("(This command affects the Proof Assistant only.  It may be issued");
@@ -535,7 +548,7 @@ H("empty assumption lists would be permissable.)");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP SET SEARCH_LIMIT");
+printHelp = !strcmp(saveHelpCmd, "HELP SET SEARCH_LIMIT");
 H("Syntax:  SET SEARCH_LIMIT <number>");
 H("");
 H("(This command affects the Proof Assistant only.)");
@@ -547,7 +560,7 @@ H("value.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP SET JEREMY_HENTY_FILTER");
+printHelp = !strcmp(saveHelpCmd, "HELP SET JEREMY_HENTY_FILTER");
 H("Syntax:  SET JEREMY_HENTY_FILTER ON or SET JEREMY_HENTY_FILTER OFF");
 H("");
 H("(This command affects the Proof Assistant only.)");
@@ -559,7 +572,7 @@ H("is ON, and the only reason to turn it off would be for debugging.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP VERIFY PROOF");
+printHelp = !strcmp(saveHelpCmd, "HELP VERIFY PROOF");
 H("Syntax:  VERIFY PROOF <label-match> [/ SYNTAX_ONLY]");
 H("");
 H("This command verifies the proofs of the specified statements.");
@@ -579,7 +592,7 @@ H("in comments.  One way to check the markup language is WRITE THEOREM_LIST.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP SUBMIT");
+printHelp = !strcmp(saveHelpCmd, "HELP SUBMIT");
 H("Syntax:  SUBMIT <filename> [/ SILENT]");
 H("");
 H("This command causes further command lines to be taken from the specified");
@@ -601,7 +614,7 @@ H("        file itself).  The screen output of any operating system commands");
 H("        inside the command file (see HELP SYSTEM) is not suppressed.");
 
 
-printHelp = !strcmp(helpCmd, "HELP SYSTEM");
+printHelp = !strcmp(saveHelpCmd, "HELP SYSTEM");
 H("A line enclosed in single or double quotes will be executed by your");
 H("computer's operating system, if it has such a feature.  For example, on a");
 H("GNU/Linux system,");
@@ -614,7 +627,7 @@ H("    MM> 'ls | less -EX");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP PROVE");
+printHelp = !strcmp(saveHelpCmd, "HELP PROVE");
 H("Syntax:  PROVE <label>");
 H("");
 H("This command will enter the Proof Assistant, which will allow you to");
@@ -624,12 +637,12 @@ H("See also:  HELP PROOF_ASSISTANT and HELP EXIT");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP MM-PA");
+printHelp = !strcmp(saveHelpCmd, "HELP MM-PA");
 H("See HELP PROOF_ASSISTANT");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP MORE");
+printHelp = !strcmp(saveHelpCmd, "HELP MORE");
 H("Syntax:  MORE <filename>");
 H("");
 H("This command will type (i.e. display) the contents of an ASCII file on");
@@ -639,7 +652,7 @@ H("do this, such as \"less -EX\" in Linux.)");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP FILE SEARCH");
+printHelp = !strcmp(saveHelpCmd, "HELP FILE SEARCH");
 H("Syntax:  FILE SEARCH <filename> \"<search string>\" [/ FROM_LINE");
 H("             <number>] [/ TO_LINE <number>]");
 H("");
@@ -651,7 +664,7 @@ H("equivalent command, such as \"grep\" in Linux.)");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP WRITE SOURCE");
+printHelp = !strcmp(saveHelpCmd, "HELP WRITE SOURCE");
 H("Syntax:  WRITE SOURCE <filename> [/ FORMAT] [/ REWRAP] [/ CLEAN]");
 H("");
 H("Optional qualifiers:");
@@ -679,7 +692,7 @@ H("its constituent files included with $[ $] keywords.  Instead it will write");
 H("the entire database as one big file.");
 H("");
 
-printHelp = !strcmp(helpCmd, "HELP WRITE THEOREM_LIST");
+printHelp = !strcmp(saveHelpCmd, "HELP WRITE THEOREM_LIST");
 H("Syntax:  WRITE THEOREM_LIST");
 H("");
 H("Optional qualifier:");
@@ -713,7 +726,7 @@ H("Note:  To create the files mmdefinitions.html and mmascii.html, use");
 H("SHOW STATEMENT *! / HTML.  See HELP HTML.");
 H("");
 
-printHelp = !strcmp(helpCmd, "HELP WRITE BIBLIOGRAPHY");
+printHelp = !strcmp(saveHelpCmd, "HELP WRITE BIBLIOGRAPHY");
 H("Syntax:  WRITE BIBLIOGRAPHY <filename>");
 H("");
 H("This command reads an HTML bibliographic cross-reference file, normally");
@@ -728,7 +741,7 @@ H("syntax is somewhat loose and subject to refinement.)  The original input");
 H("file is renamed to \"<filename>~1\"");
 H("");
 
-printHelp = !strcmp(helpCmd, "HELP WRITE RECENT_ADDITIONS");
+printHelp = !strcmp(saveHelpCmd, "HELP WRITE RECENT_ADDITIONS");
 H("Syntax:  WRITE RECENT_ADDITIONS <filename>");
 H("");
 H("Optional qualifier:");
@@ -748,7 +761,7 @@ H("\"$( [dd-mmm-yyyy] $)\", where \"dd\" may be 1 or 2 digits, e.g.");
 H("\"$( [31-Dec-2007] $)\".");
 H("");
 
-printHelp = !strcmp(helpCmd, "HELP ASSIGN");
+printHelp = !strcmp(saveHelpCmd, "HELP ASSIGN");
 H("Syntax:  ASSIGN <step> <label>");
 H("         ASSIGN FIRST <label>");  /* 11-Dec-05 nm */
 H("         ASSIGN LAST <label>");
@@ -765,29 +778,46 @@ H("step (one with ? in the SHOW NEW_PROOF listing) with the statement");
 H("specified by <label>.  The assignment will not be allowed if the");
 H("statement cannot be unified with the step.");
 H("");
-H("If FIRST is specified instead of <step> number, the first step that is");
-H("shown by SHOW NEW_PROOF / UNKNOWN will be used.");
+H("If <step> starts with \"-\", the -<step>th from last unknown step,");
+H("as shown by SHOW NEW_PROOF / UNKNOWN, will be used.  ASSIGN -0 will");
+H("assign the last unknown step, ASSIGN -1 <label> will assign the");
+H("penultimate unknown step, etc.  If <step> starts with \"+\", the <step>th");
+H("from the first unknown step will be used.  Otherwise, when the step is");
+H("a positive integer (with no \"+\" sign), ASSIGN assumes it is the actual");
+H("step number shown by SHOW NEW_PROOF / UNKNOWN.");
 H("");
-H("If LAST is specified instead of <step> number, the last step that is");
-H("shown by SHOW NEW_PROOF / UNKNOWN will be used.  This can be useful for");
-H("building a proof with a command file (see HELP SUBMIT).");
-H("");
-H("If the <step> is zero or negative, the -<step>th from last unknown step,");
-H("as shown by SHOW NEW_PROOF / UNKNOWN, will be used.  ASSIGN -1 <label>");
-H("will assign the penultimate unknown step,  ASSIGN -2 <label> the");
-H("antepenultimate, and ASSIGN 0 <label> is the same as ASSIGN LAST <label>.");
+H("ASSIGN FIRST and ASSIGN LAST mean ASSIGN +0 and ASSIGN -0 respectively,");
+H("in other words the first and last steps shown by SHOW NEW_PROOF / UNKNOWN.");
 H("");
 
-printHelp = !strcmp(helpCmd, "HELP REPLACE");
+printHelp = !strcmp(saveHelpCmd, "HELP REPLACE");
 H("Syntax:  REPLACE <step> <label>");
+H("Syntax:  REPLACE FIRST <label>");
+H("Syntax:  REPLACE LAST <label>");
 H("");
 H("This command, available in the Proof Assistant only, replaces the");
 H("statement assigned to <step> with statement <label>.  The replacement");
-H("will be done only if the subproof at <step> has contains steps (with no");
-H("dummy variables) that exactly match the hypotheses of <label>.");
+H("will be done only if subproofs can be found that match all of the");
+H("hypotheses of  <label>.  REPLACE is equivalent to IMPROVE with the");
+H("qualifiers / 3 / DEPTH 1 / SUBPROOF (see HELP IMPROVE), except that");
+H("it considers only statement <label> rather than scanning all preceding");
+H("statements in the database.");
+H("");
+H("If <step> starts with \"-\", the -<step>th from last unknown step,");
+H("as shown by SHOW NEW_PROOF / UNKNOWN, will be used.  REPLACE -0 will");
+H("assign the last unknown step, REPLACE -1 <label> will assign the");
+H("penultimate unknown step, etc.  If <step> starts with \"+\", the <step>th");
+H("from the first unknown step will be used.  Otherwise, when the step is");
+H("a positive integer (with no \"+\" sign), REPLACE assumes it is the actual");
+H("step number shown by SHOW NEW_PROOF (and can be used whether the step is");
+H("known or not).");
+H("");
+H("REPLACE FIRST and REPLACE LAST mean REPLACE +0 and REPLACE -0");
+H("respectively, in other words the first and last steps shown by");
+H("SHOW NEW_PROOF / UNKNOWN.");
 H("");
 
-printHelp = !strcmp(helpCmd, "HELP MATCH");
+printHelp = !strcmp(saveHelpCmd, "HELP MATCH");
 H("Syntax:  MATCH STEP <step> [/ MAX_ESSENTIAL_HYP <number>]");
 H("    or:  MATCH ALL [/ ESSENTIAL_ONLY] [/ MAX_ESSENTIAL_HYP <number>]");
 H("");
@@ -802,32 +832,39 @@ H("        would be listed in SHOW NEW_PROOF display are matched.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP LET");
+printHelp = !strcmp(saveHelpCmd, "HELP LET");
 H("Syntax:  LET VARIABLE <variable> = \"<symbol sequence>\"");
 H("         LET STEP <step> = \"<symbol sequence>\"");
+H("         LET STEP FIRST = \"<symbol sequence>\"");
+H("         LET STEP LAST = \"<symbol sequence>\"");
 H("");
 H("These commands, available in the Proof Assistant only, assign an unknown");
 H("variable or step with a specific symbol sequence.  They are useful in the");
 H("middle of creating a proof, when you know what should be in the proof");
 H("step but the unification algorithm doesn't yet have enough information");
-H("to completely specify the unknown variables.  An \"unknown\" variable is");
-H("one which has the form $nn in the proof display, such as $1, $2, etc.");
-H("The <symbol sequence> may contain other unknown variables if desired.");
+H("to completely specify the unknown variables.  An \"unknown\" or \"work\"");
+H("variable is one which has the form $nn in the proof display, such as $1,");
+H("$2, etc.  The <symbol sequence> may contain other unknown variables if");
+H("desired.");
 H("Examples:");
 H("    LET VARIABLE $32 = \" A = B \"");
 H("    LET VARIABLE $32 = \" A = $35 \"");
 H("    LET STEP 10 = \" |- x = x \"");
 H("    LET STEP -2 = \" |- ( $7 <-> ph ) \"");
+H("    LET STEP +2 = \" |- ( $7 <-> ph ) \"");
 H("");
 H("Any symbol sequence will be accepted for the LET VARIABLE command.  In");
 H("LET STEP, only symbol sequences that can be unified with the step are");
 H("accepted.  LET STEP assignments are prefixed with \"=(User)\" in most");
 H("SHOW NEW_PROOF displays.");
 H("");
-H("If <step> is zero or negative, the -<step>th from last unknown step,");
-H("as shown by SHOW NEW_PROOF / UNKNOWN, will be used.  LET STEP 0 will");
+H("If <step> starts with \"-\", the -<step>th from last unknown step,");
+H("as shown by SHOW NEW_PROOF / UNKNOWN, will be used.  LET STEP -0 will");
 H("assign the last unknown step, LET STEP -1 <label> will assign the");
-H("penultimate unknown step, etc.  If <step> is positive, LET STEP may be");
+H("penultimate unknown step, etc.  If <step> starts with \"+\", the <step>th");
+H("from the first unknown step will be used.  LET STEP FIRST and LET STEP");
+H("LAST means LET STEP +0 and LET STEP -0 respectively.  Otherwise, when");
+H("the step is a positive integer (with no \"+\" sign), LET STEP may be");
 H("used to assign known as well as unknown steps.");
 H("");
 H("The LET commands are somewhat dangerous in that they \"zap\" the proof");
@@ -869,7 +906,7 @@ H("  MM-PA> SHOW NEW_PROOF/UNKNOWN");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP UNIFY");
+printHelp = !strcmp(saveHelpCmd, "HELP UNIFY");
 H("HELP UNIFY");
 H("Syntax:  UNIFY STEP <step>");
 H("         UNIFY ALL [/ INTERACTIVE]");
@@ -891,7 +928,7 @@ H("manually assign unknown variables also helps difficult cases.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP INITIALIZE");
+printHelp = !strcmp(saveHelpCmd, "HELP INITIALIZE");
 H("Syntax:  INITIALIZE ALL");
 H("         INITIALIZE USER");
 H("         INITIALIZE STEP <step>");
@@ -917,7 +954,7 @@ H("See also:  UNIFY and DELETE");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP DELETE");
+printHelp = !strcmp(saveHelpCmd, "HELP DELETE");
 H("Syntax:  DELETE STEP <step>");
 H("         DELETE ALL");
 H("         DELETE FLOATING_HYPOTHESES");
@@ -938,13 +975,16 @@ H("Warning:  There is currently no \"undo\" from DELETE.  Save your work!");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP IMPROVE");
-H("Syntax:  IMPROVE <step> [/ DEPTH <number>] [/ NO_DISTINCT]");
-                                                           /* 26-Aug-2006 nm */
-H("         IMPROVE ALL [/ DEPTH <number>] [/ NO_DISTINCT]");
-H("         IMPROVE FIRST [/ DEPTH <number>] [/ NO_DISTINCT]");
-                                                             /* 11-Dec-05 nm */
-H("         IMPROVE LAST [/ DEPTH <number>] [/ NO_DISTINCT]");
+printHelp = !strcmp(saveHelpCmd, "HELP IMPROVE");
+H("Syntax:  IMPROVE <step> [/ DEPTH <number>] [/ NO_DISTINCT] [/ 2] [/ 3]");
+H("                           [/ SUBPROOFS]");
+                              /* 26-Aug-2006 nm */ /* 4-Sep-2012 */
+H("         IMPROVE FIRST [/ DEPTH <number>] [/ NO_DISTINCT] [/ 2] [/ 3]");
+H("                           [/ SUBPROOFS]");
+H("         IMPROVE LAST [/ DEPTH <number>] [/ NO_DISTINCT] [/ 2] [/ 3]");
+H("                           [/ SUBPROOFS]");
+H("         IMPROVE ALL [/ DEPTH <number>] [/ NO_DISTINCT] [/ 2] [/ 3]");
+H("                           [/ SUBPROOFS]");
 H("");
 H("These commands, available in the Proof Assistant only, try to");
 H("find proofs automatically for unknown steps whose symbol sequences are");
@@ -952,28 +992,61 @@ H("completely known.  They are primarily useful for filling in proofs of $f");
 H("hypotheses.  The search will be restricted to statements having no $e");
 H("hypotheses.");
 H("");
-H("IMPROVE FIRST is the same as IMPROVE <step> using the first step that is");
-H("shown by SHOW NEW_PROOF / UNKNOWN.");
+H("If <step> starts with \"-\", the -<step>th from last unknown step,");
+H("as shown by SHOW NEW_PROOF / UNKNOWN, will be used.  IMPROVE -0 will");
+H("assign the last unknown step, IMPROVE -1 <label> will assign the");
+H("penultimate unknown step, etc.  If <step> starts with \"+\", the <step>th");
+H("from the first unknown step will be used.  Otherwise, when <step> is");
+H("a positive integer (with no \"+\" sign), IMPROVE assumes it is the actual");
+H("step number shown by SHOW NEW_PROOF (and can be used whether the step is");
+H("known or not).");
 H("");
-H("IMPROVE LAST is the same as IMPROVE <step> using the last step that is");
-H("shown by SHOW NEW_PROOF / UNKNOWN.");
+H("IMPROVE FIRST and IMPROVE LAST mean IMPROVE +0 and IMPROVE -0");
+H("respectively, in other words the first and last steps shown by");
+H("SHOW NEW_PROOF / UNKNOWN.");
 H("");
-H("If the <step> is zero or negative, the -<step>th from last unknown step,");
-H("as shown by SHOW NEW_PROOF / UNKNOWN, will be used.  IMPROVE -1 will use");
-H("the penultimate unknown step,  IMPROVE -2 the antepenultimate, and");
-H("IMPROVE 0 is the same as IMPROVE LAST.");
+H("IMPROVE ALL scans all unknown steps.  If / SUBPROOFS is specified,");
+H("it also scans all steps with unknown subproofs.");
 H("");
-H("Optional qualifier:");
+H("Optional qualifiers:");
 H("    / DEPTH <number> - This qualifier will cause the search to include");
-H("        statements with $e hypotheses (but no new variables in the $e");
-H("        hypotheses), provided that the backtracking has not exceeded the");
-H("        specified depth.  **WARNING**:  Try DEPTH 1, then 2, then 3, etc");
-H("        in sequence because of possible exponential blowups.  Save your");
-H("        work before trying DEPTH greater than 1!!!");
+H("        statements with $e hypotheses (but no new variables in their $e");
+H("        hypotheses - these are called \"cut-free\" statements), provided");
+H("        that the backtracking has not exceeded the specified depth.");
+H("        **WARNING**:  Try DEPTH 1, then 2, then 3, etc. in sequence");
+H("        because of possible exponential blowups.  Save your work before");
+H("        trying DEPTH greater than 1!!!");
 H("    / NO_DISTINCT - Skip trial statements that have $d requirements.");
 H("        This qualifier will prevent assignments that might violate $d");
-H("        requirements but it also could miss possible legal assignments.");
+H("        requirements, but it also could miss possible legal assignments.");
+H("    / 1 - Use the traditional search algorithm used in earlier versions");
+H("        of this program.  It is the default.  It tries to match cut-free");
+H("        statements only (those having not having variables in their");
+H("        hypotheses that are not in the conclusion).  It is the fastest");
+H("        method when it can find a proof.");
+H("    / 2 - Try to match statements with cuts.  It also tries to match");
+H("        steps containing working ($nn) variables when they don't share");
+H("        working variables with the rest of the proof.  It runs slower");
+H("        than / 1.");
+H("    / 3 - Attempt to find (cut-free) proofs of $e hypotheses that result");
+H("        from a trial match, unlike / 2, which only attempts (cut-free)");
+H("        proofs of $f hypotheses.  It runs much slower than / 1, and you");
+H("        may prefer to use it with specific statements.  For example, if");
+H("        step 456 is unknown, you may want to use IMPROVE 456 / 3 rather");
+H("        than IMPROVE ALL / 3.  Note that / 3 respects the / DEPTH");
+H("        qualiifer, although the expense of additional run time.");
+H("    / SUBPROOFS - Look at each subproof that isn't completely known, and");
+H("        try to see if it can be proved independently.  This qualifier is");
+H("        meaningful only for IMPROVE ALL / 2 or IMPROVE ALL / 3.  It may");
+H("        take a very long time to run, especially with / 3.");
 H("");
+H("Note that / 2 includes the search of / 1, and / 3 includes / 2.");
+H("Specifying / 1 / 2 / 3 has the same effect as specifying just / 3, so");
+H("there is no need to specify more than one.  Finally, since / 1 is the");
+H("default, you never need to use it; it is included for completeness (or");
+H("in case the default is changed in the future).");
+H("");
+/*   This seems obsolete now with today's computers.  4-Sep-2012 nm
 H("Note:  If memory is limited, IMPROVE ALL on a large proof may overflow");
 H("memory.  If you use SET UNIFICATION_TIMEOUT 1 before IMPROVE ALL,");
 H("there will usually be sufficient improvement to later easily recover and");
@@ -981,11 +1054,12 @@ H("completely IMPROVE the proof on a larger computer.  Warning:  Once");
 H("memory has overflowed, there is no recovery.  If in doubt, save the");
 H("intermediate proof (SAVE NEW_PROOF then WRITE SOURCE) before IMPROVE ALL.");
 H("");
+*/
 H("See also:  HELP SET SEARCH_LIMIT");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP MINIMIZE_WITH");
+printHelp = !strcmp(saveHelpCmd, "HELP MINIMIZE_WITH");
 H("Syntax:  MINIMIZE_WITH <label-match> [/ BRIEF] [/ ALLOW_GROWTH]");
 H("             [/ NO_DISTINCT] [/ EXCEPT <label-match>]");
 H("             [/ REVERSE] [/ INCLUDE_MATHBOXES]");
@@ -1019,13 +1093,14 @@ H("        usually leads to better results.  With this qualifier they are");
 H("        scanned from first to last.  You may wish to try both ways");
 H("        (from the same starting proof) and choose the shorter result.");
 /* 28-Jun-2011 nm - Added INCLUDE_MATHBOXES */
-H("    / INCLUDE_MATHBOXES - By default, statements beyond the one with");
-H("        label \"mathbox\" are skipped.  This qualifier allows them to be");
-H("        included.");
+/* 14-Aug-2012 nm - Added note about current mathbox */
+H("    / INCLUDE_MATHBOXES - By default, MINIMIZE_WITH skips statements");
+H("        beyond the one with label \"mathbox\" and not in the mathbox of");
+H("        the PROVE argument.  This qualifier allows them to be included.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP SAVE PROOF");
+printHelp = !strcmp(saveHelpCmd, "HELP SAVE PROOF");
 H("Syntax:  SAVE PROOF <label> [/ NORMAL] [/ COMPRESSED]");
 H("");
 H("The SAVE PROOF command will reformat a proof in one of two formats and");
@@ -1048,7 +1123,7 @@ H("        reduces storage requirements in a source file.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP SAVE NEW_PROOF");
+printHelp = !strcmp(saveHelpCmd, "HELP SAVE NEW_PROOF");
 H("Syntax:  SAVE NEW_PROOF [/ NORMAL] [/ COMPRESSED]");
 H("");
 H("The SAVE NEW_PROOF command is available in the Proof Assistant only. It");
@@ -1077,7 +1152,7 @@ H("        reduces storage requirements in a source file.");
 H("");
 
 
-printHelp = !strcmp(helpCmd, "HELP DEMO");
+printHelp = !strcmp(saveHelpCmd, "HELP DEMO");
 H("For a quick demo that enables you to see Metamath do something, type");
 H("the following:");
 H("    READ set.mm");
@@ -1090,5 +1165,8 @@ H("will show all the distributive laws in the database.");
 H("    SEARCH * \"(_ $* u.\"");
 H("will show all statements with subset then union in them.");
 H("");
+
+if (strcmp(helpCmd, saveHelpCmd)) bug(1401); /* helpCmd got corrupted */
+let(&saveHelpCmd, ""); /* Deallocate memory */
 
 }

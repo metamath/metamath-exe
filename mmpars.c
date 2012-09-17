@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2011  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2012  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -57,7 +57,7 @@ char *readRawSource(vstring inputFn, long bufOffsetSoFar, long *size)
   char *fbPtr;
   long lineNum;
   flag insideComment;
-  flag insideLineComment;
+  /* flag insideLineComment; */ /* obsolete */
   char mode;
   char *startSection;
   char tmpch;
@@ -123,11 +123,12 @@ char *readRawSource(vstring inputFn, long bufOffsetSoFar, long *size)
 
   /* Allocate space for the entire input file */
   fileBufSize = fileBufSize + 10; /* Add a factor for unknown text formats */
-  fileBuf = malloc(fileBufSize * sizeof(char));
+  fileBuf = malloc((size_t)fileBufSize * sizeof(char));
   if (!fileBuf) outOfMemory("#1 (fileBuf)");
 
   /* Put the entire input file into the buffer as a giant character string */
-  charCount = fread(fileBuf, sizeof(char), fileBufSize - 2, inputFp);
+  charCount = (long)fread(fileBuf, sizeof(char), (size_t)fileBufSize - 2,
+      inputFp);
   if (!feof(inputFp)) {
     print2("Note:  This bug will occur if there is a disk file read error.\n");
     /* If this bug occurs (due to obscure future format such as compressed
@@ -184,7 +185,7 @@ char *readRawSource(vstring inputFn, long bufOffsetSoFar, long *size)
   lineNum = 1;
   mode = 0; /* 0 = outside of 'include', 1 = inside of 'include' */
   insideComment = 0; /* 1 = inside $( $) comment */
-  insideLineComment = 0; /* 1 = inside $! comment */
+  /* insideLineComment = 0; */ /* 1 = inside $! comment */
   while (1) {
     /* Find a keyword or newline */
     /* fbPtr = strpbrk(fbPtr, "\n$"); */ /* Takes 10 msec on VAX 4000/60 ! */
@@ -204,7 +205,7 @@ char *readRawSource(vstring inputFn, long bufOffsetSoFar, long *size)
     }
     if (tmpch != '$') {
       if (tmpch == '\n') {
-        insideLineComment = 0; /* ??? OBSOLETE */
+        /* insideLineComment = 0; */ /* obsolete */
         lineNum++;
       } else {
         /* if (!insideComment && !insideLineComment) { */
@@ -264,12 +265,15 @@ char *readRawSource(vstring inputFn, long bufOffsetSoFar, long *size)
         }
         insideComment = 0;
         continue;
-      case '!': /* Comment to end-of-line */  /* ??? OBSOLETE */
+      /* Comment to end-of-line */  /* obsolete */
+      /*
+      case '!':
         if (!insideComment) {
           insideLineComment = 1;
           fbPtr++;
           continue;
         }
+      */
     }
     if (insideComment) continue;
     switch (fbPtr[0]) {
@@ -298,14 +302,15 @@ char *readRawSource(vstring inputFn, long bufOffsetSoFar, long *size)
           MAX_INCLUDECALLS = MAX_INCLUDECALLS + 20;
 /*E*/if(db5)print2("'Include' call table was increased to %ld entries.\n",
 /*E*/    MAX_INCLUDECALLS);
-          includeCall = realloc(includeCall, MAX_INCLUDECALLS *
+          includeCall = realloc(includeCall, (size_t)MAX_INCLUDECALLS *
               sizeof(struct includeCall_struct));
           if (!includeCall) outOfMemory("#2 (includeCall)");
         }
         includeCall[includeCalls].includeSource = "";
         i = fbPtr - startSection + 1;
         let(&includeCall[includeCalls].includeSource, space(i));
-        memcpy(includeCall[includeCalls].includeSource, startSection, i);
+        memcpy(includeCall[includeCalls].includeSource, startSection,
+          (size_t)i);
         includeCall[includeCalls].bufOffset = startSection - fileBuf
             + bufOffsetSoFar;
         includeCall[includeCalls].calledBy_fn = "";
@@ -319,7 +324,8 @@ char *readRawSource(vstring inputFn, long bufOffsetSoFar, long *size)
         j = tokenLen(startSection + 2 + i);
         includeCall[includeCalls].current_fn = "";
         let(&includeCall[includeCalls].current_fn, space(j));
-        memcpy(includeCall[includeCalls].current_fn, startSection + 2 + i, j);
+        memcpy(includeCall[includeCalls].current_fn, startSection + 2 + i,
+            (size_t)j);
         fileNameBufStrt = fileBuf;  /* For file-not-found error msg */
         fileNamePtr = startSection + 2 + i; /* For file-not-found error msg */
         fileNameLen = j; /* For file-not-found error msg */
@@ -382,7 +388,7 @@ char *readRawSource(vstring inputFn, long bufOffsetSoFar, long *size)
         if (includeCall[saveIncludeCalls].length > fbPtr - startSection + 1) {
           /* Do this only if buffer size increased (if it decreased, doing this
              would chop off the end before the memmove) */
-          fileBuf = realloc(fileBuf, charCount + 1);
+          fileBuf = realloc(fileBuf, (size_t)charCount + 1);
           if (!fileBuf) outOfMemory("#3 (fileBuf)");
         }
 
@@ -393,17 +399,18 @@ char *readRawSource(vstring inputFn, long bufOffsetSoFar, long *size)
         */
         /*??? inefficient memory use - rewrite with loop */
         /* Emulate memmove */
-        memmovePtr = malloc(j);
+        memmovePtr = malloc((size_t)j);
         if (!memmovePtr) outOfMemory("#26 (memmove)");
         memcpy(memmovePtr,
-            fileBuf + i + (fbPtr - startSection + 1), j);
+            fileBuf + i + (fbPtr - startSection + 1), (size_t)j);
         memcpy(fileBuf + i + includeCall[saveIncludeCalls].length,
-            memmovePtr, j);
+            memmovePtr, (size_t)j);
         free(memmovePtr);
         /* End of memmove emulation */
 
         if (includeCall[saveIncludeCalls].length) {
-          memcpy(fileBuf + i, tmpPtr, includeCall[saveIncludeCalls].length);
+          memcpy(fileBuf + i, tmpPtr,
+              (size_t)(includeCall[saveIncludeCalls].length));
           free(tmpPtr);
         }
         fbPtr = fileBuf + i + includeCall[saveIncludeCalls].length;
@@ -506,7 +513,7 @@ void parseKeywords(void)
 /*E*/   potentialStatements);
 
   /* Reallocate the statement array for all potential statements */
-  statement = realloc(statement, potentialStatements
+  statement = realloc(statement, (size_t)potentialStatements
       * sizeof(struct statement_struct));
   if (!statement) outOfMemory("#4 (statement)");
 
@@ -792,10 +799,10 @@ void parseLabels(void)
           sourceError(fbPtr, j, stmt,
                 "A label isn't allowed for this statement type.");
       }
-      statement[stmt].labelName = malloc(j + 1);
+      statement[stmt].labelName = malloc((size_t)j + 1);
       if (!statement[stmt].labelName) outOfMemory("#5 (label)");
       statement[stmt].labelName[j] = 0;
-      memcpy(statement[stmt].labelName, fbPtr, j);
+      memcpy(statement[stmt].labelName, fbPtr, (size_t)j);
       fbPtr = fbPtr + j;
       fbPtr = fbPtr + whiteSpaceLen(fbPtr);
       j = tokenLen(fbPtr);
@@ -825,14 +832,14 @@ void parseLabels(void)
   }
 
   /* Sort the labels for later lookup */
-  labelKey = malloc((statements + 1) * sizeof(long));
+  labelKey = malloc(((size_t)statements + 1) * sizeof(long));
   if (!labelKey) outOfMemory("#6 (labelKey)");
   for (i = 1; i <= statements; i++) {
     labelKey[i] = i;
   }
   labelKeyBase = &labelKey[1];
   numLabelKeys = statements;
-  qsort(labelKeyBase, numLabelKeys, sizeof(long), labelSortCmp);
+  qsort(labelKeyBase, (size_t)numLabelKeys, sizeof(long), labelSortCmp);
 
   /* Skip null labels. */
   for (i = 1; i <= statements; i++) {
@@ -851,9 +858,9 @@ void parseLabels(void)
 
   /* Copy the keys for all possible labels for lookup by the
      squishProof command when local labels are generated in packed proofs. */
-  allLabelKeyBase = malloc(numLabelKeys * sizeof(long));
+  allLabelKeyBase = malloc((size_t)numLabelKeys * sizeof(long));
   if (!allLabelKeyBase) outOfMemory("#60 (allLabelKeyBase)");
-  memcpy(allLabelKeyBase, labelKeyBase, numLabelKeys * sizeof(long));
+  memcpy(allLabelKeyBase, labelKeyBase, (size_t)numLabelKeys * sizeof(long));
   numAllLabelKeys = numLabelKeys;
 
   /* Now back to the regular label stuff. */
@@ -912,7 +919,7 @@ void parseMathDecl(void)
   }
   potentialSymbols = (potentialSymbols / 2) + 2;
 /*E*/if(db5)print2("%ld potential symbols were computed.\n",potentialSymbols);
-  mathToken = realloc(mathToken, potentialSymbols *
+  mathToken = realloc(mathToken, (size_t)potentialSymbols *
       sizeof(struct mathToken_struct));
   if (!mathToken) outOfMemory("#7 (mathToken)");
 
@@ -928,10 +935,10 @@ void parseMathDecl(void)
           i = whiteSpaceLen(fbPtr);
           j = tokenLen(fbPtr + i);
           if (!j) break;
-          tmpPtr = malloc(j + 1); /* Math symbol name */
+          tmpPtr = malloc((size_t)j + 1); /* Math symbol name */
           if (!tmpPtr) outOfMemory("#8 (symbol name)");
           tmpPtr[j] = 0; /* End of string */
-          memcpy(tmpPtr, fbPtr + i, j);
+          memcpy(tmpPtr, fbPtr + i, (size_t)j);
           fbPtr = fbPtr + i + j;
           /* Create a new math symbol */
           mathToken[mathTokens].tokenName = tmpPtr;
@@ -953,7 +960,7 @@ void parseMathDecl(void)
 
         /* Create the symbol list for this statement */
         j = mathTokens - oldMathTokens; /* Number of tokens in this statement */
-        nmbrTmpPtr = poolFixedMalloc((j + 1) * sizeof(nmbrString));
+        nmbrTmpPtr = poolFixedMalloc((j + 1) * (long)(sizeof(nmbrString)));
         /* if (!nmbrTmpPtr) outOfMemory("#9 (symbol table)"); */ /*??? Not nec. with poolMalloc */
         nmbrTmpPtr[j] = -1;
         for (i = 0; i < j; i++) {
@@ -973,7 +980,7 @@ void parseMathDecl(void)
   /* Add 100 to allow for initial Proof Assistant use, and up to 100
      errors in undeclared token references */
   MAX_MATHTOKENS = mathTokens + 100;
-  mathToken = realloc(mathToken, MAX_MATHTOKENS *
+  mathToken = realloc(mathToken, (size_t)MAX_MATHTOKENS *
       sizeof(struct mathToken_struct));
   if (!mathToken) outOfMemory("#10 (mathToken)");
 
@@ -990,12 +997,12 @@ void parseMathDecl(void)
 
 
   /* Sort the math symbols for later lookup */
-  mathKey = malloc(mathTokens * sizeof(long));
+  mathKey = malloc((size_t)mathTokens * sizeof(long));
   if (!mathKey) outOfMemory("#11 (mathKey)");
   for (i = 0; i < mathTokens; i++) {
     mathKey[i] = i;
   }
-  qsort(mathKey, mathTokens, sizeof(long), mathSortCmp);
+  qsort(mathKey, (size_t)mathTokens, sizeof(long), mathSortCmp);
 /*E*/if(db5){print2("The first (up to 5) sorted math tokens are:\n");
 /*E*/  for (i=0; i<5; i++) {
 /*E*/    if (i >= mathTokens) break;
@@ -1013,7 +1020,7 @@ void parseMathDecl(void)
   for (i = 0; i < mathTokens; i++) {
     /* See if the math token is in the list of labels */
     voidPtr = (void *)bsearch(mathToken[i].tokenName, labelKeyBase,
-        numLabelKeys, sizeof(long), labelSrchCmp);
+        (size_t)numLabelKeys, sizeof(long), labelSrchCmp);
     if (voidPtr) { /* A label matching the token was found */
       stmt = (*(long *)voidPtr); /* Statement number */
       fbPtr = statement[stmt].labelSectionPtr;
@@ -1128,9 +1135,9 @@ void parseStatements(void)
   /* Initialize flags for mathKey array that identify math symbols as
      unique (when 0) or, if not unique, the flag is a number identifying a group
      of identical names */
-  mathTokenSameAs = malloc(mathTokens * sizeof(long));
+  mathTokenSameAs = malloc((size_t)mathTokens * sizeof(long));
   if (!mathTokenSameAs) outOfMemory("#12 (mathTokenSameAs)");
-  reverseMathKey = malloc(mathTokens * sizeof(long));
+  reverseMathKey = malloc((size_t)mathTokens * sizeof(long));
   if (!reverseMathKey) outOfMemory("#13 (reverseMathKey)");
   for (i = 0; i < mathTokens; i++) {
     mathTokenSameAs[i] = 0; /* 0 means unique */
@@ -1147,11 +1154,11 @@ void parseStatements(void)
   /* Initialize flags for labelKey array that identify labels as
      unique (when 0) or, if not unique, the flag is a number identifying a group
      of identical names */
-  labelTokenSameAs = malloc((statements + 1) * sizeof(long));
+  labelTokenSameAs = malloc(((size_t)statements + 1) * sizeof(long));
   if (!labelTokenSameAs) outOfMemory("#112 (labelTokenSameAs)");
-  reverseLabelKey = malloc((statements + 1) * sizeof(long));
+  reverseLabelKey = malloc(((size_t)statements + 1) * sizeof(long));
   if (!reverseLabelKey) outOfMemory("#113 (reverseLabelKey)");
-  labelActiveFlag = malloc((statements + 1) * sizeof(flag));
+  labelActiveFlag = malloc(((size_t)statements + 1) * sizeof(flag));
   if (!labelActiveFlag) outOfMemory("#114 (labelActiveFlag)");
   for (i = 1; i <= statements; i++) {
     labelTokenSameAs[i] = 0; /* Initialize:  0 = unique */
@@ -1172,34 +1179,36 @@ void parseStatements(void)
      they can accomodate any extra non-declared tokens (which get
      declared as part of error handling, where the MAX_MATHTOKENS
      limit is checked) */
-  activeConstStack = malloc(MAX_MATHTOKENS
+  activeConstStack = malloc((size_t)MAX_MATHTOKENS
       * sizeof(struct activeConstStack_struct));
-  activeVarStack = malloc(MAX_MATHTOKENS
+  activeVarStack = malloc((size_t)MAX_MATHTOKENS
       * sizeof(struct activeVarStack_struct));
-  wrkVarPtr1 = malloc(MAX_MATHTOKENS * sizeof(nmbrString));
-  wrkVarPtr2 = malloc(MAX_MATHTOKENS * sizeof(nmbrString));
+  wrkVarPtr1 = malloc((size_t)MAX_MATHTOKENS * sizeof(nmbrString));
+  wrkVarPtr2 = malloc((size_t)MAX_MATHTOKENS * sizeof(nmbrString));
   if (!activeConstStack || !activeVarStack || !wrkVarPtr1 || !wrkVarPtr2)
       outOfMemory("#14 (activeVarStack)");
 
-  activeEHypStack = malloc(activeHypStackSize
+  activeEHypStack = malloc((size_t)activeHypStackSize
       * sizeof(struct activeEHypStack_struct));
-  activeFHypStack = malloc(activeHypStackSize
+  activeFHypStack = malloc((size_t)activeHypStackSize
       * sizeof(struct activeFHypStack_struct));
-  wrkHypPtr1 = malloc(activeHypStackSize * sizeof(nmbrString));
-  wrkHypPtr2 = malloc(activeHypStackSize * sizeof(nmbrString));
-  wrkHypPtr3 = malloc(activeHypStackSize * sizeof(nmbrString));
+  wrkHypPtr1 = malloc((size_t)activeHypStackSize * sizeof(nmbrString));
+  wrkHypPtr2 = malloc((size_t)activeHypStackSize * sizeof(nmbrString));
+  wrkHypPtr3 = malloc((size_t)activeHypStackSize * sizeof(nmbrString));
   if (!activeEHypStack || !activeFHypStack || !wrkHypPtr1 || !wrkHypPtr2 ||
       !wrkHypPtr3)
       outOfMemory("#15 (activeHypStack)");
 
-  activeDisjHypStack = malloc(activeDisjHypStackSize *
+  activeDisjHypStack = malloc((size_t)activeDisjHypStackSize *
       sizeof(struct activeDisjHypStack_struct));
-  wrkDisjHPtr1A = malloc(activeDisjHypStackSize * sizeof(nmbrString));
-  wrkDisjHPtr1B = malloc(activeDisjHypStackSize * sizeof(nmbrString));
-  wrkDisjHPtr1Stmt = malloc(activeDisjHypStackSize * sizeof(nmbrString));
-  wrkDisjHPtr2A = malloc(activeDisjHypStackSize * sizeof(nmbrString));
-  wrkDisjHPtr2B = malloc(activeDisjHypStackSize * sizeof(nmbrString));
-  wrkDisjHPtr2Stmt = malloc(activeDisjHypStackSize * sizeof(nmbrString));
+  wrkDisjHPtr1A = malloc((size_t)activeDisjHypStackSize * sizeof(nmbrString));
+  wrkDisjHPtr1B = malloc((size_t)activeDisjHypStackSize * sizeof(nmbrString));
+  wrkDisjHPtr1Stmt = malloc((size_t)activeDisjHypStackSize
+      * sizeof(nmbrString));
+  wrkDisjHPtr2A = malloc((size_t)activeDisjHypStackSize * sizeof(nmbrString));
+  wrkDisjHPtr2B = malloc((size_t)activeDisjHypStackSize * sizeof(nmbrString));
+  wrkDisjHPtr2Stmt = malloc((size_t)activeDisjHypStackSize
+      * sizeof(nmbrString));
   if (!activeDisjHypStack
       || !wrkDisjHPtr1A || !wrkDisjHPtr1B || !wrkDisjHPtr1Stmt
       || !wrkDisjHPtr2A || !wrkDisjHPtr2B || !wrkDisjHPtr2Stmt)
@@ -1207,9 +1216,9 @@ void parseStatements(void)
 
   /* Initialize temporary working space for parsing tokens */
   wrkLen = 1;
-  wrkNmbrPtr = malloc(wrkLen * sizeof(nmbrString));
+  wrkNmbrPtr = malloc((size_t)wrkLen * sizeof(nmbrString));
   if (!wrkNmbrPtr) outOfMemory("#22 (wrkNmbrPtr)");
-  wrkStrPtr = malloc(wrkLen + 1);
+  wrkStrPtr = malloc((size_t)wrkLen + 1);
   if (!wrkStrPtr) outOfMemory("#23 (wrkStrPtr)");
 
   /* Find declared math symbol lengths (used to speed up parsing) */
@@ -1219,7 +1228,7 @@ void parseStatements(void)
       maxSymbolLen = mathToken[i].length;
     }
   }
-  symbolLenExists = malloc((maxSymbolLen + 1) * sizeof(flag));
+  symbolLenExists = malloc(((size_t)maxSymbolLen + 1) * sizeof(flag));
   if (!symbolLenExists) outOfMemory("#25 (symbolLenExists)");
   for (i = 0; i <= maxSymbolLen; i++) {
     symbolLenExists[i] = 0;
@@ -1408,9 +1417,9 @@ void parseStatements(void)
           free(wrkNmbrPtr);
           free(wrkStrPtr);
           wrkLen = mathSectionLen + 100;
-          wrkNmbrPtr = malloc(wrkLen * sizeof(nmbrString));
+          wrkNmbrPtr = malloc((size_t)wrkLen * sizeof(nmbrString));
           if (!wrkNmbrPtr) outOfMemory("#20 (wrkNmbrPtr)");
-          wrkStrPtr = malloc(wrkLen + 1);
+          wrkStrPtr = malloc((size_t)wrkLen + 1);
           if (!wrkStrPtr) outOfMemory("#21 (wrkStrPtr)");
         }
 
@@ -1434,7 +1443,7 @@ void parseStatements(void)
           /* New code: don't allow missing white space */
           symbolLen = origSymbolLen;
 
-          memcpy(wrkStrPtr, fbPtr, symbolLen);
+          memcpy(wrkStrPtr, fbPtr, (size_t)symbolLen);
 
           /* Old code: tolerate unambiguous missing white space
           for (; symbolLen > 0; symbolLen--) {
@@ -1446,7 +1455,7 @@ void parseStatements(void)
             /* symbolLenExists means a symbol of this length was declared */
             if (!symbolLenExists[symbolLen]) continue;
             wrkStrPtr[symbolLen] = 0; /* Define end of trial token to look up */
-            mathKeyPtr = (void *)bsearch(wrkStrPtr, mathKey, mathTokens,
+            mathKeyPtr = (void *)bsearch(wrkStrPtr, mathKey, (size_t)mathTokens,
                 sizeof(long), mathSrchCmp);
             if (!mathKeyPtr) continue; /* Trial token was not declared */
             mathKeyNum = (long *)mathKeyPtr - mathKey; /* Pointer arithmetic! */
@@ -1603,7 +1612,7 @@ void parseStatements(void)
 
         /* Assign mathString to statement array */
         nmbrTmpPtr = poolFixedMalloc(
-            (mathStringLen + 1) * sizeof(nmbrString));
+            (mathStringLen + 1) * (long)(sizeof(nmbrString)));
         /*if (!nmbrTmpPtr) outOfMemory("#24 (mathString)");*/ /*???Not nec. w/ poolMalloc */
         for (i = 0; i < mathStringLen; i++) {
           nmbrTmpPtr[i] = wrkNmbrPtr[i];
@@ -1719,19 +1728,19 @@ void parseStatements(void)
                 free(wrkDisjHPtr2Stmt);
                 activeDisjHypStackSize = activeDisjHypStackSize + 100;
                 activeDisjHypStack = realloc(activeDisjHypStack,
-                    activeDisjHypStackSize
+                    (size_t)activeDisjHypStackSize
                     * sizeof(struct activeDisjHypStack_struct));
-                wrkDisjHPtr1A = malloc(activeDisjHypStackSize
+                wrkDisjHPtr1A = malloc((size_t)activeDisjHypStackSize
                     * sizeof(nmbrString));
-                wrkDisjHPtr1B = malloc(activeDisjHypStackSize
+                wrkDisjHPtr1B = malloc((size_t)activeDisjHypStackSize
                     * sizeof(nmbrString));
-                wrkDisjHPtr1Stmt = malloc(activeDisjHypStackSize
+                wrkDisjHPtr1Stmt = malloc((size_t)activeDisjHypStackSize
                     * sizeof(nmbrString));
-                wrkDisjHPtr2A = malloc(activeDisjHypStackSize
+                wrkDisjHPtr2A = malloc((size_t)activeDisjHypStackSize
                     * sizeof(nmbrString));
-                wrkDisjHPtr2B = malloc(activeDisjHypStackSize
+                wrkDisjHPtr2B = malloc((size_t)activeDisjHypStackSize
                     * sizeof(nmbrString));
-                wrkDisjHPtr2Stmt = malloc(activeDisjHypStackSize
+                wrkDisjHPtr2Stmt = malloc((size_t)activeDisjHypStackSize
                     * sizeof(nmbrString));
                 if (!activeDisjHypStack
                     || !wrkDisjHPtr1A || !wrkDisjHPtr1B || !wrkDisjHPtr1Stmt
@@ -1764,13 +1773,13 @@ void parseStatements(void)
           free(wrkHypPtr2);
           free(wrkHypPtr3);
           activeHypStackSize = activeHypStackSize + 100;
-          activeEHypStack = realloc(activeEHypStack, activeHypStackSize
+          activeEHypStack = realloc(activeEHypStack, (size_t)activeHypStackSize
               * sizeof(struct activeEHypStack_struct));
-          activeFHypStack = realloc(activeFHypStack, activeHypStackSize
+          activeFHypStack = realloc(activeFHypStack, (size_t)activeHypStackSize
               * sizeof(struct activeFHypStack_struct));
-          wrkHypPtr1 = malloc(activeHypStackSize * sizeof(nmbrString));
-          wrkHypPtr2 = malloc(activeHypStackSize * sizeof(nmbrString));
-          wrkHypPtr3 = malloc(activeHypStackSize * sizeof(nmbrString));
+          wrkHypPtr1 = malloc((size_t)activeHypStackSize * sizeof(nmbrString));
+          wrkHypPtr2 = malloc((size_t)activeHypStackSize * sizeof(nmbrString));
+          wrkHypPtr3 = malloc((size_t)activeHypStackSize * sizeof(nmbrString));
           if (!activeEHypStack || !activeFHypStack || !wrkHypPtr1 ||
               !wrkHypPtr2 || !wrkHypPtr3) outOfMemory("#32 (activeHypStack)");
         }
@@ -1801,9 +1810,9 @@ void parseStatements(void)
           j++;
           k = nmbrTmpPtr[j];
         }
-        nmbrTmpPtr = malloc((reqVars + 1) * sizeof(nmbrString));
+        nmbrTmpPtr = malloc(((size_t)reqVars + 1) * sizeof(nmbrString));
         if (!nmbrTmpPtr) outOfMemory("#32 (hypothesis variables)");
-        memcpy(nmbrTmpPtr, wrkVarPtr1, reqVars * sizeof(nmbrString));
+        memcpy(nmbrTmpPtr, wrkVarPtr1, (size_t)reqVars * sizeof(nmbrString));
         nmbrTmpPtr[reqVars] = -1;
         /* Clear the variable flags for future re-use */
         for (i = 0; i < reqVars; i++) {
@@ -1877,9 +1886,11 @@ void parseStatements(void)
 
         /* We have finished determining required variables, so allocate the
            permanent list for the statement array */
-        nmbrTmpPtr = poolFixedMalloc((reqVars + 1) * sizeof(nmbrString));
-        /* if (!nmbrTmpPtr) outOfMemory("#30 (reqVars)"); */ /* Not nec. w/ poolMalloc */
-        memcpy(nmbrTmpPtr, wrkVarPtr1, reqVars * sizeof(nmbrString));
+        nmbrTmpPtr = poolFixedMalloc((reqVars + 1)
+            * (long)(sizeof(nmbrString)));
+        /* if (!nmbrTmpPtr) outOfMemory("#30 (reqVars)"); */
+                                                    /* Not nec. w/ poolMalloc */
+        memcpy(nmbrTmpPtr, wrkVarPtr1, (size_t)reqVars * sizeof(nmbrString));
         nmbrTmpPtr[reqVars] = -1;
         statement[stmt].reqVarList = nmbrTmpPtr;
 
@@ -1999,9 +2010,11 @@ void parseStatements(void)
         }
 
         /* Now do the allocation */
-        nmbrTmpPtr = poolFixedMalloc((reqHyps + 1) * sizeof(nmbrString));
-        /* if (!nmbrTmpPtr) outOfMemory("#33 (reqHyps)"); */ /* Not nec. w/ poolMalloc */
-        memcpy(nmbrTmpPtr, wrkHypPtr3, reqHyps * sizeof(nmbrString));
+        nmbrTmpPtr = poolFixedMalloc((reqHyps + 1)
+            * (long)(sizeof(nmbrString)));
+        /* if (!nmbrTmpPtr) outOfMemory("#33 (reqHyps)"); */
+                                       /* Not nec. w/ poolMalloc */
+        memcpy(nmbrTmpPtr, wrkHypPtr3, (size_t)reqHyps * sizeof(nmbrString));
         nmbrTmpPtr[reqHyps] = -1;
         statement[stmt].reqHypList = nmbrTmpPtr;
         statement[stmt].numReqHyp = reqHyps;
@@ -2009,9 +2022,10 @@ void parseStatements(void)
         /* We have finished determining optional $f hyps, so allocate the
            permanent list for the statement array */
         if (type == p__) { /* Optional ones are not used by $a statements */
-          nmbrTmpPtr = poolFixedMalloc((optHyps + 1) * sizeof(nmbrString));
+          nmbrTmpPtr = poolFixedMalloc((optHyps + 1)
+              * (long)(sizeof(nmbrString)));
           /* if (!nmbrTmpPtr) outOfMemory("#34 (optHyps)"); */ /* Not nec. w/ poolMalloc */
-          memcpy(nmbrTmpPtr, wrkHypPtr2, optHyps * sizeof(nmbrString));
+          memcpy(nmbrTmpPtr, wrkHypPtr2, (size_t)optHyps * sizeof(nmbrString));
           nmbrTmpPtr[optHyps] = -1;
           statement[stmt].optHypList = nmbrTmpPtr;
         }
@@ -2047,21 +2061,27 @@ void parseStatements(void)
         /* We have finished determining required $d hyps, so allocate the
            permanent list for the statement array */
 
-        nmbrTmpPtr = poolFixedMalloc((reqHyps + 1) * sizeof(nmbrString));
+        nmbrTmpPtr = poolFixedMalloc((reqHyps + 1)
+            * (long)(sizeof(nmbrString)));
         /* if (!nmbrTmpPtr) outOfMemory("#40 (reqDisjHyps)"); */ /* Not nec. w/ poolMalloc */
-        memcpy(nmbrTmpPtr, wrkDisjHPtr1A, reqHyps * sizeof(nmbrString));
+        memcpy(nmbrTmpPtr, wrkDisjHPtr1A, (size_t)reqHyps
+            * sizeof(nmbrString));
         nmbrTmpPtr[reqHyps] = -1;
         statement[stmt].reqDisjVarsA = nmbrTmpPtr;
 
-        nmbrTmpPtr = poolFixedMalloc((reqHyps + 1) * sizeof(nmbrString));
+        nmbrTmpPtr = poolFixedMalloc((reqHyps + 1)
+            * (long)(sizeof(nmbrString)));
         /* if (!nmbrTmpPtr) outOfMemory("#41 (reqDisjHyps)"); */ /* Not nec. w/ poolMalloc */
-        memcpy(nmbrTmpPtr, wrkDisjHPtr1B, reqHyps * sizeof(nmbrString));
+        memcpy(nmbrTmpPtr, wrkDisjHPtr1B, (size_t)reqHyps
+            * sizeof(nmbrString));
         nmbrTmpPtr[reqHyps] = -1;
         statement[stmt].reqDisjVarsB = nmbrTmpPtr;
 
-        nmbrTmpPtr = poolFixedMalloc((reqHyps + 1) * sizeof(nmbrString));
+        nmbrTmpPtr = poolFixedMalloc((reqHyps + 1)
+            * (long)(sizeof(nmbrString)));
         /* if (!nmbrTmpPtr) outOfMemory("#42 (reqDisjHyps)"); */ /* Not nec. w/ poolMalloc */
-        memcpy(nmbrTmpPtr, wrkDisjHPtr1Stmt, reqHyps * sizeof(nmbrString));
+        memcpy(nmbrTmpPtr, wrkDisjHPtr1Stmt, (size_t)reqHyps
+            * sizeof(nmbrString));
         nmbrTmpPtr[reqHyps] = -1;
         statement[stmt].reqDisjVarsStmt = nmbrTmpPtr;
 
@@ -2070,21 +2090,26 @@ void parseStatements(void)
 
         if (type == p__) { /* Optional ones are not used by $a statements */
 
-          nmbrTmpPtr = poolFixedMalloc((optHyps + 1) * sizeof(nmbrString));
+          nmbrTmpPtr = poolFixedMalloc((optHyps + 1)
+              * (long)(sizeof(nmbrString)));
           /* if (!nmbrTmpPtr) outOfMemory("#43 (optDisjHyps)"); */ /* Not nec. w/ poolMalloc */
-          memcpy(nmbrTmpPtr, wrkDisjHPtr2A, optHyps * sizeof(nmbrString));
+          memcpy(nmbrTmpPtr, wrkDisjHPtr2A, (size_t)optHyps
+              * sizeof(nmbrString));
           nmbrTmpPtr[optHyps] = -1;
           statement[stmt].optDisjVarsA = nmbrTmpPtr;
 
-          nmbrTmpPtr = poolFixedMalloc((optHyps + 1) * sizeof(nmbrString));
+          nmbrTmpPtr = poolFixedMalloc((optHyps + 1)
+              * (long)(sizeof(nmbrString)));
           /* if (!nmbrTmpPtr) outOfMemory("#44 (optDisjHyps)"); */ /* Not nec. w/ poolMalloc */
-          memcpy(nmbrTmpPtr, wrkDisjHPtr2B, optHyps * sizeof(nmbrString));
+          memcpy(nmbrTmpPtr, wrkDisjHPtr2B, (size_t)optHyps
+              * sizeof(nmbrString));
           nmbrTmpPtr[optHyps] = -1;
           statement[stmt].optDisjVarsB = nmbrTmpPtr;
 
-          nmbrTmpPtr = poolFixedMalloc((optHyps + 1) * sizeof(nmbrString));
+          nmbrTmpPtr = poolFixedMalloc((optHyps + 1)
+              * (long)(sizeof(nmbrString)));
           /* if (!nmbrTmpPtr) outOfMemory("#45 (optDisjHyps)"); */ /* Not nec. w/ poolMalloc */
-          memcpy(nmbrTmpPtr, wrkDisjHPtr2Stmt, optHyps
+          memcpy(nmbrTmpPtr, wrkDisjHPtr2Stmt, (size_t)optHyps
               * sizeof(nmbrString));
           nmbrTmpPtr[optHyps] = -1;
           statement[stmt].optDisjVarsStmt = nmbrTmpPtr;
@@ -2105,9 +2130,10 @@ void parseStatements(void)
         /* We have finished determining optional variables, so allocate the
            permanent list for the statement array */
         if (type == p__) { /* Optional ones are not used by $a statements */
-          nmbrTmpPtr = poolFixedMalloc((optVars + 1) * sizeof(nmbrString));
+          nmbrTmpPtr = poolFixedMalloc((optVars + 1)
+              * (long)(sizeof(nmbrString)));
           /* if (!nmbrTmpPtr) outOfMemory("#31 (optVars)"); */ /* Not nec. w/ poolMalloc */
-          memcpy(nmbrTmpPtr, wrkVarPtr2, optVars * sizeof(nmbrString));
+          memcpy(nmbrTmpPtr, wrkVarPtr2, (size_t)optVars * sizeof(nmbrString));
           nmbrTmpPtr[optVars] = -1;
           statement[stmt].optVarList = nmbrTmpPtr;
         }
@@ -2358,23 +2384,28 @@ char parseProof(long statemNum)
         + statement[statemNum].numReqHyp + numOptHyp
         + 2; /* 2 is minimum for 1-step proof; the other terms could
                 all be 0 */
-    wrkProof.tokenSrcPtrNmbr = malloc(wrkProofMaxSize * sizeof(nmbrString));
-    wrkProof.tokenSrcPtrPntr = malloc(wrkProofMaxSize * sizeof(pntrString));
-    wrkProof.stepSrcPtrNmbr = malloc(wrkProofMaxSize * sizeof(nmbrString));
-    wrkProof.stepSrcPtrPntr = malloc(wrkProofMaxSize * sizeof(pntrString));
-    wrkProof.localLabelFlag = malloc(wrkProofMaxSize * sizeof(flag));
+    wrkProof.tokenSrcPtrNmbr = malloc((size_t)wrkProofMaxSize
+        * sizeof(nmbrString));
+    wrkProof.tokenSrcPtrPntr = malloc((size_t)wrkProofMaxSize
+        * sizeof(pntrString));
+    wrkProof.stepSrcPtrNmbr = malloc((size_t)wrkProofMaxSize
+        * sizeof(nmbrString));
+    wrkProof.stepSrcPtrPntr = malloc((size_t)wrkProofMaxSize
+        * sizeof(pntrString));
+    wrkProof.localLabelFlag = malloc((size_t)wrkProofMaxSize
+        * sizeof(flag));
     wrkProof.hypAndLocLabel =
-        malloc(wrkProofMaxSize * sizeof(struct sortHypAndLoc));
-    wrkProof.localLabelPool = malloc(wrkProofMaxSize * sizeof(char));
+        malloc((size_t)wrkProofMaxSize * sizeof(struct sortHypAndLoc));
+    wrkProof.localLabelPool = malloc((size_t)wrkProofMaxSize * sizeof(char));
     wrkProof.proofString =
-        poolFixedMalloc(wrkProofMaxSize * sizeof(nmbrString));
+        poolFixedMalloc(wrkProofMaxSize * (long)(sizeof(nmbrString)));
          /* Use poolFixedMalloc instead of poolMalloc so that it won't get
             trimmed by memUsedPoolPurge. */
     wrkProof.mathStringPtrs =
-        malloc(wrkProofMaxSize * sizeof(nmbrString));
-    wrkProof.RPNStack = malloc(wrkProofMaxSize * sizeof(nmbrString));
+        malloc((size_t)wrkProofMaxSize * sizeof(nmbrString));
+    wrkProof.RPNStack = malloc((size_t)wrkProofMaxSize * sizeof(nmbrString));
     wrkProof.compressedPfLabelMap =
-         malloc(wrkProofMaxSize * sizeof(nmbrString));
+         malloc((size_t)wrkProofMaxSize * sizeof(nmbrString));
     if (!wrkProof.tokenSrcPtrNmbr ||
         !wrkProof.tokenSrcPtrPntr ||
         !wrkProof.stepSrcPtrNmbr ||
@@ -2453,7 +2484,7 @@ char parseProof(long statemNum)
 
   /* Sort the hypotheses by label name for lookup */
   numActiveHyp = wrkProof.numHypAndLoc; /* Save for bsearch later */
-  qsort(wrkProof.hypAndLocLabel, wrkProof.numHypAndLoc,
+  qsort(wrkProof.hypAndLocLabel, (size_t)(wrkProof.numHypAndLoc),
       sizeof(struct sortHypAndLoc), hypAndLocSortCmp);
 
 
@@ -2519,7 +2550,7 @@ char parseProof(long statemNum)
     }
 
     /* Add the label to the local label pool and hypAndLocLabel table */
-    memcpy(wrkProof.localLabelPoolPtr, fbPtr, tokLength);
+    memcpy(wrkProof.localLabelPoolPtr, fbPtr, (size_t)tokLength);
     wrkProof.localLabelPoolPtr[tokLength] = 0; /* String terminator */
     wrkProof.hypAndLocLabel[wrkProof.numHypAndLoc].labelTokenNum =
        -wrkProof.numSteps - 1000; /* offset of -1000 is flag for local label*/
@@ -2528,7 +2559,7 @@ char parseProof(long statemNum)
 
     /* Make sure local label is different from all earlier $a and $p labels */
     voidPtr = (void *)bsearch(wrkProof.localLabelPoolPtr, labelKeyBase,
-        numLabelKeys, sizeof(long), labelSrchCmp);
+        (size_t)numLabelKeys, sizeof(long), labelSrchCmp);
     if (voidPtr) { /* It was found */
       j = *(long *)voidPtr; /* Statement number */
       if (j <= statemNum) {
@@ -2553,7 +2584,7 @@ char parseProof(long statemNum)
     /* Make sure local label is different from all active $e and $f labels */
     voidPtr = (void *)bsearch(wrkProof.localLabelPoolPtr,
         wrkProof.hypAndLocLabel,
-        numActiveHyp, sizeof(struct sortHypAndLoc), hypAndLocSrchCmp);
+        (size_t)numActiveHyp, sizeof(struct sortHypAndLoc), hypAndLocSrchCmp);
     if (voidPtr) { /* It was found */
       j = ( (struct sortHypAndLoc *)voidPtr)->labelTokenNum; /* Statement number */
       if (!wrkProof.errorCount) {
@@ -2582,7 +2613,7 @@ char parseProof(long statemNum)
   if (wrkProof.numHypAndLoc > numActiveHyp) { /* There were local labels */
 
     /* Sort the local labels into the hypAndLocLabel look-up table */
-    qsort(wrkProof.hypAndLocLabel, wrkProof.numHypAndLoc,
+    qsort(wrkProof.hypAndLocLabel, (size_t)(wrkProof.numHypAndLoc),
         sizeof(struct sortHypAndLoc), hypAndLocSortCmp);
 
     /* Check for duplicate local labels */
@@ -2641,7 +2672,8 @@ char parseProof(long statemNum)
 
     /* See if the proof token is a hypothesis or local label ref. */
     voidPtr = (void *)bsearch(fbPtr, wrkProof.hypAndLocLabel,
-        wrkProof.numHypAndLoc, sizeof(struct sortHypAndLoc), hypAndLocSrchCmp);
+        (size_t)(wrkProof.numHypAndLoc), sizeof(struct sortHypAndLoc),
+        hypAndLocSrchCmp);
     if (voidPtr) {
       fbPtr[tokLength] = zapSave; /* Unzap source */
       j = ((struct sortHypAndLoc *)voidPtr)->labelTokenNum; /* Label lookup number */
@@ -2700,8 +2732,8 @@ char parseProof(long statemNum)
     } /* End if local label or hypothesis */
 
     /* See if token is an assertion label */
-    voidPtr = (void *)bsearch(fbPtr, labelKeyBase, numLabelKeys, sizeof(long),
-        labelSrchCmp);
+    voidPtr = (void *)bsearch(fbPtr, labelKeyBase, (size_t)numLabelKeys,
+        sizeof(long), labelSrchCmp);
     fbPtr[tokLength] = zapSave; /* Unzap source */
     if (!voidPtr) {
       if (!wrkProof.errorCount) {
@@ -2863,8 +2895,8 @@ char parseCompressedProof(long statemNum)
   flag hypLocUnkFlag;  /* Hypothesis, local label ref, or unknown step */
   long labelMapIndex;
 
-  static char chrWeight[256]; /* Proof label character weights */
-  static char chrType[256]; /* Proof character types */
+  static unsigned char chrWeight[256]; /* Proof label character weights */
+  static unsigned char chrType[256]; /* Proof character types */
   static flag chrTablesInited = 0;
   static char *digits = "0123456789";
   static char *letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -2892,8 +2924,8 @@ char parseCompressedProof(long statemNum)
     digits = "UVWXY"; /* MSB's are base 5 */
     labelChar = 'Z'; /* Was colon */
 
-    lettersLen = strlen(letters);
-    digitsLen = strlen(digits);
+    lettersLen = (long)strlen(letters);
+    digitsLen = (long)strlen(digits);
 
     /* Initialize compressed proof label character weights */
     /* Initialize compressed proof character types */
@@ -2903,12 +2935,12 @@ char parseCompressedProof(long statemNum)
     }
     j = lettersLen;
     for (i = 0; i < j; i++) {
-      chrWeight[(long)(letters[i])] = i;
+      chrWeight[(long)(letters[i])] = (unsigned char)i;
       chrType[(long)(letters[i])] = 0; /* Letter */
     }
     j = digitsLen;
     for (i = 0; i < j; i++) {
-      chrWeight[(long)(digits[i])] = i;
+      chrWeight[(long)(digits[i])] = (unsigned char)i;
       chrType[(long)(digits[i])] = 1; /* Digit */
     }
     for (i = 0; i < 256; i++) {
@@ -2956,23 +2988,28 @@ char parseCompressedProof(long statemNum)
     }
     wrkProofMaxSize = statement[statemNum].proofSectionLen
         + statement[statemNum].numReqHyp + numOptHyp;
-    wrkProof.tokenSrcPtrNmbr = malloc(wrkProofMaxSize * sizeof(nmbrString));
-    wrkProof.tokenSrcPtrPntr = malloc(wrkProofMaxSize * sizeof(pntrString));
-    wrkProof.stepSrcPtrNmbr = malloc(wrkProofMaxSize * sizeof(nmbrString));
-    wrkProof.stepSrcPtrPntr = malloc(wrkProofMaxSize * sizeof(pntrString));
-    wrkProof.localLabelFlag = malloc(wrkProofMaxSize * sizeof(flag));
+    wrkProof.tokenSrcPtrNmbr = malloc((size_t)wrkProofMaxSize
+        * sizeof(nmbrString));
+    wrkProof.tokenSrcPtrPntr = malloc((size_t)wrkProofMaxSize
+        * sizeof(pntrString));
+    wrkProof.stepSrcPtrNmbr = malloc((size_t)wrkProofMaxSize
+        * sizeof(nmbrString));
+    wrkProof.stepSrcPtrPntr = malloc((size_t)wrkProofMaxSize
+        * sizeof(pntrString));
+    wrkProof.localLabelFlag = malloc((size_t)wrkProofMaxSize
+        * sizeof(flag));
     wrkProof.hypAndLocLabel =
-        malloc(wrkProofMaxSize * sizeof(struct sortHypAndLoc));
-    wrkProof.localLabelPool = malloc(wrkProofMaxSize * sizeof(char));
+        malloc((size_t)wrkProofMaxSize * sizeof(struct sortHypAndLoc));
+    wrkProof.localLabelPool = malloc((size_t)wrkProofMaxSize * sizeof(char));
     wrkProof.proofString =
-        poolFixedMalloc(wrkProofMaxSize * sizeof(nmbrString));
+        poolFixedMalloc(wrkProofMaxSize * (long)(sizeof(nmbrString)));
          /* Use poolFixedMalloc instead of poolMalloc so that it won't get
             trimmed by memUsedPoolPurge. */
     wrkProof.mathStringPtrs =
-        malloc(wrkProofMaxSize * sizeof(nmbrString));
-    wrkProof.RPNStack = malloc(wrkProofMaxSize * sizeof(nmbrString));
+        malloc((size_t)wrkProofMaxSize * sizeof(nmbrString));
+    wrkProof.RPNStack = malloc((size_t)wrkProofMaxSize * sizeof(nmbrString));
     wrkProof.compressedPfLabelMap =
-         malloc(wrkProofMaxSize * sizeof(nmbrString));
+         malloc((size_t)wrkProofMaxSize * sizeof(nmbrString));
     if (!wrkProof.tokenSrcPtrNmbr ||
         !wrkProof.tokenSrcPtrPntr ||
         !wrkProof.stepSrcPtrNmbr ||
@@ -3053,7 +3090,7 @@ char parseCompressedProof(long statemNum)
   }
 
   /* Sort the hypotheses by label name for lookup */
-  qsort(wrkProof.hypAndLocLabel, wrkProof.numHypAndLoc,
+  qsort(wrkProof.hypAndLocLabel, (size_t)(wrkProof.numHypAndLoc),
       sizeof(struct sortHypAndLoc), hypAndLocSortCmp);
 
   /* Build the proof string (actually just a list of labels) */
@@ -3073,7 +3110,8 @@ char parseCompressedProof(long statemNum)
 
     /* See if the proof token is a hypothesis */
     voidPtr = (void *)bsearch(fbPtr, wrkProof.hypAndLocLabel,
-        wrkProof.numHypAndLoc, sizeof(struct sortHypAndLoc), hypAndLocSrchCmp);
+        (size_t)(wrkProof.numHypAndLoc), sizeof(struct sortHypAndLoc),
+        hypAndLocSrchCmp);
     if (voidPtr) {
       /* It's a hypothesis reference */
       fbPtr[tokLength] = zapSave; /* Unzap source */
@@ -3101,8 +3139,8 @@ char parseCompressedProof(long statemNum)
     } /* End if hypothesis */
 
     /* See if token is an assertion label */
-    voidPtr = (void *)bsearch(fbPtr, labelKeyBase, numLabelKeys, sizeof(long),
-        labelSrchCmp);
+    voidPtr = (void *)bsearch(fbPtr, labelKeyBase, (size_t)numLabelKeys,
+        sizeof(long), labelSrchCmp);
     fbPtr[tokLength] = zapSave; /* Unzap source */
     if (!voidPtr) {
       if (!wrkProof.errorCount) {
@@ -3564,7 +3602,7 @@ void rawSourceError(char *startFile, char *ptr, long tokLen, long lineNum,
   endLine--;
   let(&errLine, space(endLine - startLine + 1));
   if (endLine - startLine + 1 < 0) bug(1721);
-  memcpy(errLine, startLine, endLine - startLine + 1);
+  memcpy(errLine, startLine, (size_t)(endLine - startLine) + 1);
   errorMessage(errLine, lineNum, ptr - startLine + 1, tokLen, errorMsg,
       fileName, 0, (char)_error);
   print2("\n");
@@ -3642,7 +3680,7 @@ void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
 
   /* Save line with error (with no newline on it) */
   let(&errLine, space(endLine - startLine + 1));
-  memcpy(errLine, startLine, endLine - startLine + 1);
+  memcpy(errLine, startLine, (size_t)(endLine - startLine) + 1);
 
   if (!lineNum) {
     /* Not a source file parse */
@@ -3685,7 +3723,7 @@ vstring shortDumpRPNStack(void) {
      k = wrkProof.RPNStack[i]; /* Step */
      let(&tmpStr,space(wrkProof.stepSrcPtrNmbr[k]));
      memcpy(tmpStr,wrkProof.stepSrcPtrPntr[k],
-         wrkProof.stepSrcPtrNmbr[k]); /* Label at step */
+         (size_t)(wrkProof.stepSrcPtrNmbr[k])); /* Label at step */
      let(&tmpStr2,cat(
          tmpStr2,", ","\"",tmpStr,"\" (step ",str(k + 1),")",NULL));
   }
@@ -3696,8 +3734,8 @@ vstring shortDumpRPNStack(void) {
         right(tmpStr2,m + 1),NULL));
   }
   if (wrkProof.RPNStackPtr > 2) {
-    m = strlen(tmpStr2);
-    for (m = strlen(tmpStr2); m > 0; m--) { /* Find last comma */
+    m = (long)strlen(tmpStr2);
+    for (m = (long)strlen(tmpStr2); m > 0; m--) { /* Find last comma */
       if (tmpStr2[m - 1] == ',') break;
     }
     let(&tmpStr2,cat(left(tmpStr2,m - 1),", and ",
@@ -3723,8 +3761,8 @@ long lookupLabel(vstring label)
   void *voidPtr; /* bsearch returned value */
   long statemNum;
   /* Find the statement number */
-  voidPtr = (void *)bsearch(label, labelKeyBase, numLabelKeys, sizeof(long),
-      labelSrchCmp);
+  voidPtr = (void *)bsearch(label, labelKeyBase, (size_t)numLabelKeys,
+      sizeof(long), labelSrchCmp);
   if (!voidPtr) {
     return (-1);
   }
@@ -3817,7 +3855,7 @@ long whiteSpaceLen(char *ptr)
           }
           /* end in-line strchr code */
           if (!ptr1) {
-            return(i + strlen(&ptr[i])); /* Unterminated comment - goto EOF */
+            return(i + (long)strlen(&ptr[i])); /* Unterminated comment - goto EOF */
           }
           if (ptr1[1] == ')') break;
           i = ptr1 - ptr;
@@ -3946,7 +3984,7 @@ vstring outputStatement(long stmt, flag cleanFlag,
 
   let(&labelSection, space(statement[stmt].labelSectionLen));
   memcpy(labelSection, statement[stmt].labelSectionPtr,
-      statement[stmt].labelSectionLen);
+      (size_t)(statement[stmt].labelSectionLen));
 
   if (stmt == statements + 1) return labelSection; /* Special case - EOF */
 
@@ -3969,11 +4007,11 @@ vstring outputStatement(long stmt, flag cleanFlag,
 
   let(&mathSection, space(statement[stmt].mathSectionLen));
   memcpy(mathSection, statement[stmt].mathSectionPtr,
-      statement[stmt].mathSectionLen);
+      (size_t)(statement[stmt].mathSectionLen));
 
   let(&proofSection, space(statement[stmt].proofSectionLen));
   memcpy(proofSection, statement[stmt].proofSectionPtr,
-      statement[stmt].proofSectionLen);
+      (size_t)(statement[stmt].proofSectionLen));
 
 
   /* 12-Jun-2011 nm Added this section to reformat statements to match the
@@ -4028,7 +4066,7 @@ vstring outputStatement(long stmt, flag cleanFlag,
         if (pos == 0 && stmt > 1) {
           let(&labelSection, cat(edit(labelSection, 128 /* trailing spaces */),
               "\n", NULL));
-          pos = strlen(labelSection) + 1;
+          pos = (long)strlen(labelSection) + 1;
         }
         /* Put a blank line between $} and ${ if there is none */
         if (stmt > 1) {
@@ -4048,13 +4086,13 @@ vstring outputStatement(long stmt, flag cleanFlag,
             if (dollarDpos + 2 + (signed)(strlen(mathSection)) + 4
                 <= screenWidth) {
               let(&labelSection, "  ");  /* 2 spaces between $d's */
-              dollarDpos = dollarDpos + 2 + strlen(mathSection) + 4;
+              dollarDpos = dollarDpos + 2 + (long)strlen(mathSection) + 4;
             } else {
               /* Add 4 = '$d' length + '$.' length */
-              dollarDpos = indent + strlen(mathSection) + 4;
+              dollarDpos = indent + (long)strlen(mathSection) + 4;
             }
           } else {
-            dollarDpos = indent + strlen(mathSection) + 4;
+            dollarDpos = indent + (long)strlen(mathSection) + 4;
           }
         }
         break;
@@ -4086,7 +4124,7 @@ vstring outputStatement(long stmt, flag cleanFlag,
         if (pos == 0 && stmt > 1) {
           let(&labelSection, cat(edit(labelSection, 128 /* trailing spaces */),
               "\n", NULL));
-          pos = strlen(labelSection) + 1;
+          pos = (long)strlen(labelSection) + 1;
         }
         let(&labelSection, left(labelSection, pos));
 
@@ -4127,7 +4165,7 @@ vstring outputStatement(long stmt, flag cleanFlag,
         outputToString = 0;
 #define ASCII_4 4
         /* Restore ASCII_4 characters put in by rewrapComment() to space */
-        length = strlen(comment);
+        length = (long)strlen(comment);
         for (pos = 2; pos < length - 2; pos++) {
            /* For debugging: */
            /* if (comment[pos] == ASCII_4) comment[pos] = '#'; */
@@ -4156,7 +4194,7 @@ vstring outputStatement(long stmt, flag cleanFlag,
         if (pos == 0 && stmt > 1) {
           let(&labelSection, cat(edit(labelSection, 128 /* trailing spaces */),
               "\n", NULL));
-          pos = strlen(labelSection) + 1;
+          pos = (long)strlen(labelSection) + 1;
         }
         let(&labelSection, left(labelSection, pos));
         /* If previous statement is $d or $e and there is no comment after it,
@@ -4198,7 +4236,7 @@ vstring outputStatement(long stmt, flag cleanFlag,
           let(&mathSection, edit(mathSection,
               8 /* leading sp */ + 128 /* trailing sp */));
           if (mathSection[strlen(mathSection) - 1] != '\n') break;
-          let(&mathSection, left(mathSection, strlen(mathSection) - 1));
+          let(&mathSection, left(mathSection, (long)strlen(mathSection) - 1));
         }
         let(&mathSection, cat(" ", mathSection, " ", NULL));
                    /* Restore standard leading/trailing space stripped above */
@@ -4220,14 +4258,14 @@ vstring outputStatement(long stmt, flag cleanFlag,
         length = indent + 2 /* Prefix length - add 2 for keyword ${, etc. */
             /* Add 1 for space after label, if $e, $f, $a, $p */
             + (((statement[stmt].labelName)[0]) ?
-                (strlen(statement[stmt].labelName) + 1) : 0);
+                ((long)strlen(statement[stmt].labelName) + 1) : 0);
         if (outputToString == 1) bug(1728);
         outputToString = 1;
         let(&printString, "");
         printLongLine(cat(space(length), mathSection, "$.", NULL),
             space(indent + 4), " ");
         outputToString = 0;
-        let(&mathSection, left(printString, strlen(printString) - 3));
+        let(&mathSection, left(printString, (long)strlen(printString) - 3));
             /* Trim off "$." plus "\n" */
         let(&mathSection, right(mathSection, length + 1));
         let(&printString, "");
@@ -4315,7 +4353,7 @@ vstring rewrapComment(vstring comment1)
   while (1) {
     pos = instr(pos + 1, comment, "`");
     if (pos == 0) break;
-    mathmode = 1 - mathmode;
+    mathmode = (flag)(1 - mathmode);
     if (comment[pos - 2] == '`' || comment[pos] == '`') continue;
             /* See if previous or next char is "`"; ignore "``" escape */
     if (comment[pos] != ' ' && comment[pos] != '\n') {
@@ -4364,7 +4402,7 @@ vstring rewrapComment(vstring comment1)
   /* Change all newlines to space unless double newline */
   /* Note:  it is assumed that blank lines have no spaces
      for this to work; the user must ensure that. */
-  length = strlen(comment);
+  length = (long)strlen(comment);
   for (pos = 2; pos < length - 2; pos++) {
     if (comment[pos] == '\n' && comment[pos - 1] != '\n'
         && comment[pos + 1] != '\n')
@@ -4374,7 +4412,7 @@ vstring rewrapComment(vstring comment1)
 
   /* Remove spaces and blank lines at end of comment */
   while (1) {
-    length = strlen(comment);
+    length = (long)strlen(comment);
     if (comment[length - 3] != ' ') bug(1730);
             /* Should have been syntax err (no space before "$)") */
     if (comment[length - 4] != ' ' && comment[length - 4] != '\n') break;
@@ -4386,7 +4424,7 @@ vstring rewrapComment(vstring comment1)
   /* Note:  This will not detect a '~ label' at end of comment.
      A diff by the user is needed to verify it doesn't happen.
      (We could enhace the code here to do that if it becomes a problem.) */
-  length = strlen(comment);
+  length = (long)strlen(comment);
   if (islower((unsigned char)(comment[length - 4]))) {
     let(&comment, cat(left(comment, length - 3), ". $)", NULL));
   }
@@ -4409,7 +4447,7 @@ vstring rewrapComment(vstring comment1)
           comment[pos + 1] = ASCII_4;
       }
 */
-      mathmode = 1 - mathmode;
+      mathmode = (char)(1 - mathmode);
     }
     if ( mathmode == 1 && comment[pos] == ' ')
       /* We assign comment[] rather than commentTemplate to avoid confusion of
@@ -4447,7 +4485,7 @@ vstring rewrapComment(vstring comment1)
     } /* end while */
   } /* next i */
 
-  length = strlen(comment);
+  length = (long)strlen(comment);
   let(&commentTemplate, space(length));
   for (pos = 3; pos < length - 2; pos++) {
     if (comment[pos] == ' ') {
@@ -4581,9 +4619,9 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
   /* Initialize flags for mathKey array that identify math symbols as
      unique (when 0) or, if not unique, the flag is a number identifying a group
      of identical names */
-  mathTokenSameAs = malloc(mathTokens * sizeof(long));
+  mathTokenSameAs = malloc((size_t)mathTokens * sizeof(long));
   if (!mathTokenSameAs) outOfMemory("#12 (mathTokenSameAs)");
-  reverseMathKey = malloc(mathTokens * sizeof(long));
+  reverseMathKey = malloc((size_t)mathTokens * sizeof(long));
   if (!reverseMathKey) outOfMemory("#13 (reverseMathKey)");
   for (i = 0; i < mathTokens; i++) {
     mathTokenSameAs[i] = 0; /* 0 means unique */
@@ -4599,10 +4637,10 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
 
   /* Initialize temporary working space for parsing tokens */
   /* Assume the worst case of one token per userText character */
-  wrkLen = strlen(userText);
-  wrkNmbrPtr = malloc(wrkLen * sizeof(nmbrString));
+  wrkLen = (long)strlen(userText);
+  wrkNmbrPtr = malloc((size_t)wrkLen * sizeof(nmbrString));
   if (!wrkNmbrPtr) outOfMemory("#22 (wrkNmbrPtr)");
-  wrkStrPtr = malloc(wrkLen + 1);
+  wrkStrPtr = malloc((size_t)wrkLen + 1);
   if (!wrkStrPtr) outOfMemory("#23 (wrkStrPtr)");
 
   /* Find declared math symbol lengths (used to speed up parsing) */
@@ -4612,7 +4650,7 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
       maxSymbolLen = mathToken[i].length;
     }
   }
-  symbolLenExists = malloc((maxSymbolLen + 1) * sizeof(flag));
+  symbolLenExists = malloc(((size_t)maxSymbolLen + 1) * sizeof(flag));
   if (!symbolLenExists) outOfMemory("#25 (symbolLenExists)");
   for (i = 0; i <= maxSymbolLen; i++) {
     symbolLenExists[i] = 0;
@@ -4645,13 +4683,13 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
           } else {
             symbolLen = origSymbolLen;
           }
-          memcpy(wrkStrPtr, fbPtr, symbolLen);
+          memcpy(wrkStrPtr, fbPtr, (size_t)symbolLen);
           for (; symbolLen > 0; symbolLen--) {
             /* symbolLenExists means a symbol of this length was declared */
             if (!symbolLenExists[symbolLen]) continue;
             wrkStrPtr[symbolLen] = 0; /* Define end of trial token to look up */
-            mathKeyPtr = (void *)bsearch(wrkStrPtr, mathKey, mathTokens,
-                sizeof(long), mathSrchCmp);
+            mathKeyPtr = (void *)bsearch(wrkStrPtr, mathKey,
+                (size_t)mathTokens, sizeof(long), mathSrchCmp);
             if (!mathKeyPtr) continue; /* Trial token was not declared */
             mathKeyNum = (long *)mathKeyPtr - mathKey; /* Pointer arithmetic! */
             if (mathTokenSameAs[mathKeyNum]) { /* Multiply-declared symbol */
@@ -4715,9 +4753,9 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
               if (symbolLen == 1) {
                 symbolLen = 0; /* No # after '$' -- error */
               } else {
-                memcpy(wrkStrPtr, fbPtr + 1, i - 1);
+                memcpy(wrkStrPtr, fbPtr + 1, (size_t)i - 1);
                 wrkStrPtr[i - 1] = 0; /* End of string */
-                tokenNum = val(wrkStrPtr) + mathTokens;
+                tokenNum = (long)(val(wrkStrPtr)) + mathTokens;
                 /* See if dummy var has been declared; if not, declare it */
                 if (tokenNum > pipDummyVars + mathTokens) {
                   declareDummyVars(tokenNum - pipDummyVars - mathTokens);

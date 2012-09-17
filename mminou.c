@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2011  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2012  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -102,6 +102,9 @@ flag print2(char* fmt,...)
     }
     backBufferPos = 1;
     pntrLet(&backBuffer, pntrAddElement(backBuffer));
+    /* Note: pntrAddElement() initializes the added element to the
+       empty string, so we don't need a separate initialization. */
+    /* backBuffer[backBufferPos - 1] = ""; */  /* already done */
   }
 
   if ((!quitPrint && commandFileNestingLevel == 0 && (scrollMode == 1
@@ -135,7 +138,7 @@ flag print2(char* fmt,...)
         fflush(stdout);
 #endif
       }
-      c = getchar();
+      c = (char)(getchar());
       if (c == '\n') {
         if (backBufferPos == pntrLen(backBuffer)) {
           /* Normal output */
@@ -195,7 +198,7 @@ flag print2(char* fmt,...)
 #endif
         continue;
       }
-      while (c != '\n') c = getchar();
+      while (c != '\n') c = (char)(getchar());
     } /* While 1 */
     if (backFromCmdInput)
       goto PRINT2_RETURN;
@@ -203,6 +206,9 @@ flag print2(char* fmt,...)
     if (!quitPrint) {
       backBufferPos++;
       pntrLet(&backBuffer, pntrAddElement(backBuffer));
+      /* Note: pntrAddElement() initializes the added element to the
+         empty string, so we don't need a separate initialization. */
+      /* backBuffer[backBufferPos - 1] = ""; */  /* already done */
     }
   }
 
@@ -242,7 +248,7 @@ flag print2(char* fmt,...)
   }
 
   nlpos = instr(1, printBuffer, "\n");
-  lineLen = strlen(printBuffer);
+  lineLen = (long)strlen(printBuffer);
 
   /* 10/14/02 Change any ASCII 3's back to spaces, where they were set in
      printLongLine to handle the broken quote problem */
@@ -306,6 +312,9 @@ flag print2(char* fmt,...)
           printedLines = 1;
           backBufferPos++;
           pntrLet(&backBuffer, pntrAddElement(backBuffer));
+          /* Note: pntrAddElement() initializes the added element to the
+             empty string, so we don't need a separate initialization. */
+          /* backBuffer[backBufferPos - 1] = ""; */  /* already done */
         }
       }
     }
@@ -444,7 +453,7 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
      where all ASCII 3's are converted back to space. */
   /* Note added 10/20/02: tidy.exe breaks HREF quotes with new line.
      Check HTML spec - do we really need this code? */
-  j = strlen(multiLine);
+  j = (long)strlen(multiLine);
   /* Do a bug check to make sure no real ASCII 3's are ever printed */
   for (i = 0; i < j; i++) {
     if (multiLine[i] == QUOTED_SPACE) bug(1514); /* Should never be the case */
@@ -562,7 +571,7 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
     /* Now we will break up one caller's line */
     firstLine = 1;
 
-    startNextLineLen = strlen(startNextLine1);
+    startNextLineLen = (long)strlen(startNextLine1);
     /* Prevent infinite loop if next line prefix is longer than screen */
     if (startNextLineLen > screenWidth - 4) {
       startNextLineLen = screenWidth - 4;
@@ -575,7 +584,7 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
 
       /* Assume compressed proof if 1st char of breakMatch1 is "&" */
       if (breakMatch1[0] == '&'
-          && !instr(p, left(longLine, strlen(longLine) - 3), " ")
+          && !instr(p, left(longLine, (long)strlen(longLine) - 3), " ")
           && longLine[p - 3] != ' ') /* Don't split trailing "$." */ {
         /* We're in the compressed proof section; break line anywhere */
         p = p;
@@ -685,7 +694,7 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
       if (treeIndentationFlag) {
         /* Right justify output for continuation lines */
         print2("%s\n",cat(startNextLine1, space(screenWidth
-              - startNextLineLen - strlen(longLine)), longLine, NULL));
+            - startNextLineLen - (long)(strlen(longLine))), longLine, NULL));
       } else {
         print2("%s\n",cat(startNextLine1, longLine, NULL));
       }
@@ -739,7 +748,7 @@ vstring cmdInput(FILE *stream, vstring ask)
       fflush(stdout);
 #endif
     }
-    i = strlen(g);
+    i = (long)strlen(g);
 /*E*/db = db - (CMD_BUFFER_SIZE - i); /* Adjust string usage to detect leaks */
     /* Detect operating system bug of inputting no characters */
     if (!i) {
@@ -899,6 +908,9 @@ vstring cmdInput1(vstring ask)
       backBufferPos = 1;
       pntrLet(&backBuffer, NULL_PNTRSTRING);
       pntrLet(&backBuffer, pntrAddElement(backBuffer));
+      /* Note: pntrAddElement() initializes the added element to the
+         empty string, so we don't need a separate initialization. */
+      /* backBuffer[backBufferPos - 1] = ""; */  /* already done */
 
       /* Add user's typing to the backup buffer for display on 1st screen */
       let((vstring *)(&(backBuffer[backBufferPos - 1])), cat(
@@ -938,7 +950,7 @@ vstring cmdInput1(vstring ask)
 } /* cmdInput1 */
 
 
-void errorMessage(vstring line, long lineNum, short column, short tokenLength,
+void errorMessage(vstring line, long lineNum, long column, long tokenLength,
   vstring error, vstring fileName, long statementNum, flag severity)
 {
   /* Note:  "line" may be terminated with \n.  "error" and "fileName"
@@ -1279,7 +1291,7 @@ vstring readFileToString(vstring fileName, char verbose) {
   /* Allocate space for the entire input file */
   fileBufSize = fileBufSize + 10;
             /* Add a factor for unknown text formats (just a guess) */
-  fileBuf = malloc(fileBufSize * sizeof(char));
+  fileBuf = malloc((size_t)fileBufSize * sizeof(char));
   if (!fileBuf) {
     if (verbose) print2(
         "?Sorry, there was not enough memory to read the file \"%s\".\n",
@@ -1289,7 +1301,8 @@ vstring readFileToString(vstring fileName, char verbose) {
   }
 
   /* Put the entire input file into the buffer as a giant character string */
-  charCount = fread(fileBuf, sizeof(char), fileBufSize - 2, inputFp);
+  charCount = (long)fread(fileBuf, sizeof(char), (size_t)fileBufSize - 2,
+      inputFp);
   if (!feof(inputFp)) {
     print2("Note:  This bug will occur if there is a disk file read error.\n");
     /* If this bug occurs (due to obscure future format such as compressed
@@ -1384,7 +1397,7 @@ vstring readFileToString(vstring fileName, char verbose) {
   }
 
   /* Make sure there aren't null characters */
-  i = strlen(fileBuf);
+  i = (long)strlen(fileBuf);
   if (charCount != i) {
     if (verbose) {
       print2(

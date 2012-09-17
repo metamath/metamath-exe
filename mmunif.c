@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2011  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2012  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -8,13 +8,14 @@
    proof verification is done in mmveri.c) */
 
 /*
-This module deals with an object called the stateVector, which is a string of
-16 pointers (called entries 0 through 15 below) to either other pntrStrings or
-to nmbrStrings.  In the description, data in stateVector may be referred to
+This module deals with an object called the stateVector, which is a pntrString
+of 16 pointers (called entries 0 through 15 below) to either other pntrStrings
+or to nmbrStrings.  In the description, data in stateVector may be referred to
 by the local C variable the data is typically assigned to, such as
 "unkVarsLen".  The word "variable" in the context of scheme content refers
-to temporary variables $1, $2, etc.  The entries are not organized in logical
-order for historical reasons, e.g. entry 11 logically comes first.
+to temporary (or "work" or "dummy") variables $1, $2, etc.  The entries are not
+organized in logical order for historical reasons, e.g. entry 11 logically
+comes first.
 
 Entry 11 is a nmbrString of length 4 holding individual parameters.
 
@@ -130,7 +131,7 @@ long unifTimeouts = 0; /* Number of timeouts so far for this command */
 flag hentyFilter = 1; /* Default to ON (turn OFF for debugging). */
 flag bracketMatchInit = 0; /* Global so eraseSource() (mmcmds.c) can clr it */
 
-/* Additional prototypes */
+/* Additional local prototypes */
 void hentyNormalize(nmbrString **hentyVars, nmbrString **hentyVarStart,
     nmbrString **hentyVarLen, nmbrString **hentySubstList,
     pntrString **stateVector);
@@ -271,7 +272,7 @@ nmbrString *makeSubstUnif(flag *newVarFlag,
 /*E*/if(db7)printLongLine(cat("result ",nmbrCvtMToVString(result),NULL),""," ");
   nmbrLet(&stackUnkVar, NULL_NMBRSTRING); /* Deallocate */
   return (result);
-}
+} /* makeSubstUnif */
 
 
 
@@ -1197,7 +1198,7 @@ char unify(
     return (2);
   }
   return (0);
-}
+} /* unify */
 
 
 /* oneDirUnif() is like unify(), except that when reEntryFlag is 1,
@@ -1260,7 +1261,7 @@ nmbrString *oldStackUnkVarLen; /* Pointer only - not allocated */
     } /* End while (1) */
   }
   return(0); /* Dummy return value - never happens */
-}
+} /* oneDirUnif */
 
 
 
@@ -1390,7 +1391,7 @@ char uniqueUnif(
 
   return (3); /* Return flag that unification is not unique */
 
-}
+} /* uniqueUnif */
 
 
 /* Deallocates the contents of a stateVector */
@@ -1439,7 +1440,7 @@ void purgeStateVector(pntrString **stateVector) {
 
   return;
 
-}
+} /* purgeStateVector */
 
 
 /* Prints the substitutions determined by unify for debugging purposes */
@@ -1470,7 +1471,7 @@ void printSubst(pntrString *stateVector)
     let(&tmpStr,"");
     nmbrLet(&nmbrTmp,NULL_NMBRSTRING);
   }
-}
+} /* printSubst */
 
 
 /* unifyH() is like unify(), except that when reEntryFlag is 1, a new
@@ -1551,7 +1552,7 @@ char unifyH(
     return (tmpFlag);
 
   }
-}
+} /* unifyH */
 
 /* Extract and normalize the unification substitutions. */
 void hentyNormalize(nmbrString **hentyVars, nmbrString **hentyVarStart,
@@ -1675,7 +1676,7 @@ void hentyNormalize(nmbrString **hentyVars, nmbrString **hentyVarStart,
 
   return;
 
-}
+} /* hentyNormalize */
 
 /* Check to see if an equivalent unification exists in the Henty filter */
 flag hentyMatch(nmbrString *hentyVars, nmbrString *hentyVarStart,
@@ -1701,7 +1702,7 @@ flag hentyMatch(nmbrString *hentyVars, nmbrString *hentyVarStart,
   } /* Next i */
 
   return (0); /* There was no previous equivalent unification */
-}
+} /* hentyMatch */
 
 /* Add an entry to the Henty filter */
 void hentyAdd(nmbrString *hentyVars, nmbrString *hentyVarStart,
@@ -1724,4 +1725,4 @@ void hentyAdd(nmbrString *hentyVars, nmbrString *hentyVarStart,
       (pntrString *)((*stateVector)[15])));
   ((pntrString *)((*stateVector)[15]))[size] =
       hentySubstList;
-}
+} /* hentyAdd */

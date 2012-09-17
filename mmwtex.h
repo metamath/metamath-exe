@@ -53,10 +53,10 @@ int texSrchCmp(const void *key, const void *data);
 /* Convert ascii to a string of \tt tex */
 /* (The caller must surround it by {\tt }) */
 vstring asciiToTt(vstring s);
-vstring tokenToTex(vstring mtoken);
+vstring tokenToTex(vstring mtoken, long statemNum);
 /* Converts a comment section in math mode to TeX.  Each math token
    MUST be separated by white space.   TeX "$" does not surround the output. */
-vstring asciiMathToTex(vstring mathComment);
+vstring asciiMathToTex(vstring mathComment, long statemNum);
 /* Gets the next section of a comment that is in the current mode (text,
    label, or math).  If 1st char. is not "$", text mode is assumed.
    mode = 0 means end of comment reached.  srcptr is left at 1st char.
@@ -127,7 +127,7 @@ vstring spectrumToRGB(long color, long maxColor);
    or LaTeX when !htmlFlag, for the math string (hypothesis or conclusion) that
    is passed in. */
 /* Warning: The caller must deallocate the returned vstring. */
-vstring getTexLongMath(nmbrString *mathString);
+vstring getTexLongMath(nmbrString *mathString, long statemNum);
 
 /* Added 18-Sep-03 (transferred from metamath.c) */
 /* Returns the TeX, or HTML code for GIFs (!altHtmlFlag) or Unicode

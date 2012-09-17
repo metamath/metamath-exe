@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2011  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2012  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -49,7 +49,6 @@ flag processCommandLine(void)
     a field is optional */
   pntrLet(&fullArg,NULL_PNTRSTRING);
 
-
   if (!toolsMode) {
 
     if (!PFASmode) {
@@ -65,8 +64,9 @@ flag processCommandLine(void)
         "LET|UNIFY|IMPROVE|MINIMIZE_WITH|MATCH|DELETE|MORE|TOOLS|MIDI|<HELP>",
         NULL));
     }
-    if (!getFullArg(0,tmpStr))
+    if (!getFullArg(0,tmpStr)) {
       goto pclbad;
+    }
 
     if (cmdMatches("HELP")) {
       if (!getFullArg(1, cat("LANGUAGE|PROOF_ASSISTANT|MM-PA|",
@@ -404,6 +404,7 @@ flag processCommandLine(void)
             goto pclbad;
       }
       if (showStatement) {
+        if (showStatement < 0) bug(1110);
         let(&defaultArg,cat(" <",statement[showStatement].labelName,">",NULL));
       } else {
         let(&defaultArg,"");
@@ -531,8 +532,9 @@ flag processCommandLine(void)
           goto pclbad;
         }
         if (!getFullArg(2,
-            cat("* What is the statement label",defaultArg,"? ",NULL)))
+            cat("* What is the statement label",defaultArg,"? ",NULL))) {
           goto pclbad;
+        }
         goto pclgood;
       }
 
@@ -692,6 +694,7 @@ flag processCommandLine(void)
             goto pclbad;
       }
       if (showStatement) {
+        if (showStatement < 0) bug(1111);
         let(&defaultArg,cat(" <",statement[showStatement].labelName,">",NULL));
       } else {
         let(&defaultArg,"");
@@ -855,7 +858,7 @@ flag processCommandLine(void)
         if (lastArgMatches("/")) {
           i++;
           if (!getFullArg(i,
-              "DEPTH|NO_DISTINCT<DEPTH>")
+              "DEPTH|NO_DISTINCT|1|2|3|SUBPROOFS<DEPTH>")
               ) goto pclbad;
           if (lastArgMatches("DEPTH")) {
             i++;
@@ -988,7 +991,9 @@ flag processCommandLine(void)
     }
 
     if (cmdMatches("REPLACE")) {
-      if (!getFullArg(1,"# Replace what step number? ")) goto pclbad;
+      /* 14-Sep-2012 nm Added FIRST, LAST */
+      if (!getFullArg(1,"* What step number, or FIRST, or LAST <LAST>? "))
+          goto pclbad;
       if (!getFullArg(2,"* With what statement label? ")) goto pclbad;
       goto pclgood;
     }
@@ -996,10 +1001,11 @@ flag processCommandLine(void)
     if (cmdMatches("LET")) {
       if (!getFullArg(1,"STEP|VARIABLE|<STEP>")) goto pclbad;
       if (cmdMatches("LET STEP")) {
-        if (!getFullArg(2,"# Assign what step number? ")) goto pclbad;
+        if (!getFullArg(2,"* What step number, or FIRST, or LAST <LAST>? "))
+          goto pclbad;
       }
       if (cmdMatches("LET VARIABLE")) {
-        if (!getFullArg(2,"* Assign what variable (format $nnn)? ")) goto pclbad;
+        if (!getFullArg(2,"* Assign what variable (format $nn)? ")) goto pclbad;
       }
       if (!getFullArg(3,"=|<=>")) goto pclbad;
       if (!getFullArg(4,"* With what math symbol string? "))
@@ -1546,7 +1552,7 @@ flag processCommandLine(void)
   let(&tmpStr,"");
   return (0);
 
-}
+} /* processCommandLine */
 
 
 
@@ -1860,7 +1866,7 @@ flag getFullArg(long arg, vstring cmdList1)
   let(&cmdList,"");
   return(0);
 
-}
+} /* getFullArg */
 
 
 
@@ -2051,7 +2057,7 @@ void parseCommandLine(vstring line)
 
   /* Deallocate */
   let(&specialOneCharTokens, "");
-}
+} /* parseCommandLine */
 
 
 flag lastArgMatches(vstring argString)
@@ -2062,7 +2068,7 @@ flag lastArgMatches(vstring argString)
   } else {
     return (0);
   }
-}
+} /* lastArgMatches */
 
 flag cmdMatches(vstring cmdString)
 {
@@ -2092,7 +2098,8 @@ flag cmdMatches(vstring cmdString)
     let(&tmpStr,"");
     return (0);
   }
-}
+} /* cmdMatches */
+
 
 long switchPos(vstring swString)
 {
@@ -2141,7 +2148,7 @@ long switchPos(vstring swString)
   let(&tmpStr,"");
   let(&swString1,"");
   return (j + 1);
-}
+} /* switchPos */
 
 
 void printCommandError(vstring line1, long arg, vstring errorMsg)
@@ -2182,5 +2189,5 @@ void printCommandError(vstring line1, long arg, vstring errorMsg)
   printLongLine(errorMsg, "", " ");
   let(&errorPointer, "");
   let(&line, "");
-}
+} /* printCommandError */
 

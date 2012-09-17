@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2011  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2012  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -59,10 +59,10 @@ void interactiveMatch(long step, long maxEssential)
   long stmt, matchListPos, timeoutListPos;
 
   printLongLine(cat("Step ", str(step + 1), ":  ", nmbrCvtMToVString(
-      proofInProgress.target[step]), NULL), "  ", " ");
-  if (nmbrLen(proofInProgress.user[step])) {
+      (proofInProgress.target)[step]), NULL), "  ", " ");
+  if (nmbrLen((proofInProgress.user)[step])) {
     printLongLine(cat("Step ", str(step + 1), "(user):  ", nmbrCvtMToVString(
-        proofInProgress.user[step]), NULL), "  ", " ");
+        (proofInProgress.user)[step]), NULL), "  ", " ");
   }
   /* Allocate a flag for each step to be tested */
   /* 1 means no match, 2 means match */
@@ -219,7 +219,7 @@ void interactiveMatch(long step, long maxEssential)
   nmbrLet(&timeoutList, NULL_NMBRSTRING);
   return;
 
-}
+} /* interactiveMatch */
 
 
 
@@ -229,7 +229,7 @@ void assignStatement(long statemNum, long step)
   long hyp;
   nmbrString *hypList = NULL_NMBRSTRING;
 
-  if (proofInProgress.proof[step] != -(long)'?') bug(1802);
+  if ((proofInProgress.proof)[step] != -(long)'?') bug(1802);
 
   /* Add the statement to the proof */
   nmbrLet(&hypList, nmbrSpace(statement[statemNum].numReqHyp + 1));
@@ -242,25 +242,78 @@ void assignStatement(long statemNum, long step)
   initStep(step + statement[statemNum].numReqHyp);
   nmbrLet(&hypList, NULL_NMBRSTRING);
   return;
+} /* assignStatement */
+
+
+
+/* Find proof of formula by using the replaceStatement() algorithm i.e.
+   see if any statement matches current step AND each of its hypotheses
+   matches a proof in progress hypothesis or some step already in the proof.
+   If a proof is found, it is returned, otherwise an empty (length 0) proof is
+   returned. */
+/* The caller must deallocate the returned nmbrString. */
+nmbrString *proveByReplacement(long prfStmt,
+    long prfStep, /* 0 means step 1 */
+    flag noDistinct, /* 1 means don't try statements with $d's */
+    flag dummyVarFlag, /* 0 means no dummy vars are in prfStmt */
+    flag searchMethod, /* 1 means to try proveFloating on $e's also */
+    long improveDepth /* depth for proveFloating() */
+    )
+{
+
+  long trialStmt;
+  nmbrString *prfMath;
+  nmbrString *trialPrf = NULL_NMBRSTRING;
+  prfMath = (proofInProgress.target)[prfStep];
+
+  for (trialStmt = 1; trialStmt < prfStmt; trialStmt++) {
+
+    if (quickMatchFilter(trialStmt, prfMath, dummyVarFlag) == 0) continue;
+
+    /* noDistinct is set by NO_DISTICT qualifier in IMPROVE */
+    if (noDistinct) {
+      /* Skip the statement if it has a $d requirement.  This option
+         prevents illegal proofs that would violate $d requirements
+         since the Proof Assistant does not check for $d violations. */
+      if (nmbrLen(statement[trialStmt].reqDisjVarsA)) {
+        continue;
+      }
+    }
+
+    trialPrf = replaceStatement(trialStmt, prfStep,
+        prfStmt, 0,/*scan whole proof to maximize chance of a match*/
+        noDistinct,
+        searchMethod,
+        improveDepth);
+    if (nmbrLen(trialPrf) > 0) {
+      /* A proof for the step was found. */
+      return trialPrf;
+    }
+    /* nmbrLet(&trialPrf, NULL_NMBRSTRING); */
+                       /* Don't need to do this because it is already null */
+  }
+  return trialPrf;  /* Proof not found - return empty proof */
 }
 
 
-/* Replace a known step with another statement.  Returns 0-length proof
-   if an exact hypothesis match wasn't found, otherwise returns a subproof
-   starting at the replaced step, with the step replaced by
-   replStatemNum. */
-nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
-{
-  nmbrString *mString; /* Pointer only */
+nmbrString *replaceStatement(long replStatemNum, long prfStep,
+    long provStmtNum,
+    flag subProofFlag, /* If 1, then scan only subproof at prfStep to look for
+   matches, instead of whole proof, for faster speed (used by MINIMIZE_WITH) */
+    flag noDistinct, /* 1 means proveFloating won't try statements with $d's */
+    flag searchMethod, /* 1 means to try proveFloating on $e's also */
+    long improveDepth /* Depth for proveFloating */
+    ) {
+  nmbrString *prfMath; /* Pointer only */
   long reqHyps;
-  long hyp, sym, var, i, j, substep;
+  long hyp, sym, var, i, j, k, trialStep;
   nmbrString *proof = NULL_NMBRSTRING;
   nmbrString *scheme = NULL_NMBRSTRING;
   pntrString *hypList = NULL_PNTRSTRING;
-  nmbrString *hypListMap = NULL_NMBRSTRING; /* Order remapping for speedup */
+  nmbrString *hypSortMap = NULL_NMBRSTRING; /* Order remapping for speedup */
   pntrString *hypProofList = NULL_PNTRSTRING;
   pntrString *stateVector = NULL_PNTRSTRING;
-  nmbrString *stmtMathPtr;
+  nmbrString *replStmtSchemePtr;
   nmbrString *hypSchemePtr;
   nmbrString *hypProofPtr;
   nmbrString *makeSubstPtr;
@@ -270,62 +323,86 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
   nmbrString *hypStepList = NULL_NMBRSTRING;
   flag reEntryFlag;
   flag tmpFlag;
-  flag breakFlag;
-  flag substepBreakFlag;
-  long schemeLen, mStringLen, schemeVars, schReqHyps, hypLen, reqVars,
+  flag noHypMatch;
+  flag foundTrialStepMatch;
+  long replStmtSchemeLen, schemeVars, schReqHyps, hypLen, reqVars,
       schEHyps, subPfLen;
   long saveUnifTrialCount;
   flag reenterFFlag;
   flag dummyVarFlag; /* Flag that replacement hypothesis under consideration has
                         dummy variables */
   nmbrString *hypTestPtr; /* Points to what we are testing hyp. against */
-  flag hypOrSubproofFlag; /* 0 means testing against hyp., 1 against subproof*/
+  flag hypOrSubproofFlag; /* 0 means testing against hyp., 1 against proof*/
+  vstring indepKnownSteps = ""; /* 'Y' = ok to try step; 'N' = step */
+                                                 /* 22-Aug-2012 nm */
+  long pfLen;          /* 22-Aug-2012 nm */
+  long scanLen;         /* 22-Aug-2012 nm */
+  long scanUpperBound;  /* 22-Aug-2012 nm */
+  long scanLowerBound;  /* 22-Aug-2012 nm */
+  vstring hasFloatingProof = "";  /* 'N' or 'Y' for $e hyps */
+                                                            /* 4-Sep-2012 nm */
+  vstring tryFloatingProofLater = "";  /* 'N' or 'Y' */     /* 4-Sep-2012 nm */
+  flag hasDummyVar;     /* 4-Sep-2012 nm */
 
   /* Initialization to avoid compiler warning (should not be theoretically
      necessary) */
-  substep = 0;
+  trialStep = 0;
 
-
-  mString = proofInProgress.target[step];
-  mStringLen = nmbrLen(mString);
-
-  /* Get length of the existing subproof at the replacement step.  The
-     existing subproof will be scanned to match the $e hypotheses of the
-     replacement statement.  */
-  subPfLen = subProofLen(proofInProgress.proof, step);
-
+  prfMath = (proofInProgress.target)[prfStep];
+  if (subProofFlag) {
+    /* Get length of the existing subproof at the replacement step.  The
+       existing subproof will be scanned to see if there is a match to
+       the $e hypotheses of the replacement statement.  */
+    subPfLen = subProofLen(proofInProgress.proof, prfStep);
+    scanLen = subPfLen;
+    scanUpperBound = prfStep;
+    scanLowerBound = scanUpperBound - scanLen + 1;
+  } else {
+    /* Treat the whole proof as a "subproof" and get its length.  The whole
+       existing proof will be scanned to see if there is a match to
+       the $e hypotheses of the replacement statement.  */
+    pfLen = nmbrLen(proofInProgress.proof);
+    scanLen = pfLen;
+    scanUpperBound = pfLen - 1;  /* Last proof step (0=1st step, 1=2nd, etc. */
+    scanLowerBound = 0; /* scanUpperBound - scanLen + 1;  */
+  }
+  /* Note: the variables subPfLen, pfLen, and scanLen aren't
+     used again.  They could be eliminated above if we wanted. */
 
   if (statement[replStatemNum].type != (char)a__ &&
       statement[replStatemNum].type != (char)p__)
     bug(1822); /* Not $a or $p */
-  stmtMathPtr = statement[replStatemNum].mathString;
-
-  schemeLen = nmbrLen(stmtMathPtr);
 
   schReqHyps = statement[replStatemNum].numReqHyp;
   reqVars = nmbrLen(statement[replStatemNum].reqVarList);
 
+  /* hasFloatingProof is used only when searchMethod=1 */
+  let(&hasFloatingProof, string(schReqHyps, ' ')); /* 4-Sep-2012 nm Init */
+  let(&tryFloatingProofLater, string(schReqHyps, ' ')); /* 4-Sep-2012 nm Init */
+  replStmtSchemePtr = statement[replStatemNum].mathString;
+  replStmtSchemeLen = nmbrLen(replStmtSchemePtr);
+
   /* Change all variables in the statement to dummy vars for unification */
-  nmbrLet(&scheme, stmtMathPtr);
+  nmbrLet(&scheme, replStmtSchemePtr);
   schemeVars = reqVars;
-  if (schemeVars + pipDummyVars > dummyVars) {
+  if (schemeVars + pipDummyVars/*global*/ > dummyVars/*global*/) {
     /* Declare more dummy vars if necessary */
     declareDummyVars(schemeVars + pipDummyVars - dummyVars);
   }
   for (var = 0; var < schemeVars; var++) {
     /* Put dummy var mapping into mathToken[].tmp field */
-    mathToken[statement[replStatemNum].reqVarList[var]].tmp = mathTokens + 1 +
-        pipDummyVars + var;
+    mathToken[statement[replStatemNum].reqVarList[var]].tmp
+        = mathTokens/*global*/ + 1 + pipDummyVars/*global*/ + var;
   }
-  for (sym = 0; sym < schemeLen; sym++) {
-    if (mathToken[stmtMathPtr[sym]].tokenType != (char)var__) continue;
+  for (sym = 0; sym < replStmtSchemeLen; sym++) {
+    if (mathToken[replStmtSchemePtr[sym]].tokenType != (char)var__) continue;
     /* Use dummy var mapping from mathToken[].tmp field */
-    scheme[sym] = mathToken[stmtMathPtr[sym]].tmp;
+    scheme[sym] = mathToken[replStmtSchemePtr[sym]].tmp;
   }
 
   /* Change all variables in the statement's hyps to dummy vars for subst. */
   pntrLet(&hypList, pntrNSpace(schReqHyps));
-  nmbrLet(&hypListMap, nmbrSpace(schReqHyps));
+  nmbrLet(&hypSortMap, nmbrSpace(schReqHyps));
   pntrLet(&hypProofList, pntrNSpace(schReqHyps));
 
   for (hyp = 0; hyp < schReqHyps; hyp++) {
@@ -340,17 +417,17 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
       hypSchemePtr[sym] = mathToken[hypSchemePtr[sym]].tmp;
     }
     hypList[hyp] = hypSchemePtr;
-    hypListMap[hyp] = hyp;
+    hypSortMap[hyp] = hyp;
   }
 
   /* Move all $e's to front of hypothesis list */
   schEHyps = 0;
   for (hyp = 0; hyp < schReqHyps; hyp++) {
-    if (statement[statement[replStatemNum].reqHypList[hypListMap[hyp]]].type
+    if (statement[statement[replStatemNum].reqHypList[hypSortMap[hyp]]].type
          == (char)e__) {
-      j = hypListMap[hyp];
-      hypListMap[hyp] = hypListMap[schEHyps];
-      hypListMap[schEHyps] = j;
+      j = hypSortMap[hyp];
+      hypSortMap[hyp] = hypSortMap[schEHyps];
+      hypSortMap[schEHyps] = j;
       schEHyps++;
     }
   }
@@ -358,14 +435,26 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
   /* 9/2/99 - Speedup - sort essential hyp's according to decreasing length to
      maximize the chance of early rejection */
   for (hyp = 0; hyp < schEHyps; hyp++) {
-    /* Bubble sort - should be OK for typically small # of hyp's */
+    /* Bubble sort - but should be OK for typically small # of hyp's */
     for (i = hyp + 1; i < schEHyps; i++) {
-      if (nmbrLen(hypList[hypListMap[i]]) > nmbrLen(hypList[hypListMap[hyp]])) {
-        j = hypListMap[hyp];
-        hypListMap[hyp] = hypListMap[i];
-        hypListMap[i] = j;
+      if (nmbrLen(hypList[hypSortMap[i]]) > nmbrLen(hypList[hypSortMap[hyp]])) {
+        j = hypSortMap[hyp];
+        hypSortMap[hyp] = hypSortMap[i];
+        hypSortMap[i] = j;
       }
     }
+  }
+
+  /* If we are just scanning the subproof, all subproof steps are independent,
+     so the getIndepKnownSteps scan would be redundant. */
+  if (!subProofFlag) {
+    /* 22-Aug-2012 nm - if subProofFlag is not set, we scan the whole proof,
+       not just the subproof starting at prfStep, to find additional possible
+       matches. */
+    /* Get a list of the possible steps to look at that are not dependent
+       on the prfStep.  A value of 'Y'  means we can try the step. */
+    let(&indepKnownSteps, "");
+    indepKnownSteps = getIndepKnownSteps(provStmtNum, prfStep);
   }
 
   /* Initialize state vector list for hypothesis unifications */
@@ -389,7 +478,7 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
   reqHyps = statement[provStmtNum].numReqHyp;
 
   while (1) { /* Try all possible unifications */
-    tmpFlag = unifyH(scheme, mString, &stateVector, reEntryFlag);
+    tmpFlag = unifyH(scheme, prfMath, &stateVector, reEntryFlag);
     if (!tmpFlag) break; /* (Next) unification not possible */
     if (tmpFlag == 2) {
       print2(
@@ -403,53 +492,70 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
     /* Make substitutions into each hypothesis, and try to prove that
        hypothesis */
     nmbrLet(&proof, NULL_NMBRSTRING);
-    breakFlag = 0;
+    noHypMatch = 0;
     for (hyp = 0; hyp < schReqHyps; hyp++) {
 
       /* Make substitutions from replacement statement's stateVector */
-      nmbrLet((nmbrString **)(&(hypMakeSubstList[hypListMap[hyp]])),
+      nmbrLet((nmbrString **)(&(hypMakeSubstList[hypSortMap[hyp]])),
           NULL_NMBRSTRING); /* Deallocate previous pass if any */
-      hypMakeSubstList[hypListMap[hyp]] =
-          makeSubstUnif(&dummyVarFlag, hypList[hypListMap[hyp]],
+      hypMakeSubstList[hypSortMap[hyp]] =
+          makeSubstUnif(&dummyVarFlag, hypList[hypSortMap[hyp]],
           stateVector);
+
+      /* Initially, a $e has no proveFloating proof */
+      hasFloatingProof[hyp] = 'N';  /* Init for this pass */ /* 4-Sep-2012 nm */
+      tryFloatingProofLater[hyp] = 'N'; /* Init for this pass */ /* 4-Sep-2012 nm */
 
       /* Make substitutions from each earlier hypothesis unification */
       for (i = 0; i < hyp; i++) {
         /* Only do substitutions for $e's -- the $f's will have no
-           dummy vars., and they may not even have a stateVector
-           since they may have been found with proveFloating below */
+           dummy vars., and they have no stateVector
+           since they were found with proveFloating below */
         if (i >= schEHyps) break;
 
+        /* If it is an essential hypothesis with a proveFloating proof,
+           we don't want to make substitutions since it has no
+           stateVector.  (This is the only place we look
+           at hasFloatingProof.) */
+        if (hasFloatingProof[i] == 'Y') continue;  /* 4-Sep-2012 nm */
+
         makeSubstPtr = makeSubstUnif(&dummyVarFlag,
-            hypMakeSubstList[hypListMap[hyp]],
-            hypStateVectorList[hypListMap[i]]);
-        nmbrLet((nmbrString **)(&(hypMakeSubstList[hypListMap[hyp]])),
+            hypMakeSubstList[hypSortMap[hyp]],
+            hypStateVectorList[hypSortMap[i]]);
+        nmbrLet((nmbrString **)(&(hypMakeSubstList[hypSortMap[hyp]])),
             NULL_NMBRSTRING);
-        hypMakeSubstList[hypListMap[hyp]] = makeSubstPtr;
+        hypMakeSubstList[hypSortMap[hyp]] = makeSubstPtr;
       }
 
       if (hyp < schEHyps) {
         /* It's a $e hypothesis */
-        if (statement[statement[replStatemNum].reqHypList[hypListMap[hyp]]
+        if (statement[statement[replStatemNum].reqHypList[hypSortMap[hyp]]
             ].type != (char)e__) bug (1823);
       } else {
         /* It's a $f hypothesis */
-        if (statement[statement[replStatemNum].reqHypList[hypListMap[hyp]]
+        if (statement[statement[replStatemNum].reqHypList[hypSortMap[hyp]]
              ].type != (char)f__) bug(1824);
         /* At this point there should be no dummy variables in $f
            hypotheses */
-        if (dummyVarFlag) bug(1825);
+        /* 22-Aug-2012 nm This can now occur with new algorithm.  For now,
+           let it continue; I'm not sure if there are adverse side effects. */
+        /*
+        if (dummyVarFlag) {
+          printSubst(stateVector);
+          bug(1825);
+        }
+        */
       }
 
 
       /* Scan all known steps of existing subproof to find a hypothesis
          match */
-      substepBreakFlag = 0;
+      foundTrialStepMatch = 0;
       reenterFFlag = 0;
-      if (hypReEntryFlagList[hypListMap[hyp]] == 2) {
+      if (hypReEntryFlagList[hypSortMap[hyp]] == 2) {
         /* Reentry flag is set; we're continuing with a previously unified
            subproof step */
-        substep = hypStepList[hypListMap[hyp]];
+        trialStep = hypStepList[hypSortMap[hyp]];
 
         /* If we are re-entering the unification for a $f, it means we
            backtracked from a later failure, and there won't be another
@@ -458,51 +564,70 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
            we will have an infinite loop.)  Note that for $f's, all
            variables will be known so there will only be one unification
            anyway. */
-        if (hyp >= schEHyps) reenterFFlag = 1;
-
+        if (hyp >= schEHyps
+            || hasFloatingProof[hyp] == 'Y' /* 5-Sep-2012 nm */
+            ) {
+          reenterFFlag = 1;
+        }
       } else {
-        if (hypReEntryFlagList[hypListMap[hyp]] == 1) {
-          /* Start at the beginning of the subproof */
-          substep = step - subPfLen + 1;
+        if (hypReEntryFlagList[hypSortMap[hyp]] == 1) {
+          /* Start at the beginning of the proof */
+          /* trialStep = prfStep - subPfLen + 1; */ /* obsolete */
+          trialStep = scanLowerBound;   /* 22-Aug-2012 nm */
           /* Later enhancement:  start at required hypotheses */
           /* (Here we use the trick of shifting down the starting
-              substep to below the real subproof start) */
-          substep = substep - reqHyps;
+              trialStep to below the real subproof start) */
+          trialStep = trialStep - reqHyps;
         } else {
-          if (hypReEntryFlagList[hypListMap[hyp]] == 3) {
+          if (hypReEntryFlagList[hypSortMap[hyp]] == 3) {
             /* This is the case where proveFloating previously found a
                proof for the step, and we've backtracked.  In this case,
                we want to backtrack further - no scan or proveFloating
                call again. */
-            hypReEntryFlagList[hypListMap[hyp]] = 1;
+            hypReEntryFlagList[hypSortMap[hyp]] = 1;
             reenterFFlag = 1; /* Skip proveFloating call */
-            substep = step; /* Skip loop */
+            /*trialStep = prfStep;  old */ /* Skip loop */
+            trialStep = scanUpperBound; /* Skip loop */
           } else {
             bug(1826);
           }
         }
       }
-      for (substep = substep; substep < step; substep++) {
 
-        if (substep < step - subPfLen + 1) {
+      /* for (trialStep = trialStep; trialStep < prfStep; trialStep++) { old */
+      for (trialStep = trialStep; trialStep < scanUpperBound;
+          trialStep++) {                             /* 22-Aug-2012 nm */
+        /* Note that step scanUpperBound is not scanned since that is
+           the statement we want to replace (subProofFlag = 1) or the
+           last statement of the proof (subProofFlag = 0), neither of
+           which would be useful for a replacement step subproof. */
+
+        /* if (trialStep < prfStep - subPfLen + 1) { */ /* obsolete */
+        if (trialStep < scanLowerBound) {  /* 22-Aug-2012 nm */
           /* We're scanning required hypotheses */
           hypOrSubproofFlag = 0;
           /* Point to what we are testing hyp. against */
-          /* (Note offset to substep needed to compensate for trick) */
+          /* (Note offset to trialStep needed to compensate for trick) */
           hypTestPtr =
               statement[statement[provStmtNum].reqHypList[
-              substep - (step - subPfLen + 1 - reqHyps)]].mathString;
+              /* trialStep - (prfStep - subPfLen + 1 - reqHyps)]].mathString;*/
+              trialStep - (scanLowerBound - reqHyps)]].mathString;
+                                                           /* 22-Aug-2012 nm */
         } else {
           /* We're scanning the subproof */
           hypOrSubproofFlag = 1;
           /* Point to what we are testing hyp. against */
-          hypTestPtr = proofInProgress.target[substep];
+          hypTestPtr = (proofInProgress.target)[trialStep];
 
           /* Do not consider unknown subproof steps or those with
              unknown variables */
-          j = 0; /* Break flag */
+          /* Break flag */
+/***** obsolete  22-Aug-2012 nm - the new IMPROVE allows non-shared dummy
+       vars - but we'll keep the commented-out code for a while in case
+       it's needed for debugging
+          j = 0;
           i = nmbrLen(hypTestPtr);
-          if (i == 0) bug(1824); /* Shouldn't be empty */
+          if (i == 0) bug(1824);
           for (i = i - 1; i >= 0; i--) {
             if (((nmbrString *)hypTestPtr)[i] >
                 mathTokens) {
@@ -510,13 +635,21 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
               break;
             }
           }
-          if (j) continue;  /* Subproof step has dummy var.; don't use it */
+          if (j) continue;
+*******/
 
+          /* Subproof step has dummy var.; don't use it */
+          if (!subProofFlag) {
+            if (indepKnownSteps[trialStep] != 'Y') {
+              if (indepKnownSteps[trialStep] != 'N') bug(1836);
+              continue; /* Don't use the step */
+            }
+          }
         }
 
         /* Speedup - skip if no dummy vars in hyp and statements not equal */
         if (!dummyVarFlag) {
-          if (!nmbrEq(hypTestPtr, hypMakeSubstList[hypListMap[hyp]])) {
+          if (!nmbrEq(hypTestPtr, hypMakeSubstList[hypSortMap[hyp]])) {
             continue;
           }
         }
@@ -524,21 +657,26 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
         /* Speedup - skip if 1st symbols are constants and don't match */
         /* First symbol */
         i = hypTestPtr[0];
-        j = ((nmbrString *)(hypMakeSubstList[hypListMap[hyp]]))[0];
+        j = ((nmbrString *)(hypMakeSubstList[hypSortMap[hyp]]))[0];
         if (mathToken[i].tokenType == (char)con__) {
           if (mathToken[j].tokenType == (char)con__) {
-            if (i != j) continue;
+            if (i != j) {
+              continue;
+            }
           }
         }
 
         /* unifTrialCount = 1; */ /* ??Don't reset it here in order to
            detect exponential blowup in hypotheses trials */
         unifTrialCount = 1; /* Reset unification timeout counter */
-        tmpFlag = unifyH(hypMakeSubstList[hypListMap[hyp]],
+        if (hypReEntryFlagList[hypSortMap[hyp]] < 1
+            || hypReEntryFlagList[hypSortMap[hyp]] > 2)
+          bug(1851);
+        tmpFlag = unifyH(hypMakeSubstList[hypSortMap[hyp]],
             hypTestPtr,
-            (pntrString **)(&(hypStateVectorList[hypListMap[hyp]])),
+            (pntrString **)(&(hypStateVectorList[hypSortMap[hyp]])),
             /* (Remember: 1 = false, 2 = true in hypReEntryFlagList) */
-            hypReEntryFlagList[hypListMap[hyp]] - 1);
+            hypReEntryFlagList[hypSortMap[hyp]] - 1);
         if (!tmpFlag || tmpFlag == 2) {
           /* (Next) unification not possible or timeout */
           if (tmpFlag == 2) {
@@ -547,7 +685,7 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
             unifTrialCount = 1; /* Reset unification timeout */
             /* Deallocate unification state vector */
             purgeStateVector(
-                (pntrString **)(&(hypStateVectorList[hypListMap[hyp]])));
+                (pntrString **)(&(hypStateVectorList[hypSortMap[hyp]])));
           }
 
           /* If this is a reenter, and there are no dummy vars in replacement
@@ -559,18 +697,20 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
              above since we know it will fail, but it will clear out our
              stateVector for us.) */
           if (!dummyVarFlag) {
-            if (hypReEntryFlagList[hypListMap[hyp]] - 1 == 1) {
+            if (hypReEntryFlagList[hypSortMap[hyp]] - 1 == 1) {
               /* There are no dummy variables, so previous match
-                 was exact.  Force the substep loop to terminate as
+                 was exact.  Force the trialStep loop to terminate as
                  if nothing further was found.  (If we don't do this,
                  there could be, say 50 more matches for "var x",
                  so we might need a factor of 50 greater runtime for each
                  replacement hypothesis having this situation.) */
-              substep = step - 1; /* Make this the last loop pass */
+              /* trialStep = prfStep - 1;  old version */
+              trialStep = scanUpperBound - 1;
+                       /* Make this the last loop pass */  /* 22-Aug-2012 nm */
             }
           }
 
-          hypReEntryFlagList[hypListMap[hyp]] = 1;
+          hypReEntryFlagList[hypSortMap[hyp]] = 1;
           continue;
         } else {
 
@@ -581,23 +721,28 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
           /* If this subproof step has previously occurred in a hypothesis
              or an earlier subproof step, don't consider it since that
              would be redundant. */
-          if (hypReEntryFlagList[hypListMap[hyp]] == 1
+          if (hypReEntryFlagList[hypSortMap[hyp]] == 1
               /* && 0 */  /* To skip this for testing */
               ) {
             j = 0; /* Break flag */
-            for (i = step - subPfLen + 1 - reqHyps; i < substep; i++) {
-              if (i < step - subPfLen + 1) {
+            /*for (i = prfStep - subPfLen + 1 - reqHyps; i < trialStep; i++) {*/
+            for (i = scanLowerBound - reqHyps; i < trialStep; i++) {
+                                                            /* 22-Aug-2012 nm */
+              /* if (i < prfStep - subPfLen + 1) { */
+              if (i < scanLowerBound) { /* 22-Aug-2012 nm */
                 /* A required hypothesis */
                 if (nmbrEq(hypTestPtr,
                     statement[statement[provStmtNum].reqHypList[
-                    i - (step - subPfLen + 1 - reqHyps)]].mathString)) {
+                    /*i - (prfStep - subPfLen + 1 - reqHyps)]].mathString)) { */
+                    i - (scanLowerBound - reqHyps)]].mathString)) {
+                                                           /* 22-Aug-2012 nm */
                   j = 1;
                   break;
                 }
               } else {
                 /* A subproof step */
                 if (nmbrEq(hypTestPtr,
-                    proofInProgress.target[i])) {
+                    (proofInProgress.target)[i])) {
                   j = 1;
                   break;
                 }
@@ -608,83 +753,192 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
                  we can skip considering it again. */
               /* Deallocate unification state vector */
               purgeStateVector(
-                  (pntrString **)(&(hypStateVectorList[hypListMap[hyp]])));
+                  (pntrString **)(&(hypStateVectorList[hypSortMap[hyp]])));
               continue;
             }
           } /* end if not reentry */
           /* (End speedup) */
 
 
-          hypReEntryFlagList[hypListMap[hyp]] = 2; /* For next unifyH() */
-          hypStepList[hypListMap[hyp]] = substep;
+          hypReEntryFlagList[hypSortMap[hyp]] = 2; /* For next unifyH() */
+          hypStepList[hypSortMap[hyp]] = trialStep;
 
           if (!hypOrSubproofFlag) {
             /* We're scanning required hypotheses */
-            nmbrLet((nmbrString **)(&hypProofList[hypListMap[hyp]]),
+            nmbrLet((nmbrString **)(&hypProofList[hypSortMap[hyp]]),
                 nmbrAddElement(NULL_NMBRSTRING,
                 statement[provStmtNum].reqHypList[
-                substep - (step - subPfLen + 1 - reqHyps)]));
+                /* trialStep - (prfStep - subPfLen + 1 - reqHyps)])); */
+                trialStep - (scanLowerBound - reqHyps)])); /* 22-Aug-2012 nm */
           } else {
             /* We're scanning the subproof */
-            i = subProofLen(proofInProgress.proof, substep);
-            nmbrLet((nmbrString **)(&hypProofList[hypListMap[hyp]]),
-                nmbrSeg(proofInProgress.proof, substep - i + 2, substep + 1));
+            i = subProofLen(proofInProgress.proof, trialStep);
+            nmbrLet((nmbrString **)(&hypProofList[hypSortMap[hyp]]),
+                nmbrSeg(proofInProgress.proof, trialStep - i + 2,
+                trialStep + 1));
           }
 
-          substepBreakFlag = 1;
+          foundTrialStepMatch = 1;
           break;
         } /* end if (!tmpFlag || tmpFlag = 2) */
-      } /* next substep */
+      } /* next trialStep */
 
-      if (!substepBreakFlag) {
-        /* There was no (completely known) step in the subproof that
+      if (!foundTrialStepMatch) {
+        hasDummyVar = 0;
+        hypLen = nmbrLen(hypMakeSubstList[hypSortMap[hyp]]);
+        for (sym = 0; sym < hypLen; sym++) {
+          k = ((nmbrString *)(hypMakeSubstList[hypSortMap[hyp]]))[sym];
+          if (k > mathTokens/*global*/) {
+            hasDummyVar = 1;
+            break;
+          }
+        }
+        /* There was no (completely known) step in the (sub)proof that
            matched the hypothesis.  If it's a $f hypothesis, we will try
            to prove it by itself. */
         /* (However, if this is 2nd pass of backtrack, i.e. reenterFFlag is
            set, we already got an exact $f match earlier and don't need this
            scan, and shouldn't do it to prevent inf. loop.) */
-        if (hyp >= schEHyps && !reenterFFlag) {
-          /* It's a $f hypothesis */
-          saveUnifTrialCount = unifTrialCount; /* Save unification timeout */
-          hypProofPtr =
-              proveFloating(hypMakeSubstList[hypListMap[hyp]],
-              provStmtNum, 0, step, 0/*not noDistinct*/);
-          unifTrialCount = saveUnifTrialCount; /* Restore unif. timeout */
-          if (nmbrLen(hypProofPtr)) {
-            nmbrLet((nmbrString **)(&hypProofList[hypListMap[hyp]]),
-                NULL_NMBRSTRING);
-            hypProofList[hypListMap[hyp]] = hypProofPtr;
-            substepBreakFlag = 1;
-            hypReEntryFlagList[hypListMap[hyp]] = 3;
+        /* if (hyp >= schEHyps */   /* old */
+        if ((hyp >= schEHyps || searchMethod == 1) /* 4-Sep-2012 */
+             && !reenterFFlag
+             /*&& !hasDummyVar*/) { /* 25-Aug-2012 nm (Do we need this?) */
+          /* It's a $f hypothesis, or any hypothesis when searchMethod=1 */
+          if (hasDummyVar) {
+            /* If it's a $f and we have dummy vars, that is bad so we leave
+               foundTrialStepMatch = 0 to backtrack */
+            if (hyp < schEHyps) {
+              /* It's a $e with dummy vars, so we flag it to try later in
+                 case further matches get rid of the dummy vars */
+              tryFloatingProofLater[hyp] = 'Y';
+              /* Unify the hypothesis with itself to initialize the
+                 stateVector to allow further substitutions */
+              tmpFlag = unifyH(hypMakeSubstList[hypSortMap[hyp]],
+                  hypMakeSubstList[hypSortMap[hyp]],
+                  (pntrString **)(&(hypStateVectorList[hypSortMap[hyp]])),
+                  /* (Remember: 1 = false, 2 = true in hypReEntryFlagList) */
+                  hypReEntryFlagList[hypSortMap[hyp]] - 1);
+              if (tmpFlag != 1) bug (1849);  /* This should be a trivial
+                      unification, so it should never fail */
+              foundTrialStepMatch = 1; /* So we can continue */
+            }
+          } else {
+            saveUnifTrialCount = unifTrialCount; /* Save unification timeout */
+            hypProofPtr =
+                proveFloating(hypMakeSubstList[hypSortMap[hyp]],
+                provStmtNum, improveDepth, prfStep, noDistinct);
+            unifTrialCount = saveUnifTrialCount; /* Restore unif. timeout */
+            if (nmbrLen(hypProofPtr)) { /* Proof was found */
+              nmbrLet((nmbrString **)(&hypProofList[hypSortMap[hyp]]),
+                  NULL_NMBRSTRING);
+              hypProofList[hypSortMap[hyp]] = hypProofPtr;
+              foundTrialStepMatch = 1;
+              hypReEntryFlagList[hypSortMap[hyp]] = 3;
+              /* Set flag so that we won't attempt subst. on $e w/ float prf */
+              hasFloatingProof[hyp] = 'Y'; /* 4-Sep-2012 */
+            }
           }
-        } /* end if $f */
+        } /* end if $f, or $e and searchMethod 1 */
       }
 
-      if (!substepBreakFlag) {
+      if (hyp == schEHyps - 1 && foundTrialStepMatch) {
+        /* Scan all the postponed $e hypotheses in case they are known now */
+        for (i = 0; i < schEHyps; i++) {
+          if (tryFloatingProofLater[i] == 'Y') {
+
+            /* Incorporate substitutions of all later hypotheses
+               into this one (only earlier ones were done in main scan) */
+            for (j = i + 1; j < schEHyps; j++) {
+              if (hasFloatingProof[j] == 'Y') continue;
+              makeSubstPtr = makeSubstUnif(&dummyVarFlag,
+                  hypMakeSubstList[hypSortMap[i]],
+                  hypStateVectorList[hypSortMap[j]]);
+              nmbrLet((nmbrString **)(&(hypMakeSubstList[hypSortMap[i]])),
+                  NULL_NMBRSTRING);
+              hypMakeSubstList[hypSortMap[i]] = makeSubstPtr;
+            }
+
+            hasDummyVar = 0;
+            hypLen = nmbrLen(hypMakeSubstList[hypSortMap[i]]);
+            for (sym = 0; sym < hypLen; sym++) {
+              k = ((nmbrString *)(hypMakeSubstList[hypSortMap[i]]))[sym];
+              if (k > mathTokens/*global*/) {
+                hasDummyVar = 1;
+                break;
+              }
+            }
+            if (hasDummyVar) {
+              foundTrialStepMatch = 0; /* Force backtrack */
+              /* If we don't have a proof at this point, we didn't save
+                 enough info to backtrack easily, so we'll break out to
+                 the top-most next unification (if any). */
+              hyp = 0; /* Force breakout below */
+              break;
+            }
+            saveUnifTrialCount = unifTrialCount; /* Save unification timeout */
+            hypProofPtr =
+                proveFloating(hypMakeSubstList[hypSortMap[i]],
+                provStmtNum, improveDepth, prfStep, noDistinct);
+            unifTrialCount = saveUnifTrialCount; /* Restore unif. timeout */
+            if (nmbrLen(hypProofPtr)) { /* Proof was found */
+              nmbrLet((nmbrString **)(&hypProofList[hypSortMap[i]]),
+                  NULL_NMBRSTRING);
+              hypProofList[hypSortMap[i]] = hypProofPtr;
+              foundTrialStepMatch = 1;
+              hypReEntryFlagList[hypSortMap[i]] = 3;
+              /* Set flag so that we won't attempt subst. on $e w/ float prf */
+              hasFloatingProof[i] = 'Y'; /* 4-Sep-2012 */
+            } else {   /* Proof not found */
+              foundTrialStepMatch = 0; /* Force backtrack */
+              /* If we don't have a proof at this point, we didn't save
+                 enough info to backtrack easily, so we'll break out to
+                 the top-most next unification (if any). */
+              hyp = 0; /* Force breakout below */
+              break;
+            }
+          }
+        }
+      }
+
+      if (!foundTrialStepMatch) {
         /* We must backtrack */
+
+        /* 16-Sep-2012 nm fix infinite loop under weird conditions */
+        /* Backtrack through all of postponed hypotheses with
+           dummy variables whose proof wasn't found yet.  If we
+           don't do this, we could end up with an infinite loop since we
+           would just repeat the postponement and move forward again. */
+        for (i = hyp - 1; i >=0; i--) {
+          if (tryFloatingProofLater[i] == 'N') break;
+          if (tryFloatingProofLater[i] != 'Y') bug(1853);
+          hyp--;
+        }
+
         if (hyp == 0) {
           /* No more possibilities to try */
-          breakFlag = 1;
+          noHypMatch = 1;
           break;
         }
         hyp = hyp - 2; /* Go back one interation (subtract 2 to offset
-                          end of loop increment */
+                          end of loop increment) */
       }
+
     } /* next hyp */
 
-
-    if (breakFlag) {
+    if (noHypMatch) {
       /* Proof was not found for some hypothesis. */
       continue; /* Get next unification */
-    } /* End if breakFlag */
+    } /* End if noHypMatch */
 
     /* Proofs were found for all hypotheses */
 
     /* Build the proof */
     for (hyp = 0; hyp < schReqHyps; hyp++) {
+      if (nmbrLen(hypProofList[hyp]) == 0) bug(1852); /* Should have proof */
       nmbrLet(&proof, nmbrCat(proof, hypProofList[hyp], NULL));
     }
-    nmbrLet(&proof, nmbrAddElement(proof, replStatemNum)); /* Complete the proof */
+    nmbrLet(&proof, nmbrAddElement(proof, replStatemNum));
+                                                     /* Complete the proof */
 
     /* Deallocate hypothesis schemes and proofs */
     for (hyp = 0; hyp < schReqHyps; hyp++) {
@@ -697,9 +951,9 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
 
   /* Deallocate hypothesis schemes and proofs */
   for (hyp = 0; hyp < schReqHyps; hyp++) {
-    nmbrLet((nmbrString **)(&hypList[hyp]), NULL_NMBRSTRING);
-    nmbrLet((nmbrString **)(&hypProofList[hyp]), NULL_NMBRSTRING);
-    nmbrLet((nmbrString **)(&hypMakeSubstList[hyp]), NULL_NMBRSTRING);
+    nmbrLet((nmbrString **)(&(hypList[hyp])), NULL_NMBRSTRING);
+    nmbrLet((nmbrString **)(&(hypProofList[hyp])), NULL_NMBRSTRING);
+    nmbrLet((nmbrString **)(&(hypMakeSubstList[hyp])), NULL_NMBRSTRING);
     purgeStateVector((pntrString **)(&(hypStateVectorList[hyp])));
   }
 
@@ -711,18 +965,179 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
 
   nmbrLet(&scheme, NULL_NMBRSTRING);
   pntrLet(&hypList, NULL_PNTRSTRING);
-  nmbrLet(&hypListMap, NULL_NMBRSTRING);
+  nmbrLet(&hypSortMap, NULL_NMBRSTRING);
   pntrLet(&hypProofList, NULL_PNTRSTRING);
   pntrLet(&hypMakeSubstList, NULL_PNTRSTRING);
   pntrLet(&hypStateVectorList, NULL_PNTRSTRING);
   let(&hypReEntryFlagList, "");
   nmbrLet(&hypStepList, NULL_NMBRSTRING);
+  let(&indepKnownSteps, "");
+  let(&hasFloatingProof, ""); /* 4-Sep-2012 */
+  let(&tryFloatingProofLater, ""); /* 4-Sep-2012 */
 
 
 /*E*/if(db8)print2("%s\n", cat("Returned: ",
 /*E*/   nmbrCvtRToVString(proof), NULL));
   return (proof); /* Caller must deallocate */
-}
+} /* replaceStatement */
+
+
+
+/* 22-Aug-2012 nm Added this function */
+/* This function identifies all steps in the proof in progress that (1) are
+   independent of step refStep, (2) have no dummy variables, (3) are
+   not $f's or $e's, and (4) have subproofs that are complete
+   (no unassigned steps).  A "Y" is returned for each such step,
+   and "N" is returned for all other steps.  The "Y" steps can be used
+   for scanning for useful subproofs outside of the subProof of refStep.
+   Note: The caller must deallocate the returned vstring. */
+vstring getIndepKnownSteps(long proofStmt, long refStep)
+{
+  long proofLen, prfStep, step2;
+  long wrkSubPfLen, mathLen;
+  nmbrString *proofStepContent;
+  vstring indepSteps = "";
+  vstring unkSubPrfSteps = ""; /* 'K' if subproof is known, 'U' if unknown */
+
+  /* proofInProgress is global */
+  proofLen = nmbrLen(proofInProgress.proof);
+  /* Preallocate the return argument */
+  let(&indepSteps, string(proofLen, 'N'));
+
+  /* Scan back from last step to get independent subproofs */
+  for (prfStep = proofLen - 2 /*next to last step*/; prfStep >= 0;
+      prfStep--) {
+    wrkSubPfLen = subProofLen(proofInProgress.proof, prfStep);
+    if (prfStep >= refStep && prfStep - wrkSubPfLen + 1 <= refStep) {
+      /* The subproof includes the refStep; reject it */
+      continue;
+    }
+    /* Mark all steps in the subproof as independent */
+    for (step2 = prfStep - wrkSubPfLen + 1; step2 <= prfStep; step2++) {
+      if (indepSteps[step2] == 'Y') bug(1832); /* Should be 1st Y assignment */
+      indepSteps[step2] = 'Y';
+    }
+    /* Speedup: skip over independent subproof to reduce subProofLen() calls */
+    prfStep = prfStep - wrkSubPfLen + 1; /* Decrement loop counter */
+        /* (Note that a 1-step subproof won't modify loop counter) */
+  } /* next prfStep */
+
+  /* Scan all of the 'Y' steps and mark them as 'N' if $e, $f, or the
+     step has dummy variables */
+  for (prfStep = 0; prfStep < proofLen; prfStep++) {
+    if (indepSteps[prfStep] == 'N') continue;
+
+    /* Flag $e, $f as 'N' */
+    proofStmt = (proofInProgress.proof)[prfStep];
+    if (proofStmt < 0) {
+      if (proofStmt == -(long)'?') {
+        /* indepSteps[prfStep] = 'N' */ /* We can still use its mathstring */
+      } else {
+        bug(1833); /* Packed ("squished") proof not handled (yet?) */
+      }
+    } else {
+      if (statement[proofStmt].type == (char)e__
+          || statement[proofStmt].type == (char)f__) {
+        /* $e or $f */
+        indepSteps[prfStep] = 'N';
+      } else if (statement[proofStmt].type != (char)p__
+            && statement[proofStmt].type != (char)a__) {
+        bug(1834);
+      }
+    }
+
+    if (indepSteps[prfStep] == 'N') continue;
+
+    /* Flag statements with dummy variables with 'N' */
+
+    /* Get the math tokens in the proof step */
+    proofStepContent = (proofInProgress.target)[prfStep];
+
+    /* Do not consider unknown subproof steps or those with
+       unknown variables */
+    mathLen = nmbrLen(proofStepContent);
+    if (mathLen == 0) bug(1835); /* Shouldn't be empty */
+    for (mathLen = mathLen - 1; mathLen >= 0; mathLen--) {
+      if (((nmbrString *)proofStepContent)[mathLen] >
+          mathTokens/*global*/) {
+        /* The token is a dummy variable */
+        indepSteps[prfStep] = 'N';
+        break;
+      }
+    }
+  } /* next prfStep */
+
+  /* Identify subproofs that have unknown steps */
+  unkSubPrfSteps = getKnownSubProofs();
+  /* Propagate unknown subproofs to Y/N flags */
+  for (prfStep = 0; prfStep < proofLen; prfStep++) {
+    if (unkSubPrfSteps[prfStep] == 'U') indepSteps[prfStep] = 'N';
+  }
+
+  let(&unkSubPrfSteps, ""); /* Deallocate */
+
+  return indepSteps; /* Caller must deallocate */
+
+} /* getIndepKnownSteps */
+
+
+
+/* 22-Aug-2012 nm Added this function */
+/* This function classifies each proof step in proofInProgress.proof
+   as known or unknown ('K' or 'U' in the returned string) depending
+   on whether the step has a completely known subproof.
+   Note: The caller must deallocate the returned vstring. */
+vstring getKnownSubProofs(void)
+{
+  long proofLen, hyp;
+  vstring unkSubPrfSteps = ""; /* 'K' if subproof is known, 'U' if unknown */
+  vstring unkSubPrfStack = ""; /* 'K' if subproof is known, 'U' if unknown */
+  long stackPtr, prfStep, stmt;
+
+  /* proofInProgress is global */
+  proofLen = nmbrLen(proofInProgress.proof);
+
+  /* Scan the proof and identify subproofs that have unknown steps */
+  let(&unkSubPrfSteps, space(proofLen));
+  let(&unkSubPrfStack, space(proofLen));
+  stackPtr = -1;
+  for (prfStep = 0; prfStep < proofLen; prfStep++) {
+    stmt = (proofInProgress.proof)[prfStep];
+    if (stmt < 0) { /* Unknown step or local label */
+      if (stmt != -(long)'?') bug(1837); /* We don't handle compact proofs */
+      unkSubPrfSteps[prfStep] = 'U'; /* Subproof is unknown */
+      stackPtr++;
+      unkSubPrfStack[stackPtr] = 'U';
+      continue;
+    }
+    if (statement[stmt].type == (char)e__ ||
+        statement[stmt].type == (char)f__) { /* A hypothesis */
+      unkSubPrfSteps[prfStep] = 'K'; /* Subproof is known */
+      stackPtr++;
+      unkSubPrfStack[stackPtr] = 'K';
+      continue;
+    }
+    if (statement[stmt].type != (char)a__ &&
+        statement[stmt].type != (char)p__) bug(1838);
+    unkSubPrfSteps[prfStep] = 'K';  /* Start assuming subproof is known */
+    for (hyp = 1; hyp <= statement[stmt].numReqHyp; hyp++) {
+      if (stackPtr < 0) bug(1839);
+      if (unkSubPrfStack[stackPtr] == 'U') {
+        /* If any hypothesis is unknown, the statement's subproof is unknown */
+        unkSubPrfSteps[prfStep] = 'U';
+      }
+      stackPtr--;
+    }
+    stackPtr++;
+    if (stackPtr < 0) bug(1840);
+    unkSubPrfStack[stackPtr] = unkSubPrfSteps[prfStep];
+  } /* next prfStep */
+  if (stackPtr != 0) bug(1841);
+  let(&unkSubPrfStack, ""); /* Deallocate */
+  return unkSubPrfSteps; /* Caller must deallocate */
+
+} /* getKnownSubProofs */
+
 
 
 /* Add a subproof in place of an unknown step to proofInProgress.  The
@@ -731,7 +1146,7 @@ nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum)
 void addSubProof(nmbrString *subProof, long step) {
   long sbPfLen;
 
-  if (proofInProgress.proof[step] != -(long)'?') bug(1803);
+  if ((proofInProgress.proof)[step] != -(long)'?') bug(1803);
                      /* Only unknown steps should be allowed at cmd interface */
   sbPfLen = nmbrLen(subProof);
   nmbrLet(&proofInProgress.proof, nmbrCat(nmbrLeft(proofInProgress.proof, step),
@@ -740,23 +1155,31 @@ void addSubProof(nmbrString *subProof, long step) {
       step), pntrNSpace(sbPfLen - 1), pntrRight(proofInProgress.target,
       step + 1), NULL));
   /* Deallocate .source in case not empty (if not, though, it's a bug) */
-  if (nmbrLen(proofInProgress.source[step])) bug(1804);
- /*nmbrLet((nmbrString **)(&(proofInProgress.source[step])), NULL_NMBRSTRING);*/
+  if (nmbrLen((proofInProgress.source)[step])) bug(1804);
+ /*nmbrLet((nmbrString **)(&((proofInProgress.source)[step])), NULL_NMBRSTRING);*/
   pntrLet(&proofInProgress.source, pntrCat(pntrLeft(proofInProgress.source,
       step), pntrNSpace(sbPfLen - 1), pntrRight(proofInProgress.source,
       step + 1), NULL));
   pntrLet(&proofInProgress.user, pntrCat(pntrLeft(proofInProgress.user,
       step), pntrNSpace(sbPfLen - 1), pntrRight(proofInProgress.user,
       step + 1), NULL));
-}
+} /* addSubProof */
 
 /* Delete a subproof starting (in reverse from) step.  The step is replaced
    with an unknown step, and its .target and .user fields are retained. */
 void deleteSubProof(long step) {
   long sbPfLen, pos;
 
-  if (proofInProgress.proof[step] == -(long)'?') bug (1805);
+  /* 22-Aug-2012 nm  We now allow this so we can REPLACE an unassigned
+     step.  User detection for DELETE of unassigned step is still done
+     separately in metamath.c. */
+  /*
+  if ((proofInProgress.proof)[step] == -(long)'?') bug (1805);
+  */
                        /* Unknown step should not be allowed at cmd interface */
+  if ((proofInProgress.proof)[step] == -(long)'?') return;
+           /* 22-Aug-2012 nm Don't do anything if step is unassigned. */
+
   sbPfLen = subProofLen(proofInProgress.proof, step);
   nmbrLet(&proofInProgress.proof, nmbrCat(nmbrAddElement(
       nmbrLeft(proofInProgress.proof, step - sbPfLen + 1), -(long)'?'),
@@ -764,11 +1187,11 @@ void deleteSubProof(long step) {
   for (pos = step - sbPfLen + 1; pos <= step; pos++) {
     if (pos < step) {
       /* Deallocate .target and .user */
-      nmbrLet((nmbrString **)(&(proofInProgress.target[pos])), NULL_NMBRSTRING);
-      nmbrLet((nmbrString **)(&(proofInProgress.user[pos])), NULL_NMBRSTRING);
+      nmbrLet((nmbrString **)(&((proofInProgress.target)[pos])), NULL_NMBRSTRING);
+      nmbrLet((nmbrString **)(&((proofInProgress.user)[pos])), NULL_NMBRSTRING);
     }
     /* Deallocate .source */
-    nmbrLet((nmbrString **)(&(proofInProgress.source[pos])), NULL_NMBRSTRING);
+    nmbrLet((nmbrString **)(&((proofInProgress.source)[pos])), NULL_NMBRSTRING);
   }
   pntrLet(&proofInProgress.target, pntrCat(pntrLeft(proofInProgress.target,
       step - sbPfLen + 1), pntrRight(proofInProgress.target,
@@ -779,7 +1202,7 @@ void deleteSubProof(long step) {
   pntrLet(&proofInProgress.user, pntrCat(pntrLeft(proofInProgress.user,
       step - sbPfLen + 1), pntrRight(proofInProgress.user,
       step + 1), NULL));
-}
+} /* deleteSubProof */
 
 
 /* Check to see if a statement will match the proofInProgress.target (or .user)
@@ -797,10 +1220,10 @@ char checkStmtMatch(long statemNum, long step)
   flag firstSymbsAreConstsFlag;
 
   /* This is no longer a bug.  (Could be true for REPLACE command.)
-  if (proofInProgress.proof[step] != -(long)'?') bug(1806);
+  if ((proofInProgress.proof)[step] != -(long)'?') bug(1806);
   */
 
-  targetLen = nmbrLen(proofInProgress.target[step]);
+  targetLen = nmbrLen((proofInProgress.target)[step]);
   if (!targetLen) bug(1807);
 
   /* If the statement is a hypothesis, just see if it unifies. */
@@ -831,11 +1254,11 @@ char checkStmtMatch(long statemNum, long step)
     }
 
     unifTrialCount = 1; /* Reset unification timeout */
-    targetFlag = unifyH(proofInProgress.target[step],
+    targetFlag = unifyH((proofInProgress.target)[step],
         statement[statemNum].mathString, &stateVector, 0);
-   if (nmbrLen(proofInProgress.user[step])) {
+   if (nmbrLen((proofInProgress.user)[step])) {
       unifTrialCount = 1; /* Reset unification timeout */
-      userFlag = unifyH(proofInProgress.user[step],
+      userFlag = unifyH((proofInProgress.user)[step],
         statement[statemNum].mathString, &stateVector, 0);
     }
     goto returnPoint;
@@ -850,7 +1273,7 @@ char checkStmtMatch(long statemNum, long step)
   /* First symbol */
   firstSymbsAreConstsFlag = 0;
   stsym = mString[0];
-  tasym = ((nmbrString *)(proofInProgress.target[step]))[0];
+  tasym = ((nmbrString *)((proofInProgress.target)[step]))[0];
   if (mathToken[stsym].tokenType == (char)con__) {
     if (mathToken[tasym].tokenType == (char)con__) {
       firstSymbsAreConstsFlag = 1; /* The first symbols are constants */
@@ -862,7 +1285,7 @@ char checkStmtMatch(long statemNum, long step)
   }
   /* Last symbol */
   stsym = mString[mStringLen - 1];
-  tasym = ((nmbrString *)(proofInProgress.target[step]))[targetLen - 1];
+  tasym = ((nmbrString *)((proofInProgress.target)[step]))[targetLen - 1];
   if (stsym != tasym) {
     if (mathToken[stsym].tokenType == (char)con__) {
       if (mathToken[tasym].tokenType == (char)con__) {
@@ -874,7 +1297,7 @@ char checkStmtMatch(long statemNum, long step)
   /* Second symbol */
   if (targetLen > 1 && mStringLen > 1 && firstSymbsAreConstsFlag) {
     stsym = mString[1];
-    tasym = ((nmbrString *)(proofInProgress.target[step]))[1];
+    tasym = ((nmbrString *)((proofInProgress.target)[step]))[1];
     if (stsym != tasym) {
       if (mathToken[stsym].tokenType == (char)con__) {
         if (mathToken[tasym].tokenType == (char)con__) {
@@ -906,11 +1329,11 @@ char checkStmtMatch(long statemNum, long step)
 
   /* Now see if we can unify */
   unifTrialCount = 1; /* Reset unification timeout */
-  targetFlag = unifyH(proofInProgress.target[step],
+  targetFlag = unifyH((proofInProgress.target)[step],
       scheme, &stateVector, 0);
-  if (nmbrLen(proofInProgress.user[step])) {
+  if (nmbrLen((proofInProgress.user)[step])) {
     unifTrialCount = 1; /* Reset unification timeout */
-    userFlag = unifyH(proofInProgress.user[step],
+    userFlag = unifyH((proofInProgress.user)[step],
       scheme, &stateVector, 0);
   }
 
@@ -922,7 +1345,7 @@ char checkStmtMatch(long statemNum, long step)
   if (targetFlag == 1 && userFlag == 1) return (1);
   return (2);
 
-}
+} /* checkStmtMatch */
 
 /* Check to see if a (user-specified) math string will match the
    proofInProgress.target (or .user) of an step.  Returns 1 if match, 0 if
@@ -934,11 +1357,11 @@ char checkMStringMatch(nmbrString *mString, long step)
   char sourceFlag = 1; /* Default if no .source */
 
   unifTrialCount = 1; /* Reset unification timeout */
-  targetFlag = unifyH(mString, proofInProgress.target[step],
+  targetFlag = unifyH(mString, (proofInProgress.target)[step],
       &stateVector, 0);
-  if (nmbrLen(proofInProgress.source[step])) {
+  if (nmbrLen((proofInProgress.source)[step])) {
     unifTrialCount = 1; /* Reset unification timeout */
-    sourceFlag = unifyH(mString, proofInProgress.source[step],
+    sourceFlag = unifyH(mString, (proofInProgress.source)[step],
         &stateVector, 0);
   }
 
@@ -948,7 +1371,8 @@ char checkMStringMatch(nmbrString *mString, long step)
   if (targetFlag == 1 && sourceFlag == 1) return (1);
   return (2);
 
-}
+} /* checkMStringMatch */
+
 
 /* Find proof of formula or simple theorem (no new vars in $e's) */
 /* maxEDepth is the maximum depth at which statements with $e hypotheses are
@@ -964,10 +1388,10 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
   nmbrString *proof = NULL_NMBRSTRING;
   nmbrString *scheme = NULL_NMBRSTRING;
   pntrString *hypList = NULL_PNTRSTRING;
-  nmbrString *hypListMap = NULL_NMBRSTRING; /* Order remapping for speedup */
+  nmbrString *hypOrdMap = NULL_NMBRSTRING; /* Order remapping for speedup */
   pntrString *hypProofList = NULL_PNTRSTRING;
   pntrString *stateVector = NULL_PNTRSTRING;
-  long firstSymbol, secondSymbol, lastSymbol;
+  /* long firstSymbol, secondSymbol, lastSymbol; */ /* 22-Aug-2012 nm Deleted */
   nmbrString *stmtMathPtr;
   nmbrString *hypSchemePtr;
   nmbrString *hypProofPtr;
@@ -976,7 +1400,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
   flag tmpFlag;
   flag breakFlag;
   flag firstEHypFlag;
-  long schemeLen, mStringLen, schemeVars, schReqHyps, hypLen, reqVars;
+  long schemeLen, /*mStringLen,*/ schemeVars, schReqHyps, hypLen, reqVars;
   long saveUnifTrialCount;
   static long depth = 0;
   static long trials;
@@ -1045,7 +1469,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
   /* We scan backwards for maximum speed since IMPROVE ALL processes steps
      backwards, so we maximize the chance of a proved hit earlier on */
   for (selfScanStep = selfScanSteps - 1; selfScanStep >= 0; selfScanStep--) {
-    if (nmbrEq(mString, proofInProgress.target[selfScanStep])) {
+    if (nmbrEq(mString, (proofInProgress.target)[selfScanStep])) {
       /* The step matches.  Now see if the step was proved. */
 
       /* Get the subproof at the step */
@@ -1064,32 +1488,38 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
       }
       /* Otherwise, we've found our proof; use it and exit */
       goto returnPoint;
-    } /* if (nmbrEq(mString, proofInProgress.target[selfScanStep]) */
+    } /* if (nmbrEq(mString, (proofInProgress.target)[selfScanStep]) */
   } /* Next selfScanStep */
   /* 7/31/99 - End of scanning current proof */
 
   /* Scan all statements up to the current statement to see if we can unify */
 
+  /* 22-Aug-2012 nm Now done with quickMatchFilter() *******
   mStringLen = nmbrLen(mString);
-
-  /* For speedup */
+  /@ For speedup @/
   firstSymbol = mString[0];
   if (mathToken[firstSymbol].tokenType != (char)con__) firstSymbol = 0;
   if (mStringLen > 1) {
     secondSymbol = mString[1];
     if (mathToken[secondSymbol].tokenType != (char)con__) secondSymbol = 0;
-    /* If first symbol is a variable, second symbol shouldn't be tested. */
+    /@ If first symbol is a variable, second symbol shouldn't be tested. @/
     if (!firstSymbol) secondSymbol = 0;
   } else {
     secondSymbol = 0;
   }
   lastSymbol = mString[mStringLen - 1];
   if (mathToken[lastSymbol].tokenType != (char)con__) lastSymbol = 0;
+  **** */
 
   for (stmt = 1; stmt < statemNum; stmt++) {
 
+    /* 22-Aug-2012 nm Separated quick filter for reuse in other functions */
+    if (quickMatchFilter(stmt, mString, 0/*no dummy vars*/) == 0) continue;
+
+    /* 22-Aug-2012 nm Now done with quickMatchFilter() ****
     if (statement[stmt].type != (char)a__ &&
-        statement[stmt].type != (char)p__) continue; /* Not $a or $p */
+        statement[stmt].type != (char)p__) continue; /@ Not $a or $p @/
+    **** */
 
     /* 16-Aug-04 nm  noDistinct is set by NO_DISTICT qualifier in IMPROVE */
     if (noDistinct) {
@@ -1103,21 +1533,24 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
 
     stmtMathPtr = statement[stmt].mathString;
 
-    /* Speedup:  if first or last tokens in instance and scheme are constants,
-       they must match */
-    if (firstSymbol) { /* First symbol in mString is a constant */
+    /* 22-Aug-2012 nm Now done with quickMatchFilter() ****
+    /@ Speedup:  if first or last tokens in instance and scheme are constants,
+       they must match @/
+    if (firstSymbol) { /@ First symbol in mString is a constant @/
       if (firstSymbol != stmtMathPtr[0]) {
         if (mathToken[stmtMathPtr[0]].tokenType == (char)con__) continue;
       }
     }
+    **** */
 
     schemeLen = nmbrLen(stmtMathPtr);
 
-    /* ...Continuation of speedup */
-    if (secondSymbol) { /* Second symbol in mString is a constant */
+    /* 22-Aug-2012 nm Now done with quickMatchFilter() ****
+    /@ ...Continuation of speedup @/
+    if (secondSymbol) { /@ Second symbol in mString is a constant @/
       if (schemeLen > 1) {
         if (secondSymbol != stmtMathPtr[1]) {
-          /* Second symbol should be tested only if 1st symbol is a constant */
+          /@ Second symbol should be tested only if 1st symbol is a constant @/
           if (mathToken[stmtMathPtr[0]].tokenType == (char)con__) {
             if (mathToken[stmtMathPtr[1]].tokenType == (char)con__)
                 continue;
@@ -1125,12 +1558,38 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
         }
       }
     }
-    if (lastSymbol) { /* Last symbol in mString is a constant */
+    if (lastSymbol) { /@ Last symbol in mString is a constant @/
       if (lastSymbol != stmtMathPtr[schemeLen - 1]) {
         if (mathToken[stmtMathPtr[schemeLen - 1]].tokenType ==
            (char)con__) continue;
       }
     }
+    **** */
+
+    /* 22-Aug-2012 nm Now done with quickMatchFilter() ****
+    /@ Speedup:  make sure all constants in scheme are in instance (i.e.
+       mString) @/
+    /@ First, set mathToken[].tmp for all symbols in scheme @/
+    for (sym = 0; sym < schemeLen; sym++) {
+      mathToken[stmtMathPtr[sym]].tmp = 1;
+    }
+    /@ Next, clear mathToken[].tmp for all symbols in instance @/
+    for (sym = 0; sym < mStringLen; sym++) {
+      mathToken[mString[sym]].tmp = 0;
+    }
+    /@ Finally, check that they got cleared for all constants in scheme @/
+    breakFlag = 0;
+    for (sym = 0; sym < schemeLen; sym++) {
+      if (mathToken[stmtMathPtr[sym]].tokenType == (char)con__) {
+        if (mathToken[stmtMathPtr[sym]].tmp) {
+          breakFlag = 1;
+          break;
+        }
+      }
+    }
+    if (breakFlag) continue; /@ To next stmt @/
+    **** */
+
 
     schReqHyps = statement[stmt].numReqHyp;
     reqVars = nmbrLen(statement[stmt].reqVarList);
@@ -1175,29 +1634,6 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
 
 
 
-    /* Speedup:  make sure all constants in scheme are in instance (i.e.
-       mString) */
-    /* First, set mathToken[].tmp for all symbols in scheme */
-    for (sym = 0; sym < schemeLen; sym++) {
-      mathToken[stmtMathPtr[sym]].tmp = 1;
-    }
-    /* Next, clear mathToken[].tmp for all symbols in instance */
-    for (sym = 0; sym < mStringLen; sym++) {
-      mathToken[mString[sym]].tmp = 0;
-    }
-    /* Finally, check that they got cleared for all constants in scheme */
-    breakFlag = 0;
-    for (sym = 0; sym < schemeLen; sym++) {
-      if (mathToken[stmtMathPtr[sym]].tokenType == (char)con__) {
-        if (mathToken[stmtMathPtr[sym]].tmp) {
-          breakFlag = 1;
-          break;
-        }
-      }
-    }
-    if (breakFlag) continue;
-
-
     /* Change all variables in the statement to dummy vars for unification */
     nmbrLet(&scheme, stmtMathPtr);
     schemeVars = reqVars; /* S.b. same after eliminated new $e vars above */
@@ -1218,7 +1654,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
 
     /* Change all variables in the statement's hyps to dummy vars for subst. */
     pntrLet(&hypList, pntrNSpace(schReqHyps));
-    nmbrLet(&hypListMap, nmbrSpace(schReqHyps));
+    nmbrLet(&hypOrdMap, nmbrSpace(schReqHyps));
     pntrLet(&hypProofList, pntrNSpace(schReqHyps));
     for (hyp = 0; hyp < schReqHyps; hyp++) {
       hypSchemePtr = NULL_NMBRSTRING;
@@ -1232,7 +1668,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
         hypSchemePtr[sym] = mathToken[hypSchemePtr[sym]].tmp;
       }
       hypList[hyp] = hypSchemePtr;
-      hypListMap[hyp] = hyp;
+      hypOrdMap[hyp] = hyp;
     }
 
     unifTrialCount = 1; /* Reset unification timeout */
@@ -1261,9 +1697,9 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
       breakFlag = 0;
       for (hyp = 0; hyp < schReqHyps; hyp++) {
 /*E*/if (db8)print2("%s\n", cat(space(depth+2), "Proving hyp. ",
-/*E*/   str(hypListMap[hyp]), "(#", str(hyp), "):  ",
-/*E*/   nmbrCvtMToVString(hypList[hypListMap[hyp]]), NULL));
-        makeSubstPtr = makeSubstUnif(&tmpFlag, hypList[hypListMap[hyp]],
+/*E*/   str(hypOrdMap[hyp]), "(#", str(hyp), "):  ",
+/*E*/   nmbrCvtMToVString(hypList[hypOrdMap[hyp]]), NULL));
+        makeSubstPtr = makeSubstUnif(&tmpFlag, hypList[hypOrdMap[hyp]],
             stateVector);
         if (tmpFlag) bug(1808); /* No dummy vars. should result unless bad $a's*/
                             /*??? Implement an error check for this in parser */
@@ -1282,10 +1718,10 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
 
         /* Deallocate in case this is the 2nd or later pass of main
            unification */
-        nmbrLet((nmbrString **)(&hypProofList[hypListMap[hyp]]),
+        nmbrLet((nmbrString **)(&hypProofList[hypOrdMap[hyp]]),
             NULL_NMBRSTRING);
 
-        hypProofList[hypListMap[hyp]] = hypProofPtr;
+        hypProofList[hypOrdMap[hyp]] = hypProofPtr;
       }
       if (breakFlag) {
        /* Proof is not possible for some hypothesis. */
@@ -1309,11 +1745,11 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
        /* Speedup:  Move the hypothesis for which the proof was not found
           to the beginning of the hypothesis list, so it will be tried
           first next time. */
-       j = hypListMap[hyp];
+       j = hypOrdMap[hyp];
        for (i = hyp; i >= 1; i--) {
-         hypListMap[i] = hypListMap[i - 1];
+         hypOrdMap[i] = hypOrdMap[i - 1];
        }
-       hypListMap[0] = j;
+       hypOrdMap[0] = j;
 
        continue; /* Not possible; get next unification */
 
@@ -1352,15 +1788,113 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
 
   nmbrLet(&scheme, NULL_NMBRSTRING);
   pntrLet(&hypList, NULL_PNTRSTRING);
-  nmbrLet(&hypListMap, NULL_NMBRSTRING);
+  nmbrLet(&hypOrdMap, NULL_NMBRSTRING);
   pntrLet(&hypProofList, NULL_PNTRSTRING);
   depth--; /* Restore backtracking depth */
 /*E*/if(db8)print2("%s\n", cat(space(depth+2), "Returned: ",
 /*E*/   nmbrCvtRToVString(proof), NULL));
 /*E*/if(db8){if(!depth)print2("Trials: %ld\n", trials);}
   return (proof); /* Caller must deallocate */
-}
+} /* proveFloating */
 
+
+
+/* This function does quick check for some common conditions that prevent
+   a trial statement (scheme) from being unified with a given instance.
+   Return value 0 means it can't be unified, 1 means it might be unifiable. */
+flag quickMatchFilter(long trialStmt, nmbrString *mString,
+    long dummyVarFlag /* 0 if no dummy vars in mString */) {
+  /* 22-Aug-2012 nm This function used to be part of proveFloating().  It
+     was separated out for reuse in other places */
+  long sym;
+  long firstSymbol, secondSymbol, lastSymbol;
+  nmbrString *stmtMathPtr;
+  flag breakFlag;
+  long schemeLen, mStringLen;
+
+  if (statement[trialStmt].type != (char)p__ &&
+      statement[trialStmt].type != (char)a__) return 0; /* Not $a or $p */
+
+  /* This section is common to all trial statements and in principle
+     could be computed once for speedup (it used to be when this code
+     was in proveStatement() ), but it doesn't seem too compute-intensive. */
+  mStringLen = nmbrLen(mString);
+  firstSymbol = mString[0];
+  if (mathToken[firstSymbol].tokenType != (char)con__) firstSymbol = 0;
+  if (mStringLen > 1) {
+    secondSymbol = mString[1];
+    if (mathToken[secondSymbol].tokenType != (char)con__) secondSymbol = 0;
+    /* If first symbol is a variable, second symbol shouldn't be tested. */
+    if (!firstSymbol) secondSymbol = 0;
+  } else {
+    secondSymbol = 0;
+  }
+  lastSymbol = mString[mStringLen - 1];
+  if (mathToken[lastSymbol].tokenType != (char)con__) lastSymbol = 0;
+  /* (End of common section) */
+
+
+  stmtMathPtr = statement[trialStmt].mathString;
+
+  /* Speedup:  if first or last tokens in instance and scheme are constants,
+     they must match */
+  if (firstSymbol) { /* First symbol in mString is a constant */
+    if (firstSymbol != stmtMathPtr[0]) {
+      if (mathToken[stmtMathPtr[0]].tokenType == (char)con__) return 0;
+    }
+  }
+
+  schemeLen = nmbrLen(stmtMathPtr);
+
+  /* ...Continuation of speedup */
+  if (secondSymbol) { /* Second symbol in mString is a constant */
+    if (schemeLen > 1) {
+      if (secondSymbol != stmtMathPtr[1]) {
+        /* Second symbol should be tested only if 1st symbol is a constant */
+        if (mathToken[stmtMathPtr[0]].tokenType == (char)con__) {
+          if (mathToken[stmtMathPtr[1]].tokenType == (char)con__)
+              return 0;
+        }
+      }
+    }
+  }
+  if (lastSymbol) { /* Last symbol in mString is a constant */
+    if (lastSymbol != stmtMathPtr[schemeLen - 1]) {
+      if (mathToken[stmtMathPtr[schemeLen - 1]].tokenType ==
+         (char)con__) return 0;
+    }
+  }
+
+  /* Speedup:  make sure all constants in scheme are in instance (i.e.
+     mString) */
+  /* First, set mathToken[].tmp for all symbols in scheme */
+  for (sym = 0; sym < schemeLen; sym++) {
+    mathToken[stmtMathPtr[sym]].tmp = 1;
+  }
+  /* Next, clear mathToken[].tmp for all symbols in instance */
+  for (sym = 0; sym < mStringLen; sym++) {
+    mathToken[mString[sym]].tmp = 0;
+  }
+  /* Finally, check that they got cleared for all constants in scheme */
+  /* Only do this when there are no dummy variables in mString; this
+     is the case when dummyVarFlag = 0 (we depend on caller to set this
+     correctly) */
+  if (dummyVarFlag == 0) {
+    breakFlag = 0;
+    for (sym = 0; sym < schemeLen; sym++) {
+      if (mathToken[stmtMathPtr[sym]].tokenType == (char)con__) {
+        if (mathToken[stmtMathPtr[sym]].tmp) {
+          breakFlag = 1;
+          break;
+        }
+      }
+    }
+    if (breakFlag) return 0; /* No match */
+  } /* if dummyVarFlag == 0 */
+
+  return 1;
+
+} /* quickMatchFilter */
 
 
 /* Shorten proof by using specified statement. */
@@ -1384,7 +1918,7 @@ void minimizeProof(long repStatemNum, long prvStatemNum,
     foundFlag = 0;
     for (step = plen - 1; step >= 0; step--) {
       /* Reject step with dummy vars */
-      mString = proofInProgress.target[step];
+      mString = (proofInProgress.target)[step];
       mlen = nmbrLen(mString);
       breakFlag = 0;
       for (sym = 0; sym < mlen; sym++) {
@@ -1396,12 +1930,14 @@ void minimizeProof(long repStatemNum, long prvStatemNum,
       if (breakFlag) continue;  /* Step has dummy var.; don't try it */
 
       /* Reject step not matching replacement step */
-      if (!checkStmtMatch(repStatemNum, step)) continue;
+      if (!checkStmtMatch(repStatemNum, step)) {
+        continue;
+      }
 
       /* Try the replacement */
       /* Don't replace a step with itself (will cause infinite loop in
          ALLOW_GROWTH mode) */
-      if (proofInProgress.proof[step] != repStatemNum
+      if ((proofInProgress.proof)[step] != repStatemNum
           /* || 1 */  /* For special replacement with same label; also below */
           /* 3-Feb-06 nm */
           /* When not in ALLOW_GROWTH mode i.e. when an infinite loop can't
@@ -1409,8 +1945,15 @@ void minimizeProof(long repStatemNum, long prvStatemNum,
              do-nothing chain of bitr's/pm4.2's will be trimmed off with a
              better bitr match. */
           || !allowGrowthFlag) {
-        newSubProofPtr = replaceStatement(repStatemNum, step,
-            prvStatemNum);
+        newSubProofPtr = replaceStatement(repStatemNum,
+            step,
+            prvStatemNum,
+            1/*scan just subproof for speed*/,
+            0/*noDistinct=0 OK since searchMethod=0 will only
+               call proveFloating for $f's */,
+            0/*searchMethod=0: call proveFloating only for $f's*/,
+            0/*improveDepth=0 OK since we call proveFloating only for $f's*/
+            );
       }
       if (!nmbrLen(newSubProofPtr)) continue;
                                            /* Replacement was not successful */
@@ -1430,7 +1973,7 @@ void minimizeProof(long repStatemNum, long prvStatemNum,
         /* Success - proof length was reduced */
         /* 7-Jun-2011 nm Delete the old subproof only if it is not an unknown
            step (since if it is an unknown step, it is already deleted) */
-        if (proofInProgress.proof[step] == -(long)'?') {
+        if ((proofInProgress.proof)[step] == -(long)'?') {
           /* 7-Jun-2011 nm This can only occur in / ALLOW_GROWTH mode */
           if (!allowGrowthFlag) bug(1831);
         } else {
@@ -1451,7 +1994,7 @@ void minimizeProof(long repStatemNum, long prvStatemNum,
                       to prevent inf loop */
   } /* end while */
 
-}
+} /* minimizeProof */
 
 
 
@@ -1464,11 +2007,11 @@ void initStep(long step)
   nmbrString *reqHypPos = NULL_NMBRSTRING;
   nmbrString *nmbrTmpPtr; /* Pointer only; not allocated */
 
-  stmt = proofInProgress.proof[step];
+  stmt = (proofInProgress.proof)[step];
   if (stmt < 0) {
     if (stmt == -(long)'?') {
       /* Initialize unknown step source to nothing */
-      nmbrLet((nmbrString **)(&(proofInProgress.source[step])),
+      nmbrLet((nmbrString **)(&((proofInProgress.source)[step])),
           NULL_NMBRSTRING);
     } else {
 /*E*/print2("step %ld stmt %ld\n",step,stmt);
@@ -1478,7 +2021,7 @@ void initStep(long step)
   }
   if (statement[stmt].type == (char)e__ || statement[stmt].type == (char)f__) {
     /* A hypothesis -- initialize to the actual statement */
-    nmbrLet((nmbrString **)(&(proofInProgress.source[step])),
+    nmbrLet((nmbrString **)(&((proofInProgress.source)[step])),
         statement[stmt].mathString);
     return;
   }
@@ -1486,7 +2029,7 @@ void initStep(long step)
   /* It must be an assertion ($a or $p) */
 
   /* Assign the assertion to .source */
-  nmbrLet((nmbrString **)(&(proofInProgress.source[step])),
+  nmbrLet((nmbrString **)(&((proofInProgress.source)[step])),
       statement[stmt].mathString);
 
   /* Find the position in proof of all required hyps, and
@@ -1496,7 +2039,7 @@ void initStep(long step)
   pos = step - 1; /* Step with last hyp */
   for (hyp = reqHyps - 1; hyp >= 0; hyp--) {
     reqHypPos[hyp] = pos;
-    nmbrLet((nmbrString **)(&(proofInProgress.target[pos])),
+    nmbrLet((nmbrString **)(&((proofInProgress.target)[pos])),
         statement[statement[stmt].reqHypList[hyp]].mathString);
                                            /* Assign the hypothesis to target */
     if (hyp > 0) { /* Don't care about subproof length for 1st hyp */
@@ -1517,7 +2060,7 @@ void initStep(long step)
       pipDummyVars + var;
   }
   /* Change vars in assertion */
-  nmbrTmpPtr = proofInProgress.source[step];
+  nmbrTmpPtr = (proofInProgress.source)[step];
   mlen = nmbrLen(nmbrTmpPtr);
   for (sym = 0; sym < mlen; sym++) {
     if (mathToken[nmbrTmpPtr[sym]].tokenType == (char)var__) {
@@ -1527,7 +2070,7 @@ void initStep(long step)
   }
   /* Change vars in hypotheses */
   for (hyp = 0; hyp < reqHyps; hyp++) {
-    nmbrTmpPtr = proofInProgress.target[reqHypPos[hyp]];
+    nmbrTmpPtr = (proofInProgress.target)[reqHypPos[hyp]];
     mlen = nmbrLen(nmbrTmpPtr);
     for (sym = 0; sym < mlen; sym++) {
       if (mathToken[nmbrTmpPtr[sym]].tokenType == (char)var__) {
@@ -1543,7 +2086,7 @@ void initStep(long step)
   nmbrLet(&reqHypPos, NULL_NMBRSTRING); /* Deallocate */
 
   return;
-}
+} /* initStep */
 
 
 
@@ -1561,7 +2104,7 @@ void assignKnownSubProofs(void)
     subplen = subProofLen(proofInProgress.proof, pos); /* Find length of subpr*/
     breakFlag = 0;
     for (q = pos - subplen + 1; q <= pos; q++) {
-      if (proofInProgress.proof[q] == -(long)'?') {
+      if ((proofInProgress.proof)[q] == -(long)'?') {
         breakFlag = 1;
         break;
       }
@@ -1580,7 +2123,7 @@ void assignKnownSubProofs(void)
 
   } /* Next pos */
   return;
-}
+} /* assignKnownSubProofs */
 
 
 /* This function assigns math strings to all steps (proofInProgress.target and
@@ -1601,7 +2144,7 @@ void assignKnownSteps(long startStep, long sbProofLen)
   nmbrLet(&stack, nmbrSpace(sbProofLen));
   stackPtr = 0;
   for (pos = startStep; pos < startStep + sbProofLen; pos++) {
-    stmt = proofInProgress.proof[pos];
+    stmt = (proofInProgress.proof)[pos];
 
     if (stmt <= 0) {
       if (stmt != -(long)'?') bug(1810);
@@ -1612,7 +2155,7 @@ void assignKnownSteps(long startStep, long sbProofLen)
 
     if (statement[stmt].type == (char)e__ || statement[stmt].type == (char)f__){
       /* It's a hypothesis or unknown step; assign step; push the stack */
-      nmbrLet((nmbrString **)(&(proofInProgress.source[pos])),
+      nmbrLet((nmbrString **)(&((proofInProgress.source)[pos])),
           statement[stmt].mathString);
       stack[stackPtr] = pos;
       stackPtr++;
@@ -1624,8 +2167,9 @@ void assignKnownSteps(long startStep, long sbProofLen)
 
       instLen = 1; /* First "$|$" separator token */
       for (st = stackPtr - reqHyps; st < stackPtr; st++) {
+        if (st < 0) bug(1850); /* Proof sent in may be corrupted */
         /* Add 1 for "$|$" separator token */
-        instLen = instLen + nmbrLen(proofInProgress.source[stack[st]]) + 1;
+        instLen = instLen + nmbrLen((proofInProgress.source)[stack[st]]) + 1;
       }
       /* Preallocate instance */
       nmbrLet(&instance, nmbrSpace(instLen));
@@ -1633,10 +2177,10 @@ void assignKnownSteps(long startStep, long sbProofLen)
       instance[0] = mathTokens; /* "$|$" separator */
       instPos = 1;
       for (st = stackPtr - reqHyps; st < stackPtr; st++) {
-        hypLen = nmbrLen(proofInProgress.source[stack[st]]);
+        hypLen = nmbrLen((proofInProgress.source)[stack[st]]);
         for (hypPos = 0; hypPos < hypLen; hypPos++) {
           instance[instPos] =
-              ((nmbrString *)(proofInProgress.source[stack[st]]))[hypPos];
+              ((nmbrString *)((proofInProgress.source)[stack[st]]))[hypPos];
           instPos++;
         }
         instance[instPos] = mathTokens; /* "$|$" separator */
@@ -1717,8 +2261,8 @@ void assignKnownSteps(long startStep, long sbProofLen)
         goto returnPoint;
       }
       /* Substitute and assign assertion to proof in progress */
-      nmbrLet((nmbrString **)(&(proofInProgress.source[pos])), NULL_NMBRSTRING);
-      proofInProgress.source[pos] = makeSubstUnif(&tmpFlag, assertion,
+      nmbrLet((nmbrString **)(&((proofInProgress.source)[pos])), NULL_NMBRSTRING);
+      (proofInProgress.source)[pos] = makeSubstUnif(&tmpFlag, assertion,
           stateVector);
       if (tmpFlag) bug(1814); /* All vars s.b. assigned */
 
@@ -1738,8 +2282,8 @@ void assignKnownSteps(long startStep, long sbProofLen)
  returnPoint:
   /* Assign .target field for all but last step */
   for (pos = startStep; pos < startStep + sbProofLen - 1; pos++) {
-    nmbrLet((nmbrString **)(&(proofInProgress.target[pos])),
-        proofInProgress.source[pos]);
+    nmbrLet((nmbrString **)(&((proofInProgress.target)[pos])),
+        (proofInProgress.source)[pos]);
   }
 
   /* Deallocate (stateVector was deallocated by 2nd unif. call) */
@@ -1748,7 +2292,7 @@ void assignKnownSteps(long startStep, long sbProofLen)
   nmbrLet(&scheme, NULL_NMBRSTRING);
   nmbrLet(&assertion, NULL_NMBRSTRING);
   return;
-}
+} /* assignKnownSteps */
 
 
 /* Interactively unify a step.  Calls interactiveUnify(). */
@@ -1765,32 +2309,32 @@ void interactiveUnifyStep(long step, char messageFlag)
   char unifFlag;
 
   /* Target should never be empty */
-  if (!nmbrLen(proofInProgress.target[step])) bug (1817);
+  if (!nmbrLen((proofInProgress.target)[step])) bug (1817);
 
   /* First, see if .target and .user should be unified */
   /* If not, then see if .source and .user should be unified */
   /* If not, then see if .target and .source should be unified */
-  if (nmbrLen(proofInProgress.user[step])) {
-    if (!nmbrEq(proofInProgress.target[step], proofInProgress.user[step])) {
+  if (nmbrLen((proofInProgress.user)[step])) {
+    if (!nmbrEq((proofInProgress.target)[step], (proofInProgress.user)[step])) {
       if (messageFlag == 0) print2("Step %ld:\n", step + 1);
-      unifFlag = interactiveUnify(proofInProgress.target[step],
-        proofInProgress.user[step], &stateVector);
+      unifFlag = interactiveUnify((proofInProgress.target)[step],
+        (proofInProgress.user)[step], &stateVector);
       goto subAndReturn;
     }
-    if (nmbrLen(proofInProgress.source[step])) {
-      if (!nmbrEq(proofInProgress.source[step], proofInProgress.user[step])) {
+    if (nmbrLen((proofInProgress.source)[step])) {
+      if (!nmbrEq((proofInProgress.source)[step], (proofInProgress.user)[step])) {
         if (messageFlag == 0) print2("Step %ld:\n", step + 1);
-        unifFlag = interactiveUnify(proofInProgress.source[step],
-          proofInProgress.user[step], &stateVector);
+        unifFlag = interactiveUnify((proofInProgress.source)[step],
+          (proofInProgress.user)[step], &stateVector);
         goto subAndReturn;
       }
     }
   } else {
-    if (nmbrLen(proofInProgress.source[step])) {
-      if (!nmbrEq(proofInProgress.target[step], proofInProgress.source[step])) {
+    if (nmbrLen((proofInProgress.source)[step])) {
+      if (!nmbrEq((proofInProgress.target)[step], (proofInProgress.source)[step])) {
         if (messageFlag == 0) print2("Step %ld:\n", step + 1);
-        unifFlag = interactiveUnify(proofInProgress.target[step],
-          proofInProgress.source[step], &stateVector);
+        unifFlag = interactiveUnify((proofInProgress.target)[step],
+          (proofInProgress.source)[step], &stateVector);
         goto subAndReturn;
       }
     }
@@ -1817,7 +2361,7 @@ void interactiveUnifyStep(long step, char messageFlag)
 
   return;
 
-}
+} /* interactiveUnifyStep */
 
 
 /* Interactively select one of several possible unifications */
@@ -2040,7 +2584,7 @@ char interactiveUnify(nmbrString *schemeA, nmbrString *schemeB,
   nmbrLet(&substResult, NULL_NMBRSTRING); /* Deallocate */
   return returnValue;
 
-}
+} /* interactiveUnify */
 
 
 
@@ -2050,7 +2594,7 @@ void autoUnify(flag congrats)
 {
   long step, plen;
   char unifFlag;
-  flag stepChanged;
+  /* flag stepChanged; */
   flag somethingChanged = 1;
   int pass;
   nmbrString *schemeAPtr; /* Pointer only; not allocated */
@@ -2068,28 +2612,28 @@ void autoUnify(flag congrats)
   while (somethingChanged) {
     somethingChanged = 0;
     for (step = 0; step < plen; step++) {
-      stepChanged = 0;
+      /* stepChanged = 0; */
 
       for (pass = 0; pass < 3; pass++) {
 
         switch (pass) {
           case 0:
             /* Check target vs. user */
-            schemeAPtr = proofInProgress.target[step];
+            schemeAPtr = (proofInProgress.target)[step];
             if (!nmbrLen(schemeAPtr)) print2(
  "?Bad unification selected:  A proof step should never be completely empty\n");
       /*if (!nmbrLen(schemeAPtr)) bug (1820);*/ /* Target can never be empty */
-            schemeBPtr = proofInProgress.user[step];
+            schemeBPtr = (proofInProgress.user)[step];
             break;
           case 1:
             /* Check source vs. user */
-            schemeAPtr = proofInProgress.source[step];
-            schemeBPtr = proofInProgress.user[step];
+            schemeAPtr = (proofInProgress.source)[step];
+            schemeBPtr = (proofInProgress.user)[step];
             break;
           case 2:
             /* Check target vs. source */
-            schemeAPtr = proofInProgress.target[step];
-            schemeBPtr = proofInProgress.source[step];
+            schemeAPtr = (proofInProgress.target)[step];
+            schemeBPtr = (proofInProgress.source)[step];
             break;
         }
         if (nmbrLen(schemeAPtr) && nmbrLen(schemeBPtr)) {
@@ -2159,28 +2703,28 @@ void makeSubstAll(pntrString *stateVector) {
   plen = nmbrLen(proofInProgress.proof);
   for (step = 0; step < plen; step++) {
 
-    nmbrTmpPtr = proofInProgress.target[step];
-    proofInProgress.target[step] = makeSubstUnif(&tmpFlag, nmbrTmpPtr,
+    nmbrTmpPtr = (proofInProgress.target)[step];
+    (proofInProgress.target)[step] = makeSubstUnif(&tmpFlag, nmbrTmpPtr,
       stateVector);
     nmbrLet(&nmbrTmpPtr, NULL_NMBRSTRING);
 
-    nmbrTmpPtr = proofInProgress.source[step];
+    nmbrTmpPtr = (proofInProgress.source)[step];
     if (nmbrLen(nmbrTmpPtr)) {
-      proofInProgress.source[step] = makeSubstUnif(&tmpFlag, nmbrTmpPtr,
+      (proofInProgress.source)[step] = makeSubstUnif(&tmpFlag, nmbrTmpPtr,
         stateVector);
       nmbrLet(&nmbrTmpPtr, NULL_NMBRSTRING);
     }
 
-    nmbrTmpPtr = proofInProgress.user[step];
+    nmbrTmpPtr = (proofInProgress.user)[step];
     if (nmbrLen(nmbrTmpPtr)) {
-      proofInProgress.user[step] = makeSubstUnif(&tmpFlag, nmbrTmpPtr,
+      (proofInProgress.user)[step] = makeSubstUnif(&tmpFlag, nmbrTmpPtr,
         stateVector); /* 16-Apr-06 nm Fixed bug here */
       nmbrLet(&nmbrTmpPtr, NULL_NMBRSTRING);
     }
 
   } /* Next step */
   return;
-}
+} /* makeSubstAll */
 
 /* Replace a dummy variable with a user-specified math string */
 void replaceDummyVar(long dummyVar, nmbrString *mString)
@@ -2196,40 +2740,40 @@ void replaceDummyVar(long dummyVar, nmbrString *mString)
 
     stepChanged = 0;
 
-    nmbrTmpPtr = proofInProgress.target[step];
+    nmbrTmpPtr = (proofInProgress.target)[step];
     slen = nmbrLen(nmbrTmpPtr);
     for (sym = slen - 1; sym >= 0; sym--) {
       if (nmbrTmpPtr[sym] == dummyVar + mathTokens) {
-        nmbrLet((nmbrString **)(&(proofInProgress.target[step])),
+        nmbrLet((nmbrString **)(&((proofInProgress.target)[step])),
             nmbrCat(nmbrLeft(nmbrTmpPtr, sym), mString,
             nmbrRight(nmbrTmpPtr, sym + 2), NULL));
-        nmbrTmpPtr = proofInProgress.target[step];
+        nmbrTmpPtr = (proofInProgress.target)[step];
         stepChanged = 1;
         numSubs++;
       }
     } /* Next sym */
 
-    nmbrTmpPtr = proofInProgress.source[step];
+    nmbrTmpPtr = (proofInProgress.source)[step];
     slen = nmbrLen(nmbrTmpPtr);
     for (sym = slen - 1; sym >= 0; sym--) {
       if (nmbrTmpPtr[sym] == dummyVar + mathTokens) {
-        nmbrLet((nmbrString **)(&(proofInProgress.source[step])),
+        nmbrLet((nmbrString **)(&((proofInProgress.source)[step])),
             nmbrCat(nmbrLeft(nmbrTmpPtr, sym), mString,
             nmbrRight(nmbrTmpPtr, sym + 2), NULL));
-        nmbrTmpPtr = proofInProgress.source[step];
+        nmbrTmpPtr = (proofInProgress.source)[step];
         stepChanged = 1;
         numSubs++;
       }
     } /* Next sym */
 
-    nmbrTmpPtr = proofInProgress.user[step];
+    nmbrTmpPtr = (proofInProgress.user)[step];
     slen = nmbrLen(nmbrTmpPtr);
     for (sym = slen - 1; sym >= 0; sym--) {
       if (nmbrTmpPtr[sym] == dummyVar + mathTokens) {
-        nmbrLet((nmbrString **)(&(proofInProgress.user[step])),
+        nmbrLet((nmbrString **)(&((proofInProgress.user)[step])),
             nmbrCat(nmbrLeft(nmbrTmpPtr, sym), mString,
             nmbrRight(nmbrTmpPtr, sym + 2), NULL));
-        nmbrTmpPtr = proofInProgress.user[step];
+        nmbrTmpPtr = (proofInProgress.user)[step];
         stepChanged = 1;
         numSubs++;
       }
@@ -2246,7 +2790,7 @@ void replaceDummyVar(long dummyVar, nmbrString *mString)
   }
 
   return;
-}
+} /* replaceDummyVar */
 
 /* Get subproof length of a proof, starting at endStep and going backwards */
 long subProofLen(nmbrString *proof, long endStep)
@@ -2269,8 +2813,140 @@ long subProofLen(nmbrString *proof, long endStep)
     lvl = lvl + statement[stmt].numReqHyp;
   }
   return (endStep - p + 1);
-}
+} /* subProofLen */
 
+
+/* 25-Aug-2012 nm Added this function */
+/* If testStep has no dummy variables, return 0;
+   if testStep has isolated dummy variables (that don't affect rest of
+   proof), return 1;
+   if testStep has dummy variables used elsewhere in proof, return 2 */
+char checkDummyVarIsolation(long testStep) /* 0=1st step, 1=2nd, etc. */
+{
+  long proofLen, hyp, parentStep, tokpos, token;
+  char dummyVarIndicator;
+  long prfStep, parentStmt;
+  nmbrString *dummyVarList = NULL_NMBRSTRING;
+  flag bugCheckFlag;
+  char hypType;
+
+  /* Get list of dummy variables */
+  for (tokpos = 0; tokpos < nmbrLen((proofInProgress.target)[testStep]);
+      tokpos++) {
+    token = ((nmbrString *)((proofInProgress.target)[testStep]))[tokpos];
+    if (token > mathTokens/*global*/) {
+      if (!nmbrElementIn(1, dummyVarList, token)) {
+        nmbrLet(&dummyVarList, nmbrAddElement(dummyVarList, token));
+      }
+    }
+  }
+  if (nmbrLen(dummyVarList) == 0) {
+    dummyVarIndicator = 0; /* No dummy variables */
+    goto RETURN_POINT;
+  }
+  /* proofInProgress is global */
+  proofLen = nmbrLen(proofInProgress.proof);
+  if (testStep == proofLen - 1) {
+    dummyVarIndicator = 1; /* Dummy variables don't affect rest of proof
+       (ignoring the subproof of testStep, which would be replaced by
+       a replaceStatement success later on) */
+    goto RETURN_POINT;
+  }
+
+  parentStep = getParentStep(testStep); /* testStep is a hyp of parent step */
+
+  /* Check if parent step has the dummy vars - if not, they will not
+     occur outside of the subproof of the parent step */
+  for (tokpos = 0; tokpos < nmbrLen((proofInProgress.target)[parentStep]);
+      tokpos++) {
+    token = ((nmbrString *)((proofInProgress.target)[parentStep]))[tokpos];
+    if (token > mathTokens/*global*/) {
+      if (nmbrElementIn(1, dummyVarList, token)) {
+        /* One of testStep's dummy vars occurs in the parent, so it
+           could be used elsewhere and is thus not "isolated" */
+        dummyVarIndicator = 2;
+        goto RETURN_POINT;
+      }
+    }
+  }
+  /* Check all hypotheses of parentStep other than testStep - if none have
+     testStep's dummy vars, then the dummy vars are "isolated" */
+  parentStmt = (proofInProgress.proof)[parentStep];
+  if (parentStmt < 0) bug(1845);
+  if (statement[parentStmt].type != (char)a__ &&
+      statement[parentStmt].type != (char)p__) bug(1846);
+  bugCheckFlag = 0;
+  prfStep = parentStep - 1;
+  for (hyp = statement[parentStmt].numReqHyp - 1; hyp >= 0; hyp--) {
+    if (hyp < statement[parentStmt].numReqHyp - 1) { /* Skip computation at
+                                       first loop iteration */
+      /* Skip to proof step of previous hypothesis of parent step */
+      prfStep = prfStep - subProofLen(proofInProgress.proof, prfStep);
+    }
+    if (prfStep == testStep) { /* Don't check the hypothesis of testStep */
+      bugCheckFlag = 1; /* Make sure we encountered it during scan */
+      continue;
+    }
+    hypType = statement[statement[parentStmt].reqHypList[hyp]].type;
+    if (hypType == (char)e__) {
+      /* Check whether (other) $e hyps of parent step have the dummy vars
+         of testStep */
+      for (tokpos = 0; tokpos < nmbrLen((proofInProgress.target)[prfStep]);
+          tokpos++) {
+        token = ((nmbrString *)((proofInProgress.target)[prfStep]))[tokpos];
+        if (token > mathTokens/*global*/) {
+          if (nmbrElementIn(1, dummyVarList, token)) {
+            /* One of testStep's dummy vars occurs in the parent, so it
+               could be used elsewhere and is thus not "isolated" */
+            dummyVarIndicator = 2;
+            goto RETURN_POINT;
+          }
+        }
+      } /* next tokpos */
+    } else if (hypType != (char)f__) {
+      bug(1848);
+    }
+  } /* next hyp */
+  if (bugCheckFlag == 0) bug(1847); /* Scan didn't encounter testStep */
+  /* If we passed the whole scan, the dummy vars are "isolated" */
+  dummyVarIndicator = 1;
+
+ RETURN_POINT:
+  nmbrLet(&dummyVarList, NULL_NMBRSTRING); /* Deallocate */
+  return dummyVarIndicator;
+} /* checkDummyVarIsolation */
+
+
+/* 25-Aug-2012 nm Added this function */
+/* Given a starting step, find its parent (the step it is a hypothesis of) */
+/* If the starting step is the last proof step, just return it */
+long getParentStep(long startStep) /* 0=1st step, 1=2nd, etc. */
+{
+  long proofLen;
+  long stackPtr, prfStep, stmt;
+
+  /* proofInProgress is global */
+  proofLen = nmbrLen(proofInProgress.proof);
+
+  stackPtr = 0;
+  for (prfStep = startStep + 1; prfStep < proofLen; prfStep++) {
+    stmt = (proofInProgress.proof)[prfStep];
+    if (stmt < 0) { /* Unknown step or local label */
+      if (stmt != -(long)'?') bug(1842); /* We don't handle compact proofs */
+      stackPtr++;
+    } else if (statement[stmt].type == (char)e__ ||
+          statement[stmt].type == (char)f__) { /* A hypothesis */
+      stackPtr++;
+    } else {
+      if (statement[stmt].type != (char)a__ &&
+          statement[stmt].type != (char)p__) bug(1843);
+      stackPtr = stackPtr - statement[stmt].numReqHyp + 1;
+      if (stackPtr <= 0) return prfStep; /* This identifies the parent step */
+    }
+  } /* next prfStep */
+  if (startStep != proofLen - 1) bug(1844); /* Didn't find parent... */
+  return startStep; /* ...unless we started with the last proof step */
+} /* getParentStep */
 
 
 /* This function puts numNewVars dummy variables, named "$nnn", at the end
@@ -2296,7 +2972,7 @@ void declareDummyVars(long numNewVars)
       /* Reallocate */
       /* Add 1000 so we won't have to do this very often */
       MAX_MATHTOKENS = MAX_MATHTOKENS + 1000;
-      mathToken = realloc(mathToken, MAX_MATHTOKENS *
+      mathToken = realloc(mathToken, (size_t)MAX_MATHTOKENS *
         sizeof(struct mathToken_struct));
       if (!mathToken) outOfMemory("#10 (mathToken)");
     }
@@ -2306,7 +2982,7 @@ void declareDummyVars(long numNewVars)
     let(&mathToken[mathTokens + dummyVars].tokenName,
         cat("$", str(dummyVars), NULL));
     mathToken[mathTokens + dummyVars].length =
-        strlen(mathToken[mathTokens + dummyVars].tokenName);
+        (long)strlen(mathToken[mathTokens + dummyVars].tokenName);
     mathToken[mathTokens + dummyVars].scope = currentScope;
     mathToken[mathTokens + dummyVars].active = 1;
     mathToken[mathTokens + dummyVars].tokenType = (char)var__;
@@ -2318,6 +2994,5 @@ void declareDummyVars(long numNewVars)
 
   return;
 
-}
-
+} /* declareDummyVars */
 

@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2012  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -30,11 +30,46 @@ void interactiveMatch(long step, long maxEssential);
 /* Assign a statement to an unknown proof step */
 void assignStatement(long statemNum, long step);
 
-/* Replace a known step with another statement.  Returns 0-length proof
-   if an exact hypothesis match wasn't found, otherwise returns a subproof
-   starting at the replaced step, with the step replaced by
-   replStatemNum. */
-nmbrString *replaceStatement(long replStatemNum, long step, long provStmtNum);
+/* Find proof of formula by using the replaceStatement() algorithm i.e.
+   see if any statement matches current step AND each of its hypotheses
+   matches a proof in progress hypothesis or some step already in the proof.
+   If a proof is found, it is returned, otherwise an empty (length 0) proof is
+   returned. */
+/* The caller must deallocate the returned nmbrString. */
+nmbrString *proveByReplacement(long prfStmt,
+    long prfStep, /* 0 means step 1 */
+    flag noDistinct, /* 1 means don't try statements with $d's */
+    flag dummyVarFlag, /* 0 means no dummy vars are in prfStmt */
+    flag searchMethod, /* 1 means to try proveFloating on $e's also */
+    long improveDepth
+     );
+
+nmbrString *replaceStatement(long replStatemNum,
+    long prfStep,
+    long provStmtNum,
+    flag subProofFlag, /* If 1, then scan only subproof at prfStep to look for
+   matches, instead of whole proof, for faster speed (used by MINIMIZE_WITH) */
+    flag noDistinct, /* 1 means don't try statements with $d's */
+    flag searchMethod, /* 1 means to try proveFloating on $e's also */
+    long improveDepth
+    );
+
+/* 22-Aug-2012 nm Added this function */
+/* This function identifies all steps in the proof in progress that (1) are
+   independent of step refStep, (2) have no dummy variables, (3) are
+   not $f's or $e's, and (4) have subproofs that are complete
+   (no unassigned steps).  A "Y" is returned for each such step,
+   and "N" is returned for all other steps.  The "Y" steps can be used
+   for scanning for useful subproofs outside of the subProof of refStep.
+   Note: The caller must deallocate the returned vstring. */
+vstring getIndepKnownSteps(long proofStmt, long refStep);
+
+/* 22-Aug-2012 nm Added this function */
+/* This function classifies each proof step in proofInProgress.proof
+   as known or unknown ('K' or 'U' in the returned string) depending
+   on whether the step has a completely known subproof.
+   Note: The caller must deallocate the returned vstring. */
+vstring getKnownSubProofs(void);
 
 /* Add a subproof in place of an unknown step to proofInProgress.  The
    .target, .source, and .user fields are initialized to empty (except
@@ -60,6 +95,13 @@ char checkMStringMatch(nmbrString *mString, long step);
    considered.  A value of 0 means none are considered. */
 nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
     long step, flag noDistinct);
+
+/* 22-Aug-2012 nm Added this function */
+/* This function does quick check for some common conditions that prevent
+   a trial statement (scheme) from being unified with a given instance.
+   Return value 0 means it can't be unified, 1 means it might be unifiable. */
+char quickMatchFilter(long trialStmt, nmbrString *mString,
+    long dummyVarFlag /* 0 if no dummy vars in mString */);
 
 /* Shorten proof by using specified statement. */
 void minimizeProof(long repStatemNum, long prvStatemNum, flag
@@ -104,6 +146,18 @@ void replaceDummyVar(long dummyVar, nmbrString *mString);
 
 /* Get subproof length of a proof, starting at endStep and going backwards */
 long subProofLen(nmbrString *proof, long endStep);
+
+/* 25-Aug-2012 nm Added this function */
+/* If testStep has no dummy variables, return 0;
+   if testStep has isolated dummy variables (that don't affect rest of
+   proof), return 1;
+   if testStep has dummy variables used elsewhere in proof, return 2 */
+char checkDummyVarIsolation(long testStep); /* 0=1st step, 1=2nd, etc. */
+
+/* 25-Aug-2012 nm Added this function */
+/* Given a starting step, find its parent (the step it is a hypothesis of) */
+/* If the starting step is the last proof step, just return it */
+long getParentStep(long startStep); /* 0=1st step, 1=2nd, etc. */
 
 /* Adds a dummy variable to end of mathToken array */
 /* (Note:  it now grows forever, but purging it might worsen fragmentation) */
