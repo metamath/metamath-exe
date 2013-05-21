@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2012  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2013  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -163,3 +163,9 @@ long getParentStep(long startStep); /* 0=1st step, 1=2nd, etc. */
 /* (Note:  it now grows forever, but purging it might worsen fragmentation) */
 void declareDummyVars(long numNewVars);
 
+/* Copies the Proof Assistant proof state */
+void copyProofStruct(struct pip_struct *outProofStruct,
+    struct pip_struct inProofStruct);
+
+/* Clears the Proof Assistant proof state */
+void deallocProofStruct(struct pip_struct *proofStruct);

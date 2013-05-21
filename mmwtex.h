@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2010  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2012  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -44,6 +44,13 @@ extern long sandboxStmt; /* At this statement and above, use sandbox stuff */
 flag readTexDefs(void);
                                                     /* Returns 1=OK, 0=error */
 extern flag texDefsRead;
+struct texDef_struct {  /* 27-Oct-2012 nm Made global for "erase" */
+  vstring tokenName; /* ASCII token */
+  vstring texEquiv; /* Converted to TeX */
+};
+extern struct texDef_struct *texDefs; /* 27-Oct-2012 nm Now glob for "erase" */
+
+
 long texDefWhiteSpaceLen(char *ptr);
 long texDefTokenLen(char *ptr);
 /* Token comparison for qsort */
@@ -75,7 +82,7 @@ void printTexTrailer(flag texHeaderFlag);
 
 /* Added 4-Dec-03
    Function implementing WRITE THEOREM_LIST / THEOREMS_PER_PAGE nn */
-void writeTheoremList(long theoremsPerPage);
+void writeTheoremList(long theoremsPerPage, flag showLemmas);
 
 /* 2-Aug-2009 nm - broke this function out from writeTheoremList() */
 void getSectionHeadings(long stmt, vstring *bigHdrAddr,

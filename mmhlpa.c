@@ -372,6 +372,72 @@ vstring saveHelpCmd = "";
    for the same reason.)  */
 let(&saveHelpCmd, helpCmd);
 
+
+printHelp = !strcmp(saveHelpCmd, "HELP CLI");
+H("The Metamath program was first developed on a VAX/VMS system, and some");
+H("aspects of its command line behavior reflect this heritage.  Hopefully");
+H(
+"you will find it reasonably user-friendly once you get used to it.");
+H("");
+H("Each command line is a sequence of English-like words separated by");
+H("spaces, as in SHOW SETTINGS.  Command words are not case sensitive, and");
+H("only as many letters are needed as are necessary to eliminate ambiguity;");
+H("for example, \"sh se\" would work for the command SHOW SETTINGS.  In some");
+H("cases arguments such as file names, statement labels, or symbol names are");
+H("required; these are case-sensitive (although file names may not be on");
+H("some operating systems).");
+H("");
+H("A command line is entered by typing it in then pressing the <return> key.");
+H("");
+H("To find out what commands are available, type ? at the MM> prompt,");
+H("followed by <return>. (This is actually just a trick to force an error");
+H("message, since ? is not a legal command.)");
+H("");
+H("To find out the choices at any point in a command, press <return> and you");
+H("will be prompted for them.  The default choice (the one selected if you");
+H("just press <return>) is shown in brackets (<>).");
+H("");
+H("You may also type ? in place of a command word to force Metamath to tell");
+H("you what the choices are.  The ? method won't work, though, if a");
+H("non-keyword argument such as a file name is expected at that point,");
+H("because the CLI will think the ? is the argument.");
+H("");
+H("Some commands have one or more optional qualifiers that modify the");
+H("behavior of the command.  Qualifiers are indicated by a slash (/), such as");
+H("in READ set.mm / VERIFY.  Spaces are optional around / and =.  If you need");
+H("to use / or = in a command argument, as in a Unix file name, put single");
+H("or double quotes around the command argument.  See the last section of");
+H("HELP LET for more information on special characters in arguments.");
+H("");
+H("The OPEN LOG command will save everything you see on the screen, and is");
+H("useful to help you recover should something go wrong in a proof, or if");
+H("you want to document a bug.");
+H("");
+H("If the response to a command is more than a screenful, you will be");
+H("prompted to '<return> to continue, Q to quit, or S to scroll to end'.");
+H("Q will complete the command internally but suppress further output until");
+H("the next \"MM>\" prompt.  S will suppress further pausing until the next");
+H("\"MM>\" prompt.  After the first screen, you can also choose B to go back");
+H("a screenful.  Note that B may also be entered at the \"MM>\" prompt");
+H("immediately after a command to scroll back through the output of that");
+H("command.  Scrolling can be disabled with SET SCROLL CONTINUOUS.");
+H("");
+H("**Warning**  Pressing CTRL-C will abort the Metamath program");
+H("unconditionally.  This means any unsaved work will be lost.");
+H("");
+H("A command line enclosed in quotes is executed by your operating system.");
+H("See HELP SYSTEM.");
+H("");
+H("Some additional CLI-related features are explained by:");
+H("    HELP SET ECHO");
+H("    HELP SET SCROLL");
+H("    HELP SET WIDTH");  /* 18-Nov-05 nm Was SCREEN_WIDTH */
+H("    HELP SET HEIGHT"); /* 18-Nov-05 nm New */
+H("    HELP SUBMIT");
+H("");
+
+
+
 printHelp = !strcmp(saveHelpCmd, "HELP LANGUAGE");
 H("The language is best learned by reading the book and studying a few proofs");
 H("with the Metamath program.  This is a brief summary for reference.");

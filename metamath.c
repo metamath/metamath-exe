@@ -1,11 +1,24 @@
 /*****************************************************************************/
 /* Program name:  metamath                                                   */
-/* Copyright (C) 2012 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
+/* Copyright (C) 2013 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
 /* License terms:  GNU General Public License Version 2 or any later version */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.07.82 16-Sep-2012"
+#define MVERSION "0.07.91 20-May-2013"
+/* 0.07.91 20-May-2013 nm metamath.c mmpfas.c,h mmcmds.c,h mmcmdl.c
+   mmhlpb.c- added /FORBID qualifier to MINIMIZE_WITH */
+/* 0.07.90 19-May-2013 nm metamath.c mmcmds.c mmcmdl.c mmhlpb.c - added /MATCH
+   qualifier to SHOW TRACE_BACK */
+/* 0.07.88 18-Nov-2012 nm mmcmds.c - fixed bug 243 */
+/* 0.07.87 17-Nov-2012 nm mmwtex.c - fixed formatting problem when label
+   markup ends a comment in SHOW PROOF ... /HTML */
+/* 0.07.86 27-Oct-2012 nm mmcmds.c, mmwtex.c, mmwtex.h - fixed ERASE bug
+   caused by imperfect re-initialization; reported by Wolf Lammen */
+/* 0.07.85 10-Oct-2012 nm metamath.c, mmcmdl.c, mmwtex.c, mmwtex.h, mmhlpb.c -
+   added /SHOW_LEMMAS to WRITE THEOREM_LIST to bypass lemma math suppression */
+/* 0.07.84 9-Oct-2012 nm mmcmds.c - fixed bug in getStatementNum() */
+/* 0.07.83 19-Sep-2012 nm mmwtex.c - fixed bug reported by Wolf Lammen */
 /* 0.07.82 16-Sep-2012 nm metamath.c, mmpfas.c - fixed REPLACE infinite loop;
    improved REPLACE message for shared dummy variables */
 /* 0.07.81 14-Sep-2012 nm metamath.c, mmcmds.c, mmcmds.h, mmcmdl.c, mmhlpb.c
@@ -113,7 +126,7 @@
    statement label in SHOW TRACE_BACK.  All wildcards now allow
    comma-separated lists [i.e. matchesList() instead of matches()] */
 /* 0.07.38 26-Apr-2008 nm metamath.c, mmdata.h, mmdata.c, mmvstr.c, mmhlpb.c -
-   Enhanced / EXCLUDE qualifier for MINIMIZE_WITH to handle comma-separated
+   Enhanced / EXCEPT qualifier for MINIMIZE_WITH to handle comma-separated
    wildcard list. */
 /* 0.07.37 14-Apr-2008 nm metamath.c, mmcmdl.c, mmhlpb.c - Added / JOIN
    qualifier to SEARCH. */
@@ -366,6 +379,7 @@ void command(int argc, char *argv[])
   /* The variables in command() are static so that they won't be destroyed
     by a longjmp return to setjmp. */
   long c, e, i, j, k, m, l, n, p, q, r, s /*,tokenNum*/;
+  long stmt, step;
   int subType = 0;
 #define SYNTAX 4
   vstring str1 = "", str2 = "", str3 = "", str4 = "", str5= "";
@@ -398,6 +412,10 @@ void command(int argc, char *argv[])
   vstring labelMatch = ""; /* SHOW PROOF <label> argument */
 
   flag axiomFlag; /* For SHOW TRACE_BACK */
+  flag treeFlag; /* For SHOW TRACE_BACK */ /* 19-May-2013 nm */
+  flag countStepsFlag; /* For SHOW TRACE_BACK */ /* 19-May-2013 nm */
+  flag matchFlag; /* For SHOW TRACE_BACK */ /* 19-May-2013 nm */
+  vstring matchList = "";  /* For SHOW TRACE_BACK */ /* 19-May-2013 nm */
   flag recursiveFlag; /* For SHOW USAGE */
   long fromLine, toLine; /* For TYPE, SEARCH */
   flag joinFlag; /* For SEARCH */
@@ -422,6 +440,13 @@ void command(int argc, char *argv[])
   flag mathboxFlag; /* For MINIMIZE_WITH */ /* 28-Jun-2011 nm */
   long thisMathboxStmt; /* For MINIMIZE_WITH */ /* 14-Aug-2012 nm */
   flag revFlag; /* For MINIMIZE_WITH */ /* 11-Nov-2011 nm */
+  long forbidMatchPos;  /* For MINIMIZE_WITH */ /* 20-May-2013 nm */
+  vstring forbidMatchList = "";  /* For MINIMIZE_WITH */ /* 20-May-2013 nm */
+  struct pip_struct forbidMatchSaveProof = {
+       NULL_NMBRSTRING, NULL_PNTRSTRING, NULL_PNTRSTRING, NULL_PNTRSTRING };
+                                   /* For MINIMIZE_WITH */ /* 20-May-2013 nm */
+
+  flag showLemmas; /* For WRITE THEOREM_LIST */ /* 10-Oct-2012 nm */
 
   /* toolsMode-specific variables */
   flag commandProcessedFlag = 0; /* Set when the first command line processed;
@@ -744,6 +769,9 @@ void command(int argc, char *argv[])
  "Exiting the Proof Assistant.  Type EXIT again to exit Metamath.\n");
 
         /* Deallocate proof structure */
+        deallocProofStruct(&proofInProgress); /* 20-May-2013 nm */
+
+        /**** old deallocation before 20-May-2013
         i = nmbrLen(proofInProgress.proof);
         nmbrLet(&proofInProgress.proof, NULL_NMBRSTRING);
         for (j = 0; j < i; j++) {
@@ -757,6 +785,7 @@ void command(int argc, char *argv[])
         pntrLet(&proofInProgress.target, NULL_PNTRSTRING);
         pntrLet(&proofInProgress.source, NULL_PNTRSTRING);
         pntrLet(&proofInProgress.user, NULL_PNTRSTRING);
+        *** end of old code before 20-May-2013 */
 
         PFASmode = 0;
         continue;
@@ -1680,6 +1709,7 @@ void command(int argc, char *argv[])
       } else {
         i = THEOREMS_PER_PAGE; /* Use the default value */
       }
+      showLemmas = (switchPos("/ SHOW_LEMMAS") != 0);
 
       if (!texDefsRead) {
         htmlFlag = 1;
@@ -1698,7 +1728,7 @@ void command(int argc, char *argv[])
         }
       }
       /* Output the theorem list */
-      writeTheoremList(i); /* (located in mmwtex.c) */
+      writeTheoremList(i, showLemmas); /* (located in mmwtex.c) */
       continue;
     }  /* End of "WRITE THEOREM_LIST" */
 
@@ -2413,12 +2443,14 @@ void command(int argc, char *argv[])
          so use getStatementNum().  Eventually, SHOW SOURCE may become
          obsolete; I don't think anyone uses it. */
       s = getStatementNum(fullArg[2],
+          1/*startStmt*/,
           statements + 1  /*maxStmt*/,
           1/*aAllowed*/,
           1/*pAllowed*/,
           1/*eAllowed*/,
           1/*fAllowed*/,
-          0/*efOnlyForMaxStmt*/);
+          0/*efOnlyForMaxStmt*/,
+          1/*uniqueFlag*/);
       if (s == -1) {
         continue; /* Error msg was provided */
       }
@@ -3188,6 +3220,44 @@ void command(int argc, char *argv[])
       i = switchPos("/ DEPTH"); /* Limit depth of printout */
       if (i) endIndent = (long)val(fullArg[i + 1]);
 
+       /* 19-May-2013 nm */
+      i = switchPos("/ COUNT_STEPS");
+      countStepsFlag = (i != 0 ? 1 : 0);
+      i = switchPos("/ TREE");
+      treeFlag = (i != 0 ? 1 : 0);
+      i = switchPos("/ MATCH");
+      matchFlag = (i != 0 ? 1 : 0);
+      if (matchFlag) {
+        let(&matchList, fullArg[i + 1]);
+      } else {
+        let(&matchList, "");
+      }
+      if (treeFlag) {
+        if (axiomFlag) {
+          print2(
+              "(Note:  The AXIOMS switch is ignored in TREE mode.)\n");
+        }
+        if (countStepsFlag) {
+          print2(
+              "(Note:  The COUNT_STEPS switch is ignored in TREE mode.)\n");
+        }
+        if (matchFlag) {
+          print2(
+  "(Note: The MATCH list is ignored in TREE mode.)\n");
+        }
+      } else {
+        if (endIndent != 0) {
+          print2(
+  "(Note:  The DEPTH is ignored if the TREE switch is not used.)\n");
+        }
+        if (countStepsFlag) {
+          if (matchFlag) {
+            print2(
+  "(Note: The MATCH list is ignored in COUNT_STEPS mode.)\n");
+          }
+        }
+      }
+
       /* 21-May-2008 nm Added wildcard handling */
       showStatement = 0;
       for (i = 1; i <= statements; i++) {
@@ -3198,9 +3268,7 @@ void command(int argc, char *argv[])
           continue;
 
         showStatement = i;
-
-        /* ??? Future - move /TREE and /COUNT_STEPS to outside loop,
-           assigning new variables, for cleaner code. */
+        /*** start of 19-May-2013 deletion
         j = switchPos("/ TREE");
         if (j) {
           if (axiomFlag) {
@@ -3225,6 +3293,22 @@ void command(int argc, char *argv[])
             traceProof(showStatement, essentialFlag, axiomFlag);
           }
         }
+        *** end of 19-May-2013 deletion */
+
+
+        /* 19-May-2013 nm - move /TREE and /COUNT_STEPS to outside loop,
+           assigning new variables, for cleaner code. */
+        if (treeFlag) {
+          traceProofTree(showStatement, essentialFlag, endIndent);
+        } else {
+          if (countStepsFlag) {
+            countSteps(showStatement, essentialFlag);
+          } else {
+            traceProof(showStatement, essentialFlag, axiomFlag,
+                matchList, /* 19-May-2013 nm */
+                0 /* testOnlyFlag */ /* 20-May-2013 nm */);
+          }
+        }
 
       /* 21-May-2008 nm Added wildcard handling */
       } /* next i */
@@ -3234,6 +3318,7 @@ void command(int argc, char *argv[])
             "See HELP SHOW TRACE_BACK for matching rules.", NULL), "", " ");
       }
 
+      let(&matchList, ""); /* Deallocate memory */
       continue;
     }
 
@@ -3791,12 +3876,14 @@ void command(int argc, char *argv[])
       /* 14-Sep-2012 nm */
       /* Get the unique statement matching the fullArg[1] pattern */
       i = getStatementNum(fullArg[1],
+          1/*startStmt*/,
           statements + 1  /*maxStmt*/,
           0/*aAllowed*/,
           1/*pAllowed*/,
           0/*eAllowed*/,
           0/*fAllowed*/,
-          0/*efOnlyForMaxStmt*/);
+          0/*efOnlyForMaxStmt*/,
+          1/*uniqueFlag*/);
       if (i == -1) {
         continue; /* Error msg was provided if not unique */
       }
@@ -4243,12 +4330,14 @@ void command(int argc, char *argv[])
       /* 14-Sep-2012 nm */
       /* Get the unique statement matching the fullArg[2] pattern */
       k = getStatementNum(fullArg[2],
+          1/*startStmt*/,
           proveStatement  /*maxStmt*/,
           1/*aAllowed*/,
           1/*pAllowed*/,
           1/*eAllowed*/,
           1/*fAllowed*/,
-          1/*efOnlyForMaxStmt*/);
+          1/*efOnlyForMaxStmt*/,
+          1/*uniqueFlag*/);
       if (k == -1) {
         continue; /* Error msg was provided if not unique */
       }
@@ -4428,9 +4517,9 @@ void command(int argc, char *argv[])
       /* s = (long)val(fullArg[1]);  obsolete */ /* Step number */
 
       /* 14-Sep-2012 nm */
-      s = getStepNum(fullArg[1], proofInProgress.proof,
+      step = getStepNum(fullArg[1], proofInProgress.proof,
           0 /* ALL not allowed */);
-      if (s == -1) continue;  /* Error; message was provided already */
+      if (step == -1) continue;  /* Error; message was provided already */
 
       /* This limitation is due to the assignKnownSteps call below which
          does not tolerate unknown steps. */
@@ -4443,23 +4532,17 @@ void command(int argc, char *argv[])
 
       /* 14-Sep-2012 nm */
       /* Get the unique statement matching the fullArg[2] pattern */
-      k = getStatementNum(fullArg[2],
+      stmt = getStatementNum(fullArg[2],
+          1/*startStmt*/,
           proveStatement  /*maxStmt*/,
           1/*aAllowed*/,
           1/*pAllowed*/,
-          1/*eAllowed*/,
-          1/*fAllowed*/,
-          1/*efOnlyForMaxStmt*/);
-      if (k == -1) {
+          0/*eAllowed*/, /* Not implemented (yet?) */
+          0/*fAllowed*/, /* Not implemented (yet?) */
+          1/*efOnlyForMaxStmt*/,
+          1/*uniqueFlag*/);
+      if (stmt == -1) {
         continue; /* Error msg was provided if not unique */
-      }
-
-      /* 16-Sep-2012 nm */
-      if (statement[k].type != (char)p__ &&
-          statement[k].type != (char)a__) { /* Not $a or $p */
-        print2(
-   "?REPLACE currently allows $p and $a only.  Please use ASSIGN instead.\n");
-        continue;
       }
 
       /*********** 14-Sep-2012 replaced by getStatementNum()
@@ -4521,21 +4604,21 @@ void command(int argc, char *argv[])
       }
 
       /* Check to see if the statement selected is allowed */
-      if (!checkStmtMatch(k, s - 1)) {
+      if (!checkStmtMatch(stmt, step - 1)) {
         print2("?Statement \"%s\" cannot be unified with step %ld.\n",
-          statement[k].labelName, s);
+          statement[stmt].labelName, step);
         continue;
       }
 
       /* 16-Sep-2012 nm */
       /* Check dummy variable status of step */
       /* For use in message later */
-      dummyVarIsoFlag = checkDummyVarIsolation(s - 1);
+      dummyVarIsoFlag = checkDummyVarIsolation(step - 1);
             /* 0=no dummy vars, 1=isolated dummy vars, 2=not isolated*/
 
       /* Do the replacement */
-      nmbrTmpPtr = replaceStatement(k /*statement#*/,
-          s - 1 /*step*/,
+      nmbrTmpPtr = replaceStatement(stmt /*statement#*/,
+          step - 1 /*step*/,
           proveStatement,
           0,/*scan whole proof to maximize chance of a match*/
           0/*noDistinct*/,
@@ -4544,14 +4627,14 @@ void command(int argc, char *argv[])
       if (!nmbrLen(nmbrTmpPtr)) {
         print2(
            "?Hypotheses of statement \"%s\" do not match known proof steps.\n",
-            statement[k].labelName);
+            statement[stmt].labelName);
         continue;
       }
 
       /* Get the subproof at step s */
-      q = subProofLen(proofInProgress.proof, s - 1);
-      deleteSubProof(s - 1);
-      addSubProof(nmbrTmpPtr, s - q);
+      q = subProofLen(proofInProgress.proof, step - 1);
+      deleteSubProof(step - 1);
+      addSubProof(nmbrTmpPtr, step - q);
 
       /* 10/20/02 Replaced "assignKnownSteps" with code from entry of PROVE
          command so REPLACE can be done in partial proofs */
@@ -4578,18 +4661,18 @@ void command(int argc, char *argv[])
         /* The proof is not complete, so print step numbers that changed */
         if (m == n) {
           print2("Step %ld was replaced with statement %s.\n",
-            s, statement[k].labelName);
+            step, statement[stmt].labelName);
         } else {
-          if (s != m) {
-            printLongLine(cat("Step ", str(s),
-                " was replaced with statement ", statement[k].labelName,
-                ".  Steps ", str(s), ":",
-                str(m), " are now ", str(s - m + n), ":", str(n), ".",
+          if (step != m) {
+            printLongLine(cat("Step ", str(step),
+                " was replaced with statement ", statement[stmt].labelName,
+                ".  Steps ", str(step), ":",
+                str(m), " are now ", str(step - m + n), ":", str(n), ".",
                 NULL),
                 "", " ");
           } else {
-            printLongLine(cat("Step ", str(s),
-                " was replaced with statement ", statement[k].labelName,
+            printLongLine(cat("Step ", str(step),
+                " was replaced with statement ", statement[stmt].labelName,
                 ".  Step ", str(m), " is now step ", str(n), ".",
                 NULL),
                 "", " ");
@@ -4598,13 +4681,15 @@ void command(int argc, char *argv[])
       }
       /*autoUnify(1);*/
 
-      /* Automatically interact with user if step not unified */
-      /* ???We might want to add a setting to defeat this if user doesn't
-         like it */
-      if (1 /* ???Future setting flag */) {
-        interactiveUnifyStep(s - m + n - 1, 2); /* 2nd arg. means print msg if
-                                                 already unified */
+      /************ delete 19-Sep-2012 nm - not needed for REPLACE *******
+      /@ Automatically interact with user if step not unified @/
+      /@ ???We might want to add a setting to defeat this if user doesn't
+         like it @/
+      if (1 /@ ???Future setting flag @/) {
+        interactiveUnifyStep(step - m + n - 1, 2); /@ 2nd arg. means print
+                                         msg if already unified @/
       }
+      *************** end 19-Sep-2012 deletion ********************/
 
       proofChangedFlag = 1; /* Flag to push 'undo' stack */
       proofChanged = 1; /* Cumulative flag */
@@ -4614,7 +4699,7 @@ void command(int argc, char *argv[])
         printLongLine(cat(
      "Assignments to shared working variables ($nn) are guesses.  If "
      "incorrect, to undo DELETE STEP ",
-              str(s - m + n),
+              str(step - m + n),
       ", INITIALIZE, UNIFY, then assign them manually with LET ",
       "and try REPLACE again.",
               NULL),
@@ -5089,7 +5174,9 @@ void command(int argc, char *argv[])
     if (cmdMatches("MINIMIZE_WITH")) {
       q = 0; /* Line length */
       s = 0; /* Status flag */
-      i = switchPos("/ BRIEF"); /* Non-verbose mode */
+      /* i = switchPos("/ BRIEF"); */ /* Non-verbose mode */
+      /* 4-Feb-2013 nm VERBOSE is now default */
+      i = ! switchPos("/ VERBOSE"); /* Verbose mode */
       /* 30-Jan-06 nm Added single-character-match wildcard argument */
       if (!(instr(1, fullArg[1], "*") || instr(1, fullArg[1], "?"))) i = 1;
           /* 16-Feb-05 If no wildcard was used, switch to non-verbose mode
@@ -5099,6 +5186,15 @@ void command(int argc, char *argv[])
                                        if doesn't reduce proof length */
       p = switchPos("/ NO_DISTINCT"); /* Skip trying statements with $d */
       e = switchPos("/ EXCEPT"); /* Statement match to skip */ /* 7-Jan-06 */
+
+      /* 20-May-2013 nm */
+      forbidMatchPos = switchPos("/ FORBID");
+      if (forbidMatchPos != 0) {
+        let(&forbidMatchList, fullArg[forbidMatchPos + 1]);
+      } else {
+        let(&forbidMatchList, "");
+      }
+
       mathboxFlag = (switchPos("/ INCLUDE_MATHBOXES") != 0); /* 28-Jun-2011 */
       revFlag = (switchPos("/ REVERSE") != 0); /* 10-Nov-2011 nm */
       if (sandboxStmt == 0) { /* Look up "mathbox" label if it hasn't been */
@@ -5124,6 +5220,13 @@ void command(int argc, char *argv[])
              break;
           }
         }
+      }
+
+      /* 20-May-2013 nm */
+      if (forbidMatchList[0]) { /* User provided a /FORBID list */
+        /* Save the proof structure in case we have to revert a
+           forbidden match. */
+        copyProofStruct(&forbidMatchSaveProof, proofInProgress);
       }
 
       if (j) j = 1; /* Make sure it's a char value for minimizeProof call */
@@ -5167,6 +5270,19 @@ void command(int argc, char *argv[])
             continue;
         }
 
+        /* 20-May-2013 nm */
+        if (forbidMatchList[0]) { /* User provided a /FORBID list */
+          /* First, we check to make sure we're not trying a statement
+             in the forbidMatchList directly (traceProof() won't find
+             this) */
+          if (matchesList(statement[k].labelName, forbidMatchList, '*', '?'))
+            continue;
+          /* Save the proof structure in case we have to revert a
+             forbidden match.  We only care about $p statements. */
+          if (statement[k].type == (char)p__) {
+          }
+        }
+
         /* Print individual labels */
         if (s == 0) s = 1; /* Matched at least one */
         if (!i) {
@@ -5182,10 +5298,37 @@ void command(int argc, char *argv[])
         m = nmbrLen(proofInProgress.proof); /* Original proof length */
         nmbrLet(&nmbrTmp, proofInProgress.proof);
 
-        minimizeProof(k, proveStatement, (char)j);
+        minimizeProof(k /* trial statement */,
+            proveStatement /* statement being proved in MM-PA */,
+            (char)j /* allowGrowthFlag */);
 
         n = nmbrLen(proofInProgress.proof); /* New proof length */
         if (!nmbrEq(nmbrTmp, proofInProgress.proof)) {
+
+          /* 20-May-2013 nm Because of the slow speed of traceBack(),
+             we only want to check the /FORBID list in the relatively
+             rare case where a minimization occurred.  If the FORBID
+             list is matched, we then need to revert back to the
+             original proof. */
+          if (forbidMatchList[0]) { /* User provided a /FORBID list */
+            if (statement[k].type == (char)p__) {
+              /* We only care about tracing $p statements */
+              /* See if the TRACE_BACK list includes a match to the
+                 /FORBID argument */
+              if (traceProof(k,
+                  0 /*essentialFlag*/,
+                  0 /*axiomFlag*/,
+                  forbidMatchList,
+                  1 /* testOnlyFlag */)) {
+                /* Yes, a forbidden statement occurred in traceProof() */
+                /* Revert the proof to before minimization */
+                copyProofStruct(&proofInProgress, forbidMatchSaveProof);
+                /* Skip further printout and flag setting */
+                continue; /* Continue at 'Next k' loop end below */
+              }
+            }
+          }
+
           if (!i) {
             /* Verbose mode */
             print2("\n");
@@ -5215,6 +5358,14 @@ void command(int argc, char *argv[])
           s = 2; /* Found one */
           proofChangedFlag = 1;
           proofChanged = 1; /* Cumulative flag */
+
+          /* 20-May-2012 nm */
+          if (forbidMatchList[0]) { /* User provided a /FORBID list */
+            /* Save the changed proof in case we have to restore
+               it later */
+            copyProofStruct(&forbidMatchSaveProof, proofInProgress);
+          }
+
         }
 
       } /* Next k (statement) */
@@ -5237,6 +5388,13 @@ void command(int argc, char *argv[])
         print2(
   "(Other mathboxes were not checked.  Use / INCLUDE_MATHBOXES to include them.)\n");
       }
+
+      /* 20-May-2013 nm */
+      if (forbidMatchList[0]) { /* User provided a /FORBID list */
+        deallocProofStruct(&forbidMatchSaveProof); /* Deallocate memory */
+        let(&forbidMatchList, ""); /* Deallocate memory */
+      }
+
       continue;
 
     } /* End if MINIMIZE_WITH */

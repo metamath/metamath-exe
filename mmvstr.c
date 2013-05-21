@@ -280,7 +280,7 @@ vstring mid(vstring sin, long start, long length)
   if (length < 0) length = 0;
   sout=tempAlloc(length + 1);
   strncpy(sout,sin + start - 1, (size_t)length);
-/*??? Should db be substracted from if length > end of string? */
+/*??? Should db be subtracted from if length > end of string? */
   sout[length] = 0;
   return (sout);
 }

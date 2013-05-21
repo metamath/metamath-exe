@@ -64,13 +64,9 @@ vstring tex_dict_fn = "";
 
 /* Global variables */
 flag texDefsRead = 0;
+struct texDef_struct *texDefs; /* 27-Oct-2012 nm Made global for "erase" */
 
 /* Variables local to this module (except some $t variables) */
-struct texDef_struct {
-  vstring tokenName; /* ASCII token */
-  vstring texEquiv; /* Converted to TeX */
-};
-struct texDef_struct *texDefs;
 long numSymbs;
 #define DOLLAR_SUBST 2
 /*char dollarSubst = 2;*/
@@ -930,12 +926,23 @@ vstring tokenToTex(vstring mtoken, long statemNum /*for error msgs*/)
     /* 9/5/99 If it wasn't found, give user a warning... */
     saveOutputToString = outputToString;
     outputToString = 0;
-    if (statemNum <= 0 || statemNum > statements) bug(2331);
-    printLongLine(cat("?Error: In the comment for statement \"",
-        statement[statemNum].labelName,
-        "\", math symbol token \"", mtoken,
-        "\" does not have a LaTeX and/or an HTML definition.", NULL),
-        "", " ");
+    /* if (statemNum <= 0 || statemNum > statements) bug(2331); */ /* OLD */
+    /* 19-Sep-2012 nm It is possible for statemNum to be 0 when
+       tokenToTex() is called (via getTexLongMath()) from
+       printTexLongMath(), when its hypStmt argument is 0 (= not associated
+       with a statement).  (Reported by Wolf Lammen.) */
+    if (statemNum < 0 || statemNum > statements) bug(2331);
+    if (statemNum > 0) {   /* Include statement label in error message */
+      printLongLine(cat("?Error: In the comment for statement \"",
+          statement[statemNum].labelName,
+          "\", math symbol token \"", mtoken,
+          "\" does not have a LaTeX and/or an HTML definition.", NULL),
+          "", " ");
+    } else { /* There is no statement associated with the error message */
+      printLongLine(cat("?Error: Math symbol token \"", mtoken,
+          "\" does not have a LaTeX and/or an HTML definition.", NULL),
+          "", " ");
+    }
     outputToString = saveOutputToString;
     /* ... but we'll still leave in the old default conversion anyway: */
 
@@ -1767,6 +1774,7 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
               if (!cmt[pos2]) break; /* End of string */
               /* Look for whitespace or closing punctuation */
               if (isspace((unsigned char)(cmt[pos2]))
+                  || strchr(OPENING_PUNCTUATION, cmt[pos2]) != NULL
                   || strchr(CLOSING_PUNCTUATION, cmt[pos2]) != NULL) break;
               pos2++; /* Move forward through subscript */
             }
@@ -2074,7 +2082,10 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
 
       }
     }
-    if (isspace((unsigned char)(cmt[i])) && mode == 'l') {
+    if (( isspace((unsigned char)(cmt[i]))
+            || cmt[i] == '<') /* 17-Nov-2012 nm If the label ends the comment,
+               "</TD>" with no space will be appended before this section. */
+        && mode == 'l') {
       /* Whitespace exits label mode */
       mode = 'n';
       let(&cmt, cat(left(cmt, i), chr(DOLLAR_SUBST) /*$*/, chr(mode),
@@ -2738,9 +2749,9 @@ void printTexTrailer(flag texTrailerFlag) {
 } /* printTexTrailer */
 
 
-/* Added 4-Dec-03 - Write out theorem list into mmtheorems.html,
-   mmtheorems2.html,... */
-void writeTheoremList(long theoremsPerPage)
+/* Added 4-Dec-03 - WRITE THEOREM_LIST command:  Write out theorem list
+   into mmtheorems.html, mmtheorems2.html,... */
+void writeTheoremList(long theoremsPerPage, flag showLemmas)
 {
   nmbrString *nmbrStmtNmbr = NULL_NMBRSTRING;
   long pages, page, assertion, assertions, lastAssertion;
@@ -2937,6 +2948,7 @@ void writeTheoremList(long theoremsPerPage)
       print2("ALIGN=MIDDLE> &nbsp;Metamath Proof Explorer</A>\n");
 
       let(&str3, "");
+      if (statement[extHtmlStmt].pinkNumber <= 0) bug(2332);
       str3 = pinkRangeHTML(nmbrStmtNmbr[1],
           nmbrStmtNmbr[statement[extHtmlStmt].pinkNumber - 1]);
       printLongLine(cat("<BR>(", str3, ")", NULL),
@@ -2957,6 +2969,7 @@ void writeTheoremList(long theoremsPerPage)
 
       let(&str3, "");
       /* str3 = pinkRangeHTML(extHtmlStmt, nmbrStmtNmbr[assertions]); */
+      if (statement[sandboxStmt].pinkNumber <= 0) bug(2333);
       str3 = pinkRangeHTML(extHtmlStmt,
          nmbrStmtNmbr[statement[sandboxStmt].pinkNumber - 1]);
       printLongLine(cat("<BR>(", str3, ")", NULL),
@@ -3255,9 +3268,10 @@ void writeTheoremList(long theoremsPerPage)
 
       /* 19-Aug-05 nm Suppress the math content of lemmas, which can
          be very big and not interesting */
-      if (!strcmp(left(str3, 10), "Lemma for ")) {
+      if (!strcmp(left(str3, 10), "Lemma for ")
+          && !showLemmas) {  /* 10-Oct-2012 nm */
         /* Suppress the table row with the math content */
-        print2("</TD></TR>\n");
+        print2(" <I>[Auxiliary lemma - not displayed.]</I></TD></TR>\n");
       } else {
         /* Output the table row with the math content */
         printLongLine(cat("</TD></TR><TR",
@@ -3773,7 +3787,9 @@ vstring spectrumToRGB(long color, long maxColor) {
     return str1;
   }
 
-  if (color < 1 || color > maxColor) bug(2327);
+  if (color < 1 || color > maxColor) {
+    bug(2327);
+  }
   fraction = (1.0 * (color - 1)) / maxColor;
                                    /* Fractional position in "spectrum" */
   partition = (long)(PARTITIONS * fraction);  /* Partition number (integer) */

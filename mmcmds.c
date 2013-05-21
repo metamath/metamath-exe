@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2012  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2013  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -69,6 +69,7 @@ void typeStatement(long showStmt,
   vstring htmlDistinctVars = ""; /* 12/23/01 */
   char htmlDistinctVarsCommaFlag = 0; /* 12/23/01 */
   vstring str4 = ""; /* 10/10/02 */
+  vstring str5 = ""; /* 19-Sep-2012 nm */
   long distVarGrps = 0;  /* 11-Aug-2006 nm */
 
   /* For syntax breakdown of definitions in HTML page */
@@ -896,6 +897,7 @@ void typeStatement(long showStmt,
             " is referenced by:</B>", NULL));
         /* Convert str1 to trailing space after each label */
         let(&str1, cat(right(str1, 2), " ", NULL));
+        let(&str5, ""); /* Buffer for very long strings */ /* 19-Sep-2012 nm */
         i = 0;
         while (1) {
           j = i + 1;
@@ -930,8 +932,40 @@ void typeStatement(long showStmt,
             let(&str2, "");
           }
           */
+          /* 19-Sep-2012 nm Try again to fix SHOW STATEMENT syl/HTML speed
+             without a major rewrite */
+          /*
+          Unfortunately, makes little difference.  Using lcc:
+          orig    real    1m6.676s
+          500     real    1m2.285s
+          3000    real    1m2.181s
+          3000    real    1m1.663s
+          3000    real    1m1.785s
+          5000    real    1m0.678s
+          5000    real    1m0.169s
+          5000    real    1m1.951s
+          5000    real    1m2.307s
+          5000    real    1m1.717s
+          7000    real    1m2.048s
+          7000    real    1m2.012s
+          7000    real    1m1.817s
+          10000   real    1m2.779s
+          10000   real    1m1.830s
+          20000   real    1m1.431s
+          50000   real    1m1.325s
+          100000  real    1m3.172s
+          100000  real    1m4.657s
+          */
+          /* Accumulate large cat buffer when small cats exceed certain size */
+          if (strlen(str2) > 5000) {
+            let(&str5, cat(str5, str2, NULL));
+            let(&str2, "");
+          }
+          /* End 19-Sep-2012 */
         }
-        let(&str2, cat(str2, "</FONT></TD></TR>", NULL));
+        /* let(&str2, cat(str2, "</FONT></TD></TR>", NULL)); */ /* old */
+         /* 19-Sep-2012 nm Include buffer in output string*/
+        let(&str2, cat(str5, str2, "</FONT></TD></TR>", NULL));
         printLongLine(str2, "", "\"");
       }
     }
@@ -986,6 +1020,7 @@ void typeStatement(long showStmt,
   let(&str2, "");
   let(&str3, "");
   let(&str4, "");
+  let(&str5, "");
   let(&htmlDistinctVars, "");
 } /* typeStatement */
 
@@ -1136,7 +1171,18 @@ void typeProof(long statemNum,
 
   if (!pipFlag) {
     parseProof(showStatement);
-    if (wrkProof.errorSeverity > 1) return; /* Display could crash */
+    if (wrkProof.errorSeverity > 1) {
+      /* 18-Nov-2012 nm Fix bug 243 */
+      /* Print warning and close out proof table */
+      outputToString = 1;
+      print2(
+     "<TD COLSPAN=4><B><FONT COLOR=RED>WARNING: Proof has a severe error.\n");
+      print2("</FONT></B></TD></TR>\n");
+      outputToString = 0;
+      /* Clear out printStringForReferencedBy to prevent bug 243 above */
+      let(&printStringForReferencedBy, "");
+      return; /* verifyProof() could crash */
+    }
     verifyProof(showStatement);
   }
 
@@ -2426,24 +2472,38 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
 
 
 /* Traces back the statements used by a proof, recursively. */
-void traceProof(long statemNum,
+/* Returns 1 if at least one label is printed (or would be printed in
+   case testOnlyFlag=1); otherwise, returns 0 */
+/* matchList suppresses all output except labels matching matchList */
+/* testOnlyFlag prevents any printout; it is used to determine whether
+   there is an unwanted axiom for MINIMIZE_WITH /FORBID. */
+/* void traceProof(long statemNum, */ /* before 20-May-2013 */
+flag traceProof(long statemNum, /* 20-May-2013 nm */
   flag essentialFlag,
-  flag axiomFlag)
+  flag axiomFlag,
+  vstring matchList, /* 19-May-2013 nm */
+  flag testOnlyFlag /* 20-May-2013 nm */)
 {
 
   long stmt, pos;
   vstring statementUsedFlags = ""; /* y/n flags that statement is used */
   vstring outputString = "";
   nmbrString *unprovedList = NULL_NMBRSTRING;
+  flag foundFlag = 0;
 
-  if (axiomFlag) {
-    print2(
-"Statement \"%s\" assumes the following axioms ($a statements):\n",
-        statement[statemNum].labelName);
-  } else {
-    print2(
-"The proof of statement \"%s\" uses the following earlier statements:\n",
-        statement[statemNum].labelName);
+  /* Make sure we're calling this with $p statements only */
+  if (statement[statemNum].type != (char)p__) bug(249);
+
+  if (!testOnlyFlag) {  /* 20-May-2013 nm */
+    if (axiomFlag) {
+      print2(
+  "Statement \"%s\" assumes the following axioms ($a statements):\n",
+          statement[statemNum].labelName);
+    } else {
+      print2(
+  "The proof of statement \"%s\" uses the following earlier statements:\n",
+          statement[statemNum].labelName);
+    }
   }
 
   traceProofWork(statemNum, essentialFlag, &statementUsedFlags,
@@ -2454,6 +2514,19 @@ void traceProof(long statemNum,
   let(&outputString, "");
   for (stmt = 1; stmt < statemNum; stmt++) {
     if (statementUsedFlags[stmt] == 'y') {
+
+      /* 19-May-2013 nm - Added MATCH qualifier */
+      if (matchList[0]) {  /* There is a list to match */
+        /* Don't include unmatched labels */
+        if (!matchesList(statement[stmt].labelName, matchList, '*', '?'))
+          continue;
+      }
+
+      /* 20-May-2013 nm  Skip rest of scan in testOnlyFlag mode */
+      foundFlag = 1; /* At least one label would be printed */
+      if (testOnlyFlag) {
+        goto TRACE_RETURN;
+      }
       if (axiomFlag) {
         if (statement[stmt].type == a__) {
           let(&outputString, cat(outputString, " ", statement[stmt].labelName,
@@ -2470,6 +2543,12 @@ void traceProof(long statemNum,
       }
     } /* End if (statementUsedFlag[stmt] == 'y') */
   } /* Next stmt */
+
+  /* 20-May-2013 nm  Skip printing in testOnlyFlag mode */
+  if (testOnlyFlag) {
+    goto TRACE_RETURN;
+  }
+
   if (outputString[0]) {
     let(&outputString, cat(" ", outputString, NULL));
   } else {
@@ -2491,10 +2570,12 @@ void traceProof(long statemNum,
     printLongLine(outputString, "  ", " ");
   }
 
+ TRACE_RETURN:
   /* Deallocate */
   let(&outputString, "");
   let(&statementUsedFlags, "");
   nmbrLet(&unprovedList, NULL_NMBRSTRING);
+  return foundFlag;
 } /* traceProof */
 
 /* Traces back the statements used by a proof, recursively.  Returns
@@ -3333,6 +3414,14 @@ void eraseSource(void)
   /* Deallocate the wrkProof structure */
   /*???*/
 
+  /* Deallocate the texdef/htmldef storage */ /* Added 27-Oct-2012 nm */
+  if (texDefsRead) {
+    texDefsRead = 0;
+    free(texDefs);
+  }
+  sandboxStmt = 0; /* Used by a non-zero test in mmwtex.c to see if assigned */
+  extHtmlStmt = 0; /* May be used by a non-zero test; init to be safe */
+
   /* Allocate big arrays */
   initBigArrays();
 
@@ -3576,18 +3665,23 @@ long getStepNum(vstring relStep, /* User's argument */
 } /* getStepNum */
 
 
-
-/* This procedure finds the (unique) statement number whose label matches
-   stmtName.  Wildcards are allowed in stmtName for user convenience, but
+/* 19-Sep-2012 nm */
+/* This procedure finds the next statement number whose label matches
+   stmtName.  Wildcards are allowed.  If uniqueFlag is 1,
    there must be exactly one match, otherwise an error message is printed,
-   and -1 is returned.  Used by PROVE, REPLACE, ASSIGN. */
+   and -1 is returned.  If uniqueFlag is 0, the next match is
+   returned, or -1 if there are no more matches.  No error messages are
+   printed when uniqueFlag is 0, except for the special case of
+   startStmt=1.  For use by PROVE, REPLACE, ASSIGN. */
 long getStatementNum(vstring stmtName, /* Possibly with wildcards */
-    long maxStmt, /* Must be less than this statement number */
+    long startStmt, /* Starting statement number (1 for full scan) */
+    long maxStmt, /* Matches must be LESS THAN this statement number */
     flag aAllowed, /* 1 means $a is allowed */
     flag pAllowed, /* 1 means $p is allowed */
     flag eAllowed, /* 1 means $e is allowed */
     flag fAllowed, /* 1 means $f is allowed */
-    flag efOnlyForMaxStmt) /* If 1, $e and $f must belong to maxStmt */
+    flag efOnlyForMaxStmt, /* If 1, $e and $f must belong to maxStmt */
+    flag uniqueFlag) /* If 1, match must be unique */
 {
   flag hasWildcard;
   long matchesFound, matchStmt, matchStmt2, stmt;
@@ -3600,7 +3694,7 @@ long getStatementNum(vstring stmtName, /* Possibly with wildcards */
   matchStmt = 1; /* Set to a legal value in case of bug */
   matchStmt2 = 1; /* Set to a legal value in case of bug */
 
-  for (stmt = 1; stmt < maxStmt; stmt++) {
+  for (stmt = startStmt; stmt < maxStmt; stmt++) {
     if (!statement[stmt].labelName[0]) continue; /* No label */
     typ = statement[stmt].type;
 
@@ -3636,27 +3730,41 @@ long getStatementNum(vstring stmtName, /* Possibly with wildcards */
     if (matchesFound == 0) {
       /* This is the first match found; save it */
       matchStmt = stmt;
+      /* If uniqueFlag is not set, we're done (don't need to check for
+         uniqueness) */
     }
     if (matchesFound == 1) {
       /* This is the 2nd match found; save it for error message */
       matchStmt2 = stmt;
     }
     matchesFound++;
+    if (!uniqueFlag) break; /* We are just getting the next match, so done */
     if (!hasWildcard) break; /* Since there can only be 1 match, don't
                                 bother to continue */
   }
 
   if (matchesFound == 0) {
-    if (aAllowed && pAllowed && eAllowed && fAllowed && !efOnlyForMaxStmt) {
+    if (!uniqueFlag) {
+      if (startStmt == 1) {
+        /* For non-unique scan, print only if we started from beginning */
+        print2("?No statement label matches \"%s\".\n", stmtName);
+      }
+    } else if (aAllowed && pAllowed && eAllowed && fAllowed
+               && !efOnlyForMaxStmt) {
       print2("?No statement label matches \"%s\".\n", stmtName);
     } else if (!aAllowed && pAllowed && !eAllowed && !fAllowed) {
+      /* This is normally the PROVE command */
       print2("?No $p statement label matches \"%s\".\n", stmtName);
+    } else if (!eAllowed && !fAllowed) {
+      /* This is normally for REPLACE */
+      print2("?No earlier $a or $p statement label matches \"%s\".\n",
+          stmtName);
     } else {
-      printLongLine(cat("?A statement label matching \"",
+      /* This is normally for ASSIGN */
+      printLongLine(cat("?An earlier statement label matching \"",
           stmtName,
           "\" was not found or is not a hypothesis of the statement ",
-          "being proved.  ",
-          "Use SHOW LABELS for a list of valid labels.", NULL), "", " ");
+          "being proved.", NULL), "", " ");
     }
   } else if (matchesFound == 2) {
     printLongLine(cat("?This command requires a unique label, but there are ",
@@ -3669,10 +3777,11 @@ long getStatementNum(vstring stmtName, /* Possibly with wildcards */
         str(matchesFound), " (allowed) matches for \"",
         stmtName, "\".  The first 2 are \"", statement[matchStmt].labelName,
         "\" and \"", statement[matchStmt2].labelName, "\".",
-        "  Use SHOW LABELS \"", stmtName, "\" to see all matches.",
+        "  Use SHOW LABELS \"", stmtName, "\" to see all non-$e matches.",
         NULL), "", " ");
   }
-  if (matchesFound != 1) matchStmt = -1; /* Error - no unique match */
+  if (!uniqueFlag && matchesFound > 1) bug(248);
+  if (matchesFound != 1) matchStmt = -1; /* Error - no (unique) match */
   return matchStmt;
 } /* getStatementNum */
 

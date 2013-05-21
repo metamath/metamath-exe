@@ -2996,3 +2996,72 @@ void declareDummyVars(long numNewVars)
 
 } /* declareDummyVars */
 
+
+
+/* 20-May-2013 nm Added this function */
+/* Copy inProofStruct to outProofStruct.  A proof structure contains
+   the state of the proof in the Proof Assistant MM-PA.  The one
+   used by MM-PA is the global proofInProgress.  This function lets
+   it be copied for temporary storage and retrieval. */
+void copyProofStruct(struct pip_struct *outProofStruct,
+    struct pip_struct inProofStruct)
+{
+  long proofLen, j;
+  /* First, make sure the output structure is empty to prevent memory
+     leaks. */
+  deallocProofStruct(&(*outProofStruct));
+
+  /* Get the proof length of the input structure */
+  proofLen = nmbrLen(inProofStruct.proof);
+  if (proofLen == 0) bug(1854); /* An empty proof should never occur
+    here; proof should have at least one step (possibly unknown) */
+  if (proofLen == 0) return;  /* The input proof is empty */
+  nmbrLet(&((*outProofStruct).proof), inProofStruct.proof);
+
+  /* Allocate pointers to empty nmbrStrings that will be assigned
+     the proof step contents */
+  pntrLet(&((*outProofStruct).target), pntrNSpace(proofLen));
+  pntrLet(&((*outProofStruct).source), pntrNSpace(proofLen));
+  pntrLet(&((*outProofStruct).user), pntrNSpace(proofLen));
+
+  if (proofLen != pntrLen(inProofStruct.target)) bug(1855);
+  if (proofLen != pntrLen(inProofStruct.source)) bug(1856);
+  if (proofLen != pntrLen(inProofStruct.user)) bug(1857);
+  /* Copy the individual proof step contents */
+  for (j = 0; j < proofLen; j++) {
+    nmbrLet((nmbrString **)(&(((*outProofStruct).target)[j])),
+        (inProofStruct.target)[j]);
+    nmbrLet((nmbrString **)(&(((*outProofStruct).source)[j])),
+        (inProofStruct.source)[j]);
+    nmbrLet((nmbrString **)(&(((*outProofStruct).user)[j])),
+        (inProofStruct.user)[j]);
+  }
+  return;
+} /* copyProofStruct */
+
+
+/* 20-May-2013 nm Added this function */
+/* Deallocate memory used by a proof structure and set it to the initial
+   state.  A proof structure contains the state of the proof in the Proof
+   Assistant MM-PA.  It is assumed that proofStruct was declared with:
+     struct pip_struct proofStruct = {
+       NULL_NMBRSTRING, NULL_PNTRSTRING, NULL_PNTRSTRING, NULL_PNTRSTRING };
+   This function sets it back to that initial assignment. */
+void deallocProofStruct(struct pip_struct *proofStruct)
+{
+  long proofLen, j;
+  /* Deallocate proof structure */
+  proofLen = nmbrLen((*proofStruct).proof);
+  if (proofLen == 0) return;  /* Already deallocated */
+  nmbrLet(&((*proofStruct).proof), NULL_NMBRSTRING);
+  for (j = 0; j < proofLen; j++) {
+    nmbrLet((nmbrString **)(&(((*proofStruct).target)[j])), NULL_NMBRSTRING);
+    nmbrLet((nmbrString **)(&(((*proofStruct).source)[j])), NULL_NMBRSTRING);
+    nmbrLet((nmbrString **)(&(((*proofStruct).user)[j])), NULL_NMBRSTRING);
+  }
+  pntrLet(&((*proofStruct).target), NULL_PNTRSTRING);
+  pntrLet(&((*proofStruct).source), NULL_PNTRSTRING);
+  pntrLet(&((*proofStruct).user), NULL_PNTRSTRING);
+  return;
+} /* deallocProofStruct */
+

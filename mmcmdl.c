@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2012  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2013  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -173,7 +173,7 @@ flag processCommandLine(void)
           } else {
             break;
           }
-          break; /* Break if only 1 switch is allowed */
+          /* break; */ /* Break if only 1 switch is allowed */
         } /* End while for switch loop */
 
         goto pclgood;
@@ -191,7 +191,7 @@ flag processCommandLine(void)
           if (lastArgMatches("/")) {
             i++;
             if (!getFullArg(i,cat(
-                "THEOREMS_PER_PAGE",
+                "THEOREMS_PER_PAGE|SHOW_LEMMAS",
                 "|<THEOREMS_PER_PAGE>",NULL)))
               goto pclbad;
             if (lastArgMatches("THEOREMS_PER_PAGE")) {
@@ -202,7 +202,7 @@ flag processCommandLine(void)
           } else {
             break;
           }
-          break; /* Break if only 1 switch is allowed */
+          /* break; */ /* Break if only 1 switch is allowed */
         }
         goto pclgood;
       }
@@ -298,7 +298,7 @@ flag processCommandLine(void)
           } else {
             break;
           }
-          break; /* Break if only 1 switch is allowed */
+          /* break; */ /* Break if only 1 switch is allowed */
         } /* End while for switch loop */
 
       }
@@ -428,12 +428,19 @@ flag processCommandLine(void)
           if (lastArgMatches("/")) {
             i++;
             if (!getFullArg(i,cat(
-                "ALL|ESSENTIAL|AXIOMS|TREE|DEPTH|COUNT_STEPS",
+                /* 19-May-2013 nm Added MATCH */
+                "ALL|ESSENTIAL|AXIOMS|TREE|DEPTH|COUNT_STEPS|MATCH",
                 "|<ALL>",NULL)))
               goto pclbad;
             if (lastArgMatches("DEPTH")) {
               i++;
               if (!getFullArg(i,"# How many indentation levels <999>? "))
+                goto pclbad;
+            }
+            /* 13-May-2013 nm Added MATCH */
+            if (lastArgMatches("MATCH")) {
+              i++;
+              if (!getFullArg(i,"* What statement label? "))
                 goto pclbad;
             }
           } else {
@@ -858,7 +865,7 @@ flag processCommandLine(void)
         if (lastArgMatches("/")) {
           i++;
           if (!getFullArg(i,
-              "DEPTH|NO_DISTINCT|1|2|3|SUBPROOFS<DEPTH>")
+              "DEPTH|NO_DISTINCT|1|2|3|SUBPROOFS|<DEPTH>")
               ) goto pclbad;
           if (lastArgMatches("DEPTH")) {
             i++;
@@ -897,7 +904,7 @@ flag processCommandLine(void)
           if (lastArgMatches("/")) {
             i++;
             if (!getFullArg(i,
-                "DEPTH|NO_DISTINCT<DEPTH>")
+                "DEPTH|NO_DISTINCT|<DEPTH>")
                 ) goto pclbad;
             if (lastArgMatches("DEPTH")) {
               i++;
@@ -925,8 +932,8 @@ flag processCommandLine(void)
         if (lastArgMatches("/")) {
           i++;
           if (!getFullArg(i,cat(
-              "BRIEF|ALLOW_GROWTH|NO_DISTINCT|EXCEPT|",
-              "REVERSE|INCLUDE_MATHBOXES|<BRIEF>", NULL)))
+              "BRIEF|VERBOSE|ALLOW_GROWTH|NO_DISTINCT|EXCEPT|",
+              "REVERSE|INCLUDE_MATHBOXES|FORBID|<BRIEF>", NULL)))
                                    /* 7-Jan-06 nm Added EXCEPT */
                                    /* 28-Jun-2011 nm Added INCLUDE_MATHBOXES */
                                    /* 10-Nov-2011 nm Added REVERSE */
@@ -934,6 +941,12 @@ flag processCommandLine(void)
 
           /* 7-Jan-06 nm Added EXCEPT */
           if (lastArgMatches("EXCEPT")) {
+            i++;
+            if (!getFullArg(i,"* What statement label? "))
+              goto pclbad;
+          }
+          /* 20-May-2013 nm Added FORBID */
+          if (lastArgMatches("FORBID")) {
             i++;
             if (!getFullArg(i,"* What statement label? "))
               goto pclbad;

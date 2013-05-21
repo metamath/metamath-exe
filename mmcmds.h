@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2011  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2013  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -29,9 +29,11 @@ void showDetailStep(long statemNum, long detailStep);
 /* Summary of statements in proof */
 void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag);
 /* Traces back the statements used by a proof, recursively. */
-void traceProof(long statemNum,
+flag traceProof(long statemNum,
   flag essentialFlag,
-  flag axiomFlag);
+  flag axiomFlag,
+  vstring matchList, /* 19-May-2013 nm */
+  flag testOnlyFlag /* 20-May-2013 nm */);
 void traceProofWork(long statemNum,
   flag essentialFlag,
   vstring *statementUsedFlagsP, /* 'y'/'n' flag that statement is used */
@@ -67,18 +69,23 @@ long getStepNum(vstring relStep, /* User's argument */
    nmbrString *pfInProgress, /* proofInProgress.proof */
    flag allFlag /* 1 = "ALL" is permissable */);
 
-/* 14-Sep-2012 nm */
-/* This procedure finds the (unique) statement number whose label matches
-   stmtName.  Wildcards are allowed in stmtName for user convenience, but
+/* 19-Sep-2012 nm */
+/* This procedure finds the next statement number whose label matches
+   stmtName.  Wildcards are allowed.  If uniqueFlag is 1,
    there must be exactly one match, otherwise an error message is printed,
-   and -1 is returned.  For use by PROVE, REPLACE, ASSIGN. */
+   and -1 is returned.  If uniqueFlag is 0, the next match is
+   returned, or -1 if there are no more matches.  No error messages are
+   printed when uniqueFlag is 0, except for the special case of
+   startStmt=1.  For use by PROVE, REPLACE, ASSIGN. */
 long getStatementNum(vstring stmtName, /* Possibly with wildcards */
-    long maxStmt, /* Must be less than this statement number */
+    long startStmt, /* Starting statement number (1 for full scan) */
+    long maxStmt, /* Must be LESS THAN this statement number */
     flag aAllowed, /* 1 means $a is allowed */
     flag pAllowed, /* 1 means $p is allowed */
     flag eAllowed, /* 1 means $e is allowed */
     flag fAllowed, /* 1 means $f is allowed */
-    flag efOnlyForMaxStmt); /* If 1, $e and $f must belong to maxStmt */
+    flag efOnlyForMaxStmt, /* If 1, $e and $f must belong to maxStmt */
+    flag uniqueFlag); /* If 1, match must be unique */
 
 extern vstring mainFileName;
 
