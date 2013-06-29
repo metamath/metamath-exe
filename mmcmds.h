@@ -22,6 +22,7 @@ void typeProof(long statemNum,
   flag reverseFlag,
   flag noIndentFlag,
   long startColumn,
+  flag skipRepeatedSteps, /* 28-Jun-2013 nm Added */
   flag texFlag,
   flag htmlFlg);
 /* Show details of step */

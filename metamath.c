@@ -5,7 +5,11 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.07.91 20-May-2013"
+#define MVERSION "0.07.92 28-Jun-2013"
+/* 0.07.92 28-Jun-2013 nm metamath.c mmcmds.c,h mmcmdl.c mmhlpb.c- added
+   /NO_REPEATED_STEPS for /LEMMON mode of SHOW PROOF, SHOW NEW_PROOF.
+   This reverts the /LEMMON mode default display change of 31-Jan-2010
+   and invokes it when desired via /NO_REPEATED_STEPS. */
 /* 0.07.91 20-May-2013 nm metamath.c mmpfas.c,h mmcmds.c,h mmcmdl.c
    mmhlpb.c- added /FORBID qualifier to MINIMIZE_WITH */
 /* 0.07.90 19-May-2013 nm metamath.c mmcmds.c mmcmdl.c mmhlpb.c - added /MATCH
@@ -406,6 +410,7 @@ void command(int argc, char *argv[])
   long detailStep;
   flag noIndentFlag; /* Flag to use non-indented display */
   long splitColumn; /* Column at which formula starts in nonindented display */
+  flag skipRepeatedSteps; /* NO_REPEATED_STEPS qualifier */ /* 28-Jun-2013 nm */
   flag texFlag; /* Flag for TeX */
   flag saveFlag; /* Flag to save in source */
   long indentation; /* Number of spaces to indent proof */
@@ -3438,6 +3443,7 @@ void command(int argc, char *argv[])
       detailStep = 0;
       noIndentFlag = 0;
       splitColumn = DEFAULT_COLUMN;
+      skipRepeatedSteps = 0; /* 28-Jun-2013 nm */
       texFlag = 0;
 
       i = switchPos("/ FROM_STEP");
@@ -3470,6 +3476,8 @@ void command(int argc, char *argv[])
       if (i) noIndentFlag = 1;
       i = switchPos("/ START_COLUMN");
       if (i) splitColumn = (long)val(fullArg[i + 1]);
+      i = switchPos("/ NO_REPEATED_STEPS"); /* 28-Jun-2013 nm */
+      if (i) skipRepeatedSteps = 1;         /* 28-Jun-2013 nm */
       i = switchPos("/ TEX") || switchPos("/ HTML")
           /* 14-Sep-2010 nm Added OLDE_TEX */
           || switchPos("/ OLD_TEX");
@@ -3784,6 +3792,7 @@ void command(int argc, char *argv[])
             reverseFlag,
             noIndentFlag,
             splitColumn,
+            skipRepeatedSteps, /* 28-Jun-2013 nm */
             texFlag,
             htmlFlag);
         if (texFlag) {
@@ -3997,6 +4006,7 @@ void command(int argc, char *argv[])
             0 /*reverseFlag*/,
             0 /*noIndentFlag*/,
             0 /*splitColumn*/,
+            0 /*skipRepeatedSteps*/, /* 28-Jun-2013 nm */
             0 /*texFlag*/,
             0 /*htmlFlag*/);
         /* 6/14/98 end */
@@ -4077,6 +4087,7 @@ void command(int argc, char *argv[])
           0 /*reverseFlag*/,
           0 /*noIndentFlag*/,
           0 /*splitColumn*/,
+          0 /*skipRepeatedSteps*/, /* 28-Jun-2013 nm */
           0 /*texFlag*/,
           0 /*htmlFlag*/);
       /* 6/14/98 end */
@@ -4283,6 +4294,7 @@ void command(int argc, char *argv[])
           0 /*reverseFlag*/,
           0 /*noIndentFlag*/,
           0 /*splitColumn*/,
+          0 /*skipRepeatedSteps*/, /* 28-Jun-2013 nm */
           0 /*texFlag*/,
           0 /*htmlFlag*/);
       /* 6/14/98 end */
@@ -4500,6 +4512,7 @@ void command(int argc, char *argv[])
           0 /*reverseFlag*/,
           0 /*noIndentFlag*/,
           0 /*splitColumn*/,
+          0 /*skipRepeatedSteps*/, /* 28-Jun-2013 nm */
           0 /*texFlag*/,
           0 /*htmlFlag*/);
       /* 6/14/98 end */
@@ -4722,6 +4735,7 @@ void command(int argc, char *argv[])
             0 /*reverseFlag*/,
             0 /*noIndentFlag*/,
             0 /*splitColumn*/,
+            0 /*skipRepeatedSteps*/, /* 28-Jun-2013 nm */
             0 /*texFlag*/,
             0 /*htmlFlag*/);
       /* 14-Sep-2012 end */
@@ -5162,6 +5176,7 @@ void command(int argc, char *argv[])
             0 /*reverseFlag*/,
             0 /*noIndentFlag*/,
             0 /*splitColumn*/,
+            0 /*skipRepeatedSteps*/, /* 28-Jun-2013 nm */
             0 /*texFlag*/,
             0 /*htmlFlag*/);
       /* 6/14/98 end */
@@ -5455,6 +5470,7 @@ void command(int argc, char *argv[])
           0 /*reverseFlag*/,
           0 /*noIndentFlag*/,
           0 /*splitColumn*/,
+          0 /*skipRepeatedSteps*/, /* 28-Jun-2013 nm */
           0 /*texFlag*/,
           0 /*htmlFlag*/);
       /* 6/14/98 end */
@@ -5513,6 +5529,7 @@ void command(int argc, char *argv[])
             0 /*reverseFlag*/,
             0 /*noIndentFlag*/,
             0 /*splitColumn*/,
+            0 /*skipRepeatedSteps*/, /* 28-Jun-2013 nm */
             0 /*texFlag*/,
             0 /*htmlFlag*/);
         /* 6/14/98 end */

@@ -7,6 +7,8 @@
 /*
 mmvstr.c - VMS-BASIC variable length string library routines header
 This is an emulation of the string functions available in VMS BASIC.
+
+Note: For these functions, the first string character position is 1, not 0.
 */
 
 /*** See the comments in mmvstr.h for an explanation of these functions ******/

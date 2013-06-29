@@ -568,7 +568,8 @@ flag processCommandLine(void)
                 "|REVERSE|LANGUAGE_MODE|VERBOSE|NORMAL|COMPRESSED",
                 /* 14-Sep-2010 nm Added OLD_TEX */
                 "|STATEMENT_SUMMARY|DETAILED_STEP|TEX|OLD_TEX|HTML|SAVE",
-                "|LEMMON|START_COLUMN|RENUMBER|<ESSENTIAL>",NULL)))
+                "|LEMMON|START_COLUMN|NO_REPEATED_STEPS",
+                "|RENUMBER|<ESSENTIAL>",NULL)))
               goto pclbad;
             if (lastArgMatches("FROM_STEP")) {
               i++;
@@ -624,7 +625,8 @@ flag processCommandLine(void)
                 /*"|REVERSE|LANGUAGE_MODE|VERBOSE|NORMAL|PACKED|COMPRESSED",*/
                 "|REVERSE|LANGUAGE_MODE|VERBOSE|NORMAL|COMPRESSED",
                 "|NOT_UNIFIED|TEX|HTML",
-                "|LEMMON|START_COLUMN|RENUMBER|<ESSENTIAL>",NULL)))
+                "|LEMMON|START_COLUMN|NO_REPEATED_STEPS",
+                "|RENUMBER|<ESSENTIAL>",NULL)))
               goto pclbad;
             if (lastArgMatches("FROM_STEP")) {
               i++;
