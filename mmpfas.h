@@ -4,6 +4,12 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
+#ifndef METAMATH_MMPFAS_H_
+#define METAMATH_MMPFAS_H_
+
+#include "mmvstr.h"
+#include "mmdata.h"
+
 extern long proveStatement; /* The statement to be proved */
 extern flag proofChangedFlag; /* Flag to push 'undo' stack */
 
@@ -169,3 +175,5 @@ void copyProofStruct(struct pip_struct *outProofStruct,
 
 /* Clears the Proof Assistant proof state */
 void deallocProofStruct(struct pip_struct *proofStruct);
+
+#endif /* METAMATH_MMPFAS_H_ */

@@ -70,17 +70,17 @@ void interactiveMatch(long step, long maxEssential)
   /* 1 means no timeout, 2 means timeout */
   let(&timeoutFlags, string(proveStatement, 1));
   for (stmt = 1; stmt < proveStatement; stmt++) {
-    if (statement[stmt].type != (char)e__ &&
-        statement[stmt].type != (char)f__ &&
-        statement[stmt].type != (char)a__ &&
-        statement[stmt].type != (char)p__) continue;
+    if (statement[stmt].type != (char)e_ &&
+        statement[stmt].type != (char)f_ &&
+        statement[stmt].type != (char)a_ &&
+        statement[stmt].type != (char)p_) continue;
 
     /* See if the maximum number of requested essential hypotheses is
        exceeded */
     if (maxEssential != -1) {
       essHypCount = 0;
       for (hyp = 0; hyp < statement[stmt].numReqHyp; hyp++) {
-        if (statement[statement[stmt].reqHypList[hyp]].type == (char)e__) {
+        if (statement[statement[stmt].reqHypList[hyp]].type == (char)e_) {
           essHypCount++;
           if (essHypCount > maxEssential) break;
         }
@@ -369,8 +369,8 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
   /* Note: the variables subPfLen, pfLen, and scanLen aren't
      used again.  They could be eliminated above if we wanted. */
 
-  if (statement[replStatemNum].type != (char)a__ &&
-      statement[replStatemNum].type != (char)p__)
+  if (statement[replStatemNum].type != (char)a_ &&
+      statement[replStatemNum].type != (char)p_)
     bug(1822); /* Not $a or $p */
 
   schReqHyps = statement[replStatemNum].numReqHyp;
@@ -395,7 +395,7 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
         = mathTokens/*global*/ + 1 + pipDummyVars/*global*/ + var;
   }
   for (sym = 0; sym < replStmtSchemeLen; sym++) {
-    if (mathToken[replStmtSchemePtr[sym]].tokenType != (char)var__) continue;
+    if (mathToken[replStmtSchemePtr[sym]].tokenType != (char)var_) continue;
     /* Use dummy var mapping from mathToken[].tmp field */
     scheme[sym] = mathToken[replStmtSchemePtr[sym]].tmp;
   }
@@ -412,7 +412,7 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
     hypLen = nmbrLen(hypSchemePtr);
     for (sym = 0; sym < hypLen; sym++) {
       if (mathToken[hypSchemePtr[sym]].tokenType
-          != (char)var__) continue;
+          != (char)var_) continue;
       /* Use dummy var mapping from mathToken[].tmp field */
       hypSchemePtr[sym] = mathToken[hypSchemePtr[sym]].tmp;
     }
@@ -424,7 +424,7 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
   schEHyps = 0;
   for (hyp = 0; hyp < schReqHyps; hyp++) {
     if (statement[statement[replStatemNum].reqHypList[hypSortMap[hyp]]].type
-         == (char)e__) {
+         == (char)e_) {
       j = hypSortMap[hyp];
       hypSortMap[hyp] = hypSortMap[schEHyps];
       hypSortMap[schEHyps] = j;
@@ -530,11 +530,11 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
       if (hyp < schEHyps) {
         /* It's a $e hypothesis */
         if (statement[statement[replStatemNum].reqHypList[hypSortMap[hyp]]
-            ].type != (char)e__) bug (1823);
+            ].type != (char)e_) bug (1823);
       } else {
         /* It's a $f hypothesis */
         if (statement[statement[replStatemNum].reqHypList[hypSortMap[hyp]]
-             ].type != (char)f__) bug(1824);
+             ].type != (char)f_) bug(1824);
         /* At this point there should be no dummy variables in $f
            hypotheses */
         /* 22-Aug-2012 nm This can now occur with new algorithm.  For now,
@@ -658,8 +658,8 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
         /* First symbol */
         i = hypTestPtr[0];
         j = ((nmbrString *)(hypMakeSubstList[hypSortMap[hyp]]))[0];
-        if (mathToken[i].tokenType == (char)con__) {
-          if (mathToken[j].tokenType == (char)con__) {
+        if (mathToken[i].tokenType == (char)con_) {
+          if (mathToken[j].tokenType == (char)con_) {
             if (i != j) {
               continue;
             }
@@ -1036,12 +1036,12 @@ vstring getIndepKnownSteps(long proofStmt, long refStep)
         bug(1833); /* Packed ("squished") proof not handled (yet?) */
       }
     } else {
-      if (statement[proofStmt].type == (char)e__
-          || statement[proofStmt].type == (char)f__) {
+      if (statement[proofStmt].type == (char)e_
+          || statement[proofStmt].type == (char)f_) {
         /* $e or $f */
         indepSteps[prfStep] = 'N';
-      } else if (statement[proofStmt].type != (char)p__
-            && statement[proofStmt].type != (char)a__) {
+      } else if (statement[proofStmt].type != (char)p_
+            && statement[proofStmt].type != (char)a_) {
         bug(1834);
       }
     }
@@ -1110,15 +1110,15 @@ vstring getKnownSubProofs(void)
       unkSubPrfStack[stackPtr] = 'U';
       continue;
     }
-    if (statement[stmt].type == (char)e__ ||
-        statement[stmt].type == (char)f__) { /* A hypothesis */
+    if (statement[stmt].type == (char)e_ ||
+        statement[stmt].type == (char)f_) { /* A hypothesis */
       unkSubPrfSteps[prfStep] = 'K'; /* Subproof is known */
       stackPtr++;
       unkSubPrfStack[stackPtr] = 'K';
       continue;
     }
-    if (statement[stmt].type != (char)a__ &&
-        statement[stmt].type != (char)p__) bug(1838);
+    if (statement[stmt].type != (char)a_ &&
+        statement[stmt].type != (char)p_) bug(1838);
     unkSubPrfSteps[prfStep] = 'K';  /* Start assuming subproof is known */
     for (hyp = 1; hyp <= statement[stmt].numReqHyp; hyp++) {
       if (stackPtr < 0) bug(1839);
@@ -1227,8 +1227,8 @@ char checkStmtMatch(long statemNum, long step)
   if (!targetLen) bug(1807);
 
   /* If the statement is a hypothesis, just see if it unifies. */
-  if (statement[statemNum].type == (char)e__ || statement[statemNum].type ==
-      (char)f__) {
+  if (statement[statemNum].type == (char)e_ || statement[statemNum].type ==
+      (char)f_) {
 
     /* Make sure it's a hypothesis of the statement being proved */
     breakFlag = 0;
@@ -1274,8 +1274,8 @@ char checkStmtMatch(long statemNum, long step)
   firstSymbsAreConstsFlag = 0;
   stsym = mString[0];
   tasym = ((nmbrString *)((proofInProgress.target)[step]))[0];
-  if (mathToken[stsym].tokenType == (char)con__) {
-    if (mathToken[tasym].tokenType == (char)con__) {
+  if (mathToken[stsym].tokenType == (char)con_) {
+    if (mathToken[tasym].tokenType == (char)con_) {
       firstSymbsAreConstsFlag = 1; /* The first symbols are constants */
       if (stsym != tasym) {
         targetFlag = 0;
@@ -1287,8 +1287,8 @@ char checkStmtMatch(long statemNum, long step)
   stsym = mString[mStringLen - 1];
   tasym = ((nmbrString *)((proofInProgress.target)[step]))[targetLen - 1];
   if (stsym != tasym) {
-    if (mathToken[stsym].tokenType == (char)con__) {
-      if (mathToken[tasym].tokenType == (char)con__) {
+    if (mathToken[stsym].tokenType == (char)con_) {
+      if (mathToken[tasym].tokenType == (char)con_) {
         targetFlag = 0;
         goto returnPoint;
       }
@@ -1299,8 +1299,8 @@ char checkStmtMatch(long statemNum, long step)
     stsym = mString[1];
     tasym = ((nmbrString *)((proofInProgress.target)[step]))[1];
     if (stsym != tasym) {
-      if (mathToken[stsym].tokenType == (char)con__) {
-        if (mathToken[tasym].tokenType == (char)con__) {
+      if (mathToken[stsym].tokenType == (char)con_) {
+        if (mathToken[tasym].tokenType == (char)con_) {
           targetFlag = 0;
           goto returnPoint;
         }
@@ -1321,7 +1321,7 @@ char checkStmtMatch(long statemNum, long step)
         pipDummyVars + var;
   }
   for (sym = 0; sym < mStringLen; sym++) {
-    if (mathToken[scheme[sym]].tokenType != (char)var__)
+    if (mathToken[scheme[sym]].tokenType != (char)var_)
         continue;
     /* Use dummy var mapping from mathToken[].tmp field */
     scheme[sym] = mathToken[scheme[sym]].tmp;
@@ -1498,17 +1498,17 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
   mStringLen = nmbrLen(mString);
   /@ For speedup @/
   firstSymbol = mString[0];
-  if (mathToken[firstSymbol].tokenType != (char)con__) firstSymbol = 0;
+  if (mathToken[firstSymbol].tokenType != (char)con_) firstSymbol = 0;
   if (mStringLen > 1) {
     secondSymbol = mString[1];
-    if (mathToken[secondSymbol].tokenType != (char)con__) secondSymbol = 0;
+    if (mathToken[secondSymbol].tokenType != (char)con_) secondSymbol = 0;
     /@ If first symbol is a variable, second symbol shouldn't be tested. @/
     if (!firstSymbol) secondSymbol = 0;
   } else {
     secondSymbol = 0;
   }
   lastSymbol = mString[mStringLen - 1];
-  if (mathToken[lastSymbol].tokenType != (char)con__) lastSymbol = 0;
+  if (mathToken[lastSymbol].tokenType != (char)con_) lastSymbol = 0;
   **** */
 
   for (stmt = 1; stmt < statemNum; stmt++) {
@@ -1517,8 +1517,8 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
     if (quickMatchFilter(stmt, mString, 0/*no dummy vars*/) == 0) continue;
 
     /* 22-Aug-2012 nm Now done with quickMatchFilter() ****
-    if (statement[stmt].type != (char)a__ &&
-        statement[stmt].type != (char)p__) continue; /@ Not $a or $p @/
+    if (statement[stmt].type != (char)a_ &&
+        statement[stmt].type != (char)p_) continue; /@ Not $a or $p @/
     **** */
 
     /* 16-Aug-04 nm  noDistinct is set by NO_DISTICT qualifier in IMPROVE */
@@ -1538,7 +1538,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
        they must match @/
     if (firstSymbol) { /@ First symbol in mString is a constant @/
       if (firstSymbol != stmtMathPtr[0]) {
-        if (mathToken[stmtMathPtr[0]].tokenType == (char)con__) continue;
+        if (mathToken[stmtMathPtr[0]].tokenType == (char)con_) continue;
       }
     }
     **** */
@@ -1551,8 +1551,8 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
       if (schemeLen > 1) {
         if (secondSymbol != stmtMathPtr[1]) {
           /@ Second symbol should be tested only if 1st symbol is a constant @/
-          if (mathToken[stmtMathPtr[0]].tokenType == (char)con__) {
-            if (mathToken[stmtMathPtr[1]].tokenType == (char)con__)
+          if (mathToken[stmtMathPtr[0]].tokenType == (char)con_) {
+            if (mathToken[stmtMathPtr[1]].tokenType == (char)con_)
                 continue;
           }
         }
@@ -1561,7 +1561,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
     if (lastSymbol) { /@ Last symbol in mString is a constant @/
       if (lastSymbol != stmtMathPtr[schemeLen - 1]) {
         if (mathToken[stmtMathPtr[schemeLen - 1]].tokenType ==
-           (char)con__) continue;
+           (char)con_) continue;
       }
     }
     **** */
@@ -1580,7 +1580,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
     /@ Finally, check that they got cleared for all constants in scheme @/
     breakFlag = 0;
     for (sym = 0; sym < schemeLen; sym++) {
-      if (mathToken[stmtMathPtr[sym]].tokenType == (char)con__) {
+      if (mathToken[stmtMathPtr[sym]].tokenType == (char)con_) {
         if (mathToken[stmtMathPtr[sym]].tmp) {
           breakFlag = 1;
           break;
@@ -1599,7 +1599,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
     breakFlag = 0;
     firstEHypFlag = 1;
     for (hyp = 0; hyp < schReqHyps; hyp++) {
-      if (statement[statement[stmt].reqHypList[hyp]].type == (char)e__) {
+      if (statement[statement[stmt].reqHypList[hyp]].type == (char)e_) {
         /* (???Maybe, in the future, we'd want to do this only for depths >
            a small nonzero amount -- specified by global variable) */
         if (depth > maxEDepth) {
@@ -1647,7 +1647,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
           pipDummyVars + var;
     }
     for (sym = 0; sym < schemeLen; sym++) {
-      if (mathToken[stmtMathPtr[sym]].tokenType != (char)var__) continue;
+      if (mathToken[stmtMathPtr[sym]].tokenType != (char)var_) continue;
       /* Use dummy var mapping from mathToken[].tmp field */
       scheme[sym] = mathToken[stmtMathPtr[sym]].tmp;
     }
@@ -1663,7 +1663,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
       hypLen = nmbrLen(hypSchemePtr);
       for (sym = 0; sym < hypLen; sym++) {
         if (mathToken[hypSchemePtr[sym]].tokenType
-            != (char)var__) continue;
+            != (char)var_) continue;
         /* Use dummy var mapping from mathToken[].tmp field */
         hypSchemePtr[sym] = mathToken[hypSchemePtr[sym]].tmp;
       }
@@ -1812,25 +1812,25 @@ flag quickMatchFilter(long trialStmt, nmbrString *mString,
   flag breakFlag;
   long schemeLen, mStringLen;
 
-  if (statement[trialStmt].type != (char)p__ &&
-      statement[trialStmt].type != (char)a__) return 0; /* Not $a or $p */
+  if (statement[trialStmt].type != (char)p_ &&
+      statement[trialStmt].type != (char)a_) return 0; /* Not $a or $p */
 
   /* This section is common to all trial statements and in principle
      could be computed once for speedup (it used to be when this code
      was in proveStatement() ), but it doesn't seem too compute-intensive. */
   mStringLen = nmbrLen(mString);
   firstSymbol = mString[0];
-  if (mathToken[firstSymbol].tokenType != (char)con__) firstSymbol = 0;
+  if (mathToken[firstSymbol].tokenType != (char)con_) firstSymbol = 0;
   if (mStringLen > 1) {
     secondSymbol = mString[1];
-    if (mathToken[secondSymbol].tokenType != (char)con__) secondSymbol = 0;
+    if (mathToken[secondSymbol].tokenType != (char)con_) secondSymbol = 0;
     /* If first symbol is a variable, second symbol shouldn't be tested. */
     if (!firstSymbol) secondSymbol = 0;
   } else {
     secondSymbol = 0;
   }
   lastSymbol = mString[mStringLen - 1];
-  if (mathToken[lastSymbol].tokenType != (char)con__) lastSymbol = 0;
+  if (mathToken[lastSymbol].tokenType != (char)con_) lastSymbol = 0;
   /* (End of common section) */
 
 
@@ -1840,7 +1840,7 @@ flag quickMatchFilter(long trialStmt, nmbrString *mString,
      they must match */
   if (firstSymbol) { /* First symbol in mString is a constant */
     if (firstSymbol != stmtMathPtr[0]) {
-      if (mathToken[stmtMathPtr[0]].tokenType == (char)con__) return 0;
+      if (mathToken[stmtMathPtr[0]].tokenType == (char)con_) return 0;
     }
   }
 
@@ -1851,8 +1851,8 @@ flag quickMatchFilter(long trialStmt, nmbrString *mString,
     if (schemeLen > 1) {
       if (secondSymbol != stmtMathPtr[1]) {
         /* Second symbol should be tested only if 1st symbol is a constant */
-        if (mathToken[stmtMathPtr[0]].tokenType == (char)con__) {
-          if (mathToken[stmtMathPtr[1]].tokenType == (char)con__)
+        if (mathToken[stmtMathPtr[0]].tokenType == (char)con_) {
+          if (mathToken[stmtMathPtr[1]].tokenType == (char)con_)
               return 0;
         }
       }
@@ -1861,7 +1861,7 @@ flag quickMatchFilter(long trialStmt, nmbrString *mString,
   if (lastSymbol) { /* Last symbol in mString is a constant */
     if (lastSymbol != stmtMathPtr[schemeLen - 1]) {
       if (mathToken[stmtMathPtr[schemeLen - 1]].tokenType ==
-         (char)con__) return 0;
+         (char)con_) return 0;
     }
   }
 
@@ -1882,7 +1882,7 @@ flag quickMatchFilter(long trialStmt, nmbrString *mString,
   if (dummyVarFlag == 0) {
     breakFlag = 0;
     for (sym = 0; sym < schemeLen; sym++) {
-      if (mathToken[stmtMathPtr[sym]].tokenType == (char)con__) {
+      if (mathToken[stmtMathPtr[sym]].tokenType == (char)con_) {
         if (mathToken[stmtMathPtr[sym]].tmp) {
           breakFlag = 1;
           break;
@@ -2019,7 +2019,7 @@ void initStep(long step)
     }
     return;
   }
-  if (statement[stmt].type == (char)e__ || statement[stmt].type == (char)f__) {
+  if (statement[stmt].type == (char)e_ || statement[stmt].type == (char)f_) {
     /* A hypothesis -- initialize to the actual statement */
     nmbrLet((nmbrString **)(&((proofInProgress.source)[step])),
         statement[stmt].mathString);
@@ -2063,7 +2063,7 @@ void initStep(long step)
   nmbrTmpPtr = (proofInProgress.source)[step];
   mlen = nmbrLen(nmbrTmpPtr);
   for (sym = 0; sym < mlen; sym++) {
-    if (mathToken[nmbrTmpPtr[sym]].tokenType == (char)var__) {
+    if (mathToken[nmbrTmpPtr[sym]].tokenType == (char)var_) {
       /* Use dummy var mapping from mathToken[].tmp field */
       nmbrTmpPtr[sym] = mathToken[nmbrTmpPtr[sym]].tmp;
     }
@@ -2073,7 +2073,7 @@ void initStep(long step)
     nmbrTmpPtr = (proofInProgress.target)[reqHypPos[hyp]];
     mlen = nmbrLen(nmbrTmpPtr);
     for (sym = 0; sym < mlen; sym++) {
-      if (mathToken[nmbrTmpPtr[sym]].tokenType == (char)var__) {
+      if (mathToken[nmbrTmpPtr[sym]].tokenType == (char)var_) {
         /* Use dummy var mapping from mathToken[].tmp field */
         nmbrTmpPtr[sym] = mathToken[nmbrTmpPtr[sym]].tmp;
       }
@@ -2153,7 +2153,7 @@ void assignKnownSteps(long startStep, long sbProofLen)
                                     /* Unknown proofs are not handled (yet?) */
     }
 
-    if (statement[stmt].type == (char)e__ || statement[stmt].type == (char)f__){
+    if (statement[stmt].type == (char)e_ || statement[stmt].type == (char)f_){
       /* It's a hypothesis or unknown step; assign step; push the stack */
       nmbrLet((nmbrString **)(&((proofInProgress.source)[pos])),
           statement[stmt].mathString);
@@ -2224,7 +2224,7 @@ void assignKnownSteps(long startStep, long sbProofLen)
       }
       for (schemePos = 0; schemePos < schemeLen; schemePos++) {
         if (mathToken[scheme[schemePos]].tokenType
-            != (char)var__) continue;
+            != (char)var_) continue;
         /* Use dummy var mapping from mathToken[].tmp field */
         scheme[schemePos] = mathToken[scheme[schemePos]].tmp;
       }
@@ -2234,7 +2234,7 @@ void assignKnownSteps(long startStep, long sbProofLen)
       assLen = nmbrLen(assertion);
       for (assPos = 0; assPos < assLen; assPos++) {
         if (mathToken[assertion[assPos]].tokenType
-            != (char)var__) continue;
+            != (char)var_) continue;
         /* Use dummy var mapping from mathToken[].tmp field */
         assertion[assPos] = mathToken[assertion[assPos]].tmp;
       }
@@ -2806,8 +2806,8 @@ long subProofLen(nmbrString *proof, long endStep)
     if (stmt < 0) { /* Unknown step or local label */
       continue;
     }
-    if (statement[stmt].type == (char)e__ ||
-        statement[stmt].type == (char)f__) { /* A hypothesis */
+    if (statement[stmt].type == (char)e_ ||
+        statement[stmt].type == (char)f_) { /* A hypothesis */
       continue;
     }
     lvl = lvl + statement[stmt].numReqHyp;
@@ -2873,8 +2873,8 @@ char checkDummyVarIsolation(long testStep) /* 0=1st step, 1=2nd, etc. */
      testStep's dummy vars, then the dummy vars are "isolated" */
   parentStmt = (proofInProgress.proof)[parentStep];
   if (parentStmt < 0) bug(1845);
-  if (statement[parentStmt].type != (char)a__ &&
-      statement[parentStmt].type != (char)p__) bug(1846);
+  if (statement[parentStmt].type != (char)a_ &&
+      statement[parentStmt].type != (char)p_) bug(1846);
   bugCheckFlag = 0;
   prfStep = parentStep - 1;
   for (hyp = statement[parentStmt].numReqHyp - 1; hyp >= 0; hyp--) {
@@ -2888,7 +2888,7 @@ char checkDummyVarIsolation(long testStep) /* 0=1st step, 1=2nd, etc. */
       continue;
     }
     hypType = statement[statement[parentStmt].reqHypList[hyp]].type;
-    if (hypType == (char)e__) {
+    if (hypType == (char)e_) {
       /* Check whether (other) $e hyps of parent step have the dummy vars
          of testStep */
       for (tokpos = 0; tokpos < nmbrLen((proofInProgress.target)[prfStep]);
@@ -2903,7 +2903,7 @@ char checkDummyVarIsolation(long testStep) /* 0=1st step, 1=2nd, etc. */
           }
         }
       } /* next tokpos */
-    } else if (hypType != (char)f__) {
+    } else if (hypType != (char)f_) {
       bug(1848);
     }
   } /* next hyp */
@@ -2934,12 +2934,12 @@ long getParentStep(long startStep) /* 0=1st step, 1=2nd, etc. */
     if (stmt < 0) { /* Unknown step or local label */
       if (stmt != -(long)'?') bug(1842); /* We don't handle compact proofs */
       stackPtr++;
-    } else if (statement[stmt].type == (char)e__ ||
-          statement[stmt].type == (char)f__) { /* A hypothesis */
+    } else if (statement[stmt].type == (char)e_ ||
+          statement[stmt].type == (char)f_) { /* A hypothesis */
       stackPtr++;
     } else {
-      if (statement[stmt].type != (char)a__ &&
-          statement[stmt].type != (char)p__) bug(1843);
+      if (statement[stmt].type != (char)a_ &&
+          statement[stmt].type != (char)p_) bug(1843);
       stackPtr = stackPtr - statement[stmt].numReqHyp + 1;
       if (stackPtr <= 0) return prfStep; /* This identifies the parent step */
     }
@@ -2985,7 +2985,7 @@ void declareDummyVars(long numNewVars)
         (long)strlen(mathToken[mathTokens + dummyVars].tokenName);
     mathToken[mathTokens + dummyVars].scope = currentScope;
     mathToken[mathTokens + dummyVars].active = 1;
-    mathToken[mathTokens + dummyVars].tokenType = (char)var__;
+    mathToken[mathTokens + dummyVars].tokenType = (char)var_;
     mathToken[mathTokens + dummyVars].tmp = 0;
 
   }

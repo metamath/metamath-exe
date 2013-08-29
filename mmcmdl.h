@@ -4,6 +4,12 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
+#ifndef METAMATH_MMCMDL_H_
+#define METAMATH_MMCMDL_H_
+
+#include "mmvstr.h"
+#include "mmdata.h"
+
 flag processCommandLine(void);
 flag getFullArg(long arg, vstring cmdList);
 void parseCommandLine(vstring line);
@@ -32,4 +38,4 @@ extern flag proofChanged; /* Flag that user made some change to proof in
 extern flag commandEcho; /* Echo full command */
 extern flag memoryStatus; /* Always show memory */
 
-
+#endif /* METAMATH_MMCMDL_H_ */

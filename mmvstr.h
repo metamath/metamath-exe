@@ -121,6 +121,8 @@ with 'let(&' and thus has the same effect as 'let(&'.
 ******************************************************************************/
 
 
+#ifndef METAMATH_MMVSTR_H_
+#define METAMATH_MMVSTR_H_
 
 typedef char* vstring;
 #define vstringdef(x) vstring x = ""
@@ -192,5 +194,4 @@ extern int startTempAllocStack; /* Where to start freeing temporary allocation
    assigned again with let() */
 void makeTempAlloc(vstring s);    /* Make string have temporary allocation to be
                                     released by next let() */
-
-
+#endif /* METAMATH_MMVSTR_H_ */

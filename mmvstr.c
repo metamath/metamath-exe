@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2012  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2013  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -7,8 +7,6 @@
 /*
 mmvstr.c - VMS-BASIC variable length string library routines header
 This is an emulation of the string functions available in VMS BASIC.
-
-Note: For these functions, the first string character position is 1, not 0.
 */
 
 /*** See the comments in mmvstr.h for an explanation of these functions ******/
@@ -56,14 +54,14 @@ vstring tempAlloc(long size)    /* String memory allocation/deallocation */
   if (size) {
     if (tempAllocStackTop>=(MAX_ALLOC_STACK-1)) {
       printf("*** FATAL ERROR ***  Temporary string stack overflow\n");
-#ifdef __STDC__
+#if __STDC__
       fflush(stdout);
 #endif
       bug(2201);
     }
     if (!(tempAllocStack[tempAllocStackTop++]=malloc((size_t)size))) {
       printf("*** FATAL ERROR ***  Temporary string allocation failed\n");
-#ifdef __STDC__
+#if __STDC__
       fflush(stdout);
 #endif
       bug(2202);
@@ -90,7 +88,7 @@ void makeTempAlloc(vstring s)
 {
     if (tempAllocStackTop>=(MAX_ALLOC_STACK-1)) {
       printf("*** FATAL ERROR ***  Temporary string stack overflow\n");
-#ifdef __STDC__
+#if __STDC__
       fflush(stdout);
 #endif
       bug(2203);
@@ -102,6 +100,7 @@ void makeTempAlloc(vstring s)
 }
 
 
+/* 8-Jul-2013 Wolf Lammen - rewritten to simplify it */
 void let(vstring *target,vstring source)        /* String assignment */
 /* This function must ALWAYS be called to make assignment to */
 /* a vstring in order for the memory cleanup routines, etc. */
@@ -109,60 +108,43 @@ void let(vstring *target,vstring source)        /* String assignment */
 /* it is the user's responsibility to initialize it to "" (the */
 /* null string). */
 {
-  long targetLength,sourceLength;
 
-  sourceLength = (long)strlen(source);  /* Save its length */
-  targetLength = (long)strlen(*target); /* Save its length */
+  size_t sourceLength = strlen(source);  /* Save its length */
+  size_t targetLength = strlen(*target); /* Save its length */
 /*E*/if (targetLength) {
-/*E*/  db = db - (targetLength+1)*(long)(sizeof(char));
+/*E*/  db -= (long)targetLength+1;
 /*E*/  /* printf("%ld Deleting %s\n",db,*target); */
 /*E*/}
 /*E*/if (sourceLength) {
-/*E*/  db = db + (sourceLength+1)*(long)(sizeof(char));
+/*E*/  db += (long)sourceLength+1;
 /*E*/  /* printf("%ld Adding %s\n",db,source); */
 /*E*/}
-  if (targetLength) {
-    if (sourceLength) { /* source and target are both nonzero length */
-
-      if (targetLength>=sourceLength) { /* Old string has room for new one */
-        strcpy(*target,source); /* Re-use the old space to save CPU time */
-      } else {
-        /* Free old string space and allocate new space */
-        free(*target);  /* Free old space */
-        *target=malloc((size_t)sourceLength+1); /* Allocate new space */
-        if (!*target) {
-          printf("*** FATAL ERROR ***  String memory couldn't be allocated\n");
-#ifdef __STDC__
-          fflush(stdout);
+  if (targetLength<sourceLength) { /* Old string has not enough room for new one */
+    /* Free old string space and allocate new space */
+    if (targetLength)
+      free(*target);  /* Free old space */
+    *target=malloc(sourceLength+1); /* Allocate new space */
+    if (!*target) {
+      printf("*** FATAL ERROR ***  String memory couldn't be allocated\n");
+#if __STDC__
+      fflush(stdout);
 #endif
-          bug(2204);
-        }
-        strcpy(*target,source);
-      }
-
-    } else {    /* source is 0 length, target is not */
-      free(*target);
-      *target= "";
+      bug(2204);
     }
+  }
+  if (sourceLength) {
+    strcpy(*target,source);
   } else {
-    if (sourceLength) { /* target is 0 length, source is not */
-      *target=malloc((size_t)sourceLength+1);   /* Allocate new space */
-      if (!*target) {
-        printf("*** FATAL ERROR ***  Could not allocate string memory\n");
-#ifdef __STDC__
-        fflush(stdout);
-#endif
-        bug(2205);
-      }
-      strcpy(*target,source);
-    } else {    /* source and target are both 0 length */
-      *target= "";
+    /* empty strings could still be temporaries, so always assign a constant */
+    if (targetLength) {
+      free(*target);
     }
+    *target= "";
   }
 
   tempAlloc(0); /* Free up temporary strings used in expression computation */
 
-}
+} /* let */
 
 
 
@@ -185,7 +167,7 @@ vstring cat(vstring string1,...)        /* String concatenation */
         /* User-provided argument list must terminate with 0 */
     if (numArgs >= MAX_CAT_ARGS - 1) {
       printf("*** FATAL ERROR ***  Too many cat() arguments\n");
-#ifdef __STDC__
+#if __STDC__
       fflush(stdout);
 #endif
       bug(2206);
@@ -232,7 +214,7 @@ vstring linput(FILE *stream,vstring ask,vstring *target)
   char f[10001]; /* Allow up to 10000 characters */
   if (ask) {
     printf("%s",ask);
-#ifdef __STDC__
+#if __STDC__
     fflush(stdout);
 #endif
   }

@@ -114,11 +114,11 @@ void typeStatement(long showStmt,
 #define DEFINITION 2
 #define AXIOM 3
 #define THEOREM 4
-        if (statement[showStmt].type == (char)p__) {
+        if (statement[showStmt].type == (char)p_) {
           subType = THEOREM;
         } else {
-          /* Must be a__ due to filter in main() */
-          if (statement[showStmt].type != (char)a__) bug(228);
+          /* Must be a_ due to filter in main() */
+          if (statement[showStmt].type != (char)a_) bug(228);
           if (strcmp("|-", mathToken[
               (statement[showStmt].mathString)[0]].tokenName)) {
             subType = SYNTAX;
@@ -354,14 +354,14 @@ void typeStatement(long showStmt,
     for (i = 0; i < j; i++) {
       /* Count the number of essential hypotheses */
       if (statement[statement[showStmt].reqHypList[i]].type
-        == (char)e__) k++;
+        == (char)e_) k++;
 
       /* Added 5/26/03 */
       /* For syntax definitions, also include $f hypotheses so user can more
          easily match them in syntax breakdowns of axioms and definitions */
       if (subType == SYNTAX && (texFlag && htmlFlg)) {
         if (statement[statement[showStmt].reqHypList[i]].type
-          == (char)f__) k++;
+          == (char)f_) k++;
       }
 
     }
@@ -382,13 +382,13 @@ void typeStatement(long showStmt,
       }
       for (i = 0; i < j; i++) {
         k = statement[showStmt].reqHypList[i];
-        if (statement[k].type != (char)e__
+        if (statement[k].type != (char)e_
 
             /* Added 5/26/03 */
             /* For syntax definitions, include $f hypotheses so user can more
                easily match them in syntax breakdowns of axioms & definitions */
             && !(subType == SYNTAX && (texFlag && htmlFlg)
-                && statement[k].type == (char)f__)
+                && statement[k].type == (char)f_)
 
             ) continue;
 
@@ -432,7 +432,7 @@ void typeStatement(long showStmt,
 
   let(&str1, "");
   type = statement[showStmt].type;
-  if (type == p__) let(&str1, " $= ...");
+  if (type == p_) let(&str1, " $= ...");
   if (!texFlag)
     let(&str2, cat(str(showStmt), " ", NULL));
   else
@@ -497,8 +497,8 @@ void typeStatement(long showStmt,
      statement.  Now they are printed before (see above 6-Dec-03 comments),
      so some code below is commented out. */
   switch (type) {
-    case a__:
-    case p__:
+    case a_:
+    case p_:
       /* 6-Dec-03  This is not really needed but keeps output consistent
          with previous version.  It puts a blank line before the HTML
          "distinct variable" list. */
@@ -516,7 +516,7 @@ void typeStatement(long showStmt,
       j = nmbrLen(statement[showStmt].reqHypList);
       for (i = 0; i < j; i++) {
         k = statement[showStmt].reqHypList[i];
-        if (statement[k].type != (char)e__ && (!htmlFlg && texFlag))
+        if (statement[k].type != (char)e_ && (!htmlFlg && texFlag))
           continue; /* 9/2/99 Don't put $f's in LaTeX output */
         let(&str2, cat("  ",statement[k].labelName,
             " $", chr(statement[k].type), " ", NULL));
@@ -570,7 +570,7 @@ void typeStatement(long showStmt,
               "Its mandatory disjoint variable pairs are:  ",
               right(str1,3),NULL),"  "," ");
       }
-      if (type == p__ &&
+      if (type == p_ &&
           nmbrLen(statement[showStmt].optHypList)
           && !texFlag) {
         printLongLine(cat(
@@ -582,7 +582,7 @@ void typeStatement(long showStmt,
       nmbrTmpPtr1 = statement[showStmt].optDisjVarsA;
       nmbrTmpPtr2 = statement[showStmt].optDisjVarsB;
       i = nmbrLen(nmbrTmpPtr1);
-      if (i && type == p__) {
+      if (i && type == p_) {
         if (!texFlag) {
           let(&str1, "");
         } else {
@@ -663,7 +663,7 @@ void typeStatement(long showStmt,
       printLongLine(cat(
           "The statement and its hypotheses require the variables:  ",
           str1, NULL), "      ", " ");
-      if (type == p__ &&
+      if (type == p_ &&
           nmbrLen(statement[showStmt].optVarList)) {
         printLongLine(cat(
             "These additional variables are allowed in its proof:  "
@@ -700,7 +700,7 @@ void typeStatement(long showStmt,
        meaningful definition is picked. */
     if (subType == SYNTAX) {
       for (i = showStmt + 1; i <= statements; i++) {
-        if (statement[i].type == (char)a__) {
+        if (statement[i].type == (char)a_) {
           if (!strcmp("|-", mathToken[
               (statement[i].mathString)[0]].tokenName)) {
             /* It's a definition or axiom */
@@ -710,7 +710,7 @@ void typeStatement(long showStmt,
             /* We start with k=1 for 2nd token (1st is wff, class, etc.) */
             for (k = 1; k < statement[showStmt].mathStringLen; k++) {
               if (mathToken[(statement[showStmt].mathString)[k]].
-                  tokenType == (char)con__) {
+                  tokenType == (char)con_) {
                 if (!nmbrElementIn(1, statement[i].mathString,
                     (statement[showStmt].mathString)[k])) {
                   /* The definition being considered doesn't have one of
@@ -780,8 +780,8 @@ void typeStatement(long showStmt,
 
       if (wffToken >= 0) {
         /* Temporarily zap statement type from $a to $p */
-        if (statement[showStmt].type != (char)a__) bug(231);
-        statement[showStmt].type = (char)p__;
+        if (statement[showStmt].type != (char)a_) bug(231);
+        statement[showStmt].type = (char)p_;
         /* Temporarily zap statement with "wff" token in 1st position
            so parseProof will not give errors (in typeProof() call) */
         zapStatement1stToken = (statement[showStmt].mathString)[0];
@@ -851,7 +851,7 @@ void typeStatement(long showStmt,
 
 
         /* Restore the zapped statement structure */
-        statement[showStmt].type = (char)a__;
+        statement[showStmt].type = (char)a_;
         (statement[showStmt].mathString)[0] = zapStatement1stToken;
 
         /* Deallocate storage */
@@ -914,7 +914,7 @@ void typeStatement(long showStmt,
             continue;
           }
           /* It should be a $p */
-          if (statement[m].type != p__) bug(241);
+          if (statement[m].type != p_) bug(241);
           /* Get the pink number */
           let(&str4, "");
           str4 = pinkHTML(m);
@@ -992,7 +992,7 @@ void typeStatement(long showStmt,
     /*** Output the html proof for $p statements ***/
     /* Note that we also output the axiom and definition usage
        lists inside this function */
-    if (statement[showStmt].type == (char)p__) {
+    if (statement[showStmt].type == (char)p_) {
       typeProof(showStmt,
           0 /*pipFlag*/,
           0 /*startStep*/,
@@ -1008,7 +1008,7 @@ void typeStatement(long showStmt,
           0 /*skipRepeatedSteps*/,  /* 28-Jun-2013 nm */
           1 /*texFlag*/,  /* Means either latex or html */
           1 /*htmlFlg*/);
-    } /* if (statement[showStmt].type == (char)p__) */
+    } /* if (statement[showStmt].type == (char)p_) */
   } /* if (htmlFlg && texFlag) */
   /* End of html proof for $p statements */
 
@@ -1225,7 +1225,7 @@ void typeProof(long statemNum,
       stmt = proof[step];
       if (stmt < 0) continue;  /* Unknown or label ref */
       type = statement[stmt].type;
-      if (type == f__ || type == e__  /* It's a hypothesis */
+      if (type == f_ || type == e_  /* It's a hypothesis */
           || statement[stmt].numReqHyp == 0) { /* A statement w/ no hyp */
         for (i = 0; i < step; i++) {
           if (stmt == proof[i]) {
@@ -1459,7 +1459,7 @@ void typeProof(long statemNum,
         hypStep = step - 1;
         hypPtr = statement[stmt].reqHypList;
         for (hyp = statement[stmt].numReqHyp - 1; hyp >=0; hyp--) {
-          if (!essentialFlag || statement[hypPtr[hyp]].type == (char)e__) {
+          if (!essentialFlag || statement[hypPtr[hyp]].type == (char)e_) {
             i = stepRenumber[hypStep];
             if (i == 0) {
               /* if (!(htmlFlg && texFlag)) bug(221); */
@@ -1701,7 +1701,7 @@ void typeProof(long statemNum,
         stmt = proof[step];
         /* Convention: collect all $a's that don't begin with "|-" */
         if (stmt > 0) {
-          if (statement[stmt].type == a__) {
+          if (statement[stmt].type == a_) {
             if (strcmp("|-", mathToken[
                 (statement[stmt].mathString)[0]].tokenName)) {
               statementUsedFlags[stmt] = 'y'; /* Flag to use it */
@@ -1735,16 +1735,16 @@ void typeProof(long statemNum,
           /* i = -1 is the statement itself; i >= 0 is hypotheses i */
           if (i == -1) {
             /* If it's not a $p we shouldn't be here */
-            if (statement[statemNum].type != (char)p__) bug(245);
+            if (statement[statemNum].type != (char)p_) bug(245);
             nmbrTmpPtr1 = NULL_NMBRSTRING;
             nmbrLet(&nmbrTmpPtr1, statement[statemNum].mathString);
           } else {
             /* Ignore $f */
             if (statement[statement[statemNum].reqHypList[i]].type
-                == (char)f__) continue;
+                == (char)f_) continue;
             /* Must therefore be a $e */
             if (statement[statement[statemNum].reqHypList[i]].type
-                != (char)e__) bug(234);
+                != (char)e_) bug(234);
             nmbrTmpPtr1 = NULL_NMBRSTRING;
             nmbrLet(&nmbrTmpPtr1,
                 statement[statement[statemNum].reqHypList[i]].mathString);
@@ -1780,7 +1780,7 @@ void typeProof(long statemNum,
             /* Convention: collect all $a's that don't begin with "|-" */
             if (stmt > 0) {
               if (statementUsedFlags[stmt] == 'n') { /* For slight speedup */
-                if (statement[stmt].type == a__) {
+                if (statement[stmt].type == a_) {
                   if (strcmp("|-", mathToken[
                       (statement[stmt].mathString)[0]].tokenName)) {
                     statementUsedFlags[stmt] = 'y'; /* Flag to use it */
@@ -1826,7 +1826,7 @@ void typeProof(long statemNum,
           let(&tmpStr1, "");
           for (i = 1 /* Skip |- */; i < statement[stmt].mathStringLen; i++) {
             if (mathToken[(statement[stmt].mathString)[i]].tokenType ==
-                (char)con__) {
+                (char)con_) {
               /* Skip parentheses, commas, etc. */
               if (strcmp(mathToken[(statement[stmt].mathString)[i]
                       ].tokenName, "(")
@@ -1897,7 +1897,7 @@ void typeProof(long statemNum,
       /* First get axioms */
       let(&tmpStr, "");
       for (stmt = 1; stmt <= statements; stmt++) {
-        if (statementUsedFlags[stmt] == 'y' && statement[stmt].type == a__) {
+        if (statementUsedFlags[stmt] == 'y' && statement[stmt].type == a_) {
           let(&tmpStr1, left(statement[stmt].labelName, 3));
           if (!strcmp(tmpStr1, "ax-")) {
             if (!tmpStr[0]) {
@@ -1923,7 +1923,7 @@ void typeProof(long statemNum,
       /* 10/10/02 Then get definitions */
       let(&tmpStr, "");
       for (stmt = 1; stmt <= statements; stmt++) {
-        if (statementUsedFlags[stmt] == 'y' && statement[stmt].type == a__) {
+        if (statementUsedFlags[stmt] == 'y' && statement[stmt].type == a_) {
           let(&tmpStr1, left(statement[stmt].labelName, 3));
           if (!strcmp(tmpStr1, "df-")) {
             if (!tmpStr[0]) {
@@ -2161,8 +2161,8 @@ void showDetailStep(long statemNum, long detailStep) {
   let(&tmpStr, cat(tmpStr, tmpStr1, NULL));
 
   if (sourceStmt >= 0) {
-    if (statement[sourceStmt].type == a__
-        || statement[sourceStmt].type == p__) {
+    if (statement[sourceStmt].type == a_
+        || statement[sourceStmt].type == p_) {
       j = nmbrLen(statement[sourceStmt].reqHypList);
       if (j != nmbrLen(getStep.sourceHyps)) bug(209);
       if (!j) {
@@ -2212,8 +2212,8 @@ void showDetailStep(long statemNum, long detailStep) {
   printLongLine(tmpStr, "", " ");
 
   if (sourceStmt >= 0) {
-    if (statement[sourceStmt].type == a__
-        || statement[sourceStmt].type == p__) {
+    if (statement[sourceStmt].type == a_
+        || statement[sourceStmt].type == p_) {
       print2("The source assertion before substitution was:\n");
       printLongLine(cat("    ", statement[sourceStmt].labelName, " $",
           chr(statement[sourceStmt].type), " ", nmbrCvtMToVString(
@@ -2347,7 +2347,7 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
     let(&printString, "");
   }
 
-  if (statement[statemNum].type != p__) {
+  if (statement[statemNum].type != p_) {
     print2("  This is not a provable ($p) statement.\n");
     return;
   }
@@ -2369,7 +2369,7 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
       continue; /* Ignore '?' and local labels */
     }
     if (1) { /* Limit list to $a and $p only */
-      if (statement[stmt].type != a__ && statement[stmt].type != p__) {
+      if (statement[stmt].type != a_ && statement[stmt].type != p_) {
         continue;
       }
     }
@@ -2439,7 +2439,7 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
       j = nmbrLen(statement[stmt].reqHypList);
       for (i = 0; i < j; i++) {
         k = statement[stmt].reqHypList[i];
-        if (!essentialFlag || statement[k].type != f__) {
+        if (!essentialFlag || statement[k].type != f_) {
           let(&str2, cat("  ",statement[k].labelName,
               " $", chr(statement[k].type), " ", NULL));
           if (!texFlag) {
@@ -2456,7 +2456,7 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
 
       let(&str1, "");
       type = statement[stmt].type;
-      if (type == p__) let(&str1, " $= ...");
+      if (type == p_) let(&str1, " $= ...");
       let(&str2, cat("  ", statement[stmt].labelName,
           " $",chr(type), " ", NULL));
       if (!texFlag) {
@@ -2504,7 +2504,7 @@ flag traceProof(long statemNum, /* 20-May-2013 nm */
   flag foundFlag = 0;
 
   /* Make sure we're calling this with $p statements only */
-  if (statement[statemNum].type != (char)p__) bug(249);
+  if (statement[statemNum].type != (char)p_) bug(249);
 
   if (!testOnlyFlag) {  /* 20-May-2013 nm */
     if (axiomFlag) {
@@ -2540,7 +2540,7 @@ flag traceProof(long statemNum, /* 20-May-2013 nm */
         goto TRACE_RETURN;
       }
       if (axiomFlag) {
-        if (statement[stmt].type == a__) {
+        if (statement[stmt].type == a_) {
           let(&outputString, cat(outputString, " ", statement[stmt].labelName,
               NULL));
         }
@@ -2548,9 +2548,9 @@ flag traceProof(long statemNum, /* 20-May-2013 nm */
         let(&outputString, cat(outputString, " ", statement[stmt].labelName,
             NULL));
         switch (statement[stmt].type) {
-          case a__: let(&outputString, cat(outputString, "($a)", NULL)); break;
-          case e__: let(&outputString, cat(outputString, "($e)", NULL)); break;
-          case f__: let(&outputString, cat(outputString, "($f)", NULL)); break;
+          case a_: let(&outputString, cat(outputString, "($a)", NULL)); break;
+          case e_: let(&outputString, cat(outputString, "($e)", NULL)); break;
+          case f_: let(&outputString, cat(outputString, "($f)", NULL)); break;
         }
       }
     } /* End if (statementUsedFlag[stmt] == 'y') */
@@ -2610,7 +2610,7 @@ void traceProofWork(long statemNum,
 
   let(&(*statementUsedFlagsP), string(statements + 1, 'n')); /* Init. to 'no' */
   for (pos = 0; pos < slen; pos++) {
-    if (statement[statementList[pos]].type != p__) {
+    if (statement[statementList[pos]].type != p_) {
       continue; /* Not a $p */
     }
     parseProof(statementList[pos]);
@@ -2636,7 +2636,7 @@ void traceProofWork(long statemNum,
         continue; /* Ignore '?' and local labels */
       }
       if (1) { /* Limit list to $a and $p only */
-        if (statement[stmt].type != a__ && statement[stmt].type != p__) {
+        if (statement[stmt].type != a_ && statement[stmt].type != p_) {
           continue;
         }
       }
@@ -2664,7 +2664,7 @@ long indentShift = 0;
 void traceProofTree(long statemNum,
   flag essentialFlag, long endIndent)
 {
-  if (statement[statemNum].type != p__) {
+  if (statement[statemNum].type != p_) {
     print2("Statement %s is not a $p statement.\n",
         statement[statemNum].labelName);
     return;
@@ -2732,12 +2732,12 @@ void traceProofTreeRec(long statemNum,
         MAX_LINE_LEN + (screenWidth - MAX_LINE_LEN) - 3), "...", NULL));
   }
 
-  if (statement[statemNum].type == p__ || statement[statemNum].type == a__) {
+  if (statement[statemNum].type == p_ || statement[statemNum].type == a_) {
     /* Only print assertions to reduce output bulk */
     print2("%s\n", outputStr);
   }
 
-  if (statement[statemNum].type != p__) {
+  if (statement[statemNum].type != p_) {
     let(&outputStr, "");
     return;
   }
@@ -2789,7 +2789,7 @@ void traceProofTreeRec(long statemNum,
     stmt = localFoundList[pos];
     if (!nmbrElementIn(1, localPrintedList, stmt)) {
       /* Don't include $f, $e in output */
-      if (statement[stmt].type == p__ || statement[stmt].type == a__) {
+      if (statement[stmt].type == p_ || statement[stmt].type == a_) {
         let(&outputStr, cat(outputStr, " ",
             statement[stmt].labelName, NULL));
       }
@@ -2882,7 +2882,7 @@ double countSteps(long statemNum, flag essentialFlag)
   stepDistSum = 0;
   stmtDist[statemNum] = -2; /* Forces at least one assignment */
 
-  if (statement[statemNum].type != (char)p__) {
+  if (statement[statemNum].type != (char)p_) {
     /* $a, $e, or $f */
     stepCount = 1;
     stepNodeCount = 0;
@@ -2925,11 +2925,11 @@ double countSteps(long statemNum, flag essentialFlag)
         /* It has already been computed */
         stepCount = stepCount + stmtCount[stmt];
       }
-      if (statement[stmt].type == (char)p__) {
+      if (statement[stmt].type == (char)p_) {
         /*stepCount--;*/ /* -1 to account for the replacement of this step */
         for (j = 0; j < statement[stmt].numReqHyp; j++) {
           k = statement[stmt].reqHypList[j];
-          if (!essentialFlag || statement[k].type == (char)e__) {
+          if (!essentialFlag || statement[k].type == (char)e_) {
             stepCount--;
           }
         }
@@ -2967,7 +2967,7 @@ double countSteps(long statemNum, flag essentialFlag)
     actualSteps2 = actualSteps; /* Steps w/ single-use subtheorems eliminated */
     actualSubTheorems2 = 0; /* Multiple-use subtheorems only */
     for (i = 1; i < statemNum; i++) {
-      if (statement[i].type == (char)p__ && stmtCount[i] != 0) {
+      if (statement[i].type == (char)p_ && stmtCount[i] != 0) {
         actualSteps = actualSteps + stmtProofLen[i];
         actualSubTheorems++;
         if (stmtUsage[i] > 1) {
@@ -2978,7 +2978,7 @@ double countSteps(long statemNum, flag essentialFlag)
           for (j = 0; j < statement[i].numReqHyp; j++) {
             /* Subtract out hypotheses if subtheorem eliminated */
             k = statement[i].reqHypList[j];
-            if (!essentialFlag || statement[k].type == (char)e__) {
+            if (!essentialFlag || statement[k].type == (char)e_) {
               actualSteps2--;
             }
           }
@@ -3054,7 +3054,7 @@ vstring traceUsage(long statemNum,
   char zapSave;
   flag notEFRec;
 
-  if (statement[statemNum].type == e__ || statement[statemNum].type == f__
+  if (statement[statemNum].type == e_ || statement[statemNum].type == f_
       || recursiveFlag) {
     notEFRec = 0;
   } else {
@@ -3064,7 +3064,7 @@ vstring traceUsage(long statemNum,
   nmbrLet(&statementList, nmbrAddElement(statementList, statemNum));
   lastPos = 1;
   for (stmt = statemNum + 1; stmt <= statements; stmt++) { /* Scan all stmts*/
-    if (statement[stmt].type != p__) continue; /* Ignore if not $p */
+    if (statement[stmt].type != p_) continue; /* Ignore if not $p */
 
     /* Speed up:  Do a character search for the statement label in the proof,
        before parsing the proof.  Skip this if the label refers to a $e or $f
@@ -3125,7 +3125,7 @@ vstring traceUsage(long statemNum,
   let(&statementUsedFlags, string(statements + 1, 'n')); /* Init. to 'no' */
   for (pos = 1; pos < slen; pos++) { /* Start with 1 (ignore traced statement)*/
     stmt = statementList[pos];
-    if (stmt <= statemNum || statement[stmt].type != p__ || stmt > statements)
+    if (stmt <= statemNum || statement[stmt].type != p_ || stmt > statements)
         bug(212);
     statementUsedFlags[stmt] = 'y';
   }
@@ -3266,7 +3266,7 @@ void writeInput(flag cleanFlag, /* 1 = "/ CLEAN" qualifier was chosen */
   for (i = 1; i <= statements + 1; i++) {
 
     /* Added 24-Oct-03 nm */
-    if (cleanFlag && statement[i].type == (char)p__) {
+    if (cleanFlag && statement[i].type == (char)p_) {
       /* Clean out any proof-in-progress (that user has flagged with a ? in its
          date comment field) */
       /* Get the comment section after the statement */
@@ -3373,30 +3373,45 @@ void eraseSource(void)
   /* Deallocate the statement[] array */
   for (i = 1; i <= statements + 1; i++) { /* statements + 1 is a dummy statement
                                           to hold source after last statement */
+
+    /* 28-Aug-2013 am - statement[stmt].reqVarList allocated in
+       parseStatements() was not always freed by eraseSource().  If reqVars==0
+       (in parseStatements()) then statement[i].reqVarList[0]==-1 (in
+       eraseSource()) and so eraseSource() thought that
+       statement[stmt].reqVarList wass not allocated and should not be freed.
+
+       There were similar problems for reqHypList, reqDisjVarsA, reqDisjVarsB,
+       reqDisjVarsStmt, optDisjVarsA, optDisjVarsB, optDisjVarsStmt.
+
+       These were fixed by comparing to NULL_NMBRSTRING instead of -1.
+
+       I think other files (mathString, proofString, optHypList, optVarList)
+       should be also fixed, but I could not find simple example for memory
+       leak and leave it as it was.  */
     if (statement[i].labelName[0]) free(statement[i].labelName);
     if (statement[i].mathString[0] != -1)
         poolFree(statement[i].mathString);
     if (statement[i].proofString[0] != -1)
         poolFree(statement[i].proofString);
-    if (statement[i].reqHypList[0] != -1)
+    if (statement[i].reqHypList != NULL_NMBRSTRING)
         poolFree(statement[i].reqHypList);
     if (statement[i].optHypList[0] != -1)
         poolFree(statement[i].optHypList);
-    if (statement[i].reqVarList[0] != -1)
+    if (statement[i].reqVarList != NULL_NMBRSTRING)
         poolFree(statement[i].reqVarList);
     if (statement[i].optVarList[0] != -1)
         poolFree(statement[i].optVarList);
-    if (statement[i].reqDisjVarsA[0] != -1)
+    if (statement[i].reqDisjVarsA != NULL_NMBRSTRING)
         poolFree(statement[i].reqDisjVarsA);
-    if (statement[i].reqDisjVarsB[0] != -1)
+    if (statement[i].reqDisjVarsB != NULL_NMBRSTRING)
         poolFree(statement[i].reqDisjVarsB);
-    if (statement[i].reqDisjVarsStmt[0] != -1)
+    if (statement[i].reqDisjVarsStmt != NULL_NMBRSTRING)
         poolFree(statement[i].reqDisjVarsStmt);
-    if (statement[i].optDisjVarsA[0] != -1)
+    if (statement[i].optDisjVarsA != NULL_NMBRSTRING)
         poolFree(statement[i].optDisjVarsA);
-    if (statement[i].optDisjVarsB[0] != -1)
+    if (statement[i].optDisjVarsB != NULL_NMBRSTRING)
         poolFree(statement[i].optDisjVarsB);
-    if (statement[i].optDisjVarsStmt[0] != -1)
+    if (statement[i].optDisjVarsStmt != NULL_NMBRSTRING)
         poolFree(statement[i].optDisjVarsStmt);
 
     /* See if the proof was "saved" */
@@ -3410,6 +3425,13 @@ void eraseSource(void)
     }
 
   } /* Next i (statement) */
+
+  /* 28-Aug-2013 am - mathToken[mathTokens].tokenName is assigned in
+     parseMathDecl() by let().  eraseSource() should free every mathToken and
+     there are (mathTokens + dummyVars) tokens. */
+  for (i = 0; i <= mathTokens + dummyVars; i++) {
+    let(&mathToken[i].tokenName,"");
+  }
 
   memFreePoolPurge(0);
   statements = 0;
@@ -3489,6 +3511,7 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
     print2("\n");
 #else
     print2("%s\n", header);
+    let(&header, "");
 #endif
 #endif
   }
@@ -3502,7 +3525,7 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
       }
     }
 
-    if (statement[i].type != p__) continue;
+    if (statement[i].type != p_) continue;
     /* 30-Jan-06 nm Added single-character-match argument */
     if (!matchesList(statement[i].labelName, labelMatch, '*', '?')) continue;
     if (strcmp("*",labelMatch) && verifyFlag) {
@@ -3710,10 +3733,10 @@ long getStatementNum(vstring stmtName, /* Possibly with wildcards */
     if (!statement[stmt].labelName[0]) continue; /* No label */
     typ = statement[stmt].type;
 
-    if ((!aAllowed && typ == (char)a__)
-        ||(!pAllowed && typ == (char)p__)
-        ||(!eAllowed && typ == (char)e__)
-        ||(!fAllowed && typ == (char)f__)) {
+    if ((!aAllowed && typ == (char)a_)
+        ||(!pAllowed && typ == (char)p_)
+        ||(!eAllowed && typ == (char)e_)
+        ||(!fAllowed && typ == (char)f_)) {
       continue; /* Statement type is not allowed */
     }
 
@@ -3732,7 +3755,7 @@ long getStatementNum(vstring stmtName, /* Possibly with wildcards */
                                              in case of PROVE call */
       /* If a $e or $f, it must be a hypothesis of the statement
          being proved */
-      if (typ == (char)e__ || typ == (char)f__){
+      if (typ == (char)e_ || typ == (char)f_){
         if (!nmbrElementIn(1, statement[maxStmt].reqHypList, stmt) &&
             !nmbrElementIn(1, statement[maxStmt].optHypList, stmt))
             continue;

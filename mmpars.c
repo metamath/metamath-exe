@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2012  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2013  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -629,13 +629,13 @@ void parseKeywords(void)
     }
     if (insideComment) continue;
     switch (fbPtr[0]) {
-      case 'c':  type = c__; break;
-      case 'v':  type = v__; break;
-      case 'e':  type = e__; break;
-      case 'f':  type = f__; break;
-      case 'd':  type = d__; break;
-      case 'a':  type = a__; dollarACount++; break;
-      case 'p':  type = p__; dollarPCount++; break;
+      case 'c':  type = c_; break;
+      case 'v':  type = v_; break;
+      case 'e':  type = e_; break;
+      case 'f':  type = f_; break;
+      case 'd':  type = d_; break;
+      case 'a':  type = a_; dollarACount++; break;
+      case 'p':  type = p_; dollarPCount++; break;
       case '{':  type = lb_; break;
       case '}':  type = rb_; break;
     }
@@ -650,7 +650,7 @@ void parseKeywords(void)
       case '{':
       case '}':
         if (mode != 0) {
-          if (mode == 2 || type != p__) {
+          if (mode == 2 || type != p_) {
             sourceError(fbPtr - 1, 2, statements,
                 "Expected \"$.\" here.");
           } else {
@@ -677,14 +677,14 @@ void parseKeywords(void)
           continue;
         }
         if (mode == 1) {
-          if (type == p__ && fbPtr[0] != '=') {
+          if (type == p_ && fbPtr[0] != '=') {
             sourceError(fbPtr - 1, 2, statements,
                 "Expected \"$=\" here.");
             if (fbPtr[0] == '.') {
               mode = 2; /* If $. switch mode to help reduce error msgs */
             }
           }
-          if (type != p__ && fbPtr[0] != '.') {
+          if (type != p_ && fbPtr[0] != '.') {
             sourceError(fbPtr - 1, 2, statements,
                 "Expected \"$.\" here.");
             continue;
@@ -693,7 +693,7 @@ void parseKeywords(void)
           statement[statements].mathSectionPtr = startSection;
           statement[statements].mathSectionLen = fbPtr - startSection - 1;
           startSection = fbPtr + 1;
-          if (type == p__ && mode != 2 /* !error msg case */) {
+          if (type == p_ && mode != 2 /* !error msg case */) {
             mode = 2; /* Switch mode to proof section */
           } else {
             mode = 0;
@@ -737,7 +737,7 @@ void parseKeywords(void)
      number which also counts $f, $e, $c, $v, ${, $} */
   j = 0;
   for (i = 1; i <= statements; i++) {
-    if (statement[i].type == a__ || statement[i].type == p__) {
+    if (statement[i].type == a_ || statement[i].type == p_) {
       j++;
       statement[i].pinkNumber = j;
     }
@@ -791,11 +791,11 @@ void parseLabels(void)
         }
       }
       switch (type) {
-        case d__:
+        case d_:
         case rb_:
         case lb_:
-        case v__:
-        case c__:
+        case v_:
+        case c_:
           sourceError(fbPtr, j, stmt,
                 "A label isn't allowed for this statement type.");
       }
@@ -812,10 +812,10 @@ void parseLabels(void)
       }
     } else {
       switch (type) {
-        case e__:
-        case f__:
-        case a__:
-        case p__:
+        case e_:
+        case f_:
+        case a_:
+        case p_:
           sourceError(fbPtr, 2, stmt,
                 "A label is required for this statement type.");
       }
@@ -912,8 +912,8 @@ void parseMathDecl(void)
   potentialSymbols = 0;
   for (stmt = 1; stmt <= statements; stmt++) {
     switch (statement[stmt].type) {
-      case c__:
-      case v__:
+      case c_:
+      case v_:
         potentialSymbols = potentialSymbols + statement[stmt].mathSectionLen;
     }
   }
@@ -927,8 +927,8 @@ void parseMathDecl(void)
   mathTokens = 0;
   for (stmt = 1; stmt <= statements; stmt++) {
     switch (statement[stmt].type) {
-      case c__:
-      case v__:
+      case c_:
+      case v_:
         oldMathTokens = mathTokens;
         fbPtr = statement[stmt].mathSectionPtr;
         while (1) {
@@ -943,10 +943,10 @@ void parseMathDecl(void)
           /* Create a new math symbol */
           mathToken[mathTokens].tokenName = tmpPtr;
           mathToken[mathTokens].length = j;
-          if (statement[stmt].type == c__) {
-            mathToken[mathTokens].tokenType = (char)con__;
+          if (statement[stmt].type == c_) {
+            mathToken[mathTokens].tokenType = (char)con_;
           } else {
-            mathToken[mathTokens].tokenType = (char)var__;
+            mathToken[mathTokens].tokenType = (char)var_;
           }
           mathToken[mathTokens].active = 0;
           mathToken[mathTokens].scope = 0; /* Unknown for now */
@@ -988,7 +988,7 @@ void parseMathDecl(void)
   mathToken[mathTokens].tokenName = "";
   let(&mathToken[mathTokens].tokenName, "$|$");
   mathToken[mathTokens].length = 2; /* Never used */
-  mathToken[mathTokens].tokenType = (char)con__;
+  mathToken[mathTokens].tokenType = (char)con_;
   mathToken[mathTokens].active = 0; /* Never used */
   mathToken[mathTokens].scope = 0; /* Never used */
   mathToken[mathTokens].tmp = 0; /* Never used */
@@ -1312,14 +1312,14 @@ void parseStatements(void)
               "Too many \"$}\"s at this point.");
         }
         break;
-      case c__:
-      case v__:
+      case c_:
+      case v_:
         /* Scan all symbols declared (they have already been parsed) and
            flag them as active, add to stack, and check for errors */
 
         /* (Not true anymore) */
     /*
-        if (type == c__) {
+        if (type == c_) {
           if (currentScope > 0) {
             sourceError(statement[stmt].labelSectionPtr +
                 statement[stmt].labelSectionLen, 2, stmt,
@@ -1367,11 +1367,11 @@ void parseStatements(void)
             k = 0; /* Flag for $c */
             m = 0; /* Flag for $v */
             for (j = lowerKey; j <= upperKey; j++) {
-              if (mathToken[mathKey[j]].tokenType == (char)con__) k = 1;
-              if (mathToken[mathKey[j]].tokenType == (char)var__) m = 1;
+              if (mathToken[mathKey[j]].tokenType == (char)con_) k = 1;
+              if (mathToken[mathKey[j]].tokenType == (char)var_) m = 1;
             }
-            if ((k == 1 && mathToken[tokenNum].tokenType == (char)var__) ||
-                (m == 1 && mathToken[tokenNum].tokenType == (char)con__)) {
+            if ((k == 1 && mathToken[tokenNum].tokenType == (char)var_) ||
+                (m == 1 && mathToken[tokenNum].tokenType == (char)con_)) {
                mathTokenError(i, nmbrTmpPtr, stmt,
                    "A symbol may not be both a constant and a variable.");
             }
@@ -1383,7 +1383,7 @@ void parseStatements(void)
           mathToken[tokenNum].active = 1;
           mathToken[tokenNum].scope = currentScope;
 
-          if (type == v__) {
+          if (type == v_) {
 
             /* Identify this stack position in the mathToken array, for use
                by the hypothesis variable scan below */
@@ -1406,11 +1406,11 @@ void parseStatements(void)
           i++;
         }
         break;
-      case d__:
-      case f__:
-      case e__:
-      case a__:
-      case p__:
+      case d_:
+      case f_:
+      case e_:
+      case a_:
+      case p_:
         /* Make sure we have enough working space */
         mathSectionLen = statement[stmt].mathSectionLen;
         if (wrkLen < mathSectionLen) {
@@ -1539,7 +1539,7 @@ void parseStatements(void)
             mathToken[tokenNum].tokenName = "";
             let(&mathToken[tokenNum].tokenName, left(fbPtr,symbolLen));
             mathToken[tokenNum].length = symbolLen;
-            mathToken[tokenNum].tokenType = (char)var__;
+            mathToken[tokenNum].tokenType = (char)var_;
             /* Prevent stray pointers later */
             mathToken[tokenNum].tmp = 0; /* Location in active variable stack */
             if (!activeVarStackPtr) { /* Make a ficticious entry */
@@ -1550,22 +1550,22 @@ void parseStatements(void)
             }
           }
 
-          if (type == d__) {
-            if (mathToken[tokenNum].tokenType == (char)con__) {
+          if (type == d_) {
+            if (mathToken[tokenNum].tokenType == (char)con_) {
               sourceError(fbPtr, symbolLen, stmt,
                   "Constant symbols are not allowed in a \"$d\" statement.");
             }
           } else {
             if (mathStringLen == 0) {
-              if (mathToken[tokenNum].tokenType != (char)con__) {
+              if (mathToken[tokenNum].tokenType != (char)con_) {
                 sourceError(fbPtr, symbolLen, stmt, cat(
                     "The first symbol must be a constant in a \"$",
                     chr(type), "\" statement.", NULL));
               }
             } else {
-              if (type == f__) {
+              if (type == f_) {
                 if (mathStringLen == 1) {
-                  if (mathToken[tokenNum].tokenType == (char)con__) {
+                  if (mathToken[tokenNum].tokenType == (char)con_) {
                     sourceError(fbPtr, symbolLen, stmt,
                 "The second symbol must be a variable in a \"$f\" statement.");
                   }
@@ -1592,7 +1592,7 @@ void parseStatements(void)
           }
         } /* End while */
 
-        if (type == d__) {
+        if (type == d_) {
           if (mathStringLen < 2) {
             sourceError(fbPtr, 2, stmt,
                 "A \"$d\" statement requires at least two variable symbols.");
@@ -1602,7 +1602,7 @@ void parseStatements(void)
             sourceError(fbPtr, 2, stmt,
                 "This statement type requires at least one math symbol.");
           } else {
-            if (type == f__ && mathStringLen < 2) {
+            if (type == f_ && mathStringLen < 2) {
               sourceError(fbPtr, 2, stmt,
                   "A \"$f\" statement requires two math symbols.");
             }
@@ -1636,10 +1636,10 @@ void parseStatements(void)
        indicated.) */
 
     switch (type) {
-      case f__:
-      case e__:
-      case a__:
-      case p__:
+      case f_:
+      case e_:
+      case a_:
+      case p_:
         /* These types have labels.  Make the label active, and make sure that
            there is no other identical label that is also active. */
         /* (If the label name is unique, we don't have to worry about this.) */
@@ -1685,7 +1685,7 @@ void parseStatements(void)
 
 
     switch (type) {
-      case d__:
+      case d_:
 
         nmbrTmpPtr = statement[stmt].mathString;
         /* Stack all possible pairs of disjoint variables */
@@ -1760,8 +1760,8 @@ void parseStatements(void)
 
         break; /* Switch case break */
 
-      case f__:
-      case e__:
+      case f_:
+      case e_:
 
         /* Increase stack size if necessary */
         /* For convenience, we will keep the size greater than the sum of
@@ -1785,7 +1785,7 @@ void parseStatements(void)
         }
 
         /* Add the hypothesis to the stack */
-        if (type == e__) {
+        if (type == e_) {
           activeEHypStack[activeEHypStackPtr].statemNum = stmt;
           activeEHypStack[activeEHypStackPtr].scope = currentScope;
         } else {
@@ -1799,7 +1799,7 @@ void parseStatements(void)
         nmbrTmpPtr = statement[stmt].mathString;
         k = nmbrTmpPtr[j]; /* Math symbol number */
         while (k != -1) {
-          if (mathToken[k].tokenType == (char)var__) {
+          if (mathToken[k].tokenType == (char)var_) {
             if (!activeVarStack[mathToken[k].tmp].tmpFlag) {
               /* Variable has not been already added to list */
               wrkVarPtr1[reqVars] = k;
@@ -1819,7 +1819,7 @@ void parseStatements(void)
           activeVarStack[mathToken[nmbrTmpPtr[i]].tmp].tmpFlag = 0;
         }
 
-        if (type == e__) {
+        if (type == e_) {
           activeEHypStack[activeEHypStackPtr].varList = nmbrTmpPtr;
           activeEHypStackPtr++;
         } else {
@@ -1836,8 +1836,8 @@ void parseStatements(void)
 
         break;  /* Switch case break */
 
-      case a__:
-      case p__:
+      case a_:
+      case p_:
 
         /* Scan this statement for required variables */
         reqVars = 0;
@@ -1845,7 +1845,7 @@ void parseStatements(void)
         nmbrTmpPtr = statement[stmt].mathString;
         k = nmbrTmpPtr[j]; /* Math symbol number */
         while (k != -1) {
-          if (mathToken[k].tokenType == (char)var__) {
+          if (mathToken[k].tokenType == (char)var_) {
             if (!activeVarStack[mathToken[k].tmp].tmpFlag) {
               /* Variable has not been already added to list */
               wrkVarPtr1[reqVars] = k;
@@ -1967,7 +1967,7 @@ void parseStatements(void)
         nmbrTmpPtr = statement[stmt].mathString;
         k = nmbrTmpPtr[j]; /* Math symbol number */
         while (k != -1) {
-          if (mathToken[k].tokenType == (char)var__) {
+          if (mathToken[k].tokenType == (char)var_) {
             if (activeVarStack[mathToken[k].tmp].tmpFlag == 2) {
               /* The variable did not appear in any hypothesis */
               mathTokenError(j, statement[stmt].mathString, stmt,
@@ -2021,7 +2021,7 @@ void parseStatements(void)
 
         /* We have finished determining optional $f hyps, so allocate the
            permanent list for the statement array */
-        if (type == p__) { /* Optional ones are not used by $a statements */
+        if (type == p_) { /* Optional ones are not used by $a statements */
           nmbrTmpPtr = poolFixedMalloc((optHyps + 1)
               * (long)(sizeof(nmbrString)));
           /* if (!nmbrTmpPtr) outOfMemory("#34 (optHyps)"); */ /* Not nec. w/ poolMalloc */
@@ -2088,7 +2088,7 @@ void parseStatements(void)
         /* We have finished determining optional $d hyps, so allocate the
            permanent list for the statement array */
 
-        if (type == p__) { /* Optional ones are not used by $a statements */
+        if (type == p_) { /* Optional ones are not used by $a statements */
 
           nmbrTmpPtr = poolFixedMalloc((optHyps + 1)
               * (long)(sizeof(nmbrString)));
@@ -2129,7 +2129,7 @@ void parseStatements(void)
         }
         /* We have finished determining optional variables, so allocate the
            permanent list for the statement array */
-        if (type == p__) { /* Optional ones are not used by $a statements */
+        if (type == p_) { /* Optional ones are not used by $a statements */
           nmbrTmpPtr = poolFixedMalloc((optVars + 1)
               * (long)(sizeof(nmbrString)));
           /* if (!nmbrTmpPtr) outOfMemory("#31 (optVars)"); */ /* Not nec. w/ poolMalloc */
@@ -2152,7 +2152,7 @@ void parseStatements(void)
        Before the user had to allow this manually with
        SET EMPTY_SUBSTITUTION ON; now it is done automatically. */
     type = statement[stmt].type;
-    if (type == a__) {
+    if (type == a_) {
       if (minSubstLen) {
         if (statement[stmt].mathStringLen == 1) {
           minSubstLen = 0;
@@ -2181,7 +2181,7 @@ void parseStatements(void)
     /* ??? To do (maybe):  This might be better placed in-line with the scan
        above, for faster speed and to get the pointer to the token for the
        error message, but it would require a careful code analysis above. */
-    if (type == a__ || type == p__) {
+    if (type == a_ || type == p_) {
       /* Scan each hypothesis (and the statement itself in last pass) */
       reqHyps = nmbrLen(statement[stmt].reqHypList);
       for (i = 0; i <= reqHyps; i++) {
@@ -2190,7 +2190,7 @@ void parseStatements(void)
         } else {
           m = stmt;
         }
-        if (statement[m].type != f__) { /* Check $e,$a,$p */
+        if (statement[m].type != f_) { /* Check $e,$a,$p */
           /* This block implements: "Each variable in a $e, $a, or $p
              statement must exist in an active $f statement" (Metamath
              book p. 94). */
@@ -2198,13 +2198,13 @@ void parseStatements(void)
           /* Scan all the vars in the $e (i<reqHyps) or $a/$p (i=reqHyps) */
           for (j = 0; j < statement[m].mathStringLen; j++) {
             tokenNum = nmbrTmpPtr[j];
-            if (mathToken[tokenNum].tokenType == (char)con__) continue;
+            if (mathToken[tokenNum].tokenType == (char)con_) continue;
                                             /* Ignore constants */
             p = 0;  /* Initialize flag that we found a $f with the variable */
             /* Scan all the mandatory $f's before this $e,$a,$p */
             for (k = 0; k < i; k++) {
               n = (statement[stmt].reqHypList)[k];
-              if (statement[n].type != f__) continue; /* Only check $f */
+              if (statement[n].type != f_) continue; /* Only check $f */
               if (statement[n].mathStringLen != 2) continue; /* This was
                   already verified earlier; but if there was an error, don't
                   cause memory violation by going out of bounds */
@@ -2221,7 +2221,7 @@ void parseStatements(void)
                   "\" does not appear in an active \"$f\" statement.", NULL));
             }
           } /* next j (variable scan) */
-        } else { /* statement[m].type == f__ */
+        } else { /* statement[m].type == f_ */
           /* This block implements: "There may not be be two active $f
              statements containing the same variable" (Metamath book p. 94). */
           /* Check for duplicate vars in active $f's */
@@ -2232,7 +2232,7 @@ void parseStatements(void)
           /* Scan all the mandatory $f's before this $f */
           for (k = 0; k < i; k++) {
             n = (statement[stmt].reqHypList)[k];
-            if (statement[n].type != f__) continue; /* Only check $f */
+            if (statement[n].type != f_) continue; /* Only check $f */
             if (statement[n].mathStringLen != 2) continue;  /* This was
                   already verified earlier; but if there was an error, don't
                   cause memory violation by going out of bounds */
@@ -2276,7 +2276,7 @@ void parseStatements(void)
 /*E*/if(db5)print2("Number of label keys before filter: %ld",numLabelKeys);
   for (i = 0; i < numLabelKeys; i++) {
     type = statement[labelKeyBase[i]].type;
-    if (type == e__ || type == f__) {
+    if (type == e_ || type == f_) {
       j++;
     } else {
       labelKeyBase[i - j] = labelKeyBase[i];
@@ -2306,6 +2306,7 @@ void parseStatements(void)
   free(activeFHypStack);
   free(wrkHypPtr1);
   free(wrkHypPtr2);
+  free(wrkHypPtr3);  /* 28-Aug-2013 am - added missing free */
   free(activeDisjHypStack);
   free(wrkDisjHPtr1A);
   free(wrkDisjHPtr1B);
@@ -2343,7 +2344,7 @@ char parseProof(long statemNum)
   void *voidPtr; /* bsearch returned value */
   vstring tmpStrPtr;
 
-  if (statement[statemNum].type != p__) {
+  if (statement[statemNum].type != p_) {
     bug(1723); /* 13-Oct-05 nm - should never get here */
     wrkProof.errorSeverity = 4;
     return (4); /* Do nothing if not $p */
@@ -2753,7 +2754,7 @@ char parseProof(long statemNum)
 
     /* It's an assertion ($a or $p) */
     j = *(long *)voidPtr; /* Statement number */
-    if (statement[j].type != a__ && statement[j].type != p__) bug(1710);
+    if (statement[j].type != a_ && statement[j].type != p_) bug(1710);
     wrkProof.proofString[step] = j; /* Proof string */
 
     if (j >= statemNum) { /* Error */
@@ -2819,11 +2820,11 @@ char parseProof(long statemNum)
     nmbrTmpPtr = statement[j].reqHypList;
     numReqHyp = statement[j].numReqHyp;
     for (i = 0; i < numReqHyp; i++) {
-      if (statement[nmbrTmpPtr[i]].type == e__) {
+      if (statement[nmbrTmpPtr[i]].type == e_) {
         m = wrkProof.RPNStackPtr - numReqHyp + i;
         k = wrkProof.proofString[wrkProof.RPNStack[m]];
         if (k > 0) {
-          if (statement[k].type == f__) {
+          if (statement[k].type == f_) {
             if (!wrkProof.errorCount) {
               sourceError(fbPtr, tokLength, statemNum, cat(
                   "Statement \"",statement[j].labelName,"\" (proof step ",
@@ -2952,7 +2953,7 @@ char parseCompressedProof(long statemNum)
   }
 
 
-  if (statement[statemNum].type != p__) {
+  if (statement[statemNum].type != p_) {
     bug(1724); /* 13-Oct-05 nm - should never get here */
     return (4); /* Do nothing if not $p */
   }
@@ -3155,7 +3156,7 @@ char parseCompressedProof(long statemNum)
 
     /* It's an assertion ($a or $p) */
     j = *(long *)voidPtr; /* Statement number */
-    if (statement[j].type != a__ && statement[j].type != p__) bug(1714);
+    if (statement[j].type != a_ && statement[j].type != p_) bug(1714);
     wrkProof.proofString[step] = j; /* Proof string */
 
     if (j >= statemNum) { /* Error */
@@ -3272,8 +3273,8 @@ char parseCompressedProof(long statemNum)
         if (stmt < 0) { /* Local label or '?' */
           hypLocUnkFlag = 1;
         } else {
-          if (statement[stmt].type != (char)a__ &&
-              statement[stmt].type != (char)p__) hypLocUnkFlag = 1;
+          if (statement[stmt].type != (char)a_ &&
+              statement[stmt].type != (char)p_) hypLocUnkFlag = 1;
                                                                /* Hypothesis */
         }
         if (hypLocUnkFlag) { /* Hypothesis, local label ref, or unknown step */
@@ -3321,11 +3322,11 @@ char parseCompressedProof(long statemNum)
           nmbrTmpPtr = statement[stmt].reqHypList;
           numReqHyp = statement[stmt].numReqHyp;
           for (i = 0; i < numReqHyp; i++) {
-            if (statement[nmbrTmpPtr[i]].type == e__) {
+            if (statement[nmbrTmpPtr[i]].type == e_) {
               m = wrkProof.RPNStackPtr - numReqHyp + i;
               k = wrkProof.proofString[wrkProof.RPNStack[m]];
               if (k > 0) {
-                if (statement[k].type == f__) {
+                if (statement[k].type == f_) {
                   if (!wrkProof.errorCount) {
                     sourceError(fbPtr, tokLength, statemNum, cat(
                         "Statement \"", statement[stmt].labelName,
@@ -3422,8 +3423,8 @@ char parseCompressedProof(long statemNum)
         if (stmt < 0) { /* Local label or '?' */
           hypLocUnkFlag = 1;
         } else {
-          if (statement[stmt].type != (char)a__ &&
-              statement[stmt].type != (char)p__) hypLocUnkFlag = 1;
+          if (statement[stmt].type != (char)a_ &&
+              statement[stmt].type != (char)p_) hypLocUnkFlag = 1;
                                                                 /* Hypothesis */
         }
         if (hypLocUnkFlag) { /* Hypothesis, local label ref, or unknown step */
@@ -3604,7 +3605,7 @@ void rawSourceError(char *startFile, char *ptr, long tokLen, long lineNum,
   if (endLine - startLine + 1 < 0) bug(1721);
   memcpy(errLine, startLine, (size_t)(endLine - startLine) + 1);
   errorMessage(errLine, lineNum, ptr - startLine + 1, tokLen, errorMsg,
-      fileName, 0, (char)_error);
+      fileName, 0, (char)error_);
   print2("\n");
   let(&errLine,"");
   let(&errorMsg,"");
@@ -3685,10 +3686,10 @@ void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
   if (!lineNum) {
     /* Not a source file parse */
     errorMessage(errLine, lineNum, ptr - startLine + 1, tokLen, errorMsg,
-        NULL, stmtNum, (char)_error);
+        NULL, stmtNum, (char)error_);
   } else {
     errorMessage(errLine, lineNum, ptr - startLine + 1, tokLen, errorMsg,
-        includeCall[i].current_fn, stmtNum, (char)_error);
+        includeCall[i].current_fn, stmtNum, (char)error_);
   }
   let(&errLine,"");
   let(&errorMsg,"");
@@ -3767,7 +3768,7 @@ long lookupLabel(vstring label)
     return (-1);
   }
   statemNum = (*(long *)voidPtr); /* Statement number */
-  if (statement[statemNum].type != a__ && statement[statemNum].type != p__)
+  if (statement[statemNum].type != a_ && statement[statemNum].type != p_)
       bug(1718);
   return (statemNum);
 } /* lookupLabel */
@@ -4057,9 +4058,9 @@ vstring outputStatement(long stmt, flag cleanFlag,
     switch (statement[stmt].type) {
       case lb_: /* ${ */
       case rb_: /* $} */
-      case v__: /* $v */
-      case c__: /* $c */
-      case d__: /* $d */
+      case v_: /* $v */
+      case c_: /* $c */
+      case d_: /* $d */
         /* Get the last newline */
         pos = rinstr(labelSection, "\n");
         /* If there is none, insert it (unless first line in file) */
@@ -4078,10 +4079,10 @@ vstring outputStatement(long stmt, flag cleanFlag,
         }
         let(&labelSection, cat(left(labelSection, pos),
             space(indent), NULL));
-        if (statement[stmt].type == d__) {
+        if (statement[stmt].type == d_) {
           let(&mathSection, edit(mathSection,
               4 /* discard LF */ + 16 /* reduce spaces */));
-          if (previousType == d__) {
+          if (previousType == d_) {
             /* See if the $d can be added to the current line */
             if (dollarDpos + 2 + (signed)(strlen(mathSection)) + 4
                 <= screenWidth) {
@@ -4096,8 +4097,8 @@ vstring outputStatement(long stmt, flag cleanFlag,
           }
         }
         break;
-      case a__:    /* $a */
-      case p__:    /* $p */
+      case a_:    /* $a */
+      case p_:    /* $p */
         /* Get last $( */
         commentStart = rinstr(labelSection,  "$(");
         /* Get last $) */
@@ -4115,7 +4116,7 @@ vstring outputStatement(long stmt, flag cleanFlag,
 
         /* 9-Jul-2011 nm Added */
         /* If previous statement was $e, take out any blank line */
-        if (previousType == e__ && pos == 2 && labelSection[0] == '\n') {
+        if (previousType == e_ && pos == 2 && labelSection[0] == '\n') {
           let(&labelSection, right(labelSection, 2));
           pos = 1;
         }
@@ -4185,8 +4186,8 @@ vstring outputStatement(long stmt, flag cleanFlag,
         let(&labelSection, cat(labelSection, comment,
             space(indent), statement[stmt].labelName, " ", NULL));
         break;
-      case e__:    /* $e */
-      case f__:    /* $f */
+      case e_:    /* $e */
+      case f_:    /* $f */
         pos = rinstr(labelSection, statement[stmt].labelName);
         let(&labelSection, left(labelSection, pos - 1));
         pos = rinstr(labelSection, "\n");
@@ -4200,8 +4201,8 @@ vstring outputStatement(long stmt, flag cleanFlag,
         /* If previous statement is $d or $e and there is no comment after it,
            discard entire rest of label to get rid of redundant blank lines */
         if (stmt > 1) {
-          if ((statement[stmt - 1].type == d__
-                || statement[stmt - 1].type == e__)
+          if ((statement[stmt - 1].type == d_
+                || statement[stmt - 1].type == e_)
               && instr(1, labelSection, "$(") == 0) {
             let(&labelSection, "\n");
           }
@@ -4217,13 +4218,13 @@ vstring outputStatement(long stmt, flag cleanFlag,
     switch (statement[stmt].type) {
       case lb_: /* ${ */
       case rb_: /* $} */
-      case v__: /* $v */
-      case c__: /* $c */
-      case d__: /* $d */
-      case a__: /* $a */
-      case p__: /* $p */
-      case e__: /* $e */
-      case f__: /* $f */
+      case v_: /* $v */
+      case c_: /* $c */
+      case d_: /* $d */
+      case a_: /* $a */
+      case p_: /* $p */
+      case e_: /* $e */
+      case f_: /* $f */
         /* Remove blank lines */
         while (1) {
           pos = instr(1, mathSection, "\n\n");
@@ -4274,7 +4275,7 @@ vstring outputStatement(long stmt, flag cleanFlag,
     }
 
     /* Set previous state for next statement */
-    if (statement[stmt].type == d__) {
+    if (statement[stmt].type == d_) {
       /* dollarDpos is computed in the processing above */
     } else {
       dollarDpos = 0; /* Reset it */
@@ -4292,7 +4293,7 @@ vstring outputStatement(long stmt, flag cleanFlag,
   if (statement[stmt].mathSectionLen) {
     let(&output, cat(output, mathSection, NULL));
     newProofFlag = 0;
-    if (statement[stmt].type == (char)p__) {
+    if (statement[stmt].type == (char)p_) {
       let(&output, cat(output, "$=", proofSection, NULL));
       if (statement[stmt].proofSectionPtr[-1] == 1) {
         /* ASCII 1 is flag that line is not from original source file */

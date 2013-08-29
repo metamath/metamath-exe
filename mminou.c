@@ -96,7 +96,7 @@ flag print2(char* fmt,...)
     /* Warning:  Don't call bug(), because it calls print2. */
     if (pntrLen(backBuffer)) {
       printf("*** BUG #1501\n");
-#ifdef __STDC__
+#if __STDC__
       fflush(stdout);
 #endif
     }
@@ -119,7 +119,7 @@ flag print2(char* fmt,...)
       if (backBufferPos < 1 || backBufferPos > pntrLen(backBuffer)) {
         /* Warning:  Don't call bug(), because it calls print2. */
         printf("*** BUG #1502 %ld\n", backBufferPos);
-#ifdef __STDC__
+#if __STDC__
         fflush(stdout);
 #endif
       }
@@ -127,14 +127,14 @@ flag print2(char* fmt,...)
         printf(
 "Press <return> for more, Q <return> to quit, S <return> to scroll to end... "
           );
-#ifdef __STDC__
+#if __STDC__
         fflush(stdout);
 #endif
       } else {
         printf(
 "Press <return> for more, Q <ret> quit, S <ret> scroll, B <ret> back up... "
          );
-#ifdef __STDC__
+#if __STDC__
         fflush(stdout);
 #endif
       }
@@ -147,7 +147,7 @@ flag print2(char* fmt,...)
           /* Get output from buffer */
           backBufferPos++;
           printf("%s", (vstring)(backBuffer[backBufferPos - 1]));
-#ifdef __STDC__
+#if __STDC__
           fflush(stdout);
 #endif
           continue;
@@ -171,7 +171,7 @@ flag print2(char* fmt,...)
             while (backBufferPos + 1 <= pntrLen(backBuffer)) {
               backBufferPos++;
               printf("%s", (vstring)(backBuffer[backBufferPos - 1]));
-#ifdef __STDC__
+#if __STDC__
               fflush(stdout);
 #endif
             }
@@ -185,7 +185,7 @@ flag print2(char* fmt,...)
           if (c == 'b' || c == 'B') {
             backBufferPos--;
             printf("%s", (vstring)(backBuffer[backBufferPos - 1]));
-#ifdef __STDC__
+#if __STDC__
             fflush(stdout);
 #endif
             continue;
@@ -193,7 +193,7 @@ flag print2(char* fmt,...)
         }
 
         printf("%c", 7); /* Bell */
-#ifdef __STDC__
+#if __STDC__
         fflush(stdout);
 #endif
         continue;
@@ -242,7 +242,7 @@ flag print2(char* fmt,...)
     printf("?Memory may now be corrupted.\n");
     printf("?Save your work, exit, and verify output files.\n");
     printf("?You should recompile with increased PRINTBUFFERSIZE.\n");
-#ifdef __STDC__
+#if __STDC__
     fflush(stdout);
 #endif
   }
@@ -286,7 +286,7 @@ flag print2(char* fmt,...)
       cgetxy(&ii, &jj, stdout);
 #endif
 
-#ifdef __STDC__
+#if __STDC__
       /*
       The following change to mminou.c was necessary on my Unix (Linux)
       system to get the `verify proof *' progress bar to display
@@ -299,7 +299,7 @@ flag print2(char* fmt,...)
 
     } else {
       printf("%s", printBuffer); /* Normal line */
-#ifdef __STDC__
+#if __STDC__
       fflush(stdout);
 #endif
       printedLines++;
@@ -322,7 +322,7 @@ flag print2(char* fmt,...)
     /* Warning:  Don't call bug(), because it calls print2. */
     if (backBufferPos < 1) {
       printf("*** PROGRAM BUG #1504\n");
-#ifdef __STDC__
+#if __STDC__
       fflush(stdout);
 #endif
     }
@@ -349,7 +349,7 @@ flag print2(char* fmt,...)
     printf("*** PROGRAM BUG #1505\n");
     printf("%ld %s\n", lineLen, printBuffer);
     /*printf(NULL);*/  /* Force crash on VAXC to see where it came from */
-#ifdef __STDC__
+#if __STDC__
     fflush(stdout);
 #endif
   }
@@ -357,7 +357,7 @@ flag print2(char* fmt,...)
   /* Warning:  Don't call bug(), because it calls print2. */
   if (nlpos != 0 && nlpos != lineLen) {
     printf("*** PROGRAM BUG #1506\n");
-#ifdef __STDC__
+#if __STDC__
     fflush(stdout);
 #endif
   }
@@ -728,7 +728,7 @@ vstring cmdInput(FILE *stream, vstring ask)
   while (1) { /* For "B" backup loop */
     if (ask != NULL && !commandFileSilentFlag) {
       printf("%s",ask);
-#ifdef __STDC__
+#if __STDC__
       fflush(stdout);
 #endif
     }
@@ -744,7 +744,7 @@ vstring cmdInput(FILE *stream, vstring ask)
       /* Detect input overflow */
       /* Warning:  Don't call bug() - it calls print2 which may call this. */
       printf("***BUG #1508\n");
-#ifdef __STDC__
+#if __STDC__
       fflush(stdout);
 #endif
     }
@@ -753,7 +753,7 @@ vstring cmdInput(FILE *stream, vstring ask)
     /* Detect operating system bug of inputting no characters */
     if (!i) {
       printf("***BUG #1507\n");
-#ifdef __STDC__
+#if __STDC__
       fflush(stdout);
 #endif
 
@@ -764,7 +764,7 @@ vstring cmdInput(FILE *stream, vstring ask)
         /* Warning:  Don't call bug() - it calls print2 which may call this. */
         if (!feof(stream)) {
           printf("***BUG #1524\n");
-#ifdef __STDC__
+#if __STDC__
           fflush(stdout);
 #endif
         }
@@ -781,7 +781,7 @@ vstring cmdInput(FILE *stream, vstring ask)
       i--;
       if (g[i] != '\n') {
         printf("***BUG #1519\n");
-#ifdef __STDC__
+#if __STDC__
         fflush(stdout);
 #endif
       }
@@ -790,7 +790,7 @@ vstring cmdInput(FILE *stream, vstring ask)
     } else {
       if (g[0] != '\n') {
         printf("***BUG #1521\n");
-#ifdef __STDC__
+#if __STDC__
         fflush(stdout);
 #endif
       }
@@ -811,7 +811,7 @@ vstring cmdInput(FILE *stream, vstring ask)
       /* Set variables so only backup buffer will be looked at in print2() */
       backBufferPos = pntrLen(backBuffer) - 1;
       printf("%s", (vstring)(backBuffer[backBufferPos - 1]));
-#ifdef __STDC__
+#if __STDC__
       fflush(stdout);
 #endif
       backFromCmdInput = 1; /* Flag for print2() */
@@ -827,7 +827,7 @@ vstring cmdInput(FILE *stream, vstring ask)
       if (ask == NULL) {
         printf("***BUG #1523\n"); /* 23-Aug-04 In non-SUBMIT
           mode 'ask' won't be NULL, so flag non-fatal bug here just in case */
-#ifdef __STDC__
+#if __STDC__
         fflush(stdout);
 #endif
       }
@@ -985,13 +985,13 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
   }
 
   switch (severity) {
-    case (char)_notice:
+    case (char)notice_:
       let(&prntStr, "?Notice"); break;
-    case (char)_warning:
+    case (char)warning_:
       let(&prntStr, "?Warning"); break;
-    case (char)_error:
+    case (char)error_:
       let(&prntStr, "?Error"); break;
-    case (char)_fatal:
+    case (char)fatal_:
       let(&prntStr, "?Fatal error"); break;
   }
   if (lineNum) {

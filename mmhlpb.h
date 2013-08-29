@@ -4,4 +4,11 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
+#ifndef METAMATH_MMHLPB_H_
+#define METAMATH_MMHLPB_H_
+
+#include "mmvstr.h"
+
 void help2(vstring helpCmd);
+
+#endif /* METAMATH_MMHLPB_H_ */

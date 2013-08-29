@@ -4,6 +4,11 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
+#ifndef METAMATH_MMVERI_H_
+#define METAMATH_MMVERI_H_
+
+#include "mmdata.h"
+
 char verifyProof(long statemNum);
 
 /* assignVar() finds an assignment to substScheme variables that match
@@ -36,3 +41,5 @@ struct getStep_struct {
   pntrString *targetSubstsPntr; /* List of vars w/ ptr to subst math tokens */
 };
 extern struct getStep_struct getStep;
+
+#endif /* METAMATH_MMVERI_H_ */

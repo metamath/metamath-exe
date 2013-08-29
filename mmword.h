@@ -4,6 +4,11 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
+#ifndef METAMATH_MMWORD_H_
+#define METAMATH_MMWORD_H_
+
+#include "mmvstr.h"
+
 /* Tag file changes with revision number tags */
 void revise(FILE *f1_fp, FILE *f2_fp, FILE *f3_fp, vstring addTag, long m);
 
@@ -24,3 +29,5 @@ long getRevision(vstring line);
    difference algorithm (like Unix diff). */
 void gosub_7320(void);
 void gosub_7330(void);
+
+#endif /* METAMATH_MMWORD_H_ */

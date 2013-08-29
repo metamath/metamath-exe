@@ -4,6 +4,11 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
+#ifndef METAMATH_MMUNIF_H_
+#define METAMATH_MMUNIF_H_
+
+#include "mmdata.h"
+
 extern long minSubstLen; /* User-settable value - 0 or 1 */
 extern long userMaxUnifTrials;
             /* User-defined upper limit (# backtracks) for unification trials */
@@ -89,3 +94,5 @@ void purgeStateVector(pntrString **stateVector);
 
 /* Prints the substitutions determined by unify for debugging purposes */
 void printSubst(pntrString *stateVector);
+
+#endif /* METAMATH_MMUNIF_H_ */

@@ -45,7 +45,7 @@ char verifyProof(long statemNum)
   flag unkHypFlag;
   nmbrString *nmbrTmp = NULL_NMBRSTRING; /* Used to force tmp stack dealloc */
 
-  if (statement[statemNum].type != p__) return (4); /* Do nothing if not $p */
+  if (statement[statemNum].type != p_) return (4); /* Do nothing if not $p */
 
   /* Initialize pointers to math strings in RPN stack and vs. statement. */
   /* (Must be initialized, even if severe error, to prevent crashes later.) */
@@ -97,7 +97,7 @@ char verifyProof(long statemNum)
     type = statement[stmt].type;
 
     /* See if the proof token is a hypothesis */
-    if (type == e__ || type == f__) {
+    if (type == e_ || type == f_) {
       /* It's a hypothesis reference */
 
       /* Push the stack */
@@ -113,7 +113,7 @@ char verifyProof(long statemNum)
     }
 
     /* The proof token must be an assertion */
-    if (type != a__ && type != p__) bug(2102);
+    if (type != a_ && type != p_) bug(2102);
 
     /* It's an valid assertion. */
     numReqHyp = statement[stmt].numReqHyp;
@@ -122,7 +122,7 @@ char verifyProof(long statemNum)
     /* Assemble the hypotheses into two big math strings for unification */
     /* Use a "dummy" token, the top of mathTokens array, to separate them. */
     /* This is already done by the source parsing routines:
-    mathToken[mathTokens].tokenType = (char)con__;
+    mathToken[mathTokens].tokenType = (char)con_;
     mathToken[mathTokens].tokenName = "$|$"; */ /* Don't deallocate! */
 
     nmbrLet(&bigSubstSchemeHyp, nmbrAddElement(NULL_NMBRSTRING, mathTokens));
@@ -349,7 +349,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
      occurrence) */
   for (i = 0; i < bigSubstSchemeLen; i++) {
     if (mathToken[bigSubstSchemeAss[i]].tokenType ==
-        (char)var__) {
+        (char)var_) {
       if (substSchemeFrstVarOcc[mathToken[bigSubstSchemeAss[
           i]].tmp] == -1) {
         substSchemeFrstVarOcc[mathToken[bigSubstSchemeAss[
@@ -371,7 +371,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
 /*E*/if(db7)nmbrLet(&bigSubstInstAss,bigSubstInstAss);
 /*E*/if(db7){print2("Enter scan: v=%ld,p=%ld,q=%ld\n",v,p,q); let(&tmpStr,"");}
     tokenNum = bigSubstSchemeAss[p];
-    if (mathToken[tokenNum].tokenType == (char)con__) {
+    if (mathToken[tokenNum].tokenType == (char)con_) {
       /* Constants must match in both substScheme and definiendum assumptions */
       if (tokenNum == bigSubstInstAss[q]) {
         p++;
@@ -621,7 +621,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
       instBPos = substInstFrstVarOcc[substBPos];
       for (a = 0; a < substALen; a++) { /* Scan subst of 1st var in disj pair */
         aToken = bigSubstInstAss[instAPos + a];
-        if (mathToken[aToken].tokenType == (char)con__) continue; /* Ignore */
+        if (mathToken[aToken].tokenType == (char)con_) continue; /* Ignore */
 
         /* Speed up:  find the 1st occurrence of aToken in the disjoint variable
            list of the statement being proved. */
@@ -658,7 +658,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
 
         for (b = 0; b < substBLen; b++) { /* Scan subst of 2nd var in pair */
           bToken = bigSubstInstAss[instBPos + b];
-          if (mathToken[bToken].tokenType == (char)con__) continue; /* Ignore */
+          if (mathToken[bToken].tokenType == (char)con_) continue; /* Ignore */
           if (aToken == bToken) {
             if (!wrkProof.errorCount) { /* No previous errors in this proof */
               sourceError(wrkProof.stepSrcPtrPntr[step], /* source ptr */
@@ -787,7 +787,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
   q = 0;
   for (p = 0; p < substSchemeLen; p++) {
     tokenNum = statement[substScheme].mathString[p];
-    if (mathToken[tokenNum].tokenType == (char)con__) {
+    if (mathToken[tokenNum].tokenType == (char)con_) {
       q++;
     } else {
       q = q + varAssLen[mathToken[tokenNum].tmp];
@@ -800,7 +800,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
   q = 0;
   for (p = 0; p < substSchemeLen; p++) {
     tokenNum = statement[substScheme].mathString[p];
-    if (mathToken[tokenNum].tokenType == (char)con__) {
+    if (mathToken[tokenNum].tokenType == (char)con_) {
       result[q] = tokenNum;
       q++;
     } else {
@@ -883,7 +883,7 @@ void cleanWrkProof(void) {
   for (step = 0; step < wrkProof.numSteps; step++) {
     if (wrkProof.proofString[step] > 0) {
       type = statement[wrkProof.proofString[step]].type;
-      if (type == a__ || type == p__) {
+      if (type == a_ || type == p_) {
         /* Allocation was only done if: (1) it's not a local label reference
            and (2) it's not a hypothesis.  In this case, deallocate. */
         nmbrLet((nmbrString **)(&wrkProof.mathStringPtrs[step]),

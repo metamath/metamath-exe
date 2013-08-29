@@ -4,6 +4,14 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
+#ifndef METAMATH_MMINOU_H_
+#define METAMATH_MMINOU_H_
+
+#include <stdio.h>
+
+#include "mmvstr.h"
+#include "mmdata.h"
+
 extern int errorCount;     /* Total error count */
 
 /* Global variables used by print2() */
@@ -44,7 +52,7 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch);
 vstring cmdInput(FILE *stream,vstring ask);
 vstring cmdInput1(vstring ask);
 
-enum severity {_notice,_warning,_error,_fatal};
+enum severity {notice_,warning_,error_,fatal_};
 void errorMessage(vstring line, long lineNum, long column, long tokenLength,
   vstring error, vstring fileName, long statementNum, flag warnFlag);
 
@@ -68,3 +76,5 @@ vstring fGetTmpName(vstring filePrefix);
    could not be opened or had a non-ASCII Unicode character or some other
    problem.   If verbose is 0, error and warning messages are suppressed. */
 vstring readFileToString(vstring fileName, char verbose);
+
+#endif /* METAMATH_MMINOU_H_*/

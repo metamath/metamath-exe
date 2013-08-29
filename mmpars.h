@@ -4,6 +4,12 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
+#ifndef METAMATH_MMPARS_H_
+#define METAMATH_MMPARS_H_
+
+#include "mmvstr.h"
+#include "mmdata.h"
+
 char *readRawSource(vstring inputFn, long bufOffsetSoFar, long *size);
 void parseKeywords(void);
 void parseLabels(void);
@@ -126,3 +132,5 @@ vstring rewrapComment(vstring comment);
 /* Lookup $a or $p label and return statement number.
    Return -1 if not found. */
 long lookupLabel(vstring label);
+
+#endif /* METAMATH_MMPARS_H_ */

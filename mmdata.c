@@ -655,7 +655,7 @@ void nmbrMakeTempAlloc(nmbrString *s)
     if (nmbrTempAllocStackTop>=(M_MAX_ALLOC_STACK-1)) {
       printf(
       "*** FATAL ERROR ***  Temporary nmbrString stack overflow in nmbrMakeTempAlloc()\n");
-#ifdef __STDC__
+#if __STDC__
       fflush(stdout);
 #endif
       bug(1368);
@@ -806,7 +806,7 @@ nmbrString *nmbrCat(nmbrString *string1,...) /* String concatenation */
         /* User-provided argument list must terminate with NULL */
     if (numArgs>=M_MAX_CAT_ARGS-1) {
       printf("*** FATAL ERROR ***  Too many cat() arguments\n");
-#ifdef __STDC__
+#if __STDC__
       fflush(stdout);
 #endif
       bug(1369);
@@ -1253,7 +1253,7 @@ nmbrString *nmbrExtractVars(nmbrString *m)
     /* Changed >= to > because tokenNum=mathTokens is used by mmveri.c for
        dummy token */
     if (m[i] < 0 || m[i] > mathTokens) bug(1328);
-    if (mathToken[m[i]].tokenType == (char)var__) {
+    if (mathToken[m[i]].tokenType == (char)var_) {
       if (!nmbrElementIn(1, v, m[i])) { /* Don't duplicate variable */
         v[j] = m[i];
         j++;
@@ -1383,7 +1383,7 @@ long nmbrGetSubProofLen(nmbrString *proof, long step)
   stmt = proof[step];
   if (stmt < 0) return (1); /* Unknown or label ref */
   type = statement[stmt].type;
-  if (type == f__ || type == e__) return (1); /* Hypothesis */
+  if (type == f_ || type == e_) return (1); /* Hypothesis */
   hyps = statement[stmt].numReqHyp;
   pos = step - 1;
   for (i = 0; i < hyps; i++) {
@@ -1500,13 +1500,13 @@ nmbrString *nmbrGetIndentation(nmbrString *proof,
     return (indentationLevel);
   }
   type = statement[stmt].type;
-  if (type == f__ || type == e__) { /* A hypothesis */
+  if (type == f_ || type == e_) { /* A hypothesis */
     if (plen != 1) bug(1331);
     nmbrMakeTempAlloc(indentationLevel); /* Flag it for deallocation */
     return (indentationLevel);
   }
   /* An assertion */
-  if (type != a__ && type != p__) bug(1332);
+  if (type != a_ && type != p_) bug(1332);
   hyps = statement[stmt].numReqHyp;
   pos = plen - 2;
   for (i = 0; i < hyps; i++) {
@@ -1554,7 +1554,7 @@ nmbrString *nmbrGetEssential(nmbrString *proof)
     return (essentialFlags);
   }
   type = statement[stmt].type;
-  if (type == f__ || type == e__) { /* A hypothesis */
+  if (type == f_ || type == e_) { /* A hypothesis */
     /* The only time it should get here is if the original proof has only one
        step */
     if (plen != 1) bug(1336);
@@ -1562,13 +1562,13 @@ nmbrString *nmbrGetEssential(nmbrString *proof)
     return (essentialFlags);
   }
   /* An assertion */
-  if (type != a__ && type != p__) bug(1337);
+  if (type != a_ && type != p_) bug(1337);
   hyps = statement[stmt].numReqHyp;
   pos = plen - 2;
   nmbrTmpPtr2 = statement[stmt].reqHypList;
   for (i = 0; i < hyps; i++) {
     splen = nmbrGetSubProofLen(proof, pos);
-    if (statement[nmbrTmpPtr2[hyps - i - 1]].type == e__) {
+    if (statement[nmbrTmpPtr2[hyps - i - 1]].type == e_) {
       nmbrLet(&subProof, nmbrSeg(proof, pos - splen + 2, pos + 1));
       nmbrLet(&nmbrTmp, nmbrGetEssential(subProof));
       for (j = 0; j < splen; j++) {
@@ -1615,7 +1615,7 @@ nmbrString *nmbrGetTargetHyp(nmbrString *proof, long statemNum)
     return (targetHyp);
   }
   type = statement[stmt].type;
-  if (type == f__ || type == e__) { /* A hypothesis */
+  if (type == f_ || type == e_) { /* A hypothesis */
     /* The only time it should get here is if the original proof has only one
        step */
     if (plen != 1) bug(1341);
@@ -1623,7 +1623,7 @@ nmbrString *nmbrGetTargetHyp(nmbrString *proof, long statemNum)
     return (targetHyp);
   }
   /* An assertion */
-  if (type != a__ && type != p__) bug(1342);
+  if (type != a_ && type != p_) bug(1342);
   hyps = statement[stmt].numReqHyp;
   pos = plen - 2;
   for (i = 0; i < hyps; i++) {
@@ -1690,7 +1690,7 @@ vstring compressProof(nmbrString *proof, long statemNum)
 
   nmbrLet(&saveProof, proof); /* In case of temp. alloc. of proof */
 
-  if (statement[statemNum].type != (char)p__) bug(1344);
+  if (statement[statemNum].type != (char)p_) bug(1344);
   plen = nmbrLen(saveProof);
 
   /* Create the initial label list of required hypotheses */
@@ -1722,8 +1722,8 @@ vstring compressProof(nmbrString *proof, long statemNum)
         if (stmt != -(long)'?') bug(1346);
       }
     } else {
-      if (statement[stmt].type != (char)a__ &&
-          statement[stmt].type != (char)p__) {
+      if (statement[stmt].type != (char)a_ &&
+          statement[stmt].type != (char)p_) {
         hypList[hypLabels] = stmt;
         hypLabels++;
       } else {
@@ -1958,7 +1958,7 @@ void pntrMakeTempAlloc(pntrString *s)
     if (pntrTempAllocStackTop>=(M_MAX_ALLOC_STACK-1)) {
       printf(
       "*** FATAL ERROR ***  Temporary pntrString stack overflow in pntrMakeTempAlloc()\n");
-#ifdef __STDC__
+#if __STDC__
       fflush(stdout);
 #endif
       bug(1370);
@@ -2107,7 +2107,7 @@ pntrString *pntrCat(pntrString *string1,...) /* String concatenation */
         /* User-provided argument list must terminate with NULL */
     if (numArgs>=M_MAX_CAT_ARGS-1) {
       printf("*** FATAL ERROR ***  Too many cat() arguments\n");
-#ifdef __STDC__
+#if __STDC__
       fflush(stdout);
 #endif
       bug(1371);

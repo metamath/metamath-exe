@@ -6,6 +6,11 @@
 
 /* mmdata.h - includes for some principal data structures and data-string handling */
 
+#ifndef METAMATH_MMDATA_H_
+#define METAMATH_MMDATA_H_
+
+#include "mmvstr.h"
+
 /*E*/extern long db,db0,db1,db2,db3,db4,db5,db6,db7,db8,db9;/* debugging flags & variables */
 typedef char flag; /* A "flag" is simply a character intended for use as a
                       yes/no logical Boolean; 0 = no and 1 = yes */
@@ -18,16 +23,16 @@ typedef void* pntrString; /* String of pointers */
 
 
 
-enum mTokenType { var__, con__ };
+enum mTokenType { var_, con_ };
 #define lb_ '{' /* ${ */
 #define rb_ '}' /* $} */
-#define v__ 'v' /* $v */
-#define c__ 'c' /* $c */
-#define a__ 'a' /* $a */
-#define d__ 'd' /* $d */
-#define e__ 'e' /* $e */
-#define f__ 'f' /* $f */
-#define p__ 'p' /* $p */
+#define v_  'v' /* $v */
+#define c_  'c' /* $c */
+#define a_  'a' /* $a */
+#define d_  'd' /* $d */
+#define e_  'e' /* $e */
+#define f_  'f' /* $f */
+#define p_  'p' /* $p */
 #define eq_ '=' /* $= */
 #define sc_ '.' /* $. (historically, used to be $; (semicolon) ) */
 #define illegal_ '?' /* anything else */
@@ -92,7 +97,7 @@ struct includeCall_struct {
 struct mathToken_struct {
   vstring tokenName; /* may be used more than once at different scopes */
   long length; /* to speed up parsing scans */
-  char tokenType; /* variable or constant - (char)var__ or (char)con__ */
+  char tokenType; /* variable or constant - (char)var_ or (char)con_ */
   flag active;  /* 1 if token is recognized in current scope */
   int scope;    /* scope level token was declared at */
   long tmp;     /* Temporary field use to speed up certain functions */
@@ -371,3 +376,4 @@ pntrString *pntrAddElement(pntrString *g);
 /* Add a single null pntrString element to a pntrString - faster than pntrCat */
 pntrString *pntrAddGElement(pntrString *g);
 
+#endif /* METAMATH_MMDATA_H_ */

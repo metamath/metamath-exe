@@ -4,6 +4,12 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
+#ifndef METAMATH_MMCMDS_H_
+#define METAMATH_MMCMDS_H_
+
+#include "mmvstr.h"
+#include "mmdata.h"
+
 /* Type (i.e. print) a statement */
 void typeStatement(long statemNum,
   flag briefFlag,
@@ -99,3 +105,5 @@ extern flag midiFlag; /* Set to 1 if typeProof() is to output MIDI file */
 extern vstring midiParam; /* Parameter string for MIDI file */
 void outputMidi(long plen, nmbrString *indentationLevels,
   nmbrString *logicalFlags, vstring midiParameter, vstring statementLabel);
+
+#endif /* METAMATH_MMCMDS_H_ */

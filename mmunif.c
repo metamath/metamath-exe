@@ -209,7 +209,7 @@ nmbrString *makeSubstUnif(flag *newVarFlag,
     tokenNum = trialScheme[p];
 /*E*/if(db7)print2("token is %s, tokenType is %ld\n",mathToken[tokenNum].tokenName,
 /*E*/  (long)mathToken[tokenNum].tokenType);
-    if (mathToken[tokenNum].tokenType == (char)con__) {
+    if (mathToken[tokenNum].tokenType == (char)con_) {
       q++;
     } else {
       if (tokenNum > mathTokens) {
@@ -240,7 +240,7 @@ nmbrString *makeSubstUnif(flag *newVarFlag,
   q = 0;
   for (p = 0; p < schemeLen; p++) {
     tokenNum = trialScheme[p];
-    if (mathToken[tokenNum].tokenType == (char)con__) {
+    if (mathToken[tokenNum].tokenType == (char)con_) {
       result[q] = tokenNum;
       q++;
     } else {
@@ -368,8 +368,8 @@ char unify(
   bracketMismatchFound = 0;
 
   /* Fast early exit -- first or last constants of schemes don't match */
-  if (mathToken[schemeA[0]].tokenType == (char)con__) {
-    if (mathToken[schemeB[0]].tokenType == (char)con__) {
+  if (mathToken[schemeA[0]].tokenType == (char)con_) {
+    if (mathToken[schemeB[0]].tokenType == (char)con_) {
       if (schemeA[0] != schemeB[0]) {
         return (0);
       }
@@ -379,8 +379,8 @@ char unify(
   j = nmbrLen(schemeA);
   k = nmbrLen(schemeB);
   if (!j || !k) bug(1901);
-  if (mathToken[schemeA[j-1]].tokenType == (char)con__) {
-    if (mathToken[schemeB[k-1]].tokenType == (char)con__) {
+  if (mathToken[schemeA[j-1]].tokenType == (char)con_) {
+    if (mathToken[schemeB[k-1]].tokenType == (char)con_) {
       if (schemeA[j-1] != schemeB[k-1]) {
         return (0);
       }
@@ -402,11 +402,11 @@ char unify(
     /*for (stmt = 1; stmt < proveStatement; stmt++) {*/
     /* Do it for all statements since we do it once permanently now */
     for (stmt = 1; stmt <= statements; stmt++) {
-      if (statement[stmt].type != (char)a__)
+      if (statement[stmt].type != (char)a_)
         continue; /* Not $a */
       if (statement[stmt].mathStringLen < 2) continue;
       /* Look at first symbol after variable type symbol */
-      if (mathToken[(statement[stmt].mathString)[1]].tokenType == (char)con__) {
+      if (mathToken[(statement[stmt].mathString)[1]].tokenType == (char)con_) {
         firstConst[(statement[stmt].mathString)[1]] = 1; /* Set flag */
         if (statement[stmt].mathStringLen == 2) {
           oneConst[(statement[stmt].mathString)[1]] = 1; /* Set flag */
@@ -414,7 +414,7 @@ char unify(
       }
       /* Look at last symbol */
       if (mathToken[(statement[stmt].mathString)[
-          statement[stmt].mathStringLen - 1]].tokenType == (char)con__) {
+          statement[stmt].mathStringLen - 1]].tokenType == (char)con_) {
         lastConst[(statement[stmt].mathString)[
           statement[stmt].mathStringLen - 1]] = 1; /* Set flag for const */
       }
@@ -805,7 +805,7 @@ char unify(
     }
     for (m = bracketScanStart; m <= bracketScanStop; m++) {
       if (bracketMatchInit == 0) {  /* Initialization pass */
-        if (statement[m].type != a__) continue;
+        if (statement[m].type != a_) continue;
         nmbrTmpPtr = statement[m].mathString;
       } else {  /* Normal pass */
         nmbrTmpPtr = substitution;
@@ -938,12 +938,12 @@ char unify(
      Proof Assistant failure reported by Josh Purinton. */
   if (j/*subst len*/ > 0 && minSubstLen > 0) {
     impossible = 0;
-    if (mathToken[substitution[0]].tokenType == (char)con__) {
+    if (mathToken[substitution[0]].tokenType == (char)con_) {
       if (!firstConst[substitution[0]]
          || (j == 1 && !oneConst[substitution[0]]))
         impossible = 1;
     }
-    if (mathToken[substitution[j - 1]].tokenType == (char)con__) {
+    if (mathToken[substitution[j - 1]].tokenType == (char)con_) {
       if (!lastConst[substitution[j - 1]])
         impossible = 1;
     }

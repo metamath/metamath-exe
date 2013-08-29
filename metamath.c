@@ -5,7 +5,11 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.07.92 28-Jun-2013"
+#define MVERSION "0.07.94 28-Aug-2013"
+/* 0.07.94 28-Aug-2013 Alexey Merkulov mmcmds.c, mmpars.c - fixed several
+   memory leaks found by valgrind --leak-check=full --show-possibly-lost=no */
+/* 0.07.93 8-Jul-2013 Wolf Lammen mmvstr.c - simplified let() function;
+   also many minor changes in m*.c and m*.h to assist future refactoring */
 /* 0.07.92 28-Jun-2013 nm metamath.c mmcmds.c,h mmcmdl.c mmhlpb.c- added
    /NO_REPEATED_STEPS for /LEMMON mode of SHOW PROOF, SHOW NEW_PROOF.
    This reverts the /LEMMON mode default display change of 31-Jan-2010
@@ -1798,8 +1802,8 @@ void command(int argc, char *argv[])
 
         /* Scan all $a and $p statements */
         for (i = 1; i <= statements; i++) {
-          if (statement[i].type != (char)p__ &&
-            statement[i].type != (char)a__) continue;
+          if (statement[i].type != (char)p_ &&
+            statement[i].type != (char)a_) continue;
           /* Omit ...OBS (obsolete) and ...NEW (to be implemented) statements */
           if (instr(1, statement[i].labelName, "NEW")) continue;
           if (instr(1, statement[i].labelName, "OBS")) continue;
@@ -2187,7 +2191,7 @@ void command(int argc, char *argv[])
             str(m), "]$)", NULL));
         for (s = statements; s >= 1; s--) {
 
-          if (statement[s].type != (char)p__) continue;
+          if (statement[s].type != (char)p_) continue;
 
           /* Get the comment section after the statement */
           let(&str2, space(statement[s + 1].labelSectionLen));
@@ -2295,8 +2299,8 @@ void command(int argc, char *argv[])
             /* Find the previous statement with a web page */
             j = 0;
             for (q = s - 1; q >= 1; q--) {
-              if (statement[q].type == (char)p__ ||
-                  statement[q].type == (char)a__ ) {
+              if (statement[q].type == (char)p_ ||
+                  statement[q].type == (char)a_ ) {
                 j = q;
                 break;
               }
@@ -2307,8 +2311,8 @@ void command(int argc, char *argv[])
             /* Find the next statement with a web page */
             j = 0;
             for (q = s + 1; q <= statements; q++) {
-              if (statement[q].type == (char)p__ ||
-                  statement[q].type == (char)a__ ) {
+              if (statement[q].type == (char)p_ ||
+                  statement[q].type == (char)a_ ) {
                 j = q;
                 break;
               }
@@ -2401,8 +2405,8 @@ void command(int argc, char *argv[])
         k = 0;
         for (i = 1; i <= statements; i++) {
           if (!statement[i].labelName[0]) continue; /* No label */
-          if (!m && statement[i].type != (char)p__ &&
-              statement[i].type != (char)a__) continue; /* No /ALL switch */
+          if (!m && statement[i].type != (char)p_ &&
+              statement[i].type != (char)a_) continue; /* No /ALL switch */
           /* 30-Jan-06 nm Added single-character-match wildcard argument */
           if (!matchesList(statement[i].labelName, fullArg[2], '*', '?')) {
             continue;
@@ -2577,8 +2581,8 @@ void command(int argc, char *argv[])
           /* 30-Jan-06 nm Added single-character-match wildcard argument */
           if (!matchesList(statement[s].labelName, fullArg[2], '*', '?'))
             continue;
-          if (statement[s].type != (char)a__
-              && statement[s].type != (char)p__) continue;
+          if (statement[s].type != (char)a_
+              && statement[s].type != (char)p_) continue;
         }
 
         q = 1; /* Flag that at least one matching statement was found */
@@ -2737,12 +2741,12 @@ void command(int argc, char *argv[])
                   "</FONT></B> starts here</TD></TR>", NULL), "", "\"");
             }
 
-            if (statement[i].type == (char)p__ ||
-                statement[i].type == (char)a__ ) m++;
-            if ((s == -1 && statement[i].type != (char)p__)
-                || (s == 0 && statement[i].type != (char)a__)
-                || (s == -2 && statement[i].type != (char)c__
-                    && statement[i].type != (char)v__)
+            if (statement[i].type == (char)p_ ||
+                statement[i].type == (char)a_ ) m++;
+            if ((s == -1 && statement[i].type != (char)p_)
+                || (s == 0 && statement[i].type != (char)a_)
+                || (s == -2 && statement[i].type != (char)c_
+                    && statement[i].type != (char)v_)
                 ) continue;
             switch (s) {
               case -2:
@@ -2797,7 +2801,7 @@ void command(int argc, char *argv[])
                 j = nmbrLen(statement[i].reqHypList);
                 for (n = 0; n < j; n++) {
                   if (statement[statement[i].reqHypList[n]].type
-                      == (char)e__) {
+                      == (char)e_) {
                     k++;
                   }
                 }
@@ -2958,8 +2962,8 @@ void command(int argc, char *argv[])
         /* 30-Jan-06 nm Added single-character-match wildcard argument */
         if (!matchesList(statement[s].labelName, fullArg[2], '*', '?'))
           continue;
-        if (statement[s].type != (char)a__
-            && statement[s].type != (char)p__)
+        if (statement[s].type != (char)a_
+            && statement[s].type != (char)p_)
           continue;
 
         let(&str1, cat("<CENTER><B><FONT SIZE=\"+1\">",
@@ -2974,9 +2978,9 @@ void command(int argc, char *argv[])
         j = nmbrLen(statement[showStatement].reqHypList);
         for (i = 0; i < j; i++) {
           k = statement[showStatement].reqHypList[i];
-          if (statement[k].type != (char)e__
+          if (statement[k].type != (char)e_
               && !(subType == SYNTAX
-              && statement[k].type == (char)f__))
+              && statement[k].type == (char)f_))
             continue;
 
           let(&str1, cat("<TR ALIGN=LEFT><TD><FONT SIZE=\"+2\">",
@@ -3078,8 +3082,8 @@ void command(int argc, char *argv[])
           /* For brief or comment qualifier, if label has wildcards,
              show only $p and $a's */
           /* 30-Jan-06 nm Added single-character-match wildcard argument */
-          if (statement[s].type != (char)p__
-              && statement[s].type != (char)a__ && (instr(1, fullArg[2], "*")
+          if (statement[s].type != (char)p_
+              && statement[s].type != (char)a_ && (instr(1, fullArg[2], "*")
                   || instr(1, fullArg[2], "?")))
             continue;
         }
@@ -3266,7 +3270,7 @@ void command(int argc, char *argv[])
       /* 21-May-2008 nm Added wildcard handling */
       showStatement = 0;
       for (i = 1; i <= statements; i++) {
-        if (statement[i].type != (char)p__)
+        if (statement[i].type != (char)p_)
           continue; /* Not a $p statement; skip it */
         /* Wildcard matching */
         if (!matchesList(statement[i].labelName, fullArg[2], '*', '?'))
@@ -3342,8 +3346,8 @@ void command(int argc, char *argv[])
 
         /* 7-Jan-2008 nm Added wildcard handling */
         if (!statement[i].labelName[0]) continue; /* No label */
-        if (!m && statement[i].type != (char)p__ &&
-            statement[i].type != (char)a__
+        if (!m && statement[i].type != (char)p_ &&
+            statement[i].type != (char)a_
             /* A wildcard-free user-specified statement is always matched even
                if it's a $e, i.e. it overrides omission of / ALL */
             && (instr(1, fullArg[2], "*")
@@ -3534,7 +3538,7 @@ void command(int argc, char *argv[])
            statement, and at the end of the s loop we break out of it. */
         /* If !pipFlag, get the next statement: */
         if (!pipFlag) {
-          if (statement[s].type != (char)p__) continue; /* Not $p */
+          if (statement[s].type != (char)p_) continue; /* Not $p */
           /* 30-Jan-06 nm Added single-character-match wildcard argument */
           if (!matchesList(statement[s].labelName, labelMatch, '*', '?'))
             continue;
@@ -3911,7 +3915,7 @@ void command(int argc, char *argv[])
         continue;
       }
       proveStatement = i;
-      if (statement[proveStatement].type != (char)p__) {
+      if (statement[proveStatement].type != (char)p_) {
         printLongLine(cat("?Statement \"", fullArg[1],
             "\" is not a $p statement.", NULL), "", " ");
         proveStatement = 0;
@@ -4359,7 +4363,7 @@ void command(int argc, char *argv[])
         if (!strcmp(fullArg[2], statement[i].labelName)) {
           /@ If a $e or $f, it must be a hypothesis of the statement
              being proved @/
-          if (statement[i].type == (char)e__ || statement[i].type == (char)f__){
+          if (statement[i].type == (char)e_ || statement[i].type == (char)f_){
             if (!nmbrElementIn(1, statement[proveStatement].reqHypList, i) &&
                 !nmbrElementIn(1, statement[proveStatement].optHypList, i))
                 continue;
@@ -4563,7 +4567,7 @@ void command(int argc, char *argv[])
         if (!strcmp(fullArg[2], statement[i].labelName)) {
           /@ If a $e or $f, it must be a hypothesis of the statement
              being proved @/
-          if (statement[i].type == (char)e__ || statement[i].type == (char)f__){
+          if (statement[i].type == (char)e_ || statement[i].type == (char)f_){
             if (!nmbrElementIn(1, statement[proveStatement].reqHypList, i) &&
                 !nmbrElementIn(1, statement[proveStatement].optHypList, i))
                 continue;
@@ -5260,7 +5264,7 @@ void command(int argc, char *argv[])
         /* 14-Aug-2012 nm */
         if (!mathboxFlag && k >= sandboxStmt && k < thisMathboxStmt) continue;
 
-        if (statement[k].type != (char)p__ && statement[k].type != (char)a__)
+        if (statement[k].type != (char)p_ && statement[k].type != (char)a_)
           continue;
         /* 30-Jan-06 nm Added single-character-match wildcard argument */
         if (!matchesList(statement[k].labelName, fullArg[1], '*', '?'))
@@ -5294,7 +5298,7 @@ void command(int argc, char *argv[])
             continue;
           /* Save the proof structure in case we have to revert a
              forbidden match.  We only care about $p statements. */
-          if (statement[k].type == (char)p__) {
+          if (statement[k].type == (char)p_) {
           }
         }
 
@@ -5326,7 +5330,7 @@ void command(int argc, char *argv[])
              list is matched, we then need to revert back to the
              original proof. */
           if (forbidMatchList[0]) { /* User provided a /FORBID list */
-            if (statement[k].type == (char)p__) {
+            if (statement[k].type == (char)p_) {
               /* We only care about tracing $p statements */
               /* See if the TRACE_BACK list includes a match to the
                  /FORBID argument */
@@ -5705,8 +5709,8 @@ void command(int argc, char *argv[])
 
       for (i = 1; i <= statements; i++) {
         if (!statement[i].labelName[0]) continue; /* No label */
-        if (!m && statement[i].type != (char)p__ &&
-            statement[i].type != (char)a__) {
+        if (!m && statement[i].type != (char)p_ &&
+            statement[i].type != (char)a_) {
           continue; /* No /ALL switch */
         }
         /* 30-Jan-06 nm Added single-character-match wildcard argument */
@@ -5749,13 +5753,13 @@ void command(int argc, char *argv[])
 
           /* 14-Apr-2008 nm JOIN flag */
           tmpFlag = 0; /* Flag that $p or $a is already in string */
-          if (joinFlag && (statement[i].type == (char)p__ ||
-              statement[i].type == (char)a__)) {
+          if (joinFlag && (statement[i].type == (char)p_ ||
+              statement[i].type == (char)a_)) {
             /* If $a or $p, prepend $e's to string to match */
             k = nmbrLen(statement[i].reqHypList);
             for (j = k - 1; j >= 0; j--) {
               p = statement[i].reqHypList[j];
-              if (statement[p].type == (char)e__) {
+              if (statement[p].type == (char)e_) {
                 let(&str2, cat("$e ",
                     nmbrCvtMToVString(statement[p].mathString),
                     tmpFlag ? "" : cat(" $", chr(statement[i].type), NULL),

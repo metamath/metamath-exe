@@ -168,7 +168,7 @@ l7130:  gosub_7320();
         i1_=i1_+1;
         if (i1_ >= MAX_LINES) {
           printf("*** FATAL *** Overflow#1\n");
-#ifdef __STDC__
+#if __STDC__
           fflush(stdout);
 #endif
           exit(0);
@@ -200,7 +200,7 @@ l7140:  if (strcmpe(line1_[i1_+t-m+1], line2_[i+t])) {
         i2_=i2_+1;
         if (i2_ >= MAX_LINES) {
           printf("*** FATAL *** Overflow#2\n");
-#ifdef __STDC__
+#if __STDC__
           fflush(stdout);
 #endif
           exit(0);
@@ -241,7 +241,7 @@ l7200:  i=i+m-1;
         r2=r2+i2_-i;
         if (r2 >= MAX_BUF) {
           printf("*** FATAL *** Overflow#3\n");
-#ifdef __STDC__
+#if __STDC__
           fflush(stdout);
 #endif
           exit(0);
@@ -261,7 +261,7 @@ l7220:  i=i+m-1;
         r1=r1+i1_-i;
         if (r1 >= MAX_BUF) {
           printf("*** FATAL *** Overflow#4\n");
-#ifdef __STDC__
+#if __STDC__
           fflush(stdout);
 #endif
           exit(0);

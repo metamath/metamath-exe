@@ -1421,8 +1421,8 @@ void printTexHeader(flag texHeaderFlag)
       j = 0;
       k = 0;
       for (i = showStatement - 1; i >= 1; i--) {
-        if ((statement[i].type == (char)p__ ||
-            statement[i].type == (char)a__ )
+        if ((statement[i].type == (char)p_ ||
+            statement[i].type == (char)a_ )
             /* Skip dummy "xxx..." statements.  We rely on lazy
                evaluation to prevent array bound overflow. */
             && (statement[i].labelName[0] != 'x' /* Skip "xxx.." */
@@ -1436,8 +1436,8 @@ void printTexHeader(flag texHeaderFlag)
         k = 1; /* First statement flag */
         /* For the first statement, wrap to last one */
         for (i = statements; i >= 1; i--) {
-          if ((statement[i].type == (char)p__ ||
-              statement[i].type == (char)a__ )
+          if ((statement[i].type == (char)p_ ||
+              statement[i].type == (char)a_ )
               /* Skip dummy "xxx..." statements.  We rely on lazy
                  evaluation to prevent array bound overflow. */
               && (statement[i].labelName[0] != 'x' /* Skip "xxx.." */
@@ -1460,8 +1460,8 @@ void printTexHeader(flag texHeaderFlag)
       j = 0;
       k = 0;
       for (i = showStatement + 1; i <= statements; i++) {
-        if ((statement[i].type == (char)p__ ||
-            statement[i].type == (char)a__ )
+        if ((statement[i].type == (char)p_ ||
+            statement[i].type == (char)a_ )
             /* Skip dummy "xxx..." statements.  We rely on lazy
                evaluation to prevent array bound overflow. */
             && (statement[i].labelName[0] != 'x' /* Skip "xxx.." */
@@ -1475,8 +1475,8 @@ void printTexHeader(flag texHeaderFlag)
         k = 1; /* Last statement flag */
         /* For the last statement, wrap to first one */
         for (i = 1; i <= statements; i++) {
-          if ((statement[i].type == (char)p__ ||
-              statement[i].type == (char)a__ )
+          if ((statement[i].type == (char)p_ ||
+              statement[i].type == (char)a_ )
               /* Skip dummy "xxx..." statements.  We rely on lazy
                  evaluation to prevent array bound overflow. */
               && (statement[i].labelName[0] != 'x' /* Skip "xxx.." */
@@ -2774,7 +2774,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
   nmbrLet(&nmbrStmtNmbr, nmbrSpace(statements + 1));
   assertions = 0; /* Number of $p's + $a's */
   for (s = 1; s <= statements; s++) {
-    if (statement[s].type == a__ || statement[s].type == p__) {
+    if (statement[s].type == a_ || statement[s].type == p_) {
       assertions++; /* Corresponds to pink number */
       nmbrStmtNmbr[assertions] = s;
     }
@@ -3031,7 +3031,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
       for (stmt = 1; stmt <= statements; stmt++) {
         getSectionHeadings(stmt, &bigHdr, &smallHdr);
         /* Output the headers for $a and $p statements */
-        if (statement[stmt].type == p__ || statement[stmt].type == a__) {
+        if (statement[stmt].type == p_ || statement[stmt].type == a_) {
           if (bigHdr[0] || smallHdr[0]) {
             /* Write to the table of contents */
             outputToString = 1;
@@ -3157,7 +3157,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
 
       s = nmbrStmtNmbr[assertion]; /* Statement number */
       /* Output only $p's, not $a's */
-      /*if (statement[s].type != p__) continue;*/ /* Now do everything */
+      /*if (statement[s].type != p_) continue;*/ /* Now do everything */
 
       /* nm 22-Jan-04 Skip statements whose labels begin "xxx" - this
          means they are temporary placeholders created by
@@ -3166,7 +3166,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
       if (!strcmp("xxx", left(statement[s].labelName, 3))) continue;
 
       /* Construct the statement type label */
-      if (statement[s].type == p__) {
+      if (statement[s].type == p_) {
         let(&str1, "Theorem");
       } else if (!strcmp("ax-", left(statement[s].labelName, 3))) {
         let(&str1, "<B><FONT COLOR=red>Axiom</FONT></B>");
@@ -3508,7 +3508,7 @@ long pinkNumber(long statemNum)
      For the future it could be added to the statement[] structure. */
   statemMap = 0;
   for (i = 1; i <= statemNum; i++) {
-    if (statement[i].type == a__ || statement[i].type == p__)
+    if (statement[i].type == a_ || statement[i].type == p_)
       statemMap++;
   }
   return statemMap;
@@ -3533,7 +3533,7 @@ vstring pinkHTML(long statemNum)
   /*
   statemMap = 0;
   for (i = 1; i <= statemNum; i++) {
-    if (statement[i].type == a__ || statement[i].type == p__)
+    if (statement[i].type == a_ || statement[i].type == p_)
       statemMap++;
   }
   */
@@ -4010,7 +4010,7 @@ vstring getTexOrHtmlHypAndAssertion(long statemNum)
   let(&texOrHtmlCode, "");
   for (n = 0; n < reqHyps; n++) {
     if (statement[statement[statemNum].reqHypList[n]].type
-        == (char)e__) {
+        == (char)e_) {
       essHyps++;
       if (texOrHtmlCode[0]) { /* Add '&' between hypotheses */
         if (!htmlFlag) {

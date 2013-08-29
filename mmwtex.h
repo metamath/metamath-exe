@@ -4,6 +4,12 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
+#ifndef METAMATH_MMWTEX_H_
+#define METAMATH_MMWTEX_H_
+
+#include "mmvstr.h"
+#include "mmdata.h"
+
 /* Colors for HTML pages. */
 #define GREEN_TITLE_COLOR "\"#006633\""
 #define MINT_BACKGROUND_COLOR "\"#EEFFFA\""
@@ -143,3 +149,5 @@ vstring getTexLongMath(nmbrString *mathString, long statemNum);
 /* Warning: The caller must deallocate the returned vstring. */
 /* 14-Sep-2010 nm Changed name from getHTMLHypAndAssertion() */
 vstring getTexOrHtmlHypAndAssertion(long statemNum);
+
+#endif /* METAMATH_MMWTEX_H_ */
