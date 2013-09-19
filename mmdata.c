@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2012  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2013  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -410,7 +410,6 @@ long getFreeSpace(long max)
   char *s;
   i = 0;
   j = max + 2;
-  k = j;
   while (i < j - 2) {
     k = (i + j) / 2;
     s = malloc((size_t)k);

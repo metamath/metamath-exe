@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2012  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2013  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -1660,7 +1660,6 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
     /* 26-Dec-2011 nm Detect preformatted HTML (this is crude, since it
        will apply to whole comment - perhaps fine-tune this later) */
     if (instr(1, cmt, "<HTML>")) preformattedMode = 1;
-    pos1 = 0;
     mode = 1; /* 1 normal, -1 math token */
     let(&tmp, "");
     while (1) {
@@ -1724,7 +1723,7 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
      subscripts */
   /* 5-Dec-03 Added LaTeX handling */
   /* This section is independent and can be removed without side effects */
-  if (i == i /*htmlFlag*/) {  /* 5-Dec-03 */
+  if (i == i + 0 /*htmlFlag*/) {  /* 5-Dec-03 */
     pos1 = 0;
     while (1) {
       pos1 = instr(pos1 + 1, cmt, "_");
@@ -1853,7 +1852,7 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
 
         /* 30-Jun-2011 nm */
         /* See if we are in math mode */
-        clen = (long)strlen(cmt);
+        /* clen = (long)strlen(cmt); */ /* 18-Sep-2013 never used */
         mode = 0; /* 0 = normal, 1 = math */
         for (i = 0; i < pos1; i++) {
           if (cmt[i] == '`' && cmt[i + 1] != '`') {
@@ -3176,7 +3175,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
         let(&str1, "<B><FONT COLOR=\"#00CC00\">Syntax</FONT></B>");
       }
 
-     if (s == s) goto skip_date;
+     if (s == s + 0) goto skip_date;
       /* OBSOLETE */
       /* Get the date in the comment section after the statement */
       let(&str1, space(statement[s + 1].labelSectionLen));

@@ -1434,11 +1434,13 @@ void parseStatements(void)
           /* Scan for largest matching token from the left */
          nextAdjToken:
           /* maxSymbolLen is the longest declared symbol */
+          /* 18-Sep-2013 Disable unused old code
           if (origSymbolLen > maxSymbolLen) {
             symbolLen = maxSymbolLen;
           } else {
             symbolLen = origSymbolLen;
           }
+          */
 
           /* New code: don't allow missing white space */
           symbolLen = origSymbolLen;
@@ -2143,8 +2145,6 @@ void parseStatements(void)
 
         break;  /* Switch case break */
     }
-
-    type = statement[stmt].type;
 
     /************** Start of 27-Sep-2010 ****************/
     /* 27-Sep-2010 nm If a $a statement consists of a single constant,
@@ -3521,7 +3521,7 @@ char parseCompressedProof(long statemNum)
     }
     wrkProof.errorCount++;
     if (returnFlag < 2) returnFlag = 2;
-    labelMapIndex = 0;
+    /* labelMapIndex = 0; */ /* 18-Sep-2013 never used */
   }
 
   /* If proof is empty, make it have one unknown step */
@@ -3735,7 +3735,6 @@ vstring shortDumpRPNStack(void) {
         right(tmpStr2,m + 1),NULL));
   }
   if (wrkProof.RPNStackPtr > 2) {
-    m = (long)strlen(tmpStr2);
     for (m = (long)strlen(tmpStr2); m > 0; m--) { /* Find last comma */
       if (tmpStr2[m - 1] == ',') break;
     }

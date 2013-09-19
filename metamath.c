@@ -5,7 +5,10 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.07.94 28-Aug-2013"
+#define MVERSION "0.07.95 18-Sep-2013"
+/* 0.07.95 18-Sep-2013 Wolf Lammen mmvstr.c - optimized cat();
+   nm metamath.c, mmcmds.c, mmdata.c, mmpars.c, mmpfas.c, mmvstr.c,
+   mmwtex.c - suppress some clang warnings */
 /* 0.07.94 28-Aug-2013 Alexey Merkulov mmcmds.c, mmpars.c - fixed several
    memory leaks found by valgrind --leak-check=full --show-possibly-lost=no */
 /* 0.07.93 8-Jul-2013 Wolf Lammen mmvstr.c - simplified let() function;
@@ -951,10 +954,6 @@ void command(int argc, char *argv[])
               q = (long)val(fullArg[4]);
               if (q == 0) q = 1;    /* The occurrence # of string to subst */
             }
-            s = 0;
-            /*
-            if (!strcmp(fullArg[2], "\\n")) {
-            */
             s = instr(1, fullArg[2], "\\n");
             if (s) {
               /*s = 1;*/ /* Replace lf flag */
@@ -1550,7 +1549,6 @@ void command(int argc, char *argv[])
         list2_ftmpname = fGetTmpName("zz~tools");
         list2_fp = fSafeOpen(list2_ftmpname, "w");
         if (!list2_fp) continue; /* Couldn't open it (error msg was provided) */
-        lines = 0;
         let(&str4, cat(fullArg[1], ",", NULL));
         lines = 0;
         j = 0; /* Error flag */
@@ -1724,7 +1722,6 @@ void command(int argc, char *argv[])
         htmlFlag = 1;
         print2("Reading definitions from $t statement of %s...\n", input_fn);
         if (!readTexDefs()) {
-          tmpFlag = 1; /* Error flag to recover input file */
           continue; /* An error occurred */
         }
       } else {
@@ -1911,7 +1908,7 @@ void command(int argc, char *argv[])
             let(&str2, seg(str1, m, p - 1));     /* "Theorem #" */
             let(&str3, seg(str1, p + 1, q - 1));  /* "[bibref]" w/out [] */
             let(&str4, seg(str1, q + 1, s - 1)); /* " p. nnnn" */
-            str2[0] = toupper((unsigned char)(str2[0]));
+            str2[0] = (char)(toupper((unsigned char)(str2[0])));
             /* Eliminate noise like "of" in "Theorem 1 of [bibref]" */
             for (k = (long)strlen(str2); k >=1; k--) {
               if (0
@@ -2104,7 +2101,6 @@ void command(int argc, char *argv[])
         htmlFlag = 1;
         print2("Reading definitions from $t statement of %s...\n", input_fn);
         if (!readTexDefs()) {
-          tmpFlag = 1; /* Error flag to recover input file */
           continue; /* An error occurred */
         }
       } else {
@@ -2389,7 +2385,6 @@ void command(int argc, char *argv[])
 
 
     if (cmdMatches("SHOW LABELS")) {
-        texFlag = 0;
         linearFlag = 0;
         if (switchPos("/ LINEAR")) linearFlag = 1;
         if (switchPos("/ ALL")) {

@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2012  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2013  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -362,7 +362,7 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
        existing proof will be scanned to see if there is a match to
        the $e hypotheses of the replacement statement.  */
     pfLen = nmbrLen(proofInProgress.proof);
-    scanLen = pfLen;
+    /* scanLen = pfLen; */ /* 28-Sep-2013 never used */
     scanUpperBound = pfLen - 1;  /* Last proof step (0=1st step, 1=2nd, etc. */
     scanLowerBound = 0; /* scanUpperBound - scanLen + 1;  */
   }
@@ -2432,7 +2432,8 @@ char interactiveUnify(nmbrString *schemeA, nmbrString *schemeB,
        empirical observations of typical unification sets */
 
     stackTop = ((nmbrString *)((*stateVector)[11]))[1];
-    stackUnkVar = (nmbrString *)((*stateVector)[1]);
+    /* stackUnkVar = (nmbrString *)((*stateVector)[1]); */ /* 18-Sep-2013 -
+                                           This assignement is never used */
     stackUnkVarStart = (nmbrString *)((*stateVector)[2]);
     stackUnkVarLen = (nmbrString *)((*stateVector)[3]);
     unifiedScheme = (nmbrString *)((*stateVector)[8]);

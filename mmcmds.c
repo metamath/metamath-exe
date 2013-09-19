@@ -2424,7 +2424,7 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
         let(&printString, "");
       }
 
-      type = statement[stmt].type;
+      /* type = statement[stmt].type; */ /* 18-Sep-2013 Not used */
       let(&str1, "");
       str1 = getDescription(stmt);
       if (str1[0]) {
@@ -2873,6 +2873,7 @@ double countSteps(long statemNum, flag essentialFlag)
     for (stmt = 1; stmt < statements + 1; stmt++) {
       stmtCount[stmt] = 0;
       stmtUsage[stmt] = 0;
+      stmtDist[stmt] = 0; /* 18-Sep-2013 Initialize */
     }
     unprovedFlag = 0; /* Flag that some proof wasn't complete */
   }
@@ -3100,7 +3101,6 @@ vstring traceUsage(long statemNum,
       }
     } /* (End of speed-up code) */
 
-    tmpFlag = 0;
     parseProof(stmt); /* Parse proof into wrkProof structure */
     nmbrLet(&proof, wrkProof.proofString); /* The proof */
     tmpFlag = 0;
