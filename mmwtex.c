@@ -1344,14 +1344,14 @@ void printTexHeader(flag texHeaderFlag)
       let(&smallHdr, ""); /* Deallocate memory */
       /* 2-Aug-2009 nm - end of "Mathbox for <username>" mod */
 
-      print2("%s\n", cat("<TITLE>",
+      printLongLine(cat("<TITLE>",
           /* Strip off ".html" */
           left(texFileName, (long)strlen(texFileName) - 5),
           /*left(texFileName, instr(1, texFileName, ".htm") - 1),*/
           /*" - ", sandboxTitle,*/
           /* 2-Aug-2009 nm - "Mathbox for <username>" mod */
           " - ", localSandboxTitle,
-          "</TITLE>", NULL));
+          "</TITLE>", NULL), "", "\"");
 
     }
     /* Icon for bookmark */

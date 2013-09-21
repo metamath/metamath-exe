@@ -346,7 +346,8 @@ flag print2(char* fmt,...)
   /* Check for lines too long */
   if (lineLen > screenWidth + 1) { /* The +1 ignores \n */
     /* Warning:  Don't call bug(), because it calls print2. */
-    printf("*** PROGRAM BUG #1505\n");
+    printf("*** PROGRAM BUG #1505 (not serious, but please report it)\n");
+    printf("Line exceeds screen width; caller should use printLongLine.\n");
     printf("%ld %s\n", lineLen, printBuffer);
     /*printf(NULL);*/  /* Force crash on VAXC to see where it came from */
 #if __STDC__

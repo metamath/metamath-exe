@@ -5,7 +5,9 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.07.95 18-Sep-2013"
+#define MVERSION "0.07.96 20-Sep-2013"
+/* 0.07.96 20-Sep-2013 Wolf Lammen mmvstr.c - revised cat();
+   nm mmwtex.c, mminou.c - change a print2 to printLongLine to fix bug 1150 */
 /* 0.07.95 18-Sep-2013 Wolf Lammen mmvstr.c - optimized cat();
    nm metamath.c, mmcmds.c, mmdata.c, mmpars.c, mmpfas.c, mmvstr.c,
    mmwtex.c - suppress some clang warnings */

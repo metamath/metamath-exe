@@ -153,37 +153,37 @@ vstring cat(vstring string1,...)        /* String concatenation */
 #define MAX_CAT_ARGS 50
 {
   va_list ap;   /* Declare list incrementer */
-  vstring tmp;
-  vstring arg[MAX_CAT_ARGS-1];    /* Array to store arguments */
-  long argPos[MAX_CAT_ARGS-1]; /* Array of argument positions in target */
+  vstring arg[MAX_CAT_ARGS];    /* Array to store arguments */
+  size_t argPos[MAX_CAT_ARGS]; /* Array of argument positions in result */
+  vstring result;
   int i;
-  int lastIdx=-1;        /* Define "last argument" */
+  int numArgs=0;        /* Define "last argument" */
 
-  long pos=(long)strlen(string1);
+  size_t pos=0;
+  char* curArg=string1;
 
   va_start(ap,string1); /* Begin the session */
-  while ((tmp=va_arg(ap,char *))) {
+  do {
         /* User-provided argument list must terminate with 0 */
-    if (++lastIdx >= MAX_CAT_ARGS-1) {
+    if (numArgs >= MAX_CAT_ARGS) {
       printf("*** FATAL ERROR ***  Too many cat() arguments\n");
 #if __STDC__
       fflush(stdout);
 #endif
       bug(2206);
     }
-    arg[lastIdx]=tmp;
-    argPos[lastIdx]=pos;
-    pos+=(long)strlen(tmp);
-  }
+    arg[numArgs]=curArg;
+    argPos[numArgs]=pos;
+    pos+=strlen(curArg);
+  } while (++numArgs, (curArg=va_arg(ap,char *)) != 0);
   va_end(ap);           /* End var args session */
 
   /* Allocate the memory for it */
-  tmp=tempAlloc(pos+1);
+  result=tempAlloc((long)pos+1);
   /* Move the strings into the newly allocated area */
-  strcpy(tmp, string1);
-  for (i=-1; ++i<=lastIdx;)
-    strcpy(tmp+argPos[i],arg[i]);
-  return tmp;
+  for (i=0; i<numArgs; ++i)
+    strcpy(result+argPos[i],arg[i]);
+  return result;
 }
 
 
