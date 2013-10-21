@@ -147,7 +147,8 @@ vstring cat(vstring string1,...);
     c:      if (!linput(file1,NULL,&a)) break;  (break on EOF)
 
   */
-vstring linput(FILE *stream,vstring ask,vstring *target);
+/* returns whether a (possibly empty) line was successfully read */
+int linput(FILE *stream,vstring ask,vstring *target);
 
 /* Emulation of BASIC string functions */
 vstring seg(vstring sin, long p1, long p2);

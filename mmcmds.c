@@ -2352,8 +2352,14 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
     return;
   }
 
-  parseProof(statemNum);
-  nmbrLet(&proof, wrkProof.proofString); /* The proof */
+  /* 20-Oct-2013 nm Don't use bad proofs (incomplete proofs are ok) */
+  if (parseProof(statemNum) > 1) {
+    /* The proof has an error, so use the empty proof */
+    nmbrLet(&proof, nmbrAddElement(NULL_NMBRSTRING, -(long)'?'));
+  } else {
+    nmbrLet(&proof, wrkProof.proofString);
+  }
+
   plen = nmbrLen(proof);
   /* Get the essential step flags, if required */
   if (essentialFlag) {
@@ -2613,8 +2619,15 @@ void traceProofWork(long statemNum,
     if (statement[statementList[pos]].type != p_) {
       continue; /* Not a $p */
     }
-    parseProof(statementList[pos]);
-    nmbrLet(&proof, wrkProof.proofString); /* The proof */
+
+    /* 20-Oct-2013 nm Don't use bad proofs (incomplete proofs are ok) */
+    if (parseProof(statementList[pos]) > 1) {
+      /* The proof has an error, so use the empty proof */
+      nmbrLet(&proof, nmbrAddElement(NULL_NMBRSTRING, -(long)'?'));
+    } else {
+      nmbrLet(&proof, wrkProof.proofString);
+    }
+
     plen = nmbrLen(proof);
     /* Get the essential step flags, if required */
     if (essentialFlag) {
@@ -2750,8 +2763,14 @@ void traceProofTreeRec(long statemNum,
     }
   }
 
-  parseProof(statemNum);
-  nmbrLet(&proof, wrkProof.proofString); /* The proof */
+  /* 20-Oct-2013 nm Don't use bad proofs (incomplete proofs are ok) */
+  if (parseProof(statemNum) > 1) {
+    /* The proof has an error, so use the empty proof */
+    nmbrLet(&proof, nmbrAddElement(NULL_NMBRSTRING, -(long)'?'));
+  } else {
+    nmbrLet(&proof, wrkProof.proofString);
+  }
+
   plen = nmbrLen(proof);
   /* Get the essential step flags, if required */
   if (essentialFlag) {
@@ -2891,8 +2910,14 @@ double countSteps(long statemNum, flag essentialFlag)
     goto returnPoint;
   }
 
-  parseProof(statemNum);
-  nmbrLet(&proof, nmbrUnsquishProof(wrkProof.proofString)); /* The proof */
+  /* 20-Oct-2013 nm Don't use bad proofs (incomplete proofs are ok) */
+  if (parseProof(statemNum) > 1) {
+    /* The proof has an error, so use the empty proof */
+    nmbrLet(&proof, nmbrAddElement(NULL_NMBRSTRING, -(long)'?'));
+  } else {
+    nmbrLet(&proof, nmbrUnsquishProof(wrkProof.proofString)); /* The proof */
+  }
+
   plen = nmbrLen(proof);
   /* Get the essential step flags, if required */
   if (essentialFlag) {
@@ -3101,8 +3126,14 @@ vstring traceUsage(long statemNum,
       }
     } /* (End of speed-up code) */
 
-    parseProof(stmt); /* Parse proof into wrkProof structure */
-    nmbrLet(&proof, wrkProof.proofString); /* The proof */
+    /* 20-Oct-2013 nm Don't use bad proofs (incomplete proofs are ok) */
+    if (parseProof(stmt) > 1) {
+      /* The proof has an error, so use the empty proof */
+      nmbrLet(&proof, nmbrAddElement(NULL_NMBRSTRING, -(long)'?'));
+    } else {
+      nmbrLet(&proof, wrkProof.proofString);
+    }
+
     tmpFlag = 0;
     for (pos = 0; pos < lastPos; pos++) {
       if (nmbrElementIn(1, proof, statementList[pos])) {

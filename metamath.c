@@ -5,7 +5,9 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.07.96 20-Sep-2013"
+#define MVERSION "0.07.97 20-Oct-2013"
+/* 0.07.97 20-Oct-2013 Wolf Lammen mmvstr.c,h, metamath.c - improved linput();
+   nm mmcmds.c, mmdata.c - tolerate bad proofs in SHOW TRACE_BACK etc. */
 /* 0.07.96 20-Sep-2013 Wolf Lammen mmvstr.c - revised cat();
    nm mmwtex.c, mminou.c - change a print2 to printLongLine to fix bug 1150 */
 /* 0.07.95 18-Sep-2013 Wolf Lammen mmvstr.c - optimized cat();
@@ -1388,13 +1390,13 @@ void command(int argc, char *argv[])
         while (1) {
           let(&str1, "");
           if (p1) {
-            p1 = (linput(list1_fp, NULL, &str1) != NULL);
+            p1 = linput(list1_fp, NULL, &str1);
             if (p1) p++;
             else let(&str1, "");
           }
           let(&str2, "");
           if (p2) {
-            p2 = (linput(list2_fp, NULL, &str2) != NULL);
+            p2 = linput(list2_fp, NULL, &str2);
             if (p2) q++;
             else let(&str2, "");
           }

@@ -1576,7 +1576,7 @@ nmbrString *nmbrGetEssential(nmbrString *proof)
     }
     pos = pos - splen;
   }
-  if (pos != -1) bug (338);
+  if (pos != -1) bug (1338);
 
   nmbrLet(&subProof,NULL_NMBRSTRING); /* Deallocate */
   nmbrLet(&nmbrTmp, NULL_NMBRSTRING); /* Deallocate */

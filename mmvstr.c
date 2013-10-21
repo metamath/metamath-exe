@@ -188,7 +188,8 @@ vstring cat(vstring string1,...)        /* String concatenation */
 
 
 /* input a line from the user or from a file */
-vstring linput(FILE *stream,vstring ask,vstring *target)
+/* returns whether a (possibly empty) line was successfully read */
+int linput(FILE *stream,vstring ask,vstring *target)
 {
   /*
     BASIC:  linput "what";a$
@@ -204,6 +205,8 @@ vstring linput(FILE *stream,vstring ask,vstring *target)
     *target MUST be initialized to "" or previously assigned by let(&...)
     before using it in linput. */
   char f[10001]; /* Allow up to 10000 characters */
+  int result = 0;
+  int eol_found;
   if (ask) {
     printf("%s",ask);
 #if __STDC__
@@ -211,18 +214,20 @@ vstring linput(FILE *stream,vstring ask,vstring *target)
 #endif
   }
   if (stream == NULL) stream = stdin;
-  if (!fgets(f,10000,stream)) {
-    /* End of file */
-    return NULL;
+  eol_found = 0;
+  while (!eol_found && fgets(f,sizeof(f),stream))
+  {
+    size_t endpos = strlen(f) - 1;
+    eol_found = f[endpos] == '\n';
+    if (eol_found)
+      f[endpos] = 0;
+    if (result)
+      *target = cat(*target, f);
+    else
+      let (target, f);
+    result=1;
   }
-  f[10000]=0;     /* Just in case */
-  if (f[(long)strlen(f) - 1] == '\n' ) { /* 9-Jul-2011 nm Don't do this unless line
-       ends with '\n' (which might not be the case for the last line in file */
-    f[(long)strlen(f) - 1] = 0;     /* Eliminate new-line character */
-  }
-  /* Assign the user's input line */
-  let(target,f);
-  return *target;
+  return result;
 }
 
 
