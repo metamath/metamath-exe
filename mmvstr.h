@@ -148,9 +148,10 @@ vstring cat(vstring string1,...);
 
   */
 /* returns whether a (possibly empty) line was successfully read */
-int linput(FILE *stream,vstring ask,vstring *target);
+int linput(FILE *stream,const char* ask,vstring *target);
 
 /* Emulation of BASIC string functions */
+/* Indices are 1-based */
 vstring seg(vstring sin, long p1, long p2);
 vstring mid(vstring sin, long p, long l);
 vstring left(vstring sin, long n);

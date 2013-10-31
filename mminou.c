@@ -1292,7 +1292,7 @@ vstring readFileToString(vstring fileName, char verbose) {
   /* Allocate space for the entire input file */
   fileBufSize = fileBufSize + 10;
             /* Add a factor for unknown text formats (just a guess) */
-  fileBuf = malloc((size_t)fileBufSize * sizeof(char));
+  fileBuf = malloc((size_t)fileBufSize);
   if (!fileBuf) {
     if (verbose) print2(
         "?Sorry, there was not enough memory to read the file \"%s\".\n",

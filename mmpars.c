@@ -123,7 +123,7 @@ char *readRawSource(vstring inputFn, long bufOffsetSoFar, long *size)
 
   /* Allocate space for the entire input file */
   fileBufSize = fileBufSize + 10; /* Add a factor for unknown text formats */
-  fileBuf = malloc((size_t)fileBufSize * sizeof(char));
+  fileBuf = malloc((size_t)fileBufSize);
   if (!fileBuf) outOfMemory("#1 (fileBuf)");
 
   /* Put the entire input file into the buffer as a giant character string */
@@ -2397,7 +2397,7 @@ char parseProof(long statemNum)
         * sizeof(flag));
     wrkProof.hypAndLocLabel =
         malloc((size_t)wrkProofMaxSize * sizeof(struct sortHypAndLoc));
-    wrkProof.localLabelPool = malloc((size_t)wrkProofMaxSize * sizeof(char));
+    wrkProof.localLabelPool = malloc((size_t)wrkProofMaxSize);
     wrkProof.proofString =
         poolFixedMalloc(wrkProofMaxSize * (long)(sizeof(nmbrString)));
          /* Use poolFixedMalloc instead of poolMalloc so that it won't get
@@ -3001,7 +3001,7 @@ char parseCompressedProof(long statemNum)
         * sizeof(flag));
     wrkProof.hypAndLocLabel =
         malloc((size_t)wrkProofMaxSize * sizeof(struct sortHypAndLoc));
-    wrkProof.localLabelPool = malloc((size_t)wrkProofMaxSize * sizeof(char));
+    wrkProof.localLabelPool = malloc((size_t)wrkProofMaxSize);
     wrkProof.proofString =
         poolFixedMalloc(wrkProofMaxSize * (long)(sizeof(nmbrString)));
          /* Use poolFixedMalloc instead of poolMalloc so that it won't get

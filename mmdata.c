@@ -22,7 +22,7 @@ mmdata.c
 
 #include <limits.h>
 #include <setjmp.h>
-/*E*/long db=0,db0=0,db1=0,db2=0,db3=0,db4=0,db5=0,db6=0,db7=0,db8=0,db9=0;
+/*E*/long db=0,db0=0,db2=0,db3=0,db4=0,db5=0,db6=0,db7=0,db8=0,db9=0;
 flag listMode = 0; /* 0 = metamath, 1 = list utility */
 flag toolsMode = 0; /* In metamath: 0 = metamath, 1 = text tools utility */
 

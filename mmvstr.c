@@ -26,76 +26,76 @@ This is an emulation of the string functions available in VMS BASIC.
    independent of the other programs, for use with another project, do the
    following:
      (1) Remove all lines beginning with the "/ *E* /" comment.
-     (2) Remove all calls to the bug() function (6 places).
+     (2) Remove all calls to the bug() function (4 places).
    To see an example of stand-alone usage of the mmvstr.c functions, see
    the program lattice.c and several others included in
      http://us.metamath.org/downloads/quantum-logic.tar.gz
 */
 
-/* Remaining prototypes (outside of mmvstr.h) */
-char *tempAlloc(long size);     /* String memory allocation/deallocation */
+/*E*/long db1=0;
+#ifdef NDEBUG
+# define INCDB1(x)
+#else
+# define INCDB1(x) db1+=(x)
+#endif
 
 #define MAX_ALLOC_STACK 100
 int tempAllocStackTop=0;        /* Top of stack for tempAlloc functon */
 int startTempAllocStack=0;      /* Where to start freeing temporary allocation
                                     when let() is called (normally 0, except in
                                     special nested vstring functions) */
-char *tempAllocStack[MAX_ALLOC_STACK];
+void *tempAllocStack[MAX_ALLOC_STACK];
 
-
-vstring tempAlloc(long size)    /* String memory allocation/deallocation */
+static void freeTempAlloc(void)
 {
-  /* When "size" is >0, "size" bytes are allocated. */
-  /* When "size" is 0, all memory previously allocated with this */
-  /* function is deallocated. */
+  /* All memory previously allocated with tempAlloc is deallocated. */
   /* EXCEPT:  When startTempAllocStack != 0, the freeing will start at
      startTempAllocStack. */
   int i;
-  if (size) {
-    if (tempAllocStackTop>=(MAX_ALLOC_STACK-1)) {
-      printf("*** FATAL ERROR ***  Temporary string stack overflow\n");
-#if __STDC__
-      fflush(stdout);
-#endif
-      bug(2201);
-    }
-    if (!(tempAllocStack[tempAllocStackTop++]=malloc((size_t)size))) {
-      printf("*** FATAL ERROR ***  Temporary string allocation failed\n");
-#if __STDC__
-      fflush(stdout);
-#endif
-      bug(2202);
-    }
-/*E*/db1=db1+(size)*(long)(sizeof(char));
-/*E* /printf("%ld adding\n",db1);*/
-    return (tempAllocStack[tempAllocStackTop-1]);
-  } else {
-    for (i=startTempAllocStack; i<tempAllocStackTop; i++) {
-/*E*/db1=db1-((long)strlen(tempAllocStack[i])+1)*(long)(sizeof(char));
+  for (i=startTempAllocStack; i<tempAllocStackTop; i++) {
+/*E*/INCDB1(-1-(long)strlen(tempAllocStack[i]));
 /*E* /printf("%ld removing [%s]\n",db1,tempAllocStack[i]);*/
-      free(tempAllocStack[i]);
-    }
-    tempAllocStackTop=startTempAllocStack;
-    return (NULL);
+    free(tempAllocStack[i]);
   }
+  tempAllocStackTop=startTempAllocStack;  
 }
 
+static void pushTempAlloc(void *mem)
+{
+  if (tempAllocStackTop>=(MAX_ALLOC_STACK-1)) {
+    printf("*** FATAL ERROR ***  Temporary string stack overflow\n");
+#if __STDC__
+    fflush(stdout);
+#endif
+    bug(2201);
+  }
+  tempAllocStack[tempAllocStackTop++]=mem;
+}
+
+static void* tempAlloc(long size)  /* String memory allocation/deallocation */
+{
+  void* memptr = malloc((size_t)size);
+  if (!memptr || size == 0) {
+    printf("*** FATAL ERROR ***  Temporary string allocation failed\n");
+#if __STDC__
+    fflush(stdout);
+#endif
+    bug(2202);
+  }
+  pushTempAlloc(memptr);
+/*E*/INCDB1(size);
+/*E* /printf("%ld adding\n",db1);*/
+  return memptr;
+}
 
 /* Make string have temporary allocation to be released by next let() */
 /* Warning:  after makeTempAlloc() is called, the genString may NOT be
    assigned again with let() */
 void makeTempAlloc(vstring s)
 {
-    if (tempAllocStackTop>=(MAX_ALLOC_STACK-1)) {
-      printf("*** FATAL ERROR ***  Temporary string stack overflow\n");
-#if __STDC__
-      fflush(stdout);
-#endif
-      bug(2203);
-    }
-    tempAllocStack[tempAllocStackTop++]=s;
-/*E*/db1=db1+((long)strlen(s)+1)*(long)(sizeof(char));
-/*E*/db=db-((long)strlen(s)+1)*(long)(sizeof(char));
+  pushTempAlloc(s);
+/*E*/INCDB1((long)strlen(s)+1);
+/*E*/db-=(long)strlen(s)+1;
 /*E* /printf("%ld temping[%s]\n",db1,s);*/
 }
 
@@ -142,12 +142,9 @@ void let(vstring *target,vstring source)        /* String assignment */
     *target= "";
   }
 
-  tempAlloc(0); /* Free up temporary strings used in expression computation */
+  freeTempAlloc(); /* Free up temporary strings used in expression computation */
 
 } /* let */
-
-
-
 
 vstring cat(vstring string1,...)        /* String concatenation */
 #define MAX_CAT_ARGS 50
@@ -189,7 +186,7 @@ vstring cat(vstring string1,...)        /* String concatenation */
 
 /* input a line from the user or from a file */
 /* returns whether a (possibly empty) line was successfully read */
-int linput(FILE *stream,vstring ask,vstring *target)
+int linput(FILE *stream,const char* ask,vstring *target)
 {
   /*
     BASIC:  linput "what";a$
@@ -201,12 +198,12 @@ int linput(FILE *stream,vstring ask,vstring *target)
   */
   /* This function prints a prompt (if 'ask' is not NULL), gets a line from
     the stream, and assigns it to target using the let(&...) function.
-    NULL is returned when end-of-file is encountered.  The vstring
+    0 is returned when end-of-file is encountered.  The vstring
     *target MUST be initialized to "" or previously assigned by let(&...)
     before using it in linput. */
   char f[10001]; /* Allow up to 10000 characters */
   int result = 0;
-  int eol_found;
+  int eol_found = 0;
   if (ask) {
     printf("%s",ask);
 #if __STDC__
@@ -214,7 +211,6 @@ int linput(FILE *stream,vstring ask,vstring *target)
 #endif
   }
   if (stream == NULL) stream = stdin;
-  eol_found = 0;
   while (!eol_found && fgets(f,sizeof(f),stream))
   {
     size_t endpos = strlen(f) - 1;
@@ -237,20 +233,11 @@ long len(vstring s)
   return ((long)strlen(s));
 }
 
-
 /* Extract sin from character position start to stop into sout */
 vstring seg(vstring sin, long start, long stop)
 {
-  vstring sout;
-  long length;
   if (start < 1) start = 1;
-  if (stop < 1) stop = 0;
-  length = stop - start + 1;
-  if (length < 0) length = 0;
-  sout=tempAlloc(length + 1);
-  strncpy(sout, sin + start - 1, (size_t)length);
-  sout[length] = 0;
-  return (sout);
+  return mid(sin, start, stop - start + 1);
 }
 
 /* Extract sin from character position start for length len */
@@ -792,7 +779,7 @@ vstring str(double f)
       s[i]=0;                           /* delete the trailing 0 */
     }
     if (s[i]=='.') s[i]=0;              /* delete trailing period */
-/*E*/db1 = db1 - (49 - (long)strlen(s));
+/*E*/INCDB1(-(49 - (long)strlen(s)));
   }
   return (s);
 }
