@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2005  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2013  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -23,6 +23,7 @@ extern pntrString *rawArgPntr;
 extern nmbrString *rawArgNmbr;
 extern long rawArgs;
 extern pntrString *fullArg;
+extern vstring fullArgString; /* 1-Nov-2013 nm fullArg as one string */
 extern vstring commandPrompt;
 extern vstring commandLine;
 extern long showStatement;

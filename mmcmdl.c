@@ -26,6 +26,7 @@ pntrString *rawArgPntr = NULL_PNTRSTRING;
 nmbrString *rawArgNmbr = NULL_NMBRSTRING;
 long rawArgs = 0;
 pntrString *fullArg = NULL_PNTRSTRING;
+vstring fullArgString = ""; /* 1-Nov-2013 nm fullArg as one string */
 vstring commandPrompt = "";
 vstring commandLine = "";
 long showStatement = 0;
@@ -61,7 +62,8 @@ flag processCommandLine(void)
       let(&tmpStr,cat("DBG|",
           "HELP|WRITE|SHOW|SEARCH|SAVE|SUBMIT|OPEN|CLOSE|",
           "SET|FILE|BEEP|EXIT|QUIT|VERIFY|INITIALIZE|ASSIGN|REPLACE|",
-        "LET|UNIFY|IMPROVE|MINIMIZE_WITH|MATCH|DELETE|MORE|TOOLS|MIDI|<HELP>",
+        "LET|UNIFY|IMPROVE|MINIMIZE_WITH|MATCH|DELETE|UNDO|REDO|",
+        "MORE|TOOLS|MIDI|<HELP>",
         NULL));
     }
     if (!getFullArg(0,tmpStr)) {
@@ -73,7 +75,8 @@ flag processCommandLine(void)
           "BEEP|EXIT|QUIT|READ|ERASE|",
           "OPEN|CLOSE|SHOW|SEARCH|SET|VERIFY|SUBMIT|SYSTEM|PROVE|FILE|WRITE|",
           "ASSIGN|REPLACE|MATCH|UNIFY|LET|INITIALIZE|DELETE|IMPROVE|",
-          "MINIMIZE_WITH|SAVE|DEMO|INVOKE|CLI|EXPLORE|TEX|LATEX|HTML|MORE|",
+          "MINIMIZE_WITH|UNDO|REDO|SAVE|DEMO|INVOKE|CLI|EXPLORE|TEX|",
+          "LATEX|HTML|MORE|",
           "TOOLS|MIDI|$|<$>", NULL))) goto pclbad;
       if (cmdMatches("HELP OPEN")) {
         if (!getFullArg(2, "LOG|TEX|HTML|<LOG>")) goto pclbad;
@@ -91,7 +94,7 @@ flag processCommandLine(void)
       }
       if (cmdMatches("HELP SET")) {
         if (!getFullArg(2, cat(
-            "ECHO|SCROLL|WIDTH|HEIGHT|UNIFICATION_TIMEOUT|",
+            "ECHO|SCROLL|WIDTH|HEIGHT|UNDO|UNIFICATION_TIMEOUT|",
             "EMPTY_SUBSTITUTION|SEARCH_LIMIT|JEREMY_HENTY_FILTER|<ECHO>",
             NULL)))
             goto pclbad;
@@ -1051,14 +1054,18 @@ flag processCommandLine(void)
       goto pclgood;
     }
 
-    if (cmdMatches("REVERT")) {
+    if (cmdMatches("UNDO")) {
+      goto pclgood;
+    }
+
+    if (cmdMatches("REDO")) {
       goto pclgood;
     }
 
     if (cmdMatches("SET")) {
       let(&tmpStr, cat(
           /*"ECHO|SCROLL|UNIVERSE|",*/
-          "WIDTH|HEIGHT|ECHO|SCROLL|",
+          "WIDTH|HEIGHT|UNDO|ECHO|SCROLL|",
           "DEBUG|MEMORY_STATUS|SEARCH_LIMIT|UNIFICATION_TIMEOUT|",
           "EMPTY_SUBSTITUTION|JEREMY_HENTY_FILTER|<WIDTH>",NULL));
       if (!getFullArg(1,tmpStr)) goto pclbad;
@@ -1136,6 +1143,14 @@ flag processCommandLine(void)
         if (!getFullArg(2, cat(
            "# What is number of lines your screen displays <",
             str(screenHeight), ">? ", NULL)))
+          goto pclbad;
+        goto pclgood;
+      }
+
+      if (cmdMatches("SET UNDO")) {
+        if (!getFullArg(2, cat(
+           "# What is the maximum number of UNDOs <",
+            str(processUndoStack(NULL, PUS_GET_SIZE, "", 0)), ">? ", NULL)))
           goto pclbad;
         goto pclgood;
       }
@@ -1556,6 +1571,14 @@ flag processCommandLine(void)
     goto pclbad;
   }
 
+  /* 1-Nov-2013 nm Create a single string containing the fullArg tokens */
+  let(&fullArgString, "");
+  for (i = 0; i < pntrLen(fullArg); i++) {
+    let(&fullArgString, cat(fullArgString, " ", fullArg[i], NULL));
+  }
+  let(&fullArgString, right(fullArgString, 2)); /* Strip leading space */
+
+
   /* Deallocate memory */
   let(&defaultArg,"");
   let(&tmpStr,"");
@@ -1645,6 +1668,7 @@ flag getFullArg(long arg, vstring cmdList1)
 
 
   /* Handle special case - any arbitrary string is OK */
+  /* '*' means any string, '&' means a file */
   /* However, "|$<$>" also allows null string (no argument) */
   if (cmdList[0] == '*' || cmdList[0] == '&') {
     let(&defaultCmd,
@@ -1686,6 +1710,24 @@ flag getFullArg(long arg, vstring cmdList1)
     } /* End of asking user for additional argument */
 
     let(&keyword,rawArgPntr[arg]);
+
+    /* 1-Nov-2013 nm */
+    /* Convert abbreviations of FIRST, LAST, ALL to
+       full keywords.  The rest of the program works fine without doing this,
+       but it provides better cosmetic appearance when the command is echoed
+       such as in during the UNDO command. */
+    if (cmdList[0] == '*') {
+      if ((keyword[0] == 'f' || keyword[0] == 'F')
+          && instr(1, cmdList, " FIRST") != 0)
+        let(&keyword, "FIRST");
+      if ((keyword[0] == 'l' || keyword[0] == 'L')
+          && instr(1, cmdList, " LAST") != 0)
+        let(&keyword, "LAST");
+      if ((keyword[0] == 'a' || keyword[0] == 'A')
+          && instr(1, cmdList, " ALL") != 0)
+        let(&keyword, "ALL");
+    }
+
     if (keyword[0] == 0) { /* Use default argument */
       /* This case handles blank arguments on completely input command line */
       let(&keyword, seg(defaultCmd,2,len(defaultCmd) - 1));

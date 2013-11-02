@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2012  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2013  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -715,6 +715,26 @@ H("");
 H("Type EXIT to exit the MM-PA> prompt and get back to the MM> prompt.");
 H("Another EXIT will then get you out of Metamath.");
 H("");
+
+printHelp = !strcmp(saveHelpCmd, "HELP UNDO");
+H("Syntax:  UNDO");
+H("");
+H("This command, available in the Proof Assistant only, allows any command");
+H("(such as ASSIGN, DELETE, IMPROVE) that affects the proof to be reversed.");
+H("See also HELP REDO and HELP SET UNDO.");
+H("");
+
+
+printHelp = !strcmp(saveHelpCmd, "HELP REDO");
+H("Syntax:  REDO");
+H("");
+H("This command, available in the Proof Assistant only, reverses the");
+H("effect of the last UNDO command.  Note that REDO can be issued only");
+H("if no proof-changing commands (such as ASSIGN, DELETE, IMPROVE)");
+H("were issued after the last UNDO.  A sequence of REDOs will reverse as");
+H("many UNDOs as were issued since the last proof-changing command.");
+H("");
+
 
 
 printHelp = !strcmp(saveHelpCmd, "HELP HTML");

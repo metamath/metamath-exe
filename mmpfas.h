@@ -176,4 +176,18 @@ void copyProofStruct(struct pip_struct *outProofStruct,
 /* Clears the Proof Assistant proof state */
 void deallocProofStruct(struct pip_struct *proofStruct);
 
+/* Actions for processUndoStack() */
+#define PUS_INIT 1
+#define PUS_PUSH 2
+#define PUS_UNDO 3
+#define PUS_REDO 4
+#define PUS_NEW_SIZE 5
+#define PUS_GET_SIZE 6
+#define PUS_GET_STATUS 7
+/* Handle the PUSH, UNDO, and REDO commands */
+long processUndoStack(struct pip_struct *proofStruct,
+    char action,
+    vstring info, /* Info to print upon UNDO or REDO */
+    long newStackSize); /* Used only by NEW_SIZE */
+
 #endif /* METAMATH_MMPFAS_H_ */

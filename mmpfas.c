@@ -3066,3 +3066,235 @@ void deallocProofStruct(struct pip_struct *proofStruct)
   return;
 } /* deallocProofStruct */
 
+
+/* 1-Nov-2013 nm Added this function */
+#define DEFAULT_UNDO_STACK_SIZE 6
+/* This function handles the UNDO/REDO commands.  It is called
+   with action PUS_INIT then with PUS_PUSH upon entering MM-PA.  It is
+   called with PUS_INIT upon exiting MM-PA.  It should be called with
+   PUS_PUSH after every command changing the proof.
+
+   PUS_UNDO and PUS_REDO are called by the UNDO and REDO CLI commands.
+
+   PUS_NEW_SIZE is called by the SET UNDO command to change the size
+   of the undo stack.  SET UNDO may be called outside or inside MM-PA;
+   in the latter case, the current UNDO stack is aborted (discarded).
+   If inside of MM-PA, PUS_PUSH must be called after PUS_NEW_SIZE.
+
+   PUS_GET_SIZE does not affect the stack; it returns the maximum UNDOs
+   PUS_GET_STATUS does not affect the stack; it returns 0 if it is
+     safe to exit MM-PA without saving (assuming there was no SAVE NEW_PROOF
+     while the UNDO stack was not empty).
+
+   Inputs:
+   proofStruct - must be current proof in progress (&proofInProgress)
+       for PUS_PUSH, PUS_UNDO, and PUS_REDO actions; may be NULL for
+       other actions
+   action - the action the function should perform
+   info - description of command which will be reversed by UNDO; required
+       for all PUS_PUSH actions (except the first upon entering MM-PA that
+       loads the starting proof structure).  It is ignored for all other
+       actions and may be the empty string.
+   newSize - for PUS_NEW_SIZE, the new size (>= 0).
+
+   Return value = see PUS_GET_SIZE and PUS_GET_STATUS above
+ */
+long processUndoStack(struct pip_struct *proofStruct,
+    char action,  /* PUS_INIT 1 Deallocates and initializes undo stack
+                     PUS_PUSH 2 Pushes the current proof state onto the stack
+                     PUS_UNDO 3 Restores the previous proof state
+                     PUS_REDO 4 Reverses PUS_UNDO
+                     PUS_NEW_SIZE 5 Changes size of stack
+                     PUS_GET_SIZE 6 Returns stack size
+                     PUS_GET_STATUS 7 Returns proof changed status */
+    vstring info, /* Info to print upon PUS_UNDO or PUS_REDO */
+    long newSize) /* New maximum number of UNDOs for PUS_NEW_SIZE */
+{
+
+  static struct pip_struct *proofStack = NULL;
+  static pntrString *infoStack = NULL_PNTRSTRING; /* UNDO/REDO command info */
+  static long stackSize = DEFAULT_UNDO_STACK_SIZE; /* Change w/ SET UNDO */
+  static long stackEnd = -1;
+  static long stackPtr = -1;
+  static flag firstTime = 1;
+  static flag stackOverflowed = 0; /* For user msg and prf chg determination */
+  static flag stackAborted = 0;  /* For proof changed determination */
+  long i;
+
+  if (stackPtr < -1 || stackPtr > stackEnd || stackPtr > stackSize - 1
+      || stackEnd < -1 || stackEnd > stackSize -1 ) {
+    bug(1858);
+  }
+
+  if (firstTime == 1) { /* First time ever called */
+    firstTime = 0;
+    proofStack = malloc((size_t)(stackSize) * sizeof(struct pip_struct));
+    if (!proofStack) bug(1859);
+    for (i = 0; i < stackSize; i++) { /* Set to empty proofs */
+      proofStack[i].proof = NULL_NMBRSTRING;
+      proofStack[i].target = NULL_PNTRSTRING;
+      proofStack[i].source = NULL_PNTRSTRING;
+      proofStack[i].user = NULL_PNTRSTRING;
+    }
+    pntrLet(&infoStack, pntrSpace(stackSize)); /* Set to empty vstrings */
+  }
+
+  if (!proofStack) bug(1860);
+
+  switch (action) {
+    case PUS_GET_SIZE:
+    case PUS_GET_STATUS:
+      break;  /* Do nothing; just return stack size */
+
+    case PUS_INIT:
+    case PUS_NEW_SIZE:
+      /* Deallocate old contents */
+      for (i = 0; i <= stackEnd; i++) {
+        deallocProofStruct(&(proofStack[i]));
+        let((vstring *)(&(infoStack[i])), "");
+      }
+
+      /* If UNDOs weren't exhausted and thus are abandoned due to size change,
+         this flag will prevent the program from falsely thinking the proof
+         hasn't changed */
+      if (action == PUS_NEW_SIZE) {
+        if (stackPtr > 0) {
+          print2("The previous UNDOs are no longer available.\n");
+          stackAborted = 1;
+        }
+        /* Since we're going to reset stackOverflowed, save its state
+           in stackAborted so we don't falsely exit MM-PA without saving */
+        if (stackOverflowed) stackAborted = 1;
+      }
+
+      stackEnd = -1; /* Nothing in UNDO stack now */
+      stackPtr = -1;
+      stackOverflowed = 0;
+
+      if (action == PUS_INIT) {
+        stackAborted = 0;
+        break;
+      }
+
+      /* Re-size the stack */
+      /* Free the old stack (pntrLet() below will free old infoStack) */
+      free(proofStack);
+      /* Reinitialize new stack */
+      stackSize = newSize + 1;
+      if (stackSize < 1) bug(1867);
+      proofStack = malloc((size_t)(stackSize) * sizeof(struct pip_struct));
+      if (!proofStack) bug(1861);
+      for (i = 0; i < stackSize; i++) { /* Set to empty proofs */
+        proofStack[i].proof = NULL_NMBRSTRING;
+        proofStack[i].target = NULL_PNTRSTRING;
+        proofStack[i].source = NULL_PNTRSTRING;
+        proofStack[i].user = NULL_PNTRSTRING;
+      }
+      pntrLet(&infoStack, pntrSpace(stackSize)); /* Set to empty vstrings */
+      break;
+
+    case PUS_PUSH:
+      /* Warning: PUS_PUSH must be called upon entering Proof Assistant to put
+         the original proof into stack locaton 0.  It also must be
+         called after PUS_NEW_SIZE if inside of MM-PA. */
+
+      /* Any new command after UNDO should erase the REDO part */
+      if (stackPtr < stackEnd) {
+        for (i = stackPtr + 1; i <= stackEnd; i++) {
+          deallocProofStruct(&(proofStack[i]));
+          let((vstring *)(&(infoStack[i])), "");
+        }
+        stackEnd = stackPtr;
+      }
+
+      /* If the stack is full, deallocate bottom of stack and move things
+         down to make room for new stack entry */
+      if (stackPtr == stackSize - 1) {
+        stackOverflowed = 1; /* To  modify user message if UNDO exhausted */
+        deallocProofStruct(&(proofStack[0])); /* Deallocate the bottom entry */
+        let((vstring *)(&(infoStack[0])), "");
+        for (i = 0; i < stackSize - 1; i++) {
+          /* Instead of
+               "copyProofStruct(&(proofStack[i]), proofStack[i + 1]);
+            (which involves de/reallocation), copy the pointers directly
+            for improved speed */
+          proofStack[i].proof = proofStack[i + 1].proof;
+          proofStack[i].target = proofStack[i + 1].target;
+          proofStack[i].source = proofStack[i + 1].source;
+          proofStack[i].user = proofStack[i + 1].user;
+          infoStack[i] = infoStack[i + 1];
+        }
+        /* Now initialize the top of the stack pointers (don't deallocate since
+           its old contents are pointed to by the next one down) */
+        proofStack[stackPtr].proof = NULL_NMBRSTRING;
+        proofStack[stackPtr].target = NULL_PNTRSTRING;
+        proofStack[stackPtr].source = NULL_PNTRSTRING;
+        proofStack[stackPtr].user = NULL_PNTRSTRING;
+        infoStack[stackPtr] = "";
+        stackPtr--;
+        stackEnd--;
+        if (stackPtr != stackSize - 2 || stackPtr != stackEnd) bug(1862);
+      }
+
+      /* Add the new command to the stack */
+      stackPtr++;
+      stackEnd++;
+      if (stackPtr != stackEnd) bug(1863);
+      copyProofStruct(&(proofStack[stackPtr]), *proofStruct);
+      let((vstring *)(&(infoStack[stackPtr])), info);
+      break;
+
+    case PUS_UNDO:
+      if (stackPtr < 0) bug(1864); /* A first PUSH wasn't called upon entry to
+                   Proof Assistant (MM-PA) */
+      if (stackPtr == 0) {
+        if (stackOverflowed == 0) {
+          print2("There is nothing to undo.\n");
+        } else {
+          printLongLine(cat("Exceeded maximum of ", str(stackSize - 1),
+              " UNDOs.  To increase the number, see HELP SET UNDO.",
+              NULL), "", " ");
+        }
+        break;
+      }
+
+      /* Print the Undid message for the most recent action */
+      printLongLine(cat("Undid:  ", infoStack[stackPtr],
+              NULL), "", " ");
+      stackPtr--;
+      /* Restore the version of the proof before that action */
+      copyProofStruct(&(*proofStruct), proofStack[stackPtr]);
+      break;
+
+    case PUS_REDO:
+      if (stackPtr == stackEnd) {
+        print2("There is nothing more to redo.\n");
+        break;
+      }
+
+      /* Move up stack pointer and return its entry. */
+      stackPtr++;
+      /* Restore the last undo and print the message for its action */
+      copyProofStruct(&(*proofStruct), proofStack[stackPtr]);
+      printLongLine(cat("Redid:  ", infoStack[stackPtr],
+              NULL), "", " ");
+      break;
+
+    default:
+      bug(1865);
+  } /* end switch(action) */
+
+  if (stackPtr < -1 || stackPtr > stackEnd || stackPtr > stackSize - 1
+      || stackEnd < -1 || stackEnd > stackSize -1 ) {
+    bug(1866);
+  }
+
+  if (action == PUS_GET_STATUS) {
+    /* Return the OR of all conditions which might indicate that the
+       proof has changed, so that it may not be safe to exit MM-PA without
+       a warning to save the proof */
+    return (stackOverflowed || stackAborted || stackPtr != 0);
+  } else {
+    return stackSize - 1;
+  }
+} /* processUndoStack */

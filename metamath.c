@@ -5,7 +5,9 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.07.98 30-Oct-2013"
+#define MVERSION "0.07.99 1-Nov-2013"
+/* 0.07.99 1-Nov-2013 nm metamath.c, mmpfas.h,c, mmcmdl.h,c, mmhlpa.c,
+   mmhlpb.c - added UNDO, REDO, SET UNDO commands (see HELP UNDO) */
 /* 0.07.98 30-Oct-2013 Wolf Lammen mmvstr.c,h, mmiou.c, mmpars.c,
    mmdata.c  - improve code style and program structure */
 /* 0.07.97 20-Oct-2013 Wolf Lammen mmvstr.c,h, metamath.c - improved linput();
@@ -404,11 +406,16 @@ void command(int argc, char *argv[])
   nmbrString *nmbrTmp = NULL_NMBRSTRING;
   nmbrString *nmbrSaveProof = NULL_NMBRSTRING;
   /*pntrString *pntrTmpPtr;*/ /* Pointer only; not allocated directly */
-  /*pntrString *pntrTmpPtr1;*/ /* Pointer only; not allocated directly */
-  /*pntrString *pntrTmpPtr2;*/ /* Pointer only; not allocated directly */
   pntrString *pntrTmp = NULL_PNTRSTRING;
   pntrString *expandedProof = NULL_PNTRSTRING;
   flag tmpFlag;
+
+  /* 1-Nov-2013 nm proofSavedFlag tells us there was at least one
+     SAVE NEW_PROOF during the MM-PA session while the UNDO stack wasn't
+     empty, meaning that "UNDO stack empty" is no longer a reliable indication
+     that the proof wasn't changed.  It is cleared upon entering MM-PA, and
+     set by SAVE NEW_PROOF. */
+  flag proofSavedFlag = 0;
 
   /* Variables for SHOW PROOF */
   flag pipFlag; /* Proof-in-progress flag */
@@ -765,7 +772,15 @@ void command(int argc, char *argv[])
 
       if (PFASmode) {
 
-        if (proofChanged) {
+        if (proofChanged &&
+              /* If proofChanged, but the UNDO stack is empty (and
+                 there were no other conditions such as stack overflow),
+                 the proof didn't really change, so it is safe to
+                 exit MM-PA without warning */
+              (processUndoStack(NULL, PUS_GET_STATUS, "", 0)
+                 /* However, if the proof was saved earlier, UNDO stack
+                    empty no longer indicates proof didn't change */
+                 || proofSavedFlag)) {
           print2(
               "Warning:  You have not saved changes to the proof of \"%s\".\n",
               statement[proveStatement].labelName); /* 21-Jan-06 nm */
@@ -780,8 +795,11 @@ void command(int argc, char *argv[])
             /* User specified / FORCE, so answer question automatically */
             print2("Do you want to EXIT anyway (Y, N) <N>? Y\n");
           }
-          proofChanged = 0;
         }
+
+        proofChanged = 0;
+        processUndoStack(NULL, PUS_INIT, "", 0);
+        proofSavedFlag = 0; /* Will become 1 if proof is ever saved */
 
         print2(
  "Exiting the Proof Assistant.  Type EXIT again to exit Metamath.\n");
@@ -3150,6 +3168,8 @@ void command(int argc, char *argv[])
         print2("(PROVE...) The statement you are proving is '%s'.\n",
             statement[proveStatement].labelName);
       }
+      print2("(SET UNDO...) The maximum number of UNDOs is %ld.\n",
+          processUndoStack(NULL, PUS_GET_SIZE, "", 0));
       print2(
     "(SET UNIFICATION_TIMEOUT...) The unification timeout parameter is %ld.\n",
           userMaxUnifTrials);
@@ -3685,6 +3705,11 @@ void command(int argc, char *argv[])
           if (saveFlag) {
             sourceChanged = 1;
             proofChanged = 0;
+            if (processUndoStack(NULL, PUS_GET_STATUS, "", 0)) {
+              /* The UNDO stack may not be empty */
+              proofSavedFlag = 1; /* UNDO stack empty no longer reliably
+                             indicates that proof hasn't changed */
+            }
             /* ASCII 1 is a flag that string was allocated and not part of
                original source file text buffer */
             let(&printString, cat(chr(1), "\n", printString, NULL));
@@ -4017,10 +4042,63 @@ void command(int argc, char *argv[])
         /* 6/14/98 end */
       }
 
+      processUndoStack(NULL, PUS_INIT, "", 0); /* Optional? */
+      /* Put the initial proof into the UNDO stack; we don't need
+         the info string since it won't be undone */
+      processUndoStack(&proofInProgress, PUS_PUSH, "", 0);
       continue;
     }
 
 
+    /* 1-Nov-2013 nm Added UNDO */
+    if (cmdMatches("UNDO")) {
+      processUndoStack(&proofInProgress, PUS_UNDO, "", 0);
+      proofChanged = 1; /* Maybe make this more intelligent some day */
+      /* 6/14/98 - Automatically display new unknown steps
+         ???Future - add switch to enable/defeat this */
+      typeProof(proveStatement,
+          1 /*pipFlag*/,
+          0 /*startStep*/,
+          0 /*endStep*/,
+          0 /*endIndent*/,
+          1 /*essentialFlag*/,
+          0 /*renumberFlag*/,
+          1 /*unknownFlag*/,
+          0 /*notUnifiedFlag*/,
+          0 /*reverseFlag*/,
+          0 /*noIndentFlag*/,
+          0 /*splitColumn*/,
+          0 /*skipRepeatedSteps*/, /* 28-Jun-2013 nm */
+          0 /*texFlag*/,
+          0 /*htmlFlag*/);
+      /* 6/14/98 end */
+      continue;
+    }
+
+    /* 1-Nov-2013 nm Added REDO */
+    if (cmdMatches("REDO")) {
+      processUndoStack(&proofInProgress, PUS_REDO, "", 0);
+      proofChanged = 1; /* Maybe make this more intelligent some day */
+      /* 6/14/98 - Automatically display new unknown steps
+         ???Future - add switch to enable/defeat this */
+      typeProof(proveStatement,
+          1 /*pipFlag*/,
+          0 /*startStep*/,
+          0 /*endStep*/,
+          0 /*endIndent*/,
+          1 /*essentialFlag*/,
+          0 /*renumberFlag*/,
+          1 /*unknownFlag*/,
+          0 /*notUnifiedFlag*/,
+          0 /*reverseFlag*/,
+          0 /*noIndentFlag*/,
+          0 /*splitColumn*/,
+          0 /*skipRepeatedSteps*/, /* 28-Jun-2013 nm */
+          0 /*texFlag*/,
+          0 /*htmlFlag*/);
+      /* 6/14/98 end */
+      continue;
+    }
 
     if (cmdMatches("UNIFY")) {
       m = nmbrLen(proofInProgress.proof); /* Original proof length */
@@ -4042,6 +4120,7 @@ void command(int argc, char *argv[])
         autoUnify(1);
         if (proofChangedFlag) {
           proofChanged = 1; /* Cumulative flag */
+          processUndoStack(&proofInProgress, PUS_PUSH, fullArgString, 0);
         }
         continue;
       }
@@ -4055,10 +4134,14 @@ void command(int argc, char *argv[])
           print2(
   "Steps were unified.  SHOW NEW_PROOF / NOT_UNIFIED to see any remaining.\n");
           proofChanged = 1; /* Cumulative flag */
+          processUndoStack(&proofInProgress, PUS_PUSH, fullArgString, 0);
         }
       } else {
         q = 0;
         while (1) {
+          /* Repeat the unifications over and over until done, since
+             a later unification may improve the ability of an aborted earlier
+             one to be done without timeout */
           proofChangedFlag = 0; /* This flag is set by autoUnify() and
                                    interactiveUnifyStep() */
           autoUnify(0);
@@ -4068,13 +4151,19 @@ void command(int argc, char *argv[])
           }
           autoUnify(1); /* 1 means print congratulations if complete */
           if (!proofChangedFlag) {
-            if (!q) print2("No new unifications were made.\n");
+            if (!q) {
+              print2("No new unifications were made.\n");
+            } else {
+              /* If q=1, then we are in the 2nd or later pass, which means
+                 there was a change in the 1st pass. */
+              print2(
+  "Steps were unified.  SHOW NEW_PROOF / NOT_UNIFIED to see any remaining.\n");
+              proofChanged = 1; /* Cumulative flag */
+              processUndoStack(&proofInProgress, PUS_PUSH, fullArgString, 0);
+            }
             break; /* while (1) */
           } else {
-            q = 1; /* Flag that a 2nd pass was done */
-            print2(
-  "Steps were unified.  SHOW NEW_PROOF / NOT_UNIFIED to see any remaining.\n");
-            proofChanged = 1; /* Cumulative flag */
+            q = 1; /* Flag that we're starting a 2nd or later pass */
           }
         } /* End while (1) */
       }
@@ -4136,6 +4225,9 @@ void command(int argc, char *argv[])
 
         autoUnify(1);
         proofChanged = 1; /* Cumulative flag */
+        /* 1-Nov-2013 nm Why is proofChanged set unconditionally above?
+           Do we need the processUndoStack() call? */
+        processUndoStack(&proofInProgress, PUS_PUSH, fullArgString, 0);
 
         continue;
       } /* End if MATCH STEP */
@@ -4169,6 +4261,7 @@ void command(int argc, char *argv[])
         if (k) {
           proofChangedFlag = 1; /* Restore it */
           proofChanged = 1; /* Cumulative flag */
+          processUndoStack(&proofInProgress, PUS_PUSH, fullArgString, 0);
           print2("Steps %ld and above have been renumbered.\n", k);
         }
         autoUnify(1);
@@ -4207,8 +4300,10 @@ void command(int argc, char *argv[])
 
         proofChangedFlag = 1; /* Flag to push 'undo' stack */
         proofChanged = 1; /* Cumulative flag */
+        processUndoStack(&proofInProgress, PUS_PUSH, fullArgString, 0);
 
       }
+
       if (cmdMatches("LET STEP")) {
 
         /* 14-Sep-2012 nm */
@@ -4284,6 +4379,7 @@ void command(int argc, char *argv[])
         autoUnify(1);
         proofChangedFlag = 1; /* Flag to push 'undo' stack */
         proofChanged = 1; /* Cumulative flag */
+        processUndoStack(&proofInProgress, PUS_PUSH, fullArgString, 0);
       }
       /* 6/14/98 - Automatically display new unknown steps
          ???Future - add switch to enable/defeat this */
@@ -4498,10 +4594,12 @@ void command(int argc, char *argv[])
       }
       */
       /* 8-Apr-05 nm Added: */
+      /* 1-Nov-2013 nm No longer needed because of UNDO
       printLongLine(cat("To undo the assignment, DELETE STEP ",
               str(s - m + n), " and if needed INITIALIZE, UNIFY.",
               NULL),
               "", " ");
+      */
 
       /* 6/14/98 - Automatically display new unknown steps
          ???Future - add switch to enable/defeat this */
@@ -4525,6 +4623,7 @@ void command(int argc, char *argv[])
 
       proofChangedFlag = 1; /* Flag to push 'undo' stack (future) */
       proofChanged = 1; /* Cumulative flag */
+      processUndoStack(&proofInProgress, PUS_PUSH, fullArgString, 0);
       continue;
 
     } /* cmdMatches("ASSIGN") */
@@ -4711,6 +4810,7 @@ void command(int argc, char *argv[])
 
       proofChangedFlag = 1; /* Flag to push 'undo' stack */
       proofChanged = 1; /* Cumulative flag */
+      processUndoStack(&proofInProgress, PUS_PUSH, fullArgString, 0);
 
       /* 16-Sep-2012 nm */
       if (dummyVarIsoFlag == 2 && proofChangedFlag) {
@@ -4987,6 +5087,7 @@ void command(int argc, char *argv[])
 
         autoUnify(1); /* To get 'congrats' message if proof complete */
         proofChanged = 1; /* Cumulative flag */
+        processUndoStack(&proofInProgress, PUS_PUSH, fullArgString, 0);
 
         /* End if s != 0 i.e. not IMPROVE ALL */   /* 14-Sep-2012 nm */
       } else {
@@ -5145,7 +5246,9 @@ void command(int argc, char *argv[])
             print2("No new subproofs were found.\n");
             break; /* out of improveAllIter loop */
           }
-          if (proofChangedFlag) proofChanged = 1; /* Cumulative flag */
+          if (proofChangedFlag) {
+            proofChanged = 1; /* Cumulative flag */
+          }
 
           if (!nmbrElementIn(1, proofInProgress.proof, -(long)'?')) {
             break; /* Proof is complete */
@@ -5155,8 +5258,14 @@ void command(int argc, char *argv[])
 
         } /* Next improveAllIter */
 
-        if (n > 0 && proofChangedFlag) {
-          print2("Steps %ld and above have been renumbered.\n", n);
+        if (proofChangedFlag) {
+          if (n > 0) {
+            /* n is the first step number changed.  It will be 0 if
+               the numbering didn't change e.g. a $e was assigned to
+               an unknown step. */
+            print2("Steps %ld and above have been renumbered.\n", n);
+          }
+          processUndoStack(&proofInProgress, PUS_PUSH, fullArgString, 0);
         }
         if (!nmbrElementIn(1, proofInProgress.proof, -(long)'?')) {
           /* This is a redundant call; its purpose is just to give
@@ -5222,6 +5331,8 @@ void command(int argc, char *argv[])
         if (sandboxStmt == -1)
           sandboxStmt = statements + 1;  /* Default beyond db end if none */
       }
+
+      proofChangedFlag = 0;
 
       /* Added 14-Aug-2012 nm */
       /* Always scan statements in current mathbox, even if
@@ -5377,7 +5488,6 @@ void command(int argc, char *argv[])
           q = 0; /* Line length for label list */
           s = 2; /* Found one */
           proofChangedFlag = 1;
-          proofChanged = 1; /* Cumulative flag */
 
           /* 20-May-2012 nm */
           if (forbidMatchList[0]) { /* User provided a /FORBID list */
@@ -5415,15 +5525,13 @@ void command(int argc, char *argv[])
         let(&forbidMatchList, ""); /* Deallocate memory */
       }
 
+      if (proofChangedFlag) {
+        proofChanged = 1; /* Cumulative flag */
+        processUndoStack(&proofInProgress, PUS_PUSH, fullArgString, 0);
+      }
       continue;
 
     } /* End if MINIMIZE_WITH */
-
-
-    if (cmdMatches("REVERT")) {
-      /*??? Implement UNDO stack */
-      continue;
-    }
 
 
 
@@ -5480,8 +5588,8 @@ void command(int argc, char *argv[])
           0 /*htmlFlag*/);
       /* 6/14/98 end */
 
-      proofChangedFlag = 1;/* Flag for UNDO stack */
       proofChanged = 1; /* Cumulative flag */
+      processUndoStack(&proofInProgress, PUS_PUSH, fullArgString, 0);
 
       continue;
 
@@ -5540,6 +5648,7 @@ void command(int argc, char *argv[])
         /* 6/14/98 end */
 
         proofChanged = 1; /* Cumulative flag */
+        processUndoStack(&proofInProgress, PUS_PUSH, fullArgString, 0);
       } else {
         print2("?There are no floating-hypothesis steps to delete.\n");
       }
@@ -5566,6 +5675,7 @@ void command(int argc, char *argv[])
 
         print2("All steps have been initialized.\n");
         proofChanged = 1; /* Cumulative flag */
+        processUndoStack(&proofInProgress, PUS_PUSH, fullArgString, 0);
         continue;
       }
 
@@ -5580,6 +5690,7 @@ void command(int argc, char *argv[])
         print2(
       "All LET STEP user assignments have been initialized (i.e. deleted).\n");
         proofChanged = 1; /* Cumulative flag */
+        processUndoStack(&proofInProgress, PUS_PUSH, fullArgString, 0);
         continue;
       }
       /* End 16-Apr-06 */
@@ -5603,6 +5714,7 @@ void command(int argc, char *argv[])
           s);
 
       proofChanged = 1; /* Cumulative flag */
+      processUndoStack(&proofInProgress, PUS_PUSH, fullArgString, 0);
       continue;
 
     }
@@ -5893,6 +6005,28 @@ void command(int argc, char *argv[])
       /* screenHeight is one less than the physical screen to account for the
          prompt line after pausing. */
       screenHeight = s - 1;
+      continue;
+    }
+
+
+    /* 1-Nov-2013 nm Added UNDO */
+    if (cmdMatches("SET UNDO")) {
+      s = (long)val(fullArg[2]); /* Maximum UNDOs */
+      if (s < 0) s = 0;  /* Less than 0 UNDOs makes no sense */
+      /* Reset the stack size if it changed */
+      if (processUndoStack(NULL, PUS_GET_SIZE, "", 0) != s) {
+        print2(
+            "The maximum number of UNDOs was changed from %ld to %ld\n",
+            processUndoStack(NULL, PUS_GET_SIZE, "", 0), s);
+        processUndoStack(NULL, PUS_NEW_SIZE, "", s);
+        if (PFASmode == 1) {
+          /* If we're in the Proof Assistant, assign the first stack
+             entry with the current proof (the stack was erased) */
+          processUndoStack(&proofInProgress, PUS_PUSH, "", 0);
+        }
+      } else {
+        print2("The maximum number of UNDOs was not changed.\n");
+      }
       continue;
     }
 

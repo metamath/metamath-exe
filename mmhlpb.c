@@ -50,7 +50,7 @@ H("To exit Metamath, type EXIT (or its synonym QUIT).");
 H("");
 H(cat("If you need technical support, contact Norman Megill at nm",
     "@", "alum.mit.edu.", NULL));
-H("Copyright (C) 2010 Norman Megill");
+H("Copyright (C) 2013 Norman Megill");
 H("License terms:  GNU General Public License");
 H("");
 
@@ -464,6 +464,20 @@ H("of lines at which the display pauses and prompts you to continue.");
 H("");
 
 
+printHelp = !strcmp(saveHelpCmd, "HELP SET UNDO"); /* 1-Nov-2013 nm */
+H("Syntax:  SET UNDO <number>");
+H("");
+H("(This command affects the Proof Assistant only.)");
+H("");
+H("This command changes the maximum number of UNDOs.  The current maximum");
+H("can be seen with SHOW SETTINGS.  Making it larger uses more memory,");
+H("especially for large proofs.  See also HELP UNDO.");
+H("");
+H("If this command is issued while inside of the Proof Assistant, the");
+H("UNDO stack is reset (i.e. previous possible UNDOs will be lost).");
+H("");
+
+
 printHelp = !strcmp(saveHelpCmd, "HELP SET UNIFICATION_TIMEOUT");
 H("Syntax:  SET UNIFICATION_TIMEOUT <number>");
 H("");
@@ -732,6 +746,8 @@ H("SHOW STATEMENT <label> / ALT_HTML was run, the output files will be in");
 H("Unicode format.  (A future version may add explicit / HTML and / ALT_HTML");
 H("qualifiers.)");
 H("");
+
+
 
 printHelp = !strcmp(saveHelpCmd, "HELP ASSIGN");
 H("Syntax:  ASSIGN <step> <label>");
