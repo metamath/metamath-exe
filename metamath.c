@@ -5,7 +5,11 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.07.99 1-Nov-2013"
+#define MVERSION "0.100 30-Nov-2013"
+/* 0.100 30-Nov-2013 nm mmpfas.c - reversed statement scan order in
+   proveFloating(), to speed up SHOW STATEMENT df-* /HTML; metamath.c - remove
+   the unknown date place holder in SAVE NEW_PROOF; Wolf Lammen mmvstr.c -
+   some cleanup */
 /* 0.07.99 1-Nov-2013 nm metamath.c, mmpfas.h,c, mmcmdl.h,c, mmhlpa.c,
    mmhlpb.c - added UNDO, REDO, SET UNDO commands (see HELP UNDO) */
 /* 0.07.98 30-Oct-2013 Wolf Lammen mmvstr.c,h, mmiou.c, mmpars.c,
@@ -3343,7 +3347,7 @@ void command(int argc, char *argv[])
       /* 21-May-2008 nm Added wildcard handling */
       } /* next i */
       if (showStatement == 0) {
-        printLongLine(cat("?There are no labels matching \"",
+        printLongLine(cat("?There are no $p labels matching \"",
             fullArg[2], "\".  ",
             "See HELP SHOW TRACE_BACK for matching rules.", NULL), "", " ");
       }
@@ -3664,7 +3668,9 @@ void command(int argc, char *argv[])
                  proof is becomes "official." */
               /*print2("%s$([?]$) $([%s]$)\n", space(indentation), date());*/
               /* 7-Sep-04 Put space around "[<date>]" */
-              print2("%s$( [?] $) $( [%s] $)\n", space(indentation), date());
+              /*print2("%s$( [?] $) $( [%s] $)\n", space(indentation), date());*/
+              /* 30-Nov-2013 remove the unknown date placeholder */
+              print2("%s$( [%s] $)\n", space(indentation), date());
             } else {
               if (saveFlag && (instr(1, str2, "$([")
                   /* 7-Sep-04 Allow both "$([<date>])$" and "$( [<date>] )$" */

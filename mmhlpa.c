@@ -635,15 +635,6 @@ H("practice using the Proof Assistant, you may want to PROVE an existing");
 H("theorem, then delete all steps with DELETE ALL, then re-create it with");
 H("the Proof Assistant while looking at its proof display (before deletion).");
 H("");
-H("IMPORTANT:  Keep track of your work with a log file (OPEN LOG) and save");
-H("it frequently (SAVE NEW_PROOF, WRITE SOURCE), because currently there is");
-H("no undo command!  Hopefully there will be an undo command will be in a");
-H("future version.  However, you can use DELETE to reverse an ASSIGN, and");
-H("you can do DELETE FLOATING_HYPOTHESES then INITIALIZE ALL then");
-H("UNIFY ALL /INTERACTIVE to reinitialize bad unifications made accidentally");
-H("or by bad ASSIGNs.  You cannot reverse a DELETE except by EXIT / FORCE");
-H("then recovering from the last SAVE NEW_PROOF.");
-H("");
 H("The commands available to help you create a proof are the following.");
 H("See the help for the individual commands for more detail.");
 H("    SHOW NEW_PROOF [/ ALL,...] - Displays the proof in progress.");
@@ -706,6 +697,9 @@ H("        candidates matching specific math token combinations.)");
 H("    MINIMIZE_WITH - After a proof is complete, this command will attempt");
 H("        to match other database theorems to the proof to see if the proof");
 H("        size can be reduced as a result.");
+H("    UNDO - Undo the effect of a proof-changing command (all but the SHOW");
+H("        and SAVE commands above).");
+H("    REDO - Reverse the previous UNDO.");
 H("");
 H("The following commands set parameters that may be relevant to your proof:");
 H("    SET UNIFICATION_TIMEOUT");
@@ -733,6 +727,20 @@ H("effect of the last UNDO command.  Note that REDO can be issued only");
 H("if no proof-changing commands (such as ASSIGN, DELETE, IMPROVE)");
 H("were issued after the last UNDO.  A sequence of REDOs will reverse as");
 H("many UNDOs as were issued since the last proof-changing command.");
+H("");
+
+
+printHelp = !strcmp(saveHelpCmd, "HELP SET UNDO"); /* 1-Nov-2013 nm */
+H("Syntax:  SET UNDO <number>");
+H("");
+H("(This command affects the Proof Assistant only.)");
+H("");
+H("This command changes the maximum number of UNDOs.  The current maximum");
+H("can be seen with SHOW SETTINGS.  Making it larger uses more memory,");
+H("especially for large proofs.  See also HELP UNDO.");
+H("");
+H("If this command is issued while inside of the Proof Assistant, the");
+H("UNDO stack is reset (i.e. previous possible UNDOs will be lost).");
 H("");
 
 

@@ -1164,6 +1164,7 @@ void printTexHeader(flag texHeaderFlag)
     /* 14-Sep-2010 nm Added OLD_TEX (oldTexFlag) */
     if (texHeaderFlag && !oldTexFlag) {
       print2("\\documentclass{article}\n");
+      print2("\\usepackage{graphicx}\n"); /* 29-Nov-2013 nm For rotated iota */
       print2("\\usepackage{amssymb}\n");
       print2("\\usepackage{amsmath}\n"); /* For \begin{align}... */
       print2("\\usepackage{amsthm}\n");
@@ -1187,6 +1188,7 @@ void printTexHeader(flag texHeaderFlag)
       print2(
     "\\documentclass[leqno]{article}\n");
       /* LaTeX 2e */
+      print2("\\usepackage{graphicx}\n"); /* 29-Nov-2013 nm For rotated iota */
       print2(
     "\\usepackage{amssymb}\n");
       print2(

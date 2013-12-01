@@ -797,7 +797,7 @@ void typeStatement(long showStmt,
            considered.  A value of 0 means none are considered. */
         nmbrTmpPtr2 = proveFloating(nmbrTmpPtr1 /*mString*/,
             showStmt /*statemNum*/, 0 /*maxEDepth*/,
-            0, /*step - 0 = step 1 */ /*For messages*/
+            0, /*step:  0 = step 1 */ /*For messages*/
             0  /*not noDistinct*/);
 
         if (nmbrLen(nmbrTmpPtr2)) {

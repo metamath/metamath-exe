@@ -57,7 +57,7 @@ static void freeTempAlloc(void)
 /*E* /printf("%ld removing [%s]\n",db1,tempAllocStack[i]);*/
     free(tempAllocStack[i]);
   }
-  tempAllocStackTop=startTempAllocStack;  
+  tempAllocStackTop=startTempAllocStack;
 }
 
 static void pushTempAlloc(void *mem)
@@ -201,7 +201,7 @@ int linput(FILE *stream,const char* ask,vstring *target)
     0 is returned when end-of-file is encountered.  The vstring
     *target MUST be initialized to "" or previously assigned by let(&...)
     before using it in linput. */
-  char f[10001]; /* Allow up to 10000 characters */
+  char f[10001]; /* Read in chunks up to 10000 characters */
   int result = 0;
   int eol_found = 0;
   if (ask) {
@@ -256,26 +256,13 @@ vstring mid(vstring sin, long start, long length)
 /* Extract leftmost n characters */
 vstring left(vstring sin,long n)
 {
-  vstring sout;
-  if (n < 0) n = 0;
-  sout=tempAlloc(n + 1);
-  strncpy(sout, sin, (size_t)n);
-  sout[n] = 0;
-  return (sout);
+  return mid(sin, 1, n);
 }
 
 /* Extract after character n */
 vstring right(vstring sin,long n)
 {
-  /*??? We could just return &sin[n-1], but this is safer for debugging. */
-  vstring sout;
-  long i;
-  if (n<1) n=1;
-  i = (long)strlen(sin);
-  if (n>i) return ("");
-  sout = tempAlloc(i - n + 2);
-  strcpy(sout,&sin[n-1]);
-  return (sout);
+  return seg(sin, n, (long)(strlen(sin)));
 }
 
 /* Emulate VMS BASIC edit$ command */

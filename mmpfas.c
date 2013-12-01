@@ -1511,7 +1511,14 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
   if (mathToken[lastSymbol].tokenType != (char)con_) lastSymbol = 0;
   **** */
 
-  for (stmt = 1; stmt < statemNum; stmt++) {
+  /* for (stmt = 1; stmt < statemNum; stmt++) { */   /* old code */
+  /* 30-Nov-2013 nm Reversed the scan order so that w3a will match before
+     wa, helping to prevent an exponential blowup for definition syntax
+     breakdown.  If wa is first, then wa will incorrectly match a w3a
+     subexpression, with the incorrect trial only detected deeper down;
+     whereas w3a will rarely match a wa subexpression, so the trial match
+     will get rejected immediately. */
+  for (stmt = statemNum - 1; stmt >= 1; stmt--) {
 
     /* 22-Aug-2012 nm Separated quick filter for reuse in other functions */
     if (quickMatchFilter(stmt, mString, 0/*no dummy vars*/) == 0) continue;
