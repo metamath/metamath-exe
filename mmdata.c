@@ -19,6 +19,7 @@ mmdata.c
 #include "mminou.h"
 #include "mmpars.h"
 #include "mmcmdl.h" /* Needed for logFileName */
+#include "mmcmds.h" /* Needed for getSourceIndentation */
 
 #include <limits.h>
 #include <setjmp.h>
@@ -1655,7 +1656,8 @@ nmbrString *nmbrGetTargetHyp(nmbrString *proof, long statemNum)
    be much longer of course). */
 /* The statement number is needed because required hypotheses are
    implicit in the compressed proof. */
-vstring compressProof(nmbrString *proof, long statemNum)
+vstring compressProof(nmbrString *proof, long statemNum,
+    flag oldCompressionAlgorithm)
 {
   vstring output = "";
   long outputLen;
@@ -1669,13 +1671,34 @@ vstring compressProof(nmbrString *proof, long statemNum)
   long hypLabels, assertionLabels, localLabels;
   long plen, step, stmt, labelLen, lab, numchrs;
   /* long thresh, newnumchrs, newlab; */ /* 15-Oct-05 nm No longer used */
-  long i, j;
+  long i, j, k;
   /* flag breakFlag; */ /* 15-Oct-05 nm No longer used */
   /* char c; */ /* 15-Oct-05 nm No longer used */
   long lettersLen, digitsLen;
   static char *digits = "0123456789";
   static char *letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
   static char labelChar = ':';
+
+  /* 27-Dec-2013 nm Variables for new algorithm */
+  nmbrString *explList = NULL_NMBRSTRING;
+  long explLabels;
+  nmbrString *explRefCount = NULL_NMBRSTRING;
+  nmbrString *labelRefCount = NULL_NMBRSTRING;
+  long maxExplRefCount;
+  nmbrString *explComprLen = NULL_NMBRSTRING;
+  long explSortPosition;
+  long maxExplComprLen;
+  vstring explUsedFlag = "";
+  nmbrString *explLabelLen = NULL_NMBRSTRING;
+  nmbrString *newExplList = NULL_NMBRSTRING;
+  long newExplPosition;
+  long indentation;
+  long explOffset;
+  long explUnassignedCount;
+  nmbrString *explWorth = NULL_NMBRSTRING;
+  long explWidth;
+  vstring explIncluded = "";
+
 
   /* Compression standard with all cap letters */
   /* (For 500-700 step proofs, we only lose about 18% of file size --
@@ -1745,6 +1768,200 @@ vstring compressProof(nmbrString *proof, long statemNum)
   }
   if (lab != localLabels) bug(1347);
 
+  /* To obtain the old algorithm, we simply skip the new label re-ordering */
+  if (oldCompressionAlgorithm) goto OLD_ALGORITHM;
+
+
+  /* 27-Dec-2013 nm */
+  /************ New algorithm to sort labels according to usage ***********/
+
+  /* This algorithm, based on an idea proposed by Mario Carneiro, sorts
+     the explicit labels so that the most-used labels occur first, optimizing
+     the use of 1-character compressed label lengths, then 2-character
+     lengths, and so on.  Also, an attempt is made to fit the label list into
+     the exact maximum current screen width, using the 0/1-knapsack
+     algorithm, so that fewer lines will result due to wasted space at the
+     end of each line with labels.  */
+
+  /* Get the list of explicit labels */
+  nmbrLet(&explList, nmbrCat(
+      /* Trim off leading implicit required hypotheses */
+      nmbrRight(hypList, statement[statemNum].numReqHyp + 1),
+      /* Add in the list of assertion ($a, $p) references */
+      assertionList, NULL));
+  explLabels = nmbrLen(explList);
+
+  /* Initialize reference counts for the explicit labels */
+  nmbrLet(&explRefCount, nmbrSpace(explLabels));
+
+  /* Count the number of references to labels in the original proof */
+  /* We allocate up to statemNum, since any earlier statement could appear */
+  nmbrLet(&labelRefCount, nmbrSpace(statemNum));  /* Warning: nmbrSpace() must
+                                                 produce a string of 0's */
+  for (step = 0; step < plen; step++) { /* Scan the proof */
+    if (saveProof[step] > 0) { /* Ignore local labels and '?' */
+      if (saveProof[step] < statemNum) {
+        labelRefCount[saveProof[step]]++;
+      } else {
+        bug(1380); /* Corrupted proof */
+      }
+    }
+  }
+  maxExplRefCount = 0;  /* Largest number of reference counts found */
+  /* Populate the explict label list with the counts */
+  for (i = 0; i < explLabels; i++) {
+    explRefCount[i] = labelRefCount[explList[i]]; /* Save the ref count */
+    if (explRefCount[i] <= 0) bug(1381);
+    if (explRefCount[i] > maxExplRefCount) {
+      maxExplRefCount = explRefCount[i]; /* Update largest count */
+    }
+  }
+  /* We're done with giant labelRefCount array; deallocate */
+  nmbrLet(&labelRefCount, NULL_NMBRSTRING);
+
+  /* Assign compressed label lengths starting from most used to least
+     used label */
+  /* Initialize compressed label lengths for the explicit labels */
+  nmbrLet(&explComprLen, nmbrSpace(explLabels));
+  explSortPosition = 0;
+  maxExplComprLen = 0;
+  /* The "sorting" below has n^2 behavior; improve if is it a problem */
+  /* explSortPosition is where the label would occur if reverse-sorted
+     by reference count, for the purpose of computing the compressed
+     label length.  No actual sorting is done, since later we're
+     only interested in groups with the same compressed label length. */
+  for (i = maxExplRefCount; i >= 1; i--) {
+    for (j = 0; j < explLabels; j++) {
+      if (explRefCount[j] == i) {
+        /* Find length, numchrs, of compressed label */
+        /* If there are no req hyps, 0 = 1st label in explict list */
+        lab = statement[statemNum].numReqHyp + explSortPosition;
+
+        /* The following 7 lines are from the compressed label length
+           determination algorithm below */
+        numchrs = 1;
+        k = lab / lettersLen;
+        while (1) {
+          if (!k) break;
+          numchrs++;
+          k = (k - 1) / digitsLen;
+        }
+
+        explComprLen[j] = numchrs; /* Assign the compressed label length */
+        if (numchrs > maxExplComprLen) {
+          maxExplComprLen = numchrs; /* Update maximum length */
+        }
+        explSortPosition++;
+      }
+    }
+  }
+
+  let(&explUsedFlag, string(explLabels, 'n')); /* Mark with 'y' when placed in
+                                            output label list (newExplList) */
+  nmbrLet(&explLabelLen, nmbrSpace(explLabels));
+  /* Populate list of label lengths for knapsack01() "size" */
+  for (i = 0; i < explLabels; i++) {
+    stmt = explList[i];
+    explLabelLen[i] = (long)(strlen(statement[stmt].labelName)) + 1;
+                                     /* +1 accounts for space between labels */
+  }
+
+  /* Re-distribute labels in order of compressed label length, fitted to
+     line by knapsack01() algorithm */
+
+  nmbrLet(&newExplList, nmbrSpace(explLabels)); /* List in final order */
+  nmbrLet(&explWorth, nmbrSpace(explLabels));  /* "Value" for knapsack01() */
+  let(&explIncluded, string(explLabels, '?')); /* Returned by knapsack01() */
+  newExplPosition = 0; /* Counter for position in output label list */
+
+  indentation =  2 + getSourceIndentation(statemNum); /* Proof indentation */
+  explOffset = 2; /* add 2 for "( " opening parenthesis of compressed proof */
+
+  /* Fill up the output with labels in groups of increasing compressed label
+     size */
+  for (i = 1; i <= maxExplComprLen; i++) {
+    explUnassignedCount = 0; /* Unassigned at current compressed label size */
+    /* Initialize worths for knapsack01() */
+    for (j = 0; j < explLabels; j++) {
+      if (explComprLen[j] == i) {
+        if (explUsedFlag[j] == 'y') bug(1382);
+        explWorth[j] = explLabelLen[j]; /* Make worth=size so that label
+            length does not affect whether the label is chosen by knapsack01(),
+            so the only influence is whether it fits */
+        explUnassignedCount++;
+      } else { /* Not the curren compressed label size */
+        explWorth[j] = -1; /* Negative worth will make knapsack avoid it */
+      }
+    }
+    while (explUnassignedCount > 0) {
+      /* Find the the amount of space available on the remainder of the line */
+      /* The +1 accounts for space after last label, which wrapping will trim */
+      /* Note that the actual line wrapping will happen with printLongLine
+         far in the future.  Here we will just put the labels in the order
+         that will cause it to wrap at the desired place. */
+      explWidth = screenWidth - indentation - explOffset + 1;
+
+      /* Fill in the label list output line with labels that fit best */
+      /* The knapsack01() call below is always given the entire set of
+         explicit labels, with -1 worth assigned to the ones to be avoided.
+         It would be more efficient to give it a smaller list with -1s
+         removed, if run time becomes a problem. */
+      j = knapsack01(explLabels /*#items*/,
+          explLabelLen /*array of sizes*/,
+          explWorth /*array of worths*/,
+          explWidth /*maxSize*/,
+          explIncluded /*itemIncluded return values*/);
+      /*if (j == 0) bug(1383);*/ /* j=0 is legal when it can't fit any labels
+         on the rest of the line (such as if the line only has 1 space left
+         i.e. explWidth=1) */
+
+      /* Accumulate the labels selected by knapsack01() into the output list,
+         in the same order as they appeared in the original explicit label
+         list */
+      explUnassignedCount = 0;
+      for (j = 0; j < explLabels; j++) {
+        if (explIncluded[j] == 'y') { /* was chosen by knapsack01() */
+          if (explComprLen[j] != i) bug(1384); /* Other compressed length
+             shouldn't occur because -1 worth should have been rejected by
+             knapsack01() */
+          newExplList[newExplPosition] = explList[j];
+          newExplPosition++;
+          explUsedFlag[j] = 'y';
+          if (explWorth[j] == -1) bug(1385); /* knapsack01() should
+              have rejected all previously assigned labels */
+          explWorth[j] = -1; /* Negative worth will avoid it next loop iter */
+          explOffset = explOffset + explLabelLen[j];
+        } else {
+          if (explComprLen[j] == i && explUsedFlag[j] == 'n') {
+            explUnassignedCount++; /* There are still more to be assigned
+                                      at this compressed label length */
+            if (explWorth[j] != explLabelLen[j]) bug(1386); /* Sanity check */
+          }
+        }
+      }
+      if (explUnassignedCount > 0) {
+        /* If there are labels still at this level (of compressed
+           label length), so start a new line for next knapsack01() call */
+        explOffset = 0;
+      }
+    }
+  }
+  if (newExplPosition != explLabels) bug(1387); /* Labels should be exhausted */
+
+  /* The hypList and assertionList below are artificially assigned
+     for use by the continuation of the old algorithm that follows */
+
+  /* "hypList" is truncated to have only the required hypotheses with no
+     optional ones */
+  nmbrLet(&hypList, nmbrLeft(hypList, statement[statemNum].numReqHyp));
+  /* "assertionList" will have both the optional hypotheses and the assertions,
+     reordered */
+  nmbrLet(&assertionList, newExplList);
+
+  /********************** End of new algorithm ****************************/
+
+
+ OLD_ALGORITHM:
   /* Combine all label lists */
   nmbrLet(&labelList, nmbrCat(hypList, assertionList, localList, NULL));
 
@@ -1880,7 +2097,7 @@ vstring compressProof(nmbrString *proof, long statemNum)
       let(&output, cat(output, space(outputLen + 1 - outputAllocated +
           COMPR_INC), NULL));
       outputAllocated = outputLen + 1 + COMPR_INC; /* = (long)strlen(output) */
-      /* CPU-intensive bug check; enable only if required: */
+      /* CPU-intensive bug check due to strlen; enable only if required: */
       /* if (outputAllocated != (long)strlen(output)) bug(1352); */
       if (output[outputAllocated - 1] == 0 ||
           output[outputAllocated] != 0) bug(1352); /* 13-Oct-05 nm */
@@ -1903,6 +2120,19 @@ vstring compressProof(nmbrString *proof, long statemNum)
   nmbrLet(&assertionList, NULL_NMBRSTRING);
   nmbrLet(&localList, NULL_NMBRSTRING);
   nmbrLet(&localLabelFlags, NULL_NMBRSTRING);
+
+  /* Deallocate arrays for new algorithm */  /* 27-Dec-2013 nm */
+
+  nmbrLet(&explList, NULL_NMBRSTRING);
+  nmbrLet(&explRefCount, NULL_NMBRSTRING);
+  nmbrLet(&labelRefCount, NULL_NMBRSTRING);
+  nmbrLet(&explComprLen, NULL_NMBRSTRING);
+  let(&explUsedFlag, "");
+  nmbrLet(&explLabelLen, NULL_NMBRSTRING);
+  nmbrLet(&newExplList, NULL_NMBRSTRING);
+  nmbrLet(&explWorth, NULL_NMBRSTRING);
+  let(&explIncluded, "");
+
   makeTempAlloc(output); /* Flag it for deallocation */
   return(output);
 }
@@ -2386,3 +2616,113 @@ pntrString *pntrAddGElement(pntrString *g)
   v[length + 1] = *NULL_PNTRSTRING;
   return(v);
 }
+
+
+/*******************************************************************/
+/*********** Miscellaneous utility functions ***********************/
+/*******************************************************************/
+
+
+/* 0/1 knapsack algorithm */
+/* Returns the maximum worth (value) for items that can fit into maxSize */
+/* itemIncluded[] will be populated with 'y'/'n' if item included/excluded */
+long knapsack01(long items, /* # of items available to populate knapsack */
+    long *size, /* size of item 0,...,items-1 */
+    long *worth, /* worth (value) of item 0,...,items-1 */
+    long maxSize, /* size of knapsack (largest total size that will fit) */
+    char *itemIncluded /* output: 'y'/'n' if item 0..items-1 incl/excluded */)
+    {
+  long witem, wsize, a, b;
+
+  /* Maximum worth that can be attained for given #items and size */
+  long **maxWorth;  /* 2d matrix */
+  maxWorth = alloc2DMatrix((size_t)items + 1, (size_t)maxSize + 1);
+
+  /* This may run faster for applications that have hard-coded limits
+#define KS_MAX_ITEMS 100
+#define KS_MAX_SIZE 200
+  static long maxWorth[KS_MAX_ITEMS + 1][KS_MAX_SIZE + 1];
+  if (items > KS_MAX_ITEMS) {
+    printf("matrix item overflow\n"); exit(1);
+  }
+  if (maxSize > KS_MAX_SIZE) {
+    printf("matrix size overflow\n"); exit(1);
+  }
+  */
+
+  /* Populate the maximum worth matrix */
+  for (wsize = 0; wsize <= maxSize; wsize++) {
+    maxWorth[0][wsize] = 0;
+  }
+  for (witem = 1; witem <= items; witem++) {
+    for (wsize = 0; wsize <= maxSize; wsize++) {
+      if (wsize >= size[witem - 1]) {
+        /* Item witem can be part of the solution */
+        a = maxWorth[witem - 1][wsize];
+        b = maxWorth[witem - 1][wsize - size[witem - 1]] + worth[witem - 1];
+        /* Choose the case with greater value */
+        maxWorth[witem][wsize] = (a > b) ? a : b;  /* max(a,b) */
+      } else {
+        /* Item witem can't be part of the solution, otherwise total size
+           would exceed the intermediate size wsize. */
+        maxWorth[witem][wsize] = maxWorth[witem - 1][wsize];
+      }
+    }
+  }
+
+  /* Find the included items */
+  wsize = maxSize;
+  for (witem = items; witem > 0; witem--) {
+    itemIncluded[witem - 1] = 'n'; /* Initialize as excluded */
+    if (wsize > 0) {
+      if (maxWorth[witem][wsize] != maxWorth[witem - 1][wsize]) {
+        itemIncluded[witem - 1] = 'y'; /* Include the item */
+        wsize = wsize - size[witem - 1];
+      }
+    }
+  }
+
+  a = maxWorth[items][maxSize]; /* Final maximum worth */
+  free2DMatrix(maxWorth, (size_t)items + 1 /*, maxSize + 1*/);
+  return a;
+} /* knapsack01 */
+
+
+/* Allocate a 2-dimensional long integer matrix */
+/* Warning:  only entries 0,...,xsize-1 and 0,...,ysize-1 are allocated;
+   don't use entry xsize or ysize! */
+long **alloc2DMatrix(size_t xsize, size_t ysize)
+{
+  long **matrix;
+  long i;
+  matrix = malloc(xsize * sizeof(long *));
+  if (matrix == NULL) {
+    fprintf(stderr,"?FATAL ERROR 1376 Out of memory\n");
+    exit(1);
+  }
+  for (i = 0; i < (long)xsize; i++) {
+    matrix[i] = malloc(ysize * sizeof(long));
+    if (matrix[i] == NULL) {
+      fprintf(stderr,"?FATAL ERROR 1377 Out of memory\n");
+      exit(1);
+    }
+  }
+  return matrix;
+} /* alloc2DMatrix */
+
+
+/* Free a 2-dimensional long integer matrix */
+/* Note: the ysize argument isn't used, but is commented out as
+   a reminder so the caller doesn't confuse x and y */
+void free2DMatrix(long **matrix, size_t xsize /*, size_t ysize*/)
+{
+  long i;
+  for (i = (long)xsize - 1; i >= 0; i--) {
+    if (matrix[i] == NULL) bug(1378);
+    free(matrix[i]);
+  }
+  if (matrix == NULL) bug(1379);
+  free(matrix);
+  return;
+} /* free2DMatrix */
+

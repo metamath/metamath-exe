@@ -242,7 +242,9 @@ H("        qualifier.");
 */
 H("    / COMPRESSED - The proof is displayed in compressed format");
 H("        suitable for inclusion in a source file.  May not be used with");
-H("        any other qualifier.");
+H("        any other qualifier except / FAST_COMPRESSION.");
+H("    / FAST_COMPRESSION - When used with / COMPRESSED, specifies an older,");
+H("        less space-efficient but faster algorithm.");
 H("    / STATEMENT_SUMMARY - Summarizes all statements (like a brief SHOW");
 H("        STATEMENT) used by the proof.  May not be used with any other");
 H("        qualifier except / ESSENTIAL.");
@@ -1129,6 +1131,8 @@ H("        local labels to avoid repetition of identical subproofs.");
 */
 H("    / COMPRESSED - The proof is saved in the compressed format which");
 H("        reduces storage requirements in a source file.");
+H("    / FAST_COMPRESSION - When used with / COMPRESSED, specifies an older,");
+H("        less space-efficient but faster algorithm.");
 H("");
 
 

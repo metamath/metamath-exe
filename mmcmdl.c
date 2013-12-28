@@ -569,6 +569,7 @@ flag processCommandLine(void)
                 "ESSENTIAL|ALL|UNKNOWN|FROM_STEP|TO_STEP|DEPTH",
                 /*"|REVERSE|LANGUAGE_MODE|VERBOSE|NORMAL|PACKED|COMPRESSED",*/
                 "|REVERSE|LANGUAGE_MODE|VERBOSE|NORMAL|COMPRESSED",
+                "|FAST_COMPRESSION",   /* 27-Dec-2013 nm */
                 /* 14-Sep-2010 nm Added OLD_TEX */
                 "|STATEMENT_SUMMARY|DETAILED_STEP|TEX|OLD_TEX|HTML|SAVE",
                 "|LEMMON|START_COLUMN|NO_REPEATED_STEPS",
@@ -627,6 +628,7 @@ flag processCommandLine(void)
                 "ESSENTIAL|ALL|UNKNOWN|FROM_STEP|TO_STEP|DEPTH",
                 /*"|REVERSE|LANGUAGE_MODE|VERBOSE|NORMAL|PACKED|COMPRESSED",*/
                 "|REVERSE|LANGUAGE_MODE|VERBOSE|NORMAL|COMPRESSED",
+                "|FAST_COMPRESSION",   /* 27-Dec-2013 nm */
                 "|NOT_UNIFIED|TEX|HTML",
                 "|LEMMON|START_COLUMN|NO_REPEATED_STEPS",
                 "|RENUMBER|<ESSENTIAL>",NULL)))
@@ -731,12 +733,13 @@ flag processCommandLine(void)
             i++;
             if (!getFullArg(i,cat(
                 "NORMAL|PACKED|COMPRESSED",
+                "|FAST_COMPRESSION",   /* 27-Dec-2013 nm */
                 "|<NORMAL>",NULL)))
               goto pclbad;
           } else {
             break;
           }
-          break; /* Break if only 1 switch is allowed */
+          /* break; */ /* Break if only 1 switch is allowed */
         }
         goto pclgood;
       } /* End if (cmdMatches("SAVE PROOF")) */
@@ -757,6 +760,7 @@ flag processCommandLine(void)
             i++;
             if (!getFullArg(i,cat(
                 "NORMAL|PACKED|COMPRESSED",
+                "|FAST_COMPRESSION",   /* 27-Dec-2013 nm */
                 "|<NORMAL>",NULL)))
               goto pclbad;
           } else {

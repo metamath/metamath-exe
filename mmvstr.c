@@ -184,9 +184,10 @@ vstring cat(vstring string1,...)        /* String concatenation */
 }
 
 
-/* input a line from the user or from a file */
-/* returns whether a (possibly empty) line was successfully read */
-int linput(FILE *stream,const char* ask,vstring *target)
+/* 20-Oct-2013 Wolf Lammen - allow unlimited input line lengths */
+/* Input a line from the user or from a file */
+/* Returns whether a (possibly empty) line was successfully read */
+int linput(FILE *stream, const char* ask, vstring *target)
 {
   /*
     BASIC:  linput "what";a$
@@ -211,16 +212,17 @@ int linput(FILE *stream,const char* ask,vstring *target)
 #endif
   }
   if (stream == NULL) stream = stdin;
-  while (!eol_found && fgets(f,sizeof(f),stream))
+  while (!eol_found && fgets(f, sizeof(f), stream))
   {
     size_t endpos = strlen(f) - 1;
-    eol_found = f[endpos] == '\n';
+    eol_found = (f[endpos] == '\n');
     if (eol_found)
       f[endpos] = 0;
     if (result)
-      *target = cat(*target, f);
+      /* *target = cat(*target, f); */
+      let(target, cat(*target, f, NULL));  /* 27-Dec-2013 nm */
     else
-      let (target, f);
+      let(target, f);
     result=1;
   }
   return result;

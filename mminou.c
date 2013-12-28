@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2012  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2013  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -589,13 +589,20 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
           && longLine[p - 3] != ' ') /* Don't split trailing "$." */ {
         /* We're in the compressed proof section; break line anywhere */
         p = p;
+        /* 27-Dec-2013 nm */
+        /* In the case where the last space occurs at column 79 i.e.
+           screenWidth, break the line at column 78.  This can happen
+           when compressed proof ends at column 78, followed by space
+           and "$." */
+        if (longLine[p - 2] == ' ') p--; /* 27-Dec-2013 */
       } else {
         if (!breakMatch1[0]) {
           p = p; /* Break line anywhere */
         } else {
           if (breakMatch1[0] == '&') {
             /* Compressed proof */
-            p = p - 1; /* We will add a trailing space to line for easier
+            /* 27-Dec-2013 nm - no longer add the trailing space */
+            /* p = p - 1; */ /* We will add a trailing space to line for easier
                           label searches by the user during editing */
           }
           if (p <= 0) bug(1518);
@@ -629,7 +636,8 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
 
           if (breakMatch1[0] == '&') {
             /* Compressed proof */
-            p = p + 1; /* We will add a trailing space to line for easier
+            /* 27-Dec-2013 nm - no longer add the trailing space */
+            /* p = p + 1; */ /* We will add a trailing space to line for easier
                           label searches by the user during editing */
           }
         } /* end if (!breakMatch1[0]) else */

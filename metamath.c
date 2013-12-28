@@ -5,7 +5,11 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.100 30-Nov-2013"
+#define MVERSION "0.101 27-Dec-2013"
+/* 0.101 27-Dec-2013 nm mmdata.h,c, mminou.c, mmcmdl.c, mmhlpb.c, mmvstr.c -
+   Improved storage efficiency of /COMPRESSED proofs (but with 20% slower run
+   time); added /FAST_COMPRESSION to specify old algorithm; removed end-of-line
+   space after label list in old algorithm; fixed linput() bug */
 /* 0.100 30-Nov-2013 nm mmpfas.c - reversed statement scan order in
    proveFloating(), to speed up SHOW STATEMENT df-* /HTML; metamath.c - remove
    the unknown date place holder in SAVE NEW_PROOF; Wolf Lammen mmvstr.c -
@@ -3458,6 +3462,16 @@ void command(int argc, char *argv[])
         saveFlag = 1; /* The command is SAVE PROOF */
       }
 
+      /* 27-Dec-2013 nm */
+      i = switchPos("/ FAST_COMPRESSION");
+      if (i) {
+        if (!switchPos("/ COMPRESSED")) {
+          print2("?/ FAST_COMPRESSION must be accompanied by / COMPRESSED\n");
+          continue;
+        }
+      }
+
+
       /* Establish defaults for omitted qualifiers */
       startStep = 0;
       endStep = 0;
@@ -3616,7 +3630,9 @@ void command(int argc, char *argv[])
           }
 
           if (switchPos("/ COMPRESSED")) {
-            let(&str1, compressProof(nmbrSaveProof, i));
+            let(&str1, compressProof(nmbrSaveProof, i
+                , (switchPos("/ FAST_COMPRESSION")) ? 1 : 0  /* 27-Dec-2013 nm */
+                ));
           } else {
             let(&str1, nmbrCvtRToVString(nmbrSaveProof));
           }

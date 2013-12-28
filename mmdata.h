@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2012  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2013  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -307,7 +307,8 @@ nmbrString *nmbrGetTargetHyp(nmbrString *proof, long statemNum);
    although it's not a requirement. */
 /* The statement number is needed because required hypotheses are
    implicit in the compressed proof. */
-vstring compressProof(nmbrString *proof, long statemNum);
+vstring compressProof(nmbrString *proof, long statemNum,
+    flag oldCompressionAlgorithm);
 
 
 /*******************************************************************/
@@ -375,5 +376,16 @@ pntrString *pntrAddElement(pntrString *g);
 
 /* Add a single null pntrString element to a pntrString - faster than pntrCat */
 pntrString *pntrAddGElement(pntrString *g);
+
+/* Utility functions */
+
+/* 0/1 knapsack algorithm */
+long knapsack01(long items, long *size, long *worth, long maxSize,
+       char *itemIncluded /* output: 1 = item included, 0 = not included */);
+
+/* 2D matrix allocation and deallocation */
+long **alloc2DMatrix(size_t xsize, size_t ysize);
+void free2DMatrix(long **matrix, size_t xsize /*, size_t ysize*/);
+
 
 #endif /* METAMATH_MMDATA_H_ */
