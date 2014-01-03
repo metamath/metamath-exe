@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2013  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2014  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -583,17 +583,20 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
       p = screenWidth - (long)tildeFlag - (long)(breakMatch1[0] == '\\') + 1;
       if (!firstLine) p = p - startNextLineLen;
 
+      if (p < 4) bug(1524);  /* This may cause out-of-string ref below */
       /* Assume compressed proof if 1st char of breakMatch1 is "&" */
       if (breakMatch1[0] == '&'
-          && !instr(p, left(longLine, (long)strlen(longLine) - 3), " ")
-          && longLine[p - 3] != ' ') /* Don't split trailing "$." */ {
+          && ((!instr(p, left(longLine, (long)strlen(longLine) - 3), " ")
+              && longLine[p - 3] != ' ') /* Don't split trailing "$." */
+            /* 2-Jan-2014 nm Added the condition below: */
+            || longLine[p - 4] == ')')) /* Label sect ends in col 77 */ {
         /* We're in the compressed proof section; break line anywhere */
         p = p;
         /* 27-Dec-2013 nm */
         /* In the case where the last space occurs at column 79 i.e.
            screenWidth, break the line at column 78.  This can happen
            when compressed proof ends at column 78, followed by space
-           and "$." */
+           and "$."  It prevents an extraneous trailing space on the line. */
         if (longLine[p - 2] == ' ') p--; /* 27-Dec-2013 */
       } else {
         if (!breakMatch1[0]) {

@@ -1803,7 +1803,7 @@ vstring compressProof(nmbrString *proof, long statemNum,
       if (saveProof[step] < statemNum) {
         labelRefCount[saveProof[step]]++;
       } else {
-        bug(1380); /* Corrupted proof */
+        bug(1380); /* Corrupted proof should have been caught earlier */
       }
     }
   }
@@ -1889,7 +1889,7 @@ vstring compressProof(nmbrString *proof, long statemNum,
             length does not affect whether the label is chosen by knapsack01(),
             so the only influence is whether it fits */
         explUnassignedCount++;
-      } else { /* Not the curren compressed label size */
+      } else { /* Not the current compressed label size */
         explWorth[j] = -1; /* Negative worth will make knapsack avoid it */
       }
     }
@@ -1914,11 +1914,13 @@ vstring compressProof(nmbrString *proof, long statemNum,
       /*if (j == 0) bug(1383);*/ /* j=0 is legal when it can't fit any labels
          on the rest of the line (such as if the line only has 1 space left
          i.e. explWidth=1) */
+      if (j < 0) bug(1383);
 
       /* Accumulate the labels selected by knapsack01() into the output list,
          in the same order as they appeared in the original explicit label
          list */
       explUnassignedCount = 0;
+      /* Scan expIncluded y/n string returned by knapsack01() */
       for (j = 0; j < explLabels; j++) {
         if (explIncluded[j] == 'y') { /* was chosen by knapsack01() */
           if (explComprLen[j] != i) bug(1384); /* Other compressed length

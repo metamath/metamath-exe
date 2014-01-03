@@ -1,11 +1,13 @@
 /*****************************************************************************/
 /* Program name:  metamath                                                   */
-/* Copyright (C) 2013 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
+/* Copyright (C) 2014 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
 /* License terms:  GNU General Public License Version 2 or any later version */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.101 27-Dec-2013"
+#define MVERSION "0.102 2-Jan-2014"
+/* 0.102 2-Jan-2014 nm mminou.c - made compressed proof line wrapping more
+   uniform at start of compressed part of proof */
 /* 0.101 27-Dec-2013 nm mmdata.h,c, mminou.c, mmcmdl.c, mmhlpb.c, mmvstr.c -
    Improved storage efficiency of /COMPRESSED proofs (but with 20% slower run
    time); added /FAST_COMPRESSION to specify old algorithm; removed end-of-line
