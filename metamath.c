@@ -5,7 +5,10 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.102 2-Jan-2014"
+#define MVERSION "0.103 4-Jan-2014"
+/* 0.103 4-Jan-2014 nm mmcmds.c,h - added "Allowed substitution hints" below
+   the "Distinct variable groups" list on generated web pages
+   mmwtex.c - added "*" to indicate DV's occur in Statement List entries. */
 /* 0.102 2-Jan-2014 nm mminou.c - made compressed proof line wrapping more
    uniform at start of compressed part of proof */
 /* 0.101 27-Dec-2013 nm mmdata.h,c, mminou.c, mmcmdl.c, mmhlpb.c, mmvstr.c -

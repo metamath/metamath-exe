@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2013  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2014  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -647,6 +647,18 @@ void typeStatement(long showStmt,
         outputToString = 0;
       }
 
+      /* 4-Jan-2014 nm */
+      if (texFlag && htmlFlg) {
+        let(&str2, "");
+        str2 = htmlAllowedSubst(showStmt);
+        if (str2[0] != 0) {
+          outputToString = 1;
+          /* Print the list of allowed free variables */
+          printLongLine(str2, "", "\"");
+          outputToString = 0;
+        }
+      }
+
       if (texFlag) {
         outputToString = 1;
         if (htmlFlg && texFlag) print2("<HR NOSHADE SIZE=1>\n");
@@ -1025,6 +1037,175 @@ void typeStatement(long showStmt,
   let(&str5, "");
   let(&htmlDistinctVars, "");
 } /* typeStatement */
+
+
+
+/* 4-Jan-2014 nm */
+/* Get the HTML string of "allowed substitutions" list for an axiom
+   or theorem's web page.  It should be called only if we're in
+   HTML output mode i.e.  */
+/* This is HARD-CODED FOR SET.MM and will not produce meaningful
+   output for other databases (so far none) with $d's */
+/* Caller must deallocate returned string */
+vstring htmlAllowedSubst(long showStmt)
+{
+  nmbrString *reqHyp; /* Pointer only; not allocated directly */
+  long numReqHyps;
+  nmbrString *reqDVA; /* Pointer only; not allocated directly */
+  nmbrString *reqDVB; /* Pointer only; not allocated directly */
+  long numDVs;
+  nmbrString *setVar = NULL_NMBRSTRING; /* set (individual) variables */
+  char *strptr;
+  vstring str1 = "";
+  long setVars;
+  long wffOrClassVar;
+  vstring setVarDVFlag = "";
+  flag found, first;
+  long i, j, k;
+  vstring htmlAllowedList = "";
+  long countInfo = 0;
+
+  reqDVA = statement[showStmt].reqDisjVarsA;
+  reqDVB = statement[showStmt].reqDisjVarsB;
+  numDVs = nmbrLen(reqDVA);
+
+  reqHyp = statement[showStmt].reqHypList;
+  numReqHyps = nmbrLen(reqHyp);
+
+  /* This function should be called only for web page generation */
+  /*if (!(htmlFlag && texFlag)) bug(250);*/  /* texFlag is not global */
+  if (!htmlFlag) bug(250);
+
+  if (statement[showStmt].mathStringLen < 1) bug(254);
+  if (strcmp("|-", mathToken[
+            (statement[showStmt].mathString)[0]].tokenName)) {
+    /* Don't process syntax statements */
+    goto RETURN_POINT;
+  }
+
+  if (numDVs == 0) {  /* Don't create a hint list if no $d's */
+    /*let(&htmlAllowedList, "(no restrictions)");*/
+    goto RETURN_POINT;
+  }
+
+  /* Collect list of all set variables in the theorem */
+  /* First, count the number of set variables */
+  setVars = 0;
+  for (i = 0; i < numReqHyps; i++) {
+    /* Scan "set" variables */
+    if (statement[reqHyp[i]].type == (char)e_) continue;
+    if (statement[reqHyp[i]].type != (char)f_) bug(251);
+    if (statement[reqHyp[i]].mathStringLen != 2)
+      bug(252); /* $f must have 2 tokens */
+    strptr = mathToken[
+              (statement[reqHyp[i]].mathString)[0]].tokenName;
+    if (strcmp("set", strptr)) continue;
+                                  /* Not a set variable */
+    setVars++;
+  }
+  /* Next, create a list of them in setVar[] */
+  j = 0;
+  nmbrLet(&setVar, nmbrSpace(setVars));
+  for (i = 0; i < numReqHyps; i++) {
+    /* Scan "set" variables */
+    if (statement[reqHyp[i]].type == (char)e_) continue;
+    strptr = mathToken[
+              (statement[reqHyp[i]].mathString)[0]].tokenName;
+    if (strcmp("set", strptr)) continue;
+                                  /* Not a set variable */
+    setVar[j] = (statement[reqHyp[i]].mathString)[1];
+    j++;
+  }
+  if (j != setVars) bug(253);
+
+  /* Scan "wff" and "class" variables for attached $d's */
+  for (i = 0; i < numReqHyps; i++) {
+    /* Look for a "wff" and "class" variable */
+    if (statement[reqHyp[i]].type == (char)e_) continue;
+    strptr = mathToken[
+              (statement[reqHyp[i]].mathString)[0]].tokenName;
+    if (strcmp("wff", strptr) && strcmp("class", strptr)) continue;
+                                  /* Not a wff or class variable */
+    wffOrClassVar = (statement[reqHyp[i]].mathString)[1];
+    let(&setVarDVFlag, string(setVars, 'n')); /* No $d yet */
+    /* Scan for attached $d's */
+    for (j = 0; j < numDVs; j++) {
+      found = 0;
+      if (wffOrClassVar == reqDVA[j]) {
+        for (k = 0; k < setVars; k++) {
+          if (setVar[k] == reqDVB[j]) {
+            setVarDVFlag[k] = 'y';
+            found = 1;
+            break;
+          }
+        }
+      }
+      if (found) continue;
+      /* Repeat with swapped $d arguments */
+      if (wffOrClassVar == reqDVB[j]) {
+        for (k = 0; k < setVars; k++) {
+          if (setVar[k] == reqDVA[j]) {
+            setVarDVFlag[k] = 'y';
+            break;
+          }
+        }
+      }
+    } /* next $d */
+
+    /* Collect set vars that don't have $d's with this wff or class var */
+    /* First, if there aren't any, then omit this wff or class var */
+    found = 0;
+    for (j = 0; j < setVars; j++) {
+      if (setVarDVFlag[j] == 'n') {
+        found = 1;
+        break;
+      }
+    }
+    if (found == 0) continue; /* All set vars have $d with this wff or class */
+
+    let(&str1, "");
+    str1 = tokenToTex(mathToken[wffOrClassVar].tokenName, showStmt);
+         /* tokenToTex allocates str1; we must deallocate it eventually */
+    countInfo++;
+    let(&htmlAllowedList, cat(htmlAllowedList, " &nbsp; ",
+        str1, "(", NULL));
+    first = 1;
+    for (j = 0; j < setVars; j++) {
+      if (setVarDVFlag[j] == 'n') {
+        let(&str1, "");
+        str1 = tokenToTex(mathToken[setVar[j]].tokenName, showStmt);
+        let(&htmlAllowedList, cat(htmlAllowedList,
+            (first == 0) ? "," : "", str1, NULL));
+        if (first == 0) countInfo++;
+        first = 0;
+      }
+    }
+    let(&htmlAllowedList, cat(htmlAllowedList, ")", NULL));
+
+  } /* next i (wff or class var) */
+
+ RETURN_POINT:
+
+  if (htmlAllowedList[0] != 0) {
+    let(&htmlAllowedList, cat("<CENTER>",
+     /*
+     "<A HREF=\"mmset.html#allowedsubst\">Allowed substitution",
+     (countInfo != 1) ? "s" : "", "</A>: ",
+     */
+     "<A HREF=\"mmset.html#allowedsubst\">Allowed substitution</A> hint",
+     (countInfo != 1) ? "s" : "", ": ",
+        htmlAllowedList, "</CENTER>", NULL));
+  }
+
+  /* Deallocate strings */
+  nmbrLet(&setVar, NULL_NMBRSTRING);
+  let(&str1, "");
+  let(&setVarDVFlag, "");
+
+  return htmlAllowedList;
+} /* htmlAllowedSubst */
+
+
 
 /* Displays a proof (or part of a proof, depending on arguments). */
 /* Note that parseProof() and verifyProof() are assumed to have been called,

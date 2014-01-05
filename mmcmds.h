@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2013  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2014  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -57,6 +57,7 @@ double countSteps(long statemNum, flag essentialFlag);
 /* Traces what statements require the use of a given statement */
 vstring traceUsage(long statemNum,
   flag recursiveFlag);
+vstring htmlAllowedSubst(long showStmt);  /* 4-Jan-2014 nm */
 /* Returns any comment that occurs just before a statement */
 vstring getDescription(long statemNum);
 long getSourceIndentation(long statemNum);

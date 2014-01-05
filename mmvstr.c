@@ -186,15 +186,15 @@ vstring cat(vstring string1,...)        /* String concatenation */
 
 /* 20-Oct-2013 Wolf Lammen - allow unlimited input line lengths */
 /* Input a line from the user or from a file */
-/* Returns whether a (possibly empty) line was successfully read */
+/* Returns 1 if a (possibly empty) line was successfully read, 0 if EOF */
 int linput(FILE *stream, const char* ask, vstring *target)
-{
+{                                           /* ^^^^^^ same as char **target */
   /*
-    BASIC:  linput "what";a$
-    c:      linput(NULL,"what?",&a);
+    BASIC:  linput "what"; a$
+    c:      linput(NULL, "what?", &a);
 
-    BASIC:  linput #1,a$                        (error trap on EOF)
-    c:      if (!linput(file1,NULL,&a)) break;  (break on EOF)
+    BASIC:  linput #1, a$                         (error trap on EOF)
+    c:      if (!linput(file1, NULL, &a)) break;  (break on EOF)
 
   */
   /* This function prints a prompt (if 'ask' is not NULL), gets a line from
@@ -206,7 +206,7 @@ int linput(FILE *stream, const char* ask, vstring *target)
   int result = 0;
   int eol_found = 0;
   if (ask) {
-    printf("%s",ask);
+    printf("%s", ask);
 #if __STDC__
     fflush(stdout);
 #endif
@@ -216,14 +216,23 @@ int linput(FILE *stream, const char* ask, vstring *target)
   {
     size_t endpos = strlen(f) - 1;
     eol_found = (f[endpos] == '\n');
+    /* In the rare case that the last line in the file has no newline,
+       eol_found will be 0, but another loop iteration will not happen
+       since the fgets() above will return 0.  Whether or not the last
+       line has a newline, we will return a string with any newline
+       stripped. */
     if (eol_found)
       f[endpos] = 0;
     if (result)
-      /* *target = cat(*target, f); */
-      let(target, cat(*target, f, NULL));  /* 27-Dec-2013 nm */
+      /* This appends additional parts of the line to *target */
+      /* Reallocate *target and copy the concatenation of the
+         old *target and the additional input f[] to it */
+      let(target /* = &(*target) */, cat(*target, f, NULL));
     else
-      let(target, f);
-    result=1;
+      /* This is the first time through the loop, and normally
+         the only one unless the input line overflows f[] */
+      let(target, f);  /* Allocate *target and copy f to it */
+    result = 1;
   }
   return result;
 }

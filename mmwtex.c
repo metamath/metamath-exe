@@ -3124,7 +3124,10 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
         " - </B>", str3, "<B>-</B>", str4,"<B>",
         " - Page ",
         str(page), " of ",
-        str(pages), "</B></CAPTION>",NULL),
+        str(pages),
+        "</B>",
+        " &nbsp; *Has distinct variable group(s)"
+        "</CAPTION>",NULL),
         " ",  /* Start continuation line with space */
         "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
     print2("\n");
@@ -3177,7 +3180,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
         let(&str1, "<B><FONT COLOR=\"#00CC00\">Syntax</FONT></B>");
       }
 
-     if (s == s + 0) goto skip_date;
+      if (s == s + 0) goto skip_date;
       /* OBSOLETE */
       /* Get the date in the comment section after the statement */
       let(&str1, space(statement[s + 1].labelSectionLen));
@@ -3246,8 +3249,13 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
             "</TD><TD ALIGN=CENTER><A HREF=\"",
             statement[s].labelName, ".html\">",
             statement[s].labelName, "</A>",
-            str4, "</TD><TD ALIGN=LEFT>",
+            str4,
 
+            /* 5-Jan-2014 nm */
+            /* Add asterisk if statement has distinct var groups */
+            (nmbrLen(statement[s].reqDisjVarsA) > 0) ? "*" : "",
+
+            "</TD><TD ALIGN=LEFT>",
             /* 15-Aug-04 nm - Add anchor for hyperlinking to the table row */
             "<A NAME=\"", statement[s].labelName, "\"></A>",
 
