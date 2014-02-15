@@ -3933,6 +3933,7 @@ long getStatementNum(vstring stmtName, /* Possibly with wildcards */
   flag hasWildcard;
   long matchesFound, matchStmt, matchStmt2, stmt;
   char typ;
+  flag laterMatchFound = 0; /* For better error message */ /* 16-Jan-2014 nm */
 
   hasWildcard = 0;
   if (instr(1, stmtName, "*") || instr(1, stmtName, "?"))
@@ -3941,7 +3942,16 @@ long getStatementNum(vstring stmtName, /* Possibly with wildcards */
   matchStmt = 1; /* Set to a legal value in case of bug */
   matchStmt2 = 1; /* Set to a legal value in case of bug */
 
-  for (stmt = startStmt; stmt < maxStmt; stmt++) {
+  for (stmt = startStmt; stmt <= statements; stmt++) {
+
+    /* 16-Jan-2014 nm */
+    if (stmt >= maxStmt) {
+      if (matchesFound > 0) break; /* Normal exit when a match was found */
+      if (!uniqueFlag) break; /* We only want to scan up to maxStmt anyway */
+      /* Otherwise, we continue to see if there is a later match, for
+         error message purposes */
+    }
+
     if (!statement[stmt].labelName[0]) continue; /* No label */
     typ = statement[stmt].type;
 
@@ -3974,6 +3984,16 @@ long getStatementNum(vstring stmtName, /* Possibly with wildcards */
       }
     }
 
+    /* 16-Jan-2014 nm */
+    if (stmt >= maxStmt) {
+      /* For error messages:
+         This signals that a later match (after the statement being
+         proved, in case of ASSIGN) exists, so the user is trying to
+         reference a future statement. */
+      laterMatchFound = 1;
+      break;
+    }
+
     if (matchesFound == 0) {
       /* This is the first match found; save it */
       matchStmt = stmt;
@@ -4004,14 +4024,26 @@ long getStatementNum(vstring stmtName, /* Possibly with wildcards */
       print2("?No $p statement label matches \"%s\".\n", stmtName);
     } else if (!eAllowed && !fAllowed) {
       /* This is normally for REPLACE */
-      print2("?No earlier $a or $p statement label matches \"%s\".\n",
+      if (!laterMatchFound) {
+        print2("?No $a or $p statement label matches \"%s\".\n",
           stmtName);
+      } else {
+        /* 16-Jan-2014 nm */
+        print2(
+   "?You must specify a statement that occurs earlier the one being proved.\n");
+      }
     } else {
       /* This is normally for ASSIGN */
-      printLongLine(cat("?An earlier statement label matching \"",
-          stmtName,
-          "\" was not found or is not a hypothesis of the statement ",
-          "being proved.", NULL), "", " ");
+      if (!laterMatchFound) {
+        printLongLine(cat("?A statement label matching \"",
+            stmtName,
+            "\" was not found or is not a hypothesis of the statement ",
+            "being proved.", NULL), "", " ");
+      } else {
+        /* 16-Jan-2014 nm */
+        print2(
+   "?You must specify a statement that occurs earlier the one being proved.\n");
+      }
     }
   } else if (matchesFound == 2) {
     printLongLine(cat("?This command requires a unique label, but there are ",

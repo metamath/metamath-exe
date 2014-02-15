@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2013  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2014  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -36,12 +36,12 @@ This is an emulation of the string functions available in VMS BASIC.
 #ifdef NDEBUG
 # define INCDB1(x)
 #else
-# define INCDB1(x) db1+=(x)
+# define INCDB1(x) db1 += (x)
 #endif
 
 #define MAX_ALLOC_STACK 100
-int tempAllocStackTop=0;        /* Top of stack for tempAlloc functon */
-int startTempAllocStack=0;      /* Where to start freeing temporary allocation
+int tempAllocStackTop = 0;      /* Top of stack for tempAlloc functon */
+int startTempAllocStack = 0;    /* Where to start freeing temporary allocation
                                     when let() is called (normally 0, except in
                                     special nested vstring functions) */
 void *tempAllocStack[MAX_ALLOC_STACK];
@@ -52,25 +52,27 @@ static void freeTempAlloc(void)
   /* EXCEPT:  When startTempAllocStack != 0, the freeing will start at
      startTempAllocStack. */
   int i;
-  for (i=startTempAllocStack; i<tempAllocStackTop; i++) {
-/*E*/INCDB1(-1-(long)strlen(tempAllocStack[i]));
-/*E* /printf("%ld removing [%s]\n",db1,tempAllocStack[i]);*/
+  for (i = startTempAllocStack; i < tempAllocStackTop; i++) {
+/*E*/INCDB1(-1 - (long)strlen(tempAllocStack[i]));
+/*E* /printf("%ld removing [%s]\n", db1, tempAllocStack[i]);*/
     free(tempAllocStack[i]);
   }
-  tempAllocStackTop=startTempAllocStack;
-}
+  tempAllocStackTop = startTempAllocStack;
+} /* freeTempAlloc */
+
 
 static void pushTempAlloc(void *mem)
 {
-  if (tempAllocStackTop>=(MAX_ALLOC_STACK-1)) {
+  if (tempAllocStackTop >= (MAX_ALLOC_STACK-1)) {
     printf("*** FATAL ERROR ***  Temporary string stack overflow\n");
 #if __STDC__
     fflush(stdout);
 #endif
     bug(2201);
   }
-  tempAllocStack[tempAllocStackTop++]=mem;
-}
+  tempAllocStack[tempAllocStackTop++] = mem;
+} /* pushTempAlloc */
+
 
 static void* tempAlloc(long size)  /* String memory allocation/deallocation */
 {
@@ -86,22 +88,23 @@ static void* tempAlloc(long size)  /* String memory allocation/deallocation */
 /*E*/INCDB1(size);
 /*E* /printf("%ld adding\n",db1);*/
   return memptr;
-}
+} /* tempAlloc */
+
 
 /* Make string have temporary allocation to be released by next let() */
-/* Warning:  after makeTempAlloc() is called, the genString may NOT be
+/* Warning:  after makeTempAlloc() is called, the vstring may NOT be
    assigned again with let() */
 void makeTempAlloc(vstring s)
 {
   pushTempAlloc(s);
-/*E*/INCDB1((long)strlen(s)+1);
-/*E*/db-=(long)strlen(s)+1;
-/*E* /printf("%ld temping[%s]\n",db1,s);*/
-}
+/*E*/INCDB1((long)strlen(s) + 1);
+/*E*/db-=(long)strlen(s) + 1;
+/*E* /printf("%ld temping[%s]\n", db1, s);*/
+} /* makeTempAlloc */
 
 
 /* 8-Jul-2013 Wolf Lammen - rewritten to simplify it */
-void let(vstring *target,vstring source)        /* String assignment */
+void let(vstring *target, vstring source)        /* String assignment */
 /* This function must ALWAYS be called to make assignment to */
 /* a vstring in order for the memory cleanup routines, etc. */
 /* to work properly.  If a vstring has never been assigned before, */
@@ -119,11 +122,11 @@ void let(vstring *target,vstring source)        /* String assignment */
 /*E*/  db += (long)sourceLength+1;
 /*E*/  /* printf("%ld Adding %s\n",db,source); */
 /*E*/}
-  if (targetLength<sourceLength) { /* Old string has not enough room for new one */
+  if (targetLength < sourceLength) { /* Old string has not enough room for new one */
     /* Free old string space and allocate new space */
     if (targetLength)
       free(*target);  /* Free old space */
-    *target=malloc(sourceLength+1); /* Allocate new space */
+    *target = malloc(sourceLength + 1); /* Allocate new space */
     if (!*target) {
       printf("*** FATAL ERROR ***  String memory couldn't be allocated\n");
 #if __STDC__
@@ -133,9 +136,9 @@ void let(vstring *target,vstring source)        /* String assignment */
     }
   }
   if (sourceLength) {
-    strcpy(*target,source);
+    strcpy(*target, source);
   } else {
-    /* empty strings could still be temporaries, so always assign a constant */
+    /* Empty strings could still be temporaries, so always assign a constant */
     if (targetLength) {
       free(*target);
     }
@@ -154,12 +157,12 @@ vstring cat(vstring string1,...)        /* String concatenation */
   size_t argPos[MAX_CAT_ARGS]; /* Array of argument positions in result */
   vstring result;
   int i;
-  int numArgs=0;        /* Define "last argument" */
+  int numArgs = 0;        /* Define "last argument" */
 
-  size_t pos=0;
-  char* curArg=string1;
+  size_t pos = 0;
+  char* curArg = string1;
 
-  va_start(ap,string1); /* Begin the session */
+  va_start(ap, string1); /* Begin the session */
   do {
         /* User-provided argument list must terminate with 0 */
     if (numArgs >= MAX_CAT_ARGS) {
@@ -169,26 +172,26 @@ vstring cat(vstring string1,...)        /* String concatenation */
 #endif
       bug(2206);
     }
-    arg[numArgs]=curArg;
-    argPos[numArgs]=pos;
-    pos+=strlen(curArg);
-  } while (++numArgs, (curArg=va_arg(ap,char *)) != 0);
+    arg[numArgs] = curArg;
+    argPos[numArgs] = pos;
+    pos += strlen(curArg);
+  } while (++numArgs, (curArg = va_arg(ap,char *)) != 0);
   va_end(ap);           /* End var args session */
 
   /* Allocate the memory for it */
-  result=tempAlloc((long)pos+1);
+  result = tempAlloc((long)pos+1);
   /* Move the strings into the newly allocated area */
-  for (i=0; i<numArgs; ++i)
-    strcpy(result+argPos[i],arg[i]);
+  for (i = 0; i < numArgs; ++i)
+    strcpy(result + argPos[i], arg[i]);
   return result;
-}
+} /* cat */
 
 
 /* 20-Oct-2013 Wolf Lammen - allow unlimited input line lengths */
 /* Input a line from the user or from a file */
 /* Returns 1 if a (possibly empty) line was successfully read, 0 if EOF */
 int linput(FILE *stream, const char* ask, vstring *target)
-{                                           /* ^^^^^^ same as char **target */
+{                           /* Note: "vstring *target" means "char **target" */
   /*
     BASIC:  linput "what"; a$
     c:      linput(NULL, "what?", &a);
@@ -216,16 +219,13 @@ int linput(FILE *stream, const char* ask, vstring *target)
   {
     size_t endpos = strlen(f) - 1;
     eol_found = (f[endpos] == '\n');
-    /* In the rare case that the last line in the file has no newline,
-       eol_found will be 0, but another loop iteration will not happen
-       since the fgets() above will return 0.  Whether or not the last
-       line has a newline, we will return a string with any newline
-       stripped. */
+    /* If the last line in the file has no newline, eol_found will be 0 here.
+       The fgets() above will return 0 and prevent another loop iteration. */
     if (eol_found)
-      f[endpos] = 0;
+      f[endpos] = 0; /* The return string will have any newline stripped. */
     if (result)
-      /* This appends additional parts of the line to *target */
-      /* Reallocate *target and copy the concatenation of the
+      /* Append additional parts of the line to *target */
+      /* The let() reallocates *target and copies the concatenation of the
          old *target and the additional input f[] to it */
       let(target /* = &(*target) */, cat(*target, f, NULL));
     else
@@ -235,21 +235,23 @@ int linput(FILE *stream, const char* ask, vstring *target)
     result = 1;
   }
   return result;
-}
+} /* linput */
 
 
 /* Find out the length of a string */
 long len(vstring s)
 {
   return ((long)strlen(s));
-}
+} /* len */
+
 
 /* Extract sin from character position start to stop into sout */
 vstring seg(vstring sin, long start, long stop)
 {
   if (start < 1) start = 1;
   return mid(sin, start, stop - start + 1);
-}
+} /* seg */
+
 
 /* Extract sin from character position start for length len */
 vstring mid(vstring sin, long start, long length)
@@ -259,52 +261,53 @@ vstring mid(vstring sin, long start, long length)
   if (length < 0) length = 0;
   sout=tempAlloc(length + 1);
   strncpy(sout,sin + start - 1, (size_t)length);
-/*??? Should db be subtracted from if length > end of string? */
+/*E*/ /*??? Should db be subtracted from if length > end of string? */
   sout[length] = 0;
   return (sout);
-}
+} /* mid */
+
 
 /* Extract leftmost n characters */
 vstring left(vstring sin,long n)
 {
   return mid(sin, 1, n);
-}
+} /* left */
+
 
 /* Extract after character n */
-vstring right(vstring sin,long n)
+vstring right(vstring sin, long n)
 {
   return seg(sin, n, (long)(strlen(sin)));
-}
+} /* right */
+
 
 /* Emulate VMS BASIC edit$ command */
 vstring edit(vstring sin,long control)
 #define isblank_(c) ((c==' ') || (c=='\t'))
     /* 11-Sep-2009 nm Added _ to fix '"isblank" redefined' compiler warning */
 {
-/*
-EDIT$
-  Syntax
-         str-vbl = EDIT$(str-exp, int-exp)
-     Values   Effect
-     1        Trim parity bits
-     2        Discard all spaces and tabs
-     4        Discard characters: CR, LF, FF, ESC, RUBOUT, and NULL
-     8        Discard leading spaces and tabs
-     16       Reduce spaces and tabs to one space
-     32       Convert lowercase to uppercase
-     64       Convert [ to ( and ] to )
-     128      Discard trailing spaces and tabs
-     256      Do not alter characters inside quotes
+  /* EDIT$ (from VMS BASIC manual)
+       Syntax:  str-vbl = EDIT$(str-exp, int-exp)
+       Values   Effect
+       1        Trim parity bits
+       2        Discard all spaces and tabs
+       4        Discard characters: CR, LF, FF, ESC, RUBOUT, and NULL
+       8        Discard leading spaces and tabs
+       16       Reduce spaces and tabs to one space
+       32       Convert lowercase to uppercase
+       64       Convert [ to ( and ] to )
+       128      Discard trailing spaces and tabs
+       256      Do not alter characters inside quotes
 
-     (non-BASIC extensions)
-     512      Convert uppercase to lowercase
-     1024     Tab the line (convert spaces to equivalent tabs)
-     2048     Untab the line (convert tabs to equivalent spaces)
-     4096     Convert VT220 screen print frame graphics to -,|,+ characters
+       (non-BASIC extensions)
+       512      Convert uppercase to lowercase
+       1024     Tab the line (convert spaces to equivalent tabs)
+       2048     Untab the line (convert tabs to equivalent spaces)
+       4096     Convert VT220 screen print frame graphics to -,|,+ characters
 
-     (Added 10/24/03:)
-     8192     Discard CR only (to assist DOS-to-Unix conversion)
-*/
+       (Added 10/24/03:)
+       8192     Discard CR only (to assist DOS-to-Unix conversion)
+  */
   vstring sout;
   long i, j, k, m;
   int last_char_is_blank;
@@ -315,15 +318,15 @@ EDIT$
   unsigned char graphicsChar;
 
   /* Set up the flags */
-  trim_flag=control & 1;
-  alldiscard_flag=control & 2;
-  discardctrl_flag=control & 4;
-  leaddiscard_flag=control & 8;
-  reduce_flag=control & 16;
-  case_flag=control & 32;
-  bracket_flag=control & 64;
-  traildiscard_flag=control & 128;
-  quote_flag=control & 256;
+  trim_flag = control & 1;
+  alldiscard_flag = control & 2;
+  discardctrl_flag = control & 4;
+  leaddiscard_flag = control & 8;
+  reduce_flag = control & 16;
+  case_flag = control & 32;
+  bracket_flag = control & 64;
+  traildiscard_flag = control & 128;
+  quote_flag = control & 256;
 
   /* Non-BASIC extensions */
   lowercase_flag = control & 512;
@@ -331,7 +334,7 @@ EDIT$
   untab_flag = control & 2048;
   screen_flag = control & 4096; /* Convert VT220 screen prints to |,-,+
                                    format */
-  discardcr_flag=control & 8192; /* Discard CR's */
+  discardcr_flag = control & 8192; /* Discard CR's */
 
   /* Copy string */
   i = (long)strlen(sin) + 1;
@@ -342,15 +345,15 @@ EDIT$
   /* Discard leading space/tab */
   i=0;
   if (leaddiscard_flag)
-    while ((sout[i]!=0) && isblank_(sout[i]))
-      sout[i++]=0;
+    while ((sout[i] != 0) && isblank_(sout[i]))
+      sout[i++] = 0;
 
   /* Main processing loop */
-  while (sout[i]!=0) {
+  while (sout[i] != 0) {
 
     /* Alter characters inside quotes ? */
-    if (quote_flag && ((sout[i]=='"') || (sout[i]=='\'')))
-       processing_inside_quote=~processing_inside_quote;
+    if (quote_flag && ((sout[i] == '"') || (sout[i] == '\'')))
+       processing_inside_quote = ~ processing_inside_quote;
     if (processing_inside_quote) {
        /* Skip the rest of the code and continue to process next character */
        i++; continue;
@@ -358,31 +361,31 @@ EDIT$
 
     /* Discard all space/tab */
     if ((alldiscard_flag) && isblank_(sout[i]))
-        sout[i]=0;
+        sout[i] = 0;
 
     /* Trim parity (eighth?) bit */
     if (trim_flag)
-       sout[i]=sout[i] & 0x7F;
+       sout[i] = sout[i] & 0x7F;
 
     /* Discard CR,LF,FF,ESC,BS */
     if ((discardctrl_flag) && (
-         (sout[i]=='\015') || /* CR  */
-         (sout[i]=='\012') || /* LF  */
-         (sout[i]=='\014') || /* FF  */
-         (sout[i]=='\033') || /* ESC */
-         /*(sout[i]=='\032') ||*/ /* ^Z */ /* DIFFERENCE won't work w/ this */
-         (sout[i]=='\010')))  /* BS  */
-      sout[i]=0;
+         (sout[i] == '\015') || /* CR  */
+         (sout[i] == '\012') || /* LF  */
+         (sout[i] == '\014') || /* FF  */
+         (sout[i] == '\033') || /* ESC */
+         /*(sout[i] == '\032') ||*/ /* ^Z */ /* DIFFERENCE won't work w/ this */
+         (sout[i] == '\010')))  /* BS  */
+      sout[i] = 0;
 
     /* Discard CR */
     if ((discardcr_flag) && (
-         (sout[i]=='\015')))  /* CR  */
-      sout[i]=0;
+         (sout[i] == '\015')))  /* CR  */
+      sout[i] = 0;
 
     /* Convert lowercase to uppercase */
     /*
     if ((case_flag) && (islower(sout[i])))
-       sout[i]=toupper(sout[i]);
+       sout[i] = toupper(sout[i]);
     */
     /* 13-Jun-2009 nm The upper/lower case C functions have odd behavior
        with characters > 127, at least in lcc.  So this was rewritten to
@@ -391,15 +394,15 @@ EDIT$
        sout[i] = (char)(sout[i] - ('a' - 'A'));
 
     /* Convert [] to () */
-    if ((bracket_flag) && (sout[i]=='['))
-       sout[i]='(';
-    if ((bracket_flag) && (sout[i]==']'))
-       sout[i]=')';
+    if ((bracket_flag) && (sout[i] == '['))
+       sout[i] = '(';
+    if ((bracket_flag) && (sout[i] == ']'))
+       sout[i] = ')';
 
     /* Convert uppercase to lowercase */
     /*
     if ((lowercase_flag) && (isupper(sout[i])))
-       sout[i]=tolower(sout[i]);
+       sout[i] = tolower(sout[i]);
     */
     /* 13-Jun-2009 nm The upper/lower case C functions have odd behavior
        with characters > 127, at least in lcc.  So this was rewritten to
@@ -429,33 +432,33 @@ EDIT$
   /* sout[i]=0 is the last character at this point */
 
   /* Clean up the deleted characters */
-  for (j=0,k=0; j<=i; j++)
+  for (j = 0, k = 0; j <= i; j++)
     if (sout[j]!=0) sout[k++]=sout[j];
-  sout[k]=0;
-  /* sout[k]=0 is the last character at this point */
+  sout[k] = 0;
+  /* sout[k] = 0 is the last character at this point */
 
   /* Discard trailing space/tab */
   if (traildiscard_flag) {
     --k;
-    while ((k>=0) && isblank_(sout[k])) --k;
-    sout[++k]=0;
+    while ((k >= 0) && isblank_(sout[k])) --k;
+    sout[++k] = 0;
   }
 
   /* Reduce multiple space/tab to a single space */
   if (reduce_flag) {
-    i=j=last_char_is_blank=0;
-    while (i<=k-1) {
+    i = j = last_char_is_blank = 0;
+    while (i <= k - 1) {
       if (!isblank_(sout[i])) {
-        sout[j++]=sout[i++];
-        last_char_is_blank=0;
+        sout[j++] = sout[i++];
+        last_char_is_blank = 0;
       } else {
         if (!last_char_is_blank)
           sout[j++]=' '; /* Insert a space at the first occurrence of a blank */
-        last_char_is_blank=1; /* Register that a blank is found */
+        last_char_is_blank = 1; /* Register that a blank is found */
         i++; /* Process next character */
       }
     }
-    sout[j]=0;
+    sout[j] = 0;
   }
 
   /* Untab the line */
@@ -546,42 +549,42 @@ EDIT$
     for (j = 0, k = 0; j <= i; j++)
       if (sout[j] != 0) sout[k++] = sout[j];
     sout[k] = 0;
-    /* sout[k]=0 is the last character at this point */
+    /* sout[k] = 0 is the last character at this point */
   }
 
   return (sout);
-}
+} /* edit */
 
 
 /* Return a string of the same character */
 vstring string(long n, char c)
 {
   vstring sout;
-  long j=0;
-  if (n<0) n=0;
-  sout=tempAlloc(n+1);
-  while (j<n) sout[j++]=c;
-  sout[j]=0;
+  long j = 0;
+  if (n < 0) n = 0;
+  sout=tempAlloc(n + 1);
+  while (j < n) sout[j++] = c;
+  sout[j] = 0;
   return (sout);
-}
+} /* string */
 
 
 /* Return a string of spaces */
 vstring space(long n)
 {
-  return (string(n,' '));
-}
+  return (string(n, ' '));
+} /* space */
 
 
 /* Return a character given its ASCII value */
 vstring chr(long n)
 {
   vstring sout;
-  sout=tempAlloc(2);
-  sout[0]= (char)(n & 0xFF);
-  sout[1]=0;
+  sout = tempAlloc(2);
+  sout[0] = (char)(n & 0xFF);
+  sout[1] = 0;
   return(sout);
-}
+} /* chr */
 
 
 /* Search for string2 in string1 starting at start_position */
@@ -589,23 +592,23 @@ vstring chr(long n)
 /* If string2 is "", (length of the string) + 1 is returned */
 long instr(long start_position, vstring string1, vstring string2)
 {
-   char *sp1, *sp2;
-   long ls1, ls2;
-   long found = 0;
-   if (start_position < 1) start_position = 1;
-   ls1=(long)strlen(string1);
-   ls2=(long)strlen(string2);
-   if (start_position > ls1) start_position = ls1 + 1;
-   sp1 = string1 + start_position - 1;
-   while ((sp2 = strchr(sp1, string2[0])) != 0) {
-     if (strncmp(sp2, string2, (size_t)ls2) == 0) {
-        found = sp2 - string1 + 1;
-        break;
-     } else
-        sp1 = sp2 + 1;
-   }
-   return (found);
-}
+  char *sp1, *sp2;
+  long ls1, ls2;
+  long found = 0;
+  if (start_position < 1) start_position = 1;
+  ls1 = (long)strlen(string1);
+  ls2 = (long)strlen(string2);
+  if (start_position > ls1) start_position = ls1 + 1;
+  sp1 = string1 + start_position - 1;
+  while ((sp2 = strchr(sp1, string2[0])) != 0) {
+    if (strncmp(sp2, string2, (size_t)ls2) == 0) {
+      found = sp2 - string1 + 1;
+      break;
+    } else
+      sp1 = sp2 + 1;
+  }
+  return (found);
+} /* instr */
 
 
 /* 12-Jun-2011 nm Added rinstr */
@@ -615,16 +618,16 @@ long instr(long start_position, vstring string1, vstring string2)
    backwards from end of string1 */
 long rinstr(vstring string1, vstring string2)
 {
-   long pos = 0;
-   long savePos = 0;
+  long pos = 0;
+  long savePos = 0;
 
-   while (1) {  /* Scan until substring no longer found */
-     pos = instr(pos + 1, string1, string2);
-     if (!pos) break;
-     savePos = pos;
-   }
-   return (savePos);
-}
+  while (1) {  /* Scan until substring no longer found */
+    pos = instr(pos + 1, string1, string2);
+    if (!pos) break;
+    savePos = pos;
+  }
+  return (savePos);
+} /* rinstr */
 
 
 /* Translate string in sin to sout based on table.
@@ -632,30 +635,31 @@ long rinstr(vstring string1, vstring string2)
 vstring xlate(vstring sin,vstring table)
 {
   vstring sout;
-  long len_table,len_sin;
-  long i,j;
+  long len_table, len_sin;
+  long i, j;
   long table_entry;
   char m;
-  len_sin=(long)strlen(sin);
-  len_table=(long)strlen(table);
-  sout=tempAlloc(len_sin+1);
-  for (i=j=0; i<len_sin; i++)
+  len_sin = (long)strlen(sin);
+  len_table = (long)strlen(table);
+  sout = tempAlloc(len_sin+1);
+  for (i = j = 0; i < len_sin; i++)
   {
-    table_entry= 0x000000FF & (long)sin[i];
-    if (table_entry<len_table)
-      if ((m=table[table_entry])!='\0')
-        sout[j++]=m;
+    table_entry = 0x000000FF & (long)sin[i];
+    if (table_entry < len_table)
+      if ((m = table[table_entry])!='\0')
+        sout[j++] = m;
   }
   sout[j]='\0';
   return (sout);
-}
+} /* xlate */
 
 
 /* Returns the ascii value of a character */
 long ascii_(vstring c)
 {
   return ((long)c[0]);
-}
+} /* ascii_ */
+
 
 /* Returns the floating-point value of a numeric string */
 double val(vstring s)
@@ -685,79 +689,84 @@ double val(vstring s)
   /*
   return (atof(s));
   */
-}
+} /* val */
 
 
 /* Returns current date as an ASCII string */
 vstring date()
 {
-        vstring sout;
-        struct tm *time_structure;
-        time_t time_val;
-        char *month[12];
+  vstring sout;
+  struct tm *time_structure;
+  time_t time_val;
+  char *month[12];
 
-        /* (Aggregrate initialization is not portable) */
-        /* (It must be done explicitly for portability) */
-        month[0]="Jan";
-        month[1]="Feb";
-        month[2]="Mar";
-        month[3]="Apr";
-        month[4]="May";
-        month[5]="Jun";
-        month[6]="Jul";
-        month[7]="Aug";
-        month[8]="Sep";
-        month[9]="Oct";
-        month[10]="Nov";
-        month[11]="Dec";
+  /* (Aggregrate initialization is not portable) */
+  /* (It must be done explicitly for portability) */
+  month[0] = "Jan";
+  month[1] = "Feb";
+  month[2] = "Mar";
+  month[3] = "Apr";
+  month[4] = "May";
+  month[5] = "Jun";
+  month[6] = "Jul";
+  month[7] = "Aug";
+  month[8] = "Sep";
+  month[9] = "Oct";
+  month[10] = "Nov";
+  month[11] = "Dec";
 
-        time(&time_val);                        /* Retrieve time */
-        time_structure=localtime(&time_val); /* Translate to time structure */
-        sout=tempAlloc(12);
-        /* "%02d" means leading zeros with min. field width of 2 */
-        /* sprintf(sout,"%d-%s-%02d", */
-        sprintf(sout,"%d-%s-%04d",             /* 10-Apr-06 nm */
-                time_structure->tm_mday,
-                month[time_structure->tm_mon],
-                /* (int)((time_structure->tm_year) % 100)); */ /* Y2K */
-                (int)((time_structure->tm_year) + 1900)); /* 10-Apr-06 nm */
-        return(sout);
-}
+  time(&time_val); /* Retrieve time */
+  time_structure = localtime(&time_val); /* Translate to time structure */
+  sout = tempAlloc(12);
+  /* "%02d" means leading zeros with min. field width of 2 */
+  /* sprintf(sout,"%d-%s-%02d", */
+  sprintf(sout,"%d-%s-%04d", /* 10-Apr-06 nm 4-digit year */
+      time_structure->tm_mday,
+      month[time_structure->tm_mon],
+      /* time_structure->tm_year); */ /* old */
+      /* (int)((time_structure->tm_year) % 100)); */ /* Y2K */
+      (int)((time_structure->tm_year) + 1900)); /* 10-Apr-06 nm 4-digit yr */
+  return(sout);
+} /* date */
+
 
 /* Return current time as an ASCII string */
 vstring time_()
 {
-        vstring sout;
-        struct tm *time_structure;
-        time_t time_val;
-        int i;
-        char *format;
-        char *format1="%d:%d %s";
-        char *format2="%d:0%d %s";
-        char *am_pm[2];
-        /* (Aggregrate initialization is not portable) */
-        /* (It must be done explicitly for portability) */
-        am_pm[0]="AM";
-        am_pm[1]="PM";
+  vstring sout;
+  struct tm *time_structure;
+  time_t time_val;
+  int i;
+  char *format;
+  char *format1 = "%d:%d %s";
+  char *format2 = "%d:0%d %s";
+  char *am_pm[2];
+  /* (Aggregrate initialization is not portable) */
+  /* (It must be done explicitly for portability) */
+  am_pm[0] = "AM";
+  am_pm[1] = "PM";
 
-        time(&time_val);                        /* Retrieve time */
-        time_structure=localtime(&time_val); /* Translate to time structure */
-        if (time_structure->tm_hour>=12) i=1;
-        else                             i=0;
-        if (time_structure->tm_hour>12) time_structure->tm_hour-=12;
-        if (time_structure->tm_hour==0) time_structure->tm_hour=12;
-        sout=tempAlloc(12);
-        if (time_structure->tm_min>=10)
-          format=format1;
-        else
-          format=format2;
-        sprintf(sout,format,
-                time_structure->tm_hour,
-                time_structure->tm_min,
-                am_pm[i]);
-        return(sout);
-
-}
+  time(&time_val); /* Retrieve time */
+  time_structure = localtime(&time_val); /* Translate to time structure */
+  if (time_structure->tm_hour >= 12)
+    i = 1;
+  else
+    i = 0;
+  if (time_structure->tm_hour > 12)
+    time_structure->tm_hour -= 12;
+  if (time_structure->tm_hour == 0)
+    time_structure->tm_hour = 12;
+  sout = tempAlloc(12);
+  if (time_structure->tm_min >= 10)
+    format = format1;
+  else
+    format = format2;
+  sprintf(sout,format,
+      time_structure->tm_hour,
+      time_structure->tm_min,
+      am_pm[i]);
+  return(sout);
+} /* time */
 
 
 /* Return a number as an ASCII string */
@@ -769,32 +778,35 @@ vstring str(double f)
   /* instead of 7.000000000000000. */
   vstring s;
   long i;
-  s=tempAlloc(50);
-  sprintf(s,"%f",f);
-  if (strchr(s,'.')!=0) {               /* the string has a period in it */
-    for (i=(long)strlen(s)-1; i>0; i--) {     /* scan string backwards */
-      if (s[i]!='0') break;             /* 1st non-zero digit */
-      s[i]=0;                           /* delete the trailing 0 */
+  s = tempAlloc(50);
+  sprintf(s,"%f", f);
+  if (strchr(s, '.') != 0) { /* The string has a period in it */
+    for (i = (long)strlen(s) - 1; i > 0; i--) {  /* Scan string backwards */
+      if (s[i] != '0') break; /* 1st non-zero digit */
+      s[i] = 0; /* Delete the trailing 0 */
     }
-    if (s[i]=='.') s[i]=0;              /* delete trailing period */
+    if (s[i] == '.') s[i] = 0; /* Delete trailing period */
 /*E*/INCDB1(-(49 - (long)strlen(s)));
   }
   return (s);
-}
+} /* str */
 
 
 /* Return a number as an ASCII string */
+/* (This may have differed slightly from str() in BASIC but I forgot how.
+   It should be considered deprecated.) */
 vstring num1(double f)
 {
   return (str(f));
-}
+} /* num1 */
 
 
 /* Return a number as an ASCII string surrounded by spaces */
+/* (This should be considered deprecated.) */
 vstring num(double f)
 {
   return (cat(" ",str(f)," ",NULL));
-}
+} /* num */
 
 
 

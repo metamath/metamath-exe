@@ -5,7 +5,9 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.103 4-Jan-2014"
+#define MVERSION "0.104 14-Feb-2014"
+/* 0.104 14-Feb-2014 nm mmwtex.c - fixed bug 2312, mmcmds.c - enhanced ASSIGN
+   error message. */
 /* 0.103 4-Jan-2014 nm mmcmds.c,h - added "Allowed substitution hints" below
    the "Distinct variable groups" list on generated web pages
    mmwtex.c - added "*" to indicate DV's occur in Statement List entries. */

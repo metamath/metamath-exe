@@ -2130,9 +2130,10 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
         break;
       }
       if (cmtptr[0] == '\n' && textMode) break;
-      if (cmtptr[0] == '$') {
+      /* if (cmtptr[0] == '$') { */
+      if (cmtptr[0] == DOLLAR_SUBST) {  /* 14-Feb-2014 nm */
         if (cmtptr[1] == ')') {
-          bug(2312); /* Obsolete (will never happen) */
+          bug(2312); /* Obsolete (should never happen) */
           lastLineFlag = 1;
           break;
         }
