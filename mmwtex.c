@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2013  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2014  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -781,6 +781,8 @@ long texDefTokenLen(char *ptr)
 int texSortCmp(const void *key1, const void *key2)
 {
   /* Returns -1 if key1 < key2, 0 if equal, 1 if key1 > key2 */
+  /* Note:  ptr->fld == (*ptr).fld
+            str.fld == (&str)->fld   */
   return (strcmp( ((struct texDef_struct *)key1)->tokenName,
       ((struct texDef_struct *)key2)->tokenName));
 } /* texSortCmp */
@@ -1629,6 +1631,7 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
   vstring bibFileContentsUpper = ""; /* Uppercase version */
   vstring bibTags = "";
   long pos1, pos2, htmlpos1, htmlpos2, saveScreenWidth;
+  flag tmpMathMode; /* 15-Feb-2014 nm */
 
   /* Variables for converting ` ` and ~ to old $m,$n and $l,$n formats in
      order to re-use the old code */
@@ -1725,7 +1728,7 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
      subscripts */
   /* 5-Dec-03 Added LaTeX handling */
   /* This section is independent and can be removed without side effects */
-  if (i == i + 0 /*htmlFlag*/) {  /* 5-Dec-03 */
+  if (i == i + 0 /*was htmlFlag*/) {  /* 5-Dec-03 */
     pos1 = 0;
     while (1) {
       pos1 = instr(pos1 + 1, cmt, "_");
@@ -1820,6 +1823,53 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
       }
     }
   }
+
+  /* 15-Feb-2014 nm */
+  /* Convert any remaining special characters for LaTeX */
+  /* This section is independent and can be removed without side effects */
+  if (!htmlFlag) { /* i.e. LaTeX mode */
+    /* At this point, the comment begins e.g "\begin{lemma}\label{lem:abc}" */
+    pos1 = instr(1, cmt, "} ");
+    if (pos1) {
+      pos1++; /* Start after the "}" */
+    } else {
+      pos1 = 1; /* If not found, start from beginning of line */
+    }
+    pos2 = (long)strlen(cmt);
+    tmpMathMode = 0;
+    for (pos1 = pos1; pos1 <= pos2; pos1++) {
+      /* Don't modify anything inside of math symbol strings
+         (imperfect - only works if `...` is not split across lines?) */
+      if (cmt[pos1 - 1] == '`') tmpMathMode = (flag)(1 - tmpMathMode);
+      if (tmpMathMode) continue;
+      if (pos1 > 1) {
+        if (cmt[pos1 - 1] == '_' && cmt[pos1 - 2] == '$') {
+          /* The _ is part of "$_{...}$" earlier conversion */
+          continue;
+        }
+      }
+      /* $%#{}&^\\|<>"~_ are converted by asciiToTt() */
+      /* Omit \ and $ since they be part of an earlier converston */
+      /* Omit ~ since it is part of label ref */
+      /* Omit " since it legal */
+      /* Because converting to \char` causes later math mode problems due to `,
+         we change |><_ to /)(- (an ugly workaround) */
+      switch(cmt[pos1 - 1]) {
+        case '|': cmt[pos1 - 1] = '/'; break;
+        case '<': cmt[pos1 - 1] = '{'; break;
+        case '>': cmt[pos1 - 1] = '}'; break;
+        case '_': cmt[pos1 - 1] = '-'; break;
+      }
+      if (strchr("%#{}&^|<>_", cmt[pos1 - 1]) != NULL) {
+        let(&tmpStr, "");
+        tmpStr = asciiToTt(chr(cmt[pos1 - 1]));
+        let(&cmt, cat(left(cmt, pos1 - 1), tmpStr,
+            right(cmt, pos1 + 1), NULL));
+        pos1 += (long)strlen(tmpStr) - 1;
+        pos2 += (long)strlen(tmpStr) - 1;
+      }
+    } /* Next pos1 */
+  } if (!htmlFlag)
 
   /* 10/10/02 Put bibliography hyperlinks in comments converted to HTML:
         [Monk2] becomes <A HREF="mmset.html#monk2>[Monk2]</A> etc. */
