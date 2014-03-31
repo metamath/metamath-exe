@@ -3075,7 +3075,7 @@ void deallocProofStruct(struct pip_struct *proofStruct)
 
 
 /* 1-Nov-2013 nm Added this function */
-#define DEFAULT_UNDO_STACK_SIZE 6
+#define DEFAULT_UNDO_STACK_SIZE 20
 /* This function handles the UNDO/REDO commands.  It is called
    with action PUS_INIT then with PUS_PUSH upon entering MM-PA.  It is
    called with PUS_INIT upon exiting MM-PA.  It should be called with

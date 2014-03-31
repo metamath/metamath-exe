@@ -1869,7 +1869,7 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
         pos2 += (long)strlen(tmpStr) - 1;
       }
     } /* Next pos1 */
-  } if (!htmlFlag)
+  } /* if (!htmlFlag) */
 
   /* 10/10/02 Put bibliography hyperlinks in comments converted to HTML:
         [Monk2] becomes <A HREF="mmset.html#monk2>[Monk2]</A> etc. */

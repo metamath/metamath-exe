@@ -5,7 +5,10 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.105 15-Feb-2014"
+#define MVERSION "0.106 30-Mar-2014"
+/* 0.106 30-Mar-2014 nm mmwtex.c - fix bug introduced by 0.105 that disabled
+   hyperlinks on literature refs in HTML comment.  metamath.c - improve
+   messages */
 /* 0.105 15-Feb-2014 nm mmwtex.c - prevented illegal LaTeX output for certain
    special characters in comments. */
 /* 0.104 14-Feb-2014 nm mmwtex.c - fixed bug 2312, mmcmds.c - enhanced ASSIGN
@@ -1842,9 +1845,9 @@ void command(int argc, char *argv[])
         for (i = 1; i <= statements; i++) {
           if (statement[i].type != (char)p_ &&
             statement[i].type != (char)a_) continue;
-          /* Omit ...OBS (obsolete) and ...NEW (to be implemented) statements */
+          /* Omit ...OLD (obsolete) and ...NEW (to be implemented) statements */
           if (instr(1, statement[i].labelName, "NEW")) continue;
-          if (instr(1, statement[i].labelName, "OBS")) continue;
+          if (instr(1, statement[i].labelName, "OLD")) continue;
           let(&str1, "");
           str1 = getDescription(i); /* Get the statement's comment */
           if (!instr(1, str1, "[")) continue;
@@ -4844,12 +4847,23 @@ void command(int argc, char *argv[])
       processUndoStack(&proofInProgress, PUS_PUSH, fullArgString, 0);
 
       /* 16-Sep-2012 nm */
+      /*
       if (dummyVarIsoFlag == 2 && proofChangedFlag) {
         printLongLine(cat(
      "Assignments to shared working variables ($nn) are guesses.  If "
      "incorrect, to undo DELETE STEP ",
               str(step - m + n),
       ", INITIALIZE, UNIFY, then assign them manually with LET ",
+      "and try REPLACE again.",
+              NULL),
+              "", " ");
+      }
+      */
+      /* 25-Feb-2014 nm */
+      if (dummyVarIsoFlag == 2 && proofChangedFlag) {
+        printLongLine(cat(
+     "Assignments to shared working variables ($nn) are guesses.  If "
+     "incorrect, UNDO then assign them manually with LET ",
       "and try REPLACE again.",
               NULL),
               "", " ");
