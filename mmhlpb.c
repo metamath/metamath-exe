@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2013  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2014  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -106,6 +106,14 @@ printHelp = !strcmp(saveHelpCmd, "HELP SHOW SETTINGS");
 H("Syntax:  SHOW SETTINGS");
 H("");
 H("This command shows the state of various parameters.");
+H("");
+
+
+printHelp = !strcmp(saveHelpCmd, "HELP SHOW ELAPSED_TIME");
+H("Syntax:  SHOW ELAPSED_TIME");
+H("");
+H("This command shows the time elapsed in the session and from any");
+H("previous use of SHOW ELAPSED_TIME.");
 H("");
 
 
@@ -248,6 +256,8 @@ H("        less space-efficient but faster algorithm.");
 H("    / STATEMENT_SUMMARY - Summarizes all statements (like a brief SHOW");
 H("        STATEMENT) used by the proof.  May not be used with any other");
 H("        qualifier except / ESSENTIAL.");
+H("    / SIZE - Shows size of the proof in the source.  The size depends on");
+H("        how it was last SAVEd (compressed or normal).");
 H("    / DETAILED_STEP <step> - Shows the details of what is happening at");
 H("        a specific proof step.  May not be used with any other qualifier.");
 H("");
@@ -679,13 +689,13 @@ H("qualifiers.)");
 H("");
 H("The first output file, \"mmtheorems.html\", includes a Table of Contents.");
 H("An entry is triggered in the database by \"$(\" immediately followed by a");
-H("new line starting with either \"#*#*\" (for a section break) or \"=-=-\"");
-H("(for a subsection break).  The line following that one that will be used");
-H("for the table of contents entry, after trimming spaces.  In between two");
-H("successive statements that generate web pages (i.e. $a and $p");
-H("statements), only the last section and/or subsection break will be used,");
-H("and any subsection break before a section break will be ignored.  See the");
-H("set.mm database file for examples.");
+H("new line starting with \"####\" (for a major part break), \"#*#*\" (for a");
+H("section break), or \"=-=-\" (for a subsection break).  The line following");
+H("that one that will be used for the table of contents entry, after");
+H("trimming spaces.  In between two successive statements that generate web");
+H("pages (i.e. $a and $p) statements), only the last of each break type");
+H("will be used, and any smaller break before a larger break will be");
+H("ignored.  See the set.mm database file for examples.");
 H("");
 H("[Warning: For the above matching, white space is NOT ignored.  There");
 H("should be no spaces between \"$(\" and the end of the line.  This may be");

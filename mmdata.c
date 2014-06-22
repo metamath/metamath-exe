@@ -1737,7 +1737,7 @@ vstring compressProof(nmbrString *proof, long statemNum,
     stmt = labelList[lab];
     if (stmt < 0) {
       if (stmt <= -1000) {
-        if (-1000 - stmt >= plen) bug (345);
+        if (-1000 - stmt >= plen) bug(345);
         localLabelFlags[-1000 - stmt] = 1;
         localLabels++;
       } else {

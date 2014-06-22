@@ -1146,6 +1146,7 @@ void printTexHeader(flag texHeaderFlag)
 
   /* 2-Aug-2009 nm - "Mathbox for <username>" mod */
   vstring localSandboxTitle = "";
+  vstring hugeHdr = ""; /* 21-Jun-2014 nm */
   vstring bigHdr = "";
   vstring smallHdr = "";
 
@@ -1333,7 +1334,7 @@ void printTexHeader(flag texHeaderFlag)
       /* 2-Aug-2009 nm - "Mathbox for <username>" mod */
       /* Scan from this statement backwards until a big header is found */
       for (i = showStatement; i > sandboxStmt; i--) {
-        getSectionHeadings(i, &bigHdr, &smallHdr);
+        getSectionHeadings(i, &hugeHdr, &bigHdr, &smallHdr);
         if (bigHdr[0] != 0) break;
       } /* next i */
       if (bigHdr[0]) {
@@ -1344,6 +1345,7 @@ void printTexHeader(flag texHeaderFlag)
            formatted right, but use default just in case) */
         let(&localSandboxTitle, sandboxTitle);
       }
+      let(&hugeHdr, "");   /* Deallocate memory */
       let(&bigHdr, "");   /* Deallocate memory */
       let(&smallHdr, ""); /* Deallocate memory */
       /* 2-Aug-2009 nm - end of "Mathbox for <username>" mod */
@@ -2811,13 +2813,19 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
   vstring str1 = "";
   vstring str3 = "";
   vstring str4 = "";
+  vstring prevNextLinks = "";
+  long partCntr;        /* Counter for hugeHdr */ /* 21-Jun-2014 */
+  long sectionCntr;     /* Counter for bigHdr */ /* 21-Jun-2014 */
+  long subsectionCntr;  /* Counter for smallHdr */ /* 21-Jun-2014 */
   vstring outputFileName = "";
   FILE *outputFilePtr;
 
   /* 31-Jul-2006 for table of contents mod */
+  vstring hugeHdr = ""; /* 21-Jun-2014 nm */
   vstring bigHdr = "";
   vstring smallHdr = "";
   long stmt, i;
+  pntrString *pntrHugeHdr = NULL_PNTRSTRING;
   pntrString *pntrBigHdr = NULL_PNTRSTRING;
   pntrString *pntrSmallHdr = NULL_PNTRSTRING;
 
@@ -2835,6 +2843,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
 
   /* 31-Jul-2006 nm Table of contents mod */
   /* Allocate array for section headers found */
+  pntrLet(&pntrHugeHdr, pntrSpace(statements + 1));
   pntrLet(&pntrBigHdr, pntrSpace(statements + 1));
   pntrLet(&pntrSmallHdr, pntrSpace(statements + 1));
 
@@ -2886,7 +2895,11 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
     /* 4-Jun-06 nm - Put page name before "Metamath Proof Explorer" etc. */
     print2("%s\n", cat("<TITLE>",
         /* Strip off ".html" */
-        left(outputFileName, (long)strlen(outputFileName) - 5), " - ",
+        /*
+        left(outputFileName, (long)strlen(outputFileName) - 5),
+        */
+        "List p. ", str(page),  /* 21-Jun-2014 */
+        " - ",
         htmlTitle,
         "</TITLE>", NULL));
     /* Icon for bookmark */
@@ -2899,14 +2912,49 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
     printLongLine(cat("ROWSPAN=2>", htmlHome, "</TD>", NULL), "", "\"");
     printLongLine(cat(
         "<TD NOWRAP ALIGN=CENTER ROWSPAN=2><FONT SIZE=\"+3\" COLOR=",
-        GREEN_TITLE_COLOR, "><B>", htmlTitle, "</B></FONT>", NULL), "", "\"");
+        GREEN_TITLE_COLOR, "><B>", htmlTitle, "</B></FONT>",
+        "<BR><FONT SIZE=\"+2\" COLOR=",      /* 21-Jun-2014 */
+        GREEN_TITLE_COLOR,                   /* 21-Jun-2014 */
+        "><B>Statement List (p. ", str(page), /* 21-Jun-2014 */
+        " of ", str(pages), ")</B></FONT>",   /* 21-Jun-2014 */
+        NULL), "", "\"");
+
+
     /* Put Previous/Next links into web page */
-    print2("</TD><TD NOWRAP ALIGN=RIGHT VALIGN=TOP WIDTH=\"25%s\"><FONT\n", "%");
+    print2("</TD><TD NOWRAP ALIGN=RIGHT VALIGN=TOP WIDTH=\"25%c\"><FONT\n", '%');
     print2(" SIZE=-1 FACE=sans-serif>\n");
 
     /* Output title with current page */
     /* Output previous and next */
 
+
+    /* 21-Jun-2014 nm Assign prevNextLinks once here since it is used 3 times */
+    let(&prevNextLinks, cat("<A HREF=\"mmtheorems",
+        (page > 1)
+            ? ((page - 1 > 1) ? str(page - 1) : "")
+            : ((pages > 1) ? str(pages) : ""),
+        ".html\">", NULL));
+    if (page > 1) {
+      let(&prevNextLinks, cat(prevNextLinks,
+          "&lt; Previous</A>&nbsp;&nbsp;", NULL));
+    } else {
+      let(&prevNextLinks, cat(prevNextLinks, "&lt; Wrap</A>&nbsp;&nbsp;", NULL));
+    }
+    let(&prevNextLinks, cat(prevNextLinks, "<A HREF=\"mmtheorems",
+        (page < pages)
+            ? str(page + 1)
+            : "",
+        ".html\">", NULL));
+    if (page < pages) {
+      let(&prevNextLinks, cat(prevNextLinks, "Next &gt;</A>", NULL));
+    } else {
+      let(&prevNextLinks, cat(prevNextLinks, "Wrap &gt;</A>", NULL));
+    }
+
+    printLongLine(prevNextLinks,
+        " ",  /* Start continuation line with space */
+        "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+    /********* old code that the above printLongLine replaces
     let(&str1, cat("<A HREF=\"mmtheorems",
         (page > 1)
             ? ((page - 1 > 1) ? str(page - 1) : "")
@@ -2927,6 +2975,8 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
     } else {
       print2("%sWrap &gt;</A>\n", str1);
     }
+    ******************************/
+
 
     /* Finish up header */
     /* Print the GIF/Unicode Font choice, if directories are specified */
@@ -2948,45 +2998,219 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
     print2("</TR></TABLE>\n");
     print2("<HR NOSHADE SIZE=1>\n");
 
+    /* Print some useful links */
+    /* print2("<CENTER>\n"); */
+    print2("<A HREF=\"../mm.html\">Mirrors</A>\n");
+    print2("&nbsp;&gt;&nbsp;<A HREF=\"../index.html\">\n");
+    print2("Metamath Home Page</A>\n");
+    print2("&nbsp;&gt;&nbsp;<A HREF=\"mmset.html\">\n");
+    print2("MPE Home Page</A>\n");
+    if (page != 1) {
+      print2("&nbsp;&gt;&nbsp;<A HREF=\"mmtheorems.html\">\n");
+      print2("Statement List Contents</A>\n");
+    } else {
+      print2("&nbsp;&gt;&nbsp;\n");
+      print2("Statement List Contents</A>\n");
+    }
+    print2("&nbsp;&gt;&nbsp;<A HREF=\"mmrecent.html\">\n");
+    print2("Recent Proofs</A>\n");
+    print2("&nbsp; &nbsp; &nbsp; <B><FONT COLOR=%s>\n", GREEN_TITLE_COLOR);
+    print2("This page:</FONT></B> \n");
+    if (page == 1) {
+      print2("<A HREF=\"#mmstmtlst\">Start of list</A>&nbsp; &nbsp; \n");
+    }
+    print2("<A HREF=\"#mmpglst\">Page list</A>\n");
+    /* print2("</CENTER>\n"); */
+    print2("<HR NOSHADE SIZE=1>\n");
+
     /* Write out HTML page so far */
     fprintf(outputFilePtr, "%s", printString);
     outputToString = 0;
     let(&printString, "");
 
-    /* Output links to the other pages */
+    /***** 21-Jun-2014 Moved to bottom of page ********
+    /@ Output links to the other pages @/
     fprintf(outputFilePtr, "Jump to page: \n");
     for (p = 1; p <= pages; p++) {
 
-      /* Construct the pink number range */
+      /@ Construct the pink number range @/
       let(&str3, "");
       str3 = pinkRangeHTML(
-          nmbrStmtNmbr[(p - 1) * theoremsPerPage + 1],
+          nmbrStmtNmbr[(p - 1) @ theoremsPerPage + 1],
           (p < pages) ?
-            nmbrStmtNmbr[p * theoremsPerPage] :
+            nmbrStmtNmbr[p @ theoremsPerPage] :
             nmbrStmtNmbr[assertions]);
 
-      /* 31-Jul-2006 nm Change "1" to "Contents + 1" */
+      /@ 31-Jul-2006 nm Change "1" to "Contents + 1" @/
       if (p == page) {
         let(&str1,
-            (p == 1) ? "Contents + 1" : str(p) /* 31-Jul-2006 nm */
-            ); /* Current page shouldn't have link to self */
+            (p == 1) ? "Contents + 1" : str(p) /@ 31-Jul-2006 nm @/
+            ); /@ Current page shouldn't have link to self @/
       } else {
         let(&str1, cat("<A HREF=\"mmtheorems",
             (p == 1) ? "" : str(p),
-            /* (p == 1) ? ".html#mmtc\">" : ".html\">", */ /* 31-Aug-2006 nm */
-            ".html\">", /* 8-Feb-2007 nm Friendlier, because you can start
+            /@ (p == 1) ? ".html#mmtc\">" : ".html\">", @/ /@ 31-Aug-2006 nm @/
+            ".html\">", /@ 8-Feb-2007 nm Friendlier, because you can start
                   scrolling through the page before it finishes loading,
                   without its jumping to #mmtc (start of Table of Contents)
-                  when it's done. */
-            (p == 1) ? "Contents + 1" : str(p) /* 31-Jul-2006 nm */
+                  when it's done. @/
+            (p == 1) ? "Contents + 1" : str(p) /@ 31-Jul-2006 nm @/
             , "</A>", NULL));
       }
       let(&str1, cat(str1, PINK_NBSP, str3, NULL));
       fprintf(outputFilePtr, "%s\n", str1);
     }
+    ******** end of 21-Jun-2014 move *******/
+
+    /* 31-Jul-2006 nm Add table of contents to first WRITE THEOREM page */
+    if (page == 1) {  /* We're on page 1 */
+
+      outputToString = 1;
+      print2(
+        "<P><CENTER><A NAME=\"mmtc\"></A><B>Table of Contents</B></CENTER>\n");
+      fprintf(outputFilePtr, "%s", printString);
+      outputToString = 0;
+      let(&printString, "");
+
+      let(&hugeHdr, "");
+      let(&bigHdr, "");
+      let(&smallHdr, "");
+      partCntr = 0;    /* Initialize counters */    /* 21-Jun-2014 */
+      sectionCntr = 0;
+      subsectionCntr = 0;
+      for (stmt = 1; stmt <= statements; stmt++) {
+        getSectionHeadings(stmt, &hugeHdr, &bigHdr, &smallHdr);
+        /* Output the headers for $a and $p statements */
+        if (statement[stmt].type == p_ || statement[stmt].type == a_) {
+          if (hugeHdr[0] || bigHdr[0] || smallHdr[0]) {
+            /* Write to the table of contents */
+            outputToString = 1;
+            i = ((statement[stmt].pinkNumber - 1) / theoremsPerPage)
+                + 1; /* Page # */
+            let(&str3, cat("mmtheorems", (i == 1) ? "" : str(i), ".html#",
+                          /* Note that page 1 has no number after mmtheorems */
+                /* statement[stmt].labelName, NULL)); */
+                "mm", str(statement[stmt].pinkNumber), NULL));
+                   /* Link to page/location - no theorem can be named "mm*" */
+            let(&str4, "");
+            str4 = pinkHTML(stmt);
+            /*let(&str4, right(str4, (long)strlen(PINK_NBSP) + 1));*/
+                                                         /* Discard "&nbsp;" */
+            if (hugeHdr[0]) {    /* 21-Jun-2014 nm */
+
+              /* Create part number */
+              partCntr++;
+              sectionCntr = 0;
+              subsectionCntr = 0;
+              let(&hugeHdr, cat("PART ", str(partCntr), "&nbsp;&nbsp;", hugeHdr, NULL));
+
+              printLongLine(cat(
+
+                  /* 29-Jul-2008 nm Add an anchor to the "sandbox" theorem
+                     for use by mmrecent.html */
+                  /* 21-Jun-2014 nm We use "sandbox:bighdr" for both here and
+                     below so that either huge or big header type could
+                     be used to start mathbox sections */
+                  (stmt == sandboxStmt && bigHdr[0] == 0) ?
+                      /* Note the colon so it won't conflict w/ theorem
+                         name anchor */
+                      "<A NAME=\"sandbox:bighdr\"></A>" : "",
+
+
+                  " <A HREF=\"", str3, "h\"><B>",
+                  hugeHdr, "</B></A>",
+                  /*
+                  " &nbsp; <A HREF=\"",
+                  statement[stmt].labelName, ".html\">",
+                  statement[stmt].labelName, "</A>",
+                  str4,
+                  */
+                  "<BR>", NULL),
+                  " ",  /* Start continuation line with space */
+                  "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+              /* Assign to array for use during theorem output */
+              let((vstring *)(&pntrHugeHdr[stmt]), hugeHdr);
+              let(&hugeHdr, "");
+            }
+            if (bigHdr[0]) {
+
+              /* Create section number */  /* 21-Jun-2014 */
+              sectionCntr++;
+              subsectionCntr = 0;
+              let(&bigHdr, cat(str(partCntr), ".", str(sectionCntr),
+                  "&nbsp;&nbsp;",
+                  bigHdr, NULL));
+
+              printLongLine(cat("&nbsp; &nbsp; &nbsp; ",
+
+                  /* 29-Jul-2008 nm Add an anchor to the "sandbox" theorem
+                     for use by mmrecent.html */
+                  stmt == sandboxStmt ?
+                      /* Note the colon so it won't conflict w/ theorem
+                         name anchor */
+                      "<A NAME=\"sandbox:bighdr\"></A>" : "",
+
+
+                  " <A HREF=\"", str3, "b\"><B>",
+                  bigHdr, "</B></A>",
+                  /*
+                  " &nbsp; <A HREF=\"",
+                  statement[stmt].labelName, ".html\">",
+                  statement[stmt].labelName, "</A>",
+                  str4,
+                  */
+                  "<BR>", NULL),
+                  " ",  /* Start continuation line with space */
+                  "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+              /* Assign to array for use during theorem output */
+              let((vstring *)(&pntrBigHdr[stmt]), bigHdr);
+              let(&bigHdr, "");
+            }
+            if (smallHdr[0]) {
+
+              /* Create subsection number */  /* 21-Jun-2014 */
+              subsectionCntr++;
+              let(&smallHdr, cat(str(partCntr), ".", str(sectionCntr),
+                  ".", str(subsectionCntr), "&nbsp;&nbsp;",
+                  smallHdr, NULL));
+
+              printLongLine(cat("&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; ",
+
+                  /* 23-May-2008 nm Add an anchor to the "sandbox" theorem
+                     for use by mmrecent.html */
+                  /*
+                  !strcmp(statement[stmt].labelName, "sandbox") ?
+                      "<A NAME=\"sandbox:smallhdr\"></A>" : "",
+                  */
+
+                  "<A HREF=\"", str3, "s\">",
+                  smallHdr, "</A>",
+                  " &nbsp; <A HREF=\"",
+                  statement[stmt].labelName, ".html\">",
+                  statement[stmt].labelName, "</A>",
+                  str4,
+                  "<BR>", NULL),
+                  " ",  /* Start continuation line with space */
+                  "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+              /* Assign to array for use during theorem output */
+              let((vstring *)(&pntrSmallHdr[stmt]), smallHdr);
+              let(&smallHdr, "");
+            }
+            fprintf(outputFilePtr, "%s", printString);
+            outputToString = 0;
+            let(&printString, "");
+          } /* if big or small header */
+        } /* if $a or $p */
+      } /* next stmt */
+      fprintf(outputFilePtr, "<HR NOSHADE SIZE=1>\n");
+    } /* if page 1 */
+    /* End of 31-Jul-2006 added code for table of contents mod */
+
+
 
     /* Put in color key */
     outputToString = 1;
+    print2("<A NAME=\"mmstmtlst\"></A>\n");
     if (extHtmlStmt <= statements) { /* extHtmlStmt = statements + 1 in ql.mm */
       /* ?? Currently this is customized for set.mm only!! */
       print2("<P>\n");
@@ -3068,93 +3292,6 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
     outputToString = 0;
     let(&printString, "");
 
-    /* 31-Jul-2006 nm Add table of contents to first WRITE THEOREM page */
-    if (page == 1) {  /* We're on page 1 */
-
-      outputToString = 1;
-      print2(
-        "<P><CENTER><A NAME=\"mmtc\"></A><B>Table of Contents</B></CENTER>\n");
-      fprintf(outputFilePtr, "%s", printString);
-      outputToString = 0;
-      let(&printString, "");
-
-      let(&bigHdr, "");
-      let(&smallHdr, "");
-      for (stmt = 1; stmt <= statements; stmt++) {
-        getSectionHeadings(stmt, &bigHdr, &smallHdr);
-        /* Output the headers for $a and $p statements */
-        if (statement[stmt].type == p_ || statement[stmt].type == a_) {
-          if (bigHdr[0] || smallHdr[0]) {
-            /* Write to the table of contents */
-            outputToString = 1;
-            i = ((statement[stmt].pinkNumber - 1) / theoremsPerPage)
-                + 1; /* Page # */
-            let(&str3, cat("mmtheorems", (i == 1) ? "" : str(i), ".html#",
-                          /* Note that page 1 has no number after mmtheorems */
-                /* statement[stmt].labelName, NULL)); */
-                "mm", str(statement[stmt].pinkNumber), NULL));
-                   /* Link to page/location - no theorem can be named "mm*" */
-            let(&str4, "");
-            str4 = pinkHTML(stmt);
-            /*let(&str4, right(str4, (long)strlen(PINK_NBSP) + 1));*/
-                                                         /* Discard "&nbsp;" */
-            if (bigHdr[0]) {
-              printLongLine(cat(
-
-                  /* 29-Jul-2008 nm Add an anchor to the "sandbox" theorem
-                     for use by mmrecent.html */
-                  stmt == sandboxStmt ?
-                      /* Note the colon so it won't conflict w/ theorem
-                         name anchor */
-                      "<A NAME=\"sandbox:bighdr\"></A>" : "",
-
-
-                  " <A HREF=\"", str3, "b\"><B>",
-                  bigHdr, "</B></A>",
-                  /*
-                  " &nbsp; <A HREF=\"",
-                  statement[stmt].labelName, ".html\">",
-                  statement[stmt].labelName, "</A>",
-                  str4,
-                  */
-                  "<BR>", NULL),
-                  " ",  /* Start continuation line with space */
-                  "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
-              /* Assign to array for use during theorem output */
-              let((vstring *)(&pntrBigHdr[stmt]), bigHdr);
-              let(&bigHdr, "");
-            }
-            if (smallHdr[0]) {
-              printLongLine(cat("&nbsp; &nbsp; ",
-
-                  /* 23-May-2008 nm Add an anchor to the "sandbox" theorem
-                     for use by mmrecent.html */
-                  /*
-                  !strcmp(statement[stmt].labelName, "sandbox") ?
-                      "<A NAME=\"sandbox:smallhdr\"></A>" : "",
-                  */
-
-                  "<A HREF=\"", str3, "s\">",
-                  smallHdr, "</A>",
-                  " &nbsp; <A HREF=\"",
-                  statement[stmt].labelName, ".html\">",
-                  statement[stmt].labelName, "</A>",
-                  str4,
-                  "<BR>", NULL),
-                  " ",  /* Start continuation line with space */
-                  "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
-              /* Assign to array for use during theorem output */
-              let((vstring *)(&pntrSmallHdr[stmt]), smallHdr);
-              let(&smallHdr, "");
-            }
-            fprintf(outputFilePtr, "%s", printString);
-            outputToString = 0;
-            let(&printString, "");
-          } /* if big or small header */
-        } /* if $a or $p */
-      } /* next stmt */
-    } /* if page 1 */
-    /* End of 31-Jul-2006 added code for table of contents mod */
 
     /* Write the main table header */
     outputToString = 1;
@@ -3172,11 +3309,14 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
         nmbrStmtNmbr[assertions]);
     let(&str4, right(str4, (long)strlen(PINK_NBSP) + 1)); /* Discard "&nbsp;" */
     printLongLine(cat("<CAPTION><B>Statement List for ", htmlTitle,
-        " - </B>", str3, "<B>-</B>", str4,"<B>",
+        " - </B>", str3, "<B>-</B>", str4,
+        /* 21-Jun-2014 - redundant, since it's in the title now
+        "<B>",
         " - Page ",
         str(page), " of ",
         str(pages),
         "</B>",
+        */
         " &nbsp; *Has distinct variable group(s)"
         "</CAPTION>",NULL),
         " ",  /* Start continuation line with space */
@@ -3258,6 +3398,21 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
       print2("\n"); /* Blank line for HTML source human readability */
 
       /* 31-Jul-2006 nm Table of contents mod */
+      if (((vstring)(pntrHugeHdr[s]))[0]) { /* There is a major part break */
+        printLongLine(cat(                                  /* 21-Jun-2014 */
+                 /* The header */
+                 "<TR BGCOLOR=\"#FFFFF2\"><TD COLSPAN=3",
+                 " ALIGN=CENTER><FONT SIZE=\"+1\"><B>",
+                 "<A NAME=\"mm", str(statement[s].pinkNumber), "h\"></A>",
+                                             /* Anchor for table of contents */
+                 (vstring)(pntrHugeHdr[s]), "</B></FONT></TD></TR>",
+                 /* Separator row */
+                 "<TR BGCOLOR=white><TD COLSPAN=3>",
+                 "<FONT SIZE=-3>&nbsp;</FONT></TD></TR>",
+                 NULL),
+            " ",  /* Start continuation line with space */
+            "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+      }
       if (((vstring)(pntrBigHdr[s]))[0]) { /* There is a major section break */
         printLongLine(cat(
                  /* The header */
@@ -3383,8 +3538,82 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
     outputToString = 1;
     print2("</TABLE></CENTER>\n");
     print2("\n");
+
+
+    /* 21-Jun-2014 nm Put extra Prev/Next hyperlinks here for convenience */
+    print2("<TABLE BORDER=0 WIDTH=\"100%c\">\n", '%');
+    print2("  <TR>\n");
+    print2("    <TD ALIGN=LEFT VALIGN=TOP WIDTH=\"25%c\">\n", '%');
+    print2("      &nbsp;\n");
+    /*
+    print2("      <FONT SIZE=-1 FACE=sans-serif>\n");
+    print2("      <A HREF=\"mmset.html\">MPE Home</A>&nbsp;&nbsp;\n");
+    print2(
+  "      <A HREF=\"mmtheorems.html#mmtc\">Table of contents</A></FONT>\n");
+    */
+    print2("    </TD>\n");
+    print2("    <TD NOWRAP ALIGN=CENTER>&nbsp;</TD>\n");
+    print2("    <TD NOWRAP ALIGN=RIGHT VALIGN=TOP WIDTH=\"25%c\"><FONT\n", '%');
+    print2("      SIZE=-1 FACE=sans-serif>\n");
+    printLongLine(cat("      ", prevNextLinks, NULL),
+        " ",  /* Start continuation line with space */
+        "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+    print2("      </FONT></TD>\n");
+    print2("  </TR>\n");
+    print2("</TABLE>\n");
+
+
     print2("<HR NOSHADE SIZE=1>\n");
 
+
+    outputToString = 0;
+    fprintf(outputFilePtr, "%s", printString);
+    let(&printString, "");
+
+
+    fprintf(outputFilePtr, "<A NAME=\"mmpglst\"></A>\n");
+    fprintf(outputFilePtr, "<CENTER>\n");
+    fprintf(outputFilePtr, "<B>Page List</B>\n");
+    fprintf(outputFilePtr, "</CENTER>\n");
+
+
+    /* 21-Jun-2014 nm Moved page list to bottom */
+    /* Output links to the other pages */
+    fprintf(outputFilePtr, "Jump to page: \n");
+    for (p = 1; p <= pages; p++) {
+
+      /* Construct the pink number range */
+      let(&str3, "");
+      str3 = pinkRangeHTML(
+          nmbrStmtNmbr[(p - 1) * theoremsPerPage + 1],
+          (p < pages) ?
+            nmbrStmtNmbr[p * theoremsPerPage] :
+            nmbrStmtNmbr[assertions]);
+
+      /* 31-Jul-2006 nm Change "1" to "Contents + 1" */
+      if (p == page) {
+        let(&str1,
+            (p == 1) ? "Contents + 1" : str(p) /* 31-Jul-2006 nm */
+            ); /* Current page shouldn't have link to self */
+      } else {
+        let(&str1, cat("<A HREF=\"mmtheorems",
+            (p == 1) ? "" : str(p),
+            /* (p == 1) ? ".html#mmtc\">" : ".html\">", */ /* 31-Aug-2006 nm */
+            ".html\">", /* 8-Feb-2007 nm Friendlier, because you can start
+                  scrolling through the page before it finishes loading,
+                  without its jumping to #mmtc (start of Table of Contents)
+                  when it's done. */
+            (p == 1) ? "Contents + 1" : str(p) /* 31-Jul-2006 nm */
+            , "</A>", NULL));
+      }
+      let(&str1, cat(str1, PINK_NBSP, str3, NULL));
+      fprintf(outputFilePtr, "%s\n", str1);
+    }
+    /* End of 21-Jun-2014 */
+
+
+    outputToString = 1;
+    print2("<HR NOSHADE SIZE=1>\n");
     /* nm 22-Jan-04 Take out date because it causes an unnecessary incremental
        site update */
     /*
@@ -3399,6 +3628,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
     print2("</FONT></CENTER>\n");
     */
     /* Add a "Previous" and "Next" links to bottom of page for convenience */
+    /************ 21-Jun-2014 nm Done above, put into prevNextLinks string
     let(&str1, cat("<A HREF=\"mmtheorems",
         (page > 1)
             ? ((page - 1 > 1) ? str(page - 1) : "")
@@ -3419,14 +3649,21 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
     } else {
       let(&str1, cat(str1, "Wrap &gt;</A>", NULL));
     }
+    *************/
+
     print2("<TABLE BORDER=0 WIDTH=\"100%c\">\n", '%');
     print2("  <TR>\n");
   /*print2("    <TD ALIGN=LEFT VALIGN=TOP WIDTH=\"25%c\">&nbsp;</TD>\n", '%');*/
     /* 31-Aug-2006 nm Changed above line to the 4 following lines: */
     print2("    <TD ALIGN=LEFT VALIGN=TOP WIDTH=\"25%c\">\n", '%');
+    print2("      &nbsp;\n");
+    /*
     print2("      <FONT SIZE=-1 FACE=sans-serif>\n");
     print2("      <A HREF=\"mmset.html\">MPE Home</A>&nbsp;&nbsp;\n");
-    print2("      <A HREF=\"mmtheorems.html#mmtc\">Contents</A></FONT></TD>\n");
+    print2(
+  "      <A HREF=\"mmtheorems.html#mmtc\">Table of contents</A></FONT>\n");
+    */
+    print2("    </TD>\n");
     print2("    <TD NOWRAP ALIGN=CENTER><FONT SIZE=-2\n");
     print2("      FACE=ARIAL>\n");
     /*
@@ -3437,7 +3674,8 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
     print2("      </FONT></TD>\n");
     print2("    <TD NOWRAP ALIGN=RIGHT VALIGN=TOP WIDTH=\"25%c\"><FONT\n", '%');
     print2("      SIZE=-1 FACE=sans-serif>\n");
-    printLongLine(cat("      ", str1, NULL),
+    /*printLongLine(cat("      ", str1, NULL),*/
+    printLongLine(cat("      ", prevNextLinks, NULL), /* 21-Jun-2014 */
         " ",  /* Start continuation line with space */
         "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
     print2("      </FONT></TD>\n");
@@ -3466,9 +3704,13 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
   let(&str1, "");
   let(&str3, "");
   let(&str4, "");
+  let(&prevNextLinks, "");
   let(&outputFileName, "");
+  let(&hugeHdr, "");
   let(&bigHdr, "");
   let(&smallHdr, "");
+  for (i = 0; i <= statements; i++) let((vstring *)(&pntrHugeHdr[i]), "");
+  pntrLet(&pntrHugeHdr, NULL_PNTRSTRING);
   for (i = 0; i <= statements; i++) let((vstring *)(&pntrBigHdr[i]), "");
   pntrLet(&pntrBigHdr, NULL_PNTRSTRING);
   for (i = 0; i <= statements; i++) let((vstring *)(&pntrSmallHdr[i]), "");
@@ -3479,12 +3721,14 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
 
 /* 2-Aug-2009 nm - broke this function out from writeTheoremList() */
 /* This function extracts any section headers in the comment sections
-   prior to the label of statement stmt.   If a big (#*#*...) header isn't
-   found, *bigHdrAddr will be set to the empty string.  If a small
-   (=-=-...) header isn't found (or isn't after the last big header),
-   *smallHdrAddr will be set to the empty string.  In both cases, only
-   the last occurrence of a header is considered. */
-void getSectionHeadings(long stmt, vstring *bigHdrAddr,
+   prior to the label of statement stmt.   If a huge (####...) header isn't
+   found, *hugeHdrAddr will be set to the empty string.
+   If a big (#*#*...) header isn't found (or isn't after the last huge header),
+   *bigHdrAddr will be set to the empty string.  If a small
+   (=-=-...) header isn't found (or isn't after the last huge header or
+   the last big header), *smallHdrAddr will be set to the empty string.
+   In all 3 cases, only the last occurrence of a header is considered. */
+void getSectionHeadings(long stmt, vstring *hugeHdrAddr, vstring *bigHdrAddr,
     vstring *smallHdrAddr) {
 
   /* 31-Jul-2006 for table of contents mod */
@@ -3496,6 +3740,36 @@ void getSectionHeadings(long stmt, vstring *bigHdrAddr,
   memcpy(labelStr, statement[stmt].labelSectionPtr,
       (size_t)(statement[stmt].labelSectionLen));
   pos = 0;
+  pos2 = 0;
+  while (1) {  /* Find last "huge" header, if any */
+    /* nm 4-Nov-2007:  Obviously, the match below will not work if the
+       $( line has a trailing space, which some editors might insert.
+       The symptom is a missing table of contents entry.  But to detect
+       this (and for the #*#* and =-=- matches below) would take a little work
+       and perhaps slow things down, and I don't think it is worth it.  I
+       put a note in HELP WRITE THEOREM_LIST. */
+    pos1 = pos; /* 23-May-2008 */
+    pos = instr(pos + 1, labelStr, "$(\n####");
+
+    /* 23-May-2008 nm Tolerate one space after "$(", to handle case of
+      one space added to the end of each line with TOOLS to make global
+      label changes are easier (still a kludge; this should be made
+      white-space insensitive some day) */
+    pos1 = instr(pos1 + 1, labelStr, "$( \n####");
+    if (pos1 > pos) pos = pos1;
+
+    if (!pos) break;
+    if (pos) pos2 = pos;
+  }
+  if (pos2) { /* Extract "huge" header */
+    pos = instr(pos2 + 4, labelStr, "\n");
+    pos2 = instr(pos + 1, labelStr, "\n");
+    let(&(*hugeHdrAddr), seg(labelStr, pos + 1, pos2 - 1));
+    let(&(*hugeHdrAddr), edit((*hugeHdrAddr), 8 + 128));
+                                                /* Trim leading, trailing sp */
+  }
+  /* pos = 0; */ /* Start with "huge" header pos, to ignore any earlier
+                    "small" or "big" header */
   pos2 = 0;
   while (1) {  /* Find last "big" header, if any */
     /* nm 4-Nov-2007:  Obviously, the match below will not work if the

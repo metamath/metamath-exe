@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2013  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2014  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -56,7 +56,9 @@ flag processCommandLine(void)
       /* Normal mode */
       let(&tmpStr,cat("DBG|",
           "HELP|READ|WRITE|PROVE|SHOW|SEARCH|SAVE|SUBMIT|OPEN|CLOSE|",
-          "SET|FILE|BEEP|EXIT|QUIT|ERASE|VERIFY|MORE|TOOLS|MIDI|<HELP>",NULL));
+          "SET|FILE|BEEP|EXIT|QUIT|ERASE|VERIFY|MORE|TOOLS|",
+          "MIDI|<HELP>",
+          NULL));
     } else {
       /* Proof assistant mode */
       let(&tmpStr,cat("DBG|",
@@ -88,7 +90,7 @@ flag processCommandLine(void)
       }
       if (cmdMatches("HELP SHOW")) {
         if (!getFullArg(2, cat("MEMORY|SETTINGS|LABELS|SOURCE|STATEMENT|",
-            "PROOF|NEW_PROOF|USAGE|TRACE_BACK|<MEMORY>", NULL)))
+            "PROOF|NEW_PROOF|USAGE|TRACE_BACK|ELAPSED_TIME|<MEMORY>", NULL)))
             goto pclbad;
         goto pclgood;
       }
@@ -397,18 +399,21 @@ flag processCommandLine(void)
 
     if (cmdMatches("SHOW")) {
       if (!PFASmode) {
-        if (!getFullArg(1,
-     "SETTINGS|LABELS|STATEMENT|SOURCE|PROOF|MEMORY|TRACE_BACK|USAGE|<SETTINGS>"))
+        if (!getFullArg(1, cat(
+     "SETTINGS|LABELS|STATEMENT|SOURCE|PROOF|MEMORY|TRACE_BACK|",
+     "USAGE|ELAPSED_TIME|<SETTINGS>", NULL)))
             goto pclbad;
       } else {
         if (!getFullArg(1, cat("NEW_PROOF|",
-     "SETTINGS|LABELS|STATEMENT|SOURCE|PROOF|MEMORY|TRACE_BACK|USAGE|<SETTINGS>",
+     "SETTINGS|LABELS|STATEMENT|SOURCE|PROOF|MEMORY|TRACE_BACK|",
+     "USAGE|ELAPSED_TIME|<SETTINGS>",
             NULL)))
             goto pclbad;
       }
       if (showStatement) {
-        if (showStatement < 0) bug(1110);
-        let(&defaultArg,cat(" <",statement[showStatement].labelName,">",NULL));
+        if (showStatement < 1 || showStatement > statements) bug(1110);
+        let(&defaultArg, cat(" <",statement[showStatement].labelName,">",
+            NULL));
       } else {
         let(&defaultArg,"");
       }
@@ -420,7 +425,7 @@ flag processCommandLine(void)
           goto pclbad;
         }
         if (!getFullArg(2,
-            cat("* What is the statement label",defaultArg,"? ",NULL)))
+            cat("* What is the statement label", defaultArg,"? ", NULL)))
           goto pclbad;
 
         /* Get any switches */
@@ -573,7 +578,7 @@ flag processCommandLine(void)
                 /* 14-Sep-2010 nm Added OLD_TEX */
                 "|STATEMENT_SUMMARY|DETAILED_STEP|TEX|OLD_TEX|HTML|SAVE",
                 "|LEMMON|START_COLUMN|NO_REPEATED_STEPS",
-                "|RENUMBER|<ESSENTIAL>",NULL)))
+                "|RENUMBER|SIZE|<ESSENTIAL>",NULL)))
               goto pclbad;
             if (lastArgMatches("FROM_STEP")) {
               i++;

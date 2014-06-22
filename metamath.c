@@ -5,7 +5,10 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.106 30-Mar-2014"
+#define MVERSION "0.107 21-Jun-2014"
+/* 0.107 21-Jun-2014 nm metamath.c, mmcmdl.c, mmhlpb.c - added /SIZE qualifier
+   to SHOW PROOF; added SHOW ELAPSED_TIME; mmwtex.c - reformatted WRITE
+   THEOREM_LIST output; now "$(", newline, "######" starts a "part" */
 /* 0.106 30-Mar-2014 nm mmwtex.c - fix bug introduced by 0.105 that disabled
    hyperlinks on literature refs in HTML comment.  metamath.c - improve
    messages */
@@ -315,6 +318,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdarg.h>
+#include <time.h>  /* 21-Jun-2014 nm For ELAPSED_TIME */
 #ifdef THINK_C
 #include <console.h>
 #endif
@@ -513,6 +517,10 @@ void command(int argc, char *argv[])
   long tagEndCount = 0;        /* 2-Jul-2011 nm For TAG command */
   long tagStartCounter = 0;    /* 2-Jul-2011 nm For TAG command */
   long tagEndCounter = 0;      /* 2-Jul-2011 nm For TAG command */
+
+  /* 21-Jun-2014 */
+  clock_t timePrevious = 0;  /* For SHOW ELAPSED_TIME command */
+  clock_t timeNow = 0;       /* For SHOW ELAPSED_TIME command */
 
   /* Initialization to avoid compiler warning (should not be theoretically
      necessary) */
@@ -3223,6 +3231,9 @@ void command(int argc, char *argv[])
         print2("The %s file '%s' is open.\n", htmlFlag ? "HTML" : "LaTeX",
             texFileName);
       }
+      /* 21-Jun-2014 */
+      print2("The program is compiled for a %ld-bit CPU.\n",
+          (long)(8 * sizeof(long)));
       continue;
     }
 
@@ -3239,6 +3250,19 @@ void command(int argc, char *argv[])
       } else {
         print2("%ld bytes of memory are free.\n",i);
       }
+      continue;
+    }
+
+    /* 21-Jun-2014 */
+    if (cmdMatches("SHOW ELAPSED_TIME")) {
+#ifdef CLOCKS_PER_SEC
+      timeNow = clock();
+#endif
+      print2(
+      "Time since last SHOW ELAPSED_TIME command = %4.2f s; total = %4.2f s\n",
+          (double)((1.0 * (timeNow - timePrevious))/CLOCKS_PER_SEC),
+          (double)((1.0 * timeNow)/CLOCKS_PER_SEC));
+      timePrevious = timeNow;
       continue;
     }
 
@@ -3607,6 +3631,26 @@ void command(int argc, char *argv[])
         if (switchPos("/ STATEMENT_SUMMARY")) { /* non-pip mode only */
           /* Just summarize the statements used in the proof */
           proofStmtSumm(showStatement, essentialFlag, texFlag);
+          continue;
+        }
+
+        /* 21-Jun-2014 */
+        if (switchPos("/ SIZE")) { /* non-pip mode only */
+          /* Just print the size of the stored proof and continue */
+          let(&str1, space(statement[showStatement].proofSectionLen));
+          memcpy(str1, statement[showStatement].proofSectionPtr,
+              (size_t)(statement[showStatement].proofSectionLen));
+          n = instr(1, str1, "$.");
+          if (n == 0) {
+            /* The original source truncates the proof before $. */
+            n = statement[showStatement].proofSectionLen;
+          } else {
+            /* If a proof is saved, it includes the $. (Should we
+               revisit or document better how/why this is done?) */
+            n = n - 1;
+          }
+          print2("The proof source for \"%s\" has %ld characters.\n",
+              statement[showStatement].labelName, n);
           continue;
         }
 
