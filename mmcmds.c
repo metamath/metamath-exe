@@ -3569,7 +3569,23 @@ void eraseSource(void)
   long i;
   vstring tmpStr;
 
-  /*??? Deallocate wrkProof structure if wrkProofMaxSize != 0 */
+  /* 24-Jun-2014 nm */
+  /* Deallocate wrkProof structure if wrkProofMaxSize != 0 */
+  /* Assigned in parseProof() in mmpars.c */
+  if (wrkProofMaxSize) { /* It has been allocated */
+    free(wrkProof.tokenSrcPtrNmbr);
+    free(wrkProof.tokenSrcPtrPntr);
+    free(wrkProof.stepSrcPtrNmbr);
+    free(wrkProof.stepSrcPtrPntr);
+    free(wrkProof.localLabelFlag);
+    free(wrkProof.hypAndLocLabel);
+    free(wrkProof.localLabelPool);
+    poolFree(wrkProof.proofString);
+    free(wrkProof.mathStringPtrs);
+    free(wrkProof.RPNStack);
+    free(wrkProof.compressedPfLabelMap);
+    wrkProofMaxSize = 0;
+  }
 
   if (statements == 0) {
     /* Already called */

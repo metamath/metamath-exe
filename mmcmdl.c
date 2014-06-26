@@ -946,11 +946,16 @@ flag processCommandLine(void)
         if (lastArgMatches("/")) {
           i++;
           if (!getFullArg(i,cat(
+              /*
               "BRIEF|VERBOSE|ALLOW_GROWTH|NO_DISTINCT|EXCEPT|",
               "REVERSE|INCLUDE_MATHBOXES|FORBID|<BRIEF>", NULL)))
-                                   /* 7-Jan-06 nm Added EXCEPT */
-                                   /* 28-Jun-2011 nm Added INCLUDE_MATHBOXES */
-                                   /* 10-Nov-2011 nm Added REVERSE */
+              */
+              "VERBOSE|ALLOW_GROWTH|EXCEPT|",
+              "INCLUDE_MATHBOXES|FORBID|<VERBOSE>", NULL)))
+                              /* 7-Jan-06 nm Added EXCEPT */
+                              /* 28-Jun-2011 nm Added INCLUDE_MATHBOXES */
+                              /* 10-Nov-2011 nm Added REVERSE */
+                              /* 25-Jun-2014 nm Removed REVERSE, NO_DISTINCT */
             goto pclbad;
 
           /* 7-Jan-06 nm Added EXCEPT */

@@ -1066,33 +1066,48 @@ H("");
 
 
 printHelp = !strcmp(saveHelpCmd, "HELP MINIMIZE_WITH");
+/*
 H("Syntax:  MINIMIZE_WITH <label-match> [/ BRIEF] [/ ALLOW_GROWTH]");
 H("             [/ NO_DISTINCT] [/ EXCEPT <label-match>]");
 H("              [/ FORBID <label-match>] [/ REVERSE] [/ INCLUDE_MATHBOXES]");
+*/
+H("Syntax:  MINIMIZE_WITH <label-match> [/ VERBOSE] [/ ALLOW_GROWTH]");
+H("              [/ EXCEPT <label-match>] [/ FORBID <label-match>]");
+H("              [/ INCLUDE_MATHBOXES]");
 H("");
 H("This command, available in the Proof Assistant only, checks whether");
 H("the proof can be shortened by using earlier $p or $a statements matching");
 H("<label-match>, and if so, shortens the proof.  <label-match> is a list of");
 H("comma-separated labels which can contain wildcards (* and ?) to test more");
 H("than one statement, but each statement is tested independently from the");
-H("others.  Warning:  MINIMIZE_WITH does not check for $d violations, so");
+H("others.  Note:  In the informational output, if the size is given in");
+H("bytes, it refers to the compressed proof size, otherwise it refers to the");
+H("number of steps in the uncompressed proof.");
+/*
+H("  Warning:  MINIMIZE_WITH does not check for $d violations, so");
 H("SAVE PROOF then VERIFY PROOF should be run afterwards to check for them");
 H("if you don't use / NO_DISTINCT.");
+*/
 H("");
 H("Optional qualifiers:");
 /* 4-Feb-2013 nm - Added VERBOSE */
-H("    / VERBOSE - The labels of statements that were tested but didn't reduce");
-H("        the proof length will also be listed.");
+H("    / VERBOSE - Shows additional information such as uncompressed proof");
+H("        lengths and reverted shortening attempts");
+/* 25-Jun-2014 nm Removed BRIEF, NO_DISTINCT, REVERSE */
+/*
 H("    / BRIEF - The labels of statements that were tested but didn't reduce");
 H("        the proof length will not be listed, for brevity.  (This qualifier");
 H("        is the default and is never needed, but is retained for backwards");
 H("        compatibility with older program versions.)");
+*/
 H("    / ALLOW_GROWTH - If a substitution is possible, it will be made even");
 H("        if the proof length increases.  This is useful if we are just");
 H("        updating the proof with a newer version of an obsolete theorem.");
+/*
 H("    / NO_DISTINCT - Skip the trial statement if it has a $d requirement.");
 H("        This qualifier is useful when <label-match> has wildcards, to");
 H("        prevent illegal shortenings that would violate $d requirements.");
+*/
 /* 7-Jan-06 nm - Added EXCEPT */
 H("    / EXCEPT <label-match> - Skip trial statements matching <label-match>,");
 H("        which may contain * and ? wildcard characters; see HELP SEARCH");
@@ -1107,11 +1122,13 @@ H("        example, MINIMIZE_WITH ... / FORBID ax-ac,ax-inf* will not shorten");
 H("        the proof with any statement that depends on ax-ac, ax-inf, or");
 H("        ax-inf2 (in the set.mm as of this writing).");
 /* 10-Nov-2011 nm - Added REVERSE */
+/*
 H("    / REVERSE - Reverse the order of statement scanning.  By default,");
 H("        statements are scanned from last to first, since empirically this");
 H("        usually leads to better results.  With this qualifier they are");
 H("        scanned from first to last.  You may wish to try both ways");
 H("        (from the same starting proof) and choose the shorter result.");
+*/
 /* 28-Jun-2011 nm - Added INCLUDE_MATHBOXES */
 /* 14-Aug-2012 nm - Added note about current mathbox */
 H("    / INCLUDE_MATHBOXES - By default, MINIMIZE_WITH skips statements");

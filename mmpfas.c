@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2013  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2014  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -895,10 +895,10 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
                  the top-most next unification (if any). */
               hyp = 0; /* Force breakout below */
               break;
-            }
-          }
-        }
-      }
+            } /* if (nmbrLen(hypProofPtr)) */
+          } /* if (tryFloatingProofLater[i] == 'Y') */
+        } /* for (i = 0; i < schEHyps; i++) */
+      } /* if (hyp == schEHyps - 1 && foundTrialStepMatch) */
 
       if (!foundTrialStepMatch) {
         /* We must backtrack */
@@ -921,7 +921,7 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
         }
         hyp = hyp - 2; /* Go back one interation (subtract 2 to offset
                           end of loop increment) */
-      }
+      } /* if (!foundTrialStepMatch) */
 
     } /* next hyp */
 
@@ -941,14 +941,24 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
                                                      /* Complete the proof */
 
     /* Deallocate hypothesis schemes and proofs */
+    /* 25-Jun-2014 This is now done after returnPoint (why was it incomplete?)
     for (hyp = 0; hyp < schReqHyps; hyp++) {
       nmbrLet((nmbrString **)(&hypList[hyp]), NULL_NMBRSTRING);
       nmbrLet((nmbrString **)(&hypProofList[hyp]), NULL_NMBRSTRING);
     }
+    */
     goto returnPoint;
 
   } /* End while (next unifyH() call for main replacement statement) */
 
+  nmbrLet(&proof, NULL_NMBRSTRING);  /* Proof not possible */
+
+ returnPoint:
+
+  /* 25-Jun-2014 nm This was moved from before returnPoint to after
+     returnPoint.  This seems to solve a memory leak problem with
+     MINIMIZE_WITH.  Not clear why it wasn't discovered before; this
+     is very old from before Feb. 2010 at least */
   /* Deallocate hypothesis schemes and proofs */
   for (hyp = 0; hyp < schReqHyps; hyp++) {
     nmbrLet((nmbrString **)(&(hypList[hyp])), NULL_NMBRSTRING);
@@ -957,9 +967,6 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
     purgeStateVector((pntrString **)(&(hypStateVectorList[hyp])));
   }
 
-  nmbrLet(&proof, NULL_NMBRSTRING);  /* Proof not possible */
-
- returnPoint:
   /* Deallocate unification state vector */
   purgeStateVector(&stateVector);
 
@@ -1915,10 +1922,13 @@ void minimizeProof(long repStatemNum, long prvStatemNum,
      even if it doesn't shorten the proof length */
 
   long plen, step, mlen, sym, sublen;
+  long startingPlen = 0; /* 25-Jun-2014 nm */
   flag foundFlag, breakFlag;
   nmbrString *mString; /* Pointer only; not allocated */
   nmbrString *newSubProofPtr = NULL_NMBRSTRING; /* Pointer only; not allocated;
                 however initialize for nmbrLen function before it's assigned */
+  /* 25-Jun-2014 nm */
+  if (allowGrowthFlag) startingPlen = nmbrLen(proofInProgress.proof);
 
   while (1) {
     plen = nmbrLen(proofInProgress.proof);
@@ -1930,6 +1940,7 @@ void minimizeProof(long repStatemNum, long prvStatemNum,
       breakFlag = 0;
       for (sym = 0; sym < mlen; sym++) {
         if (mString[sym] > mathTokens) {
+          /* It is a dummy var. (i.e. work variable $1, $2, etc.) */
           breakFlag = 1;
           break;
         }
@@ -1997,6 +2008,15 @@ void minimizeProof(long repStatemNum, long prvStatemNum,
     } /* next step */
 
     if (!foundFlag) break; /* Done */
+    /* 25-Jun-2014 nm */
+#define MAX_GROWTH_FACTOR 2
+    if (allowGrowthFlag && plen > MAX_GROWTH_FACTOR * startingPlen) {
+      /* 25-Jun-2014 nm */
+      /* This will prevent an infinite loop in some cases with ALLOW_GROWTH,
+         for example 'MINIMIZE_WITH idi/ALLOW_GROWTH' in 'PROVE a1i' */
+      print2("Suppressed excessive ALLOW_GROWTH growth.\n");
+      break; /* Too much growth */
+    }
     /* break; */  /* For special replacement with same label: always break
                       to prevent inf loop */
   } /* end while */

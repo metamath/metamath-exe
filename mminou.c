@@ -396,7 +396,9 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
   flag treeIndentationFlag = 0;
 
   /* 10/14/02 added for HTML handling */
-  flag htmlFlag = 0; /* 1 means printLongLine was called with "\"" as
+  /* 26-Jun-2014 nm No longer needed? */
+  /* flag htmlFlag = 0; */
+               /* 1 means printLongLine was called with "\"" as
                         breakMatch argument (for HTML code) */
   flag quoteMode = 0; /* 1 means inside quote */
   /*char quoteChar = '"';*/ /* Current quote character */
@@ -460,7 +462,7 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
     if (multiLine[i] == QUOTED_SPACE) bug(1514); /* Should never be the case */
   }
   if (breakMatch1[0] == '\"') {
-    htmlFlag = 1;
+    /* htmlFlag = 1; */ /* 26-Jun-2014 nm No longer needed? */
     breakMatch1[0] = ' '; /* Change to a space (the real break character) */
     /* Scan string for quoted strings */
     quoteMode = 0;
@@ -619,7 +621,11 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
             p--;
             if (!p) break;
           }
-          if (p <= 0 && htmlFlag) {
+          /* if (p <= 0 && htmlFlag) { */
+          /* 25-Jun-2014 nm We will now not break any line at non-space,
+             since it causes more problems that it solves e.g. with
+             WRITE SOURCE.../REWRAP with long URLs */
+          if (p <= 0) {
             /* The line couldn't be broken.  Since it's an HTML line, we
                can increase screenWidth until it will fit. */
             screenWidth++;

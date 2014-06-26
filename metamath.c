@@ -5,7 +5,17 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.107 21-Jun-2014"
+#define MVERSION "0.108 25-Jun-2014"
+/* 0.108 25-Jun-2014 nm
+   (1) metamath.c, mmcmdl.c, mmhlpb.c - MINIMIZE_WITH now checks the size
+   of the compressed proof, prevents $d violations, and tries forward and
+   reverse statment scanning order; /NO_DISTINCT, /BRIEF, /REVERSE
+   qualifiers were removed.
+   (2) mminou.c - prevent hard breaks (in the middle of a word) in too-long
+   lines (e.g. long URLs) in WRITE SOURCE .../REWRAP; just overflow the
+   screen width instead.
+   (3) mmpfas.c - fixed memory leak in replaceStatement()
+   (4) mmpfas.c - suppress inf. growth with MINIMIZE_WITH idi/ALLOW_GROWTH */
 /* 0.107 21-Jun-2014 nm metamath.c, mmcmdl.c, mmhlpb.c - added /SIZE qualifier
    to SHOW PROOF; added SHOW ELAPSED_TIME; mmwtex.c - reformatted WRITE
    THEOREM_LIST output; now "$(", newline, "######" starts a "part" */
@@ -419,9 +429,7 @@ void command(int argc, char *argv[])
   long argsProcessed = 0;  /* Number of argv initial command-line
                                      arguments processed so far */
 
-  /* The variables in command() are static so that they won't be destroyed
-    by a longjmp return to setjmp. */
-  long c, e, i, j, k, m, l, n, p, q, r, s /*,tokenNum*/;
+  long c, i, j, k, m, l, n, p, q, r, s /*,tokenNum*/;
   long stmt, step;
   int subType = 0;
 #define SYNTAX 4
@@ -486,14 +494,34 @@ void command(int argc, char *argv[])
   flag linearFlag; /* For SHOW LABELS */
   vstring bgcolor = ""; /* For SHOW STATEMENT definition list */
                                                             /* 8-Aug-2008 nm */
+
+  flag verboseMode, allowGrowthFlag /*, noDistinctFlag*/; /* For MINIMIZE_WITH */
+  long prntStatus; /* For MINIMIZE_WITH */
+  flag hasWildCard; /* For MINIMIZE_WITH */
+  long exceptPos; /* For MINIMIZE_WITH */
   flag mathboxFlag; /* For MINIMIZE_WITH */ /* 28-Jun-2011 nm */
   long thisMathboxStmt; /* For MINIMIZE_WITH */ /* 14-Aug-2012 nm */
-  flag revFlag; /* For MINIMIZE_WITH */ /* 11-Nov-2011 nm */
+  flag forwFlag; /* For MINIMIZE_WITH */ /* 11-Nov-2011 nm */
   long forbidMatchPos;  /* For MINIMIZE_WITH */ /* 20-May-2013 nm */
   vstring forbidMatchList = "";  /* For MINIMIZE_WITH */ /* 20-May-2013 nm */
-  struct pip_struct forbidMatchSaveProof = {
+  struct pip_struct saveProofForReverting = {
        NULL_NMBRSTRING, NULL_PNTRSTRING, NULL_PNTRSTRING, NULL_PNTRSTRING };
                                    /* For MINIMIZE_WITH */ /* 20-May-2013 nm */
+  long origCompressedLength; /* For MINIMIZE_WITH */ /* 25-Jun-2014 nm */
+  long oldCompressedLength = 0; /* For MINIMIZE_WITH */ /* 25-Jun-2014 nm */
+  long newCompressedLength = 0; /* For MINIMIZE_WITH */ /* 25-Jun-2014 nm */
+  long forwardCompressedLength = 0; /* For MINIMIZE_WITH */ /* 25-Jun-2014 nm */
+  long forwardLength = 0; /* For MINIMIZE_WITH */ /* 25-Jun-2014 nm */
+  vstring saveZappedProofSectionPtr; /* Pointer only */ /* For MINIMIZE_WITH */
+  long saveZappedProofSectionLen; /* For MINIMIZE_WITH */ /* 25-Jun-2014 nm */
+
+  struct pip_struct saveOrigProof = {
+       NULL_NMBRSTRING, NULL_PNTRSTRING, NULL_PNTRSTRING, NULL_PNTRSTRING };
+                                   /* For MINIMIZE_WITH */ /* 25-Jun-2014 nm */
+  struct pip_struct save1stPassProof = {
+       NULL_NMBRSTRING, NULL_PNTRSTRING, NULL_PNTRSTRING, NULL_PNTRSTRING };
+                                   /* For MINIMIZE_WITH */ /* 25-Jun-2014 nm */
+  long forwRevPass; /* 1 = forward pass */ /* 25-Jun-2014 nm */
 
   flag showLemmas; /* For WRITE THEOREM_LIST */ /* 10-Oct-2012 nm */
 
@@ -3257,12 +3285,14 @@ void command(int argc, char *argv[])
     if (cmdMatches("SHOW ELAPSED_TIME")) {
 #ifdef CLOCKS_PER_SEC
       timeNow = clock();
-#endif
       print2(
       "Time since last SHOW ELAPSED_TIME command = %4.2f s; total = %4.2f s\n",
           (double)((1.0 * (timeNow - timePrevious))/CLOCKS_PER_SEC),
           (double)((1.0 * timeNow)/CLOCKS_PER_SEC));
       timePrevious = timeNow;
+#else
+      print2("The clock() function is not implemented on this computer.\n");
+#endif
       continue;
     }
 
@@ -3686,8 +3716,9 @@ void command(int argc, char *argv[])
           }
 
           if (switchPos("/ COMPRESSED")) {
-            let(&str1, compressProof(nmbrSaveProof, i
-                , (switchPos("/ FAST_COMPRESSION")) ? 1 : 0  /* 27-Dec-2013 nm */
+            let(&str1, compressProof(nmbrSaveProof,
+                i, /* showStatement or proveStatement based on pipFlag */
+                (switchPos("/ FAST_COMPRESSION")) ? 1 : 0  /* 27-Dec-2013 nm */
                 ));
           } else {
             let(&str1, nmbrCvtRToVString(nmbrSaveProof));
@@ -5390,20 +5421,27 @@ void command(int argc, char *argv[])
 
 
     if (cmdMatches("MINIMIZE_WITH")) {
-      q = 0; /* Line length */
-      s = 0; /* Status flag */
-      /* i = switchPos("/ BRIEF"); */ /* Non-verbose mode */
+      /* q = 0; */ /* Line length */  /* 25-Jun-2014 deleted */
+      prntStatus = 0; /* Status flag to help determine messages
+                         0 = no statement was matched during scan
+                         1 = a statement was matched but no shorter proof
+                         2 = shorter proof found */
+      /* verboseMode = (switchPos("/ BRIEF") == 0); */ /* Non-verbose mode */
       /* 4-Feb-2013 nm VERBOSE is now default */
-      i = ! switchPos("/ VERBOSE"); /* Verbose mode */
+      verboseMode = (switchPos("/ VERBOSE") != 0); /* Verbose mode */
       /* 30-Jan-06 nm Added single-character-match wildcard argument */
       if (!(instr(1, fullArg[1], "*") || instr(1, fullArg[1], "?"))) i = 1;
           /* 16-Feb-05 If no wildcard was used, switch to non-verbose mode
              since there is no point to it and an annoying extra blank line
              results */
-      j = switchPos("/ ALLOW_GROWTH"); /* Mode to replace even if
-                                       if doesn't reduce proof length */
-      p = switchPos("/ NO_DISTINCT"); /* Skip trying statements with $d */
-      e = switchPos("/ EXCEPT"); /* Statement match to skip */ /* 7-Jan-06 */
+      allowGrowthFlag = (switchPos("/ ALLOW_GROWTH") != 0);
+                  /* Mode to replace even if it doesn't reduce proof length */
+      /* 25-Jun-2014 nm /NO_DISTINCT is obsolete
+      noDistinctFlag = (switchPos("/ NO_DISTINCT") != 0);
+      */
+                                          /* Skip trying statements with $d */
+      exceptPos = switchPos("/ EXCEPT"); /* Statement match to skip */
+                                                               /* 7-Jan-06 */
 
       /* 20-May-2013 nm */
       forbidMatchPos = switchPos("/ FORBID");
@@ -5414,12 +5452,22 @@ void command(int argc, char *argv[])
       }
 
       mathboxFlag = (switchPos("/ INCLUDE_MATHBOXES") != 0); /* 28-Jun-2011 */
-      revFlag = (switchPos("/ REVERSE") != 0); /* 10-Nov-2011 nm */
+      /* 25-Jun-2014 nm /REVERSE is obsolete
+      forwFlag = (switchPos("/ REVERSE") != 0); /@ 10-Nov-2011 nm @/
+      */
       if (sandboxStmt == 0) { /* Look up "mathbox" label if it hasn't been */
         sandboxStmt = lookupLabel("mathbox");
         if (sandboxStmt == -1)
           sandboxStmt = statements + 1;  /* Default beyond db end if none */
       }
+
+
+      /* 25-Jun-2014 nm */
+      /* If a single statement is specified, don't bother to do certain
+         actions or print some of the messages */
+      hasWildCard = (instr(1, fullArg[1], "*")
+                || instr(1, fullArg[1], "?")
+                || instr(1, fullArg[1], ","));
 
       proofChangedFlag = 0;
 
@@ -5442,166 +5490,368 @@ void command(int argc, char *argv[])
         }
       }
 
-      /* 20-May-2013 nm */
-      if (forbidMatchList[0]) { /* User provided a /FORBID list */
-        /* Save the proof structure in case we have to revert a
-           forbidden match. */
-        copyProofStruct(&forbidMatchSaveProof, proofInProgress);
-      }
+      /* 25-Jun-2014 nm */
+      copyProofStruct(&saveOrigProof, proofInProgress);
 
-      if (j) j = 1; /* Make sure it's a char value for minimizeProof call */
-      /* for (k = 1; k < proveStatement; k++) { */
-      /* 10-Nov-2011 nm */
-      /* We use bottom-up scanning as the default (revFlag=0) since empirically
-         it seems to lead to shorter proofs */
-      /* If revFlag is 0, scan from proveStatement-1 to 1
-         If revFlag is 1, scan from 1 to proveStatement-1 */
-      for (k = revFlag ? 1 : (proveStatement - 1);
-           k * (revFlag ? 1 : -1) < (revFlag ? proveStatement : 0);
-           k = k + (revFlag ? 1 : -1)) {
-        /* 28-Jun-2011 */
-        /* Scan mathbox statements only if INCLUDE_MATHBOXES specified */
-        /*if (!mathboxFlag && k >= sandboxStmt) continue;*/
-        /* 14-Aug-2012 nm */
-        if (!mathboxFlag && k >= sandboxStmt && k < thisMathboxStmt) continue;
+      /* 25-Jun-2014 nm Get the current (original) compressed proof length
+         to compare it when a shorter non-compressed proof is found, to see
+         if the compressed proof also decreased in size */
+      nmbrLet(&nmbrSaveProof, proofInProgress.proof);
+      nmbrLet(&nmbrSaveProof, nmbrSquishProof(proofInProgress.proof));
+      /* We only care about length; str1 will be discarded */
+      let(&str1, compressProof(nmbrSaveProof,
+          proveStatement, /* statement being proved */
+          0 /* Normal (not "fast") compression */
+          ));
+      origCompressedLength = (long)strlen(str1);
+      print2(
+"Bytes refer to compressed proof size, steps to uncompressed length.\n");
 
-        if (statement[k].type != (char)p_ && statement[k].type != (char)a_)
-          continue;
-        /* 30-Jan-06 nm Added single-character-match wildcard argument */
-        if (!matchesList(statement[k].labelName, fullArg[1], '*', '?'))
-          continue;
-        if (p) {
-          /* Skip the statement if it has a $d requirement.  This option
-             prevents illegal minimizations that would violate $d requirements
-             since MINIMIZE_WITH does not check for $d violations. */
-          if (nmbrLen(statement[k].reqDisjVarsA)) {
-            /* 30-Jan-06 nm Added single-character-match wildcard argument */
-            if (!(instr(1, fullArg[1], "*") || instr(1, fullArg[1], "?")))
-              print2("?\"%s\" has a $d requirement\n", fullArg[1]);
-            continue;
-          }
-        }
+      /* 25-Jun-2014 nm forwRevPass outer loop added */
+      /* Scan forward, then reverse, then pick best result */
+      for (forwRevPass = 1; forwRevPass <= 2; forwRevPass++) {
 
-        /* 7-Jan-06 nm - Added EXCEPT switch */
-        if (e) {
-          /* Skip any match to the EXCEPT argument */
-          /* 30-Jan-06 nm Added single-character-match wildcard argument */
-          if (matchesList(statement[k].labelName, fullArg[e + 1], '*', '?'))
-            continue;
+        /* 25-Jun-2014 nm */
+        if (forwRevPass == 1) {
+          if (hasWildCard) print2("Scanning forward through statements...\n");
+          forwFlag = 1;
+        } else {
+          /* If growth allowed, don't bother with reverse pass */
+          if (allowGrowthFlag) break;
+          /* If nothing was found on forward pass, don't bother with rev pass */
+          if (!proofChangedFlag) break;
+          /* If only one statement was specified, don't bother with rev pass */
+          if (!hasWildCard) break;
+          print2("Scanning backward through statements...\n");
+          forwFlag = 0;
+          /* Save proof and length from 1st pass; re-initialize */
+          copyProofStruct(&save1stPassProof, proofInProgress);
+          forwardLength = nmbrLen(proofInProgress.proof);
+          forwardCompressedLength = oldCompressedLength;
+          /* Start over from original proof */
+          copyProofStruct(&proofInProgress, saveOrigProof);
         }
 
         /* 20-May-2013 nm */
-        if (forbidMatchList[0]) { /* User provided a /FORBID list */
-          /* First, we check to make sure we're not trying a statement
-             in the forbidMatchList directly (traceProof() won't find
-             this) */
-          if (matchesList(statement[k].labelName, forbidMatchList, '*', '?'))
+        /*
+        if (forbidMatchList[0]) { /@ User provided a /FORBID list @/
+          /@ Save the proof structure in case we have to revert a
+             forbidden match. @/
+          copyProofStruct(&saveProofForReverting, proofInProgress);
+        }
+        */
+        /* 25-Jun-2014 nm */
+        copyProofStruct(&saveProofForReverting, proofInProgress);
+
+        oldCompressedLength = origCompressedLength;
+
+        /* for (k = 1; k < proveStatement; k++) { */
+        /* 10-Nov-2011 nm */
+        /* We use bottom-up scanning as the default (forwFlag=0) since empirically
+           it seems to lead to shorter proofs */
+        /* If forwFlag is 0, scan from proveStatement-1 to 1
+           If forwFlag is 1, scan from 1 to proveStatement-1 */
+        for (k = forwFlag ? 1 : (proveStatement - 1);
+             k * (forwFlag ? 1 : -1) < (forwFlag ? proveStatement : 0);
+             k = k + (forwFlag ? 1 : -1)) {
+          /* 28-Jun-2011 */
+          /* Scan mathbox statements only if INCLUDE_MATHBOXES specified */
+          /*if (!mathboxFlag && k >= sandboxStmt) continue;*/
+          /* 14-Aug-2012 nm */
+          if (!mathboxFlag && k >= sandboxStmt && k < thisMathboxStmt) continue;
+
+          if (statement[k].type != (char)p_ && statement[k].type != (char)a_)
             continue;
-          /* Save the proof structure in case we have to revert a
-             forbidden match.  We only care about $p statements. */
-          if (statement[k].type == (char)p_) {
+          /* 30-Jan-06 nm Added single-character-match wildcard argument */
+          if (!matchesList(statement[k].labelName, fullArg[1], '*', '?'))
+            continue;
+          /* 25-Jun-2014 nm /NO_DISTINCT is obsolete
+          if (noDistinctFlag) {
+            /@ Skip the statement if it has a $d requirement.  This option
+               prevents illegal minimizations that would violate $d requirements
+               since MINIMIZE_WITH does not check for $d violations. @/
+            if (nmbrLen(statement[k].reqDisjVarsA)) {
+              /@ 30-Jan-06 nm Added single-character-match wildcard argument @/
+              if (!(instr(1, fullArg[1], "@") || instr(1, fullArg[1], "?")))
+                print2("?\"%s\" has a $d requirement\n", fullArg[1]);
+              continue;
+            }
           }
-        }
+          */
 
-        /* Print individual labels */
-        if (s == 0) s = 1; /* Matched at least one */
-        if (!i) {
-          /* Verbose mode */
-          q = q + (long)strlen(statement[k].labelName) + 1;
-          if (q > 72) {
-            q = (long)strlen(statement[k].labelName) + 1;
-            print2("\n");
+          /* 7-Jan-06 nm - Added EXCEPT switch */
+          if (exceptPos != 0) {
+            /* Skip any match to the EXCEPT argument */
+            /* 30-Jan-06 nm Added single-character-match wildcard argument */
+            if (matchesList(statement[k].labelName, fullArg[exceptPos + 1],
+                '*', '?'))
+              continue;
           }
-          print2("%s ",statement[k].labelName);
-        }
 
-        m = nmbrLen(proofInProgress.proof); /* Original proof length */
-        nmbrLet(&nmbrTmp, proofInProgress.proof);
-
-        minimizeProof(k /* trial statement */,
-            proveStatement /* statement being proved in MM-PA */,
-            (char)j /* allowGrowthFlag */);
-
-        n = nmbrLen(proofInProgress.proof); /* New proof length */
-        if (!nmbrEq(nmbrTmp, proofInProgress.proof)) {
-
-          /* 20-May-2013 nm Because of the slow speed of traceBack(),
-             we only want to check the /FORBID list in the relatively
-             rare case where a minimization occurred.  If the FORBID
-             list is matched, we then need to revert back to the
-             original proof. */
+          /* 20-May-2013 nm */
           if (forbidMatchList[0]) { /* User provided a /FORBID list */
+            /* First, we check to make sure we're not trying a statement
+               in the forbidMatchList directly (traceProof() won't find
+               this) */
+            if (matchesList(statement[k].labelName, forbidMatchList, '*', '?'))
+              continue;
+            /* Save the proof structure in case we have to revert a
+               forbidden match.  We only care about $p statements. */
             if (statement[k].type == (char)p_) {
-              /* We only care about tracing $p statements */
-              /* See if the TRACE_BACK list includes a match to the
-                 /FORBID argument */
-              if (traceProof(k,
-                  0 /*essentialFlag*/,
-                  0 /*axiomFlag*/,
-                  forbidMatchList,
-                  1 /* testOnlyFlag */)) {
-                /* Yes, a forbidden statement occurred in traceProof() */
-                /* Revert the proof to before minimization */
-                copyProofStruct(&proofInProgress, forbidMatchSaveProof);
-                /* Skip further printout and flag setting */
-                continue; /* Continue at 'Next k' loop end below */
-              }
             }
           }
 
-          if (!i) {
-            /* Verbose mode */
-            print2("\n");
+          /* Print individual labels */
+          if (prntStatus == 0) prntStatus = 1; /* Matched at least one */
+          /* 25-Jun-2014 nm Don't list matched statements anymore
+          if (verboseMode) {
+            q = q + (long)strlen(statement[k].labelName) + 1;
+            if (q > 72) {
+              q = (long)strlen(statement[k].labelName) + 1;
+              print2("\n");
+            }
+            print2("%s ",statement[k].labelName);
           }
-          if (n < m) print2(
-            "Proof length of \"%s\" decreased from %ld to %ld using \"%s\".\n",
-              statement[proveStatement].labelName,
-              m, n, statement[k].labelName);
-          /* ALLOW_GROWTH possibility */
-          if (m < n) print2(
-            "Proof length of \"%s\" increased from %ld to %ld using \"%s\".\n",
-              statement[proveStatement].labelName,
-              m, n, statement[k].labelName);
-          /* ALLOW_GROWTH possibility */
-          if (m == n) print2(
-              "Proof length of \"%s\" remained at %ld using \"%s\".\n",
-              statement[proveStatement].labelName,
-              m, statement[k].labelName);
-          /* Distinct variable warning (??? future - add $d to Proof Assis.) */
-          if (nmbrLen(statement[k].reqDisjVarsA)) {
-            printLongLine(cat("Note: \"", statement[k].labelName,
-                "\" has $d constraints.",
-                "  SAVE NEW_PROOF then VERIFY PROOF to check them.",
-                NULL), "", " ");
-          }
-          q = 0; /* Line length for label list */
-          s = 2; /* Found one */
-          proofChangedFlag = 1;
+          */
 
-          /* 20-May-2012 nm */
-          if (forbidMatchList[0]) { /* User provided a /FORBID list */
+          m = nmbrLen(proofInProgress.proof); /* Original proof length */
+          nmbrLet(&nmbrTmp, proofInProgress.proof);
+          minimizeProof(k /* trial statement */,
+              proveStatement /* statement being proved in MM-PA */,
+              (char)allowGrowthFlag /* allowGrowthFlag */);
+
+          n = nmbrLen(proofInProgress.proof); /* New proof length */
+          if (!nmbrEq(nmbrTmp, proofInProgress.proof)) {
+            /* The proof got shorter (or it changed if ALLOW_GROWTH) */
+
+            /* 20-May-2013 nm Because of the slow speed of traceBack(),
+               we only want to check the /FORBID list in the relatively
+               rare case where a minimization occurred.  If the FORBID
+               list is matched, we then need to revert back to the
+               original proof. */
+            if (forbidMatchList[0]) { /* User provided a /FORBID list */
+              if (statement[k].type == (char)p_) {
+                /* We only care about tracing $p statements */
+                /* See if the TRACE_BACK list includes a match to the
+                   /FORBID argument */
+                if (traceProof(k,
+                    0 /*essentialFlag*/,
+                    0 /*axiomFlag*/,
+                    forbidMatchList,
+                    1 /* testOnlyFlag */)) {
+                  /* Yes, a forbidden statement occurred in traceProof() */
+                  /* Revert the proof to before minimization */
+                  copyProofStruct(&proofInProgress, saveProofForReverting);
+                  /* Skip further printout and flag setting */
+                  continue; /* Continue at 'Next k' loop end below */
+                }
+              }
+            }
+
+            /* 25-Jun-2014 nm Make sure the compressed proof length
+               decreased, otherwise revert.  Also, we will use the
+               compressed proof for the $d check next */
+            if (nmbrLen(statement[k].reqDisjVarsA) || !allowGrowthFlag) {
+              nmbrLet(&nmbrSaveProof, proofInProgress.proof);
+              nmbrLet(&nmbrSaveProof, nmbrSquishProof(proofInProgress.proof));
+              let(&str1, compressProof(nmbrSaveProof,
+                  proveStatement, /* statement being proved in MM-PA */
+                  0 /* Normal (not "fast") compression */
+                  ));
+              newCompressedLength = (long)strlen(str1);
+              if (!allowGrowthFlag && newCompressedLength > oldCompressedLength) {
+                /* The compressed proof length increased, so don't use it.
+                   (If it stayed the same, we will use it because the uncompressed
+                   length did decrease.) */
+                /* Revert the proof to before minimization */
+                if (verboseMode) {
+                  print2(
+ "Reverting \"%s\": Uncompressed steps:  old = %ld, new = %ld\n",
+                      statement[k].labelName,
+                      m, n );
+                  print2(
+ "    but compressed size:  old = %ld bytes, new = %ld bytes\n",
+                      oldCompressedLength, newCompressedLength);
+                }
+                copyProofStruct(&proofInProgress, saveProofForReverting);
+                /* Skip further printout and flag setting */
+                continue; /* Continue at 'Next k' loop end below */
+              }
+            } /* if (nmbrLen(statement[k].reqDisjVarsA) || !allowGrowthFlag) */
+
+            /* 25-Jun-2014 nm */
+            /* Make sure there are no $d violations, otherwise revert */
+            /* This requires the str1 from above */
+            if (nmbrLen(statement[k].reqDisjVarsA)) {
+              /* There is currently no way to verify a proof that doesn't
+                 read and parse the source directly.  This should be
+                 changed in the future to make the program more modular.  But
+                 for now, we temporarily zap the source with new compressed
+                 proof and see if there are any $d violations by looking at
+                 the error message output */
+              saveZappedProofSectionPtr
+                  = statement[proveStatement].proofSectionPtr;
+              saveZappedProofSectionLen
+                  = statement[proveStatement].proofSectionLen;
+              /* (search for "chr(1)" above for explanation) */
+              let(&str1, cat(chr(1), "\n", str1, " $.\n", NULL));
+              statement[proveStatement].proofSectionPtr = str1 + 1; /* Compressed
+                                                     proof generated above */
+              statement[proveStatement].proofSectionLen =
+                  newCompressedLength + 4;
+              outputToString = 1; /* Suppress error messages */
+              /* parseProof, verifyProof, cleanWkrProof must be called in
+                 sequence to assign the wrkProof structure, verify the proof,
+                 and deallocate the wrkProof structure */
+              i = parseProof(proveStatement);
+              if (i != 0) bug(1121);
+              i = verifyProof(proveStatement);
+              if (i != 0) bug(1122);
+              /**** Here we look at the screen output sent to a string.
+                    This is rather crude, and someday the ability to
+                    check proofs and $d violations should be modularized *****/
+              j = instr(1, printString,
+                  "There is a disjoint variable ($d) violation");
+              outputToString = 0; /* Restore to normal output */
+              let(&printString, ""); /* Clear out the stored error messages */
+              cleanWrkProof(); /* Deallocate verifyProof storage */
+              statement[proveStatement].proofSectionPtr
+                  = saveZappedProofSectionPtr;
+              statement[proveStatement].proofSectionLen
+                  = saveZappedProofSectionLen;
+              if (j != 0) {
+                /* There was a $d violation, so don't used minimized proof */
+                /* Revert the proof to before minimization */
+                copyProofStruct(&proofInProgress, saveProofForReverting);
+                /* Skip further printout and flag setting */
+                continue; /* Continue at 'Next k' loop end below */
+              }
+            } /* if (nmbrLen(statement[k].reqDisjVarsA)) */
+
+            /* 25-Jun-2014 nm - not needed since trials now suppressed */
+            /*
+            if (verboseMode) {
+              print2("\n");
+            }
+            */
+
+            /*if (nmbrLen(statement[k].reqDisjVarsA) || !allowGrowthFlag) {*/
+            if (!allowGrowthFlag) {
+              /* Note:  this is the length BEFORE indentation and wrapping,
+                 so it is less than SHOW PROOF ... /SIZE */
+              if (newCompressedLength < oldCompressedLength) {
+                print2(
+     "Proof of \"%s\" decreased from %ld to %ld bytes using \"%s\".\n",
+                    statement[proveStatement].labelName,
+                    oldCompressedLength, newCompressedLength,
+                    statement[k].labelName);
+              } else {
+                if (newCompressedLength > oldCompressedLength) bug(1123);
+                print2(
+     "Proof of \"%s\" stayed at %ld bytes using \"%s\".\n",
+                    statement[proveStatement].labelName,
+                    oldCompressedLength,
+                    statement[k].labelName);
+                print2(
+    "    (Uncompressed steps decreased from %ld to %ld).\n",
+                    m, n );
+              }
+              /* (We don't care about compressed length if ALLOW_GROWTH) */
+              oldCompressedLength = newCompressedLength;
+            }
+
+            if (n < m && (allowGrowthFlag || verboseMode)) {
+              print2(
+      "%sProof of \"%s\" decreased from %ld to %ld steps using \"%s\".\n",
+                (allowGrowthFlag ? "" : "    "),
+                statement[proveStatement].labelName,
+                m, n, statement[k].labelName);
+            }
+            /* ALLOW_GROWTH possibility */
+            if (m < n) print2(
+      "Proof of \"%s\" increased from %ld to %ld steps using \"%s\".\n",
+                statement[proveStatement].labelName,
+                m, n, statement[k].labelName);
+            /* ALLOW_GROWTH possibility */
+            if (m == n) print2(
+                "Proof of \"%s\" remained at %ld steps using \"%s\".\n",
+                statement[proveStatement].labelName,
+                m, statement[k].labelName);
+            /* Distinct variable warning (obsolete) */
+            /*
+            if (nmbrLen(statement[k].reqDisjVarsA)) {
+              printLongLine(cat("Note: \"", statement[k].labelName,
+                  "\" has $d constraints.",
+                  "  SAVE NEW_PROOF then VERIFY PROOF to check them.",
+                  NULL), "", " ");
+            }
+            */
+            /* q = 0; */ /* Line length for label list */ /* 25-Jun-2014 del */
+            prntStatus = 2; /* Found one */
+            proofChangedFlag = 1;
+
+            /* 20-May-2012 nm */
+            /*
+            if (forbidMatchList[0]) { /@ User provided a /FORBID list @/
+              /@ Save the changed proof in case we have to restore
+                 it later @/
+              copyProofStruct(&saveProofForReverting, proofInProgress);
+            }
+            */
+            /* 25-Jun-2014 nm */
             /* Save the changed proof in case we have to restore
                it later */
-            copyProofStruct(&forbidMatchSaveProof, proofInProgress);
+            copyProofStruct(&saveProofForReverting, proofInProgress);
+
           }
 
+        } /* Next k (statement) */
+        /* 25-Jun-2014 nm - not needed since trials now suppressed */
+        /*
+        if (verboseMode) {
+          if (prntStatus) print2("\n");
+        }
+        */
+
+        if (proofChangedFlag && forwRevPass == 2) {
+          /* 25-Jun-2014 nm */
+          /* Check whether the reverse pass found a better proof than the
+             forward pass */
+          if (verboseMode) {
+            print2(
+"Forward vs. backward: %ld vs. %ld bytes; %ld vs. %ld steps\n",
+                      forwardCompressedLength,
+                      oldCompressedLength,
+                      forwardLength,
+                      nmbrLen(proofInProgress.proof));
+          }
+          if (oldCompressedLength < forwardCompressedLength
+               || (oldCompressedLength == forwardCompressedLength &&
+                   nmbrLen(proofInProgress.proof) < forwardLength)) {
+            /* The reverse pass was better */
+            print2("The backward scan results were used.\n");
+          } else {
+            copyProofStruct(&proofInProgress, save1stPassProof);
+            print2("The forward scan results were used.\n");
+          }
         }
 
-      } /* Next k (statement) */
-      if (!i) {
-        /* Verbose mode */
-        if (s) print2("\n");
-      }
-      if (s == 1 && !j) print2("No shorter proof was found.\n");
-      if (s == 1 && j) print2("The proof was not changed.\n");
-      if (!s && !p) print2("?No earlier $p or $a label matches \"%s\".\n",
-        fullArg[1]);
-      if (!s && p) {
-        /* 30-Jan-06 nm Added single-character-match wildcard argument */
-        if (instr(1, fullArg[1], "*") || instr(1, fullArg[1], "?"))
+      } /* next forwRevPass */
+
+      if (prntStatus == 1 && !allowGrowthFlag)
+        print2("No shorter proof was found.\n");
+      if (prntStatus == 1 && allowGrowthFlag)
+        print2("The proof was not changed.\n");
+      if (!prntStatus /* && !noDistinctFlag */)
+        print2("?No earlier $p or $a label matches \"%s\".\n", fullArg[1]);
+      /* 25-Jun-2014 nm /NO_DISTINCT is obsolete
+      if (!prntStatus && noDistinctFlag) {
+        /@ 30-Jan-06 nm Added single-character-match wildcard argument @/
+        if (instr(1, fullArg[1], "@") || instr(1, fullArg[1], "?"))
           print2("?No earlier $p or $a label (without $d) matches \"%s\".\n",
               fullArg[1]);
       }
+      */
       /* 28-Jun-2011 nm */
       if (!mathboxFlag && proveStatement >= sandboxStmt) {
         print2(
@@ -5610,9 +5860,13 @@ void command(int argc, char *argv[])
 
       /* 20-May-2013 nm */
       if (forbidMatchList[0]) { /* User provided a /FORBID list */
-        deallocProofStruct(&forbidMatchSaveProof); /* Deallocate memory */
+        /*deallocProofStruct(&saveProofForReverting);*/ /* Deallocate memory */
         let(&forbidMatchList, ""); /* Deallocate memory */
       }
+      /* 25-Jun-2014 nm */
+      deallocProofStruct(&saveProofForReverting); /* Deallocate memory */
+      deallocProofStruct(&saveOrigProof); /* Deallocate memory */
+      deallocProofStruct(&save1stPassProof); /* Deallocate memory */
 
       if (proofChangedFlag) {
         proofChanged = 1; /* Cumulative flag */
