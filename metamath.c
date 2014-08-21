@@ -5,7 +5,11 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.108 25-Jun-2014"
+#define MVERSION "0.109 20-Aug-2014"
+/* 0.109 20-Aug-2014 nm mmwtex.c - fix corrupted HTML caused by misinterpreting
+   math symbols as comment markup (math symbols with _ [ ] or ~).  Also,
+   allow https:// as well as http:// in ~ label markup.
+   11-Jul-2014 wl mmdata.c - fix obscure crash in debugging mode db9 */
 /* 0.108 25-Jun-2014 nm
    (1) metamath.c, mmcmdl.c, mmhlpb.c - MINIMIZE_WITH now checks the size
    of the compressed proof, prevents $d violations, and tries forward and

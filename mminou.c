@@ -89,8 +89,6 @@ flag print2(char* fmt,...)
   char printBuffer[PRINTBUFFERSIZE];
   long i;
 
-/*E*/flag savedb9=0;
-/*E*/if(db9) savedb9=1; db9=0; /* recursive call to print2 crashes - gcc bug? */
   if (backBufferPos == 0) {
     /* Initialize backBuffer - 1st time in program */
     /* Warning:  Don't call bug(), because it calls print2. */
@@ -364,7 +362,6 @@ flag print2(char* fmt,...)
   }
 
  PRINT2_RETURN:
-/*E*/if (savedb9) db9=1;
   return (!quitPrint);
 }
 

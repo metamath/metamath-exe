@@ -108,7 +108,10 @@ void *poolFixedMalloc(long size /* bytes */)
 {
   void *ptr;
   void *ptr2;
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("a0: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/ /* 11-Jul-2014 nm Don't call print2() if db9 is set, since it will */
+/*E*/ /* recursively call the pool stuff causing a crash.  I changed */
+/*E*/ /* 41 cases of print2() to printf() below to resolve this. */
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("a0: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
   if (!memFreePoolSize) { /* The pool is empty; we must allocate memory */
     ptr = malloc( 3 * sizeof(long) + (size_t)size);
     if (!ptr) outOfMemory(
@@ -123,7 +126,7 @@ void *poolFixedMalloc(long size /* bytes */)
     memFreePoolSize--;
     ptr = memFreePool[memFreePoolSize];
     poolTotalFree = poolTotalFree - ((long *)ptr)[-2];
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("a: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("a: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
     if (size <= ((long *)ptr)[-2]) { /* We have enough space already */
       ptr2 = realloc( (long *)ptr - 3, 3 * sizeof(long) + (size_t)size);
       /* Reallocation cannot fail, since we are shrinking space */
@@ -165,7 +168,7 @@ void *poolMalloc(long size /* bytes */)
     memFreePoolPurge(1);
   }
 
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("b0: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("b0: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
   if (!memFreePoolSize) { /* The pool is empty; we must allocate memory */
     ptr = malloc( 3 * sizeof(long) + (size_t)size);
     if (!ptr) {
@@ -180,7 +183,7 @@ void *poolMalloc(long size /* bytes */)
     memFreePoolSize--;
     ptr = memFreePool[memFreePoolSize];
     poolTotalFree = poolTotalFree - ((long *)ptr)[-2];
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("b: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("b: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
     if (size <= ((long *)ptr)[-2]) { /* We have enough space already */
       ((long *)ptr)[-1] = size; /* Actual size */
       ((long *)ptr)[-3] = -1; /* Not in storage pool yet */
@@ -200,17 +203,17 @@ void *poolMalloc(long size /* bytes */)
       ((long *)ptr)[-1] = size; /* Actual size */
       ((long *)ptr)[-2] = size; /* Allocated size */
       ((long *)ptr)[-3] = -1;  /* Location in memUsedPool (-1 = none) */
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("bb: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("bb: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
       return (ptr);
     }
   }
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("bc: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("bc: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
   if (((long *)ptr)[-1] == ((long *)ptr)[-2]) return (ptr);
   /* Allocated and actual sizes are different, so add this array to used pool */
   poolTotalFree = poolTotalFree + ((long *)ptr)[-2] - ((long *)ptr)[-1];
   if (memUsedPoolSize >= memUsedPoolMax) { /* Increase size of used pool */
     memUsedPoolTmpMax = memUsedPoolMax + MEM_POOL_GROW;
-/*E*/if(db9)print2("Growing used pool to %ld\n",memUsedPoolTmpMax);
+/*E*/if(db9)printf("Growing used pool to %ld\n",memUsedPoolTmpMax);
     if (!memUsedPoolMax) {
       /* The program has just started; initialize */
       memUsedPoolTmpPtr = malloc((size_t)memUsedPoolTmpMax
@@ -233,7 +236,7 @@ void *poolMalloc(long size /* bytes */)
   memUsedPool[memUsedPoolSize] = ptr;
   ((long *)ptr)[-3] = memUsedPoolSize;
   memUsedPoolSize++;
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("c: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("c: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
   return (ptr);
 }
 
@@ -245,23 +248,35 @@ void poolFree(void *ptr)
   long memFreePoolTmpMax;
   void *memFreePoolTmpPtr;
 
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("c0: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("c0: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
   /* First, see if the array is in memUsedPool; if so, remove it. */
   usedLoc = ((long *)ptr)[-3];
   if (usedLoc >= 0) { /* It is */
     poolTotalFree = poolTotalFree - ((long *)ptr)[-2] + ((long *)ptr)[-1];
     memUsedPoolSize--;
+
+    /* 11-Jul-2014 WL old code deleted */
+    /*
     memUsedPool[usedLoc] = memUsedPool[memUsedPoolSize];
     ptr1 = memUsedPool[usedLoc];
-    ((long *)ptr1)[-3] = usedLoc;
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("d: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+    ((long @)ptr1)[-3] = usedLoc;
+/@E@/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("d: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+    */
+    /* 11-Jul-2014 WL new code */
+    if (usedLoc < memUsedPoolSize) {
+      memUsedPool[usedLoc] = memUsedPool[memUsedPoolSize];
+      ptr1 = memUsedPool[usedLoc];
+      ((long *)ptr1)[-3] = usedLoc;
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("d: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+    }
+    /* end of 11-Jul-2014 WL new code */
   }
 
   /* Next, add the array to the memFreePool */
   /* First, allocate more memFreePool pointer space if needed */
   if (memFreePoolSize >= memFreePoolMax) { /* Increase size of free pool */
     memFreePoolTmpMax = memFreePoolMax + MEM_POOL_GROW;
-/*E*/if(db9)print2("Growing free pool to %ld\n",memFreePoolTmpMax);
+/*E*/if(db9)printf("Growing free pool to %ld\n",memFreePoolTmpMax);
     if (!memFreePoolMax) {
       /* The program has just started; initialize */
       memFreePoolTmpPtr = malloc((size_t)memFreePoolTmpMax
@@ -274,7 +289,7 @@ void poolFree(void *ptr)
           (size_t)memFreePoolTmpMax * sizeof(void *));
     }
     if (!memFreePoolTmpPtr) {
-/*E*/if(db9)print2("Realloc failed\n");
+/*E*/if(db9)printf("Realloc failed\n");
       outOfMemory(cat("#30 (poolFree ", str(memFreePoolTmpMax), ")", NULL));
     } else {
       /* Reallocation successful */
@@ -284,9 +299,13 @@ void poolFree(void *ptr)
   }
   /* Add the free array to the free pool */
   memFreePool[memFreePoolSize] = ptr;
+  /* In theory, [-3] should never get referenced for an entry in the
+     memFreePool. However, here we make it a definite (illegal) value in
+     case it is referenced by code with a bug. */
+  ((long *)ptr)[-3] = -2;  /* 11-Jul-2014 WL */
   memFreePoolSize++;
   poolTotalFree = poolTotalFree + ((long *)ptr)[-2];
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("e: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("e: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
   return;
 }
 
@@ -296,14 +315,14 @@ void addToUsedPool(void *ptr)
 {
   long memUsedPoolTmpMax;
   void *memUsedPoolTmpPtr;
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("d0: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("d0: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
   if (((long *)ptr)[-1] == ((long *)ptr)[-2]) bug(1305); /* No need to add it
                                  when it's not partially used */
   if (((long *)ptr)[-1] == ((long *)ptr)[-2]) return;
   /* Allocated and actual sizes are different, so add this array to used pool */
   if (memUsedPoolSize >= memUsedPoolMax) { /* Increase size of used pool */
     memUsedPoolTmpMax = memUsedPoolMax + MEM_POOL_GROW;
-/*E*/if(db9)print2("1Growing used pool to %ld\n",memUsedPoolTmpMax);
+/*E*/if(db9)printf("1Growing used pool to %ld\n",memUsedPoolTmpMax);
     if (!memUsedPoolMax) {
       /* The program has just started; initialize */
       memUsedPoolTmpPtr = malloc((size_t)memUsedPoolTmpMax
@@ -327,14 +346,14 @@ void addToUsedPool(void *ptr)
   ((long *)ptr)[-3] = memUsedPoolSize;
   memUsedPoolSize++;
   poolTotalFree = poolTotalFree + ((long *)ptr)[-2] - ((long *)ptr)[-1];
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("f: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("f: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
   return;
 }
 
 /* Free all arrays in the free pool. */
 void memFreePoolPurge(flag untilOK)
 {
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("e0: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("e0: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
   while (memFreePoolSize) {
     memFreePoolSize--;
     /* Free an array */
@@ -354,7 +373,7 @@ void memFreePoolPurge(flag untilOK)
         * sizeof(void *)); /* Allocate starting increment */
     memFreePoolMax = MEM_POOL_GROW;
   }
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("g: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("g: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
   return;
 }
 
@@ -625,7 +644,7 @@ nmbrString *nmbrTempAlloc(long size)
   /* When "size" is >0, "size" instances of nmbrString are allocated. */
   /* When "size" is 0, all memory previously allocated with this */
   /* function is deallocated, down to nmbrStartTempAllocStack. */
-  int i;
+  /* int i; */  /* 11-Jul-2014 WL old code deleted */
   if (size) {
     if (nmbrTempAllocStackTop>=(M_MAX_ALLOC_STACK-1)) {
       /*??? Fix to allocate more */
@@ -637,10 +656,20 @@ nmbrString *nmbrTempAlloc(long size)
 /*E*/db2=db2+size*(long)(sizeof(nmbrString));
     return (nmbrTempAllocStack[nmbrTempAllocStackTop-1]);
   } else {
+    /* 11-Jul-2014 WL old code deleted */
+    /*
     for (i=nmbrStartTempAllocStack; i < nmbrTempAllocStackTop; i++) {
-/*E*/db2=db2-(nmbrLen(nmbrTempAllocStack[i])+1)*(long)(sizeof(nmbrString));
+/@E@/db2=db2-(nmbrLen(nmbrTempAllocStack[i])+1)*(long)(sizeof(nmbrString));
       poolFree(nmbrTempAllocStack[i]);
     }
+    */
+    /* 11-Jul-2014 WL new code */
+    while(nmbrTempAllocStackTop != nmbrStartTempAllocStack) {
+/*E*/db2=db2-(nmbrLen(nmbrTempAllocStack[nmbrTempAllocStackTop-1])+1)
+/*E*/                                              *(long)(sizeof(nmbrString));
+      poolFree(nmbrTempAllocStack[--nmbrTempAllocStackTop]);
+    }
+    /* end of 11-Jul-2014 WL new code */
     nmbrTempAllocStackTop=nmbrStartTempAllocStack;
     return (0);
   }
@@ -680,7 +709,7 @@ void nmbrLet(nmbrString **target,nmbrString *source)
   long targetLength,sourceLength;
   long targetAllocLen;
   long poolDiff;
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("k0: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("k0: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
   sourceLength=nmbrLen(source);  /* Save its actual length */
   targetLength=nmbrLen(*target);  /* Save its actual length */
   targetAllocLen=nmbrAllocLen(*target); /* Save target's allocated length */
@@ -709,11 +738,11 @@ void nmbrLet(nmbrString **target,nmbrString *source)
           if (((long *)(*target))[-3] == -1) {
             /* It's not already in the used pool, so add it */
             addToUsedPool(*target);
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("k0aa: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("k0aa: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
           } else {
             /* Adjust free space independently */
             poolTotalFree = poolTotalFree + poolDiff;
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("k0ab: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("k0ab: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
           }
         } else {
           if (((long *)(*target))[-3] != -1) {
@@ -724,7 +753,7 @@ void nmbrLet(nmbrString **target,nmbrString *source)
         }
 
 
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("k0a: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("k0a: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
       } else {
         /* Free old string space and allocate new space */
         poolFree(*target);  /* Free old space */
@@ -760,14 +789,14 @@ void nmbrLet(nmbrString **target,nmbrString *source)
             poolTotalFree = poolTotalFree + poolDiff;
           }
         }
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("k0b: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("k0b: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
 
       }
 
     } else {    /* source is 0 length, target is not */
       poolFree(*target);
       *target= NULL_NMBRSTRING;
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("k0c: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("k0c: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
     }
   } else {
     if (sourceLength) { /* target is 0 length, source is not */
@@ -775,14 +804,14 @@ void nmbrLet(nmbrString **target,nmbrString *source)
                         /* Allocate new space */
       /* if (!*target) outOfMemory("#108 (nmbrString)"); */ /*???Unnec. w/ poolMalloc*/
       nmbrCpy(*target,source);
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("k0d: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("k0d: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
     } else {    /* source and target are both 0 length */
       /* *target= NULL_NMBRSTRING; */ /* Redundant */
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("k0e: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("k0e: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
     }
   }
 
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("k1: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("k1: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
   nmbrTempAlloc(0); /* Free up temporary strings used in expression computation*/
 
 }
@@ -867,7 +896,7 @@ void nmbrZapLen(nmbrString *s, long length) {
         - (length + 1) * (long)(sizeof(nmbrString));
   }
   ((long *)s)[-1] = (length + 1) * (long)(sizeof(nmbrString));
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("l: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("l: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
 }
 
 
@@ -1292,7 +1321,7 @@ nmbrString *nmbrAddElement(nmbrString *g, long element)
   nmbrCpy(v, g);
   v[length] = element;
   v[length + 1] = *NULL_NMBRSTRING; /* End of string */
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("bbg2: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("bbg2: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
   return(v);
 }
 
@@ -2160,7 +2189,7 @@ pntrString *pntrTempAlloc(long size)
   /* When "size" is >0, "size" instances of pntrString are allocated. */
   /* When "size" is 0, all memory previously allocated with this */
   /* function is deallocated, down to pntrStartTempAllocStack. */
-  int i;
+  /* int i; */   /* 11-Jul-2014 WL old code deleted */
   if (size) {
     if (pntrTempAllocStackTop>=(M_MAX_ALLOC_STACK-1))
       /*??? Fix to allocate more */
@@ -2171,10 +2200,20 @@ pntrString *pntrTempAlloc(long size)
 /*E*/db2=db2+(size)*(long)(sizeof(pntrString));
     return (pntrTempAllocStack[pntrTempAllocStackTop-1]);
   } else {
+    /* 11-Jul-2014 WL old code deleted */
+    /*
     for (i=pntrStartTempAllocStack; i < pntrTempAllocStackTop; i++) {
-/*E*/db2=db2-(pntrLen(pntrTempAllocStack[i])+1)*(long)(sizeof(pntrString));
+/@E@/db2=db2-(pntrLen(pntrTempAllocStack[i])+1)*(long)(sizeof(pntrString));
       poolFree(pntrTempAllocStack[i]);
     }
+    */
+    /* 11-Jul-2014 WL new code */
+    while(pntrTempAllocStackTop != pntrStartTempAllocStack) {
+/*E*/db2=db2-(pntrLen(pntrTempAllocStack[pntrTempAllocStackTop-1])+1)
+/*E*/                                              *(long)(sizeof(pntrString));
+      poolFree(pntrTempAllocStack[--pntrTempAllocStackTop]);
+    }
+    /* end of 11-Jul-2014 WL new code */
     pntrTempAllocStackTop=pntrStartTempAllocStack;
     return (0);
   }
@@ -2213,7 +2252,7 @@ void pntrLet(pntrString **target,pntrString *source)
   long targetLength,sourceLength;
   long targetAllocLen;
   long poolDiff;
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("k0: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("k0: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
   sourceLength=pntrLen(source);  /* Save its actual length */
   targetLength=pntrLen(*target);  /* Save its actual length */
   targetAllocLen=pntrAllocLen(*target); /* Save target's allocated length */
@@ -2242,11 +2281,11 @@ void pntrLet(pntrString **target,pntrString *source)
           if (((long *)(*target))[-3] == -1) {
             /* It's not already in the used pool, so add it */
             addToUsedPool(*target);
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("k0aa: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("k0aa: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
           } else {
             /* Adjust free space independently */
             poolTotalFree = poolTotalFree + poolDiff;
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("k0ab: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("k0ab: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
           }
         } else {
           if (((long *)(*target))[-3] != -1) {
@@ -2257,7 +2296,7 @@ void pntrLet(pntrString **target,pntrString *source)
         }
 
 
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("k0a: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("k0a: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
       } else {
         /* Free old string space and allocate new space */
         poolFree(*target);  /* Free old space */
@@ -2293,14 +2332,14 @@ void pntrLet(pntrString **target,pntrString *source)
             poolTotalFree = poolTotalFree + poolDiff;
           }
         }
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("k0b: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("k0b: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
 
       }
 
     } else {    /* source is 0 length, target is not */
       poolFree(*target);
       *target= NULL_PNTRSTRING;
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("k0c: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("k0c: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
     }
   } else {
     if (sourceLength) { /* target is 0 length, source is not */
@@ -2308,14 +2347,14 @@ void pntrLet(pntrString **target,pntrString *source)
                         /* Allocate new space */
       /* if (!*target) outOfMemory("#112 (pntrString)"); */ /*???Unnec. w/ poolMalloc*/
       pntrCpy(*target,source);
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("k0d: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("k0d: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
     } else {    /* source and target are both 0 length */
       /* *target= NULL_PNTRSTRING; */ /* Redundant */
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("k0e: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("k0e: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
     }
   }
 
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("k1: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("k1: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
   pntrTempAlloc(0); /* Free up temporary strings used in expression computation*/
 
 }
@@ -2398,7 +2437,7 @@ void pntrZapLen(pntrString *s, long length) {
         - (length + 1) * (long)(sizeof(pntrString));
   }
   ((long *)s)[-1] = (length + 1) * (long)(sizeof(pntrString));
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("l: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("l: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
 }
 
 
@@ -2601,7 +2640,7 @@ pntrString *pntrAddElement(pntrString *g)
   pntrCpy(v, g);
   v[length] = "";
   v[length + 1] = *NULL_PNTRSTRING;
-/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)print2("bbg3: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("bbg3: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
   return(v);
 }
 

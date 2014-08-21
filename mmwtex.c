@@ -1638,6 +1638,9 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
      order to re-use the old code */
   /* Note that DOLLAR_SUBST will replace the old $. */
   vstring cmt = "";
+  vstring cmtMasked = ""; /* cmt with math syms blanked */ /* 20-Aug-2014 nm */
+  vstring tmpMasked = ""; /* tmp with math syms blanked */ /* 20-Aug-2014 nm */
+  vstring tmpStrMasked = ""; /* tmpStr with math syms blanked */ /* 20-Aug-2014 nm */
   long i, clen;
 
   /* We must let this procedure handle switching output to string mode */
@@ -1657,6 +1660,10 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
   if (!i) i = (long)strlen(cmtptr) + 1;  /* If it's a stand-alone string */
   let(&cmt, left(cmtptr, i - 1));
 
+  /* All actions on cmt should be mirrored on cmdMasked, except that
+     math symbols are replaced with blanks in cmdMasked */
+  let(&cmtMasked, cmt); /* 20-Aug-2014 nm */
+
   /* 10/10/02 Add leading and trailing HTML markup to comment here
      (instead of in caller).  Also convert special characters. */
   /* This section is independent and can be removed without side effects */
@@ -1668,6 +1675,7 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
     if (instr(1, cmt, "<HTML>")) preformattedMode = 1;
     mode = 1; /* 1 normal, -1 math token */
     let(&tmp, "");
+    let(&tmpMasked, "");
     while (1) {
       pos1 = 0;
       while (1) {
@@ -1683,21 +1691,38 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
       if (mode == 1 && preformattedMode == 0) {
         let(&tmpStr, "");
         tmpStr = asciiToTt(left(cmt, pos1));
+        let(&tmpStrMasked, tmpStr);
       } else {
         let(&tmpStr, left(cmt, pos1));
+        /* 20-Aug-2014 nm */
+        if (mode == -1) { /* Math mode */
+          /* Replace math symbols with spaces to prevent confusing them
+             with markup in sections below */
+          let(&tmpStrMasked, cat(space(pos1 - 1),
+              mid(cmtMasked, pos1, 1), NULL));
+        } else { /* Preformatted mode but not math mode */
+          let(&tmpStrMasked, left(cmtMasked, pos1));
+        }
       }
       let(&tmp, cat(tmp, tmpStr, NULL));
+      let(&tmpMasked, cat(tmpMasked, tmpStrMasked, NULL));
       let(&cmt, right(cmt, pos1 + 1));
+      let(&cmtMasked, right(cmtMasked, pos1 + 1));
       if (!cmt[0]) break;
       mode = (char)(-mode);
     }
     let(&cmt, tmp);
+    let(&cmtMasked, tmpMasked);
     let(&tmpStr, ""); /* Deallocate */
+    let(&tmpStrMasked, "");
 
     /* This used to be done in mmcmds.c */
     if (htmlCenterFlag) {
       let(&cmt, cat("<CENTER><TABLE><TR><TD ALIGN=LEFT><B>Description: </B>",
           cmt, "</TD></TR></TABLE></CENTER>", NULL));
+      let(&cmtMasked,
+          cat("<CENTER><TABLE><TR><TD ALIGN=LEFT><B>Description: </B>",
+          cmtMasked, "</TD></TR></TABLE></CENTER>", NULL));
     }
   }
 
@@ -1718,8 +1743,10 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
       /* Don't modify anything inside of <HTML>...</HTML> tags */
       if (pos1 > instr(1, cmt, "<HTML>") && pos1 < instr(1, cmt, "</HTML>"))
         continue;
-      let(&cmt, cat(left(cmt, pos1 - 1), "\\$", right(cmt, pos1 + 1),
-          NULL));
+      let(&cmt, cat(left(cmt, pos1 - 1), "\\$",
+          right(cmt, pos1 + 1), NULL));
+      let(&cmtMasked, cat(left(cmtMasked, pos1 - 1), "\\$",
+          right(cmtMasked, pos1 + 1), NULL));
       pos1 = pos1 + 1; /* Adjust for 2-1 extra chars in "let" above */
     }
   }
@@ -1732,7 +1759,9 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
   if (i == i + 0 /*was htmlFlag*/) {  /* 5-Dec-03 */
     pos1 = 0;
     while (1) {
-      pos1 = instr(pos1 + 1, cmt, "_");
+      /* pos1 = instr(pos1 + 1, cmt, "_"); */
+      /* 20-Aug-2014 nm Only look at non-math part of comment */
+      pos1 = instr(pos1 + 1, cmtMasked, "_");
       if (!pos1) break;
       /*
       /@ Don't modify anything inside of <PRE>...</PRE> tags @/
@@ -1744,9 +1773,12 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
         continue;
       /* 23-Jul-2006 nm Don't modify anything inside of math symbol strings
          (imperfect - only works if `...` is not split across lines) */
+      /* 20-Aug-2014 nm No longer necessary since we now use cmtMasked */
+      /*
       if (pos1 > instr(1, cmt, "`") && pos1 < instr(instr(1, cmt, "`") + 1,
           cmt, "`"))
         continue;
+      */
 
       /* 5-Apr-2007 nm Don't modify external hyperlinks containing "_" */
       pos2 = pos1 - 1;
@@ -1755,6 +1787,10 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
         pos2--;
       }
       if (!strcmp(mid(cmt, pos2 + 2, 7), "http://")) {
+        continue;
+      }
+      /* 20-Aug-2014 nm Add https */
+      if (!strcmp(mid(cmt, pos2 + 2, 8), "https://")) {
         continue;
       }
 
@@ -1786,15 +1822,23 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
             pos2++; /* Adjust for left, seg, etc. that start at 1 not 0 */
             if (htmlFlag) {  /* HTML */
               /* Put <SUB>...</SUB> around subscript */
-              let(&cmt, cat(left(cmt, pos1 - 1), "<SUB><FONT SIZE=\"-1\">",
-                  seg(cmt, pos1 + 1, pos2 - 1),  /* Skip (delete) "_" */
+              let(&cmt, cat(left(cmt, pos1 - 1),
+                  "<SUB><FONT SIZE=\"-1\">",
+                  seg(cmt, pos1 + 1, pos2 - 1), /* Skip (delete) "_" */
                   "</FONT></SUB>", right(cmt, pos2), NULL));
+              let(&cmtMasked, cat(left(cmtMasked, pos1 - 1),
+                  "<SUB><FONT SIZE=\"-1\">",
+                  seg(cmtMasked, pos1 + 1, pos2 - 1), /* Skip (delete) "_" */
+                  "</FONT></SUB>", right(cmtMasked, pos2), NULL));
               pos1 = pos2 + 33; /* Adjust for 34-1 extra chars in "let" above */
             } else {  /* LaTeX */
               /* Put _{...} around subscript */
               let(&cmt, cat(left(cmt, pos1 - 1), "$_{",
                   seg(cmt, pos1 + 1, pos2 - 1),  /* Skip (delete) "_" */
                   "}$", right(cmt, pos2), NULL));
+              let(&cmtMasked, cat(left(cmtMasked, pos1 - 1), "$_{",
+                  seg(cmtMasked, pos1 + 1, pos2 - 1),  /* Skip (delete) "_" */
+                  "}$", right(cmtMasked, pos2), NULL));
               pos1 = pos2 + 4; /* Adjust for 5-1 extra chars in "let" above */
             }
             continue;
@@ -1808,18 +1852,28 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
         }
       }
       if (!isalnum((unsigned char)(cmt[pos1]))) continue;
-      pos2 = instr(pos1 + 1, cmt, "_");
+      /* pos2 = instr(pos1 + 1, cmt, "_"); */
+      /* 20-Aug-2014 nm Only look at non-math part of comment */
+      pos2 = instr(pos1 + 1, cmtMasked, "_");
       if (!pos2) break;
       /* Closing "_" must be <alphanum>_<nonalphanum> */
       if (!isalnum((unsigned char)(cmt[pos2 - 2]))) continue;
       if (isalnum((unsigned char)(cmt[pos2]))) continue;
       if (htmlFlag) {  /* HTML */
-        let(&cmt, cat(left(cmt, pos1 - 1), "<I>", seg(cmt, pos1 + 1, pos2 - 1),
+        let(&cmt, cat(left(cmt, pos1 - 1), "<I>",
+            seg(cmt, pos1 + 1, pos2 - 1),
             "</I>", right(cmt, pos2 + 1), NULL));
+        let(&cmtMasked, cat(left(cmtMasked, pos1 - 1), "<I>",
+            seg(cmtMasked, pos1 + 1, pos2 - 1),
+            "</I>", right(cmtMasked, pos2 + 1), NULL));
         pos1 = pos2 + 5; /* Adjust for 7-2 extra chars in "let" above */
       } else {  /* LaTeX */
-        let(&cmt, cat(left(cmt, pos1 - 1), "{\\em ", seg(cmt, pos1 + 1, pos2 - 1),
+        let(&cmt, cat(left(cmt, pos1 - 1), "{\\em ",
+            seg(cmt, pos1 + 1, pos2 - 1),
             "}", right(cmt, pos2 + 1), NULL));
+        let(&cmtMasked, cat(left(cmtMasked, pos1 - 1), "{\\em ",
+            seg(cmtMasked, pos1 + 1, pos2 - 1),
+            "}", right(cmtMasked, pos2 + 1), NULL));
         pos1 = pos2 + 4; /* Adjust for 6-2 extra chars in "let" above */
       }
     }
@@ -1866,6 +1920,8 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
         tmpStr = asciiToTt(chr(cmt[pos1 - 1]));
         let(&cmt, cat(left(cmt, pos1 - 1), tmpStr,
             right(cmt, pos1 + 1), NULL));
+        let(&cmtMasked, cat(left(cmtMasked, pos1 - 1), tmpStr,
+            right(cmtMasked, pos1 + 1), NULL));
         pos1 += (long)strlen(tmpStr) - 1;
         pos2 += (long)strlen(tmpStr) - 1;
       }
@@ -1898,23 +1954,32 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
       while (1) {
         /* Look for any bibliography tags to convert to hyperlinks */
         /* The biblio tag should be in brackets e.g. "[Monk2]" */
-        pos1 = instr(pos1 + 1, cmt, "[");
+        /* pos1 = instr(pos1 + 1, cmt, "["); */
+        /* 20-Aug-2014 nm Only look at non-math part of comment */
+        pos1 = instr(pos1 + 1, cmtMasked, "[");
         if (!pos1) break;
-        pos2 = instr(pos1 + 1, cmt, "]");
+        /* pos2 = instr(pos1 + 1, cmt, "]"); */
+        /* 20-Aug-2014 nm Only look at non-math part of comment */
+        pos2 = instr(pos1 + 1, cmtMasked, "]");
         if (!pos2) break;
 
         /* 30-Jun-2011 nm */
         /* See if we are in math mode */
         /* clen = (long)strlen(cmt); */ /* 18-Sep-2013 never used */
-        mode = 0; /* 0 = normal, 1 = math */
+        /* 20-Aug-2014 nm Deleted since cmtMasked takes care of it */
+        /*
+        mode = 0; /@ 0 = normal, 1 = math @/
         for (i = 0; i < pos1; i++) {
           if (cmt[i] == '`' && cmt[i + 1] != '`') {
             mode = (char)(1 - mode);
           }
         }
-        if (mode) continue; /* Don't process [...] brackets in math mode */
+        if (mode) continue; /@ Don't process [...] brackets in math mode @/
+        */
 
-        let(&bibTag, seg(cmt, pos1, pos2));
+        /* let(&bibTag, seg(cmt, pos1, pos2)); */
+        /* 20-Aug-2014 nm Get bibTag from cmtMasked as extra precaution */
+        let(&bibTag, seg(cmtMasked, pos1, pos2));
         /* There should be no white space in the tag */
         if ((signed)(strcspn(bibTag, " \n\r\t\f")) < pos2 - pos1 + 1) continue;
         /* OK, we have a good tag.  If the file with bibliography has not been
@@ -2016,12 +2081,20 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
             seg(bibTag, 2, pos2 - pos1), "</A>]", NULL));
         let(&cmt, cat(left(cmt, pos1 - 1), tmp, right(cmt,
             pos2 + 1), NULL));
+        let(&cmtMasked, cat(left(cmtMasked, pos1 - 1), tmp, right(cmtMasked,
+            pos2 + 1), NULL));
         pos1 = pos1 + (long)strlen(tmp) - (long)strlen(bibTag); /* Adjust comment position */
       } /* end while(1) */
     } /* end if (bibFileName[0]) */
   } /* end of if (htmlFlag) */
   /* 10/10/02 End of bibliography hyperlinks */
 
+  /* All actions on cmt should be mirrored on cmdMasked, except that
+     math symbols are replaced with blanks in cmdMasked */
+  if (strlen(cmt) != strlen(cmtMasked)) bug(2334); /* Should be in sync */
+
+  /* Starting here, we no longer use cmtMasked, so syncing it with cmt
+     isn't important anymore. */
 
   clen = (long)strlen(cmt);
   mode = 'n';
@@ -2256,7 +2329,9 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
           }
           *******/
 
-          if (!strcmp("http://", left(tmpStr, 7))) {
+          if (!strcmp("http://", left(tmpStr, 7))
+              || !strcmp("https://", left(tmpStr, 8)) /* 20-Aug-2014 nm */
+              ) {
             /* 4/13/04 nm - If the "label" begins with 'http://', then
                assume it is an external hyperlink and not a real label.
                This is kind of a syntax kludge but it is easy to do. */
@@ -2438,9 +2513,12 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
   let(&sourceLine, "");
   let(&outputLine, "");
   let(&cmt, "");
+  let(&cmtMasked, "");
   let(&tmpComment, "");
   let(&tmp, "");
+  let(&tmpMasked, "");
   let(&tmpStr, "");
+  let(&tmpStrMasked, "");
   let(&bibTag, "");
   let(&bibFileName, "");
   let(&bibFileContents, "");
