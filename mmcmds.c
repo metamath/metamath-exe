@@ -1365,15 +1365,19 @@ void typeProof(long statemNum,
   if (!pipFlag) {
     parseProof(showStatement);
     if (wrkProof.errorSeverity > 1) {
-      /* 18-Nov-2012 nm Fix bug 243 */
-      /* Print warning and close out proof table */
-      outputToString = 1;
-      print2(
-     "<TD COLSPAN=4><B><FONT COLOR=RED>WARNING: Proof has a severe error.\n");
-      print2("</FONT></B></TD></TR>\n");
-      outputToString = 0;
-      /* Clear out printStringForReferencedBy to prevent bug 243 above */
-      let(&printStringForReferencedBy, "");
+      /* 2-Nov-2014 nm Prevent population of printString outside of web
+         page generation to fix bug 1114 (reported by Sefan O'Rear). */
+      if (htmlFlg && texFlag) {
+        /* Print warning and close out proof table */
+        outputToString = 1;
+        print2(
+      "<TD COLSPAN=4><B><FONT COLOR=RED>WARNING: Proof has a severe error.\n");
+        print2("</FONT></B></TD></TR>\n");
+        outputToString = 0;
+        /* 18-Nov-2012 nm Fix bug 243 */
+        /* Clear out printStringForReferencedBy to prevent bug 243 above */
+        let(&printStringForReferencedBy, "");
+      }
       return; /* verifyProof() could crash */
     }
     verifyProof(showStatement);

@@ -5,7 +5,10 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.109 20-Aug-2014"
+#define MVERSION "0.110 2-Nov-2014"
+/* 0.110 2-Nov-2014 nm mmcmds.c - fixed bug 1114 (reported by Stefan O'Rear);
+   metamath.c, mmhlpb.c - added "SHOW STATEMENT =" to show the statement
+   being proved in MM-PA */
 /* 0.109 20-Aug-2014 nm mmwtex.c - fix corrupted HTML caused by misinterpreting
    math symbols as comment markup (math symbols with _ [ ] or ~).  Also,
    allow https:// as well as http:// in ~ label markup.
@@ -3154,9 +3157,20 @@ void command(int argc, char *argv[])
 
       for (s = 1; s <= statements; s++) {
         if (!statement[s].labelName[0]) continue; /* No label */
-        /* 30-Jan-06 nm Added single-character-match wildcard argument */
-        if (!matchesList(statement[s].labelName, fullArg[2], '*', '?'))
-          continue;
+        if (PFASmode && !strcmp(fullArg[2], "=")) {
+          /* 2-Nov-2014 nm Added "SHOW STATEMENT =" to show statement
+             under proof */
+          if (s != proveStatement) {
+            /* If this isn't the statement under proof, skip to next s */
+            continue;
+          }
+        } else {
+          /* We are not in MM-PA mode, or the statement isn't "=" */
+          /* 30-Jan-06 nm Added single-character-match wildcard argument */
+          if (!matchesList(statement[s].labelName, fullArg[2], '*', '?'))
+            continue;
+        }
+
         if (briefFlag || commentOnlyFlag || texFlag) {
           /* For brief or comment qualifier, if label has wildcards,
              show only $p and $a's */
