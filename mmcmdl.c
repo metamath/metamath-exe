@@ -951,23 +951,30 @@ flag processCommandLine(void)
               "REVERSE|INCLUDE_MATHBOXES|FORBID|<BRIEF>", NULL)))
               */
               "VERBOSE|ALLOW_GROWTH|EXCEPT|",
-              "INCLUDE_MATHBOXES|FORBID|<VERBOSE>", NULL)))
+              "INCLUDE_MATHBOXES|FORBID|NO_NEW_AXIOMS_FROM|<VERBOSE>", NULL)))
                               /* 7-Jan-06 nm Added EXCEPT */
                               /* 28-Jun-2011 nm Added INCLUDE_MATHBOXES */
                               /* 10-Nov-2011 nm Added REVERSE */
                               /* 25-Jun-2014 nm Removed REVERSE, NO_DISTINCT */
+                              /* 22-Nov-2014 nm Added NO_NEW_AXIOMS_FROM */
             goto pclbad;
 
           /* 7-Jan-06 nm Added EXCEPT */
           if (lastArgMatches("EXCEPT")) {
             i++;
-            if (!getFullArg(i,"* What statement label? "))
+            if (!getFullArg(i,"* What statement label match pattern? "))
               goto pclbad;
           }
           /* 20-May-2013 nm Added FORBID */
           if (lastArgMatches("FORBID")) {
             i++;
-            if (!getFullArg(i,"* What statement label? "))
+            if (!getFullArg(i,"* What statement label match pattern? "))
+              goto pclbad;
+          }
+          /* 22-Nov-2014 nm Added NO_NEW_AXIOMS_FROM */
+          if (lastArgMatches("NO_NEW_AXIOMS_FROM")) {
+            i++;
+            if (!getFullArg(i,"* What statement label match pattern? "))
               goto pclbad;
           }
         } else {

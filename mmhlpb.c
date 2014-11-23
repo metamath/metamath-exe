@@ -386,6 +386,9 @@ H("A ? in <label-match> matches any single character.  For example,");
 H("SEARCH p?4* \"ph <-> ph\" will check statements whose labels have p and 4");
 H("in their first and third character positions, and display them when their");
 H("math strings contain \"ph <-> ph\".");
+H("A ~ in <label-match> divides the match into two labels, <from>~<to>, and");
+H("matches statements located in the source file range between <from> and");
+H("<to>, inclusive.");
 H("");
 H("A $* in <symbol-match> matches any sequence of zero or more characters");
 H("in the statement's math string.  A $? in <symbol-match> matches any");
@@ -396,9 +399,9 @@ H("\"E. x A. y ph -> A. y E. x ph\".  As this example shows, $? is");
 H("particularly useful when you don't know the variable names used in a");
 H("theorem of interest.");
 H("");
-H("Note 1. Multiple statements (and wildcard patterns) may be specified");
+H("Note 1. Multiple wildcard patterns and ranges may be specified");
 H("using a comma-separated list for <label-match>, with no spaces around");
-H("the commas.  Example:  SEARCH ax-*,df-* 'E. x'.");
+H("the commas.  Example:  SEARCH df-*,ax-ext~ax-ac 'E. x'.");
 H("");
 H("Note 2. The first and last characters of <label-match>, if they are not");
 H("wildcards, will be matched against the first and last characters of the");
@@ -1077,7 +1080,7 @@ H("              [/ FORBID <label-match>] [/ REVERSE] [/ INCLUDE_MATHBOXES]");
 */
 H("Syntax:  MINIMIZE_WITH <label-match> [/ VERBOSE] [/ ALLOW_GROWTH]");
 H("              [/ EXCEPT <label-match>] [/ FORBID <label-match>]");
-H("              [/ INCLUDE_MATHBOXES]");
+H("              [/ INCLUDE_MATHBOXES] [/ NO_NEW_AXIOMS_FROM <label-match>]");
 H("");
 H("This command, available in the Proof Assistant only, checks whether");
 H("the proof can be shortened by using earlier $p or $a statements matching");
@@ -1125,6 +1128,16 @@ H("        the use of undesired axioms when reducing proof length.  For");
 H("        example, MINIMIZE_WITH ... / FORBID ax-ac,ax-inf* will not shorten");
 H("        the proof with any statement that depends on ax-ac, ax-inf, or");
 H("        ax-inf2 (in the set.mm as of this writing).");
+/* 22-Nov-2014 nm - Added NO_NEW_AXIOMS_FROM */
+H("    / NO_NEW_AXIOMS_FROM <label-match> - skip any trial statement whose");
+H("        proof depends on a $a statement matching <label-match> but that");
+H("        isn't used by the current proof.  This makes it easier to avoid");
+H("        say ax-ac if the current proof doesn't already use ax-ac, but it");
+H("        permits ax-ac otherwise.  Examples:");
+H("        MINIMIZE_WITH ... / NO_NEW_AXIOMS_FROM ax-* will avoid the use");
+H("        of any new proper axioms (ax-*) but will allow the use of new");
+H("        definitions (df-*).  MINIMIZE_WITH ... / NO_NEW_AXIOMS_FROM *");
+H("        will avoid any new axioms as well as new definitions.");
 /* 10-Nov-2011 nm - Added REVERSE */
 /*
 H("    / REVERSE - Reverse the order of statement scanning.  By default,");

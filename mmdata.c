@@ -574,8 +574,21 @@ flag matchesList(vstring testString, vstring pattern, char wildCard,
 /* 30-Jan-06 nm Added single-character-match wildcard argument */
 flag matches(vstring testString, vstring pattern, char wildCard,
     char oneCharWildCard) {
+  long i, ppos, pctr, tpos, s1, s2, s3;
+  vstring tmpStr = "";
 
-  long i, ppos, pctr, tpos;
+  /* 21-Nov-14 Stefan O'Rear - added label ranges - see HELP SEARCH */
+  if (wildCard == '*') {
+    i = instr(1, pattern, "~");
+    if (i != 0) {
+      s1 = lookupLabel(left(pattern, i - 1));
+      s2 = lookupLabel(testString);
+      s3 = lookupLabel(right(pattern, i + 1));
+      let(&tmpStr, ""); /* Clean up temporary allocations of left and right */
+      return (s1 >= 0 && s2 >= 0 && s3 >= 0 && s1 <= s2 && s2 <= s3);
+    }
+  }
+
   /* Get to first wild card character */
   ppos = 0;
   /*if (wildCard!='*') printf("'%s' vs. '%s'\n", pattern, testString);*/

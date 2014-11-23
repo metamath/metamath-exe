@@ -2798,8 +2798,8 @@ void traceProofWork(long statemNum,
   statementList[0] = statemNum;
   slen = 1;
   nmbrLet(&(*unprovedListP), NULL_NMBRSTRING); /* List of unproved statements */
-
   let(&(*statementUsedFlagsP), string(statements + 1, 'n')); /* Init. to 'no' */
+  (*statementUsedFlagsP)[statemNum] = 'y';  /* nm 22-Nov-2014 */
   for (pos = 0; pos < slen; pos++) {
     if (statement[statementList[pos]].type != p_) {
       continue; /* Not a $p */

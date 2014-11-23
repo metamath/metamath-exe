@@ -5,7 +5,11 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.110 2-Nov-2014"
+#define MVERSION "0.111 22-Nov-2014"
+/* 0.111 22-Nov-2014 nm metamath.c, mmcmds.c, mmcmdl.c, mmhlpb.c - added
+   /NO_NEW_AXIOMS_FROM qualifier to MINIMIZE_WITH; see HELP MINIMIZE_WITH.
+   21-Nov-2014 Stepan O'Rear mmdata.c, mmhlpb.c - added ~ label range specifier
+   to wildcards; see HELP SEARCH */
 /* 0.110 2-Nov-2014 nm mmcmds.c - fixed bug 1114 (reported by Stefan O'Rear);
    metamath.c, mmhlpb.c - added "SHOW STATEMENT =" to show the statement
    being proved in MM-PA */
@@ -511,6 +515,11 @@ void command(int argc, char *argv[])
   flag forwFlag; /* For MINIMIZE_WITH */ /* 11-Nov-2011 nm */
   long forbidMatchPos;  /* For MINIMIZE_WITH */ /* 20-May-2013 nm */
   vstring forbidMatchList = "";  /* For MINIMIZE_WITH */ /* 20-May-2013 nm */
+  long noNewAxiomsMatchPos;  /* For NO_NEW_AXIOMS_FROM */ /* 22-Nov-2014 nm */
+  vstring noNewAxiomsMatchList = "";  /* For NO_NEW_AXIOMS_FROM */ /* 22-Nov-2014 */
+  vstring traceProofFlags = ""; /* For NO_NEW_AXIOMS_FROM */ /* 22-Nov-2014 nm */
+  vstring traceTrialFlags = ""; /* For NO_NEW_AXIOMS_FROM */ /* 22-Nov-2014 nm */
+
   struct pip_struct saveProofForReverting = {
        NULL_NMBRSTRING, NULL_PNTRSTRING, NULL_PNTRSTRING, NULL_PNTRSTRING };
                                    /* For MINIMIZE_WITH */ /* 20-May-2013 nm */
@@ -5469,6 +5478,14 @@ void command(int argc, char *argv[])
         let(&forbidMatchList, "");
       }
 
+      /* 20-May-2013 nm */
+      noNewAxiomsMatchPos = switchPos("/ NO_NEW_AXIOMS_FROM");
+      if (noNewAxiomsMatchPos != 0) {
+        let(&noNewAxiomsMatchList, fullArg[noNewAxiomsMatchPos + 1]);
+      } else {
+        let(&noNewAxiomsMatchList, "");
+      }
+
       mathboxFlag = (switchPos("/ INCLUDE_MATHBOXES") != 0); /* 28-Jun-2011 */
       /* 25-Jun-2014 nm /REVERSE is obsolete
       forwFlag = (switchPos("/ REVERSE") != 0); /@ 10-Nov-2011 nm @/
@@ -5613,10 +5630,6 @@ void command(int argc, char *argv[])
                this) */
             if (matchesList(statement[k].labelName, forbidMatchList, '*', '?'))
               continue;
-            /* Save the proof structure in case we have to revert a
-               forbidden match.  We only care about $p statements. */
-            if (statement[k].type == (char)p_) {
-            }
           }
 
           /* Print individual labels */
@@ -5665,6 +5678,55 @@ void command(int argc, char *argv[])
                 }
               }
             }
+
+
+            /* 22-Nov-2014 nm Because of the slow speed of traceBack(),
+               we only want to check the /NO_NEW_AXIOMS_FROM list in the
+               relatively rare case where a minimization occurred.  If the
+               NO_NEW_AXIOMS_FROM condition applies, we then need to revert
+               back to the original proof. */
+            if (noNewAxiomsMatchList[0]) { /* User provided /NO_NEW_AXIOMS_FROM */
+              /* If we haven't called trace yet for the theorem being proved,
+                 do it now. */
+              if (traceProofFlags[0] == 0) {
+                traceProofWork(proveStatement, 1 /*essentialFlag*/,
+                    &traceProofFlags, /* y/n list of flags */
+                    &nmbrTmp /* unproved list - ignored */);
+                nmbrLet(&nmbrTmp, NULL_NMBRSTRING); /* Discard */
+              }
+              let(&traceTrialFlags, "");
+              traceProofWork(k, 1 /*essentialFlag*/,
+                  &traceTrialFlags, /* y/n list of flags */
+                  &nmbrTmp /* unproved list - ignored */);
+              nmbrLet(&nmbrTmp, NULL_NMBRSTRING); /* Discard */
+              j = 1; /* 1 = ok to use trial statement */
+              for (i = 1; i < proveStatement; i++) {
+                if (statement[i].type != (char)a_) continue; /* Not $a */
+                if (traceProofFlags[i] == 'y') continue;
+                         /* If the axiom is already used by the proof, we
+                            don't care if the trial statement depends on it */
+                if (matchesList(statement[i].labelName, noNewAxiomsMatchList,
+                    '*', '?') != 1) {
+                  /* If the axiom isn't in the list to avoid, we don't
+                     care if the trial statement depends on it */
+                  continue;
+                }
+                if (traceTrialFlags[i] == 'y') {
+                  /* The trial statement uses an axiom that the current
+                     proof should avoid, so we abort it */
+                  j = 0; /* 0 = don't use trial statement */
+                  break;
+                }
+              }
+              if (j == 0) {
+                /* A forbidden axiom is used by the trial proof */
+                /* Revert the proof to before minimization */
+                copyProofStruct(&proofInProgress, saveProofForReverting);
+                /* Skip further printout and flag setting */
+                continue; /* Continue at 'Next k' loop end below */
+              }
+            } /* end if noNewAxiomsMatchList[0] */
+
 
             /* 25-Jun-2014 nm Make sure the compressed proof length
                decreased, otherwise revert.  Also, we will use the
@@ -5881,6 +5943,14 @@ void command(int argc, char *argv[])
         /*deallocProofStruct(&saveProofForReverting);*/ /* Deallocate memory */
         let(&forbidMatchList, ""); /* Deallocate memory */
       }
+
+      /* 22-Nov-2014 nm */
+      if (noNewAxiomsMatchList[0]) { /* User provided /NO_NEW_AXIOMS_FROM list */
+        let(&noNewAxiomsMatchList, ""); /* Deallocate memory */
+        let(&traceProofFlags, ""); /* Deallocate memory */
+        let(&traceTrialFlags, ""); /* Deallocate memory */
+      }
+
       /* 25-Jun-2014 nm */
       deallocProofStruct(&saveProofForReverting); /* Deallocate memory */
       deallocProofStruct(&saveOrigProof); /* Deallocate memory */
