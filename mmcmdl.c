@@ -576,7 +576,7 @@ flag processCommandLine(void)
                 "|REVERSE|LANGUAGE_MODE|VERBOSE|NORMAL|COMPRESSED",
                 "|FAST_COMPRESSION",   /* 27-Dec-2013 nm */
                 /* 14-Sep-2010 nm Added OLD_TEX */
-                "|STATEMENT_SUMMARY|DETAILED_STEP|TEX|OLD_TEX|HTML|SAVE",
+                "|STATEMENT_SUMMARY|DETAILED_STEP|TEX|OLD_TEX|HTML",
                 "|LEMMON|START_COLUMN|NO_REPEATED_STEPS",
                 "|RENUMBER|SIZE|<ESSENTIAL>",NULL)))
               goto pclbad;

@@ -1262,6 +1262,8 @@ void printTexHeader(flag texHeaderFlag)
 
     print2("<STYLE TYPE=\"text/css\">\n");
     print2("<!--\n");
+    /* 15-Apr-2015 nm - align math symbol images to text */
+    print2("img { margin-bottom: -4px }\n");
 #ifndef RAINBOW_OPTION
     /* Print style sheet for pink number that goes after statement label */
     print2(".p { font-family: \"Arial Narrow\";\n");
@@ -2946,6 +2948,8 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
 
     print2("<STYLE TYPE=\"text/css\">\n");
     print2("<!--\n");
+    /* 15-Apr-2015 nm - align math symbol images to text */
+    print2("img { margin-bottom: -4px }\n");
 #ifndef RAINBOW_OPTION
     /* Print style sheet for pink number that goes after statement label */
     print2(".p { font-family: \"Arial Narrow\";\n");
@@ -3080,8 +3084,27 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
     print2("<A HREF=\"../mm.html\">Mirrors</A>\n");
     print2("&nbsp;&gt;&nbsp;<A HREF=\"../index.html\">\n");
     print2("Metamath Home Page</A>\n");
-    print2("&nbsp;&gt;&nbsp;<A HREF=\"mmset.html\">\n");
-    print2("MPE Home Page</A>\n");
+
+    /* print2("&nbsp;&gt;&nbsp;<A HREF=\"mmset.html\">\n"); */
+    /* 15-Apr-2015 nm */
+    /* Normally, htmlBibliography in the .mm file will have the
+       project home page, and we depend on this here rather than
+       extracting from htmlHome */
+    print2("&nbsp;&gt;&nbsp;<A HREF=\"%s\">\n", htmlBibliography);
+
+    /* print2("MPE Home Page</A>\n"); */
+    /* 15-Apr-2015 nm */
+    /* Put a meaningful abbreviation for the project home page
+       by extracting capital letters from title */
+    let(&str1, "");
+    s = (long)strlen(htmlTitle);
+    for (i = 0; i < s; i++) {
+      if (htmlTitle[i] >= 'A' && htmlTitle[i] <= 'Z') {
+        let(&str1, cat(str1, chr(htmlTitle[i]), NULL));
+      }
+    }
+    print2("%s Home Page</A>\n", str1);
+
     if (page != 1) {
       print2("&nbsp;&gt;&nbsp;<A HREF=\"mmtheorems.html\">\n");
       print2("Statement List Contents</A>\n");
@@ -3089,8 +3112,17 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
       print2("&nbsp;&gt;&nbsp;\n");
       print2("Statement List Contents</A>\n");
     }
-    print2("&nbsp;&gt;&nbsp;<A HREF=\"mmrecent.html\">\n");
-    print2("Recent Proofs</A>\n");
+
+    /* 15-Apr-2015 nm */
+    /* Use "extHtmlStmt <= statements" as an indicator that we're doing
+       Metamath Proof Explorer; the others don't have mmrecent.html pages */
+    if (extHtmlStmt <= statements) { /* extHtmlStmt = statements + 1
+                                              unless mmset.html */
+      print2("&nbsp;&gt;&nbsp;<A HREF=\"mmrecent.html\">\n");
+      print2("Recent Proofs</A>\n");
+    }
+
+
     print2("&nbsp; &nbsp; &nbsp; <B><FONT COLOR=%s>\n", GREEN_TITLE_COLOR);
     print2("This page:</FONT></B> \n");
     if (page == 1) {

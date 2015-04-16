@@ -2257,7 +2257,7 @@ void parseStatements(void)
 
   if (currentScope > 0) {
     if (currentScope == 1) {
-      let(&tmpStr,"A \"$}\" is\n");
+      let(&tmpStr,"A \"$}\" is");
     } else {
       let(&tmpStr,cat(str(currentScope)," \"$}\"s are",NULL));
     }

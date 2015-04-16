@@ -5,7 +5,12 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.111 22-Nov-2014"
+#define MVERSION "0.112 15-Apr-2015"
+/* 0.112 15-Apr-2015 nm metamath.c - fix bug 1121 (reported by S. O'Rear);
+   mwtex.c - add "img { margin-bottom: -4px }" to CSS to align symbol GIFs;
+   mwtex.c - remove some hard coding for set.mm, for use with new nf.mm;
+   metamath.c - fix comment parsing in WRITE BIBLIOGRAPHY to ignore
+   math symbols  */
 /* 0.111 22-Nov-2014 nm metamath.c, mmcmds.c, mmcmdl.c, mmhlpb.c - added
    /NO_NEW_AXIOMS_FROM qualifier to MINIMIZE_WITH; see HELP MINIMIZE_WITH.
    21-Nov-2014 Stepan O'Rear mmdata.c, mmhlpb.c - added ~ label range specifier
@@ -1903,11 +1908,38 @@ void command(int argc, char *argv[])
           let(&str1, "");
           str1 = getDescription(i); /* Get the statement's comment */
           if (!instr(1, str1, "[")) continue;
-          for (j = 0; j < (signed)(strlen(str1)); j++) {
+          l = (signed)(strlen(str1));
+          for (j = 0; j < l; j++) {
             if (str1[j] == '\n') str1[j] = ' '; /* Change newlines to spaces */
             if (str1[j] == '\r') bug(1119);
           }
           let(&str1, edit(str1, 8 + 128 + 16)); /* Reduce & trim whitespace */
+
+          /* 15-Apr-2015 nm */
+          /* Clear out math symbols in backquotes to prevent false matches
+             to [reference] bracket */
+          k = 0; /* Math symbol mode if 1 */
+          l = (signed)(strlen(str1));
+          for (j = 0; j < l - 1; j++) {
+            if (k == 0) {
+              if (str1[j] == '`') {
+                k = 1; /* Start of math mode */
+              }
+            } else { /* In math mode */
+              if (str1[j] == '`') { /* A backquote */
+                if (str1[j + 1] == '`') {
+                  /* It is an escaped backquote */
+                  str1[j] = ' ';
+                  str1[j + 1] = ' ';
+                } else {
+                  k = 0; /* End of math mode */
+                }
+              } else { /* Not a backquote */
+                str1[j] = ' '; /* Clear out the math mode part */
+              }
+            } /* end if k == 0 */
+          } /* next j */
+
           /* Put spaces before page #s (up to 4 digits) for sorting */
           j = 0;
           while (1) {
@@ -1955,6 +1987,8 @@ void command(int argc, char *argv[])
                   || !strcmp(mid(str2, k, (long)strlen("PROBLEM")), "PROBLEM")
                   || !strcmp(mid(str2, k, (long)strlen("NOTATION")), "NOTATION")
                   || !strcmp(mid(str2, k, (long)strlen("EXAMPLE")), "EXAMPLE")
+                  || !strcmp(mid(str2, k, (long)strlen("PART")), "PART")
+                  || !strcmp(mid(str2, k, (long)strlen("SECTION")), "SECTION")
                   || !strcmp(mid(str2, k, (long)strlen("PROPERTY")), "PROPERTY")
                   || !strcmp(mid(str2, k, (long)strlen("FIGURE")), "FIGURE")
                   || !strcmp(mid(str2, k, (long)strlen("POSTULATE")), "POSTULATE")
@@ -4100,7 +4134,8 @@ void command(int argc, char *argv[])
             nmbrLen(proofInProgress.proof) != 0  */
 
       parseProof(proveStatement);
-      verifyProof(proveStatement); /* Necessary??? */
+      verifyProof(proveStatement); /* Necessary to set RPN stack ptrs
+                                      before calling cleanWrkProof() */
       if (wrkProof.errorSeverity > 1) {
      print2("The starting proof has a severe error.  It will not be used.\n");
         nmbrLet(&nmbrSaveProof, nmbrAddElement(NULL_NMBRSTRING, -(long)'?'));
@@ -5780,13 +5815,20 @@ void command(int argc, char *argv[])
               statement[proveStatement].proofSectionLen =
                   newCompressedLength + 4;
               outputToString = 1; /* Suppress error messages */
-              /* parseProof, verifyProof, cleanWkrProof must be called in
-                 sequence to assign the wrkProof structure, verify the proof,
-                 and deallocate the wrkProof structure */
-              i = parseProof(proveStatement);
-              if (i != 0) bug(1121);
-              i = verifyProof(proveStatement);
-              if (i != 0) bug(1122);
+              /* i = parseProof(proveStatement); */
+              /* if (i != 0) bug(1121); */
+              /* i = verifyProof(proveStatement); */
+              /* if (i != 0) bug(1122); */
+              /* 15-Apr-2015 nm parseProof, verifyProof, cleanWkrProof must be
+                 called in sequence to assign the wrkProof structure, verify
+                 the proof, and deallocate the wrkProof structure.  Either none
+                 of them or all of them must be called. */
+              parseProof(proveStatement);
+              verifyProof(proveStatement); /* Must be called even if error
+                                  occurred in parseProof, to init RPN stack */
+              /* 15-Apr-2015 nm - don't change proof if there is an error
+                 (which could be pre-existing). */
+              i = (wrkProof.errorSeverity > 1);
               /**** Here we look at the screen output sent to a string.
                     This is rather crude, and someday the ability to
                     check proofs and $d violations should be modularized *****/
@@ -5799,8 +5841,9 @@ void command(int argc, char *argv[])
                   = saveZappedProofSectionPtr;
               statement[proveStatement].proofSectionLen
                   = saveZappedProofSectionLen;
-              if (j != 0) {
-                /* There was a $d violation, so don't used minimized proof */
+              if (i != 0 || j != 0) {
+                /* There was a verify proof error (j!=0) or $d violation (i!=0)
+                   so don't used minimized proof */
                 /* Revert the proof to before minimization */
                 copyProofStruct(&proofInProgress, saveProofForReverting);
                 /* Skip further printout and flag setting */
