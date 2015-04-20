@@ -5,7 +5,12 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.112 15-Apr-2015"
+#define MVERSION "0.113 19-Apr-2015"
+/* 0.113 19-Apr-2015 so, nm metamath.c, mmdata.c
+   1. SHOW LABEL % will show statements with changed proofs
+   2. SHOW LABEL = will show the statement being proved in MM-PA
+   3. Added blank lines before, after "---------Clip out the proof" proof
+   4. Generate date only if the proof is complete */
 /* 0.112 15-Apr-2015 nm metamath.c - fix bug 1121 (reported by S. O'Rear);
    mwtex.c - add "img { margin-bottom: -4px }" to CSS to align symbol GIFs;
    mwtex.c - remove some hard coding for set.mm, for use with new nf.mm;
@@ -3200,19 +3205,10 @@ void command(int argc, char *argv[])
 
       for (s = 1; s <= statements; s++) {
         if (!statement[s].labelName[0]) continue; /* No label */
-        if (PFASmode && !strcmp(fullArg[2], "=")) {
-          /* 2-Nov-2014 nm Added "SHOW STATEMENT =" to show statement
-             under proof */
-          if (s != proveStatement) {
-            /* If this isn't the statement under proof, skip to next s */
-            continue;
-          }
-        } else {
-          /* We are not in MM-PA mode, or the statement isn't "=" */
-          /* 30-Jan-06 nm Added single-character-match wildcard argument */
-          if (!matchesList(statement[s].labelName, fullArg[2], '*', '?'))
-            continue;
-        }
+        /* We are not in MM-PA mode, or the statement isn't "=" */
+        /* 30-Jan-06 nm Added single-character-match wildcard argument */
+        if (!matchesList(statement[s].labelName, fullArg[2], '*', '?'))
+          continue;
 
         if (briefFlag || commentOnlyFlag || texFlag) {
           /* For brief or comment qualifier, if label has wildcards,
@@ -3796,6 +3792,8 @@ void command(int argc, char *argv[])
               break; /* Break for speedup if user quit */
             print2(
 "---------Clip out the proof below this line to put it in the source file:\n");
+            /* 19-Apr-2015 so */
+            print2("\n"); /* add a blank line to make clipping easier */
           }
           if (switchPos("/ COMPRESSED")) {
             printLongLine(cat(space(indentation), str1, " $.", NULL),
@@ -3818,6 +3816,11 @@ void command(int argc, char *argv[])
                stamp will always be created if it doesn't exist */
             if ( /* pipFlag && */ !instr(1, str2, "$([")
                 /* 7-Sep-04 Allow both "$([<date>])$" and "$( [<date>] )$" */
+                /* 19-Apr-2015 so */
+                /* SOREAR Only generate date if the proof looks complete.
+                   This is not intended as a grading mechanism, just trying
+                   to avoid premature output */
+                && !nmbrElementIn(1, nmbrSaveProof, -(long)'?')
                 && !instr(1, str2, "$( [")) {
             /* 6/13/98 end */
               /* No date stamp existed before.  Create one for today's
@@ -3905,6 +3908,8 @@ void command(int argc, char *argv[])
                   NULL), "", " ");
             }
           } else {
+            /* 19-Apr-2015 so */
+            print2("\n"); /* add a blank line to make clipping easier */
             print2(cat(
                 "---------The proof of \"",statement[i].labelName,
                 "\" to clip out ends above this line.\n",NULL));

@@ -3467,7 +3467,7 @@ void readInput(void)
 
 /* This function implements the WRITE SOURCE command. */
 void writeInput(flag cleanFlag, /* 1 = "/ CLEAN" qualifier was chosen */
-                flag reformatFlag /* 1 = "/ CLEAN" qualifier was chosen */)
+                flag reformatFlag /* 1 = "/ FORMAT", 2 = "/REWRAP" */ )
 {
 
   /* Temporary variables and strings */

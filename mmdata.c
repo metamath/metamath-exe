@@ -20,6 +20,7 @@ mmdata.c
 #include "mmpars.h"
 #include "mmcmdl.h" /* Needed for logFileName */
 #include "mmcmds.h" /* Needed for getSourceIndentation */
+#include "mmpfas.h" /* Needed for proveStatement */
 
 #include <limits.h>
 #include <setjmp.h>
@@ -579,6 +580,7 @@ flag matches(vstring testString, vstring pattern, char wildCard,
 
   /* 21-Nov-14 Stefan O'Rear - added label ranges - see HELP SEARCH */
   if (wildCard == '*') {
+    /* checking for wildCard = * means this is only for label listing */
     i = instr(1, pattern, "~");
     if (i != 0) {
       s1 = lookupLabel(left(pattern, i - 1));
@@ -586,6 +588,34 @@ flag matches(vstring testString, vstring pattern, char wildCard,
       s3 = lookupLabel(right(pattern, i + 1));
       let(&tmpStr, ""); /* Clean up temporary allocations of left and right */
       return (s1 >= 0 && s2 >= 0 && s3 >= 0 && s1 <= s2 && s2 <= s3);
+    }
+
+    /* 19-Apr-2015 so, nm - Added "=" to match statement being proved */
+    if (!strcmp(pattern,"=")) {
+      s1 = lookupLabel(testString);
+      return (PFASmode && proveStatement == s1);
+    }
+
+    /* 19-Apr-2015 so, nm - Added "%" to match changed proofs */
+    if (!strcmp(pattern,"%")) {
+      s1 = lookupLabel(testString);  /* Returns -1 if not found or (not
+                                        $a and not $p) */
+      if (s1 > 0) { /* It's a $a or $p statement */
+        /* (If it's not $p, we don't want to peek at proofSectionPtr[-1]
+           to prevent bad pointer.  If it is $p, proofSectionPtr[-1]
+           will be the last math section character if proof hasn't been
+           changed and an ASCII 1 if it has.) */
+        if (statement[s1].type == (char)p_) { /* $p so it has a proof */
+          /* ASCII 1 is flag that proof is not from original source file */
+          if (statement[s1].proofSectionPtr[-1] == 1) {
+            return 1;
+          }
+        }
+      }
+      return 0;
+      /*
+      return nmbrElementIn(1, changedStmtNmbr, s1);
+      */
     }
   }
 
@@ -1444,7 +1474,7 @@ nmbrString *nmbrSquishProof(nmbrString *proof)
   nmbrString *newProof = NULL_NMBRSTRING;
   nmbrString *dummyProof = NULL_NMBRSTRING;
   nmbrString *subProof = NULL_NMBRSTRING;
-  long step, dummyStep, subProofLen, matchStep, plen;
+  long step, dummyStep, subPrfLen, matchStep, plen;
   flag foundFlag;
 
   nmbrLet(&newProof,proof); /* In case of temp. alloc. of proof */
@@ -1453,12 +1483,12 @@ nmbrString *nmbrSquishProof(nmbrString *proof)
   nmbrLet(&dummyProof, newProof); /* Parallel proof with test subproof replaced
                                  with a reference to itself, for matching. */
   for (step = 0; step < plen; step++) {
-    subProofLen = nmbrGetSubProofLen(dummyProof, dummyStep);
-    if (subProofLen <= 1) {
+    subPrfLen = nmbrGetSubProofLen(dummyProof, dummyStep);
+    if (subPrfLen <= 1) {
       dummyStep++;
       continue;
     }
-    nmbrLet(&subProof, nmbrSeg(dummyProof, dummyStep - subProofLen + 2,
+    nmbrLet(&subProof, nmbrSeg(dummyProof, dummyStep - subPrfLen + 2,
         dummyStep + 1));
     matchStep = step + 1;
     foundFlag = 0;
@@ -1469,14 +1499,14 @@ nmbrString *nmbrSquishProof(nmbrString *proof)
       /* Replace the found subproof with a reference to this subproof */
       nmbrLet(&newProof,
             nmbrCat(nmbrAddElement(nmbrLeft(newProof, matchStep - 1),
-            -1000 - step), nmbrRight(newProof, matchStep + subProofLen), NULL));
-      matchStep = matchStep - subProofLen + 1;
+            -1000 - step), nmbrRight(newProof, matchStep + subPrfLen), NULL));
+      matchStep = matchStep - subPrfLen + 1;
     }
     if (foundFlag) {
       plen = nmbrLen(newProof); /* Update the new proof length */
       /* Replace this subproof with a reference to itself, for later matching */
       /* and add on rest of real proof. */
-      dummyStep = dummyStep + 1 - subProofLen;
+      dummyStep = dummyStep + 1 - subPrfLen;
       nmbrLet(&dummyProof,
           nmbrCat(nmbrAddElement(nmbrLeft(dummyProof, dummyStep),
           -1000 - step), nmbrRight(newProof, step + 2), NULL));
@@ -1496,7 +1526,7 @@ nmbrString *nmbrUnsquishProof(nmbrString *proof)
 {
   nmbrString *newProof = NULL_NMBRSTRING;
   nmbrString *subProof = NULL_NMBRSTRING;
-  long step, plen, subProofLen, stmt;
+  long step, plen, subPrfLen, stmt;
 
   nmbrLet(&newProof, proof);
   plen = nmbrLen(newProof);
@@ -1505,11 +1535,11 @@ nmbrString *nmbrUnsquishProof(nmbrString *proof)
     if (stmt > -1000) continue;
     /* It's a local label reference */
     stmt = -1000 - stmt;
-    subProofLen = nmbrGetSubProofLen(newProof, stmt);
+    subPrfLen = nmbrGetSubProofLen(newProof, stmt);
     nmbrLet(&newProof, nmbrCat(nmbrLeft(newProof, step),
-        nmbrSeg(newProof, stmt - subProofLen + 2, stmt + 1),
+        nmbrSeg(newProof, stmt - subPrfLen + 2, stmt + 1),
         nmbrRight(newProof, step + 2), NULL));
-    step = step + subProofLen - 1;
+    step = step + subPrfLen - 1;
   }
   nmbrLet(&subProof, NULL_NMBRSTRING);
   nmbrMakeTempAlloc(newProof); /* Flag it for deallocation */
