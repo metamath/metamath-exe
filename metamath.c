@@ -1,11 +1,13 @@
 /*****************************************************************************/
 /* Program name:  metamath                                                   */
-/* Copyright (C) 2014 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
+/* Copyright (C) 2015 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
 /* License terms:  GNU General Public License Version 2 or any later version */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.113 19-Apr-2015"
+#define MVERSION "0.114 22-Apr-2015"
+/* 0.114 22-Apr-2015 nm mmcmds.c - put [-1], [-2],... offsets on 'show
+   new_proof/unknown' */
 /* 0.113 19-Apr-2015 so, nm metamath.c, mmdata.c
    1. SHOW LABEL % will show statements with changed proofs
    2. SHOW LABEL = will show the statement being proved in MM-PA

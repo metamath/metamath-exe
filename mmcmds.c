@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2014  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2015  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -1279,7 +1279,7 @@ void typeProof(long statemNum,
         - determined by the global variable midiFlag, not by a parameter to
         typeProof()
   */
-  long i, plen, step, stmt, lens, lent, maxStepNum;
+  long i, j, plen, step, stmt, lens, lent, maxStepNum;
   vstring tmpStr = "";
   vstring tmpStr1 = "";
   vstring locLabDecl = "";
@@ -1291,6 +1291,8 @@ void typeProof(long statemNum,
   vstring userPrefix = "";
   vstring contPrefix = "";
   vstring statementUsedFlags = "";
+  vstring startStringWithNum = ""; /* 22-Apr-2015 nm */
+  vstring startStringWithoutNum = ""; /* 22-Apr-2015 nm */
   nmbrString *proof = NULL_NMBRSTRING;
   nmbrString *localLabels = NULL_NMBRSTRING;
   nmbrString *localLabelNames = NULL_NMBRSTRING;
@@ -1300,8 +1302,10 @@ void typeProof(long statemNum,
   nmbrString *stepRenumber = NULL_NMBRSTRING;
   nmbrString *notUnifiedFlags = NULL_NMBRSTRING;
   nmbrString *unprovedList = NULL_NMBRSTRING; /* For traceProofWork() */
+  nmbrString *relativeStepNums = NULL_NMBRSTRING; /* For unknownFlag */
   long maxLabelLen = 0;
   long maxStepNumLen = 1;
+  long maxStepNumOffsetLen = 0; /* 22-Apr-2015 nm */
   char type;
   flag stepPrintFlag;
   long fromStep, toStep, byStep;
@@ -1485,11 +1489,11 @@ void typeProof(long statemNum,
     }
   }
 
-  /* Get the printed character length of the largest step number */
-  i = maxStepNum;
-  while (i >= 10) {
-    i = i/10; /* The number is printed in base 10 */
-    maxStepNumLen++;
+  /* 22-Apr-2015 nm */
+  /* Get the relative offset (0, -1, -2,...) for unknown steps */
+  if (unknownFlag) {
+    if (!pipFlag) bug(255);
+    relativeStepNums = getRelStepNums(proofInProgress.proof);
   }
 
   /* Get steps not unified (pipFlag only) */
@@ -1508,6 +1512,28 @@ void typeProof(long statemNum,
       }
     }
   }
+
+  /* Get the printed character length of the largest step number */
+  i = maxStepNum;
+  while (i >= 10) {
+    i = i/10; /* The number is printed in base 10 */
+    maxStepNumLen++;
+  }
+  /* 22-Apr-2015 nm */
+  /* Add extra space for negative offset numbers e.g. "3:-1" */
+  if (unknownFlag) {
+    maxStepNumOffsetLen = 3; /* :, -, # */
+    j = 0;
+    for (i = 0; i < plen; i++) {
+      j = relativeStepNums[i];
+      if (j <= 0) break; /* Found first unknown step (largest offset) */
+    }
+    while (j <= -10) {
+      j = j/10; /* The number is printed in base 10 */
+      maxStepNumOffsetLen++;
+    }
+  }
+
 
 
   /* Get local labels and maximum label length */
@@ -1729,10 +1755,29 @@ void typeProof(long statemNum,
         }
         let(&contPrefix, space((long)strlen(startPrefix) + 4));
       } else {  /* not noIndentFlag */
-        let(&startPrefix, cat(
+
+        /* 22-Apr-2015 nm */
+        /* Compute prefix with and without step number.  For 'show new_proof
+           /unknown', unknownFlag is set, and we add the negative offset. */
+        let(&tmpStr, "");
+        if (unknownFlag) {
+          if (relativeStepNums[step] < 0) {
+            let(&tmpStr, cat(" ", str(relativeStepNums[step]), NULL));
+          }
+          let(&tmpStr, cat(tmpStr, space(maxStepNumOffsetLen
+              - (long)(strlen(tmpStr))), NULL));
+        }
+
+        let(&startStringWithNum, cat(
             space(maxStepNumLen - (long)strlen(str(stepRenumber[step]))),
             str(stepRenumber[step]),
-            " ",
+            tmpStr,
+            " ", NULL));
+        let(&startStringWithoutNum, space(maxStepNumLen + 1));
+
+
+        let(&startPrefix, cat(
+            startStringWithNum,
             space(indentationLevel[step] * PF_INDENT_INC - (long)strlen(locLabDecl)),
             locLabDecl,
             tgtLabel,
@@ -1741,9 +1786,7 @@ void typeProof(long statemNum,
             NULL));
         if (pipFlag) {
           let(&tgtPrefix, cat(
-              space(maxStepNumLen - (long)strlen(str(stepRenumber[step]))),
-              str(stepRenumber[step]),
-              " ",
+              startStringWithNum,
               space(indentationLevel[step] * PF_INDENT_INC - (long)strlen(locLabDecl)),
               locLabDecl,
               tgtLabel,
@@ -1751,9 +1794,7 @@ void typeProof(long statemNum,
               space(maxLabelLen - (long)strlen(tgtLabel) - (long)strlen(srcLabel)),
               NULL));
           let(&srcPrefix, cat(
-              space(maxStepNumLen - (long)strlen(str(stepRenumber[step]))),
-              space((long)strlen(str(stepRenumber[step]))),
-              " ",
+              startStringWithoutNum,
               space(indentationLevel[step] * PF_INDENT_INC - (long)strlen(locLabDecl)),
               space((long)strlen(locLabDecl)),
               space((long)strlen(tgtLabel)),
@@ -1761,9 +1802,7 @@ void typeProof(long statemNum,
               space(maxLabelLen - (long)strlen(tgtLabel) - (long)strlen(srcLabel)),
               NULL));
           let(&userPrefix, cat(
-              space(maxStepNumLen - (long)strlen(str(stepRenumber[step]))),
-              space((long)strlen(str(stepRenumber[step]))),
-              " ",
+              startStringWithoutNum,
               space(indentationLevel[step] * PF_INDENT_INC - (long)strlen(locLabDecl)),
               space((long)strlen(locLabDecl)),
               space((long)strlen(tgtLabel)),
@@ -2179,6 +2218,8 @@ void typeProof(long statemNum,
   let(&userPrefix, "");
   let(&contPrefix, "");
   let(&hypStr, "");
+  let(&startStringWithNum, ""); /* 22-Apr-2015 nm */
+  let(&startStringWithoutNum, ""); /* 22-Apr-2015 nm */
   nmbrLet(&unprovedList, NULL_NMBRSTRING);
   nmbrLet(&localLabels, NULL_NMBRSTRING);
   nmbrLet(&localLabelNames, NULL_NMBRSTRING);
@@ -2188,6 +2229,7 @@ void typeProof(long statemNum,
   nmbrLet(&essentialFlags, NULL_NMBRSTRING);
   nmbrLet(&stepRenumber, NULL_NMBRSTRING);
   nmbrLet(&notUnifiedFlags, NULL_NMBRSTRING);
+  nmbrLet(&relativeStepNums, NULL_NMBRSTRING); /* 22-Apr-2015 nm */
 } /* typeProof() */
 
 /* Show details of one proof step */
@@ -3930,6 +3972,39 @@ long getStepNum(vstring relStep, /* User's argument */
 
   return actualStepVal;
 } /* getStepNum */
+
+
+/* Added 22-Apr-2015 nm */
+/* Convert the actual step numbers of an unassigned step to the relative
+   -1, -2, etc. offset for SHOW NEW_PROOF ...  /UNKNOWN, to make it easier
+   for the user to ASSIGN the relative step number. A 0 is returned
+   for the last unknown step.  The step numbers of known steps are
+   unchanged.  */
+/* The caller must deallocate the returned nmbrString. */
+nmbrString *getRelStepNums(nmbrString *pfInProgress) {
+  nmbrString *essentialFlags = NULL_NMBRSTRING;
+  nmbrString *relSteps = NULL_NMBRSTRING;
+  long i, j, pfLen;
+
+  pfLen = nmbrLen(pfInProgress); /* Get proof length */
+  nmbrLet(&relSteps, nmbrSpace(pfLen));  /* Initialize */
+  nmbrLet(&essentialFlags, nmbrGetEssential(pfInProgress));
+  j = 0;  /* Negative offset (or 0 for last unknown step) */
+  for (i = pfLen; i >= 1; i--) {
+    if (essentialFlags[i - 1]
+        && pfInProgress[i - 1] == -(long)'?') {
+      relSteps[i - 1] = j;
+      j--; /* It's an essential unknown step; increment negative offset */
+    } else {
+      relSteps[i - 1] = i; /* Just keep the normal step number */
+    }
+  }
+
+  /* Deallocate memory */
+  nmbrLet(&essentialFlags, NULL_NMBRSTRING);
+
+  return relSteps;
+} /* getRelStepNums */
 
 
 /* 19-Sep-2012 nm */
