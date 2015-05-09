@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2014  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2015  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -76,6 +76,15 @@ void verifyProofs(vstring labelMatch, flag verifyFlag);
 long getStepNum(vstring relStep, /* User's argument */
    nmbrString *pfInProgress, /* proofInProgress.proof */
    flag allFlag /* 1 = "ALL" is permissable */);
+
+/* 22-Apr-2015 nm */
+/* Convert the actual step numbers of an unassigned step to the relative
+   -1, -2, etc. offset for SHOW NEW_PROOF ...  /UNKNOWN, to make it easier
+   for the user to ASSIGN the relative step number. A 0 is returned
+   for the last unknown step.  The step numbers of known steps are
+   unchanged.  */
+/* The caller must deallocate the returned nmbrString. */
+nmbrString *getRelStepNums(nmbrString *pfInProgress);
 
 /* 19-Sep-2012 nm */
 /* This procedure finds the next statement number whose label matches

@@ -54,6 +54,12 @@ H("Copyright (C) 2013 Norman Megill");
 H("License terms:  GNU General Public License");
 H("");
 
+printHelp = !strcmp(saveHelpCmd, "HELP COMMENTS");
+H("Comment markup is described near the end of HELP LANGUAGE.  See also");
+H("HELP HTML for the $t comment and HTML definitions.");
+H("");
+
+
 printHelp = !strcmp(saveHelpCmd, "HELP INVOKE");
 H("To invoke Metamath from a Unix/Linux/MacOSX prompt, assuming that the");
 H("Metamath program is in the current directory, type");

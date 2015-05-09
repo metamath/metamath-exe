@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2014  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2015  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -283,8 +283,10 @@ vstring right(vstring sin, long n)
 
 /* Emulate VMS BASIC edit$ command */
 vstring edit(vstring sin,long control)
-#define isblank_(c) ((c==' ') || (c=='\t'))
+#define isblank_(c) ((c == ' ') || (c == '\t'))
     /* 11-Sep-2009 nm Added _ to fix '"isblank" redefined' compiler warning */
+#define isblankorlf_(c) ((c == ' ') || (c == '\t') || (c == '\n'))
+    /* 8-May-2015 nm added isblankorlf_ */
 {
   /* EDIT$ (from VMS BASIC manual)
        Syntax:  str-vbl = EDIT$(str-exp, int-exp)
@@ -307,12 +309,16 @@ vstring edit(vstring sin,long control)
 
        (Added 10/24/03:)
        8192     Discard CR only (to assist DOS-to-Unix conversion)
+
+       (Added 8-May-2015 nm:)
+       16384    Discard trailing spaces, tabs, and LFs
   */
   vstring sout;
   long i, j, k, m;
   int last_char_is_blank;
   int trim_flag, discardctrl_flag, bracket_flag, quote_flag, case_flag;
-  int alldiscard_flag, leaddiscard_flag, traildiscard_flag, reduce_flag;
+  int alldiscard_flag, leaddiscard_flag, traildiscard_flag,
+      traildiscardLF_flag, reduce_flag;
   int processing_inside_quote=0;
   int lowercase_flag, tab_flag, untab_flag, screen_flag, discardcr_flag;
   unsigned char graphicsChar;
@@ -326,6 +332,7 @@ vstring edit(vstring sin,long control)
   case_flag = control & 32;
   bracket_flag = control & 64;
   traildiscard_flag = control & 128;
+  traildiscardLF_flag = control & 16384;
   quote_flag = control & 256;
 
   /* Non-BASIC extensions */
@@ -441,6 +448,14 @@ vstring edit(vstring sin,long control)
   if (traildiscard_flag) {
     --k;
     while ((k >= 0) && isblank_(sout[k])) --k;
+    sout[++k] = 0;
+  }
+
+  /* 8-May-2015 nm */
+  /* Discard trailing space/tab and LF */
+  if (traildiscardLF_flag) {
+    --k;
+    while ((k >= 0) && isblankorlf_(sout[k])) --k;
     sout[++k] = 0;
   }
 

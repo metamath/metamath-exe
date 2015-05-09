@@ -1148,6 +1148,9 @@ void printTexHeader(flag texHeaderFlag)
   vstring hugeHdr = ""; /* 21-Jun-2014 nm */
   vstring bigHdr = "";
   vstring smallHdr = "";
+  vstring hugeHdrComment = ""; /* 8-May-2015 nm */
+  vstring bigHdrComment = ""; /* 8-May-2015 nm */
+  vstring smallHdrComment = ""; /* 8-May-2015 nm */
 
   if (!texDefsRead) {
     if (!readTexDefs()) {
@@ -1335,7 +1338,11 @@ void printTexHeader(flag texHeaderFlag)
       /* 2-Aug-2009 nm - "Mathbox for <username>" mod */
       /* Scan from this statement backwards until a big header is found */
       for (i = showStatement; i > sandboxStmt; i--) {
-        getSectionHeadings(i, &hugeHdr, &bigHdr, &smallHdr);
+        /* Note: only bigHdr is used; the other 5 returned strings are
+           ignored */
+        getSectionHeadings(i, &hugeHdr, &bigHdr, &smallHdr,
+            /* 5-May-2015 nm */
+            &hugeHdrComment, &bigHdrComment, &smallHdrComment);
         if (bigHdr[0] != 0) break;
       } /* next i */
       if (bigHdr[0]) {
@@ -1349,6 +1356,9 @@ void printTexHeader(flag texHeaderFlag)
       let(&hugeHdr, "");   /* Deallocate memory */
       let(&bigHdr, "");   /* Deallocate memory */
       let(&smallHdr, ""); /* Deallocate memory */
+      let(&hugeHdrComment, "");   /* Deallocate memory */
+      let(&bigHdrComment, "");   /* Deallocate memory */
+      let(&smallHdrComment, ""); /* Deallocate memory */
       /* 2-Aug-2009 nm - end of "Mathbox for <username>" mod */
 
       printLongLine(cat("<TITLE>",
@@ -2864,6 +2874,8 @@ void printTexTrailer(flag texTrailerFlag) {
       print2("<A HREF=\"../copyright.html#pd\">Public domain</A>\n");
       print2("</FONT></CENTER>\n");
 
+      /* Todo: Decide to use or not use this */
+      /*
       print2("<SCRIPT SRC=\"http://www.google-analytics.com/urchin.js\"\n");
       print2("  TYPE=\"text/javascript\">\n");
       print2("</SCRIPT>\n");
@@ -2871,6 +2883,7 @@ void printTexTrailer(flag texTrailerFlag) {
       print2("  _uacct = \"UA-1862729-1\";\n");
       print2("  urchinTracker();\n");
       print2("</SCRIPT>\n");
+      */
 
       print2("</BODY></HTML>\n");
     }
@@ -2903,10 +2916,16 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
   vstring hugeHdr = ""; /* 21-Jun-2014 nm */
   vstring bigHdr = "";
   vstring smallHdr = "";
+  vstring hugeHdrComment = ""; /* 8-May-2015 nm */
+  vstring bigHdrComment = ""; /* 8-May-2015 nm */
+  vstring smallHdrComment = ""; /* 8-May-2015 nm */
   long stmt, i;
   pntrString *pntrHugeHdr = NULL_PNTRSTRING;
   pntrString *pntrBigHdr = NULL_PNTRSTRING;
   pntrString *pntrSmallHdr = NULL_PNTRSTRING;
+  pntrString *pntrHugeHdrComment = NULL_PNTRSTRING;  /* 8-May-2015 nm */
+  pntrString *pntrBigHdrComment = NULL_PNTRSTRING;  /* 8-May-2015 nm */
+  pntrString *pntrSmallHdrComment = NULL_PNTRSTRING;  /* 8-May-2015 nm */
 
   /* Populate the statement map */
   /* ? ? ? Future:  is assertions same as statement[statements].pinkNumber? */
@@ -2925,12 +2944,19 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
   pntrLet(&pntrHugeHdr, pntrSpace(statements + 1));
   pntrLet(&pntrBigHdr, pntrSpace(statements + 1));
   pntrLet(&pntrSmallHdr, pntrSpace(statements + 1));
+  pntrLet(&pntrHugeHdrComment, pntrSpace(statements + 1)); /* 8-May-2015 nm */
+  pntrLet(&pntrBigHdrComment, pntrSpace(statements + 1)); /* 8-May-2015 nm */
+  pntrLet(&pntrSmallHdrComment, pntrSpace(statements + 1)); /* 8-May-2015 nm */
 
   pages = ((assertions - 1) / theoremsPerPage) + 1;
-  for (page = 1; page <= pages; page++) {
+  /* for (page = 1; page <= pages; page++) { */
+  /* 8-May-2015 nm */
+  for (page = 0; page <= pages; page++) {
     /* Open file */
     let(&outputFileName,
-        cat("mmtheorems", (page > 1) ? str(page) : "", ".html", NULL));
+        /* cat("mmtheorems", (page > 1) ? str(page) : "", ".html", NULL)); */
+        /* 8-May-2015 nm */
+        cat("mmtheorems", (page > 0) ? str(page) : "", ".html", NULL));
     print2("Creating %s\n", outputFileName);
     outputFilePtr = fSafeOpen(outputFileName, "w");
     if (!outputFilePtr) goto TL_ABORT; /* Couldn't open it (error msg was provided)*/
@@ -2996,8 +3022,11 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
         GREEN_TITLE_COLOR, "><B>", htmlTitle, "</B></FONT>",
         "<BR><FONT SIZE=\"+2\" COLOR=",      /* 21-Jun-2014 */
         GREEN_TITLE_COLOR,                   /* 21-Jun-2014 */
-        "><B>Statement List (p. ", str(page), /* 21-Jun-2014 */
-        " of ", str(pages), ")</B></FONT>",   /* 21-Jun-2014 */
+        "><B>Statement List (",
+        ((page == 0)
+            ? "Table of Contents"
+            : cat("(p. ", str(page), " of ", str(pages), NULL)),
+        ")</B></FONT>",
         NULL), "", "\"");
 
 
@@ -3011,11 +3040,19 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
 
     /* 21-Jun-2014 nm Assign prevNextLinks once here since it is used 3 times */
     let(&prevNextLinks, cat("<A HREF=\"mmtheorems",
+        /*
         (page > 1)
             ? ((page - 1 > 1) ? str(page - 1) : "")
             : ((pages > 1) ? str(pages) : ""),
+        */
+        /* 8-May-2015 */
+        (page > 0)
+            ? ((page - 1 > 0) ? str(page - 1) : "")
+            : ((pages > 0) ? str(pages) : ""),
         ".html\">", NULL));
-    if (page > 1) {
+    /* if (page > 1) { */
+    /* 8-May-2015 */
+    if (page > 0) {
       let(&prevNextLinks, cat(prevNextLinks,
           "&lt; Previous</A>&nbsp;&nbsp;", NULL));
     } else {
@@ -3105,12 +3142,14 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
     }
     print2("%s Home Page</A>\n", str1);
 
-    if (page != 1) {
+    /* if (page != 1) { */
+    /* 8-May-2015 nm */
+    if (page != 0) {
       print2("&nbsp;&gt;&nbsp;<A HREF=\"mmtheorems.html\">\n");
       print2("Statement List Contents</A>\n");
     } else {
       print2("&nbsp;&gt;&nbsp;\n");
-      print2("Statement List Contents</A>\n");
+      print2("Statement List Contents\n");
     }
 
     /* 15-Apr-2015 nm */
@@ -3125,9 +3164,12 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
 
     print2("&nbsp; &nbsp; &nbsp; <B><FONT COLOR=%s>\n", GREEN_TITLE_COLOR);
     print2("This page:</FONT></B> \n");
+    /* 8-May-2015 nm Deleted, since ToC is now separate page: */
+    /*
     if (page == 1) {
       print2("<A HREF=\"#mmstmtlst\">Start of list</A>&nbsp; &nbsp; \n");
     }
+    */
     print2("<A HREF=\"#mmpglst\">Page list</A>\n");
     /* print2("</CENTER>\n"); */
     print2("<HR NOSHADE SIZE=1>\n");
@@ -3172,7 +3214,9 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
     ******** end of 21-Jun-2014 move *******/
 
     /* 31-Jul-2006 nm Add table of contents to first WRITE THEOREM page */
-    if (page == 1) {  /* We're on page 1 */
+    /* if (page == 1) { */ /* We're on page 1 */
+    /* 8-May-2015 nm */
+    if (page == 0) {  /* We're on ToC page */
 
       outputToString = 1;
       print2(
@@ -3184,11 +3228,16 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
       let(&hugeHdr, "");
       let(&bigHdr, "");
       let(&smallHdr, "");
+      let(&hugeHdrComment, "");
+      let(&bigHdrComment, "");
+      let(&smallHdrComment, "");
       partCntr = 0;    /* Initialize counters */    /* 21-Jun-2014 */
       sectionCntr = 0;
       subsectionCntr = 0;
       for (stmt = 1; stmt <= statements; stmt++) {
-        getSectionHeadings(stmt, &hugeHdr, &bigHdr, &smallHdr);
+        getSectionHeadings(stmt, &hugeHdr, &bigHdr, &smallHdr,
+            /* 5-May-2015 nm */
+            &hugeHdrComment, &bigHdrComment, &smallHdrComment);
         /* Output the headers for $a and $p statements */
         if (statement[stmt].type == p_ || statement[stmt].type == a_) {
           if (hugeHdr[0] || bigHdr[0] || smallHdr[0]) {
@@ -3196,8 +3245,10 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
             outputToString = 1;
             i = ((statement[stmt].pinkNumber - 1) / theoremsPerPage)
                 + 1; /* Page # */
-            let(&str3, cat("mmtheorems", (i == 1) ? "" : str(i), ".html#",
+            /* let(&str3, cat("mmtheorems", (i == 1) ? "" : str(i), ".html#", */
                           /* Note that page 1 has no number after mmtheorems */
+            /* 8-May-2015 nm */
+            let(&str3, cat("mmtheorems", str(i), ".html#",
                 /* statement[stmt].labelName, NULL)); */
                 "mm", str(statement[stmt].pinkNumber), NULL));
                    /* Link to page/location - no theorem can be named "mm*" */
@@ -3240,6 +3291,8 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
               /* Assign to array for use during theorem output */
               let((vstring *)(&pntrHugeHdr[stmt]), hugeHdr);
               let(&hugeHdr, "");
+              let((vstring *)(&pntrHugeHdrComment[stmt]), hugeHdrComment);
+              let(&hugeHdrComment, "");
             }
             if (bigHdr[0]) {
 
@@ -3271,9 +3324,11 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                   "<BR>", NULL),
                   " ",  /* Start continuation line with space */
                   "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
-              /* Assign to array for use during theorem output */
+              /* Assign to array for use during theorem list output */
               let((vstring *)(&pntrBigHdr[stmt]), bigHdr);
               let(&bigHdr, "");
+              let((vstring *)(&pntrBigHdrComment[stmt]), bigHdrComment);
+              let(&bigHdrComment, "");
             }
             if (smallHdr[0]) {
 
@@ -3304,6 +3359,8 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
               /* Assign to array for use during theorem output */
               let((vstring *)(&pntrSmallHdr[stmt]), smallHdr);
               let(&smallHdr, "");
+              let((vstring *)(&pntrSmallHdrComment[stmt]), smallHdrComment);
+              let(&smallHdrComment, "");
             }
             fprintf(outputFilePtr, "%s", printString);
             outputToString = 0;
@@ -3311,10 +3368,13 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
           } /* if big or small header */
         } /* if $a or $p */
       } /* next stmt */
+      /* 8-May-2015 nm Do we need the HR below? */
       fprintf(outputFilePtr, "<HR NOSHADE SIZE=1>\n");
-    } /* if page 1 */
+    } /* if page 0 */
     /* End of 31-Jul-2006 added code for table of contents mod */
 
+    /* 8-May-2015 nm Just skip over instead of a big if indent */
+    if (page == 0) goto SKIP_LIST;
 
 
     /* Put in color key */
@@ -3394,7 +3454,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
 
 
       print2("</TR></TABLE></CENTER>\n");
-    }
+    } /* end if (extHtmlStmt <= statements) */
 
     /* Write out HTML page so far */
     fprintf(outputFilePtr, "%s", printString);
@@ -3410,6 +3470,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
         MINT_BACKGROUND_COLOR);
     print2("SUMMARY=\"Statement List for %s\">\n", htmlTitle);
     let(&str3, "");
+    if (page < 1) bug(2335); /* Page 0 ToC should have been skipped */
     str3 = pinkHTML(nmbrStmtNmbr[(page - 1) * theoremsPerPage + 1]);
     let(&str3, right(str3, (long)strlen(PINK_NBSP) + 1)); /* Discard "&nbsp;" */
     let(&str4, "");
@@ -3515,6 +3576,42 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                  "<A NAME=\"mm", str(statement[s].pinkNumber), "h\"></A>",
                                              /* Anchor for table of contents */
                  (vstring)(pntrHugeHdr[s]), "</B></FONT></TD></TR>",
+                 NULL),
+            " ",  /* Start continuation line with space */
+            "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+
+        /* 8-May-2015 nm */
+        /* The comment part of the header, if any */
+        if (((vstring)(pntrHugeHdrComment[s]))[0]) {
+
+          /* Open the table row */
+          print2("%s\n", "<TR BGCOLOR=\"#FFFFF2\"><TD COLSPAN=3>");
+
+          /* We are currently printing to printString to allow use of
+             printLongLine(); however, the rendering function
+             printTexComment uses printString internally, so we have to
+             flush the current printString and turn off outputToString mode
+             in order to call the rendering function printTexComment. */
+          /* (Question:  why do the calls to printTexComment for statement
+             descriptions, later, not need to flush the printString?  Is the
+             flushing code here redundant?) */
+          /* Clear out the printString output in prep for printTexComment */
+          outputToString = 0;
+          fprintf(outputFilePtr, "%s", printString);
+          let(&printString, "");
+          showStatement = s; /* For printTexComment */
+          texFilePtr = outputFilePtr; /* For printTexComment */
+          /* 8-May-2015 ???Future - make this just return a string??? */
+          printTexComment((vstring)(pntrHugeHdrComment[s]), 0);
+                                        /* Sends result to outputFilePtr */
+          texFilePtr = NULL;
+          outputToString = 1; /* Restore after printTexComment */
+
+          /* Close the table row */
+          print2("%s\n", "</TD></TR>");
+        }
+
+        printLongLine(cat(                                  /* 21-Jun-2014 */
                  /* Separator row */
                  "<TR BGCOLOR=white><TD COLSPAN=3>",
                  "<FONT SIZE=-3>&nbsp;</FONT></TD></TR>",
@@ -3530,6 +3627,42 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                  "<A NAME=\"mm", str(statement[s].pinkNumber), "b\"></A>",
                                              /* Anchor for table of contents */
                  (vstring)(pntrBigHdr[s]), "</B></FONT></TD></TR>",
+                 NULL),
+            " ",  /* Start continuation line with space */
+            "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+
+        /* 8-May-2015 nm */
+        /* The comment part of the header, if any */
+        if (((vstring)(pntrBigHdrComment[s]))[0]) {
+
+          /* Open the table row */
+          print2("%s\n", "<TR BGCOLOR=\"#FFFFF2\"><TD COLSPAN=3>");
+
+          /* We are currently printing to printString to allow use of
+             printLongLine(); however, the rendering function
+             printTexComment uses printString internally, so we have to
+             flush the current printString and turn off outputToString mode
+             in order to call the rendering function printTexComment. */
+          /* (Question:  why do the calls to printTexComment for statement
+             descriptions, later, not need to flush the printString?  Is the
+             flushing code here redundant?) */
+          /* Clear out the printString output in prep for printTexComment */
+          outputToString = 0;
+          fprintf(outputFilePtr, "%s", printString);
+          let(&printString, "");
+          showStatement = s; /* For printTexComment */
+          texFilePtr = outputFilePtr; /* For printTexComment */
+          /* 8-May-2015 ???Future - make this just return a string??? */
+          printTexComment((vstring)(pntrBigHdrComment[s]), 0);
+                                        /* Sends result to outputFilePtr */
+          texFilePtr = NULL;
+          outputToString = 1; /* Restore after printTexComment */
+
+          /* Close the table row */
+          print2("%s\n", "</TD></TR>");
+        }
+
+        printLongLine(cat(                                  /* 21-Jun-2014 */
                  /* Separator row */
                  "<TR BGCOLOR=white><TD COLSPAN=3>",
                  "<FONT SIZE=-3>&nbsp;</FONT></TD></TR>",
@@ -3544,6 +3677,42 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                  "<A NAME=\"mm", str(statement[s].pinkNumber), "s\"></A>",
                                              /* Anchor for table of contents */
                  (vstring)(pntrSmallHdr[s]), "</B></TD></TR>",
+                 NULL),
+            " ",  /* Start continuation line with space */
+            "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+
+        /* 8-May-2015 nm */
+        /* The comment part of the header, if any */
+        if (((vstring)(pntrSmallHdrComment[s]))[0]) {
+
+          /* Open the table row */
+          print2("%s\n", "<TR BGCOLOR=\"#FFFFF2\"><TD COLSPAN=3>");
+
+          /* We are currently printing to printString to allow use of
+             printLongLine(); however, the rendering function
+             printTexComment uses printString internally, so we have to
+             flush the current printString and turn off outputToString mode
+             in order to call the rendering function printTexComment. */
+          /* (Question:  why do the calls to printTexComment for statement
+             descriptions, later, not need to flush the printString?  Is the
+             flushing code here redundant?) */
+          /* Clear out the printString output in prep for printTexComment */
+          outputToString = 0;
+          fprintf(outputFilePtr, "%s", printString);
+          let(&printString, "");
+          showStatement = s; /* For printTexComment */
+          texFilePtr = outputFilePtr; /* For printTexComment */
+          /* 8-May-2015 ???Future - make this just return a string??? */
+          printTexComment((vstring)(pntrSmallHdrComment[s]), 0);
+                                        /* Sends result to outputFilePtr */
+          texFilePtr = NULL;
+          outputToString = 1; /* Restore after printTexComment */
+
+          /* Close the table row */
+          print2("%s\n", "</TD></TR>");
+        }
+
+        printLongLine(cat(                                  /* 21-Jun-2014 */
                  /* Separator row */
                  "<TR BGCOLOR=white><TD COLSPAN=3>",
                  "<FONT SIZE=-3>&nbsp;</FONT></TD></TR>",
@@ -3648,6 +3817,10 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
     print2("</TABLE></CENTER>\n");
     print2("\n");
 
+    /* 8-May-2015 */
+   SKIP_LIST: /* (skipped when page == 0) */
+    outputToString = 1; /* To compensate for skipped assignment above */
+
 
     /* 21-Jun-2014 nm Put extra Prev/Next hyperlinks here for convenience */
     print2("<TABLE BORDER=0 WIDTH=\"100%c\">\n", '%');
@@ -3689,30 +3862,40 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
     /* 21-Jun-2014 nm Moved page list to bottom */
     /* Output links to the other pages */
     fprintf(outputFilePtr, "Jump to page: \n");
-    for (p = 1; p <= pages; p++) {
+    /* for (p = 1; p <= pages; p++) { */
+    /* 8-May-2015 */
+    for (p = 0; p <= pages; p++) {
 
       /* Construct the pink number range */
       let(&str3, "");
-      str3 = pinkRangeHTML(
-          nmbrStmtNmbr[(p - 1) * theoremsPerPage + 1],
-          (p < pages) ?
-            nmbrStmtNmbr[p * theoremsPerPage] :
-            nmbrStmtNmbr[assertions]);
+      if (p > 0) {   /* 8-May-2015 */
+        str3 = pinkRangeHTML(
+            nmbrStmtNmbr[(p - 1) * theoremsPerPage + 1],
+            (p < pages) ?
+              nmbrStmtNmbr[p * theoremsPerPage] :
+              nmbrStmtNmbr[assertions]);
+      }
 
       /* 31-Jul-2006 nm Change "1" to "Contents + 1" */
       if (p == page) {
         let(&str1,
-            (p == 1) ? "Contents + 1" : str(p) /* 31-Jul-2006 nm */
+            /* (p == 1) ? "Contents + 1" : str(p) */ /* 31-Jul-2006 nm */
+            /* 8-May-2015 nm */
+            (p == 0) ? "Contents" : str(p)
             ); /* Current page shouldn't have link to self */
       } else {
         let(&str1, cat("<A HREF=\"mmtheorems",
-            (p == 1) ? "" : str(p),
+            /* (p == 1) ? "" : str(p), */
+            /* 8-May-2015 nm */
+            (p == 0) ? "" : str(p),
             /* (p == 1) ? ".html#mmtc\">" : ".html\">", */ /* 31-Aug-2006 nm */
             ".html\">", /* 8-Feb-2007 nm Friendlier, because you can start
                   scrolling through the page before it finishes loading,
                   without its jumping to #mmtc (start of Table of Contents)
                   when it's done. */
-            (p == 1) ? "Contents + 1" : str(p) /* 31-Jul-2006 nm */
+            /* (p == 1) ? "Contents + 1" : str(p) */ /* 31-Jul-2006 nm */
+            /* 8-May-2015 nm */
+            (p == 0) ? "Contents" : str(p)
             , "</A>", NULL));
       }
       let(&str1, cat(str1, PINK_NBSP, str3, NULL));
@@ -3791,6 +3974,8 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
     print2("  </TR>\n");
     print2("</TABLE>\n");
 
+    /* Todo: Decide to use or not use this */
+    /*
     print2("<SCRIPT SRC=\"http://www.google-analytics.com/urchin.js\"\n");
     print2("  TYPE=\"text/javascript\">\n");
     print2("</SCRIPT>\n");
@@ -3798,6 +3983,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
     print2("  _uacct = \"UA-1862729-1\";\n");
     print2("  urchinTracker();\n");
     print2("</SCRIPT>");
+    */
 
     print2("</BODY></HTML>\n");
     outputToString = 0;
@@ -3829,20 +4015,26 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
 
 
 /* 2-Aug-2009 nm - broke this function out from writeTheoremList() */
+/* 21-Jun-2014 nm - added hugeHdrTitle */
+/* 8-May-2015 nm - added hugeHdrComment, bigHdrComment, smallHdrComment */
 /* This function extracts any section headers in the comment sections
    prior to the label of statement stmt.   If a huge (####...) header isn't
-   found, *hugeHdrAddr will be set to the empty string.
+   found, *hugeHdrTitle will be set to the empty string.
    If a big (#*#*...) header isn't found (or isn't after the last huge header),
-   *bigHdrAddr will be set to the empty string.  If a small
+   *bigHdrTitle will be set to the empty string.  If a small
    (=-=-...) header isn't found (or isn't after the last huge header or
-   the last big header), *smallHdrAddr will be set to the empty string.
+   the last big header), *smallHdrTitle will be set to the empty string.
    In all 3 cases, only the last occurrence of a header is considered. */
-void getSectionHeadings(long stmt, vstring *hugeHdrAddr, vstring *bigHdrAddr,
-    vstring *smallHdrAddr) {
+void getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
+    vstring *smallHdrTitle,
+    /* Added 8-May-2015 nm */
+    vstring *hugeHdrComment,
+    vstring *bigHdrComment,
+    vstring *smallHdrComment) {
 
   /* 31-Jul-2006 for table of contents mod */
   vstring labelStr = "";
-  long pos, pos1, pos2;
+  long pos, pos1, pos2, pos3, pos4;
 
   /* Get headers from comment section between statements */
   let(&labelStr, space(statement[stmt].labelSectionLen));
@@ -3851,7 +4043,7 @@ void getSectionHeadings(long stmt, vstring *hugeHdrAddr, vstring *bigHdrAddr,
   pos = 0;
   pos2 = 0;
   while (1) {  /* Find last "huge" header, if any */
-    /* nm 4-Nov-2007:  Obviously, the match below will not work if the
+    /* 4-Nov-2007 nm:  Obviously, the match below will not work if the
        $( line has a trailing space, which some editors might insert.
        The symptom is a missing table of contents entry.  But to detect
        this (and for the #*#* and =-=- matches below) would take a little work
@@ -3871,11 +4063,17 @@ void getSectionHeadings(long stmt, vstring *hugeHdrAddr, vstring *bigHdrAddr,
     if (pos) pos2 = pos;
   }
   if (pos2) { /* Extract "huge" header */
-    pos = instr(pos2 + 4, labelStr, "\n");
-    pos2 = instr(pos + 1, labelStr, "\n");
-    let(&(*hugeHdrAddr), seg(labelStr, pos + 1, pos2 - 1));
-    let(&(*hugeHdrAddr), edit((*hugeHdrAddr), 8 + 128));
+    pos = instr(pos2 + 4, labelStr, "\n"); /* Get to end of #### line */
+    pos2 = instr(pos + 1, labelStr, "\n"); /* Find end of title line */
+    pos3 = instr(pos2 + 1, labelStr, "\n"); /* Get to end of 2nd #### line */
+    while (labelStr[(pos3 - 1) + 1] == '\n') pos3++; /* Skip 1st blank lines */
+    pos4 = instr(pos3, labelStr, "$)"); /* Get to end of title comment */
+    let(&(*hugeHdrTitle), seg(labelStr, pos + 1, pos2 - 1));
+    let(&(*hugeHdrTitle), edit((*hugeHdrTitle), 8 + 128));
                                                 /* Trim leading, trailing sp */
+    let(&(*hugeHdrComment), seg(labelStr, pos3 + 1, pos4 - 2));
+    let(&(*hugeHdrComment), edit((*hugeHdrComment), 8 + 16384));
+                                        /* Trim leading sp, trailing sp & lf */
   }
   /* pos = 0; */ /* Start with "huge" header pos, to ignore any earlier
                     "small" or "big" header */
@@ -3901,10 +4099,17 @@ void getSectionHeadings(long stmt, vstring *hugeHdrAddr, vstring *bigHdrAddr,
     if (pos) pos2 = pos;
   }
   if (pos2) { /* Extract "big" header */
-    pos = instr(pos2 + 4, labelStr, "\n");
-    pos2 = instr(pos + 1, labelStr, "\n");
-    let(&(*bigHdrAddr), seg(labelStr, pos + 1, pos2 - 1));
-    let(&(*bigHdrAddr), edit((*bigHdrAddr), 8 + 128)); /* Trim leading, trailing sp */
+    pos = instr(pos2 + 4, labelStr, "\n"); /* Get to end of #*#* line */
+    pos2 = instr(pos + 1, labelStr, "\n"); /* Find end of title line */
+    pos3 = instr(pos2 + 1, labelStr, "\n"); /* Get to end of 2nd #*#* line */
+    while (labelStr[(pos3 - 1) + 1] == '\n') pos3++; /* Skip 1st blank lines */
+    pos4 = instr(pos3, labelStr, "$)"); /* Get to end of title comment */
+    let(&(*bigHdrTitle), seg(labelStr, pos + 1, pos2 - 1));
+    let(&(*bigHdrTitle), edit((*bigHdrTitle), 8 + 128));
+                                                /* Trim leading, trailing sp */
+    let(&(*bigHdrComment), seg(labelStr, pos3 + 1, pos4 - 2));
+    let(&(*bigHdrComment), edit((*bigHdrComment), 8 + 16384));
+                                        /* Trim leading sp, trailing sp & lf */
   }
   /* pos = 0; */ /* Start with "big" header pos, to ignore any earlier
                     "small" header */
@@ -3924,11 +4129,17 @@ void getSectionHeadings(long stmt, vstring *hugeHdrAddr, vstring *bigHdrAddr,
     if (pos) pos2 = pos;
   }
   if (pos2) { /* Extract "small" header */
-    pos = instr(pos2 + 4, labelStr, "\n");
-    pos2 = instr(pos + 1, labelStr, "\n");
-    let(&(*smallHdrAddr), seg(labelStr, pos + 1, pos2 - 1));
-    let(&(*smallHdrAddr), edit((*smallHdrAddr), 8 + 128));
-                   /* Trim lead, trail sp */
+    pos = instr(pos2 + 4, labelStr, "\n"); /* Get to end of =-=- line */
+    pos2 = instr(pos + 1, labelStr, "\n"); /* Find end of title line */
+    pos3 = instr(pos2 + 1, labelStr, "\n"); /* Get to end of 2nd =-=- line */
+    while (labelStr[(pos3 - 1) + 1] == '\n') pos3++; /* Skip 1st blank lines */
+    pos4 = instr(pos3, labelStr, "$)"); /* Get to end of title comment */
+    let(&(*smallHdrTitle), seg(labelStr, pos + 1, pos2 - 1));
+    let(&(*smallHdrTitle), edit((*smallHdrTitle), 8 + 128));
+                                                /* Trim leading, trailing sp */
+    let(&(*smallHdrComment), seg(labelStr, pos3 + 1, pos4 - 2));
+    let(&(*smallHdrComment), edit((*smallHdrComment), 8 + 16384));
+                                        /* Trim leading sp, trailing sp & lf */
   }
   let(&labelStr, "");
   return;

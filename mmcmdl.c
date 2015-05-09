@@ -78,7 +78,7 @@ flag processCommandLine(void)
           "OPEN|CLOSE|SHOW|SEARCH|SET|VERIFY|SUBMIT|SYSTEM|PROVE|FILE|WRITE|",
           "ASSIGN|REPLACE|MATCH|UNIFY|LET|INITIALIZE|DELETE|IMPROVE|",
           "MINIMIZE_WITH|UNDO|REDO|SAVE|DEMO|INVOKE|CLI|EXPLORE|TEX|",
-          "LATEX|HTML|MORE|",
+          "LATEX|HTML|COMMENTS|MORE|",
           "TOOLS|MIDI|$|<$>", NULL))) goto pclbad;
       if (cmdMatches("HELP OPEN")) {
         if (!getFullArg(2, "LOG|TEX|HTML|<LOG>")) goto pclbad;
@@ -572,8 +572,8 @@ flag processCommandLine(void)
             i++;
             if (!getFullArg(i,cat(
                 "ESSENTIAL|ALL|UNKNOWN|FROM_STEP|TO_STEP|DEPTH",
-                /*"|REVERSE|LANGUAGE_MODE|VERBOSE|NORMAL|PACKED|COMPRESSED",*/
-                "|REVERSE|LANGUAGE_MODE|VERBOSE|NORMAL|COMPRESSED",
+                /*"|REVERSE|VERBOSE|NORMAL|PACKED|COMPRESSED",*/
+                "|REVERSE|VERBOSE|NORMAL|COMPRESSED",
                 "|FAST_COMPRESSION",   /* 27-Dec-2013 nm */
                 /* 14-Sep-2010 nm Added OLD_TEX */
                 "|STATEMENT_SUMMARY|DETAILED_STEP|TEX|OLD_TEX|HTML",
@@ -631,8 +631,8 @@ flag processCommandLine(void)
             i++;
             if (!getFullArg(i,cat(
                 "ESSENTIAL|ALL|UNKNOWN|FROM_STEP|TO_STEP|DEPTH",
-                /*"|REVERSE|LANGUAGE_MODE|VERBOSE|NORMAL|PACKED|COMPRESSED",*/
-                "|REVERSE|LANGUAGE_MODE|VERBOSE|NORMAL|COMPRESSED",
+                /*"|REVERSE|VERBOSE|NORMAL|PACKED|COMPRESSED",*/
+                "|REVERSE|VERBOSE|NORMAL|COMPRESSED",
                 "|FAST_COMPRESSION",   /* 27-Dec-2013 nm */
                 "|NOT_UNIFIED|TEX|HTML",
                 "|LEMMON|START_COLUMN|NO_REPEATED_STEPS",
