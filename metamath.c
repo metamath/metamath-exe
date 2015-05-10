@@ -5,7 +5,11 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.115 8-May-2015"
+#define MVERSION "0.116 9-May-2015"
+/* 0.116 9-May-2015 nm mmwtex.c - adjust paragraph break in 'write th';
+   Statement List renamed Theorem List;  prevent space in after paragraph
+   in Theorem List; remove stray "(";  put header and header comment
+   in same table cell; fix <TITLE> of Theorem List pages */
 /* 0.115 8-May-2015 nm mmwtex.c - added section header comments to
        WRITE THEOREM_LIST and broke out Table of Contents page
    24-Apr-2015 nm metamath.c - add # bytes to end of "---Clip out the proof";

@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2014  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2015  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -2412,8 +2412,12 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
     if (htmlFlag) {
       /* Change blank lines into paragraph breaks except in <HTML> mode */
       if (!outputLine[0]) { /* Blank line */
-        if (preformattedMode == 0) let(&outputLine, "<P>");
-                                                /* Make it a paragraph break */
+        if (preformattedMode == 0) {  /* Make it a paragraph break */
+          let(&outputLine,
+              /* "<P>"); */
+              /* 9-May-2015 nm Prevent space after last paragraph */
+              "<P STYLE=\"margin-bottom:0em\">");
+        }
       }
       /* 11/15/02 If a statement comment has a section embedded in
          <PRE>...</PRE>, we make it a table with monospaced text and a
@@ -3005,7 +3009,13 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
         /*
         left(outputFileName, (long)strlen(outputFileName) - 5),
         */
-        "List p. ", str(page),  /* 21-Jun-2014 */
+
+        /* "List p. ", str(page), */ /* 21-Jun-2014 */
+        /* 9-May-2015 nm */
+        ((page == 0)
+            ? "Table of Contents of Theorem List"
+            : cat("P. ", str(page), " of Theorem List", NULL)),
+
         " - ",
         htmlTitle,
         "</TITLE>", NULL));
@@ -3022,10 +3032,14 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
         GREEN_TITLE_COLOR, "><B>", htmlTitle, "</B></FONT>",
         "<BR><FONT SIZE=\"+2\" COLOR=",      /* 21-Jun-2014 */
         GREEN_TITLE_COLOR,                   /* 21-Jun-2014 */
-        "><B>Statement List (",
+        /* "><B>Statement List (", */
+        /* 9-May-2015 nm */
+        "><B>Theorem List (",
         ((page == 0)
             ? "Table of Contents"
-            : cat("(p. ", str(page), " of ", str(pages), NULL)),
+            /* : cat("(p. ", str(page), " of ", str(pages), NULL)), */
+            /* 9-May-2015 nm Remove stray "(" */
+            : cat("p. ", str(page), " of ", str(pages), NULL)),
         ")</B></FONT>",
         NULL), "", "\"");
 
@@ -3146,10 +3160,14 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
     /* 8-May-2015 nm */
     if (page != 0) {
       print2("&nbsp;&gt;&nbsp;<A HREF=\"mmtheorems.html\">\n");
-      print2("Statement List Contents</A>\n");
+      /* print2("Statement List Contents</A>\n"); */
+      /* 9-May-2015 nm */
+      print2("Theorem List Contents</A>\n");
     } else {
       print2("&nbsp;&gt;&nbsp;\n");
-      print2("Statement List Contents\n");
+      /* print2("Statement List Contents\n"); */
+      /* 9-May-2015 nm */
+      print2("Theorem List Contents\n");
     }
 
     /* 15-Apr-2015 nm */
@@ -3468,7 +3486,9 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
     print2("<P><CENTER>\n");
     print2("<TABLE BORDER CELLSPACING=0 CELLPADDING=3 BGCOLOR=%s\n",
         MINT_BACKGROUND_COLOR);
-    print2("SUMMARY=\"Statement List for %s\">\n", htmlTitle);
+    /* print2("SUMMARY=\"Statement List for %s\">\n", htmlTitle); */
+    /* 9-May-2015 nm */
+    print2("SUMMARY=\"Theorem List for %s\">\n", htmlTitle);
     let(&str3, "");
     if (page < 1) bug(2335); /* Page 0 ToC should have been skipped */
     str3 = pinkHTML(nmbrStmtNmbr[(page - 1) * theoremsPerPage + 1]);
@@ -3478,7 +3498,9 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
         nmbrStmtNmbr[page * theoremsPerPage] :
         nmbrStmtNmbr[assertions]);
     let(&str4, right(str4, (long)strlen(PINK_NBSP) + 1)); /* Discard "&nbsp;" */
-    printLongLine(cat("<CAPTION><B>Statement List for ", htmlTitle,
+    /* printLongLine(cat("<CAPTION><B>Statement List for ", htmlTitle, */
+    /* 9-May-2015 nm */
+    printLongLine(cat("<CAPTION><B>Theorem List for ", htmlTitle,
         " - </B>", str3, "<B>-</B>", str4,
         /* 21-Jun-2014 - redundant, since it's in the title now
         "<B>",
@@ -3509,6 +3531,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
       if (assertion > assertions) break; /* We're beyond the end */
       /* nm 22-Jan-04 Don't count statements whose names begin with "xxx"
          because they will not be output */
+      /* 9-May-2015 nm Can this be deleted?  Do we need it anymore? */
       if (strcmp("xxx", left(statement[s].labelName, 3))) {
         lastAssertion = assertion;
       }
@@ -3528,6 +3551,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
          means they are temporary placeholders created by
          WRITE SOURCE / CLEAN in writeInput() in mmcmds.c */
       let(&str1, ""); /* Purge string stack if too many left()'s */
+      /* 9-May-2015 nm Can this be deleted?  Do we need it anymore? */
       if (!strcmp("xxx", left(statement[s].labelName, 3))) continue;
 
       /* Construct the statement type label */
@@ -3572,10 +3596,15 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
         printLongLine(cat(                                  /* 21-Jun-2014 */
                  /* The header */
                  "<TR BGCOLOR=\"#FFFFF2\"><TD COLSPAN=3",
-                 " ALIGN=CENTER><FONT SIZE=\"+1\"><B>",
+                 /* " ALIGN=CENTER><FONT SIZE=\"+1\"><B>", */
+                 /* 9-May-2015 nm */
+                 "><CENTER><FONT SIZE=\"+1\"><B>",
                  "<A NAME=\"mm", str(statement[s].pinkNumber), "h\"></A>",
                                              /* Anchor for table of contents */
-                 (vstring)(pntrHugeHdr[s]), "</B></FONT></TD></TR>",
+                 (vstring)(pntrHugeHdr[s]),
+                 /* "</B></FONT></TD></TR>", */
+                 /* 9-May-2015 nm */
+                 "</B></FONT></CENTER>",
                  NULL),
             " ",  /* Start continuation line with space */
             "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
@@ -3585,7 +3614,9 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
         if (((vstring)(pntrHugeHdrComment[s]))[0]) {
 
           /* Open the table row */
-          print2("%s\n", "<TR BGCOLOR=\"#FFFFF2\"><TD COLSPAN=3>");
+          /* print2("%s\n", "<TR BGCOLOR=\"#FFFFF2\"><TD COLSPAN=3>"); */\
+          /* 9-May-2015 nm - keep comment in same table cell */
+          print2("%s\n", "<P STYLE=\"margin-bottom:0em\">");
 
           /* We are currently printing to printString to allow use of
              printLongLine(); however, the rendering function
@@ -3608,8 +3639,12 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
           outputToString = 1; /* Restore after printTexComment */
 
           /* Close the table row */
-          print2("%s\n", "</TD></TR>");
+          /* print2("%s\n", "</TD></TR>"); */ /* 9-May-2015 nm */
         }
+
+        /* 9-May-2015 nm */
+        /* Close the table row */
+        print2("%s\n", "</TD></TR>");
 
         printLongLine(cat(                                  /* 21-Jun-2014 */
                  /* Separator row */
@@ -3623,10 +3658,15 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
         printLongLine(cat(
                  /* The header */
                  "<TR BGCOLOR=\"#FFFFF2\"><TD COLSPAN=3",
-                 " ALIGN=CENTER><FONT SIZE=\"+1\"><B>",
+                 /* " ALIGN=CENTER><FONT SIZE=\"+1\"><B>", */
+                 /* 9-May-2015 nm */
+                 "><CENTER><FONT SIZE=\"+1\"><B>",
                  "<A NAME=\"mm", str(statement[s].pinkNumber), "b\"></A>",
                                              /* Anchor for table of contents */
-                 (vstring)(pntrBigHdr[s]), "</B></FONT></TD></TR>",
+                 (vstring)(pntrBigHdr[s]),
+                 /* "</B></FONT></TD></TR>", */
+                 /* 9-May-2015 nm */
+                 "</B></FONT></CENTER>",
                  NULL),
             " ",  /* Start continuation line with space */
             "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
@@ -3636,7 +3676,9 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
         if (((vstring)(pntrBigHdrComment[s]))[0]) {
 
           /* Open the table row */
-          print2("%s\n", "<TR BGCOLOR=\"#FFFFF2\"><TD COLSPAN=3>");
+          /* print2("%s\n", "<TR BGCOLOR=\"#FFFFF2\"><TD COLSPAN=3>"); */\
+          /* 9-May-2015 nm - keep comment in same table cell */
+          print2("%s\n", "<P STYLE=\"margin-bottom:0em\">");
 
           /* We are currently printing to printString to allow use of
              printLongLine(); however, the rendering function
@@ -3659,8 +3701,12 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
           outputToString = 1; /* Restore after printTexComment */
 
           /* Close the table row */
-          print2("%s\n", "</TD></TR>");
+          /* print2("%s\n", "</TD></TR>"); */ /* 9-May-2015 nm */
         }
+
+        /* 9-May-2015 nm */
+        /* Close the table row */
+        print2("%s\n", "</TD></TR>");
 
         printLongLine(cat(                                  /* 21-Jun-2014 */
                  /* Separator row */
@@ -3673,10 +3719,16 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
       if (((vstring)(pntrSmallHdr[s]))[0]) { /* There is a minor sec break */
         printLongLine(cat(
                  /* The header */
-                 "<TR BGCOLOR=\"#FFFFF2\"><TD COLSPAN=3 ALIGN=CENTER><B>",
+                 "<TR BGCOLOR=\"#FFFFF2\"><TD COLSPAN=3",
+                 /* " ALIGN=CENTER><B>", */
+                 /* 9-May-2015 nm */
+                 "><CENTER><B>",
                  "<A NAME=\"mm", str(statement[s].pinkNumber), "s\"></A>",
                                              /* Anchor for table of contents */
-                 (vstring)(pntrSmallHdr[s]), "</B></TD></TR>",
+                 (vstring)(pntrSmallHdr[s]),
+                 /* "</B></TD></TR>", */
+                 /* 9-May-2015 nm */
+                 "</B></CENTER>",
                  NULL),
             " ",  /* Start continuation line with space */
             "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
@@ -3686,7 +3738,9 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
         if (((vstring)(pntrSmallHdrComment[s]))[0]) {
 
           /* Open the table row */
-          print2("%s\n", "<TR BGCOLOR=\"#FFFFF2\"><TD COLSPAN=3>");
+          /* print2("%s\n", "<TR BGCOLOR=\"#FFFFF2\"><TD COLSPAN=3>"); */\
+          /* 9-May-2015 nm - keep comment in same table cell */
+          print2("%s\n", "<P STYLE=\"margin-bottom:0em\">");
 
           /* We are currently printing to printString to allow use of
              printLongLine(); however, the rendering function
@@ -3709,8 +3763,12 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
           outputToString = 1; /* Restore after printTexComment */
 
           /* Close the table row */
-          print2("%s\n", "</TD></TR>");
+          /* print2("%s\n", "</TD></TR>"); */ /* 9-May-2015 nm */
         }
+
+        /* 9-May-2015 nm */
+        /* Close the table row */
+        print2("%s\n", "</TD></TR>");
 
         printLongLine(cat(                                  /* 21-Jun-2014 */
                  /* Separator row */
