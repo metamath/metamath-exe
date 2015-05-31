@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2014  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2015  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -590,7 +590,7 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
             /* 2-Jan-2014 nm Added the condition below: */
             || longLine[p - 4] == ')')) /* Label sect ends in col 77 */ {
         /* We're in the compressed proof section; break line anywhere */
-        p = p;
+        p = p + 0;  /* Don't change position */
         /* 27-Dec-2013 nm */
         /* In the case where the last space occurs at column 79 i.e.
            screenWidth, break the line at column 78.  This can happen
@@ -599,7 +599,7 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
         if (longLine[p - 2] == ' ') p--; /* 27-Dec-2013 */
       } else {
         if (!breakMatch1[0]) {
-          p = p; /* Break line anywhere */
+          p = p + 0; /* Break line anywhere; don't change position */
         } else {
           if (breakMatch1[0] == '&') {
             /* Compressed proof */

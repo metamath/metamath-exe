@@ -5,7 +5,13 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.116 9-May-2015"
+#define MVERSION "0.117 30-May-2015"
+/* 0.117 30-May-2015
+   1. nm mmwtex.c - move <A NAME... tag to math symbol cell in proof pages so
+       hyperlink will jump to top of cell (reported by Alan Sare)
+   2. daw mmpfas.c - add INLINE speedup if compiler permits
+   3. nm metamath.c, mminou.c, mmwtex.c, mmpfas.c - fix clang -Wall warnings
+       (reported by David A. Wheeler) */
 /* 0.116 9-May-2015 nm mmwtex.c - adjust paragraph break in 'write th';
    Statement List renamed Theorem List;  prevent space in after paragraph
    in Theorem List; remove stray "(";  put header and header comment
@@ -2010,6 +2016,7 @@ void command(int argc, char *argv[])
                   || !strcmp(mid(str2, k, (long)strlen("EQUATION")), "EQUATION")
                   || !strcmp(mid(str2, k, (long)strlen("SCHEME")), "SCHEME")
                   || !strcmp(mid(str2, k, (long)strlen("ITEM")), "ITEM")
+                  || !strcmp(mid(str2, k, (long)strlen("LINE")), "LINE")
                   /* Don't use SCHEMA since we may have THEOREM SCHEMA
                   || !strcmp(mid(str2, k, (long)strlen("SCHEMA")), "SCHEMA")
                   */
@@ -2705,7 +2712,7 @@ void command(int argc, char *argv[])
         s = 1;
       }
 
-      for (s = s; s <= statements; s++) {
+      for (s = s + 0; s <= statements; s++) {
 
         if (s > 0 && briefHtmlFlag) break; /* Only do summaries */
 

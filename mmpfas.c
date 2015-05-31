@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2014  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2015  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -20,6 +20,11 @@
 #include "mmpars.h"
 #include "mmunif.h"
 #include "mmpfas.h"
+
+/* Allow user to define INLINE as "inline".  lcc doesn't support inline. */
+#ifndef INLINE
+#define INLINE
+#endif
 
 long proveStatement = 0; /* The statement to be proved - global */
 flag proofChangedFlag; /* Flag to push 'undo' stack - global */
@@ -595,7 +600,7 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
       }
 
       /* for (trialStep = trialStep; trialStep < prfStep; trialStep++) { old */
-      for (trialStep = trialStep; trialStep < scanUpperBound;
+      for (trialStep = trialStep + 0; trialStep < scanUpperBound;
           trialStep++) {                             /* 22-Aug-2012 nm */
         /* Note that step scanUpperBound is not scanned since that is
            the statement we want to replace (subProofFlag = 1) or the
@@ -1816,7 +1821,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
 /* This function does quick check for some common conditions that prevent
    a trial statement (scheme) from being unified with a given instance.
    Return value 0 means it can't be unified, 1 means it might be unifiable. */
-flag quickMatchFilter(long trialStmt, nmbrString *mString,
+INLINE flag quickMatchFilter(long trialStmt, nmbrString *mString,
     long dummyVarFlag /* 0 if no dummy vars in mString */) {
   /* 22-Aug-2012 nm This function used to be part of proveFloating().  It
      was separated out for reuse in other places */

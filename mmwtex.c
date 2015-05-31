@@ -1155,7 +1155,7 @@ void printTexHeader(flag texHeaderFlag)
   if (!texDefsRead) {
     if (!readTexDefs()) {
       print2(
-          "?There was an error in the $t comment's Latex/HTML definitions.\n");
+          "?There was an error in the $t comment's LaTeX/HTML definitions.\n");
       return;
     }
   }
@@ -1522,8 +1522,9 @@ void printTexHeader(flag texHeaderFlag)
          the same as the THEOREMS_PER_PAGE in WRITE THEOREMS (have a SET
          global variable in place of THEOREMS_PER_PAGE?) */
       i = ((statement[showStatement].pinkNumber - 1) / 100) + 1; /* Page # */
-      let(&tmpStr, cat("mmtheorems", (i == 1) ? "" : str(i), ".html#",
-             /* Note that page 1 has no number after mmtheorems */
+      /* let(&tmpStr, cat("mmtheorems", (i == 1) ? "" : str(i), ".html#", */
+      /* 12-Jul-2015 nm - all thm pages now have page num after mmtheorems */
+      let(&tmpStr, cat("mmtheorems", str(i), ".html#",
           statement[showStatement].labelName, NULL)); /* Link to page/stmt */
 
       /* Print the GIF/Unicode Font choice, if directories are specified */
@@ -1904,7 +1905,7 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
     }
     pos2 = (long)strlen(cmt);
     tmpMathMode = 0;
-    for (pos1 = pos1; pos1 <= pos2; pos1++) {
+    for (pos1 = pos1 + 0; pos1 <= pos2; pos1++) {
       /* Don't modify anything inside of math symbol strings
          (imperfect - only works if `...` is not split across lines?) */
       if (cmt[pos1 - 1] == '`') tmpMathMode = (flag)(1 - tmpMathMode);
@@ -2567,6 +2568,7 @@ void printTexLongMath(nmbrString *mathString,
   vstring texLine = "";
   vstring sPrefix = ""; /* 7/3/98 */
   vstring htmStep = ""; /* 7/4/98 */
+  vstring htmStepTag = ""; /* 30-May-2015 nm */
   vstring htmHyp = ""; /* 7/4/98 */
   vstring htmRef = ""; /* 7/4/98 */
   vstring tmp = "";  /* 10/10/02 */
@@ -2672,7 +2674,10 @@ void printTexLongMath(nmbrString *mathString,
       /* 9-Sep-2010 Stefan Allen - put hyperlinks on hypothesis
          label references in SHOW STATEMENT * /HTML, ALT_HTML output */
       /*Add hyperlink references to the proof */
-      let(&htmStep,cat("<A NAME=\"",htmStep,"\">",htmStep,"</A>",NULL));
+      /* let(&htmStep, cat("<A NAME=\"",htmStep,"\">",htmStep,"</A>",NULL)); */
+      /* 30-May-2015 nm Use a separate tag to put into the math cell,
+         so it will link to the top of the math cell */
+      let(&htmStepTag, cat("<A NAME=\"", htmStep, "\">","</A>", NULL));
       i = 1;
       pos = 1;
       while (pos && strcmp(htmHyp, "&nbsp;")) {
@@ -2706,12 +2711,18 @@ void printTexLongMath(nmbrString *mathString,
         /* A hypothesis - don't include link */
         printLongLine(cat("<TR ALIGN=LEFT><TD>", htmStep, "</TD><TD>",
             htmHyp, "</TD><TD>", htmRef,
-            "</TD><TD>", NULL), "", "\"");
+            "</TD><TD>",
+            htmStepTag, /* 30-May-2015 nm */
+                /* Put the <A NAME=...></A> tag at start of math symbol cell */
+            NULL), "", "\"");
       } else {
         if (hypStmt <= 0) {
           printLongLine(cat("<TR ALIGN=LEFT><TD>", htmStep, "</TD><TD>",
               htmHyp, "</TD><TD><A HREF=\"", htmRef, ".html\">", htmRef,
-              "</A></TD><TD>", NULL), "", "\"");
+              "</A></TD><TD>",
+              htmStepTag, /* 30-May-2015 nm */
+                /* Put the <A NAME=...></A> tag at start of math symbol cell */
+              NULL), "", "\"");
         } else {
           /* Include step number reference.  The idea is that this will
              help the user to recognized "important" (vs. early trivial
@@ -2761,11 +2772,15 @@ void printTexLongMath(nmbrString *mathString,
 
               ">", htmRef,
               "</A>", tmp,
-              "</TD><TD>", NULL), "", "\"");
+              "</TD><TD>",
+              htmStepTag, /* 30-May-2015 nm */
+                /* Put the <A NAME=...></A> tag at start of math symbol cell */
+              NULL), "", "\"");
         }
       }
       let(&descr, ""); /*Deallocate */  /* 17-Nov-2007 nm */
       let(&htmStep, ""); /* Deallocate */
+      let(&htmStepTag, ""); /* Deallocate */
       let(&htmHyp, ""); /* Deallocate */
       let(&htmRef, ""); /* Deallocate */
       let(&tmp, ""); /* Deallocate */
