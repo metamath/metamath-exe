@@ -878,7 +878,6 @@ void typeStatement(long showStmt,
   /* End of finding definition for syntax statement */
 
 
-
   /* 10/6/99 - Start of creating used-by list for html page */
   if (htmlFlg && texFlag) {
     /* 10/25/02 Clear out any previous printString accumulation
@@ -889,12 +888,16 @@ void typeStatement(long showStmt,
     if (outputToString != 0) bug(242);
     outputToString = 1;
     if (subType != SYNTAX) { /* Only do this for
-        definitions and axioms, not syntax statements */
+        definitions, axioms, and theorems, not syntax statements */
       let(&str1, "");
-      str1 = traceUsage(showStmt, 0 /* recursiveFlag */);
-      if (str1[0]) { /* Used by at least one */
-        /* str1 will have a leading space before each label */
-        /* Convert usage list to html links */
+      str1 = traceUsage(showStmt,
+          0, /* recursiveFlag */
+          0 /* cutoffStmt */);
+      /* if (str1[0]) { */ /* Used by at least one */
+      /* 18-Jul-2015 nm */
+      if (str1[0] == 'Y') { /* Used by at least one */
+        /* str1[i] will be 'Y' if used by showStmt */
+        /* Convert usage list str1 to html links */
         switch (subType) {
           case AXIOM:  let(&str3, "axiom"); break;
           case DEFINITION: let(&str3, "definition"); break;
@@ -908,46 +911,50 @@ void typeStatement(long showStmt,
         /* 10/10/02 */
         let(&str2, cat("<TR><TD ALIGN=LEFT><FONT SIZE=-1><B>This ", str3,
             " is referenced by:</B>", NULL));
-        /* Convert str1 to trailing space after each label */
+
+
+        /********* 18-Jul-2015 Deleted code *********************/
+        /*
+        /@ Convert str1 to trailing space after each label @/
         let(&str1, cat(right(str1, 2), " ", NULL));
-        let(&str5, ""); /* Buffer for very long strings */ /* 19-Sep-2012 nm */
+        let(&str5, ""); /@ Buffer for very long strings @/ /@ 19-Sep-2012 nm @/
         i = 0;
         while (1) {
           j = i + 1;
           i = instr(j, str1, " ");
           if (!i) break;
-          /* Extract the label */
+          /@ Extract the label @/
           let(&str3, seg(str1, j, i - 1));
-          /* Find the statement number */
+          /@ Find the statement number @/
           m = lookupLabel(str3);
           if (m < 0) {
-            /* The lookup should never fail */
+            /@ The lookup should never fail @/
             bug(240);
             continue;
           }
-          /* It should be a $p */
+          /@ It should be a $p @/
           if (statement[m].type != p_) bug(241);
-          /* Get the pink number */
+          /@ Get the pink number @/
           let(&str4, "");
           str4 = pinkHTML(m);
-          /* Assemble the href */
+          /@ Assemble the href @/
           let(&str2, cat(str2, " &nbsp;<A HREF=\"",
               str3, ".html\">",
               str3, "</A>", str4, NULL));
-          /* 8-Aug-2008 nm If line is very long, print it out and reset
-             it to speed up program (SHOW STATEMENT syl/HTML is very slow) */
-          /* 8-Aug-2008 nm This doesn't solve problem, because the bottleneck
+          /@ 8-Aug-2008 nm If line is very long, print it out and reset
+             it to speed up program (SHOW STATEMENT syl/HTML is very slow) @/
+          /@ 8-Aug-2008 nm This doesn't solve problem, because the bottleneck
              is printing printStringForReferencedBy below.  This whole
-             code section needs to be redesigned to solve the speed problem. */
-          /*
+             code section needs to be redesigned to solve the speed problem. @/
+          /@
           if (strlen(str2) > 500) {
             printLongLine(str2, "", "\"");
             let(&str2, "");
           }
-          */
-          /* 19-Sep-2012 nm Try again to fix SHOW STATEMENT syl/HTML speed
-             without a major rewrite */
-          /*
+          @/
+          /@ 19-Sep-2012 nm Try again to fix SHOW STATEMENT syl/HTML speed
+             without a major rewrite @/
+          /@
           Unfortunately, makes little difference.  Using lcc:
           orig    real    1m6.676s
           500     real    1m2.285s
@@ -968,26 +975,76 @@ void typeStatement(long showStmt,
           50000   real    1m1.325s
           100000  real    1m3.172s
           100000  real    1m4.657s
-          */
+          (Added 17-Jul-2015: The 1 minute is probably due to the old
+              traceUsage algorithm that built a huge string of labels; should
+              be faster now.)
+          @/
+          /@ Accumulate large cat buffer when small cats exceed certain size @/
+          if (strlen(str2) > 5000) {
+            let(&str5, cat(str5, str2, NULL));
+            let(&str2, "");
+          }
+          /@ End 19-Sep-2012 @/
+        }
+        /@ let(&str2, cat(str2, "</FONT></TD></TR>", NULL)); @/ /@ old @/
+         /@ 19-Sep-2012 nm Include buffer in output string@/
+        let(&str2, cat(str5, str2, "</FONT></TD></TR>", NULL));
+        printLongLine(str2, "", "\"");
+        */
+        /**************** 18-Jul-2015 End of deleted code *********/
+
+
+        let(&str5, ""); /* Buffer for very long strings */ /* 19-Sep-2012 nm */
+        /* Scan all future statements in str1 Y/N list */
+        for (m = showStmt + 1; m <= statements; m++) {
+          /* Scan the used-by map */
+          if (str1[m] != 'Y') continue;
+          /* Get the label */
+          let(&str3, statement[m].labelName);
+          /* It should be a $p */
+          if (statement[m].type != p_) bug(241);
+          /* Get the pink number */
+          let(&str4, "");
+          str4 = pinkHTML(m);
+          /* Assemble the href */
+          let(&str2, cat(str2, " &nbsp;<A HREF=\"",
+              str3, ".html\">",
+              /*str3, "</A>", str4, NULL));*/
+              str3, "</A>\n", str4, NULL));  /* 18-Jul-2015 nm */
+          /* 8-Aug-2008 nm If line is very long, print it out and reset
+             it to speed up program (SHOW STATEMENT syl/HTML is very slow) */
+          /* 8-Aug-2008 nm This doesn't solve problem, because the bottleneck
+             is printing printStringForReferencedBy below.  This whole
+             code section needs to be redesigned to solve the speed problem. */
+          /* 19-Sep-2012 nm Try again to fix SHOW STATEMENT syl/HTML speed
+             without a major rewrite.  Unfortunately, made little difference. */
+          /* 18-Jul-2015: Part of slowdown was due to the old
+              traceUsage algorithm that built a huge string of labels.  Improved
+             from 313 sec to 280 sec for 'sh st syl/a'; still a problem. */
           /* Accumulate large cat buffer when small cats exceed certain size */
           if (strlen(str2) > 5000) {
             let(&str5, cat(str5, str2, NULL));
             let(&str2, "");
           }
           /* End 19-Sep-2012 */
-        }
+        } /* next m (statement number) */
         /* let(&str2, cat(str2, "</FONT></TD></TR>", NULL)); */ /* old */
          /* 19-Sep-2012 nm Include buffer in output string*/
         let(&str2, cat(str5, str2, "</FONT></TD></TR>", NULL));
-        printLongLine(str2, "", "\"");
-      }
-    }
+        /*printLongLine(str2, "", "\"");*/ /* 18-Jul-2015 nm Deleted */
+        if (printString[0]) bug(256);  /* 18-Jul-2015 nm */
+        let(&printString, str2); /* 18-Jul-2015 nm */
+      } /* if (str1[0] == 'Y') */
+    } /* if (subType != SYNTAX) */
     if (subType == THEOREM) {
       /* 10/25/02 The "referenced by" does not show up after the proof
          because we moved the typeProof() to below.  Therefore, we save
          printString into a temporary global holding variable to print
          at the proper place inside of typeProof().  Ugly but necessary
          with present design. */
+      /* In the case of THEOREM, we save and reset the printString.  In the
+         case of != THEOREM (i.e. AXIOM and DEFINITION), printString will
+         be printed and cleared below. */
       let(&printStringForReferencedBy, printString);
       let(&printString, "");
     }
@@ -1127,14 +1184,14 @@ vstring htmlAllowedSubst(long showStmt)
     if (strcmp("wff", strptr) && strcmp("class", strptr)) continue;
                                   /* Not a wff or class variable */
     wffOrClassVar = (statement[reqHyp[i]].mathString)[1];
-    let(&setVarDVFlag, string(setVars, 'n')); /* No $d yet */
+    let(&setVarDVFlag, string(setVars, 'N')); /* No $d yet */
     /* Scan for attached $d's */
     for (j = 0; j < numDVs; j++) {
       found = 0;
       if (wffOrClassVar == reqDVA[j]) {
         for (k = 0; k < setVars; k++) {
           if (setVar[k] == reqDVB[j]) {
-            setVarDVFlag[k] = 'y';
+            setVarDVFlag[k] = 'Y';
             found = 1;
             break;
           }
@@ -1145,7 +1202,7 @@ vstring htmlAllowedSubst(long showStmt)
       if (wffOrClassVar == reqDVB[j]) {
         for (k = 0; k < setVars; k++) {
           if (setVar[k] == reqDVA[j]) {
-            setVarDVFlag[k] = 'y';
+            setVarDVFlag[k] = 'Y';
             break;
           }
         }
@@ -1156,7 +1213,7 @@ vstring htmlAllowedSubst(long showStmt)
     /* First, if there aren't any, then omit this wff or class var */
     found = 0;
     for (j = 0; j < setVars; j++) {
-      if (setVarDVFlag[j] == 'n') {
+      if (setVarDVFlag[j] == 'N') {
         found = 1;
         break;
       }
@@ -1171,7 +1228,7 @@ vstring htmlAllowedSubst(long showStmt)
         str1, "(", NULL));
     first = 1;
     for (j = 0; j < setVars; j++) {
-      if (setVarDVFlag[j] == 'n') {
+      if (setVarDVFlag[j] == 'N') {
         let(&str1, "");
         str1 = tokenToTex(mathToken[setVar[j]].tokenName, showStmt);
         let(&htmlAllowedList, cat(htmlAllowedList,
@@ -1920,7 +1977,7 @@ void typeProof(long statemNum,
         definition which is called from typeStatement() */
 
       /* Create list of syntax statements used */
-      let(&statementUsedFlags, string(statements + 1, 'n')); /* Init. to 'no' */
+      let(&statementUsedFlags, string(statements + 1, 'N')); /* Init. to 'no' */
       for (step = 0; step < plen; step++) {
         stmt = proof[step];
         /* Convention: collect all $a's that don't begin with "|-" */
@@ -1928,7 +1985,7 @@ void typeProof(long statemNum,
           if (statement[stmt].type == a_) {
             if (strcmp("|-", mathToken[
                 (statement[stmt].mathString)[0]].tokenName)) {
-              statementUsedFlags[stmt] = 'y'; /* Flag to use it */
+              statementUsedFlags[stmt] = 'Y'; /* Flag to use it */
             }
           }
         }
@@ -2003,11 +2060,11 @@ void typeProof(long statemNum,
             stmt = nmbrTmpPtr2[step];
             /* Convention: collect all $a's that don't begin with "|-" */
             if (stmt > 0) {
-              if (statementUsedFlags[stmt] == 'n') { /* For slight speedup */
+              if (statementUsedFlags[stmt] == 'N') { /* For slight speedup */
                 if (statement[stmt].type == a_) {
                   if (strcmp("|-", mathToken[
                       (statement[stmt].mathString)[0]].tokenName)) {
-                    statementUsedFlags[stmt] = 'y'; /* Flag to use it */
+                    statementUsedFlags[stmt] = 'Y'; /* Flag to use it */
                   } else {
                     /* In a syntax proof there should be no |- */
                     /* (In the future, we may want to break instead of
@@ -2036,7 +2093,7 @@ void typeProof(long statemNum,
 
       let(&tmpStr, "");
       for (stmt = 1; stmt <= statements; stmt++) {
-        if (statementUsedFlags[stmt] == 'y') {
+        if (statementUsedFlags[stmt] == 'Y') {
           if (!tmpStr[0]) {
             let(&tmpStr,
                /* 10/10/02 */
@@ -2105,7 +2162,11 @@ void typeProof(long statemNum,
 
       /* 10/25/02 Output "referenced by" list here */
       if (printStringForReferencedBy[0]) {
-        printLongLine(printStringForReferencedBy, "", "\"");
+        /* printLongLine takes 130 sec for 'sh st syl/a' */
+        /*printLongLine(printStringForReferencedBy, "", "\"");*/
+        /* 18-Jul-2015 nm Speedup for 'sh st syl/a' */
+        if (outputToString != 1) bug(257);
+        let(&printString, cat(printString, printStringForReferencedBy, NULL));
         let(&printStringForReferencedBy, "");
       }
 
@@ -2113,7 +2174,8 @@ void typeProof(long statemNum,
       /* Get list of axioms and definitions assumed by proof */
       let(&statementUsedFlags, "");
       traceProofWork(statemNum,
-          1 /*essentialFlag*/,
+          1, /*essentialFlag*/
+          "", /*traceToList*/ /* 18-Jul-2015 nm */
           &statementUsedFlags, /*&statementUsedFlags*/
           &unprovedList /* &unprovedList */);
       if ((signed)(strlen(statementUsedFlags)) != statements + 1) bug(227);
@@ -2121,7 +2183,7 @@ void typeProof(long statemNum,
       /* First get axioms */
       let(&tmpStr, "");
       for (stmt = 1; stmt <= statements; stmt++) {
-        if (statementUsedFlags[stmt] == 'y' && statement[stmt].type == a_) {
+        if (statementUsedFlags[stmt] == 'Y' && statement[stmt].type == a_) {
           let(&tmpStr1, left(statement[stmt].labelName, 3));
           if (!strcmp(tmpStr1, "ax-")) {
             if (!tmpStr[0]) {
@@ -2147,7 +2209,7 @@ void typeProof(long statemNum,
       /* 10/10/02 Then get definitions */
       let(&tmpStr, "");
       for (stmt = 1; stmt <= statements; stmt++) {
-        if (statementUsedFlags[stmt] == 'y' && statement[stmt].type == a_) {
+        if (statementUsedFlags[stmt] == 'Y' && statement[stmt].type == a_) {
           let(&tmpStr1, left(statement[stmt].labelName, 3));
           if (!strcmp(tmpStr1, "df-")) {
             if (!tmpStr[0]) {
@@ -2538,7 +2600,7 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
 
   long i, j, k, pos, stmt, plen, slen, step;
   char type;
-  vstring statementUsedFlags = ""; /* 'y'/'n' flag that statement is used */
+  vstring statementUsedFlags = ""; /* 'Y'/'N' flag that statement is used */
   vstring str1 = "";
   vstring str2 = "";
   vstring str3 = "";
@@ -2616,15 +2678,15 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
   /* First, fill in the statementUsedFlags char array.  This allows us to sort
      the output by statement number without calling a sort routine. */
   slen = nmbrLen(statementList);
-  let(&statementUsedFlags, string(statements + 1, 'n')); /* Init. to 'no' */
+  let(&statementUsedFlags, string(statements + 1, 'N')); /* Init. to 'no' */
   for (pos = 0; pos < slen; pos++) {
     stmt = statementList[pos];
     if (stmt > statemNum || stmt < 1) bug(210);
-    statementUsedFlags[stmt] = 'y';
+    statementUsedFlags[stmt] = 'Y';
   }
   /* Next, build the output string */
   for (stmt = 1; stmt < statemNum; stmt++) {
-    if (statementUsedFlags[stmt] == 'y') {
+    if (statementUsedFlags[stmt] == 'Y') {
 
       let(&str1, cat(" is located on line ", str(statement[stmt].lineNum),
           " of the file ", NULL));
@@ -2702,10 +2764,10 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
             str2, str3, 0, 0);
       }
 
-    } /* End if (statementUsedFlag[stmt] == 'y') */
+    } /* End if (statementUsedFlag[stmt] == 'Y') */
   } /* Next stmt */
 
-  let(&statementUsedFlags, ""); /* 'y'/'n' flag that statement is used */
+  let(&statementUsedFlags, ""); /* 'Y'/'N' flag that statement is used */
   let(&str1, "");
   let(&str2, "");
   let(&str3, "");
@@ -2727,6 +2789,7 @@ flag traceProof(long statemNum, /* 20-May-2013 nm */
   flag essentialFlag,
   flag axiomFlag,
   vstring matchList, /* 19-May-2013 nm */
+  vstring traceToList, /* 18-Jul-2015 nm */
   flag testOnlyFlag /* 20-May-2013 nm */)
 {
 
@@ -2744,21 +2807,28 @@ flag traceProof(long statemNum, /* 20-May-2013 nm */
       print2(
   "Statement \"%s\" assumes the following axioms ($a statements):\n",
           statement[statemNum].labelName);
-    } else {
+    } else  if (traceToList[0] == 0) {
       print2(
   "The proof of statement \"%s\" uses the following earlier statements:\n",
           statement[statemNum].labelName);
+    } else {
+      print2(
+  "The proof of statement \"%s\" traces back to \"%s\" via:\n",
+          statement[statemNum].labelName, traceToList);
     }
   }
 
-  traceProofWork(statemNum, essentialFlag, &statementUsedFlags,
+  traceProofWork(statemNum,
+      essentialFlag,
+      traceToList, /* 18-Jul-2015 nm */
+      &statementUsedFlags,
       &unprovedList);
   if ((signed)(strlen(statementUsedFlags)) != statements + 1) bug(226);
 
   /* Build the output string */
   let(&outputString, "");
   for (stmt = 1; stmt < statemNum; stmt++) {
-    if (statementUsedFlags[stmt] == 'y') {
+    if (statementUsedFlags[stmt] == 'Y') {
 
       /* 19-May-2013 nm - Added MATCH qualifier */
       if (matchList[0]) {  /* There is a list to match */
@@ -2786,7 +2856,7 @@ flag traceProof(long statemNum, /* 20-May-2013 nm */
           case f_: let(&outputString, cat(outputString, "($f)", NULL)); break;
         }
       }
-    } /* End if (statementUsedFlag[stmt] == 'y') */
+    } /* End if (statementUsedFlag[stmt] == 'Y') */
   } /* Next stmt */
 
   /* 20-May-2013 nm  Skip printing in testOnlyFlag mode */
@@ -2827,7 +2897,8 @@ flag traceProof(long statemNum, /* 20-May-2013 nm */
    a nmbrString with a list of statements and unproved statements */
 void traceProofWork(long statemNum,
   flag essentialFlag,
-  vstring *statementUsedFlagsP, /* 'y'/'n' flag that statement is used */
+  vstring traceToList, /* 18-Jul-2015 nm */
+  vstring *statementUsedFlagsP, /* 'Y'/'N' flag that statement is used */
   nmbrString **unprovedListP)
 {
 
@@ -2835,13 +2906,43 @@ void traceProofWork(long statemNum,
   nmbrString *statementList = NULL_NMBRSTRING;
   nmbrString *proof = NULL_NMBRSTRING;
   nmbrString *essentialFlags = NULL_NMBRSTRING;
+  vstring traceToFilter = ""; /* 18-Jul-2015 nm */
+  vstring str1 = ""; /* 18-Jul-2015 nm */
+  long j; /* 18-Jul-2015 nm */
+
+  /* 18-Jul-2015 nm */
+  /* Preprocess the "SHOW TRACE_BACK ... / TO" traceToList list if any */
+  if (traceToList[0] != 0) {
+    let(&traceToFilter, string(statements + 1, 'N')); /* Init. to 'no' */
+    /* Wildcard match scan */
+    for (stmt = 1; stmt <= statements; stmt++) {
+      if (statement[stmt].type != (char)a_
+          && statement[stmt].type != (char)p_)
+        continue; /* Not a $a or $p statement; skip it */
+      /* Wildcard matching */
+      if (!matchesList(statement[stmt].labelName, traceToList, '*', '?'))
+        continue;
+      let(&str1, "");
+      str1 = traceUsage(stmt /*showStatement*/,
+          1, /*recursiveFlag*/
+          statemNum /* cutoffStmt */);
+      traceToFilter[stmt] = 'Y'; /* Include the statement we're showing
+                                    usage of */
+      if (str1[0] == 'Y') {  /* There is some usage */
+        for (j = stmt + 1; j <= statements; j++) {
+          /* OR in the usage to the filter */
+          if (str1[j] == 'Y') traceToFilter[j] = 'Y';
+        }
+      }
+    } /* Next i (statement number) */
+  } /* if (traceToList[0] != 0) */
 
   nmbrLet(&statementList, nmbrSpace(statements));
   statementList[0] = statemNum;
   slen = 1;
   nmbrLet(&(*unprovedListP), NULL_NMBRSTRING); /* List of unproved statements */
-  let(&(*statementUsedFlagsP), string(statements + 1, 'n')); /* Init. to 'no' */
-  (*statementUsedFlagsP)[statemNum] = 'y';  /* nm 22-Nov-2014 */
+  let(&(*statementUsedFlagsP), string(statements + 1, 'N')); /* Init. to 'no' */
+  (*statementUsedFlagsP)[statemNum] = 'Y';  /* nm 22-Nov-2014 */
   for (pos = 0; pos < slen; pos++) {
     if (statement[statementList[pos]].type != p_) {
       continue; /* Not a $p */
@@ -2881,10 +2982,21 @@ void traceProofWork(long statemNum,
         }
       }
       /* Add this statement to the statement list if not already in it */
-      if ((*statementUsedFlagsP)[stmt] == 'n') {
-        statementList[slen] = stmt;
-        slen++;
-        (*statementUsedFlagsP)[stmt] = 'y';
+      if ((*statementUsedFlagsP)[stmt] == 'N') {
+        /*(*statementUsedFlagsP)[stmt] = 'Y';*/  /* 18-Jul-2015 deleted */
+
+        /* 18-Jul-2015 nm */
+        if (traceToList[0] == 0) {
+          statementList[slen] = stmt;
+          slen++;
+          (*statementUsedFlagsP)[stmt] = 'Y';
+        } else {
+          if (traceToFilter[stmt] == 'Y') {
+            statementList[slen] = stmt;
+            slen++;
+            (*statementUsedFlagsP)[stmt] = 'Y';
+          }
+        }
       }
     } /* Next step */
   } /* Next pos */
@@ -2893,6 +3005,8 @@ void traceProofWork(long statemNum,
   nmbrLet(&essentialFlags, NULL_NMBRSTRING);
   nmbrLet(&proof, NULL_NMBRSTRING);
   nmbrLet(&statementList, NULL_NMBRSTRING);
+  let(&str1, "");
+  let(&str1, "");
   return;
 
 } /* traceProofWork */
@@ -3291,13 +3405,21 @@ double countSteps(long statemNum, flag essentialFlag)
 
 /* Traces what statements require the use of a given statement */
 /* The output string must be deallocated by the user. */
+/* 18-Jul-2015 nm changed the meaning of the returned string as follows: */
+/* The return string [0] will be 'Y' or 'N' depending on whether there are any
+   statements that use statemNum.  Return string [i] will be 'Y' or 'N'
+   depending on whether statement[i] uses statemNum.  All i will be populated
+   with 'Y'/'N' even if not $a or $p (always 'N' for non-$a,$p). */
+/* 18-Jul-2015 added optional 'cutoffStmt' parameter:  if nonzero, then
+   statements above cutoffStmt will not be scanned (for speedup) */
 vstring traceUsage(long statemNum,
-  flag recursiveFlag) {
+  flag recursiveFlag,
+  long cutoffStmt /* for speedup */) {
 
   long lastPos, stmt, slen, pos;
   flag tmpFlag;
-  vstring statementUsedFlags = ""; /* 'y'/'n' flag that statement is used */
-  vstring outputString = "";
+  vstring statementUsedFlags = ""; /* 'Y'/'N' flag that statement is used */
+  /* vstring outputString = ""; */ /* 18-Jun-2015 nm Deleted */
   nmbrString *statementList = NULL_NMBRSTRING;
   nmbrString *proof = NULL_NMBRSTRING;
 
@@ -3305,7 +3427,7 @@ vstring traceUsage(long statemNum,
   char *fbPtr;
   char *fbPtr2;
   char zapSave;
-  flag notEFRec;
+  flag notEFRec; /* Not ($e or $f or recursive) */
 
   if (statement[statemNum].type == e_ || statement[statemNum].type == f_
       || recursiveFlag) {
@@ -3316,7 +3438,14 @@ vstring traceUsage(long statemNum,
 
   nmbrLet(&statementList, nmbrAddElement(statementList, statemNum));
   lastPos = 1;
-  for (stmt = statemNum + 1; stmt <= statements; stmt++) { /* Scan all stmts*/
+
+  /* 18-Jul-2015 nm */
+  /* For speedup (in traceProofWork), scan only up to cutoffStmt if it
+     is specified, otherwise scan all statements. */
+  if (cutoffStmt == 0) cutoffStmt = statements;
+
+  /*for (stmt = statemNum + 1; stmt <= statements; stmt++) {*/ /* Scan all stmts*/
+  for (stmt = statemNum + 1; stmt <= cutoffStmt; stmt++) { /* Scan stmts*/
     if (statement[stmt].type != p_) continue; /* Ignore if not $p */
 
     /* Speed up:  Do a character search for the statement label in the proof,
@@ -3380,33 +3509,41 @@ vstring traceUsage(long statemNum,
   /* Prepare the output */
   /* First, fill in the statementUsedFlags char array.  This allows us to sort
      the output by statement number without calling a sort routine. */
-  let(&statementUsedFlags, string(statements + 1, 'n')); /* Init. to 'no' */
+  let(&statementUsedFlags, string(statements + 1, 'N')); /* Init. to 'no' */
+  if (slen > 1) statementUsedFlags[0] = 'Y';  /* Used by at least one */
+                                              /* 18-Jul-2015 nm */
   for (pos = 1; pos < slen; pos++) { /* Start with 1 (ignore traced statement)*/
     stmt = statementList[pos];
     if (stmt <= statemNum || statement[stmt].type != p_ || stmt > statements)
         bug(212);
-    statementUsedFlags[stmt] = 'y';
+    statementUsedFlags[stmt] = 'Y';
   }
-  /* Next, build the output string */
+  return (statementUsedFlags); /* 18-Jul-2015 nm */
+
+  /********** 18-Jul-2015 nm Deleted code - this is now done by caller ******/
+  /*
+  /@ Next, build the output string @/
   let(&outputString, "");
   for (stmt = 1; stmt <= statements; stmt++) {
-    if (statementUsedFlags[stmt] == 'y') {
+    if (statementUsedFlags[stmt] == 'Y') {
       let(&outputString, cat(outputString, " ", statement[stmt].labelName,
           NULL));
-      /* For temporary unofficial use by NDM to help build command files: */
-      /*
+      /@ For temporary unofficial use by NDM to help build command files: @/
+      /@
       print2("prove %s$min %s/a$sa n/compr$q\n",
           statement[stmt].labelName,statement[statemNum].labelName);
-      */
-    } /* End if (statementUsedFlag[stmt] == 'y') */
-  } /* Next stmt */
+      @/
+    } /@ End if (statementUsedFlag[stmt] == 'Y') @/
+  } /@ Next stmt @/
 
-  /* Deallocate */
+  /@ Deallocate @/
   let(&statementUsedFlags, "");
   nmbrLet(&statementList, NULL_NMBRSTRING);
   nmbrLet(&proof, NULL_NMBRSTRING);
 
   return (outputString);
+  */
+  /*************** 18-Jul-2015 End of deleted code **************/
 
 } /* traceUsage */
 

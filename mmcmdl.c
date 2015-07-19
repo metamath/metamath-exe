@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2014  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2015  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -437,7 +437,7 @@ flag processCommandLine(void)
             i++;
             if (!getFullArg(i,cat(
                 /* 19-May-2013 nm Added MATCH */
-                "ALL|ESSENTIAL|AXIOMS|TREE|DEPTH|COUNT_STEPS|MATCH",
+                "ALL|ESSENTIAL|AXIOMS|TREE|DEPTH|COUNT_STEPS|MATCH|TO",
                 "|<ALL>",NULL)))
               goto pclbad;
             if (lastArgMatches("DEPTH")) {
@@ -447,6 +447,12 @@ flag processCommandLine(void)
             }
             /* 13-May-2013 nm Added MATCH */
             if (lastArgMatches("MATCH")) {
+              i++;
+              if (!getFullArg(i,"* What statement label? "))
+                goto pclbad;
+            }
+            /* 18-Jul-2015 nm Added MATCH */
+            if (lastArgMatches("TO")) {
               i++;
               if (!getFullArg(i,"* What statement label? "))
                 goto pclbad;

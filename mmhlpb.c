@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2014  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2015  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -354,6 +354,30 @@ H("        statements are excluded when <label-match> contains wildcard");
 H("        characters.");
 H("");
 
+let(&saveHelpCmd, ""); /* Deallocate memory */
+
+return;
+} /* help2 */
+
+
+/* 18-Jul-2015 nm Split up help2 into help2 and help3 so lcc
+   optimizer wouldn't overflow */
+
+
+void help3(vstring helpCmd)
+{
+
+/* 5-Sep-2012 nm */
+vstring saveHelpCmd = "";
+/* help3() may be called with a temporarily allocated argument (left(),
+   cat(), etc.), and the let()s in the eventual print2() calls will
+   deallocate and possibly corrupt helpCmd.  So, we grab a non-temporarily
+   allocated copy here.  (And after this let(), helpCmd will become invalid
+   for the same reason.)  */
+let(&saveHelpCmd, helpCmd);
+
+
+
 
 printHelp = !strcmp(saveHelpCmd, "HELP SHOW TRACE_BACK");
 H("Syntax:  SHOW TRACE_BACK <label-match> [/ ESSENTIAL] [/ AXIOMS] [/ TREE]");
@@ -373,10 +397,14 @@ H("        depth.");
 H("    / COUNT_STEPS - Counts the number of steps the proof would have if");
 H("        fully expanded back to axioms.  If / ESSENTIAL is specified,");
 H("        expansions of floating hypotheses are not counted.");
-H("    / MATCH <label-match> - include only statements matching <label-list>");
+H("    / MATCH <label-match> - include only statements matching <label-match>");
 H("        in the output display.  Undisplayed statements are still used to");
 H("        compute the list.  For example, / MATCH ax-* will show set.mm");
 H("        axioms but not definitions.");
+H("    / TO <label-match> - include only statements  that depend on the");
+H("        <label-match> statement(s).  For example,");
+H("        SHOW TRACE_BACK ac6s / TO ax-reg will all statements requiring");
+H("        ax-reg that ac6s depends on.");
 H("");
 
 
@@ -623,7 +651,6 @@ H("");
 printHelp = !strcmp(saveHelpCmd, "HELP MM-PA");
 H("See HELP PROOF_ASSISTANT");
 H("");
-
 
 printHelp = !strcmp(saveHelpCmd, "HELP MORE");
 H("Syntax:  MORE <filename>");

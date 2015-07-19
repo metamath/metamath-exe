@@ -40,9 +40,11 @@ flag traceProof(long statemNum,
   flag essentialFlag,
   flag axiomFlag,
   vstring matchList, /* 19-May-2013 nm */
+  vstring traceToList, /* 18-Jul-2015 nm */
   flag testOnlyFlag /* 20-May-2013 nm */);
 void traceProofWork(long statemNum,
   flag essentialFlag,
+  vstring traceToList, /* 18-Jul-2015 nm */
   vstring *statementUsedFlagsP, /* 'y'/'n' flag that statement is used */
   nmbrString **unprovedListP);
 /* Traces back the statements used by a proof, recursively, with tree display.*/
@@ -56,7 +58,8 @@ void traceProofTreeRec(long statemNum,
 double countSteps(long statemNum, flag essentialFlag);
 /* Traces what statements require the use of a given statement */
 vstring traceUsage(long statemNum,
-  flag recursiveFlag);
+  flag recursiveFlag,
+  long cutoffStmt /* if nonzero, stop scan there */ /* 18-Jul-2015 nm */);
 vstring htmlAllowedSubst(long showStmt);  /* 4-Jan-2014 nm */
 /* Returns any comment that occurs just before a statement */
 vstring getDescription(long statemNum);

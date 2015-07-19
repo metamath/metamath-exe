@@ -1523,7 +1523,8 @@ void printTexHeader(flag texHeaderFlag)
          global variable in place of THEOREMS_PER_PAGE?) */
       i = ((statement[showStatement].pinkNumber - 1) / 100) + 1; /* Page # */
       /* let(&tmpStr, cat("mmtheorems", (i == 1) ? "" : str(i), ".html#", */
-      /* 12-Jul-2015 nm - all thm pages now have page num after mmtheorems */
+      /* 18-Jul-2015 nm - all thm pages now have page num after mmtheorems
+         since mmtheorems.html is now just the table of contents */
       let(&tmpStr, cat("mmtheorems", str(i), ".html#",
           statement[showStatement].labelName, NULL)); /* Link to page/stmt */
 

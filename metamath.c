@@ -5,7 +5,10 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.117 30-May-2015"
+#define MVERSION "0.118 18-Jul-2015"
+/* 0.118 18-Jul-2015 nm metamath.c, mmcmds.h, mmcmds.c, mmcmdl.c, mmhlpb.h,
+   mmhlpb.c - added /TO qualifier to SHOW TRACE_BACK.  See
+   HELP SHOW TRACE_BACK. */
 /* 0.117 30-May-2015
    1. nm mmwtex.c - move <A NAME... tag to math symbol cell in proof pages so
        hyperlink will jump to top of cell (reported by Alan Sare)
@@ -510,6 +513,7 @@ void command(int argc, char *argv[])
   flag countStepsFlag; /* For SHOW TRACE_BACK */ /* 19-May-2013 nm */
   flag matchFlag; /* For SHOW TRACE_BACK */ /* 19-May-2013 nm */
   vstring matchList = "";  /* For SHOW TRACE_BACK */ /* 19-May-2013 nm */
+  vstring traceToList = ""; /* For SHOW TRACE_BACK */ /* 18-Jul-2015 nm */
   flag recursiveFlag; /* For SHOW USAGE */
   long fromLine, toLine; /* For TYPE, SEARCH */
   flag joinFlag; /* For SEARCH */
@@ -836,6 +840,7 @@ void command(int argc, char *argv[])
       } else {
         help1(str1);
         help2(str1);
+        help3(str1); /* 18-Jul-2015 nm */
       }
       continue;
     }
@@ -2017,6 +2022,7 @@ void command(int argc, char *argv[])
                   || !strcmp(mid(str2, k, (long)strlen("SCHEME")), "SCHEME")
                   || !strcmp(mid(str2, k, (long)strlen("ITEM")), "ITEM")
                   || !strcmp(mid(str2, k, (long)strlen("LINE")), "LINE")
+                  || !strcmp(mid(str2, k, (long)strlen("LINES")), "LINES")
                   /* Don't use SCHEMA since we may have THEOREM SCHEMA
                   || !strcmp(mid(str2, k, (long)strlen("SCHEMA")), "SCHEMA")
                   */
@@ -3067,7 +3073,7 @@ void command(int argc, char *argv[])
         print2("Reading definitions from $t statement of %s...\n", input_fn);
         if (!readTexDefs()) {
           print2(
-          "?There was an error in the $t comment's Latex/HTML definitions.\n");
+          "?There was an error in the $t comment's LaTeX/HTML definitions.\n");
           print2("?HTML generation was aborted due to the error above.\n");
           continue; /* An error occurred */
         }
@@ -3368,7 +3374,8 @@ void command(int argc, char *argv[])
       print2("The clock() function is not implemented on this computer.\n");
 #endif
       continue;
-    }
+    } /* if (cmdMatches("SHOW ELAPSED_TIME")) */
+
 
     if (cmdMatches("SHOW TRACE_BACK")) {
 
@@ -3409,6 +3416,12 @@ void command(int argc, char *argv[])
         let(&matchList, fullArg[i + 1]);
       } else {
         let(&matchList, "");
+      }
+      i = switchPos("/ TO");
+      if (i != 0) {
+        let(&traceToList, fullArg[i + 1]);
+      } else {
+        let(&traceToList, "");
       }
       if (treeFlag) {
         if (axiomFlag) {
@@ -3482,8 +3495,11 @@ void command(int argc, char *argv[])
           if (countStepsFlag) {
             countSteps(showStatement, essentialFlag);
           } else {
-            traceProof(showStatement, essentialFlag, axiomFlag,
+            traceProof(showStatement,
+                essentialFlag,
+                axiomFlag,
                 matchList, /* 19-May-2013 nm */
+                traceToList, /* 18-Jul-2015 nm */
                 0 /* testOnlyFlag */ /* 20-May-2013 nm */);
           }
         }
@@ -3497,8 +3513,9 @@ void command(int argc, char *argv[])
       }
 
       let(&matchList, ""); /* Deallocate memory */
+      let(&traceToList, ""); /* Deallocate memory */
       continue;
-    }
+    } /* if (cmdMatches("SHOW TRACE_BACK")) */
 
 
     if (cmdMatches("SHOW USAGE")) {
@@ -3534,9 +3551,15 @@ void command(int argc, char *argv[])
         if (j) recursiveFlag = 0; /* Direct references only */
 
         let(&str1, "");
-        str1 = traceUsage(showStatement, recursiveFlag);
+        str1 = traceUsage(showStatement,
+            recursiveFlag,
+            0 /* cutoffStmt */);
 
-        /* Count the number of statements = # of spaces */
+
+
+        /************* 18-Jul-2015 nm Start of deleted code ************/
+        /*
+        /@ Count the number of statements = # of spaces @/
         k = (long)strlen(str1) - (long)strlen(edit(str1, 2));
 
         if (!k) {
@@ -3569,9 +3592,80 @@ void command(int argc, char *argv[])
           let(&str1, "  (None)");
         }
 
-        /* Print the output */
+        /@ Print the output @/
         printLongLine(str1, "  ", " ");
-      } /* next i */
+        */
+        /********* 18-Jul-2015 nm End of deleted code ****************/
+
+
+        /************* 18-Jul-2015 nm Start of new code ************/
+        /* 18-Jul-2015 nm */
+        /* str1[0] will be 'Y' or 'N' depending on whether there are any
+           statements.  str1[i] will be 'Y' or 'N' depending on whether
+           statement[i] uses showStatement. */
+        /* Count the number of statements k = # of 'Y' */
+        k = 0;
+        if (str1[0] == 'Y') {
+          /* There is at least one statement using showStatement */
+          for (j = showStatement + 1; j <= statements; j++) {
+            if (str1[j] == 'Y') {
+              k++;
+            } else {
+              if (str1[j] != 'N') bug(1124); /* Must be 'Y' or 'N' */
+            }
+          }
+        } else {
+          if (str1[0] != 'N') bug(1125); /* Must be 'Y' or 'N' */
+        }
+
+        if (k == 0) {
+          printLongLine(cat("Statement \"",
+              statement[showStatement].labelName,
+              "\" is not referenced in the proof of any statement.", NULL),
+              "", " ");
+        } else {
+          if (recursiveFlag) {
+            let(&str2, "\" directly or indirectly affects");
+          } else {
+            let(&str2, "\" is directly referenced in");
+          }
+          if (k == 1) {
+            printLongLine(cat("Statement \"",
+                statement[showStatement].labelName,
+                str2, " the proof of ",
+                str(k), " statement:", NULL), "", " ");
+          } else {
+            printLongLine(cat("Statement \"",
+                statement[showStatement].labelName,
+                str2, " the proofs of ",
+                str(k), " statements:", NULL), "", " ");
+          }
+        }
+
+        if (k != 0) {
+          let(&str3, " "); /* Line buffer */
+          for (j = showStatement + 1; j <= statements; j++) {
+            if (str1[j] == 'Y') {
+              /* Since the output list could be huge, don't build giant
+                 string (very slow) but output it line by line */
+              if ((long)strlen(str3) + 1 +
+                  (long)strlen(statement[j].labelName) > screenWidth) {
+                /* Output and reset the line buffer */
+                print2("%s\n", str3);
+                let(&str3, " ");
+              }
+              let(&str3, cat(str3, " ", statement[j].labelName, NULL));
+            }
+          }
+          if (strlen(str3) > 1) print2("%s\n", str3);
+          let(&str3, "");
+        } else {
+          print2("  (None)\n");
+        } /* if (k != 0) */
+        /********* 18-Jul-2015 nm End of new code ****************/
+
+
+      } /* next i (statement matching wildcard list) */
 
       if (showStatement == 0) {
         printLongLine(cat("?There are no labels matching \"",
@@ -3579,7 +3673,7 @@ void command(int argc, char *argv[])
             "See HELP SHOW USAGE for matching rules.", NULL), "", " ");
       }
       continue;
-    } /* cmdMatches("SHOW USAGE") */
+    } /* if cmdMatches("SHOW USAGE") */
 
 
     if (cmdMatches("SHOW PROOF")
@@ -4090,7 +4184,8 @@ void command(int argc, char *argv[])
       }
 
       continue;
-    } /* if (cmdMatches("SHOW PROOF")... */
+    } /* if (cmdMatches("SHOW/SAVE [NEW_]PROOF" or" MIDI") */
+
 
 /*E*/ /*???????? DEBUG command for debugging only */
     if (cmdMatches("DBG")) {
@@ -5731,9 +5826,10 @@ void command(int argc, char *argv[])
                 /* See if the TRACE_BACK list includes a match to the
                    /FORBID argument */
                 if (traceProof(k,
-                    0 /*essentialFlag*/,
-                    0 /*axiomFlag*/,
+                    0, /*essentialFlag*/
+                    0, /*axiomFlag*/
                     forbidMatchList,
+                    "", /*traceToList*/ /* 18-Jul-2015 nm */
                     1 /* testOnlyFlag */)) {
                   /* Yes, a forbidden statement occurred in traceProof() */
                   /* Revert the proof to before minimization */
@@ -5754,20 +5850,24 @@ void command(int argc, char *argv[])
               /* If we haven't called trace yet for the theorem being proved,
                  do it now. */
               if (traceProofFlags[0] == 0) {
-                traceProofWork(proveStatement, 1 /*essentialFlag*/,
+                traceProofWork(proveStatement,
+                    1 /*essentialFlag*/,
+                    "", /*traceToList*/ /* 18-Jul-2015 nm */
                     &traceProofFlags, /* y/n list of flags */
                     &nmbrTmp /* unproved list - ignored */);
                 nmbrLet(&nmbrTmp, NULL_NMBRSTRING); /* Discard */
               }
               let(&traceTrialFlags, "");
-              traceProofWork(k, 1 /*essentialFlag*/,
-                  &traceTrialFlags, /* y/n list of flags */
+              traceProofWork(k,
+                  1 /*essentialFlag*/,
+                  "", /*traceToList*/ /* 18-Jul-2015 nm */
+                  &traceTrialFlags, /* Y/N list of flags */
                   &nmbrTmp /* unproved list - ignored */);
               nmbrLet(&nmbrTmp, NULL_NMBRSTRING); /* Discard */
               j = 1; /* 1 = ok to use trial statement */
               for (i = 1; i < proveStatement; i++) {
                 if (statement[i].type != (char)a_) continue; /* Not $a */
-                if (traceProofFlags[i] == 'y') continue;
+                if (traceProofFlags[i] == 'Y') continue;
                          /* If the axiom is already used by the proof, we
                             don't care if the trial statement depends on it */
                 if (matchesList(statement[i].labelName, noNewAxiomsMatchList,
@@ -5776,7 +5876,7 @@ void command(int argc, char *argv[])
                      care if the trial statement depends on it */
                   continue;
                 }
-                if (traceTrialFlags[i] == 'y') {
+                if (traceTrialFlags[i] == 'Y') {
                   /* The trial statement uses an axiom that the current
                      proof should avoid, so we abort it */
                   j = 0; /* 0 = don't use trial statement */
