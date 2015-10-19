@@ -1416,6 +1416,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
   long saveUnifTrialCount;
   static long depth = 0;
   static long trials;
+  static flag maxDepthExceeded; /* 2-Oct-2015 nm */
   long selfScanSteps;
   long selfScanStep;
 /*E*/  long unNum;
@@ -1424,6 +1425,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
 
   if (depth == 0) {
     trials = 0; /* Initialize trials */
+    maxDepthExceeded = 0; /* 2-Oct-2015 nm  Initialize */
   } else {
     trials++;
   }
@@ -1435,6 +1437,14 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
         (long)(step + 1));
     goto returnPoint;
   }
+
+  /* 2-Oct-2015 nm */
+  if (maxDepthExceeded) {
+    /* Pop out of the recursive calls to avoid an infinite loop */
+    nmbrLet(&proof, NULL_NMBRSTRING);
+    goto returnPoint;
+  }
+
 #define MAX_DEPTH 40  /* > this, infinite loop assumed */ /*???User setting?*/
   if (depth > MAX_DEPTH) {
     nmbrLet(&proof, NULL_NMBRSTRING);
@@ -1444,7 +1454,9 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
        "backtracking (i.e., depth > ", str(MAX_DEPTH),
        ").  The last proof attempt was for math string \"",
        nmbrCvtMToVString(mString),
-       "\".  Your axiom system may have an error.", NULL), " ", " ");
+       "\".  Your axiom system may have an error ",
+       "or you may have to SET EMPTY_SUBSTITUTION ON.", NULL), " ", " ");
+    maxDepthExceeded = 1;  /* 2-Oct-2015 nm  Flag to exit recursion */
     goto returnPoint;
   }
 

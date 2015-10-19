@@ -5,7 +5,11 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.118 18-Jul-2015"
+#define MVERSION "0.119 18-Oct-2015"
+/* 0.119 18-Oct-2015 nm mmwtex.c - add summary TOC to Theorem List; improve
+       math symbol GIF image alignment
+   2-Oct-2015 nm metamath.c, mmpfas.c, mmwtex.c - fix miscellaneous small
+       bugs or quirks */
 /* 0.118 18-Jul-2015 nm metamath.c, mmcmds.h, mmcmds.c, mmcmdl.c, mmhlpb.h,
    mmhlpb.c - added /TO qualifier to SHOW TRACE_BACK.  See
    HELP SHOW TRACE_BACK. */
@@ -2543,59 +2547,100 @@ void command(int argc, char *argv[])
 
 
     if (cmdMatches("SHOW LABELS")) {
-        linearFlag = 0;
-        if (switchPos("/ LINEAR")) linearFlag = 1;
-        if (switchPos("/ ALL")) {
-          m = 1;  /* Include $e, $f statements */
-          print2(
-  "The labels that match are shown with statement number, label, and type.\n");
-        } else {
-          m = 0;  /* Show $a, $p only */
-          print2(
+      linearFlag = 0;
+      if (switchPos("/ LINEAR")) linearFlag = 1;
+      if (switchPos("/ ALL")) {
+        m = 1;  /* Include $e, $f statements */
+        print2(
+"The labels that match are shown with statement number, label, and type.\n");
+      } else {
+        m = 0;  /* Show $a, $p only */
+        print2(
 "The assertions that match are shown with statement number, label, and type.\n");
+      }
+      j = 0;
+      k = 0;
+      let(&str2, ""); /* Line so far */
+#define COL 20 /* Characters per column */
+#define MIN_SPACE 2 /* At least this many spaces between columns */
+      for (i = 1; i <= statements; i++) {
+        if (!statement[i].labelName[0]) continue; /* No label */
+        if (!m && statement[i].type != (char)p_ &&
+            statement[i].type != (char)a_) continue; /* No /ALL switch */
+        /* 30-Jan-06 nm Added single-character-match wildcard argument */
+        if (!matchesList(statement[i].labelName, fullArg[2], '*', '?')) {
+          continue;
         }
-        j = 0;
-        k = 0;
-        for (i = 1; i <= statements; i++) {
-          if (!statement[i].labelName[0]) continue; /* No label */
-          if (!m && statement[i].type != (char)p_ &&
-              statement[i].type != (char)a_) continue; /* No /ALL switch */
-          /* 30-Jan-06 nm Added single-character-match wildcard argument */
-          if (!matchesList(statement[i].labelName, fullArg[2], '*', '?')) {
-            continue;
-          }
-          let(&str1,cat(str(i)," ",
-              statement[i].labelName," $",chr(statement[i].type)," ",NULL));
-#define COL 19 /* Characters per column */
-          if (j + (long)strlen(str1) > MAX_LEN
-              || (linearFlag && j != 0)) { /* j != 0 to suppress 1st CR */
-            print2("\n");
-            j = 0;
-            k = 0;
-          }
-          if (strlen(str1) > COL || linearFlag) {
-            j = j + (long)strlen(str1);
-            k = k + (long)strlen(str1) - COL;
-            print2(str1);
+
+        /* 2-Oct-2015 nm */
+        let(&str1, cat(str(i), " ",
+            statement[i].labelName, " $", chr(statement[i].type),
+            NULL));
+        if (!str2[0]) {
+          j = 0; /* # of fields on line so far */
+        }
+        k = ((long)strlen(str2) + MIN_SPACE > j * COL)
+            ? (long)strlen(str2) + MIN_SPACE : j * COL;
+                /* Position before new str1 starts */
+        if (k + (long)strlen(str1) > screenWidth || linearFlag) {
+          if (j == 0) {
+            /* In case of huge label, force it out anyway */
+            printLongLine(str1, "", " ");
           } else {
-            if (k == 0) {
-              j = j + COL;
-              print2("%s%s",str1,space(COL - (long)strlen(str1)));
+            /* Line width exceeded, postpone adding str1 */
+            print2("%s\n", str2);
+            let(&str2, str1);
+            j = 1;
+          }
+        } else {
+          /* Add new field to line */
+          if (j == 0) {
+            let(&str2, str1); /* Don't put space before 1st label on line */
+          } else {
+            let(&str2, cat(str2, space(k - (long)strlen(str2)), str1, NULL));
+          }
+          j++;
+        }
+
+        /* 2-Oct-2015 nm Deleted
+        let(&str1,cat(str(i)," ",
+            statement[i].labelName," $",chr(statement[i].type)," ",NULL));
+#define COL 19 /@ Characters per column @/
+        if (j + (long)strlen(str1) > MAX_LEN
+            || (linearFlag && j != 0)) { /@ j != 0 to suppress 1st CR @/
+          print2("\n");
+          j = 0;
+          k = 0;
+        }
+        if (strlen(str1) > COL || linearFlag) {
+          j = j + (long)strlen(str1);
+          k = k + (long)strlen(str1) - COL;
+          print2(str1);
+        } else {
+          if (k == 0) {
+            j = j + COL;
+            print2("%s%s",str1,space(COL - (long)strlen(str1)));
+          } else {
+            k = k - (COL - (long)strlen(str1));
+            if (k > 0) {
+              print2(str1);
+              j = j + (long)strlen(str1);
             } else {
-              k = k - (COL - (long)strlen(str1));
-              if (k > 0) {
-                print2(str1);
-                j = j + (long)strlen(str1);
-              } else {
-                print2("%s%s",str1,space(COL - (long)strlen(str1)));
-                j = j + COL;
-                k = 0;
-              }
+              print2("%s%s",str1,space(COL - (long)strlen(str1)));
+              j = j + COL;
+              k = 0;
             }
           }
         }
-        print2("\n");
-        continue;
+        */
+      } /* next i */
+      /* print2("\n"); */
+      if (str2[0]) {
+        print2("%s\n", str2);
+        let(&str2, "");
+      }
+      let(&str1, "");
+      continue;
     }
 
     if (cmdMatches("SHOW SOURCE")) {
@@ -4603,7 +4648,7 @@ void command(int argc, char *argv[])
       if (cmdMatches("LET STEP")) {
 
         /* 14-Sep-2012 nm */
-        s = getStepNum(fullArg[1], proofInProgress.proof,
+        s = getStepNum(fullArg[2], proofInProgress.proof,
             0 /* ALL not allowed */);
         if (s == -1) continue;  /* Error; message was provided already */
 

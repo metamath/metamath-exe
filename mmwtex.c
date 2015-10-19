@@ -1378,6 +1378,32 @@ void printTexHeader(flag texHeaderFlag)
     print2("<META HTML-EQUIV=\"Keywords\"\n");
     print2("CONTENT=\"%s\">\n", htmlTitle);
     */
+
+    /* 18-Oct-2015 nm Image alignment fix */
+    print2(
+        "<STYLE TYPE=\"text/css\">\n");
+    print2(
+        "<!--\n");
+    /* Optional information but takes unnecessary file space */
+    /* (change @ to * if uncommenting)
+    print2(
+        "/@ Math symbol images will be shifted down 4 pixels to align with\n");
+    print2(
+        "   normal text for compatibility with various browsers.  The old\n");
+    print2(
+        "   ALIGN=TOP for math symbol images did not align in all browsers\n");
+    print2(
+        "   and should be deleted.  All other images must override this\n");
+    print2(
+        "   shift with STYLE=\"margin-bottom:0px\". @/\n");
+    */
+    print2(
+        "img { margin-bottom: -4px }\n");
+    print2(
+        "-->\n");
+    print2(
+        "</STYLE>\n");
+
     print2("</HEAD>\n");
     /*print2("<BODY BGCOLOR=\"#D2FFFF\">\n");*/
     /*print2("<BODY BGCOLOR=%s>\n", MINT_BACKGROUND_COLOR);*/
@@ -2200,7 +2226,15 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
              "~~" to escape it, which will become a single tilde on output.
              (At some future point this bug should be converted to a
              meaningful error message that doesn't abort the program.) */
-          bug(2310);
+          /* bug(2310); */
+          /* 2-Oct-2015 nm Changed to error message */
+          outputToString = 0;
+          printLongLine(cat("?Warning:  There is a \"~\" inside of a label",
+              " in the comment of statement \"",
+              statement[showStatement].labelName,
+              "\".  Use \"~~\" to escape \"~\" in an http reference.",
+              NULL), "", " ");
+          outputToString = 1;
           mode = 'n';
         }
         let(&cmt, cat(left(cmt, i), chr(DOLLAR_SUBST) /*$*/, chr(mode),
@@ -2323,7 +2357,19 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
           let(&tmpStr, "");
           tmpStr = asciiToTt(modeSection);
           if (!tmpStr[0]) { /* Can't be blank */
-            bug(2313);
+            /* bug(2313); */ /* 2-Oct-2015 nm Commented out */
+
+            /* 2-Oct-2015 nm */
+            /* This can happen if ~ is followed by ` (start of math string) */
+            outputToString = 0;
+            printLongLine(cat("?Error:  There is a \"~\" with no label",
+                " in the comment of statement \"",
+                statement[showStatement].labelName,
+                "\".  Check that \"`\" inside of a math symbol is",
+                " escaped with \"``\".",
+                NULL), "", " ");
+            outputToString = 1;
+
           }
 
           /* 10/10/02 - obsolete */
@@ -2931,6 +2977,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
   long subsectionCntr;  /* Counter for smallHdr */ /* 21-Jun-2014 */
   vstring outputFileName = "";
   FILE *outputFilePtr;
+  long passNumber; /* 18-Oct-2015 1/2 for summary/detailed table of contents */
 
   /* 31-Jul-2006 for table of contents mod */
   vstring hugeHdr = ""; /* 21-Jun-2014 nm */
@@ -3038,6 +3085,32 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
     /* Icon for bookmark */
     print2("%s%s\n", "<LINK REL=\"shortcut icon\" HREF=\"favicon.ico\" ",
         "TYPE=\"image/x-icon\">");
+
+    /* 18-Oct-2015 nm Image alignment fix */
+    print2(
+        "<STYLE TYPE=\"text/css\">\n");
+    print2(
+        "<!--\n");
+    /* Optional information but takes unnecessary file space */
+    /* (change @ to * if uncommenting)
+    print2(
+        "/@ Math symbol GIFs will be shifted down 4 pixels to align with\n");
+    print2(
+        "   normal text for compatibility with various browsers.  The old\n");
+    print2(
+        "   ALIGN=TOP for math symbol images did not align in all browsers\n");
+    print2(
+        "   and should be deleted.  All other images must override this\n");
+    print2(
+        "   shift with STYLE=\"margin-bottom:0px\". @/\n");
+    */
+    print2(
+        "img { margin-bottom: -4px }\n");
+    print2(
+        "-->\n");
+    print2(
+        "</STYLE>\n");
+
     print2("</HEAD>\n");
     print2("<BODY BGCOLOR=\"#FFFFFF\">\n");
     print2("<TABLE BORDER=0 WIDTH=\"100%s\"><TR>\n", "%");
@@ -3204,7 +3277,14 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
       print2("<A HREF=\"#mmstmtlst\">Start of list</A>&nbsp; &nbsp; \n");
     }
     */
-    print2("<A HREF=\"#mmpglst\">Page list</A>\n");
+
+    /* 18-Oct-2015 nm */
+    if (page == 0) {
+      print2(
+          "&nbsp;<A HREF=\"#mmdtoc\">Detailed Table of Contents</A>&nbsp;\n");
+    }
+
+    print2("<A HREF=\"#mmpglst\">Page List</A>\n");
     /* print2("</CENTER>\n"); */
     print2("<HR NOSHADE SIZE=1>\n");
 
@@ -3252,158 +3332,210 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
     /* 8-May-2015 nm */
     if (page == 0) {  /* We're on ToC page */
 
-      outputToString = 1;
-      print2(
+      /* Pass 1: table of contents summary; pass 2: detail */ /* 18-Oct-2015 */
+      for (passNumber = 1; passNumber <= 2; passNumber++) {
+
+        outputToString = 1;
+
+        /* 18-Oct-2015 deleted
+        print2(
         "<P><CENTER><A NAME=\"mmtc\"></A><B>Table of Contents</B></CENTER>\n");
-      fprintf(outputFilePtr, "%s", printString);
-      outputToString = 0;
-      let(&printString, "");
+        */
+        /* 18-Oct-2015 nm */
+        if (passNumber == 1) {
+          print2(
+              "<P><CENTER><B>Table of Contents Summary</B></CENTER>\n");
+        } else {
+          print2(
+"<P><CENTER><A NAME=\"mmdtoc\"></A><B>Detailed Table of Contents</B></CENTER>\n");
+        }
 
-      let(&hugeHdr, "");
-      let(&bigHdr, "");
-      let(&smallHdr, "");
-      let(&hugeHdrComment, "");
-      let(&bigHdrComment, "");
-      let(&smallHdrComment, "");
-      partCntr = 0;    /* Initialize counters */    /* 21-Jun-2014 */
-      sectionCntr = 0;
-      subsectionCntr = 0;
-      for (stmt = 1; stmt <= statements; stmt++) {
-        getSectionHeadings(stmt, &hugeHdr, &bigHdr, &smallHdr,
-            /* 5-May-2015 nm */
-            &hugeHdrComment, &bigHdrComment, &smallHdrComment);
-        /* Output the headers for $a and $p statements */
-        if (statement[stmt].type == p_ || statement[stmt].type == a_) {
-          if (hugeHdr[0] || bigHdr[0] || smallHdr[0]) {
-            /* Write to the table of contents */
-            outputToString = 1;
-            i = ((statement[stmt].pinkNumber - 1) / theoremsPerPage)
-                + 1; /* Page # */
-            /* let(&str3, cat("mmtheorems", (i == 1) ? "" : str(i), ".html#", */
+        fprintf(outputFilePtr, "%s", printString);
+
+        outputToString = 0;
+        let(&printString, "");
+
+        let(&hugeHdr, "");
+        let(&bigHdr, "");
+        let(&smallHdr, "");
+        let(&hugeHdrComment, "");
+        let(&bigHdrComment, "");
+        let(&smallHdrComment, "");
+        partCntr = 0;    /* Initialize counters */    /* 21-Jun-2014 */
+        sectionCntr = 0;
+        subsectionCntr = 0;
+        for (stmt = 1; stmt <= statements; stmt++) {
+          getSectionHeadings(stmt, &hugeHdr, &bigHdr, &smallHdr,
+              /* 5-May-2015 nm */
+              &hugeHdrComment, &bigHdrComment, &smallHdrComment);
+          /* Output the headers for $a and $p statements */
+          if (statement[stmt].type == p_ || statement[stmt].type == a_) {
+            if (hugeHdr[0] || bigHdr[0] || smallHdr[0]) {
+              /* Write to the table of contents */
+              outputToString = 1;
+              i = ((statement[stmt].pinkNumber - 1) / theoremsPerPage)
+                  + 1; /* Page # */
+              /* let(&str3, cat("mmtheorems", (i == 1) ? "" : str(i), ".html#", */
                           /* Note that page 1 has no number after mmtheorems */
-            /* 8-May-2015 nm */
-            let(&str3, cat("mmtheorems", str(i), ".html#",
-                /* statement[stmt].labelName, NULL)); */
-                "mm", str(statement[stmt].pinkNumber), NULL));
-                   /* Link to page/location - no theorem can be named "mm*" */
-            let(&str4, "");
-            str4 = pinkHTML(stmt);
-            /*let(&str4, right(str4, (long)strlen(PINK_NBSP) + 1));*/
-                                                         /* Discard "&nbsp;" */
-            if (hugeHdr[0]) {    /* 21-Jun-2014 nm */
+              /* 8-May-2015 nm */
+              let(&str3, cat("mmtheorems", str(i), ".html#",
+                  /* statement[stmt].labelName, NULL)); */
+                  "mm", str(statement[stmt].pinkNumber), NULL));
+                     /* Link to page/location - no theorem can be named "mm*" */
+              let(&str4, "");
+              str4 = pinkHTML(stmt);
+              /*let(&str4, right(str4, (long)strlen(PINK_NBSP) + 1));*/
+                                                          /* Discard "&nbsp;" */
+              if (hugeHdr[0]) {    /* 21-Jun-2014 nm */
 
-              /* Create part number */
-              partCntr++;
-              sectionCntr = 0;
-              subsectionCntr = 0;
-              let(&hugeHdr, cat("PART ", str(partCntr), "&nbsp;&nbsp;", hugeHdr, NULL));
+                /* Create part number */
+                partCntr++;
+                sectionCntr = 0;
+                subsectionCntr = 0;
+                let(&hugeHdr, cat("PART ", str(partCntr), "&nbsp;&nbsp;",
+                    hugeHdr, NULL));
 
-              printLongLine(cat(
+                printLongLine(cat(
 
-                  /* 29-Jul-2008 nm Add an anchor to the "sandbox" theorem
-                     for use by mmrecent.html */
-                  /* 21-Jun-2014 nm We use "sandbox:bighdr" for both here and
-                     below so that either huge or big header type could
-                     be used to start mathbox sections */
-                  (stmt == sandboxStmt && bigHdr[0] == 0) ?
-                      /* Note the colon so it won't conflict w/ theorem
-                         name anchor */
-                      "<A NAME=\"sandbox:bighdr\"></A>" : "",
+                    /* 18-Oct-2015 nm */
+                    /* In detailed section, add an anchor to reach it from
+                       summary section */
+                    (passNumber == 2) ?
+                         cat("<A NAME=\"", str(partCntr), "\"></A>", NULL) : "",
 
+                    /* 29-Jul-2008 nm Add an anchor to the "sandbox" theorem
+                       for use by mmrecent.html */
+                    /* 21-Jun-2014 nm We use "sandbox:bighdr" for both here and
+                       below so that either huge or big header type could
+                       be used to start mathbox sections */
+                    (stmt == sandboxStmt && bigHdr[0] == 0) ?
+                        /* Note the colon so it won't conflict w/ theorem
+                           name anchor */
+                        "<A NAME=\"sandbox:bighdr\"></A>" : "",
 
-                  " <A HREF=\"", str3, "h\"><B>",
-                  hugeHdr, "</B></A>",
-                  /*
-                  " &nbsp; <A HREF=\"",
-                  statement[stmt].labelName, ".html\">",
-                  statement[stmt].labelName, "</A>",
-                  str4,
-                  */
-                  "<BR>", NULL),
-                  " ",  /* Start continuation line with space */
-                  "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
-              /* Assign to array for use during theorem output */
-              let((vstring *)(&pntrHugeHdr[stmt]), hugeHdr);
-              let(&hugeHdr, "");
-              let((vstring *)(&pntrHugeHdrComment[stmt]), hugeHdrComment);
-              let(&hugeHdrComment, "");
-            }
-            if (bigHdr[0]) {
+                    " <A HREF=\"",
 
-              /* Create section number */  /* 21-Jun-2014 */
-              sectionCntr++;
-              subsectionCntr = 0;
-              let(&bigHdr, cat(str(partCntr), ".", str(sectionCntr),
-                  "&nbsp;&nbsp;",
-                  bigHdr, NULL));
+                    /* 18-Oct-2015 nm */
+                    (passNumber == 1) ?
+                        cat("#", str(partCntr), NULL)  /* Link to detailed toc */
+                        : cat(str3, "h", NULL), /* Link to thm list */
 
-              printLongLine(cat("&nbsp; &nbsp; &nbsp; ",
+                    "\"><B>",
+                    hugeHdr, "</B></A>",
+                    /*
+                    " &nbsp; <A HREF=\"",
+                    statement[stmt].labelName, ".html\">",
+                    statement[stmt].labelName, "</A>",
+                    str4,
+                    */
+                    "<BR>", NULL),
+                    " ",  /* Start continuation line with space */
+                    "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+                if (passNumber == 2) { /* 18-Oct-2015 nm */
+                  /* Assign to array for use during theorem output */
+                  let((vstring *)(&pntrHugeHdr[stmt]), hugeHdr);
+                  let((vstring *)(&pntrHugeHdrComment[stmt]), hugeHdrComment);
+                }
+                let(&hugeHdr, "");
+                let(&hugeHdrComment, "");
+              }
+              if (bigHdr[0]) {
 
-                  /* 29-Jul-2008 nm Add an anchor to the "sandbox" theorem
-                     for use by mmrecent.html */
-                  stmt == sandboxStmt ?
-                      /* Note the colon so it won't conflict w/ theorem
-                         name anchor */
-                      "<A NAME=\"sandbox:bighdr\"></A>" : "",
+                /* Create section number */  /* 21-Jun-2014 */
+                sectionCntr++;
+                subsectionCntr = 0;
+                let(&bigHdr, cat(str(partCntr), ".", str(sectionCntr),
+                    "&nbsp;&nbsp;",
+                    bigHdr, NULL));
 
+                printLongLine(cat("&nbsp; &nbsp; &nbsp; ",
 
-                  " <A HREF=\"", str3, "b\"><B>",
-                  bigHdr, "</B></A>",
-                  /*
-                  " &nbsp; <A HREF=\"",
-                  statement[stmt].labelName, ".html\">",
-                  statement[stmt].labelName, "</A>",
-                  str4,
-                  */
-                  "<BR>", NULL),
-                  " ",  /* Start continuation line with space */
-                  "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
-              /* Assign to array for use during theorem list output */
-              let((vstring *)(&pntrBigHdr[stmt]), bigHdr);
-              let(&bigHdr, "");
-              let((vstring *)(&pntrBigHdrComment[stmt]), bigHdrComment);
-              let(&bigHdrComment, "");
-            }
-            if (smallHdr[0]) {
+                    /* 18-Oct-2015 nm */
+                    /* In detailed section, add an anchor to reach it from
+                       summary section */
+                    (passNumber == 2) ?
+                         cat("<A NAME=\"", str(partCntr), ".",
+                             str(sectionCntr), "\"></A>", NULL)
+                         : "",
 
-              /* Create subsection number */  /* 21-Jun-2014 */
-              subsectionCntr++;
-              let(&smallHdr, cat(str(partCntr), ".", str(sectionCntr),
-                  ".", str(subsectionCntr), "&nbsp;&nbsp;",
-                  smallHdr, NULL));
+                    /* 29-Jul-2008 nm Add an anchor to the "sandbox" theorem
+                       for use by mmrecent.html */
+                    stmt == sandboxStmt ?
+                        /* Note the colon so it won't conflict w/ theorem
+                           name anchor */
+                        "<A NAME=\"sandbox:bighdr\"></A>" : "",
 
-              printLongLine(cat("&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; ",
+                    " <A HREF=\"",
 
-                  /* 23-May-2008 nm Add an anchor to the "sandbox" theorem
-                     for use by mmrecent.html */
-                  /*
-                  !strcmp(statement[stmt].labelName, "sandbox") ?
-                      "<A NAME=\"sandbox:smallhdr\"></A>" : "",
-                  */
+                    /* 18-Oct-2015 nm */
+                    (passNumber == 1) ?
+                         cat("#", str(partCntr), ".", str(sectionCntr),
+                             NULL)   /* Link to detailed toc */
+                        : cat(str3, "b", NULL), /* Link to thm list */
 
-                  "<A HREF=\"", str3, "s\">",
-                  smallHdr, "</A>",
-                  " &nbsp; <A HREF=\"",
-                  statement[stmt].labelName, ".html\">",
-                  statement[stmt].labelName, "</A>",
-                  str4,
-                  "<BR>", NULL),
-                  " ",  /* Start continuation line with space */
-                  "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
-              /* Assign to array for use during theorem output */
-              let((vstring *)(&pntrSmallHdr[stmt]), smallHdr);
-              let(&smallHdr, "");
-              let((vstring *)(&pntrSmallHdrComment[stmt]), smallHdrComment);
-              let(&smallHdrComment, "");
-            }
-            fprintf(outputFilePtr, "%s", printString);
-            outputToString = 0;
-            let(&printString, "");
-          } /* if big or small header */
-        } /* if $a or $p */
-      } /* next stmt */
-      /* 8-May-2015 nm Do we need the HR below? */
-      fprintf(outputFilePtr, "<HR NOSHADE SIZE=1>\n");
+                    "\"><B>",
+                    bigHdr, "</B></A>",
+                    /*
+                    " &nbsp; <A HREF=\"",
+                    statement[stmt].labelName, ".html\">",
+                    statement[stmt].labelName, "</A>",
+                    str4,
+                    */
+                    "<BR>", NULL),
+                    " ",  /* Start continuation line with space */
+                    "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+                if (passNumber == 2) { /* 18-Oct-2015 nm */
+                  /* Assign to array for use during theorem list output */
+                  let((vstring *)(&pntrBigHdr[stmt]), bigHdr);
+                  let((vstring *)(&pntrBigHdrComment[stmt]), bigHdrComment);
+                }
+                let(&bigHdr, "");
+                let(&bigHdrComment, "");
+              }
+              if (smallHdr[0]
+                  && passNumber == 2) {  /* Skip in pass 1 (summary) */
+
+                /* Create subsection number */  /* 21-Jun-2014 */
+                subsectionCntr++;
+                let(&smallHdr, cat(str(partCntr), ".", str(sectionCntr),
+                    ".", str(subsectionCntr), "&nbsp;&nbsp;",
+                    smallHdr, NULL));
+
+                printLongLine(cat("&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; ",
+
+                    /* 23-May-2008 nm Add an anchor to the "sandbox" theorem
+                       for use by mmrecent.html */
+                    /*
+                    !strcmp(statement[stmt].labelName, "sandbox") ?
+                        "<A NAME=\"sandbox:smallhdr\"></A>" : "",
+                    */
+
+                    "<A HREF=\"", str3, "s\">",
+                    smallHdr, "</A>",
+                    " &nbsp; <A HREF=\"",
+                    statement[stmt].labelName, ".html\">",
+                    statement[stmt].labelName, "</A>",
+                    str4,
+                    "<BR>", NULL),
+                    " ",  /* Start continuation line with space */
+                    "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+                /* Assign to array for use during theorem output */
+                let((vstring *)(&pntrSmallHdr[stmt]), smallHdr);
+                let(&smallHdr, "");
+                let((vstring *)(&pntrSmallHdrComment[stmt]), smallHdrComment);
+                let(&smallHdrComment, "");
+              }
+              fprintf(outputFilePtr, "%s", printString);
+              outputToString = 0;
+              let(&printString, "");
+            } /* if huge or big or small header */
+          } /* if $a or $p */
+        } /* next stmt */
+        /* 8-May-2015 nm Do we need the HR below? */
+        fprintf(outputFilePtr, "<HR NOSHADE SIZE=1>\n");
+
+      } /* next passNumber */ /* 18-Oct-2015 nm */
+
     } /* if page 0 */
     /* End of 31-Jul-2006 added code for table of contents mod */
 
