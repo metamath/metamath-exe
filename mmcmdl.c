@@ -103,7 +103,7 @@ flag processCommandLine(void)
         goto pclgood;
       }
       if (cmdMatches("HELP VERIFY")) {
-        if (!getFullArg(2, "PROOF"))
+        if (!getFullArg(2, "PROOF|MARKUP|<PROOF>"))
             goto pclbad;
         goto pclgood;
       }
@@ -1228,7 +1228,7 @@ flag processCommandLine(void)
 
     if (cmdMatches("VERIFY")) {
       if (!getFullArg(1,
-          "PROOF|<PROOF>"))
+          "PROOF|MARKUP|<PROOF>"))
         goto pclbad;
       if (cmdMatches("VERIFY PROOF")) {
         if (statements == 0) {
@@ -1249,6 +1249,36 @@ flag processCommandLine(void)
             if (!getFullArg(i,cat(
                 "COMPLETE|SYNTAX_ONLY",
                 "|<COMPLETE>",NULL)))
+              goto pclbad;
+          } else {
+            break;
+          }
+          break;  /* Break if only 1 switch is allowed */
+        }
+
+        goto pclgood;
+      }
+
+      /* 7-Nov-2015 nm */
+      if (cmdMatches("VERIFY MARKUP")) {
+        if (statements == 0) {
+          print2("?No source file has been read in.  Use READ first.\n");
+          goto pclbad;
+        }
+        if (!getFullArg(2,
+            "* What are the labels to match (* = wildcard) <*>?"))
+          goto pclbad;
+
+        /* Get any switches */
+        i = 2;
+        while (1) {
+          i++;
+          if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+          if (lastArgMatches("/")) {
+            i++;
+            if (!getFullArg(i,cat(
+                "ALL|NO_FILES",
+                "|<ALL>",NULL)))
               goto pclbad;
           } else {
             break;

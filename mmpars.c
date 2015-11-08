@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2013  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2015  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -15,6 +15,7 @@
 #include "mmdata.h"
 #include "mminou.h"
 #include "mmpars.h"
+/* #include "mmcmds.h" */  /* For getContribs() if used */
 #include "mmpfas.h" /* Needed for parseMathTokens */
 #include "mmunif.h" /* Needed for minSubstLen */
 
@@ -3981,6 +3982,12 @@ vstring outputStatement(long stmt, flag cleanFlag,
   vstring str1 = "";
   long length;
 
+  /* For getContribs in-line error insertion to assist massive corrections
+  long i;
+  vstring ca = "", cd = "", ra = "", rd = "", sa = "", sd = "";
+  long saveWidth;
+  */
+
 
   let(&labelSection, space(statement[stmt].labelSectionLen));
   memcpy(labelSection, statement[stmt].labelSectionPtr,
@@ -4109,6 +4116,76 @@ vstring outputStatement(long stmt, flag cleanFlag,
           /* If there is no comment before $a or $p, add dummy comment */
           let(&comment, "$( PLEASE PUT DESCRIPTION HERE. $)");
         }
+
+        /* 4-Nov-2015 The section below is for a one-time attribution in
+           definitions and should be commented out for normal use. */
+        /******* TODO: DELETE THIS SOMEDAY *********/
+        /*********
+        long j;
+        if (statement[stmt].type == a_
+             && instr(1, comment, "(Contributed") == 0
+             && (!strcmp(left(statement[stmt].labelName, 3), "df-")
+               || !strcmp(left(statement[stmt].labelName, 3), "ax-"))) {
+          let(&str1, "");
+          str1 = traceUsage(stmt, 0, 0);
+          for (i = 1; i <= statements; i++) {
+            if (str1[i] == 'Y') break;
+          }
+          if (i >= statements) {
+             let(&ca, "??");
+             let(&cd, cat("??", "-???", "-????", NULL));
+          } else {
+            getContrib(i, &ca, &cd, &ra, &rd, &sa, &sd, 0);
+            if (cd[0] == 0) {
+              let(&ca, "??");
+              getProofDate(i, &cd, &rd);
+              if (rd[0]) let(&cd, rd);
+              if (cd[0] == 0) {
+                let(&cd, cat("??", "-???", "-????", NULL));
+              }
+            }
+          }
+          let(&comment, cat(left(comment, (long)strlen(comment) - 2),
+              " (Contributed by ", ca, ", ", cd, ".) $)", NULL));
+          let(&ca, "");
+          let(&cd, "");
+          let(&ra, "");
+          let(&rd, "");
+          let(&sa, "");
+          let(&sd, "");
+          let(&str1, "");
+        }
+
+        if (statement[stmt].type == p_
+           && instr(1, comment, "(Contributed") == 0) {
+          getProofDate(stmt, &cd, &rd);
+          if (rd[0]) let(&cd, rd);
+          if (cd[0] == 0) {
+            let(&cd, cat("??", "-???", "-????", NULL));
+          }
+
+          i = instr(1, comment, "(Revised") - 1;
+          if (i <= 0) i = (long)strlen(comment);
+          j = instr(1, comment, "(Proof shorten") - 1;
+          if (j <= 0) j = (long)strlen(comment);
+
+          if (j < i) i = j;
+          if ((long)strlen(comment) - 2 < i) i = (long)strlen(comment) - 2;
+
+          let(&ca, "??");
+          let(&comment, cat(left(comment, i - 1),
+              " (Contributed by ", ca, ", ", cd, ".) ", right(comment, i),
+              NULL));
+          let(&ca, "");
+          let(&cd, "");
+          let(&ra, "");
+          let(&rd, "");
+          let(&sa, "");
+          let(&sd, "");
+          let(&str1, "");
+        }
+        ************/
+
         let(&labelSection, left(labelSection, commentStart - 1));
         /* Get the last newline before the comment */
         pos = rinstr(labelSection, "\n");
@@ -4158,6 +4235,14 @@ vstring outputStatement(long stmt, flag cleanFlag,
         if (outputToString == 1) bug(1726);
         outputToString = 1;
         let(&printString, "");
+        /* 7-Nov-2015 nm For getContribs in-line error insertion to assist
+           massive corrections; maybe delete someday */
+        /***********
+        saveWidth = screenWidth;
+        screenWidth = 9999;
+        i=getContrib(stmt, &ca, &cd, &ra, &rd, &sa, &sd, 1);
+        screenWidth = saveWidth;
+        ************/
         printLongLine(cat(space(indent), comment, NULL),
             space(indent + 3), " ");
         let(&comment, printString);

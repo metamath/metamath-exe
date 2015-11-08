@@ -5,7 +5,12 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.119 18-Oct-2015"
+#define MVERSION "0.120 7-Nov-2015"
+/* 0.120 7-Nov-2015 nm metamath.c, mmcmdl.c, mmpars.c - add VERIFY MARKUP
+   4-Nov-2015 nm metamath.c, mmcmds.c/h, mmdata.c/h - move getDescription,
+       getSourceIndentation from mmcmds.c to mmdata.c.
+       metamath.c, mmdata.c - add and call parseDate() instead of in-line
+       code; add getContrib(), getProofDate(), buildDate(), compareDates(). */
 /* 0.119 18-Oct-2015 nm mmwtex.c - add summary TOC to Theorem List; improve
        math symbol GIF image alignment
    2-Oct-2015 nm metamath.c, mmpfas.c, mmwtex.c - fix miscellaneous small
@@ -206,7 +211,7 @@
    to "mathbox" */
 /* 0.07.45 15-Jun-2009 nm metamath.c, mmhlpb.c - put "!" before each line of
    SET ECHO ON output to make them easy to identity for creating scripts */
-/* 0.07.44 12-May-2009 Stefan Allan, nm metamath.c, mmcmdl.c, mmmmwtex.c -
+/* 0.07.44 12-May-2009 Stefan Allan, nm metamath.c, mmcmdl.c, mmwtex.c -
    added SHOW STATEMENT / MNEMONICS - see HELP SHOW STATEMENT */
 /* 0.07.43 29-Aug-2008 nm mmwtex.c - workaround for Unicode huge font bug in
    FireFox 3 */
@@ -2318,35 +2323,53 @@ void command(int argc, char *argv[])
       if (tmpFlag) goto wrrecent_error;
 
       /* Get and parse today's date */
+      parseDate(date(), &k /*dd*/, &l /*mmm*/, &m /*yyyy*/); /* 4-Nov-2015 */
+
+      /************ Deleted 4-Nov-2015
       let(&str1, date());
       j = instr(1, str1, "-");
-      k = (long)val(left(str1, j - 1)); /* Day */
+      k = (long)val(left(str1, j - 1)); /@ Day @/
 #define MONTHS "JanFebMarAprMayJunJulAugSepOctNovDec"
-      l = ((instr(1, MONTHS, mid(str1, j + 1, 3)) - 1) / 3) + 1; /* 1 = Jan */
-      m = str1[j + 6]; /* Character after 2-digit year */  /* nm 10-Apr-06 */
-      if (m == ' ' || m == ']') {                          /* nm 10-Apr-06 */
-        /* Handle 2-digit year */
-        m = (long)val(mid(str1, j + 5, 2));  /* Year */
-#define START_YEAR 93 /* Earliest 19xx year in set.mm database */
+      l = ((instr(1, MONTHS, mid(str1, j + 1, 3)) - 1) / 3) + 1; /@ 1 = Jan @/
+      m = str1[j + 6]; /@ Character after 2-digit year @/  /@ nm 10-Apr-06 @/
+      if (m == ' ' || m == ']') {                          /@ nm 10-Apr-06 @/
+        /@ Handle 2-digit year @/
+        m = (long)val(mid(str1, j + 5, 2));  /@ Year @/
+#define START_YEAR 93 /@ Earliest 19xx year in set.mm database @/
         if (m < START_YEAR) {
           m = m + 2000;
         } else {
           m = m + 1900;
         }
-      } else {                                            /* nm 10-Apr-06 */
-        /* Handle 4-digit year */                         /* nm 10-Apr-06 */
-        m = (long)val(mid(str1, j + 5, 4));  /* Year */         /* nm 10-Apr-06 */
-      }                                                   /* nm 10-Apr-06 */
+      } else {                                            /@ nm 10-Apr-06 @/
+        /@ Handle 4-digit year @/                         /@ nm 10-Apr-06 @/
+        m = (long)val(mid(str1, j + 5, 4));  /@ Year @/         /@ nm 10-Apr-06 @/
+      }                                                   /@ nm 10-Apr-06 @/
+      *********** end of 4-Nov-2015 deletion */
 
+#define START_YEAR 93 /* Earliest 19xx year in set.mm database */
       n = 0; /* Count of how many output so far */
       while (n < i /*RECENT_COUNT*/ && m > START_YEAR + 1900 - 1) {
+
         /* Build date string to match */
-        /* Match for 2-digit year */
-        let(&str1, cat("$([", str(k), "-", mid(MONTHS, 3 * l - 2, 3), "-",
+        /* 4-Nov-2015 nm */
+        buildDate(k, l, m, &str5);
+        let(&str5, cat("$([", str5, "]$)", NULL));
+        /* 2-digit year is obsolete, but keep for backwards compatibility */
+        let(&str1, cat(left(str5, (long)strlen(str5) - 7),
+            right(str5, (long)strlen(str5) - 4), NULL));
+
+
+        /************ Deleted 4-Nov-2015
+#define MONTHS "JanFebMarAprMayJunJulAugSepOctNovDec"
+        /@ Match for 2-digit year OBSOLETE @/
+        let(&str1, cat("$([", str(k), "-", mid(MONTHS, 3 @ l - 2, 3), "-",
             right(str(m), 3), "]$)", NULL));
-        /* Match for 2-digit year */  /* nm 10-Apr-06 */
-        let(&str5, cat("$([", str(k), "-", mid(MONTHS, 3 * l - 2, 3), "-",
+        /@ Match for 4-digit year @/  /@ nm 10-Apr-06 @/
+        let(&str5, cat("$([", str(k), "-", mid(MONTHS, 3 @ l - 2, 3), "-",
             str(m), "]$)", NULL));
+        *********** end of 4-Nov-2015 deletion */
+
         for (s = statements; s >= 1; s--) {
 
           if (statement[s].type != (char)p_) continue;
@@ -2561,7 +2584,7 @@ void command(int argc, char *argv[])
       j = 0;
       k = 0;
       let(&str2, ""); /* Line so far */
-#define COL 20 /* Characters per column */
+#define COL 20 /* Column width */
 #define MIN_SPACE 2 /* At least this many spaces between columns */
       for (i = 1; i <= statements; i++) {
         if (!statement[i].labelName[0]) continue; /* No label */
@@ -2633,6 +2656,7 @@ void command(int argc, char *argv[])
           }
         }
         */
+
       } /* next i */
       /* print2("\n"); */
       if (str2[0]) {
@@ -6914,6 +6938,16 @@ void command(int argc, char *argv[])
         verifyProofs(fullArg[2],0); /* Parse only */
       } else {
         verifyProofs(fullArg[2],1); /* Parse and verify */
+      }
+      continue;
+    }
+
+    /* 7-Nov-2015 nm Added */
+    if (cmdMatches("VERIFY MARKUP")) {
+      if (switchPos("/ NO_FILES")) {
+        verifyMarkup(fullArg[2],0); /* Don't check external files */
+      } else {
+        verifyMarkup(fullArg[2],1); /* Include external files */
       }
       continue;
     }

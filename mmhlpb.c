@@ -599,7 +599,20 @@ H("        correct.");
 H("");
 H("Note: READ, followed by VERIFY PROOF *, will ensure the database is free");
 H("from errors in Metamath language but will not check the markup language");
-H("in comments.  One way to check the markup language is WRITE THEOREM_LIST.");
+H("in comments.  See HELP VERIFY MARKUP.");
+H("");
+
+
+printHelp = !strcmp(saveHelpCmd, "HELP VERIFY MARKUP");
+H("Syntax:  VERIFY MARKUP <label-match>");
+H("");
+H("This command verifies the date consistency of \"(Contributed by...)\",");
+H("\"(Revised by...)\", and \"(Proof shortened by...)\", tags in the comment");
+H("above each $a and $p statement.");
+H("");
+H("(Over time, more extensive comment markup checking will be done by this");
+H("command.  In the meantime, use WRITE THEOREM_LIST and WRITE BIBLIOGRAPHY");
+H("to check other kinds of markup.");
 H("");
 
 

@@ -3549,76 +3549,6 @@ vstring traceUsage(long statemNum,
 
 
 
-/* Returns the last embedded comment (if any) in the label section of
-   a statement.  This is used to provide the user with information in the SHOW
-   STATEMENT command.  The caller must deallocate the result. */
-vstring getDescription(long statemNum) {
-  char *fbPtr; /* Source buffer pointer */
-  vstring description = "";
-  char *startDescription;
-  char *endDescription;
-  char *startLabel;
-
-  fbPtr = statement[statemNum].mathSectionPtr;
-  if (!fbPtr[0]) return (description);
-  startLabel = statement[statemNum].labelSectionPtr;
-  if (!startLabel[0]) return (description);
-  endDescription = NULL;
-  while (1) { /* Get end of embedded comment */
-    if (fbPtr <= startLabel) break;
-    if (fbPtr[0] == '$' && fbPtr[1] == ')') {
-      endDescription = fbPtr;
-      break;
-    }
-    fbPtr--;
-  }
-  if (!endDescription) return (description); /* No embedded comment */
-  while (1) { /* Get start of embedded comment */
-    if (fbPtr < startLabel) bug(216);
-    if (fbPtr[0] == '$' && fbPtr[1] == '(') {
-      startDescription = fbPtr + 2;
-      break;
-    }
-    fbPtr--;
-  }
-  let(&description, space(endDescription - startDescription));
-  memcpy(description, startDescription,
-      (size_t)(endDescription - startDescription));
-  if (description[endDescription - startDescription - 1] == '\n') {
-    /* Trim trailing new line */
-    let(&description, left(description, endDescription - startDescription - 1));
-  }
-  /* Discard leading and trailing blanks */
-  let(&description, edit(description, 8 + 128));
-  return (description);
-} /* getDescription */
-
-
-/* Returns the amount of indentation of a statement label.  Used to
-   determine how much to indent a saved proof. */
-long getSourceIndentation(long statemNum) {
-  char *fbPtr; /* Source buffer pointer */
-  char *startLabel;
-  long indentation = 0;
-
-  fbPtr = statement[statemNum].mathSectionPtr;
-  if (fbPtr[0] == 0) return 0;
-  startLabel = statement[statemNum].labelSectionPtr;
-  if (startLabel[0] == 0) return 0;
-  while (1) { /* Go back to first line feed prior to the label */
-    if (fbPtr <= startLabel) break;
-    if (fbPtr[0] == '\n') break;
-    if (fbPtr[0] == ' ') {
-      indentation++; /* Space increments indentation */
-    } else {
-      indentation = 0; /* Non-space (i.e. a label character) resets back to 0 */
-    }
-    fbPtr--;
-  }
-  return indentation;
-} /* getSourceIndentation */
-
-
 /* This implements the READ command (although the / VERIFY qualifier is
    processed separately in metamath.c). */
 void readInput(void)
@@ -3987,6 +3917,41 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
   let(&emptyProofList, ""); /* Deallocate */
 
 } /* verifyProofs */
+
+
+/* If checkFiles = 0, do not open external files.
+   If checkFiles = 1, check mm*.html, presence of gifs, etc. */
+void verifyMarkup(vstring labelMatch, flag checkFiles) {
+  flag f;
+  long errCount = 0;
+  long stmtNum;
+  vstring contributor = ""; vstring contribDate = "";
+  vstring reviser = ""; vstring reviseDate = "";
+  vstring shortener = ""; vstring shortenDate = "";
+
+  for (stmtNum = 1; stmtNum <= statements; stmtNum++) {
+    if (!matchesList(statement[stmtNum].labelName, labelMatch, '*', '?'))
+      continue;
+    /* Use the error-checking feature of getContrib() extractor */
+    f = getContrib(stmtNum, &contributor, &contribDate,
+        &reviser, &reviseDate, &shortener, &shortenDate,
+        1/*printErrorsFlag*/);
+    if (f == 1) errCount++;
+  }
+
+  if (checkFiles == 1) {
+    /* Future checks here */
+  }
+
+  if (errCount == 0) {
+    print2("No errors were found.\n");
+  } else {
+    print2("Errors were found in %ld statements.\n", errCount);
+  }
+
+  return;
+
+} /* verifyMarkup */
 
 
 /* Added 14-Sep-2012 nm */

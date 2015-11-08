@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2014  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2015  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -19,7 +19,6 @@ mmdata.c
 #include "mminou.h"
 #include "mmpars.h"
 #include "mmcmdl.h" /* Needed for logFileName */
-#include "mmcmds.h" /* Needed for getSourceIndentation */
 #include "mmpfas.h" /* Needed for proveStatement */
 
 #include <limits.h>
@@ -2809,4 +2808,595 @@ void free2DMatrix(long **matrix, size_t xsize /*, size_t ysize*/)
   free(matrix);
   return;
 } /* free2DMatrix */
+
+
+/* Returns the amount of indentation of a statement label.  Used to
+   determine how much to indent a saved proof. */
+long getSourceIndentation(long statemNum) {
+  char *fbPtr; /* Source buffer pointer */
+  char *startLabel;
+  long indentation = 0;
+
+  fbPtr = statement[statemNum].mathSectionPtr;
+  if (fbPtr[0] == 0) return 0;
+  startLabel = statement[statemNum].labelSectionPtr;
+  if (startLabel[0] == 0) return 0;
+  while (1) { /* Go back to first line feed prior to the label */
+    if (fbPtr <= startLabel) break;
+    if (fbPtr[0] == '\n') break;
+    if (fbPtr[0] == ' ') {
+      indentation++; /* Space increments indentation */
+    } else {
+      indentation = 0; /* Non-space (i.e. a label character) resets back to 0 */
+    }
+    fbPtr--;
+  }
+  return indentation;
+} /* getSourceIndentation */
+
+
+/* Returns the last embedded comment (if any) in the label section of
+   a statement.  This is used to provide the user with information in the SHOW
+   STATEMENT command.  The caller must deallocate the result. */
+vstring getDescription(long statemNum) {
+  char *fbPtr; /* Source buffer pointer */
+  vstring description = "";
+  char *startDescription;
+  char *endDescription;
+  char *startLabel;
+
+  fbPtr = statement[statemNum].mathSectionPtr;
+  if (!fbPtr[0]) return (description);
+  startLabel = statement[statemNum].labelSectionPtr;
+  if (!startLabel[0]) return (description);
+  endDescription = NULL;
+  while (1) { /* Get end of embedded comment */
+    if (fbPtr <= startLabel) break;
+    if (fbPtr[0] == '$' && fbPtr[1] == ')') {
+      endDescription = fbPtr;
+      break;
+    }
+    fbPtr--;
+  }
+  if (!endDescription) return (description); /* No embedded comment */
+  while (1) { /* Get start of embedded comment */
+    if (fbPtr < startLabel) bug(216);
+    if (fbPtr[0] == '$' && fbPtr[1] == '(') {
+      startDescription = fbPtr + 2;
+      break;
+    }
+    fbPtr--;
+  }
+  let(&description, space(endDescription - startDescription));
+  memcpy(description, startDescription,
+      (size_t)(endDescription - startDescription));
+  if (description[endDescription - startDescription - 1] == '\n') {
+    /* Trim trailing new line */
+    let(&description, left(description, endDescription - startDescription - 1));
+  }
+  /* Discard leading and trailing blanks */
+  let(&description, edit(description, 8 + 128));
+  return (description);
+} /* getDescription */
+
+
+
+/* 7-Nov-2015 nm */
+/* Extract any contributors and dates from statement description.
+   If missing, the corresponding return strings are blank.
+   Returns 1 if an error was found AND printErrorsFlag = 1, 0 otherwise. */
+flag getContrib(long stmtNum,
+    vstring *contributor, vstring *contribDate,
+    vstring *reviser, vstring *reviseDate,
+    vstring *shortener, vstring *shortenDate,
+    flag printErrorsFlag) {
+  long cStart, cMid = 0, cEnd = 0;
+  long rStart, rMid = 0, rEnd = 0;
+  long sStart, sMid = 0, sEnd = 0;
+  long firstR = 0, firstS = 0;
+  vstring description = "";
+  vstring tmpDate0 = "";
+  vstring tmpDate1 = "";
+  vstring tmpDate2 = "";
+  long p, dd, mmm, yyyy;
+  flag err = 0;
+#define CONTRIB_MATCH " (Contributed by "
+#define REVISE_MATCH " (Revised by "
+#define SHORTEN_MATCH " (Proof shortened by "
+#define END_MATCH ".) "
+
+  /* The checks only $a and $p statements - should we do others? */
+  if (statement[stmtNum].type != a_ && statement[stmtNum].type != p_) {
+    goto RETURN_POINT;
+  }
+
+  let(&description, "");
+  description = getDescription(stmtNum);
+  let(&description, edit(description,
+      4/*ctrl*/ + 8/*leading*/ + 16/*reduce*/ + 128/*trailing*/));
+  let(&description, cat(" ", description, " ", NULL)); /* Add for matching */
+
+  cStart = instr(1, description, CONTRIB_MATCH);
+  if (cStart != 0) {
+    cStart = cStart + (long)strlen(CONTRIB_MATCH); /* Start of contributor */
+    cEnd = instr(cStart, description, END_MATCH); /* End of date */
+    cMid = cEnd; /* After end of contributor and before start of date */
+    if (cMid != 0) {
+      while (description[cMid - 1] != ' ') {
+        cMid--;
+        if (cMid == 0) break;
+      }
+    }
+    let(&(*contributor), seg(description, cStart, cMid - 2));
+    let(&(*contribDate), seg(description, cMid + 1, cEnd - 1));
+  } else {
+    let(&(*contributor), "");
+    let(&(*contribDate), "");
+  }
+
+  rStart = 0;
+  do {  /* Get the last revision entry */
+    p = instr(rStart + 1, description, REVISE_MATCH);
+    if (p != 0) {
+      rStart = p;
+      if (firstR == 0) firstR = p + (long)strlen(REVISE_MATCH);
+                             /* Add the strlen so to later compare to rStart */
+    }
+  } while (p != 0);
+  if (rStart != 0) {
+    rStart = rStart + (long)strlen(REVISE_MATCH); /* Start of reviser */
+    rEnd = instr(rStart, description, END_MATCH); /* End of date */
+    rMid = rEnd; /* After end of reviser and before start of date */
+    if (rMid != 0) {
+      while (description[rMid - 1] != ' ') {
+        rMid--;
+        if (rMid == 0) break;
+      }
+    }
+    let(&(*reviser), seg(description, rStart, rMid - 2));
+    let(&(*reviseDate), seg(description, rMid + 1, rEnd - 1));
+  } else {
+    let(&(*reviser), "");
+    let(&(*reviseDate), "");
+  }
+
+  sStart = 0;
+  do {  /* Get the last shorten entry */
+    p = instr(sStart + 1, description, SHORTEN_MATCH);
+    if (p != 0) {
+      sStart = p;
+      if (firstS == 0) firstS = p + (long)strlen(SHORTEN_MATCH);
+                             /* Add the strlen so to later compare to rStart */
+    }
+  } while (p != 0);
+  if (sStart != 0) {
+    sStart = sStart + (long)strlen(SHORTEN_MATCH); /* Start of shortener */
+    sEnd = instr(sStart, description, END_MATCH); /* End of date */
+    sMid = sEnd; /* After end of shortener and before start of date */
+    if (sMid != 0) {
+      while (description[sMid - 1] != ' ') {
+        sMid--;
+        if (sMid == 0) break;
+      }
+    }
+    let(&(*shortener), seg(description, sStart, sMid - 2));
+    let(&(*shortenDate), seg(description, sMid + 1, sEnd - 1));
+  } else {
+    let(&(*shortener), "");
+    let(&(*shortenDate), "");
+  }
+
+  /* Skip error checking for speedup if we're not printing errors */
+  if (printErrorsFlag == 0) goto RETURN_POINT;
+
+  /* For error checking, we don't require dates in syntax statements
+     (**** Note that this is set.mm-specific! ****) */
+  if (statement[stmtNum].type == a_   /* Don't check syntax statements */
+      && strcmp(left(statement[stmtNum].labelName, 3), "df-")
+      && strcmp(left(statement[stmtNum].labelName, 3), "ax-")) {
+    goto RETURN_POINT;
+  }
+
+  if (cStart == 0) {
+    err = 1;
+    printLongLine(cat(
+        /* convenience prefix to assist massive revisions
+        statement[stmtNum].labelName, " [",
+        *contributor, "/", *reviser, "/", *shortener, "] ",
+        */
+        "?Warning:  There is no \"", edit(CONTRIB_MATCH, 8+128),
+        "...)\" in the comment above statement ",
+        str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        NULL), "    ", " ");
+  }
+
+  if (instr(cStart + 1, description, CONTRIB_MATCH) != 0) {
+    err = 1;
+    printLongLine(cat(
+        /* convenience prefix to assist massive revisions
+        statement[stmtNum].labelName, " [",
+        *contributor, "/", *reviser, "/", *shortener, "] ",
+        */
+        "?Warning:  There is more than one \"", edit(CONTRIB_MATCH, 8+128),
+        "...)\" ",
+        "in the comment above statement ",
+        str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        NULL), "    ", " ");
+  }
+
+  /*********  Turn off this warning unless we decide not to allow this
+  if ((firstR != rStart) || (firstS != sStart)) {
+    err = 1;
+    printLongLine(cat(
+        /@ convenience prefix to assist massive revisions
+        statement[stmtNum].labelName, " [",
+        @contributor, "/", @reviser, "/", @shortener, "] ",
+        @/
+        "?Warning: There are multiple \"",
+        edit(REVISE_MATCH, 8+128) , "...)\" or \"",
+        edit(SHORTEN_MATCH, 8+128) ,
+        "...)\" entries in the comment above statement ",
+        str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        "  The last one of each type was used.",
+        NULL), "    ", " ");
+  }
+  *********/
+
+  if ((firstR != 0 && firstR < cStart)
+      || (firstS != 0 && firstS < cStart)) {
+    err = 1;
+    printLongLine(cat(
+        /* convenience prefix to assist massive revisions
+        statement[stmtNum].labelName, " [",
+        *contributor, "/", *reviser, "/", *shortener, "] ",
+        */
+        "?Warning:  \"", edit(CONTRIB_MATCH, 8+128),
+        "...)\" is placed after \"",
+        edit(REVISE_MATCH, 8+128) , "...)\" or \"",
+        edit(SHORTEN_MATCH, 8+128) ,
+        "...)\" in the comment above statement ",
+        str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        NULL), "    ", " ");
+  }
+
+  if ((cStart !=0 && (cMid == 0 || cEnd == 0 || cMid == cEnd
+          || (*contributor)[0] == 0 || (*contribDate)[0] == 0))
+      || (rStart !=0 && (rMid == 0 || rEnd == 0 || rMid == rEnd
+          || (*reviser)[0] == 0 || (*reviseDate)[0] == 0))
+      || (sStart !=0 && (sMid == 0 || sEnd == 0 || sMid == sEnd
+          || (*shortener)[0] == 0 || (*shortenDate)[0] == 0))) {
+    err = 1;
+    printLongLine(cat(
+        /* convenience prefix to assist massive revisions
+        statement[stmtNum].labelName, " [",
+        *contributor, "/", *reviser, "/", *shortener, "] ",
+        */
+        "?Warning: There is a formatting error in a",
+        " \"", edit(CONTRIB_MATCH, 8+128),  "...)\", \"",
+        edit(REVISE_MATCH, 8+128) , "...)\", or \"",
+        edit(SHORTEN_MATCH, 8+128),
+        "...)\" entry in the comment above statement ",
+        str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        NULL), "    ", " ");
+  }
+
+  if ((*contribDate)[0] != 0) {
+    parseDate(*contribDate, &dd, &mmm, &yyyy);
+    buildDate(dd, mmm, yyyy, &tmpDate0);
+    if (strcmp(*contribDate, tmpDate0)) {
+      err = 1;
+      printLongLine(cat(
+          /* convenience prefix to assist massive revisions
+          statement[stmtNum].labelName, " [",
+          *contributor, "/", *reviser, "/", *shortener, "] ",
+          */
+          "?Warning: There is a formatting error in the \"",
+          edit(CONTRIB_MATCH, 8+128),  "...)\" date \"", *contribDate, "\""
+          " in the comment above statement ",
+          str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+          NULL), "    ", " ");
+    }
+  }
+
+  if ((*reviseDate)[0] != 0) {
+    parseDate(*reviseDate, &dd, &mmm, &yyyy);
+    buildDate(dd, mmm, yyyy, &tmpDate0);
+    if (strcmp(*reviseDate, tmpDate0)) {
+      err = 1;
+      printLongLine(cat(
+          /* convenience prefix to assist massive revisions
+          statement[stmtNum].labelName, " [",
+          *contributor, "/", *reviser, "/", *shortener, "] ",
+          */
+          "?Warning: There is a formatting error in the \"",
+          edit(REVISE_MATCH, 8+128) , "...)\" date \"", *reviseDate, "\""
+          " in the comment above statement ",
+          str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+          NULL), "    ", " ");
+    }
+  }
+
+  if ((*shortenDate)[0] != 0) {
+    parseDate(*shortenDate, &dd, &mmm, &yyyy);
+    buildDate(dd, mmm, yyyy, &tmpDate0);
+    if (strcmp(*shortenDate, tmpDate0)) {
+      err = 1;
+      printLongLine(cat(
+          /* convenience prefix to assist massive revisions
+          statement[stmtNum].labelName, " [",
+          *contributor, "/", *reviser, "/", *shortener, "] ",
+          */
+          "?Warning: There is a formatting error in the \"",
+          edit(SHORTEN_MATCH, 8+128) , "...)\" date \"", *shortenDate, "\""
+          " in the comment above statement ",
+          str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+          NULL), "    ", " ");
+    }
+  }
+
+  if ((*contribDate)[0] != 0 &&
+     (((*reviseDate)[0] != 0
+         && compareDates(*contribDate, *reviseDate) != -1)
+     || ((*shortenDate)[0] != 0
+         && compareDates(*contribDate, *shortenDate) != -1))) {
+    err = 1;
+    printLongLine(cat(
+        /* convenience prefix to assist massive revisions
+        statement[stmtNum].labelName, " [",
+        *contributor, "/", *reviser, "/", *shortener, "] ",
+        */
+        "?Warning:  The \"", edit(CONTRIB_MATCH, 8+128),
+        "...)\" date is not earlier than the \"",
+        edit(REVISE_MATCH, 8+128), "...)\" or \"",
+        edit(SHORTEN_MATCH, 8+128),
+        "...)\" date in the comment above statement ",
+        str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        NULL), "    ", " ");
+  }
+
+  if ((*reviseDate)[0] != 0 && (*shortenDate)[0] != 0) {
+    p = compareDates(*reviseDate, *shortenDate);
+    if ((rStart < sStart && p == 1)
+        || (rStart > sStart && p == -1)) {
+      err = 1;
+      printLongLine(cat(
+        /* convenience prefix to assist massive revisions
+        statement[stmtNum].labelName, " [",
+        *contributor, "/", *reviser, "/", *shortener, "] ",
+        */
+          "?Warning:  The \"", edit(REVISE_MATCH, 8+128), "...)\" and \"",
+          edit(SHORTEN_MATCH, 8+128),
+         "...)\" dates are in the wrong order in the comment above statement ",
+          str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+          NULL), "    ", " ");
+    }
+  }
+
+
+  /* TODO ******** The rest of the checks should be deleted if we decide
+     to drop the date after the proof */
+  if (statement[stmtNum].type != p_) {
+    goto RETURN_POINT;
+  }
+  getProofDate(stmtNum, &tmpDate1, &tmpDate2);
+  if (tmpDate1[0] == 0) {
+    err = 1;
+    printLongLine(cat(
+        /* convenience prefix to assist massive revisions
+        statement[stmtNum].labelName, " [",
+        *contributor, "/", *reviser, "/", *shortener, "] ",
+        */
+        "?Warning:  There is no date below the proof in statement ",
+        str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        NULL), "    ", " ");
+  }
+  if (tmpDate2[0] == 0
+      && ((*reviseDate)[0] != 0 || (*shortenDate)[0] != 0)) {
+    err = 1;
+    printLongLine(cat(
+        /* convenience prefix to assist massive revisions
+        statement[stmtNum].labelName, " [",
+        *contributor, "/", *reviser, "/", *shortener, "] ",
+        */
+        "?Warning:  The comment has \"",
+        edit(REVISE_MATCH, 8+128), "...)\" or \"",
+        edit(SHORTEN_MATCH, 8+128),
+        "...)\" but there is only one date below the proof",
+        " in statement ",
+        str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        NULL), "    ", " ");
+  }
+  if (tmpDate2[0] != 0 && (*reviseDate)[0] == 0 && (*shortenDate)[0] == 0) {
+    err = 1;
+    printLongLine(cat(
+        /* convenience prefix to assist massive revisions
+        statement[stmtNum].labelName, " [",
+        *contributor, "/", *reviser, "/", *shortener, "] ",
+        */
+        "?Warning:  There are two dates below the proof but no \"",
+        edit(REVISE_MATCH, 8+128), "...)\" or \"",
+        edit(SHORTEN_MATCH, 8+128),
+        "...)\" entry in statement ",
+        str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        NULL), "    ", " ");
+  }
+  if (tmpDate2[0] != 0
+      && ((*reviseDate)[0] != 0 || (*shortenDate)[0] != 0)
+      && strcmp(tmpDate1, *reviseDate)
+      && strcmp(tmpDate1, *shortenDate)) {
+    err = 1;
+    printLongLine(cat(
+        /* convenience prefix to assist massive revisions
+        statement[stmtNum].labelName, " [",
+        *contributor, "/", *reviser, "/", *shortener, "] ",
+        */
+        "?Warning:  Neither a \"",
+        edit(REVISE_MATCH, 8+128), "...)\" date ",
+        "nor a \"", edit(SHORTEN_MATCH, 8+128), "...)\" date ",
+        "matches the date ", tmpDate1,
+        " below the proof in statement ",
+        str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        NULL), "    ", " ");
+  }
+  if (tmpDate2[0] != 0
+      && (*reviseDate)[0] != 0
+      && compareDates(tmpDate1, *reviseDate) == -1) {
+    err = 1;
+    printLongLine(cat(
+        /* convenience prefix to assist massive revisions
+        statement[stmtNum].labelName, " [",
+        *contributor, "/", *reviser, "/", *shortener, "] ",
+        */
+        "?Warning:  The \"",
+        edit(REVISE_MATCH, 8+128), "...)\" date ", *reviseDate,
+        " is later than the date ", tmpDate1,
+        " below the proof in statement ",
+        str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        NULL), "    ", " ");
+  }
+  if (tmpDate2[0] != 0
+      && (*shortenDate)[0] != 0
+      && compareDates(tmpDate1, *shortenDate) == -1) {
+    err = 1;
+    printLongLine(cat(
+        /* convenience prefix to assist massive revisions
+        statement[stmtNum].labelName, " [",
+        *contributor, "/", *reviser, "/", *shortener, "] ",
+        */
+        "?Warning:  The \"",
+        edit(SHORTEN_MATCH, 8+128), "...)\" date ", *shortenDate,
+        " is later than the date ", tmpDate1,
+        " below the proof in statement ",
+        str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        NULL), "    ", " ");
+  }
+  if (tmpDate2[0] != 0 && compareDates(tmpDate2, tmpDate1) != -1) {
+    err = 1;
+    printLongLine(cat(
+        /* convenience prefix to assist massive revisions
+        statement[stmtNum].labelName, " [",
+        *contributor, "/", *reviser, "/", *shortener, "] ",
+        */
+        "?Warning:  The first date below the proof, ", tmpDate1,
+        ", is not newer than the second, ", tmpDate2,
+        ", in statement ",
+        str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        NULL), "    ", " ");
+  }
+  if (tmpDate2[0] == 0) {
+    let(&tmpDate0, tmpDate1);
+  } else {
+    let(&tmpDate0, tmpDate2);
+  }
+  if ((*contribDate)[0] != 0
+      && tmpDate0[0] != 0 && strcmp(*contribDate, tmpDate0)) {
+    err = 1;
+    printLongLine(cat(
+        /* convenience prefix to assist massive revisions
+        statement[stmtNum].labelName, " [",
+        *contributor, "/", *reviser, "/", *shortener, "] ",
+        */
+        "?Warning:  The \"", edit(CONTRIB_MATCH, 8+128), "...)\" date ",
+        *contribDate,
+        " doesn't match the date ", tmpDate0,
+        " below the proof in statement ",
+        str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        NULL), "    ", " ");
+  }
+  /***** End of section to delete if date after proof is dropped */
+
+
+ RETURN_POINT:
+  let(&description, "");
+  let(&tmpDate0, "");
+  let(&tmpDate1, "");
+  let(&tmpDate2, "");
+  return err;
+} /* getContrib */
+
+/* 4-Nov-2015 nm */
+/* Extract up to 2 dates after a statement's proof.  If no date is present,
+   date1 will be blank.  If no 2nd date is present, date2 will be blank.
+   THIS WILL BECOME OBSOLETE WHEN WE START TO USE DATES IN THE
+   DESCRIPTION. */
+void getProofDate(long stmtNum, vstring *date1, vstring *date2) {
+  vstring textAfterProof = "";
+  long p1, p2;
+  let(&textAfterProof, space(statement[stmtNum + 1].labelSectionLen));
+  memcpy(textAfterProof, statement[stmtNum + 1].labelSectionPtr,
+      (size_t)(statement[stmtNum + 1].labelSectionLen));
+  let(&textAfterProof, edit(textAfterProof, 2)); /* Discard spaces and tabs */
+  p1 = instr(1, textAfterProof, "$([");
+  p2 = instr(p1, textAfterProof, "]$)");
+  if (p1 && p2) {
+    let(&(*date1), seg(textAfterProof, p1 + 3, p2 - 1));  /* 1st date stamp */
+    p1 = instr(p2, textAfterProof, "$([");
+    p2 = instr(p1, textAfterProof, "]$)");
+    if (p1 && p2) {
+      let(&(*date2), seg(textAfterProof, p1 + 3, p2 - 1)); /* 2nd date stamp */
+    } else {
+      let(&(*date2), ""); /* No 2nd date stamp */
+    }
+  } else {
+    let(&(*date1), ""); /* No 1st or 2nd date stamp */
+    let(&(*date2), "");
+  }
+  let(&textAfterProof, ""); /* Deallocate */
+  return;
+} /* getProofDate */
+
+
+/* 4-Nov-2015 nm */
+/* Get date, month, year fields from a dd-mmm-yyyy date string,
+   where dd may be 1 or 2 digits, mmm is 1st 3 letters of month,
+   and yyyy is 2 or 4 digits.  A 1 is returned if an error was detected. */
+flag parseDate(vstring dateStr, long *dd, long *mmm, long *yyyy) {
+  long j;
+  flag err = 0;
+  j = instr(1, dateStr, "-");
+  *dd = (long)val(left(dateStr, j - 1)); /* Day */
+#define MONTHS "JanFebMarAprMayJunJulAugSepOctNovDec"
+  *mmm = ((instr(1, MONTHS, mid(dateStr, j + 1, 3)) - 1) / 3) + 1; /* 1 = Jan */
+  j = instr(j + 1, dateStr, "-");
+  *yyyy = (long)val(right(dateStr, j + 1));
+  if (*yyyy < 100) { /* 2-digit year (obsolete) */
+#define START_YEAR 93 /* Earliest 19xx year in set.mm database */
+    if (*yyyy < START_YEAR) {
+      *yyyy = *yyyy + 2000;
+    } else {
+      *yyyy = *yyyy + 1900;
+    }
+  }
+  return err;
+} /* parseDate */
+
+
+/* 4-Nov-2015 nm */
+/* Build date from numeric fields.  mmm should be a number from 1 to 12.
+   There is no error-checking. */
+void buildDate(long dd, long mmm, long yyyy, vstring *dateStr) {
+  let(&(*dateStr), cat(str(dd), "-", mid(MONTHS, mmm * 3 - 2, 3), "-",
+      str(yyyy), NULL));
+  return;
+} /* buildDate */
+
+
+/* 4-Nov-2015 nm */
+/* Compare two dates in the form dd-mmm-yyyy.  -1 = date1 < date2,
+   0 = date1 = date2,  1 = date1 > date2.  There is no error checking. */
+flag compareDates(vstring date1, vstring date2) {
+  long d1, m1, y1, d2, m2, y2, dd1, dd2;
+  parseDate(date1, &d1, &m1, &y1);
+  parseDate(date2, &d2, &m2, &y2);
+  /* dd1, dd2 increase monotonically but aren't true days since 1-Jan-0000 */
+  dd1 = d1 + m1 * 32 + y1 * 500;
+  dd2 = d2 + m2 * 32 + y2 * 500;
+  if (dd1 < dd2) {
+    return -1;
+  } else if (dd1 == dd2) {
+    return 0;
+  } else {
+    return 1;
+  }
+} /* compareDates */
 

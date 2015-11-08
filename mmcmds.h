@@ -61,14 +61,13 @@ vstring traceUsage(long statemNum,
   flag recursiveFlag,
   long cutoffStmt /* if nonzero, stop scan there */ /* 18-Jul-2015 nm */);
 vstring htmlAllowedSubst(long showStmt);  /* 4-Jan-2014 nm */
-/* Returns any comment that occurs just before a statement */
-vstring getDescription(long statemNum);
-long getSourceIndentation(long statemNum);
+
 void readInput(void);
 void writeInput(flag cleanFlag, flag reformatFlag);
 void writeDict(void);
 void eraseSource(void);
 void verifyProofs(vstring labelMatch, flag verifyFlag);
+void verifyMarkup(vstring labelMatch, flag checkFiles); /* 7-Nov-2015 nm */
 
 /* 14-Sep-2012 nm */
 /* Take a relative step FIRST, LAST, +nn, -nn (relative to the unknown

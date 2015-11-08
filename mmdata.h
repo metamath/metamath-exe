@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2013  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2015  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -387,5 +387,35 @@ long knapsack01(long items, long *size, long *worth, long maxSize,
 long **alloc2DMatrix(size_t xsize, size_t ysize);
 void free2DMatrix(long **matrix, size_t xsize /*, size_t ysize*/);
 
+/* Returns the amount of indentation of a statement label.  Used to
+   determine how much to indent a saved proof. */
+long getSourceIndentation(long statemNum);
+
+/* Returns any comment (description) that occurs just before a statement */
+vstring getDescription(long statemNum);
+
+/* Extract any contributors and dates from statement description.
+   If missing, the corresponding return strings are blank. */
+flag getContrib(long stmtNum,
+    vstring *contributor, vstring *contribDate,
+    vstring *revisor, vstring *reviseDate,
+    vstring *shortener, vstring *shortenDate,
+    flag printErrors /* 1 = print errors found */);
+
+/* Extract up to 2 dates after a statement's proof.  If no date is present,
+   date1 will be blank.  If no 2nd date is present, date2 will be blank. */
+void getProofDate(long stmtNum, vstring *date1, vstring *date2);
+
+/* Get date, month, year fields from a dd-mmm-yyyy date string,
+   where dd may be 1 or 2 digits, mmm is 1st 3 letters of month,
+   and yyyy is 2 or 4 digits.  A 1 is returned if an error was detected. */
+flag parseDate(vstring dateStr, long *dd, long *mmm, long *yyyy);
+
+/* Build date from numeric fields.  mmm should be a number from 1 to 12. */
+void buildDate(long dd, long mmm, long yyyy, vstring *dateStr);
+
+/* Compare two dates in the form dd-mmm-yyyy.  -1 = date1 < date2,
+   0 = date1 = date2,  1 = date1 > date2.  There is no error checking. */
+flag compareDates(vstring date1, vstring date2);
 
 #endif /* METAMATH_MMDATA_H_ */

@@ -19,7 +19,6 @@
 #include "mmpars.h" /* For rawSourceError and mathSrchCmp and lookupLabel */
 #include "mmwtex.h"
 #include "mmcmdl.h" /* For texFileName */
-#include "mmcmds.h" /* For getDescription */
 
 /* 6/27/99 - Now, all LaTeX and HTML definitions are taken from the source
    file (read in the by READ... command).  In the source file, there should
