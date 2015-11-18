@@ -418,4 +418,10 @@ void buildDate(long dd, long mmm, long yyyy, vstring *dateStr);
    0 = date1 = date2,  1 = date1 > date2.  There is no error checking. */
 flag compareDates(vstring date1, vstring date2);
 
+/* 17-Nov-2015 nm */
+extern vstring qsortKey;
+      /* Used by qsortStringCmp; pointer only, do not deallocate */
+/* Comparison function for qsort */
+int qsortStringCmp(const void *p1, const void *p2);
+
 #endif /* METAMATH_MMDATA_H_ */

@@ -93,7 +93,29 @@ vstring sandboxTitle = "";
 vstring htmlBibliographyTags = "";
 vstring extHtmlBibliographyTags = "";
 
-flag readTexDefs(void)
+
+/* 17-Nov-2015 nm Added */
+void eraseTexDefs(void) {
+  /* Deallocate the texdef/htmldef storage */ /* Added 27-Oct-2012 nm */
+  long i;
+  if (texDefsRead) {  /* If not (already deallocated or never allocated) */
+    texDefsRead = 0;
+
+    for (i = 0; i < numSymbs; i++) {  /* Deallocate structure member i */
+      let(&(texDefs[i].tokenName), "");
+      let(&(texDefs[i].texEquiv), "");
+    }
+    free(texDefs); /* Deallocate the structure */
+  }
+  return;
+} /* eraseTexDefs */
+
+
+/* Returns 2 if there were severe parsing errors, 1 if there were warnings but
+   no errors, 0 if no errors or warnings */
+flag readTexDefs(
+  flag errorsOnly,  /* 1 = supprees non-error messages */
+  flag noGifCheck   /* 1 = don't check for missing GIFs */)
 {
 
   char *fileBuf;
@@ -112,10 +134,29 @@ flag readTexDefs(void)
   vstring token = "";
   vstring partialToken = ""; /* 6-Aug-2011 nm */
   FILE *tmpFp;
+  static flag saveHtmlFlag = -1; /* -1 to force 1st read */  /* 17-Nov-2015 nm */
+  static flag saveAltHtmlFlag = 1; /* -1 to force 1st read */ /* 17-Nov-2015 nm */
+  flag warningFound = 0; /* 1 if a warning was found */
 
   /* bsearch returned values for use in error-checking */
   void *mathKeyPtr; /* bsearch returned value for math symbol lookup */
   void *texDefsPtr; /* For binary search */
+
+  /* 17-Nov-2015 nm */
+  /* if (texDefsRead) { */
+  if (saveHtmlFlag != htmlFlag || saveAltHtmlFlag != altHtmlFlag) {
+    /* One or both changed - we need to erase and re-read */
+    eraseTexDefs();
+    saveHtmlFlag = htmlFlag; /* Save for next call to readTexDefs() */
+    saveAltHtmlFlag = altHtmlFlag;  /* Save for next call to readTexDefs() */
+    if (htmlFlag == 0 /* Tex */ && altHtmlFlag == 1) {
+      bug(2301); /* Nonsensical combination */
+    }
+  } else {
+    /* Nothing changed; don't need to read again */
+    return 0; /* No errors */
+  }
+  /* } */
 
   /* Initial values below will be overridden if a user assignment exists in the
      $t comment of the xxx.mm input file */
@@ -124,8 +165,9 @@ flag readTexDefs(void)
   let(&htmlHome, "<A HREF=\"http://metamath.org\">Home</A>");
                                      /* Set by htmlhome command in $t comment */
 
-  if (texDefsRead) bug(2301); /* Shouldn't parse the $t comment twice */
-
+  if (errorsOnly == 0) {
+    print2("Reading definitions from $t statement of %s...\n", input_fn);
+  }
   /******* 10/14/02 Rewrote this section so xxx.mm is not read again *******/
   /* Find the comment with the $t */
   fileBuf = ""; /* This used to point to the input file buffer of an external
@@ -154,7 +196,7 @@ flag readTexDefs(void)
   "?Error: There are two comments containing a $t keyword in \"%s\".\n",
             input_fn);
         let(&fileBuf, "");
-        return 0;
+        return 2;
       }
       let(&fileBuf, tmpPtr);
       tmpPtr[j] = zapChar;
@@ -207,7 +249,7 @@ flag readTexDefs(void)
 "The file should have exactly one comment of the form $(...$t...$) with\n");
     print2("the LaTeX and HTML definitions between $t and $).\n");
     let(&fileBuf, "");  /* was: free(fileBuf); */
-    return 0;
+    return 2;
   }
   startPtr++; /* Move to 1st char after $t */
 
@@ -227,7 +269,7 @@ flag readTexDefs(void)
   "?Error: There is no $) comment closure after the $t keyword in \"%s\".\n",
         input_fn);
     let(&fileBuf, "");  /* was: free(fileBuf); */
-    return 0;
+    return 2;
   }
 
   /* 10/9/02 Make sure there aren't two comments with $t commands */
@@ -239,7 +281,7 @@ flag readTexDefs(void)
   "?Error: There are two comments containing a $t keyword in \"%s\".\n",
             input_fn);
         let(&fileBuf, "");  /* was: free(fileBuf); */
-        return 0;
+        return 2;
       }
     }
     if (tmpPtr2[0] == 0) break;
@@ -286,7 +328,7 @@ flag readTexDefs(void)
             " \"htmlbibliography\", or \"exthtmlbibliography\" here.",
             NULL));
         let(&fileBuf, "");  /* was: free(fileBuf); */
-        return (0);
+        return 2;
       }
       fbPtr = fbPtr + tokenLength;
 
@@ -311,7 +353,7 @@ flag readTexDefs(void)
           rawSourceError(fileBuf, fbPtr, tokenLength, lineNum, input_fn,
               "Expected a quoted string here.");
           let(&fileBuf, "");  /* was: free(fileBuf); */
-          return (0);
+          return 2;
         }
         if (parsePass == 2) {
           zapChar = fbPtr[tokenLength - 1]; /* Chr to restore after zapping src */
@@ -366,7 +408,7 @@ flag readTexDefs(void)
           rawSourceError(fileBuf, fbPtr, tokenLength, lineNum, input_fn,
               "Expected the keyword \"as\" here.");
           let(&fileBuf, "");  /* was: free(fileBuf); */
-          return (0);
+          return 2;
         }
         fbPtr[tokenLength] = zapChar;
         fbPtr = fbPtr + tokenLength;
@@ -395,7 +437,7 @@ flag readTexDefs(void)
           rawSourceError(fileBuf, fbPtr, tokenLength, lineNum, input_fn,
               "Expected a quoted string here.");
           let(&fileBuf, "");  /* was: free(fileBuf); */
-          return (0);
+          return 2;
         }
         if (parsePass == 2) {
           zapChar = fbPtr[tokenLength - 1]; /* Chr to restore after zapping src */
@@ -464,7 +506,7 @@ flag readTexDefs(void)
           rawSourceError(fileBuf, fbPtr, tokenLength, lineNum, input_fn,
               "Expected \"+\" or \";\" here.");
           let(&fileBuf, "");  /* was: free(fileBuf); */
-         return (0);
+         return 2;
         }
         fbPtr = fbPtr + tokenLength;
 
@@ -544,8 +586,10 @@ flag readTexDefs(void)
     if (fbPtr != fileBuf + charCount) bug(2305);
 
     if (parsePass == 1 ) {
-      print2("%ld typesetting statements were read from \"%s\".\n",
-          numSymbs, input_fn);
+      if (errorsOnly == 0) {
+        print2("%ld typesetting statements were read from \"%s\".\n",
+            numSymbs, input_fn);
+      }
       texDefs = malloc((size_t)numSymbs * sizeof(struct texDef_struct));
       if (!texDefs) outOfMemory("#99 (TeX symbols)");
     }
@@ -559,10 +603,11 @@ flag readTexDefs(void)
   /* Check for duplicate definitions */
   for (i = 1; i < numSymbs; i++) {
     if (!strcmp(texDefs[i].tokenName, texDefs[i - 1].tokenName)) {
-      printLongLine(cat("?Error:  Token ", texDefs[i].tokenName,
+      printLongLine(cat("?Warning:  Token ", texDefs[i].tokenName,
           " is defined more than once in ",
           htmlFlag ? "an htmldef" : "a latexdef", " statement.", NULL),
           "", " ");
+      warningFound = 1;
     }
   }
 
@@ -573,10 +618,11 @@ flag readTexDefs(void)
     mathKeyPtr = (void *)bsearch(texDefs[i].tokenName, mathKey,
         (size_t)mathTokens, sizeof(long), mathSrchCmp);
     if (!mathKeyPtr) {
-      printLongLine(cat("?Error:  The token \"", texDefs[i].tokenName,
+      printLongLine(cat("?Warning:  The token \"", texDefs[i].tokenName,
           "\", which was defined in ", htmlFlag ? "an htmldef" : "a latexdef",
           " statement, was not declared in any $v or $c statement.", NULL),
           "", " ");
+      warningFound = 1;
     }
   }
 
@@ -585,10 +631,11 @@ flag readTexDefs(void)
     texDefsPtr = (void *)bsearch(mathToken[i].tokenName, texDefs,
         (size_t)numSymbs, sizeof(struct texDef_struct), texSrchCmp);
     if (!texDefsPtr) {
-      printLongLine(cat("?Error:  The token \"", mathToken[i].tokenName,
+      printLongLine(cat("?Warning:  The token \"", mathToken[i].tokenName,
        "\", which was defined in a $v or $c statement, was not declared in ",
           htmlFlag ? "an htmldef" : "a latexdef", " statement.", NULL),
           "", " ");
+      warningFound = 1;
     }
   }
 
@@ -612,14 +659,17 @@ flag readTexDefs(void)
                                      trailing quote" warning */
            /* (We test k after the let() so that the temporary string stack
               entry created by mid() is emptied and won't overflow */
-        tmpFp = fopen(token, "r"); /* See if it exists */
-        if (!tmpFp) {
-          printLongLine(cat("?Warning:  The file \"", token,
-              "\", which is referenced in an htmldef",
-              " statement, was not found.", NULL),
-              "", " ");
-        } else {
-          fclose(tmpFp);
+        if (noGifCheck == 0) { /* 17-Nov-2015 nm */
+          tmpFp = fopen(token, "r"); /* See if it exists */
+          if (!tmpFp) {
+            printLongLine(cat("?Warning:  The file \"", token,
+                "\", which is referenced in an htmldef",
+                " statement, was not found.", NULL),
+                "", " ");
+            warningFound = 1;
+          } else {
+            fclose(tmpFp);
+          }
         }
       }
     }
@@ -632,10 +682,11 @@ flag readTexDefs(void)
       if (!strcmp(extHtmlLabel, statement[i].labelName)) break;
     }
     if (i > statements) {
-      printLongLine(cat("?Error: There is no statement with label \"",
+      printLongLine(cat("?Warning: There is no statement with label \"",
           extHtmlLabel,
           "\" (specified by exthtmllabel in the database source $t comment).  ",
           "Use SHOW LABELS for a list of valid labels.", NULL), "", " ");
+      warningFound = 1;
     }
     extHtmlStmt = i;
   } else {
@@ -680,7 +731,8 @@ flag readTexDefs(void)
   let(&partialToken, ""); /* Deallocate */  /* 6-Aug-2011 nm */
   let(&fileBuf, "");  /* was: free(fileBuf); */
   texDefsRead = 1;  /* Set global flag that it's been read in */
-  return (1); /* Return indicator that parsing passed */
+  return warningFound; /* Return indicator that parsing passed (0) or
+                           had warning(s) (1) */
 
 } /* readTexDefs */
 
@@ -933,13 +985,13 @@ vstring tokenToTex(vstring mtoken, long statemNum /*for error msgs*/)
        with a statement).  (Reported by Wolf Lammen.) */
     if (statemNum < 0 || statemNum > statements) bug(2331);
     if (statemNum > 0) {   /* Include statement label in error message */
-      printLongLine(cat("?Error: In the comment for statement \"",
+      printLongLine(cat("?Warning: In the comment for statement \"",
           statement[statemNum].labelName,
           "\", math symbol token \"", mtoken,
           "\" does not have a LaTeX and/or an HTML definition.", NULL),
           "", " ");
     } else { /* There is no statement associated with the error message */
-      printLongLine(cat("?Error: Math symbol token \"", mtoken,
+      printLongLine(cat("?Warning: Math symbol token \"", mtoken,
           "\" does not have a LaTeX and/or an HTML definition.", NULL),
           "", " ");
     }
@@ -1151,13 +1203,13 @@ void printTexHeader(flag texHeaderFlag)
   vstring bigHdrComment = ""; /* 8-May-2015 nm */
   vstring smallHdrComment = ""; /* 8-May-2015 nm */
 
-  if (!texDefsRead) {
-    if (!readTexDefs()) {
-      print2(
-          "?There was an error in the $t comment's LaTeX/HTML definitions.\n");
-      return;
-    }
+  /*if (!texDefsRead) {*/ /* 17-Nov-2015 nm Now done in readTexDefs() */
+  if (2/*error*/ == readTexDefs(0/*errorsOnly=0*/, 0 /*noGifCheck=0*/)) {
+    print2(
+       "?There was an error in the $t comment's LaTeX/HTML definitions.\n");
+    return;
   }
+  /*}*/
 
   outputToString = 1;  /* Redirect print2 and printLongLine to printString */
   /*let(&printString, "");*/ /* May have stuff to be printed 7/4/98 */
@@ -1646,7 +1698,11 @@ void printTexHeader(flag texHeaderFlag)
 /* Note: the global long "showStatement" is referenced to determine whether
    to read bibliography from mmset.html or mmhilbert.html (or other
    htmlBibliography or extHtmlBibliography file pair). */
-void printTexComment(vstring commentPtr, char htmlCenterFlag)
+/* Returns 1 if an error or warning message was printed */ /* 17-Nov-2015 */
+flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
+    /* 17-Nov-2015 nm */
+    flag errorsOnly, /* 1 = no output, just warning msgs if any */
+    flag noFileCheck)  /* 1 = ignore missing external files (gifs, bib, etc.) */
 {
   vstring cmtptr; /* Not allocated */
   vstring srcptr; /* Not allocated */
@@ -1679,18 +1735,23 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
   vstring cmt = "";
   vstring cmtMasked = ""; /* cmt with math syms blanked */ /* 20-Aug-2014 nm */
   vstring tmpMasked = ""; /* tmp with math syms blanked */ /* 20-Aug-2014 nm */
-  vstring tmpStrMasked = ""; /* tmpStr with math syms blanked */ /* 20-Aug-2014 nm */
+  vstring tmpStrMasked = ""; /* tmpStr w/ math syms blanked */ /* 20-Aug-2014 */
   long i, clen;
+  flag returnVal = 0; /* 1 means error/warning */ /* 17-Nov-2015 nm */
 
   /* We must let this procedure handle switching output to string mode */
   if (outputToString) bug(2309);
   /* The LaTeX (or HTML) file must be open */
-  if (!texFilePtr) bug(2321);
+  if (errorsOnly == 0) {   /* 17-Nov-2015 nm */
+    if (!texFilePtr) bug(2321);
+  }
 
   cmtptr = commentPtr;
 
-  if (!texDefsRead) return; /* TeX defs were not read (error was detected
+  if (!texDefsRead) {
+    return returnVal; /* TeX defs were not read (error was detected
                                and flagged to the user elsewhere) */
+  }
 
   /* Convert line to the old $m..$n and $l..$n formats (using DOLLAR_SUBST
      instead of "$") - the old syntax is obsolete but we do this conversion
@@ -2025,66 +2086,72 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
            read in yet, let's do so here for error-checking. */
 
         /* Start of error-checking */
-        if (!bibTags[0]) {
-          /* The bibliography file has not be read in yet. */
-          let(&bibFileContents, "");
-          print2("Reading HTML bibliographic tags from file \"%s\"...\n",
-              bibFileName);
-          bibFileContents = readFileToString(bibFileName, 0);
-          if (!bibFileContents) {
-            /* The file was not found or had some problem (use verbose mode = 1
-               in 2nd argument of readFileToString for debugging). */
-            printLongLine(cat("?Warning:  Couldn't open or read the file \"",
-                bibFileName,
-                "\".  The bibliographic hyperlinks will not be checked for",
-                " correctness.  The first one is \"", bibTag,
-                "\" in the comment for statement \"",
-                statement[showStatement].labelName, "\".",
-                NULL), "", " ");
-            bibFileContents = ""; /* Restore to normal string */
-            let(&bibTags, "?"); /* Assign to a nonsense tag that won't match
-                but tells us an attempt was already made to read the file */
-          } else {
-            /* Note: In an <A NAME=...> tag, HTML is case-insensitive for A and
-               NAME but case-sensitive for the token after the = */
-            /* Strip all whitespace */
-            let(&bibFileContents, edit(bibFileContents, 2));
-            /* Uppercase version for HTML tag search */
-            let(&bibFileContentsUpper, edit(bibFileContents, 32));
-            htmlpos1 = 0;
-            while (1) {  /* Look for all <A NAME=...></A> HTML tags */
-              htmlpos1 = instr(htmlpos1 + 1, bibFileContentsUpper, "<ANAME=");
-              /* Note stripped space after <A... - not perfectly robust but
-                 good enough if HTML file is legal since <ANAME is not an HTML
-                 tag (let's not get into a regex discussion though...) */
-              if (!htmlpos1) break;
-              htmlpos1 = htmlpos1 + 7;  /* Point ot beginning of tag name */
-              /* Extract tag, ignoring any surrounding quotes */
-              if (bibFileContents[htmlpos1 - 1] == '\''
-                  || bibFileContents[htmlpos1 - 1] == '"') htmlpos1++;
-              htmlpos2 = instr(htmlpos1, bibFileContents, ">");
-              if (!htmlpos2) break;
-              htmlpos2--; /* Move to character before ">" */
-              if (bibFileContents[htmlpos2 - 1] == '\''
-                  || bibFileContents[htmlpos2 - 1] == '"') htmlpos2--;
-              if (htmlpos2 <= htmlpos1) continue;  /* Ignore bad HTML syntax */
-              let(&tmp, cat("[",
-                  seg(bibFileContents, htmlpos1, htmlpos2), "]", NULL));
-              /* Check if tag is already in list */
-              if (instr(1, bibTags, tmp)) {
-                printLongLine(cat("?Error: There two occurrences of",
-                    " bibliographic reference \"",
-                    seg(bibFileContents, htmlpos1, htmlpos2),
-                    "\" in the file \"", bibFileName, "\".", NULL), "", " ");
-              }
-              /* Add tag to tag list */
-              let(&bibTags, cat(bibTags, tmp, NULL));
-            } /* end while */
-            if (!bibTags[0]) {
-              /* No tags found; put dummy partial tag meaning "file read" */
-              let(&bibTags, "[");
+        if (noFileCheck == 0) {  /* 17-Nov-2015 nm */
+          if (!bibTags[0]) {
+            /* The bibliography file has not be read in yet. */
+            let(&bibFileContents, "");
+            if (errorsOnly == 0) { /* 17-Nov-2015 nm */
+              print2("Reading HTML bibliographic tags from file \"%s\"...\n",
+                  bibFileName);
             }
-          } /* end if (!bibFIleContents) */
+            bibFileContents = readFileToString(bibFileName, 0);
+            if (!bibFileContents) {
+              /* The file was not found or had some problem (use verbose mode = 1
+                 in 2nd argument of readFileToString for debugging). */
+              printLongLine(cat("?Warning:  Couldn't open or read the file \"",
+                  bibFileName,
+                  "\".  The bibliographic hyperlinks will not be checked for",
+                  " correctness.  The first one is \"", bibTag,
+                  "\" in the comment for statement \"",
+                  statement[showStatement].labelName, "\".",
+                  NULL), "", " ");
+              returnVal = 1; /* Error/warning printed */ /* 17-Nov-2015 nm */
+              bibFileContents = ""; /* Restore to normal string */
+              let(&bibTags, "?"); /* Assign to a nonsense tag that won't match
+                  but tells us an attempt was already made to read the file */
+            } else {
+              /* Note: In an <A NAME=...> tag, HTML is case-insensitive for A and
+                 NAME but case-sensitive for the token after the = */
+              /* Strip all whitespace */
+              let(&bibFileContents, edit(bibFileContents, 2));
+              /* Uppercase version for HTML tag search */
+              let(&bibFileContentsUpper, edit(bibFileContents, 32));
+              htmlpos1 = 0;
+              while (1) {  /* Look for all <A NAME=...></A> HTML tags */
+                htmlpos1 = instr(htmlpos1 + 1, bibFileContentsUpper, "<ANAME=");
+                /* Note stripped space after <A... - not perfectly robust but
+                   good enough if HTML file is legal since <ANAME is not an HTML
+                   tag (let's not get into a regex discussion though...) */
+                if (!htmlpos1) break;
+                htmlpos1 = htmlpos1 + 7;  /* Point ot beginning of tag name */
+                /* Extract tag, ignoring any surrounding quotes */
+                if (bibFileContents[htmlpos1 - 1] == '\''
+                    || bibFileContents[htmlpos1 - 1] == '"') htmlpos1++;
+                htmlpos2 = instr(htmlpos1, bibFileContents, ">");
+                if (!htmlpos2) break;
+                htmlpos2--; /* Move to character before ">" */
+                if (bibFileContents[htmlpos2 - 1] == '\''
+                    || bibFileContents[htmlpos2 - 1] == '"') htmlpos2--;
+                if (htmlpos2 <= htmlpos1) continue;  /* Ignore bad HTML syntax */
+                let(&tmp, cat("[",
+                    seg(bibFileContents, htmlpos1, htmlpos2), "]", NULL));
+                /* Check if tag is already in list */
+                if (instr(1, bibTags, tmp)) {
+                  printLongLine(cat("?Error: There two occurrences of",
+                      " bibliographic reference \"",
+                      seg(bibFileContents, htmlpos1, htmlpos2),
+                      "\" in the file \"", bibFileName, "\".", NULL), "", " ");
+                  returnVal = 1; /* Error/warning printed */ /* 17-Nov-2015 nm */
+                }
+                /* Add tag to tag list */
+                let(&bibTags, cat(bibTags, tmp, NULL));
+              } /* end while */
+              if (!bibTags[0]) {
+                /* No tags found; put dummy partial tag meaning "file read" */
+                let(&bibTags, "[");
+              }
+            } /* end if (!bibFIleContents) */
+          } /* end if (noFileCheck == 0) */
           /* Assign to permanent tag list for next time */
           if (showStatement < extHtmlStmt) {
             let(&htmlBibliographyTags, bibTags);
@@ -2110,6 +2177,7 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
                 seg(bibTag, 2, pos2 - pos1),
                 "\"></A> tag in the file \"", bibFileName, "\".", NULL),
                 "", " ");
+            returnVal = 1; /* Error/warning printed */ /* 17-Nov-2015 nm */
           }
         }
         /* End of error-checking */
@@ -2233,6 +2301,7 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
               statement[showStatement].labelName,
               "\".  Use \"~~\" to escape \"~\" in an http reference.",
               NULL), "", " ");
+          returnVal = 1; /* Error/warning printed */ /* 17-Nov-2015 nm */
           outputToString = 1;
           mode = 'n';
         }
@@ -2367,6 +2436,7 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
                 "\".  Check that \"`\" inside of a math symbol is",
                 " escaped with \"``\".",
                 NULL), "", " ");
+            returnVal = 1; /* Error/warning printed */ /* 17-Nov-2015 nm */
             outputToString = 1;
 
           }
@@ -2385,6 +2455,7 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
             printLongLine(cat("?Error: Statement \"", tmpStr,
                "\" (referenced in comment) does not exist.", NULL), "", " ");
             outputToString = 1;
+            returnVal = 1;
           }
           *******/
 
@@ -2407,6 +2478,7 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
                   statement[showStatement].labelName,
                   "\") is not a $a or $p statement label.", NULL), "", " ");
               outputToString = 1;
+              returnVal = 1; /* Error/warning printed */ /* 17-Nov-2015 nm */
             }
 
             if (!htmlFlag) {
@@ -2550,7 +2622,9 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
     /* 26-Dec-2011 nm - in <PRE> mode, we don't want to wrap the HTML
        output with spurious newlines */
     if (preformattedMode) screenWidth = PRINTBUFFERSIZE - 2;
-    printLongLine(outputLine, "", htmlFlag ? "\"" : "\\");
+    if (errorsOnly == 0) {
+      printLongLine(outputLine, "", htmlFlag ? "\"" : "\\");
+    }
     screenWidth = saveScreenWidth;
 
     let(&tmp, ""); /* Clear temporary allocation stack */
@@ -2570,7 +2644,9 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
   }
 
   outputToString = 0; /* Restore normal output */
-  fprintf(texFilePtr, "%s", printString);
+  if (errorsOnly == 0) { /* 17-Nov-2015 nm */
+    fprintf(texFilePtr, "%s", printString);
+  }
 
   let(&printString, ""); /* Deallocate strings */
   let(&sourceLine, "");
@@ -2587,6 +2663,8 @@ void printTexComment(vstring commentPtr, char htmlCenterFlag)
   let(&bibFileContents, "");
   let(&bibFileContentsUpper, "");
   let(&bibTags, "");
+
+  return returnVal; /* 1 if error/warning found */
 
 } /* printTexComment */
 
@@ -3066,7 +3144,8 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
         "</TITLE>", NULL));
     */
     /* 4-Jun-06 nm - Put page name before "Metamath Proof Explorer" etc. */
-    print2("%s\n", cat("<TITLE>",
+    /* 15-Nov-2015 nm - Change print2() to printLongLine() */
+    printLongLine(cat("<TITLE>",
         /* Strip off ".html" */
         /*
         left(outputFileName, (long)strlen(outputFileName) - 5),
@@ -3075,12 +3154,13 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
         /* "List p. ", str(page), */ /* 21-Jun-2014 */
         /* 9-May-2015 nm */
         ((page == 0)
-            ? "Table of Contents of Theorem List"
+            ? "TOC of Theorem List"
             : cat("P. ", str(page), " of Theorem List", NULL)),
 
         " - ",
         htmlTitle,
-        "</TITLE>", NULL));
+        "</TITLE>",
+        NULL), "", "\"");
     /* Icon for bookmark */
     print2("%s%s\n", "<LINK REL=\"shortcut icon\" HREF=\"favicon.ico\" ",
         "TYPE=\"image/x-icon\">");
@@ -3780,8 +3860,13 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
           showStatement = s; /* For printTexComment */
           texFilePtr = outputFilePtr; /* For printTexComment */
           /* 8-May-2015 ???Future - make this just return a string??? */
-          printTexComment((vstring)(pntrHugeHdrComment[s]), 0);
-                                        /* Sends result to outputFilePtr */
+          /* printTexComment((vstring)(pntrHugeHdrComment[s]), 0); */
+          /* 17-Nov-2015 nm Add 3rd & 4th arguments */
+          printTexComment(  /* Sends result to texFilePtr */
+              (vstring)(pntrHugeHdrComment[s]),
+              0, /* 1 = htmlCenterFlag */
+              0, /* 1 = errorsOnly */
+              0 /* 1 = noFileCheck */);
           texFilePtr = NULL;
           outputToString = 1; /* Restore after printTexComment */
 
@@ -3842,8 +3927,13 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
           showStatement = s; /* For printTexComment */
           texFilePtr = outputFilePtr; /* For printTexComment */
           /* 8-May-2015 ???Future - make this just return a string??? */
-          printTexComment((vstring)(pntrBigHdrComment[s]), 0);
-                                        /* Sends result to outputFilePtr */
+          /* printTexComment((vstring)(pntrBigHdrComment[s]), 0); */
+          /* 17-Nov-2015 nm Add 3rd & 4th arguments */
+          printTexComment(  /* Sends result to texFilePtr */
+              (vstring)(pntrBigHdrComment[s]),
+              0, /* 1 = htmlCenterFlag */
+              0, /* 1 = errorsOnly */
+              0  /* 1 = noFileCheck */);
           texFilePtr = NULL;
           outputToString = 1; /* Restore after printTexComment */
 
@@ -3904,8 +3994,13 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
           showStatement = s; /* For printTexComment */
           texFilePtr = outputFilePtr; /* For printTexComment */
           /* 8-May-2015 ???Future - make this just return a string??? */
-          printTexComment((vstring)(pntrSmallHdrComment[s]), 0);
-                                        /* Sends result to outputFilePtr */
+          /* printTexComment((vstring)(pntrSmallHdrComment[s]), 0); */
+          /* 17-Nov-2015 nm Add 3rd & 4th arguments */
+          printTexComment(  /* Sends result to texFilePtr */
+              (vstring)(pntrSmallHdrComment[s]),
+              0, /* 1 = htmlCenterFlag */
+              0, /* 1 = errorsOnly */
+              0  /* 1 = noFileCheck */);
           texFilePtr = NULL;
           outputToString = 1; /* Restore after printTexComment */
 
@@ -3956,7 +4051,13 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
       outputToString = 0; /* For printTexComment */
       texFilePtr = outputFilePtr; /* For printTexComment */
       /* 18-Sep-03 ???Future - make this just return a string??? */
-      printTexComment(str3, 0); /* Sends result to outputFilePtr */
+      /* printTexComment(str3, 0); */ /* Sends result to texFilePtr */
+      /* 17-Nov-2015 nm Add 3rd & 4th arguments */
+      printTexComment(  /* Sends result to texFilePtr */
+          str3,
+          0, /* 1 = htmlCenterFlag */
+          0, /* 1 = errorsOnly */
+          0  /* 1 = noFileCheck */);
       texFilePtr = NULL;
       outputToString = 1; /* Restore after printTexComment */
 
@@ -4937,3 +5038,447 @@ vstring getTexOrHtmlHypAndAssertion(long statemNum)
   let(&str2, "");
   return texOrHtmlCode;
 }  /* getTexOrHtmlHypAndAssertion */
+
+
+
+
+/* Added 17-Nov-2015 (broken out of metamath.c for better modularization) */
+/* Called by the WRITE BIBLIOGRPAHY command and also by VERIFY MARKUP
+   for error checking */
+/* Returns 0 if OK, 1 if warning(s), 2 if any error */
+flag writeBibliography(vstring bibFile,
+    flag errorsOnly,  /* 1 = no output, just warning msgs if any */
+    flag noFileCheck) /* 1 = ignore missing external files (mmbiblio.html) */
+{
+  flag errFlag;
+  FILE *list1_fp = NULL;
+  FILE *list2_fp = NULL;
+  long lines, p2, i, j, k, l, m, n, p, q, s, pass1refs;
+  vstring str1 = "", str2 = "", str3 = "", str4 = "", newstr = "", oldstr = "";
+  pntrString *pntrTmp = NULL_PNTRSTRING;
+  flag warnFlag;
+
+  if (noFileCheck == 1 && errorsOnly == 0) {
+    bug(2336); /* If we aren't opening files, a non-error run can't work */
+  }
+  /* 10/10/02 */
+  /* This utility builds the bibliographical cross-references to various
+     textbooks and updates the user-specified file normally called
+     mmbiblio.html. */
+  warnFlag = 0; /* 1 means warning was found, 2 that error was found */
+  errFlag = 0; /* Error flag to recover input file and to set return value 2 */
+  if (noFileCheck == 0) {
+    list1_fp = fSafeOpen(bibFile, "r");
+    if (list1_fp == NULL) {
+      /* Couldn't open it (error msg was provided)*/
+      return 1;
+    }
+    if (errorsOnly == 0) {
+      fclose(list1_fp);
+      /* This will rename the input mmbiblio.html as mmbiblio.html~1 */
+      list2_fp = fSafeOpen(bibFile, "w");
+      if (list2_fp == NULL) {
+          /* Couldn't open it (error msg was provided)*/
+        return 1;
+      }
+      /* Note: in older versions the "~1" string was OS-dependent, but we
+         don't support VAX or THINK C anymore...  Anyway we reopen it
+         here with the renamed file in case the OS won't let us rename
+         an opened file during the fSafeOpen for write above. */
+      list1_fp = fSafeOpen(cat(bibFile, "~1", NULL), "r");
+      if (list1_fp == NULL) bug(2337);
+    }
+  }
+  if (!texDefsRead) {
+    htmlFlag = 1;
+    /* Now done in readTexDefs() *
+    if (errorsOnly == 0 ) {
+      print2("Reading definitions from $t statement of %s...\n", input_fn);
+    }
+    */
+    if (2/*error*/ == readTexDefs(errorsOnly, noFileCheck)) {
+      errFlag = 2; /* Error flag to recover input file */
+      goto BIB_ERROR; /* An error occurred */
+    }
+  }
+
+  /* Transfer the input file up to the special "<!-- #START# -->" comment */
+  if (noFileCheck == 0) {
+    while (1) {
+      if (!linput(list1_fp, NULL, &str1)) {
+        print2(
+  "?Error: Could not find \"<!-- #START# -->\" line in input file \"%s\".\n",
+            bibFile);
+        errFlag = 2; /* Error flag to recover input file */
+        break;
+      }
+      if (errorsOnly == 0) {
+        fprintf(list2_fp, "%s\n", str1);
+      }
+      if (!strcmp(str1, "<!-- #START# -->")) break;
+    }
+    if (errFlag) goto BIB_ERROR;
+  }
+
+  p2 = 1; /* Pass 1 or 2 flag */
+  lines = 0;
+  while (1) {
+
+    if (p2 == 2) {  /* Pass 2 */
+      /* Allocate memory for sorting */
+      pntrLet(&pntrTmp, pntrSpace(lines));
+      lines = 0;
+    }
+
+    /* Scan all $a and $p statements */
+    for (i = 1; i <= statements; i++) {
+      if (statement[i].type != (char)p_ &&
+        statement[i].type != (char)a_) continue;
+      /* Omit ...OLD (obsolete) and ...NEW (to be implemented) statements */
+      if (instr(1, statement[i].labelName, "NEW")) continue;
+      if (instr(1, statement[i].labelName, "OLD")) continue;
+      let(&str1, "");
+      str1 = getDescription(i); /* Get the statement's comment */
+      if (!instr(1, str1, "[")) continue;
+      l = (signed)(strlen(str1));
+      for (j = 0; j < l; j++) {
+        if (str1[j] == '\n') str1[j] = ' '; /* Change newlines to spaces */
+        if (str1[j] == '\r') bug(2338);
+      }
+      let(&str1, edit(str1, 8 + 128 + 16)); /* Reduce & trim whitespace */
+
+      /* 15-Apr-2015 nm */
+      /* Clear out math symbols in backquotes to prevent false matches
+         to [reference] bracket */
+      k = 0; /* Math symbol mode if 1 */
+      l = (signed)(strlen(str1));
+      for (j = 0; j < l - 1; j++) {
+        if (k == 0) {
+          if (str1[j] == '`') {
+            k = 1; /* Start of math mode */
+          }
+        } else { /* In math mode */
+          if (str1[j] == '`') { /* A backquote */
+            if (str1[j + 1] == '`') {
+              /* It is an escaped backquote */
+              str1[j] = ' ';
+              str1[j + 1] = ' ';
+            } else {
+              k = 0; /* End of math mode */
+            }
+          } else { /* Not a backquote */
+            str1[j] = ' '; /* Clear out the math mode part */
+          }
+        } /* end if k == 0 */
+      } /* next j */
+
+      /* Put spaces before page #s (up to 4 digits) for sorting */
+      j = 0;
+      while (1) {
+        j = instr(j + 1, str1, " p. "); /* Heuristic - match " p. " */
+        if (!j) break;
+        if (j) {
+          for (k = j + 4; k <= (signed)(strlen(str1)) + 1; k++) {
+            if (!isdigit((unsigned char)(str1[k - 1]))) {
+              let(&str1, cat(left(str1, j + 2),
+                  space(4 - (k - (j + 4))), right(str1, j + 3), NULL));
+              /* Add ### after page number as marker */
+              let(&str1, cat(left(str1, j + 7), "###", right(str1, j + 8),
+                  NULL));
+              break;
+            }
+          }
+        }
+      }
+      /* Process any bibliographic references in comment */
+      j = 0;
+      n = 0;
+      while (1) {
+        j = instr(j + 1, str1, "["); /* Find reference (not robust) */
+        if (!j) break;
+        if (!isalnum((unsigned char)(str1[j]))) continue; /* Not start of reference */
+        n++;
+        /* Backtrack from [reference] to a starting keyword */
+        m = 0;
+        let(&str2, edit(str1, 32)); /* to uppercase */
+
+        /* (The string search below is rather inefficient; maybe improve
+           the algorithm if speed becomes a problem.) */
+        for (k = j - 1; k >= 1; k--) {
+          /* **IMPORTANT** Make sure to update mmhlpb.c HELP WRITE BIBLIOGRAPHY
+             if new items are added to this list. */
+          if (0
+              /* Do not add SCHEMA but use AXIOM SCHEMA or THEOREM SCHEMA */
+              /* Put the most frequent ones first to speed up search */
+              || !strcmp(mid(str2, k, (long)strlen("THEOREM")), "THEOREM")
+              || !strcmp(mid(str2, k, (long)strlen("EQUATION")), "EQUATION")
+              || !strcmp(mid(str2, k, (long)strlen("DEFINITION")), "DEFINITION")
+              || !strcmp(mid(str2, k, (long)strlen("LEMMA")), "LEMMA")
+              || !strcmp(mid(str2, k, (long)strlen("EXERCISE")), "EXERCISE")
+              || !strcmp(mid(str2, k, (long)strlen("AXIOM")), "AXIOM")
+
+              || !strcmp(mid(str2, k, (long)strlen("CHAPTER")), "CHAPTER")
+              || !strcmp(mid(str2, k, (long)strlen("COMPARE")), "COMPARE")
+              || !strcmp(mid(str2, k, (long)strlen("CONDITION")), "CONDITION")
+              || !strcmp(mid(str2, k, (long)strlen("COROLLARY")), "COROLLARY")
+              || !strcmp(mid(str2, k, (long)strlen("EXAMPLE")), "EXAMPLE")
+              || !strcmp(mid(str2, k, (long)strlen("FIGURE")), "FIGURE")
+              || !strcmp(mid(str2, k, (long)strlen("ITEM")), "ITEM")
+              || !strcmp(mid(str2, k, (long)strlen("LEMMAS")), "LEMMAS")
+              || !strcmp(mid(str2, k, (long)strlen("LINE")), "LINE")
+              || !strcmp(mid(str2, k, (long)strlen("LINES")), "LINES")
+              || !strcmp(mid(str2, k, (long)strlen("NOTATION")), "NOTATION")
+              || !strcmp(mid(str2, k, (long)strlen("PART")), "PART")
+              || !strcmp(mid(str2, k, (long)strlen("POSTULATE")), "POSTULATE")
+              || !strcmp(mid(str2, k, (long)strlen("PROBLEM")), "PROBLEM")
+              || !strcmp(mid(str2, k, (long)strlen("PROPERTY")), "PROPERTY")
+              || !strcmp(mid(str2, k, (long)strlen("PROPOSITION")), "PROPOSITION")
+              || !strcmp(mid(str2, k, (long)strlen("REMARK")), "REMARK")
+              || !strcmp(mid(str2, k, (long)strlen("RULE")), "RULE")
+              || !strcmp(mid(str2, k, (long)strlen("SCHEME")), "SCHEME")
+              || !strcmp(mid(str2, k, (long)strlen("SECTION")), "SECTION")
+              ) {
+            m = k;
+            break;
+          }
+          let(&str3, ""); /* Clear tmp alloc stack created by "mid" */
+        }
+        if (!m) {
+          if (p2 == 1) {
+            print2(
+             "?Warning: Bibliography keyword missing in comment for \"%s\".\n",
+                statement[i].labelName);
+            print2(
+                "    (See HELP WRITE BIBLIOGRAPHY for list of keywords.)\n");
+            warnFlag = 1;
+          }
+          continue; /* Not a bib ref - ignore */
+        }
+        /* m is at the start of a keyword */
+        p = instr(m, str1, "["); /* Start of bibliograpy reference */
+        q = instr(p, str1, "]"); /* End of bibliography reference */
+        if (!q) {
+          if (p2 == 1) {
+            print2(
+        "?Warning: Bibliography reference not found in HTML file in \"%s\".\n",
+              statement[i].labelName);
+            warnFlag = 1;
+          }
+          continue; /* Pretend it is not a bib ref - ignore */
+        }
+        s = instr(q, str1, "###"); /* Page number marker */
+        if (!s) {
+          if (p2 == 1) {
+            print2(
+          "?Warning: No page number after [<author>] bib ref in \"%s\".\n",
+              statement[i].labelName);
+            warnFlag = 1;
+          }
+          continue; /* No page number given - ignore */
+        }
+        /* Now we have a real reference; increment reference count */
+        lines++;
+        if (p2 == 1) continue; /* In 1st pass, we just count refs */
+
+        let(&str2, seg(str1, m, p - 1));     /* "Theorem #" */
+        let(&str3, seg(str1, p + 1, q - 1));  /* "[bibref]" w/out [] */
+        let(&str4, seg(str1, q + 1, s - 1)); /* " p. nnnn" */
+        str2[0] = (char)(toupper((unsigned char)(str2[0])));
+        /* Eliminate noise like "of" in "Theorem 1 of [bibref]" */
+        for (k = (long)strlen(str2); k >=1; k--) {
+          if (0
+              || !strcmp(mid(str2, k, (long)strlen(" of ")), " of ")
+              || !strcmp(mid(str2, k, (long)strlen(" in ")), " in ")
+              || !strcmp(mid(str2, k, (long)strlen(" from ")), " from ")
+              || !strcmp(mid(str2, k, (long)strlen(" on ")), " on ")
+              ) {
+            let(&str2, left(str2, k - 1));
+            break;
+          }
+          let(&str2, str2);
+        }
+
+        let(&newstr, "");
+        newstr = pinkHTML(i); /* Get little pink number */
+        let(&oldstr, cat(
+            /* Construct the sorting key */
+            /* The space() helps Th. 9 sort before Th. 10 on same page */
+            str3, " ", str4, space(20 - (long)strlen(str2)), str2,
+            "|||",  /* ||| means end of sort key */
+            /* Construct just the statement href for combining dup refs */
+            "<A HREF=\"", statement[i].labelName,
+            ".html\">", statement[i].labelName, "</A>",
+            newstr,
+            "&&&",  /* &&& means end of statement href */
+            /* Construct actual HTML table row (without ending tag
+               so duplicate references can be added) */
+
+            /*
+            (i < extHtmlStmt) ?
+               "<TR>" :
+               cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL),
+            */
+
+            /* 29-Jul-2008 nm Sandbox stuff */
+            (i < extHtmlStmt)
+               ? "<TR>"
+               : (i < sandboxStmt)
+                   ? cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL)
+                   : cat("<TR BGCOLOR=", SANDBOX_COLOR, ">", NULL),
+
+            "<TD NOWRAP>[<A HREF=\"",
+
+            /*
+            (i < extHtmlStmt) ?
+               htmlBibliography :
+               extHtmlBibliography,
+            */
+
+            /* 29-Jul-2008 nm Sandbox stuff */
+            (i < extHtmlStmt)
+               ? htmlBibliography
+               : (i < sandboxStmt)
+                   ? extHtmlBibliography
+                   /* Note that the sandbox uses the mmset.html
+                      bibliography */
+                   : htmlBibliography,
+
+            "#",
+            str3,
+            "\">", str3, "</A>]", str4,
+            "</TD><TD>", str2, "</TD><TD><A HREF=\"",
+            statement[i].labelName,
+            ".html\">", statement[i].labelName, "</A>",
+            newstr, NULL));
+        /* Put construction into string array for sorting */
+        let((vstring *)(&pntrTmp[lines - 1]), oldstr);
+      } /* while(1) */
+    } /* next i */
+
+    /* 'lines' should be the same in both passes */
+    if (p2 == 1) {
+      pass1refs = lines;
+    } else {
+      if (pass1refs != lines) bug(2339);
+    }
+
+    if (errorsOnly == 0 && p2 == 2) {
+      /*
+      print2("Pass %ld finished.  %ld references were processed.\n", p2, lines);
+      */
+      print2("%ld references were processed.\n", lines);
+    }
+    if (p2 == 2) break;
+    p2++;    /* Increment from pass 1 to pass 2 */
+  } /* while(1) */
+
+  /* Sort */
+  qsortKey = "";
+  qsort(pntrTmp, (size_t)lines, sizeof(void *), qsortStringCmp);
+
+  /* Combine duplicate references */
+  let(&str1, "");  /* Last biblio ref */
+  for (i = 0; i < lines; i++) {
+    j = instr(1, (vstring)(pntrTmp[i]), "|||");
+    let(&str2, left((vstring)(pntrTmp[i]), j - 1));
+    if (!strcmp(str1, str2)) {
+      /* n++; */ /* 17-Nov-2015 nm Deleted - why was this here? */
+      /* Combine last with this */
+      k = instr(j, (vstring)(pntrTmp[i]), "&&&");
+      /* Extract statement href */
+      let(&str3, seg((vstring)(pntrTmp[i]), j + 3, k -1));
+      let((vstring *)(&pntrTmp[i]),
+          cat((vstring)(pntrTmp[i - 1]), " &nbsp;", str3, NULL));
+      let((vstring *)(&pntrTmp[i - 1]), ""); /* Clear previous line */
+    }
+    let(&str1, str2);
+  }
+
+  /* Write output */
+  if (noFileCheck == 0 && errorsOnly == 0) {
+    n = 0; /* Table rows written */
+    for (i = 0; i < lines; i++) {
+      j = instr(1, (vstring)(pntrTmp[i]), "&&&");
+      if (j) {  /* Don't print blanked out combined lines */
+        n++;
+        /* Take off prefixes and reduce spaces */
+        let(&str1, edit(right((vstring)(pntrTmp[i]), j + 3), 16));
+        j = 1;
+        /* Break up long lines for text editors */
+        let(&printString, "");
+        outputToString = 1;
+        printLongLine(cat(str1, "</TD></TR>", NULL),
+            " ",  /* Start continuation line with space */
+            "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+        outputToString = 0;
+        fprintf(list2_fp, "%s", printString);
+        let(&printString, "");
+      }
+    }
+  }
+
+
+  /* Discard the input file up to the special "<!-- #END# -->" comment */
+  if (noFileCheck == 0) {
+    while (1) {
+      if (!linput(list1_fp, NULL, &str1)) {
+        print2(
+  "?Error: Could not find \"<!-- #END# -->\" line in input file \"%s\".\n",
+            bibFile);
+        errFlag = 2; /* Error flag to recover input file */
+        break;
+      }
+      if (!strcmp(str1, "<!-- #END# -->")) {
+        if (errorsOnly == 0) {
+          fprintf(list2_fp, "%s\n", str1);
+        }
+        break;
+      }
+    }
+    if (errFlag) goto BIB_ERROR;
+  }
+
+  if (noFileCheck == 0 && errorsOnly == 0) {
+    /* Transfer the rest of the input file */
+    while (1) {
+      if (!linput(list1_fp, NULL, &str1)) {
+        break;
+      }
+
+      /* Update the date stamp at the bottom of the HTML page. */
+      /* This is just a nicety; no error check is done. */
+      if (!strcmp("This page was last updated on ", left(str1, 30))) {
+        let(&str1, cat(left(str1, 30), date(), ".", NULL));
+      }
+
+      fprintf(list2_fp, "%s\n", str1);
+    }
+
+    print2("%ld table rows were written.\n", n);
+    /* Deallocate string array */
+    for (i = 0; i < lines; i++) let((vstring *)(&pntrTmp[i]), "");
+    pntrLet(&pntrTmp,NULL_PNTRSTRING);
+  }
+
+
+ BIB_ERROR:
+  if (noFileCheck == 0) {
+    fclose(list1_fp);
+    if (errorsOnly == 0) {
+      fclose(list2_fp);
+    }
+    if (errorsOnly == 0) {
+      if (errFlag) {
+        /* Recover input files in case of error */
+        remove(bibFile);  /* Delete output file */
+        rename(cat(bibFile, "~1", NULL), fullArg[2]);
+            /* Restore input file name */
+        print2("?The file \"%s\" was not modified.\n", fullArg[2]);
+      }
+    }
+  }
+  if (errFlag == 2) warnFlag = 2;
+  return warnFlag;
+}  /* writeBibliography */
+
+

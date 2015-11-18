@@ -195,7 +195,12 @@ void typeStatement(long showStmt,
             let(&str1, cat("\n\\vspace{1ex} %2\n\n", str1, NULL));
           }
         }
-        printTexComment(str1, 1);
+        /* printTexComment(str1, 1); */
+        /* 17-Nov-2015 nm Add 3rd & 4th arguments */
+        printTexComment(str1,              /* Sends result to texFilePtr */
+            1, /* 1 = htmlCenterFlag */
+            0, /* 1 = errorsOnly */
+            0  /* 1 = noFileCheck */);
       }
     }
   }
@@ -2726,7 +2731,12 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
         if (!texFlag) {
           printLongLine(cat("\"", str1, "\"", NULL), "", " ");
         } else {
-          printTexComment(str1, 1);
+          /* printTexComment(str1, 1); */
+          /* 17-Nov-2015 nm Added 3rd & 4th arguments */
+          printTexComment(str1,              /* Sends result to texFilePtr */
+              1, /* 1 = htmlCenterFlag */
+              0, /* 1 = errorsOnly */
+              0 /* 1 = noFileCheck */);
         }
       }
 
@@ -3790,10 +3800,8 @@ void eraseSource(void)
   /*???*/
 
   /* Deallocate the texdef/htmldef storage */ /* Added 27-Oct-2012 nm */
-  if (texDefsRead) {
-    texDefsRead = 0;
-    free(texDefs);
-  }
+  eraseTexDefs(); /* 17-Nov-2015 nm */
+
   sandboxStmt = 0; /* Used by a non-zero test in mmwtex.c to see if assigned */
   extHtmlStmt = 0; /* May be used by a non-zero test; init to be safe */
 
@@ -3919,35 +3927,102 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
 } /* verifyProofs */
 
 
+/* 7-Nov-2015 nm Added this function for date consistency */
+/* 17-Nov-2015 nm Added htmldefs, bib, markup checking */
 /* If checkFiles = 0, do not open external files.
    If checkFiles = 1, check mm*.html, presence of gifs, etc. */
-void verifyMarkup(vstring labelMatch, flag checkFiles) {
+void verifyMarkup(vstring labelMatch,
+    flag dateSkip, /* 1 = don't check date consistency */
+    flag fileSkip) /* 1 = don't check external files (gifs, mmset.html,...) */ {
   flag f;
-  long errCount = 0;
+  flag saveHtmlFlag, saveAltHtmlFlag;
+  flag errFound = 0;
   long stmtNum;
   vstring contributor = ""; vstring contribDate = "";
   vstring reviser = ""; vstring reviseDate = "";
   vstring shortener = ""; vstring shortenDate = "";
+  vstring descr = "";
 
+  saveHtmlFlag = htmlFlag;  saveAltHtmlFlag = altHtmlFlag;
+
+  /* Check $t statement */
+  eraseTexDefs(); /* Force a reread regardless of previous mode */
+  /* Check latexdef statements */
+  print2("Checking latexdef, htmldef, althtmldef...\n");
+  htmlFlag = 0; /* 1 = HTML, not TeX */
+  altHtmlFlag = 0; /* 1 = Unicode, not GIFs (when htmlFlag = 1) */
+  f = readTexDefs(1/*errorsOnly*/,
+          fileSkip /* 1 = no GIF file existence check */  );
+  if (f != 0) errFound = 1;
+  if (f != 2) {   /* We continue if no severe errors (warnings are ok) */
+    /*print2("Checking htmldefs...\n");*/
+    /* Check htmldef statements (reread since we've switched modes) */
+    htmlFlag = 1; /* 1 = HTML, not TeX */
+    altHtmlFlag = 0; /* 1 = Unicode, not GIFs (when htmlFlag = 1) */
+    f = readTexDefs(1/*errorsOnly*/,
+            fileSkip /* 1 = no GIF file existence check */  );
+  }
+  if (f != 0) errFound = 1;
+  if (f != 2) {  /* We continue if no severe errors (warnings are ok) */
+    /*print2("Checking althtmldefs...\n");*/
+    /* Check althtmldef statements (reread since we've switched modes) */
+    htmlFlag = 1; /* 1 = HTML, not TeX */
+    altHtmlFlag = 1; /* 1 = Unicode, not GIFs (when htmlFlag = 1) */
+    f = readTexDefs(1/*errorsOnly*/,
+            fileSkip /* 1 = no GIF file existence check */  );
+  }
+  if (f != 0) errFound = 1;
+
+  /* Check date consistency and comment markup in all statements */
+  print2("Checking statement comments...\n");
   for (stmtNum = 1; stmtNum <= statements; stmtNum++) {
-    if (!matchesList(statement[stmtNum].labelName, labelMatch, '*', '?'))
+    if (!matchesList(statement[stmtNum].labelName, labelMatch, '*', '?')) {
       continue;
-    /* Use the error-checking feature of getContrib() extractor */
-    f = getContrib(stmtNum, &contributor, &contribDate,
-        &reviser, &reviseDate, &shortener, &shortenDate,
-        1/*printErrorsFlag*/);
-    if (f == 1) errCount++;
+    }
+    if (statement[stmtNum].type != a_ && statement[stmtNum].type != p_) {
+      continue;
+    }
+
+    if (dateSkip == 0) {
+      /* Check date consistency of the statement */
+      /* Use the error-checking feature of getContrib() extractor */
+      f = getContrib(stmtNum, &contributor, &contribDate,
+          &reviser, &reviseDate, &shortener, &shortenDate,
+          1/*printErrorsFlag*/);
+      if (f == 1) errFound = 1;
+    }
+
+    let(&descr, "");
+    descr = getDescription(stmtNum);
+
+    /* 17-Nov-2015 */
+    /* Check comment markup of the statement */
+    showStatement /* global */ = stmtNum; /* For printTexComment */
+    texFilePtr /* global */  = NULL; /* Not used, but set to something */
+    /* Use the errors-only (no output) feature of printTexComment() */
+    f = printTexComment(descr,
+        0, /* 1 = htmlCenterFlag (irrelevant for this call) */
+        1, /* 1 = errorsOnly */
+        fileSkip /* 1 = noFileCheck */);
+    if (f == 1) errFound = 1;
+    let(&descr, "");
+
   }
 
-  if (checkFiles == 1) {
-    /* Future checks here */
-  }
+  /* Use the errors-only (no output) feature of writeBibliography() */
+  print2("Checking bibliographic references...\n");
+  f = writeBibliography("mmbiblio.html",
+          1,  /* 1 = no output, just warning msgs if any */
+          fileSkip); /* 1 = ignore missing external files (gifs, bib, etc.) */
+  if (f != 0) errFound = 1;
 
-  if (errCount == 0) {
+  if (errFound == 0) {
     print2("No errors were found.\n");
-  } else {
-    print2("Errors were found in %ld statements.\n", errCount);
   }
+
+  htmlFlag = saveHtmlFlag;  altHtmlFlag = saveAltHtmlFlag;
+  /* Force reread to get current mode defaults for future user commands */
+  eraseTexDefs();
 
   return;
 

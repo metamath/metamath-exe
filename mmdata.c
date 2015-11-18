@@ -69,6 +69,8 @@ pntrString *pntrTempAlloc(long size);
 void pntrCpy(pntrString *sout, pntrString *sin);
 void pntrNCpy(pntrString *s, pntrString *t, long n);
 
+vstring qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate */
+
 
 /* Memory pools are used to reduce the number of malloc and alloc calls that
    allocate arrays (strings or nmbr/pntrStrings typically).   The "free" pool
@@ -477,50 +479,85 @@ void outOfMemory(vstring msg)
 }
 
 
+/* 17-Nov-2015 nm Added abort, skip, ignore options */
 /* Bug check */
 void bug(int bugNum)
 {
   vstring tmpStr = "";
+  flag oldMode;
+  long wrongAnswerCount = 0;
+  static flag mode = 0; /* 1 = run to next bug, 2 = continue and ignore bugs */
 
   /* 10/10/02 */
   flag saveOutputToString = outputToString;
   outputToString = 0; /* Make sure we print to screen and not to string */
 
-  print2("*** A PROGRAM BUG WAS DETECTED.\n");
-  print2("Bug identifier (for technical support):  %ld\n",(long)bugNum);
-  print2(
-"To get technical support, please send Norm Megill (%salum.mit.edu) a\n",
-      "nm+c@");
-  print2(
-"command file that reproduces this bug, along with the source files that\n");
-  print2(
-"were used.  See HELP SUBMIT for help on command files.\n");
-  print2(
-"Search for \"bug(<bug#>)\" in the m*.c source code to find its origin.\n");
-  print2("\n");
+  if (mode == 2) {
+    /* If user chose to ignore bugs, print brief info and return */
+    print2("?BUG CHECK:  *** DETECTED BUG %ld, IGNORING IT...\n", (long)bugNum);
+    return;
+  }
+
+  print2("?BUG CHECK:  *** DETECTED BUG %ld\n", (long)bugNum);
+  if (mode == 0) { /* Print detailed info for first bug */
+    print2("\n");
+    print2(
+  "To get technical support, please send Norm Megill (%salum.mit.edu) the\n",
+        "nm@");
+    print2(
+  "detailed command sequence or a command file that reproduces this bug,\n");
+    print2(
+  "along with the source file that was used.  See HELP LOG for help on\n");
+    print2(
+  "recording a session.  See HELP SUBMIT for help on command files. Search\n");
+    print2(
+  "for \"bug(<bug#>)\" in the m*.c source code to find its origin.\n");
+    print2("\n");
+  }
 
   let(&tmpStr, "?");
-  while (strcmp(tmpStr, "cont") && strcmp(tmpStr, "")) {
-    let(&tmpStr, "");
-    print2(
-"Press RETURN to abort program, or type 'cont' to continue at your own risk\n");
-    tmpStr = cmdInput1("?");
+  while (strcmp(tmpStr, "A") && strcmp(tmpStr, "a")
+      && strcmp(tmpStr, "S") && strcmp(tmpStr, "s")
+      && strcmp(tmpStr, "I") && strcmp(tmpStr, "i")
+      /* The above is actually useless because of break below, but we'll leave
+         it in case we want to re-ask after wrong answers in the future */
+      ) {
+    if (wrongAnswerCount > 6) {
+      print2(
+"Too many wrong answers; program will be aborted to exit scripting loops.\n");
+      break; /* Added 8-Nov-03 */
+    }
+    if (wrongAnswerCount > 0) {
+      let(&tmpStr, "");
+      tmpStr = cmdInput1("Please answer I, S, or A:  ");
+    } else {
+      print2(
+ "Press S <return> to step to next bug, I <return> to ignore further bugs,\n");
+      let(&tmpStr, "");
+      tmpStr = cmdInput1("or A <return> to abort program:  ");
+    }
     /******* 8-Nov-03 This loop caused an infinite loop in a cron job when bug
-     detection was triggered.  Now, with this loop broken, if the user
-     types anything other than 'cont' the program will abort. *******/
-    break; /* Added 8-Nov-03 */
+      detection was triggered.  Now, when the loop breaks above,
+      the program will abort. *******/
+    wrongAnswerCount++;
   }
-  if (!strcmp(tmpStr, "cont")) {
+  oldMode = mode;
+  mode = 0;
+  if (!strcmp(tmpStr, "S") || !strcmp(tmpStr, "s")) mode = 1; /* Skip to next bug */
+  if (!strcmp(tmpStr, "I") || !strcmp(tmpStr, "i")) mode = 2; /* Ignore bugs */
+  if (oldMode == 0 && mode > 0) {
+    /* Print dire warning after the first bug only */
+    print2("\n");
     print2(
     "Warning!!!  A bug was detected, but you are continuing anyway.\n");
     print2(
     "The program may be corrupted, so you are proceeding at your own risk.\n");
     print2("\n");
     let(&tmpStr, "");
-
+  }
+  if (mode > 0) {
     /* 10/10/02 */
     outputToString = saveOutputToString; /* Restore for continuation */
-
     return;
   }
   let(&tmpStr, "");
@@ -528,12 +565,15 @@ void bug(int bugNum)
   cmdInput1("Program has crashed.  Press <return> to leave.");
 #endif
 
+  print2("\n");
   /* Close the log to make sure error log is saved */
   if (logFileOpenFlag) {
+    print2("The log file \"%s\" was closed %s %s.\n",logFileName,
+        date(),time_());
     fclose(logFilePtr);
     logFileOpenFlag = 0;
   }
-
+  print2("The program was aborted.\n");
   exit(1); /* Use 1 instead of 0 to flag abnormal termination to scripts */
 }
 
@@ -3399,4 +3439,31 @@ flag compareDates(vstring date1, vstring date2) {
     return 1;
   }
 } /* compareDates */
+
+
+
+
+/* 17-Nov-2015 Moved out of metamath.c for better modularization */
+/* Compare strings via pointers for qsort */
+/* qsortKey is a global string key at which the sort starts; if empty,
+   start at the beginning of each line. */
+int qsortStringCmp(const void *p1, const void *p2)
+{
+  vstring tmp = "";
+  long n1, n2;
+  int r;
+  /* Returns -1 if p1 < p2, 0 if equal, 1 if p1 > p2 */
+  if (qsortKey[0] == 0) {
+    /* No key, use full line */
+    return strcmp(*(char * const *)p1, *(char * const *)p2);
+  } else {
+    n1 = instr(1, *(char * const *)p1, qsortKey);
+    n2 = instr(1, *(char * const *)p2, qsortKey);
+    r = strcmp(
+        right(*(char * const *)p1, n1),
+        right(*(char * const *)p2, n2));
+    let(&tmp, ""); /* Deallocate temp string stack */
+    return r;
+  }
+}
 

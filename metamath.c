@@ -5,7 +5,17 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.120 7-Nov-2015"
+#define MVERSION "0.121 17-Nov-2015"
+/* 0.121 17-Nov-2015 nm metamath.c, mmcmdl.h, mmcmdl.c, mmcmds.h, mmcmds.c,
+       mmwtex.h, mmwtex.c, mmdata.h, mmdata.c -
+   1. Moved WRITE BIBLIOGRAPHY code from metamath.c to its own function in
+      mmwtex.c; moved qsortStringCmp() from metamath.c to mmdata.c
+   2. Added $t, comment markup, and bibliography checking to VERIFY MARKUP
+   3. Added options to bug() bug-check interception to select aborting,
+      stepping to next bug, or ignoring subsequent bugs
+   4. SHOW STATEMENT can now use both /HTML and /ALT_HTML in same session
+   5. Added /HTML, /ALT_HTML to WRITE THEOREM_LIST and
+      WRITE RECENT_ADDITIONS */
 /* 0.120 7-Nov-2015 nm metamath.c, mmcmdl.c, mmpars.c - add VERIFY MARKUP
    4-Nov-2015 nm metamath.c, mmcmds.c/h, mmdata.c/h - move getDescription,
        getSourceIndentation from mmcmds.c to mmdata.c.
@@ -20,10 +30,10 @@
    HELP SHOW TRACE_BACK. */
 /* 0.117 30-May-2015
    1. nm mmwtex.c - move <A NAME... tag to math symbol cell in proof pages so
-       hyperlink will jump to top of cell (reported by Alan Sare)
+      hyperlink will jump to top of cell (reported by Alan Sare)
    2. daw mmpfas.c - add INLINE speedup if compiler permits
    3. nm metamath.c, mminou.c, mmwtex.c, mmpfas.c - fix clang -Wall warnings
-       (reported by David A. Wheeler) */
+      (reported by David A. Wheeler) */
 /* 0.116 9-May-2015 nm mmwtex.c - adjust paragraph break in 'write th';
    Statement List renamed Theorem List;  prevent space in after paragraph
    in Theorem List; remove stray "(";  put header and header comment
@@ -400,9 +410,6 @@
 #endif
 
 void command(int argc, char *argv[]);
-
-int qsortStringCmp(const void *p1, const void *p2);
-vstring qsortKey; /* Pointer only; do not deallocate */
 
 int main(int argc, char *argv[])
 {
@@ -1854,14 +1861,16 @@ void command(int argc, char *argv[])
       }
       showLemmas = (switchPos("/ SHOW_LEMMAS") != 0);
 
+      /**** 17-Nov-2015 nm Deleted, no longer need this restriction
       if (!texDefsRead) {
         htmlFlag = 1;
         print2("Reading definitions from $t statement of %s...\n", input_fn);
-        if (!readTexDefs()) {
-          continue; /* An error occurred */
+        if (2/@error@/ == readTexDefs(0 /@ 1 = check errors only @/,
+            0 /@ 1 = no GIF file existence check @/ )) {
+          continue; /@ An error occurred @/
         }
       } else {
-        /* Current limitation - can only read def's from .mm file once */
+        /@ Current limitation - can only read def's from .mm file once @/
         if (!htmlFlag) {
           print2("?You cannot use both LaTeX and HTML in the same session.\n");
           print2(
@@ -1869,6 +1878,26 @@ void command(int argc, char *argv[])
           continue;
         }
       }
+      *** end of 17-Nov-2015 deletion */
+
+      htmlFlag = 1;
+      /* If not specified, for backwards compatibility in scripts
+         leave altHtmlFlag at current value */
+      if (switchPos("/ HTML") != 0) {
+        if (switchPos("/ ALT_HTML") != 0) {
+          print2("?Please specify only one of / HTML and / ALT_HTML.\n");
+          continue;
+        }
+        altHtmlFlag = 0;
+      } else {
+        if (switchPos("/ ALT_HTML") != 0) altHtmlFlag = 1;
+      }
+
+      if (2/*error*/ == readTexDefs(0 /* 1 = check errors only */,
+          0 /* 1 = no GIF file existence check */ )) {
+        continue; /* An error occurred */
+      }
+
       /* Output the theorem list */
       writeTheoremList(i, showLemmas); /* (located in mmwtex.c) */
       continue;
@@ -1876,373 +1905,16 @@ void command(int argc, char *argv[])
 
 
     if (cmdMatches("WRITE BIBLIOGRAPHY")) {
-      /* 10/10/02 -
-         This utility builds the bibliographical cross-references to various
+      /* 10/10/02 */
+      /* This command builds the bibliographical cross-references to various
          textbooks and updates the user-specified file normally called
-         mmbiblio.html.
-       */
-      tmpFlag = 0; /* Error flag to recover input file */
-      list1_fp = fSafeOpen(fullArg[2], "r");
-      if (list1_fp == NULL) {
-        /* Couldn't open it (error msg was provided)*/
-        continue;
-      }
-      fclose(list1_fp);
-      /* This will rename the input mmbiblio.html as mmbiblio.html~1 */
-      list2_fp = fSafeOpen(fullArg[2], "w");
-      if (list2_fp == NULL) {
-          /* Couldn't open it (error msg was provided)*/
-        continue;
-      }
-      /* Note: in older versions the "~1" string was OS-dependent, but we
-         don't support VAX or THINK C anymore...  Anyway we reopen it
-         here with the renamed file in case the OS won't let us rename
-         an opened file during the fSafeOpen for write above. */
-      list1_fp = fSafeOpen(cat(fullArg[2], "~1", NULL), "r");
-      if (list1_fp == NULL) bug(1116);
-      if (!texDefsRead) {
-        htmlFlag = 1;
-        print2("Reading definitions from $t statement of %s...\n", input_fn);
-        if (!readTexDefs()) {
-          tmpFlag = 1; /* Error flag to recover input file */
-          goto bib_error; /* An error occurred */
-        }
-      }
+         mmbiblio.html. */
 
-      /* Transfer the input file up to the special "<!-- #START# -->" comment */
-      while (1) {
-        if (!linput(list1_fp, NULL, &str1)) {
-          print2(
-"?Error: Could not find \"<!-- #START# -->\" line in input file \"%s\".\n",
-              fullArg[2]);
-          tmpFlag = 1; /* Error flag to recover input file */
-          break;
-        }
-        fprintf(list2_fp, "%s\n", str1);
-        if (!strcmp(str1, "<!-- #START# -->")) break;
-      }
-      if (tmpFlag) goto bib_error;
-
-      p2 = 1; /* Pass 1 or 2 flag */
-      lines = 0;
-      while (1) {
-
-        if (p2 == 2) {  /* Pass 2 */
-          /* Allocate memory for sorting */
-          pntrLet(&pntrTmp, pntrSpace(lines));
-          lines = 0;
-        }
-
-        /* Scan all $a and $p statements */
-        for (i = 1; i <= statements; i++) {
-          if (statement[i].type != (char)p_ &&
-            statement[i].type != (char)a_) continue;
-          /* Omit ...OLD (obsolete) and ...NEW (to be implemented) statements */
-          if (instr(1, statement[i].labelName, "NEW")) continue;
-          if (instr(1, statement[i].labelName, "OLD")) continue;
-          let(&str1, "");
-          str1 = getDescription(i); /* Get the statement's comment */
-          if (!instr(1, str1, "[")) continue;
-          l = (signed)(strlen(str1));
-          for (j = 0; j < l; j++) {
-            if (str1[j] == '\n') str1[j] = ' '; /* Change newlines to spaces */
-            if (str1[j] == '\r') bug(1119);
-          }
-          let(&str1, edit(str1, 8 + 128 + 16)); /* Reduce & trim whitespace */
-
-          /* 15-Apr-2015 nm */
-          /* Clear out math symbols in backquotes to prevent false matches
-             to [reference] bracket */
-          k = 0; /* Math symbol mode if 1 */
-          l = (signed)(strlen(str1));
-          for (j = 0; j < l - 1; j++) {
-            if (k == 0) {
-              if (str1[j] == '`') {
-                k = 1; /* Start of math mode */
-              }
-            } else { /* In math mode */
-              if (str1[j] == '`') { /* A backquote */
-                if (str1[j + 1] == '`') {
-                  /* It is an escaped backquote */
-                  str1[j] = ' ';
-                  str1[j + 1] = ' ';
-                } else {
-                  k = 0; /* End of math mode */
-                }
-              } else { /* Not a backquote */
-                str1[j] = ' '; /* Clear out the math mode part */
-              }
-            } /* end if k == 0 */
-          } /* next j */
-
-          /* Put spaces before page #s (up to 4 digits) for sorting */
-          j = 0;
-          while (1) {
-            j = instr(j + 1, str1, " p. "); /* Heuristic - match " p. " */
-            if (!j) break;
-            if (j) {
-              for (k = j + 4; k <= (signed)(strlen(str1)) + 1; k++) {
-                if (!isdigit((unsigned char)(str1[k - 1]))) {
-                  let(&str1, cat(left(str1, j + 2),
-                      space(4 - (k - (j + 4))), right(str1, j + 3), NULL));
-                  /* Add ### after page number as marker */
-                  let(&str1, cat(left(str1, j + 7), "###", right(str1, j + 8),
-                      NULL));
-                  break;
-                }
-              }
-            }
-          }
-          /* Process any bibliographic references in comment */
-          j = 0;
-          n = 0;
-          while (1) {
-            j = instr(j + 1, str1, "["); /* Find reference (not robust) */
-            if (!j) break;
-            if (!isalnum((unsigned char)(str1[j]))) continue; /* Not start of reference */
-            n++;
-            /* Backtrack from [reference] to a starting keyword */
-            m = 0;
-            let(&str2, edit(str1, 32)); /* to uppercase */
-            for (k = j - 1; k >= 1; k--) {
-              /* ??? Future: make this a loop from a list that can be
-                 printed in the error message if not found */
-              if (0
-                  || !strcmp(mid(str2, k, (long)strlen("THEOREM")), "THEOREM")
-                  || !strcmp(mid(str2, k, (long)strlen("LEMMA")), "LEMMA")
-                  || !strcmp(mid(str2, k, (long)strlen("LEMMAS")), "LEMMAS")
-                  || !strcmp(mid(str2, k, (long)strlen("DEFINITION")), "DEFINITION")
-                  || !strcmp(mid(str2, k, (long)strlen("COMPARE")), "COMPARE")
-                  || !strcmp(mid(str2, k, (long)strlen("PROPOSITION")), "PROPOSITION")
-                  || !strcmp(mid(str2, k, (long)strlen("COROLLARY")), "COROLLARY")
-                  || !strcmp(mid(str2, k, (long)strlen("AXIOM")), "AXIOM")
-                  || !strcmp(mid(str2, k, (long)strlen("RULE")), "RULE")
-                  || !strcmp(mid(str2, k, (long)strlen("REMARK")), "REMARK")
-                  || !strcmp(mid(str2, k, (long)strlen("EXERCISE")), "EXERCISE")
-                  || !strcmp(mid(str2, k, (long)strlen("PROBLEM")), "PROBLEM")
-                  || !strcmp(mid(str2, k, (long)strlen("NOTATION")), "NOTATION")
-                  || !strcmp(mid(str2, k, (long)strlen("EXAMPLE")), "EXAMPLE")
-                  || !strcmp(mid(str2, k, (long)strlen("PART")), "PART")
-                  || !strcmp(mid(str2, k, (long)strlen("SECTION")), "SECTION")
-                  || !strcmp(mid(str2, k, (long)strlen("PROPERTY")), "PROPERTY")
-                  || !strcmp(mid(str2, k, (long)strlen("FIGURE")), "FIGURE")
-                  || !strcmp(mid(str2, k, (long)strlen("POSTULATE")), "POSTULATE")
-                  || !strcmp(mid(str2, k, (long)strlen("EQUATION")), "EQUATION")
-                  || !strcmp(mid(str2, k, (long)strlen("SCHEME")), "SCHEME")
-                  || !strcmp(mid(str2, k, (long)strlen("ITEM")), "ITEM")
-                  || !strcmp(mid(str2, k, (long)strlen("LINE")), "LINE")
-                  || !strcmp(mid(str2, k, (long)strlen("LINES")), "LINES")
-                  /* Don't use SCHEMA since we may have THEOREM SCHEMA
-                  || !strcmp(mid(str2, k, (long)strlen("SCHEMA")), "SCHEMA")
-                  */
-                  || !strcmp(mid(str2, k, (long)strlen("CHAPTER")), "CHAPTER")
-                  ) {
-                m = k;
-                break;
-              }
-              let(&str3, ""); /* Clear tmp alloc stack created by "mid" */
-            }
-            if (!m) {
-              if (p2 == 1) {
-                print2("?Warning: No keyword match in \"%s\".\n",
-                  statement[i].labelName);
-                /* ??? Future - show the actual list */
-                print2(
-       "?(See metamath.c source for list of keywords THEOREM, LEMMA, etc.)\n");
-              }
-              continue; /* Not a bib ref - ignore */
-            }
-            /* m is at the start of a keyword */
-            p = instr(m, str1, "["); /* Start of bibliograpy reference */
-            q = instr(p, str1, "]"); /* End of bibliography reference */
-            if (!q) {
-              if (p2 == 1) print2(
-                  "?Warning: Reference not found in HTML file in \"%s\".\n",
-                  statement[i].labelName);
-              continue; /* Not a bib ref - ignore */
-            }
-            s = instr(q, str1, "###"); /* Page number marker */
-            if (!s) {
-              if (p2 == 1) print2(
-                  "?Warning: No page number after reference in \"%s\".\n",
-                  statement[i].labelName);
-              continue; /* No page number given - ignore */
-            }
-            /* Now we have a real reference; increment reference count */
-            lines++;
-            if (p2 == 1) continue; /* In 1st pass, we just count refs */
-
-            let(&str2, seg(str1, m, p - 1));     /* "Theorem #" */
-            let(&str3, seg(str1, p + 1, q - 1));  /* "[bibref]" w/out [] */
-            let(&str4, seg(str1, q + 1, s - 1)); /* " p. nnnn" */
-            str2[0] = (char)(toupper((unsigned char)(str2[0])));
-            /* Eliminate noise like "of" in "Theorem 1 of [bibref]" */
-            for (k = (long)strlen(str2); k >=1; k--) {
-              if (0
-                  || !strcmp(mid(str2, k, (long)strlen(" of ")), " of ")
-                  || !strcmp(mid(str2, k, (long)strlen(" in ")), " in ")
-                  || !strcmp(mid(str2, k, (long)strlen(" from ")), " from ")
-                  || !strcmp(mid(str2, k, (long)strlen(" on ")), " on ")
-                  ) {
-                let(&str2, left(str2, k - 1));
-                break;
-              }
-              let(&str2, str2);
-            }
-
-            let(&newstr, "");
-            newstr = pinkHTML(i); /* Get little pink number */
-            let(&oldstr, cat(
-                /* Construct the sorting key */
-                /* The space() helps Th. 9 sort before Th. 10 on same page */
-                str3, " ", str4, space(20 - (long)strlen(str2)), str2,
-                "|||",  /* ||| means end of sort key */
-                /* Construct just the statement href for combining dup refs */
-                "<A HREF=\"", statement[i].labelName,
-                ".html\">", statement[i].labelName, "</A>",
-                newstr,
-                "&&&",  /* &&& means end of statement href */
-                /* Construct actual HTML table row (without ending tag
-                   so duplicate references can be added) */
-
-                /*
-                (i < extHtmlStmt) ?
-                   "<TR>" :
-                   cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL),
-                */
-
-                /* 29-Jul-2008 nm Sandbox stuff */
-                (i < extHtmlStmt)
-                   ? "<TR>"
-                   : (i < sandboxStmt)
-                       ? cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL)
-                       : cat("<TR BGCOLOR=", SANDBOX_COLOR, ">", NULL),
-
-                "<TD NOWRAP>[<A HREF=\"",
-
-                /*
-                (i < extHtmlStmt) ?
-                   htmlBibliography :
-                   extHtmlBibliography,
-                */
-
-                /* 29-Jul-2008 nm Sandbox stuff */
-                (i < extHtmlStmt)
-                   ? htmlBibliography
-                   : (i < sandboxStmt)
-                       ? extHtmlBibliography
-                       /* Note that the sandbox uses the mmset.html
-                          bibliography */
-                       : htmlBibliography,
-
-                "#",
-                str3,
-                "\">", str3, "</A>]", str4,
-                "</TD><TD>", str2, "</TD><TD><A HREF=\"",
-                statement[i].labelName,
-                ".html\">", statement[i].labelName, "</A>",
-                newstr, NULL));
-            /* Put construction into string array for sorting */
-            let((vstring *)(&pntrTmp[lines - 1]), oldstr);
-          }
-        }
-        /* 'lines' should be the same in both passes */
-        print2("Pass %ld finished.  %ld references were processed.\n", p2, lines);
-        if (p2 == 2) break;
-        p2++;    /* Increment from pass 1 to pass 2 */
-      }
-
-      /* Sort */
-      qsortKey = "";
-      qsort(pntrTmp, (size_t)lines, sizeof(void *), qsortStringCmp);
-
-      /* Combine duplicate references */
-      let(&str1, "");  /* Last biblio ref */
-      for (i = 0; i < lines; i++) {
-        j = instr(1, (vstring)(pntrTmp[i]), "|||");
-        let(&str2, left((vstring)(pntrTmp[i]), j - 1));
-        if (!strcmp(str1, str2)) {
-          n++;
-          /* Combine last with this */
-          k = instr(j, (vstring)(pntrTmp[i]), "&&&");
-          /* Extract statement href */
-          let(&str3, seg((vstring)(pntrTmp[i]), j + 3, k -1));
-          let((vstring *)(&pntrTmp[i]),
-              cat((vstring)(pntrTmp[i - 1]), " &nbsp;", str3, NULL));
-          let((vstring *)(&pntrTmp[i - 1]), ""); /* Clear previous line */
-        }
-        let(&str1, str2);
-      }
-
-      /* Write output */
-      n = 0;
-      for (i = 0; i < lines; i++) {
-        j = instr(1, (vstring)(pntrTmp[i]), "&&&");
-        if (j) {  /* Don't print blanked out combined lines */
-          n++;
-          /* Take off prefixes and reduce spaces */
-          let(&str1, edit(right((vstring)(pntrTmp[i]), j + 3), 16));
-          j = 1;
-          /* Break up long lines for text editors */
-          let(&printString, "");
-          outputToString = 1;
-          printLongLine(cat(str1, "</TD></TR>", NULL),
-              " ",  /* Start continuation line with space */
-              "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
-          outputToString = 0;
-          fprintf(list2_fp, "%s", printString);
-          let(&printString, "");
-        }
-      }
-
-
-      /* Discard the input file up to the special "<!-- #END# -->" comment */
-      while (1) {
-        if (!linput(list1_fp, NULL, &str1)) {
-          print2(
-"?Error: Could not find \"<!-- #END# -->\" line in input file \"%s\".\n",
-              fullArg[2]);
-          tmpFlag = 1; /* Error flag to recover input file */
-          break;
-        }
-        if (!strcmp(str1, "<!-- #END# -->")) {
-          fprintf(list2_fp, "%s\n", str1);
-          break;
-        }
-      }
-      if (tmpFlag) goto bib_error;
-
-      /* Transfer the rest of the input file */
-      while (1) {
-        if (!linput(list1_fp, NULL, &str1)) {
-          break;
-        }
-
-        /* Update the date stamp at the bottom of the HTML page. */
-        /* This is just a nicety; no error check is done. */
-        if (!strcmp("This page was last updated on ", left(str1, 30))) {
-          let(&str1, cat(left(str1, 30), date(), ".", NULL));
-        }
-
-        fprintf(list2_fp, "%s\n", str1);
-      }
-
-      print2("%ld table rows were written.\n", n);
-      /* Deallocate string array */
-      for (i = 0; i < lines; i++) let((vstring *)(&pntrTmp[i]), "");
-      pntrLet(&pntrTmp,NULL_PNTRSTRING);
-
-
-     bib_error:
-      fclose(list1_fp);
-      fclose(list2_fp);
-      if (tmpFlag) {
-        /* Recover input files in case of error */
-        remove(fullArg[2]);  /* Delete output file */
-        rename(cat(fullArg[2], "~1", NULL), fullArg[2]);
-            /* Restore input file name */
-        print2("?The file \"%s\" was not modified.\n", fullArg[2]);
-      }
+      /* 17-Nov-2015 nm code moved to writeBibliography() in mmwtex.c */
+      /* (Also called by verifyMarkup() in mmcmds.c for error checking) */
+      writeBibliography(fullArg[2],
+          0,  /* 1 = no output, just warning msgs if any */
+          0); /* 1 = ignore missing external files (gifs, bib, etc.) */
       continue;
     }  /* End of "WRITE BIBLIOGRAPHY" */
 
@@ -2264,20 +1936,42 @@ void command(int argc, char *argv[])
         i = RECENT_COUNT; /* Use the default value */
       }
 
+      /**** 17-Nov-2015 nm Deleted because readTeXDefs() now handles everything
       if (!texDefsRead) {
         htmlFlag = 1;
         print2("Reading definitions from $t statement of %s...\n", input_fn);
-        if (!readTexDefs()) {
-          continue; /* An error occurred */
+        if (2/@error@/ == readTexDefs(0 /@ 1 = check errors only @/,
+            0 /@ 1 = no GIF file existence check @/  )) {
+          continue; /@ An error occurred @/
         }
       } else {
-        /* Current limitation - can only read def's from .mm file once */
+        /@ Current limitation - can only read def's from .mm file once @/
         if (!htmlFlag) {
           print2("?You cannot use both LaTeX and HTML in the same session.\n");
           print2(
               "You must EXIT and restart Metamath to switch to the other.\n");
           continue;
         }
+      }
+      **** end of 17-Nov-2015 deletion */
+
+      htmlFlag = 1;
+      /* If not specified, for backwards compatibility in scripts
+         leave altHtmlFlag at current value */
+      if (switchPos("/ HTML") != 0) {
+        if (switchPos("/ ALT_HTML") != 0) {
+          print2("?Please specify only one of / HTML and / ALT_HTML.\n");
+          continue;
+        }
+        altHtmlFlag = 0;
+      } else {
+        if (switchPos("/ ALT_HTML") != 0) altHtmlFlag = 1;
+      }
+
+      /* readTexDefs() rereads based on changed in htmlFlag, altHtmlFlag */
+      if (2/*error*/ == readTexDefs(0 /* 1 = check errors only */,
+          0 /* 1 = no GIF file existence check */  )) {
+        continue; /* An error occurred */
       }
 
       tmpFlag = 0; /* Error flag to recover input file */
@@ -2426,7 +2120,12 @@ void command(int argc, char *argv[])
             outputToString = 0; /* For printTexComment */
             texFilePtr = list2_fp;
             /* 18-Sep-03 ???Future - make this just return a string??? */
-            printTexComment(str3, 0); /* Sends result to texFilePtr */
+            /* printTexComment(str3, 0); */
+            /* 17-Nov-2015 nm Added 3rd & 4th arguments */
+            printTexComment(str3,              /* Sends result to texFilePtr */
+                0, /* 1 = htmlCenterFlag */
+                0, /* 1 = errorsOnly */
+                0  /* 1 = noFileCheck */ );
             texFilePtr = NULL;
             outputToString = 1; /* Restore after printTexComment */
 
@@ -2730,8 +2429,9 @@ void command(int argc, char *argv[])
         continue;
       }
 
+      /*** 17-Nov-2014 nm This restriction has been removed.
       if (texDefsRead) {
-        /* Current limitation - can only read def's from .mm file once */
+        /@ Current limitation - can only read def's from .mm file once @/
         if (!htmlFlag) {
           print2("?You cannot use both LaTeX and HTML in the same session.\n");
           print2(
@@ -2748,6 +2448,9 @@ void command(int argc, char *argv[])
           }
         }
       }
+      *** End 17-Nov-2014 deletion */
+
+      htmlFlag = 1; /* 17-Nov-2015 nm */
 
       if (switchPos("/ BRIEF_HTML") || switchPos("/ BRIEF_ALT_HTML")) {
         if (strcmp(fullArg[2], "*")) {
@@ -3136,18 +2839,21 @@ void command(int argc, char *argv[])
     /* Write mnemosyne.txt */
     if (cmdMatches("SHOW STATEMENT") && switchPos("/ MNEMONICS")) {
 
+      /*** 17-Nov-2015 nm Deleted - removed htmlFlag, altHtmlFlag
+            change prohibition
       if (!texDefsRead) {
-        htmlFlag = 1;     /* Use HTML, not TeX section */
-        altHtmlFlag = 1;  /* Use Unicode, not GIF */
+        htmlFlag = 1;     /@ Use HTML, not TeX section @/
+        altHtmlFlag = 1;  /@ Use Unicode, not GIF @/
         print2("Reading definitions from $t statement of %s...\n", input_fn);
-        if (!readTexDefs()) {
+        if (2/@error@/ == readTexDefs(0 /@ 1 = check errors only @/,
+            0 /@ 1 = no GIF file existence check @/  )) {
           print2(
           "?There was an error in the $t comment's LaTeX/HTML definitions.\n");
           print2("?HTML generation was aborted due to the error above.\n");
-          continue; /* An error occurred */
+          continue; /@ An error occurred @/
         }
       } else {
-        /* Current limitation - can only read def's from .mm file once */
+        /@ Current limitation - can only read def's from .mm file once @/
         if (!htmlFlag) {
           print2("?You cannot use both LaTeX and HTML in the same session.\n");
           print2(
@@ -3162,6 +2868,15 @@ void command(int argc, char *argv[])
             continue;
           }
         }
+      }
+      *** end of 17-Nov-2015 deletion */
+
+      htmlFlag = 1;     /* Use HTML, not TeX section */
+      altHtmlFlag = 1;  /* Use Unicode, not GIF */
+      /* readTexDefs() rereads based on changes to htmlFlag, altHtmlFlag */
+      if (2/*error*/ == readTexDefs(0 /* 1 = check errors only */,
+          0 /* 1 = no GIF file existence check */  )) {
+        continue; /* An error occurred */
       }
 
       let(&texFileName,"mnemosyne.txt");
@@ -3408,6 +3123,12 @@ void command(int argc, char *argv[])
         print2("The %s file '%s' is open.\n", htmlFlag ? "HTML" : "LaTeX",
             texFileName);
       }
+      /* 17-Nov-2015 nm */
+      print2(
+  "(SHOW STATEMENT.../[TEX,HTML,ALT_HTML]) Current output mode is %s.\n",
+          htmlFlag
+             ? (altHtmlFlag ? "ALT_HTML" : "HTML")
+             : "TEX (LaTeX)");
       /* 21-Jun-2014 */
       print2("The program is compiled for a %ld-bit CPU.\n",
           (long)(8 * sizeof(long)));
@@ -6743,6 +6464,10 @@ void command(int argc, char *argv[])
         print2("?OPEN HTML is obsolete - use SHOW STATEMENT * / HTML\n");
         continue;
       }
+
+      /* 17-Nov-2015 TODO: clean up mixed LaTeX/HTML attempts (check
+         texFileOpenFlag when switching to HTML & close LaTeX file) */
+
       if (texDefsRead) {
         /* Current limitation - can only read .def once */
         if (cmdMatches("OPEN HTML") != htmlFlag) {
@@ -6942,13 +6667,13 @@ void command(int argc, char *argv[])
       continue;
     }
 
-    /* 7-Nov-2015 nm Added */
+    /* 7-Nov-2015 nm Added */  /* 17-Nov-2015 nm Updated */
     if (cmdMatches("VERIFY MARKUP")) {
-      if (switchPos("/ NO_FILES")) {
-        verifyMarkup(fullArg[2],0); /* Don't check external files */
-      } else {
-        verifyMarkup(fullArg[2],1); /* Include external files */
-      }
+      i = (switchPos("/ DATE_SKIP") != 0) ? 1 : 0;
+      j = (switchPos("/ FILE_SKIP") != 0) ? 1 : 0;
+      verifyMarkup(fullArg[2],
+          (flag)i, /* 1 = skip checking date consistency */
+          (flag)j); /* 1 = skip checking external files GIF, mmset.html,... */
       continue;
     }
 
@@ -6958,25 +6683,4 @@ void command(int argc, char *argv[])
   }
 } /* command */
 
-
-/* Compare strings via pointers */
-int qsortStringCmp(const void *p1, const void *p2)
-{
-  vstring tmp = "";
-  long i1, i2;
-  int r;
-  /* Returns -1 if p1 < p2, 0 if equal, 1 if p1 > p2 */
-  if (qsortKey[0] == 0) {
-    /* No key, use full line */
-    return strcmp(*(char * const *)p1, *(char * const *)p2);
-  } else {
-    i1 = instr(1, *(char * const *)p1, qsortKey);
-    i2 = instr(1, *(char * const *)p2, qsortKey);
-    r = strcmp(
-        right(*(char * const *)p1, i1),
-        right(*(char * const *)p2, i2));
-    let(&tmp, ""); /* Deallocate temp string stack */
-    return r;
-  }
-}
 

@@ -67,7 +67,8 @@ void writeInput(flag cleanFlag, flag reformatFlag);
 void writeDict(void);
 void eraseSource(void);
 void verifyProofs(vstring labelMatch, flag verifyFlag);
-void verifyMarkup(vstring labelMatch, flag checkFiles); /* 7-Nov-2015 nm */
+void verifyMarkup(vstring labelMatch, flag dateSkip,
+    flag fileSkip); /* 7-Nov-2015 nm */
 
 /* 14-Sep-2012 nm */
 /* Take a relative step FIRST, LAST, +nn, -nn (relative to the unknown

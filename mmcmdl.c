@@ -196,7 +196,7 @@ flag processCommandLine(void)
           if (lastArgMatches("/")) {
             i++;
             if (!getFullArg(i,cat(
-                "THEOREMS_PER_PAGE|SHOW_LEMMAS",
+                "THEOREMS_PER_PAGE|SHOW_LEMMAS|HTML|ALT_HTML",
                 "|<THEOREMS_PER_PAGE>",NULL)))
               goto pclbad;
             if (lastArgMatches("THEOREMS_PER_PAGE")) {
@@ -244,7 +244,7 @@ flag processCommandLine(void)
           if (lastArgMatches("/")) {
             i++;
             if (!getFullArg(i,cat(
-                "LIMIT",
+                "LIMIT|HTML|ALT_HTML",
                 "|<LIMIT>",NULL)))
               goto pclbad;
             if (lastArgMatches("LIMIT")) {
@@ -255,7 +255,7 @@ flag processCommandLine(void)
           } else {
             break;
           }
-          break; /* Break if only 1 switch is allowed */
+          /*break;*/ /* Break if only 1 switch is allowed */
         }
         goto pclgood;
       }
@@ -1277,13 +1277,13 @@ flag processCommandLine(void)
           if (lastArgMatches("/")) {
             i++;
             if (!getFullArg(i,cat(
-                "ALL|NO_FILES",
-                "|<ALL>",NULL)))
+                "DATE_SKIP|FILE_SKIP",
+                "|<DATE_SKIP>",NULL)))
               goto pclbad;
           } else {
             break;
           }
-          break;  /* Break if only 1 switch is allowed */
+          /* break; */  /* Break if only 1 switch is allowed */
         }
 
         goto pclgood;

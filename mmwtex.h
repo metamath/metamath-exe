@@ -46,9 +46,15 @@ extern vstring extHtmlBibliography; /* Optional; set by exthtmlbibliography
 /* 29-Jul-2008 nm Sandbox stuff */
 extern long sandboxStmt; /* At this statement and above, use sandbox stuff */
 
-/* TeX word-processor-specific routines */
-flag readTexDefs(void);
-                                                    /* Returns 1=OK, 0=error */
+void eraseTexDefs(void); /* Undo readTexDefs() */
+
+/* TeX/HTML/ALT_HTML word-processor-specific routines */
+/* Returns 2 if there were severe parsing errors, 1 if there were warnings but
+   no errors, 0 if no errors or warnings */
+flag readTexDefs(
+  flag errorsOnly,  /* 1 = supprees non-error messages */
+  flag noGifCheck   /* 1 = don't check for missing GIFs */);
+
 extern flag texDefsRead;
 struct texDef_struct {  /* 27-Oct-2012 nm Made global for "erase" */
   vstring tokenName; /* ASCII token */
@@ -76,12 +82,19 @@ vstring asciiMathToTex(vstring mathComment, long statemNum);
    of start of next comment section. */
 vstring getCommentModeSection(vstring *srcptr, char *mode);
 void printTexHeader(flag texHeaderFlag);
+
 /* Prints an embedded comment in TeX.  The commentPtr must point to the first
    character after the "$(" in the comment.  The printout ends when the first
    "$)" or null character is encountered.   commentPtr must not be a temporary
    allocation.  htmlCenterFlag, if 1, means to center the HTML and add a
    "Description:" prefix.*/
-void printTexComment(vstring commentPtr, char htmlCenterFlag);
+/* void printTexComment(vstring commentPtr, char htmlCenterFlag); */
+/* 17-Nov-2015 nm Added 3rd & 4th arguments; returns 1 if error/warning */
+flag printTexComment(vstring commentPtr,    /* Sends result to texFilePtr */
+    flag htmlCenterFlag, /* 1 = htmlCenterFlag */
+    flag errorsOnly, /* 1 = errorsOnly */
+    flag noFileCheck /* 1 = noFileCheck */);
+
 void printTexLongMath(nmbrString *proofStep, vstring startPrefix,
     vstring contPrefix, long hypStmt, long indentationLevel);
 void printTexTrailer(flag texHeaderFlag);
@@ -155,5 +168,12 @@ vstring getTexLongMath(nmbrString *mathString, long statemNum);
 /* Warning: The caller must deallocate the returned vstring. */
 /* 14-Sep-2010 nm Changed name from getHTMLHypAndAssertion() */
 vstring getTexOrHtmlHypAndAssertion(long statemNum);
+
+/* Added 17-Nov-2015 (broken out of metamath.c for better modularization) */
+/* For WRITE BIBLIOGRAPHY command and error checking by VERIFY MARKUP */
+/* Returns 0 if OK, 1 if error or warning found */
+flag writeBibliography(vstring bibFile,
+    flag errorsOnly,  /* 1 = no output, just warning msgs if any */
+    flag noFileCheck); /* 1 = ignore missing external files (gifs, bib, etc.) */
 
 #endif /* METAMATH_MMWTEX_H_ */
