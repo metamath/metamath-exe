@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2015  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2016  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -42,6 +42,8 @@ extern vstring htmlVarColors; /* Set by htmlvarcolor commands */
 extern vstring htmlBibliography; /* Optional; set by htmlbibliography command */
 extern vstring extHtmlBibliography; /* Optional; set by exthtmlbibliography
                                        command */
+/* Added 14-Jan-2016 */
+extern vstring htmlFont; /* Optional; set by htmlfont command */
 
 /* 29-Jul-2008 nm Sandbox stuff */
 extern long sandboxStmt; /* At this statement and above, use sandbox stuff */

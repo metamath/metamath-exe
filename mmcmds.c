@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2015  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2016  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -643,11 +643,17 @@ void typeStatement(long showStmt,
      "<CENTER><A HREF=\"mmset.html#distinct\">Distinct variable</A> group",
             /* 11-Aug-2006 nm Determine whether "group" or "groups". */
             distVarGrps > 1 ? "s" : "",  /* 11-Aug-2006 */
-            ": ", htmlDistinctVars, "</CENTER>", NULL), "", "\"");
+            ": ",
+            (altHtmlFlag ? cat("<SPAN ", htmlFont, ">", NULL) : ""),
+                                               /* 14-Jan-2016 nm */
+            htmlDistinctVars,
+            (altHtmlFlag ? "</SPAN>" : ""),    /* 14-Jan-2016 nm */
+            "</CENTER>", NULL), "", "\"");
         /* original code:
         printLongLine(cat(
      "<CENTER><A HREF=\"mmset.html#distinct\">Distinct variable</A> group(s): ",
-            htmlDistinctVars, "</CENTER>", NULL), "", "\"");
+            htmlDistinctVars,
+            "</CENTER>", NULL), "", "\"");
         */
         outputToString = 0;
       }
@@ -1250,13 +1256,17 @@ vstring htmlAllowedSubst(long showStmt)
 
   if (htmlAllowedList[0] != 0) {
     let(&htmlAllowedList, cat("<CENTER>",
-     /*
-     "<A HREF=\"mmset.html#allowedsubst\">Allowed substitution",
-     (countInfo != 1) ? "s" : "", "</A>: ",
-     */
-     "<A HREF=\"mmset.html#allowedsubst\">Allowed substitution</A> hint",
-     (countInfo != 1) ? "s" : "", ": ",
-        htmlAllowedList, "</CENTER>", NULL));
+        /*
+        "<A HREF=\"mmset.html#allowedsubst\">Allowed substitution",
+        (countInfo != 1) ? "s" : "", "</A>: ",
+        */
+        "<A HREF=\"mmset.html#allowedsubst\">Allowed substitution</A> hint",
+        ((countInfo != 1) ? "s" : ""), ": ",
+        (altHtmlFlag ? cat("<SPAN ", htmlFont, ">", NULL) : ""),
+                                           /* 14-Jan-2016 nm */
+        htmlAllowedList,
+        (altHtmlFlag ? "</SPAN>" : ""),    /* 14-Jan-2016 nm */
+        "</CENTER>", NULL));
   }
 
   /* Deallocate strings */
@@ -2126,6 +2136,13 @@ void typeProof(long statemNum,
                 tmpStr1 =
                     tokenToTex(mathToken[(statement[stmt].mathString)[i]
                     ].tokenName, stmt);
+                /* 14-Jan-2016 nm */
+                let(&tmpStr1, cat(
+                    (altHtmlFlag ? cat("<SPAN ", htmlFont, ">", NULL) : ""),
+                                           /* 14-Jan-2016 nm */
+                    tmpStr1,
+                    (altHtmlFlag ? "</SPAN>" : ""),
+                    NULL));
                 break;
               }
             }

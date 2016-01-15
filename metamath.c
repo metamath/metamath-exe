@@ -1,11 +1,18 @@
 /*****************************************************************************/
 /* Program name:  metamath                                                   */
-/* Copyright (C) 2015 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
+/* Copyright (C) 2016 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
 /* License terms:  GNU General Public License Version 2 or any later version */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.121 17-Nov-2015"
+#define MVERSION "0.122 14-Jan-2016"
+/* 0.122 14-Jan-2016 nm metamath.c, mmcmds.c, mmwtex.c, mmwtex.h - surrounded
+      math HTML output with "<SPAN [htmlFont]>...</SPAN>; added htmlcss and
+      htmlfont $t commands
+   10-Jan-2016 nm mmwtex.c - delete duplicate -4px style; metamath.c -
+     add &nbsp; after char on mmascii.html
+   3-Jan-2016 nm mmwtex.c - fix bug when doing SHOW STATEMENT * /ALT_HTML after
+   VERIFY MARKUP */
 /* 0.121 17-Nov-2015 nm metamath.c, mmcmdl.h, mmcmdl.c, mmcmds.h, mmcmds.c,
        mmwtex.h, mmwtex.c, mmdata.h, mmdata.c -
    1. Moved WRITE BIBLIOGRAPHY code from metamath.c to its own function in
@@ -2686,7 +2693,8 @@ void command(int argc, char *argv[])
                     let(&str2, "");
                     str2 = tokenToTex(mathToken[(statement[i].mathString)[j]
                         ].tokenName, i/*stmt# for error msgs*/);
-                    /* 2/9/02  Skip any tokens (such as |-) that may be suppressed */
+                    /* 2/9/02  Skip any tokens (such as |- in QL Explorer) that
+                       may be suppressed */
                     if (!str2[0]) continue;
                     /* Convert special characters to HTML entities */
                     for (k = 0; k < (signed)(strlen(str1)); k++) {
@@ -2707,7 +2715,13 @@ void command(int argc, char *argv[])
                       }
                     } /* next k */
                     printLongLine(cat("<TR ALIGN=LEFT><TD>",
+                        (altHtmlFlag ? cat("<SPAN ", htmlFont, ">", NULL) : ""),
+                                                           /* 14-Jan-2016 nm */
                         str2,
+                        (altHtmlFlag ? "</SPAN>" : ""),    /* 14-Jan-2016 nm */
+                        "&nbsp;", /* 10-Jan-2016 nm This will prevent a
+                                     -4px shifted image from overlapping the
+                                     lower border of the table cell */
                         "</TD><TD><TT>",
                         str1,
                         "</TT></TD></TR>", NULL), "", "\"");

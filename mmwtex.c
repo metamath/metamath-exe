@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2015  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2016  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -73,6 +73,8 @@ long numSymbs;
 
 /* Variables set by the language in the set.mm etc. $t statement */
 /* Some of these are global; see mmwtex.h */
+vstring htmlCSS = ""; /* Set by htmlcss commands */  /* 14-Jan-2016 nm */
+vstring htmlFont = ""; /* Set by htmlfont commands */  /* 14-Jan-2016 nm */
 vstring htmlVarColors = ""; /* Set by htmlvarcolor commands */
 vstring htmlTitle = ""; /* Set by htmltitle command */
 vstring htmlHome = ""; /* Set by htmlhome command */
@@ -114,7 +116,7 @@ void eraseTexDefs(void) {
 /* Returns 2 if there were severe parsing errors, 1 if there were warnings but
    no errors, 0 if no errors or warnings */
 flag readTexDefs(
-  flag errorsOnly,  /* 1 = supprees non-error messages */
+  flag errorsOnly,  /* 1 = suppress non-error messages */
   flag noGifCheck   /* 1 = don't check for missing GIFs */)
 {
 
@@ -144,7 +146,8 @@ flag readTexDefs(
 
   /* 17-Nov-2015 nm */
   /* if (texDefsRead) { */
-  if (saveHtmlFlag != htmlFlag || saveAltHtmlFlag != altHtmlFlag) {
+  if (saveHtmlFlag != htmlFlag || saveAltHtmlFlag != altHtmlFlag
+      || !texDefsRead) {   /* 3-Jan-2016 nm */
     /* One or both changed - we need to erase and re-read */
     eraseTexDefs();
     saveHtmlFlag = htmlFlag; /* Save for next call to readTexDefs() */
@@ -229,6 +232,9 @@ flag readTexDefs(
 /* Added 10/9/02 */
 #define HTMLBIBLIOGRAPHY 12
 #define EXTHTMLBIBLIOGRAPHY 13
+/* Added 14-Jan-2016 nm */
+#define HTMLCSS 14
+#define HTMLFONT 15
 
   startPtr = fileBuf;
 
@@ -312,8 +318,10 @@ flag readTexDefs(
       fbPtr[tokenLength] = 0; /* Create end of string */
       cmd = lookup(fbPtr,
           "latexdef,htmldef,htmlvarcolor,htmltitle,htmlhome"
-        ",althtmldef,exthtmltitle,exthtmlhome,exthtmllabel,htmldir,althtmldir"
-        ",htmlbibliography,exthtmlbibliography");
+          ",althtmldef,exthtmltitle,exthtmlhome,exthtmllabel,htmldir"
+          ",althtmldir,htmlbibliography,exthtmlbibliography"
+          ",htmlcss,htmlfont"   /* 14-Jan-2016 nm */
+          );
       fbPtr[tokenLength] = zapChar;
       if (cmd == 0) {
         lineNum = lineNumOffset;
@@ -325,7 +333,8 @@ flag readTexDefs(
             " \"htmltitle\", \"htmlhome\", \"althtmldef\",",
             " \"exthtmltitle\", \"exthtmlhome\", \"exthtmllabel\",",
             " \"htmldir\", \"althtmldir\",",
-            " \"htmlbibliography\", or \"exthtmlbibliography\" here.",
+            " \"htmlbibliography\", \"exthtmlbibliography\",",
+            " \"htmlcss\", or \"htmlfont\" here.",     /* 14-Jan-2016 nm */
             NULL));
         let(&fileBuf, "");  /* was: free(fileBuf); */
         return 2;
@@ -335,7 +344,10 @@ flag readTexDefs(
       if (cmd != HTMLVARCOLOR && cmd != HTMLTITLE && cmd != HTMLHOME
           && cmd != EXTHTMLTITLE && cmd != EXTHTMLHOME && cmd != EXTHTMLLABEL
           && cmd != HTMLDIR && cmd != ALTHTMLDIR
-          && cmd != HTMLBIBLIOGRAPHY && cmd != EXTHTMLBIBLIOGRAPHY) {
+          && cmd != HTMLBIBLIOGRAPHY && cmd != EXTHTMLBIBLIOGRAPHY
+          && cmd != HTMLCSS /* 14-Jan-2016 nm */
+          && cmd != HTMLFONT /* 14-Jan-2016 nm */
+          ) {
          /* Get next token - string in quotes */
         fbPtr = fbPtr + texDefWhiteSpaceLen(fbPtr);
         tokenLength = texDefTokenLen(fbPtr);
@@ -390,7 +402,10 @@ flag readTexDefs(
       if (cmd != HTMLVARCOLOR && cmd != HTMLTITLE && cmd != HTMLHOME
           && cmd != EXTHTMLTITLE && cmd != EXTHTMLHOME && cmd != EXTHTMLLABEL
           && cmd != HTMLDIR && cmd != ALTHTMLDIR
-          && cmd != HTMLBIBLIOGRAPHY && cmd != EXTHTMLBIBLIOGRAPHY) {
+          && cmd != HTMLBIBLIOGRAPHY && cmd != EXTHTMLBIBLIOGRAPHY
+          && cmd != HTMLCSS /* 14-Jan-2016 nm */
+          && cmd != HTMLFONT /* 14-Jan-2016 nm */
+          ) {
         /* Get next token -- "as" */
         fbPtr = fbPtr + texDefWhiteSpaceLen(fbPtr);
         tokenLength = texDefTokenLen(fbPtr);
@@ -572,6 +587,12 @@ flag readTexDefs(
         }
         if (cmd == EXTHTMLBIBLIOGRAPHY) {
           let(&extHtmlBibliography, token);
+        }
+        if (cmd == HTMLCSS) {
+          let(&htmlCSS, token);
+        }
+        if (cmd == HTMLFONT) {
+          let(&htmlFont, token);
         }
       }
 
@@ -1191,7 +1212,7 @@ vstring getCommentModeSection(vstring *srcptr, char *mode)
 void printTexHeader(flag texHeaderFlag)
 {
 
-  long i, j, k;
+  long i, j, k, p;
   vstring tmpStr = "";
 
   /* 2-Aug-2009 nm - "Mathbox for <username>" mod */
@@ -1317,6 +1338,20 @@ void printTexHeader(flag texHeaderFlag)
     print2("<STYLE TYPE=\"text/css\">\n");
     print2("<!--\n");
     /* 15-Apr-2015 nm - align math symbol images to text */
+    /* 18-Oct-2015 nm Image alignment fix */
+    /* 10-Jan-2016 nm Optional information but takes unnecessary file space */
+    /* (change @ to * if uncommenting)
+    print2(
+        "/@ Math symbol images will be shifted down 4 pixels to align with\n");
+    print2(
+        "   normal text for compatibility with various browsers.  The old\n");
+    print2(
+        "   ALIGN=TOP for math symbol images did not align in all browsers\n");
+    print2(
+        "   and should be deleted.  All other images must override this\n");
+    print2(
+        "   shift with STYLE=\"margin-bottom:0px\". @/\n");
+    */
     print2("img { margin-bottom: -4px }\n");
 #ifndef RAINBOW_OPTION
     /* Print style sheet for pink number that goes after statement label */
@@ -1346,6 +1381,33 @@ void printTexHeader(flag texHeaderFlag)
 #endif
     print2("-->\n");
     print2("</STYLE>\n");
+    /* 14-Jan-2016 nm User's CSS */
+    /* Convert characters "\n" to new line - maybe do for other fields too? */
+    do {
+      p = instr(1, htmlCSS, "\\n");
+      if (p != 0) {
+        let(&htmlCSS, cat(left(htmlCSS, p - 1), "\n",
+            right(htmlCSS, p + 2), NULL));
+      }
+    } while (p != 0);
+    printLongLine(htmlCSS, "", " ");
+
+    /*
+    /@ 12-Jan-2016 nm Per Mario Carneiro's suggestion @/
+    print2(".set { color: red; font-style: italic }\n");
+    print2(".class { color: #C3C; font-style: italic }\n");
+    print2(".wff { color: blue; font-style: italic }\n");
+    /@ .symvar = use symbol as class variable @/
+    print2(".symvar { text-decoration: underline dotted; color: #C3C}\n");
+    print2(".typecode { color: gray }\n");
+    print2(".hidden { color: gray }\n");
+    /@ 10-Jan-2016 nm Experiment to always include a style sheet @/
+    /@   Todo: decide on name and directory for .css's @/
+    print2("<LINK href=\"mmstyle.css\" title=\"mmstyle\"\n");
+    print2("      rel=\"stylesheet\" type=\"text/css\">\n");
+    print2("<LINK href=\"mmstylealt.css\" title=\"mmstylealt\"\n");
+    print2("      rel=\"alternate stylesheet\" type=\"text/css\">\n");
+    */
 
     /*
     print2("<META NAME=\"ROBOTS\" CONTENT=\"NONE\">\n");
@@ -1429,31 +1491,6 @@ void printTexHeader(flag texHeaderFlag)
     print2("<META HTML-EQUIV=\"Keywords\"\n");
     print2("CONTENT=\"%s\">\n", htmlTitle);
     */
-
-    /* 18-Oct-2015 nm Image alignment fix */
-    print2(
-        "<STYLE TYPE=\"text/css\">\n");
-    print2(
-        "<!--\n");
-    /* Optional information but takes unnecessary file space */
-    /* (change @ to * if uncommenting)
-    print2(
-        "/@ Math symbol images will be shifted down 4 pixels to align with\n");
-    print2(
-        "   normal text for compatibility with various browsers.  The old\n");
-    print2(
-        "   ALIGN=TOP for math symbol images did not align in all browsers\n");
-    print2(
-        "   and should be deleted.  All other images must override this\n");
-    print2(
-        "   shift with STYLE=\"margin-bottom:0px\". @/\n");
-    */
-    print2(
-        "img { margin-bottom: -4px }\n");
-    print2(
-        "-->\n");
-    print2(
-        "</STYLE>\n");
 
     print2("</HEAD>\n");
     /*print2("<BODY BGCOLOR=\"#D2FFFF\">\n");*/
@@ -2519,6 +2556,14 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
             /* 10/25/02 Trim leading, trailing spaces in case punctuation
                surrounds the math symbols in the comment */
             let(&tmpStr, edit(tmpStr, 8 + 128));
+            /* 14-Jan-2016 nm */
+            /* Enclose math symbols in a span to be used for font selection */
+            let(&tmpStr, cat(
+                (altHtmlFlag ? cat("<SPAN ", htmlFont, ">", NULL) : ""),
+                                               /* 14-Jan-2016 nm */
+                tmpStr,
+                (altHtmlFlag ? "</SPAN>" : ""),    /* 14-Jan-2016 nm */
+                NULL));
             let(&outputLine, cat(outputLine, tmpStr, NULL)); /* html */
           }
           let(&tmpStr, ""); /* Deallocate */
@@ -3106,6 +3151,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
     if (!outputFilePtr) goto TL_ABORT; /* Couldn't open it (error msg was provided)*/
 
     /* Output header */
+    /* TODO 14-Jan-2016: why aren't we using printTexHeader? */
 
     outputToString = 1;
     print2(
@@ -3136,6 +3182,16 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
 #endif
     print2("-->\n");
     print2("</STYLE>\n");
+    /* 14-Jan-2016 nm User's CSS */
+    /* Convert characters "\n" to new line - maybe do for other fields too? */
+    do {
+      p = instr(1, htmlCSS, "\\n");
+      if (p != 0) {
+        let(&htmlCSS, cat(left(htmlCSS, p - 1), "\n",
+            right(htmlCSS, p + 2), NULL));
+      }
+    } while (p != 0);
+    printLongLine(htmlCSS, "", " ");
 
     /*
     print2("%s\n", cat("<TITLE>", htmlTitle, " - ",
@@ -4945,6 +5001,10 @@ vstring getTexLongMath(nmbrString *mathString, long statemNum)
   /* 8/9/03 Discard redundant white space to reduce HTML file size */
   let(&texLine, edit(texLine, 8 + 16 + 128));
 
+  /* 14-Jan-2016 nm */
+  /* Enclose math symbols in a span to be used for font selection */
+  let(&texLine, cat("<SPAN CLASS=math>", texLine, "</SPAN>", NULL));
+
   let(&tex, "");
   let(&lastTex, "");
   return texLine;
@@ -5058,6 +5118,7 @@ flag writeBibliography(vstring bibFile,
   pntrString *pntrTmp = NULL_PNTRSTRING;
   flag warnFlag;
 
+  n = 0; /* 14-Jan-2016 nm Old gcc 4.6.3 wrongly says may be uninit ln 5506 */
   if (noFileCheck == 1 && errorsOnly == 0) {
     bug(2336); /* If we aren't opening files, a non-error run can't work */
   }
