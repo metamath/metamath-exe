@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2015  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2016  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -16,7 +16,7 @@
 #include "mminou.h"
 #include "mmpars.h"
 /* #include "mmcmds.h" */  /* For getContribs() if used */
-#include "mmpfas.h" /* Needed for parseMathTokens */
+#include "mmpfas.h" /* Needed for pipDummyVars, subProofLen() */
 #include "mmunif.h" /* Needed for minSubstLen */
 
 long potentialStatements; /* Potential statements in source file (upper
@@ -2345,6 +2345,22 @@ char parseProof(long statemNum)
   void *voidPtr; /* bsearch returned value */
   vstring tmpStrPtr;
 
+  /* 25-Jan-2016 nm */
+  flag explicitTargets = 0; /* Proof is of form <target>=<source> */
+  /* Source file pointers and token sizes for targets in a /EXPLICIT proof */
+  pntrString *targetPntr = NULL_PNTRSTRING; /* Pointers to target tokens */
+  nmbrString *targetNmbr = NULL_NMBRSTRING; /* Size of target tokens */
+  /* Variables for rearranging /EXPLICIT proof */
+  nmbrString *wrkProofString = NULL_NMBRSTRING; /* Holds wrkProof.proofString */
+  long hypStepNum, hypSubProofLen, conclSubProofLen;
+  long matchingHyp;
+  nmbrString *oldStepNums = NULL_NMBRSTRING; /* Just numbers 0 to numSteps-1 */
+  pntrString *reqHypSubProof = NULL_PNTRSTRING; /* Subproofs of hypotheses */
+  pntrString *reqHypOldStepNums = NULL_PNTRSTRING; /* Local label flag for
+                                                     subproofs of hypotheses */
+  nmbrString *rearrangedSubProofs = NULL_NMBRSTRING;
+  nmbrString *rearrangedOldStepNums = NULL_NMBRSTRING;
+
   if (statement[statemNum].type != p_) {
     bug(1723); /* 13-Oct-05 nm - should never get here */
     wrkProof.errorSeverity = 4;
@@ -2516,6 +2532,17 @@ char parseProof(long statemNum)
   for (tok = 0; tok < wrkProof.numTokens; tok++) {
     fbPtr = wrkProof.tokenSrcPtrPntr[tok];
 
+    /* 25-Jan-2016 nm */
+    /* If next token is = then this token is a target for /EXPLICIT format,
+       so don't increment the proof step number */
+    if (tok < wrkProof.numTokens - 2) {
+      if (((char *)((wrkProof.tokenSrcPtrPntr)[tok + 1]))[0] == '=') {
+        explicitTargets = 1; /* Flag that proof has explicit targets */
+        continue;
+      }
+    }
+    if (fbPtr[0] == '=') continue; /* Skip the = token */
+
     /* Save pointer to source file vs. step for error messages */
     wrkProof.stepSrcPtrNmbr[wrkProof.numSteps] =
         wrkProof.tokenSrcPtrNmbr[tok]; /* Token length */
@@ -2612,6 +2639,61 @@ char parseProof(long statemNum)
 
   } /* Next i */
 
+  /* 25-Jan-2016 nm */
+  /* Collect all target labels in /EXPLICIT format */
+  /* I decided not to make targetPntr, targetNmbr part of the wrkProof
+     structure since other proof formats don't assign it, so we can't
+     reference it reliably outside of this function.  And it would waste
+     some memory if we don't use /EXPLICIT, which is intended primarily
+     for database maintenance. */
+  if (explicitTargets == 1) {
+    pntrLet(&targetPntr, pntrSpace(wrkProof.numSteps));
+    nmbrLet(&targetNmbr, nmbrSpace(wrkProof.numSteps));
+    step = 0;
+    for (tok = 0; tok < wrkProof.numTokens - 2; tok++) {
+      /* If next token is = then this token is a target for /EXPLICIT format,
+         so don't increment the proof step number */
+      if (((char *)((wrkProof.tokenSrcPtrPntr)[tok + 1]))[0] == '=') {
+        fbPtr = wrkProof.tokenSrcPtrPntr[tok];
+        if (step >= wrkProof.numSteps) {
+          if (!wrkProof.errorCount) {
+            sourceError(fbPtr, wrkProof.tokenSrcPtrNmbr[tok], statemNum, cat(
+                "There are more target labels than proof steps.", NULL));
+          }
+          wrkProof.errorCount++;
+          if (returnFlag < 2) returnFlag = 2;
+          break;
+        }
+        targetPntr[step] = fbPtr;
+        targetNmbr[step] = wrkProof.tokenSrcPtrNmbr[tok];
+        if (wrkProof.tokenSrcPtrPntr[tok + 2]
+            != wrkProof.stepSrcPtrPntr[step]) {
+          if (!wrkProof.errorCount) {
+            sourceError(fbPtr, wrkProof.tokenSrcPtrNmbr[tok], statemNum, cat(
+                "The target label for step ", str(step + 1),
+                " is not assigned to that step.  ",
+                "(Check for missing or extra \"=\".)", NULL));
+          }
+          wrkProof.errorCount++;
+          if (returnFlag < 2) returnFlag = 2;
+        }
+        step++;
+      }
+    } /* next tok */
+    if (step != wrkProof.numSteps) {
+      if (!wrkProof.errorCount) {
+        sourceError(
+            (char *)((wrkProof.tokenSrcPtrPntr)[wrkProof.numTokens - 1]),
+            wrkProof.tokenSrcPtrNmbr[wrkProof.numTokens - 1],
+            statemNum, cat(
+                "There are ", str(wrkProof.numSteps), " proof steps but only ",
+                str(step), " target labels.", NULL));
+      }
+      wrkProof.errorCount++;
+      if (returnFlag < 2) returnFlag = 2;
+    }
+  } /* if explicitTargets == 1 */
+
   if (wrkProof.numHypAndLoc > numActiveHyp) { /* There were local labels */
 
     /* Sort the local labels into the hypAndLocLabel look-up table */
@@ -2637,9 +2719,9 @@ char parseProof(long statemNum)
         if (!wrkProof.errorCount) {
           sourceError(fbPtr,
               proofTokenLen(fbPtr), statemNum,
-              cat("The local label at proof step ",str(k + 1),
+              cat("The local label at proof step ", str(k + 1),
               " is the same as the one declared at step ",
-              str(j + 1),".",NULL));
+              str(j + 1), ".", NULL));
         }
         wrkProof.errorCount++;
         if (returnFlag < 2) returnFlag = 2;
@@ -2652,6 +2734,15 @@ char parseProof(long statemNum)
   wrkProof.proofString[wrkProof.numSteps] = -1; /* End of proof */
   nmbrZapLen(wrkProof.proofString, wrkProof.numSteps);
      /* Zap mem pool actual length (because nmbrLen will be used later on this)*/
+
+  /* 25-Jan-2016 nm */
+  if (explicitTargets == 1) {
+    /* List of original step numbers to keep track of local label movement */
+    nmbrLet(&oldStepNums, nmbrSpace(wrkProof.numSteps));
+    for (i = 0; i < wrkProof.numSteps; i++) {
+      oldStepNums[i] = i;
+    }
+  }
 
   for (step = 0; step < wrkProof.numSteps; step++) {
     tokLength = wrkProof.stepSrcPtrNmbr[step];
@@ -2687,6 +2778,7 @@ char parseProof(long statemNum)
 
       if (j < 0) { /* It's a local label reference */
         i = -1000 - j; /* Step number referenced */
+        if (i < 0) bug(1734);
 
         /* Make sure we don't reference a later step */
         if (i > step) {
@@ -2756,7 +2848,7 @@ char parseProof(long statemNum)
     /* It's an assertion ($a or $p) */
     j = *(long *)voidPtr; /* Statement number */
     if (statement[j].type != a_ && statement[j].type != p_) bug(1710);
-    wrkProof.proofString[step] = j; /* Proof string */
+    wrkProof.proofString[step] = j; /* Assign $a/$p label to proof string */
 
     if (j >= statemNum) { /* Error */
       if (!wrkProof.errorCount) {
@@ -2817,10 +2909,127 @@ char parseProof(long statemNum)
       continue;
     } /* End if stack exhausted */
 
+    /**** Start of 25-Jan-2016 nm ***/
+    /* For proofs saved with /EXPLICIT, the user may have changed the order
+       of hypotheses.  First, get the subproofs for the hypotheses.  Then
+       reassemble them in the right order. */
+    if (explicitTargets == 1) {
+      nmbrLet(&wrkProofString, wrkProof.proofString);
+            /* nmbrString to rearrange proof then when done reassign to
+               wrkProof.proofString structure component */
+      nmbrTmpPtr = statement[j].reqHypList;
+      numReqHyp = statement[j].numReqHyp;
+      conclSubProofLen = subProofLen(wrkProofString, step);
+      pntrLet(&reqHypSubProof, pntrNSpace(numReqHyp));
+                                         /* Initialize to NULL_NMBRSTRINGs */
+      pntrLet(&reqHypOldStepNums, pntrNSpace(numReqHyp));
+                                         /* Initialize to NULL_NMBRSTRINGs */
+      k = 0; /* Total hypothesis subproof lengths for error checking */
+      for (i = 0; i < numReqHyp; i++) {
+        m = wrkProof.RPNStackPtr - numReqHyp + i; /* Stack position of hyp */
+        hypStepNum = wrkProof.RPNStack[m]; /* Step number of hypothesis i */
+        hypSubProofLen = subProofLen(wrkProofString, hypStepNum);
+        k += hypSubProofLen;
+        nmbrLet((nmbrString **)(&(reqHypSubProof[i])),
+            /* For nmbrSeg, 1 = first step */
+            nmbrSeg(wrkProofString,
+                hypStepNum - hypSubProofLen + 2, hypStepNum + 1));
+        nmbrLet((nmbrString **)(&(reqHypOldStepNums[i])),
+            /* For nmbrSeg, 1 = first step */
+            nmbrSeg(oldStepNums,
+                hypStepNum - hypSubProofLen + 2, hypStepNum + 1));
+      } /* Next i */
+      if (k != conclSubProofLen - 1 /* && returnFlag < 2 */) {
+                        /* Uncomment above if bad proof triggers this bug */
+        bug(1731);
+      }
+      nmbrLet(&rearrangedSubProofs, NULL_NMBRSTRING);
+      matchingHyp = -1; /* In case there are no hypotheses */
+      for (i = 0; i < numReqHyp; i++) {
+        matchingHyp = -1;
+        for (k = 0; k < numReqHyp; k++) {
+          m = wrkProof.RPNStackPtr - numReqHyp + k; /* Stack position of hyp */
+          hypStepNum = wrkProof.RPNStack[m]; /* Step number of hypothesis k */
+
+
+          /* Temporarily zap the token's end with a null for string comparisons */
+          fbPtr = targetPntr[hypStepNum];
+          zapSave = fbPtr[targetNmbr[hypStepNum]];
+          fbPtr[targetNmbr[hypStepNum]] = 0; /* Zap source */
+          /* See if hypothesis i matches the target label k i.e. hypStepNum */
+          if (!strcmp(statement[nmbrTmpPtr[i]].labelName, fbPtr)) {
+            matchingHyp = k;
+          }
+          fbPtr[targetNmbr[hypStepNum]] = zapSave; /* Unzap source */
+          if (matchingHyp != -1) break;
+        } /* next k (0 to numReqHyp-1) */
+        if (matchingHyp == -1) {
+          if (!wrkProof.errorCount) {
+            sourceError(fbPtr, 1/*token length*/, statemNum, cat(
+                "The target labels for the hypotheses for step ", str(step + 1),
+                " do not match hypothesis \"",
+                statement[nmbrTmpPtr[i]].labelName,
+                "\" of the assertion \"",
+                statement[j].labelName,
+                "\" in step ",  str(step + 1), ".",
+                NULL));
+          }
+          wrkProof.errorCount++;
+          if (returnFlag < 2) returnFlag = 2;
+          break; /* Give up; don't try to rearrange hypotheses */
+        }
+        /* Accumulate the subproof for hypothesis i */
+        nmbrLet(&rearrangedSubProofs, nmbrCat(rearrangedSubProofs,
+            reqHypSubProof[matchingHyp], NULL));
+        nmbrLet(&rearrangedOldStepNums, nmbrCat(rearrangedOldStepNums,
+            reqHypOldStepNums[matchingHyp], NULL));
+      } /* next i (0 to numReqHyp-1) */
+
+      if (matchingHyp != -1) { /* All hypotheses found */
+        if (nmbrLen(rearrangedSubProofs) != conclSubProofLen - 1
+             /* && returnFlag < 2 */) {
+                          /* Uncomment above if bad proof triggers this bug */
+          bug(1732);
+        }
+        nmbrLet(&(wrkProofString), nmbrCat(
+            nmbrLeft(wrkProofString, step - conclSubProofLen + 1),
+            rearrangedSubProofs,
+            nmbrRight(wrkProofString, step + 1), NULL));
+        nmbrLet(&oldStepNums, nmbrCat(
+            nmbrLeft(oldStepNums, step - conclSubProofLen + 1),
+            rearrangedOldStepNums,
+            nmbrRight(oldStepNums, step + 1), NULL));
+      }
+
+      /* Reassign wrkProof.proofString from rearranged wrkProofString */
+      for (i = 0; i < step; i++) {
+        /* Nothing from step to end has been changed, so stop at step */
+        (wrkProof.proofString)[i] = wrkProofString[i];
+      }
+      if ((wrkProof.proofString)[step] != wrkProofString[step]) bug(1735);
+
+      /* Deallocate */
+      for (i = 0; i < numReqHyp; i++) {
+        nmbrLet((nmbrString **)(&(reqHypSubProof[i])), NULL_NMBRSTRING);
+        nmbrLet((nmbrString **)(&(reqHypOldStepNums[i])), NULL_NMBRSTRING);
+      }
+      pntrLet(&reqHypSubProof, NULL_PNTRSTRING);
+      pntrLet(&reqHypOldStepNums, NULL_PNTRSTRING);
+      nmbrLet(&rearrangedSubProofs, NULL_NMBRSTRING);
+      nmbrLet(&rearrangedOldStepNums, NULL_NMBRSTRING);
+      nmbrLet(&wrkProofString, NULL_NMBRSTRING);
+    } /* if explicitTargets */
+    /**** End of 25-Jan-2016 ***/
+
     /* Error check for $e <- $f assignments (illegal) */
     nmbrTmpPtr = statement[j].reqHypList;
     numReqHyp = statement[j].numReqHyp;
     for (i = 0; i < numReqHyp; i++) {
+
+      /* 25-Jan-2016 nm */
+      /* Skip this check if /EXPLICIT since hyps may be in random order */
+      if (explicitTargets == 1) break;
+
       if (statement[nmbrTmpPtr[i]].type == e_) {
         m = wrkProof.RPNStackPtr - numReqHyp + i;
         k = wrkProof.proofString[wrkProof.RPNStack[m]];
@@ -2865,11 +3074,75 @@ char parseProof(long statemNum)
     if (returnFlag < 3) returnFlag = 3;
   }
 
+  /**** Start of 25-Jan-2016 nm ***/
+  if (explicitTargets) {
+    /* Correct the local label refs in the rearranged proof */
+    for (step = 0; step < wrkProof.numSteps; step++) {
+      /* This is slow lookup with n^2 behavior, but should be ok since
+         /EXPLICIT isn't used that often */
+      k = (wrkProof.proofString)[step]; /* Will be <= -1000 if local label */
+      if (k <= -1000) {
+        k = -1000 - k; /* Restore step number */
+        if (k < 0 || k >= wrkProof.numSteps) bug(1733);
+        /* Find the original step */
+        if (oldStepNums[k] == k) {
+            /* Wasn't changed, so skip renumbering for speedup */
+          continue;
+        }
+        i = 0; /* For bug check */
+        /* Find the original step number and change it to the new one */
+        for (m = 0; m < wrkProof.numSteps; m++) {
+          if (oldStepNums[m] == k) {
+            (wrkProof.proofString)[step] = -1000 - m;
+            i = 1; /* Found */
+            break;
+          }
+        }
+        if (i == 0) bug(1744);
+      }
+    } /* next step */
+
+    /* Check if any local labels point to future steps: if so, we should
+       expand the proof so it will verify (since many functions require
+       that a local label be declared before it is used) */
+    for (step = 0; step < wrkProof.numSteps; step++) {
+      k = (wrkProof.proofString)[step]; /* Will be <= -1000 if local label */
+      if (k <= -1000) { /* References local label i.e. subproof */
+        k = -1000 - k; /* Restore step number subproof ends at */
+        if (k > step) { /* Refers to label declared after this step */
+          /* Expand the proof */
+          nmbrLet(&wrkProofString, nmbrUnsquishProof(wrkProof.proofString));
+          /* Recompress the proof */
+          nmbrLet(&wrkProofString, nmbrSquishProof(wrkProofString));
+          /* The number of steps shouldn't have changed */
+          /* (If this bug is valid behavior, it means we may have to
+             reallocate (grow) the wrkProof structure, which might be
+             unpleasant at this point.) */
+          if (nmbrLen(wrkProofString) != wrkProof.numSteps) {
+            bug(1736);
+          }
+          /* Reassign wrkProof.proofString from new wrkProofString */
+          for (i = 0; i < wrkProof.numSteps; i++) {
+            (wrkProof.proofString)[i] = wrkProofString[i];
+          }
+          break;
+        } /* if k>step */
+      } /* if k<= -1000 */
+    } /* next step */
+
+
+    /* Deallocate */
+    pntrLet(&targetPntr, NULL_PNTRSTRING);
+    nmbrLet(&targetNmbr, NULL_NMBRSTRING);
+    nmbrLet(&oldStepNums, NULL_NMBRSTRING);
+    nmbrLet(&wrkProofString, NULL_NMBRSTRING);
+  } /* if (explicitTargets) */
+  /**** End of 25-Jan-2016 ***/
 
   wrkProof.errorSeverity = returnFlag;
   return (returnFlag);
 
-}
+} /* parseProof() */
 
 
 
@@ -3921,7 +4194,7 @@ long tokenLen(char *ptr)
    character of the token.  If ptr points to a white space character, 0
    is returned.  If ptr points to a null character, 0 is returned.  If ptr
    points to a keyword, 0 is returned.  A keyword ends a token.
-   ":" and "?" and "(" and ")" are considered tokens. */
+   ":" and "?" and "(" and ")" and "=" (25-Jan-2016) are considered tokens. */
 long proofTokenLen(char *ptr)
 {
   long i = 0;
@@ -3930,6 +4203,8 @@ long proofTokenLen(char *ptr)
   if (ptr[0] == '?') return (1); /* The token is a "?" */
   if (ptr[0] == '(') return (1); /* The token is a "(" (compressed proof) */
   if (ptr[0] == ')') return (1); /* The token is a ")" (compressed proof) */
+  /* 25-Jan-2016 nm */
+  if (ptr[0] == '=') return (1); /* The token is a "=" (/EXPLICIT proof) */
   while (1) {
     tmpchr = ptr[i];
     if (tmpchr == '$') {
@@ -3945,6 +4220,7 @@ long proofTokenLen(char *ptr)
     if (tmpchr == '?') return(i); /* "?" ends a token */
     if (tmpchr == '(') return(i); /* "(" ends a token */
     if (tmpchr == ')') return(i); /* ")" ends a token */
+    if (tmpchr == '=') return(i); /* "=" ends a token */ /* 25-Jan-2016 nm */
     i++;
   }
   return(0); /* Dummy return - never happens */

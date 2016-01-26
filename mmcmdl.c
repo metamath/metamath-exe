@@ -578,8 +578,8 @@ flag processCommandLine(void)
             i++;
             if (!getFullArg(i,cat(
                 "ESSENTIAL|ALL|UNKNOWN|FROM_STEP|TO_STEP|DEPTH",
-                /*"|REVERSE|VERBOSE|NORMAL|PACKED|COMPRESSED",*/
-                "|REVERSE|VERBOSE|NORMAL|COMPRESSED",
+                /*"|REVERSE|VERBOSE|NORMAL|COMPRESSED",*/
+                "|REVERSE|VERBOSE|NORMAL|PACKED|COMPRESSED|EXPLICIT",
                 "|FAST_COMPRESSION",   /* 27-Dec-2013 nm */
                 /* 14-Sep-2010 nm Added OLD_TEX */
                 "|STATEMENT_SUMMARY|DETAILED_STEP|TEX|OLD_TEX|HTML",
@@ -637,8 +637,8 @@ flag processCommandLine(void)
             i++;
             if (!getFullArg(i,cat(
                 "ESSENTIAL|ALL|UNKNOWN|FROM_STEP|TO_STEP|DEPTH",
-                /*"|REVERSE|VERBOSE|NORMAL|PACKED|COMPRESSED",*/
-                "|REVERSE|VERBOSE|NORMAL|COMPRESSED",
+                /*"|REVERSE|VERBOSE|NORMAL|COMPRESSED",*/
+                "|REVERSE|VERBOSE|NORMAL|PACKED|COMPRESSED|EXPLICIT",
                 "|FAST_COMPRESSION",   /* 27-Dec-2013 nm */
                 "|NOT_UNIFIED|TEX|HTML",
                 "|LEMMON|START_COLUMN|NO_REPEATED_STEPS",
@@ -743,7 +743,7 @@ flag processCommandLine(void)
           if (lastArgMatches("/")) {
             i++;
             if (!getFullArg(i,cat(
-                "NORMAL|PACKED|COMPRESSED",
+                "NORMAL|PACKED|COMPRESSED|EXPLICIT",
                 "|FAST_COMPRESSION",   /* 27-Dec-2013 nm */
                 "|<NORMAL>",NULL)))
               goto pclbad;
@@ -770,7 +770,7 @@ flag processCommandLine(void)
           if (lastArgMatches("/")) {
             i++;
             if (!getFullArg(i,cat(
-                "NORMAL|PACKED|COMPRESSED",
+                "NORMAL|PACKED|COMPRESSED|EXPLICIT",
                 "|FAST_COMPRESSION",   /* 27-Dec-2013 nm */
                 "|<NORMAL>",NULL)))
               goto pclbad;

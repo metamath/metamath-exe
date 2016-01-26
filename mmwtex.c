@@ -5119,6 +5119,7 @@ flag writeBibliography(vstring bibFile,
   flag warnFlag;
 
   n = 0; /* 14-Jan-2016 nm Old gcc 4.6.3 wrongly says may be uninit ln 5506 */
+  pass1refs = 0; /* 25-Jan-2016 gcc 4.5.3 wrongly says may be uninit */
   if (noFileCheck == 1 && errorsOnly == 0) {
     bug(2336); /* If we aren't opening files, a non-error run can't work */
   }

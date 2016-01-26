@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2015  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2016  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -236,7 +236,10 @@ int nmbrEq(nmbrString *sout,nmbrString *sin);
 vstring nmbrCvtMToVString(nmbrString *s);
 
 /* Converts rString to a vstring with one space between tokens */
-vstring nmbrCvtRToVString(nmbrString *s);
+/* 25-Jan-2016 nm Added explicitFormat, statemNum */
+vstring nmbrCvtRToVString(nmbrString *s,
+    flag explicitTargets,    /* 25-Jan-2016 */
+    long statemNum);        /* 25-Jan-2016 */
 
 /* Get step numbers in an rString - needed by cvtRToVString & elsewhere */
 nmbrString *nmbrGetProofStepNumbs(nmbrString *reason);

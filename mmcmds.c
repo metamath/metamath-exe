@@ -581,7 +581,10 @@ void typeStatement(long showStmt,
         printLongLine(cat(
            "Its optional hypotheses are:  ",
             nmbrCvtRToVString(
-            statement[showStmt].optHypList),NULL),
+            statement[showStmt].optHypList,
+                /* 25-Jan-2016 nm */
+                0, /*explicitTargets*/
+                0 /*statemNum, used only if explicitTargets*/), NULL),
             "      "," ");
       }
       nmbrTmpPtr1 = statement[showStmt].optDisjVarsA;
@@ -832,7 +835,10 @@ void typeStatement(long showStmt,
               definition - this would be impossible) */
           if (strcmp(statement[showStmt].proofSectionPtr, "")) bug(231);
           if (statement[showStmt].proofSectionLen != 0) bug(232);
-          let(&str1, nmbrCvtRToVString(nmbrTmpPtr2));
+          let(&str1, nmbrCvtRToVString(nmbrTmpPtr2,
+                /* 25-Jan-2016 nm */
+                0, /*explicitTargets*/
+                0 /*statemNum, used only if explicitTargets*/));
           /* Temporarily zap proof into the $a statement */
           statement[showStmt].proofSectionPtr = str1;
           statement[showStmt].proofSectionLen = (long)strlen(str1) - 1;

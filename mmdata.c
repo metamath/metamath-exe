@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2015  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2016  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -1175,9 +1175,13 @@ vstring nmbrCvtMToVString(nmbrString *s)
 
 
 /* Converts proof to a vstring with one space between tokens */
-vstring nmbrCvtRToVString(nmbrString *proof)
+vstring nmbrCvtRToVString(nmbrString *proof,
+    /* 25-Jan-2016 */
+    flag explicitTargets, /* 1 = "target=source" for /EXPLICIT proof format */
+    long statemNum) /* used only if explicitTargets=1 */
 {
   long i, j, plen, maxLabelLen, maxLocalLen, step, stmt;
+  long maxTargetLabelLen; /* 25-Jan-2016 nm */
   vstring proofStr = "";
   vstring tmpStr = "";
   vstring ptr;
@@ -1185,15 +1189,25 @@ vstring nmbrCvtRToVString(nmbrString *proof)
   nmbrString *localLabelNames = NULL_NMBRSTRING;
   long nextLocLabNum = 1; /* Next number to be used for a local label */
   void *voidPtr; /* bsearch result */
+  /* 26-Jan-2016 nm */
+  nmbrString *targetHyps = NULL_NMBRSTRING; /* Targets for /EXPLICIT format */
 
   long saveTempAllocStack;
   long nmbrSaveTempAllocStack;
   saveTempAllocStack = startTempAllocStack; /* For let() stack cleanup */
   startTempAllocStack = tempAllocStackTop;
-  nmbrSaveTempAllocStack = nmbrStartTempAllocStack; /*For nmbrLet() stack cleanup*/
+  nmbrSaveTempAllocStack = nmbrStartTempAllocStack;
+                                           /* For nmbrLet() stack cleanup*/
   nmbrStartTempAllocStack = nmbrTempAllocStackTop;
 
   plen = nmbrLen(proof);
+
+  /* 25-Jan-2016 nm */
+  if (explicitTargets == 1) {
+    /* Get the list of targets for /EXPLICIT format */
+    if (statemNum <= 0) bug(1388);
+    nmbrLet(&targetHyps, nmbrGetTargetHyp(proof, statemNum));
+  }
 
   /* Find longest local label name */
   maxLocalLen = 0;
@@ -1206,6 +1220,7 @@ vstring nmbrCvtRToVString(nmbrString *proof)
   /* Collect local labels */
   /* Also, find longest statement label name */
   maxLabelLen = 0;
+  maxTargetLabelLen = 0; /* 25-Jan-2016 nm */
   for (step = 0; step < plen; step++) {
     stmt = proof[step];
     if (stmt <= -1000) {
@@ -1220,26 +1235,53 @@ vstring nmbrCvtRToVString(nmbrString *proof)
         }
       }
     }
-  }
 
- /* localLabelNames[] holds an integer which, when converted to string,
+    /* 25-Jan-2016 nm */
+    if (explicitTargets == 1) {
+      /* Also consider longest target label name */
+      stmt = targetHyps[step];
+      if (stmt <= 0) bug(1390);
+      if ((signed)(strlen(statement[stmt].labelName)) > maxTargetLabelLen) {
+        maxTargetLabelLen = (long)strlen(statement[stmt].labelName);
+      }
+    }
+
+  } /* next step */
+
+  /* localLabelNames[] holds an integer which, when converted to string,
     is the local label name. */
   nmbrLet(&localLabelNames, nmbrSpace(plen));
 
   /* Build the ASCII string */
   /* Preallocate the string for speed (the "2" accounts for a space and a
      colon). */
-  let(&proofStr, space(plen * (2 + maxLabelLen + maxLocalLen)));
+  let(&proofStr, space(plen * (2 + maxLabelLen
+      + ((explicitTargets == 1) ? maxTargetLabelLen + 1 : 0)  /* 25-Jan-2016 */
+                                          /* The "1" accounts for equal sign */
+      + maxLocalLen)));
   ptr = proofStr;
   for (step = 0; step < plen; step++) {
     stmt = proof[step];
     if (stmt < 0) {
       if (stmt <= -1000) {
         stmt = -1000 - stmt;
-        /* stmt is now the step number a local label refers to */
-        let(&tmpStr, cat(str(localLabelNames[stmt]), " ", NULL));
+            /* Change stmt to the step number a local label refers to */
+        let(&tmpStr, cat(
+
+            /* 25-Jan-2016 nm */
+            ((explicitTargets == 1) ? statement[targetHyps[step]].labelName : ""),
+            ((explicitTargets == 1) ? "=" : ""),
+
+            str(localLabelNames[stmt]), " ", NULL));
       } else {
-        let(&tmpStr, cat(chr(-stmt), " ", NULL));
+        if (stmt != -(long)'?') bug(1391); /* Must be an unknown step */
+        let(&tmpStr, cat(
+
+            /* 25-Jan-2016 nm */
+            ((explicitTargets == 1) ? statement[targetHyps[step]].labelName : ""),
+            ((explicitTargets == 1) ? "=" : ""),
+
+            chr(-stmt), " ", NULL));
       }
     } else {
       let(&tmpStr,"");
@@ -1260,7 +1302,13 @@ vstring nmbrCvtRToVString(nmbrString *proof)
         let(&tmpStr, cat(tmpStr, ":", NULL));
         nextLocLabNum++; /* Prepare for next local label */
       }
-      let(&tmpStr, cat(tmpStr, statement[stmt].labelName, " ", NULL));
+      let(&tmpStr, cat(tmpStr,
+
+          /* 25-Jan-2016 nm */
+          ((explicitTargets == 1) ? statement[targetHyps[step]].labelName : ""),
+          ((explicitTargets == 1) ? "=" : ""),
+
+          statement[stmt].labelName, " ", NULL));
     }
     j = (long)strlen(tmpStr);
     memcpy(ptr, tmpStr, (size_t)j);
@@ -1758,7 +1806,7 @@ nmbrString *nmbrGetTargetHyp(nmbrString *proof, long statemNum)
   nmbrLet(&nmbrTmp, NULL_NMBRSTRING); /* Deallocate */
   nmbrMakeTempAlloc(targetHyp); /* Flag it for deallocation */
   return (targetHyp);
-}
+} /* nmbrGetTargetHyp */
 
 
 /* Converts a proof string to a compressed-proof-format ASCII string.
@@ -2224,7 +2272,10 @@ vstring compressProof(nmbrString *proof, long statemNum,
   let(&output, cat("( ", nmbrCvtRToVString(nmbrCat(
       /* Trim off leading implicit required hypotheses */
       nmbrRight(hypList, statement[statemNum].numReqHyp + 1),
-      assertionList, NULL)),
+      assertionList, NULL),
+                /* 25-Jan-2016 nm */
+                0, /*explicitTargets*/
+                0 /*statemNum used only if explicitTargets*/),
       " ) ", left(output, outputLen), NULL));
 
   nmbrLet(&saveProof, NULL_NMBRSTRING);

@@ -5,7 +5,10 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.122 14-Jan-2016"
+#define MVERSION "0.123 25-Jan-2016"
+/* 0.123 25-Jan-2016 nm mmpars.c, mmdata.h, mmdata.c, mmpfas.c, mmcmds.,
+   metamath.c, mmcmdl.c, mmwtex.c - unlocked SHOW PROOF.../PACKED,
+   added SHOW PROOF.../EXPLICIT */
 /* 0.122 14-Jan-2016 nm metamath.c, mmcmds.c, mmwtex.c, mmwtex.h - surrounded
       math HTML output with "<SPAN [htmlFont]>...</SPAN>; added htmlcss and
       htmlfont $t commands
@@ -514,6 +517,8 @@ void command(int argc, char *argv[])
 
   /* Variables for SHOW PROOF */
   flag pipFlag; /* Proof-in-progress flag */
+  long outStatement; /* Statement for SHOW PROOF or SHOW NEW_PROOF */
+  flag explicitTargets; /* For SAVE PROOF /EXPLICIT */
   long startStep; long endStep;
   /* long startIndent; */
   long endIndent; /* Also for SHOW TRACE_BACK */
@@ -3657,17 +3662,19 @@ void command(int argc, char *argv[])
         }
 
         if (switchPos("/ PACKED") || switchPos("/ NORMAL") ||
-            switchPos("/ COMPRESSED") || saveFlag) {
+            switchPos("/ COMPRESSED") || switchPos("/ EXPLICIT") || saveFlag) {
           /*??? Add error msg if other switches were specified. (Ignore them.)*/
 
           if (!pipFlag) {
-            i = showStatement;
+            outStatement = showStatement;
           } else {
-            i = proveStatement;
+            outStatement = proveStatement;
           }
 
+          explicitTargets = (switchPos("/ EXPLICIT") != 0) ? 1 : 0;
+
           /* Get the amount to indent the proof by */
-          indentation = 2 + getSourceIndentation(i);
+          indentation = 2 + getSourceIndentation(outStatement);
 
           if (!pipFlag) {
             parseProof(showStatement);  /* Prints message if severe error */
@@ -3689,11 +3696,14 @@ void command(int argc, char *argv[])
 
           if (switchPos("/ COMPRESSED")) {
             let(&str1, compressProof(nmbrSaveProof,
-                i, /* showStatement or proveStatement based on pipFlag */
+                outStatement, /* showStatement or proveStatement based on pipFlag */
                 (switchPos("/ FAST_COMPRESSION")) ? 1 : 0  /* 27-Dec-2013 nm */
                 ));
           } else {
-            let(&str1, nmbrCvtRToVString(nmbrSaveProof));
+            let(&str1, nmbrCvtRToVString(nmbrSaveProof,
+                /* 25-Jan-2016 nm */
+                explicitTargets, /*explicitTargets*/
+                outStatement /*statemNum, used only if explicitTargets*/));
           }
 
 
@@ -3703,7 +3713,7 @@ void command(int argc, char *argv[])
             let(&printString, "");
             outputToString = 1; /* Flag for print2 to add to printString */
           } else {
-            if (!print2("Proof of \"%s\":\n", statement[i].labelName))
+            if (!print2("Proof of \"%s\":\n", statement[outStatement].labelName))
               break; /* Break for speedup if user quit */
             print2(
 "---------Clip out the proof below this line to put it in the source file:\n");
@@ -3729,9 +3739,9 @@ void command(int argc, char *argv[])
                will refer to a final "dummy" statement containing
                text (comments) through the end of file, stored in its
                labelSectionXxx structure members. */
-            let(&str2, space(statement[i + 1].labelSectionLen));
-            memcpy(str2, statement[i + 1].labelSectionPtr,
-                (size_t)(statement[i + 1].labelSectionLen));
+            let(&str2, space(statement[outStatement + 1].labelSectionLen));
+            memcpy(str2, statement[outStatement + 1].labelSectionPtr,
+                (size_t)(statement[outStatement + 1].labelSectionLen));
             /* 12-Jun-2011 nm Removed pipFlag condition so that a date
                stamp will always be created if it doesn't exist */
             if ( /* pipFlag && */ !instr(1, str2, "$([")
@@ -3774,7 +3784,7 @@ void command(int argc, char *argv[])
                    an isolated string that can be allocated/deallocated but
                    rather to a place in the input source buffer. */
                 /* Correct the indentation on old date */
-                while ((statement[i + 1].labelSectionPtr)[0] !=
+                while ((statement[outStatement + 1].labelSectionPtr)[0] !=
                     '$') {
                   /* "Delete" spaces before old date (by moving source
                      buffer pointer forward), and also "delete"
@@ -3782,8 +3792,8 @@ void command(int argc, char *argv[])
                   /* If the proof is saved a 2nd time, this loop will
                      not be entered because the pointer will already be
                      at the "$". */
-                  (statement[i + 1].labelSectionPtr)++;
-                  (statement[i + 1].labelSectionLen)--;
+                  (statement[outStatement + 1].labelSectionPtr)++;
+                  (statement[outStatement + 1].labelSectionLen)--;
                 }
                 if (!outputToString) bug(1115);
                 /* The final \n will not appear in final output (done in
@@ -3806,24 +3816,24 @@ void command(int argc, char *argv[])
             /* ASCII 1 is a flag that string was allocated and not part of
                original source file text buffer */
             let(&printString, cat(chr(1), "\n", printString, NULL));
-            if (statement[i].proofSectionPtr[-1] == 1) {
+            if (statement[outStatement].proofSectionPtr[-1] == 1) {
               /* Deallocate old proof if not original source */
               let(&str1, "");
-              str1 = statement[i].proofSectionPtr - 1;
+              str1 = statement[outStatement].proofSectionPtr - 1;
               let(&str1, "");
             }
-            statement[i].proofSectionPtr = printString + 1;
+            statement[outStatement].proofSectionPtr = printString + 1;
             /* Subtr 1 char for ASCII 1 at beg, 1 char for "\n" */
-            statement[i].proofSectionLen = (long)strlen(printString) - 2;
+            statement[outStatement].proofSectionLen = (long)strlen(printString) - 2;
             /* Reset printString without deallocating */
             printString = "";
             outputToString = 0;
             if (!pipFlag) {
-              printLongLine(cat("The proof of \"", statement[i].labelName,
+              printLongLine(cat("The proof of \"", statement[outStatement].labelName,
                   "\" has been reformatted and saved internally.",
                   NULL), "", " ");
             } else {
-              printLongLine(cat("The new proof of \"", statement[i].labelName,
+              printLongLine(cat("The new proof of \"", statement[outStatement].labelName,
                   "\" has been saved internally.",
                   NULL), "", " ");
             }
@@ -3832,7 +3842,7 @@ void command(int argc, char *argv[])
             /* 24-Apr-2015 nm Reverted */
             /*print2("\n");*/ /* Add a blank line to make clipping easier */
             print2(cat(
-                "---------The proof of \"",statement[i].labelName,
+                "---------The proof of \"",statement[outStatement].labelName,
                 /* "\" to clip out ends above this line.\n",NULL)); */
                 /* 24-Apr-2015 nm */
                 "\" (", str(l), " bytes) ends above this line.\n", NULL));
@@ -3841,14 +3851,14 @@ void command(int argc, char *argv[])
           if (pipFlag) break; /* Only one iteration for NEW_PROOF stuff */
           continue;  /* to next s iteration */
         } /* end if (switchPos("/ PACKED") || switchPos("/ NORMAL") ||
-            switchPos("/ COMPRESSED") || saveFlag) */
+            switchPos("/ COMPRESSED") || switchPos("/ EXPLICIT") || saveFlag) */
 
         if (saveFlag) bug(1112); /* Shouldn't get here */
 
         if (!pipFlag) {
-          i = showStatement;
+          outStatement = showStatement;
         } else {
-          i = proveStatement;
+          outStatement = proveStatement;
         }
         if (texFlag) {
           outputToString = 1; /* Flag for print2 to add to printString */
@@ -3862,7 +3872,7 @@ void command(int argc, char *argv[])
               print2("\\vspace{1ex} %%1\n");
               printLongLine(cat("Proof of ",
                   "{\\tt ",
-                  asciiToTt(statement[i].labelName),
+                  asciiToTt(statement[outStatement].labelName),
                   "}:", NULL), "", " ");
               print2("\n");
               print2("\n");
@@ -3875,7 +3885,7 @@ void command(int argc, char *argv[])
                 MINT_BACKGROUND_COLOR);
             print2("<CAPTION><B>Proof of Theorem <FONT\n");
             printLongLine(cat("   COLOR=", GREEN_TITLE_COLOR, ">",
-                asciiToTt(statement[i].labelName),
+                asciiToTt(statement[outStatement].labelName),
                 "</FONT></B></CAPTION>", NULL), "", "\"");
             print2(
                 "<TR><TD><B>Step</B></TD><TD><B>Hyp</B></TD><TD><B>Ref</B>\n");
@@ -3898,7 +3908,7 @@ void command(int argc, char *argv[])
           if (!pipFlag) {
             /* 30-Jan-06 nm Added single-character-match wildcard argument */
             if (instr(1, labelMatch, "*") || instr(1, labelMatch, "?")) {
-              if (!print2("Proof of \"%s\":\n", statement[i].labelName))
+              if (!print2("Proof of \"%s\":\n", statement[outStatement].labelName))
                 break; /* Break for speedup if user quit */
             }
           }
@@ -3908,7 +3918,7 @@ void command(int argc, char *argv[])
         if (texFlag) print2("Outputting proof of \"%s\"...\n",
             statement[s].labelName);
 
-        typeProof(i,
+        typeProof(outStatement,
             pipFlag,
             startStep,
             endStep,
@@ -3949,15 +3959,24 @@ void command(int argc, char *argv[])
         /*nmbrLet(&wrkProof.proofString, nmbrSaveProof);*/
 
         /*E*/ if (0) { /* for debugging: */
-          printLongLine(nmbrCvtRToVString(wrkProof.proofString)," "," ");
+          printLongLine(nmbrCvtRToVString(wrkProof.proofString,
+                /* 25-Jan-2016 nm */
+                0, /*explicitTargets*/
+                0 /*statemNum, used only if explicitTargets*/)," "," ");
           print2("\n");
 
           nmbrLet(&nmbrSaveProof, nmbrSquishProof(wrkProof.proofString));
-          printLongLine(nmbrCvtRToVString(nmbrSaveProof)," "," ");
+          printLongLine(nmbrCvtRToVString(nmbrSaveProof,
+                /* 25-Jan-2016 nm */
+                0, /*explicitTargets*/
+                0 /*statemNum, used only if explicitTargets*/)," "," ");
           print2("\n");
 
           nmbrLet(&nmbrTmp, nmbrUnsquishProof(nmbrSaveProof));
-          printLongLine(nmbrCvtRToVString(nmbrTmp)," "," ");
+          printLongLine(nmbrCvtRToVString(nmbrTmp,
+                /* 25-Jan-2016 nm */
+                0, /*explicitTargets*/
+                0 /*statemNum, used only if explicitTargets*/)," "," ");
 
           nmbrLet(&nmbrTmp, nmbrGetTargetHyp(nmbrSaveProof,showStatement));
           printLongLine(nmbrCvtAnyToVString(nmbrTmp)," "," "); print2("\n");
@@ -4002,7 +4021,10 @@ void command(int argc, char *argv[])
         if (nmbrLen(nmbrTmpPtr)) break;
       }
 
-      print2("Result:  %s\n", nmbrCvtRToVString(nmbrTmpPtr));
+      print2("Result:  %s\n", nmbrCvtRToVString(nmbrTmpPtr,
+                /* 25-Jan-2016 nm */
+                0, /*explicitTargets*/
+                0 /*statemNum, used only if explicitTargets*/));
       nmbrLet(&nmbrTmpPtr, NULL_NMBRSTRING);
 
       continue;
@@ -4066,7 +4088,8 @@ void command(int argc, char *argv[])
       verifyProof(proveStatement); /* Necessary to set RPN stack ptrs
                                       before calling cleanWrkProof() */
       if (wrkProof.errorSeverity > 1) {
-     print2("The starting proof has a severe error.  It will not be used.\n");
+        print2(
+             "The starting proof has a severe error.  It will not be used.\n");
         nmbrLet(&nmbrSaveProof, nmbrAddElement(NULL_NMBRSTRING, -(long)'?'));
       } else {
         nmbrLet(&nmbrSaveProof, wrkProof.proofString);

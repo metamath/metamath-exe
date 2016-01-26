@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2015  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2016  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -147,8 +147,14 @@ void interactiveMatch(long step, long maxEssential)
     }
   }
 
-  let(&tmpStr1, nmbrCvtRToVString(matchList));
-  let(&tmpStr4, nmbrCvtRToVString(timeoutList));
+  let(&tmpStr1, nmbrCvtRToVString(matchList,
+                /* 25-Jan-2016 nm */
+                0, /*explicitTargets*/
+                0 /*statemNum, used only if explicitTargets*/));
+  let(&tmpStr4, nmbrCvtRToVString(timeoutList,
+                /* 25-Jan-2016 nm */
+                0, /*explicitTargets*/
+                0 /*statemNum, used only if explicitTargets*/));
 
   printLongLine(cat("Step ", str(step + 1), " matches statements:  ", tmpStr1,
       NULL), "  ", " ");
@@ -989,7 +995,10 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
 
 
 /*E*/if(db8)print2("%s\n", cat("Returned: ",
-/*E*/   nmbrCvtRToVString(proof), NULL));
+/*E*/   nmbrCvtRToVString(proof,
+/*E*/                /* 25-Jan-2016 nm */
+/*E*/                0, /*explicitTargets*/
+/*E*/                0 /*statemNum, used only if explicitTargets*/), NULL));
   return (proof); /* Caller must deallocate */
 } /* replaceStatement */
 
@@ -1823,7 +1832,10 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
   pntrLet(&hypProofList, NULL_PNTRSTRING);
   depth--; /* Restore backtracking depth */
 /*E*/if(db8)print2("%s\n", cat(space(depth+2), "Returned: ",
-/*E*/   nmbrCvtRToVString(proof), NULL));
+/*E*/   nmbrCvtRToVString(proof,
+/*E*/                /* 25-Jan-2016 nm */
+/*E*/                0, /*explicitTargets*/
+/*E*/                0 /*statemNum, used only if explicitTargets*/), NULL));
 /*E*/if(db8){if(!depth)print2("Trials: %ld\n", trials);}
   return (proof); /* Caller must deallocate */
 } /* proveFloating */
@@ -2837,7 +2849,8 @@ void replaceDummyVar(long dummyVar, nmbrString *mString)
   return;
 } /* replaceDummyVar */
 
-/* Get subproof length of a proof, starting at endStep and going backwards */
+/* Get subproof length of a proof, starting at endStep and going backwards.
+   Note that the first step is 0, the second is 1, etc. */
 long subProofLen(nmbrString *proof, long endStep)
 {
   long stmt, p, lvl;
