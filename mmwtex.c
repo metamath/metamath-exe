@@ -5001,9 +5001,12 @@ vstring getTexLongMath(nmbrString *mathString, long statemNum)
   /* 8/9/03 Discard redundant white space to reduce HTML file size */
   let(&texLine, edit(texLine, 8 + 16 + 128));
 
-  /* 14-Jan-2016 nm */
+  /* 1-Feb-2016 nm */
   /* Enclose math symbols in a span to be used for font selection */
-  let(&texLine, cat("<SPAN CLASS=math>", texLine, "</SPAN>", NULL));
+  let(&texLine, cat(
+      (altHtmlFlag ? cat("<SPAN ", htmlFont, ">", NULL) : ""),
+      texLine,
+      (altHtmlFlag ? "</SPAN>" : ""), NULL));
 
   let(&tex, "");
   let(&lastTex, "");
@@ -5044,8 +5047,10 @@ vstring getTexOrHtmlHypAndAssertion(long statemNum)
             let(&texOrHtmlCode, cat(texOrHtmlCode,
                 /* 8/8/03 - Changed from Symbol to Unicode */
 /* "&nbsp;&nbsp;&nbsp;<FONT FACE=\"Symbol\"> &#38;</FONT>&nbsp;&nbsp;&nbsp;" */
-                "&nbsp;&nbsp;&nbsp; &amp;&nbsp;&nbsp;&nbsp;"
-                ,NULL));
+                "<SPAN ", htmlFont, ">",  /* 1-Feb-2016 nm */
+                "&nbsp;&nbsp;&nbsp; &amp;&nbsp;&nbsp;&nbsp;",
+                "</SPAN>",   /* 1-Feb-2016 nm */
+                NULL));
           } else {
             /* Hard-coded for set.mm! */
             let(&texOrHtmlCode, cat(texOrHtmlCode,

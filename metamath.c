@@ -5,7 +5,10 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.123 25-Jan-2016"
+#define MVERSION "0.124 1-Feb-2016"
+/* 0.124 1-Feb-2016 nm mmwtex.c - put "<SPAN [htmlFont]..." around math
+   formulas only in althtmldef mode, to prevent mpegif alignment problems in
+   old browsers. */
 /* 0.123 25-Jan-2016 nm mmpars.c, mmdata.h, mmdata.c, mmpfas.c, mmcmds.,
    metamath.c, mmcmdl.c, mmwtex.c - unlocked SHOW PROOF.../PACKED,
    added SHOW PROOF.../EXPLICIT */
