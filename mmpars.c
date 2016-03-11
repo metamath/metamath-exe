@@ -2360,6 +2360,8 @@ char parseProof(long statemNum)
                                                      subproofs of hypotheses */
   nmbrString *rearrangedSubProofs = NULL_NMBRSTRING;
   nmbrString *rearrangedOldStepNums = NULL_NMBRSTRING;
+  flag subProofMoved; /* Flag to restart scan after moving subproof */
+                 /* 10-Mar-2016 nm */
 
   if (statement[statemNum].type != p_) {
     bug(1723); /* 13-Oct-05 nm - should never get here */
@@ -3098,38 +3100,142 @@ char parseProof(long statemNum)
             break;
           }
         }
-        if (i == 0) bug(1744);
+        if (i == 0) bug(1740);
       }
     } /* next step */
 
-    /* Check if any local labels point to future steps: if so, we should
+    /************** Start of section deleted 10-Mar-2016 nm
+    /@ Check if any local labels point to future steps: if so, we should
        expand the proof so it will verify (since many functions require
-       that a local label be declared before it is used) */
+       that a local label be declared before it is used) @/
     for (step = 0; step < wrkProof.numSteps; step++) {
-      k = (wrkProof.proofString)[step]; /* Will be <= -1000 if local label */
-      if (k <= -1000) { /* References local label i.e. subproof */
-        k = -1000 - k; /* Restore step number subproof ends at */
-        if (k > step) { /* Refers to label declared after this step */
-          /* Expand the proof */
+      k = (wrkProof.proofString)[step]; /@ Will be <= -1000 if local label @/
+      if (k <= -1000) { /@ References local label i.e. subproof @/
+        k = -1000 - k; /@ Restore step number subproof ends at @/
+        if (k > step) { /@ Refers to label declared after this step @/
+          /@ Expand the proof @/
           nmbrLet(&wrkProofString, nmbrUnsquishProof(wrkProof.proofString));
-          /* Recompress the proof */
+          /@ Recompress the proof @/
           nmbrLet(&wrkProofString, nmbrSquishProof(wrkProofString));
-          /* The number of steps shouldn't have changed */
-          /* (If this bug is valid behavior, it means we may have to
+          /@ The number of steps shouldn't have changed @/
+          /@ (If this bug is valid behavior, it means we may have to
              reallocate (grow) the wrkProof structure, which might be
-             unpleasant at this point.) */
+             unpleasant at this point.) @/
           if (nmbrLen(wrkProofString) != wrkProof.numSteps) {
             bug(1736);
           }
-          /* Reassign wrkProof.proofString from new wrkProofString */
+          /@ Reassign wrkProof.proofString from new wrkProofString @/
           for (i = 0; i < wrkProof.numSteps; i++) {
             (wrkProof.proofString)[i] = wrkProofString[i];
           }
           break;
-        } /* if k>step */
-      } /* if k<= -1000 */
-    } /* next step */
+        } /@ if k>step @/
+      } /@ if k<= -1000 @/
+    } /@ next step @/
+    ************************* end of 10-Mar-2016 deletion */
 
+
+    /* 10-Mar-2016 nm (Replace above deleted secton) */
+    /* Check if any local labels point to future steps: if so, we should
+       moved the subproof they point to down (since many functions require
+       that a local label be declared before it is used) */
+    do {
+      subProofMoved = 0;  /* Flag to rescan after moving a subproof */
+      /* TODO: restart loop after step just finished for speedup?
+         (maybe not worth it).
+         We could just change subProofMoved to restartStep (long) and use
+         restartStep > 0 as the flag, since we would restart at the
+         last step processed plus 1. */
+      for (step = 0; step < wrkProof.numSteps; step++) {
+        k = (wrkProof.proofString)[step]; /* Will be <= -1000 if local label */
+        if (k <= -1000) { /* References local label i.e. subproof */
+          k = -1000 - k; /* Restore step number subproof ends at */
+          if (k > step) { /* Refers to label declared after this step */
+            m = subProofLen(wrkProof.proofString, k);
+            /*m = nmbrGetSubProofLen(wrkProof.proofString, k);*/
+
+            /* At this point:
+                   step = the step referencing a future subproof
+                   k = end of future subproof
+                   m = length of future subproof */
+
+            /* TODO - make this a direct assignment for speedup?
+               (with most $f's reversed, this has about 13K hits during
+               'verify proof *' - maybe not enough to justify rewriting this
+               to make direct assignment instead of nmbrLet().) */
+            /* Replace the step with the subproof it references */
+            /* Note that nmbrXxx() positions start at 1, not 0; add 1 to step */
+            nmbrLet(&wrkProofString, nmbrCat(
+                /* Proof before future label ref: */
+                nmbrLeft(wrkProof.proofString, step),
+                /* The future subproof moved to the current step: */
+                nmbrMid(wrkProof.proofString, k - m + 2, m),
+                /* The steps between this step and the future subproof: */
+                nmbrSeg(wrkProof.proofString, step + 2, k - m + 1),
+                /* The future subproof replaced with the current step (a local
+                   label to be renumbered below): */
+                nmbrMid(wrkProof.proofString, step + 1, 1),
+                /* The rest of the steps to the end of proof: */
+                nmbrRight(wrkProof.proofString, k + 2),
+                NULL));
+            if (nmbrLen(wrkProofString) != wrkProof.numSteps) {
+              bug(1736); /* Make sure proof length didn't change */
+            }
+            if (wrkProofString[k] != (wrkProof.proofString)[step]) {
+              bug(1737); /* Make sure future subproof is now the future local
+                            label (to be renumbered below) */
+            }
+
+            /* We now have this wrkProofString[...] content:
+                [0]...[step-1]                   same as original proof
+                [step+1]...[step+m-1]            moved subproof
+                [step+m]...[k-1]                 shifted orig proof
+                [k]...[k]                        subproof replaced by loc label
+                [k+1]...[wrkProof.numSteps-1]    same as orig proof */
+
+            /* Correct all local labels */
+            for (i = 0; i < wrkProof.numSteps; i++) {
+              j = (wrkProofString)[i]; /* Will be <= -1000 if local label */
+              if (j > -1000) continue; /* Not loc label ref */
+              j = -1000 - j; /* Restore step number subproof ends at */
+              /* Note: the conditions before the "&&" below are redundant
+                 but provide better sanity checking */
+              if (j >= 0 && j < step) { /* Before moved subproof */
+                j = j; /* Same as orig proof */
+              } else if (j == step) { /* The original local label ref */
+                bug(1738); /* A local label shouldn't ref a local label */
+              } else if (j > step && j <= k - m) {
+                                   /* Steps shifted up by subproof insertion */
+                j = j + m - 1; /* Offset by size of subproof moved down -1 */
+              } else if (j > k - m && j <= k) {
+                                   /* Reference to inside the moved subproof */
+                j = j + step + m - 1 - k;  /* Shift down */
+              } else if (j > k && j <= wrkProof.numSteps - 1) {
+                                              /* Ref to after moved subproof */
+                j = j;  /* Same as orig proof */
+              } else {
+                bug(1739);  /* Cases not exhausted or j is out of range */
+              }
+              (wrkProofString)[i] = -j - 1000; /* Update new proof */
+            } /* next i */
+
+            /* Transfer proof back to original */
+            for (i = 0; i < wrkProof.numSteps; i++) {
+              (wrkProof.proofString)[i] = wrkProofString[i];
+            }
+
+            /* Set flag that a subproof was moved and restart the scan */
+            subProofMoved = 1;
+            /* Reassign wrkProof.proofString from new wrkProofString */
+            for (i = 0; i < wrkProof.numSteps; i++) {
+              (wrkProof.proofString)[i] = wrkProofString[i];
+            }
+            break; /* Break out of the 'for (step...' loop */
+
+          } /* if k>step */
+        } /* if k<= -1000 */
+      } /* next step */
+    } while (subProofMoved);
 
     /* Deallocate */
     pntrLet(&targetPntr, NULL_PNTRSTRING);
@@ -4572,7 +4678,7 @@ vstring outputStatement(long stmt, flag cleanFlag,
             space(indent), statement[stmt].labelName, " ", NULL));
         break;
       default: bug(1727);
-    }
+    } /* switch (statement[stmt].type) */
 
     /* Reformat the math section */
     switch (statement[stmt].type) {
@@ -4592,15 +4698,21 @@ vstring outputStatement(long stmt, flag cleanFlag,
           let(&mathSection, cat(left(mathSection, pos),
               right(mathSection, pos + 2), NULL));
         }
-        /* Remove leading and trailing space and trailing new lines */
+
+        /* 6-Mar-2016 nm Turn off wrapping of math section.  It should be
+           done manually for best readability. */
+        /*
+        /@ Remove leading and trailing space and trailing new lines @/
         while(1) {
           let(&mathSection, edit(mathSection,
-              8 /* leading sp */ + 128 /* trailing sp */));
+              8 /@ leading sp @/ + 128 /@ trailing sp @/));
           if (mathSection[strlen(mathSection) - 1] != '\n') break;
           let(&mathSection, left(mathSection, (long)strlen(mathSection) - 1));
         }
         let(&mathSection, cat(" ", mathSection, " ", NULL));
-                   /* Restore standard leading/trailing space stripped above */
+                   /@ Restore standard leading/trailing space stripped above @/
+        */
+
         /* Reduce multiple in-line spaces to single space */
         pos = 0;
         while(1) {
@@ -4615,9 +4727,13 @@ vstring outputStatement(long stmt, flag cleanFlag,
             }
           }
         }
-        /* Wrap long lines */
-        length = indent + 2 /* Prefix length - add 2 for keyword ${, etc. */
-            /* Add 1 for space after label, if $e, $f, $a, $p */
+
+        /* 6-Mar-2016 nm Turn off wrapping of math section.  It should be
+           done manually for best readability. */
+        /*
+        /@ Wrap long lines @/
+        length = indent + 2 /@ Prefix length - add 2 for keyword ${, etc. @/
+            /@ Add 1 for space after label, if $e, $f, $a, $p @/
             + (((statement[stmt].labelName)[0]) ?
                 ((long)strlen(statement[stmt].labelName) + 1) : 0);
         if (outputToString == 1) bug(1728);
@@ -4627,9 +4743,11 @@ vstring outputStatement(long stmt, flag cleanFlag,
             space(indent + 4), " ");
         outputToString = 0;
         let(&mathSection, left(printString, (long)strlen(printString) - 3));
-            /* Trim off "$." plus "\n" */
+            /@ Trim off "$." plus "\n" @/
         let(&mathSection, right(mathSection, length + 1));
         let(&printString, "");
+        */
+
         break;
       default: bug(1729);
     }

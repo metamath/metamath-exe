@@ -4991,6 +4991,15 @@ vstring getTexLongMath(nmbrString *mathString, long statemNum)
           let(&texLine, cat(texLine, " ", NULL)); /* Add a space */
         }
       }
+      /* 7-Mar-2016 nm This one puts a space between "}" and "{" in
+         konigsberg proof. */
+      if (pos >=1) {
+        /* See if we have "}" followed by "(" */
+        if (!strcmp(mathToken[mathString[pos - 1]].tokenName, "}")
+            && !strcmp(mathToken[mathString[pos]].tokenName, "{")) {
+          let(&texLine, cat(texLine, " ", NULL)); /* Add a space */
+        }
+      }
       /* 7/27/03 end */
 
       let(&texLine, cat(texLine, tex, NULL));

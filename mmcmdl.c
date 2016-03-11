@@ -580,7 +580,8 @@ flag processCommandLine(void)
                 "ESSENTIAL|ALL|UNKNOWN|FROM_STEP|TO_STEP|DEPTH",
                 /*"|REVERSE|VERBOSE|NORMAL|COMPRESSED",*/
                 "|REVERSE|VERBOSE|NORMAL|PACKED|COMPRESSED|EXPLICIT",
-                "|FAST_COMPRESSION",   /* 27-Dec-2013 nm */
+                "|FAST",   /* 2-Mar-2016 nm */
+                "|OLD_COMPRESSION",   /* 27-Dec-2013 nm */
                 /* 14-Sep-2010 nm Added OLD_TEX */
                 "|STATEMENT_SUMMARY|DETAILED_STEP|TEX|OLD_TEX|HTML",
                 "|LEMMON|START_COLUMN|NO_REPEATED_STEPS",
@@ -639,7 +640,7 @@ flag processCommandLine(void)
                 "ESSENTIAL|ALL|UNKNOWN|FROM_STEP|TO_STEP|DEPTH",
                 /*"|REVERSE|VERBOSE|NORMAL|COMPRESSED",*/
                 "|REVERSE|VERBOSE|NORMAL|PACKED|COMPRESSED|EXPLICIT",
-                "|FAST_COMPRESSION",   /* 27-Dec-2013 nm */
+                "|OLD_COMPRESSION",   /* 27-Dec-2013 nm */
                 "|NOT_UNIFIED|TEX|HTML",
                 "|LEMMON|START_COLUMN|NO_REPEATED_STEPS",
                 "|RENUMBER|<ESSENTIAL>",NULL)))
@@ -744,7 +745,7 @@ flag processCommandLine(void)
             i++;
             if (!getFullArg(i,cat(
                 "NORMAL|PACKED|COMPRESSED|EXPLICIT",
-                "|FAST_COMPRESSION",   /* 27-Dec-2013 nm */
+                "|FAST|OLD_COMPRESSION",   /* 27-Dec-2013 nm */
                 "|<NORMAL>",NULL)))
               goto pclbad;
           } else {
@@ -771,7 +772,7 @@ flag processCommandLine(void)
             i++;
             if (!getFullArg(i,cat(
                 "NORMAL|PACKED|COMPRESSED|EXPLICIT",
-                "|FAST_COMPRESSION",   /* 27-Dec-2013 nm */
+                "|OLD_COMPRESSION",   /* 27-Dec-2013 nm */
                 "|<NORMAL>",NULL)))
               goto pclbad;
           } else {

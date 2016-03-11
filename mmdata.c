@@ -612,6 +612,9 @@ flag matchesList(vstring testString, vstring pattern, char wildCard,
    wildCard matches 0 or more characters; oneCharWildCard matches any
    single character. */
 /* 30-Jan-06 nm Added single-character-match wildcard argument */
+/* 19-Apr-2015 so, nm - Added "=" to match statement being proved */
+/* 19-Apr-2015 so, nm - Added "%" to match changed proofs */
+/* 8-Mar-2016 nm Added "#12345" to match internal statement number */
 flag matches(vstring testString, vstring pattern, char wildCard,
     char oneCharWildCard) {
   long i, ppos, pctr, tpos, s1, s2, s3;
@@ -619,14 +622,25 @@ flag matches(vstring testString, vstring pattern, char wildCard,
 
   /* 21-Nov-14 Stefan O'Rear - added label ranges - see HELP SEARCH */
   if (wildCard == '*') {
-    /* checking for wildCard = * means this is only for label listing */
+    /* Checking for wildCard = * means this is only for label listing */
     i = instr(1, pattern, "~");
     if (i != 0) {
       s1 = lookupLabel(left(pattern, i - 1));
       s2 = lookupLabel(testString);
       s3 = lookupLabel(right(pattern, i + 1));
       let(&tmpStr, ""); /* Clean up temporary allocations of left and right */
-      return (s1 >= 0 && s2 >= 0 && s3 >= 0 && s1 <= s2 && s2 <= s3);
+      return ((s1 >= 0 && s2 >= 0 && s3 >= 0 && s1 <= s2 && s2 <= s3)
+          ? 1 : 0);
+    }
+
+    /* 8-Mar-2016 nm Added "#12345" to match internal statement number */
+    if (pattern[0] == '#') {
+      s1 = (long)val(right(pattern, 2));
+      if (!strcmp(statement[s1].labelName, testString)) {
+        return 1;
+      } else {
+        return 0;
+      }
     }
 
     /* 19-Apr-2015 so, nm - Added "=" to match statement being proved */

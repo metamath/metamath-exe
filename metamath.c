@@ -5,10 +5,15 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.124 1-Feb-2016"
-/* 0.124 1-Feb-2016 nm mmwtex.c - put "<SPAN [htmlFont]..." around math
-   formulas only in althtmldef mode, to prevent mpegif alignment problems in
-   old browsers. */
+#define MVERSION "0.125 10-Mar-2016"
+/* 0.125 10-Mar-2016 mmpars.c - fixed bug parsing /EXPLICIT/PACKED format
+   8-Mar-2016 nm mmdata.c - added "#nnn" to SHOW STATEMENT etc. to reference
+      statement number e.g. SHOW STATEMENT #58 shows a1i in set.mm.
+   7-Mar-2016 nm mmwtex.c - added space between } and { in HTML output
+   6-Mar-2016 nm mmpars.c - disabled wrapping of formula lines in
+       WRITE SOURCE.../REWRAP
+   2-Mar-2016 nm metamat.c, mmcmdl.c, mmhlpb.c - added /FAST to
+       SAVE PROOF, SHOW PROOF */
 /* 0.123 25-Jan-2016 nm mmpars.c, mmdata.h, mmdata.c, mmpfas.c, mmcmds.,
    metamath.c, mmcmdl.c, mmwtex.c - unlocked SHOW PROOF.../PACKED,
    added SHOW PROOF.../EXPLICIT */
@@ -105,7 +110,7 @@
    uniform at start of compressed part of proof */
 /* 0.101 27-Dec-2013 nm mmdata.h,c, mminou.c, mmcmdl.c, mmhlpb.c, mmvstr.c -
    Improved storage efficiency of /COMPRESSED proofs (but with 20% slower run
-   time); added /FAST_COMPRESSION to specify old algorithm; removed end-of-line
+   time); added /OLD_COMPRESSION to specify old algorithm; removed end-of-line
    space after label list in old algorithm; fixed linput() bug */
 /* 0.100 30-Nov-2013 nm mmpfas.c - reversed statement scan order in
    proveFloating(), to speed up SHOW STATEMENT df-* /HTML; metamath.c - remove
@@ -1795,7 +1800,7 @@ void command(int argc, char *argv[])
             /* 5-Jan-04 mm*.html is reserved for mmtheorems.html, etc. */
             !strcmp(",MM", left(str2, 3))) {
           print2("\n");
-          printLongLine(cat("?Error in statement \"",
+          printLongLine(cat("?Warning in statement \"",
               statement[i].labelName, "\" at line ", str(statement[i].lineNum),
               " in file \"", statement[i].fileName,
               "\".  To workaround a Microsoft operating system limitation, the",
@@ -3509,10 +3514,36 @@ void command(int argc, char *argv[])
       }
 
       /* 27-Dec-2013 nm */
-      i = switchPos("/ FAST_COMPRESSION");
+      i = switchPos("/ OLD_COMPRESSION");
       if (i) {
         if (!switchPos("/ COMPRESSED")) {
-          print2("?/ FAST_COMPRESSION must be accompanied by / COMPRESSED\n");
+          print2("?/ OLD_COMPRESSION must be accompanied by / COMPRESSED.\n");
+          continue;
+        }
+      }
+
+      /* 2-Mar-2016 nm */
+      i = switchPos("/ FAST");
+      if (i) {
+        if (!switchPos("/ COMPRESSED") && !switchPos("/ PACKED")) {
+          print2("?/ FAST must be accompanied by / COMPRESSED or / PACKED.\n");
+          continue;
+        }
+      }
+
+      /* 2-Mar-2016 nm */
+      if (switchPos("/ EXPLICIT")) {
+        if (switchPos("/ COMPRESSED")) {
+          print2("?/ COMPRESSED and / EXPLICIT may not be used together.\n");
+          continue;
+        } else if (switchPos("/ NORMAL")) {
+          print2("?/ NORMAL and / EXPLICIT may not be used together.\n");
+          continue;
+        }
+      }
+      if (switchPos("/ NORMAL")) {
+        if (switchPos("/ COMPRESSED")) {
+          print2("?/ NORMAL and / COMPRESSED may not be used together.\n");
           continue;
         }
       }
@@ -3689,18 +3720,27 @@ void command(int argc, char *argv[])
               continue;
             }
             /* verifyProof(showStatement); */ /* Not necessary */
-            nmbrLet(&nmbrSaveProof, nmbrUnsquishProof(wrkProof.proofString));
+            if (switchPos("/ FAST")) { /* 2-Mar-2016 nm */
+              /* 2-Mar-2016 nm */
+              /* Use the proof as is */
+              nmbrLet(&nmbrSaveProof, wrkProof.proofString);
+            } else {
+              /* Make sure the proof is uncompressed */
+              nmbrLet(&nmbrSaveProof, nmbrUnsquishProof(wrkProof.proofString));
+            }
           } else {
             nmbrLet(&nmbrSaveProof, proofInProgress.proof);
           }
           if (switchPos("/ PACKED")  || switchPos("/ COMPRESSED")) {
-            nmbrLet(&nmbrSaveProof, nmbrSquishProof(nmbrSaveProof));
+            if (!switchPos("/ FAST")) { /* 2-Mar-2016 nm */
+              nmbrLet(&nmbrSaveProof, nmbrSquishProof(nmbrSaveProof));
+            }
           }
 
           if (switchPos("/ COMPRESSED")) {
             let(&str1, compressProof(nmbrSaveProof,
                 outStatement, /* showStatement or proveStatement based on pipFlag */
-                (switchPos("/ FAST_COMPRESSION")) ? 1 : 0  /* 27-Dec-2013 nm */
+                (switchPos("/ OLD_COMPRESSION")) ? 1 : 0  /* 27-Dec-2013 nm */
                 ));
           } else {
             let(&str1, nmbrCvtRToVString(nmbrSaveProof,
