@@ -137,6 +137,16 @@ H("        building scripts in conjunction with the TOOLS utility.");
 H("");
 
 
+printHelp = !strcmp(saveHelpCmd, "HELP SHOW RESTRICTED");
+H("Syntax:  SHOW RESTRICTED");
+H("");
+H("This command shows the usage and proof statistics for statements with");
+H("\"(Proof modification is discouraged.)\" and \"(New usage is");
+H("discouraged.)\" markup tags in their description comments.  The output");
+H("is intended to be used by scripts that compare a modified .mm file");
+H("to a previous version.");
+H("");
+
 printHelp = !strcmp(saveHelpCmd, "HELP SHOW SOURCE");
 H("Syntax:  SHOW SOURCE <label>");
 H("");
@@ -370,7 +380,8 @@ let(&saveHelpCmd, helpCmd);
 
 printHelp = !strcmp(saveHelpCmd, "HELP SHOW TRACE_BACK");
 H("Syntax:  SHOW TRACE_BACK <label-match> [/ ESSENTIAL] [/ AXIOMS] [/ TREE]");
-H("             [/ DEPTH <number>] [/ COUNT_STEPS]");
+H("             [/ DEPTH <number>] [/ COUNT_STEPS] [/MATCH <label-match>]");
+H("             [/TO <label-match>]");
 H("");
 H("This command lists all statements that the proof of the $p statement(s)");
 H("specified by <label-match> depends on.  <label-match> may contain *");
@@ -831,16 +842,9 @@ H("");
 
 
 printHelp = !strcmp(saveHelpCmd, "HELP ASSIGN");
-H("Syntax:  ASSIGN <step> <label>");
-H("         ASSIGN FIRST <label>");  /* 11-Dec-05 nm */
-H("         ASSIGN LAST <label>");
-H("");
-H("Optional qualifier:");
-H("    / NO_UNIFY - do not prompt user to select a unification if there is");
-H("        more than one possibility.  This is useful for noninteractive");
-H("        command files.  Later, the user can UNIFY ALL / INTERACTIVE.");
-H("        (The assignment will still be automatically unified if there is");
-H("        only one possibility.)");
+H("Syntax:  ASSIGN <step> <label> [/ NO_UNIFY] [/ OVERRIDE]");
+H("         ASSIGN FIRST <label> [/ NO_UNIFY] [/ OVERRIDE]");  /* 11-Dec-05 nm */
+H("         ASSIGN LAST <label> [/ NO_UNIFY] [/ OVERRIDE]");
 H("");
 H("This command, available in the Proof Assistant only, assigns an unknown");
 H("step (one with ? in the SHOW NEW_PROOF listing) with the statement");
@@ -858,12 +862,22 @@ H("");
 H("ASSIGN FIRST and ASSIGN LAST mean ASSIGN +0 and ASSIGN -0 respectively,");
 H("in other words the first and last steps shown by SHOW NEW_PROOF / UNKNOWN.");
 H("");
+H("Optional qualifiers:");
+H("    / NO_UNIFY - do not prompt user to select a unification if there is");
+H("        more than one possibility.  This is useful for noninteractive");
+H("        command files.  Later, the user can UNIFY ALL / INTERACTIVE.");
+H("        (The assignment will still be automatically unified if there is");
+H("        only one possibility.)");
+H("    / OVERRIDE - By default, ASSIGN will refuse to assign a statement");
+H("        if \"(New usage is discouraged.)\" is present in the statement's");
+H("        description comment.  This qualifier will allow the assignment.");
+H("");
 
 
 printHelp = !strcmp(saveHelpCmd, "HELP REPLACE");
-H("Syntax:  REPLACE <step> <label>");
-H("Syntax:  REPLACE FIRST <label>");
-H("Syntax:  REPLACE LAST <label>");
+H("Syntax:  REPLACE <step> <label> [/ OVERRIDE]");
+H("Syntax:  REPLACE FIRST <label> [/ OVERRIDE]");
+H("Syntax:  REPLACE LAST <label> [/ OVERRIDE]");
 H("");
 H("This command, available in the Proof Assistant only, replaces the");
 H("current subproof ending at <step> with a new complete subproof (if one");
@@ -905,6 +919,11 @@ H("");
 H("REPLACE FIRST and REPLACE LAST mean REPLACE +0 and REPLACE -0");
 H("respectively, in other words the first and last steps shown by");
 H("SHOW NEW_PROOF / UNKNOWN.");
+H("");
+H("Optional qualifier:");
+H("    / OVERRIDE - By default, REPLACE will refuse to assign a statement");
+H("        if \"(New usage is discouraged.)\" is present in the statement's");
+H("        description comment.  This qualifier will allow the assignment.");
 H("");
 
 printHelp = !strcmp(saveHelpCmd, "HELP MATCH");
@@ -1060,14 +1079,14 @@ H("");
 
 printHelp = !strcmp(saveHelpCmd, "HELP IMPROVE");
 H("Syntax:  IMPROVE <step> [/ DEPTH <number>] [/ NO_DISTINCT] [/ 2] [/ 3]");
-H("                           [/ SUBPROOFS]");
+H("                           [/ SUBPROOFS] [/ OVERRIDE]");
                               /* 26-Aug-2006 nm */ /* 4-Sep-2012 */
 H("         IMPROVE FIRST [/ DEPTH <number>] [/ NO_DISTINCT] [/ 2] [/ 3]");
-H("                           [/ SUBPROOFS]");
+H("                           [/ SUBPROOFS] [/ OVERRIDE]");
 H("         IMPROVE LAST [/ DEPTH <number>] [/ NO_DISTINCT] [/ 2] [/ 3]");
-H("                           [/ SUBPROOFS]");
+H("                           [/ SUBPROOFS] [/ OVERRIDE]");
 H("         IMPROVE ALL [/ DEPTH <number>] [/ NO_DISTINCT] [/ 2] [/ 3]");
-H("                           [/ SUBPROOFS]");
+H("                           [/ SUBPROOFS] [/ OVERRIDE]");
 H("");
 H("This command, available in the Proof Assistant only, tries to");
 H("find proofs automatically for unknown steps whose symbol sequences are");
@@ -1129,6 +1148,10 @@ H("    / SUBPROOFS - Look at each subproof that isn't completely known, and");
 H("        try to see if it can be proved independently.  This qualifier is");
 H("        meaningful only for IMPROVE ALL / 2 or IMPROVE ALL / 3.  It may");
 H("        take a very long time to run, especially with / 3.");
+/* 3-May-2016 nm - Added OVERRIDE */
+H("    / OVERRIDE - By default, IMPROVE skips statements that have");
+H("        \"(New usage is discouraged.)\" in their description comment.");
+H("        This qualifier tries to use them anyway.");
 H("");
 H("Note that / 2 includes the search of / 1, and / 3 includes / 2.");
 H("Specifying / 1 / 2 / 3 has the same effect as specifying just / 3, so");
@@ -1158,6 +1181,7 @@ H("              [/ FORBID <label-match>] [/ REVERSE] [/ INCLUDE_MATHBOXES]");
 H("Syntax:  MINIMIZE_WITH <label-match> [/ VERBOSE] [/ ALLOW_GROWTH]");
 H("              [/ EXCEPT <label-match>] [/ FORBID <label-match>]");
 H("              [/ INCLUDE_MATHBOXES] [/ NO_NEW_AXIOMS_FROM <label-match>]");
+H("              [/ OVERRIDE]");
 H("");
 H("This command, available in the Proof Assistant only, checks whether");
 H("the proof can be shortened by using earlier $p or $a statements matching");
@@ -1228,11 +1252,15 @@ H("        (from the same starting proof) and choose the shorter result.");
 H("    / INCLUDE_MATHBOXES - By default, MINIMIZE_WITH skips statements");
 H("        beyond the one with label \"mathbox\" and not in the mathbox of");
 H("        the PROVE argument.  This qualifier allows them to be included.");
+/* 3-May-2016 nm - Added OVERRIDE */
+H("    / OVERRIDE - By default, MINIMIZE_WITH skips statements that have");
+H("        \"(New usage is discouraged.)\" in their description comment.");
+H("        This qualifier tries to use them anyway.");
 H("");
 
 
 printHelp = !strcmp(saveHelpCmd, "HELP SAVE PROOF");
-H("Syntax:  SAVE PROOF <label-match> [/ NORMAL] [/ COMPRESSED]");
+H("Syntax:  SAVE PROOF <label-match> [/ <qualifier>] [/ <qualfier>]...");
 H("");
 H("The SAVE PROOF command will reformat a proof in one of two formats and");
 H("replace the existing proof in the database buffer.  It is useful for");
@@ -1271,7 +1299,7 @@ H("");
 
 
 printHelp = !strcmp(saveHelpCmd, "HELP SAVE NEW_PROOF");
-H("Syntax:  SAVE NEW_PROOF [/ NORMAL] [/ COMPRESSED]");
+H("Syntax:  SAVE NEW_PROOF <label-match> [/ <qualifier>] [/ <qualfier>]...");
 H("");
 H("The SAVE NEW_PROOF command is available in the Proof Assistant only. It");
 H("saves the proof in progress in the database buffer.  SAVE NEW_PROOF may be");
@@ -1289,6 +1317,10 @@ H("Optional qualifiers:");
 H("    / NORMAL, / COMPRESSED, / EXPLICIT, / PACKED, / OLD_COMPRESSION -");
 H("        These qualifiers are the same as for SAVE PROOF.  See");
 H("        HELP SAVE PROOF.");
+H("    / OVERRIDE - By default, SAVE NEW_PROOF will refuse to overwrite");
+H("        the proof if \"(Proof modification is discouraged.)\" is present");
+H("        in the statement's description comment.  This qualifier will");
+H("        allow the proof to be saved.");
 H("");
 H("Note that if no qualifier is specified, / NORMAL is assumed.");
 H("");

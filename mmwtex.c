@@ -1639,7 +1639,7 @@ void printTexHeader(flag texHeaderFlag)
       /* let(&tmpStr, cat("mmtheorems", (i == 1) ? "" : str(i), ".html#", */
       /* 18-Jul-2015 nm - all thm pages now have page num after mmtheorems
          since mmtheorems.html is now just the table of contents */
-      let(&tmpStr, cat("mmtheorems", str(i), ".html#",
+      let(&tmpStr, cat("mmtheorems", str((double)i), ".html#",
           statement[showStatement].labelName, NULL)); /* Link to page/stmt */
 
       /* Print the GIF/Unicode Font choice, if directories are specified */
@@ -2961,7 +2961,7 @@ void printTexLongMath(nmbrString *mathString,
       }
       let(&tmp, cat("<SPAN CLASS=i>",
           tmp,
-          str(indentationLevel + INDENTATION_OFFSET), "</SPAN>",
+          str((double)(indentationLevel + INDENTATION_OFFSET)), "</SPAN>",
           NULL));
       printLongLine(tmp, "", "\"");
       let(&tmp, "");
@@ -3145,7 +3145,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
     let(&outputFileName,
         /* cat("mmtheorems", (page > 1) ? str(page) : "", ".html", NULL)); */
         /* 8-May-2015 nm */
-        cat("mmtheorems", (page > 0) ? str(page) : "", ".html", NULL));
+        cat("mmtheorems", (page > 0) ? str((double)page) : "", ".html", NULL));
     print2("Creating %s\n", outputFileName);
     outputFilePtr = fSafeOpen(outputFileName, "w");
     if (!outputFilePtr) goto TL_ABORT; /* Couldn't open it (error msg was provided)*/
@@ -3211,7 +3211,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
         /* 9-May-2015 nm */
         ((page == 0)
             ? "TOC of Theorem List"
-            : cat("P. ", str(page), " of Theorem List", NULL)),
+            : cat("P. ", str((double)page), " of Theorem List", NULL)),
 
         " - ",
         htmlTitle,
@@ -3263,7 +3263,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
             ? "Table of Contents"
             /* : cat("(p. ", str(page), " of ", str(pages), NULL)), */
             /* 9-May-2015 nm Remove stray "(" */
-            : cat("p. ", str(page), " of ", str(pages), NULL)),
+            : cat("p. ", str((double)page), " of ", str((double)pages), NULL)),
         ")</B></FONT>",
         NULL), "", "\"");
 
@@ -3285,8 +3285,8 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
         */
         /* 8-May-2015 */
         (page > 0)
-            ? ((page - 1 > 0) ? str(page - 1) : "")
-            : ((pages > 0) ? str(pages) : ""),
+            ? ((page - 1 > 0) ? str((double)page - 1) : "")
+            : ((pages > 0) ? str((double)pages) : ""),
         ".html\">", NULL));
     /* if (page > 1) { */
     /* 8-May-2015 */
@@ -3298,7 +3298,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
     }
     let(&prevNextLinks, cat(prevNextLinks, "<A HREF=\"mmtheorems",
         (page < pages)
-            ? str(page + 1)
+            ? str((double)page + 1)
             : "",
         ".html\">", NULL));
     if (page < pages) {
@@ -3513,9 +3513,9 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
               /* let(&str3, cat("mmtheorems", (i == 1) ? "" : str(i), ".html#", */
                           /* Note that page 1 has no number after mmtheorems */
               /* 8-May-2015 nm */
-              let(&str3, cat("mmtheorems", str(i), ".html#",
+              let(&str3, cat("mmtheorems", str((double)i), ".html#",
                   /* statement[stmt].labelName, NULL)); */
-                  "mm", str(statement[stmt].pinkNumber), NULL));
+                  "mm", str((double)(statement[stmt].pinkNumber)), NULL));
                      /* Link to page/location - no theorem can be named "mm*" */
               let(&str4, "");
               str4 = pinkHTML(stmt);
@@ -3527,7 +3527,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                 partCntr++;
                 sectionCntr = 0;
                 subsectionCntr = 0;
-                let(&hugeHdr, cat("PART ", str(partCntr), "&nbsp;&nbsp;",
+                let(&hugeHdr, cat("PART ", str((double)partCntr), "&nbsp;&nbsp;",
                     hugeHdr, NULL));
 
                 printLongLine(cat(
@@ -3536,7 +3536,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                     /* In detailed section, add an anchor to reach it from
                        summary section */
                     (passNumber == 2) ?
-                         cat("<A NAME=\"", str(partCntr), "\"></A>", NULL) : "",
+                         cat("<A NAME=\"", str((double)partCntr), "\"></A>", NULL) : "",
 
                     /* 29-Jul-2008 nm Add an anchor to the "sandbox" theorem
                        for use by mmrecent.html */
@@ -3552,7 +3552,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
 
                     /* 18-Oct-2015 nm */
                     (passNumber == 1) ?
-                        cat("#", str(partCntr), NULL)  /* Link to detailed toc */
+                        cat("#", str((double)partCntr), NULL)  /* Link to detailed toc */
                         : cat(str3, "h", NULL), /* Link to thm list */
 
                     "\"><B>",
@@ -3579,7 +3579,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                 /* Create section number */  /* 21-Jun-2014 */
                 sectionCntr++;
                 subsectionCntr = 0;
-                let(&bigHdr, cat(str(partCntr), ".", str(sectionCntr),
+                let(&bigHdr, cat(str((double)partCntr), ".", str((double)sectionCntr),
                     "&nbsp;&nbsp;",
                     bigHdr, NULL));
 
@@ -3589,8 +3589,8 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                     /* In detailed section, add an anchor to reach it from
                        summary section */
                     (passNumber == 2) ?
-                         cat("<A NAME=\"", str(partCntr), ".",
-                             str(sectionCntr), "\"></A>", NULL)
+                         cat("<A NAME=\"", str((double)partCntr), ".",
+                             str((double)sectionCntr), "\"></A>", NULL)
                          : "",
 
                     /* 29-Jul-2008 nm Add an anchor to the "sandbox" theorem
@@ -3604,7 +3604,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
 
                     /* 18-Oct-2015 nm */
                     (passNumber == 1) ?
-                         cat("#", str(partCntr), ".", str(sectionCntr),
+                         cat("#", str((double)partCntr), ".", str((double)sectionCntr),
                              NULL)   /* Link to detailed toc */
                         : cat(str3, "b", NULL), /* Link to thm list */
 
@@ -3632,8 +3632,9 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
 
                 /* Create subsection number */  /* 21-Jun-2014 */
                 subsectionCntr++;
-                let(&smallHdr, cat(str(partCntr), ".", str(sectionCntr),
-                    ".", str(subsectionCntr), "&nbsp;&nbsp;",
+                let(&smallHdr, cat(str((double)partCntr), ".",
+                    str((double)sectionCntr),
+                    ".", str((double)subsectionCntr), "&nbsp;&nbsp;",
                     smallHdr, NULL));
 
                 printLongLine(cat("&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; ",
@@ -3882,8 +3883,8 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                  /* " ALIGN=CENTER><FONT SIZE=\"+1\"><B>", */
                  /* 9-May-2015 nm */
                  "><CENTER><FONT SIZE=\"+1\"><B>",
-                 "<A NAME=\"mm", str(statement[s].pinkNumber), "h\"></A>",
-                                             /* Anchor for table of contents */
+                 "<A NAME=\"mm", str((double)(statement[s].pinkNumber)),
+                     "h\"></A>",   /* Anchor for table of contents */
                  (vstring)(pntrHugeHdr[s]),
                  /* "</B></FONT></TD></TR>", */
                  /* 9-May-2015 nm */
@@ -3949,8 +3950,8 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                  /* " ALIGN=CENTER><FONT SIZE=\"+1\"><B>", */
                  /* 9-May-2015 nm */
                  "><CENTER><FONT SIZE=\"+1\"><B>",
-                 "<A NAME=\"mm", str(statement[s].pinkNumber), "b\"></A>",
-                                             /* Anchor for table of contents */
+                 "<A NAME=\"mm", str((double)(statement[s].pinkNumber)),
+                     "b\"></A>",      /* Anchor for table of contents */
                  (vstring)(pntrBigHdr[s]),
                  /* "</B></FONT></TD></TR>", */
                  /* 9-May-2015 nm */
@@ -4016,8 +4017,8 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                  /* " ALIGN=CENTER><B>", */
                  /* 9-May-2015 nm */
                  "><CENTER><B>",
-                 "<A NAME=\"mm", str(statement[s].pinkNumber), "s\"></A>",
-                                             /* Anchor for table of contents */
+                 "<A NAME=\"mm", str((double)(statement[s].pinkNumber)),
+                     "s\"></A>",    /* Anchor for table of contents */
                  (vstring)(pntrSmallHdr[s]),
                  /* "</B></TD></TR>", */
                  /* 9-May-2015 nm */
@@ -4243,13 +4244,13 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
         let(&str1,
             /* (p == 1) ? "Contents + 1" : str(p) */ /* 31-Jul-2006 nm */
             /* 8-May-2015 nm */
-            (p == 0) ? "Contents" : str(p)
+            (p == 0) ? "Contents" : str((double)p)
             ); /* Current page shouldn't have link to self */
       } else {
         let(&str1, cat("<A HREF=\"mmtheorems",
             /* (p == 1) ? "" : str(p), */
             /* 8-May-2015 nm */
-            (p == 0) ? "" : str(p),
+            (p == 0) ? "" : str((double)p),
             /* (p == 1) ? ".html#mmtc\">" : ".html\">", */ /* 31-Aug-2006 nm */
             ".html\">", /* 8-Feb-2007 nm Friendlier, because you can start
                   scrolling through the page before it finishes loading,
@@ -4257,7 +4258,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                   when it's done. */
             /* (p == 1) ? "Contents + 1" : str(p) */ /* 31-Jul-2006 nm */
             /* 8-May-2015 nm */
-            (p == 0) ? "Contents" : str(p)
+            (p == 0) ? "Contents" : str((double)p)
             , "</A>", NULL));
       }
       let(&str1, cat(str1, PINK_NBSP, str3, NULL));
@@ -4574,7 +4575,7 @@ vstring pinkHTML(long statemNum)
   /* With style sheet */
   let(&htmlCode, cat(PINK_NBSP,
       "<SPAN CLASS=p>",
-      (statemMap != -1) ? str(statemMap) : "(future)", "</SPAN>", NULL));
+      (statemMap != -1) ? str((double)statemMap) : "(future)", "</SPAN>", NULL));
 #endif
 
 #ifdef RAINBOW_OPTION
@@ -4583,7 +4584,7 @@ vstring pinkHTML(long statemNum)
   hexValue = spectrumToRGB(statemMap, statement[statements].pinkNumber);
   let(&htmlCode, cat(PINK_NBSP,
       "<SPAN CLASS=r STYLE=\"color:#", hexValue, "\">",
-      (statemMap != -1) ? str(statemMap) : "(future)", "</SPAN>", NULL));
+      (statemMap != -1) ? str((double)statemMap) : "(future)", "</SPAN>", NULL));
 #endif
   let(&hexValue, "");
 
@@ -4806,11 +4807,11 @@ vstring spectrumToRGB(long color, long maxColor) {
   if (color < 1 || color > maxColor) {
     bug(2327);
   }
-  fraction = (1.0 * (color - 1)) / maxColor;
+  fraction = (1.0 * ((double)color - 1)) / (double)maxColor;
                                    /* Fractional position in "spectrum" */
   partition = (long)(PARTITIONS * fraction);  /* Partition number (integer) */
   if (partition >= PARTITIONS) bug(2325); /* Roundoff error? */
-  fractionInPartition = 1.0 * (fraction - (1.0 * partition) / PARTITIONS)
+  fractionInPartition = 1.0 * (fraction - (1.0 * (double)partition) / PARTITIONS)
       * PARTITIONS; /* The fraction of this partition it covers */
   red = (long)(1.0 * (redRef[partition] +
           fractionInPartition *

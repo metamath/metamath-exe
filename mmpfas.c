@@ -63,10 +63,10 @@ void interactiveMatch(long step, long maxEssential)
   nmbrString *timeoutList = NULL_NMBRSTRING;
   long stmt, matchListPos, timeoutListPos;
 
-  printLongLine(cat("Step ", str(step + 1), ":  ", nmbrCvtMToVString(
+  printLongLine(cat("Step ", str((double)step + 1), ":  ", nmbrCvtMToVString(
       (proofInProgress.target)[step]), NULL), "  ", " ");
   if (nmbrLen((proofInProgress.user)[step])) {
-    printLongLine(cat("Step ", str(step + 1), "(user):  ", nmbrCvtMToVString(
+    printLongLine(cat("Step ", str((double)step + 1), "(user):  ", nmbrCvtMToVString(
         (proofInProgress.user)[step]), NULL), "  ", " ");
   }
   /* Allocate a flag for each step to be tested */
@@ -115,8 +115,8 @@ void interactiveMatch(long step, long maxEssential)
 
 #define MATCH_LIMIT 100
   if (matchCount > MATCH_LIMIT) {
-    let(&tmpStr1, cat("There are ", str(matchCount), " matches for step ",
-      str(step + 1), ".  View them (Y, N) <N>? ", NULL));
+    let(&tmpStr1, cat("There are ", str((double)matchCount), " matches for step ",
+      str((double)step + 1), ".  View them (Y, N) <N>? ", NULL));
     tmpStr2 = cmdInput1(tmpStr1);
     let(&tmpStr1, "");
 
@@ -156,7 +156,7 @@ void interactiveMatch(long step, long maxEssential)
                 0, /*explicitTargets*/
                 0 /*statemNum, used only if explicitTargets*/));
 
-  printLongLine(cat("Step ", str(step + 1), " matches statements:  ", tmpStr1,
+  printLongLine(cat("Step ", str((double)step + 1), " matches statements:  ", tmpStr1,
       NULL), "  ", " ");
   if (timeoutCount) {
     printLongLine(cat("In addition, there were unification timeouts with the",
@@ -174,7 +174,7 @@ void interactiveMatch(long step, long maxEssential)
   } else {
 
     while (1) {
-      let(&tmpStr3, cat("What statement to select for step ", str(step + 1),
+      let(&tmpStr3, cat("What statement to select for step ", str((double)step + 1),
           " (<return> to bypass)? ", NULL));
       tmpStr2 = cmdInput1(tmpStr3);
       let(&tmpStr3, "");
@@ -268,7 +268,9 @@ nmbrString *proveByReplacement(long prfStmt,
     flag noDistinct, /* 1 means don't try statements with $d's */
     flag dummyVarFlag, /* 0 means no dummy vars are in prfStmt */
     flag searchMethod, /* 1 means to try proveFloating on $e's also */
-    long improveDepth /* depth for proveFloating() */
+    long improveDepth, /* depth for proveFloating() */
+    /* 3-May-2016 nm */
+    flag overrideFlag /* 1 means to override usage locks */
     )
 {
 
@@ -280,6 +282,10 @@ nmbrString *proveByReplacement(long prfStmt,
   for (trialStmt = 1; trialStmt < prfStmt; trialStmt++) {
 
     if (quickMatchFilter(trialStmt, prfMath, dummyVarFlag) == 0) continue;
+
+    /* 3-May-2016 nm */
+    /* Skip statements with locked usage (the above skips non-$a,p) */
+    if (overrideFlag == 0 && getMarkupFlag(trialStmt, 2/*usage*/)) continue;
 
     /* noDistinct is set by NO_DISTICT qualifier in IMPROVE */
     if (noDistinct) {
@@ -295,9 +301,21 @@ nmbrString *proveByReplacement(long prfStmt,
         prfStmt, 0,/*scan whole proof to maximize chance of a match*/
         noDistinct,
         searchMethod,
-        improveDepth);
+        improveDepth,
+        overrideFlag  /* 3-May-2016 nm */
+        );
     if (nmbrLen(trialPrf) > 0) {
       /* A proof for the step was found. */
+
+      /* 3-May-2016 nm */
+      /* Inform user that we're using a statement with locked usage */
+      if (overrideFlag == 1 && getMarkupFlag(trialStmt, 2/*usage*/)) {
+        print2("\n");
+        print2(">>> ?Warning:  Assigning restricted statement \"%s\".\n",
+            statement[trialStmt].labelName);
+        print2("\n");
+      }
+
       return trialPrf;
     }
     /* nmbrLet(&trialPrf, NULL_NMBRSTRING); */
@@ -313,7 +331,9 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
    matches, instead of whole proof, for faster speed (used by MINIMIZE_WITH) */
     flag noDistinct, /* 1 means proveFloating won't try statements with $d's */
     flag searchMethod, /* 1 means to try proveFloating on $e's also */
-    long improveDepth /* Depth for proveFloating */
+    long improveDepth, /* Depth for proveFloating */
+    /* 3-May-2016 nm */
+    flag overrideFlag  /* 1 means to override statement usage locks */
     ) {
   nmbrString *prfMath; /* Pointer only */
   long reqHyps;
@@ -354,6 +374,11 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
                                                             /* 4-Sep-2012 nm */
   vstring tryFloatingProofLater = "";  /* 'N' or 'Y' */     /* 4-Sep-2012 nm */
   flag hasDummyVar;     /* 4-Sep-2012 nm */
+
+  /* 3-May-2016 nm */
+  /* If we are overriding locked usage, a warning has already been printed. */
+  /* If we are not, then we should never get here. */
+  if (overrideFlag == 0 && getMarkupFlag(replStatemNum, 2/*usage*/)) bug(1868);
 
   /* Initialization to avoid compiler warning (should not be theoretically
      necessary) */
@@ -837,7 +862,9 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
             saveUnifTrialCount = unifTrialCount; /* Save unification timeout */
             hypProofPtr =
                 proveFloating(hypMakeSubstList[hypSortMap[hyp]],
-                provStmtNum, improveDepth, prfStep, noDistinct);
+                    provStmtNum, improveDepth, prfStep, noDistinct,
+                    overrideFlag /* 3-May-2016 nm */
+                    );
             unifTrialCount = saveUnifTrialCount; /* Restore unif. timeout */
             if (nmbrLen(hypProofPtr)) { /* Proof was found */
               nmbrLet((nmbrString **)(&hypProofList[hypSortMap[hyp]]),
@@ -889,7 +916,9 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
             saveUnifTrialCount = unifTrialCount; /* Save unification timeout */
             hypProofPtr =
                 proveFloating(hypMakeSubstList[hypSortMap[i]],
-                provStmtNum, improveDepth, prfStep, noDistinct);
+                    provStmtNum, improveDepth, prfStep, noDistinct,
+                    overrideFlag  /* 3-May-2016 nm */
+                    );
             unifTrialCount = saveUnifTrialCount; /* Restore unif. timeout */
             if (nmbrLen(hypProofPtr)) { /* Proof was found */
               nmbrLet((nmbrString **)(&hypProofList[hypSortMap[i]]),
@@ -1401,7 +1430,11 @@ char checkMStringMatch(nmbrString *mString, long step)
 /* The caller must deallocate the returned nmbrString. */
 nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
     long step, /* 0 means step 1; used for messages */
-    flag noDistinct /* 1 means don't try statements with $d's  16-Aug-04 */)
+    flag noDistinct, /* 1 means don't try statements with $d's  16-Aug-04 */
+    /* 3-May-2016 nm */
+    flag overrideFlag /* 1 means to override usage locks, 2 means to
+              override silently (for web-page syntax breakdown in mmcmds.c) */
+    )
 {
 
   long reqHyps, optHyps;
@@ -1460,7 +1493,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
 /*??? Document in Metamath manual. */
     printLongLine(cat(
        "?Warning:  A possible infinite loop was found in $f hypothesis ",
-       "backtracking (i.e., depth > ", str(MAX_DEPTH),
+       "backtracking (i.e., depth > ", str((double)MAX_DEPTH),
        ").  The last proof attempt was for math string \"",
        nmbrCvtMToVString(mString),
        "\".  Your axiom system may have an error ",
@@ -1555,6 +1588,12 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
 
     /* 22-Aug-2012 nm Separated quick filter for reuse in other functions */
     if (quickMatchFilter(stmt, mString, 0/*no dummy vars*/) == 0) continue;
+
+    /* 3-May-2016 nm */
+    if (!overrideFlag && getMarkupFlag(stmt, 2/*usage*/)) {
+      /* Skip restricted (usage-locked) statements */
+      continue;
+    }
 
     /* 22-Aug-2012 nm Now done with quickMatchFilter() ****
     if (statement[stmt].type != (char)a_ &&
@@ -1727,7 +1766,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
 
 /*E*/unNum++;
 /*E*/if (db8)print2("%s\n", cat(space(depth+2), "Testing unification ",
-/*E*/   str(unNum), " statement ", statement[stmt].labelName,
+/*E*/   str((double)unNum), " statement ", statement[stmt].labelName,
 /*E*/   ": ", nmbrCvtMToVString(scheme), NULL));
       reEntryFlag = 1; /* For next unifyH() */
 
@@ -1737,7 +1776,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
       breakFlag = 0;
       for (hyp = 0; hyp < schReqHyps; hyp++) {
 /*E*/if (db8)print2("%s\n", cat(space(depth+2), "Proving hyp. ",
-/*E*/   str(hypOrdMap[hyp]), "(#", str(hyp), "):  ",
+/*E*/   str((double)(hypOrdMap[hyp])), "(#", str((double)hyp), "):  ",
 /*E*/   nmbrCvtMToVString(hypList[hypOrdMap[hyp]]), NULL));
         makeSubstPtr = makeSubstUnif(&tmpFlag, hypList[hypOrdMap[hyp]],
             stateVector);
@@ -1746,7 +1785,9 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
 
         saveUnifTrialCount = unifTrialCount; /* Save unification timeout */
         hypProofPtr = proveFloating(makeSubstPtr, statemNum, maxEDepth, step,
-            noDistinct);
+            noDistinct,
+            overrideFlag /* 3-May-2016 nm */
+            );
         unifTrialCount = saveUnifTrialCount; /* Restore unification timeout */
 
         nmbrLet(&makeSubstPtr, NULL_NMBRSTRING); /* Deallocate */
@@ -1801,6 +1842,22 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
       for (hyp = 0; hyp < schReqHyps; hyp++) {
         nmbrLet(&proof, nmbrCat(proof, hypProofList[hyp], NULL));
       }
+
+      if (getMarkupFlag(stmt, 2/*usage*/)) {
+        switch (overrideFlag) {
+          case 0: bug(1869); break; /* Should never get here if no override */
+          case 2: break; /* Accept overrided silently (in mmcmds.c syntax
+                            breakdown calls for $ web pages) */
+          case 1:  /* Normal override */
+            print2("\n");
+            print2(">>> ?Warning:  Assigning restricted statement \"%s\".\n",
+                statement[stmt].labelName);
+            print2("\n");
+            break;
+          default: bug(1870); /* Illegal value */
+        } /* end switch (overrideFlag) */
+      } /* end if (getMarkupFlag(stmt, 2)) */
+
       nmbrLet(&proof, nmbrAddElement(proof, stmt)); /* Complete the proof */
 
       /* Deallocate hypothesis schemes and proofs */
@@ -1999,7 +2056,8 @@ void minimizeProof(long repStatemNum, long prvStatemNum,
             0/*noDistinct=0 OK since searchMethod=0 will only
                call proveFloating for $f's */,
             0/*searchMethod=0: call proveFloating only for $f's*/,
-            0/*improveDepth=0 OK since we call proveFloating only for $f's*/
+            0/*improveDepth=0 OK since we call proveFloating only for $f's*/,
+            2/*overrideFlag=2(silent) OK since MINIMIZE_WITH checked it*/
             );
       }
       if (!nmbrLen(newSubProofPtr)) continue;
@@ -2302,7 +2360,7 @@ void assignKnownSteps(long startStep, long sbProofLen)
         /*bug(1813);*/ /* Not poss. */
         /* Actually this is possible if the starting proof had an error
            in it.  Give the user some information then give up */
-        printLongLine(cat("?Error in step ", str(pos + 1),
+        printLongLine(cat("?Error in step ", str((double)pos + 1),
             ":  Could not simultaneously unify the hypotheses of \"",
             statement[stmt].labelName, "\":\n    ",
             nmbrCvtMToVString(scheme),
@@ -2535,7 +2593,7 @@ char interactiveUnify(nmbrString *schemeA, nmbrString *schemeB,
     goto returnPoint;
   }
   if (unifCount > 1) {
-    printLongLine(cat("There are ", str(unifCount),
+    printLongLine(cat("There are ", str((double)unifCount),
       " possible unifications.  Please select the correct one or QUIT if",
       " you want to UNIFY later.", NULL),
         "    ", " ");
@@ -3038,7 +3096,7 @@ void declareDummyVars(long numNewVars)
     mathToken[mathTokens + dummyVars].tokenName = "";
                                   /* Initialize vstring before let() */
     let(&mathToken[mathTokens + dummyVars].tokenName,
-        cat("$", str(dummyVars), NULL));
+        cat("$", str((double)dummyVars), NULL));
     mathToken[mathTokens + dummyVars].length =
         (long)strlen(mathToken[mathTokens + dummyVars].tokenName);
     mathToken[mathTokens + dummyVars].scope = currentScope;
@@ -3308,7 +3366,7 @@ long processUndoStack(struct pip_struct *proofStruct,
         if (stackOverflowed == 0) {
           print2("There is nothing to undo.\n");
         } else {
-          printLongLine(cat("Exceeded maximum of ", str(stackSize - 1),
+          printLongLine(cat("Exceeded maximum of ", str((double)stackSize - 1),
               " UNDOs.  To increase the number, see HELP SET UNDO.",
               NULL), "", " ");
         }

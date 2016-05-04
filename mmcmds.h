@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2015  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2016  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -67,8 +67,18 @@ void writeInput(flag cleanFlag, flag reformatFlag);
 void writeDict(void);
 void eraseSource(void);
 void verifyProofs(vstring labelMatch, flag verifyFlag);
+
+
+/* 7-Nov-2015 nm Added this function for date consistency */
+/* If checkFiles = 0, do not open external files.
+   If checkFiles = 1, check mm*.html, presence of gifs, etc. */
 void verifyMarkup(vstring labelMatch, flag dateSkip,
     flag fileSkip); /* 7-Nov-2015 nm */
+
+/* 3-May-2016 nm */
+/* List "locked" statements with "(Proof modification is discouraged." and
+   "(New usage is discourged.)" comment markup tags. */
+void showRestricted(void);
 
 /* 14-Sep-2012 nm */
 /* Take a relative step FIRST, LAST, +nn, -nn (relative to the unknown

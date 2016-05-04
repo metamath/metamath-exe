@@ -27,6 +27,12 @@ mmdata.c
 flag listMode = 0; /* 0 = metamath, 1 = list utility */
 flag toolsMode = 0; /* In metamath: 0 = metamath, 1 = text tools utility */
 
+
+/* 4-May-2015 nm */
+/* For use by getMarkupFlag() */
+vstring proofLockedMarkup = "";
+vstring usageLockedMarkup = "";
+
 /* Global variables related to current statement */
 int currentScope = 0;
 long beginScopeStatementNum = 0;
@@ -117,7 +123,7 @@ void *poolFixedMalloc(long size /* bytes */)
   if (!memFreePoolSize) { /* The pool is empty; we must allocate memory */
     ptr = malloc( 3 * sizeof(long) + (size_t)size);
     if (!ptr) outOfMemory(
-        cat("#25 (poolFixedMalloc ", str(size), ")", NULL));
+        cat("#25 (poolFixedMalloc ", str((double)size), ")", NULL));
 
     ptr = (long *)ptr + 3;
     ((long *)ptr)[-1] = size; /* Actual size */
@@ -144,7 +150,7 @@ void *poolFixedMalloc(long size /* bytes */)
       memFreePoolPurge(0);
       ptr = malloc( 3 * sizeof(long) + (size_t)size);
       if (!ptr) outOfMemory(
-          cat("#26 (poolMalloc ", str(size), ")", NULL));
+          cat("#26 (poolMalloc ", str((double)size), ")", NULL));
                                             /* Nothing more can be done */
     }
     ptr = (long *)ptr + 3;
@@ -174,7 +180,7 @@ void *poolMalloc(long size /* bytes */)
   if (!memFreePoolSize) { /* The pool is empty; we must allocate memory */
     ptr = malloc( 3 * sizeof(long) + (size_t)size);
     if (!ptr) {
-      outOfMemory(cat("#27 (poolMalloc ", str(size), ")", NULL));
+      outOfMemory(cat("#27 (poolMalloc ", str((double)size), ")", NULL));
     }
     ptr = (long *)ptr + 3;
     ((long *)ptr)[-1] = size; /* Actual size */
@@ -198,7 +204,7 @@ void *poolMalloc(long size /* bytes */)
         memFreePoolPurge(0);
         ptr = malloc( 3 * sizeof(long) + (size_t)size);
         if (!ptr) outOfMemory(
-            cat("#28 (poolMalloc ", str(size), ")", NULL));
+            cat("#28 (poolMalloc ", str((double)size), ")", NULL));
                                               /* Nothing more can be done */
       }
       ptr = (long *)ptr + 3;
@@ -228,7 +234,7 @@ void *poolMalloc(long size /* bytes */)
           (size_t)memUsedPoolTmpMax * sizeof(void *));
     }
     if (!memUsedPoolTmpPtr) {
-      outOfMemory(cat("#29 (poolMalloc ", str(memUsedPoolTmpMax), ")", NULL));
+      outOfMemory(cat("#29 (poolMalloc ", str((double)memUsedPoolTmpMax), ")", NULL));
     } else {
       /* Reallocation successful */
       memUsedPool = memUsedPoolTmpPtr;
@@ -292,7 +298,7 @@ void poolFree(void *ptr)
     }
     if (!memFreePoolTmpPtr) {
 /*E*/if(db9)printf("Realloc failed\n");
-      outOfMemory(cat("#30 (poolFree ", str(memFreePoolTmpMax), ")", NULL));
+      outOfMemory(cat("#30 (poolFree ", str((double)memFreePoolTmpMax), ")", NULL));
     } else {
       /* Reallocation successful */
       memFreePool = memFreePoolTmpPtr;
@@ -727,8 +733,8 @@ flag matches(vstring testString, vstring pattern, char wildCard,
 /*********** Number string functions *******************************/
 /*******************************************************************/
 
-int nmbrTempAllocStackTop = 0;     /* Top of stack for nmbrTempAlloc functon */
-int nmbrStartTempAllocStack = 0;   /* Where to start freeing temporary allocation
+long nmbrTempAllocStackTop = 0;     /* Top of stack for nmbrTempAlloc functon */
+long nmbrStartTempAllocStack = 0;   /* Where to start freeing temporary allocation
                                     when nmbrLet() is called (normally 0, except in
                                     special nested vstring functions) */
 nmbrString *nmbrTempAllocStack[M_MAX_ALLOC_STACK];
@@ -1286,7 +1292,7 @@ vstring nmbrCvtRToVString(nmbrString *proof,
             ((explicitTargets == 1) ? statement[targetHyps[step]].labelName : ""),
             ((explicitTargets == 1) ? "=" : ""),
 
-            str(localLabelNames[stmt]), " ", NULL));
+            str((double)(localLabelNames[stmt])), " ", NULL));
       } else {
         if (stmt != -(long)'?') bug(1391); /* Must be an unknown step */
         let(&tmpStr, cat(
@@ -1303,14 +1309,14 @@ vstring nmbrCvtRToVString(nmbrString *proof,
         /* This statement declares a local label */
         /* First, get a name for the local label, using the next integer that
            does not match any integer used for a statement label. */
-        let(&tmpStr,str(nextLocLabNum));
+        let(&tmpStr, str((double)nextLocLabNum));
         while (1) {
           voidPtr = (void *)bsearch(tmpStr,
               allLabelKeyBase, (size_t)numAllLabelKeys,
               sizeof(long), labelSrchCmp);
           if (!voidPtr) break; /* It does not conflict */
           nextLocLabNum++; /* Try the next one */
-          let(&tmpStr,str(nextLocLabNum));
+          let(&tmpStr, str((double)nextLocLabNum));
         }
         localLabelNames[step] = nextLocLabNum;
         let(&tmpStr, cat(tmpStr, ":", NULL));
@@ -1403,7 +1409,7 @@ vstring nmbrCvtAnyToVString(nmbrString *s)
   startTempAllocStack = tempAllocStackTop;
 
   for (i = 1; i <= nmbrLen(s); i++) {
-    let(&tmpStr,cat(tmpStr," ",str(s[i-1]),NULL));
+    let(&tmpStr,cat(tmpStr," ", str((double)(s[i-1])),NULL));
   }
 
   startTempAllocStack = saveTempAllocStack;
@@ -2323,8 +2329,8 @@ vstring compressProof(nmbrString *proof, long statemNum,
 /*********** Pointer string functions ******************************/
 /*******************************************************************/
 
-int pntrTempAllocStackTop = 0;     /* Top of stack for pntrTempAlloc functon */
-int pntrStartTempAllocStack = 0;   /* Where to start freeing temporary allocation
+long pntrTempAllocStackTop = 0;     /* Top of stack for pntrTempAlloc functon */
+long pntrStartTempAllocStack = 0;   /* Where to start freeing temporary allocation
                                     when pntrLet() is called (normally 0, except in
                                     special nested vstring functions) */
 pntrString *pntrTempAllocStack[M_MAX_ALLOC_STACK];
@@ -2940,6 +2946,89 @@ long getSourceIndentation(long statemNum) {
 } /* getSourceIndentation */
 
 
+/* Returns 0 or 1 to indicate absence or presence of an indicator in
+   the comment of the statement. */
+/* type = 1 means get the proof restriction indicator
+   type = 2 means get the usage restriction indicator
+   type = 0 means to reset everything (statemeNum is ignored) */
+flag getMarkupFlag(long statemNum, flag type) {
+  /* For speedup, the algorithm searches a statement's comment for markup
+     matches only the first time, then saves the result for subsequent calls
+     for that statement. */
+  static char init = 0;
+  static vstring commentSearchedFlags = ""; /* Y if comment was searched */
+  static vstring proofFlags = "";  /* Y if proof restriction, else N */
+  static vstring usageFlags = "";  /* Y if usage restriction, else N */
+  vstring str1 = "";
+  /* These are global in mmdata.h
+#define PROOF_LOCKED_MARKUP "(Proof modification is discouraged.)"
+#define USAGE_LOCKED_MARKUP "(New usage is discouraged.)"
+  extern vstring proofLockedMarkup;
+  extern vstring usageLockedMarkup;
+  */
+
+  if (type == 0) { /* Initialize */ /* Should be called by RESET command */
+    let(&commentSearchedFlags, "");
+    let(&proofFlags, "");
+    let(&usageFlags, "");
+    init = 0;
+    return 0;
+  }
+
+  if (init == 0) {
+    init = 1;
+    /* The global variables proofLockedMarkup and usageLockedMarkup are
+       initialized to "" like all vstrings to allow them to be reassigned
+       by a possible future SET command.  So the first time this is called
+       we need to assign them to the default markup strings. */
+    if (proofLockedMarkup[0] == 0) {
+      let(&proofLockedMarkup, PROOF_LOCKED_MARKUP);
+    }
+    if (usageLockedMarkup[0] == 0) {
+      let(&usageLockedMarkup, USAGE_LOCKED_MARKUP);
+    }
+    /* Initialize flag strings */
+    let(&commentSearchedFlags, string(statements + 1, 'N'));
+    let(&proofFlags, space(statements + 1));
+    let(&usageFlags, space(statements + 1));
+  }
+
+  if (statemNum < 1 || statemNum > statements) bug(1392);
+
+  if (commentSearchedFlags[statemNum] == 'N') {
+    if (statement[statemNum].type == f_) {
+      /* Any comment before a $f statement is assumed irrelevant */
+      proofFlags[statemNum] = 'N';
+      usageFlags[statemNum] = 'N';
+    } else {
+      if (statement[statemNum].type != a_ && statement[statemNum].type != p_) {
+        bug(1393);
+      }
+      str1 = getDescription(statemNum);  /* str1 must be deallocated here */
+      /* Strip linefeeds and reduce spaces */
+      let(&str1, edit(str1, 4 + 8 + 16 + 128));
+      if (instr(1, str1, proofLockedMarkup)) {
+        proofFlags[statemNum] = 'Y';
+      } else {
+        proofFlags[statemNum] = 'N';
+      }
+      if (instr(1, str1, usageLockedMarkup)) {
+        usageFlags[statemNum] = 'Y';
+      } else {
+        usageFlags[statemNum] = 'N';
+      }
+      let(&str1, ""); /* Deallocate */
+    }
+    commentSearchedFlags[statemNum] = 'Y';
+  }
+
+  if (type == 1) return (proofFlags[statemNum] == 'Y') ? 1 : 0;
+  if (type == 2) return (usageFlags[statemNum] == 'Y') ? 1 : 0;
+  bug(1394);
+  return 0;
+} /* getMarkupFlag */
+
+
 /* Returns the last embedded comment (if any) in the label section of
    a statement.  This is used to provide the user with information in the SHOW
    STATEMENT command.  The caller must deallocate the result. */
@@ -3111,7 +3200,7 @@ flag getContrib(long stmtNum,
         */
         "?Warning:  There is no \"", edit(CONTRIB_MATCH, 8+128),
         "...)\" in the comment above statement ",
-        str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
 
@@ -3125,7 +3214,7 @@ flag getContrib(long stmtNum,
         "?Warning:  There is more than one \"", edit(CONTRIB_MATCH, 8+128),
         "...)\" ",
         "in the comment above statement ",
-        str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
 
@@ -3141,7 +3230,7 @@ flag getContrib(long stmtNum,
         edit(REVISE_MATCH, 8+128) , "...)\" or \"",
         edit(SHORTEN_MATCH, 8+128) ,
         "...)\" entries in the comment above statement ",
-        str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
         "  The last one of each type was used.",
         NULL), "    ", " ");
   }
@@ -3160,7 +3249,7 @@ flag getContrib(long stmtNum,
         edit(REVISE_MATCH, 8+128) , "...)\" or \"",
         edit(SHORTEN_MATCH, 8+128) ,
         "...)\" in the comment above statement ",
-        str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
 
@@ -3181,7 +3270,7 @@ flag getContrib(long stmtNum,
         edit(REVISE_MATCH, 8+128) , "...)\", or \"",
         edit(SHORTEN_MATCH, 8+128),
         "...)\" entry in the comment above statement ",
-        str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
 
@@ -3198,7 +3287,7 @@ flag getContrib(long stmtNum,
           "?Warning: There is a formatting error in the \"",
           edit(CONTRIB_MATCH, 8+128),  "...)\" date \"", *contribDate, "\""
           " in the comment above statement ",
-          str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+          str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
           NULL), "    ", " ");
     }
   }
@@ -3216,7 +3305,7 @@ flag getContrib(long stmtNum,
           "?Warning: There is a formatting error in the \"",
           edit(REVISE_MATCH, 8+128) , "...)\" date \"", *reviseDate, "\""
           " in the comment above statement ",
-          str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+          str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
           NULL), "    ", " ");
     }
   }
@@ -3234,7 +3323,7 @@ flag getContrib(long stmtNum,
           "?Warning: There is a formatting error in the \"",
           edit(SHORTEN_MATCH, 8+128) , "...)\" date \"", *shortenDate, "\""
           " in the comment above statement ",
-          str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+          str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
           NULL), "    ", " ");
     }
   }
@@ -3255,7 +3344,7 @@ flag getContrib(long stmtNum,
         edit(REVISE_MATCH, 8+128), "...)\" or \"",
         edit(SHORTEN_MATCH, 8+128),
         "...)\" date in the comment above statement ",
-        str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
 
@@ -3272,7 +3361,7 @@ flag getContrib(long stmtNum,
           "?Warning:  The \"", edit(REVISE_MATCH, 8+128), "...)\" and \"",
           edit(SHORTEN_MATCH, 8+128),
          "...)\" dates are in the wrong order in the comment above statement ",
-          str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+          str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
           NULL), "    ", " ");
     }
   }
@@ -3292,7 +3381,7 @@ flag getContrib(long stmtNum,
         *contributor, "/", *reviser, "/", *shortener, "] ",
         */
         "?Warning:  There is no date below the proof in statement ",
-        str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
   if (tmpDate2[0] == 0
@@ -3308,7 +3397,7 @@ flag getContrib(long stmtNum,
         edit(SHORTEN_MATCH, 8+128),
         "...)\" but there is only one date below the proof",
         " in statement ",
-        str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
   if (tmpDate2[0] != 0 && (*reviseDate)[0] == 0 && (*shortenDate)[0] == 0) {
@@ -3322,7 +3411,7 @@ flag getContrib(long stmtNum,
         edit(REVISE_MATCH, 8+128), "...)\" or \"",
         edit(SHORTEN_MATCH, 8+128),
         "...)\" entry in statement ",
-        str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
   if (tmpDate2[0] != 0
@@ -3340,7 +3429,7 @@ flag getContrib(long stmtNum,
         "nor a \"", edit(SHORTEN_MATCH, 8+128), "...)\" date ",
         "matches the date ", tmpDate1,
         " below the proof in statement ",
-        str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
   if (tmpDate2[0] != 0
@@ -3356,7 +3445,7 @@ flag getContrib(long stmtNum,
         edit(REVISE_MATCH, 8+128), "...)\" date ", *reviseDate,
         " is later than the date ", tmpDate1,
         " below the proof in statement ",
-        str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
   if (tmpDate2[0] != 0
@@ -3372,7 +3461,7 @@ flag getContrib(long stmtNum,
         edit(SHORTEN_MATCH, 8+128), "...)\" date ", *shortenDate,
         " is later than the date ", tmpDate1,
         " below the proof in statement ",
-        str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
   if (tmpDate2[0] != 0 && compareDates(tmpDate2, tmpDate1) != -1) {
@@ -3385,7 +3474,7 @@ flag getContrib(long stmtNum,
         "?Warning:  The first date below the proof, ", tmpDate1,
         ", is not newer than the second, ", tmpDate2,
         ", in statement ",
-        str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
   if (tmpDate2[0] == 0) {
@@ -3405,7 +3494,7 @@ flag getContrib(long stmtNum,
         *contribDate,
         " doesn't match the date ", tmpDate0,
         " below the proof in statement ",
-        str(stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
   /***** End of section to delete if date after proof is dropped */
@@ -3480,8 +3569,8 @@ flag parseDate(vstring dateStr, long *dd, long *mmm, long *yyyy) {
 /* Build date from numeric fields.  mmm should be a number from 1 to 12.
    There is no error-checking. */
 void buildDate(long dd, long mmm, long yyyy, vstring *dateStr) {
-  let(&(*dateStr), cat(str(dd), "-", mid(MONTHS, mmm * 3 - 2, 3), "-",
-      str(yyyy), NULL));
+  let(&(*dateStr), cat(str((double)dd), "-", mid(MONTHS, mmm * 3 - 2, 3), "-",
+      str((double)yyyy), NULL));
   return;
 } /* buildDate */
 

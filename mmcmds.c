@@ -82,8 +82,8 @@ void typeStatement(long showStmt,
   if (!showStmt) bug(225); /* Must be 1 or greater */
 
   if (!commentOnlyFlag && !briefFlag) {
-    let(&str1, cat("Statement ", str(showStmt),
-        " is located on line ", str(statement[showStmt].lineNum),
+    let(&str1, cat("Statement ", str((double)showStmt),
+        " is located on line ", str((double)(statement[showStmt].lineNum)),
         " of the file ", NULL));
     if (!texFlag) {
       printLongLine(cat(str1,
@@ -93,7 +93,7 @@ void typeStatement(long showStmt,
         (statement[showStmt].pinkNumber == 0) ?   /* !=0 means $a or $p */
            "" :
            cat("  Its statement number for HTML pages is ",
-               str(statement[showStmt].pinkNumber), ".", NULL),
+               str((double)(statement[showStmt].pinkNumber)), ".", NULL),
         NULL), "", " ");
     } else {
       if (!htmlFlg) let(&printString, "");
@@ -398,7 +398,7 @@ void typeStatement(long showStmt,
             ) continue;
 
         if (!texFlag) {
-          let(&str2, cat(str(k), " ", NULL));
+          let(&str2, cat(str((double)k), " ", NULL));
         } else {
           let(&str2, "  ");
         }
@@ -439,7 +439,7 @@ void typeStatement(long showStmt,
   type = statement[showStmt].type;
   if (type == p_) let(&str1, " $= ...");
   if (!texFlag)
-    let(&str2, cat(str(showStmt), " ", NULL));
+    let(&str2, cat(str((double)showStmt), " ", NULL));
   else
     let(&str2, "  ");
   let(&str2, cat(str2, statement[showStmt].labelName,
@@ -824,7 +824,10 @@ void typeStatement(long showStmt,
         nmbrTmpPtr2 = proveFloating(nmbrTmpPtr1 /*mString*/,
             showStmt /*statemNum*/, 0 /*maxEDepth*/,
             0, /*step:  0 = step 1 */ /*For messages*/
-            0  /*not noDistinct*/);
+            0,  /*not noDistinct*/
+            /* 3-May-2016 nm */
+            2 /* override locked-usage statements silently */
+            );
 
         if (nmbrLen(nmbrTmpPtr2)) {
           /* A proof for the step was found. */
@@ -1623,7 +1626,7 @@ void typeProof(long statemNum,
       if (stmt <= -1000) {
         stmt = -1000 - stmt;
         /* stmt is now the step number a local label refers to */
-        lens = (long)strlen(str(localLabelNames[stmt]));
+        lens = (long)strlen(str((double)(localLabelNames[stmt])));
         let(&tmpStr1, ""); /* Clear temp alloc stack for str function */
       } else {
         if (stmt != -(long)'?') bug (219); /* the only other possibility */
@@ -1711,9 +1714,9 @@ void typeProof(long statemNum,
             local label will never be printed since it will be skipped above */
         /* stmt is now the step number a local label refers to */
         if (noIndentFlag) {
-          let(&srcLabel, cat("@", str(localLabelNames[stmt]), NULL));
+          let(&srcLabel, cat("@", str((double)(localLabelNames[stmt])), NULL));
         } else {
-          let(&srcLabel, cat("=", str(localLabelNames[stmt]), NULL));
+          let(&srcLabel, cat("=", str((double)(localLabelNames[stmt])), NULL));
         }
         type = statement[proof[stmt]].type;
       } else {
@@ -1733,10 +1736,10 @@ void typeProof(long statemNum,
           /* 31-Jan-2010 nm Changed to: */
           if (!(skipRepeatedSteps)) { /* No local label declaration is
               shown for html */
-            let(&locLabDecl, cat("@", str(localLabelNames[step]), ":", NULL));
+            let(&locLabDecl, cat("@", str((double)(localLabelNames[step])), ":", NULL));
           }
         } else {
-          let(&locLabDecl, cat(str(localLabelNames[step]), ":", NULL));
+          let(&locLabDecl, cat(str((double)(localLabelNames[step])), ":", NULL));
         }
       }
 
@@ -1768,14 +1771,14 @@ void typeProof(long statemNum,
             }
             if (!hypStr[0]) {
               if (i != -(long)'?') {
-                let(&hypStr, str(i));
+                let(&hypStr, str((double)i));
               } else {
                 let(&hypStr, "?");
               }
             } else {
               /* Put comma between more than one hypothesis reference */
               if (i != -(long)'?') {
-                let(&hypStr, cat(str(i), ",", hypStr, NULL));
+                let(&hypStr, cat(str((double)i), ",", hypStr, NULL));
               } else {
                 let(&hypStr, cat("?", ",", hypStr, NULL));
               }
@@ -1805,8 +1808,8 @@ void typeProof(long statemNum,
 
       if (noIndentFlag) {
         let(&startPrefix, cat(
-            space(maxStepNumLen - (long)strlen(str(stepRenumber[step]))),
-            str(stepRenumber[step]),
+            space(maxStepNumLen - (long)strlen(str((double)(stepRenumber[step])))),
+            str((double)(stepRenumber[step])),
             " ",
             srcLabel,
             space(splitColumn - (long)strlen(srcLabel) - (long)strlen(locLabDecl) - 1
@@ -1816,15 +1819,15 @@ void typeProof(long statemNum,
         if (pipFlag) {
           let(&tgtPrefix, startPrefix);
           let(&srcPrefix, cat(
-              space(maxStepNumLen - (long)strlen(str(stepRenumber[step]))),
-              space((long)strlen(str(stepRenumber[step]))),
+              space(maxStepNumLen - (long)strlen(str((double)(stepRenumber[step])))),
+              space((long)strlen(str((double)(stepRenumber[step])))),
               " ",
               space(splitColumn - 1
                   - maxStepNumLen),
               NULL));
           let(&userPrefix, cat(
-              space(maxStepNumLen - (long)strlen(str(stepRenumber[step]))),
-              space((long)strlen(str(stepRenumber[step]))),
+              space(maxStepNumLen - (long)strlen(str((double)(stepRenumber[step])))),
+              space((long)strlen(str((double)(stepRenumber[step])))),
               " ",
               "(User)",
               space(splitColumn - (long)strlen("(User)") - 1
@@ -1840,15 +1843,15 @@ void typeProof(long statemNum,
         let(&tmpStr, "");
         if (unknownFlag) {
           if (relativeStepNums[step] < 0) {
-            let(&tmpStr, cat(" ", str(relativeStepNums[step]), NULL));
+            let(&tmpStr, cat(" ", str((double)(relativeStepNums[step])), NULL));
           }
           let(&tmpStr, cat(tmpStr, space(maxStepNumOffsetLen
               - (long)(strlen(tmpStr))), NULL));
         }
 
         let(&startStringWithNum, cat(
-            space(maxStepNumLen - (long)strlen(str(stepRenumber[step]))),
-            str(stepRenumber[step]),
+            space(maxStepNumLen - (long)strlen(str((double)(stepRenumber[step])))),
+            str((double)(stepRenumber[step])),
             tmpStr,
             " ", NULL));
         let(&startStringWithoutNum, space(maxStepNumLen + 1));
@@ -2068,7 +2071,10 @@ void typeProof(long statemNum,
           nmbrTmpPtr2 = proveFloating(nmbrTmpPtr1 /*mString*/,
               statemNum /*statemNum*/, 0 /*maxEDepth*/,
               0, /* step; 0 = step 1 */ /*For messages*/
-              0  /*not noDistinct*/);
+              0,  /*not noDistinct*/
+              /* 3-May-2016 nm */
+              2 /* override locked-usage statements silently */
+              );
           if (!nmbrLen(nmbrTmpPtr2)) {
             /* 1-Oct-05 nm Since a proof may not be found for non-standard
                logics, just break out of this section gracefully */
@@ -2347,7 +2353,7 @@ void showDetailStep(long statemNum, long detailStep) {
   plen = nmbrLen(wrkProof.proofString);
   if (plen < detailStep || detailStep < 1) {
     printLongLine(cat("?The step number should be from 1 to ",
-        str(plen), NULL), "", " ");
+        str((double)plen), NULL), "", " ");
     return;
   }
 
@@ -2386,14 +2392,14 @@ void showDetailStep(long statemNum, long detailStep) {
         /* This statement declares a local label */
         /* First, get a name for the local label, using the next integer that
            does not match any integer used for a statement label. */
-        let(&tmpStr1,str(nextLocLabNum));
+        let(&tmpStr1, str((double)nextLocLabNum));
         while (1) {
           voidPtr = (void *)bsearch(tmpStr,
               allLabelKeyBase, (size_t)numAllLabelKeys,
               sizeof(long), labelSrchCmp);
           if (!voidPtr) break; /* It does not conflict */
           nextLocLabNum++; /* Try the next one */
-          let(&tmpStr1,str(nextLocLabNum));
+          let(&tmpStr1, str((double)nextLocLabNum));
         }
         localLabelNames[step] = nextLocLabNum;
         nextLocLabNum++; /* Prepare for next local label */
@@ -2409,7 +2415,7 @@ void showDetailStep(long statemNum, long detailStep) {
     if (stmt <= -1000) {
       stmt = -1000 - stmt;
       /* stmt is now the step number a local label refers to */
-      let(&tmpStr, cat(tmpStr,"=",str(localLabelNames[stmt]), NULL));
+      let(&tmpStr, cat(tmpStr,"=", str((double)(localLabelNames[stmt])), NULL));
       type = statement[proof[stmt]].type;
     } else {
       if (stmt != -(long)'?') bug(207);
@@ -2419,7 +2425,7 @@ void showDetailStep(long statemNum, long detailStep) {
   } else {
     if (nmbrElementIn(1, localLabels, detailStep - 1)) {
       /* This statement declares a local label */
-      let(&tmpStr1, cat(str(localLabelNames[detailStep - 1]), ":",
+      let(&tmpStr1, cat(str((double)(localLabelNames[detailStep - 1])), ":",
           NULL));
     }
     let(&tmpStr, cat(tmpStr, "=", statement[stmt].labelName, NULL));
@@ -2428,7 +2434,7 @@ void showDetailStep(long statemNum, long detailStep) {
 
   /* Print the proof line */
   printLongLine(cat("Proof step ",
-      str(detailStep),
+      str((double)detailStep),
       ":  ",
       tmpStr1,
       tmpStr,
@@ -2449,9 +2455,9 @@ void showDetailStep(long statemNum, long detailStep) {
     if (stmt <= -1000) {
       stmt = -1000 - stmt;
       /* stmt is now the step number a local label refers to */
-      let(&tmpStr, cat(tmpStr, "step ", str(stmt),
+      let(&tmpStr, cat(tmpStr, "step ", str((double)stmt),
           " (via local label reference \"",
-          str(localLabelNames[stmt]), "\") to ", NULL));
+          str((double)(localLabelNames[stmt])), "\") to ", NULL));
     } else {
       if (stmt != -(long)'?') bug(208);
       let(&tmpStr, cat(tmpStr, "an unknown statement to ", NULL));
@@ -2462,7 +2468,7 @@ void showDetailStep(long statemNum, long detailStep) {
     if (nmbrElementIn(1, localLabels, detailStep - 1)) {
       /* This statement declares a local label */
       let(&tmpStr1, cat("  This step also declares the local label ",
-          str(localLabelNames[detailStep - 1]),
+          str((double)(localLabelNames[detailStep - 1])),
           ", which is used later on.",
           NULL));
     }
@@ -2498,7 +2504,7 @@ void showDetailStep(long statemNum, long detailStep) {
               statement[statement[sourceStmt].reqHypList[i]].labelName,
               "\" ($",
               chr(statement[statement[sourceStmt].reqHypList[i]].type),
-              ", step ", str(getStep.sourceHyps[i] + 1), ")", NULL));
+              ", step ", str((double)(getStep.sourceHyps[i] + 1)), ")", NULL));
           if (i == 0 && j == 2) {
             let(&tmpStr, cat(tmpStr, " and ", NULL));
           }
@@ -2519,7 +2525,7 @@ void showDetailStep(long statemNum, long detailStep) {
          "  The parent assertion of the target hypothesis is \"",
         statement[getStep.targetParentStmt].labelName, "\" ($",
         chr(statement[getStep.targetParentStmt].type),", step ",
-        str(getStep.targetParentStep), ").", NULL));
+        str((double)(getStep.targetParentStep)), ").", NULL));
   } else {
     let(&tmpStr, cat(tmpStr,
         "  The target has no parent because it is the assertion being proved.",
@@ -2716,7 +2722,7 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
   for (stmt = 1; stmt < statemNum; stmt++) {
     if (statementUsedFlags[stmt] == 'Y') {
 
-      let(&str1, cat(" is located on line ", str(statement[stmt].lineNum),
+      let(&str1, cat(" is located on line ", str((double)(statement[stmt].lineNum)),
           " of the file ", NULL));
       if (!texFlag) {
         print2("\n");
@@ -3350,7 +3356,7 @@ double countSteps(long statemNum, flag essentialFlag)
   /* Assign step count to statement list */
   stmtCount[statemNum] = stepCount;
   stmtNodeCount[statemNum] = stepNodeCount + 1;
-  stmtAveDist[statemNum] = stepDistSum / essentialplen;
+  stmtAveDist[statemNum] = (double)stepDistSum / (double)essentialplen;
   stmtProofLen[statemNum] = essentialplen;
 
   nmbrLet(&proof, NULL_NMBRSTRING);
@@ -3395,29 +3401,29 @@ double countSteps(long statemNum, flag essentialFlag)
     }
     printLongLine(cat(
        "The statement's actual proof has ",
-           str(stmtProofLen[statemNum]), " steps.  ",
-       "Backtracking, a total of ", str(actualSubTheorems),
+           str((double)(stmtProofLen[statemNum])), " steps.  ",
+       "Backtracking, a total of ", str((double)actualSubTheorems),
            " different subtheorems are used.  ",
        "The statement and subtheorems have a total of ",
-           str(actualSteps), " actual steps.  ",
+           str((double)actualSteps), " actual steps.  ",
        "If subtheorems used only once were eliminated,",
            " there would be a total of ",
-           str(actualSubTheorems2), " subtheorems, and ",
+           str((double)actualSubTheorems2), " subtheorems, and ",
        "the statement and subtheorems would have a total of ",
-           str(actualSteps2), " steps.  ",
+           str((double)actualSteps2), " steps.  ",
        /* 27-May-05 nm stepCount is inaccurate for over 16 or so digits due
           to roundoff errors. */
        "The proof would have ",
-         stepCount > 1000000000 ? ">1000000000" : str(stepCount),
+         stepCount > 1000000000 ? ">1000000000" : str((double)stepCount),
        " steps if fully expanded.  ",
        /*
-       "The proof tree has ", str(stmtNodeCount[statemNum])," nodes.  ",
+       "The proof tree has ", str((double)stmtNodeCount[statemNum])," nodes.  ",
        "A random backtrack path has an average path length of ",
-       str(stmtAveDist[statemNum]),
+       str((double)(stmtAveDist[statemNum])),
        ".  ",
        */
        "The maximum path length is ",
-       str(stmtDist[statemNum]),
+       str((double)(stmtDist[statemNum])),
        ".  A longest path is:  ", right(tmpStr, 5), " .", NULL),
        "", " ");
     let(&tmpStr, "");
@@ -3688,7 +3694,7 @@ void writeInput(flag cleanFlag, /* 1 = "/ CLEAN" qualifier was chosen */
     if (skippedCount == 0) {
       print2("No statements were deleted by the CLEAN qualifier.\n");
     } else {
-      printLongLine(cat("The following ", str(skippedCount), " statement",
+      printLongLine(cat("The following ", str((double)skippedCount), " statement",
           (skippedCount == 1) ? " was" : "s were",
           " deleted by the CLEAN qualifier:", NULL), "", " ");
       printLongLine(cat(" ", str2, NULL), "  ", " ");
@@ -3710,7 +3716,7 @@ void writeDict(void)
 } /* writeDict */
 
 /* Free up all memory space and initialize all variables */
-void eraseSource(void)
+void eraseSource(void)    /* ERASE command */
 {
   long i;
   vstring tmpStr;
@@ -3833,6 +3839,10 @@ void eraseSource(void)
 
   bracketMatchInit = 0; /* Clear to force mmunif.c to scan $a's again */
   minSubstLen = 1; /* Initialize to the default SET EMPTY_SUBSTITUTION OFF */
+
+  /* 3-May-2016 nm */
+  getMarkupFlag(0, 0/*init*/); /* Erase the cached markup flag storage */
+
 } /* eraseSource */
 
 
@@ -3936,7 +3946,7 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
     if (verifyFlag) {
 #ifdef CLOCKS_PER_SEC    /* 28-May-04 nm */
       print2("All proofs in the database were verified in %1.2f s.\n",
-           (double)((1.0 * (clock() - clockStart)) / CLOCKS_PER_SEC));
+           (double)((1.0 * (double)(clock() - clockStart)) / CLOCKS_PER_SEC));
 #else
       print2("All proofs in the database were verified.\n");
 #endif
@@ -4052,6 +4062,75 @@ void verifyMarkup(vstring labelMatch,
 } /* verifyMarkup */
 
 
+/* 3-May-2016 nm */
+/* List "locked" statements with "(Proof modification is discouraged." and
+   "(New usage is discourged.)" comment markup tags. */
+/* This function is primarily intended for use with the "travis" system
+   to identify versioning differences on GitHub. */
+void showRestricted(void) {   /* was: showLocked */
+  long stmt, s, usageCount;
+  long lowStmt, highStmt; /* For a slight speedup */
+  flag notQuitPrint = 1; /* Goes to 0 if user typed 'q' at scroll prompt */
+  vstring str1 = "";
+  for (stmt = 1; stmt <= statements; stmt++) {
+
+    /* Since this command is slow, quit immediately if user typed 'q'
+       at scrolling prompt */
+    if (notQuitPrint == 0) break;
+
+    if (statement[stmt].type != p_ && statement[stmt].type != a_) continue;
+    if (getMarkupFlag(stmt, 1) == 1
+        && statement[stmt].type == p_ /* Ignore $a's */
+        ) {
+      /* Restricted proof */
+      /* Get number of steps */
+      parseProof(stmt);
+      notQuitPrint = print2(
+          "SHOW RESTRICTED:  Proof of \"%s\" is restricted (%ld steps).\n",
+          statement[stmt].labelName,
+          nmbrLen(wrkProof.proofString));
+    } /* if restricted proof */
+    if (getMarkupFlag(stmt, 2) == 1) {
+      /* Restricted usage */
+      usageCount = 0;
+      let(&str1, "");
+      str1 = traceUsage(stmt,
+          0, /* recursiveFlag */
+          0 /* cutoffStmt */);
+      if (str1[0] == 'Y') { /* Used by at least one */
+        /* str1[i] will be 'Y' if used by stmt */
+        lowStmt = statements;
+        highStmt = 0;
+        /* Scan all future statements in str1 Y/N list */
+        for (s = stmt + 1; s <= statements; s++) {
+          /* Scan the used-by map */
+          if (str1[s] != 'Y') continue;
+          usageCount++;
+          if (lowStmt > s) lowStmt = s;
+          if (highStmt < s) highStmt = s;
+        } /* Next s */
+      } /* if (str1[0] == 'Y') */
+      notQuitPrint = print2(
+          "SHOW RESTRICTED:  Usage of \"%s\" is restricted (%ld uses).\n",
+          statement[stmt].labelName,
+          usageCount);
+      if (str1[0] == 'Y') { /* Used by at least one */
+        /* str1[i] will be 'Y' if used by stmt */
+        /* Scan all future statements in str1 Y/N list */
+        for (s = lowStmt; s <= highStmt; s++) {
+          /* Scan the used-by map */
+          if (str1[s] != 'Y') continue;
+          notQuitPrint = print2(
+              "SHOW RESTRICTED:  \"%s\" is used by \"%s\".\n",
+              statement[stmt].labelName,
+              statement[s].labelName);
+        } /* Next s */
+      } /* if (str1[0] == 'Y') */
+    } /* if restricted usage */
+  } /* next stmt */
+  let(&str1, ""); /* Deallocate */
+} /* showRestricted */
+
 /* Added 14-Sep-2012 nm */
 /* Take a relative step FIRST, LAST, +nn, -nn (relative to the unknown
    essential steps) or ALL, and return the actual step for use by ASSIGN,
@@ -4071,7 +4150,7 @@ long getStepNum(vstring relStep, /* User's argument */
   pfLen = nmbrLen(pfInProgress); /* Proof length */
   relStepVal = (long)(val(relStepCaps)); /* val() tolerates ill-formed numbers */
 
-  if (relStepVal >= 0 && !strcmp(relStepCaps, str(relStepVal))) {
+  if (relStepVal >= 0 && !strcmp(relStepCaps, str((double)relStepVal))) {
     /* User's argument is an unsigned positive integer */
     actualStepVal = relStepVal;
     if (actualStepVal > pfLen || actualStepVal < 1) {
@@ -4087,14 +4166,14 @@ long getStepNum(vstring relStep, /* User's argument */
     relStepVal = 0;
   } else if (relStepCaps[0] == '+') {
     negFlag = 0;
-    if (strcmp(right(relStepCaps, 2), str(relStepVal))) {
+    if (strcmp(right(relStepCaps, 2), str((double)relStepVal))) {
       print2("?The characters after '+' are not a number.\n");
       actualStepVal = -1; /* Error - not a number after the '+' */
       goto RETURN_POINT;
     }
   } else if (relStepCaps[0] == '-') {
     negFlag = 1;
-    if (strcmp(right(relStepCaps, 2), str(- relStepVal))) {
+    if (strcmp(right(relStepCaps, 2), str((double)(- relStepVal)))) {
       print2("?The characters after '-' are not a number.\n");
       actualStepVal = -1; /* Error - not a number after the '-' */
       goto RETURN_POINT;
@@ -4348,7 +4427,7 @@ long getStatementNum(vstring stmtName, /* Possibly with wildcards */
         NULL), "", " ");
   } else if (matchesFound > 2) {
     printLongLine(cat("?This command requires a unique label, but there are ",
-        str(matchesFound), " (allowed) matches for \"",
+        str((double)matchesFound), " (allowed) matches for \"",
         stmtName, "\".  The first 2 are \"", statement[matchStmt].labelName,
         "\" and \"", statement[matchStmt2].labelName, "\".",
         "  Use SHOW LABELS \"", stmtName, "\" to see all non-$e matches.",

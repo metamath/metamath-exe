@@ -165,9 +165,9 @@ char verifyProof(long statemNum)
 
     }
 
-/*E*/if(db7)printLongLine(cat("step ", str(step+1), " sch ",
+/*E*/if(db7)printLongLine(cat("step ", str((double)step+1), " sch ",
 /*E*/    nmbrCvtMToVString(bigSubstSchemeHyp), NULL), "", " ");
-/*E*/if(db7)printLongLine(cat("step ", str(step+1), " ins ",
+/*E*/if(db7)printLongLine(cat("step ", str((double)step+1), " ins ",
 /*E*/    nmbrCvtMToVString(bigSubstInstHyp), NULL), "", " ");
     /* Unify the hypotheses of the scheme with their instances and assign
        the variables of the scheme.  If some of the hypotheses are unknown
@@ -175,7 +175,7 @@ char verifyProof(long statemNum)
        anyway; if the result is unique, we will use it. */
     nmbrTmpPtr = assignVar(bigSubstSchemeHyp,
         bigSubstInstHyp, stmt, statemNum, step, unkHypFlag);
-/*E*/if(db7)printLongLine(cat("step ", str(step+1), " res ",
+/*E*/if(db7)printLongLine(cat("step ", str((double)step+1), " res ",
 /*E*/    nmbrCvtMToVString(nmbrTmpPtr), NULL), "", " ");
 
     /* Deallocate stack built up if there are many $d violations */
@@ -211,7 +211,7 @@ char verifyProof(long statemNum)
         tokenLength = wrkProof.stepSrcPtrNmbr[wrkProof.numSteps - 1];
         /*??? Make sure suggested commands are correct. */
         sourceError(fbPtr, tokenLength, statemNum, cat(
-            "The result of the proof (step ",str(wrkProof.numSteps),
+            "The result of the proof (step ", str((double)(wrkProof.numSteps)),
             ") does not match the statement being proved.  The result is \"",
             nmbrCvtMToVString(
             wrkProof.mathStringPtrs[wrkProof.numSteps - 1]),
@@ -364,7 +364,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
   q = 0; /* Position in bigSubstInstAss */
  ambiguityCheck: /* Re-entry point to see if unification is unique */
   while (p != bigSubstSchemeLen-1 || q != bigSubstInstLen-1) {
-/*E*/if(db7&&v>=0)printLongLine(cat("p ", str(p), " q ", str(q), " VAR ",str(v),
+/*E*/if(db7&&v>=0)printLongLine(cat("p ", str((double)p), " q ", str((double)q), " VAR ",str((double)v),
 /*E*/    " ASSIGNED ", nmbrCvtMToVString(
 /*E*/    nmbrMid(bigSubstInstAss,substInstFrstVarOcc[v]+1,
 /*E*/    varAssLen[v])), NULL), "", " ");
@@ -505,10 +505,10 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
         let(&tmpStr2, nmbrCvtMToVString(wrkProof.mathStringPtrs[k]));
         if (tmpStr2[0] == 0) let(&tmpStr2,
             "? (Unknown step or previous error; unification ignored)");
-        let(&tmpStr, cat(tmpStr, "\n  Hypothesis ", str(i + 1), ":  ",
+        let(&tmpStr, cat(tmpStr, "\n  Hypothesis ", str((double)i + 1), ":  ",
             nmbrCvtMToVString(
                 statement[statement[substScheme].reqHypList[i]].mathString),
-            "\n  Step ", str(k + 1),
+            "\n  Step ", str((double)k + 1),
             ":  ", tmpStr2, NULL));
       } /* Next i */
       /* tmpStr = shortDumpRPNStack(); */ /* Old version */
@@ -516,7 +516,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
           wrkProof.stepSrcPtrNmbr[step],
           statementNum, cat(
           "The hypotheses of statement \"", statement[substScheme].labelName,
-          "\" at proof step ", str(step + 1),
+          "\" at proof step ", str((double)step + 1),
           " cannot be unified.", tmpStr, NULL));
       /* sourceError(wrkProof.stepSrcPtrPntr[step],
           wrkProof.stepSrcPtrNmbr[step],
@@ -665,7 +665,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
                   wrkProof.stepSrcPtrNmbr[step], /* size of token */
                   statementNum, cat(
                   "There is a disjoint variable ($d) violation at proof step ",
-                  str(step + 1),".  Assertion \"",
+                  str((double)step + 1),".  Assertion \"",
                   statement[substScheme].labelName,
                   "\" requires that variables \"",
                   mathToken[nmbrTmpPtrAS[pos]].tokenName,
@@ -734,7 +734,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
                     wrkProof.stepSrcPtrNmbr[step], /* size of token */
                     statementNum, cat(
                    "There is a disjoint variable ($d) violation at proof step ",
-                    str(step + 1), ".  Assertion \"",
+                    str((double)step + 1), ".  Assertion \"",
                     statement[substScheme].labelName,
                     "\" requires that variables \"",
                     mathToken[nmbrTmpPtrAS[pos]].tokenName,
@@ -820,7 +820,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
           wrkProof.stepSrcPtrNmbr[step],
           statementNum, cat(
           "The unification with the hypotheses of the statement at proof step ",
-          str(step + 1),
+          str((double)step + 1),
           " is not unique.  Two possible results at this step are \"",
           nmbrCvtMToVString(saveResult),
           "\" and \"",nmbrCvtMToVString(result),

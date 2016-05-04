@@ -40,8 +40,8 @@ This is an emulation of the string functions available in VMS BASIC.
 #endif
 
 #define MAX_ALLOC_STACK 100
-int tempAllocStackTop = 0;      /* Top of stack for tempAlloc functon */
-int startTempAllocStack = 0;    /* Where to start freeing temporary allocation
+long tempAllocStackTop = 0;      /* Top of stack for tempAlloc functon */
+long startTempAllocStack = 0;    /* Where to start freeing temporary allocation
                                     when let() is called (normally 0, except in
                                     special nested vstring functions) */
 void *tempAllocStack[MAX_ALLOC_STACK];
@@ -51,7 +51,7 @@ static void freeTempAlloc(void)
   /* All memory previously allocated with tempAlloc is deallocated. */
   /* EXCEPT:  When startTempAllocStack != 0, the freeing will start at
      startTempAllocStack. */
-  int i;
+  long i;
   for (i = startTempAllocStack; i < tempAllocStackTop; i++) {
 /*E*/INCDB1(-1 - (long)strlen(tempAllocStack[i]));
 /*E* /printf("%ld removing [%s]\n", db1, tempAllocStack[i]);*/

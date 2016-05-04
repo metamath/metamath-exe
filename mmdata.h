@@ -4,10 +4,18 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-/* mmdata.h - includes for some principal data structures and data-string handling */
+/* mmdata.h - includes for some principal data structures and data-string
+   handling */
 
 #ifndef METAMATH_MMDATA_H_
 #define METAMATH_MMDATA_H_
+
+/* 4-May-2015 nm */
+/* For use by getMarkupFlag() */
+#define PROOF_LOCKED_MARKUP "(Proof modification is discouraged.)"
+#define USAGE_LOCKED_MARKUP "(New usage is discouraged.)"
+extern vstring proofLockedMarkup;
+extern vstring usageLockedMarkup;
 
 #include "mmvstr.h"
 
@@ -187,8 +195,8 @@ flag matches(vstring testString, vstring pattern, char wildCard,
 /******* Special pupose routines for better
       memory allocation (use with caution) *******/
 
-extern int nmbrTempAllocStackTop;   /* Top of stack for nmbrTempAlloc funct */
-extern int nmbrStartTempAllocStack; /* Where to start freeing temporary
+extern long nmbrTempAllocStackTop;   /* Top of stack for nmbrTempAlloc funct */
+extern long nmbrStartTempAllocStack; /* Where to start freeing temporary
     allocation when nmbrLet() is called (normally 0, except for nested
     nmbrString functions) */
 
@@ -321,8 +329,8 @@ vstring compressProof(nmbrString *proof, long statemNum,
 /******* Special pupose routines for better
       memory allocation (use with caution) *******/
 
-extern int pntrTempAllocStackTop;   /* Top of stack for pntrTempAlloc funct */
-extern int pntrStartTempAllocStack; /* Where to start freeing temporary
+extern long pntrTempAllocStackTop;   /* Top of stack for pntrTempAlloc funct */
+extern long pntrStartTempAllocStack; /* Where to start freeing temporary
     allocation when pntrLet() is called (normally 0, except for nested
     pntrString functions) */
 
@@ -393,6 +401,9 @@ void free2DMatrix(long **matrix, size_t xsize /*, size_t ysize*/);
 /* Returns the amount of indentation of a statement label.  Used to
    determine how much to indent a saved proof. */
 long getSourceIndentation(long statemNum);
+
+/* Returns any comment (description) that occurs just before a statement */
+flag getMarkupFlag(long statemNum, flag type);
 
 /* Returns any comment (description) that occurs just before a statement */
 vstring getDescription(long statemNum);

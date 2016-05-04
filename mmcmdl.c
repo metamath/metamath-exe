@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2015  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2016  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -90,7 +90,9 @@ flag processCommandLine(void)
       }
       if (cmdMatches("HELP SHOW")) {
         if (!getFullArg(2, cat("MEMORY|SETTINGS|LABELS|SOURCE|STATEMENT|",
-            "PROOF|NEW_PROOF|USAGE|TRACE_BACK|ELAPSED_TIME|<MEMORY>", NULL)))
+            "PROOF|NEW_PROOF|USAGE|TRACE_BACK|ELAPSED_TIME|",
+            "RESTRICTED|<MEMORY>",
+            NULL)))
             goto pclbad;
         goto pclgood;
       }
@@ -401,12 +403,12 @@ flag processCommandLine(void)
       if (!PFASmode) {
         if (!getFullArg(1, cat(
      "SETTINGS|LABELS|STATEMENT|SOURCE|PROOF|MEMORY|TRACE_BACK|",
-     "USAGE|ELAPSED_TIME|<SETTINGS>", NULL)))
+     "USAGE|ELAPSED_TIME|RESTRICTED|<SETTINGS>", NULL)))
             goto pclbad;
       } else {
         if (!getFullArg(1, cat("NEW_PROOF|",
      "SETTINGS|LABELS|STATEMENT|SOURCE|PROOF|MEMORY|TRACE_BACK|",
-     "USAGE|ELAPSED_TIME|<SETTINGS>",
+     "USAGE|ELAPSED_TIME|RESTRICTED|<SETTINGS>",
             NULL)))
             goto pclbad;
       }
@@ -611,7 +613,7 @@ flag processCommandLine(void)
               i++;
               if (!getFullArg(i, cat(
                   "# At what column should the formula start <",
-                  str(DEFAULT_COLUMN), ">? ", NULL)))
+                  str((double)DEFAULT_COLUMN), ">? ", NULL)))
                 goto pclbad;
             }
           } else {
@@ -664,7 +666,7 @@ flag processCommandLine(void)
               i++;
               if (!getFullArg(i, cat(
                   "# At what column should the formula start <",
-                  str(DEFAULT_COLUMN), ">? ", NULL)))
+                  str((double)DEFAULT_COLUMN), ">? ", NULL)))
                 goto pclbad;
             }
           } else {
@@ -733,7 +735,7 @@ flag processCommandLine(void)
           goto pclbad;
         }
         if (!getFullArg(2,
-            cat("* What is the statement label",defaultArg,"? ",NULL)))
+            cat("* What is the statement label", defaultArg, "? ", NULL)))
           goto pclbad;
 
         /* Get any switches */
@@ -772,13 +774,15 @@ flag processCommandLine(void)
             i++;
             if (!getFullArg(i,cat(
                 "NORMAL|PACKED|COMPRESSED|EXPLICIT",
-                "|OLD_COMPRESSION",   /* 27-Dec-2013 nm */
+                /* 27-Dec-2013 nm Added / OLD_COMPRESSION */
+                /* 3-May-2016 nm Added / OVERRIDE */
+                "|OLD_COMPRESSION|OVERRIDE",
                 "|<NORMAL>",NULL)))
               goto pclbad;
           } else {
             break;
           }
-          break; /* Break if only 1 switch is allowed */
+          /*break;*/ /* Break if only 1 switch is allowed */
         }
         goto pclgood;
       } /* End if (cmdMatches("SAVE NEW_PROOF")) */
@@ -886,7 +890,8 @@ flag processCommandLine(void)
         if (lastArgMatches("/")) {
           i++;
           if (!getFullArg(i,
-              "DEPTH|NO_DISTINCT|1|2|3|SUBPROOFS|<DEPTH>")
+              /* 3-May-2016 nm Added / OVERRIDE */
+              "DEPTH|NO_DISTINCT|1|2|3|SUBPROOFS|OVERRIDE|<DEPTH>")
               ) goto pclbad;
           if (lastArgMatches("DEPTH")) {
             i++;
@@ -957,13 +962,14 @@ flag processCommandLine(void)
               "BRIEF|VERBOSE|ALLOW_GROWTH|NO_DISTINCT|EXCEPT|",
               "REVERSE|INCLUDE_MATHBOXES|FORBID|<BRIEF>", NULL)))
               */
-              "VERBOSE|ALLOW_GROWTH|EXCEPT|",
+              "VERBOSE|ALLOW_GROWTH|EXCEPT|OVERRIDE|",
               "INCLUDE_MATHBOXES|FORBID|NO_NEW_AXIOMS_FROM|<VERBOSE>", NULL)))
                               /* 7-Jan-06 nm Added EXCEPT */
                               /* 28-Jun-2011 nm Added INCLUDE_MATHBOXES */
                               /* 10-Nov-2011 nm Added REVERSE */
                               /* 25-Jun-2014 nm Removed REVERSE, NO_DISTINCT */
                               /* 22-Nov-2014 nm Added NO_NEW_AXIOMS_FROM */
+                              /* 3-May-2016 nm Added / OVERRIDE */
             goto pclbad;
 
           /* 7-Jan-06 nm Added EXCEPT */
@@ -1041,6 +1047,24 @@ flag processCommandLine(void)
       if (!getFullArg(1,"* What step number, or FIRST, or LAST <LAST>? "))
           goto pclbad;
       if (!getFullArg(2,"* With what statement label? ")) goto pclbad;
+      /* Get any switches */
+      i = 2;
+
+      /* 3-May-2016 nm Added / OVERRIDE */
+      while (1) {
+        i++;
+        if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+        if (lastArgMatches("/")) {
+          i++;
+          if (!getFullArg(i,cat(
+              "OVERRIDE|<OVERRIDE>",NULL)))
+            goto pclbad;
+        } else {
+          break;
+        }
+        break; /* Break if only 1 switch is allowed */
+      }
+
       goto pclgood;
     }
 
@@ -1071,13 +1095,13 @@ flag processCommandLine(void)
         if (!getFullArg(i, "/|$|<$>")) goto pclbad;
         if (lastArgMatches("/")) {
           i++;
-          if (!getFullArg(i,cat(
-              "NO_UNIFY|<NO_UNIFY>", NULL)))
+          if (!getFullArg(i,cat(    /* 3-May-2016 nm Added / OVERRIDE */
+              "NO_UNIFY|OVERRIDE|<NO_UNIFY>", NULL)))
             goto pclbad;
         } else {
           break;
         }
-        break;  /* Break if only 1 switch is allowed */
+        /*break;*/  /* Break if only 1 switch is allowed */
       }
       goto pclgood;
     }
@@ -1146,7 +1170,7 @@ flag processCommandLine(void)
       if (cmdMatches("SET SEARCH_LIMIT")) {
         if (!getFullArg(2, cat(
             "# What is search limit for IMPROVE command <",
-            str(userMaxProveFloat), ">? ", NULL)))
+            str((double)userMaxProveFloat), ">? ", NULL)))
           goto pclbad;
         goto pclgood;
       }
@@ -1154,7 +1178,7 @@ flag processCommandLine(void)
       if (cmdMatches("SET UNIFICATION_TIMEOUT")) {
         if (!getFullArg(2, cat(
            "# What is maximum number of unification trials <",
-            str(userMaxUnifTrials), ">? ", NULL)))
+            str((double)userMaxUnifTrials), ">? ", NULL)))
           goto pclbad;
         goto pclgood;
       }
@@ -1162,7 +1186,7 @@ flag processCommandLine(void)
       if (cmdMatches("SET WIDTH")) {
         if (!getFullArg(2, cat(
            "# What is maximum line length on your screen <",
-            str(screenWidth), ">? ", NULL)))
+            str((double)screenWidth), ">? ", NULL)))
           goto pclbad;
         goto pclgood;
       }
@@ -1170,7 +1194,7 @@ flag processCommandLine(void)
       if (cmdMatches("SET HEIGHT")) {
         if (!getFullArg(2, cat(
            "# What is number of lines your screen displays <",
-            str(screenHeight), ">? ", NULL)))
+            str((double)screenHeight), ">? ", NULL)))
           goto pclbad;
         goto pclgood;
       }
@@ -1178,7 +1202,8 @@ flag processCommandLine(void)
       if (cmdMatches("SET UNDO")) {
         if (!getFullArg(2, cat(
            "# What is the maximum number of UNDOs <",
-            str(processUndoStack(NULL, PUS_GET_SIZE, "", 0)), ">? ", NULL)))
+            str((double)(processUndoStack(NULL, PUS_GET_SIZE, "", 0))),
+            ">? ", NULL)))
           goto pclbad;
         goto pclgood;
       }
@@ -1536,8 +1561,8 @@ flag processCommandLine(void)
 "The input file will be renamed %s~1.\n", fullArg[2]);
       }
       if (!getFullArg(4,
-          cat("* Revision tag for added lines </* #", str(highestRevision(
-              fullArg[1]) + 1), " */>? ", NULL)))
+          cat("* Revision tag for added lines </* #",
+          str((double)(highestRevision(fullArg[1]) + 1)), " */>? ", NULL)))
         goto pclbad;
       if (!getFullArg(5,
 "# Successive lines required for match (more = better sync) <3>? "))
@@ -1711,15 +1736,15 @@ flag getFullArg(long arg, vstring cmdList1)
       /* (This code is needed in case of null string passed directly) */
       let(&tmpArg, seg(defaultCmd,2,len(defaultCmd) - 1));
     }
-    let(&tmpStr,str(val(tmpArg)));
-    let(&tmpStr,cat(string(len(tmpArg)-len(tmpStr),'0'),tmpStr,NULL));
-    if (strcmp(tmpStr,tmpArg)) {
+    let(&tmpStr, str(val(tmpArg)));
+    let(&tmpStr, cat(string(len(tmpArg)-len(tmpStr),'0'), tmpStr, NULL));
+    if (strcmp(tmpStr, tmpArg)) {
       printCommandError(errorLine, arg,
           "?A number was expected here.");
       goto return0;
     }
 
-    let(&keyword,str(val(tmpArg)));
+    let(&keyword, str(val(tmpArg)));
     goto return1;
   }
 

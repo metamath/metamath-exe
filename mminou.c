@@ -1010,7 +1010,7 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
       let(&prntStr, "?Fatal error"); break;
   }
   if (lineNum) {
-    let(&prntStr, cat(prntStr, " on line ", str(lineNum), NULL));
+    let(&prntStr, cat(prntStr, " on line ", str((double)lineNum), NULL));
     if (fileName)
       let(&prntStr, cat(prntStr, " of file \"", fileName, "\"", NULL));
   } else {
@@ -1018,7 +1018,7 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
       let(&prntStr, cat(prntStr, " in file \"", fileName, "\"", NULL));
   }
   if (statementNum) {
-    let(&prntStr, cat(prntStr, " at statement ", str(statementNum), NULL));
+    let(&prntStr, cat(prntStr, " at statement ", str((double)statementNum), NULL));
     if (statement[statementNum].labelName[0]) {
       let(&prntStr, cat(prntStr, ", label \"",
           statement[statementNum].labelName, "\"", NULL));
@@ -1140,7 +1140,7 @@ FILE *fSafeOpen(vstring fileName, vstring mode)
         /* Find last version before gap, if any */ /* 29-Apr-2007 nm */
         lastVersion = 0;
         for (v = 1; v <= VERSIONS; v++) {
-          let(&bakName, cat(prefix, str(v), postfix, NULL));
+          let(&bakName, cat(prefix, str((double)v), postfix, NULL));
           fp = fopen(bakName, "r");
           if (!fp) break; /* Version gap found; skip rest of scan */
           fclose(fp);
@@ -1149,7 +1149,7 @@ FILE *fSafeOpen(vstring fileName, vstring mode)
 
         /* If there are no gaps before version VERSIONS, delete it. */
         if (lastVersion == VERSIONS) {  /* 29-Apr-2007 nm */
-          let(&bakName, cat(prefix, str(VERSIONS), postfix, NULL));
+          let(&bakName, cat(prefix, str((double)VERSIONS), postfix, NULL));
           fp = fopen(bakName, "r");
           if (fp) {
             fclose(fp);
@@ -1159,11 +1159,11 @@ FILE *fSafeOpen(vstring fileName, vstring mode)
         }
 
         for (v = lastVersion; v >= 1; v--) {  /* 29-Apr-2007 nm */
-          let(&bakName, cat(prefix, str(v), postfix, NULL));
+          let(&bakName, cat(prefix, str((double)v), postfix, NULL));
           fp = fopen(bakName, "r");
           if (!fp) continue;
           fclose(fp);
-          let(&newBakName, cat(prefix, str(v + 1), postfix, NULL));
+          let(&newBakName, cat(prefix, str((double)v + 1), postfix, NULL));
           rename(bakName, newBakName);
         }
 
@@ -1256,7 +1256,7 @@ vstring fGetTmpName(vstring filePrefix)
   static long counter = 0;
   while (1) {
     counter++;
-    let(&fname, cat(filePrefix, str(counter), ".tmp", NULL));
+    let(&fname, cat(filePrefix, str((double)counter), ".tmp", NULL));
     fp = fopen(fname, "r");
     if (!fp) break;
     if (counter > 1000) {

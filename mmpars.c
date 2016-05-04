@@ -214,7 +214,8 @@ char *readRawSource(vstring inputFn, long bufOffsetSoFar, long *size)
             /* 19-Oct-2010 nm Used to bypass "lineNum++" below, which messed up
                line numbering. */
             rawSourceError(fileBuf, fbPtr, 1, lineNum, inputFn,
-                cat("Illegal character (ASCII code ",str((unsigned char)tmpch),
+                cat("Illegal character (ASCII code ",
+                str((double)((unsigned char)tmpch)),
                 " decimal).",NULL));
         /* } */
         }
@@ -349,7 +350,7 @@ char *readRawSource(vstring inputFn, long bufOffsetSoFar, long *size)
                 "(File \"",
                 includeCall[saveIncludeCalls].current_fn,
                 "\", referenced at line ",
-                str(includeCall[saveIncludeCalls].calledBy_line),
+                str((double)(includeCall[saveIncludeCalls].calledBy_line)),
                 " in \"",
                 includeCall[saveIncludeCalls].calledBy_fn,
                 "\", has already been included.)\n",NULL));
@@ -447,14 +448,14 @@ char *readRawSource(vstring inputFn, long bufOffsetSoFar, long *size)
 
   if (fbPtr != fileBuf + charCount) bug(1704);
 
-  let(&tmpStr, cat(str(lineNum - 1), " lines (", str(fileCharCount),
+  let(&tmpStr, cat(str((double)lineNum - 1), " lines (", str((double)fileCharCount),
       " characters) were read from \"", inputFn, "\"", NULL));
   if (startIncludeCalls == 0) {
     printLongLine(cat(tmpStr, ".", NULL),
         "    ", " ");
   } else {
     printLongLine(cat(tmpStr, " (included at line ",
-        str(includeCall[startIncludeCalls].calledBy_line), " of \"",
+        str((double)(includeCall[startIncludeCalls].calledBy_line)), " of \"",
         includeCall[startIncludeCalls].calledBy_fn, "\").", NULL),
         "    ", " ");
   }
@@ -1029,7 +1030,7 @@ void parseMathDecl(void)
       j = tokenLen(fbPtr + k);
       sourceError(fbPtr + k, j, stmt, cat(
          "This label has the same name as the math token declared on line ",
-         str(statement[mathToken[i].statement].lineNum), NULL));
+         str((double)(statement[mathToken[i].statement].lineNum)), NULL));
     }
   }
   /* End of 4-Jun-06 */
@@ -1939,8 +1940,8 @@ void parseStatements(void)
               if (reqFlag) {
                 mathTokenError(m - 1, statement[k].mathString, k,
                     cat("This variable does not occur in statement ",
-                    str(stmt)," (label \"",statement[stmt].labelName,
-                    "\") or statement ",str(stmt),
+                    str((double)stmt)," (label \"",statement[stmt].labelName,
+                    "\") or statement ", str((double)stmt),
                     "'s \"$e\" hypotheses, whereas variable \"",
                     mathToken[n].tokenName,
                    "\" DOES occur.  A \"$f\" hypothesis may not contain such a",
@@ -1948,8 +1949,8 @@ void parseStatements(void)
               } else {
                 mathTokenError(m - 1, statement[k].mathString, k,
                     cat("This variable occurs in statement ",
-                    str(stmt)," (label \"",statement[stmt].labelName,
-                    "\") or statement ",str(stmt),
+                    str((double)stmt)," (label \"",statement[stmt].labelName,
+                    "\") or statement ", str((double)stmt),
                     "'s \"$e\" hypotheses, whereas variable \"",
                     mathToken[n].tokenName,
                "\" does NOT occur.  A \"$f\" hypothesis may not contain such a",
@@ -2245,7 +2246,7 @@ void parseStatements(void)
                   "The variable \"", mathToken[tokenNum].tokenName,
                 "\" already appears in the earlier active \"$f\" statement \"",
                   statement[n].labelName, "\" on line ",
-                  str(statement[n].lineNum), ".", NULL));
+                  str((double)(statement[n].lineNum)), ".", NULL));
               break; /* Optional: suppresses add'l error msgs for this stmt */
             }
           } /* next k ($f hyp scan) */
@@ -2260,7 +2261,7 @@ void parseStatements(void)
     if (currentScope == 1) {
       let(&tmpStr,"A \"$}\" is");
     } else {
-      let(&tmpStr,cat(str(currentScope)," \"$}\"s are",NULL));
+      let(&tmpStr,cat(str((double)currentScope)," \"$}\"s are",NULL));
     }
     sourceError(statement[statements].labelSectionPtr +
         statement[statements].labelSectionLen, 2, 0,
@@ -2570,7 +2571,7 @@ char parseProof(long statemNum)
         if (!wrkProof.errorCount) {
           sourceError(fbPtr + j, 1, statemNum,cat(
               "The local label at proof step ",
-              str(wrkProof.numSteps + 1),
+              str((double)(wrkProof.numSteps + 1)),
               " is incorrect.  Only letters,",
               " digits, \"_\", \"-\", and \".\" are allowed in local labels.",
               NULL));
@@ -2597,11 +2598,11 @@ char parseProof(long statemNum)
         if (!wrkProof.errorCount) {
           sourceError(fbPtr, tokLength, statemNum,cat(
               "The local label at proof step ",
-              str(wrkProof.numSteps + 1),
+              str((double)(wrkProof.numSteps + 1)),
               " is the same as the label of statement ",
-              str(j),
+              str((double)j),
               " at line ",
-              str(statement[j].lineNum),
+              str((double)(statement[j].lineNum)),
               " in file \"",
               statement[j].fileName,
               "\".  Local labels must be different from active statement labels.",
@@ -2621,11 +2622,11 @@ char parseProof(long statemNum)
       if (!wrkProof.errorCount) {
         sourceError(fbPtr, tokLength, statemNum,cat(
             "The local label at proof step ",
-            str(wrkProof.numSteps + 1),
+            str((double)(wrkProof.numSteps + 1)),
             " is the same as the label of statement ",
-            str(j),
+            str((double)j),
             " at line ",
-            str(statement[j].lineNum),
+            str((double)(statement[j].lineNum)),
             " in file \"",
             statement[j].fileName,
             "\".  Local labels must be different from active statement labels.",
@@ -2672,7 +2673,7 @@ char parseProof(long statemNum)
             != wrkProof.stepSrcPtrPntr[step]) {
           if (!wrkProof.errorCount) {
             sourceError(fbPtr, wrkProof.tokenSrcPtrNmbr[tok], statemNum, cat(
-                "The target label for step ", str(step + 1),
+                "The target label for step ", str((double)step + 1),
                 " is not assigned to that step.  ",
                 "(Check for missing or extra \"=\".)", NULL));
           }
@@ -2688,8 +2689,8 @@ char parseProof(long statemNum)
             (char *)((wrkProof.tokenSrcPtrPntr)[wrkProof.numTokens - 1]),
             wrkProof.tokenSrcPtrNmbr[wrkProof.numTokens - 1],
             statemNum, cat(
-                "There are ", str(wrkProof.numSteps), " proof steps but only ",
-                str(step), " target labels.", NULL));
+                "There are ", str((double)(wrkProof.numSteps)), " proof steps but only ",
+                str((double)step), " target labels.", NULL));
       }
       wrkProof.errorCount++;
       if (returnFlag < 2) returnFlag = 2;
@@ -2721,9 +2722,9 @@ char parseProof(long statemNum)
         if (!wrkProof.errorCount) {
           sourceError(fbPtr,
               proofTokenLen(fbPtr), statemNum,
-              cat("The local label at proof step ", str(k + 1),
+              cat("The local label at proof step ", str((double)k + 1),
               " is the same as the one declared at step ",
-              str(j + 1), ".", NULL));
+              str((double)j + 1), ".", NULL));
         }
         wrkProof.errorCount++;
         if (returnFlag < 2) returnFlag = 2;
@@ -2786,7 +2787,7 @@ char parseProof(long statemNum)
         if (i > step) {
           if (!wrkProof.errorCount) {
             sourceError(fbPtr, tokLength, statemNum,cat("Proof step ",
-                str(step + 1),
+                str((double)step + 1),
                 " references a local label before it is declared.",
                 NULL));
           }
@@ -2801,7 +2802,7 @@ char parseProof(long statemNum)
                but doesn't buy anything */
             sourceError(fbPtr, tokLength, statemNum, cat(
                 "The local label reference at proof step ",
-                str(step + 1),
+                str((double)step + 1),
                 " declares a local label.  Only \"$a\" and \"$p\" statement",
                 " labels may have local label declarations.",NULL));
           }
@@ -2815,7 +2816,7 @@ char parseProof(long statemNum)
           if (!wrkProof.errorCount) {
             sourceError(fbPtr, tokLength, statemNum, cat(
                 "The hypothesis reference at proof step ",
-                str(step + 1),
+                str((double)step + 1),
                 " declares a local label.  Only \"$a\" and \"$p\" statement",
                 " labels may have local label declarations.",NULL));
           }
@@ -2835,7 +2836,7 @@ char parseProof(long statemNum)
       if (!wrkProof.errorCount) {
         sourceError(fbPtr, tokLength, statemNum, cat(
             "The token at proof step ",
-            str(step + 1),
+            str((double)step + 1),
             " is not an active statement label or a local label.",NULL));
       }
       wrkProof.errorCount++;
@@ -2857,15 +2858,15 @@ char parseProof(long statemNum)
         if (j == statemNum) {
           sourceError(fbPtr, tokLength, statemNum, cat(
               "The label at proof step ",
-              str(step + 1),
+              str((double)step + 1),
               " is the label of this statement.  A statement may not be used to",
               " prove itself.",NULL));
         } else {
           sourceError(fbPtr, tokLength, statemNum, cat(
               "The label \"", statement[j].labelName, "\" at proof step ",
-              str(step + 1),
+              str((double)step + 1),
               " is the label of a future statement (at line ",
-              str(statement[j].lineNum),
+              str((double)(statement[j].lineNum)),
               " in file ",statement[j].fileName,
       ").  Only local labels or previous, active statements may be referenced.",
               NULL));
@@ -2891,12 +2892,12 @@ char parseProof(long statemNum)
         if (numReqHyp == 1) {
           let(&tmpStrPtr,cat("a hypothesis but the ",tmpStrPtr,NULL));
         } else {
-          let(&tmpStrPtr,cat(str(numReqHyp)," hypotheses but the ",tmpStrPtr,
+          let(&tmpStrPtr,cat(str((double)numReqHyp)," hypotheses but the ",tmpStrPtr,
               NULL));
         }
         sourceError(fbPtr, tokLength, statemNum, cat(
             "At proof step ",
-            str(step + 1),", statement \"",
+            str((double)step + 1),", statement \"",
             statement[j].labelName,"\" requires ",
             tmpStrPtr,".",NULL));
         let(&tmpStrPtr,"");
@@ -2968,12 +2969,12 @@ char parseProof(long statemNum)
         if (matchingHyp == -1) {
           if (!wrkProof.errorCount) {
             sourceError(fbPtr, 1/*token length*/, statemNum, cat(
-                "The target labels for the hypotheses for step ", str(step + 1),
+                "The target labels for the hypotheses for step ", str((double)step + 1),
                 " do not match hypothesis \"",
                 statement[nmbrTmpPtr[i]].labelName,
                 "\" of the assertion \"",
                 statement[j].labelName,
-                "\" in step ",  str(step + 1), ".",
+                "\" in step ",  str((double)step + 1), ".",
                 NULL));
           }
           wrkProof.errorCount++;
@@ -3040,12 +3041,12 @@ char parseProof(long statemNum)
             if (!wrkProof.errorCount) {
               sourceError(fbPtr, tokLength, statemNum, cat(
                   "Statement \"",statement[j].labelName,"\" (proof step ",
-                  str(step + 1),
+                  str((double)step + 1),
                   ") has its \"$e\" hypothesis \"",
                   statement[nmbrTmpPtr[i]].labelName,
                   "\" assigned the \"$f\" hypothesis \"",
                   statement[k].labelName,
-                  "\" at step ",str(wrkProof.RPNStack[m] + 1),
+                  "\" at step ", str((double)(wrkProof.RPNStack[m] + 1)),
                   ".  The assignment of \"$e\" with \"$f\" is not allowed.",
                   NULL));
             }
@@ -3069,7 +3070,7 @@ char parseProof(long statemNum)
     fbPtr = wrkProof.stepSrcPtrPntr[wrkProof.numSteps - 1];
     if (!wrkProof.errorCount) {
       sourceError(fbPtr, proofTokenLen(fbPtr), statemNum, cat("After proof step ",
-          str(wrkProof.numSteps)," (the last step), the ",
+          str((double)(wrkProof.numSteps))," (the last step), the ",
           tmpStrPtr,".  It should contain exactly one entry.",NULL));
     }
     wrkProof.errorCount++;
@@ -3544,15 +3545,15 @@ char parseCompressedProof(long statemNum)
         if (j == statemNum) {
           sourceError(fbPtr, tokLength, statemNum, cat(
               "The label at proof step ",
-              str(step + 1),
+              str((double)step + 1),
              " is the label of this statement.  A statement may not be used to",
               " prove itself.",NULL));
         } else {
           sourceError(fbPtr, tokLength, statemNum, cat(
               "The label \"", statement[j].labelName, "\" at proof step ",
-              str(step + 1),
+              str((double)step + 1),
               " is the label of a future statement (at line ",
-              str(statement[j].lineNum),
+              str((double)(statement[j].lineNum)),
               " in file ",statement[j].fileName,
               ").  Only previous statements may be referenced.",
               NULL));
@@ -3636,9 +3637,9 @@ char parseCompressedProof(long statemNum)
           if (!wrkProof.errorCount) {
             sourceError(labelStart, tokLength, statemNum, cat(
      "This compressed label reference is outside the range of the label list.",
-                "  The compressed label value is ", str(labelMapIndex),
+                "  The compressed label value is ", str((double)labelMapIndex),
                 " but the largest label defined is ",
-                str(wrkProof.compressedPfNumLabels - 1), ".", NULL));
+                str((double)(wrkProof.compressedPfNumLabels - 1)), ".", NULL));
           }
           wrkProof.errorCount++;
           if (returnFlag < 2) returnFlag = 2;
@@ -3678,12 +3679,12 @@ char parseCompressedProof(long statemNum)
               if (numReqHyp == 1) {
                 let(&tmpStrPtr,cat("a hypothesis but the ",tmpStrPtr,NULL));
               } else {
-                let(&tmpStrPtr,cat(str(numReqHyp)," hypotheses but the ",tmpStrPtr,
+                let(&tmpStrPtr,cat(str((double)numReqHyp)," hypotheses but the ",tmpStrPtr,
                     NULL));
               }
               sourceError(fbPtr, tokLength, statemNum, cat(
                   "At proof step ",
-                  str(wrkProof.numSteps + 1),", statement \"",
+                  str((double)(wrkProof.numSteps + 1)),", statement \"",
                   statement[stmt].labelName,"\" requires ",
                   tmpStrPtr,".",NULL));
               let(&tmpStrPtr,"");
@@ -3711,12 +3712,12 @@ char parseCompressedProof(long statemNum)
                     sourceError(fbPtr, tokLength, statemNum, cat(
                         "Statement \"", statement[stmt].labelName,
                         "\" (proof step ",
-                        str(wrkProof.numSteps + 1),
+                        str((double)(wrkProof.numSteps + 1)),
                         ") has its \"$e\" hypothesis \"",
                         statement[nmbrTmpPtr[i]].labelName,
                         "\" assigned the \"$f\" hypothesis \"",
                         statement[k].labelName,
-                        "\" at step ",str(wrkProof.RPNStack[m] + 1),
+                        "\" at step ", str((double)(wrkProof.RPNStack[m] + 1)),
                       ".  The assignment of \"$e\" with \"$f\" is not allowed.",
                         NULL));
                   }
@@ -3814,7 +3815,7 @@ char parseCompressedProof(long statemNum)
           if (!wrkProof.errorCount) {
             sourceError(fbPtr, 1, statemNum, cat(
                 "The hypothesis or local label reference at proof step ",
-                str(wrkProof.numSteps),
+                str((double)(wrkProof.numSteps)),
                 " declares a local label.  Only \"$a\" and \"$p\" statement",
                 " labels may have local label declarations.",NULL));
           }
@@ -3945,7 +3946,7 @@ char parseCompressedProof(long statemNum)
     if (!wrkProof.errorCount) {
       sourceError(fbPtr, proofTokenLen(fbPtr), statemNum,
           cat("After proof step ",
-          str(wrkProof.numSteps)," (the last step), the ",
+          str((double)(wrkProof.numSteps))," (the last step), the ",
           tmpStrPtr,".  It should contain exactly one entry.",NULL));
     }
     wrkProof.errorCount++;
@@ -4106,7 +4107,7 @@ vstring shortDumpRPNStack(void) {
      memcpy(tmpStr,wrkProof.stepSrcPtrPntr[k],
          (size_t)(wrkProof.stepSrcPtrNmbr[k])); /* Label at step */
      let(&tmpStr2,cat(
-         tmpStr2,", ","\"",tmpStr,"\" (step ",str(k + 1),")",NULL));
+         tmpStr2,", ","\"",tmpStr,"\" (step ", str((double)k + 1),")",NULL));
   }
   let(&tmpStr2,right(tmpStr2,3));
   if (wrkProof.RPNStackPtr == 2) {
@@ -4124,7 +4125,7 @@ vstring shortDumpRPNStack(void) {
   if (wrkProof.RPNStackPtr == 1) {
     let(&tmpStr2,cat("one entry, ",tmpStr2,NULL));
   } else {
-    let(&tmpStr2,cat(str(wrkProof.RPNStackPtr)," entries: ",tmpStr2,NULL));
+    let(&tmpStr2,cat(str((double)(wrkProof.RPNStackPtr))," entries: ",tmpStr2,NULL));
   }
   let(&tmpStr2,cat("RPN stack contains ",tmpStr2,NULL));
   if (wrkProof.RPNStackPtr == 0) let(&tmpStr2,"RPN stack is empty");
@@ -4816,7 +4817,7 @@ vstring rewrapComment(vstring comment1)
 #define SENTENCE_END_PUNCTUATION ")'\""
   vstring comment = "";
   vstring commentTemplate = ""; /* Non-breaking space template */
-  long length, pos, i;
+  long length, pos, i, j;
   vstring ch; /* Pointer only; do not allocate */
   flag mathmode = 0;
 
@@ -4933,6 +4934,34 @@ vstring rewrapComment(vstring comment1)
          math with punctuation.  Also, commentTemplate would be misaligned
          anyway due to adding of spaces below. */
       comment[pos] = ASCII_4;
+  }
+
+  /* 3-May-2016 nm */
+  /* Look for proof locked or usage locked markup and change their spaces
+     to ASCII 4 to prevent line breaks in the middle */
+  if (proofLockedMarkup[0] == 0) {
+    /* getMarkupFlags() in mmdata.c has never been called, so initialize the
+       markup strings to their defaults */
+    let(&proofLockedMarkup, PROOF_LOCKED_MARKUP);
+    let(&usageLockedMarkup, USAGE_LOCKED_MARKUP);
+  }
+  pos = instr(1, comment, proofLockedMarkup);
+  if (pos != 0) {
+    i = (long)strlen(proofLockedMarkup);
+    for (j = pos; j < pos + i - 1; j++) { /* Check 2nd thru penultimate char */
+      if (comment[j] == ' ') {
+        comment[j] = ASCII_4;
+      }
+    }
+  }
+  pos = instr(1, comment, usageLockedMarkup);
+  if (pos != 0) {
+    i = (long)strlen(usageLockedMarkup);
+    for (j = pos; j < pos + i - 1; j++) { /* Check 2nd thru penultimate char */
+      if (comment[j] == ' ') {
+        comment[j] = ASCII_4;
+      }
+    }
   }
 
 

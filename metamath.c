@@ -5,7 +5,13 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.125 10-Mar-2016"
+#define MVERSION "0.126 3-May-2016"
+/* 0.126 3-May-2016 metamath.c, mmdata.h, mmdata.c, mmcmds.h, mmcmds.c,
+      mmcmdl.c, mmhlpb.c, mmpars.c - added getMarkupFlag() in mmdata.c;
+      Added /OVERRIDE added to ASSIGN, REPLACE, IMPROVE, MINIMIZE_WITH,
+      SAVE NEW_PROOF;  PROVE gives warning about SAVE NEW_PROOF for locked
+      proof.  Added SHOW RESTRICTED command.
+   3-May-2016 m*.c - fix numerous conversion warnings provided by gcc 5.3.0 */
 /* 0.125 10-Mar-2016 mmpars.c - fixed bug parsing /EXPLICIT/PACKED format
    8-Mar-2016 nm mmdata.c - added "#nnn" to SHOW STATEMENT etc. to reference
       statement number e.g. SHOW STATEMENT #58 shows a1i in set.mm.
@@ -290,8 +296,8 @@
    SHOW NEW_PROOF/START_COLUMN nn/LEM */
 /* 0.07.23 31-Aug-2006 nm mmwtex.c - Added Home and Contents links to bottom of
    WRITE THEOREM_LIST pages */
-/* 0.07.22 26-Aug-2006 nm metamath.c, mmcmdl.c, mmhlpb.c - Changed "IMPROVE
-   STEP <step>" to "IMPROVE <step>" for user convenience and to be consistent
+/* 0.07.22 26-Aug-2006 nm metamath.c, mmcmdl.c, mmhlpb.c - Changed 'IMPROVE
+   STEP <step>' to 'IMPROVE <step>' for user convenience and to be consistent
    with ASSIGN <step> */
 /* 0.07.21 20-Aug-2006 nm mmwtex.c - Revised small colored numbers so that all
    colors have the same grayscale brightness.. */
@@ -585,6 +591,7 @@ void command(int argc, char *argv[])
   vstring noNewAxiomsMatchList = "";  /* For NO_NEW_AXIOMS_FROM */ /* 22-Nov-2014 */
   vstring traceProofFlags = ""; /* For NO_NEW_AXIOMS_FROM */ /* 22-Nov-2014 nm */
   vstring traceTrialFlags = ""; /* For NO_NEW_AXIOMS_FROM */ /* 22-Nov-2014 nm */
+  flag overrideFlag; /* For restricted statement /OVERRIDE */ /* 3-May-2016 nm */
 
   struct pip_struct saveProofForReverting = {
        NULL_NMBRSTRING, NULL_PNTRSTRING, NULL_PNTRSTRING, NULL_PNTRSTRING };
@@ -1596,7 +1603,7 @@ void command(int argc, char *argv[])
         if (k > j) j = k;
         for (i = (long)val(fullArg[2]); i <= val(fullArg[3]);
             i = i + (long)val(fullArg[4])) {
-          let(&str1, str(i));
+          let(&str1, str((double)i));
           fprintf(list1_fp, "%s\n", str1);
         }
         fclose(list1_fp);
@@ -1642,7 +1649,7 @@ void command(int argc, char *argv[])
               p2++;
             }
           }
-          sum = sum + (long)val(str1);
+          sum = sum + val(str1);
         }
         print2(
 "The file has %ld lines.  The string \"%s\" occurs %ld times on %ld lines.\n",
@@ -1656,10 +1663,10 @@ void command(int argc, char *argv[])
             j, i, q);
         printLongLine(str4, "    "/*startNextLine*/, ""/*breakMatch*/);
             /* breakMatch empty means break line anywhere */  /* 6-Dec-03 */
- /* print2("If each line were a number, their sum would be %s\n", str(sum)); */
+ /* print2("If each line were a number, their sum would be %s\n", str((double)sum)); */
         printLongLine(cat(
             "Stripping all but digits, \".\", and \"-\", the sum of lines is ",
-            str(sum), NULL), "    ", " ");
+            str((double)sum), NULL), "    ", " ");
         fclose(list1_fp);
         continue;
       }
@@ -1801,7 +1808,8 @@ void command(int argc, char *argv[])
             !strcmp(",MM", left(str2, 3))) {
           print2("\n");
           printLongLine(cat("?Warning in statement \"",
-              statement[i].labelName, "\" at line ", str(statement[i].lineNum),
+              statement[i].labelName, "\" at line ",
+              str((double)(statement[i].lineNum)),
               " in file \"", statement[i].fileName,
               "\".  To workaround a Microsoft operating system limitation, the",
               " the following reserved words cannot be used for label names:",
@@ -2077,11 +2085,11 @@ void command(int argc, char *argv[])
         /************ Deleted 4-Nov-2015
 #define MONTHS "JanFebMarAprMayJunJulAugSepOctNovDec"
         /@ Match for 2-digit year OBSOLETE @/
-        let(&str1, cat("$([", str(k), "-", mid(MONTHS, 3 @ l - 2, 3), "-",
-            right(str(m), 3), "]$)", NULL));
+        let(&str1, cat("$([", str((double)k), "-", mid(MONTHS, 3 @ l - 2, 3), "-",
+            right(str((double)m), 3), "]$)", NULL));
         /@ Match for 4-digit year @/  /@ nm 10-Apr-06 @/
-        let(&str5, cat("$([", str(k), "-", mid(MONTHS, 3 @ l - 2, 3), "-",
-            str(m), "]$)", NULL));
+        let(&str5, cat("$([", str((double)k), "-", mid(MONTHS, 3 @ l - 2, 3), "-",
+            str((double)m), "]$)", NULL));
         *********** end of 4-Nov-2015 deletion */
 
         for (s = statements; s >= 1; s--) {
@@ -2315,7 +2323,7 @@ void command(int argc, char *argv[])
         }
 
         /* 2-Oct-2015 nm */
-        let(&str1, cat(str(i), " ",
+        let(&str1, cat(str((double)i), " ",
             statement[i].labelName, " $", chr(statement[i].type),
             NULL));
         if (!str2[0]) {
@@ -2345,7 +2353,7 @@ void command(int argc, char *argv[])
         }
 
         /* 2-Oct-2015 nm Deleted
-        let(&str1,cat(str(i)," ",
+        let(&str1,cat(str((double)i)," ",
             statement[i].labelName," $",chr(statement[i].type)," ",NULL));
 #define COL 19 /@ Characters per column @/
         if (j + (long)strlen(str1) > MAX_LEN
@@ -2383,6 +2391,11 @@ void command(int argc, char *argv[])
         let(&str2, "");
       }
       let(&str1, "");
+      continue;
+    }
+
+    if (cmdMatches("SHOW RESTRICTED")) {  /* was SHOW LOCKED */
+      showRestricted(); /* In mmcmds.c */
       continue;
     }
 
@@ -2776,9 +2789,9 @@ void command(int argc, char *argv[])
                   let(&str2, cat("<TR ALIGN=LEFT><TD ALIGN=LEFT>",
                       /*"<FONT COLOR=\"#FA8072\">",*/
                       "<FONT COLOR=ORANGE>",
-                      str(statement[i].pinkNumber), "</FONT> ",
+                      str((double)(statement[i].pinkNumber)), "</FONT> ",
                       "<FONT COLOR=GREEN><A HREF=\"",
-                      "mmtheorems", (k == 1) ? "" : str(k), ".html#",
+                      "mmtheorems", (k == 1) ? "" : str((double)k), ".html#",
                       statement[i].labelName,
                       "\">", statement[i].labelName,
                       "</A></FONT>", NULL));
@@ -3184,8 +3197,8 @@ void command(int argc, char *argv[])
       timeNow = clock();
       print2(
       "Time since last SHOW ELAPSED_TIME command = %4.2f s; total = %4.2f s\n",
-          (double)((1.0 * (timeNow - timePrevious))/CLOCKS_PER_SEC),
-          (double)((1.0 * timeNow)/CLOCKS_PER_SEC));
+          (double)((1.0 * (double)(timeNow - timePrevious))/CLOCKS_PER_SEC),
+          (double)((1.0 * (double)timeNow)/CLOCKS_PER_SEC));
       timePrevious = timeNow;
 #else
       print2("The clock() function is not implemented on this computer.\n");
@@ -3394,12 +3407,12 @@ void command(int argc, char *argv[])
             printLongLine(cat("Statement \"",
                 statement[showStatement].labelName,
                 str2, " the proof of ",
-                str(k), " statement:", NULL), "", " ");
+                str((double)k), " statement:", NULL), "", " ");
           } else {
             printLongLine(cat("Statement \"",
                 statement[showStatement].labelName,
                 str2, " the proofs of ",
-                str(k), " statements:", NULL), "", " ");
+                str((double)k), " statements:", NULL), "", " ");
           }
         }
 
@@ -3450,12 +3463,12 @@ void command(int argc, char *argv[])
             printLongLine(cat("Statement \"",
                 statement[showStatement].labelName,
                 str2, " the proof of ",
-                str(k), " statement:", NULL), "", " ");
+                str((double)k), " statement:", NULL), "", " ");
           } else {
             printLongLine(cat("Statement \"",
                 statement[showStatement].labelName,
                 str2, " the proofs of ",
-                str(k), " statements:", NULL), "", " ");
+                str((double)k), " statements:", NULL), "", " ");
           }
         }
 
@@ -3502,6 +3515,24 @@ void command(int argc, char *argv[])
         print2("?HTML qualifier is obsolete - use SHOW STATEMENT * / HTML\n");
         continue;
       }
+
+      /* 3-May-2016 nm */
+      if (cmdMatches("SAVE NEW_PROOF")
+          && getMarkupFlag(proveStatement, 1/*Proof locked*/)) {
+        if (switchPos("/ OVERRIDE") == 0) {
+          print2("\n");
+          print2(">>> ?Error: Attempt to overwrite a restricted proof.\n");
+          print2(
+   ">>> Use SAVE NEW_PROOF ... / OVERRIDE if you really want to do this.\n");
+          print2("\n");
+          continue;
+        } else {
+          print2("\n");
+          print2(">>> ?Warning: You are overwriting a restricted proof.\n");
+          print2("\n");
+        }
+      }
+
       if (cmdMatches("SHOW PROOF") || cmdMatches("SAVE PROOF")) {
         pipFlag = 0;
       } else {
@@ -3888,7 +3919,7 @@ void command(int argc, char *argv[])
                 "---------The proof of \"",statement[outStatement].labelName,
                 /* "\" to clip out ends above this line.\n",NULL)); */
                 /* 24-Apr-2015 nm */
-                "\" (", str(l), " bytes) ends above this line.\n", NULL));
+                "\" (", str((double)l), " bytes) ends above this line.\n", NULL));
           } /* End if saveFlag */
           nmbrLet(&nmbrSaveProof, NULL_NMBRSTRING);
           if (pipFlag) break; /* Only one iteration for NEW_PROOF stuff */
@@ -4060,7 +4091,8 @@ void command(int argc, char *argv[])
       nmbrLet(&nmbrTmp, parseMathTokens(fullArg[1], proveStatement));
       for (j = 0; j < 3; j++) {
         print2("Trying depth %ld\n", j);
-        nmbrTmpPtr = proveFloating(nmbrTmp, proveStatement, j, 0, 0);
+        nmbrTmpPtr = proveFloating(nmbrTmp, proveStatement, j, 0, 0,
+            1/*overrideFlag*/);
         if (nmbrLen(nmbrTmpPtr)) break;
       }
 
@@ -4206,6 +4238,17 @@ void command(int argc, char *argv[])
             0 /*texFlag*/,
             0 /*htmlFlag*/);
         /* 6/14/98 end */
+      }
+
+      /* 3-May-2016 nm */
+      if (getMarkupFlag(proveStatement, 1/*Proof locked*/)) {
+        print2("\n");
+        print2(
+">>> ?Warning: This statement has a restricted proof that normally should not\n"
+            );
+        print2(
+">>> be modified.  You must use SAVE NEW_PROOF ... / OVERRIDE to save it.\n");
+        print2("\n");
       }
 
       processUndoStack(NULL, PUS_INIT, "", 0); /* Optional? */
@@ -4378,12 +4421,13 @@ void command(int argc, char *argv[])
         n = nmbrLen(proofInProgress.proof); /* New proof length */
         if (n != m) {
           if (s != m) {
-            printLongLine(cat("Steps ", str(s), ":",
-                str(m), " are now ", str(s - m + n), ":", str(n), ".",
+            printLongLine(cat("Steps ", str((double)s), ":",
+                str((double)m), " are now ", str((double)(s - m + n)), ":",
+                str((double)n), ".",
                 NULL),
                 "", " ");
           } else {
-            printLongLine(cat("Step ", str(m), " is now step ", str(n), ".",
+            printLongLine(cat("Step ", str((double)m), " is now step ", str((double)n), ".",
                 NULL),
                 "", " ");
           }
@@ -4534,7 +4578,7 @@ void command(int argc, char *argv[])
 
         /* Check to see if the statement selected is allowed */
         if (!checkMStringMatch(nmbrTmp, s - 1)) {
-          printLongLine(cat("?Step ", str(s), " cannot be unified with \"",
+          printLongLine(cat("?Step ", str((double)s), " cannot be unified with \"",
               nmbrCvtMToVString(nmbrTmp),"\".", NULL), " ", " ");
           continue;
         }
@@ -4582,6 +4626,9 @@ void command(int argc, char *argv[])
           0 /* ALL not allowed */);
       if (s == -1) continue;  /* Error; message was provided already */
 
+      /* 3-May-2016 nm */
+      /* 1 means to override usage locks */
+      overrideFlag = ( (switchPos("/ OVERRIDE")) ? 1 : 0);
 
       /****** replaced by getStepNum()  nm 14-Sep-2012
       offset = 0; /@ 16-Apr-06 @/
@@ -4594,7 +4641,7 @@ void command(int argc, char *argv[])
         offset = 1;          /@ 16-Apr-06 @/
       } else {
         s = (long)val(fullArg[1]); /@ Step number @/
-        if (strcmp(fullArg[1], str(s))) {
+        if (strcmp(fullArg[1], str((double)s))) {
           print2("?Expected either a number or FIRST or LAST after ASSIGN.\n");
                                                              /@ 11-Dec-05 nm @/
           continue;
@@ -4650,6 +4697,22 @@ void command(int argc, char *argv[])
         continue;
       }
       ***************** end of 14-Sep-2012 deletion ************/
+
+      /* 3-May-2016 nm */
+      if (getMarkupFlag(k, 2/*Usage locked*/)) {
+        if (overrideFlag == 0) {
+          print2("\n");
+          print2(">>> ?Error: Attempt to assign a restricted statement.\n");
+          print2(
+       ">>> Use ASSIGN ... / OVERRIDE if you really want to do this.\n");
+          print2("\n");
+          continue;
+        } else {
+          print2("\n");
+          print2(">>> ?Warning: You are assigning a restricted statement.\n");
+          print2("\n");
+        }
+      }
 
       m = nmbrLen(proofInProgress.proof); /* Original proof length */
 
@@ -4744,16 +4807,16 @@ void command(int argc, char *argv[])
           s, statement[k].labelName);
       } else {
         if (s != m) {
-          printLongLine(cat("Step ", str(s),
+          printLongLine(cat("Step ", str((double)s),
               " was assigned statement ", statement[k].labelName,
-              ".  Steps ", str(s), ":",
-              str(m), " are now ", str(s - m + n), ":", str(n), ".",
+              ".  Steps ", str((double)s), ":",
+              str((double)m), " are now ", str((double)(s - m + n)), ":", str((double)n), ".",
               NULL),
               "", " ");
         } else {
-          printLongLine(cat("Step ", str(s),
+          printLongLine(cat("Step ", str((double)s),
               " was assigned statement ", statement[k].labelName,
-              ".  Step ", str(m), " is now step ", str(n), ".",
+              ".  Step ", str((double)m), " is now step ", str((double)n), ".",
               NULL),
               "", " ");
         }
@@ -4762,7 +4825,7 @@ void command(int argc, char *argv[])
       /* 8-Apr-05 nm Added: */
       /* 1-Nov-2013 nm No longer needed because of UNDO
       printLongLine(cat("To undo the assignment, DELETE STEP ",
-              str(s - m + n), " and if needed INITIALIZE, UNIFY.",
+              str((double)(s - m + n)), " and if needed INITIALIZE, UNIFY.",
               NULL),
               "", " ");
       */
@@ -4798,6 +4861,10 @@ void command(int argc, char *argv[])
     if (cmdMatches("REPLACE")) {
 
       /* s = (long)val(fullArg[1]);  obsolete */ /* Step number */
+
+      /* 3-May-2016 nm */
+      /* 1 means to override usage locks */
+      overrideFlag = ( (switchPos("/ OVERRIDE")) ? 1 : 0);
 
       /* 14-Sep-2012 nm */
       step = getStepNum(fullArg[1], proofInProgress.proof,
@@ -4858,6 +4925,22 @@ void command(int argc, char *argv[])
       }
       ****************************** end of 14-Sep-2012 deletion *********/
 
+      /* 3-May-2016 nm */
+      if (getMarkupFlag(stmt, 2/*Usage locked*/)) {
+        if (overrideFlag == 0) {
+          print2("\n");
+          print2(">>> ?Error: Attempt to assign a restricted statement.\n");
+          print2(
+       ">>> Use REPLACE ... / OVERRIDE if you really want to do this.\n");
+          print2("\n");
+          continue;
+        } else {
+          print2("\n");
+          print2(">>> ?Warning: You are assigning a restricted statement.\n");
+          print2("\n");
+        }
+      }
+
       m = nmbrLen(proofInProgress.proof); /* Original proof length */
 
       /************** 14-Sep-2012 replaced by getStepNum()
@@ -4906,7 +4989,9 @@ void command(int argc, char *argv[])
           0,/*scan whole proof to maximize chance of a match*/
           0/*noDistinct*/,
           1/* try to prove $e's */,
-          1/*improveDepth*/);
+          1/*improveDepth*/,
+          overrideFlag   /* 3-May-2016 nm */
+          );
       if (!nmbrLen(nmbrTmpPtr)) {
         print2(
            "?Hypotheses of statement \"%s\" do not match known proof steps.\n",
@@ -4947,16 +5032,17 @@ void command(int argc, char *argv[])
             step, statement[stmt].labelName);
         } else {
           if (step != m) {
-            printLongLine(cat("Step ", str(step),
+            printLongLine(cat("Step ", str((double)step),
                 " was replaced with statement ", statement[stmt].labelName,
-                ".  Steps ", str(step), ":",
-                str(m), " are now ", str(step - m + n), ":", str(n), ".",
+                ".  Steps ", str((double)step), ":",
+                str((double)m), " are now ", str((double)(step - m + n)), ":",
+                str((double)n), ".",
                 NULL),
                 "", " ");
           } else {
-            printLongLine(cat("Step ", str(step),
+            printLongLine(cat("Step ", str((double)step),
                 " was replaced with statement ", statement[stmt].labelName,
-                ".  Step ", str(m), " is now step ", str(n), ".",
+                ".  Step ", str((double)m), " is now step ", str((double)n), ".",
                 NULL),
                 "", " ");
           }
@@ -4984,7 +5070,7 @@ void command(int argc, char *argv[])
         printLongLine(cat(
      "Assignments to shared working variables ($nn) are guesses.  If "
      "incorrect, to undo DELETE STEP ",
-              str(step - m + n),
+              str((double)(step - m + n)),
       ", INITIALIZE, UNIFY, then assign them manually with LET ",
       "and try REPLACE again.",
               NULL),
@@ -5044,6 +5130,10 @@ void command(int argc, char *argv[])
       searchUnkSubproofs = 0;
       if (switchPos("/ SUBPROOFS")) searchUnkSubproofs = 1;
 
+      /* 3-May-2016 nm */
+      /* 1 means to override usage locks */
+      overrideFlag = ( (switchPos("/ OVERRIDE")) ? 1 : 0);
+
       /* 14-Sep-2012 nm */
       s = getStepNum(fullArg[1], proofInProgress.proof,
           1 /* ALL not allowed */);
@@ -5052,7 +5142,7 @@ void command(int argc, char *argv[])
       if (s != 0) {  /* s=0 means ALL */
 
       /**************** 14-Sep-2012 nm replaced with getStepNum()
-      /@ 26-Aug-2006 nm Changed "IMPROVE STEP <step>" to "IMPROVE <step>" @/
+      /@ 26-Aug-2006 nm Changed 'IMPROVE STEP <step>' to 'IMPROVE <step>' @/
       let(&str1, fullArg[1]); /@ To avoid void pointer problems with fullArg @/
       if (toupper((unsigned char)(str1[0])) != 'A') {
         /@ 16-Apr-06 nm - Handle nonpositive step number: 0 = last,
@@ -5062,7 +5152,7 @@ void command(int argc, char *argv[])
            with SHOW NEW_PROOF/ESSENTIAL/UNKNOWN @/
         if (toupper((unsigned char)(str1[0])) == 'L'
             || toupper((unsigned char)(str1[0])) == 'F') {
-                                        /@ "IMPROVE LAST" or "IMPROVE FIRST" @/
+                                        /@ 'IMPROVE LAST' or 'IMPROVE FIRST' @/
           s = 1; /@ Temporary until we figure out which step @/
           offset = 1;          /@ 16-Apr-06 @/
         } else {
@@ -5072,7 +5162,7 @@ void command(int argc, char *argv[])
             continue;
           }
           s = (long)val(fullArg[1]); /@ Step number @/
-          if (strcmp(fullArg[1], str(s))) {
+          if (strcmp(fullArg[1], str((double)s))) {
             print2(
                 "?Expected a number or FIRST or LAST or ALL after IMPROVE.\n");
             continue;
@@ -5210,7 +5300,9 @@ void command(int argc, char *argv[])
         if (dummyVarIsoFlag == 0) { /* No dummy vars */ /* 25-Aug-2012 nm */
           /* Only use proveFloating if no dummy vars */
           nmbrTmpPtr = proveFloating((proofInProgress.target)[s - 1],
-              proveStatement, improveDepth, s - 1, (char)p/*NO_DISTINCT*/);
+              proveStatement, improveDepth, s - 1, (char)p/*NO_DISTINCT*/,
+              overrideFlag  /* 3-May-2016 nm */
+              );
         } else {
           nmbrTmpPtr = NULL_NMBRSTRING; /* Initialize */ /* 25-Aug-2012 nm */
         }
@@ -5224,7 +5316,8 @@ void command(int argc, char *argv[])
               (char)p/*NO_DISTINCT*/, /* 1 means don't try stmts with $d's */
               dummyVarIsoFlag,
               (char)(searchAlg - 2), /*0=proveFloat for $fs, 1=$e's also */
-              improveDepth                         /* 4-Sep-2012 */
+              improveDepth, /* 4-Sep-2012 */
+              overrideFlag  /* 3-May-2016 nm */
               );
           }
           if (!nmbrLen(nmbrTmpPtr)) {
@@ -5247,16 +5340,17 @@ void command(int argc, char *argv[])
           print2("A 1-step proof was found for step %ld.\n", s);
         } else {
           if (s != m || q != 1) {
-            printLongLine(cat("A ", str(n - m + 1),
-                "-step proof was found for step ", str(s),
-                ".  Steps ", str(s), ":",
-                str(m), " are now ", str(s - q + 1 - m + n), ":", str(n), ".",
+            printLongLine(cat("A ", str((double)(n - m + 1)),
+                "-step proof was found for step ", str((double)s),
+                ".  Steps ", str((double)s), ":",
+                str((double)m), " are now ", str((double)(s - q + 1 - m + n)),
+                ":", str((double)n), ".",
                 NULL),
                 "", " ");
           } else {
-            printLongLine(cat("A ", str(n - m + 1),
-                "-step proof was found for step ", str(s),
-                ".  Step ", str(m), " is now step ", str(n), ".",
+            printLongLine(cat("A ", str((double)(n - m + 1)),
+                "-step proof was found for step ", str((double)s),
+                ".  Step ", str((double)m), " is now step ", str((double)n), ".",
                 NULL),
                 "", " ");
           }
@@ -5371,7 +5465,10 @@ void command(int argc, char *argv[])
                 /* No dummy vars */ /* 25-Aug-2012 nm */
               /* Only use proveFloating if no dummy vars */
               nmbrTmpPtr = proveFloating((proofInProgress.target)[s - 1],
-                  proveStatement, improveDepth, s - 1, (char)p/*NO_DISTINCT*/);
+                  proveStatement, improveDepth, s - 1,
+                  (char)p/*NO_DISTINCT*/,
+                  overrideFlag  /* 3-May-2016 nm */
+                  );
             } else {
               nmbrTmpPtr = NULL_NMBRSTRING; /* Init */ /* 25-Aug-2012 nm */
             }
@@ -5388,7 +5485,8 @@ void command(int argc, char *argv[])
                   (char)p/*NO_DISTINCT*/, /* 1 means don't try stmts w/ $d's */
                   dummyVarIsoFlag,
                   (char)(searchAlg - 2),/*searchMethod: 0 or 1*/
-                  improveDepth                         /* 4-Sep-2012 */
+                  improveDepth,                        /* 4-Sep-2012 */
+                  overrideFlag   /* 3-May-2016 nm */
                   );
 
               }
@@ -5474,7 +5572,7 @@ void command(int argc, char *argv[])
 
       continue;
 
-    }
+    } /* cmdMatches("IMPROVE") */
 
 
     if (cmdMatches("MINIMIZE_WITH")) {
@@ -5526,6 +5624,9 @@ void command(int argc, char *argv[])
           sandboxStmt = statements + 1;  /* Default beyond db end if none */
       }
 
+      /* 3-May-2016 nm */
+      /* Flag to override any "usage locks" placed in the comment markup */
+      overrideFlag = (switchPos("/ OVERRIDE") != 0);
 
       /* 25-Jun-2014 nm */
       /* If a single statement is specified, don't bother to do certain
@@ -5660,6 +5761,15 @@ void command(int argc, char *argv[])
                this) */
             if (matchesList(statement[k].labelName, forbidMatchList, '*', '?'))
               continue;
+          }
+
+          /* 3-May-2016 nm */
+          /* Check to see if statement comment specified a usage
+             restriction */
+          if (!overrideFlag) {
+            if (getMarkupFlag(k, 2/*usage*/)) {
+              continue;
+            }
           }
 
           /* Print individual labels */
@@ -5859,6 +5969,17 @@ void command(int argc, char *argv[])
             */
 
             /*if (nmbrLen(statement[k].reqDisjVarsA) || !allowGrowthFlag) {*/
+
+            /* 3-May-2016 nm */
+            /* Warn user if a restricted statement is overridden */
+            if (getMarkupFlag(k, 2/*usage*/)) {
+              if (!overrideFlag) bug(1126);
+              print2("\n");
+              print2(">>> ?Warning: Overriding usage restriction on \"%s\".\n",
+                  statement[k].labelName);
+              print2("\n");
+            }
+
             if (!allowGrowthFlag) {
               /* Note:  this is the length BEFORE indentation and wrapping,
                  so it is less than SHOW PROOF ... /SIZE */
@@ -5966,7 +6087,9 @@ void command(int argc, char *argv[])
       if (prntStatus == 1 && allowGrowthFlag)
         print2("The proof was not changed.\n");
       if (!prntStatus /* && !noDistinctFlag */)
-        print2("?No earlier $p or $a label matches \"%s\".\n", fullArg[1]);
+        print2("?No earlier %s$p or $a label matches \"%s\".\n",
+            (overrideFlag ? "" : "(allowed) "),  /* 3-May-2016 nm */
+            fullArg[1]);
       /* 25-Jun-2014 nm /NO_DISTINCT is obsolete
       if (!prntStatus && noDistinctFlag) {
         /@ 30-Jan-06 nm Added single-character-match wildcard argument @/
@@ -6032,10 +6155,11 @@ void command(int argc, char *argv[])
         print2("Step %ld was deleted.\n", s);
       } else {
         if (n > 1) {
-          printLongLine(cat("A ", str(m - n + 1),
-              "-step subproof at step ", str(s),
-              " was deleted.  Steps ", str(s), ":",
-              str(m), " are now ", str(s - m + n), ":", str(n), ".",
+          printLongLine(cat("A ", str((double)(m - n + 1)),
+              "-step subproof at step ", str((double)s),
+              " was deleted.  Steps ", str((double)s), ":",
+              str((double)m), " are now ", str((double)(s - m + n)), ":",
+              str((double)n), ".",
               NULL),
               "", " ");
         } else {
@@ -6315,7 +6439,7 @@ void command(int argc, char *argv[])
           /* Strip linefeeds and reduce spaces */
           let(&str2, edit(str2, 4 + 8 + 16 + 128));
           j = j + ((long)strlen(str1) / 2); /* Center of match location */
-          p = screenWidth - 7 - (long)strlen(str(i)) - (long)strlen(statement[i].labelName);
+          p = screenWidth - 7 - (long)strlen(str((double)i)) - (long)strlen(statement[i].labelName);
                         /* Longest comment portion that will fit in one line */
           q = (long)strlen(str2); /* Length of comment */
           if (q <= p) { /* Use entire comment */
@@ -6332,7 +6456,7 @@ void command(int argc, char *argv[])
               }
             }
           }
-          print2("%s\n", cat(str(i), " ", statement[i].labelName, " $",
+          print2("%s\n", cat(str((double)i), " ", statement[i].labelName, " $",
               chr(statement[i].type), " \"", str3, "\"", NULL));
           let(&str2, "");
         } else { /* No COMMENTS switch */
@@ -6378,7 +6502,7 @@ void command(int argc, char *argv[])
             continue;
           let(&str2, edit(str2, 8 + 16 + 128)); /* Trim leading, trailing
               spaces; reduce white space to space */
-          printLongLine(cat(str(i)," ",
+          printLongLine(cat(str((double)i)," ",
               statement[i].labelName,
               tmpFlag ? "" : cat(" $", chr(statement[i].type), NULL),
               " ", str2,
@@ -6656,7 +6780,7 @@ void command(int argc, char *argv[])
             }
             m++;
             if (!print2("%ld:  %s\n", j, left(str1,
-                MAX_LEN - (long)strlen(str(j)) - 3))) break;
+                MAX_LEN - (long)strlen(str((double)j)) - 3))) break;
           }
         }
         for (k = 1; k < searchWindow; k++) {

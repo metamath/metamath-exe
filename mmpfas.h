@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2013  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2016  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -47,7 +47,9 @@ nmbrString *proveByReplacement(long prfStmt,
     flag noDistinct, /* 1 means don't try statements with $d's */
     flag dummyVarFlag, /* 0 means no dummy vars are in prfStmt */
     flag searchMethod, /* 1 means to try proveFloating on $e's also */
-    long improveDepth
+    long improveDepth,
+    /* 3-May-2016 nm */
+    flag overrideFlag /* 1 means to override usage locks */
      );
 
 nmbrString *replaceStatement(long replStatemNum,
@@ -57,7 +59,9 @@ nmbrString *replaceStatement(long replStatemNum,
    matches, instead of whole proof, for faster speed (used by MINIMIZE_WITH) */
     flag noDistinct, /* 1 means don't try statements with $d's */
     flag searchMethod, /* 1 means to try proveFloating on $e's also */
-    long improveDepth
+    long improveDepth,
+    /* 3-May-2016 nm */
+    flag overrideFlag /* 1 means to override usage locks */
     );
 
 /* 22-Aug-2012 nm Added this function */
@@ -100,7 +104,12 @@ char checkMStringMatch(nmbrString *mString, long step);
 /* maxEDepth is the maximum depth at which statements with $e hypotheses are
    considered.  A value of 0 means none are considered. */
 nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
-    long step, flag noDistinct);
+    long step, flag noDistinct,
+    /* 3-May-2016 nm */
+    flag overrideFlag /* 0 means respect usage locks
+                         1 means to override usage locks
+                         2 means override silently */
+);
 
 /* 22-Aug-2012 nm Added this function */
 /* This function does quick check for some common conditions that prevent
