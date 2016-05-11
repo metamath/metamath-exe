@@ -664,10 +664,16 @@ H("");
 
 
 printHelp = !strcmp(saveHelpCmd, "HELP PROVE");
-H("Syntax:  PROVE <label>");
+H("Syntax:  PROVE <label> [/ OVERRIDE]");
 H("");
 H("This command will enter the Proof Assistant, which will allow you to");
 H("create or edit the proof of the specified statement.");
+H("");
+H("Optional qualifier:");
+H("    / OVERRIDE - By default, PROVE will refuse to enter the Proof");
+H("        Assistant if \"(Proof modification is discouraged.)\" is present");
+H("        in the statement's description comment.  This qualifier will");
+H("        allow the Proof Assistant to be entered.");
 H("");
 H("See also:  HELP PROOF_ASSISTANT and HELP EXIT");
 H("");

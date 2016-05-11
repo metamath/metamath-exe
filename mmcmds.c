@@ -4069,7 +4069,7 @@ void verifyMarkup(vstring labelMatch,
    to identify versioning differences on GitHub. */
 void showRestricted(void) {   /* was: showLocked */
   long stmt, s, usageCount;
-  long lowStmt, highStmt; /* For a slight speedup */
+  long lowStmt = 0, highStmt = 0; /* For a slight speedup */
   flag notQuitPrint = 1; /* Goes to 0 if user typed 'q' at scroll prompt */
   vstring str1 = "";
   for (stmt = 1; stmt <= statements; stmt++) {

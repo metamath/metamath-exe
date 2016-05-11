@@ -5,7 +5,9 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.126 3-May-2016"
+#define MVERSION "0.127 10-May-2016"
+/* 0.127 10-May-2016 metamath.c, mmcmdl.c, mmhlpb.c - added /OVERRIDE to
+      PROVE */
 /* 0.126 3-May-2016 metamath.c, mmdata.h, mmdata.c, mmcmds.h, mmcmds.c,
       mmcmdl.c, mmhlpb.c, mmpars.c - added getMarkupFlag() in mmdata.c;
       Added /OVERRIDE added to ASSIGN, REPLACE, IMPROVE, MINIMIZE_WITH,
@@ -4123,6 +4125,24 @@ void command(int argc, char *argv[])
         continue; /* Error msg was provided if not unique */
       }
       proveStatement = i;
+
+
+      /* 10-May-2016 nm */
+      /* 1 means to override usage locks */
+      overrideFlag = ( (switchPos("/ OVERRIDE")) ? 1 : 0);
+      if (getMarkupFlag(proveStatement, 1/*Proof locked*/)) {
+        if (overrideFlag == 0) {
+          print2("\n");
+          print2(
+ ">>> ?Error: This statement has a restricted proof that normally should not\n"
+              );
+          print2(
+ ">>> be modified.  You must use PROVE ... / OVERRIDE to work on it.\n");
+          print2("\n");
+          continue;
+        }
+      }
+
 
       /*********** 14-Sep-2012 replaced by getStatementNum()
       /@??? Make sure only $p statements are allowed. @/

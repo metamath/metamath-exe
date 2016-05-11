@@ -807,6 +807,22 @@ flag processCommandLine(void)
           cat("* What is the label of the statement you want to try proving",
           defaultArg,"? ",NULL)))
         goto pclbad;
+
+      /* 10-May-2016 nm */
+      /* Get any switches */
+      i = 1;
+      while (1) {
+        i++;
+        if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+        if (lastArgMatches("/")) {
+          i++;
+          if (!getFullArg(i,"OVERRIDE|<OVERRIDE>")) goto pclbad;
+        } else {
+          break;
+        }
+        break; /* Break if only 1 switch is allowed */
+      } /* End while for switch loop */
+
       goto pclgood;
     }
 
