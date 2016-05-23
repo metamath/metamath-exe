@@ -285,7 +285,9 @@ nmbrString *proveByReplacement(long prfStmt,
 
     /* 3-May-2016 nm */
     /* Skip statements with locked usage (the above skips non-$a,p) */
-    if (overrideFlag == 0 && getMarkupFlag(trialStmt, 2/*usage*/)) continue;
+    if (overrideFlag == 0 && getMarkupFlag(trialStmt, USAGE_RESTRICTION)) {
+      continue;
+    }
 
     /* noDistinct is set by NO_DISTICT qualifier in IMPROVE */
     if (noDistinct) {
@@ -309,7 +311,7 @@ nmbrString *proveByReplacement(long prfStmt,
 
       /* 3-May-2016 nm */
       /* Inform user that we're using a statement with locked usage */
-      if (overrideFlag == 1 && getMarkupFlag(trialStmt, 2/*usage*/)) {
+      if (overrideFlag == 1 && getMarkupFlag(trialStmt, USAGE_RESTRICTION)) {
         print2("\n");
         print2(">>> ?Warning:  Assigning restricted statement \"%s\".\n",
             statement[trialStmt].labelName);
@@ -378,7 +380,9 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
   /* 3-May-2016 nm */
   /* If we are overriding locked usage, a warning has already been printed. */
   /* If we are not, then we should never get here. */
-  if (overrideFlag == 0 && getMarkupFlag(replStatemNum, 2/*usage*/)) bug(1868);
+  if (overrideFlag == 0 && getMarkupFlag(replStatemNum, USAGE_RESTRICTION)) {
+    bug(1868);
+  }
 
   /* Initialization to avoid compiler warning (should not be theoretically
      necessary) */
@@ -1590,7 +1594,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
     if (quickMatchFilter(stmt, mString, 0/*no dummy vars*/) == 0) continue;
 
     /* 3-May-2016 nm */
-    if (!overrideFlag && getMarkupFlag(stmt, 2/*usage*/)) {
+    if (!overrideFlag && getMarkupFlag(stmt, USAGE_RESTRICTION)) {
       /* Skip restricted (usage-locked) statements */
       continue;
     }
@@ -1843,7 +1847,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
         nmbrLet(&proof, nmbrCat(proof, hypProofList[hyp], NULL));
       }
 
-      if (getMarkupFlag(stmt, 2/*usage*/)) {
+      if (getMarkupFlag(stmt, USAGE_RESTRICTION)) {
         switch (overrideFlag) {
           case 0: bug(1869); break; /* Should never get here if no override */
           case 2: break; /* Accept overrided silently (in mmcmds.c syntax
@@ -1856,7 +1860,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
             break;
           default: bug(1870); /* Illegal value */
         } /* end switch (overrideFlag) */
-      } /* end if (getMarkupFlag(stmt, 2)) */
+      } /* end if (getMarkupFlag(stmt, USAGE_RESTRICTION)) */
 
       nmbrLet(&proof, nmbrAddElement(proof, stmt)); /* Complete the proof */
 

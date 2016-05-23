@@ -3841,7 +3841,7 @@ void eraseSource(void)    /* ERASE command */
   minSubstLen = 1; /* Initialize to the default SET EMPTY_SUBSTITUTION OFF */
 
   /* 3-May-2016 nm */
-  getMarkupFlag(0, 0/*init*/); /* Erase the cached markup flag storage */
+  getMarkupFlag(0, RESET); /* Erase the cached markup flag storage */
 
 } /* eraseSource */
 
@@ -4079,7 +4079,7 @@ void showRestricted(void) {   /* was: showLocked */
     if (notQuitPrint == 0) break;
 
     if (statement[stmt].type != p_ && statement[stmt].type != a_) continue;
-    if (getMarkupFlag(stmt, 1) == 1
+    if (getMarkupFlag(stmt, PROOF_RESTRICTION) == 1
         && statement[stmt].type == p_ /* Ignore $a's */
         ) {
       /* Restricted proof */
@@ -4090,7 +4090,7 @@ void showRestricted(void) {   /* was: showLocked */
           statement[stmt].labelName,
           nmbrLen(wrkProof.proofString));
     } /* if restricted proof */
-    if (getMarkupFlag(stmt, 2) == 1) {
+    if (getMarkupFlag(stmt, USAGE_RESTRICTION) == 1) {
       /* Restricted usage */
       usageCount = 0;
       let(&str1, "");

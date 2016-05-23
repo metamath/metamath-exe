@@ -5,7 +5,9 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.127 10-May-2016"
+#define MVERSION "0.128 22-May-2016"
+/* 0.128 22-May-2016 mminou.c - fixed error message going to html page
+      instead of to screen, triggering bug 126. */
 /* 0.127 10-May-2016 metamath.c, mmcmdl.c, mmhlpb.c - added /OVERRIDE to
       PROVE */
 /* 0.126 3-May-2016 metamath.c, mmdata.h, mmdata.c, mmcmds.h, mmcmds.c,
@@ -3520,7 +3522,7 @@ void command(int argc, char *argv[])
 
       /* 3-May-2016 nm */
       if (cmdMatches("SAVE NEW_PROOF")
-          && getMarkupFlag(proveStatement, 1/*Proof locked*/)) {
+          && getMarkupFlag(proveStatement, PROOF_RESTRICTION)) {
         if (switchPos("/ OVERRIDE") == 0) {
           print2("\n");
           print2(">>> ?Error: Attempt to overwrite a restricted proof.\n");
@@ -4130,7 +4132,7 @@ void command(int argc, char *argv[])
       /* 10-May-2016 nm */
       /* 1 means to override usage locks */
       overrideFlag = ( (switchPos("/ OVERRIDE")) ? 1 : 0);
-      if (getMarkupFlag(proveStatement, 1/*Proof locked*/)) {
+      if (getMarkupFlag(proveStatement, PROOF_RESTRICTION)) {
         if (overrideFlag == 0) {
           print2("\n");
           print2(
@@ -4261,7 +4263,7 @@ void command(int argc, char *argv[])
       }
 
       /* 3-May-2016 nm */
-      if (getMarkupFlag(proveStatement, 1/*Proof locked*/)) {
+      if (getMarkupFlag(proveStatement, PROOF_RESTRICTION)) {
         print2("\n");
         print2(
 ">>> ?Warning: This statement has a restricted proof that normally should not\n"
@@ -4719,7 +4721,7 @@ void command(int argc, char *argv[])
       ***************** end of 14-Sep-2012 deletion ************/
 
       /* 3-May-2016 nm */
-      if (getMarkupFlag(k, 2/*Usage locked*/)) {
+      if (getMarkupFlag(k, USAGE_RESTRICTION)) {
         if (overrideFlag == 0) {
           print2("\n");
           print2(">>> ?Error: Attempt to assign a restricted statement.\n");
@@ -4946,7 +4948,7 @@ void command(int argc, char *argv[])
       ****************************** end of 14-Sep-2012 deletion *********/
 
       /* 3-May-2016 nm */
-      if (getMarkupFlag(stmt, 2/*Usage locked*/)) {
+      if (getMarkupFlag(stmt, USAGE_RESTRICTION)) {
         if (overrideFlag == 0) {
           print2("\n");
           print2(">>> ?Error: Attempt to assign a restricted statement.\n");
@@ -5787,7 +5789,7 @@ void command(int argc, char *argv[])
           /* Check to see if statement comment specified a usage
              restriction */
           if (!overrideFlag) {
-            if (getMarkupFlag(k, 2/*usage*/)) {
+            if (getMarkupFlag(k, USAGE_RESTRICTION)) {
               continue;
             }
           }
@@ -5992,7 +5994,7 @@ void command(int argc, char *argv[])
 
             /* 3-May-2016 nm */
             /* Warn user if a restricted statement is overridden */
-            if (getMarkupFlag(k, 2/*usage*/)) {
+            if (getMarkupFlag(k, USAGE_RESTRICTION)) {
               if (!overrideFlag) bug(1126);
               print2("\n");
               print2(">>> ?Warning: Overriding usage restriction on \"%s\".\n",

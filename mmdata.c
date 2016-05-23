@@ -2948,10 +2948,10 @@ long getSourceIndentation(long statemNum) {
 
 /* Returns 0 or 1 to indicate absence or presence of an indicator in
    the comment of the statement. */
-/* type = 1 means get the proof restriction indicator
-   type = 2 means get the usage restriction indicator
-   type = 0 means to reset everything (statemeNum is ignored) */
-flag getMarkupFlag(long statemNum, flag type) {
+/* mode = 1 = PROOF_RESTRICTION  means get any proof restriction indicator
+   mode = 2 = USAGE_RESTRICTION  means get any usage restriction indicator
+   mode = 0 = RESET  means to reset everything (statemeNum is ignored) */
+flag getMarkupFlag(long statemNum, flag mode) {
   /* For speedup, the algorithm searches a statement's comment for markup
      matches only the first time, then saves the result for subsequent calls
      for that statement. */
@@ -2967,7 +2967,7 @@ flag getMarkupFlag(long statemNum, flag type) {
   extern vstring usageLockedMarkup;
   */
 
-  if (type == 0) { /* Initialize */ /* Should be called by RESET command */
+  if (mode == RESET) { /* Initialize */ /* Should be called by RESET command */
     let(&commentSearchedFlags, "");
     let(&proofFlags, "");
     let(&usageFlags, "");
@@ -3022,8 +3022,8 @@ flag getMarkupFlag(long statemNum, flag type) {
     commentSearchedFlags[statemNum] = 'Y';
   }
 
-  if (type == 1) return (proofFlags[statemNum] == 'Y') ? 1 : 0;
-  if (type == 2) return (usageFlags[statemNum] == 'Y') ? 1 : 0;
+  if (mode == PROOF_RESTRICTION) return (proofFlags[statemNum] == 'Y') ? 1 : 0;
+  if (mode == USAGE_RESTRICTION) return (usageFlags[statemNum] == 'Y') ? 1 : 0;
   bug(1394);
   return 0;
 } /* getMarkupFlag */

@@ -976,6 +976,12 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
   vstring prntStr = "";
   vstring line1 = "";
   int j;
+  flag saveOutputToString; /* 22-May-2016 nm */
+
+  /* 22-May-2016 nm */
+  /* Prevent putting error message in printString */
+  saveOutputToString = outputToString;
+  outputToString = 0;
 
   /* Make sure vstring argument doesn't get deallocated with another let */
 /*??? USE SAVETEMPALLOC*/
@@ -1049,6 +1055,10 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
     exit(0);
   } */
 
+  /* 22-May-2016 nm */
+  /* Restore output to printString if it was enabled before */
+  outputToString = saveOutputToString;
+
   if (severity == 3) {
     print2("Aborting Metamath.\n");
     exit(0);
@@ -1058,7 +1068,7 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
   let(&prntStr,"");
   let(&error,"");
   if (line1) let(&line1,"");
-}
+} /* errorMessage() */
 
 
 
@@ -1195,7 +1205,7 @@ FILE *fSafeOpen(vstring fileName, vstring mode)
   bug(1510); /* Illegal mode */
   return(NULL);
 
-}
+} /* fSafeOpen() */
 
 
 /* Renames a file with backup of previous version.  If non-zero
@@ -1240,7 +1250,7 @@ int fSafeRename(vstring oldFileName, vstring newFileName)
         oldFileName);
   }
   return error;
-}
+} /* fSafeRename */
 
 
 /* Finds the name of the first file of the form filePrefix +
@@ -1266,7 +1276,7 @@ vstring fGetTmpName(vstring filePrefix)
     }
   }
   return fname; /* Caller must deallocate! */
-}
+} /* fGetTmpName() */
 
 
 /* Added 10/10/02 */

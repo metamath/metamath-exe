@@ -14,6 +14,10 @@
 /* For use by getMarkupFlag() */
 #define PROOF_LOCKED_MARKUP "(Proof modification is discouraged.)"
 #define USAGE_LOCKED_MARKUP "(New usage is discouraged.)"
+/* Mode argument for getMarkupFlag() */
+#define PROOF_RESTRICTION 1
+#define USAGE_RESTRICTION 2
+#define RESET 0
 extern vstring proofLockedMarkup;
 extern vstring usageLockedMarkup;
 
@@ -403,7 +407,7 @@ void free2DMatrix(long **matrix, size_t xsize /*, size_t ysize*/);
 long getSourceIndentation(long statemNum);
 
 /* Returns any comment (description) that occurs just before a statement */
-flag getMarkupFlag(long statemNum, flag type);
+flag getMarkupFlag(long statemNum, flag mode);
 
 /* Returns any comment (description) that occurs just before a statement */
 vstring getDescription(long statemNum);
