@@ -2996,8 +2996,9 @@ flag getMarkupFlag(long statemNum, flag mode) {
   if (statemNum < 1 || statemNum > statements) bug(1392);
 
   if (commentSearchedFlags[statemNum] == 'N') {
-    if (statement[statemNum].type == f_) {
-      /* Any comment before a $f statement is assumed irrelevant */
+    if (statement[statemNum].type == f_
+        || statement[statemNum].type == e_ /* 24-May-2016 nm */ ) {
+      /* Any comment before a $f, $e statement is assumed irrelevant */
       proofFlags[statemNum] = 'N';
       usageFlags[statemNum] = 'N';
     } else {
