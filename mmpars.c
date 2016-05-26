@@ -3202,7 +3202,9 @@ char parseProof(long statemNum)
               /* Note: the conditions before the "&&" below are redundant
                  but provide better sanity checking */
               if (j >= 0 && j < step) { /* Before moved subproof */
-                j = j; /* Same as orig proof */
+                /*j = j;*/ /* Same as orig proof */
+                /* 24-Mar-2016 workaround to clang complaint about j = j */
+                j = j + 0; /* Same as orig proof */
               } else if (j == step) { /* The original local label ref */
                 bug(1738); /* A local label shouldn't ref a local label */
               } else if (j > step && j <= k - m) {
@@ -3213,7 +3215,9 @@ char parseProof(long statemNum)
                 j = j + step + m - 1 - k;  /* Shift down */
               } else if (j > k && j <= wrkProof.numSteps - 1) {
                                               /* Ref to after moved subproof */
-                j = j;  /* Same as orig proof */
+                /*j = j;*/ /* Same as orig proof */
+                /* 24-Mar-2016 workaround to clang complaint about j = j */
+                j = j + 0; /* Same as orig proof */
               } else {
                 bug(1739);  /* Cases not exhausted or j is out of range */
               }

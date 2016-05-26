@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2015  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2016  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -548,8 +548,20 @@ vstring edit(vstring sin,long control)
     k = (long)strlen(sout);
     for (i = 8; i < k; i = i + 8) {
       j = i;
+
+      /* 25-May-2016 nm */
+      /* gcc m*.c -o metamath.exe -O2 -Wall was giving:
+             mmvstr.c:285:9: warning: assuming signed overflow does not occur
+             when assuming that (X - c) <= X is always true [-Wstrict-overflow]
+         Here we trick gcc into turning off this optimization by moving
+         the computation of i - 2 here, then referencing m instead of i - 2
+         below.  Note that if "m = i - 2" is moved _after_ the "while", the
+         error message returns. */
+      m = i - 2;
+
       while (sout[j - 1] == ' ' && j > i - 8) j--;
-      if (j <= i - 2) {
+      /*if (j <= i - 2) {*/
+      if (j <= m) {  /* 25-May-2016 nm */
         sout[j] = '\t';
         j = i;
         while (sout[j - 1] == ' ' && j > i - 8 + 1) {

@@ -5,7 +5,9 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.129 24-May-2016"
+#define MVERSION "0.130 25-May-2016"
+/* 0.130 25-May-2016 mmpars.c - workaround clang warning about j = j;
+      mmvstr.c - workaround gcc possible overflow warning */
 /* 0.129 24-May-2016 mmdata.c - fix bug 1393 */
 /* 0.128 22-May-2016 mminou.c - fixed error message going to html page
       instead of to screen, triggering bug 126. */
