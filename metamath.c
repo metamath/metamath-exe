@@ -5,7 +5,15 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.130 25-May-2016"
+#define MVERSION "0.131 10-Jun-2016"
+/* 0.131 10-Jun-2016 mminou.c - reverted change of 22-May-2016 because
+   'minimize_with' depends on error message in string to prevent DV violations.
+   Todo:  write a DV-checking routine for 'minimize_with', then revert
+   the 22-May-2016 fix for bug 126 (which only occurs when writing web
+   pages for .mm file with errors).
+   9-Jun-2016 mmcmdl.c, metamath.c - added _EXIT_PA for use with
+   scripts that will give an error message outside of MM-PA> rather
+   than exiting metamath */
 /* 0.130 25-May-2016 mmpars.c - workaround clang warning about j = j;
       mmvstr.c - workaround gcc possible overflow warning */
 /* 0.129 24-May-2016 mmdata.c - fix bug 1393 */
@@ -907,8 +915,17 @@ void command(int argc, char *argv[])
       continue;
     }
 
-    if (cmdMatches("EXIT") || cmdMatches("QUIT")) {
+    if (cmdMatches("EXIT") || cmdMatches("QUIT")
+        || cmdMatches("_EXIT_PA")) { /* 9-Jun-2016 - for MM-PA> exit
+            in scripts, so it will error out in MM> (if for some reason
+            MM-PA wasn't entered) instead of exiting metamath */
     /*???        || !strcmp(cmd,"^Z")) { */
+
+      /* 9-Jun-2016 */
+      if (cmdMatches("_EXIT_PA")) {
+        if (!PFASmode || (toolsMode && !listMode)) bug(1127);
+                 /* mmcmdl.c should have caught this */
+      }
 
       if (toolsMode && !listMode) {
         /* Quitting tools command from within Metamath */

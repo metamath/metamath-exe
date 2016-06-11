@@ -63,7 +63,8 @@ flag processCommandLine(void)
       /* Proof assistant mode */
       let(&tmpStr,cat("DBG|",
           "HELP|WRITE|SHOW|SEARCH|SAVE|SUBMIT|OPEN|CLOSE|",
-          "SET|FILE|BEEP|EXIT|QUIT|VERIFY|INITIALIZE|ASSIGN|REPLACE|",
+          /* 9-Jun-2016 nm Added _EXIT_PA */
+          "SET|FILE|BEEP|EXIT|_EXIT_PA|QUIT|VERIFY|INITIALIZE|ASSIGN|REPLACE|",
         "LET|UNIFY|IMPROVE|MINIMIZE_WITH|MATCH|DELETE|UNDO|REDO|",
         "MORE|TOOLS|MIDI|<HELP>",
         NULL));
@@ -1369,7 +1370,8 @@ flag processCommandLine(void)
       goto pclgood;
     }
 
-    if (cmdMatches("EXIT") || cmdMatches("QUIT")) {
+    if (cmdMatches("EXIT") || cmdMatches("QUIT")
+        || cmdMatches("_EXIT_PA")) { /* 9-Jun-2016 nm */
 
       /* Get any switches */
       i = 0;

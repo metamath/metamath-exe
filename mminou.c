@@ -976,12 +976,18 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
   vstring prntStr = "";
   vstring line1 = "";
   int j;
-  flag saveOutputToString; /* 22-May-2016 nm */
+  /*flag saveOutputToString;*/ /* 22-May-2016 nm */ /* 9-Jun-2016 reverted */
 
   /* 22-May-2016 nm */
   /* Prevent putting error message in printString */
+  /* 9-Jun-2016 nm Revert this change, because 'minimize_with' makes
+     use of the string to hold the DV violation error message.
+     We can reinstate this fix when 'minimize_with' is improved to
+     call a DV-checking function directly. */
+  /*
   saveOutputToString = outputToString;
   outputToString = 0;
+  */
 
   /* Make sure vstring argument doesn't get deallocated with another let */
 /*??? USE SAVETEMPALLOC*/
@@ -1057,7 +1063,10 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
 
   /* 22-May-2016 nm */
   /* Restore output to printString if it was enabled before */
+  /* 9-Jun-2016 nm Reverted */
+  /*
   outputToString = saveOutputToString;
+  */
 
   if (severity == 3) {
     print2("Aborting Metamath.\n");
