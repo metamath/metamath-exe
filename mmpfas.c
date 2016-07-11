@@ -284,8 +284,8 @@ nmbrString *proveByReplacement(long prfStmt,
     if (quickMatchFilter(trialStmt, prfMath, dummyVarFlag) == 0) continue;
 
     /* 3-May-2016 nm */
-    /* Skip statements with locked usage (the above skips non-$a,p) */
-    if (overrideFlag == 0 && getMarkupFlag(trialStmt, USAGE_RESTRICTION)) {
+    /* Skip statements with discouraged usage (the above skips non-$a,p) */
+    if (overrideFlag == 0 && getMarkupFlag(trialStmt, USAGE_DISCOURAGED)) {
       continue;
     }
 
@@ -310,12 +310,13 @@ nmbrString *proveByReplacement(long prfStmt,
       /* A proof for the step was found. */
 
       /* 3-May-2016 nm */
-      /* Inform user that we're using a statement with locked usage */
-      if (overrideFlag == 1 && getMarkupFlag(trialStmt, USAGE_RESTRICTION)) {
-        print2("\n");
-        print2(">>> ?Warning:  Assigning restricted statement \"%s\".\n",
+      /* Inform user that we're using a statement with discouraged usage */
+      if (overrideFlag == 1 && getMarkupFlag(trialStmt, USAGE_DISCOURAGED)) {
+        /* print2("\n"); */ /* Enable for more emphasis */
+        print2(
+          ">>> ?Warning:  Overriding discouraged usage of statement \"%s\".\n",
             statement[trialStmt].labelName);
-        print2("\n");
+        /* print2("\n"); */ /* Enable for more emphasis */
       }
 
       return trialPrf;
@@ -378,9 +379,9 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
   flag hasDummyVar;     /* 4-Sep-2012 nm */
 
   /* 3-May-2016 nm */
-  /* If we are overriding locked usage, a warning has already been printed. */
-  /* If we are not, then we should never get here. */
-  if (overrideFlag == 0 && getMarkupFlag(replStatemNum, USAGE_RESTRICTION)) {
+  /* If we are overriding discouraged usage, a warning has already been
+     printed.  If we are not, then we should never get here. */
+  if (overrideFlag == 0 && getMarkupFlag(replStatemNum, USAGE_DISCOURAGED)) {
     bug(1868);
   }
 
@@ -1594,8 +1595,8 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
     if (quickMatchFilter(stmt, mString, 0/*no dummy vars*/) == 0) continue;
 
     /* 3-May-2016 nm */
-    if (!overrideFlag && getMarkupFlag(stmt, USAGE_RESTRICTION)) {
-      /* Skip restricted (usage-locked) statements */
+    if (!overrideFlag && getMarkupFlag(stmt, USAGE_DISCOURAGED)) {
+      /* Skip usage-discouraged statements */
       continue;
     }
 
@@ -1847,20 +1848,21 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
         nmbrLet(&proof, nmbrCat(proof, hypProofList[hyp], NULL));
       }
 
-      if (getMarkupFlag(stmt, USAGE_RESTRICTION)) {
+      if (getMarkupFlag(stmt, USAGE_DISCOURAGED)) {
         switch (overrideFlag) {
           case 0: bug(1869); break; /* Should never get here if no override */
           case 2: break; /* Accept overrided silently (in mmcmds.c syntax
-                            breakdown calls for $ web pages) */
+                            breakdown calls for $a web pages) */
           case 1:  /* Normal override */
-            print2("\n");
-            print2(">>> ?Warning:  Assigning restricted statement \"%s\".\n",
+            /* print2("\n"); */ /* Enable for more emphasis */
+            print2(
+          ">>> ?Warning:  Overriding discouraged usage of statement \"%s\".\n",
                 statement[stmt].labelName);
-            print2("\n");
+            /* print2("\n"); */ /* Enable for more emphasis */
             break;
           default: bug(1870); /* Illegal value */
         } /* end switch (overrideFlag) */
-      } /* end if (getMarkupFlag(stmt, USAGE_RESTRICTION)) */
+      } /* end if (getMarkupFlag(stmt, USAGE_DISCOURAGED)) */
 
       nmbrLet(&proof, nmbrAddElement(proof, stmt)); /* Complete the proof */
 

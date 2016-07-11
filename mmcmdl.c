@@ -92,7 +92,7 @@ flag processCommandLine(void)
       if (cmdMatches("HELP SHOW")) {
         if (!getFullArg(2, cat("MEMORY|SETTINGS|LABELS|SOURCE|STATEMENT|",
             "PROOF|NEW_PROOF|USAGE|TRACE_BACK|ELAPSED_TIME|",
-            "RESTRICTED|<MEMORY>",
+            "DISCOURAGED|<MEMORY>",
             NULL)))
             goto pclbad;
         goto pclgood;
@@ -100,6 +100,7 @@ flag processCommandLine(void)
       if (cmdMatches("HELP SET")) {
         if (!getFullArg(2, cat(
             "ECHO|SCROLL|WIDTH|HEIGHT|UNDO|UNIFICATION_TIMEOUT|",
+            "DISCOURAGEMENT|",
             "EMPTY_SUBSTITUTION|SEARCH_LIMIT|JEREMY_HENTY_FILTER|<ECHO>",
             NULL)))
             goto pclbad;
@@ -404,12 +405,12 @@ flag processCommandLine(void)
       if (!PFASmode) {
         if (!getFullArg(1, cat(
      "SETTINGS|LABELS|STATEMENT|SOURCE|PROOF|MEMORY|TRACE_BACK|",
-     "USAGE|ELAPSED_TIME|RESTRICTED|<SETTINGS>", NULL)))
+     "USAGE|ELAPSED_TIME|DISCOURAGED|<SETTINGS>", NULL)))
             goto pclbad;
       } else {
         if (!getFullArg(1, cat("NEW_PROOF|",
      "SETTINGS|LABELS|STATEMENT|SOURCE|PROOF|MEMORY|TRACE_BACK|",
-     "USAGE|ELAPSED_TIME|RESTRICTED|<SETTINGS>",
+     "USAGE|ELAPSED_TIME|DISCOURAGED|<SETTINGS>",
             NULL)))
             goto pclbad;
       }
@@ -1136,6 +1137,7 @@ flag processCommandLine(void)
           /*"ECHO|SCROLL|UNIVERSE|",*/
           "WIDTH|HEIGHT|UNDO|ECHO|SCROLL|",
           "DEBUG|MEMORY_STATUS|SEARCH_LIMIT|UNIFICATION_TIMEOUT|",
+          "DISCOURAGEMENT|",  /* 10-Jul-2016 nm */
           "EMPTY_SUBSTITUTION|JEREMY_HENTY_FILTER|<WIDTH>",NULL));
       if (!getFullArg(1,tmpStr)) goto pclbad;
       if (cmdMatches("SET DEBUG")) {
@@ -1160,6 +1162,15 @@ flag processCommandLine(void)
           if (!getFullArg(2,"CONTINUOUS|PROMPTED|<CONTINUOUS>")) goto pclbad;
         } else {
           if (!getFullArg(2,"CONTINUOUS|PROMPTED|<PROMPTED>")) goto pclbad;
+        }
+        goto pclgood;
+      }
+
+      if (cmdMatches("SET DISCOURAGEMENT")) {  /* 10-Jul-2016 nm */
+        if (globalDiscouragement) {
+          if (!getFullArg(2,"ON|OFF|<OFF>")) goto pclbad;
+        } else {
+          if (!getFullArg(2,"ON|OFF|<ON>")) goto pclbad;
         }
         goto pclgood;
       }

@@ -4941,26 +4941,26 @@ vstring rewrapComment(vstring comment1)
   }
 
   /* 3-May-2016 nm */
-  /* Look for proof locked or usage locked markup and change their spaces
-     to ASCII 4 to prevent line breaks in the middle */
-  if (proofLockedMarkup[0] == 0) {
+  /* Look for proof discouraged or usage discouraged markup and change their
+     spaces to ASCII 4 to prevent line breaks in the middle */
+  if (proofDiscouragedMarkup[0] == 0) {
     /* getMarkupFlags() in mmdata.c has never been called, so initialize the
        markup strings to their defaults */
-    let(&proofLockedMarkup, PROOF_LOCKED_MARKUP);
-    let(&usageLockedMarkup, USAGE_LOCKED_MARKUP);
+    let(&proofDiscouragedMarkup, PROOF_DISCOURAGED_MARKUP);
+    let(&usageDiscouragedMarkup, USAGE_DISCOURAGED_MARKUP);
   }
-  pos = instr(1, comment, proofLockedMarkup);
+  pos = instr(1, comment, proofDiscouragedMarkup);
   if (pos != 0) {
-    i = (long)strlen(proofLockedMarkup);
+    i = (long)strlen(proofDiscouragedMarkup);
     for (j = pos; j < pos + i - 1; j++) { /* Check 2nd thru penultimate char */
       if (comment[j] == ' ') {
         comment[j] = ASCII_4;
       }
     }
   }
-  pos = instr(1, comment, usageLockedMarkup);
+  pos = instr(1, comment, usageDiscouragedMarkup);
   if (pos != 0) {
-    i = (long)strlen(usageLockedMarkup);
+    i = (long)strlen(usageDiscouragedMarkup);
     for (j = pos; j < pos + i - 1; j++) { /* Check 2nd thru penultimate char */
       if (comment[j] == ' ') {
         comment[j] = ASCII_4;

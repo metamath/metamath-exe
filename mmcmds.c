@@ -826,7 +826,7 @@ void typeStatement(long showStmt,
             0, /*step:  0 = step 1 */ /*For messages*/
             0,  /*not noDistinct*/
             /* 3-May-2016 nm */
-            2 /* override locked-usage statements silently */
+            2 /* override discouraged-usage statements silently */
             );
 
         if (nmbrLen(nmbrTmpPtr2)) {
@@ -2073,7 +2073,7 @@ void typeProof(long statemNum,
               0, /* step; 0 = step 1 */ /*For messages*/
               0,  /*not noDistinct*/
               /* 3-May-2016 nm */
-              2 /* override locked-usage statements silently */
+              2 /* override discouraged-usage statements silently */
               );
           if (!nmbrLen(nmbrTmpPtr2)) {
             /* 1-Oct-05 nm Since a proof may not be found for non-standard
@@ -4063,11 +4063,11 @@ void verifyMarkup(vstring labelMatch,
 
 
 /* 3-May-2016 nm */
-/* List "locked" statements with "(Proof modification is discouraged." and
-   "(New usage is discourged.)" comment markup tags. */
+/* List "discouraged" statements with "(Proof modification is discouraged."
+   and "(New usage is discourged.)" comment markup tags. */
 /* This function is primarily intended for use with the "travis" system
    to identify versioning differences on GitHub. */
-void showRestricted(void) {   /* was: showLocked */
+void showDiscouraged(void) {   /* was: showRestricted */
   long stmt, s, usageCount;
   long lowStmt = 0, highStmt = 0; /* For a slight speedup */
   flag notQuitPrint = 1; /* Goes to 0 if user typed 'q' at scroll prompt */
@@ -4079,19 +4079,19 @@ void showRestricted(void) {   /* was: showLocked */
     if (notQuitPrint == 0) break;
 
     if (statement[stmt].type != p_ && statement[stmt].type != a_) continue;
-    if (getMarkupFlag(stmt, PROOF_RESTRICTION) == 1
+    if (getMarkupFlag(stmt, PROOF_DISCOURAGED) == 1
         && statement[stmt].type == p_ /* Ignore $a's */
         ) {
       /* Restricted proof */
       /* Get number of steps */
       parseProof(stmt);
       notQuitPrint = print2(
-          "SHOW RESTRICTED:  Proof of \"%s\" is restricted (%ld steps).\n",
+"SHOW DISCOURAGED:  Proof modification of \"%s\" is discouraged (%ld steps).\n",
           statement[stmt].labelName,
           nmbrLen(wrkProof.proofString));
-    } /* if restricted proof */
-    if (getMarkupFlag(stmt, USAGE_RESTRICTION) == 1) {
-      /* Restricted usage */
+    } /* if discouraged proof */
+    if (getMarkupFlag(stmt, USAGE_DISCOURAGED) == 1) {
+      /* Discouraged usage */
       usageCount = 0;
       let(&str1, "");
       str1 = traceUsage(stmt,
@@ -4111,7 +4111,7 @@ void showRestricted(void) {   /* was: showLocked */
         } /* Next s */
       } /* if (str1[0] == 'Y') */
       notQuitPrint = print2(
-          "SHOW RESTRICTED:  Usage of \"%s\" is restricted (%ld uses).\n",
+"SHOW DISCOURAGED:  New usage of \"%s\" is discouraged (%ld uses).\n",
           statement[stmt].labelName,
           usageCount);
       if (str1[0] == 'Y') { /* Used by at least one */
@@ -4121,15 +4121,15 @@ void showRestricted(void) {   /* was: showLocked */
           /* Scan the used-by map */
           if (str1[s] != 'Y') continue;
           notQuitPrint = print2(
-              "SHOW RESTRICTED:  \"%s\" is used by \"%s\".\n",
+              "SHOW DISCOURAGED:  \"%s\" is used by \"%s\".\n",
               statement[stmt].labelName,
               statement[s].labelName);
         } /* Next s */
       } /* if (str1[0] == 'Y') */
-    } /* if restricted usage */
+    } /* if discouraged usage */
   } /* next stmt */
   let(&str1, ""); /* Deallocate */
-} /* showRestricted */
+} /* showDiscouraged */
 
 /* Added 14-Sep-2012 nm */
 /* Take a relative step FIRST, LAST, +nn, -nn (relative to the unknown

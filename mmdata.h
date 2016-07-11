@@ -10,17 +10,6 @@
 #ifndef METAMATH_MMDATA_H_
 #define METAMATH_MMDATA_H_
 
-/* 4-May-2015 nm */
-/* For use by getMarkupFlag() */
-#define PROOF_LOCKED_MARKUP "(Proof modification is discouraged.)"
-#define USAGE_LOCKED_MARKUP "(New usage is discouraged.)"
-/* Mode argument for getMarkupFlag() */
-#define PROOF_RESTRICTION 1
-#define USAGE_RESTRICTION 2
-#define RESET 0
-extern vstring proofLockedMarkup;
-extern vstring usageLockedMarkup;
-
 #include "mmvstr.h"
 
 /*E*/extern long db,db0,db1,db2,db3,db4,db5,db6,db7,db8,db9;/* debugging flags & variables */
@@ -134,6 +123,18 @@ extern long includeCalls;
 
 extern char *sourcePtr; /* Pointer to buffer in memory with input source */
 extern long sourceLen; /* Number of chars. in all inputs files combined (after includes)*/
+
+/* 4-May-2015 nm */
+/* For use by getMarkupFlag() */
+#define PROOF_DISCOURAGED_MARKUP "(Proof modification is discouraged.)"
+#define USAGE_DISCOURAGED_MARKUP "(New usage is discouraged.)"
+/* Mode argument for getMarkupFlag() */
+#define PROOF_DISCOURAGED 1
+#define USAGE_DISCOURAGED 2
+#define RESET 0
+extern vstring proofDiscouragedMarkup;
+extern vstring usageDiscouragedMarkup;
+extern flag globalDiscouragement; /* SET DISCOURAGEMENT */
 
 /* Allocation and deallocation in memory pool */
 void *poolFixedMalloc(long size /* bytes */);

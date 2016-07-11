@@ -76,9 +76,9 @@ void verifyMarkup(vstring labelMatch, flag dateSkip,
     flag fileSkip); /* 7-Nov-2015 nm */
 
 /* 3-May-2016 nm */
-/* List "locked" statements with "(Proof modification is discouraged." and
-   "(New usage is discourged.)" comment markup tags. */
-void showRestricted(void);
+/* List "discouraged" statements with "(Proof modification is discouraged."
+   and "(New usage is discourged.)" comment markup tags. */
+void showDiscouraged(void);
 
 /* 14-Sep-2012 nm */
 /* Take a relative step FIRST, LAST, +nn, -nn (relative to the unknown

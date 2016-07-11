@@ -30,8 +30,9 @@ flag toolsMode = 0; /* In metamath: 0 = metamath, 1 = text tools utility */
 
 /* 4-May-2015 nm */
 /* For use by getMarkupFlag() */
-vstring proofLockedMarkup = "";
-vstring usageLockedMarkup = "";
+vstring proofDiscouragedMarkup = "";
+vstring usageDiscouragedMarkup = "";
+flag globalDiscouragement = 1; /* SET DISCOURAGEMENT ON */
 
 /* Global variables related to current statement */
 int currentScope = 0;
@@ -2948,8 +2949,9 @@ long getSourceIndentation(long statemNum) {
 
 /* Returns 0 or 1 to indicate absence or presence of an indicator in
    the comment of the statement. */
-/* mode = 1 = PROOF_RESTRICTION  means get any proof restriction indicator
-   mode = 2 = USAGE_RESTRICTION  means get any usage restriction indicator
+/* mode = 1 = PROOF_DISCOURAGED means get any proof modification discouraged
+                indicator
+   mode = 2 = USAGE_DISCOURAGED means get any new usage discouraged indicator
    mode = 0 = RESET  means to reset everything (statemeNum is ignored) */
 flag getMarkupFlag(long statemNum, flag mode) {
   /* For speedup, the algorithm searches a statement's comment for markup
@@ -2957,14 +2959,14 @@ flag getMarkupFlag(long statemNum, flag mode) {
      for that statement. */
   static char init = 0;
   static vstring commentSearchedFlags = ""; /* Y if comment was searched */
-  static vstring proofFlags = "";  /* Y if proof restriction, else N */
-  static vstring usageFlags = "";  /* Y if usage restriction, else N */
+  static vstring proofFlags = "";  /* Y if proof discouragement, else N */
+  static vstring usageFlags = "";  /* Y if usage discouragement, else N */
   vstring str1 = "";
   /* These are global in mmdata.h
-#define PROOF_LOCKED_MARKUP "(Proof modification is discouraged.)"
-#define USAGE_LOCKED_MARKUP "(New usage is discouraged.)"
-  extern vstring proofLockedMarkup;
-  extern vstring usageLockedMarkup;
+#define PROOF_DISCOURAGED_MARKUP "(Proof modification is discouraged.)"
+#define USAGE_DISCOURAGED_MARKUP "(New usage is discouraged.)"
+  extern vstring proofDiscouragedMarkup;
+  extern vstring usageDiscouragedMarkup;
   */
 
   if (mode == RESET) { /* Initialize */ /* Should be called by RESET command */
@@ -2977,15 +2979,15 @@ flag getMarkupFlag(long statemNum, flag mode) {
 
   if (init == 0) {
     init = 1;
-    /* The global variables proofLockedMarkup and usageLockedMarkup are
+    /* The global variables proofDiscouragedMarkup and usageDiscouragedMarkup are
        initialized to "" like all vstrings to allow them to be reassigned
        by a possible future SET command.  So the first time this is called
        we need to assign them to the default markup strings. */
-    if (proofLockedMarkup[0] == 0) {
-      let(&proofLockedMarkup, PROOF_LOCKED_MARKUP);
+    if (proofDiscouragedMarkup[0] == 0) {
+      let(&proofDiscouragedMarkup, PROOF_DISCOURAGED_MARKUP);
     }
-    if (usageLockedMarkup[0] == 0) {
-      let(&usageLockedMarkup, USAGE_LOCKED_MARKUP);
+    if (usageDiscouragedMarkup[0] == 0) {
+      let(&usageDiscouragedMarkup, USAGE_DISCOURAGED_MARKUP);
     }
     /* Initialize flag strings */
     let(&commentSearchedFlags, string(statements + 1, 'N'));
@@ -3008,12 +3010,12 @@ flag getMarkupFlag(long statemNum, flag mode) {
       str1 = getDescription(statemNum);  /* str1 must be deallocated here */
       /* Strip linefeeds and reduce spaces */
       let(&str1, edit(str1, 4 + 8 + 16 + 128));
-      if (instr(1, str1, proofLockedMarkup)) {
+      if (instr(1, str1, proofDiscouragedMarkup)) {
         proofFlags[statemNum] = 'Y';
       } else {
         proofFlags[statemNum] = 'N';
       }
-      if (instr(1, str1, usageLockedMarkup)) {
+      if (instr(1, str1, usageDiscouragedMarkup)) {
         usageFlags[statemNum] = 'Y';
       } else {
         usageFlags[statemNum] = 'N';
@@ -3023,8 +3025,8 @@ flag getMarkupFlag(long statemNum, flag mode) {
     commentSearchedFlags[statemNum] = 'Y';
   }
 
-  if (mode == PROOF_RESTRICTION) return (proofFlags[statemNum] == 'Y') ? 1 : 0;
-  if (mode == USAGE_RESTRICTION) return (usageFlags[statemNum] == 'Y') ? 1 : 0;
+  if (mode == PROOF_DISCOURAGED) return (proofFlags[statemNum] == 'Y') ? 1 : 0;
+  if (mode == USAGE_DISCOURAGED) return (usageFlags[statemNum] == 'Y') ? 1 : 0;
   bug(1394);
   return 0;
 } /* getMarkupFlag */

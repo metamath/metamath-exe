@@ -103,8 +103,8 @@ H("");
 printHelp = !strcmp(saveHelpCmd, "HELP SHOW MEMORY");
 H("Syntax:  SHOW MEMORY");
 H("");
-H("This command shows the available memory left.  It may not be meaningful");
-H("on machines with virtual memory.");
+H("This command shows the available memory left.  It is not be meaningful");
+H("on modern machines with virtual memory.");
 H("");
 
 
@@ -137,8 +137,8 @@ H("        building scripts in conjunction with the TOOLS utility.");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP SHOW RESTRICTED");
-H("Syntax:  SHOW RESTRICTED");
+printHelp = !strcmp(saveHelpCmd, "HELP SHOW DISCOURAGED");
+H("Syntax:  SHOW DISCOURAGED");
 H("");
 H("This command shows the usage and proof statistics for statements with");
 H("\"(Proof modification is discouraged.)\" and \"(New usage is");
@@ -524,6 +524,19 @@ H("screen is taller or shorter, this command lets you to change the number");
 H("of lines at which the display pauses and prompts you to continue.");
 H("");
 
+/* 10-Jul-15 nm */
+printHelp = !strcmp(saveHelpCmd, "HELP SET DISCOURAGEMENT");
+H("Syntax:  SET DISCOURAGEMENT OFF or SET DISCOURAGEMENT ON");
+H("");
+H("By default this is set to ON, which means that statements whose");
+H("description comments have the markup tags \"(New usage is discouraged.)\"");
+H("or \"(Proof modification is discouraged.)\" will be blocked from usage");
+H("or proof modification.  When this setting is OFF, those actions are no");
+H("longer blocked.  This setting is intended only for the convenience of");
+H("advanced users who are intimately familiar with the database, for use");
+H("when maintaining \"discouraged\" statements.  SHOW SETTINGS will show you");
+H("the current value.");
+H("");
 
 printHelp = !strcmp(saveHelpCmd, "HELP SET UNIFICATION_TIMEOUT");
 H("Syntax:  SET UNIFICATION_TIMEOUT <number>");
@@ -814,8 +827,10 @@ H("These are ignored when generating the bibliographic cross-reference.");
 H("");
 H("The <author> must be present in the file identified with the");
 H("htmlbibliography assignment (e.g. mmset.html) in the database $t comment,");
-H("in the form <A NAME=\"<author>\"></A> e.g. <A NAME=\"Monk\"></A>.  The");
-H("<nnn> may be any alphanumeric string such as an integer or Roman numeral.");
+H("in the form <A NAME=\"<author>\"></A> e.g. <A NAME=\"Monk\"></A>.");
+H("");
+H("The <nnn> may be any alphanumeric string such as an integer or Roman");
+H("numeral.");
 H("");
 H("The <keyword> and <noise word(s)> lists are hard-coded into the program.");
 H("Contact Norman Megill if you need to add to these lists.");

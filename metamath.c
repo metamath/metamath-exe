@@ -5,7 +5,13 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.131 10-Jun-2016"
+#define MVERSION "0.132 10-Jul-2016"
+/* 0.132 10-Jul-2016 metamath.c, mmcmdl.c, mmcmds.c,.h, mmdata.c,.h, mmhlpb.c,
+   mmpfas.c - change "restricted" to "discouraged" to match set.mm markup
+   tags; add SET DISCOURAGEMENT OFF|ON (default ON) to turn off blocking for
+   convenience of advanced users
+   6-Jul-2016 metamath.c - add "(void)" in front of "system(...)" to
+   suppress -Wunused-result warning */
 /* 0.131 10-Jun-2016 mminou.c - reverted change of 22-May-2016 because
    'minimize_with' depends on error message in string to prevent DV violations.
    Todo:  write a DV-checking routine for 'minimize_with', then revert
@@ -15,7 +21,7 @@
    scripts that will give an error message outside of MM-PA> rather
    than exiting metamath */
 /* 0.130 25-May-2016 mmpars.c - workaround clang warning about j = j;
-      mmvstr.c - workaround gcc possible overflow warning */
+      mmvstr.c - workaround gcc -Wstrict-overflow warning */
 /* 0.129 24-May-2016 mmdata.c - fix bug 1393 */
 /* 0.128 22-May-2016 mminou.c - fixed error message going to html page
       instead of to screen, triggering bug 126. */
@@ -606,7 +612,7 @@ void command(int argc, char *argv[])
   vstring noNewAxiomsMatchList = "";  /* For NO_NEW_AXIOMS_FROM */ /* 22-Nov-2014 */
   vstring traceProofFlags = ""; /* For NO_NEW_AXIOMS_FROM */ /* 22-Nov-2014 nm */
   vstring traceTrialFlags = ""; /* For NO_NEW_AXIOMS_FROM */ /* 22-Nov-2014 nm */
-  flag overrideFlag; /* For restricted statement /OVERRIDE */ /* 3-May-2016 nm */
+  flag overrideFlag; /* For discouraged statement /OVERRIDE */ /* 3-May-2016 nm */
 
   struct pip_struct saveProofForReverting = {
        NULL_NMBRSTRING, NULL_PNTRSTRING, NULL_PNTRSTRING, NULL_PNTRSTRING };
@@ -825,7 +831,7 @@ void command(int argc, char *argv[])
           }
         }
         /* Do the operating system command */
-        system(str1);
+        (void)system(str1);
 #ifdef VAXC
         printf("\n"); /* Last line from VAX doesn't have new line */
 #endif
@@ -2418,8 +2424,8 @@ void command(int argc, char *argv[])
       continue;
     }
 
-    if (cmdMatches("SHOW RESTRICTED")) {  /* was SHOW LOCKED */
-      showRestricted(); /* In mmcmds.c */
+    if (cmdMatches("SHOW DISCOURAGED")) {  /* was SHOW RESTRICTED */
+      showDiscouraged(); /* In mmcmds.c */
       continue;
     }
 
@@ -3142,12 +3148,15 @@ void command(int argc, char *argv[])
       print2("(SET WIDTH...) Screen display WIDTH is %ld.\n", screenWidth);
       print2("(SET HEIGHT...) Screen display HEIGHT is %ld.\n",
           screenHeight + 1);
-      if (strlen(input_fn)) {
+      if (input_fn[0] != 0) {
         print2("(READ...) %ld statements have been read from '%s'.\n",
           statements, input_fn);
       } else {
         print2("(READ...) No source file has been read in yet.\n");
       }
+      print2(
+     "(SET DISCOURAGEMENT...) Blocking based on \"discouraged\" tags is %s.\n",
+          (globalDiscouragement ? "ON" : "OFF"));
       if (PFASmode) {
         print2("(PROVE...) The statement you are proving is '%s'.\n",
             statement[proveStatement].labelName);
@@ -3542,18 +3551,20 @@ void command(int argc, char *argv[])
 
       /* 3-May-2016 nm */
       if (cmdMatches("SAVE NEW_PROOF")
-          && getMarkupFlag(proveStatement, PROOF_RESTRICTION)) {
-        if (switchPos("/ OVERRIDE") == 0) {
-          print2("\n");
-          print2(">>> ?Error: Attempt to overwrite a restricted proof.\n");
+          && getMarkupFlag(proveStatement, PROOF_DISCOURAGED)) {
+        if (switchPos("/ OVERRIDE") == 0 && globalDiscouragement == 1) {
+          /* print2("\n"); */ /* Enable for more emphasis */
+          print2(
+">>> ?Error: Attempt to overwrite a proof whose modification is discouraged.\n");
           print2(
    ">>> Use SAVE NEW_PROOF ... / OVERRIDE if you really want to do this.\n");
-          print2("\n");
+          /* print2("\n"); */ /* Enable for more emphasis */
           continue;
         } else {
-          print2("\n");
-          print2(">>> ?Warning: You are overwriting a restricted proof.\n");
-          print2("\n");
+          /* print2("\n"); */ /* Enable for more emphasis */
+          print2(
+">>> ?Warning: You are overwriting a proof whose modification is discouraged.\n");
+          /* print2("\n"); */ /* Enable for more emphasis */
         }
       }
 
@@ -4151,16 +4162,17 @@ void command(int argc, char *argv[])
 
       /* 10-May-2016 nm */
       /* 1 means to override usage locks */
-      overrideFlag = ( (switchPos("/ OVERRIDE")) ? 1 : 0);
-      if (getMarkupFlag(proveStatement, PROOF_RESTRICTION)) {
+      overrideFlag = ( (switchPos("/ OVERRIDE")) ? 1 : 0)
+         || globalDiscouragement == 0;
+      if (getMarkupFlag(proveStatement, PROOF_DISCOURAGED)) {
         if (overrideFlag == 0) {
-          print2("\n");
+          /* print2("\n"); */ /* Enable for more emphasis */
           print2(
- ">>> ?Error: This statement has a restricted proof that normally should not\n"
+ ">>> ?Error: Modification of this statement's proof is discouraged.\n"
               );
           print2(
- ">>> be modified.  You must use PROVE ... / OVERRIDE to work on it.\n");
-          print2("\n");
+ ">>> You must use PROVE ... / OVERRIDE to work on it.\n");
+          /* print2("\n"); */ /* Enable for more emphasis */
           continue;
         }
       }
@@ -4283,14 +4295,16 @@ void command(int argc, char *argv[])
       }
 
       /* 3-May-2016 nm */
-      if (getMarkupFlag(proveStatement, PROOF_RESTRICTION)) {
-        print2("\n");
+      if (getMarkupFlag(proveStatement, PROOF_DISCOURAGED)) {
+        /* print2("\n"); */ /* Enable for more emphasis */
         print2(
-">>> ?Warning: This statement has a restricted proof that normally should not\n"
+">>> ?Warning: Modification of this statement's proof is discouraged.\n"
             );
+        /*
         print2(
-">>> be modified.  You must use SAVE NEW_PROOF ... / OVERRIDE to save it.\n");
-        print2("\n");
+">>> You must use SAVE NEW_PROOF ... / OVERRIDE to save it.\n");
+        */
+        /* print2("\n"); */ /* Enable for more emphasis */
       }
 
       processUndoStack(NULL, PUS_INIT, "", 0); /* Optional? */
@@ -4670,7 +4684,8 @@ void command(int argc, char *argv[])
 
       /* 3-May-2016 nm */
       /* 1 means to override usage locks */
-      overrideFlag = ( (switchPos("/ OVERRIDE")) ? 1 : 0);
+      overrideFlag = ( (switchPos("/ OVERRIDE")) ? 1 : 0)
+         || globalDiscouragement == 0;
 
       /****** replaced by getStepNum()  nm 14-Sep-2012
       offset = 0; /@ 16-Apr-06 @/
@@ -4741,18 +4756,20 @@ void command(int argc, char *argv[])
       ***************** end of 14-Sep-2012 deletion ************/
 
       /* 3-May-2016 nm */
-      if (getMarkupFlag(k, USAGE_RESTRICTION)) {
+      if (getMarkupFlag(k, USAGE_DISCOURAGED)) {
         if (overrideFlag == 0) {
-          print2("\n");
-          print2(">>> ?Error: Attempt to assign a restricted statement.\n");
+          /* print2("\n"); */ /* Enable for more emphasis */
+          print2(
+">>> ?Error: Attempt to assign a statement whose usage is discouraged.\n");
           print2(
        ">>> Use ASSIGN ... / OVERRIDE if you really want to do this.\n");
-          print2("\n");
+          /* print2("\n"); */ /* Enable for more emphasis */
           continue;
         } else {
-          print2("\n");
-          print2(">>> ?Warning: You are assigning a restricted statement.\n");
-          print2("\n");
+          /* print2("\n"); */ /* Enable for more emphasis */
+          print2(
+">>> ?Warning: You are assigning a statement whose usage is discouraged.\n");
+          /* print2("\n"); */ /* Enable for more emphasis */
         }
       }
 
@@ -4906,7 +4923,8 @@ void command(int argc, char *argv[])
 
       /* 3-May-2016 nm */
       /* 1 means to override usage locks */
-      overrideFlag = ( (switchPos("/ OVERRIDE")) ? 1 : 0);
+      overrideFlag = ( (switchPos("/ OVERRIDE")) ? 1 : 0)
+         || globalDiscouragement == 0;
 
       /* 14-Sep-2012 nm */
       step = getStepNum(fullArg[1], proofInProgress.proof,
@@ -4968,18 +4986,20 @@ void command(int argc, char *argv[])
       ****************************** end of 14-Sep-2012 deletion *********/
 
       /* 3-May-2016 nm */
-      if (getMarkupFlag(stmt, USAGE_RESTRICTION)) {
+      if (getMarkupFlag(stmt, USAGE_DISCOURAGED)) {
         if (overrideFlag == 0) {
-          print2("\n");
-          print2(">>> ?Error: Attempt to assign a restricted statement.\n");
+          /* print2("\n"); */ /* Enable for more emphasis */
+          print2(
+">>> ?Error: Attempt to assign a statement whose usage is discouraged.\n");
           print2(
        ">>> Use REPLACE ... / OVERRIDE if you really want to do this.\n");
-          print2("\n");
+          /* print2("\n"); */ /* Enable for more emphasis */
           continue;
         } else {
-          print2("\n");
-          print2(">>> ?Warning: You are assigning a restricted statement.\n");
-          print2("\n");
+          /* print2("\n"); */ /* Enable for more emphasis */
+          print2(
+">>> ?Warning: You are assigning a statement whose usage is discouraged.\n");
+          /* print2("\n"); */ /* Enable for more emphasis */
         }
       }
 
@@ -5174,7 +5194,8 @@ void command(int argc, char *argv[])
 
       /* 3-May-2016 nm */
       /* 1 means to override usage locks */
-      overrideFlag = ( (switchPos("/ OVERRIDE")) ? 1 : 0);
+      overrideFlag = ( (switchPos("/ OVERRIDE")) ? 1 : 0)
+         || globalDiscouragement == 0;
 
       /* 14-Sep-2012 nm */
       s = getStepNum(fullArg[1], proofInProgress.proof,
@@ -5668,7 +5689,8 @@ void command(int argc, char *argv[])
 
       /* 3-May-2016 nm */
       /* Flag to override any "usage locks" placed in the comment markup */
-      overrideFlag = (switchPos("/ OVERRIDE") != 0);
+      overrideFlag = (switchPos("/ OVERRIDE") != 0)
+           || globalDiscouragement == 0;
 
       /* 25-Jun-2014 nm */
       /* If a single statement is specified, don't bother to do certain
@@ -5809,7 +5831,7 @@ void command(int argc, char *argv[])
           /* Check to see if statement comment specified a usage
              restriction */
           if (!overrideFlag) {
-            if (getMarkupFlag(k, USAGE_RESTRICTION)) {
+            if (getMarkupFlag(k, USAGE_DISCOURAGED)) {
               continue;
             }
           }
@@ -6013,13 +6035,14 @@ void command(int argc, char *argv[])
             /*if (nmbrLen(statement[k].reqDisjVarsA) || !allowGrowthFlag) {*/
 
             /* 3-May-2016 nm */
-            /* Warn user if a restricted statement is overridden */
-            if (getMarkupFlag(k, USAGE_RESTRICTION)) {
+            /* Warn user if a discouraged statement is overridden */
+            if (getMarkupFlag(k, USAGE_DISCOURAGED)) {
               if (!overrideFlag) bug(1126);
-              print2("\n");
-              print2(">>> ?Warning: Overriding usage restriction on \"%s\".\n",
+              /* print2("\n"); */ /* Enable for more emphasis */
+              print2(
+                  ">>> ?Warning: Overriding discouraged usage of \"%s\".\n",
                   statement[k].labelName);
-              print2("\n");
+              /* print2("\n"); */ /* Enable for more emphasis */
             }
 
             if (!allowGrowthFlag) {
@@ -6645,6 +6668,28 @@ void command(int argc, char *argv[])
       /* screenHeight is one less than the physical screen to account for the
          prompt line after pausing. */
       screenHeight = s - 1;
+      continue;
+    }
+
+
+    /* 10-Jul-2016 nm */
+    if (cmdMatches("SET DISCOURAGEMENT")) {
+      if (!strcmp(fullArg[2], "ON")) {
+        globalDiscouragement = 1;
+        print2("\"(...is discouraged.)\" markup tags are now honored.\n");
+      } else if (!strcmp(fullArg[2], "OFF")) {
+        print2(
+    "\"(...is discouraged.)\" markup tags are no longer honored.\n");
+        /* print2("\n"); */ /* Enable for more emphasis */
+        print2(
+">>> ?Warning: This setting is intended for advanced users only.  Please turn\n");
+        print2(
+">>> it back ON if you are not intimately familiar with this database.\n");
+        /* print2("\n"); */ /* Enable for more emphasis */
+        globalDiscouragement = 0;
+      } else {
+        bug(1128);
+      }
       continue;
     }
 
