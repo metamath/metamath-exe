@@ -1164,7 +1164,7 @@ H("        proofs of $f hypotheses.  It runs much slower than / 1, and you");
 H("        may prefer to use it with specific steps.  For example, if");
 H("        step 456 is unknown, you may want to use IMPROVE 456 / 3 rather");
 H("        than IMPROVE ALL / 3.  Note that / 3 respects the / DEPTH");
-H("        qualiifer, although the expense of additional run time.");
+H("        qualifier, although the expense of additional run time.");
 H("    / SUBPROOFS - Look at each subproof that isn't completely known, and");
 H("        try to see if it can be proved independently.  This qualifier is");
 H("        meaningful only for IMPROVE ALL / 2 or IMPROVE ALL / 3.  It may");

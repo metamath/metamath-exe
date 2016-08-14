@@ -5,7 +5,9 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.132 10-Jul-2016"
+#define MVERSION "0.133 13-Aug-2016"
+/* 0.133 13-Aug-2016 mmwtex.c - improve mobile display with <head> tag
+   mmpars.c - use updated Macintosh information */
 /* 0.132 10-Jul-2016 metamath.c, mmcmdl.c, mmcmds.c,.h, mmdata.c,.h, mmhlpb.c,
    mmpfas.c - change "restricted" to "discouraged" to match set.mm markup
    tags; add SET DISCOURAGEMENT OFF|ON (default ON) to turn off blocking for

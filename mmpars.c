@@ -172,10 +172,12 @@ char *readRawSource(vstring inputFn, long bufOffsetSoFar, long *size)
   if (fileBuf[charCount - 1] != '\n') {
     fileBuf[charCount] = '\n';
     fileBuf[charCount + 1] = 0;
-    rawSourceError(fileBuf, &fileBuf[charCount - 1], 1, 0, inputFn,cat(
-        "The last line in the file does not end with a \"line break\"",
-        " character.  The \"line break\" character is a line feed in Unix",
-        " or a carriage return on the Macintosh or a CR/LF in Windows.",NULL));
+    rawSourceError(fileBuf, &fileBuf[charCount - 1], 1, 0, inputFn, cat(
+        /* 13-Aug-2016 nm Use updated Macintosh information */
+        "The last line in the file does not end with a \"line break\",",
+        " which is a line feed in Unix/Linux/MacOSX,",
+        " a carriage return on the pre-OSX Macintosh, or a CR/LF in Windows.",
+        NULL));
     charCount++;
   }
 

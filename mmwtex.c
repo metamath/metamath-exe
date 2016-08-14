@@ -1334,6 +1334,11 @@ void printTexHeader(flag texHeaderFlag)
     print2("<HEAD>\n");
     print2("%s%s\n", "<META HTTP-EQUIV=\"Content-Type\" ",
         "CONTENT=\"text/html; charset=iso-8859-1\">");
+    /* 13-Aug-2016 nm */
+    /* Improve mobile device display per David A. Wheeler */
+    print2(
+"<META NAME=\"viewport\" CONTENT=\"width=device-width, initial-scale=1.0\">\n"
+        );
 
     print2("<STYLE TYPE=\"text/css\">\n");
     print2("<!--\n");
@@ -1521,18 +1526,18 @@ void printTexHeader(flag texHeaderFlag)
 
     if (showStatement < extHtmlStmt) {
       printLongLine(cat(
-          "<TD NOWRAP ALIGN=CENTER ROWSPAN=2><FONT SIZE=\"+3\" COLOR=",
+          "<TD ALIGN=CENTER VALIGN=TOP ROWSPAN=2><FONT SIZE=\"+3\" COLOR=",
           GREEN_TITLE_COLOR, "><B>", htmlTitle, "</B></FONT>", NULL), "", "\"");
     /*} else {*/
     } else if (showStatement < sandboxStmt) { /* 29-Jul-2008 nm Sandbox stuff */
       printLongLine(cat(
-          "<TD NOWRAP ALIGN=CENTER ROWSPAN=2><FONT SIZE=\"+3\" COLOR=",
+          "<TD ALIGN=CENTER VALIGN=TOP ROWSPAN=2><FONT SIZE=\"+3\" COLOR=",
           GREEN_TITLE_COLOR, "><B>", extHtmlTitle, "</B></FONT>", NULL), "", "\"");
 
     /* 29-Jul-2008 nm Sandbox stuff */
     } else {
       printLongLine(cat(
-          "<TD NOWRAP ALIGN=CENTER ROWSPAN=2><FONT SIZE=\"+3\" COLOR=",
+          "<TD ALIGN=CENTER VALIGN=TOP ROWSPAN=2><FONT SIZE=\"+3\" COLOR=",
           GREEN_TITLE_COLOR, "><B>",
           /*sandboxTitle,*/
           /* 2-Aug-2009 nm - "Mathbox for <username>" mod */
@@ -1546,7 +1551,7 @@ void printTexHeader(flag texHeaderFlag)
       /* Put Previous/Next links into web page */
       /*print2("</TD><TD ALIGN=RIGHT VALIGN=TOP><FONT SIZE=-1 FACE=sans-serif>\n");*/
       print2(
-"</TD><TD NOWRAP ALIGN=RIGHT VALIGN=TOP WIDTH=\"25%s\" ROWSPAN=2><FONT\n", "%");
+"</TD><TD ALIGN=RIGHT VALIGN=TOP WIDTH=\"25%s\" ROWSPAN=2><FONT\n", "%");
       print2(" SIZE=-1 FACE=sans-serif>\n");
       /* Find the previous statement with a web page */
       j = 0;
@@ -3161,6 +3166,11 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
     print2("<HEAD>\n");
     print2("%s%s\n", "<META HTTP-EQUIV=\"Content-Type\" ",
         "CONTENT=\"text/html; charset=iso-8859-1\">");
+    /* 13-Aug-2016 nm */
+    /* Improve mobile device display per David A. Wheeler */
+    print2(
+"<META NAME=\"viewport\" CONTENT=\"width=device-width, initial-scale=1.0\">\n"
+        );
 
     print2("<STYLE TYPE=\"text/css\">\n");
     print2("<!--\n");
