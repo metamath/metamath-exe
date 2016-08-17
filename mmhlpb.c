@@ -195,6 +195,8 @@ H("        information on these.");
 H("    / NO_VERSIONING - When used with / HTML or the 3 HTML qualifiers");
 H("        above, a backup file suffixed with ~1 is not created (i.e. the");
 H("        previous version is overwritten).");
+H("    / TIME - When used with / HTML or the 3 HTML qualifiers, prints");
+H("        the run time used by each statement.");
 /* 12-May-2009 nm  Added MNEMONICS */
 H("    / MNEMONICS - Produces the output file mnemosyne.txt for use with");
 H("        Mnemosyne http://www.mnemosyne-proj.org/principles.php.  Should");
@@ -1202,7 +1204,7 @@ H("              [/ FORBID <label-match>] [/ REVERSE] [/ INCLUDE_MATHBOXES]");
 H("Syntax:  MINIMIZE_WITH <label-match> [/ VERBOSE] [/ ALLOW_GROWTH]");
 H("              [/ EXCEPT <label-match>] [/ FORBID <label-match>]");
 H("              [/ INCLUDE_MATHBOXES] [/ NO_NEW_AXIOMS_FROM <label-match>]");
-H("              [/ OVERRIDE]");
+H("              [/ OVERRIDE] [/ TIME]");
 H("");
 H("This command, available in the Proof Assistant only, checks whether");
 H("the proof can be shortened by using earlier $p or $a statements matching");
@@ -1277,6 +1279,7 @@ H("        the PROVE argument.  This qualifier allows them to be included.");
 H("    / OVERRIDE - By default, MINIMIZE_WITH skips statements that have");
 H("        \"(New usage is discouraged.)\" in their description comment.");
 H("        This qualifier tries to use them anyway.");
+H("    / TIME - prints out the run time used by the MINIMIZE_WITH run.");
 H("");
 
 
@@ -1308,6 +1311,7 @@ H("        conversion between formats.");
 H("    / OLD_COMPRESSION - When used with / COMPRESSED, specifies an older,");
 H("        slightly less space-efficient algorithm.  (Specifically, it does");
 H("        not try to rearrange labels to fit evenly on a line.)");
+H("    / TIME - prints out the run time used for each proof.");
 H("");
 H("Important note:  The / PACKED and / EXPLICIT qualifiers save the proof");
 H("in formats that are _not_ part of the Metamath standard and that probably");

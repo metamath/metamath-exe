@@ -77,11 +77,22 @@ vstring htmlCSS = ""; /* Set by htmlcss commands */  /* 14-Jan-2016 nm */
 vstring htmlFont = ""; /* Set by htmlfont commands */  /* 14-Jan-2016 nm */
 vstring htmlVarColors = ""; /* Set by htmlvarcolor commands */
 vstring htmlTitle = ""; /* Set by htmltitle command */
+  /* 16-Aug-2016 nm */
+  vstring htmlTitleAbbr = ""; /* Extracted from htmlTitle */
 vstring htmlHome = ""; /* Set by htmlhome command */
+  /* 16-Aug-2016 nm */
+  /* Future - assign these in the $t set.mm comment instead of htmlHome */
+  vstring htmlHomeHREF = ""; /* Extracted from htmlHome */
+  vstring htmlHomeIMG = ""; /* Extracted from htmlHome */
 vstring htmlBibliography = ""; /* Optional; set by htmlbibliography command */
 vstring extHtmlLabel = ""; /* Set by exthtmllabel command - where extHtml starts */
 vstring extHtmlTitle = ""; /* Set by exthtmltitle command (global!) */
+  vstring extHtmlTitleAbbr = ""; /* Extracted from htmlTitle */
 vstring extHtmlHome = ""; /* Set by exthtmlhome command */
+  /* 16-Aug-2016 nm */
+  /* Future - assign these in the $t set.mm comment instead of htmlHome */
+  vstring extHtmlHomeHREF = ""; /* Extracted from extHtmlHome */
+  vstring extHtmlHomeIMG = ""; /* Extracted from extHtmlHome */
 vstring extHtmlBibliography = ""; /* Optional; set by exthtmlbibliography command */
 vstring htmlDir = ""; /* Directory for GIF version, set by htmldir command */
 vstring altHtmlDir = ""; /* Directory for Unicode Font version, set by
@@ -89,7 +100,11 @@ vstring altHtmlDir = ""; /* Directory for Unicode Font version, set by
 
 /* 29-Jul-2008 nm Sandbox stuff */
 vstring sandboxHome = "";
+  vstring sandboxHomeHREF = ""; /* Extracted from extHtmlHome */
+  vstring sandboxHomeIMG = ""; /* Extracted from extHtmlHome */
 vstring sandboxTitle = "";
+  /* 16-Aug-2016 nm */
+  vstring sandboxTitleAbbr = "";
 
 /* Variables holding all HTML <a name..> tags from bibiography pages  */
 vstring htmlBibliographyTags = "";
@@ -165,7 +180,12 @@ flag readTexDefs(
      $t comment of the xxx.mm input file */
   let(&htmlTitle, "Metamath Test Page"); /* Set by htmltitle command in $t
                                                  comment */
-  let(&htmlHome, "<A HREF=\"http://metamath.org\">Home</A>");
+  /* let(&htmlHome, "<A HREF=\"http://metamath.org\">Home</A>"); */
+  /* 16-Aug-2016 nm */
+  let(&htmlHome, cat("<A HREF=\"mmset.html\"><FONT SIZE=-2 FACE=sans-serif>",
+    "<IMG SRC=\"mm.gif\" BORDER=0 ALT=",
+    "\"Home\" HEIGHT=32 WIDTH=32 ALIGN=MIDDLE STYLE=\"margin-bottom:0px\">",
+    "Home</FONT></A>", NULL));
                                      /* Set by htmlhome command in $t comment */
 
   if (errorsOnly == 0) {
@@ -743,9 +763,88 @@ flag readTexDefs(
     "<IMG SRC=\"_sandbox.gif\" BORDER=0 ALT=",
     "\"Table of Contents\" HEIGHT=32 WIDTH=32 ALIGN=MIDDLE>",
     "Table of Contents</FONT></A>", NULL));
+  let(&sandboxHomeHREF, "mmtheorems.html#sandbox:bighdr");
+  let(&sandboxHomeIMG, "_sandbox.gif");
+  let(&sandboxTitleAbbr, "Users' Mathboxes");
   /*let(&sandboxTitle, "User Sandbox");*/
   /* 24-Jul-2009 nm Changed name of sandbox to "mathbox" */
   let(&sandboxTitle, "Users' Mathboxes");
+
+  /* 16-Aug-2016 nm */
+  /*
+  let(&sandboxHomeHREF, "mmtheorems.html#sandbox:bighdr");
+  let(&sandboxHomeIMG, "_sandbox.gif");
+  let(&sandboxTitleAbbr, "Mathboxes");
+  */
+
+  /* 16-Aug-2016 nm */
+  /* Extract derived variables from the $t variables */
+  /* (In the future, it might be better to do this directly in the $t.) */
+  i = instr(1, htmlHome, "HREF=\"") + 5;
+  if (i == 5) {
+    printLongLine(
+        "?Warning: In the $t comment, htmlHome has no 'HREF=\"'.", "", " ");
+    warningFound = 1;
+  }
+  j = instr(i + 1, htmlHome, "\"");
+  let(&htmlHomeHREF, seg(htmlHome, i + 1, j - 1));
+  i = instr(1, htmlHome, "IMG SRC=\"") + 8;
+  if (i == 8) {
+    printLongLine(
+        "?Warning: In the $t comment, htmlHome has no 'IMG SRC=\"'.", "", " ");
+    warningFound = 1;
+  }
+  j = instr(i + 1, htmlHome, "\"");
+  let(&htmlHomeIMG, seg(htmlHome, i + 1, j - 1));
+
+
+  /* 16-Aug-2016 nm */
+  /* Compose abbreviated title from capital letters */
+  j = (long)strlen(htmlTitle);
+  let(&htmlTitleAbbr, "");
+  for (i = 1; i <= j; i++) {
+    if (htmlTitle[i - 1] >= 'A' && htmlTitle[i -1] <= 'Z') {
+      let(&htmlTitleAbbr, cat(htmlTitleAbbr, chr(htmlTitle[i - 1]), NULL));
+    }
+  }
+  let(&htmlTitleAbbr, cat(htmlTitleAbbr, " Home", NULL));
+
+  /* 18-Aug-2016 nm Added conditional test for extended section */
+  if (extHtmlStmt < statements + 1) { /* If extended section exists */
+    i = instr(1, extHtmlHome, "HREF=\"") + 5;
+    if (i == 5) {
+      printLongLine(
+          "?Warning: In the $t comment, extHtmlHome has no 'HREF=\"'.", "", " ");
+      warningFound = 1;
+    }
+    j = instr(i + 1, extHtmlHome, "\"");
+    let(&extHtmlHomeHREF, seg(extHtmlHome, i + 1, j - 1));
+    i = instr(1, extHtmlHome, "IMG SRC=\"") + 8;
+    if (i == 8) {
+      printLongLine(
+          "?Warning: In the $t comment, extHtmlHome has no 'IMG SRC=\"'.", "", " ");
+      warningFound = 1;
+    }
+    j = instr(i + 1, extHtmlHome, "\"");
+    let(&extHtmlHomeIMG, seg(extHtmlHome, i + 1, j - 1));
+    /* Compose abbreviated title from capital letters */
+    j = (long)strlen(extHtmlTitle);
+    let(&extHtmlTitleAbbr, "");
+    for (i = 1; i <= j; i++) {
+      if (extHtmlTitle[i - 1] >= 'A' && extHtmlTitle[i -1] <= 'Z') {
+        let(&extHtmlTitleAbbr, cat(extHtmlTitleAbbr,
+            chr(extHtmlTitle[i - 1]), NULL));
+      }
+    }
+    let(&extHtmlTitleAbbr, cat(extHtmlTitleAbbr, " Home", NULL));
+  }
+
+  /* 16-Aug-2016 nm For debugging - remove later */
+  /*
+  printf("h=%s i=%s a=%s\n",htmlHomeHREF,htmlHomeIMG,htmlTitleAbbr);
+  printf("eh=%s ei=%s ea=%s\n",extHtmlHomeHREF,extHtmlHomeIMG,extHtmlTitleAbbr);
+  */
+
 
 
   let(&token, ""); /* Deallocate */
@@ -1502,8 +1601,47 @@ void printTexHeader(flag texHeaderFlag)
     /*print2("<BODY BGCOLOR=%s>\n", MINT_BACKGROUND_COLOR);*/
     print2("<BODY BGCOLOR=\"#FFFFFF\">\n");
 
+    /* 16-Aug-2016 nm Major revision of header */
+    print2("<TABLE BORDER=0 CELLSPACING=0 CELLPADDING=0 WIDTH=\"100%s\">\n",
+         "%");
+    print2("  <TR>\n");
+    print2("    <TD ALIGN=LEFT VALIGN=TOP WIDTH=\"25%s\"><A HREF=\n", "%");
+    print2("    \"%s\"><IMG SRC=\"%s\"\n",
+        (showStatement < extHtmlStmt ? htmlHomeHREF :
+             (showStatement < sandboxStmt ? extHtmlHomeHREF :
+             sandboxHomeHREF)),
+        /* Note that we assume that the upper-left image is 32x32 */
+        (showStatement < extHtmlStmt ? htmlHomeIMG :
+             (showStatement < sandboxStmt ? extHtmlHomeIMG :
+             sandboxHomeIMG)));
+    print2("      BORDER=0\n");
+    print2("      ALT=\"%s\"\n",
+        (showStatement < extHtmlStmt ? htmlTitleAbbr :
+             (showStatement < sandboxStmt ? extHtmlTitleAbbr :
+             sandboxTitleAbbr)));
+    print2("      TITLE=\"%s\"\n",
+        (showStatement < extHtmlStmt ? htmlTitleAbbr :
+             (showStatement < sandboxStmt ? extHtmlTitleAbbr :
+             sandboxTitleAbbr)));
+    print2(
+      "      HEIGHT=32 WIDTH=32 ALIGN=TOP STYLE=\"margin-bottom:0px\"></A>\n");
+    print2("    </TD>\n");
+    print2("    <TD ALIGN=CENTER VALIGN=TOP><FONT SIZE=\"+3\" COLOR=%s><B>\n",
+      GREEN_TITLE_COLOR);
+    /* Allow plenty of room for long titles (although over 79 chars. will
+       trigger bug 1505). */
+    print2("%s\n",
+        (showStatement < extHtmlStmt ? htmlTitle :
+             (showStatement < sandboxStmt ? extHtmlTitle :
+             localSandboxTitle)));
+    print2("      </B></FONT></TD>\n");
+    print2("    </TD>\n");
+
+
+    /*
     print2("<TABLE BORDER=0 WIDTH=\"100%s\"><TR>\n", "%");
     print2("<TD ALIGN=LEFT VALIGN=TOP WIDTH=\"25%s\"\n", "%");
+    */
 
     /*
     print2("<A HREF=\"mmexplorer.html\">\n");
@@ -1512,13 +1650,14 @@ void printTexHeader(flag texHeaderFlag)
     print2("WIDTH=27 HEIGHT=32 ALIGN=LEFT><FONT SIZE=-1 FACE=sans-serif>Home\n");
     print2("</FONT></A>");
     */
+    /*
     if (showStatement < extHtmlStmt) {
       printLongLine(cat("ROWSPAN=2>", htmlHome, "</TD>", NULL), "", "\"");
-    /*} else {*/
-    } else if (showStatement < sandboxStmt) { /* 29-Jul-2008 nm Sandbox stuff */
+    /@} else {@/
+    } else if (showStatement < sandboxStmt) { /@ 29-Jul-2008 nm Sandbox stuff @/
       printLongLine(cat("ROWSPAN=2>", extHtmlHome, "</TD>", NULL), "", "\"");
 
-    /* 29-Jul-2008 nm Sandbox stuff */
+    /@ 29-Jul-2008 nm Sandbox stuff @/
     } else {
       printLongLine(cat("ROWSPAN=2>", sandboxHome, "</TD>", NULL), "", "\"");
 
@@ -1528,31 +1667,30 @@ void printTexHeader(flag texHeaderFlag)
       printLongLine(cat(
           "<TD ALIGN=CENTER VALIGN=TOP ROWSPAN=2><FONT SIZE=\"+3\" COLOR=",
           GREEN_TITLE_COLOR, "><B>", htmlTitle, "</B></FONT>", NULL), "", "\"");
-    /*} else {*/
-    } else if (showStatement < sandboxStmt) { /* 29-Jul-2008 nm Sandbox stuff */
+    /@} else {@/
+    } else if (showStatement < sandboxStmt) { /@ 29-Jul-2008 nm Sandbox stuff @/
       printLongLine(cat(
           "<TD ALIGN=CENTER VALIGN=TOP ROWSPAN=2><FONT SIZE=\"+3\" COLOR=",
           GREEN_TITLE_COLOR, "><B>", extHtmlTitle, "</B></FONT>", NULL), "", "\"");
 
-    /* 29-Jul-2008 nm Sandbox stuff */
+    /@ 29-Jul-2008 nm Sandbox stuff @/
     } else {
       printLongLine(cat(
           "<TD ALIGN=CENTER VALIGN=TOP ROWSPAN=2><FONT SIZE=\"+3\" COLOR=",
           GREEN_TITLE_COLOR, "><B>",
-          /*sandboxTitle,*/
-          /* 2-Aug-2009 nm - "Mathbox for <username>" mod */
+          /@sandboxTitle,@/
+          /@ 2-Aug-2009 nm - "Mathbox for <username>" mod @/
           localSandboxTitle,
            "</B></FONT>", NULL), "", "\"");
 
     }
+    */
 
 
-    if (texHeaderFlag) {
+    if (texHeaderFlag) {  /* For HTML, 1 means to put prev/next links */
       /* Put Previous/Next links into web page */
-      /*print2("</TD><TD ALIGN=RIGHT VALIGN=TOP><FONT SIZE=-1 FACE=sans-serif>\n");*/
-      print2(
-"</TD><TD ALIGN=RIGHT VALIGN=TOP WIDTH=\"25%s\" ROWSPAN=2><FONT\n", "%");
-      print2(" SIZE=-1 FACE=sans-serif>\n");
+      print2("    <TD ALIGN=RIGHT VALIGN=TOP WIDTH=\"25%s\">\n", "%");
+      print2("      <FONT SIZE=-1 FACE=sans-serif>\n");
       /* Find the previous statement with a web page */
       j = 0;
       k = 0;
@@ -1561,9 +1699,13 @@ void printTexHeader(flag texHeaderFlag)
             statement[i].type == (char)a_ )
             /* Skip dummy "xxx..." statements.  We rely on lazy
                evaluation to prevent array bound overflow. */
-            && (statement[i].labelName[0] != 'x' /* Skip "xxx.." */
+            /* 16-Aug-2016 nm Took out this obsolete feature */
+            /*
+            && (statement[i].labelName[0] != 'x'
               || statement[i].labelName[1] != 'x'
-              || statement[i].labelName[2] != 'x')) {
+              || statement[i].labelName[2] != 'x')
+            */
+            ) {
           j = i;
           break;
         }
@@ -1576,21 +1718,25 @@ void printTexHeader(flag texHeaderFlag)
               statement[i].type == (char)a_ )
               /* Skip dummy "xxx..." statements.  We rely on lazy
                  evaluation to prevent array bound overflow. */
-              && (statement[i].labelName[0] != 'x' /* Skip "xxx.." */
+              /* 16-Aug-2016 nm Took out this obsolete feature */
+              /*
+              && (statement[i].labelName[0] != 'x'
                 || statement[i].labelName[1] != 'x'
-                || statement[i].labelName[2] != 'x')) {
+                || statement[i].labelName[2] != 'x')
+              */
+              ) {
             j = i;
             break;
           }
         }
       }
       if (j == 0) bug(2314);
-      print2("<A HREF=\"%s.html\">\n",
+      print2("      <A HREF=\"%s.html\">\n",
           statement[j].labelName);
       if (!k) {
-        print2("&lt; Previous</A>&nbsp;&nbsp;\n");
+        print2("      &lt; Previous</A>&nbsp;&nbsp;\n");
       } else {
-        print2("&lt; Wrap</A>&nbsp;&nbsp;\n");
+        print2("      &lt; Wrap</A>&nbsp;&nbsp;\n");
       }
       /* Find the next statement with a web page */
       j = 0;
@@ -1600,9 +1746,13 @@ void printTexHeader(flag texHeaderFlag)
             statement[i].type == (char)a_ )
             /* Skip dummy "xxx..." statements.  We rely on lazy
                evaluation to prevent array bound overflow. */
-            && (statement[i].labelName[0] != 'x' /* Skip "xxx.." */
+            /* 16-Aug-2016 nm Took out this obsolete feature */
+            /*
+            && (statement[i].labelName[0] != 'x'
               || statement[i].labelName[1] != 'x'
-              || statement[i].labelName[2] != 'x')) {
+              || statement[i].labelName[2] != 'x')
+            */
+            ) {
           j = i;
           break;
         }
@@ -1615,9 +1765,13 @@ void printTexHeader(flag texHeaderFlag)
               statement[i].type == (char)a_ )
               /* Skip dummy "xxx..." statements.  We rely on lazy
                  evaluation to prevent array bound overflow. */
-              && (statement[i].labelName[0] != 'x' /* Skip "xxx.." */
+              /* 16-Aug-2016 nm Took out this obsolete feature */
+              /*
+              && (statement[i].labelName[0] != 'x'
                 || statement[i].labelName[1] != 'x'
-                || statement[i].labelName[2] != 'x')) {
+                || statement[i].labelName[2] != 'x')
+              */
+              ) {
             j = i;
             break;
           }
@@ -1626,12 +1780,14 @@ void printTexHeader(flag texHeaderFlag)
       if (j == 0) bug(2315);
       /*print2("<A HREF=\"%s.html\">Next</A></FONT>\n",*/
       if (!k) {
-        print2("<A HREF=\"%s.html\">Next &gt;</A>\n",
+        print2("      <A HREF=\"%s.html\">Next &gt;</A>\n",
             statement[j].labelName);
       } else {
-        print2("<A HREF=\"%s.html\">Wrap &gt;</A>\n",
+        print2("      <A HREF=\"%s.html\">Wrap &gt;</A>\n",
             statement[j].labelName);
       }
+
+      print2("      </FONT><FONT FACE=sans-serif SIZE=-2>\n");
 
       /* ??? Is the closing </FONT> printed if there is no altHtml?
          This should be tested.  8/9/03 ndm */
@@ -1646,45 +1802,68 @@ void printTexHeader(flag texHeaderFlag)
          since mmtheorems.html is now just the table of contents */
       let(&tmpStr, cat("mmtheorems", str((double)i), ".html#",
           statement[showStatement].labelName, NULL)); /* Link to page/stmt */
+      print2("      <BR><A HREF=\"%s\">Nearby theorems</A>\n",
+            tmpStr);    /* 15-Aug-04 */
 
+      /* Print the GIF/Unicode Font choice, if directories are specified */
+      /*
+      if (htmlDir[0]) {
+
+        if (altHtmlFlag) {
+          print2("      <BR><A HREF=\"%s%s\">GIF version</A>\n",
+                htmlDir, texFileName);
+
+        } else {
+          print2("      <BR><A HREF=\"%s%s\">Unicode version</A>\n",
+                altHtmlDir, texFileName);
+
+        }
+      }
+      */
+      print2("      </FONT>\n");
+      print2("    </TD>\n");
+      print2("  </TR>\n");
+      print2("  <TR>\n");
+      print2("    <TD COLSPAN=2 ALIGN=LEFT VALIGN=TOP><FONT SIZE=-2\n");
+      print2("      FACE=sans-serif>\n");
+      print2("      <A HREF=\"../mm.html\">Mirrors</A>&nbsp; &gt;\n");
+      print2("      &nbsp;<A HREF=\"../index.html\">Home</A>&nbsp; &gt;\n");
+      print2("      &nbsp;<A HREF=\"%s\">%s</A>&nbsp; &gt;\n",
+          (showStatement < extHtmlStmt ? htmlHomeHREF :
+               (showStatement < sandboxStmt ? extHtmlHomeHREF :
+               htmlHomeHREF)),
+          (showStatement < extHtmlStmt ? htmlTitleAbbr :
+               (showStatement < sandboxStmt ? extHtmlTitleAbbr :
+               htmlTitleAbbr)));
+      print2("      &nbsp;<A HREF=\"mmtheorems.html\">Th. List</A>&nbsp; &gt;\n");
+      if (showStatement >= sandboxStmt) {
+        print2("      &nbsp;<A HREF=\"mmtheorems.html#sandbox:bighdr\">\n");
+        print2("      Mathboxes</A>&nbsp; &gt;\n");
+      }
+      print2("      &nbsp;%s\n",
+          /* Strip off ".html" */
+          left(texFileName, (long)strlen(texFileName) - 5));
+      print2("      </FONT>\n");
+      print2("    </TD>\n");
+      print2("    <TD COLSPAN=1 ALIGN=RIGHT VALIGN=TOP>\n");
+      print2("      <FONT SIZE=-2 FACE=sans-serif>\n");
       /* Print the GIF/Unicode Font choice, if directories are specified */
       if (htmlDir[0]) {
 
-        /*print2("</FONT></TD></TR><TR><TD ALIGN=RIGHT><FONT FACE=sans-serif\n");*/
-        print2("</FONT><FONT FACE=sans-serif SIZE=-2>\n");
-        print2("<BR><A HREF=\"%s\">Related theorems</A>\n",
-              tmpStr);     /* 15-Aug-04 */
-
         if (altHtmlFlag) {
-
-          /*
-          print2("SIZE=-2>Bad symbols?\n");
-          print2("Use <A HREF=\"http://mozilla.org\">Firefox</A><BR>\n");
-          print2("(or <A HREF=\"%s%s\">GIF version</A> for IE).</FONT></TD>\n",
-              htmlDir, texFileName);
-          */
-          /* 15-Aug-04 */
-          print2("<BR><A HREF=\"%s%s\">GIF\n", htmlDir, texFileName);
-          print2("version</A></FONT></TD>\n");
+          print2("      <A HREF=\"%s%s\">GIF version</A>\n",
+                htmlDir, texFileName);
 
         } else {
-
-          /*
-          print2("SIZE=-2>Browser slow? Try the\n");
-          print2("<BR><A HREF=\"%s%s\">Unicode\n",
-              altHtmlDir, texFileName);
-          print2("version</A>.</FONT></TD>\n");
-          */
-          /* 15-Aug-04 */
-          print2("<BR><A HREF=\"%s%s\">Unicode\n", altHtmlDir, texFileName);
-          print2("version</A></FONT></TD>\n");
+          print2("      <A HREF=\"%s%s\">Unicode version</A>\n",
+                altHtmlDir, texFileName);
 
         }
       }
 
-    } else {
-      print2("</TD><TD ALIGN=RIGHT VALIGN=MIDDLE\n");
-      print2(" WIDTH=\"25%s\"><FONT FACE=sans-serif SIZE=-2>\n", "%");
+    } else { /* texHeaderFlag=0 for HTML means not to put prev/next links */
+      print2("      </TD><TD ALIGN=RIGHT VALIGN=TOP\n");
+      print2("       ><FONT FACE=sans-serif SIZE=-2>\n", "%");
 
       /* Print the GIF/Unicode Font choice, if directories are specified */
       if (htmlDir[0]) {
@@ -1703,22 +1882,14 @@ void printTexHeader(flag texHeaderFlag)
         print2("&nbsp;\n");
       }
 
-      print2("</FONT></TD></TR><TR><TD ALIGN=RIGHT VALIGN=TOP\n");
-      print2(" WIDTH=\"25%s\">&nbsp;</TD>\n", "%");
     }
 
-    print2("</TR></TABLE>\n");
+    print2("      </FONT>\n");
+    print2("    </TD>\n");
+    print2("  </TR>\n");
+    print2("</TABLE>\n");
 
-    /*
-    print2("<CENTER><H1><FONT\n");
-    if (showStatement < extHtmlStmt) {
-      print2("COLOR=%s>%s</FONT></H1></CENTER>\n",
-         GREEN_TITLE_COLOR, htmlTitle);
-    } else {
-      print2("COLOR=%s>%s</FONT></H1></CENTER>\n",
-          GREEN_TITLE_COLOR, extHtmlTitle);
-    }
-    */
+
 
     print2("<HR NOSHADE SIZE=1>\n");
 
@@ -3051,7 +3222,11 @@ void printTexTrailer(flag texTrailerFlag) {
       print2("<FONT SIZE=-1 FACE=sans-serif>Colors of variables:\n");
       printLongLine(cat(htmlVarColors, "</FONT>", NULL), "", " ");
       *******/
-      print2("</TABLE></CENTER><CENTER><FONT SIZE=-2 FACE=sans-serif>\n");
+      print2("</TABLE></CENTER>\n");
+      print2("<TABLE BORDER=0 WIDTH=\"100%s\">\n", "%");
+      print2("<TR><TD WIDTH=\"25%s\">&nbsp;</TD>\n", "%");
+      print2("<TD ALIGN=CENTER VALIGN=BOTTOM>\n");
+      print2("<FONT SIZE=-2 FACE=sans-serif>\n");
       /*
       print2("<A HREF=\"definitions.html\">Definition list</A> |\n");
       print2("<A HREF=\"theorems.html\">Theorem list</A><BR>\n");
@@ -3065,7 +3240,12 @@ void printTexTrailer(flag texTrailerFlag) {
       */
       print2("Copyright terms:\n");
       print2("<A HREF=\"../copyright.html#pd\">Public domain</A>\n");
-      print2("</FONT></CENTER>\n");
+      print2("</FONT></TD><TD ALIGN=RIGHT VALIGN=BOTTOM WIDTH=\"25%s\">\n",
+          "%");
+      print2("<FONT SIZE=-2 FACE=sans-serif>\n");
+      print2("<A HREF=\"http://validator.w3.org/check?uri=referer\">\n");
+      print2("W3C validator</A>\n");
+      print2("</FONT></TD></TR></TABLE>\n");
 
       /* Todo: Decide to use or not use this */
       /*

@@ -540,7 +540,7 @@ flag processCommandLine(void)
           if (lastArgMatches("/")) {
             i++;
             if (!getFullArg(i,cat(
-                "FULL|COMMENT|TEX|OLD_TEX|HTML|ALT_HTML|BRIEF_HTML",
+                "FULL|COMMENT|TEX|OLD_TEX|HTML|ALT_HTML|TIME|BRIEF_HTML",
                 /* 12-May-2009 sa Added MNEMONICS */
                 "|BRIEF_ALT_HTML|MNEMONICS|NO_VERSIONING|<FULL>", NULL)))
               goto pclbad;
@@ -750,7 +750,7 @@ flag processCommandLine(void)
             if (!getFullArg(i,cat(
                 "NORMAL|PACKED|COMPRESSED|EXPLICIT",
                 "|FAST|OLD_COMPRESSION",   /* 27-Dec-2013 nm */
-                "|<NORMAL>",NULL)))
+                "|TIME|<NORMAL>",NULL)))
               goto pclbad;
           } else {
             break;
@@ -981,7 +981,8 @@ flag processCommandLine(void)
               "REVERSE|INCLUDE_MATHBOXES|FORBID|<BRIEF>", NULL)))
               */
               "VERBOSE|ALLOW_GROWTH|EXCEPT|OVERRIDE|",
-              "INCLUDE_MATHBOXES|FORBID|NO_NEW_AXIOMS_FROM|<VERBOSE>", NULL)))
+              "INCLUDE_MATHBOXES|FORBID|NO_NEW_AXIOMS_FROM|TIME|<VERBOSE>",
+              NULL)))
                               /* 7-Jan-06 nm Added EXCEPT */
                               /* 28-Jun-2011 nm Added INCLUDE_MATHBOXES */
                               /* 10-Nov-2011 nm Added REVERSE */

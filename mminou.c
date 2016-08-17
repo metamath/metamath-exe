@@ -11,6 +11,7 @@
 #include <ctype.h>
 #include <stdarg.h>
 #include <setjmp.h>
+#include <time.h>  /* 16-Aug-2016 nm For ELAPSED_TIME */
 #include "mmvstr.h"
 #include "mmdata.h"
 #include "mminou.h"
@@ -1450,3 +1451,27 @@ vstring readFileToString(vstring fileName, char verbose) {
   *******/
   return ((char *)fileBuf);
 } /* readFileToString */
+
+
+/* 16-Aug-2016 nm */
+/* Returns total elapsed time in seconds since starting session (for the
+   lcc compiler) or the CPU time used (for the gcc compiler).  The
+   argument is assigned the time since the last call to this function. */
+double getRunTime(double *timeSinceLastCall) {
+#ifdef CLOCKS_PER_SEC
+  static clock_t timePrevious = 0;
+  clock_t timeNow;
+  timeNow = clock();
+  *timeSinceLastCall = (double)((1.0 * (double)(timeNow - timePrevious))
+          /CLOCKS_PER_SEC);
+  timePrevious = timeNow;
+  return (double)((1.0 * (double)timeNow)/CLOCKS_PER_SEC);
+  /* Example of printing double format: */
+  /* print2("Total elapsed time = %4.2f s\n", t) */
+#else
+  print2("The clock() function is not implemented on this computer.\n");
+  *timeSinceLastCall = 0;
+  return 0;
+#endif
+}
+

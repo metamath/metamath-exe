@@ -5,7 +5,10 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.133 13-Aug-2016"
+#define MVERSION "0.134 16-Aug-2016"
+/* 0.134 16-Aug-2016 mmwtex.c - added breadcrumbs to theorem pages;
+   metamath.c, mmcmdl.c, mmhlpb.c, mminou.c,.h - added /TIME to SAVE PROOF,
+   SHOW STATEMENT.../[ALT}HTML, MINIMIZE_WITH */
 /* 0.133 13-Aug-2016 mmwtex.c - improve mobile display with <head> tag
    mmpars.c - use updated Macintosh information */
 /* 0.132 10-Jul-2016 metamath.c, mmcmdl.c, mmcmds.c,.h, mmdata.c,.h, mmhlpb.c,
@@ -434,7 +437,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdarg.h>
-#include <time.h>  /* 21-Jun-2014 nm For ELAPSED_TIME */
+/* #include <time.h> */ /* 21-Jun-2014 nm For ELAPSED_TIME */
 #ifdef THINK_C
 #include <console.h>
 #endif
@@ -659,8 +662,13 @@ void command(int argc, char *argv[])
   long tagEndCounter = 0;      /* 2-Jul-2011 nm For TAG command */
 
   /* 21-Jun-2014 */
-  clock_t timePrevious = 0;  /* For SHOW ELAPSED_TIME command */
-  clock_t timeNow = 0;       /* For SHOW ELAPSED_TIME command */
+  /* 16-Aug-2016 nm Now in getElapasedTime() */
+  /* clock_t timePrevious = 0; */  /* For SHOW ELAPSED_TIME command */
+  /* clock_t timeNow = 0; */       /* For SHOW ELAPSED_TIME command */
+  /* 16-Aug-2016 nm */
+  double timeTotal = 0;
+  double timeIncr = 0;
+  flag printTime;  /* Set by "/ TIME" in SAVE PROOF and others */
 
   /* Initialization to avoid compiler warning (should not be theoretically
      necessary) */
@@ -2487,11 +2495,21 @@ void command(int argc, char *argv[])
          and depending on statement type a proof or other information
          is output. */
       /* if (rawArgs != 5) { */  /* obsolete */
-      if (rawArgs != (switchPos("/ NO_VERSIONING") ? 7 : 5)) {
-                                                            /* 6-Jul-2008 nm */
+
+      /* 16-Aug-2016 nm */
+      i = 5;  /* # arguments with only / HTML or / ALT_HTML */
+      if (switchPos("/ NO_VERSIONING")) i = i + 2;
+      if (switchPos("/ TIME")) i = i + 2;
+      if (rawArgs != i) {
         printLongLine(cat("?The HTML qualifiers may not be combined with",
-            " others except / NO_VERSIONING.\n", NULL), "  ", " ");
+            " others except / NO_VERSIONING and / TIME.\n", NULL), "  ", " ");
         continue;
+      }
+
+      /* 16-Aug-2016 nm */
+      printTime = 0;
+      if (switchPos("/ TIME") != 0) {
+        printTime = 1;
       }
 
       /*** 17-Nov-2014 nm This restriction has been removed.
@@ -2874,12 +2892,25 @@ void command(int argc, char *argv[])
 
         } else { /* s > 0 */
 
+          /* 16-Aug-2016 nm */
+          if (printTime == 1) {
+            getRunTime(&timeIncr);  /* This call just resets the time */
+          }
+
           /*** Output the html statement body ***/
           typeStatement(showStatement,
               0 /*briefFlag*/,
               0 /*commentOnlyFlag*/,
               1 /*texFlag*/,   /* means latex or html */
               1 /*htmlFlag*/);
+
+          /* 16-Aug-2016 nm */
+          if (printTime == 1) {
+            getRunTime(&timeIncr);
+            print2("SHOW STATEMENT run time = %6.2f sec for \"%s\"\n",
+                timeIncr,
+                texFileName);
+          }
 
         } /* if s <= 0 */
 
@@ -3228,16 +3259,10 @@ void command(int argc, char *argv[])
 
     /* 21-Jun-2014 */
     if (cmdMatches("SHOW ELAPSED_TIME")) {
-#ifdef CLOCKS_PER_SEC
-      timeNow = clock();
+      timeTotal = getRunTime(&timeIncr);
       print2(
-      "Time since last SHOW ELAPSED_TIME command = %4.2f s; total = %4.2f s\n",
-          (double)((1.0 * (double)(timeNow - timePrevious))/CLOCKS_PER_SEC),
-          (double)((1.0 * (double)timeNow)/CLOCKS_PER_SEC));
-      timePrevious = timeNow;
-#else
-      print2("The clock() function is not implemented on this computer.\n");
-#endif
+      "Time since last SHOW ELAPSED_TIME command = %6.2f s; total = %6.2f s\n",
+          timeIncr, timeTotal);
       continue;
     } /* if (cmdMatches("SHOW ELAPSED_TIME")) */
 
@@ -3581,6 +3606,12 @@ void command(int argc, char *argv[])
         saveFlag = 1; /* The command is SAVE PROOF */
       }
 
+      /* 16-Aug-2016 nm */
+      printTime = 0;
+      if (switchPos("/ TIME") != 0) {  /* / TIME legal in SAVE mode only */
+        printTime = 1;
+      }
+
       /* 27-Dec-2013 nm */
       i = switchPos("/ OLD_COMPRESSION");
       if (i) {
@@ -3767,6 +3798,13 @@ void command(int argc, char *argv[])
             switchPos("/ COMPRESSED") || switchPos("/ EXPLICIT") || saveFlag) {
           /*??? Add error msg if other switches were specified. (Ignore them.)*/
 
+          /* 16-Aug-2016 nm */
+          if (saveFlag) {
+            if (printTime == 1) {
+              getRunTime(&timeIncr);  /* This call just resets the time */
+            }
+          }
+
           if (!pipFlag) {
             outStatement = showStatement;
           } else {
@@ -3948,6 +3986,14 @@ void command(int argc, char *argv[])
                   "\" has been saved internally.",
                   NULL), "", " ");
             }
+
+            /* 16-Aug-2016 nm */
+            if (printTime == 1) {
+              getRunTime(&timeIncr);
+              print2("SAVE PROOF run time = %6.2f sec for \"%s\"\n", timeIncr,
+                  statement[outStatement].labelName);
+            }
+
           } else {
             /* 19-Apr-2015 so */
             /* 24-Apr-2015 nm Reverted */
@@ -5641,6 +5687,16 @@ void command(int argc, char *argv[])
 
 
     if (cmdMatches("MINIMIZE_WITH")) {
+
+      /* 16-Aug-2016 nm */
+      printTime = 0;
+      if (switchPos("/ TIME") != 0) {
+        printTime = 1;
+      }
+      if (printTime == 1) {
+        getRunTime(&timeIncr);  /* This call just resets the time */
+      }
+
       /* q = 0; */ /* Line length */  /* 25-Jun-2014 deleted */
       prntStatus = 0; /* Status flag to help determine messages
                          0 = no statement was matched during scan
@@ -6169,6 +6225,13 @@ void command(int argc, char *argv[])
       if (!mathboxFlag && proveStatement >= sandboxStmt) {
         print2(
   "(Other mathboxes were not checked.  Use / INCLUDE_MATHBOXES to include them.)\n");
+      }
+
+      /* 16-Aug-2016 nm */
+      if (printTime == 1) {
+        getRunTime(&timeIncr);
+        print2("MINIMIZE_WITH run time = %6.2f sec for \"%s\"\n", timeIncr,
+            statement[proveStatement].labelName);
       }
 
       /* 20-May-2013 nm */

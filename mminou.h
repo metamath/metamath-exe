@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2011  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2016  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -76,5 +76,11 @@ vstring fGetTmpName(vstring filePrefix);
    could not be opened or had a non-ASCII Unicode character or some other
    problem.   If verbose is 0, error and warning messages are suppressed. */
 vstring readFileToString(vstring fileName, char verbose);
+
+/* 16-Aug-2016 nm */
+/* Returns total elapsed time in seconds since starting session (for the
+   lcc compiler) or the CPU time used (for the gcc compiler).  The
+   argument is assigned the time since the last call to this function. */
+double getRunTime(double *timeSinceLastCall);
 
 #endif /* METAMATH_MMINOU_H_*/
