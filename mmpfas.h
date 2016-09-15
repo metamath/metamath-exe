@@ -86,6 +86,16 @@ vstring getKnownSubProofs(void);
    .target of the deleted unknown step is retained). */
 void addSubProof(nmbrString *subProof, long step);
 
+/* 11-Sep-2016 nm */
+/* This function eliminates any occurrences of statement sourceStmtNum in the
+   targetProof by substituting it with the proof of sourceStmtNum.  An empty
+   nmbrString is returned if there was an error. */
+/* Normally, targetProof is the global proofInProgress.proof.  However,
+   we make it an argument in case in the future we'd like to do this
+   outside of the proof assistant. */
+nmbrString *expandProof(nmbrString *targetProof,
+    long sourceStmtNum /*, long targetStmtNum*/);
+
 /* Delete a subproof starting (in reverse from) step.  The step is replaced
    with an unknown step, and its .target field is retained. */
 void deleteSubProof(long step);
@@ -160,7 +170,7 @@ void makeSubstAll(pntrString *stateVector);
 void replaceDummyVar(long dummyVar, nmbrString *mString);
 
 /* Get subproof length of a proof, starting at endStep and going backwards */
-long subProofLen(nmbrString *proof, long endStep);
+long subproofLen(nmbrString *proof, long endStep);
 
 /* 25-Aug-2012 nm Added this function */
 /* If testStep has no dummy variables, return 0;
@@ -181,6 +191,10 @@ void declareDummyVars(long numNewVars);
 /* Copies the Proof Assistant proof state */
 void copyProofStruct(struct pip_struct *outProofStruct,
     struct pip_struct inProofStruct);
+
+/* Initiailizes the Proof Assistant proof state */
+void initProofStruct(struct pip_struct *proofStruct, nmbrString *proof,
+    long proveStatement);
 
 /* Clears the Proof Assistant proof state */
 void deallocProofStruct(struct pip_struct *proofStruct);

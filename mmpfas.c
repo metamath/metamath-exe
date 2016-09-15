@@ -367,7 +367,7 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
                         dummy variables */
   nmbrString *hypTestPtr; /* Points to what we are testing hyp. against */
   flag hypOrSubproofFlag; /* 0 means testing against hyp., 1 against proof*/
-  vstring indepKnownSteps = ""; /* 'Y' = ok to try step; 'N' = step */
+  vstring indepKnownSteps = ""; /* 'Y' = ok to try step; 'N' = not ok */
                                                  /* 22-Aug-2012 nm */
   long pfLen;          /* 22-Aug-2012 nm */
   long scanLen;         /* 22-Aug-2012 nm */
@@ -394,7 +394,7 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
     /* Get length of the existing subproof at the replacement step.  The
        existing subproof will be scanned to see if there is a match to
        the $e hypotheses of the replacement statement.  */
-    subPfLen = subProofLen(proofInProgress.proof, prfStep);
+    subPfLen = subproofLen(proofInProgress.proof, prfStep);
     scanLen = subPfLen;
     scanUpperBound = prfStep;
     scanLowerBound = scanUpperBound - scanLen + 1;
@@ -813,7 +813,7 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
                 trialStep - (scanLowerBound - reqHyps)])); /* 22-Aug-2012 nm */
           } else {
             /* We're scanning the subproof */
-            i = subProofLen(proofInProgress.proof, trialStep);
+            i = subproofLen(proofInProgress.proof, trialStep);
             nmbrLet((nmbrString **)(&hypProofList[hypSortMap[hyp]]),
                 nmbrSeg(proofInProgress.proof, trialStep - i + 2,
                 trialStep + 1));
@@ -1062,7 +1062,7 @@ vstring getIndepKnownSteps(long proofStmt, long refStep)
   /* Scan back from last step to get independent subproofs */
   for (prfStep = proofLen - 2 /*next to last step*/; prfStep >= 0;
       prfStep--) {
-    wrkSubPfLen = subProofLen(proofInProgress.proof, prfStep);
+    wrkSubPfLen = subproofLen(proofInProgress.proof, prfStep);
     if (prfStep >= refStep && prfStep - wrkSubPfLen + 1 <= refStep) {
       /* The subproof includes the refStep; reject it */
       continue;
@@ -1072,7 +1072,7 @@ vstring getIndepKnownSteps(long proofStmt, long refStep)
       if (indepSteps[step2] == 'Y') bug(1832); /* Should be 1st Y assignment */
       indepSteps[step2] = 'Y';
     }
-    /* Speedup: skip over independent subproof to reduce subProofLen() calls */
+    /* Speedup: skip over independent subproof to reduce subproofLen() calls */
     prfStep = prfStep - wrkSubPfLen + 1; /* Decrement loop counter */
         /* (Note that a 1-step subproof won't modify loop counter) */
   } /* next prfStep */
@@ -1220,6 +1220,198 @@ void addSubProof(nmbrString *subProof, long step) {
       step + 1), NULL));
 } /* addSubProof */
 
+/* 11-Sep-2016 nm */
+/* This function eliminates any occurrences of statement sourceStmtNum in the
+   targetProof by substituting it with the proof of sourceStmtNum.  The
+   unchanged targetProof is returned if there was an error. */
+/* Normally, targetProof is the global proofInProgress.proof.  However,
+   we make it an argument in case in the future we'd like to do this
+   outside of the Proof Assistant. */
+/* The rawTargetProof may be uncompressed or compressed. */
+nmbrString *expandProof(
+    nmbrString *rawTargetProof, /* May be compressed or uncompressed */
+    long sourceStmtNum   /* The statement whose proof will be expanded */
+    /* , long targetStmtNum */) { /* The statement begin proved */
+  nmbrString *origTargetProof = NULL_NMBRSTRING;
+  nmbrString *targetProof = NULL_NMBRSTRING;
+  nmbrString *sourceProof = NULL_NMBRSTRING;
+  nmbrString *expandedTargetProof = NULL_NMBRSTRING;
+  pntrString *hypSubproofs = NULL_PNTRSTRING;
+  nmbrString *expandedSubproof = NULL_NMBRSTRING;
+  long targetStep, srcHyp, hypStep, totalSubpLen, subpLen, srcStep;
+  long sourcePLen, sourceHyps, targetPLen, targetSubpLen;
+  flag hasDummyVar = 0;
+  flag hasUnknownStep = 0;
+  char srcStepType;
+  long srcHypNum;
+  flag foundMatch;
+
+  sourceProof = getProof(sourceStmtNum, 0); /* Retrieve from source file */
+  nmbrLet(&sourceProof, nmbrUnsquishProof(sourceProof)); /* Uncompress */
+  /* (The following nmbrUnsquishProof() is unnecessary when called from
+     within the Proof Assistant.) */
+  nmbrLet(&origTargetProof, nmbrUnsquishProof(rawTargetProof)); /* Uncompress */
+  nmbrLet(&expandedTargetProof, origTargetProof);
+  sourcePLen = nmbrLen(sourceProof);
+  sourceHyps = nmbrLen(statement[sourceStmtNum].reqHypList);
+  pntrLet(&hypSubproofs, pntrNSpace(sourceHyps)); /* pntrNSpace initializes
+        to null nmbrStrings */
+  if (statement[sourceStmtNum].type != (char)p_) {
+    /* Caller should enforce $p statements only */
+    bug(1741);
+    nmbrLet(&expandedTargetProof, targetProof);
+    goto RETURN_POINT;
+  }
+
+  while (1) { /* Restart after every expansion (to handle nested
+                       references to sourceStmtNum correctly) */
+    nmbrLet(&targetProof, expandedTargetProof);
+    targetPLen = nmbrLen(targetProof);
+    foundMatch = 0;
+    for (targetStep = targetPLen - 1; targetStep >= 0; targetStep--) {
+      if (targetProof[targetStep] != sourceStmtNum) continue;
+      foundMatch = 1;
+      /* Found a use of the source statement in the proof */
+      targetSubpLen = subproofLen(targetProof, targetStep);
+      /* Collect the proofs of the hypotheses */
+      /*pntrLet(&hypSubproofs, pntrNSpace(sourceHyps));*/ /* done above */
+      hypStep = targetStep - 1;
+      totalSubpLen = 0;
+      for (srcHyp = sourceHyps - 1; srcHyp >= 0; srcHyp--) {
+        subpLen = subproofLen(targetProof, hypStep);
+                                      /* Find length of proof of hypothesis */
+        nmbrLet((nmbrString **)(&(hypSubproofs[srcHyp])),
+          nmbrMid(targetProof, (hypStep + 1) - (subpLen - 1), subpLen));
+                                    /* Note that nmbrStrings start at 1, not 0 */
+        hypStep = hypStep - subpLen;
+        totalSubpLen = totalSubpLen + subpLen;
+      }
+      if (totalSubpLen != targetSubpLen - 1) {
+        /* Independent calculation of source statement subproof failed.
+           Could be caused by corrupted proof also.  If this is confirmed,
+           change the bug() to an error message (or depend on getProof() error
+           messages) */
+        bug(1742);
+        nmbrLet(&expandedTargetProof, targetProof);
+        goto RETURN_POINT;
+      }
+
+      /* Build the expanded subproof */
+      nmbrLet(&expandedSubproof, NULL_NMBRSTRING);
+      /* Scan the proof of the statement to be expanded */
+      for (srcStep = 0; srcStep < sourcePLen; srcStep++) {
+        /* 14-Sep-2016 nm */
+        if (sourceProof[srcStep] < 0) {
+          if (sourceProof[srcStep] == -(long)'?') {
+            /* It's an unknown step in the source proof; make it an
+               unknown step in the target proof */
+            hasUnknownStep = 1;
+          } else {
+            /* It shouldn't be a compressed proof because we called
+               unSquishProof() above */
+            bug(1746);
+          }
+          /* Assign unknown to the target proof */
+          nmbrLet(&expandedSubproof, nmbrAddElement(expandedSubproof,
+              -(long)'?'));
+          continue;
+        }
+        srcStepType = statement[sourceProof[srcStep]].type;
+        if (srcStepType == (char)e_ || srcStepType == (char)f_) {
+          srcHypNum = -1;  /* Means the step is not a (required) hypothesis */
+          for (srcHyp = 0; srcHyp < sourceHyps; srcHyp++) {
+            /* Find out if the proof step references a required hyp */
+            if ((statement[sourceStmtNum].reqHypList)[srcHyp]
+                == sourceProof[srcStep]) {
+              srcHypNum = srcHyp;
+              break;
+            }
+          }
+          if (srcHypNum > -1) {
+            /* It's a required hypothesis */
+            nmbrLet(&expandedSubproof, nmbrCat(expandedSubproof,
+                hypSubproofs[srcHypNum], NULL));
+          } else if (srcStepType == (char)e_) {
+            /* A non-required hypothesis cannot be $e */
+            bug(1743);
+          } else if (srcStepType == (char)f_) {
+            /* It's an optional hypothesis (dummy variable), which we don't
+               know what it will be in final proof, so make it an unknown
+               step in final proof */
+            hasDummyVar = 1;
+            nmbrLet(&expandedSubproof, nmbrAddElement(expandedSubproof,
+                -(long)'?'));
+          }
+        } else if (srcStepType != (char)a_ && srcStepType != (char)p_) {
+          bug(1744);
+        } else {
+          /* It's a normal statement reference ($a, $p); use it as is */
+          /* (This adds normal ref steps one by one, each requiring a new
+             allocation in nmbrAddElement.  This should be OK if, as expected,
+             only relatively short proofs are expanded.  If it becomes a problem,
+             we can modify the code to do bigger chunks of $a, $p steps at a
+             time.) */
+          nmbrLet(&expandedSubproof, nmbrAddElement(expandedSubproof,
+              sourceProof[srcStep]));
+        } /* if srcStepType... *? */
+      } /* next srcStep */
+      /* Insert the expanded subproof into the final expanded proof */
+      nmbrLet(&expandedTargetProof, nmbrCat(
+          nmbrLeft(expandedTargetProof, (targetStep + 1) - targetSubpLen),
+          expandedSubproof,
+          nmbrRight(expandedTargetProof, (targetStep + 1) + 1), NULL));
+      break; /* Start over after processing an expansion */
+    } /* next targetStep */
+    if (!foundMatch) break;
+    /* A matching statement was expanded.  Start over so we can accurate
+       process nested references to sourceStmt */
+  } /* end while(1) */
+
+
+ RETURN_POINT:
+  if (nmbrEq(origTargetProof, expandedTargetProof)) {
+    /*
+    print2("No expansion occurred.  The proof was not changed.\n");
+    */
+  } else {
+    /*
+    printLongLine(cat("All references to theorem \"",
+        statement[sourceStmtNum].labelName,
+        "\" were expanded in the proof of \"",
+        statement[targetStmtNum].labelName,
+        "\", which increased from ",
+        str((double)(nmbrLen(targetProof))), " to ",
+        str((double)(nmbrLen(expandedTargetProof))), " steps (uncompressed).",
+        NULL), " ", " ");
+    */
+    if (hasDummyVar == 1) {
+      printLongLine(cat(
+      "******* Note: The expansion of \"",
+      statement[sourceStmtNum].labelName,
+      "\" has dummy variable(s) that need to be assigned.", NULL), " ", " ");
+    }
+    if (hasUnknownStep == 1) {
+      printLongLine(cat(
+      "******* Note: The expansion of \"",
+      statement[sourceStmtNum].labelName,
+      "\" has unknown step(s) that need to be assigned.", NULL), " ", " ");
+    }
+  }
+  /* Deallocate memory */
+  nmbrLet(&sourceProof, NULL_NMBRSTRING);
+  nmbrLet(&origTargetProof, NULL_NMBRSTRING);
+  nmbrLet(&targetProof, NULL_NMBRSTRING);
+  nmbrLet(&expandedSubproof, NULL_NMBRSTRING);
+  /* Deallocate array entries */
+  for (srcHyp = 0; srcHyp < sourceHyps; srcHyp++) {
+    nmbrLet((nmbrString **)(&(hypSubproofs[srcHyp])), NULL_NMBRSTRING);
+  }
+  /* Deallocate array */
+  pntrLet(&hypSubproofs, NULL_PNTRSTRING);
+  return expandedTargetProof;
+} /* expandProof */
+
+
 /* Delete a subproof starting (in reverse from) step.  The step is replaced
    with an unknown step, and its .target and .user fields are retained. */
 void deleteSubProof(long step) {
@@ -1235,7 +1427,7 @@ void deleteSubProof(long step) {
   if ((proofInProgress.proof)[step] == -(long)'?') return;
            /* 22-Aug-2012 nm Don't do anything if step is unassigned. */
 
-  sbPfLen = subProofLen(proofInProgress.proof, step);
+  sbPfLen = subproofLen(proofInProgress.proof, step);
   nmbrLet(&proofInProgress.proof, nmbrCat(nmbrAddElement(
       nmbrLeft(proofInProgress.proof, step - sbPfLen + 1), -(long)'?'),
       nmbrRight(proofInProgress.proof, step + 2), NULL));
@@ -1547,7 +1739,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
       /* Note that for subproof length of 1, the 2nd argument of nmbrSeg
          evaluates to selfScanStep + 1, so nmbrSeg will be length 1 */
       nmbrLet(&proof, nmbrSeg(proofInProgress.proof, selfScanStep -
-          subProofLen(proofInProgress.proof, selfScanStep) + 2,
+          subproofLen(proofInProgress.proof, selfScanStep) + 2,
           selfScanStep + 1));
 
       /* Check to see that the subproof has no unknown steps. */
@@ -2079,7 +2271,7 @@ void minimizeProof(long repStatemNum, long prvStatemNum,
       }
 
       /* Get the subproof at step s */
-      sublen = subProofLen(proofInProgress.proof, step);
+      sublen = subproofLen(proofInProgress.proof, step);
       if (sublen > nmbrLen(newSubProofPtr) || allowGrowthFlag) {
         /* Success - proof length was reduced */
         /* 7-Jun-2011 nm Delete the old subproof only if it is not an unknown
@@ -2163,7 +2355,7 @@ void initStep(long step)
         statement[statement[stmt].reqHypList[hyp]].mathString);
                                            /* Assign the hypothesis to target */
     if (hyp > 0) { /* Don't care about subproof length for 1st hyp */
-      pos = pos - subProofLen(proofInProgress.proof, pos);
+      pos = pos - subproofLen(proofInProgress.proof, pos);
                                              /* Get to step with previous hyp */
     }
   }
@@ -2221,7 +2413,7 @@ void assignKnownSubProofs(void)
   plen = nmbrLen(proofInProgress.proof);
   /* Scan proof for known subproofs (backwards, to get biggest ones first) */
   for (pos = plen - 1; pos >= 0; pos--) {
-    subplen = subProofLen(proofInProgress.proof, pos); /* Find length of subpr*/
+    subplen = subproofLen(proofInProgress.proof, pos); /* Find length of subpr*/
     breakFlag = 0;
     for (q = pos - subplen + 1; q <= pos; q++) {
       if ((proofInProgress.proof)[q] == -(long)'?') {
@@ -2915,7 +3107,7 @@ void replaceDummyVar(long dummyVar, nmbrString *mString)
 
 /* Get subproof length of a proof, starting at endStep and going backwards.
    Note that the first step is 0, the second is 1, etc. */
-long subProofLen(nmbrString *proof, long endStep)
+long subproofLen(nmbrString *proof, long endStep)
 {
   long stmt, p, lvl;
   lvl = 1;
@@ -2935,7 +3127,7 @@ long subProofLen(nmbrString *proof, long endStep)
     lvl = lvl + statement[stmt].numReqHyp;
   }
   return (endStep - p + 1);
-} /* subProofLen */
+} /* subproofLen */
 
 
 /* 25-Aug-2012 nm Added this function */
@@ -3003,7 +3195,7 @@ char checkDummyVarIsolation(long testStep) /* 0=1st step, 1=2nd, etc. */
     if (hyp < statement[parentStmt].numReqHyp - 1) { /* Skip computation at
                                        first loop iteration */
       /* Skip to proof step of previous hypothesis of parent step */
-      prfStep = prfStep - subProofLen(proofInProgress.proof, prfStep);
+      prfStep = prfStep - subproofLen(proofInProgress.proof, prfStep);
     }
     if (prfStep == testStep) { /* Don't check the hypothesis of testStep */
       bugCheckFlag = 1; /* Make sure we encountered it during scan */
@@ -3160,6 +3352,47 @@ void copyProofStruct(struct pip_struct *outProofStruct,
   }
   return;
 } /* copyProofStruct */
+
+
+/* 11-Sep-2016 nm Added this function */
+/* Create an initial proof structure needed for the Proof Assistant, given
+   a starting proof.  Normally, proofStruct is the global proofInProgress,
+   although we've made it an argument to help modularize the function.  There
+   are still globals such as pipDummyVars, updated by various functions. */
+void initProofStruct(struct pip_struct *proofStruct, nmbrString *proof,
+    long proveStmt)
+{
+  nmbrString *tmpProof = NULL_NMBRSTRING;
+  long plen, step;
+  /* Right now, only non-packed proofs are handled. */
+  nmbrLet(&tmpProof, nmbrUnsquishProof(proof));
+
+  /* Assign initial proof structure */
+  if (nmbrLen((*proofStruct).proof)) bug(1745); /* Should've been deall.*/
+  nmbrLet(&((*proofStruct).proof), tmpProof);
+  plen = nmbrLen((*proofStruct).proof);
+  pntrLet(&((*proofStruct).target), pntrNSpace(plen));
+  pntrLet(&((*proofStruct).source), pntrNSpace(plen));
+  pntrLet(&((*proofStruct).user), pntrNSpace(plen));
+  nmbrLet((nmbrString **)(&(((*proofStruct).target)[plen - 1])),
+      statement[proveStmt].mathString);
+  pipDummyVars = 0; /* (Global) number of dummy (work) $nn variables, updated
+        by function calls below */
+  /* Assign known subproofs */
+  assignKnownSubProofs();
+  /* Initialize remaining steps */
+  for (step = 0; step < plen/*proof length*/; step++) {
+    if (!nmbrLen(((*proofStruct).source)[step])) {
+      initStep(step);
+    }
+  }
+  /* Unify whatever can be unified */
+  autoUnify(0); /* 0 means no "congrats" message */
+
+  /* Deallocate memory */
+  nmbrLet(&tmpProof, NULL_NMBRSTRING);
+  return;
+} /* initProofStruct */
 
 
 /* 20-May-2013 nm Added this function */

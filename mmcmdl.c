@@ -65,9 +65,10 @@ flag processCommandLine(void)
           "HELP|WRITE|SHOW|SEARCH|SAVE|SUBMIT|OPEN|CLOSE|",
           /* 9-Jun-2016 nm Added _EXIT_PA */
           "SET|FILE|BEEP|EXIT|_EXIT_PA|QUIT|VERIFY|INITIALIZE|ASSIGN|REPLACE|",
-        "LET|UNIFY|IMPROVE|MINIMIZE_WITH|MATCH|DELETE|UNDO|REDO|",
-        "MORE|TOOLS|MIDI|<HELP>",
-        NULL));
+          /* 11-Sep-2016 nm Added EXPAND */
+          "LET|UNIFY|IMPROVE|MINIMIZE_WITH|EXPAND|MATCH|DELETE|UNDO|REDO|",
+          "MORE|TOOLS|MIDI|<HELP>",
+          NULL));
     }
     if (!getFullArg(0,tmpStr)) {
       goto pclbad;
@@ -78,7 +79,8 @@ flag processCommandLine(void)
           "BEEP|EXIT|QUIT|READ|ERASE|",
           "OPEN|CLOSE|SHOW|SEARCH|SET|VERIFY|SUBMIT|SYSTEM|PROVE|FILE|WRITE|",
           "ASSIGN|REPLACE|MATCH|UNIFY|LET|INITIALIZE|DELETE|IMPROVE|",
-          "MINIMIZE_WITH|UNDO|REDO|SAVE|DEMO|INVOKE|CLI|EXPLORE|TEX|",
+          /* 11-Sep-2016 nm Added EXPAND */
+          "MINIMIZE_WITH|EXPAND|UNDO|REDO|SAVE|DEMO|INVOKE|CLI|EXPLORE|TEX|",
           "LATEX|HTML|COMMENTS|MORE|",
           "TOOLS|MIDI|$|<$>", NULL))) goto pclbad;
       if (cmdMatches("HELP OPEN")) {
@@ -966,6 +968,7 @@ flag processCommandLine(void)
     }
     ------- End of old version ------- */
 
+
     if (cmdMatches("MINIMIZE_WITH")) {
       if (!getFullArg(1,"* What statement label? ")) goto pclbad;
       /* Get any switches */
@@ -1014,6 +1017,12 @@ flag processCommandLine(void)
         }
         /*break;*/  /* Break if only 1 switch is allowed */
       }
+      goto pclgood;
+    } /* end of MINIMIZE_WITH */
+
+    /* 11-Sep-2016 nm */
+    if (cmdMatches("EXPAND")) {
+      if (!getFullArg(1,"* What statement label? ")) goto pclbad;
       goto pclgood;
     }
 

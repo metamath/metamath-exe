@@ -5,7 +5,9 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.134 16-Aug-2016"
+#define MVERSION "0.135 14-Sep-2016"
+/* 0.135 11-Sep-2016, 14-Sep-2016 metamath.c, mmpfas.c,h, mmdata.c,h,
+   mmpars.c,h mmcmds.c, mmcmdl.c, mmhlpb.c - added EXPAND command */
 /* 0.134 16-Aug-2016 mmwtex.c - added breadcrumbs to theorem pages;
    metamath.c, mmcmdl.c, mmhlpb.c, mminou.c,.h - added /TIME to SAVE PROOF,
    SHOW STATEMENT.../[ALT}HTML, MINIMIZE_WITH */
@@ -637,6 +639,8 @@ void command(int argc, char *argv[])
        NULL_NMBRSTRING, NULL_PNTRSTRING, NULL_PNTRSTRING, NULL_PNTRSTRING };
                                    /* For MINIMIZE_WITH */ /* 25-Jun-2014 nm */
   long forwRevPass; /* 1 = forward pass */ /* 25-Jun-2014 nm */
+
+  long sourceStatement; /* For EXPAND */ /* 11-Sep-2016 nm */
 
   flag showLemmas; /* For WRITE THEOREM_LIST */ /* 10-Oct-2012 nm */
 
@@ -4273,32 +4277,38 @@ void command(int argc, char *argv[])
       }
       cleanWrkProof(); /* Deallocate verifyProof storage */
 
-      /* Right now, only non-packed proofs are handled. */
+      /* 11-Sep-2016 nm */
+      /* Initialize the structure needed for the Proof Assistant */
+      initProofStruct(&proofInProgress, nmbrSaveProof, proveStatement);
+
+      /****** 11-Sep-2016 nm Replaced by initProofStruct()
+      /@ Right now, only non-packed proofs are handled. @/
       nmbrLet(&nmbrSaveProof, nmbrUnsquishProof(nmbrSaveProof));
 
-      /* Assign initial proof structure */
-      if (nmbrLen(proofInProgress.proof)) bug(1113); /* Should've been deall.*/
+      /@ Assign initial proof structure @/
+      if (nmbrLen(proofInProgress.proof)) bug(1113); /@ Should've been deall.@/
       nmbrLet(&proofInProgress.proof, nmbrSaveProof);
       i = nmbrLen(proofInProgress.proof);
       pntrLet(&proofInProgress.target, pntrNSpace(i));
       pntrLet(&proofInProgress.source, pntrNSpace(i));
       pntrLet(&proofInProgress.user, pntrNSpace(i));
-      nmbrLet((nmbrString **)(&((proofInProgress.target)[i - 1])),
+      nmbrLet((nmbrString @@)(&((proofInProgress.target)[i - 1])),
           statement[proveStatement].mathString);
       pipDummyVars = 0;
 
-      /* Assign known subproofs */
+      /@ Assign known subproofs @/
       assignKnownSubProofs();
 
-      /* Initialize remaining steps */
-      for (j = 0; j < i/*proof length*/; j++) {
+      /@ Initialize remaining steps @/
+      for (j = 0; j < i/@proof length@/; j++) {
         if (!nmbrLen((proofInProgress.source)[j])) {
           initStep(j);
         }
       }
 
-      /* Unify whatever can be unified */
-      autoUnify(0); /* 0 means no "congrats" message */
+      /@ Unify whatever can be unified @/
+      autoUnify(0); /@ 0 means no "congrats" message @/
+      **** end of 11-Sep-2016 deletion ************/
 
 /*
       print2(
@@ -5110,7 +5120,7 @@ void command(int argc, char *argv[])
       }
 
       /* Get the subproof at step s */
-      q = subProofLen(proofInProgress.proof, step - 1);
+      q = subproofLen(proofInProgress.proof, step - 1);
       deleteSubProof(step - 1);
       addSubProof(nmbrTmpPtr, step - q);
 
@@ -5368,7 +5378,7 @@ void command(int argc, char *argv[])
         **************** end of 14-Sep-2012 nm ************/
 
         /* Get the subproof at step s */
-        q = subProofLen(proofInProgress.proof, s - 1);
+        q = subproofLen(proofInProgress.proof, s - 1);
         nmbrLet(&nmbrTmp, nmbrSeg(proofInProgress.proof, s - q + 1, s));
 
         /*???Shouldn't this be just known?*/
@@ -5535,7 +5545,7 @@ void command(int argc, char *argv[])
             }
 
             /* Get the subproof at step s */
-            q = subProofLen(proofInProgress.proof, s - 1);
+            q = subproofLen(proofInProgress.proof, s - 1);
             if (proofStepUnk && q != 1) {
               bug(1120); /* 25-Aug-2012 nm Consistency check */
             }
@@ -5781,10 +5791,11 @@ void command(int argc, char *argv[])
       /* 25-Jun-2014 nm */
       copyProofStruct(&saveOrigProof, proofInProgress);
 
+      /* 12-Sep-2016 nm TODO replace this w/ compressedProofSize */
       /* 25-Jun-2014 nm Get the current (original) compressed proof length
          to compare it when a shorter non-compressed proof is found, to see
          if the compressed proof also decreased in size */
-      nmbrLet(&nmbrSaveProof, proofInProgress.proof);
+      nmbrLet(&nmbrSaveProof, proofInProgress.proof);   /* Redundant? */
       nmbrLet(&nmbrSaveProof, nmbrSquishProof(proofInProgress.proof));
       /* We only care about length; str1 will be discarded */
       let(&str1, compressProof(nmbrSaveProof,
@@ -6057,7 +6068,8 @@ void command(int argc, char *argv[])
                  of them or all of them must be called. */
               parseProof(proveStatement);
               verifyProof(proveStatement); /* Must be called even if error
-                                  occurred in parseProof, to init RPN stack */
+                                  occurred in parseProof, to init RPN stack
+                                  for cleanWrkProof() */
               /* 15-Apr-2015 nm - don't change proof if there is an error
                  (which could be pre-existing). */
               i = (wrkProof.errorSeverity > 1);
@@ -6261,6 +6273,55 @@ void command(int argc, char *argv[])
     } /* End if MINIMIZE_WITH */
 
 
+    /* 11-Sep-2016 nm Added EXPAND command */
+    if (cmdMatches("EXPAND")) {
+
+      proofChangedFlag = 0;
+      nmbrLet(&nmbrSaveProof, proofInProgress.proof);
+      s = compressedProofSize(nmbrSaveProof, proveStatement);
+
+      for (i = proveStatement - 1; i >= 1; i--) {
+        if (statement[i].type != (char)p_) continue; /* Not a $p */
+        /* 30-Jan-06 nm Added single-character-match wildcard argument */
+        if (!matchesList(statement[i].labelName, fullArg[1], '*', '?')) {
+          continue;
+        }
+        sourceStatement = i;
+
+        nmbrTmp = expandProof(nmbrSaveProof,
+            sourceStatement /*, proveStatement*/);
+
+        if (!nmbrEq(nmbrTmp, nmbrSaveProof)) {
+          proofChangedFlag = 1;
+          n = compressedProofSize(nmbrTmp, proveStatement);
+          printLongLine(cat("Proof of \"",
+            statement[proveStatement].labelName, "\" ",
+            (s == n ? cat("stayed at ", str((double)s), NULL)
+                : cat((s < n ? "increased from " : " decreased from "),
+                    str((double)s), " to ", str((double)n), NULL)),
+            " bytes after expanding \"",
+            statement[sourceStatement].labelName, "\".", NULL), " ", " ");
+          s = n;
+          nmbrLet(&nmbrSaveProof, nmbrTmp);
+        }
+      }
+
+      if (proofChangedFlag) {
+        proofChanged = 1; /* Cumulative flag */
+        /* Clear the existing proof structure */
+        deallocProofStruct(&proofInProgress);
+        /* Then rebuild proof structure from new proof nmbrTmp */
+        initProofStruct(&proofInProgress, nmbrTmp, proveStatement);
+        /* Save the new proof structure on the undo stack */
+        processUndoStack(&proofInProgress, PUS_PUSH, fullArgString, 0);
+      } else {
+        print2("No expansion occurred.  The proof was not changed.\n");
+      }
+      nmbrLet(&nmbrSaveProof, NULL_NMBRSTRING);
+      nmbrLet(&nmbrTmp, NULL_NMBRSTRING);
+      continue;
+    } /* EXPAND */
+
 
     if (cmdMatches("DELETE STEP") || (cmdMatches("DELETE ALL"))) {
 
@@ -6340,7 +6401,7 @@ void command(int argc, char *argv[])
         if ((proofInProgress.proof)[s - 1] == -(long)'?') continue; /* Unknown */
 
         /* Get the subproof length at step s */
-        q = subProofLen(proofInProgress.proof, s - 1);
+        q = subproofLen(proofInProgress.proof, s - 1);
 
         deleteSubProof(s - 1);
 

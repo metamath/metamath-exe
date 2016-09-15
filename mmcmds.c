@@ -1786,7 +1786,7 @@ void typeProof(long statemNum,
           }
           if (hyp < statement[stmt].numReqHyp) {
             /* Move down to previous hypothesis */
-            hypStep = hypStep - subProofLen(proof, hypStep);
+            hypStep = hypStep - subproofLen(proof, hypStep);
           }
         } /* Next hyp */
 

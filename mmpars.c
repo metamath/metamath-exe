@@ -16,7 +16,7 @@
 #include "mminou.h"
 #include "mmpars.h"
 /* #include "mmcmds.h" */  /* For getContribs() if used */
-#include "mmpfas.h" /* Needed for pipDummyVars, subProofLen() */
+#include "mmpfas.h" /* Needed for pipDummyVars, subproofLen() */
 #include "mmunif.h" /* Needed for minSubstLen */
 
 long potentialStatements; /* Potential statements in source file (upper
@@ -2924,7 +2924,7 @@ char parseProof(long statemNum)
                wrkProof.proofString structure component */
       nmbrTmpPtr = statement[j].reqHypList;
       numReqHyp = statement[j].numReqHyp;
-      conclSubProofLen = subProofLen(wrkProofString, step);
+      conclSubProofLen = subproofLen(wrkProofString, step);
       pntrLet(&reqHypSubProof, pntrNSpace(numReqHyp));
                                          /* Initialize to NULL_NMBRSTRINGs */
       pntrLet(&reqHypOldStepNums, pntrNSpace(numReqHyp));
@@ -2933,7 +2933,7 @@ char parseProof(long statemNum)
       for (i = 0; i < numReqHyp; i++) {
         m = wrkProof.RPNStackPtr - numReqHyp + i; /* Stack position of hyp */
         hypStepNum = wrkProof.RPNStack[m]; /* Step number of hypothesis i */
-        hypSubProofLen = subProofLen(wrkProofString, hypStepNum);
+        hypSubProofLen = subproofLen(wrkProofString, hypStepNum);
         k += hypSubProofLen;
         nmbrLet((nmbrString **)(&(reqHypSubProof[i])),
             /* For nmbrSeg, 1 = first step */
@@ -3154,7 +3154,7 @@ char parseProof(long statemNum)
         if (k <= -1000) { /* References local label i.e. subproof */
           k = -1000 - k; /* Restore step number subproof ends at */
           if (k > step) { /* Refers to label declared after this step */
-            m = subProofLen(wrkProof.proofString, k);
+            m = subproofLen(wrkProof.proofString, k);
             /*m = nmbrGetSubProofLen(wrkProof.proofString, k);*/
 
             /* At this point:
@@ -3962,7 +3962,43 @@ char parseCompressedProof(long statemNum)
   wrkProof.errorSeverity = returnFlag;
   return (returnFlag);
 
-} /* parseProof */
+} /* parseCompressedProof */
+
+
+/* 11-Sep-2016 nm */
+/* The caller must deallocate the returned nmbrString! */
+/* This function just gets the proof so the caller doesn't have to worry
+   about cleaning up the wrkProof structure.  The returned proof is normal
+   or compressed depending on the .mm source; called nmbrUnsquishProof() to
+   make sure it is uncompressed if required. */
+/* If there is a severe error in the proof, a 1-step proof with "?" will
+   be returned. */
+/* If printFlag = 1, then error messages are printed, otherwise they aren't.
+   This is only partially implemented; some errors may still result in a
+   printout.  TODO: pass printFlag to parseProof(), verifyProof() */
+/* TODO: use this function to simplify some code that calls parseProof
+   directly. */
+nmbrString *getProof(long statemNum, flag printFlag) {
+  nmbrString *proof = NULL_NMBRSTRING;
+  parseProof(statemNum);
+  /* We do not need verifyProof() since we don't care about the math
+     strings for the proof steps in this function. */
+  /* verifyProof(statemNum); */ /* Necessary to set RPN stack ptrs
+                             before calling cleanWrkProof() */
+  if (wrkProof.errorSeverity > 1) {
+    if (printFlag) print2(
+         "The starting proof has a severe error.  It will not be used.\n");
+    nmbrLet(&proof, nmbrAddElement(NULL_NMBRSTRING, -(long)'?'));
+  } else {
+    nmbrLet(&proof, wrkProof.proofString);
+  }
+  /* Note: the wrkProof structure is never deallocated but grows to
+     accomodate the largest proof found so far.  The ERASE command will
+     deallocate it, though.   cleanWrkProof() just deallocates math strings
+     assigned by verifyProof() that aren't needed by this function. */
+  /* cleanWrkProof(); */ /* Deallocate verifyProof() storage */
+  return proof;
+} /* getProof */
 
 
 

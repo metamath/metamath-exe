@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2011  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2016  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -17,6 +17,7 @@ void parseMathDecl(void);
 void parseStatements(void);
 char parseProof(long statemNum);
 char parseCompressedProof(long statemNum);
+nmbrString *getProof(long statemNum, flag printFlag);
 
 void rawSourceError(char *startFile, char *ptr, long tokenLen, long lineNum,
     vstring fileName, vstring errMsg);
@@ -86,7 +87,7 @@ struct wrkProof_struct {
   long numHypAndLoc; /* Number of active hypotheses and local labels */
   char *localLabelPoolPtr; /* Next free location in local label pool */
   long RPNStackPtr; /* Offset of end of RPNStack */
-  long errorCount; /* Errors in proof - used to suppress to many error msgs */
+  long errorCount; /* Errors in proof - used to suppress too many error msgs */
   flag errorSeverity; /* 0 = OK, 1 = unk step, 2 = error, 3 = severe error,
                           4 = not a $p statement */
 

@@ -1196,6 +1196,7 @@ vstring nmbrCvtMToVString(nmbrString *s)
 
 
 /* Converts proof to a vstring with one space between tokens */
+/* 11-Sep-2016 nm Allow it to tolerate garbage entries for debugging */
 vstring nmbrCvtRToVString(nmbrString *proof,
     /* 25-Jan-2016 */
     flag explicitTargets, /* 1 = "target=source" for /EXPLICIT proof format */
@@ -1250,6 +1251,14 @@ vstring nmbrCvtRToVString(nmbrString *proof,
         nmbrLet(&localLabels, nmbrAddElement(localLabels, stmt));
       }
     } else {
+
+      /* 11-Sep-2016 nm */
+      if (stmt < 1 || stmt > statements) {
+        maxLabelLen = 100; /* For safety */
+        maxTargetLabelLen = 100; /* For safety */
+        continue; /* Ignore bad entry */
+      }
+
       if (stmt > 0) {
         if ((signed)(strlen(statement[stmt].labelName)) > maxLabelLen) {
           maxLabelLen = (long)strlen(statement[stmt].labelName);
@@ -1294,6 +1303,11 @@ vstring nmbrCvtRToVString(nmbrString *proof,
             ((explicitTargets == 1) ? "=" : ""),
 
             str((double)(localLabelNames[stmt])), " ", NULL));
+
+      /* 11-Sep-2016 nm */
+      } else if (stmt != -(long)'?') {
+        let(&tmpStr, cat("??", str((double)stmt), " ", NULL)); /* For safety */
+
       } else {
         if (stmt != -(long)'?') bug(1391); /* Must be an unknown step */
         let(&tmpStr, cat(
@@ -1304,6 +1318,11 @@ vstring nmbrCvtRToVString(nmbrString *proof,
 
             chr(-stmt), " ", NULL));
       }
+
+    /* 11-Sep-2016 nm */
+    } else if (stmt < 1 || stmt > statements) {
+      let(&tmpStr, cat("??", str((double)stmt), " ", NULL)); /* For safety */
+
     } else {
       let(&tmpStr,"");
       if (nmbrElementIn(1, localLabels, step)) {
@@ -1553,8 +1572,8 @@ nmbrString *nmbrSetMinus(nmbrString *m1,nmbrString *m2)
 /* This is a utility function that returns the length of a subproof that
    ends at step */
 /* 22-Aug-2012 nm - this doesn't seem to be used outside of mmdata.c -
-   should we replace it with subProofLen() in mmpfas.c? */
-long nmbrGetSubProofLen(nmbrString *proof, long step)
+   should we replace it with subproofLen() in mmpfas.c? */
+long nmbrGetSubproofLen(nmbrString *proof, long step)
 {
   long stmt, hyps, pos, i;
   char type;
@@ -1567,7 +1586,7 @@ long nmbrGetSubProofLen(nmbrString *proof, long step)
   hyps = statement[stmt].numReqHyp;
   pos = step - 1;
   for (i = 0; i < hyps; i++) {
-    pos = pos - nmbrGetSubProofLen(proof, pos);
+    pos = pos - nmbrGetSubproofLen(proof, pos);
   }
   return (step - pos);
 }
@@ -1591,7 +1610,7 @@ nmbrString *nmbrSquishProof(nmbrString *proof)
   nmbrLet(&dummyProof, newProof); /* Parallel proof with test subproof replaced
                                  with a reference to itself, for matching. */
   for (step = 0; step < plen; step++) {
-    subPrfLen = nmbrGetSubProofLen(dummyProof, dummyStep);
+    subPrfLen = nmbrGetSubproofLen(dummyProof, dummyStep);
     if (subPrfLen <= 1) {
       dummyStep++;
       continue;
@@ -1643,7 +1662,7 @@ nmbrString *nmbrUnsquishProof(nmbrString *proof)
     if (stmt > -1000) continue;
     /* It's a local label reference */
     stmt = -1000 - stmt;
-    subPrfLen = nmbrGetSubProofLen(newProof, stmt);
+    subPrfLen = nmbrGetSubproofLen(newProof, stmt);
     nmbrLet(&newProof, nmbrCat(nmbrLeft(newProof, step),
         nmbrSeg(newProof, stmt - subPrfLen + 2, stmt + 1),
         nmbrRight(newProof, step + 2), NULL));
@@ -1690,7 +1709,7 @@ nmbrString *nmbrGetIndentation(nmbrString *proof,
   hyps = statement[stmt].numReqHyp;
   pos = plen - 2;
   for (i = 0; i < hyps; i++) {
-    splen = nmbrGetSubProofLen(proof, pos);
+    splen = nmbrGetSubproofLen(proof, pos);
     nmbrLet(&subProof, nmbrSeg(proof, pos - splen + 2, pos + 1));
     nmbrLet(&nmbrTmp, nmbrGetIndentation(subProof, startingLevel + 1));
     for (j = 0; j < splen; j++) {
@@ -1704,7 +1723,7 @@ nmbrString *nmbrGetIndentation(nmbrString *proof,
   nmbrLet(&nmbrTmp, NULL_NMBRSTRING); /* Deallocate */
   nmbrMakeTempAlloc(indentationLevel); /* Flag it for deallocation */
   return (indentationLevel);
-}
+} /* nmbrGetIndentation */
 
 
 /* This function returns essential (1) or floating (0) vs. step number of a
@@ -1747,7 +1766,7 @@ nmbrString *nmbrGetEssential(nmbrString *proof)
   pos = plen - 2;
   nmbrTmpPtr2 = statement[stmt].reqHypList;
   for (i = 0; i < hyps; i++) {
-    splen = nmbrGetSubProofLen(proof, pos);
+    splen = nmbrGetSubproofLen(proof, pos);
     if (statement[nmbrTmpPtr2[hyps - i - 1]].type == e_) {
       nmbrLet(&subProof, nmbrSeg(proof, pos - splen + 2, pos + 1));
       nmbrLet(&nmbrTmp, nmbrGetEssential(subProof));
@@ -1763,7 +1782,7 @@ nmbrString *nmbrGetEssential(nmbrString *proof)
   nmbrLet(&nmbrTmp, NULL_NMBRSTRING); /* Deallocate */
   nmbrMakeTempAlloc(essentialFlags); /* Flag it for deallocation */
   return (essentialFlags);
-}
+} /* nmbrGetEssential */
 
 
 /* This function returns the target hypothesis vs. step number of a proof
@@ -1807,7 +1826,7 @@ nmbrString *nmbrGetTargetHyp(nmbrString *proof, long statemNum)
   hyps = statement[stmt].numReqHyp;
   pos = plen - 2;
   for (i = 0; i < hyps; i++) {
-    splen = nmbrGetSubProofLen(proof, pos);
+    splen = nmbrGetSubproofLen(proof, pos);
     if (splen > 1) {
       nmbrLet(&subProof, nmbrSeg(proof, pos - splen + 2, pos + 1));
       nmbrLet(&nmbrTmp, nmbrGetTargetHyp(subProof,
@@ -2320,9 +2339,28 @@ vstring compressProof(nmbrString *proof, long statemNum,
 
   makeTempAlloc(output); /* Flag it for deallocation */
   return(output);
-}
+} /* compressProof */
 
 
+/* Added 11-Sep-2016 nm */
+/* Compress the input proof, create the ASCII compressed proof,
+   and return its size in bytes. */
+/* TODO: call this in MINIMIZE_WITH in metamath.c */
+long compressedProofSize(nmbrString *proof, long statemNum) {
+  vstring tmpStr = "";
+  nmbrString *tmpNmbr = NULL_NMBRSTRING;
+  long bytes;
+  nmbrLet(&tmpNmbr, nmbrSquishProof(proof));
+  let(&tmpStr, compressProof(tmpNmbr,
+          statemNum, /* statement being proved */
+          0 /* don't use old algorithm (this will become obsolete) */
+          ));
+  bytes = (long)strlen(tmpStr);
+  /* Deallocate memory */
+  let(&tmpStr, "");
+  nmbrLet(&tmpNmbr, NULL_NMBRSTRING);
+  return bytes;
+} /* compressedProofSize */
 
 
 

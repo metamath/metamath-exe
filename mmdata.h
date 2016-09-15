@@ -286,7 +286,7 @@ nmbrString *nmbrSetMinus(nmbrString *m1,nmbrString *m2);
 
 /* This is a utility function that returns the length of a subproof that
    ends at step */
-long nmbrGetSubProofLen(nmbrString *proof, long step);
+long nmbrGetSubproofLen(nmbrString *proof, long step);
 
 /* This function returns a "squished" proof, putting in {} references
    to previous subproofs. */
@@ -325,6 +325,9 @@ nmbrString *nmbrGetTargetHyp(nmbrString *proof, long statemNum);
    implicit in the compressed proof. */
 vstring compressProof(nmbrString *proof, long statemNum,
     flag oldCompressionAlgorithm);
+
+/* Gets length of the ASCII form of a compressed proof */
+long compressedProofSize(nmbrString *proof, long statemNum);
 
 
 /*******************************************************************/
