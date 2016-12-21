@@ -1555,12 +1555,15 @@ void printTexHeader(flag texHeaderFlag)
       /* 2-Aug-2009 nm - "Mathbox for <username>" mod */
       /* Scan from this statement backwards until a big header is found */
       for (i = showStatement; i > sandboxStmt; i--) {
-        /* Note: only bigHdr is used; the other 5 returned strings are
-           ignored */
-        getSectionHeadings(i, &hugeHdr, &bigHdr, &smallHdr,
-            /* 5-May-2015 nm */
-            &hugeHdrComment, &bigHdrComment, &smallHdrComment);
-        if (bigHdr[0] != 0) break;
+        if (statement[i].type == a_ || statement[i].type == p_) {
+                                                            /* 18-Dec-2016 nm */
+          /* Note: only bigHdr is used; the other 5 returned strings are
+             ignored */
+          getSectionHeadings(i, &hugeHdr, &bigHdr, &smallHdr,
+              /* 5-May-2015 nm */
+              &hugeHdrComment, &bigHdrComment, &smallHdrComment);
+          if (bigHdr[0] != 0) break;
+        } /* 18-Dec-2016 nm */
       } /* next i */
       if (bigHdr[0]) {
         /* A big header was found; use it for the page title */
@@ -3690,11 +3693,18 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
         sectionCntr = 0;
         subsectionCntr = 0;
         for (stmt = 1; stmt <= statements; stmt++) {
+
+          /* 18-Dec-2016 nm moved to below the "if"
           getSectionHeadings(stmt, &hugeHdr, &bigHdr, &smallHdr,
-              /* 5-May-2015 nm */
+              /@ 5-May-2015 nm @/
               &hugeHdrComment, &bigHdrComment, &smallHdrComment);
+          */
+
           /* Output the headers for $a and $p statements */
           if (statement[stmt].type == p_ || statement[stmt].type == a_) {
+            getSectionHeadings(stmt, &hugeHdr, &bigHdr, &smallHdr,
+                /* 5-May-2015 nm */
+                &hugeHdrComment, &bigHdrComment, &smallHdrComment);
             if (hugeHdr[0] || bigHdr[0] || smallHdr[0]) {
               /* Write to the table of contents */
               outputToString = 1;
@@ -4567,6 +4577,8 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
 } /* writeTheoremList */
 
 
+/* 18-Dec-2016 nm - use true "header area" as described below, and
+   ensure statement argument is $p or $a */
 /* 2-Aug-2009 nm - broke this function out from writeTheoremList() */
 /* 21-Jun-2014 nm - added hugeHdrTitle */
 /* 8-May-2015 nm - added hugeHdrComment, bigHdrComment, smallHdrComment */
@@ -4578,6 +4590,28 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
    (=-=-...) header isn't found (or isn't after the last huge header or
    the last big header), *smallHdrTitle will be set to the empty string.
    In all 3 cases, only the last occurrence of a header is considered. */
+/*
+20-Jun-2015 metamath Google group email:
+
+There are 3 kinds of section headers, big (####...), medium (#*#*#*...),
+and small (=-=-=-).
+
+Call the collection of (outside-of-statement) comments between two
+successive $a/$p statements (i.e. those statements that generate web
+pages) a "header area".  The algorithm scans the header area for the
+_last_ header of each type (big, medium, small) and discards all others.
+Then, if there is a medium and it appears before a big, the medium is
+discarded.  If there is a small and it appears before a big or medium,
+the small is discarded.  In other words, a maximum of one header of
+each type is kept, in the order big, medium, and small.
+
+There are two reasons for doing this:  (1) it disregards headers used
+for other purposes such as the headers for the set.mm-specific
+information at the top that is not of general interest and (2) it
+ignores headers for empty sections; for example, a mathbox user might
+have a bunch of headers for sections planned for the future, but we
+ignore them if those sections are empty (no $a or $p in them).
+*/
 void getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
     vstring *smallHdrTitle,
     /* Added 8-May-2015 nm */
@@ -4589,10 +4623,32 @@ void getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
   vstring labelStr = "";
   long pos, pos1, pos2, pos3, pos4;
 
-  /* Get headers from comment section between statements */
+  /* 18-Dec-2016 nm */
+  /* We now process only $a or $p statements */
+  if (statement[stmt].type != a_ && statement[stmt].type != p_) bug(2340);
+
+  /* 18-Dec-2016 nm */
+  /* Get header area between this statement and the statement after the
+     previous $a or $p statement */
+  /* pos3 and pos4 are used temporarily here; not related to later use */
+  pos3 = statement[stmt].headerStartStmt;  /* Statement immediately after the
+                previous $a or $p statement (will be this statement if previous
+                statement is $a or $p) */
+  if (pos3 == 0 || pos3 > stmt) bug(2241);
+  pos4 = (statement[stmt].labelSectionPtr
+        - statement[pos3].labelSectionPtr)
+        + statement[stmt].labelSectionLen;  /* Length of the header area */
+  let(&labelStr, space(pos4));
+  memcpy(labelStr, statement[pos3].labelSectionPtr,
+      (size_t)(pos4));
+
+  /* Old code before 18-Dec-2016
+  /@ Get headers from comment section between statements @/
   let(&labelStr, space(statement[stmt].labelSectionLen));
   memcpy(labelStr, statement[stmt].labelSectionPtr,
       (size_t)(statement[stmt].labelSectionLen));
+  */
+
   pos = 0;
   pos2 = 0;
   while (1) {  /* Find last "huge" header, if any */
@@ -4694,7 +4750,7 @@ void getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
     let(&(*smallHdrComment), edit((*smallHdrComment), 8 + 16384));
                                         /* Trim leading sp, trailing sp & lf */
   }
-  let(&labelStr, "");
+  let(&labelStr, "");  /* Deallocate string memory */
   return;
 } /* getSectionHeadings */
 
@@ -5312,13 +5368,14 @@ vstring getTexOrHtmlHypAndAssertion(long statemNum)
    for error checking */
 /* Returns 0 if OK, 1 if warning(s), 2 if any error */
 flag writeBibliography(vstring bibFile,
+    vstring labelMatch, /* Normally "*" except when called by verifyMarkup() */
     flag errorsOnly,  /* 1 = no output, just warning msgs if any */
     flag noFileCheck) /* 1 = ignore missing external files (mmbiblio.html) */
 {
   flag errFlag;
   FILE *list1_fp = NULL;
   FILE *list2_fp = NULL;
-  long lines, p2, i, j, k, l, m, n, p, q, s, pass1refs;
+  long lines, p2, i, j, jend, k, l, m, n, p, q, s, pass1refs;
   vstring str1 = "", str2 = "", str3 = "", str4 = "", newstr = "", oldstr = "";
   pntrString *pntrTmp = NULL_PNTRSTRING;
   flag warnFlag;
@@ -5401,6 +5458,14 @@ flag writeBibliography(vstring bibFile,
     for (i = 1; i <= statements; i++) {
       if (statement[i].type != (char)p_ &&
         statement[i].type != (char)a_) continue;
+
+      /* 13-Dec-2016 nm */
+      /* Normally labelMatch is *, but may be more specific for
+         use by verifyMarkup() */
+      if (!matchesList(statement[i].labelName, labelMatch, '*', '?')) {
+        continue;
+      }
+
       /* Omit ...OLD (obsolete) and ...NEW (to be implemented) statements */
       if (instr(1, statement[i].labelName, "NEW")) continue;
       if (instr(1, statement[i].labelName, "OLD")) continue;
@@ -5463,6 +5528,22 @@ flag writeBibliography(vstring bibFile,
       while (1) {
         j = instr(j + 1, str1, "["); /* Find reference (not robust) */
         if (!j) break;
+
+        /* 13-Dec-2016 nm Fix mmbiblio.html corruption caused by
+           "[Copying an angle]" in df-ibcg in
+           set.mm.2016-09-18-JB-mbox-cleanup */
+        /* Skip if there is no trailing "]" */
+        jend = instr(j, str1, "]");
+        if (!jend) break;
+        /* Skip bracketed text with spaces */
+        /* This is a somewhat ugly workaround that lets us tolerate user
+           comments in [...] is there is at least one space.
+           The printTexComment() above handles this case with the
+           "strcspn(bibTag, " \n\r\t\f")" above; here we just have to look
+           for space since we already reduced \n \t to space (\f is probably
+           overkill, and any \r's are removed during the READ command) */
+        if (instr(1, seg(str1, j, jend), " ")) continue;
+
         if (!isalnum((unsigned char)(str1[j]))) continue; /* Not start of reference */
         n++;
         /* Backtrack from [reference] to a starting keyword */
@@ -5524,7 +5605,7 @@ flag writeBibliography(vstring bibFile,
         /* m is at the start of a keyword */
         p = instr(m, str1, "["); /* Start of bibliograpy reference */
         q = instr(p, str1, "]"); /* End of bibliography reference */
-        if (!q) {
+        if (q == 0) {
           if (p2 == 1) {
             print2(
         "?Warning: Bibliography reference not found in HTML file in \"%s\".\n",

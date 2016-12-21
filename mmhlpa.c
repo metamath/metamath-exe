@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2015  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2016  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -429,11 +429,13 @@ H("A command line enclosed in quotes is executed by your operating system.");
 H("See HELP SYSTEM.");
 H("");
 H("Some additional CLI-related features are explained by:");
+H("");
 H("    HELP SET ECHO");
 H("    HELP SET SCROLL");
 H("    HELP SET WIDTH");  /* 18-Nov-05 nm Was SCREEN_WIDTH */
 H("    HELP SET HEIGHT"); /* 18-Nov-05 nm New */
 H("    HELP SUBMIT");
+H("    HELP UNDO (or REDO) - in Proof Assistant only");  /* 21-Oct-2016 */
 H("");
 
 

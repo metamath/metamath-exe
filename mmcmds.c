@@ -3962,23 +3962,211 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
 
 /* 7-Nov-2015 nm Added this function for date consistency */
 /* 17-Nov-2015 nm Added htmldefs, bib, markup checking */
-/* If checkFiles = 0, do not open external files.
-   If checkFiles = 1, check mm*.html, presence of gifs, etc. */
+/* 13-Dec-2016 nm Added checks for undesireable labels (mm*,
+   Microsoft conflicts) */
 void verifyMarkup(vstring labelMatch,
     flag dateSkip, /* 1 = don't check date consistency */
     flag fileSkip) /* 1 = don't check external files (gifs, mmset.html,...) */ {
   flag f;
   flag saveHtmlFlag, saveAltHtmlFlag;
   flag errFound = 0;
-  long stmtNum;
+  long stmtNum, p1, p2, p3;
   vstring contributor = ""; vstring contribDate = "";
   vstring reviser = ""; vstring reviseDate = "";
   vstring shortener = ""; vstring shortenDate = "";
+
+  /* 13-Dec-2016 nm */
+  vstring mmVersionDate = ""; /* Version date at top of .mm file */
+  vstring mostRecentDate = ""; /* For entire .mm file */
+  long mostRecentStmt = 0; /* For error message */
+  /* 18-Dec-2016 nm For getSectionHeadings() call */
+  vstring hugeHdr = ""; /* 21-Jun-2014 nm */
+  vstring bigHdr = "";
+  vstring smallHdr = "";
+  vstring hugeHdrComment = ""; /* 8-May-2015 nm */
+  vstring bigHdrComment = ""; /* 8-May-2015 nm */
+  vstring smallHdrComment = ""; /* 8-May-2015 nm */
+
   vstring descr = "";
+  vstring str1 = ""; vstring str2 = "";
 
   saveHtmlFlag = htmlFlag;  saveAltHtmlFlag = altHtmlFlag;
 
-  /* Check $t statement */
+
+  print2("Checking statement label conventions...\n");
+
+  /* Check that labels can create acceptable file names for web pages */
+
+  /* 13-Dec-2016 nm Moved this check from metamath.c */
+  /* 10/21/02 - detect Microsoft bugs reported by several users, when the
+     HTML output files are named "con.html" etc. */
+  /* If we want a standard error message underlining token, this could go
+     in mmpars.c */
+  /* From Microsoft's site:
+     "The following reserved words cannot be used as the name of a file:
+     CON, PRN, AUX, CLOCK$, NUL, COM1, COM2, COM3, COM4, COM5, COM6, COM7,
+     COM8, COM9, LPT1, LPT2, LPT3, LPT4, LPT5, LPT6, LPT7, LPT8, and LPT9.
+     Also, reserved words followed by an extension - for example,
+     NUL.tx7 - are invalid file names." */
+  /* Check for labels that will lead to illegal Microsoft file names for
+     Windows users.  Don't bother checking CLOCK$ since $ is already
+     illegal */
+  let(&str1, cat(
+     ",CON,PRN,AUX,NUL,COM1,COM2,COM3,COM4,COM5,COM6,COM7,",
+     "COM8,COM9,LPT1,LPT2,LPT3,LPT4,LPT5,LPT6,LPT7,LPT8,LPT9,", NULL));
+  for (stmtNum = 1; stmtNum <= statements; stmtNum++) {
+    /* Only $a and $p can produce web pages, so check only them */
+    if (statement[stmtNum].type != a_ && statement[stmtNum].type != p_) {
+      continue;
+    }
+    if (!matchesList(statement[stmtNum].labelName, labelMatch, '*', '?')) {
+      continue;
+    }
+    let(&str2, cat(",", edit(statement[stmtNum].labelName, 32/*uppercase*/),
+        ",", NULL));
+    if (instr(1, str1, str2) ||
+        /* 5-Jan-04 mm*.html is reserved for mmtheorems.html, etc. */
+        !strcmp(",MM", left(str2, 3))) {
+      print2("\n");
+      printLongLine(cat("?Warning: in statement \"",
+          statement[stmtNum].labelName, "\" at line ",
+          str((double)(statement[stmtNum].lineNum)),
+          " in file \"", statement[stmtNum].fileName,
+          "\".  To workaround a Microsoft operating system limitation, the",
+          " the following reserved words cannot be used for label names:",
+          " CON, PRN, AUX, CLOCK$, NUL, COM1, COM2, COM3, COM4, COM5,",
+          " COM6, COM7, COM8, COM9, LPT1, LPT2, LPT3, LPT4, LPT5, LPT6,",
+          " LPT7, LPT8, and LPT9.  Also, \"mm*.html\" is reserved for",
+          " Metamath file names.  Use another name for this label.", NULL),
+          "    ", " ");
+      /* errorCount++; */
+      errFound = 1;
+    }
+
+    /* Check that $a assertions start with "ax-" or "df-" */
+    if (statement[stmtNum].type == (char)a_) {
+      if (!strcmp("|-", mathToken[
+          (statement[stmtNum].mathString)[0]].tokenName)) {
+        let(&str1, left(statement[stmtNum].labelName, 3));
+        if (strcmp("ax-", str1) && strcmp("df-", str1)) {
+          printLongLine(cat("?Warning: in the $a statement \"",
+              statement[stmtNum].labelName, "\" at line ",
+              str((double)(statement[stmtNum].lineNum)),
+              " in file \"", statement[stmtNum].fileName,
+              "\", the label does not start with \"ax-\" or \"df-\"",
+              " per our convention for axiomatic assertions (\"$a |- ...\").",
+              NULL), "    ", " ");
+          errFound = 1;
+        }
+      }
+    }
+
+
+  } /* next stmtNum */
+  /* 10/21/02 end */  /* 13-Dec-2016 nm end */
+
+
+  /* 20-Dec-2016 nm */
+  /* Check $a ax-* vs. $p ax* */
+  /*print2("Checking ax-XXX axioms vs. axXXX theorems...\n");*/
+               /* (This runs very fast and is part of label conventions) */
+  for (stmtNum = 1; stmtNum <= statements; stmtNum++) {
+    if (statement[stmtNum].type != a_) {
+      continue;
+    }
+    if (!matchesList(statement[stmtNum].labelName, labelMatch, '*', '?')) {
+      continue;
+    }
+
+    let(&str1, ""); /* Prevent string stack buildup/overflow in left() below */
+    /* Look for "ax-*" axioms */
+    if (strcmp("ax-", left(statement[stmtNum].labelName, 3))) {
+      continue;
+    }
+
+    let(&str1, statement[stmtNum].labelName);
+    /* Convert ax-XXX to axXXX */
+    let(&str2, cat(left(str1, 2), right(str1, 4), NULL));
+
+    p1 = lookupLabel(str2);
+    if (p1 == -1) continue;  /* There is no corresponding axXXX */
+
+    /* Compare statements */
+    if (nmbrEq(statement[stmtNum].mathString,
+        statement[p1].mathString) != 1) {
+      printLongLine(cat("?Warning: The assertions for statements \"",
+          statement[stmtNum].labelName, "\" and \"",
+          statement[p1].labelName, "\" are different.",
+          NULL), "  ", " ");
+      errFound = 1;
+      continue;
+    }
+
+    /* Compare number of mandatory hypotheses */
+    if (statement[stmtNum].numReqHyp != statement[p1].numReqHyp) {
+      printLongLine(cat("?Warning: Statement \"",
+          statement[stmtNum].labelName, "\" has ",
+          str((double)(statement[stmtNum].numReqHyp)),
+          " mandatory hypotheses but \"",
+          statement[p1].labelName, "\" has ",
+          str((double)(statement[p1].numReqHyp)), ".",
+          NULL), "  ", " ");
+      errFound = 1;
+      continue;
+    }
+
+    /* Compare mandatory distinct variables */
+    if (nmbrEq(statement[stmtNum].reqDisjVarsA,
+        statement[p1].reqDisjVarsA) != 1) {
+      printLongLine(cat(
+          "?Warning: The mandatory distinct variable pairs for statements \"",
+          statement[stmtNum].labelName, "\" and \"",
+          statement[p1].labelName,
+          "\" are different or have a different order.",
+          NULL), "  ", " ");
+      errFound = 1;
+      continue;
+    } else if (nmbrEq(statement[stmtNum].reqDisjVarsB,
+        statement[p1].reqDisjVarsB) != 1) {
+      printLongLine(cat(
+          "?Warning: The mandatory distinct variable pairs for statements \"",
+          statement[stmtNum].labelName, "\" and \"",
+          statement[p1].labelName,
+          "\" are different or have a different order.",
+          NULL), "  ", " ");
+      errFound = 1;
+      continue;
+    }
+
+    /* Compare mandatory hypotheses */
+    for (p2 = 0; p2 < statement[stmtNum].numReqHyp; p2++) {
+      if (nmbrEq(statement[(statement[stmtNum].reqHypList)[p2]].mathString,
+          statement[(statement[p1].reqHypList)[p2]].mathString) != 1) {
+        printLongLine(cat("?Warning: The mandatory hypotheses of statements \"",
+            statement[stmtNum].labelName, "\" and \"",
+            statement[p1].labelName, "\" are different.\n",
+            NULL), "  ", " ");
+        errFound = 1;
+        break;
+      }
+    } /* next p2 */
+
+    for (p2 = 0; p2 < nmbrLen(statement[stmtNum].reqDisjVarsA); p2++) {
+      if (nmbrEq(statement[stmtNum].reqDisjVarsA,
+          statement[p1].reqDisjVarsA) != 1) {
+        printLongLine(cat("?Warning: The mandatory hypotheses of statements \"",
+            statement[stmtNum].labelName, "\" and \"",
+            statement[p1].labelName, "\" are different.\n",
+            NULL), "  ", " ");
+        errFound = 1;
+        break;
+      }
+    } /* next p2 */
+  } /* next stmtNum */
+
+
+  /* Check $t comment content */
+
   eraseTexDefs(); /* Force a reread regardless of previous mode */
   /* Check latexdef statements */
   print2("Checking latexdef, htmldef, althtmldef...\n");
@@ -4006,23 +4194,34 @@ void verifyMarkup(vstring labelMatch,
   }
   if (f != 0) errFound = 1;
 
+
   /* Check date consistency and comment markup in all statements */
   print2("Checking statement comments...\n");
+  let(&mostRecentDate, ""); /* 13-Dec-2016 nm */
   for (stmtNum = 1; stmtNum <= statements; stmtNum++) {
-    if (!matchesList(statement[stmtNum].labelName, labelMatch, '*', '?')) {
+    if (statement[stmtNum].type != a_ && statement[stmtNum].type != p_) {
       continue;
     }
-    if (statement[stmtNum].type != a_ && statement[stmtNum].type != p_) {
+    if (!matchesList(statement[stmtNum].labelName, labelMatch, '*', '?')) {
       continue;
     }
 
     if (dateSkip == 0) {
+
       /* Check date consistency of the statement */
       /* Use the error-checking feature of getContrib() extractor */
       f = getContrib(stmtNum, &contributor, &contribDate,
           &reviser, &reviseDate, &shortener, &shortenDate,
+          &str1 /* most recent of the 3 dates */, /* 13-Dec-2016 nm */
           1/*printErrorsFlag*/);
       if (f == 1) errFound = 1;
+
+      /* Save most recent date in file - used to check Version date below */
+      if (compareDates(mostRecentDate, str1) == -1) {
+        let(&mostRecentDate, str1);
+        mostRecentStmt = stmtNum;
+      }
+
     }
 
     let(&descr, "");
@@ -4038,13 +4237,100 @@ void verifyMarkup(vstring labelMatch,
         1, /* 1 = errorsOnly */
         fileSkip /* 1 = noFileCheck */);
     if (f == 1) errFound = 1;
-    let(&descr, "");
 
-  }
+  } /* next stmtNum */
+
+  /* 13-Dec-2016 nm */
+  /* Check that the version date of the .mm file is g.e. all statement dates */
+  /* This code expects a version date at the top of the file such as:
+         $( set.mm - Version of 13-Dec-2016 $)
+     If we later want a different format, this code should be modified. */
+  if (dateSkip == 0) {
+    /* Get the top of the .mm file */
+    let(&str1, space(statement[1].labelSectionLen));
+    memcpy(str1, statement[1].labelSectionPtr,
+      (size_t)(statement[1].labelSectionLen));
+    /* Find the version date */
+    p1 = instr(1, str1, "Version of ");
+    if (p1 == 0) {
+      printLongLine(cat(
+          "?Warning: there is no \"Version of \" comment at the top of the",
+          " file \"", input_fn, "\".", NULL), "    ", " ");
+      errFound = 1;
+    } else {
+      p2 = instr(p1 + 11, str1, " ");
+      let(&str2, seg(str1, p1 + 11, p2 - 1)); /* The date */
+      f = parseDate(str2, &p1, &p2, &p3);
+      if (f == 1) {
+        printLongLine(cat(
+            "?Warning: the Version date \"", str2, "\" at the top of file \"",
+            input_fn, "\" is not a valid date.", NULL), "    ", " ");
+        errFound = 1;
+      } else {
+        if (compareDates(mostRecentDate, str2) == 1) {
+          printLongLine(cat(
+              "?Warning: the \"Version of\" date ", str2,
+              " at the top of file \"",
+              input_fn,
+              "\" is less recent than the date ", mostRecentDate,
+              " in the description of statement \"",
+              statement[mostRecentStmt].labelName, "\".", NULL), "    ", " ");
+          errFound = 1;
+        }
+      }
+    }
+  } /* if (dateSkip == 0) */
+
+
+  /* 18-Dec-2016 nm */
+  print2("Checking section header comments...\n");
+  for (stmtNum = 1; stmtNum <= statements; stmtNum++) {
+    if (statement[stmtNum].type != a_ && statement[stmtNum].type != p_) {
+      continue;
+    }
+    if (!matchesList(statement[stmtNum].labelName, labelMatch, '*', '?')) {
+      continue;
+    }
+
+    let(&hugeHdr, "");
+    let(&bigHdr, "");
+    let(&smallHdr, "");
+    let(&hugeHdrComment, "");
+    let(&bigHdrComment, "");
+    let(&smallHdrComment, "");
+    getSectionHeadings(stmtNum, &hugeHdr, &bigHdr, &smallHdr,
+        /* 5-May-2015 nm */
+        &hugeHdrComment, &bigHdrComment, &smallHdrComment);
+
+    showStatement /* global */ = stmtNum; /* For printTexComment() */
+    texFilePtr /* global */  = NULL; /* Not used, but set to something */
+
+    f = 0;
+    if (hugeHdrComment[0] != 0)
+      f = (char)(f + printTexComment(hugeHdrComment,
+          0, /* 1 = htmlCenterFlag (irrelevant for this call) */
+          1, /* 1 = errorsOnly */
+          fileSkip /* 1 = noFileCheck */));
+    if (bigHdrComment[0] != 0)
+      f = (char)(f + printTexComment(bigHdrComment,
+          0, /* 1 = htmlCenterFlag (irrelevant for this call) */
+          1, /* 1 = errorsOnly */
+          fileSkip /* 1 = noFileCheck */));
+    if (smallHdrComment[0] != 0)
+      f = (char)(f + printTexComment(smallHdrComment,
+          0, /* 1 = htmlCenterFlag (irrelevant for this call) */
+          1, /* 1 = errorsOnly */
+          fileSkip /* 1 = noFileCheck */));
+    if (f != 0) printf(
+        "    (Statement refers to the first $a or $p after the header.)\n");
+    if (f != 0) errFound = 1;
+  } /* next stmtNum */
+
 
   /* Use the errors-only (no output) feature of writeBibliography() */
   print2("Checking bibliographic references...\n");
   f = writeBibliography("mmbiblio.html",
+          labelMatch,
           1,  /* 1 = no output, just warning msgs if any */
           fileSkip); /* 1 = ignore missing external files (gifs, bib, etc.) */
   if (f != 0) errFound = 1;
@@ -4056,6 +4342,19 @@ void verifyMarkup(vstring labelMatch,
   htmlFlag = saveHtmlFlag;  altHtmlFlag = saveAltHtmlFlag;
   /* Force reread to get current mode defaults for future user commands */
   eraseTexDefs();
+
+  /* Deallocate string memory */
+  let(&contributor, "");
+  let(&contribDate, "");
+  let(&reviser, "");
+  let(&reviseDate, "");
+  let(&shortener, "");
+  let(&shortenDate, "");
+  let(&mostRecentDate, "");
+  let(&mmVersionDate, "");
+  let(&descr, "");
+  let(&str1, "");
+  let(&str2, "");
 
   return;
 

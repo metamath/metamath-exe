@@ -175,6 +175,7 @@ vstring getTexOrHtmlHypAndAssertion(long statemNum);
 /* For WRITE BIBLIOGRAPHY command and error checking by VERIFY MARKUP */
 /* Returns 0 if OK, 1 if error or warning found */
 flag writeBibliography(vstring bibFile,
+    vstring labelMatch, /* Normally "*" except by verifyMarkup() */
     flag errorsOnly,  /* 1 = no output, just warning msgs if any */
     flag noFileCheck); /* 1 = ignore missing external files (gifs, bib, etc.) */
 

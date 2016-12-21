@@ -3124,6 +3124,7 @@ flag getContrib(long stmtNum,
     vstring *contributor, vstring *contribDate,
     vstring *reviser, vstring *reviseDate,
     vstring *shortener, vstring *shortenDate,
+    vstring *mostRecentDate, /* The most recent of all 3 dates */
     flag printErrorsFlag) {
   long cStart, cMid = 0, cEnd = 0;
   long rStart, rMid = 0, rEnd = 0;
@@ -3407,6 +3408,16 @@ flag getContrib(long stmtNum,
     }
   }
 
+  /* 13-Dec-2016 nm Get the most recent date */
+  let(&(*mostRecentDate), *contribDate);
+  /* Note that compareDate() treats empty string as earliest date */
+  if (compareDates(*mostRecentDate, *reviseDate) == -1) {
+    let(&(*mostRecentDate), *reviseDate);
+  }
+  if (compareDates(*mostRecentDate, *shortenDate) == -1) {
+    let(&(*mostRecentDate), *shortenDate);
+  }
+
 
   /* TODO ******** The rest of the checks should be deleted if we decide
      to drop the date after the proof */
@@ -3602,6 +3613,7 @@ flag parseDate(vstring dateStr, long *dd, long *mmm, long *yyyy) {
       *yyyy = *yyyy + 1900;
     }
   }
+  if (*dd < 1 || *dd > 31 || *mmm < 1 || *mmm > 12) err = 1; /* 13-Dec-2016 nm */
   return err;
 } /* parseDate */
 
@@ -3621,6 +3633,20 @@ void buildDate(long dd, long mmm, long yyyy, vstring *dateStr) {
    0 = date1 = date2,  1 = date1 > date2.  There is no error checking. */
 flag compareDates(vstring date1, vstring date2) {
   long d1, m1, y1, d2, m2, y2, dd1, dd2;
+
+  /* 13-Dec-2016 nm */
+  /* If a date is the empty string, treat it as being _before_ any other
+     date */
+  if (date1[0] == 0 || date2[0] == 0) {
+    if (date1[0] == 0 && date2[0] == 0) {
+      return 0;
+    } else if (date1[0] == 0) {
+      return -1;
+    } else {
+      return 1;
+    }
+  }
+
   parseDate(date1, &d1, &m1, &y1);
   parseDate(date2, &d2, &m2, &y2);
   /* dd1, dd2 increase monotonically but aren't true days since 1-Jan-0000 */

@@ -5,7 +5,21 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.135 14-Sep-2016"
+#define MVERSION "0.137 20-Dec-2016"
+/* 0.137 20-Dec-2016 nm mmcmds.c - check ax-XXX $a vs axXXX $p label convention
+     in 'verify markup'
+   18-Dec-2016 nm mmwtex.c, mmpars.c, mmdata.h - use true "header area"
+     between successive $a/$p for getSectionHeadings()  mmcmds.c - add
+     header comment checking
+   13-Dec-2016 nm mmdata.c,h - enhanced compareDates() to treat empty string as
+     older date.
+   13-Dec-2016 nm metamath.c, mmcmds.c - moved mm* and Microsoft illegal file
+     name label check to verifyMarkup() (the VERIFY MARKUP command) instead of
+     checking on READ; added check of set.mm Version date to verifyMarkup().
+   13-Dec-2016 nm mmwtex.c,h - don't treat bracketed description text with
+     space as a bib label; add labelMatch parameter to writeBibliography() */
+/* 0.136 10-Oct-2016 mminou.c - fix resource leak bug reported by David
+   Binderman */
 /* 0.135 11-Sep-2016, 14-Sep-2016 metamath.c, mmpfas.c,h, mmdata.c,h,
    mmpars.c,h mmcmds.c, mmcmdl.c, mmhlpb.c - added EXPAND command */
 /* 0.134 16-Aug-2016 mmwtex.c - added breadcrumbs to theorem pages;
@@ -1828,27 +1842,29 @@ void command(int argc, char *argv[])
         /* verifyProofs("*",0); */ /* Parse only (for gross error checking) */
       }
 
-      /* 10/21/02 - detect Microsoft bugs reported by several users, when the
-         HTML output files are named "con.html" etc. */
-      /* If we want a standard error message underlining token, this could go
-         in mmpars.c */
-      /* From Microsoft's site:
+      /* 13-Dec-2016 nm Moved to verifyMarkup in mmcmds.c */
+      /*
+      /@ 10/21/02 - detect Microsoft bugs reported by several users, when the
+         HTML output files are named "con.html" etc. @/
+      /@ If we want a standard error message underlining token, this could go
+         in mmpars.c @/
+      /@ From Microsoft's site:
          "The following reserved words cannot be used as the name of a file:
          CON, PRN, AUX, CLOCK$, NUL, COM1, COM2, COM3, COM4, COM5, COM6, COM7,
          COM8, COM9, LPT1, LPT2, LPT3, LPT4, LPT5, LPT6, LPT7, LPT8, and LPT9.
          Also, reserved words followed by an extension - for example,
-         NUL.tx7 - are invalid file names." */
-      /* Check for labels that will lead to illegal Microsoft file names for
+         NUL.tx7 - are invalid file names." @/
+      /@ Check for labels that will lead to illegal Microsoft file names for
          Windows users.  Don't bother checking CLOCK$ since $ is already
-         illegal */
+         illegal @/
       let(&str1, cat(
          ",CON,PRN,AUX,NUL,COM1,COM2,COM3,COM4,COM5,COM6,COM7,",
          "COM8,COM9,LPT1,LPT2,LPT3,LPT4,LPT5,LPT6,LPT7,LPT8,LPT9,", NULL));
       for (i = 1; i <= statements; i++) {
-        let(&str2, cat(",", edit(statement[i].labelName, 32/*uppercase*/), ",",
+        let(&str2, cat(",", edit(statement[i].labelName, 32/@uppercase@/), ",",
             NULL));
         if (instr(1, str1, str2) ||
-            /* 5-Jan-04 mm*.html is reserved for mmtheorems.html, etc. */
+            /@ 5-Jan-04 mm@.html is reserved for mmtheorems.html, etc. @/
             !strcmp(",MM", left(str2, 3))) {
           print2("\n");
           printLongLine(cat("?Warning in statement \"",
@@ -1859,13 +1875,14 @@ void command(int argc, char *argv[])
               " the following reserved words cannot be used for label names:",
               " CON, PRN, AUX, CLOCK$, NUL, COM1, COM2, COM3, COM4, COM5,",
               " COM6, COM7, COM8, COM9, LPT1, LPT2, LPT3, LPT4, LPT5, LPT6,",
-              " LPT7, LPT8, and LPT9.  Also, \"mm*.html\" is reserved for",
+              " LPT7, LPT8, and LPT9.  Also, \"mm@.html\" is reserved for",
               " Metamath file names.  Use another name for this label.", NULL),
               "", " ");
           errorCount++;
         }
       }
-      /* 10/21/02 end */
+      /@ 10/21/02 end @/
+      */
 
       if (!errorCount) {
         let(&str1, "No errors were found.");
@@ -1985,6 +2002,7 @@ void command(int argc, char *argv[])
       /* 17-Nov-2015 nm code moved to writeBibliography() in mmwtex.c */
       /* (Also called by verifyMarkup() in mmcmds.c for error checking) */
       writeBibliography(fullArg[2],
+          "*", /* labelMatch - all labels */
           0,  /* 1 = no output, just warning msgs if any */
           0); /* 1 = ignore missing external files (gifs, bib, etc.) */
       continue;

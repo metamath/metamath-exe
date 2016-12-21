@@ -479,7 +479,7 @@ char *readRawSource(vstring inputFn, long bufOffsetSoFar, long *size)
    includeCall[] array is assumed to be created with readRawInput. */
 void parseKeywords(void)
 {
-  long i, j;
+  long i, j, k;
   char *fbPtr;
   flag insideComment;
   char mode, type;
@@ -551,6 +551,7 @@ void parseKeywords(void)
   statement[i].optDisjVarsB = NULL_NMBRSTRING;
   statement[i].optDisjVarsStmt = NULL_NMBRSTRING;
   statement[i].pinkNumber = 0;
+  statement[i].headerStartStmt = 0; /* 18-Dec-2016 nm */
   for (i = 1; i < potentialStatements; i++) {
     statement[i] = statement[0];
   }
@@ -740,8 +741,18 @@ void parseKeywords(void)
   /* The pink number only counts $a and $p statements, unlike the statement
      number which also counts $f, $e, $c, $v, ${, $} */
   j = 0;
+  k = 0; /* 18-Dec-2016 nm */
   for (i = 1; i <= statements; i++) {
     if (statement[i].type == a_ || statement[i].type == p_) {
+
+      /* 18-Dec-2016 nm */
+      /* Use the statement _after_ the previous $a or $p; that is the start
+         of the "header area" for use by getSectionHeadings() in mmwtex.c.
+         headerStartStmt will be equal to the current statement if the
+         previous statement is also a $a or $p) */
+      statement[i].headerStartStmt = k + 1;
+      k = i;
+
       j++;
       statement[i].pinkNumber = j;
     }
@@ -4409,7 +4420,7 @@ vstring outputStatement(long stmt, flag cleanFlag,
 
   /* For getContribs in-line error insertion to assist massive corrections
   long i;
-  vstring ca = "", cd = "", ra = "", rd = "", sa = "", sd = "";
+  vstring ca = "", cd = "", ra = "", rd = "", sa = "", sd = "", md = "";
   long saveWidth;
   */
 
@@ -4560,7 +4571,7 @@ vstring outputStatement(long stmt, flag cleanFlag,
              let(&ca, "??");
              let(&cd, cat("??", "-???", "-????", NULL));
           } else {
-            getContrib(i, &ca, &cd, &ra, &rd, &sa, &sd, 0);
+            getContrib(i, &ca, &cd, &ra, &rd, &sa, &sd, &md, 0);
             if (cd[0] == 0) {
               let(&ca, "??");
               getProofDate(i, &cd, &rd);
@@ -4665,7 +4676,7 @@ vstring outputStatement(long stmt, flag cleanFlag,
         /***********
         saveWidth = screenWidth;
         screenWidth = 9999;
-        i=getContrib(stmt, &ca, &cd, &ra, &rd, &sa, &sd, 1);
+        i=getContrib(stmt, &ca, &cd, &ra, &rd, &sa, &sd, &md, 1);
         screenWidth = saveWidth;
         ************/
         printLongLine(cat(space(indent), comment, NULL),

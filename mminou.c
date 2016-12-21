@@ -331,6 +331,10 @@ flag print2(char* fmt,...)
 
   if (logFileOpenFlag && !outputToString /* && !commandFileSilentFlag */) {
     fprintf(logFilePtr, "%s", printBuffer);  /* Print to log file */
+#if __STDC__
+    /* 10-Oct-2016 nm */
+    fflush(logFilePtr);
+#endif
   }
 
   if (listMode && listFile_fp != NULL && !outputToString) {
@@ -1268,7 +1272,9 @@ int fSafeRename(vstring oldFileName, vstring newFileName)
    THE RETURNED STRING [i.e. assign function return directly
    to a local empty vstring with = and not with let(), e.g.
         let(&str1, "");
-        str1 = fTmpName("zz~list");  ] */
+        str1 = fTmpName("zz~list");  ]
+   The file whose name is the returned string is not left open;
+   the caller must separately open the file. */
 vstring fGetTmpName(vstring filePrefix)
 {
   FILE *fp;
@@ -1279,8 +1285,12 @@ vstring fGetTmpName(vstring filePrefix)
     let(&fname, cat(filePrefix, str((double)counter), ".tmp", NULL));
     fp = fopen(fname, "r");
     if (!fp) break;
+
+    /* Fix resource leak reported by David Binderman 10-Oct-2016 */
+    fclose(fp);  /* 10-Oct-2016 nm */
+
     if (counter > 1000) {
-      print2("Warning: too many %snnn.tmp files - will reuse %s\n",
+      print2("?Warning: too many %snnn.tmp files - will reuse %s\n",
           filePrefix, fname);
       break;
     }

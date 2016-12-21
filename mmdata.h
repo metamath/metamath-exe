@@ -71,6 +71,8 @@ struct statement_struct { /* Array index is statement number, starting at 1 */
   nmbrString *optDisjVarsB; /* Optional disjoint variables, 2nd of pair */
   nmbrString *optDisjVarsStmt; /* Opt disjoint variables, statem number */
   long pinkNumber; /* 25-Oct-02 The $a/$p sequence number for web pages */
+  /* 18-Dec-2016 nm */
+  long headerStartStmt; /* # of stmt following previous $a, $p */
   };
 
 /* Sort keys for statement labels (allocated by parseLabels) */
@@ -422,6 +424,7 @@ flag getContrib(long stmtNum,
     vstring *contributor, vstring *contribDate,
     vstring *revisor, vstring *reviseDate,
     vstring *shortener, vstring *shortenDate,
+    vstring *mostRecentDate,
     flag printErrors /* 1 = print errors found */);
 
 /* Extract up to 2 dates after a statement's proof.  If no date is present,
