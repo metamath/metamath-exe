@@ -1341,7 +1341,7 @@ flag processCommandLine(void)
           if (lastArgMatches("/")) {
             i++;
             if (!getFullArg(i,cat(
-                "DATE_SKIP|FILE_SKIP",
+                "DATE_SKIP|FILE_SKIP|VERBOSE",
                 "|<DATE_SKIP>",NULL)))
               goto pclbad;
           } else {

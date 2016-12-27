@@ -641,6 +641,8 @@ H("    / FILE_SKIP - This qualifier will skip checks that require");
 H("        external files to be present, such as checking GIF existence and");
 H("        bibliographic links to mmset.html or equivalent.  It is useful");
 H("        for doing a quick check from a directory without these files");
+H("    / VERBOSE - Provides more information.  Currently it provides a list");
+H("        of axXXX vs. ax-XXX matches.");
 H("");
 
 

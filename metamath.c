@@ -5,7 +5,12 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.137 20-Dec-2016"
+#define MVERSION "0.138 26-Dec-2016"
+/* 0.138 26-Dec-2016 nm mmwtex.c - remove extraneous </TD> causing w3c
+   validation failure; put space after 1st x in "F/ x x = x";
+   mmcmds.c - added checking for lines > 79 chars in VERIFY MARKUP;
+   mmcmds.c, mmcmdl.c, metamath.c, mmhlpb.c, mmcmds.h - added /VERBOSE to
+   VERIFY MARKUP */
 /* 0.137 20-Dec-2016 nm mmcmds.c - check ax-XXX $a vs axXXX $p label convention
      in 'verify markup'
    18-Dec-2016 nm mmwtex.c, mmpars.c, mmdata.h - use true "header area"
@@ -7106,9 +7111,11 @@ void command(int argc, char *argv[])
     if (cmdMatches("VERIFY MARKUP")) {
       i = (switchPos("/ DATE_SKIP") != 0) ? 1 : 0;
       j = (switchPos("/ FILE_SKIP") != 0) ? 1 : 0;
+      k = (switchPos("/ VERBOSE") != 0) ? 1 : 0;
       verifyMarkup(fullArg[2],
           (flag)i, /* 1 = skip checking date consistency */
-          (flag)j); /* 1 = skip checking external files GIF, mmset.html,... */
+          (flag)j, /* 1 = skip checking external files GIF, mmset.html,... */
+          (flag)k); /* 1 = verbose mode */  /* 26-Dec-2016 nm */
       continue;
     }
 

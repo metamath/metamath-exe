@@ -1638,7 +1638,7 @@ void printTexHeader(flag texHeaderFlag)
              (showStatement < sandboxStmt ? extHtmlTitle :
              localSandboxTitle)));
     print2("      </B></FONT></TD>\n");
-    print2("    </TD>\n");
+    /* print2("    </TD>\n"); */ /* 26-Dec-2016 nm Delete extra </TD> */
 
 
     /*
@@ -5186,6 +5186,8 @@ vstring getTexLongMath(nmbrString *mathString, long statemNum)
             /* See if it's 1st letter in a quantified expression */
             if (!strcmp(mathToken[mathString[pos - 2]].tokenName, "E.")
                 || !strcmp(mathToken[mathString[pos - 2]].tokenName, "A.")
+                /* 26-Dec-2016 nm - "not free in" binder */
+                || !strcmp(mathToken[mathString[pos - 2]].tokenName, "F/")
                 /* 6-Apr-04 nm added E!, E* */
                 || !strcmp(mathToken[mathString[pos - 2]].tokenName, "E!")
   /* 4-Jun-06 nm added dom, ran for space btwn A,x in "E! x e. dom A x A y" */

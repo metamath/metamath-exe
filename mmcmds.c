@@ -3966,11 +3966,13 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
    Microsoft conflicts) */
 void verifyMarkup(vstring labelMatch,
     flag dateSkip, /* 1 = don't check date consistency */
-    flag fileSkip) /* 1 = don't check external files (gifs, mmset.html,...) */ {
+    flag fileSkip, /* 1 = don't check external files (gifs, mmset.html,...) */
+    flag verboseMode) /* 1 = more details */ {   /* 26-Dec-2016 nm */
   flag f;
   flag saveHtmlFlag, saveAltHtmlFlag;
   flag errFound = 0;
   long stmtNum, p1, p2, p3;
+  long flen, lnum, lstart; /* For line length check */ /* 26-Dec-2016 nm */
   vstring contributor = ""; vstring contribDate = "";
   vstring reviser = ""; vstring reviseDate = "";
   vstring shortener = ""; vstring shortenDate = "";
@@ -4069,7 +4071,7 @@ void verifyMarkup(vstring labelMatch,
   /* 20-Dec-2016 nm */
   /* Check $a ax-* vs. $p ax* */
   /*print2("Checking ax-XXX axioms vs. axXXX theorems...\n");*/
-               /* (This runs very fast and is part of label conventions) */
+      /* (Don't print status - this runs very fast) */
   for (stmtNum = 1; stmtNum <= statements; stmtNum++) {
     if (statement[stmtNum].type != a_) {
       continue;
@@ -4090,6 +4092,12 @@ void verifyMarkup(vstring labelMatch,
 
     p1 = lookupLabel(str2);
     if (p1 == -1) continue;  /* There is no corresponding axXXX */
+
+    /* 26-Dec-2016 nm */
+    if (verboseMode == 1) {
+      print2("Comparing \"%s\" to \"%s\"...\n", str2, str1);
+    }
+
 
     /* Compare statements */
     if (nmbrEq(statement[stmtNum].mathString,
@@ -4144,7 +4152,7 @@ void verifyMarkup(vstring labelMatch,
           statement[(statement[p1].reqHypList)[p2]].mathString) != 1) {
         printLongLine(cat("?Warning: The mandatory hypotheses of statements \"",
             statement[stmtNum].labelName, "\" and \"",
-            statement[p1].labelName, "\" are different.\n",
+            statement[p1].labelName, "\" are different.",
             NULL), "  ", " ");
         errFound = 1;
         break;
@@ -4156,13 +4164,62 @@ void verifyMarkup(vstring labelMatch,
           statement[p1].reqDisjVarsA) != 1) {
         printLongLine(cat("?Warning: The mandatory hypotheses of statements \"",
             statement[stmtNum].labelName, "\" and \"",
-            statement[p1].labelName, "\" are different.\n",
+            statement[p1].labelName, "\" are different.",
             NULL), "  ", " ");
         errFound = 1;
         break;
       }
     } /* next p2 */
   } /* next stmtNum */
+
+
+  /* 26-Dec-2016 nm */
+  /* Check line lengths */
+  /*print2("Checking line lengths...\n");*/
+      /* (Don't print status - this runs very fast) */
+  let(&str1, ""); /* Prepare to use as pointer */
+  let(&str2, ""); /* Prepare to use as pointer */
+  if (statements >= 1  /* Skip empty .mm */
+      && includeCalls == 0) { /* No $[...$] */ /* TODO - handle $[...$] */
+    str1 = statement[1].labelSectionPtr; /* Start of input file */
+    str2 = statement[statements + 1].labelSectionPtr
+       + statement[statements + 1].labelSectionLen; /* End of input file */
+    if (str2[0] != 0) bug(258); /* Should be end of (giant) string */
+    if (str2[-1] != '\n') bug(259); /* End of last line */
+    flen = str2 - str1;  /* Length of input file */
+    str2 = ""; /* Restore pointer for use as vstring */
+    lnum = 0; /* Line number */
+    lstart = 0; /* Line start */
+    for (p1 = 0; p1 < flen; p1++) {
+      if (str1[p1] == 0) {
+        /* print2("pl=%ld flen=%ld\n", p1, flen); */
+        bug(260); /* File shouldn't have nulls */
+      }
+      if (str1[p1] == '\n') {
+        /* End of a line found */
+        lnum++;
+        if (p1 - lstart > screenWidth) { /* Normally 79; see mminou.c */
+          /* Put line in str2 for error message */
+          let(&str2, space(p1 - lstart));
+          memcpy(str2, str1 + lstart,
+            (size_t)(p1 - lstart));
+          printLongLine(cat("?Warning:  Line number ",
+              str((double)lnum),
+              " has ",
+              str((double)(p1 - lstart)),
+              " characters (should have ",
+              str((double)screenWidth),
+              " or less):",
+              NULL), "    ", " ");
+          print2("    %s...\n", left(str2, screenWidth - 7));
+          errFound = 1;
+          let(&str2, ""); /* Deallocate string memory */
+        }
+        lstart = p1 + 1;
+      }
+    } /* next p1 */
+    str1 = ""; /* Restore pointer for use as vstring */
+  } /* end of line length check - if (statements >= 1... */
 
 
   /* Check $t comment content */

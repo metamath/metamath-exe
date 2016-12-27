@@ -73,7 +73,7 @@ void verifyProofs(vstring labelMatch, flag verifyFlag);
 /* If checkFiles = 0, do not open external files.
    If checkFiles = 1, check mm*.html, presence of gifs, etc. */
 void verifyMarkup(vstring labelMatch, flag dateSkip,
-    flag fileSkip); /* 7-Nov-2015 nm */
+    flag fileSkip, flag verboseMode); /* 26-Dec-2016 nm */
 
 /* 3-May-2016 nm */
 /* List "discouraged" statements with "(Proof modification is discouraged."
