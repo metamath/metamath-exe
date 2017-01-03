@@ -1,11 +1,13 @@
 /*****************************************************************************/
 /* Program name:  metamath                                                   */
-/* Copyright (C) 2016 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
+/* Copyright (C) 2017 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
 /* License terms:  GNU General Public License Version 2 or any later version */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.138 26-Dec-2016"
+#define MVERSION "0.139 2-Jan-2017"
+/* 0.139 2-Jan-2017 nm metamath.c - print only one line for
+     'save proof * /compressed/fast' */
 /* 0.138 26-Dec-2016 nm mmwtex.c - remove extraneous </TD> causing w3c
    validation failure; put space after 1st x in "F/ x x = x";
    mmcmds.c - added checking for lines > 79 chars in VERIFY MARKUP;
@@ -594,6 +596,7 @@ void command(int argc, char *argv[])
   flag skipRepeatedSteps; /* NO_REPEATED_STEPS qualifier */ /* 28-Jun-2013 nm */
   flag texFlag; /* Flag for TeX */
   flag saveFlag; /* Flag to save in source */
+  flag fastFlag; /* Flag for SAVE PROOF.../FAST */ /* 2-Jan-2017 nm */
   long indentation; /* Number of spaces to indent proof */
   vstring labelMatch = ""; /* SHOW PROOF <label> argument */
 
@@ -3655,6 +3658,9 @@ void command(int argc, char *argv[])
           print2("?/ FAST must be accompanied by / COMPRESSED or / PACKED.\n");
           continue;
         }
+        fastFlag = 1;
+      } else {
+        fastFlag = 0;
       }
 
       /* 2-Mar-2016 nm */
@@ -3773,6 +3779,15 @@ void command(int argc, char *argv[])
 
 /*??? Need better warnings for switch combinations that don't make sense */
 
+      /* 2-Jan-2017 nm */
+      /* Print a single message for "/compressed/fast" */
+      if (switchPos("/ COMPRESSED") && fastFlag
+          && !strcmp("*", labelMatch)) {
+        print2(
+            "Reformatting and saving (but not recompressing) all proofs...\n");
+      }
+
+
       q = 0;
       for (s = 1; s <= statements; s++) {
         /* If pipFlag (NEW_PROOF), we will iterate exactly once.  This
@@ -3853,7 +3868,7 @@ void command(int argc, char *argv[])
               continue;
             }
             /* verifyProof(showStatement); */ /* Not necessary */
-            if (switchPos("/ FAST")) { /* 2-Mar-2016 nm */
+            if (fastFlag) { /* 2-Mar-2016 nm */
               /* 2-Mar-2016 nm */
               /* Use the proof as is */
               nmbrLet(&nmbrSaveProof, wrkProof.proofString);
@@ -3865,7 +3880,7 @@ void command(int argc, char *argv[])
             nmbrLet(&nmbrSaveProof, proofInProgress.proof);
           }
           if (switchPos("/ PACKED")  || switchPos("/ COMPRESSED")) {
-            if (!switchPos("/ FAST")) { /* 2-Mar-2016 nm */
+            if (!fastFlag) { /* 2-Mar-2016 nm */
               nmbrLet(&nmbrSaveProof, nmbrSquishProof(nmbrSaveProof));
             }
           }
@@ -4005,9 +4020,12 @@ void command(int argc, char *argv[])
             printString = "";
             outputToString = 0;
             if (!pipFlag) {
-              printLongLine(cat("The proof of \"", statement[outStatement].labelName,
-                  "\" has been reformatted and saved internally.",
-                  NULL), "", " ");
+              if (!(fastFlag && !strcmp("*", labelMatch))) {
+                printLongLine(
+                    cat("The proof of \"", statement[outStatement].labelName,
+                    "\" has been reformatted and saved internally.",
+                    NULL), "", " ");
+              }
             } else {
               printLongLine(cat("The new proof of \"", statement[outStatement].labelName,
                   "\" has been saved internally.",
