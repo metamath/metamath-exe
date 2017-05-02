@@ -5,7 +5,9 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.139 2-Jan-2017"
+#define MVERSION "0.140 1-May-2017"
+/* 0.140 1-May-2017 nm mmwtex.c, mmcmds.c, metamath.c - fix some LaTeX issues
+   reported by Ari Ferrera */
 /* 0.139 2-Jan-2017 nm metamath.c - print only one line for
      'save proof * /compressed/fast' */
 /* 0.138 26-Dec-2016 nm mmwtex.c - remove extraneous </TD> causing w3c
@@ -4126,11 +4128,29 @@ void command(int argc, char *argv[])
             endStep,
             endIndent,
             essentialFlag,
-            renumberFlag,
+
+            /* 1-May-2017 nm */
+            /* In SHOW PROOF xxx /TEX, we use renumber steps mode so that
+               the first step is step 1.  The step number is checked for
+               step 1 in mmwtex.c to prevent a spurious \\ (newline) at the
+               start of the proof.  Note that
+               SHOW PROOF is not available in HTML mode, so texFlag will
+               always mean LaTeX mode here. */
+            (texFlag ? 1 : renumberFlag),
+            /*was: renumberFlag,*/
+
             unknownFlag,
             notUnifiedFlag,
             reverseFlag,
-            noIndentFlag,
+
+            /* 1-May-2017 nm */
+            /* In SHOW PROOF xxx /TEX, we use Lemmon mode so that the
+               hypothesis reference list will be available.  Note that
+               SHOW PROOF is not available in HTML mode, so texFlag will
+               always mean LaTeX mode here. */
+            (texFlag ? 1 : noIndentFlag),
+            /*was: noIndentFlag,*/
+
             splitColumn,
             skipRepeatedSteps, /* 28-Jun-2013 nm */
             texFlag,

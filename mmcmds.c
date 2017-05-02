@@ -188,8 +188,27 @@ void typeStatement(long showStmt,
         if (!htmlFlg) {  /* LaTeX */
           if (!oldTexFlag) {
             /* 14-Sep-2010 */
+
+            /* 1-May-2017 nm */
+            /* Distinguish axiom, definition, theorem */
+            /* Note: changes here must be mirrored in the \end{...} below */
+            if (statement[showStmt].type == a_) {
+              if (!strcmp(left(statement[showStmt].labelName, 3), "ax-")) {
+                let(&str3, "axiom");
+              } else {
+                let(&str3, "definition");
+              }
+            } else {
+              let(&str3, "theorem");
+            }
+            let(&str1, cat("\\begin{", str3, "}\\label{",
+                left(str3, 3), ":",
+                statement[showStmt].labelName, "} ", str1, NULL));
+            /* old code before 1-May-2017:
             let(&str1, cat("\\begin{lemma}\\label{lem:",
                 statement[showStmt].labelName, "} ", str1, NULL));
+            */
+
           } else {
             /* 6-Dec-03 Add separation space between theorems */
             let(&str1, cat("\n\\vspace{1ex} %2\n\n", str1, NULL));
@@ -463,10 +482,36 @@ void typeStatement(long showStmt,
               "\\label{eq:",
               statement[showStmt].labelName,
               "}",
+
+              /* 1-May-2017 nm */
+              /* Add "\tag{..}" to use .mm labels instead of equation numbers */
+              /* (Suggested by Ari Ferrera) */
+              "\\tag{",
+              statement[showStmt].labelName,
+              "}",
+
               NULL), "    ", " ");
-       /* print2("    \\label{eq:%s}\n",statement[showStmt].labelName); */
+        /* print2("    \\label{eq:%s}\n",statement[showStmt].labelName); */
         print2("\\end{align}\n");
+
+
+        /* 1-May-2017 nm */
+        /* Distinguish axiom, definition, theorem for LaTeX */
+        /* Note: changes here must be mirrored in the \begin{...} above */
+        if (statement[showStmt].type == a_) {
+          if (!strcmp(left(statement[showStmt].labelName, 3), "ax-")) {
+            let(&str3, "axiom");
+          } else {
+            let(&str3, "definition");
+          }
+        } else {
+          let(&str3, "theorem");
+        }
+        print2("%s\n", cat("\\end{", str3, "}", NULL));
+        /* old code before 1-May-2017:
         print2("\\end{lemma}\n");
+        */
+
         fprintf(texFilePtr, "%s", printString);
         let(&printString, "");
         outputToString = 0;
@@ -1859,11 +1904,13 @@ void typeProof(long statemNum,
 
         let(&startPrefix, cat(
             startStringWithNum,
-            space(indentationLevel[step] * PF_INDENT_INC - (long)strlen(locLabDecl)),
+            space(indentationLevel[step] * PF_INDENT_INC
+                - (long)strlen(locLabDecl)),
             locLabDecl,
             tgtLabel,
             srcLabel,
-            space(maxLabelLen - (long)strlen(tgtLabel) - (long)strlen(srcLabel)),
+            space(maxLabelLen - (long)strlen(tgtLabel)
+                - (long)strlen(srcLabel)),
             NULL));
         if (pipFlag) {
           let(&tgtPrefix, cat(

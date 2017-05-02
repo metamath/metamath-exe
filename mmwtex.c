@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2016  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -2067,6 +2067,57 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
     }
   }
 
+  /* 15-Feb-2014 nm */
+  /* 1-May-2017 nm - moved this section up to BEFORE the underscore handling
+     below, so that "{\em...}" won't be converted to "\}\em...\}" */
+  /* Convert any remaining special characters for LaTeX */
+  /* This section is independent and can be removed without side effects */
+  if (!htmlFlag) { /* i.e. LaTeX mode */
+    /* At this point, the comment begins e.g "\begin{lemma}\label{lem:abc}" */
+    pos1 = instr(1, cmt, "} ");
+    if (pos1) {
+      pos1++; /* Start after the "}" */
+    } else {
+      pos1 = 1; /* If not found, start from beginning of line */
+    }
+    pos2 = (long)strlen(cmt);
+    tmpMathMode = 0;
+    for (pos1 = pos1 + 0; pos1 <= pos2; pos1++) {
+      /* Don't modify anything inside of math symbol strings
+         (imperfect - only works if `...` is not split across lines?) */
+      if (cmt[pos1 - 1] == '`') tmpMathMode = (flag)(1 - tmpMathMode);
+      if (tmpMathMode) continue;
+      if (pos1 > 1) {
+        if (cmt[pos1 - 1] == '_' && cmt[pos1 - 2] == '$') {
+          /* The _ is part of "$_{...}$" earlier conversion */
+          continue;
+        }
+      }
+      /* $%#{}&^\\|<>"~_ are converted by asciiToTt() */
+      /* Omit \ and $ since they be part of an earlier converston */
+      /* Omit ~ since it is part of label ref */
+      /* Omit " since it legal */
+      /* Because converting to \char` causes later math mode problems due to `,
+         we change |><_ to /)(- (an ugly workaround) */
+      switch(cmt[pos1 - 1]) {
+        case '|': cmt[pos1 - 1] = '/'; break;
+        case '<': cmt[pos1 - 1] = '{'; break;
+        case '>': cmt[pos1 - 1] = '}'; break;
+        case '_': cmt[pos1 - 1] = '-'; break;
+      }
+      if (strchr("%#{}&^|<>_", cmt[pos1 - 1]) != NULL) {
+        let(&tmpStr, "");
+        tmpStr = asciiToTt(chr(cmt[pos1 - 1]));
+        let(&cmt, cat(left(cmt, pos1 - 1), tmpStr,
+            right(cmt, pos1 + 1), NULL));
+        let(&cmtMasked, cat(left(cmtMasked, pos1 - 1), tmpStr,
+            right(cmtMasked, pos1 + 1), NULL));
+        pos1 += (long)strlen(tmpStr) - 1;
+        pos2 += (long)strlen(tmpStr) - 1;
+      }
+    } /* Next pos1 */
+  } /* if (!htmlFlag) */
+
   /* 10-Oct-02 Handle underscores in comments converted to HTML:  Convert _abc_
      to <I>abc</I> for book titles, etc.; convert a_n to a<SUB>n</SUB> for
      subscripts */
@@ -2195,54 +2246,28 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
     }
   }
 
-  /* 15-Feb-2014 nm */
-  /* Convert any remaining special characters for LaTeX */
+  /* 1-May-2017 nm */
+  /* Convert opening double quote to `` for LaTeX */
   /* This section is independent and can be removed without side effects */
-  if (!htmlFlag) { /* i.e. LaTeX mode */
-    /* At this point, the comment begins e.g "\begin{lemma}\label{lem:abc}" */
-    pos1 = instr(1, cmt, "} ");
-    if (pos1) {
-      pos1++; /* Start after the "}" */
-    } else {
-      pos1 = 1; /* If not found, start from beginning of line */
-    }
-    pos2 = (long)strlen(cmt);
-    tmpMathMode = 0;
-    for (pos1 = pos1 + 0; pos1 <= pos2; pos1++) {
-      /* Don't modify anything inside of math symbol strings
-         (imperfect - only works if `...` is not split across lines?) */
-      if (cmt[pos1 - 1] == '`') tmpMathMode = (flag)(1 - tmpMathMode);
-      if (tmpMathMode) continue;
-      if (pos1 > 1) {
-        if (cmt[pos1 - 1] == '_' && cmt[pos1 - 2] == '$') {
-          /* The _ is part of "$_{...}$" earlier conversion */
-          continue;
-        }
-      }
-      /* $%#{}&^\\|<>"~_ are converted by asciiToTt() */
-      /* Omit \ and $ since they be part of an earlier converston */
-      /* Omit ~ since it is part of label ref */
-      /* Omit " since it legal */
-      /* Because converting to \char` causes later math mode problems due to `,
-         we change |><_ to /)(- (an ugly workaround) */
-      switch(cmt[pos1 - 1]) {
-        case '|': cmt[pos1 - 1] = '/'; break;
-        case '<': cmt[pos1 - 1] = '{'; break;
-        case '>': cmt[pos1 - 1] = '}'; break;
-        case '_': cmt[pos1 - 1] = '-'; break;
-      }
-      if (strchr("%#{}&^|<>_", cmt[pos1 - 1]) != NULL) {
-        let(&tmpStr, "");
-        tmpStr = asciiToTt(chr(cmt[pos1 - 1]));
-        let(&cmt, cat(left(cmt, pos1 - 1), tmpStr,
+  if (!htmlFlag) { /* If LaTeX mode */
+    i = 1; /* Even/odd counter: 1 = left quote, 0 = right quote */
+    pos1 = 0;
+    while (1) {
+      /* cmtMasked has math symbols blanked */
+      pos1 = instr(pos1 + 1, cmtMasked, "\"");
+      if (pos1 == 0) break;
+      if (i == 1) {
+        /* Warning:  "`" needs to be escaped (i.e. repeated) to prevent it
+           from being treated as a math symbol delimiter below.  So "````"
+           will become "``" in the LaTeX output. */
+        let(&cmt, cat(left(cmt, pos1 - 1), "````",
             right(cmt, pos1 + 1), NULL));
-        let(&cmtMasked, cat(left(cmtMasked, pos1 - 1), tmpStr,
+        let(&cmtMasked, cat(left(cmtMasked, pos1 - 1), "````",
             right(cmtMasked, pos1 + 1), NULL));
-        pos1 += (long)strlen(tmpStr) - 1;
-        pos2 += (long)strlen(tmpStr) - 1;
       }
-    } /* Next pos1 */
-  } /* if (!htmlFlag) */
+      i = 1 - i; /* Count to next even or odd */
+    }
+  }
 
   /* 10/10/02 Put bibliography hyperlinks in comments converted to HTML:
         [Monk2] becomes <A HREF="mmset.html#monk2>[Monk2]</A> etc. */
@@ -2681,8 +2706,24 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
             /* 4/13/04 nm - If the "label" begins with 'http://', then
                assume it is an external hyperlink and not a real label.
                This is kind of a syntax kludge but it is easy to do. */
-            let(&outputLine, cat(outputLine, "<A HREF=\"", tmpStr,
-                "\">", tmpStr, "</A>", tmp, NULL));
+
+            if (htmlFlag) {
+              let(&outputLine, cat(outputLine, "<A HREF=\"", tmpStr,
+                  "\">", tmpStr, "</A>", tmp, NULL));
+            } else {
+
+              /* 1-May-2017 nm */
+              /* Generate LaTeX version of the URL */
+              i = instr(1, tmpStr, "\\char`\\~");
+              /* The url{} function automatically converts ~ to LaTeX */
+              if (i != 0) {
+                let(&tmpStr, cat(left(tmpStr, i - 1), right(tmpStr, i + 7),
+                    NULL));
+              }
+              let(&outputLine, cat(outputLine, "\\url{", tmpStr,
+                  "}", tmp, NULL));
+
+            }
           } else {
             /* 10/10/02 Do binary search through just $a's and $p's (there
                are no html pages for local labels) */
@@ -2945,15 +2986,29 @@ void printTexLongMath(nmbrString *mathString,
 
   /* 14-Sep-2010 nm Moved this code from below to use for !oldTexFlag */
   if (htmlFlag || !oldTexFlag) {
+
+    /* Process a proof step prefix */
     if (strlen(sPrefix)) { /* It's a proof step */
-      /* Make each token a separate table column */
+      /* Make each token a separate table column for HTML */
       /* This is a kludge that only works with /LEMMON style proofs! */
       /* 14-Sep-2010 nm Note that asciiToTt() above puts "\ " when not in
          htmlFlag mode, so use sPrefix instead of tex so it will work in
          !oldTexFlag mode */
+
+      /* 1-May-2017 nm Fix for non-/LEMMON format used by TeX mode */
+      /* In HTML mode, sPrefix has two possible formats:
+           "2 ax-1  $a "
+           "3 1,2 ax-mp  $a "
+         In LaTeX mode (!htmlFlag), sPrefix has one format:
+           "8   maj=ax-1  $a "
+           "9 a1i=ax-mp $a " */
+      /* Later on 1-May-2017: the LaTeX mode now returns same as HTML mode. */
+
       /* let(&tex, edit(tex, 8 + 16 + 128)); */
-      let(&tex, edit(sPrefix, 8 + 16 + 128));
-      /* Example: tex = "4 2,3 ax-mp $a" here */
+      let(&tex, edit(sPrefix, 8/*no leading spaces*/
+           + 16/*reduce spaces and tabs*/
+           + 128/*no trailing spaces*/));
+
       i = 0;
       pos = 1;
       while (pos) {
@@ -2961,6 +3016,9 @@ void printTexLongMath(nmbrString *mathString,
         if (pos) {
           if (i > 3) { /* 2/8/02 - added for extra safety for the future */
             bug(2316);
+          }
+          if (!htmlFlag && i > 2) { /* 1-May-2017 nm */
+            bug(2341);
           }
           if (i == 0) let(&htmStep, left(tex, pos - 1));
           if (i == 1) let(&htmHyp, left(tex, pos - 1));
@@ -2974,8 +3032,33 @@ void printTexLongMath(nmbrString *mathString,
            "4 ax-1 $a" */
         let(&htmRef, htmHyp);
         let(&htmHyp, "");
+
+        /* 1-May-2017 nm Fix bug reported by Ari Ferrera*/
+        /* Change "maj=ax-1" to "ax-1" so \ref{} produced by
+           "show proof .../tex" will match \label{} produced by
+           "show statement .../tex" */
+        /* Later on 1-May-2017:  earlier we set the noIndentFlag (Lemmon
+           proof) in the SHOW PROOF.../TEX call in metamath.c, so the
+           hypothesis ref list will be available just like in the HTML
+           output. */
+        /* 1-May-2017 nm - Delete the below if we keep the noIndentFlag solution. */
+        /*
+        if (!htmlFlag) {
+          pos = instr(1, htmRef, "=");
+          if (!pos) bug(2342);
+          let(&htmRef, right(htmRef, pos + 1));
+        }
+        */
+        /* We now consider "=" a bug since the call via typeProof() in
+           metamath.c now always has noIndentFlag = 1. */
+        if (!htmlFlag) {
+          pos = instr(1, htmRef, "=");
+          if (pos) bug(2342);
+        }
+
+
       }
-    }
+    } /* if (strlen(sPrefix)) (end processing proof step prefix) */
   }
 
   if (!htmlFlag) {
@@ -3185,8 +3268,20 @@ void printTexLongMath(nmbrString *mathString,
             " && & ",
             texLine,
             /* Don't put space to help prevent bad line break */
+
+            /* 1-May-2017 nm Surround \ref with \mbox for non-math-mode
+               symbolic labels (due to \tag{..} in mmcmds.c).  Also,
+               move hypotheses to after referenced label */
+            "&",
+            "(\\mbox{\\ref{eq:", htmRef, "}}",
+            htmHyp[0] ? "," : "",
+            htmHyp,
+            ")\\notag", NULL),
+            /* before 1-May-2017:
             "&", htmHyp, htmHyp[0] ? "," : "",
             "(\\ref{eq:", htmRef, "})\\notag", NULL),
+            */
+
             "    \\notag \\\\ && & \\qquad ",  /* Continuation line prefix */
             " ");
       }
