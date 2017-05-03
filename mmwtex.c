@@ -1340,17 +1340,19 @@ void printTexHeader(flag texHeaderFlag)
     /* 14-Sep-2010 nm Added OLD_TEX (oldTexFlag) */
     if (texHeaderFlag && !oldTexFlag) {
       print2("\\documentclass{article}\n");
-      print2("\\usepackage{graphicx}\n"); /* 29-Nov-2013 nm For rotated iota */
+      print2("\\usepackage{graphicx} %% For rotated iota\n"); /* 29-Nov-2013 nm */
       print2("\\usepackage{amssymb}\n");
-      print2("\\usepackage{amsmath}\n"); /* For \begin{align}... */
+      print2("\\usepackage{amsmath} %% For \\begin{align}...\n");
       print2("\\usepackage{amsthm}\n");
       print2("\\theoremstyle{plain}\n");
       print2("\\newtheorem{theorem}{Theorem}[section]\n");
       print2("\\newtheorem{definition}[theorem]{Definition}\n");
       print2("\\newtheorem{lemma}[theorem]{Lemma}\n");
       print2("\\newtheorem{axiom}{Axiom}\n");
-      print2("\\allowdisplaybreaks[1]\n");  /* Allow page breaks in {align} */
+      print2("\\allowdisplaybreaks[1] %% Allow page breaks in {align}\n");
       print2("\\usepackage[plainpages=false,pdfpagelabels]{hyperref}\n");
+      print2("\\hypersetup{colorlinks} %% Get rid of boxes around links\n");
+                                                        /* 2-May-2017 */
       print2("\\begin{document}\n");
       print2("\n");
     }

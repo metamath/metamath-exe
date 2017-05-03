@@ -2985,6 +2985,52 @@ long getSourceIndentation(long statemNum) {
 } /* getSourceIndentation */
 
 
+/* Returns the last embedded comment (if any) in the label section of
+   a statement.  This is used to provide the user with information in the SHOW
+   STATEMENT command.  The caller must deallocate the result. */
+vstring getDescription(long statemNum) {
+  char *fbPtr; /* Source buffer pointer */
+  vstring description = "";
+  char *startDescription;
+  char *endDescription;
+  char *startLabel;
+
+  fbPtr = statement[statemNum].mathSectionPtr;
+  if (!fbPtr[0]) return (description);
+  startLabel = statement[statemNum].labelSectionPtr;
+  if (!startLabel[0]) return (description);
+  endDescription = NULL;
+  while (1) { /* Get end of embedded comment */
+    if (fbPtr <= startLabel) break;
+    if (fbPtr[0] == '$' && fbPtr[1] == ')') {
+      endDescription = fbPtr;
+      break;
+    }
+    fbPtr--;
+  }
+  if (!endDescription) return (description); /* No embedded comment */
+  while (1) { /* Get start of embedded comment */
+    if (fbPtr < startLabel) bug(216);
+    if (fbPtr[0] == '$' && fbPtr[1] == '(') {
+      startDescription = fbPtr + 2;
+      break;
+    }
+    fbPtr--;
+  }
+  let(&description, space(endDescription - startDescription));
+  memcpy(description, startDescription,
+      (size_t)(endDescription - startDescription));
+  if (description[endDescription - startDescription - 1] == '\n') {
+    /* Trim trailing new line */
+    let(&description, left(description, endDescription - startDescription - 1));
+  }
+  /* Discard leading and trailing blanks */
+  let(&description, edit(description, 8 + 128));
+  return (description);
+} /* getDescription */
+
+
+
 /* Returns 0 or 1 to indicate absence or presence of an indicator in
    the comment of the statement. */
 /* mode = 1 = PROOF_DISCOURAGED means get any proof modification discouraged
@@ -3007,7 +3053,7 @@ flag getMarkupFlag(long statemNum, flag mode) {
   extern vstring usageDiscouragedMarkup;
   */
 
-  if (mode == RESET) { /* Initialize */ /* Should be called by RESET command */
+  if (mode == RESET) { /* Deallocate */ /* Should be called by ERASE command */
     let(&commentSearchedFlags, "");
     let(&proofFlags, "");
     let(&usageFlags, "");
@@ -3017,8 +3063,8 @@ flag getMarkupFlag(long statemNum, flag mode) {
 
   if (init == 0) {
     init = 1;
-    /* The global variables proofDiscouragedMarkup and usageDiscouragedMarkup are
-       initialized to "" like all vstrings to allow them to be reassigned
+    /* The global variables proofDiscouragedMarkup and usageDiscouragedMarkup
+       are initialized to "" like all vstrings to allow them to be reassigned
        by a possible future SET command.  So the first time this is called
        we need to assign them to the default markup strings. */
     if (proofDiscouragedMarkup[0] == 0) {
@@ -3070,160 +3116,242 @@ flag getMarkupFlag(long statemNum, flag mode) {
 } /* getMarkupFlag */
 
 
-/* Returns the last embedded comment (if any) in the label section of
-   a statement.  This is used to provide the user with information in the SHOW
-   STATEMENT command.  The caller must deallocate the result. */
-vstring getDescription(long statemNum) {
-  char *fbPtr; /* Source buffer pointer */
-  vstring description = "";
-  char *startDescription;
-  char *endDescription;
-  char *startLabel;
-
-  fbPtr = statement[statemNum].mathSectionPtr;
-  if (!fbPtr[0]) return (description);
-  startLabel = statement[statemNum].labelSectionPtr;
-  if (!startLabel[0]) return (description);
-  endDescription = NULL;
-  while (1) { /* Get end of embedded comment */
-    if (fbPtr <= startLabel) break;
-    if (fbPtr[0] == '$' && fbPtr[1] == ')') {
-      endDescription = fbPtr;
-      break;
-    }
-    fbPtr--;
-  }
-  if (!endDescription) return (description); /* No embedded comment */
-  while (1) { /* Get start of embedded comment */
-    if (fbPtr < startLabel) bug(216);
-    if (fbPtr[0] == '$' && fbPtr[1] == '(') {
-      startDescription = fbPtr + 2;
-      break;
-    }
-    fbPtr--;
-  }
-  let(&description, space(endDescription - startDescription));
-  memcpy(description, startDescription,
-      (size_t)(endDescription - startDescription));
-  if (description[endDescription - startDescription - 1] == '\n') {
-    /* Trim trailing new line */
-    let(&description, left(description, endDescription - startDescription - 1));
-  }
-  /* Discard leading and trailing blanks */
-  let(&description, edit(description, 8 + 128));
-  return (description);
-} /* getDescription */
-
-
-
 /* 7-Nov-2015 nm */
 /* Extract any contributors and dates from statement description.
    If missing, the corresponding return strings are blank.
    Returns 1 if an error was found AND printErrorsFlag = 1, 0 otherwise. */
+/* 2-May-2017 nm - Added cache for speedup; added mode argument to clear the
+   internal cache (for ERASE command) */
+/* Special feature: the vstring arguments may be the same (dummy) variable
+   for those that we don't care about, UNLESS printErrorsFlag=1, in
+   which case all arguments must be different string variables.  For example,
+   if we only care about mostRecentDate, we could call this with
+   getContrib(s, &tmp, &tmp, &tmp, &tmp, &tmp, &tmp, &mostRecentDate, 0, 1)
+   to avoid having to declare 7 unused string variables. */
 flag getContrib(long stmtNum,
     vstring *contributor, vstring *contribDate,
     vstring *reviser, vstring *reviseDate,
     vstring *shortener, vstring *shortenDate,
     vstring *mostRecentDate, /* The most recent of all 3 dates */
-    flag printErrorsFlag) {
-  long cStart, cMid = 0, cEnd = 0;
-  long rStart, rMid = 0, rEnd = 0;
-  long sStart, sMid = 0, sEnd = 0;
+    flag printErrorsFlag,
+    flag mode /* 0 == RESET = reset, 1 = normal */ /* 2-May-2017 nm */) {
+
+  /* 2-May-2017 nm */
+  /* For speedup, the algorithm searches a statement's comment for markup
+     matches only the first time, then saves the result for subsequent calls
+     for that statement. */
+  static char init = 0;
+  static vstring commentSearchedFlags = ""; /* Y if comment was searched */
+  static pntrString *contributorList = NULL_PNTRSTRING;
+  static pntrString *contribDateList = NULL_PNTRSTRING;
+  static pntrString *reviserList = NULL_PNTRSTRING;
+  static pntrString *reviseDateList = NULL_PNTRSTRING;
+  static pntrString *shortenerList = NULL_PNTRSTRING;
+  static pntrString *shortenDateList = NULL_PNTRSTRING;
+  static pntrString *mostRecentDateList = NULL_PNTRSTRING;
+
+  long cStart = 0, cMid = 0, cEnd = 0;
+  long rStart = 0, rMid = 0, rEnd = 0;
+  long sStart = 0, sMid = 0, sEnd = 0;
   long firstR = 0, firstS = 0;
   vstring description = "";
   vstring tmpDate0 = "";
   vstring tmpDate1 = "";
   vstring tmpDate2 = "";
-  long p, dd, mmm, yyyy;
+  long stmt, p, dd, mmm, yyyy;
   flag err = 0;
 #define CONTRIB_MATCH " (Contributed by "
 #define REVISE_MATCH " (Revised by "
 #define SHORTEN_MATCH " (Proof shortened by "
 #define END_MATCH ".) "
 
-  /* The checks only $a and $p statements - should we do others? */
+  /* 2-May-2017 nm */
+  if (mode == RESET) { /* This is normally called by the ERASE command only */
+    if (init != 0) {
+      if ((long)strlen(commentSearchedFlags) != statements + 1) {
+        bug(1395);
+      }
+      for (stmt = 1; stmt <= statements; stmt++) {
+        if (commentSearchedFlags[stmt] == 'Y') {
+          /* Deallocate cached strings */
+          let((vstring *)(&(contributorList[stmt])), "");
+          let((vstring *)(&(contribDateList[stmt])), "");
+          let((vstring *)(&(reviserList[stmt])), "");
+          let((vstring *)(&(reviseDateList[stmt])), "");
+          let((vstring *)(&(shortenerList[stmt])), "");
+          let((vstring *)(&(shortenDateList[stmt])), "");
+          let((vstring *)(&(mostRecentDateList[stmt])), "");
+        }
+      }
+      /* Deallocate the lists of pointers to cached strings */
+      pntrLet(&contributorList, NULL_PNTRSTRING);
+      pntrLet(&contribDateList, NULL_PNTRSTRING);
+      pntrLet(&reviserList, NULL_PNTRSTRING);
+      pntrLet(&reviseDateList, NULL_PNTRSTRING);
+      pntrLet(&shortenerList, NULL_PNTRSTRING);
+      pntrLet(&shortenDateList, NULL_PNTRSTRING);
+      pntrLet(&mostRecentDateList, NULL_PNTRSTRING);
+      init = 0;
+    }
+    return 0;
+  }
+
+  /* We now check only $a and $p statements - should we do others? */
   if (statement[stmtNum].type != a_ && statement[stmtNum].type != p_) {
     goto RETURN_POINT;
   }
 
-  let(&description, "");
-  description = getDescription(stmtNum);
-  let(&description, edit(description,
-      4/*ctrl*/ + 8/*leading*/ + 16/*reduce*/ + 128/*trailing*/));
-  let(&description, cat(" ", description, " ", NULL)); /* Add for matching */
-
-  cStart = instr(1, description, CONTRIB_MATCH);
-  if (cStart != 0) {
-    cStart = cStart + (long)strlen(CONTRIB_MATCH); /* Start of contributor */
-    cEnd = instr(cStart, description, END_MATCH); /* End of date */
-    cMid = cEnd; /* After end of contributor and before start of date */
-    if (cMid != 0) {
-      while (description[cMid - 1] != ' ') {
-        cMid--;
-        if (cMid == 0) break;
-      }
-    }
-    let(&(*contributor), seg(description, cStart, cMid - 2));
-    let(&(*contribDate), seg(description, cMid + 1, cEnd - 1));
-  } else {
-    let(&(*contributor), "");
-    let(&(*contribDate), "");
+  if (init == 0) {
+    init = 1;
+    /* Initialize flag string */
+    let(&commentSearchedFlags, string(statements + 1, 'N'));
+    /* Initialize pointers to "" (null vstring) */
+    pntrLet(&contributorList, pntrSpace(statements + 1));
+    pntrLet(&contribDateList, pntrSpace(statements + 1));
+    pntrLet(&reviserList, pntrSpace(statements + 1));
+    pntrLet(&reviseDateList, pntrSpace(statements + 1));
+    pntrLet(&shortenerList, pntrSpace(statements + 1));
+    pntrLet(&shortenDateList, pntrSpace(statements + 1));
+    pntrLet(&mostRecentDateList, pntrSpace(statements + 1));
   }
 
-  rStart = 0;
-  do {  /* Get the last revision entry */
-    p = instr(rStart + 1, description, REVISE_MATCH);
-    if (p != 0) {
-      rStart = p;
-      if (firstR == 0) firstR = p + (long)strlen(REVISE_MATCH);
-                             /* Add the strlen so to later compare to rStart */
-    }
-  } while (p != 0);
-  if (rStart != 0) {
-    rStart = rStart + (long)strlen(REVISE_MATCH); /* Start of reviser */
-    rEnd = instr(rStart, description, END_MATCH); /* End of date */
-    rMid = rEnd; /* After end of reviser and before start of date */
-    if (rMid != 0) {
-      while (description[rMid - 1] != ' ') {
-        rMid--;
-        if (rMid == 0) break;
-      }
-    }
-    let(&(*reviser), seg(description, rStart, rMid - 2));
-    let(&(*reviseDate), seg(description, rMid + 1, rEnd - 1));
-  } else {
-    let(&(*reviser), "");
-    let(&(*reviseDate), "");
-  }
+  if (stmtNum < 1 || stmtNum > statements) bug(1396);
 
-  sStart = 0;
-  do {  /* Get the last shorten entry */
-    p = instr(sStart + 1, description, SHORTEN_MATCH);
-    if (p != 0) {
-      sStart = p;
-      if (firstS == 0) firstS = p + (long)strlen(SHORTEN_MATCH);
-                             /* Add the strlen so to later compare to rStart */
-    }
-  } while (p != 0);
-  if (sStart != 0) {
-    sStart = sStart + (long)strlen(SHORTEN_MATCH); /* Start of shortener */
-    sEnd = instr(sStart, description, END_MATCH); /* End of date */
-    sMid = sEnd; /* After end of shortener and before start of date */
-    if (sMid != 0) {
-      while (description[sMid - 1] != ' ') {
-        sMid--;
-        if (sMid == 0) break;
+  if (commentSearchedFlags[stmtNum] == 'N' /* Not in cache */
+      || printErrorsFlag == 1 /* Needed to get sStart, rStart, cStart */) {
+    /* It wasn't cached, so we extract from the statement's comment */
+
+    let(&description, "");
+    description = getDescription(stmtNum);
+    let(&description, edit(description,
+        4/*ctrl*/ + 8/*leading*/ + 16/*reduce*/ + 128/*trailing*/));
+    let(&description, cat(" ", description, " ", NULL)); /* Add for matching */
+
+    cStart = instr(1, description, CONTRIB_MATCH);
+    if (cStart != 0) {
+      cStart = cStart + (long)strlen(CONTRIB_MATCH); /* Start of contributor */
+      cEnd = instr(cStart, description, END_MATCH); /* End of date */
+      cMid = cEnd; /* After end of contributor and before start of date */
+      if (cMid != 0) {
+        while (description[cMid - 1] != ' ') {
+          cMid--;
+          if (cMid == 0) break;
+        }
       }
+      /* We assign contributorList entry instead of contributor,
+         contribDateList entry instead of contribDate, etc. in case the
+         same string variable is used for several arguments for convenience
+         (e.g. to avoid having to declare 7 string variables if only one date
+         is needed) */
+      let((vstring *)(&(contributorList[stmtNum])),
+          seg(description, cStart, cMid - 2));
+      let((vstring *)(&(contribDateList[stmtNum])),
+          seg(description, cMid + 1, cEnd - 1));
+    } else {
+      /* The contributorList etc. are already initialized to the empty
+         string, so we don't have to assign them here. */
+      /*
+      let((vstring *)(&(contributorList[stmtNum])), "");
+      let((vstring *)(&(contribDateList[stmtNum])), "");
+      */
     }
-    let(&(*shortener), seg(description, sStart, sMid - 2));
-    let(&(*shortenDate), seg(description, sMid + 1, sEnd - 1));
-  } else {
-    let(&(*shortener), "");
-    let(&(*shortenDate), "");
-  }
+
+    rStart = 0;
+    do {  /* Get the last revision entry */
+      p = instr(rStart + 1, description, REVISE_MATCH);
+      if (p != 0) {
+        rStart = p;
+        if (firstR == 0) firstR = p + (long)strlen(REVISE_MATCH);
+                               /* Add the strlen so to later compare to rStart */
+      }
+    } while (p != 0);
+    if (rStart != 0) {
+      rStart = rStart + (long)strlen(REVISE_MATCH); /* Start of reviser */
+      rEnd = instr(rStart, description, END_MATCH); /* End of date */
+      rMid = rEnd; /* After end of reviser and before start of date */
+      if (rMid != 0) {
+        while (description[rMid - 1] != ' ') {
+          rMid--;
+          if (rMid == 0) break;
+        }
+      }
+      let((vstring *)(&(reviserList[stmtNum])),
+          seg(description, rStart, rMid - 2));
+      let((vstring *)(&(reviseDateList[stmtNum])),
+          seg(description, rMid + 1, rEnd - 1));
+    } else {
+      /* redundant; already done by init
+      let((vstring *)(&(reviserList[stmtNum])), "");
+      let((vstring *)(&(reviseDateList[stmtNum])), "");
+      */
+    }
+
+    sStart = 0;
+    do {  /* Get the last shorten entry */
+      p = instr(sStart + 1, description, SHORTEN_MATCH);
+      if (p != 0) {
+        sStart = p;
+        if (firstS == 0) firstS = p + (long)strlen(SHORTEN_MATCH);
+                               /* Add the strlen so to later compare to rStart */
+      }
+    } while (p != 0);
+    if (sStart != 0) {
+      sStart = sStart + (long)strlen(SHORTEN_MATCH); /* Start of shortener */
+      sEnd = instr(sStart, description, END_MATCH); /* End of date */
+      sMid = sEnd; /* After end of shortener and before start of date */
+      if (sMid != 0) {
+        while (description[sMid - 1] != ' ') {
+          sMid--;
+          if (sMid == 0) break;
+        }
+      }
+      let((vstring *)(&(shortenerList[stmtNum])),
+          seg(description, sStart, sMid - 2));
+      let((vstring *)(&(shortenDateList[stmtNum])),
+         seg(description, sMid + 1, sEnd - 1));
+    } else {
+      /* redundant; already done by init
+      let((vstring *)(&(shortenerList[stmtNum])), "");
+      let((vstring *)(&(shortenDateList[stmtNum])), "");
+      */
+    }
+
+
+    /* 13-Dec-2016 nm Get the most recent date */
+    let((vstring *)(&(mostRecentDateList[stmtNum])),
+        (vstring)(contribDateList[stmtNum]));
+    /* Note that compareDate() treats empty string as earliest date */
+    if (compareDates((vstring)(mostRecentDateList[stmtNum]),
+        (vstring)(reviseDateList[stmtNum])) == -1) {
+      let((vstring *)(&(mostRecentDateList[stmtNum])),
+          (vstring)(reviseDateList[stmtNum]));
+    }
+    if (compareDates((vstring)(mostRecentDateList[stmtNum]),
+        (vstring)(shortenDateList[stmtNum])) == -1) {
+      let((vstring *)(&(mostRecentDateList[stmtNum])),
+          (vstring)(shortenDateList[stmtNum]));
+    }
+
+    /* 2-May-2017 nm Tag the cache entry as updated */
+    commentSearchedFlags[stmtNum] = 'Y';
+  } /* commentSearchedFlags[stmtNum] == 'N' || printErrorsFlag == 1 */
+
+  /* Assign the output strings from the cache */
+  let(&(*contributor), (vstring)(contributorList[stmtNum]));
+  let(&(*contribDate), (vstring)(contribDateList[stmtNum]));
+  let(&(*reviser), (vstring)(reviserList[stmtNum]));
+  let(&(*reviseDate), (vstring)(reviseDateList[stmtNum]));
+  let(&(*shortener), (vstring)(shortenerList[stmtNum]));
+  let(&(*shortenDate), (vstring)(shortenDateList[stmtNum]));
+  let(&(*mostRecentDate), (vstring)(mostRecentDateList[stmtNum]));
 
   /* Skip error checking for speedup if we're not printing errors */
   if (printErrorsFlag == 0) goto RETURN_POINT;
+
+  /* WARNING: For error checking below, we use the function argument
+     variables for convenience, so they must all have different
+     variable names!  (If this becomes a nuisance, we can change it
+     to use the verbose xxxList[stmtNum] cache entries.) */
 
   /* For error checking, we don't require dates in syntax statements
      (**** Note that this is set.mm-specific! ****) */
@@ -3406,16 +3534,6 @@ flag getContrib(long stmtNum,
           str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
           NULL), "    ", " ");
     }
-  }
-
-  /* 13-Dec-2016 nm Get the most recent date */
-  let(&(*mostRecentDate), *contribDate);
-  /* Note that compareDate() treats empty string as earliest date */
-  if (compareDates(*mostRecentDate, *reviseDate) == -1) {
-    let(&(*mostRecentDate), *reviseDate);
-  }
-  if (compareDates(*mostRecentDate, *shortenDate) == -1) {
-    let(&(*mostRecentDate), *shortenDate);
   }
 
 

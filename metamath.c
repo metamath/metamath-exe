@@ -5,7 +5,11 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.140 1-May-2017"
+#define MVERSION "0.141 2-May-2017"
+/* 0.141 2-May-2017 nm mmdata.c, metamath.c, mmcmds.c, mmhlpb.c - use
+   getContrib() date for WRITE RECENT instead of date below proof.  This lets
+   us list recent $a's as well as $p's.  Also, add caching to getContrib() for
+   speedup. */
 /* 0.140 1-May-2017 nm mmwtex.c, mmcmds.c, metamath.c - fix some LaTeX issues
    reported by Ari Ferrera */
 /* 0.139 2-Jan-2017 nm metamath.c - print only one line for
@@ -2147,12 +2151,15 @@ void command(int argc, char *argv[])
 
         /* Build date string to match */
         /* 4-Nov-2015 nm */
-        buildDate(k, l, m, &str5);
+        /*buildDate(k, l, m, &str5);*/
+        buildDate(k, l, m, &str1); /* 2-May-2017 nm */
+
+        /***** Deleted 2-May-2017 nm - we no longer match date below proof
         let(&str5, cat("$([", str5, "]$)", NULL));
-        /* 2-digit year is obsolete, but keep for backwards compatibility */
+        /@ 2-digit year is obsolete, but keep for backwards compatibility @/
         let(&str1, cat(left(str5, (long)strlen(str5) - 7),
             right(str5, (long)strlen(str5) - 4), NULL));
-
+        *******/
 
         /************ Deleted 4-Nov-2015
 #define MONTHS "JanFebMarAprMayJunJulAugSepOctNovDec"
@@ -2166,17 +2173,31 @@ void command(int argc, char *argv[])
 
         for (s = statements; s >= 1; s--) {
 
-          if (statement[s].type != (char)p_) continue;
+          if (statement[s].type != (char)p_ && statement[s].type != (char)a_) {
+            continue;
+          }
 
-          /* Get the comment section after the statement */
+          /******** Deleted 2-May-2017 nm
+          /@ Get the comment section after the statement @/
           let(&str2, space(statement[s + 1].labelSectionLen));
           memcpy(str2, statement[s + 1].labelSectionPtr,
               (size_t)(statement[s + 1].labelSectionLen));
           p = instr(1, str2, "$)");
-          let(&str2, left(str2, p + 1)); /* Get 1st comment (if any) */
-          let(&str2, edit(str2, 2)); /* Discard spaces */
+          let(&str2, left(str2, p + 1)); /@ Get 1st comment (if any) @/
+          let(&str2, edit(str2, 2)); /@ Discard spaces @/
+          ******** end of 2-May-2017 deletion */
+
+          /* 2-May-2017 nm */
+          /* In the call below, str3 is a dummy variable for a placeholder
+             (its value will be undefined because of multiple occurrences) */
+          getContrib(s/*stmtNum*/, &str3, &str3, &str3, &str3, &str3, &str3,
+              &str2, /*mostRecentDate*/
+              0, /*printErrorsFlag*/
+              1); /*normal mode*/
+
           /* See if the date comment matches */
-          if (instr(1, str2, str1) || instr(1, str2, str5)) { /* 10-Apr-06 */
+          /*if (instr(1, str2, str1) || instr(1, str2, str5)) {*/ /* 10-Apr-06 */
+          if (!strcmp(str2, str1)) { /* 2-May-2017 nm */
             /* We have a match, so increment the match count */
             n++;
             let(&str3, "");
@@ -2190,31 +2211,32 @@ void command(int argc, char *argv[])
             print2("\n"); /* Blank line for HTML human readability */
             printLongLine(cat(
 
-                  /*
-                  (s < extHtmlStmt) ?
-                       "<TR>" :
-                       cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL),
-                  */
+                /*
+                (s < extHtmlStmt) ?
+                     "<TR>" :
+                     cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL),
+                */
 
-                  /* 29-Jul-2008 nm Sandbox stuff */
-                  (s < extHtmlStmt)
-                     ? "<TR>"
-                     : (s < sandboxStmt)
-                         ? cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">",
-                             NULL)
-                         : cat("<TR BGCOLOR=", SANDBOX_COLOR, ">", NULL),
+                /* 29-Jul-2008 nm Sandbox stuff */
+                (s < extHtmlStmt)
+                   ? "<TR>"
+                   : (s < sandboxStmt)
+                       ? cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">",
+                           NULL)
+                       : cat("<TR BGCOLOR=", SANDBOX_COLOR, ">", NULL),
 
-                  "<TD NOWRAP>",  /* IE breaks up the date */
-                  /* mid(str1, 4, (long)strlen(str1) - 6), */ /* Date */
-                  /* Use 4-digit year */   /* 10-Apr-06 */
-                  mid(str5, 4, (long)strlen(str5) - 6), /* Date */  /* 10-Apr-06 */
-                  "</TD><TD ALIGN=CENTER><A HREF=\"",
-                  statement[s].labelName, ".html\">",
-                  statement[s].labelName, "</A>",
-                  str4, "</TD><TD ALIGN=LEFT>", NULL),  /* Description */
-                              /* 28-Dec-05 nm Added ALIGN=LEFT for IE */
-                " ",  /* Start continuation line with space */
-                "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
+                "<TD NOWRAP>",  /* IE breaks up the date */
+                /* mid(str1, 4, (long)strlen(str1) - 6), */ /* Date */
+                /* Use 4-digit year */   /* 10-Apr-06 */
+                /* mid(str5, 4, (long)strlen(str5) - 6), */ /* Date */ /* 10-Apr-06 */
+                str2, /* Date */ /* 2-May-2017 nm */
+                "</TD><TD ALIGN=CENTER><A HREF=\"",
+                statement[s].labelName, ".html\">",
+                statement[s].labelName, "</A>",
+                str4, "</TD><TD ALIGN=LEFT>", NULL),  /* Description */
+                            /* 28-Dec-05 nm Added ALIGN=LEFT for IE */
+              " ",  /* Start continuation line with space */
+              "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
 
             showStatement = s; /* For printTexComment */
             outputToString = 0; /* For printTexComment */

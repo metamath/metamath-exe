@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2016  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -425,7 +425,8 @@ flag getContrib(long stmtNum,
     vstring *revisor, vstring *reviseDate,
     vstring *shortener, vstring *shortenDate,
     vstring *mostRecentDate,
-    flag printErrors /* 1 = print errors found */);
+    flag printErrorsFlag,
+    flag mode /* 0 == RESET = reset, 1 = normal */);
 
 /* Extract up to 2 dates after a statement's proof.  If no date is present,
    date1 will be blank.  If no 2nd date is present, date2 will be blank. */

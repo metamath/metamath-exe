@@ -3861,7 +3861,7 @@ void eraseSource(void)    /* ERASE command */
   }
 
   memFreePoolPurge(0);
-  statements = 0;
+  /*statements = 0;*/ /* Must be done below */
   errorCount = 0;
 
   free(statement);
@@ -3889,6 +3889,18 @@ void eraseSource(void)    /* ERASE command */
 
   /* 3-May-2016 nm */
   getMarkupFlag(0, RESET); /* Erase the cached markup flag storage */
+
+  /* 2-May-2017 nm */
+  /* Erase the contributer markup cache */
+  /* The string arguments are not assigned in RESET mode. */
+  getContrib(0, &tmpStr, &tmpStr,
+      &tmpStr, &tmpStr, &tmpStr, &tmpStr,
+      &tmpStr,
+      0/*printErrorsFlag*/,
+      RESET/*mode: 0 == RESET = reset, 1 = normal */);
+
+  /* 2-May-2017 nm */
+  statements = 0; /* getContrib uses statements for loop limit */
 
 } /* eraseSource */
 
@@ -4317,7 +4329,8 @@ void verifyMarkup(vstring labelMatch,
       f = getContrib(stmtNum, &contributor, &contribDate,
           &reviser, &reviseDate, &shortener, &shortenDate,
           &str1 /* most recent of the 3 dates */, /* 13-Dec-2016 nm */
-          1/*printErrorsFlag*/);
+          1/*printErrorsFlag*/,
+          1/*mode: 0 == RESET = reset, 1 = normal */ /* 2-May-2017 nm */);
       if (f == 1) errFound = 1;
 
       /* Save most recent date in file - used to check Version date below */
