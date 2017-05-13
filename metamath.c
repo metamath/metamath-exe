@@ -5,7 +5,23 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#define MVERSION "0.141 2-May-2017"
+/* Contributors:  In the future I may change the license to the MIT license
+   or public domain.  Therefore any patches that are contributed should be
+   free of any copyright restrictions.  Thank you. - NM */
+
+#define MVERSION "0.142 12-May-2017"
+/* 0.142 12-May-2017 nm metamath.c mmdata.c,h mmcmds.c - added
+     "#define DATE_BELOW_PROOF" in mmdata.h that if uncommented, will enable
+     use of the (soon-to-be obsolete) date below the proof
+   4-May-2017 Ari Ferrera - mmcmds.c metamath.c mmdata.c mmcmdl.c
+     mminou.c mminou.h mmcmdl.h mmdata.h - fixed memory leaks and warnings
+     found by valgrind.
+   3-May-2017 nm - metamath.c mmdata.c,h mmcmds.c,h mmpars.c,h mmhlpb.c
+     mmcmdl.c mmwtex.c - added xxChanged flags to statement structure so
+     that any part of the source can be changed;  removed /CLEAN qualifier
+     of WRITE SOURCE; automatically put "(Contributed by ?who?..." during
+     SAVE NEW_PROOF or SAVE PROOF when it is missing; more VERIFY MARKUP
+     checking. */
 /* 0.141 2-May-2017 nm mmdata.c, metamath.c, mmcmds.c, mmhlpb.c - use
    getContrib() date for WRITE RECENT instead of date below proof.  This lets
    us list recent $a's as well as $p's.  Also, add caching to getContrib() for
@@ -564,7 +580,7 @@ void command(int argc, char *argv[])
   long argsProcessed = 0;  /* Number of argv initial command-line
                                      arguments processed so far */
 
-  long c, i, j, k, m, l, n, p, q, r, s /*,tokenNum*/;
+  long /*c,*/ i, j, k, m, l, n, p, q, r, s /*,tokenNum*/;
   long stmt, step;
   int subType = 0;
 #define SYNTAX 4
@@ -1073,6 +1089,18 @@ void command(int argc, char *argv[])
           fclose(logFilePtr);
           logFileOpenFlag = 0;
         }
+
+        /* 4-May-2017 Ari Ferrera */
+        /* Free remaining allocations before exiting */
+        freeCommandLine();
+        freeInOu();
+        memFreePoolPurge(0);
+        eraseSource();
+        freeData(); /* Call AFTER eraseSource()(->initBigArrays->malloc) */
+        let(&commandPrompt,"");
+        let(&commandLine,"");
+        let(&input_fn,"");
+
         return; /* Exit from program */
       }
     }
@@ -1924,13 +1952,15 @@ void command(int argc, char *argv[])
       output_fp = fSafeOpen(output_fn, "w");
       if (!output_fp) continue; /* Couldn't open it (error msg was provided)*/
 
-      /* Added 24-Oct-03 nm */
+      /******* Deleted 3-May-2017 nm
+      /@ Added 24-Oct-03 nm @/
       if (switchPos("/ CLEAN") > 0) {
-        c = 1; /* Clean out any proof-in-progress (that user has flagged
-                        with a ? in its date comment field) */
+        c = 1; /@ Clean out any proof-in-progress (that user has flagged
+                        with a ? in its date comment field) @/
       } else {
-        c = 0; /* Output all proofs (normal) */
+        c = 0; /@ Output all proofs (normal) @/
       }
+      *******/
 
       /* Added 12-Jun-2011 nm */
       if (switchPos("/ REWRAP") > 0) {
@@ -1941,10 +1971,18 @@ void command(int argc, char *argv[])
         r = 0; /* Keep formatting as-is */
       }
 
-      writeInput((char)c, (char)r); /* Added arg 24-Oct-03 nm 12-Jun-2011 nm */
+      /********* Deleted 3-May-2017 nm
+      writeInput((char)c, (char)r); /@ Added arg 24-Oct-03 nm 12-Jun-2011 nm @/
       fclose(output_fp);
-      if (c == 0) sourceChanged = 0; /* Don't unset flag if CLEAN option
-                                    since some new proofs may not be saved. */
+      if (c == 0) sourceChanged = 0; /@ Don't unset flag if CLEAN option
+                                    since some new proofs may not be saved. @/
+      ***********/
+
+      /* 3-May-2017 nm */
+      writeInput((char)r); /* Added arg 12-Jun-2011 nm */
+      fclose(output_fp);
+      sourceChanged = 0;
+
       continue;
     } /* End of WRITE SOURCE */
 
@@ -2171,29 +2209,34 @@ void command(int argc, char *argv[])
             str((double)m), "]$)", NULL));
         *********** end of 4-Nov-2015 deletion */
 
-        for (s = statements; s >= 1; s--) {
+        for (stmt = statements; stmt >= 1; stmt--) {
 
-          if (statement[s].type != (char)p_ && statement[s].type != (char)a_) {
+          if (statement[stmt].type != (char)p_
+                && statement[stmt].type != (char)a_) {
             continue;
           }
 
           /******** Deleted 2-May-2017 nm
           /@ Get the comment section after the statement @/
-          let(&str2, space(statement[s + 1].labelSectionLen));
-          memcpy(str2, statement[s + 1].labelSectionPtr,
-              (size_t)(statement[s + 1].labelSectionLen));
+          let(&str2, space(statement[stmt + 1].labelSectionLen));
+          memcpy(str2, statement[stmt + 1].labelSectionPtr,
+              (size_t)(statement[stmt + 1].labelSectionLen));
           p = instr(1, str2, "$)");
           let(&str2, left(str2, p + 1)); /@ Get 1st comment (if any) @/
           let(&str2, edit(str2, 2)); /@ Discard spaces @/
           ******** end of 2-May-2017 deletion */
-
           /* 2-May-2017 nm */
-          /* In the call below, str3 is a dummy variable for a placeholder
-             (its value will be undefined because of multiple occurrences) */
-          getContrib(s/*stmtNum*/, &str3, &str3, &str3, &str3, &str3, &str3,
-              &str2, /*mostRecentDate*/
-              0, /*printErrorsFlag*/
-              1); /*normal mode*/
+          /******* Deleted 3-May-2017 nm
+          /@ In the call below, str3 is a dummy variable for a placeholder
+             (its value will be undefined because of multiple occurrences) @/
+          getContrib(stmt/@stmtNum@/, &str3, &str3, &str3, &str3, &str3, &str3,
+              &str2, /@mostRecentDate@/
+              0, /@printErrorsFlag@/
+              1); /@normal mode@/
+          **********/
+          /* 3-May-2017 nm */
+          let(&str2, "");
+          str2 = getContrib(stmt/*stmtNum*/, MOST_RECENT_DATE);
 
           /* See if the date comment matches */
           /*if (instr(1, str2, str1) || instr(1, str2, str5)) {*/ /* 10-Apr-06 */
@@ -2201,9 +2244,9 @@ void command(int argc, char *argv[])
             /* We have a match, so increment the match count */
             n++;
             let(&str3, "");
-            str3 = getDescription(s);
+            str3 = getDescription(stmt);
             let(&str4, "");
-            str4 = pinkHTML(s); /* Get little pink number */
+            str4 = pinkHTML(stmt); /* Get little pink number */
             /* Output the description comment */
             /* Break up long lines for text editors with printLongLine */
             let(&printString, "");
@@ -2212,15 +2255,15 @@ void command(int argc, char *argv[])
             printLongLine(cat(
 
                 /*
-                (s < extHtmlStmt) ?
+                (stmt < extHtmlStmt) ?
                      "<TR>" :
                      cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL),
                 */
 
                 /* 29-Jul-2008 nm Sandbox stuff */
-                (s < extHtmlStmt)
+                (stmt < extHtmlStmt)
                    ? "<TR>"
-                   : (s < sandboxStmt)
+                   : (stmt < sandboxStmt)
                        ? cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">",
                            NULL)
                        : cat("<TR BGCOLOR=", SANDBOX_COLOR, ">", NULL),
@@ -2231,14 +2274,14 @@ void command(int argc, char *argv[])
                 /* mid(str5, 4, (long)strlen(str5) - 6), */ /* Date */ /* 10-Apr-06 */
                 str2, /* Date */ /* 2-May-2017 nm */
                 "</TD><TD ALIGN=CENTER><A HREF=\"",
-                statement[s].labelName, ".html\">",
-                statement[s].labelName, "</A>",
+                statement[stmt].labelName, ".html\">",
+                statement[stmt].labelName, "</A>",
                 str4, "</TD><TD ALIGN=LEFT>", NULL),  /* Description */
                             /* 28-Dec-05 nm Added ALIGN=LEFT for IE */
               " ",  /* Start continuation line with space */
               "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
 
-            showStatement = s; /* For printTexComment */
+            showStatement = stmt; /* For printTexComment */
             outputToString = 0; /* For printTexComment */
             texFilePtr = list2_fp;
             /* 18-Sep-03 ???Future - make this just return a string??? */
@@ -2263,9 +2306,9 @@ void command(int argc, char *argv[])
                   */
 
                   /* 29-Jul-2008 nm Sandbox stuff */
-                  (s < extHtmlStmt)
+                  (stmt < extHtmlStmt)
                      ? ">"
-                     : (s < sandboxStmt)
+                     : (stmt < sandboxStmt)
                          ? cat(" BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">",
                              NULL)
                          : cat(" BGCOLOR=", SANDBOX_COLOR, ">", NULL),
@@ -2300,7 +2343,7 @@ void command(int argc, char *argv[])
             /* This section can be deleted without side effects */
             /* Find the previous statement with a web page */
             j = 0;
-            for (q = s - 1; q >= 1; q--) {
+            for (q = stmt - 1; q >= 1; q--) {
               if (statement[q].type == (char)p_ ||
                   statement[q].type == (char)a_ ) {
                 j = q;
@@ -2312,7 +2355,7 @@ void command(int argc, char *argv[])
             print2("<!-- For script: %s -->\n", statement[s].labelName);
             /* Find the next statement with a web page */
             j = 0;
-            for (q = s + 1; q <= statements; q++) {
+            for (q = stmt + 1; q <= statements; q++) {
               if (statement[q].type == (char)p_ ||
                   statement[q].type == (char)a_ ) {
                 j = q;
@@ -2327,7 +2370,7 @@ void command(int argc, char *argv[])
             let(&printString, "");
 
           }
-        } /* Next s - statement number */
+        } /* Next stmt - statement number */
         /* Decrement date */
         if (k > 1) {
           k--; /* Decrement day */
@@ -2528,7 +2571,7 @@ void command(int argc, char *argv[])
       ************** end 14-Sep-2012 *******/
 
       let(&str1, "");
-      str1 = outputStatement(showStatement, 0 /* cleanFlag */,
+      str1 = outputStatement(showStatement, /*0, 3-May-2017 */ /* cleanFlag */
           0 /* reformatFlag */);
       let(&str1,edit(str1,128)); /* Trim trailing spaces */
       if (str1[strlen(str1)-1] == '\n') let(&str1, left(str1,
@@ -3812,18 +3855,18 @@ void command(int argc, char *argv[])
       }
 
 
-      q = 0;
-      for (s = 1; s <= statements; s++) {
+      q = 0;  /* Flag that at least one matching statement was found */
+      for (stmt = 1; stmt <= statements; stmt++) {
         /* If pipFlag (NEW_PROOF), we will iterate exactly once.  This
            loop of course will be entered because there is a least one
            statement, and at the end of the s loop we break out of it. */
         /* If !pipFlag, get the next statement: */
         if (!pipFlag) {
-          if (statement[s].type != (char)p_) continue; /* Not $p */
+          if (statement[stmt].type != (char)p_) continue; /* Not $p */
           /* 30-Jan-06 nm Added single-character-match wildcard argument */
-          if (!matchesList(statement[s].labelName, labelMatch, '*', '?'))
+          if (!matchesList(statement[stmt].labelName, labelMatch, '*', '?'))
             continue;
-          showStatement = s;
+          showStatement = stmt;
         }
 
         q = 1; /* Flag that at least one matching statement was found */
@@ -3926,7 +3969,11 @@ void command(int argc, char *argv[])
             /* ??? This is a problem when mixing html and save proof */
             if (printString[0]) bug(1114);
             let(&printString, "");
-            outputToString = 1; /* Flag for print2 to add to printString */
+
+            /* Set flag for print2() to put output in printString instead
+               of displaying it on the screen */
+            outputToString = 1;
+
           } else {
             if (!print2("Proof of \"%s\":\n", statement[outStatement].labelName))
               break; /* Break for speedup if user quit */
@@ -3941,53 +3988,153 @@ void command(int argc, char *argv[])
               space(indentation), "& "); /* "&" is special flag to break
                   compressed part of proof anywhere */
           } else {
-            printLongLine(cat(space(indentation), str1, " $.", NULL),
+            printLongLine(cat(space(indentation), str1," $.", NULL),
               space(indentation), " ");
           }
 
           /* 24-Apr-2015 nm */
           l = (long)(strlen(str1)); /* Save length for printout below */
 
-          if /*(pipFlag)*/ (1) { /* Add the date proof was created */
-            /* 6/13/98 If the proof already has a date stamp, don't add
-               a new one.  Note: for the last statement, i + 1
-               will refer to a final "dummy" statement containing
-               text (comments) through the end of file, stored in its
-               labelSectionXxx structure members. */
-            let(&str2, space(statement[outStatement + 1].labelSectionLen));
-            memcpy(str2, statement[outStatement + 1].labelSectionPtr,
-                (size_t)(statement[outStatement + 1].labelSectionLen));
-            /* 12-Jun-2011 nm Removed pipFlag condition so that a date
-               stamp will always be created if it doesn't exist */
-            if ( /* pipFlag && */ !instr(1, str2, "$([")
-                /* 7-Sep-04 Allow both "$([<date>])$" and "$( [<date>] )$" */
-                /* 19-Apr-2015 so */
-                /* SOREAR Only generate date if the proof looks complete.
+          /* 3-May-2017 nm Rewrote the if block below */
+          /* 12-Jun-2011 nm Removed pipFlag condition so that a date
+             stamp will always be created if it doesn't exist */
+          if /*(pipFlag)*/ (1  /* Add the date proof was created */
+              /* 19-Apr-2015 so */
+              /* SOREAR Only generate date if the proof looks complete.
+                 This is not intended as a grading mechanism, just trying
+                 to avoid premature output */
+              && !nmbrElementIn(1, nmbrSaveProof, -(long)'?')) {
+
+            /* 3-May-2017 nm */
+            /* Add a "(Contributed by...)" date if it isn't there */
+            let(&str2, "");
+            str2 = getContrib(outStatement, CONTRIBUTOR);
+            if (str2[0] == 0) { /* The is no contributor, so add one */
+              let(&str4, cat("\n", space(indentation + 1),
+                  "(Contributed by ?who?, ", date(), ".) ", NULL));
+              let(&str3, space(statement[outStatement].labelSectionLen));
+              /* str3 will have the statement's label section w/ comment */
+              memcpy(str3, statement[outStatement].labelSectionPtr,
+                  (size_t)(statement[outStatement].labelSectionLen));
+              i = rinstr(str3, "$)");  /* The last "$)" occurrence */
+              if (i != 0    /* A description comment exists */
+                  && saveFlag) { /* and we are saving the proof */
+                /* This isn't a perfect wrapping but we assume
+                   'write source .../rewrap' will be done eventually. */
+                /* str3 will have the updated comment */
+                let(&str3, cat(left(str3, i - 1), str4, right(str3, i), NULL));
+                if (statement[outStatement].labelSectionChanged == 1) {
+                  /* Deallocate old comment if not original source */
+                  let(&str4, ""); /* Deallocate any previous str4 content */
+                  str4 = statement[outStatement].labelSectionPtr;
+                  let(&str4, ""); /* Deallocate the old content */
+                }
+                /* Set flag that this is not the original source */
+                statement[outStatement].labelSectionChanged = 1;
+                statement[outStatement].labelSectionLen = (long)strlen(str3);
+                /* We do a direct assignment instead of let(&...) because
+                   labelSectionPtr may point to the middle of the giant input
+                   file buffer, which we don't want to deallocate */
+                statement[outStatement].labelSectionPtr = str3;
+                /* Reset str3 without deallocating with let(), since it
+                   was assigned to labelSectionPtr */
+                str3 = "";
+                /* Reset the cache for this statement in getContrib() */
+                str3 = getContrib(outStatement, GC_RESET_STMT);
+              } /* if i != 0 */
+
+#ifdef DATE_BELOW_PROOF /* 12-May-2017 nm */
+
+              /* Add a date below the proof.  It actually goes in the
+                 label section of the next statement; the proof section
+                 is not changed. */
+              /* (This will become obsolete eventually) */
+              let(&str3, space(statement[outStatement + 1].labelSectionLen));
+              /* str3 will have the next statement's label section w/ comment */
+              memcpy(str3, statement[outStatement + 1].labelSectionPtr,
+                  (size_t)(statement[outStatement + 1].labelSectionLen));
+              let(&str5, ""); /* Redundant but we need to guarantee it
+                                for the screen printout later */
+              if (instr(1, str3, "$( [") == 0) {
+                /* There is no date below proof (if there is, don't do
+                   anything; if it is wrong, 'verify markup' will check it) */
+
+                /* Save str5 for screen printout later! */
+                let(&str5, cat(space(indentation),
+                    "$( [", date(), "] $)", NULL)); /* str4 will be used
+                                          for the screen printout later */
+
+                if (saveFlag) { /* save proof, not show proof */
+
+                  if (statement[outStatement + 1].labelSectionChanged == 1) {
+                    /* Deallocate old comment if not original source */
+                    let(&str4, ""); /* Deallocate any previous str4 content */
+                    str4 = statement[outStatement + 1].labelSectionPtr;
+                    let(&str4, ""); /* Deallocate the old content */
+                  }
+                  /* str3 starts after the "$." ending the proof, and should
+                     start with "\n" */
+                  let(&str3, edit(str3, 8/* Discard leading spaces and tabs */));
+                  if (str3[0] != '\n') let(&str3, cat("\n", str3, NULL));
+                  /* Add the date after the proof */
+                  let(&str3, cat("\n", str5, str3, NULL));
+                  /* Set flag that this is not the original source */
+                  statement[outStatement + 1].labelSectionChanged = 1;
+                  statement[outStatement + 1].labelSectionLen
+                      = (long)strlen(str3);
+                  /* We do a direct assignment instead of let(&...) because
+                     labelSectionPtr may point to the middle of the giant input
+                     file buffer, which we don't want to deallocate */
+                  statement[outStatement + 1].labelSectionPtr = str3;
+                  /* Reset str3 without deallocating with let(), since it
+                     was assigned to labelSectionPtr */
+                  str3 = "";
+                  /* Reset the cache for this statement in getContrib() */
+                  str3 = getContrib(outStatement + 1, GC_RESET_STMT);
+                } /* if saveFlag */
+              } /* if (instr(1, str3, "$( [") == 0) */
+
+#endif /*#ifdef DATE_BELOW_PROOF*/ /* 12-May-2017 nm */
+
+            } /* if str2[0] == 0 */
+
+            /* At this point, str4 contains the "$( [date] $)" comment
+               if it would have been added to the saved proof, for use
+               by "show proof" */
+
+
+            /********* deleted 3-May-2017 - date below proof is obsolete
+            /@ 12-Jun-2011 nm Removed pipFlag condition so that a date
+               stamp will always be created if it doesn't exist @/
+            if ( /@ pipFlag && @/ !instr(1, str2, "$([")
+                /@ 7-Sep-04 Allow both "$([<date>])$" and "$( [<date>] )$" @/
+                /@ 19-Apr-2015 so @/
+                /@ SOREAR Only generate date if the proof looks complete.
                    This is not intended as a grading mechanism, just trying
-                   to avoid premature output */
+                   to avoid premature output @/
                 && !nmbrElementIn(1, nmbrSaveProof, -(long)'?')
                 && !instr(1, str2, "$( [")) {
-            /* 6/13/98 end */
-              /* No date stamp existed before.  Create one for today's
+            /@ 6/13/98 end @/
+              /@ No date stamp existed before.  Create one for today's
                  date.  Note that the characters after "$." at the end of
                  the proof normally go in the labelSection of the next
                  statement, but a special mode in outputStatement() (in
                  mmpars.c) will output the date stamp characters for a saved
-                 proof. */
-              /* print2("%s$([%s]$)\n", space(indentation), date()); */
-              /* 4/23/04 nm Initialize with a "?" date followed by today's
+                 proof. @/
+              /@ print2("%s$([%s]$)\n", space(indentation), date()); @/
+              /@ 4/23/04 nm Initialize with a "?" date followed by today's
                  date.  The "?" date can be edited by the user when the
-                 proof is becomes "official." */
-              /*print2("%s$([?]$) $([%s]$)\n", space(indentation), date());*/
-              /* 7-Sep-04 Put space around "[<date>]" */
-              /*print2("%s$( [?] $) $( [%s] $)\n", space(indentation), date());*/
-              /* 30-Nov-2013 remove the unknown date placeholder */
+                 proof is becomes "official." @/
+              /@print2("%s$([?]$) $([%s]$)\n", space(indentation), date());@/
+              /@ 7-Sep-04 Put space around "[<date>]" @/
+              /@print2("%s$( [?] $) $( [%s] $)\n", space(indentation), date());@/
+              /@ 30-Nov-2013 remove the unknown date placeholder @/
               print2("%s$( [%s] $)\n", space(indentation), date());
             } else {
               if (saveFlag && (instr(1, str2, "$([")
-                  /* 7-Sep-04 Allow both "$([<date>])$" and "$( [<date>] )$" */
+                  /@ 7-Sep-04 Allow both "$([<date>])$" and "$( [<date>] )$" @/
                   || instr(1, str2, "$( ["))) {
-                /* An old date stamp existed, and we're saving the proof to
+                /@ An old date stamp existed, and we're saving the proof to
                    the output file.  Make sure the indentation of the old
                    date stamp (which exists in the labelSection of the
                    next statement) matches the indentation of the saved
@@ -3997,29 +4144,31 @@ void command(int argc, char *argv[])
                    the end of the saved proof.  This is done because the
                    labelSectionPtr of the next statement does not point to
                    an isolated string that can be allocated/deallocated but
-                   rather to a place in the input source buffer. */
-                /* Correct the indentation on old date */
+                   rather to a place in the input source buffer. @/
+                /@ Correct the indentation on old date @/
                 while ((statement[outStatement + 1].labelSectionPtr)[0] !=
                     '$') {
-                  /* "Delete" spaces before old date (by moving source
+                  /@ "Delete" spaces before old date (by moving source
                      buffer pointer forward), and also "delete"
-                     the \n that comes before those spaces */
-                  /* If the proof is saved a 2nd time, this loop will
+                     the \n that comes before those spaces @/
+                  /@ If the proof is saved a 2nd time, this loop will
                      not be entered because the pointer will already be
-                     at the "$". */
+                     at the "$". @/
                   (statement[outStatement + 1].labelSectionPtr)++;
                   (statement[outStatement + 1].labelSectionLen)--;
                 }
                 if (!outputToString) bug(1115);
-                /* The final \n will not appear in final output (done in
+                /@ The final \n will not appear in final output (done in
                    outputStatement() in mmpars.c) because the proofSectionLen
                    below is adjusted to omit it.  This will allow the
                    space(indentation) to appear before the old date without an
-                   intervening \n. */
+                   intervening \n. @/
                 print2("%s\n", space(indentation));
               }
             }
-          }
+            ******** end of deletion 3-May-2017 ******/
+          } /* if / *(pipFlag)* / (1) */
+
           if (saveFlag) {
             sourceChanged = 1;
             proofChanged = 0;
@@ -4028,21 +4177,62 @@ void command(int argc, char *argv[])
               proofSavedFlag = 1; /* UNDO stack empty no longer reliably
                              indicates that proof hasn't changed */
             }
-            /* ASCII 1 is a flag that string was allocated and not part of
-               original source file text buffer */
+
+            /******** deleted 3-May-2017 nm (before proofSectionChanged added)
+            /@ ASCII 1 is a flag that string was allocated and not part of
+               original source file text buffer @/
             let(&printString, cat(chr(1), "\n", printString, NULL));
             if (statement[outStatement].proofSectionPtr[-1] == 1) {
-              /* Deallocate old proof if not original source */
-              let(&str1, "");
+              /@ Deallocate old proof if not original source @/
+              let(&str1, ""); /@ Deallocate any previous str1 content @/
               str1 = statement[outStatement].proofSectionPtr - 1;
-              let(&str1, "");
+              let(&str1, ""); /@ Deallocate the proof section @/
             }
             statement[outStatement].proofSectionPtr = printString + 1;
-            /* Subtr 1 char for ASCII 1 at beg, 1 char for "\n" */
-            statement[outStatement].proofSectionLen = (long)strlen(printString) - 2;
-            /* Reset printString without deallocating */
+            /@ Subtr 1 char for ASCII 1 at beg, 1 char for "\n" at the end
+               (which is the first char of next statement's labelSection) @/
+            statement[outStatement].proofSectionLen
+                = (long)strlen(printString) - 2;
+            /@ Reset printString without deallocating @/
             printString = "";
             outputToString = 0;
+            **********/
+
+            /* 3-May-2017 nm */
+            /* Add an initial \n which will go after the "$=" and the
+               beginning of the proof */
+            let(&printString, cat("\n", printString, NULL));
+            if (statement[outStatement].proofSectionChanged == 1) {
+              /* Deallocate old proof if not original source */
+              let(&str1, ""); /* Deallocate any previous str1 content */
+              str1 = statement[outStatement].proofSectionPtr;
+              let(&str1, ""); /* Deallocate the proof section */
+            }
+            /* Set flag that this is not the original source */
+            statement[outStatement].proofSectionChanged = 1;
+            if (strcmp(" $.\n",
+                right(printString, (long)strlen(printString) - 3))) {
+              bug(1128);
+            }
+            /* Note that printString ends with "$.\n", but those 3 characters
+               should not be in the proofSection.  (The "$." keyword is
+               added between proofSection and next labelSection when the
+               output is written by writeOutput.)  Thus we subtract 3
+               from the length.  But there is no need to truncate the
+               string; later deallocation will take care of the whole
+               string. */
+            statement[outStatement].proofSectionLen
+                = (long)strlen(printString) - 3;
+            /* We do a direct assignment instead of let(&...) because
+               proofSectionPtr may point to the middle of the giant input
+               file string, which we don't want to deallocate */
+            statement[outStatement].proofSectionPtr = printString;
+            /* Reset printString without deallocating with let(), since it
+               was assigned to proofSectionPtr */
+            printString = "";
+            outputToString = 0;
+
+
             if (!pipFlag) {
               if (!(fastFlag && !strcmp("*", labelMatch))) {
                 printLongLine(
@@ -4064,6 +4254,14 @@ void command(int argc, char *argv[])
             }
 
           } else {
+
+#ifdef DATE_BELOW_PROOF /* 12-May-2017 nm */
+
+            /* Print the date on the screen if it would be added to the file */
+            if (str5[0] != 0) print2("%s\n", str5);
+
+#endif /*#ifdef DATE_BELOW_PROOF*/ /* 12-May-2017 nm */
+
             /* 19-Apr-2015 so */
             /* 24-Apr-2015 nm Reverted */
             /*print2("\n");*/ /* Add a blank line to make clipping easier */
@@ -4142,7 +4340,7 @@ void command(int argc, char *argv[])
 
 
         if (texFlag) print2("Outputting proof of \"%s\"...\n",
-            statement[s].labelName);
+            statement[outStatement].labelName);
 
         typeProof(outStatement,
             pipFlag,
@@ -4232,7 +4430,7 @@ void command(int argc, char *argv[])
         } /* end debugging */
 
         if (pipFlag) break; /* Only one iteration for NEW_PROOF stuff */
-      } /* Next s */
+      } /* Next stmt */
       if (!q) {
         /* No matching statement was found */
         printLongLine(cat("?There is no $p statement whose label matches \"",
@@ -5847,8 +6045,10 @@ void command(int argc, char *argv[])
       /* If a single statement is specified, don't bother to do certain
          actions or print some of the messages */
       hasWildCard = (instr(1, fullArg[1], "*")
-                || instr(1, fullArg[1], "?")
-                || instr(1, fullArg[1], ","));
+          || instr(1, fullArg[1], "?")
+          || instr(1, fullArg[1], ",")
+          || instr(1, fullArg[1], "~") /* 3-May-2014 nm label~label range */
+          );
 
       proofChangedFlag = 0;
 
@@ -6897,7 +7097,7 @@ void command(int argc, char *argv[])
         /* print2("\n"); */ /* Enable for more emphasis */
         globalDiscouragement = 0;
       } else {
-        bug(1128);
+        bug(1129);
       }
       continue;
     }

@@ -52,10 +52,19 @@ struct statement_struct { /* Array index is statement number, starting at 1 */
   long beginScopeStatementNum;  /* statement of last ${ */
   vstring labelSectionPtr; /* Source code before statement keyword */
   long labelSectionLen;
+  /* 3-May-2017 nm Added labelSectionChanged */
+  char labelSectionChanged; /* Default is 0; if 1, labelSectionPtr points to an
+                               allocated vstring that must be freed by ERASE */
   vstring mathSectionPtr; /* Source code between keyword and $= or $. */
   long mathSectionLen;
+  /* 3-May-2017 nm Added mathSectionChanged */
+  char mathSectionChanged; /* Default is 0; if 1, mathSectionPtr points to an
+                               allocated vstring that must be freed by ERASE */
   vstring proofSectionPtr; /* Source code between $= and $. */
   long proofSectionLen;
+  /* 3-May-2017 nm Added proofSectionChanged */
+  char proofSectionChanged; /* Default is 0; if 1, proofSectionPtr points to an
+                               allocated vstring that must be freed by ERASE */
   nmbrString *mathString; /* Parsed mathSection */
   long mathStringLen;
   nmbrString *proofString; /* Parsed proofSection (used by $p's only */
@@ -134,6 +143,25 @@ extern long sourceLen; /* Number of chars. in all inputs files combined (after i
 #define PROOF_DISCOURAGED 1
 #define USAGE_DISCOURAGED 2
 #define RESET 0
+/* Mode argument for getContrib() */
+#define GC_RESET 0
+#define GC_RESET_STMT 10
+#define CONTRIBUTOR 1
+#define CONTRIB_DATE 2
+#define REVISER 3
+#define REVISE_DATE 4
+#define SHORTENER 5
+#define SHORTEN_DATE 6
+#define MOST_RECENT_DATE 7
+#define GC_ERROR_CHECK_SILENT 8
+#define GC_ERROR_CHECK_PRINT 9
+
+/* 12-May-2017 nm */
+/* DATE_BELOW_PROOF, if defined, causes generation and error-checking of
+   the date below the proof (which some day will be obsolete).  Comment
+   it out when this checking is no longer needed. */
+/*#define DATE_BELOW_PROOF*/
+
 extern vstring proofDiscouragedMarkup;
 extern vstring usageDiscouragedMarkup;
 extern flag globalDiscouragement; /* SET DISCOURAGEMENT */
@@ -413,24 +441,35 @@ void free2DMatrix(long **matrix, size_t xsize /*, size_t ysize*/);
 long getSourceIndentation(long statemNum);
 
 /* Returns any comment (description) that occurs just before a statement */
-flag getMarkupFlag(long statemNum, flag mode);
-
-/* Returns any comment (description) that occurs just before a statement */
 vstring getDescription(long statemNum);
 
-/* Extract any contributors and dates from statement description.
-   If missing, the corresponding return strings are blank. */
-flag getContrib(long stmtNum,
-    vstring *contributor, vstring *contribDate,
-    vstring *revisor, vstring *reviseDate,
-    vstring *shortener, vstring *shortenDate,
-    vstring *mostRecentDate,
-    flag printErrorsFlag,
-    flag mode /* 0 == RESET = reset, 1 = normal */);
+/* Returns 1 if comment has an "is discouraged" markup tag */
+flag getMarkupFlag(long statemNum, char mode);
 
+/***** deleted 3-May-2017
+/@ Extract any contributors and dates from statement description.
+   If missing, the corresponding return strings are blank. @/
+flag getContrib(long stmtNum,
+    vstring @contributor, vstring @contribDate,
+    vstring @revisor, vstring @reviseDate,
+    vstring @shortener, vstring @shortenDate,
+    vstring @mostRecentDate,
+    flag printErrorsFlag,
+    flag mode /@ 0 == RESET = reset, 1 = normal @/);
+************/
+
+/* Extract any contributors and dates from statement description.
+   If missing, the corresponding return string is blank.
+   See GC_RESET etc. modes above.  Caller must deallocate returned
+   string. */
+vstring getContrib(long stmtNum, char mode);
+
+
+#ifdef DATE_BELOW_PROOF /* 12-May-2017 nm */
 /* Extract up to 2 dates after a statement's proof.  If no date is present,
    date1 will be blank.  If no 2nd date is present, date2 will be blank. */
 void getProofDate(long stmtNum, vstring *date1, vstring *date2);
+#endif
 
 /* Get date, month, year fields from a dd-mmm-yyyy date string,
    where dd may be 1 or 2 digits, mmm is 1st 3 letters of month,
@@ -449,5 +488,9 @@ extern vstring qsortKey;
       /* Used by qsortStringCmp; pointer only, do not deallocate */
 /* Comparison function for qsort */
 int qsortStringCmp(const void *p1, const void *p2);
+
+/* 4-May-2017 Ari Ferrera */
+/* Call on exit to free memory */
+void freeData(void);
 
 #endif /* METAMATH_MMDATA_H_ */

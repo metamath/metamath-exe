@@ -159,11 +159,18 @@ void typeStatement(long showStmt,
     let(&str1, "");
     str1 = getDescription(showStmt);
     if (!str1[0]    /* No comment */
+
+#ifdef DATE_BELOW_PROOF /* 12-May-2017 nm */
+
         || (str1[0] == '[' && str1[strlen(str1) - 1] == ']')
         /* 7-Sep-04 Allow both "$([<date>])$" and "$( [<date>] )$" */
         || (strlen(str1) > 1 &&
-            str1[1] == '[' && str1[strlen(str1) - 2] == ']')) { /* Date stamp
-            from previous proof */
+            str1[1] == '[' && str1[strlen(str1) - 2] == ']') /* Make sure
+            getDescription() didn't pick up date stamp from previous proof */
+
+#endif /* 12-May-2017 nm */
+
+        ) {
       print2("?Warning:  Statement \"%s\" has no comment\n",
           statement[showStmt].labelName);
       /* 14-Sep-2010 nm We must print a blank comment to have \begin{lemma} */
@@ -3661,82 +3668,89 @@ void readInput(void)
 } /* readInput */
 
 /* This function implements the WRITE SOURCE command. */
-void writeInput(flag cleanFlag, /* 1 = "/ CLEAN" qualifier was chosen */
+/* Note that the labelSection, mathSection, and proofSection do not
+   contain keywords ($a, $p,...; $=; $.).  The keywords are added
+   by outputStatement. */
+void writeInput(/* flag cleanFlag, 3-May-2017 */ /* 1 = "/ CLEAN" qualifier was chosen */
                 flag reformatFlag /* 1 = "/ FORMAT", 2 = "/REWRAP" */ )
 {
 
   /* Temporary variables and strings */
-  long i, p;
+  long i;
+  /* long p; */ /* deleted 3-May-2017 nm */
   vstring str1 = "";
-  vstring str2 = "";
-  long skippedCount = 0;
+  /* vstring str2 = ""; */ /* deleted 3-May-2017 nm */
+  /* long skippedCount = 0; */ /* deleted 3-May-2017 nm */
 
   print2("Creating and writing \"%s\"...\n",output_fn);
 
   /* Process statements */
   for (i = 1; i <= statements + 1; i++) {
 
-    /* Added 24-Oct-03 nm */
+    /******** deleted 3-May-2017 nm
+    /@ Added 24-Oct-03 nm @/
     if (cleanFlag && statement[i].type == (char)p_) {
-      /* Clean out any proof-in-progress (that user has flagged with a ? in its
-         date comment field) */
-      /* Get the comment section after the statement */
+      /@ Clean out any proof-in-progress (that user has flagged with a ? in its
+         date comment field) @/
+      /@ Get the comment section after the statement @/
       let(&str1, space(statement[i + 1].labelSectionLen));
       memcpy(str1, statement[i + 1].labelSectionPtr,
           (size_t)(statement[i + 1].labelSectionLen));
-      /* Make sure it's a date comment */
-      let(&str1, edit(str1, 2 + 4)); /* Discard whitespace + control chrs */
-      p = instr(1, str1, "]$)"); /* Get end of date comment */
-      let(&str1, left(str1, p)); /* Discard stuff after date comment */
+      /@ Make sure it's a date comment @/
+      let(&str1, edit(str1, 2 + 4)); /@ Discard whitespace + control chrs @/
+      p = instr(1, str1, "]$)"); /@ Get end of date comment @/
+      let(&str1, left(str1, p)); /@ Discard stuff after date comment @/
       if (instr(1, str1, "$([") == 0) {
         printLongLine(cat(
             "?Warning: The proof for $p statement \"", statement[i].labelName,
             "\" does not have a date comment after it and will not be",
             " removed by the CLEAN qualifier.", NULL), " ", " ");
       } else {
-        /* See if the date comment has a "?" in it */
+        /@ See if the date comment has a "?" in it @/
         if (instr(1, str1, "?")) {
           skippedCount++;
           let(&str2, cat(str2, " ", statement[i].labelName, NULL));
-          /* Write at least the date from the _previous_ statement's
-             post-comment section so that WRITE RECENT can pick it up. */
+          /@ Write at least the date from the _previous_ statement's
+             post-comment section so that WRITE RECENT can pick it up. @/
           let(&str1, space(statement[i].labelSectionLen));
           memcpy(str1, statement[i].labelSectionPtr,
               (size_t)(statement[i].labelSectionLen));
-          /* nm 19-Jan-04 Don't discard w.s. because string will be returned to
-             the source file */
-          /*let(&str1, edit(str1, 2 + 4));*/ /* Discard whitespace + ctrl chrs */
-          p = instr(1, str1, "]$)"); /* Get end of date comment */
+          /@ nm 19-Jan-04 Don't discard w.s. because string will be returned to
+             the source file @/
+          /@let(&str1, edit(str1, 2 + 4));@/ /@ Discard whitespace + ctrl chrs @/
+          p = instr(1, str1, "]$)"); /@ Get end of date comment @/
           if (p == 0) {
-            /* In the future, "] $)" may flag date end to conform with
-               space-around-keyword Metamath spec recommendation */
-            /* 7-Sep-04 The future is now */
-            p = instr(1, str1, "] $)"); /* Get end of date comment */
-            if (p != 0) p++; /* Match what it would be for old standard */
+            /@ In the future, "] $)" may flag date end to conform with
+               space-around-keyword Metamath spec recommendation @/
+            /@ 7-Sep-04 The future is now @/
+            p = instr(1, str1, "] $)"); /@ Get end of date comment @/
+            if (p != 0) p++; /@ Match what it would be for old standard @/
           }
-          if (p != 0) {  /* The previous statement has a date comment */
-            let(&str1, left(str1, p + 2)); /* Discard stuff after date cmnt */
+          if (p != 0) {  /@ The previous statement has a date comment @/
+            let(&str1, left(str1, p + 2)); /@ Discard stuff after date cmnt @/
             if (!instr(1, str1, "?"))
-              /* Don't bother to print $([?]$) of previous statement because
-                 the previous statement was skipped */
+              /@ Don't bother to print $([?]$) of previous statement because
+                 the previous statement was skipped @/
               fprintf(output_fp, "%s\n", str1);
-                                             /* Output just the date comment */
+                                             /@ Output just the date comment @/
           }
 
-          /* Skip the normal output of this statement */
+          /@ Skip the normal output of this statement @/
           continue;
-        } /* if (instr(1, str1, "?")) */
-      } /* (else clause) if (instr(1, str1, "$([") == 0) */
-    } /* if cleanFlag */
+        } /@ if (instr(1, str1, "?")) @/
+      } /@ (else clause) if (instr(1, str1, "$([") == 0) @/
+    } /@ if cleanFlag @/
+    ********** end of 3-May-2017 deletion */
 
     let(&str1,""); /* Deallocate vstring */
-    str1 = outputStatement(i, cleanFlag, reformatFlag);
+    str1 = outputStatement(i, /* cleanFlag, 3-May-2017 */ reformatFlag);
     fprintf(output_fp, "%s", str1);
   }
   print2("%ld source statement(s) were written.\n",statements);
 
 
-  /* Added 24-Oct-03 nm */
+  /******** deleted 3-May-2017 nm
+  /@ Added 24-Oct-03 nm @/
   if (cleanFlag) {
     if (skippedCount == 0) {
       print2("No statements were deleted by the CLEAN qualifier.\n");
@@ -3751,9 +3765,10 @@ void writeInput(flag cleanFlag, /* 1 = "/ CLEAN" qualifier was chosen */
           "", " ");
     }
   }
+  ********** end of 3-May-2017 deletion */
 
   let(&str1,""); /* Deallocate vstring */
-  let(&str2,""); /* Deallocate vstring */
+  /* let(&str2,""); */ /* Deallocate vstring */  /* deleted 3-May-2017 nm */
 } /* writeInput */
 
 void writeDict(void)
@@ -3766,7 +3781,7 @@ void writeDict(void)
 void eraseSource(void)    /* ERASE command */
 {
   long i;
-  vstring tmpStr;
+  vstring tmpStr = "";
 
   /* 24-Jun-2014 nm */
   /* Deallocate wrkProof structure if wrkProofMaxSize != 0 */
@@ -3841,14 +3856,30 @@ void eraseSource(void)    /* ERASE command */
     if (statement[i].optDisjVarsStmt != NULL_NMBRSTRING)
         poolFree(statement[i].optDisjVarsStmt);
 
-    /* See if the proof was "saved" */
+    /**** 3-May-17 deleted
+    /@ See if the proof was "saved" @/
     if (statement[i].proofSectionLen) {
       if (statement[i].proofSectionPtr[-1] == 1) {
-        /* Deallocate proof if not original source */
-        /* (ASCII 1 is the flag for this) */
+        /@ Deallocate proof if not original source @/
+        /@ (ASCII 1 is the flag for this) @/
         tmpStr = statement[i].proofSectionPtr - 1;
         let(&tmpStr, "");
       }
+    }
+    ********/
+
+    /* 3-May-2017 nm */
+    if (statement[i].labelSectionChanged == 1) {
+      /* Deallocate text before label if not original source */
+      let(&(statement[i].labelSectionPtr), "");
+    }
+    if (statement[i].mathSectionChanged == 1) {
+      /* Deallocate math symbol text if not original source */
+      let(&(statement[i].mathSectionPtr), "");
+    }
+    if (statement[i].proofSectionChanged == 1) {
+      /* Deallocate proof if not original source */
+      let(&(statement[i].proofSectionPtr), "");
     }
 
   } /* Next i (statement) */
@@ -3870,6 +3901,7 @@ void eraseSource(void)    /* ERASE command */
   dummyVars = 0; /* For Proof Assistant */
   free(sourcePtr);
   free(labelKey);
+  free(mathKey); /* 4-May-2017 Ari Ferrera */
   free(allLabelKeyBase);
 
   /* Deallocate the wrkProof structure */
@@ -3891,15 +3923,21 @@ void eraseSource(void)    /* ERASE command */
   getMarkupFlag(0, RESET); /* Erase the cached markup flag storage */
 
   /* 2-May-2017 nm */
-  /* Erase the contributer markup cache */
-  /* The string arguments are not assigned in RESET mode. */
+  /* Erase the contributor markup cache */
+  /* 3-May-2017 nm */
+  let(&tmpStr, "");
+  tmpStr = getContrib(0 /*stmt is ignored*/, GC_RESET);
+  /****** old 3-May-2017
+  /@ The string arguments are not assigned in RESET mode. @/
   getContrib(0, &tmpStr, &tmpStr,
       &tmpStr, &tmpStr, &tmpStr, &tmpStr,
       &tmpStr,
-      0/*printErrorsFlag*/,
-      RESET/*mode: 0 == RESET = reset, 1 = normal */);
+      0/@printErrorsFlag@/,
+      RESET/@mode: 0 == RESET = reset, 1 = normal @/);
+  *********/
 
   /* 2-May-2017 nm */
+  /* getContrib uses statements (global var), so don't do this earlier */
   statements = 0; /* getContrib uses statements for loop limit */
 
 } /* eraseSource */
@@ -4032,9 +4070,11 @@ void verifyMarkup(vstring labelMatch,
   flag errFound = 0;
   long stmtNum, p1, p2, p3;
   long flen, lnum, lstart; /* For line length check */ /* 26-Dec-2016 nm */
+  /***** deleted 3-May-2017 nm
   vstring contributor = ""; vstring contribDate = "";
   vstring reviser = ""; vstring reviseDate = "";
   vstring shortener = ""; vstring shortenDate = "";
+  **********/
 
   /* 13-Dec-2016 nm */
   vstring mmVersionDate = ""; /* Version date at top of .mm file */
@@ -4262,7 +4302,7 @@ void verifyMarkup(vstring labelMatch,
           let(&str2, space(p1 - lstart));
           memcpy(str2, str1 + lstart,
             (size_t)(p1 - lstart));
-          printLongLine(cat("?Warning:  Line number ",
+          printLongLine(cat("?Warning: Line number ",
               str((double)lnum),
               " has ",
               str((double)(p1 - lstart)),
@@ -4276,6 +4316,17 @@ void verifyMarkup(vstring labelMatch,
         }
         lstart = p1 + 1;
       }
+
+      /* 3-May-2017 nm */
+      /* Check for tabs */
+      if (str1[p1] == '\t') {
+        printLongLine(cat("?Warning: Line number ",
+            str((double)lnum + 1),
+            " contains a tab, which is discouraged.",
+            NULL), "    ", " ");
+        errFound = 1;
+      }
+
     } /* next p1 */
     str1 = ""; /* Restore pointer for use as vstring */
   } /* end of line length check - if (statements >= 1... */
@@ -4322,16 +4373,36 @@ void verifyMarkup(vstring labelMatch,
       continue;
     }
 
+    /* 3-May-2017 nm */
+    /* Check the contributor */
+    let(&str1, "");
+    str1 = getContrib(stmtNum, CONTRIBUTOR);
+    if (!strcmp(str1, "?who?")) {
+      printLongLine(cat(
+          "?Warning: contributor \"?who?\" should be updated in statement \"",
+          statement[stmtNum].labelName, "\".", NULL), "    ", " ");
+      errFound = 1;
+    }
+
     if (dateSkip == 0) {
 
       /* Check date consistency of the statement */
       /* Use the error-checking feature of getContrib() extractor */
+      /* 3-May-2017 nm */
+      let(&str1, "");
+      str1 = getContrib(stmtNum, GC_ERROR_CHECK_PRINT);
+      if (str1[0] == 'F') errFound = 1;
+      let(&str1, "");
+      str1 = getContrib(stmtNum, MOST_RECENT_DATE);
+
+      /***** deleted 3-May-2017
       f = getContrib(stmtNum, &contributor, &contribDate,
           &reviser, &reviseDate, &shortener, &shortenDate,
-          &str1 /* most recent of the 3 dates */, /* 13-Dec-2016 nm */
-          1/*printErrorsFlag*/,
-          1/*mode: 0 == RESET = reset, 1 = normal */ /* 2-May-2017 nm */);
+          &str1 /@ most recent of the 3 dates @/, /@ 13-Dec-2016 nm @/
+          1/@printErrorsFlag@/,
+          1/@mode: 0 == RESET = reset, 1 = normal @/ /@ 2-May-2017 nm @/);
       if (f == 1) errFound = 1;
+      *********/
 
       /* Save most recent date in file - used to check Version date below */
       if (compareDates(mostRecentDate, str1) == -1) {
@@ -4461,12 +4532,14 @@ void verifyMarkup(vstring labelMatch,
   eraseTexDefs();
 
   /* Deallocate string memory */
+  /**** deleted 3-May-2017
   let(&contributor, "");
   let(&contribDate, "");
   let(&reviser, "");
   let(&reviseDate, "");
   let(&shortener, "");
   let(&shortenDate, "");
+  ******/
   let(&mostRecentDate, "");
   let(&mmVersionDate, "");
   let(&descr, "");

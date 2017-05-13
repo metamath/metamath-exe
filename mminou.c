@@ -1485,3 +1485,11 @@ double getRunTime(double *timeSinceLastCall) {
 #endif
 }
 
+
+/* 4-May-2017 Ari Ferrera */
+void freeInOu() {
+  long i, j;
+  j = pntrLen(backBuffer);
+  for (i = 0; i < j; i++) let((vstring *)(&backBuffer[i]), "");
+  pntrLet(&backBuffer, NULL_PNTRSTRING);
+}

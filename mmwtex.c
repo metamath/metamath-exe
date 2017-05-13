@@ -1807,8 +1807,11 @@ void printTexHeader(flag texHeaderFlag)
          since mmtheorems.html is now just the table of contents */
       let(&tmpStr, cat("mmtheorems", str((double)i), ".html#",
           statement[showStatement].labelName, NULL)); /* Link to page/stmt */
-      print2("      <BR><A HREF=\"%s\">Nearby theorems</A>\n",
-            tmpStr);    /* 15-Aug-04 */
+      /*print2("      <BR><A HREF=\"%s\">Nearby theorems</A>\n",
+            tmpStr);*/
+      /* 3-May-2017 nm Break up lines w/ long labels to prevent bug 1505 */
+      printLongLine(cat("      <BR><A HREF=\"", tmpStr,
+            "\">Nearby theorems</A>", NULL), " ", " ");
 
       /* Print the GIF/Unicode Font choice, if directories are specified */
       /*
@@ -4128,12 +4131,14 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
       /* Output only $p's, not $a's */
       /*if (statement[s].type != p_) continue;*/ /* Now do everything */
 
-      /* nm 22-Jan-04 Skip statements whose labels begin "xxx" - this
+      /********* Deleted 3-May-2017 nm
+      /@ nm 22-Jan-04 Skip statements whose labels begin "xxx" - this
          means they are temporary placeholders created by
-         WRITE SOURCE / CLEAN in writeInput() in mmcmds.c */
-      let(&str1, ""); /* Purge string stack if too many left()'s */
-      /* 9-May-2015 nm Can this be deleted?  Do we need it anymore? */
+         WRITE SOURCE / CLEAN in writeInput() in mmcmds.c @/
+      let(&str1, ""); /@ Purge string stack if too many left()'s @/
+      /@ 9-May-2015 nm Can this be deleted?  Do we need it anymore? @/
       if (!strcmp("xxx", left(statement[s].labelName, 3))) continue;
+      ******/
 
       /* Construct the statement type label */
       if (statement[s].type == p_) {

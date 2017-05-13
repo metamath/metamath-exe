@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2016  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -42,17 +42,18 @@ long MAX_STATEMENTS = 1;
 long MAX_MATHTOKENS = 1;
 long MAX_INCLUDECALLS = 2; /* Must be at least 2 (the single-file case) !!!
                          (A dummy extra top entry is used by parseKeywords().) */
-struct statement_struct *statement;
-long *labelKey;
+struct statement_struct *statement = NULL;
+long *labelKey = NULL; /* 4-May-2017 Ari Ferrera - added "= NULL" */
 struct mathToken_struct *mathToken;
-long *mathKey;
+long *mathKey = NULL;
 long statements = 0, labels = 0, mathTokens = 0;
 long maxMathTokenLength = 0;
 
-struct includeCall_struct *includeCall;
+struct includeCall_struct *includeCall = NULL; /* 4-May-2017 Ari Ferrera
+                                                            - added "= NULL" */
 long includeCalls = 0;
 
-char *sourcePtr;
+char *sourcePtr = NULL; /* 4-May-2017 Ari Ferrera - added "= NULL" */
 long sourceLen;
 
 /* 18-Jan-05 nm The structs below, and several other places, were changed
@@ -627,7 +628,7 @@ flag matches(vstring testString, vstring pattern, char wildCard,
   long i, ppos, pctr, tpos, s1, s2, s3;
   vstring tmpStr = "";
 
-  /* 21-Nov-14 Stefan O'Rear - added label ranges - see HELP SEARCH */
+  /* 21-Nov-2014 Stefan O'Rear - added label ranges - see HELP SEARCH */
   if (wildCard == '*') {
     /* Checking for wildCard = * means this is only for label listing */
     i = instr(1, pattern, "~");
@@ -662,12 +663,15 @@ flag matches(vstring testString, vstring pattern, char wildCard,
                                         $a and not $p) */
       if (s1 > 0) { /* It's a $a or $p statement */
         /* (If it's not $p, we don't want to peek at proofSectionPtr[-1]
-           to prevent bad pointer.  If it is $p, proofSectionPtr[-1]
-           will be the last math section character if proof hasn't been
-           changed and an ASCII 1 if it has.) */
+           to prevent bad pointer. */
         if (statement[s1].type == (char)p_) { /* $p so it has a proof */
-          /* ASCII 1 is flag that proof is not from original source file */
+          /*
+          /@ ASCII 1 is flag that proof is not from original source file @/
           if (statement[s1].proofSectionPtr[-1] == 1) {
+          */
+          /* 3-May-2017 nm */
+          /* The proof is not from the original source file */
+          if (statement[s1].proofSectionChanged == 1) {
             return 1;
           }
         }
@@ -2989,18 +2993,37 @@ long getSourceIndentation(long statemNum) {
    a statement.  This is used to provide the user with information in the SHOW
    STATEMENT command.  The caller must deallocate the result. */
 vstring getDescription(long statemNum) {
-  char *fbPtr; /* Source buffer pointer */
   vstring description = "";
-  char *startDescription;
-  char *endDescription;
-  char *startLabel;
+  long p1, p2;
+
+  let(&description, space(statement[statemNum].labelSectionLen));
+  memcpy(description, statement[statemNum].labelSectionPtr,
+      (size_t)(statement[statemNum].labelSectionLen));
+  p1 = rinstr(description, "$(");
+  p2 = rinstr(description, "$)");
+  if (p1 == 0 || p2 == 0 || p2 < p1) {
+    let(&description, "");
+    return description;
+  }
+  let(&description, edit(seg(description, p1 + 2, p2 - 1),
+      8 + 128 /* discard leading and trailing blanks */));
+  return description;
+
+  /* 3-May-2017 nm Old code may have been somewhat faster, but it doesn't
+     work when statement[statemNum].labelSectionChanged */
+  /************* deleted *******
+  char @fbPtr; /@ Source buffer pointer @/
+  vstring description = "";
+  char @startDescription;
+  char @endDescription;
+  char @startLabel;
 
   fbPtr = statement[statemNum].mathSectionPtr;
   if (!fbPtr[0]) return (description);
   startLabel = statement[statemNum].labelSectionPtr;
   if (!startLabel[0]) return (description);
   endDescription = NULL;
-  while (1) { /* Get end of embedded comment */
+  while (1) { /@ Get end of embedded comment @/
     if (fbPtr <= startLabel) break;
     if (fbPtr[0] == '$' && fbPtr[1] == ')') {
       endDescription = fbPtr;
@@ -3008,8 +3031,8 @@ vstring getDescription(long statemNum) {
     }
     fbPtr--;
   }
-  if (!endDescription) return (description); /* No embedded comment */
-  while (1) { /* Get start of embedded comment */
+  if (!endDescription) return (description); /@ No embedded comment @/
+  while (1) { /@ Get start of embedded comment @/
     if (fbPtr < startLabel) bug(216);
     if (fbPtr[0] == '$' && fbPtr[1] == '(') {
       startDescription = fbPtr + 2;
@@ -3021,12 +3044,14 @@ vstring getDescription(long statemNum) {
   memcpy(description, startDescription,
       (size_t)(endDescription - startDescription));
   if (description[endDescription - startDescription - 1] == '\n') {
-    /* Trim trailing new line */
+    /@ Trim trailing new line @/
     let(&description, left(description, endDescription - startDescription - 1));
   }
-  /* Discard leading and trailing blanks */
+  /@ Discard leading and trailing blanks @/
   let(&description, edit(description, 8 + 128));
   return (description);
+  *********** end of 3-May-2017 deletion *****/
+
 } /* getDescription */
 
 
@@ -3037,6 +3062,8 @@ vstring getDescription(long statemNum) {
                 indicator
    mode = 2 = USAGE_DISCOURAGED means get any new usage discouraged indicator
    mode = 0 = RESET  means to reset everything (statemeNum is ignored) */
+/* TODO: add a mode to reset a single statement if in the future we add
+   the ability to change the markup within the program. */
 flag getMarkupFlag(long statemNum, flag mode) {
   /* For speedup, the algorithm searches a statement's comment for markup
      matches only the first time, then saves the result for subsequent calls
@@ -3117,30 +3144,66 @@ flag getMarkupFlag(long statemNum, flag mode) {
 
 
 /* 7-Nov-2015 nm */
-/* Extract any contributors and dates from statement description.
-   If missing, the corresponding return strings are blank.
-   Returns 1 if an error was found AND printErrorsFlag = 1, 0 otherwise. */
-/* 2-May-2017 nm - Added cache for speedup; added mode argument to clear the
-   internal cache (for ERASE command) */
-/* Special feature: the vstring arguments may be the same (dummy) variable
-   for those that we don't care about, UNLESS printErrorsFlag=1, in
-   which case all arguments must be different string variables.  For example,
-   if we only care about mostRecentDate, we could call this with
-   getContrib(s, &tmp, &tmp, &tmp, &tmp, &tmp, &tmp, &mostRecentDate, 0, 1)
-   to avoid having to declare 7 unused string variables. */
-flag getContrib(long stmtNum,
-    vstring *contributor, vstring *contribDate,
-    vstring *reviser, vstring *reviseDate,
-    vstring *shortener, vstring *shortenDate,
-    vstring *mostRecentDate, /* The most recent of all 3 dates */
-    flag printErrorsFlag,
-    flag mode /* 0 == RESET = reset, 1 = normal */ /* 2-May-2017 nm */) {
 
+/* Extract contributor or date from statement description per the
+   following mode argument:
+
+       CONTRIBUTOR 1
+       CONTRIB_DATE 2
+       REVISER 3
+       REVISE_DATE 4
+       SHORTENER 5
+       SHORTEN_DATE 6
+       MOST_RECENT_DATE 7
+
+   When an item above is missing, the empty string is returned for that item.
+   The following utility modes are available:
+
+       GC_ERROR_CHECK_SILENT 8
+       GC_ERROR_CHECK_PRINT 9
+       GC_RESET 0
+       GC_RESET_STMT 10
+
+   For GC_ERROR_CHECK_SILENT and GC_ERROR_CHECK_PRINT, a "F" is returned if
+   error-checking fails, otherwise "P" is returned.  GC_ERROR_CHECK_PRINT also
+   prints the errors found.
+
+   GC_RESET clears the cache and returns the empty string.  It is normally
+   used by the ERASE command.  The stmtNum argument should be 0.  The
+   empty string is returned.
+
+   GC_RESET_STMT re-initializes the cache for the specified statement only.
+   It should be called whenever the labelSection is changed e.g. by
+   SAVE PROOF.  The empty string is returned.
+*/
+/* 3-May-2017 nm Changed to return a single result each call, to allow
+   expandability in the future */
+/* The caller must deallocate the returned string. */
+vstring getContrib(long stmtNum, char mode) {
+
+/******** deleted 3-May-2017
+flag getContrib(long stmtNum,
+    vstring @contributor, vstring @contribDate,
+    vstring @reviser, vstring @reviseDate,
+    vstring @shortener, vstring @shortenDate,
+    vstring @mostRecentDate, /@ The most recent of all 3 dates @/
+    flag printErrorsFlag,
+    flag mode /@ 0 == RESET = reset, 1 = normal @/ /@ 2-May-2017 nm @/) {
+*******/
   /* 2-May-2017 nm */
   /* For speedup, the algorithm searches a statement's comment for markup
      matches only the first time, then saves the result for subsequent calls
      for that statement. */
   static char init = 0;
+
+  vstring contributor = "";
+  vstring contribDate = "";
+  vstring reviser = "";
+  vstring reviseDate = "";
+  vstring shortener = "";
+  vstring shortenDate = "";
+  vstring mostRecentDate = "";   /* The most recent of all 3 dates */
+
   static vstring commentSearchedFlags = ""; /* Y if comment was searched */
   static pntrString *contributorList = NULL_PNTRSTRING;
   static pntrString *contribDateList = NULL_PNTRSTRING;
@@ -3159,17 +3222,28 @@ flag getContrib(long stmtNum,
   vstring tmpDate1 = "";
   vstring tmpDate2 = "";
   long stmt, p, dd, mmm, yyyy;
+  flag errorCheckFlag = 0;
   flag err = 0;
+  vstring returnStr = ""; /* Return value */
 #define CONTRIB_MATCH " (Contributed by "
 #define REVISE_MATCH " (Revised by "
 #define SHORTEN_MATCH " (Proof shortened by "
 #define END_MATCH ".) "
 
+  /* 3-May-2017 nm */
+  if (mode == GC_ERROR_CHECK_SILENT || mode == GC_ERROR_CHECK_PRINT) {
+    errorCheckFlag = 1;
+  }
+
   /* 2-May-2017 nm */
-  if (mode == RESET) { /* This is normally called by the ERASE command only */
+  if (mode == GC_RESET) {
+    /* This is normally called by the ERASE command only */
     if (init != 0) {
       if ((long)strlen(commentSearchedFlags) != statements + 1) {
         bug(1395);
+      }
+      if (stmtNum != 0) {
+        bug(1400);
       }
       for (stmt = 1; stmt <= statements; stmt++) {
         if (commentSearchedFlags[stmt] == 'Y') {
@@ -3191,9 +3265,36 @@ flag getContrib(long stmtNum,
       pntrLet(&shortenerList, NULL_PNTRSTRING);
       pntrLet(&shortenDateList, NULL_PNTRSTRING);
       pntrLet(&mostRecentDateList, NULL_PNTRSTRING);
+      let(&commentSearchedFlags, "");
       init = 0;
-    }
-    return 0;
+    } /* if (init != 0) */
+    return "";
+  }
+
+  /* 3-May-2017 nm */
+  if (mode == GC_RESET_STMT) {
+    /* This should be called whenever the labelSection is changed e.g. by
+       SAVE PROOF. */
+    if (init != 0) {
+      if ((long)strlen(commentSearchedFlags) != statements + 1) {
+        bug(1398);
+      }
+      if (stmtNum < 1 || stmtNum > statements + 1) {
+        bug(1399);
+      }
+      if (commentSearchedFlags[stmtNum] == 'Y') {
+        /* Deallocate cached strings */
+        let((vstring *)(&(contributorList[stmtNum])), "");
+        let((vstring *)(&(contribDateList[stmtNum])), "");
+        let((vstring *)(&(reviserList[stmtNum])), "");
+        let((vstring *)(&(reviseDateList[stmtNum])), "");
+        let((vstring *)(&(shortenerList[stmtNum])), "");
+        let((vstring *)(&(shortenDateList[stmtNum])), "");
+        let((vstring *)(&(mostRecentDateList[stmtNum])), "");
+        commentSearchedFlags[stmtNum] = 'N';
+      }
+    } /* if (init != 0) */
+    return "";
   }
 
   /* We now check only $a and $p statements - should we do others? */
@@ -3218,7 +3319,7 @@ flag getContrib(long stmtNum,
   if (stmtNum < 1 || stmtNum > statements) bug(1396);
 
   if (commentSearchedFlags[stmtNum] == 'N' /* Not in cache */
-      || printErrorsFlag == 1 /* Needed to get sStart, rStart, cStart */) {
+      || errorCheckFlag == 1 /* Needed to get sStart, rStart, cStart */) {
     /* It wasn't cached, so we extract from the statement's comment */
 
     let(&description, "");
@@ -3334,24 +3435,40 @@ flag getContrib(long stmtNum,
 
     /* 2-May-2017 nm Tag the cache entry as updated */
     commentSearchedFlags[stmtNum] = 'Y';
-  } /* commentSearchedFlags[stmtNum] == 'N' || printErrorsFlag == 1 */
+  } /* commentSearchedFlags[stmtNum] == 'N' || errorCheckFlag == 1 */
 
   /* Assign the output strings from the cache */
-  let(&(*contributor), (vstring)(contributorList[stmtNum]));
-  let(&(*contribDate), (vstring)(contribDateList[stmtNum]));
-  let(&(*reviser), (vstring)(reviserList[stmtNum]));
-  let(&(*reviseDate), (vstring)(reviseDateList[stmtNum]));
-  let(&(*shortener), (vstring)(shortenerList[stmtNum]));
-  let(&(*shortenDate), (vstring)(shortenDateList[stmtNum]));
-  let(&(*mostRecentDate), (vstring)(mostRecentDateList[stmtNum]));
+  if (errorCheckFlag == 1) {
+    let(&contributor, (vstring)(contributorList[stmtNum]));
+    let(&contribDate, (vstring)(contribDateList[stmtNum]));
+    let(&reviser, (vstring)(reviserList[stmtNum]));
+    let(&reviseDate, (vstring)(reviseDateList[stmtNum]));
+    let(&shortener, (vstring)(shortenerList[stmtNum]));
+    let(&shortenDate, (vstring)(shortenDateList[stmtNum]));
+    let(&mostRecentDate, (vstring)(mostRecentDateList[stmtNum]));
+  } else {
+    /* Assign only the requested field for faster speed */
+    switch (mode) {
+      case CONTRIBUTOR:
+        let(&returnStr, (vstring)(contributorList[stmtNum])); break;
+      case CONTRIB_DATE:
+        let(&returnStr, (vstring)(contribDateList[stmtNum])); break;
+      case REVISER:
+        let(&returnStr, (vstring)(reviserList[stmtNum])); break;
+      case REVISE_DATE:
+        let(&returnStr, (vstring)(reviseDateList[stmtNum])); break;
+      case SHORTENER:
+        let(&returnStr, (vstring)(shortenerList[stmtNum])); break;
+      case SHORTEN_DATE:
+        let(&returnStr, (vstring)(shortenDateList[stmtNum])); break;
+      case MOST_RECENT_DATE:
+        let(&returnStr, (vstring)(mostRecentDateList[stmtNum])); break;
+      default: bug(1397); /* Any future modes should be added here */
+    } /* end switch (mode) */
+  }
 
   /* Skip error checking for speedup if we're not printing errors */
-  if (printErrorsFlag == 0) goto RETURN_POINT;
-
-  /* WARNING: For error checking below, we use the function argument
-     variables for convenience, so they must all have different
-     variable names!  (If this becomes a nuisance, we can change it
-     to use the verbose xxxList[stmtNum] cache entries.) */
+  if (errorCheckFlag == 0) goto RETURN_POINT;
 
   /* For error checking, we don't require dates in syntax statements
      (**** Note that this is set.mm-specific! ****) */
@@ -3363,10 +3480,10 @@ flag getContrib(long stmtNum,
 
   if (cStart == 0) {
     err = 1;
-    printLongLine(cat(
+    if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /* convenience prefix to assist massive revisions
         statement[stmtNum].labelName, " [",
-        *contributor, "/", *reviser, "/", *shortener, "] ",
+        contributor, "/", reviser, "/", shortener, "] ",
         */
         "?Warning:  There is no \"", edit(CONTRIB_MATCH, 8+128),
         "...)\" in the comment above statement ",
@@ -3376,10 +3493,10 @@ flag getContrib(long stmtNum,
 
   if (instr(cStart + 1, description, CONTRIB_MATCH) != 0) {
     err = 1;
-    printLongLine(cat(
+    if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /* convenience prefix to assist massive revisions
         statement[stmtNum].labelName, " [",
-        *contributor, "/", *reviser, "/", *shortener, "] ",
+        contributor, "/", reviser, "/", shortener, "] ",
         */
         "?Warning:  There is more than one \"", edit(CONTRIB_MATCH, 8+128),
         "...)\" ",
@@ -3388,10 +3505,64 @@ flag getContrib(long stmtNum,
         NULL), "    ", " ");
   }
 
+  /* 3-May-2017 nm */
+  if (cStart != 0 && description[cMid - 2] != ',') {
+    err = 1;
+    if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
+        "?Warning:  There is no comma between contributor and date",
+        " in the comment above statement ",
+        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        NULL), "    ", " ");
+  }
+  if (rStart != 0 && description[rMid - 2] != ',') {
+    err = 1;
+    if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
+        "?Warning:  There is no comma between reviser and date",
+        " in the comment above statement ",
+        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        NULL), "    ", " ");
+  }
+  if (sStart != 0 && description[sMid - 2] != ',') {
+    err = 1;
+    if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
+        "?Warning:  There is no comma between proof shortener and date",
+        " in the comment above statement ",
+        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        NULL), "    ", " ");
+  }
+  if (instr(1, contributor, ",") != 0) {
+    err = 1;
+    if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
+        "?Warning:  There is a comma in the contributor name \"",
+        contributor,
+        "\" in the comment above statement ",
+        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        NULL), "    ", " ");
+  }
+  if (instr(1, reviser, ",") != 0) {
+    err = 1;
+    if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
+        "?Warning:  There is a comma in the reviser name \"",
+        reviser,
+        "\" in the comment above statement ",
+        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        NULL), "    ", " ");
+  }
+  if (instr(1, shortener, ",") != 0) {
+    err = 1;
+    if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
+        "?Warning:  There is a comma in the proof shortener name \"",
+        shortener,
+        "\" in the comment above statement ",
+        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        NULL), "    ", " ");
+  }
+
+
   /*********  Turn off this warning unless we decide not to allow this
   if ((firstR != rStart) || (firstS != sStart)) {
     err = 1;
-    printLongLine(cat(
+    if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /@ convenience prefix to assist massive revisions
         statement[stmtNum].labelName, " [",
         @contributor, "/", @reviser, "/", @shortener, "] ",
@@ -3409,10 +3580,10 @@ flag getContrib(long stmtNum,
   if ((firstR != 0 && firstR < cStart)
       || (firstS != 0 && firstS < cStart)) {
     err = 1;
-    printLongLine(cat(
+    if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /* convenience prefix to assist massive revisions
         statement[stmtNum].labelName, " [",
-        *contributor, "/", *reviser, "/", *shortener, "] ",
+        contributor, "/", reviser, "/", shortener, "] ",
         */
         "?Warning:  \"", edit(CONTRIB_MATCH, 8+128),
         "...)\" is placed after \"",
@@ -3424,16 +3595,16 @@ flag getContrib(long stmtNum,
   }
 
   if ((cStart !=0 && (cMid == 0 || cEnd == 0 || cMid == cEnd
-          || (*contributor)[0] == 0 || (*contribDate)[0] == 0))
+          || contributor[0] == 0 || contribDate[0] == 0))
       || (rStart !=0 && (rMid == 0 || rEnd == 0 || rMid == rEnd
-          || (*reviser)[0] == 0 || (*reviseDate)[0] == 0))
+          || reviser[0] == 0 || reviseDate[0] == 0))
       || (sStart !=0 && (sMid == 0 || sEnd == 0 || sMid == sEnd
-          || (*shortener)[0] == 0 || (*shortenDate)[0] == 0))) {
+          || shortener[0] == 0 || shortenDate[0] == 0))) {
     err = 1;
-    printLongLine(cat(
+    if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /* convenience prefix to assist massive revisions
         statement[stmtNum].labelName, " [",
-        *contributor, "/", *reviser, "/", *shortener, "] ",
+        contributor, "/", reviser, "/", shortener, "] ",
         */
         "?Warning: There is a formatting error in a",
         " \"", edit(CONTRIB_MATCH, 8+128),  "...)\", \"",
@@ -3444,70 +3615,70 @@ flag getContrib(long stmtNum,
         NULL), "    ", " ");
   }
 
-  if ((*contribDate)[0] != 0) {
-    parseDate(*contribDate, &dd, &mmm, &yyyy);
+  if (contribDate[0] != 0) {
+    parseDate(contribDate, &dd, &mmm, &yyyy);
     buildDate(dd, mmm, yyyy, &tmpDate0);
-    if (strcmp(*contribDate, tmpDate0)) {
+    if (strcmp(contribDate, tmpDate0)) {
       err = 1;
-      printLongLine(cat(
+      if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
           /* convenience prefix to assist massive revisions
           statement[stmtNum].labelName, " [",
-          *contributor, "/", *reviser, "/", *shortener, "] ",
+          contributor, "/", reviser, "/", shortener, "] ",
           */
           "?Warning: There is a formatting error in the \"",
-          edit(CONTRIB_MATCH, 8+128),  "...)\" date \"", *contribDate, "\""
+          edit(CONTRIB_MATCH, 8+128),  "...)\" date \"", contribDate, "\""
           " in the comment above statement ",
           str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
           NULL), "    ", " ");
     }
   }
 
-  if ((*reviseDate)[0] != 0) {
-    parseDate(*reviseDate, &dd, &mmm, &yyyy);
+  if (reviseDate[0] != 0) {
+    parseDate(reviseDate, &dd, &mmm, &yyyy);
     buildDate(dd, mmm, yyyy, &tmpDate0);
-    if (strcmp(*reviseDate, tmpDate0)) {
+    if (strcmp(reviseDate, tmpDate0)) {
       err = 1;
-      printLongLine(cat(
+      if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
           /* convenience prefix to assist massive revisions
           statement[stmtNum].labelName, " [",
-          *contributor, "/", *reviser, "/", *shortener, "] ",
+          contributor, "/", reviser, "/", shortener, "] ",
           */
           "?Warning: There is a formatting error in the \"",
-          edit(REVISE_MATCH, 8+128) , "...)\" date \"", *reviseDate, "\""
+          edit(REVISE_MATCH, 8+128) , "...)\" date \"", reviseDate, "\""
           " in the comment above statement ",
           str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
           NULL), "    ", " ");
     }
   }
 
-  if ((*shortenDate)[0] != 0) {
-    parseDate(*shortenDate, &dd, &mmm, &yyyy);
+  if (shortenDate[0] != 0) {
+    parseDate(shortenDate, &dd, &mmm, &yyyy);
     buildDate(dd, mmm, yyyy, &tmpDate0);
-    if (strcmp(*shortenDate, tmpDate0)) {
+    if (strcmp(shortenDate, tmpDate0)) {
       err = 1;
-      printLongLine(cat(
+      if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
           /* convenience prefix to assist massive revisions
           statement[stmtNum].labelName, " [",
-          *contributor, "/", *reviser, "/", *shortener, "] ",
+          contributor, "/", reviser, "/", shortener, "] ",
           */
           "?Warning: There is a formatting error in the \"",
-          edit(SHORTEN_MATCH, 8+128) , "...)\" date \"", *shortenDate, "\""
+          edit(SHORTEN_MATCH, 8+128) , "...)\" date \"", shortenDate, "\""
           " in the comment above statement ",
           str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
           NULL), "    ", " ");
     }
   }
 
-  if ((*contribDate)[0] != 0 &&
-     (((*reviseDate)[0] != 0
-         && compareDates(*contribDate, *reviseDate) != -1)
-     || ((*shortenDate)[0] != 0
-         && compareDates(*contribDate, *shortenDate) != -1))) {
+  if (contribDate[0] != 0 &&
+     ((reviseDate[0] != 0
+         && compareDates(contribDate, reviseDate) != -1)
+     || (shortenDate[0] != 0
+         && compareDates(contribDate, shortenDate) != -1))) {
     err = 1;
-    printLongLine(cat(
+    if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /* convenience prefix to assist massive revisions
         statement[stmtNum].labelName, " [",
-        *contributor, "/", *reviser, "/", *shortener, "] ",
+        contributor, "/", reviser, "/", shortener, "] ",
         */
         "?Warning:  The \"", edit(CONTRIB_MATCH, 8+128),
         "...)\" date is not earlier than the \"",
@@ -3518,15 +3689,15 @@ flag getContrib(long stmtNum,
         NULL), "    ", " ");
   }
 
-  if ((*reviseDate)[0] != 0 && (*shortenDate)[0] != 0) {
-    p = compareDates(*reviseDate, *shortenDate);
+  if (reviseDate[0] != 0 && shortenDate[0] != 0) {
+    p = compareDates(reviseDate, shortenDate);
     if ((rStart < sStart && p == 1)
         || (rStart > sStart && p == -1)) {
       err = 1;
-      printLongLine(cat(
+      if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /* convenience prefix to assist massive revisions
         statement[stmtNum].labelName, " [",
-        *contributor, "/", *reviser, "/", *shortener, "] ",
+        contributor, "/", reviser, "/", shortener, "] ",
         */
           "?Warning:  The \"", edit(REVISE_MATCH, 8+128), "...)\" and \"",
           edit(SHORTEN_MATCH, 8+128),
@@ -3536,6 +3707,7 @@ flag getContrib(long stmtNum,
     }
   }
 
+  #ifdef DATE_BELOW_PROOF /* 12-May-2017 nm */
 
   /* TODO ******** The rest of the checks should be deleted if we decide
      to drop the date after the proof */
@@ -3545,22 +3717,22 @@ flag getContrib(long stmtNum,
   getProofDate(stmtNum, &tmpDate1, &tmpDate2);
   if (tmpDate1[0] == 0) {
     err = 1;
-    printLongLine(cat(
+    if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /* convenience prefix to assist massive revisions
         statement[stmtNum].labelName, " [",
-        *contributor, "/", *reviser, "/", *shortener, "] ",
+        contributor, "/", reviser, "/", shortener, "] ",
         */
         "?Warning:  There is no date below the proof in statement ",
         str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
   if (tmpDate2[0] == 0
-      && ((*reviseDate)[0] != 0 || (*shortenDate)[0] != 0)) {
+      && (reviseDate[0] != 0 || shortenDate[0] != 0)) {
     err = 1;
-    printLongLine(cat(
+    if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /* convenience prefix to assist massive revisions
         statement[stmtNum].labelName, " [",
-        *contributor, "/", *reviser, "/", *shortener, "] ",
+        contributor, "/", reviser, "/", shortener, "] ",
         */
         "?Warning:  The comment has \"",
         edit(REVISE_MATCH, 8+128), "...)\" or \"",
@@ -3570,12 +3742,12 @@ flag getContrib(long stmtNum,
         str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
-  if (tmpDate2[0] != 0 && (*reviseDate)[0] == 0 && (*shortenDate)[0] == 0) {
+  if (tmpDate2[0] != 0 && reviseDate[0] == 0 && shortenDate[0] == 0) {
     err = 1;
-    printLongLine(cat(
+    if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /* convenience prefix to assist massive revisions
         statement[stmtNum].labelName, " [",
-        *contributor, "/", *reviser, "/", *shortener, "] ",
+        contributor, "/", reviser, "/", shortener, "] ",
         */
         "?Warning:  There are two dates below the proof but no \"",
         edit(REVISE_MATCH, 8+128), "...)\" or \"",
@@ -3585,14 +3757,14 @@ flag getContrib(long stmtNum,
         NULL), "    ", " ");
   }
   if (tmpDate2[0] != 0
-      && ((*reviseDate)[0] != 0 || (*shortenDate)[0] != 0)
-      && strcmp(tmpDate1, *reviseDate)
-      && strcmp(tmpDate1, *shortenDate)) {
+      && (reviseDate[0] != 0 || shortenDate[0] != 0)
+      && strcmp(tmpDate1, reviseDate)
+      && strcmp(tmpDate1, shortenDate)) {
     err = 1;
-    printLongLine(cat(
+    if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /* convenience prefix to assist massive revisions
         statement[stmtNum].labelName, " [",
-        *contributor, "/", *reviser, "/", *shortener, "] ",
+        contributor, "/", reviser, "/", shortener, "] ",
         */
         "?Warning:  Neither a \"",
         edit(REVISE_MATCH, 8+128), "...)\" date ",
@@ -3603,32 +3775,32 @@ flag getContrib(long stmtNum,
         NULL), "    ", " ");
   }
   if (tmpDate2[0] != 0
-      && (*reviseDate)[0] != 0
-      && compareDates(tmpDate1, *reviseDate) == -1) {
+      && reviseDate[0] != 0
+      && compareDates(tmpDate1, reviseDate) == -1) {
     err = 1;
-    printLongLine(cat(
+    if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /* convenience prefix to assist massive revisions
         statement[stmtNum].labelName, " [",
-        *contributor, "/", *reviser, "/", *shortener, "] ",
+        contributor, "/", reviser, "/", shortener, "] ",
         */
         "?Warning:  The \"",
-        edit(REVISE_MATCH, 8+128), "...)\" date ", *reviseDate,
+        edit(REVISE_MATCH, 8+128), "...)\" date ", reviseDate,
         " is later than the date ", tmpDate1,
         " below the proof in statement ",
         str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
   if (tmpDate2[0] != 0
-      && (*shortenDate)[0] != 0
-      && compareDates(tmpDate1, *shortenDate) == -1) {
+      && shortenDate[0] != 0
+      && compareDates(tmpDate1, shortenDate) == -1) {
     err = 1;
-    printLongLine(cat(
+    if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /* convenience prefix to assist massive revisions
         statement[stmtNum].labelName, " [",
-        *contributor, "/", *reviser, "/", *shortener, "] ",
+        contributor, "/", reviser, "/", shortener, "] ",
         */
         "?Warning:  The \"",
-        edit(SHORTEN_MATCH, 8+128), "...)\" date ", *shortenDate,
+        edit(SHORTEN_MATCH, 8+128), "...)\" date ", shortenDate,
         " is later than the date ", tmpDate1,
         " below the proof in statement ",
         str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
@@ -3636,10 +3808,10 @@ flag getContrib(long stmtNum,
   }
   if (tmpDate2[0] != 0 && compareDates(tmpDate2, tmpDate1) != -1) {
     err = 1;
-    printLongLine(cat(
+    if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /* convenience prefix to assist massive revisions
         statement[stmtNum].labelName, " [",
-        *contributor, "/", *reviser, "/", *shortener, "] ",
+        contributor, "/", reviser, "/", shortener, "] ",
         */
         "?Warning:  The first date below the proof, ", tmpDate1,
         ", is not newer than the second, ", tmpDate2,
@@ -3652,31 +3824,53 @@ flag getContrib(long stmtNum,
   } else {
     let(&tmpDate0, tmpDate2);
   }
-  if ((*contribDate)[0] != 0
-      && tmpDate0[0] != 0 && strcmp(*contribDate, tmpDate0)) {
+  if (contribDate[0] != 0
+      && tmpDate0[0] != 0 && strcmp(contribDate, tmpDate0)) {
     err = 1;
-    printLongLine(cat(
+    if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /* convenience prefix to assist massive revisions
         statement[stmtNum].labelName, " [",
-        *contributor, "/", *reviser, "/", *shortener, "] ",
+        contributor, "/", reviser, "/", shortener, "] ",
         */
         "?Warning:  The \"", edit(CONTRIB_MATCH, 8+128), "...)\" date ",
-        *contribDate,
+        contribDate,
         " doesn't match the date ", tmpDate0,
         " below the proof in statement ",
         str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
   /***** End of section to delete if date after proof is dropped */
+#endif /* #ifdef DATE_BELOW_PROOF */
+
+  if (err == 1) {
+    let(&returnStr, "F");  /* fail */
+  } else {
+    let(&returnStr, "P");  /* pass */
+  }
 
 
  RETURN_POINT:
+
   let(&description, "");
-  let(&tmpDate0, "");
-  let(&tmpDate1, "");
-  let(&tmpDate2, "");
-  return err;
+
+  if (errorCheckFlag == 1) { /* Slight speedup */
+    let(&contributor, "");
+    let(&contribDate, "");
+    let(&reviser, "");
+    let(&reviseDate, "");
+    let(&shortener, "");
+    let(&shortenDate, "");
+    let(&mostRecentDate, "");
+    let(&tmpDate0, "");
+    let(&tmpDate1, "");
+    let(&tmpDate2, "");
+  }
+
+  return returnStr;
 } /* getContrib */
+
+
+#ifdef DATE_BELOW_PROOF /* 12-May-2017 nm */
 
 /* 4-Nov-2015 nm */
 /* Extract up to 2 dates after a statement's proof.  If no date is present,
@@ -3708,6 +3902,8 @@ void getProofDate(long stmtNum, vstring *date1, vstring *date2) {
   let(&textAfterProof, ""); /* Deallocate */
   return;
 } /* getProofDate */
+
+#endif /*#ifdef DATE_BELOW_PROOF*/ /* 12-May-2017 nm */
 
 
 /* 4-Nov-2015 nm */
@@ -3806,3 +4002,11 @@ int qsortStringCmp(const void *p1, const void *p2)
   }
 }
 
+/* 4-May-2017 Ari Ferrera */
+void freeData() {
+  free(includeCall);
+  free(statement);
+  free(mathToken);
+  free(memFreePool);
+  free(memUsedPool);
+}

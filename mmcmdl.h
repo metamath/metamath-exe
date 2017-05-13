@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2013  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -17,6 +17,7 @@ flag lastArgMatches(vstring argString);
 flag cmdMatches(vstring cmdString);
 long switchPos(vstring swString);
 void printCommandError(vstring line, long arg, vstring errorMsg);
+void freeCommandLine(void); /* 4-May-2017 Ari Ferrera */
 
 #define DEFAULT_COLUMN 16
 extern pntrString *rawArgPntr;

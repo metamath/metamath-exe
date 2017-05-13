@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2016  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -531,11 +531,14 @@ void parseKeywords(void)
   statement[i].scope = 0;
   statement[i].beginScopeStatementNum = 0;
   statement[i].labelSectionPtr = "";
-  statement[i].labelSectionLen = 0;
+  statement[i].labelSectionLen = 0; /* 3-May-2017 nm */
+  statement[i].labelSectionChanged = 0;
   statement[i].mathSectionPtr = "";
   statement[i].mathSectionLen = 0;
+  statement[i].mathSectionChanged = 0; /* 3-May-2017 nm */
   statement[i].proofSectionPtr = "";
   statement[i].proofSectionLen = 0;
+  statement[i].proofSectionChanged = 0; /* 3-May-2017 nm */
   statement[i].mathString = NULL_NMBRSTRING;
   statement[i].mathStringLen = 0;
   statement[i].proofString = NULL_NMBRSTRING;
@@ -772,7 +775,7 @@ void parseKeywords(void)
 }
 
 /* This function parses the label sections of the statement[] structure array.
-   sourcePtr is assumed to point to the raw input buffer.
+   sourcePtr is assumed to point to the beginning of the raw input buffer.
    sourceLen is assumed to be length of the raw input buffer. */
 void parseLabels(void)
 {
@@ -4045,7 +4048,7 @@ void rawSourceError(char *startFile, char *ptr, long tokLen, long lineNum,
   let(&errorMsg,"");
 } /* rawSourceError */
 
-/*   sourcePtr is assumed to point to the raw input buffer.
+/*   sourcePtr is assumed to point to the start of the raw input buffer.
      sourceLen is assumed to be length of the raw input buffer.
      The includeCall array is referenced. */
 void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
@@ -4057,6 +4060,16 @@ void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
   long i, j;
   vstring errorMsg = "";
 
+  /* 3-May-2017 nm */
+  /* Used for the case where a source file section has been modified */
+  char *locSourcePtr;
+  long locSourceLen;
+
+  /* 3-May-2017 nm */
+  /* Initialize local pointers to raw input source */
+  locSourcePtr = sourcePtr;
+  locSourceLen = sourceLen;
+
   /* Initialization to avoid compiler warning (should not be theoretically
      necessary) */
   i = 0;
@@ -4067,9 +4080,32 @@ void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
     lineNum = 0;
     goto skipLineNum; /* This isn't a source file parse */
   }
-  if (ptr < sourcePtr || ptr > sourcePtr + sourceLen) {
+  if (ptr < locSourcePtr || ptr > locSourcePtr + locSourceLen) {
     /* The pointer is outside the raw input buffer, so it must be a
-       SAVEd proof, so there is no line number. */
+       SAVEd proof or other overwritten section, so there is no line number. */
+    /* 3-May-2017 nm */
+    /* Reassign the beginning and end of the source pointer to the
+       changed section */
+    if (statement[stmtNum].labelSectionChanged == 1
+         && ptr >= statement[stmtNum].labelSectionPtr
+         && ptr < statement[stmtNum].labelSectionPtr) {
+      locSourcePtr = statement[stmtNum].labelSectionPtr;
+      locSourceLen = statement[stmtNum].labelSectionLen;
+    } else if (statement[stmtNum].mathSectionChanged == 1
+         && ptr >= statement[stmtNum].mathSectionPtr
+         && ptr < statement[stmtNum].mathSectionPtr) {
+      locSourcePtr = statement[stmtNum].mathSectionPtr;
+      locSourceLen = statement[stmtNum].mathSectionLen;
+    } else if (statement[stmtNum].proofSectionChanged == 1
+         && ptr >= statement[stmtNum].proofSectionPtr
+         && ptr < statement[stmtNum].proofSectionPtr) {
+      locSourcePtr = statement[stmtNum].proofSectionPtr;
+      locSourceLen = statement[stmtNum].proofSectionLen;
+    } else {
+      /* ptr points to neither the original source nor a modified section */
+      bug(1741);
+    }
+
     lineNum = 0;
     goto skipLineNum;
   }
@@ -4077,34 +4113,46 @@ void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
   /* Get the line number and the file */
   /* Scan to start of the included file that ptr is in */
   for (i = 0; i <= includeCalls; i++) {
-    if (includeCall[i].bufOffset > ptr - sourcePtr) break;
+    if (includeCall[i].bufOffset > ptr - locSourcePtr) break;
   }
   i--;
   /* Count lines to ptr */
   lineNum = includeCall[i].current_line;
-  for (j = includeCall[i].bufOffset; j < ptr - sourcePtr; j++) {
-    if (sourcePtr[j] == '\n') lineNum++;
+  for (j = includeCall[i].bufOffset; j < ptr - locSourcePtr; j++) {
+    if (locSourcePtr[j] == '\n') lineNum++;
   }
 
  skipLineNum:
   /* Get the line with the error on it */
-  if (lineNum && ptr > sourcePtr) {
+  if (lineNum && ptr > locSourcePtr) {
     startLine = ptr - 1; /* Allows pointer to point to \n. */
   } else {
-    /* Special case:  Error message starts at beginning of file. */
+    /* Special case:  Error message starts at beginning of file or
+       the beginning of a changed section. */
     /* Or, it's a non-source statement; must not point to \n. */
     startLine = ptr;
   }
 
-  /* Scan back to beginning of line with error */
-  while (startLine[0] != '\n' && (!lineNum || startLine > sourcePtr)
-      /* ASCII 1 flags start of SAVEd proof */
+
+  /**** 3-May-2017 nm Deleted
+  /@ Scan back to beginning of line with error @/
+  while (startLine[0] != '\n' && (!lineNum || startLine > locSourcePtr)
+      /@ ASCII 1 flags start of SAVEd proof @/
       && (lineNum || startLine[0] != 1)
-      /* lineNum is 0 (e.g. no stmt); stop scan at beg. of file */
-      && startLine != sourcePtr) {
+      /@ lineNum is 0 (e.g. no stmt); stop scan at beg. of file
+         or beginning of a changed section @/
+      && startLine != locSourcePtr) {
+  ***/
+
+  /* 3-May-2017 nm */
+  /* Scan back to beginning of line with error */
+  while (startLine[0] != '\n' && startLine > locSourcePtr) {
+
     startLine--;
   }
-  if (startLine[0] == '\n' || startLine[0] == 1) startLine++;
+  /* if (startLine[0] == '\n' || startLine[0] == 1) startLine++; */
+  /* 3-May-2017 nm */
+  if (startLine[0] == '\n') startLine++;
 
   /* Scan forward to end of line with error */
   endLine = ptr;
@@ -4122,8 +4170,11 @@ void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
     errorMessage(errLine, lineNum, ptr - startLine + 1, tokLen, errorMsg,
         NULL, stmtNum, (char)error_);
   } else {
-    errorMessage(errLine, lineNum, ptr - startLine + 1, tokLen, errorMsg,
-        includeCall[i].current_fn, stmtNum, (char)error_);
+    errorMessage(errLine, lineNum,
+        ptr - startLine + 1, tokLen, /* column */
+        errorMsg,
+        includeCall[i].current_fn, stmtNum,
+        (char)error_ /* severity */);
   }
   let(&errLine,"");
   let(&errorMsg,"");
@@ -4396,17 +4447,19 @@ long proofTokenLen(char *ptr)
 /* ???This does not yet implement restoration of the various input files;
       all included files are merged into one. */
 /* Caller must deallocated returned string. */
-/* cleanFlag = 1: User is removing theorems with $( [?] $) dates */
 /* reformatFlag= 0: WRITE SOURCE, 1: WRITE SOURCE / REFORMAT,
    2: WRITE SOURCE / WRAP */
-vstring outputStatement(long stmt, flag cleanFlag,
+/* Note that the labelSection, mathSection, and proofSection do not
+   contain keywords ($a, $p,...; $=; $.).  The keywords are added
+   by this function when the statement is written. */
+vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
     flag reformatFlag)
 {
   vstring labelSection = "";
   vstring mathSection = "";
   vstring proofSection = "";
   vstring output = "";
-  flag newProofFlag;
+  /* flag newProofFlag; */ /* deleted 3-May-2017 nm */
   /* For reformatting: */
   long pos;
   long indent;
@@ -4431,22 +4484,25 @@ vstring outputStatement(long stmt, flag cleanFlag,
 
   if (stmt == statements + 1) return labelSection; /* Special case - EOF */
 
-  /* 1-Jul-2011 nm */
+  /******* 3-May-2017 nm  "/CLEAN" is no longer supported
+  /@ 1-Jul-2011 nm @/
   if (cleanFlag) {
-    /* Most of the WRITE SOURCE / CLEAN processing is done in the
+    /@ cleanFlag = 1: User is removing theorems with $( [?] $) dates @/
+    /@ Most of the WRITE SOURCE / CLEAN processing is done in the
        writeInput() that calls this.  Here, we just remove any
-       $( [?} $) date comment missed by that algorithm. */
-    if (labelSection[0] == '\n') { /* True unless user edited source */
+       $( [?} $) date comment missed by that algorithm. @/
+    if (labelSection[0] == '\n') { /@ True unless user edited source @/
       pos = instr(1, labelSection, "$( [?] $)");
       if (pos != 0) {
         pos = instr(pos + 9, labelSection, "\n");
         if (pos != 0) {
-          /* Use pos instead of pos + 1 so that we include the \n */
+          /@ Use pos instead of pos + 1 so that we include the \n @/
           let(&labelSection, right(labelSection, pos));
         }
       }
     }
   }
+  ************/
 
   let(&mathSection, space(statement[stmt].mathSectionLen));
   memcpy(mathSection, statement[stmt].mathSectionPtr,
@@ -4571,7 +4627,19 @@ vstring outputStatement(long stmt, flag cleanFlag,
              let(&ca, "??");
              let(&cd, cat("??", "-???", "-????", NULL));
           } else {
+
+            /@ 3-May-2017 nm (not tested because code is commented out) @/
+            let(&ca, "");
+            ca = getContrib(i, CONTRIBUTOR);
+            let(&cd, "");
+            cd = getContrib(i, CONTRIB_DATE);
+            let (&rd, "");
+            rd = getContrib(i, REVISE_DATE);
+
+            /@@@@@@@@@ deleted 3-May-2017
             getContrib(i, &ca, &cd, &ra, &rd, &sa, &sd, &md, 0);
+            @@@@@@/
+
             if (cd[0] == 0) {
               let(&ca, "??");
               getProofDate(i, &cd, &rd);
@@ -4676,7 +4744,10 @@ vstring outputStatement(long stmt, flag cleanFlag,
         /***********
         saveWidth = screenWidth;
         screenWidth = 9999;
-        i=getContrib(stmt, &ca, &cd, &ra, &rd, &sa, &sd, &md, 1);
+        /@i=getContrib(stmt, &ca, &cd, &ra, &rd, &sa, &sd, &md, 1);@/
+        let(&ca, "");
+        /@ 3-May-2017 nm @/
+        ca = getContrib(stmt, ERROR_CHECK);
         screenWidth = saveWidth;
         ************/
         printLongLine(cat(space(indent), comment, NULL),
@@ -4822,20 +4893,29 @@ vstring outputStatement(long stmt, flag cleanFlag,
   let(&output, cat(output, "$", chr(statement[stmt].type), NULL));
 
   /* Add math section and proof */
-  if (statement[stmt].mathSectionLen) {
+  if (statement[stmt].mathSectionLen != 0) {
     let(&output, cat(output, mathSection, NULL));
-    newProofFlag = 0;
+    /* newProofFlag = 0; */  /* deleted 3-May-2017 nm */
+
     if (statement[stmt].type == (char)p_) {
       let(&output, cat(output, "$=", proofSection, NULL));
+
+      /******** deleted 3-May-2017 nm
       if (statement[stmt].proofSectionPtr[-1] == 1) {
-        /* ASCII 1 is flag that line is not from original source file */
-        newProofFlag = 1; /* Proof is result of SAVE (NEW_)PROOF command */
+        /@ ASCII 1 is flag that line is not from original source file @/
+        newProofFlag = 1; /@ Proof is result of SAVE (NEW_)PROOF command @/
       }
     }
-    /* If it's not a source file line, the proof text should supply the
+    /@ If it's not a source file line, the proof text should supply the
        statement terminator, so that additional text may be added after
-       the terminator if desired.  (I.e., date in SAVE NEW_PROOF command) */
+       the terminator if desired.  (I.e., date in SAVE NEW_PROOF command) @/
     if (!newProofFlag) let(&output, cat(output, "$.", NULL));
+    ********/
+
+    /* 3-May-2017 nm */
+    }
+    let(&output, cat(output, "$.", NULL));
+
   }
 
   /* Added 10/24/03 */

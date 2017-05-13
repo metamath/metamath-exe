@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2016  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -124,7 +124,7 @@ extern struct wrkProof_struct wrkProof;
 nmbrString *parseMathTokens(vstring userText, long statemNum);
 
 /* 12-Jun-2011 nm Added reformatFlag */
-vstring outputStatement(long stmt, flag cleanFlag, flag reformatFlag);
+vstring outputStatement(long stmt, /*flag cleanFlag,*/ flag reformatFlag);
 /* 12-Jun-2011 nm */
 /* Caller must deallocate return string */
 vstring rewrapComment(vstring comment);

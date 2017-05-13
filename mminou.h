@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2016  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -82,5 +82,8 @@ vstring readFileToString(vstring fileName, char verbose);
    lcc compiler) or the CPU time used (for the gcc compiler).  The
    argument is assigned the time since the last call to this function. */
 double getRunTime(double *timeSinceLastCall);
+
+/* Call before exiting to free memory allocated by this module */
+void freeInOu(void); /* 4-May-2017 Ari Ferrera */
 
 #endif /* METAMATH_MMINOU_H_*/

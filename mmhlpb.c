@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2016  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -723,8 +723,9 @@ H("equivalent command, such as \"grep\" in Linux.)");
 H("");
 
 
+/* 3-May-2017 nm - removed CLEAN qualifier */
 printHelp = !strcmp(saveHelpCmd, "HELP WRITE SOURCE");
-H("Syntax:  WRITE SOURCE <filename> [/ FORMAT] [/ REWRAP] [/ CLEAN]");
+H("Syntax:  WRITE SOURCE <filename> [/ FORMAT] [/ REWRAP]");
 H("");
 H("Optional qualifiers:");
 H("    / FORMAT - Reformats statements and comments according to the");
@@ -740,15 +741,6 @@ H("        the original source.  The wrapped line length honors the");
 H("        SET WIDTH parameter currently in effect.  Note:  Text");
 H("        enclosed in <HTML>...</HTML> tags is not modified by the");
 H("        / REWRAP qualifier.");
-H("    / CLEAN - Suppresses the output of any theorem that has been flagged");
-H("        with a question mark (?) placed in the date comment field at the");
-H("        end of its proof, for example \"$( [?31-Oct-00] $)\" or");
-H("        \"$( [?] $)\".  This lets you strip out proofs under development");
-H("        so that a \"clean\" version of the database can be generated for");
-H("        official release.  Note:  Hypotheses are not stripped, only $p");
-H("        statements.  Spurious date comment fields in the suppressed");
-H("        theorems may also remain.");
-H("");
 H("This command will write the contents of the Metamath database into a file.");
 H("Note:  The present version of Metamath will not split the database into");
 H("its constituent files included with $[ $] keywords.  Instead it will write");

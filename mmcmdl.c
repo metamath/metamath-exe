@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2016  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -178,8 +178,9 @@ flag processCommandLine(void)
           if (lastArgMatches("/")) {
             i++;
             if (!getFullArg(i,cat(
-                "CLEAN|FORMAT|REWRAP",
-                "|<CLEAN>",NULL)))
+                /* 3-May-2017 nm Removed CLEAN */
+                "FORMAT|REWRAP",
+                "|<REWRAP>",NULL)))
               goto pclbad;
           } else {
             break;
@@ -1638,26 +1639,27 @@ flag processCommandLine(void)
       let(&tmpStr, " <mm.cmd>");
     }
     if (!getFullArg(1,cat("& What is the name of command file to run",
-        tmpStr, "? ", NULL)))
+        tmpStr, "? ", NULL))) {
       goto pclbad;
+    }
 
-      /* 23-Oct-2006 nm Added / SILENT qualifier */
-      /* Get any switches */
-      i = 1; /* Number of command words before switch */
-      while (1) {
+    /* 23-Oct-2006 nm Added / SILENT qualifier */
+    /* Get any switches */
+    i = 1; /* Number of command words before switch */
+    while (1) {
+      i++;
+      if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+      if (lastArgMatches("/")) {
         i++;
-        if (!getFullArg(i,"/|$|<$>")) goto pclbad;
-        if (lastArgMatches("/")) {
-          i++;
-          if (!getFullArg(i,cat(
-              "SILENT",
-              "|<SILENT>",NULL)))
-            goto pclbad;
-        } else {
-          break;
-        }
-        break; /* Break if only 1 switch is allowed */
-      } /* End while for switch loop */
+        if (!getFullArg(i,cat(
+            "SILENT",
+            "|<SILENT>",NULL)))
+          goto pclbad;
+      } else {
+        break;
+      }
+      break; /* Break if only 1 switch is allowed */
+    } /* End while for switch loop */
 
     goto pclgood;
   }
@@ -2370,3 +2372,15 @@ void printCommandError(vstring line1, long arg, vstring errorMsg)
   let(&line, "");
 } /* printCommandError */
 
+/* 4-May-2017 Ari Ferrera */
+void freeCommandLine() {
+  long i, j;
+  j = pntrLen(rawArgPntr);
+  for (i = 0; i < j; i++) let((vstring *)(&rawArgPntr[i]), "");
+  j = pntrLen(fullArg);
+  for (i = 0; i < j; i++) let((vstring *)(&fullArg[i]), "");
+  pntrLet(&fullArg, NULL_PNTRSTRING);
+  pntrLet(&rawArgPntr, NULL_PNTRSTRING);
+  nmbrLet(&rawArgNmbr, NULL_NMBRSTRING);
+  let(&fullArgString, "");
+}
