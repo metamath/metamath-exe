@@ -162,6 +162,12 @@ extern long sourceLen; /* Number of chars. in all inputs files combined (after i
    it out when this checking is no longer needed. */
 /*#define DATE_BELOW_PROOF*/
 
+/* 14-May-2017 nm */
+/* TODO: someday we should create structures to hold global vars, and
+   clear their string components in eraseSource() */
+extern vstring contributorName;
+#define DEFAULT_CONTRIBUTOR "?who?"
+
 extern vstring proofDiscouragedMarkup;
 extern vstring usageDiscouragedMarkup;
 extern flag globalDiscouragement; /* SET DISCOURAGEMENT */
@@ -465,11 +471,12 @@ flag getContrib(long stmtNum,
 vstring getContrib(long stmtNum, char mode);
 
 
-#ifdef DATE_BELOW_PROOF /* 12-May-2017 nm */
+/*#ifdef DATE_BELOW_PROOF*/ /* 12-May-2017 nm */
+/* 14-May-2017 nm - re-enabled for purpose of converting old .mm's */
 /* Extract up to 2 dates after a statement's proof.  If no date is present,
    date1 will be blank.  If no 2nd date is present, date2 will be blank. */
 void getProofDate(long stmtNum, vstring *date1, vstring *date2);
-#endif
+/*#endif*/
 
 /* Get date, month, year fields from a dd-mmm-yyyy date string,
    where dd may be 1 or 2 digits, mmm is 1st 3 letters of month,

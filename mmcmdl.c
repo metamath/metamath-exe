@@ -103,6 +103,7 @@ flag processCommandLine(void)
         if (!getFullArg(2, cat(
             "ECHO|SCROLL|WIDTH|HEIGHT|UNDO|UNIFICATION_TIMEOUT|",
             "DISCOURAGEMENT|",
+            "CONTRIBUTOR|",   /* 14-May-2017 nm */
             "EMPTY_SUBSTITUTION|SEARCH_LIMIT|JEREMY_HENTY_FILTER|<ECHO>",
             NULL)))
             goto pclbad;
@@ -1149,7 +1150,8 @@ flag processCommandLine(void)
           "WIDTH|HEIGHT|UNDO|ECHO|SCROLL|",
           "DEBUG|MEMORY_STATUS|SEARCH_LIMIT|UNIFICATION_TIMEOUT|",
           "DISCOURAGEMENT|",  /* 10-Jul-2016 nm */
-          "EMPTY_SUBSTITUTION|JEREMY_HENTY_FILTER|<WIDTH>",NULL));
+          "CONTRIBUTOR|",  /* 14-May-2017 nm */
+          "EMPTY_SUBSTITUTION|JEREMY_HENTY_FILTER|<WIDTH>", NULL));
       if (!getFullArg(1,tmpStr)) goto pclbad;
       if (cmdMatches("SET DEBUG")) {
         if (!getFullArg(2,"FLAG|OFF|<OFF>")) goto pclbad;
@@ -1205,6 +1207,13 @@ flag processCommandLine(void)
         goto pclgood;
       }
 
+      if (cmdMatches("SET CONTRIBUTOR")) {
+        if (!getFullArg(2, cat(
+            "* What is the contributor name for SAVE (NEW_)PROOF <",
+            contributorName, ">? ", NULL)))
+          goto pclbad;
+        goto pclgood;
+      }
 
       if (cmdMatches("SET SEARCH_LIMIT")) {
         if (!getFullArg(2, cat(

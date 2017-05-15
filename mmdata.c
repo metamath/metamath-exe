@@ -34,6 +34,9 @@ vstring proofDiscouragedMarkup = "";
 vstring usageDiscouragedMarkup = "";
 flag globalDiscouragement = 1; /* SET DISCOURAGEMENT ON */
 
+/* 14-May-2017 nm */
+vstring contributorName = "";
+
 /* Global variables related to current statement */
 int currentScope = 0;
 long beginScopeStatementNum = 0;
@@ -3870,8 +3873,8 @@ flag getContrib(long stmtNum,
 } /* getContrib */
 
 
-#ifdef DATE_BELOW_PROOF /* 12-May-2017 nm */
-
+/*#ifdef DATE_BELOW_PROOF*/ /* 12-May-2017 nm */
+/* 14-May-2017 nm - re-enabled (temporarily?) for converting old .mm's */
 /* 4-Nov-2015 nm */
 /* Extract up to 2 dates after a statement's proof.  If no date is present,
    date1 will be blank.  If no 2nd date is present, date2 will be blank.
@@ -3903,7 +3906,7 @@ void getProofDate(long stmtNum, vstring *date1, vstring *date2) {
   return;
 } /* getProofDate */
 
-#endif /*#ifdef DATE_BELOW_PROOF*/ /* 12-May-2017 nm */
+/*#endif*/ /*#ifdef DATE_BELOW_PROOF*/ /* 12-May-2017 nm */
 
 
 /* 4-Nov-2015 nm */

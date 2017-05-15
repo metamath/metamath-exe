@@ -3820,7 +3820,7 @@ void eraseSource(void)    /* ERASE command */
        parseStatements() was not always freed by eraseSource().  If reqVars==0
        (in parseStatements()) then statement[i].reqVarList[0]==-1 (in
        eraseSource()) and so eraseSource() thought that
-       statement[stmt].reqVarList wass not allocated and should not be freed.
+       statement[stmt].reqVarList was not allocated and should not be freed.
 
        There were similar problems for reqHypList, reqDisjVarsA, reqDisjVarsB,
        reqDisjVarsStmt, optDisjVarsA, optDisjVarsB, optDisjVarsStmt.
@@ -3831,17 +3831,21 @@ void eraseSource(void)    /* ERASE command */
        should be also fixed, but I could not find simple example for memory
        leak and leave it as it was.  */
     if (statement[i].labelName[0]) free(statement[i].labelName);
-    if (statement[i].mathString[0] != -1)
+    /*if (statement[i].mathString[0] != -1)*/
+    if (statement[i].mathString != NULL_NMBRSTRING) /* 14-May-2014 nm */
         poolFree(statement[i].mathString);
-    if (statement[i].proofString[0] != -1)
+    /*if (statement[i].proofString[0] != -1)*/
+    if (statement[i].proofString != NULL_NMBRSTRING) /* 14-May-2014 nm */
         poolFree(statement[i].proofString);
     if (statement[i].reqHypList != NULL_NMBRSTRING)
         poolFree(statement[i].reqHypList);
-    if (statement[i].optHypList[0] != -1)
+    /*if (statement[i].optHypList[0] != -1)*/
+    if (statement[i].optHypList != NULL_NMBRSTRING) /* 14-May-2014 nm */
         poolFree(statement[i].optHypList);
     if (statement[i].reqVarList != NULL_NMBRSTRING)
         poolFree(statement[i].reqVarList);
-    if (statement[i].optVarList[0] != -1)
+    /*if (statement[i].optVarList[0] != -1)*/
+    if (statement[i].optVarList != NULL_NMBRSTRING) /* 14-May-2014 nm */
         poolFree(statement[i].optVarList);
     if (statement[i].reqDisjVarsA != NULL_NMBRSTRING)
         poolFree(statement[i].reqDisjVarsA);
@@ -3888,7 +3892,7 @@ void eraseSource(void)    /* ERASE command */
      parseMathDecl() by let().  eraseSource() should free every mathToken and
      there are (mathTokens + dummyVars) tokens. */
   for (i = 0; i <= mathTokens + dummyVars; i++) {
-    let(&mathToken[i].tokenName,"");
+    let(&(mathToken[i].tokenName), "");
   }
 
   memFreePoolPurge(0);
@@ -4377,9 +4381,10 @@ void verifyMarkup(vstring labelMatch,
     /* Check the contributor */
     let(&str1, "");
     str1 = getContrib(stmtNum, CONTRIBUTOR);
-    if (!strcmp(str1, "?who?")) {
+    if (!strcmp(str1, DEFAULT_CONTRIBUTOR)) {
       printLongLine(cat(
-          "?Warning: contributor \"?who?\" should be updated in statement \"",
+          "?Warning: contributor \"", DEFAULT_CONTRIBUTOR,  /* 14-May-2017 nm */
+          "\" should be updated in statement \"",
           statement[stmtNum].labelName, "\".", NULL), "    ", " ");
       errFound = 1;
     }

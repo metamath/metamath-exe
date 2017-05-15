@@ -9,7 +9,12 @@
    or public domain.  Therefore any patches that are contributed should be
    free of any copyright restrictions.  Thank you. - NM */
 
-#define MVERSION "0.142 12-May-2017"
+#define MVERSION "0.143 14-May-2017"
+/* 0.143 14-May-2017 nm metamath.c mmdata.c,h mmcmdl.c mmcmds.c mmhlpb.c -
+     added SET CONTRIBUTOR; for missing "(Contributed by..." use date
+     below proof if it exists, otherwise use today's date, in order to update
+     old .mm files.
+   14-May-2017 Ari Ferrera - mmcmds.c - fix memory leaks in ERASE */
 /* 0.142 12-May-2017 nm metamath.c mmdata.c,h mmcmds.c - added
      "#define DATE_BELOW_PROOF" in mmdata.h that if uncommented, will enable
      use of the (soon-to-be obsolete) date below the proof
@@ -557,6 +562,10 @@ console_options.title = (unsigned char*)"\pMetamath";
   /* Allocate big arrays */
   initBigArrays();
 
+  /* 14-May-2017 nm */
+  /* Set the default contributor */
+  let(&contributorName, DEFAULT_CONTRIBUTOR);
+
   /* Process a command line until EXIT */
   command(argc, argv);
 
@@ -1100,6 +1109,7 @@ void command(int argc, char *argv[])
         let(&commandPrompt,"");
         let(&commandLine,"");
         let(&input_fn,"");
+        let(&contributorName, ""); /* 14-May-2017 nm */
 
         return; /* Exit from program */
       }
@@ -2296,7 +2306,7 @@ void command(int argc, char *argv[])
 
             /* Get HTML hypotheses => assertion */
             let(&str4, "");
-            str4 = getTexOrHtmlHypAndAssertion(s); /* In mmwtex.c */
+            str4 = getTexOrHtmlHypAndAssertion(stmt); /* In mmwtex.c */
             printLongLine(cat("</TD></TR><TR",
 
                   /*
@@ -3279,7 +3289,7 @@ void command(int argc, char *argv[])
       print2("(SET HEIGHT...) Screen display HEIGHT is %ld.\n",
           screenHeight + 1);
       if (input_fn[0] != 0) {
-        print2("(READ...) %ld statements have been read from '%s'.\n",
+        print2("(READ...) %ld statements have been read from \"%s\".\n",
           statements, input_fn);
       } else {
         print2("(READ...) No source file has been read in yet.\n");
@@ -3287,8 +3297,11 @@ void command(int argc, char *argv[])
       print2(
      "(SET DISCOURAGEMENT...) Blocking based on \"discouraged\" tags is %s.\n",
           (globalDiscouragement ? "ON" : "OFF"));
+      print2(
+     "(SET CONTRIBUTOR...) The current contributor is \"%s\".\n",
+          contributorName);
       if (PFASmode) {
-        print2("(PROVE...) The statement you are proving is '%s'.\n",
+        print2("(PROVE...) The statement you are proving is \"%s\".\n",
             statement[proveStatement].labelName);
       }
       print2("(SET UNDO...) The maximum number of UNDOs is %ld.\n",
@@ -3314,16 +3327,16 @@ void command(int argc, char *argv[])
              "(SET JEREMY_HENTY_FILTER...) The Henty filter is turned OFF.\n");
       }
       if (showStatement) {
-        print2("(SHOW...) The default statement for SHOW commands is '%s'.\n",
+        print2("(SHOW...) The default statement for SHOW commands is \"%s\".\n",
             statement[showStatement].labelName);
       }
       if (logFileOpenFlag) {
-        print2("(OPEN LOG...) The log file '%s' is open.\n", logFileName);
+        print2("(OPEN LOG...) The log file \"%s\" is open.\n", logFileName);
       } else {
         print2("(OPEN LOG...) No log file is currently open.\n");
       }
       if (texFileOpenFlag) {
-        print2("The %s file '%s' is open.\n", htmlFlag ? "HTML" : "LaTeX",
+        print2("The %s file \"%s\" is open.\n", htmlFlag ? "HTML" : "LaTeX",
             texFileName);
       }
       /* 17-Nov-2015 nm */
@@ -4005,13 +4018,23 @@ void command(int argc, char *argv[])
                  to avoid premature output */
               && !nmbrElementIn(1, nmbrSaveProof, -(long)'?')) {
 
+            /* 14-May-2017 nm */
+            /* See if there is a date below the proof (for converting old
+               .mm files).  Someday this will be obsolete. */
+            getProofDate(outStatement, &str3, &str4);
+            /* If there is no date below proof, use today's date */
+            if (str3[0] == 0) let(&str3, date());
+
+
             /* 3-May-2017 nm */
             /* Add a "(Contributed by...)" date if it isn't there */
             let(&str2, "");
             str2 = getContrib(outStatement, CONTRIBUTOR);
             if (str2[0] == 0) { /* The is no contributor, so add one */
               let(&str4, cat("\n", space(indentation + 1),
-                  "(Contributed by ?who?, ", date(), ".) ", NULL));
+                  /*"(Contributed by ?who?, ", date(), ".) ", NULL));*/
+                  "(Contributed by ", contributorName,
+                      ", ", str3, ".) ", NULL)); /* 14-May-2017 nm */
               let(&str3, space(statement[outStatement].labelSectionLen));
               /* str3 will have the statement's label section w/ comment */
               memcpy(str3, statement[outStatement].labelSectionPtr,
@@ -7099,6 +7122,15 @@ void command(int argc, char *argv[])
       } else {
         bug(1129);
       }
+      continue;
+    }
+
+
+    /* 14-May-2017 nm */
+    if (cmdMatches("SET CONTRIBUTOR")) {
+      print2("\"Contributed by...\" name was changed from \"%s\" to \"%s\"\n",
+          contributorName, fullArg[2]);
+      let(&contributorName, fullArg[2]);
       continue;
     }
 

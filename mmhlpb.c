@@ -527,7 +527,7 @@ H("screen is taller or shorter, this command lets you to change the number");
 H("of lines at which the display pauses and prompts you to continue.");
 H("");
 
-/* 10-Jul-15 nm */
+/* 10-Jul-2015 nm */
 printHelp = !strcmp(saveHelpCmd, "HELP SET DISCOURAGEMENT");
 H("Syntax:  SET DISCOURAGEMENT OFF or SET DISCOURAGEMENT ON");
 H("");
@@ -539,6 +539,16 @@ H("longer blocked.  This setting is intended only for the convenience of");
 H("advanced users who are intimately familiar with the database, for use");
 H("when maintaining \"discouraged\" statements.  SHOW SETTINGS will show you");
 H("the current value.");
+H("");
+
+/* 14-May-2017 nm */
+printHelp = !strcmp(saveHelpCmd, "HELP SET CONTRIBUTOR");
+H("Syntax:  SET CONTRIBUTOR <name>");
+H("");
+H("Specify the contributor name for new \"(Contributed by...\" comment");
+H("markup added by SAVE PROOF or SAVE NEW_PROOF.  Use quotes (' or \")");
+H("around <name> if it contains spaces.  The current contributor is");
+H("displayed by SHOW SETTINGS.");
 H("");
 
 printHelp = !strcmp(saveHelpCmd, "HELP SET UNIFICATION_TIMEOUT");
