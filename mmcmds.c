@@ -4388,6 +4388,16 @@ void verifyMarkup(vstring labelMatch,
           statement[stmtNum].labelName, "\".", NULL), "    ", " ");
       errFound = 1;
     }
+    /* 15-May-2017 nm */
+    let(&str1, "");
+    str1 = getContrib(stmtNum, REVISER);
+    if (!strcmp(str1, DEFAULT_CONTRIBUTOR)) {
+      printLongLine(cat(
+          "?Warning: reviser \"", DEFAULT_CONTRIBUTOR,  /* 14-May-2017 nm */
+          "\" should be updated in statement \"",
+          statement[stmtNum].labelName, "\".", NULL), "    ", " ");
+      errFound = 1;
+    }
 
     if (dateSkip == 0) {
 
@@ -4395,7 +4405,7 @@ void verifyMarkup(vstring labelMatch,
       /* Use the error-checking feature of getContrib() extractor */
       /* 3-May-2017 nm */
       let(&str1, "");
-      str1 = getContrib(stmtNum, GC_ERROR_CHECK_PRINT);
+      str1 = getContrib(stmtNum, GC_ERROR_CHECK_PRINT); /* Returns P or F */
       if (str1[0] == 'F') errFound = 1;
       let(&str1, "");
       str1 = getContrib(stmtNum, MOST_RECENT_DATE);

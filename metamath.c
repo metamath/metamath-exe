@@ -9,7 +9,9 @@
    or public domain.  Therefore any patches that are contributed should be
    free of any copyright restrictions.  Thank you. - NM */
 
-#define MVERSION "0.143 14-May-2017"
+#define MVERSION "0.144 15-May-2017"
+/* 0.144 15-May-2017 nm metamath.c mmcmds.c - Add "(Revised by..." tag for
+     conversion of legacy .mm's if there is a 2nd date under the proof */
 /* 0.143 14-May-2017 nm metamath.c mmdata.c,h mmcmdl.c mmcmds.c mmhlpb.c -
      added SET CONTRIBUTOR; for missing "(Contributed by..." use date
      below proof if it exists, otherwise use today's date, in order to update
@@ -4018,23 +4020,44 @@ void command(int argc, char *argv[])
                  to avoid premature output */
               && !nmbrElementIn(1, nmbrSaveProof, -(long)'?')) {
 
-            /* 14-May-2017 nm */
-            /* See if there is a date below the proof (for converting old
-               .mm files).  Someday this will be obsolete. */
-            getProofDate(outStatement, &str3, &str4);
-            /* If there is no date below proof, use today's date */
-            if (str3[0] == 0) let(&str3, date());
-
-
             /* 3-May-2017 nm */
             /* Add a "(Contributed by...)" date if it isn't there */
             let(&str2, "");
             str2 = getContrib(outStatement, CONTRIBUTOR);
             if (str2[0] == 0) { /* The is no contributor, so add one */
+
+              /* 14-May-2017 nm */
+              /* See if there is a date below the proof (for converting old
+                 .mm files).  Someday this will be obsolete, with str3 and
+                 str4 always returned as "". */
+              getProofDate(outStatement, &str3, &str4);
+              /* If there are two dates below the proof, the first on is
+                 the revision date and the second the "Contributed by" date. */
+              if (str4[0] != 0) { /* There are 2 dates below the proof */
+                let(&str5, str3); /* 1st date is Revised by... */
+                let(&str3, str4); /* 2nd date is Contributed by... */
+              } else {
+                let(&str5, "");
+              }
+              /* If there is no date below proof, use today's date */
+              if (str3[0] == 0) let(&str3, date());
               let(&str4, cat("\n", space(indentation + 1),
                   /*"(Contributed by ?who?, ", date(), ".) ", NULL));*/
                   "(Contributed by ", contributorName,
                       ", ", str3, ".) ", NULL)); /* 14-May-2017 nm */
+              /* If there is a 2nd date below proof, add a "(Revised by..."
+                 tag */
+              if (str5[0] != 0) {
+                /* Use the DEFAULT_CONTRIBUTOR ?who? because we don't
+                   know the reviser name (using the contributor name may
+                   be incorrect).  Also, this will trigger a warning in
+                   VERIFY MARKUP since it may be a proof shortener rather than
+                   a reviser. */
+                let(&str4, cat(str4, "\n", space(indentation + 1),
+                    "(Revised by ", DEFAULT_CONTRIBUTOR,
+                        ", ", str5, ".) ", NULL)); /* 15-May-2017 nm */
+              }
+
               let(&str3, space(statement[outStatement].labelSectionLen));
               /* str3 will have the statement's label section w/ comment */
               memcpy(str3, statement[outStatement].labelSectionPtr,
@@ -4076,7 +4099,7 @@ void command(int argc, char *argv[])
               /* str3 will have the next statement's label section w/ comment */
               memcpy(str3, statement[outStatement + 1].labelSectionPtr,
                   (size_t)(statement[outStatement + 1].labelSectionLen));
-              let(&str5, ""); /* Redundant but we need to guarantee it
+              let(&str5, ""); /* We need to guarantee this
                                 for the screen printout later */
               if (instr(1, str3, "$( [") == 0) {
                 /* There is no date below proof (if there is, don't do
@@ -4117,7 +4140,7 @@ void command(int argc, char *argv[])
                 } /* if saveFlag */
               } /* if (instr(1, str3, "$( [") == 0) */
 
-#endif /*#ifdef DATE_BELOW_PROOF*/ /* 12-May-2017 nm */
+#endif /* end #ifdef DATE_BELOW_PROOF */ /* 12-May-2017 nm */
 
             } /* if str2[0] == 0 */
 
