@@ -4048,9 +4048,10 @@ void rawSourceError(char *startFile, char *ptr, long tokLen, long lineNum,
   let(&errorMsg,"");
 } /* rawSourceError */
 
-/*   sourcePtr is assumed to point to the start of the raw input buffer.
-     sourceLen is assumed to be length of the raw input buffer.
-     The includeCall array is referenced. */
+/* The global sourcePtr is assumed to point to the start of the raw input
+     buffer.
+   The global sourceLen is assumed to be length of the raw input buffer.
+   The includeCall array is referenced. */
 void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
 {
   char *startLine;
@@ -4074,7 +4075,8 @@ void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
      necessary) */
   i = 0;
 
-  let(&errorMsg, errMsg); /* Prevent deallocation of errMsg */
+  let(&errorMsg, errMsg); /* errMsg may be deallocated if this function is
+                         called with a string function argument (cat, etc.) */
 
   if (!stmtNum) {
     lineNum = 0;
@@ -4088,17 +4090,20 @@ void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
        changed section */
     if (statement[stmtNum].labelSectionChanged == 1
          && ptr >= statement[stmtNum].labelSectionPtr
-         && ptr < statement[stmtNum].labelSectionPtr) {
+         && ptr <= statement[stmtNum].labelSectionPtr
+             + statement[stmtNum].labelSectionLen) {
       locSourcePtr = statement[stmtNum].labelSectionPtr;
       locSourceLen = statement[stmtNum].labelSectionLen;
     } else if (statement[stmtNum].mathSectionChanged == 1
          && ptr >= statement[stmtNum].mathSectionPtr
-         && ptr < statement[stmtNum].mathSectionPtr) {
+         && ptr <= statement[stmtNum].mathSectionPtr
+             + statement[stmtNum].mathSectionLen) {
       locSourcePtr = statement[stmtNum].mathSectionPtr;
       locSourceLen = statement[stmtNum].mathSectionLen;
     } else if (statement[stmtNum].proofSectionChanged == 1
          && ptr >= statement[stmtNum].proofSectionPtr
-         && ptr < statement[stmtNum].proofSectionPtr) {
+         && ptr <= statement[stmtNum].proofSectionPtr
+             + statement[stmtNum].proofSectionLen) {
       locSourcePtr = statement[stmtNum].proofSectionPtr;
       locSourceLen = statement[stmtNum].proofSectionLen;
     } else {

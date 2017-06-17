@@ -1258,7 +1258,7 @@ nmbrString *expandProof(
         to null nmbrStrings */
   if (statement[sourceStmtNum].type != (char)p_) {
     /* Caller should enforce $p statements only */
-    bug(1741);
+    bug(1871);
     nmbrLet(&expandedTargetProof, targetProof);
     goto RETURN_POINT;
   }
@@ -1291,7 +1291,7 @@ nmbrString *expandProof(
            Could be caused by corrupted proof also.  If this is confirmed,
            change the bug() to an error message (or depend on getProof() error
            messages) */
-        bug(1742);
+        bug(1872);
         nmbrLet(&expandedTargetProof, targetProof);
         goto RETURN_POINT;
       }
@@ -1309,7 +1309,7 @@ nmbrString *expandProof(
           } else {
             /* It shouldn't be a compressed proof because we called
                unSquishProof() above */
-            bug(1746);
+            bug(1873);
           }
           /* Assign unknown to the target proof */
           nmbrLet(&expandedSubproof, nmbrAddElement(expandedSubproof,
@@ -1333,7 +1333,7 @@ nmbrString *expandProof(
                 hypSubproofs[srcHypNum], NULL));
           } else if (srcStepType == (char)e_) {
             /* A non-required hypothesis cannot be $e */
-            bug(1743);
+            bug(1874);
           } else if (srcStepType == (char)f_) {
             /* It's an optional hypothesis (dummy variable), which we don't
                know what it will be in final proof, so make it an unknown
@@ -1343,7 +1343,7 @@ nmbrString *expandProof(
                 -(long)'?'));
           }
         } else if (srcStepType != (char)a_ && srcStepType != (char)p_) {
-          bug(1744);
+          bug(1875);
         } else {
           /* It's a normal statement reference ($a, $p); use it as is */
           /* (This adds normal ref steps one by one, each requiring a new
@@ -3368,7 +3368,7 @@ void initProofStruct(struct pip_struct *proofStruct, nmbrString *proof,
   nmbrLet(&tmpProof, nmbrUnsquishProof(proof));
 
   /* Assign initial proof structure */
-  if (nmbrLen((*proofStruct).proof)) bug(1745); /* Should've been deall.*/
+  if (nmbrLen((*proofStruct).proof)) bug(1876); /* Should've been deall.*/
   nmbrLet(&((*proofStruct).proof), tmpProof);
   plen = nmbrLen((*proofStruct).proof);
   pntrLet(&((*proofStruct).target), pntrNSpace(plen));

@@ -2011,6 +2011,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
       if (!pos1) pos1 = (long)strlen(cmt) + 1;
       if (mode == 1 && preformattedMode == 0) {
         let(&tmpStr, "");
+        /* asciiToTt() is where "<" is converted to "&lt;" etc. */
         tmpStr = asciiToTt(left(cmt, pos1));
         let(&tmpStrMasked, tmpStr);
       } else {
@@ -2596,9 +2597,47 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
       bug(2311);
     }
   } /* Next i */
-  cmtptr = cmt;
   /* End convert line to the old $m..$n and $l..$n */
 
+
+  /* 29-May-2017 nm */
+  /* Put <HTML> and </HTML> at beginning of line so preformattedMode won't
+     be switched on or off in the middle of processing a line */
+  /* This also fixes the problem where multiple <HTML>...</HTML> on one
+     line aren't all removed in HTML output, causing w3c validation errors */
+  /* Note:  "Q<HTML><sup>2</sup></HTML>." will have a space around "2" because
+     of this fix.  Instead use "<HTML>Q<sup>2</sup>.</HTML>" or just "Q^2." */
+  pos1 = -1; /* So -1 + 2 = 1 = start of string for instr() */
+  while (1) {
+    pos1 = instr(pos1 + 2/*skip new \n*/, cmt, "<HTML>");
+    if (pos1 == 0) break;
+
+    /* If <HTML> begins a line (after stripping spaces), don't put a \n so
+       that we don't trigger new paragraph mode */
+    let(&tmpStr, edit(left(cmt, pos1 - 1), 2/*discard spaces & tabs*/));
+    i = (long)strlen(tmpStr);
+    if (i == 0) continue;
+    if (tmpStr[i - 1] == '\n') continue;
+
+    let(&cmt, cat(left(cmt, pos1 - 1), "\n", right(cmt, pos1), NULL));
+  }
+  pos1 = -1; /* So -1 + 2 = 1 = start of string for instr() */
+  while (1) {
+    pos1 = instr(pos1 + 2/*skip new \n*/, cmt, "</HTML>");
+    if (pos1 == 0) break;
+
+    /* If </HTML> begins a line (after stripping spaces), don't put a \n so
+       that we don't trigger new paragraph mode */
+    let(&tmpStr, edit(left(cmt, pos1 - 1), 2/*discard spaces & tabs*/));
+    i = (long)strlen(tmpStr);
+    if (i == 0) continue;
+    if (tmpStr[i - 1] == '\n') continue;
+
+    let(&cmt, cat(left(cmt, pos1 - 1), "\n", right(cmt, pos1), NULL));
+  }
+
+
+  cmtptr = cmt; /* cmtptr is for scanning cmt */
 
   outputToString = 1; /* Redirect print2 and printLongLine to printString */
   /*let(&printString, "");*/ /* May have stuff to be printed 7/4/98 */

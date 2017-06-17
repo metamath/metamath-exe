@@ -1862,6 +1862,8 @@ nmbrString *nmbrGetTargetHyp(nmbrString *proof, long statemNum)
    be much longer of course). */
 /* The statement number is needed because required hypotheses are
    implicit in the compressed proof. */
+/* The returned ASCII string isn't surrounded by spaces e.g. it
+   could be "( a1i a1d ) ACBCADEF". */
 vstring compressProof(nmbrString *proof, long statemNum,
     flag oldCompressionAlgorithm)
 {

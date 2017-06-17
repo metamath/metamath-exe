@@ -9,8 +9,14 @@
    or public domain.  Therefore any patches that are contributed should be
    free of any copyright restrictions.  Thank you. - NM */
 
-#define MVERSION "0.144 15-May-2017"
-/* 0.144 15-May-2017 nm metamath.c mmcmds.c - Add "(Revised by..." tag for
+#define MVERSION "0.145 16-Jun-2017"
+/* 0.146 16-Jun-2017 nm metamath.c mmpars.c - fix bug 1741 during
+     MINIMIZE_WITH; mmpfas.c - make duplicate bug numbers unique; mmhlpa.c
+     mmhlpb.c - adjust to prevent lcc compiler "Function too big for the
+     optimizer"
+   29-May-2017 nm mmwtex.c mmhlpa.c - take out extraneous  <HTML>...</HTML>
+     markup tags in HTML output so w3c validator will pass */
+/* 0.144 15-May-2017 nm metamath.c mmcmds.c - add "(Revised by..." tag for
      conversion of legacy .mm's if there is a 2nd date under the proof */
 /* 0.143 14-May-2017 nm metamath.c mmdata.c,h mmcmdl.c mmcmds.c mmhlpb.c -
      added SET CONTRIBUTOR; for missing "(Contributed by..." use date
@@ -686,6 +692,7 @@ void command(int argc, char *argv[])
   long forwardLength = 0; /* For MINIMIZE_WITH */ /* 25-Jun-2014 nm */
   vstring saveZappedProofSectionPtr; /* Pointer only */ /* For MINIMIZE_WITH */
   long saveZappedProofSectionLen; /* For MINIMIZE_WITH */ /* 25-Jun-2014 nm */
+  flag saveZappedProofSectionChanged; /* For MINIMIZE_WITH */ /* 16-Jun-2017 nm */
 
   struct pip_struct saveOrigProof = {
        NULL_NMBRSTRING, NULL_PNTRSTRING, NULL_PNTRSTRING, NULL_PNTRSTRING };
@@ -6380,12 +6387,33 @@ void command(int argc, char *argv[])
                   = statement[proveStatement].proofSectionPtr;
               saveZappedProofSectionLen
                   = statement[proveStatement].proofSectionLen;
-              /* (search for "chr(1)" above for explanation) */
+
+              /****** Obsolete due to 3-May-2017 update
+              /@ (search for "chr(1)" above for explanation) @/
               let(&str1, cat(chr(1), "\n", str1, " $.\n", NULL));
-              statement[proveStatement].proofSectionPtr = str1 + 1; /* Compressed
-                                                     proof generated above */
+              statement[proveStatement].proofSectionPtr = str1 + 1; /@ Compressed
+                                                     proof generated above @/
               statement[proveStatement].proofSectionLen =
                   newCompressedLength + 4;
+              *******/
+
+              /******** start of 16-Jun-2017 nm ************/
+              saveZappedProofSectionChanged
+                  = statement[proveStatement].proofSectionChanged;
+              /* Set flag that this is not the original source */
+              statement[proveStatement].proofSectionChanged = 1;
+              /* str1 has the new compressed trial proof after minimization */
+              /* Put space before and after to satisfy "space around token"
+                 requirement, to prevent possible error messages, and also
+                 add "$." since parseCompressedProof() expects it */
+              let(&str1, cat(" ", str1, " $.", NULL));
+              /* Don't include the "$." in the length */
+              statement[proveStatement].proofSectionLen = (long)strlen(str1) - 2;
+              /* We don't deallocate previous proofSectionPtr content because
+                 we will recover it after the verifyProof() */
+              statement[proveStatement].proofSectionPtr = str1;
+              /******** end of 16-Jun-2017 nm ************/
+
               outputToString = 1; /* Suppress error messages */
               /* i = parseProof(proveStatement); */
               /* if (i != 0) bug(1121); */
@@ -6414,6 +6442,8 @@ void command(int argc, char *argv[])
                   = saveZappedProofSectionPtr;
               statement[proveStatement].proofSectionLen
                   = saveZappedProofSectionLen;
+              statement[proveStatement].proofSectionChanged
+                  = saveZappedProofSectionChanged; /* 16-Jun-2017 nm */
               if (i != 0 || j != 0) {
                 /* There was a verify proof error (j!=0) or $d violation (i!=0)
                    so don't used minimized proof */
