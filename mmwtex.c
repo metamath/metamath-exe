@@ -3004,6 +3004,7 @@ void printTexLongMath(nmbrString *mathString,
   vstring htmStepTag = ""; /* 30-May-2015 nm */
   vstring htmHyp = ""; /* 7/4/98 */
   vstring htmRef = ""; /* 7/4/98 */
+  vstring htmLocLab = ""; /* 7/4/98 */
   vstring tmp = "";  /* 10/10/02 */
   vstring descr = ""; /* 19-Nov-2007 nm */
   char refType = '?'; /* 14-Sep-2010 nm  'e' means $e, etc. */
@@ -3061,16 +3062,34 @@ void printTexLongMath(nmbrString *mathString,
           if (i > 3) { /* 2/8/02 - added for extra safety for the future */
             bug(2316);
           }
-          if (!htmlFlag && i > 2) { /* 1-May-2017 nm */
+          /* Deleted 26-Jun-2017 nm - this check is too conservative; we
+             could have starting tex="2 1 a4s @2: $p" which will result
+             in pos=4, i=3 */
+          /*
+          if (!htmlFlag && i > 2) { /@ 1-May-2017 nm @/
             bug(2341);
           }
+          */
           if (i == 0) let(&htmStep, left(tex, pos - 1));
           if (i == 1) let(&htmHyp, left(tex, pos - 1));
           if (i == 2) let(&htmRef, left(tex, pos - 1));
+          /* 26-Jun-2017 nm */
+          if (i == 3) let(&htmLocLab, left(tex, pos - 1));
+
           let(&tex, right(tex, pos + 1));
           i++;
         }
       }
+
+      /* 26-Jun-2017 nm */
+      if (i == 3 && htmRef[0] == '@') {
+        /* The referenced statement has no hypotheses but has a local
+           label e.g."2 a4s @2: $p" */
+        let(&htmLocLab, htmRef);
+        let(&htmRef, htmHyp);
+        let(&htmHyp, "");
+      }
+
       if (i < 3) {
         /* The referenced statement has no hypotheses e.g.
            "4 ax-1 $a" */
@@ -3253,12 +3272,6 @@ void printTexLongMath(nmbrString *mathString,
               NULL), "", "\"");
         }
       }
-      let(&descr, ""); /*Deallocate */  /* 17-Nov-2007 nm */
-      let(&htmStep, ""); /* Deallocate */
-      let(&htmStepTag, ""); /* Deallocate */
-      let(&htmHyp, ""); /* Deallocate */
-      let(&htmRef, ""); /* Deallocate */
-      let(&tmp, ""); /* Deallocate */
 #ifdef INDENT_HTML_PROOFS
       /* nm 3-Feb-04 Experiment to indent web proof displays */
       let(&tmp, "");
@@ -3291,7 +3304,8 @@ void printTexLongMath(nmbrString *mathString,
             /* If not first step, so print "\\" LaTeX line break */
             !strcmp(htmStep, "1") ? "" : "\\\\ ",
             htmStep,  /* Step number */
-            " && & ",
+            " && ",
+            " & ",
             texLine,
             /* Don't put space to help prevent bad line break */
             "&\\text{Hyp~",
@@ -3309,7 +3323,12 @@ void printTexLongMath(nmbrString *mathString,
             /* If not first step, so print "\\" LaTeX line break */
             !strcmp(htmStep, "1") ? "" : "\\\\ ",
             htmStep,  /* Step number */
-            " && & ",
+            " && ",
+
+            /* Local label if any e.g. "@2:" */ /* 26-Jun-2017 nm */
+            (htmLocLab[0] != 0) ? cat(htmLocLab, "\\ ", NULL) : "",
+
+            " & ",
             texLine,
             /* Don't put space to help prevent bad line break */
 
@@ -3317,7 +3336,13 @@ void printTexLongMath(nmbrString *mathString,
                symbolic labels (due to \tag{..} in mmcmds.c).  Also,
                move hypotheses to after referenced label */
             "&",
-            "(\\mbox{\\ref{eq:", htmRef, "}}",
+            "(",
+
+            /* Don't make local label a \ref */ /* 26-Jun-2017 nm */
+            (htmRef[0] != '@') ?
+                cat("\\mbox{\\ref{eq:", htmRef, "}}", NULL)
+                : htmRef,
+
             htmHyp[0] ? "," : "",
             htmHyp,
             ")\\notag", NULL),
@@ -3346,6 +3371,13 @@ void printTexLongMath(nmbrString *mathString,
   fprintf(texFilePtr, "%s", printString);
   let(&printString, "");
 
+  let(&descr, ""); /*Deallocate */  /* 17-Nov-2007 nm */
+  let(&htmStep, ""); /* Deallocate */
+  let(&htmStepTag, ""); /* Deallocate */
+  let(&htmHyp, ""); /* Deallocate */
+  let(&htmRef, ""); /* Deallocate */
+  let(&htmLocLab, ""); /* Deallocate */ /* 26-Jun-2017 nm */
+  let(&tmp, ""); /* Deallocate */
   let(&texLine, ""); /* Deallocate */
   let(&tex, ""); /* Deallocate */
 } /* printTexLongMath */

@@ -9,8 +9,10 @@
    or public domain.  Therefore any patches that are contributed should be
    free of any copyright restrictions.  Thank you. - NM */
 
-#define MVERSION "0.145 16-Jun-2017"
-/* 0.146 16-Jun-2017 nm metamath.c mmpars.c - fix bug 1741 during
+#define MVERSION "0.146 26-Jun-2017"
+/* 0.146 26-Jun-2017 nm mmwtex.c - fix handling of local labels in
+     'show proof.../tex' (bug 2341 reported by Eric Parfitt) */
+/* 0.145 16-Jun-2017 nm metamath.c mmpars.c - fix bug 1741 during
      MINIMIZE_WITH; mmpfas.c - make duplicate bug numbers unique; mmhlpa.c
      mmhlpb.c - adjust to prevent lcc compiler "Function too big for the
      optimizer"
