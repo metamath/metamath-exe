@@ -125,7 +125,7 @@ extern long MAX_MATHTOKENS;
 extern struct statement_struct *statement;
 /*Obs*/ /*extern struct label_struct *label;*/
 extern struct mathToken_struct *mathToken;
-extern long statements, /*labels, */mathTokens;
+extern long statements, /*labels,*/ mathTokens;
 extern long maxMathTokenLength;
 
 extern long MAX_INCLUDECALLS;

@@ -318,7 +318,7 @@ void typeStatement(long showStmt,
 
               }
               nmbrLet(&nmbrDDList, NULL_NMBRSTRING);
-              break;
+              break; /* Out of n loop */
             }
           } /* If $d var in current list is not same as one we're adding */
         } /* Next n */
@@ -658,26 +658,14 @@ void typeStatement(long showStmt,
             let(&str1, cat(str1, ", <",
                 mathToken[nmbrTmpPtr1[k]].tokenName, ",",
                 mathToken[nmbrTmpPtr2[k]].tokenName, ">", NULL));
-          } else {
-            if (htmlFlg && texFlag) {
-                   /* tokenToTex allocates str2; we must deallocate it */
-              /*  12/1/01 don't output dummy variables
-              let(&str2, "");
-              str2 = tokenToTex(mathToken[nmbrTmpPtr1[k]].tokenName, showStmt);
-              let(&str1, cat(str1, " &nbsp; ", str2, NULL));
-              let(&str2, "");
-              str2 = tokenToTex(mathToken[nmbrTmpPtr2[k]].tokenName, showStmt);
-              let(&str1, cat(str1, ",", str2, NULL));
-              */
-            }
-          }
-        }
+          } /* if !texFlag */
+        } /* next k */
         if (!texFlag) {
           printLongLine(cat(
               "Its optional disjoint variable pairs are:  ",
               right(str1,3),NULL),"  "," ");
         }
-      }
+      } /* if (i && type == p_) */
 
       /* Before 12/23/01 **********
            Future: once stable, take out redundant code producing str1
@@ -692,38 +680,57 @@ void typeStatement(long showStmt,
 
 
       /* 12/23/01 */
-      if (texFlag && htmlFlg && htmlDistinctVars[0]) {
-        outputToString = 1;
-        printLongLine(cat(
-     "<CENTER><A HREF=\"mmset.html#distinct\">Distinct variable</A> group",
-            /* 11-Aug-2006 nm Determine whether "group" or "groups". */
-            distVarGrps > 1 ? "s" : "",  /* 11-Aug-2006 */
-            ": ",
-            (altHtmlFlag ? cat("<SPAN ", htmlFont, ">", NULL) : ""),
-                                               /* 14-Jan-2016 nm */
-            htmlDistinctVars,
-            (altHtmlFlag ? "</SPAN>" : ""),    /* 14-Jan-2016 nm */
-            "</CENTER>", NULL), "", "\"");
-        /* original code:
-        printLongLine(cat(
-     "<CENTER><A HREF=\"mmset.html#distinct\">Distinct variable</A> group(s): ",
-            htmlDistinctVars,
-            "</CENTER>", NULL), "", "\"");
-        */
-        outputToString = 0;
-      }
+      if (texFlag && htmlFlg) { /* It's a web page */
 
-      /* 4-Jan-2014 nm */
-      if (texFlag && htmlFlg) {
+        if (htmlDistinctVars[0] != 0) {
+          outputToString = 1;
+          printLongLine(cat(
+              "<CENTER>",
+              "<A HREF=\"mmset.html#distinct\">Distinct variable</A> group",
+              /* 11-Aug-2006 nm Determine whether "group" or "groups". */
+              distVarGrps > 1 ? "s" : "",  /* 11-Aug-2006 */
+              ": ",
+              /* 14-Jan-2016 nm Put a span around the variable list to localize
+                 the use of the special math font for ALT_HTML */
+              (altHtmlFlag ? cat("<SPAN ", htmlFont, ">", NULL) : ""),
+                                                 /* 14-Jan-2016 nm */
+              htmlDistinctVars,
+              (altHtmlFlag ? "</SPAN>" : ""),
+              "</CENTER>",
+              NULL), "", "\"");
+          outputToString = 0;
+        }
+
+        /* 13-Aug-2017 nm */
+        let(&str3, "");
+        if (type == p_) {
+          str3 = htmlDummyVars(showStmt);
+          if (str3[0] != 0) {
+            outputToString = 1;
+            /* We don't need <BR> if code is surrounded by <CENTER>...</CENTER>
+            if (htmlDistinctVars[0] != 0) print2("<BR>\n");
+            */
+            /* Print the list of dummy variables */
+            printLongLine(str3, "", "\"");
+            outputToString = 0;
+          }
+        }
+        /* (end of 13-Aug-2017) */
+
+        /* 4-Jan-2014 nm */
         let(&str2, "");
         str2 = htmlAllowedSubst(showStmt);
         if (str2[0] != 0) {
           outputToString = 1;
+          /* We don't need <BR> if code is surrounded by <CENTER>...</CENTER>
+          if (htmlDistinctVars[0] != 0 || str3[0] != 0) print2("<BR>\n");
+          */
           /* Print the list of allowed free variables */
           printLongLine(str2, "", "\"");
           outputToString = 0;
         }
-      }
+
+      } /* if (texFlag && htmlFlg) */
 
       if (texFlag) {
         outputToString = 1;
@@ -733,7 +740,7 @@ void typeStatement(long showStmt,
         fprintf(texFilePtr, "%s", printString);
         let(&printString, "");
         */
-        break;
+        break; /* case a_ or p_ */
       }
       let(&str1, nmbrCvtMToVString(
           statement[showStmt].reqVarList));
@@ -758,7 +765,7 @@ void typeStatement(long showStmt,
       printLongLine(cat("The variables it contains are:  ",
           str1, NULL),
           "      ", " ");
-      break;
+      break; /* case a_ or p_ */
     default:
       break;
   } /* End switch(type) */
@@ -1169,10 +1176,136 @@ void typeStatement(long showStmt,
 
 
 
+/* 13-Aug-2017 nm */
+/* Get the HTML string of dummy variables used by a proof for the
+   theorem's web page.  It should be called only if we're in
+   HTML output mode i.e.  SHOW STATEMENT .../HTML or /ALT_HTML */
+/* This is HARD-CODED FOR SET.MM and will not produce meaningful
+   output for other databases (so far none) with $d's */
+/* Caller must deallocate returned string */
+vstring htmlDummyVars(long showStmt)
+{
+  nmbrString *optDVA; /* Pointer only; not allocated directly */
+  nmbrString *optDVB; /* Pointer only; not allocated directly */
+  long numDVs;
+  nmbrString *optHyp; /* Pointer only; not allocated directly */
+  long numOptHyps;
+  vstring str1 = "";
+  long k, l, n, hypStmt;
+
+  /* Variables used while collecting a statement's dummy variables in $d's */
+  long dummyVarCount; /* # of (different) dummy vars found in $d statements */
+  vstring dummyVarUsed = ""; /* 'Y'/'N' indicators that we found that var */
+  vstring htmlDummyVarList = ""; /* Output HTML string */
+  long dummyVar; /* Current variable in a $d; test if it's a dummy variable */
+
+  /* This function should be called only for web page generation */
+  /*if (!(htmlFlag && texFlag)) bug(261);*/  /* texFlag is not global */
+  if (!htmlFlag) bug(261);
+
+  if (statement[showStmt].type != p_) bug(262);
+  if (strcmp("|-", mathToken[
+            (statement[showStmt].mathString)[0]].tokenName)) {
+    /* Don't process syntax statements */
+    goto RETURN_POINT;
+  }
+
+  optDVA = statement[showStmt].optDisjVarsA;
+  optDVB = statement[showStmt].optDisjVarsB;
+  numDVs = nmbrLen(optDVA);
+  optHyp = statement[showStmt].optHypList;
+  numOptHyps = nmbrLen(optHyp);
+
+  if (numDVs == 0) {  /* Don't create a hint list if no $d's */
+    /*let(&htmlDummyVarList, "(no restrictions)");*/
+    goto RETURN_POINT;
+  }
+
+  dummyVarCount = 0;
+  if (numDVs != 0) {
+
+    /* Update wrkProof.proofString with current proof so we can
+       search it later to see if it uses the dummy variable */
+    parseProof(showStmt); /* Prints message if severe error */
+
+    /* Create an array of Y/N indicators that variable is occurs in a
+       $d statement as a dummy variable */
+    let(&dummyVarUsed, string(mathTokens, 'N'));
+    for (k = 0; k < numDVs; k++) {
+      for (l = 1; l <= 2; l++) {
+        if (l == 1) {
+          dummyVar = optDVA[k];
+        } else {
+          dummyVar = optDVB[k];
+        }
+        /* At this point, dummyVar is just a var in the $d; we
+           must still check that it is in the optHypList */
+        /* See if potential dummyVar is in optHypList */
+        if (dummyVarUsed[dummyVar] == 'N') {
+          for (n = 0; n < numOptHyps; n++) {
+            /* Check whether dummyVar matches the 2nd token of an
+               optional hypothesis list entry e.g. "x" in "set x" */
+            hypStmt = statement[showStmt].optHypList[n];
+            if (statement[hypStmt].mathString[1] == dummyVar) {
+              /* dummyVar is a dummy variable */
+
+              /* See if it is used by the proof */
+              /* wrkProof.proofString was updated by parseProof(showStmt)
+                 above */
+              if (nmbrElementIn(1, wrkProof.proofString, hypStmt) == 0) {
+                break; /* It's not used by the proof; stop hyp scan */
+              }
+
+              dummyVarUsed[dummyVar] = 'Y';
+              dummyVarCount++;
+              /* tokenToTex allocates str1; must deallocate it first */
+              let(&str1, "");
+              /* Convert token to htmldef/althtmldef string */
+              str1 = tokenToTex(mathToken[dummyVar].tokenName,
+                  showStmt);
+              let(&htmlDummyVarList, cat(htmlDummyVarList, " ", str1, NULL));
+              break; /* Found a match, so stop further checking */
+            }
+          } /* next n, 0 to numOptHyps-1*/
+        } /* if dummy var not used (yet) */
+      } /* next l */
+    } /* next k */
+  } /* if (numDVs != 0) */
+
+  if (dummyVarCount > 0) {
+    let(&htmlDummyVarList, cat(
+        "<CENTER>",
+        "Dummy variable",
+        /* 11-Aug-2006 nm Determine whether "group" or "groups". */
+        dummyVarCount > 1 ? "s" : "",  /* 11-Aug-2006 */
+        " ",
+        /* 14-Jan-2016 nm Put a span around the variable list to localize
+           the use of the special math font for ALT_HTML */
+        (altHtmlFlag ? cat("<SPAN ", htmlFont, ">", NULL) : ""),
+                                           /* 14-Jan-2016 nm */
+        htmlDummyVarList,
+        (altHtmlFlag ? "</SPAN>" : ""),
+        dummyVarCount > 1 ? " are mutually distinct and" : " is",
+        " distinct from all other variables.",
+        "</CENTER>",
+        NULL));
+  }
+
+
+ RETURN_POINT:
+  /* Deallocate strings */
+  let(&dummyVarUsed, "");
+  let(&str1, "");
+
+  return htmlDummyVarList;
+} /* htmlDummyVars */
+
+
+
 /* 4-Jan-2014 nm */
 /* Get the HTML string of "allowed substitutions" list for an axiom
    or theorem's web page.  It should be called only if we're in
-   HTML output mode i.e.  */
+   HTML output mode i.e.  SHOW STATEMENT .../HTML or /ALT_HTML */
 /* This is HARD-CODED FOR SET.MM and will not produce meaningful
    output for other databases (so far none) with $d's */
 /* Caller must deallocate returned string */
@@ -1228,6 +1361,7 @@ vstring htmlAllowedSubst(long showStmt)
       bug(252); /* $f must have 2 tokens */
     strptr = mathToken[
               (statement[reqHyp[i]].mathString)[0]].tokenName;
+    /* THE FOLLOWING IS SPECIFIC TO set.mm */
     if (strcmp("set", strptr)) continue;
                                   /* Not a set variable */
     setVars++;

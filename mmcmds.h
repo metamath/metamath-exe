@@ -60,6 +60,7 @@ double countSteps(long statemNum, flag essentialFlag);
 vstring traceUsage(long statemNum,
   flag recursiveFlag,
   long cutoffStmt /* if nonzero, stop scan there */ /* 18-Jul-2015 nm */);
+vstring htmlDummyVars(long showStmt);  /* 12-Aug-2017 nm */
 vstring htmlAllowedSubst(long showStmt);  /* 4-Jan-2014 nm */
 
 void readInput(void);

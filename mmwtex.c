@@ -3064,7 +3064,7 @@ void printTexLongMath(nmbrString *mathString,
           }
           /* Deleted 26-Jun-2017 nm - this check is too conservative; we
              could have starting tex="2 1 a4s @2: $p" which will result
-             in pos=4, i=3 */
+             in pos=4, i=3.  "show proof drsb1/tex" triggered this bug. */
           /*
           if (!htmlFlag && i > 2) { /@ 1-May-2017 nm @/
             bug(2341);

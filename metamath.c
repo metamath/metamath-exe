@@ -9,7 +9,9 @@
    or public domain.  Therefore any patches that are contributed should be
    free of any copyright restrictions.  Thank you. - NM */
 
-#define MVERSION "0.146 26-Jun-2017"
+#define MVERSION "0.147 13-Aug-2017"
+/* 0.147 13-Aug-2017 nm mmcmds.c,h - add "Dummy variable x is distinct from all
+   other variables." to proof web page */
 /* 0.146 26-Jun-2017 nm mmwtex.c - fix handling of local labels in
      'show proof.../tex' (bug 2341 reported by Eric Parfitt) */
 /* 0.145 16-Jun-2017 nm metamath.c mmpars.c - fix bug 1741 during
