@@ -9,7 +9,8 @@
    or public domain.  Therefore any patches that are contributed should be
    free of any copyright restrictions.  Thank you. - NM */
 
-#define MVERSION "0.147 13-Aug-2017"
+#define MVERSION "0.148 14-Aug-2017"
+/* 0.148 14-Aug-2017 nm mmcmds.c - Hyperlink "Dummy variable(s)" */
 /* 0.147 13-Aug-2017 nm mmcmds.c,h - add "Dummy variable x is distinct from all
    other variables." to proof web page */
 /* 0.146 26-Jun-2017 nm mmwtex.c - fix handling of local labels in

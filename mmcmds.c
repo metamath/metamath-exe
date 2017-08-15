@@ -1275,10 +1275,10 @@ vstring htmlDummyVars(long showStmt)
   if (dummyVarCount > 0) {
     let(&htmlDummyVarList, cat(
         "<CENTER>",
-        "Dummy variable",
-        /* 11-Aug-2006 nm Determine whether "group" or "groups". */
-        dummyVarCount > 1 ? "s" : "",  /* 11-Aug-2006 */
-        " ",
+        "<A HREF=\"mmset.html#dvnote1\">Dummy variable", /* 14-Aug-2017 nm */
+        /* Determine whether singular or plural */
+        dummyVarCount > 1 ? "s" : "",
+        "</A> ",  /* 14-Aug-2017 nm */
         /* 14-Jan-2016 nm Put a span around the variable list to localize
            the use of the special math font for ALT_HTML */
         (altHtmlFlag ? cat("<SPAN ", htmlFont, ">", NULL) : ""),
