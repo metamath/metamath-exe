@@ -9,8 +9,14 @@
    or public domain.  Therefore any patches that are contributed should be
    free of any copyright restrictions.  Thank you. - NM */
 
-#define MVERSION "0.148 14-Aug-2017"
-/* 0.148 14-Aug-2017 nm mmcmds.c - Hyperlink "Dummy variable(s)" */
+#define MVERSION "0.149 21-Aug-2017"
+/* 0.149 21-Aug-2017 nm mmwtex.c,h mmcmds.c mmhlpb.c - add a subsubsection
+     "tiny" header with separator "-.-." to table of contents and theorem list;
+     see HELP WRITE THEOREM_LIST
+   21-Aug-2017 nm mmcmds.c - remove bug check 255
+   19-Aug-2017 nm mmcmds.c - change mmset.html links to
+     ../mpeuni/mmset.html so they will work in NF Explorer etc. */
+/* 0.148 14-Aug-2017 nm mmcmds.c - hyperlink "Dummy variable(s)" */
 /* 0.147 13-Aug-2017 nm mmcmds.c,h - add "Dummy variable x is distinct from all
    other variables." to proof web page */
 /* 0.146 26-Jun-2017 nm mmwtex.c - fix handling of local labels in

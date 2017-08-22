@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2016  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -107,13 +107,16 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas);
 
 /* 2-Aug-2009 nm - broke this function out from writeTheoremList() */
 /* 20-Jun-2014 nm - added hugeHdrAddr */
+/* 21-Aug-2017 nm - added tinyHdrAddr */
 void getSectionHeadings(long stmt, vstring *hugeHdrTitle,
     vstring *bigHdrTitle,
     vstring *smallHdrTitle,
+    vstring *tinyHdrTitle,
     /* Added 8-May-2015 nm */
     vstring *hugeHdrComment,
     vstring *bigHdrComment,
-    vstring *smallHdrComment);
+    vstring *smallHdrComment,
+    vstring *tinyHdrComment);
 
 /* TeX symbol dictionary */
 extern FILE *tex_dict_fp;     /* File pointers */

@@ -686,7 +686,11 @@ void typeStatement(long showStmt,
           outputToString = 1;
           printLongLine(cat(
               "<CENTER>",
-              "<A HREF=\"mmset.html#distinct\">Distinct variable</A> group",
+              "<A HREF=\"",
+              /* The following link will work in the NF and other
+                 "Proof Explorers" */
+              "../mpegif/mmset.html#distinct",  /* 19-Aug-2017 nm */
+              "\">Distinct variable</A> group",
               /* 11-Aug-2006 nm Determine whether "group" or "groups". */
               distVarGrps > 1 ? "s" : "",  /* 11-Aug-2006 */
               ": ",
@@ -1275,7 +1279,11 @@ vstring htmlDummyVars(long showStmt)
   if (dummyVarCount > 0) {
     let(&htmlDummyVarList, cat(
         "<CENTER>",
-        "<A HREF=\"mmset.html#dvnote1\">Dummy variable", /* 14-Aug-2017 nm */
+         "<A HREF=\"",
+         /* The following link will work in the NF and other
+            "Proof Explorers" */
+         "../mpegif/mmset.html#dvnote1",  /* 19-Aug-2017 nm */
+         "\">Dummy variable",
         /* Determine whether singular or plural */
         dummyVarCount > 1 ? "s" : "",
         "</A> ",  /* 14-Aug-2017 nm */
@@ -1455,7 +1463,11 @@ vstring htmlAllowedSubst(long showStmt)
         "<A HREF=\"mmset.html#allowedsubst\">Allowed substitution",
         (countInfo != 1) ? "s" : "", "</A>: ",
         */
-        "<A HREF=\"mmset.html#allowedsubst\">Allowed substitution</A> hint",
+         "<A HREF=\"",
+         /* The following link will work in the NF and other
+            "Proof Explorers" */
+         "../mpegif/mmset.html#allowedsubst",  /* 19-Aug-2017 nm */
+         "\">Allowed substitution</A> group",
         ((countInfo != 1) ? "s" : ""), ": ",
         (altHtmlFlag ? cat("<SPAN ", htmlFont, ">", NULL) : ""),
                                            /* 14-Jan-2016 nm */
@@ -1759,7 +1771,14 @@ void typeProof(long statemNum,
   /* 22-Apr-2015 nm */
   /* Get the relative offset (0, -1, -2,...) for unknown steps */
   if (unknownFlag) {
-    if (!pipFlag) bug(255);
+    /* 21-Aug-2017 nm There could be unknown steps outside of MM-PA
+       So remove this bugcheck, which seems spurious.  I can't see that
+       getRelStepNums() cares whether we are in MM-PA. */
+    /*
+    if (!pipFlag) {
+      bug(255);
+    }
+    */
     relativeStepNums = getRelStepNums(proofInProgress.proof);
   }
 
@@ -4222,9 +4241,11 @@ void verifyMarkup(vstring labelMatch,
   vstring hugeHdr = ""; /* 21-Jun-2014 nm */
   vstring bigHdr = "";
   vstring smallHdr = "";
+  vstring tinyHdr = ""; /* 21-Aug-2017 nm */
   vstring hugeHdrComment = ""; /* 8-May-2015 nm */
   vstring bigHdrComment = ""; /* 8-May-2015 nm */
   vstring smallHdrComment = ""; /* 8-May-2015 nm */
+  vstring tinyHdrComment = ""; /* 21-Aug-2017 nm */
 
   vstring descr = "";
   vstring str1 = ""; vstring str2 = "";
@@ -4632,12 +4653,16 @@ void verifyMarkup(vstring labelMatch,
     let(&hugeHdr, "");
     let(&bigHdr, "");
     let(&smallHdr, "");
+    let(&tinyHdr, ""); /* 21-Aug-2017 nm */
     let(&hugeHdrComment, "");
     let(&bigHdrComment, "");
     let(&smallHdrComment, "");
+    let(&tinyHdrComment, ""); /* 21-Aug-2017 nm */
     getSectionHeadings(stmtNum, &hugeHdr, &bigHdr, &smallHdr,
+        &tinyHdr, /* 21-Aug-2017 nm */
         /* 5-May-2015 nm */
-        &hugeHdrComment, &bigHdrComment, &smallHdrComment);
+        &hugeHdrComment, &bigHdrComment, &smallHdrComment,
+        &tinyHdrComment); /* 21-Aug-2017 nm */
 
     showStatement /* global */ = stmtNum; /* For printTexComment() */
     texFilePtr /* global */  = NULL; /* Not used, but set to something */
@@ -4658,6 +4683,15 @@ void verifyMarkup(vstring labelMatch,
           0, /* 1 = htmlCenterFlag (irrelevant for this call) */
           1, /* 1 = errorsOnly */
           fileSkip /* 1 = noFileCheck */));
+
+    /* Added 21-Aug-2017 nm */
+    if (tinyHdrComment[0] != 0)
+      f = (char)(f + printTexComment(tinyHdrComment,
+          0, /* 1 = htmlCenterFlag (irrelevant for this call) */
+          1, /* 1 = errorsOnly */
+          fileSkip /* 1 = noFileCheck */));
+    /* (End of 21-Aug-2017 addition) */
+
     if (f != 0) printf(
         "    (Statement refers to the first $a or $p after the header.)\n");
     if (f != 0) errFound = 1;
@@ -4681,7 +4715,7 @@ void verifyMarkup(vstring labelMatch,
   eraseTexDefs();
 
   /* Deallocate string memory */
-  /**** deleted 3-May-2017
+  /**** deleted 3-May-2017 because now we use only mostRecentDate
   let(&contributor, "");
   let(&contribDate, "");
   let(&reviser, "");
@@ -4694,6 +4728,21 @@ void verifyMarkup(vstring labelMatch,
   let(&descr, "");
   let(&str1, "");
   let(&str2, "");
+
+  /* Added 21-Aug-2017 nm */
+  /* (It seems that I forgot to deallocate in earlier versions,
+     although it usually wouldn't have caused leakage since the last
+     statement in the .mm file normally won't have a header.  But
+     we do it here to be safe.) */
+  let(&hugeHdr, "");
+  let(&bigHdr, "");
+  let(&smallHdr, "");
+  let(&tinyHdr, "");
+  let(&hugeHdrComment, "");
+  let(&bigHdrComment, "");
+  let(&smallHdrComment, "");
+  let(&tinyHdrComment, "");
+  /* (End of 21-Aug-2017 addition) */
 
   return;
 
