@@ -38,6 +38,8 @@ extern long extHtmlStmt; /* At this statement and above, use the exthtmlxxx
 extern vstring extHtmlTitle; /* Title of extended section if any; set by
     by exthtmltitle command in special $t comment of database source */
 extern vstring htmlVarColors; /* Set by htmlvarcolor commands */
+/* Added 26-Aug-2017 nm for use by mmcmds.c */
+extern vstring htmlHome; /* Set by htmlhome command */
 /* Added 10/13/02 for use in metamath.c bibliography cross-reference */
 extern vstring htmlBibliography; /* Optional; set by htmlbibliography command */
 extern vstring extHtmlBibliography; /* Optional; set by exthtmlbibliography

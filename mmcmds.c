@@ -687,10 +687,16 @@ void typeStatement(long showStmt,
           printLongLine(cat(
               "<CENTER>",
               "<A HREF=\"",
-              /* The following link will work in the NF and other
-                 "Proof Explorers" */
-              "../mpegif/mmset.html#distinct",  /* 19-Aug-2017 nm */
-              "\">Distinct variable</A> group",
+
+              /* 26-Aug-2017 nm */
+              /* htmlHome is set by htmlhome in $t comment */
+              (instr(1, htmlHome, "mmset.html") > 0) ?
+                  "mmset.html" :
+                  /* The following link will work in the NF and other
+                     "Proof Explorers" */
+                  "../mpegif/mmset.html",  /* 19-Aug-2017 nm */
+
+              "#distinct\">Distinct variable</A> group",
               /* 11-Aug-2006 nm Determine whether "group" or "groups". */
               distVarGrps > 1 ? "s" : "",  /* 11-Aug-2006 */
               ": ",
@@ -705,21 +711,24 @@ void typeStatement(long showStmt,
           outputToString = 0;
         }
 
-        /* 13-Aug-2017 nm */
+        /* 26-Aug-2017 nm Moved this down into proof section */
+        /*
+        /@ 13-Aug-2017 nm @/
         let(&str3, "");
         if (type == p_) {
           str3 = htmlDummyVars(showStmt);
           if (str3[0] != 0) {
             outputToString = 1;
-            /* We don't need <BR> if code is surrounded by <CENTER>...</CENTER>
+            /@ We don't need <BR> if code is surrounded by <CENTER>...</CENTER>
             if (htmlDistinctVars[0] != 0) print2("<BR>\n");
-            */
-            /* Print the list of dummy variables */
+            @/
+            /@ Print the list of dummy variables @/
             printLongLine(str3, "", "\"");
             outputToString = 0;
           }
         }
-        /* (end of 13-Aug-2017) */
+        /@ (end of 13-Aug-2017) @/
+        */
 
         /* 4-Jan-2014 nm */
         let(&str2, "");
@@ -1280,10 +1289,16 @@ vstring htmlDummyVars(long showStmt)
     let(&htmlDummyVarList, cat(
         "<CENTER>",
          "<A HREF=\"",
-         /* The following link will work in the NF and other
-            "Proof Explorers" */
-         "../mpegif/mmset.html#dvnote1",  /* 19-Aug-2017 nm */
-         "\">Dummy variable",
+
+         /* 26-Aug-2017 nm */
+         /* htmlHome is set by htmlhome in $t comment */
+         (instr(1, htmlHome, "mmset.html") > 0) ?
+             "mmset.html" :
+             /* The following link will work in the NF and other
+                "Proof Explorers" */
+             "../mpegif/mmset.html",  /* 19-Aug-2017 nm */
+
+        "#dvnote1\">Dummy variable",
         /* Determine whether singular or plural */
         dummyVarCount > 1 ? "s" : "",
         "</A> ",  /* 14-Aug-2017 nm */
@@ -1293,11 +1308,16 @@ vstring htmlDummyVars(long showStmt)
                                            /* 14-Jan-2016 nm */
         htmlDummyVarList,
         (altHtmlFlag ? "</SPAN>" : ""),
-        dummyVarCount > 1 ? " are mutually distinct and" : " is",
+        /*
+        dummyVarCount > 1 ? " are assumed to be mutually distinct and"
+            : " is assumed to be",
+        */
+        dummyVarCount > 1 ? " are mutually distinct and"
+            : " is",
         " distinct from all other variables.",
         "</CENTER>",
         NULL));
-  }
+  } /* htmlDummyVars */
 
 
  RETURN_POINT:
@@ -1459,15 +1479,17 @@ vstring htmlAllowedSubst(long showStmt)
 
   if (htmlAllowedList[0] != 0) {
     let(&htmlAllowedList, cat("<CENTER>",
-        /*
-        "<A HREF=\"mmset.html#allowedsubst\">Allowed substitution",
-        (countInfo != 1) ? "s" : "", "</A>: ",
-        */
-         "<A HREF=\"",
-         /* The following link will work in the NF and other
-            "Proof Explorers" */
-         "../mpegif/mmset.html#allowedsubst",  /* 19-Aug-2017 nm */
-         "\">Allowed substitution</A> group",
+        "<A HREF=\"",
+
+        /* 26-Aug-2017 nm */
+        /* htmlHome is set by htmlhome in $t comment */
+        (instr(1, htmlHome, "mmset.html") > 0) ?
+            "mmset.html" :
+            /* The following link will work in the NF and other
+               "Proof Explorers" */
+            "../mpegif/mmset.html",  /* 19-Aug-2017 nm */
+
+        "#allowedsubst\">Allowed substitution</A> hint",
         ((countInfo != 1) ? "s" : ""), ": ",
         (altHtmlFlag ? cat("<SPAN ", htmlFont, ">", NULL) : ""),
                                            /* 14-Jan-2016 nm */
@@ -1611,17 +1633,48 @@ void typeProof(long statemNum,
            /* 28-Jun-2013 nm Now set by parameter */
 
   if (htmlFlg && texFlag) {
+
+
+
+
     outputToString = 1; /* Flag for print2 to add to printString */
-    print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=%s\n",
-        MINT_BACKGROUND_COLOR);
     if (essentialFlag) {
-      /* For bobby.cast.org approval */
-      print2("SUMMARY=\"Proof of theorem\">\n");
-      print2("<CAPTION><B>Proof of Theorem <FONT\n");
+
+      /* 26-Aug-2017 nm */
+      /* See if there are dummy variables.  If so, print them below
+         "Proof of Theorem", which means we have to make the "Proof of
+         Theorem" line separate and not the table caption, so that the
+         "Distinct variables..." line does not become part of the table. */
+      let(&tmpStr, "");
+      tmpStr = htmlDummyVars(statemNum);
+      if (tmpStr[0] != 0) {
+        print2("<CENTER><B>Proof of Theorem <FONT\n");
+        printLongLine(cat("   COLOR=", GREEN_TITLE_COLOR, ">",
+            asciiToTt(statement[statemNum].labelName),
+            "</FONT></B></CENTER>", NULL), "", "\"");
+        /* Print the list of dummy variables */
+        printLongLine(tmpStr, "", "\"");
+        let(&tmpStr, "");
+        print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=%s\n",
+            MINT_BACKGROUND_COLOR);
+        print2("SUMMARY=\"Proof of theorem\">\n");
+      } else {
+      /* End of 26-Aug-2017 */
+
+        /* For bobby.cast.org approval */
+        print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=%s\n",
+            MINT_BACKGROUND_COLOR);
+        print2("SUMMARY=\"Proof of theorem\">\n");
+        print2("<CAPTION><B>Proof of Theorem <FONT\n");
+        printLongLine(cat("   COLOR=", GREEN_TITLE_COLOR, ">",
+            asciiToTt(statement[statemNum].labelName),
+            "</FONT></B></CAPTION>", NULL), "", "\"");
+      }
     } else {
       /* This is a syntax breakdown "proof" of a definition called
          from typeStatement */
-
+      print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=%s\n",
+          MINT_BACKGROUND_COLOR);
       if (!strcmp("ax-", left(statement[showStatement].labelName, 3))) {
         /* For bobby.cast.org approval */
         print2("SUMMARY=\"Detailed syntax breakdown of axiom\">\n");
@@ -1631,10 +1684,10 @@ void typeProof(long statemNum,
         print2("SUMMARY=\"Detailed syntax breakdown of definition\">\n");
         print2("<CAPTION><B>Detailed syntax breakdown of Definition <FONT\n");
       }
+      printLongLine(cat("   COLOR=", GREEN_TITLE_COLOR, ">",
+          asciiToTt(statement[statemNum].labelName),
+          "</FONT></B></CAPTION>", NULL), "", "\"");
     }
-    printLongLine(cat("   COLOR=", GREEN_TITLE_COLOR, ">",
-        asciiToTt(statement[statemNum].labelName),
-        "</FONT></B></CAPTION>", NULL), "", "\"");
     print2(
         "<TR><TH>Step</TH><TH>Hyp</TH><TH>Ref\n");
     print2("</TH><TH>Expression</TH></TR>\n");

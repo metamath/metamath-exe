@@ -9,7 +9,11 @@
    or public domain.  Therefore any patches that are contributed should be
    free of any copyright restrictions.  Thank you. - NM */
 
-#define MVERSION "0.149 21-Aug-2017"
+#define MVERSION "0.150 26-Aug-2017"
+/* 0.150 26-Aug-2017 nm mmcmds.c,mmwtex.h - fix hyperlink for Distinct variable
+   etc. lists so that it will point to mmset.html on other Explorers like NF.
+   Move the "Dummy variables..." to print after the "Proof of Theorem..."
+   line. */
 /* 0.149 21-Aug-2017 nm mmwtex.c,h mmcmds.c mmhlpb.c - add a subsubsection
      "tiny" header with separator "-.-." to table of contents and theorem list;
      see HELP WRITE THEOREM_LIST
