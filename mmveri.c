@@ -396,7 +396,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
                A variable cannot be assigned this dummy token.  Therefore,
                we must pop back a variable.  (This test speeds up
                the program; theoretically, it is not needed.) */
-/*E*/if(db7)print2("GOT TO DUMMY TOKEN1\n");
+/*E*/if(db7){print2("GOT TO DUMMY TOKEN1\n");}
             v--;
             contFlag = 1;
             continue;
@@ -471,7 +471,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
             }
           }
           if (breakFlag) {
-/*E*/if(db7)print2(" Exit, vold bck bad: v=%ld,p=%ld,q=%ld\n",v,p,q);
+/*E*/if(db7){print2(" Exit, vold bck bad: v=%ld,p=%ld,q=%ld\n",v,p,q);}
             break;
           }
 /*E*/if(db7)print2(" Exit, vold bck ok: v=%ld,p=%ld,q=%ld\n",v,p,q);

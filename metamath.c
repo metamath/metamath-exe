@@ -9,7 +9,10 @@
    or public domain.  Therefore any patches that are contributed should be
    free of any copyright restrictions.  Thank you. - NM */
 
-#define MVERSION "0.150 26-Aug-2017"
+#define MVERSION "0.151 20-Sep-2017"
+/* 0.151 20-Sep-2017 nm mmwtex.c - better matching to insert space between
+   A and y in "E. x e. ran A y R x" to prevent spurious spaces in thms rncoeq,
+   dfiun3g as reported by Benoit Jubin */
 /* 0.150 26-Aug-2017 nm mmcmds.c,mmwtex.h - fix hyperlink for Distinct variable
    etc. lists so that it will point to mmset.html on other Explorers like NF.
    Move the "Dummy variables..." to print after the "Proof of Theorem..."

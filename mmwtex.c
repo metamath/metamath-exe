@@ -5535,19 +5535,32 @@ vstring getTexLongMath(nmbrString *mathString, long statemNum)
         if (isalpha((unsigned char)(mathToken[mathString[pos]].tokenName[0]))) {
           /* and make sure its length is 1 */
           if (!(mathToken[mathString[pos]].tokenName[1])) {
-            /* See if it's 1st letter in a quantified expression */
-            if (!strcmp(mathToken[mathString[pos - 2]].tokenName, "E.")
-                || !strcmp(mathToken[mathString[pos - 2]].tokenName, "A.")
-                /* 26-Dec-2016 nm - "not free in" binder */
-                || !strcmp(mathToken[mathString[pos - 2]].tokenName, "F/")
-                /* 6-Apr-04 nm added E!, E* */
-                || !strcmp(mathToken[mathString[pos - 2]].tokenName, "E!")
-  /* 4-Jun-06 nm added dom, ran for space btwn A,x in "E! x e. dom A x A y" */
-                || !strcmp(mathToken[mathString[pos - 2]].tokenName, "ran")
-                || !strcmp(mathToken[mathString[pos - 2]].tokenName, "dom")
-                || !strcmp(mathToken[mathString[pos - 2]].tokenName, "E*")) {
-              let(&texLine, cat(texLine, " ", NULL)); /* Add a space */
-            }
+
+            /* 20-Sep-2017 nm */
+            /* Make sure previous token is a letter also, to prevent unneeded
+               space in "ran ( A ..." (e.g. rncoeq, dfiun3g) */
+            /* Match a token starting with a letter */
+            if (isalpha((unsigned char)(mathToken[mathString[pos - 1]].tokenName[0]))) {
+              /* and make sure its length is 1 */
+              if (!(mathToken[mathString[pos - 1]].tokenName[1])) {
+
+                /* See if it's 1st letter in a quantified expression */
+                if (!strcmp(mathToken[mathString[pos - 2]].tokenName, "E.")
+                    || !strcmp(mathToken[mathString[pos - 2]].tokenName, "A.")
+                    /* 26-Dec-2016 nm - "not free in" binder */
+                    || !strcmp(mathToken[mathString[pos - 2]].tokenName, "F/")
+                    /* 6-Apr-04 nm added E!, E* */
+                    || !strcmp(mathToken[mathString[pos - 2]].tokenName, "E!")
+      /* 4-Jun-06 nm added dom, ran for space btwn A,x in "E! x e. dom A x A y" */
+                    || !strcmp(mathToken[mathString[pos - 2]].tokenName, "ran")
+                    || !strcmp(mathToken[mathString[pos - 2]].tokenName, "dom")
+                    || !strcmp(mathToken[mathString[pos - 2]].tokenName, "E*")) {
+                  let(&texLine, cat(texLine, " ", NULL)); /* Add a space */
+                }
+
+              } /* 20-Sep-2017 nm */
+            } /* 20-Sep-2017 nm */
+
           }
         }
       }
