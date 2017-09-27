@@ -694,7 +694,7 @@ void typeStatement(long showStmt,
                   "mmset.html" :
                   /* The following link will work in the NF and other
                      "Proof Explorers" */
-                  "../mpegif/mmset.html",  /* 19-Aug-2017 nm */
+                  "../mpeuni/mmset.html",  /* 19-Aug-2017, 26-Sep-2017 nm */
 
               "#distinct\">Distinct variable</A> group",
               /* 11-Aug-2006 nm Determine whether "group" or "groups". */
@@ -1296,7 +1296,7 @@ vstring htmlDummyVars(long showStmt)
              "mmset.html" :
              /* The following link will work in the NF and other
                 "Proof Explorers" */
-             "../mpegif/mmset.html",  /* 19-Aug-2017 nm */
+             "../mpeuni/mmset.html",  /* 19-Aug-2017, 26-Sep-2017 nm */
 
         "#dvnote1\">Dummy variable",
         /* Determine whether singular or plural */
@@ -1487,7 +1487,7 @@ vstring htmlAllowedSubst(long showStmt)
             "mmset.html" :
             /* The following link will work in the NF and other
                "Proof Explorers" */
-            "../mpegif/mmset.html",  /* 19-Aug-2017 nm */
+            "../mpeuni/mmset.html",  /* 19-Aug-2017, 26-Sep-2017 nm */
 
         "#allowedsubst\">Allowed substitution</A> hint",
         ((countInfo != 1) ? "s" : ""), ": ",

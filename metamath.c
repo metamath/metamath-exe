@@ -7,9 +7,13 @@
 
 /* Contributors:  In the future I may change the license to the MIT license
    or public domain.  Therefore any patches that are contributed should be
-   free of any copyright restrictions.  Thank you. - NM */
+   free of any copyright restrictions (i.e. public domain) in order to provide
+   this flexibility.  Thank you. - NM */
 
-#define MVERSION "0.151 20-Sep-2017"
+#define MVERSION "0.152 26-Sep-2017"
+/* 0.152 26-Sep-2017 nm mmcmds.c - change default links from mpegif to mpeuni;
+   metamath.c - enforce minimum screen width = 3 to prevent crash reported
+   by Benoit Jubin (TO DO: FIND OUT WHY IT CRASHES!) */
 /* 0.151 20-Sep-2017 nm mmwtex.c - better matching to insert space between
    A and y in "E. x e. ran A y R x" to prevent spurious spaces in thms rncoeq,
    dfiun3g as reported by Benoit Jubin */
@@ -7156,9 +7160,13 @@ void command(int argc, char *argv[])
         print2("mminou.h if you need more.\n");
         continue;
       }
+      /* 26-Sep-2017 nm */
+      /* TODO: figure out why s=2 crashes program! */
+      if (s < 3) s = 3; /* Less than 3 may cause a segmentation fault */
+      i = screenWidth;
+      screenWidth = s; /* 26-Sep-2017 nm - print with new screen width */
       print2("Screen width has been changed from %ld to %ld\n",
-          screenWidth, s);
-      screenWidth = s;
+          i, s);
       continue;
     }
 
