@@ -5,15 +5,17 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-/* Contributors:  In the future I may change the license to the MIT license
+/* Contributors:  In the future the license may be changed to the MIT license
    or public domain.  Therefore any patches that are contributed should be
    free of any copyright restrictions (i.e. public domain) in order to provide
    this flexibility.  Thank you. - NM */
 
-#define MVERSION "0.152 26-Sep-2017"
+#define MVERSION "0.153 1-Oct-2017"
+/* 0.153 1-Oct-2017 nm mmunif.c,h mmcmds.c - Re-initialize internal nmbrStrings
+   in unify() after 'erase' command reported by Benoit Jubin */
 /* 0.152 26-Sep-2017 nm mmcmds.c - change default links from mpegif to mpeuni;
    metamath.c - enforce minimum screen width = 3 to prevent crash reported
-   by Benoit Jubin (TO DO: FIND OUT WHY IT CRASHES!) */
+   by Benoit Jubin */
 /* 0.151 20-Sep-2017 nm mmwtex.c - better matching to insert space between
    A and y in "E. x e. ran A y R x" to prevent spurious spaces in thms rncoeq,
    dfiun3g as reported by Benoit Jubin */

@@ -23,6 +23,7 @@
 #include "mmwtex.h" /* For htmlVarColors,... */
 #include "mmpfas.h"
 #include "mmunif.h" /* 26-Sep-2010 nm For bracketMatchInit, minSubstLen */
+                    /* 1-Oct-2017 nm ...and firstConst */
 
 /* vstring mainFileName = ""; */ /* 28-Dec-05 nm Obsolete */
 flag printHelp = 0;
@@ -4128,6 +4129,10 @@ void eraseSource(void)    /* ERASE command */
 
   bracketMatchInit = 0; /* Clear to force mmunif.c to scan $a's again */
   minSubstLen = 1; /* Initialize to the default SET EMPTY_SUBSTITUTION OFF */
+  /* 1-Oct-2017 Fix 'erase' bug found by Benoit Judin */
+  /* Clear firstConst to trigger clearing of lastConst and
+     oneConst in mmunif.c */
+  nmbrLet(&firstConst, NULL_NMBRSTRING);
 
   /* 3-May-2016 nm */
   getMarkupFlag(0, RESET); /* Erase the cached markup flag storage */

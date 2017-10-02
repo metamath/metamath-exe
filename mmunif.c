@@ -148,6 +148,7 @@ int maxNestingLevel = -1;
 int nestingLevel = 0;
 
 /* 8/29/99 For improving rejection of impossible substitutions */
+/* 1-Oct-2017 nm Made firstConst global so eraseSource() can clear it */
 nmbrString *firstConst = NULL_NMBRSTRING;
 nmbrString *lastConst = NULL_NMBRSTRING;
 nmbrString *oneConst = NULL_NMBRSTRING;
@@ -386,7 +387,6 @@ char unify(
       }
     }
   }
-
   /* Add dummy token to end of schemeA and schemeB */
   /* Use one beyond the last mathTokenArray entry for this */
   nmbrLet(&schA, nmbrAddElement(schemeA, mathTokens));
@@ -395,7 +395,10 @@ char unify(
   /* 8/29/99 Initialize the usage of constants as the first, last,
      only constant in a $a statement - for rejecting some simple impossible
      substitutions - Speed-up: this is now done once and never deallocated*/
+  /* 1-Oct-2017 nm firstConst is now cleared in eraseSource.c() (mmcmds.c)
+     to trigger this initialization after "erase" */
   if (!nmbrLen(firstConst)) {
+    /* nmbrSpace() sets all entries to 0, not 32 (ASCII space) */
     nmbrLet(&firstConst, nmbrSpace(mathTokens));
     nmbrLet(&lastConst, nmbrSpace(mathTokens));
     nmbrLet(&oneConst, nmbrSpace(mathTokens));
@@ -940,12 +943,14 @@ char unify(
     impossible = 0;
     if (mathToken[substitution[0]].tokenType == (char)con_) {
       if (!firstConst[substitution[0]]
-         || (j == 1 && !oneConst[substitution[0]]))
+         || (j == 1 && !oneConst[substitution[0]])) {
         impossible = 1;
+      }
     }
     if (mathToken[substitution[j - 1]].tokenType == (char)con_) {
-      if (!lastConst[substitution[j - 1]])
+      if (!lastConst[substitution[j - 1]]) {
         impossible = 1;
+      }
     }
     if (impossible) {
 /*E*/if(db6)print2("Impossible subst: %s\n", nmbrCvtMToVString(substitution));

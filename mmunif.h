@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2010  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -19,6 +19,9 @@ extern flag hentyFilter; /* Turns Henty filter on or off */
 
 /* 26-Sep-2010 nm */
 extern flag bracketMatchInit; /* So eraseSource() (mmcmds.c) can clr it */
+
+/* 1-Oct-2017 nm Made this global so eraseSource() (mmcmds.c) can clr it */
+extern nmbrString *firstConst;
 
 
 nmbrString *makeSubstUnif(flag *newVarFlag,
