@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2012  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -149,6 +149,7 @@ int nestingLevel = 0;
 
 /* 8/29/99 For improving rejection of impossible substitutions */
 /* 1-Oct-2017 nm Made firstConst global so eraseSource() can clear it */
+/* 2-Oct-2017 nm Made them all global so valgrind won't complain */
 nmbrString *firstConst = NULL_NMBRSTRING;
 nmbrString *lastConst = NULL_NMBRSTRING;
 nmbrString *oneConst = NULL_NMBRSTRING;

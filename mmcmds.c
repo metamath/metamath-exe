@@ -4127,12 +4127,18 @@ void eraseSource(void)    /* ERASE command */
   /* Allocate big arrays */
   initBigArrays();
 
+  /* 2-Oct-2017 nm Future possibilty: add 'reset' parameter to unify() to clear
+     the 5 variables below */
   bracketMatchInit = 0; /* Clear to force mmunif.c to scan $a's again */
   minSubstLen = 1; /* Initialize to the default SET EMPTY_SUBSTITUTION OFF */
-  /* 1-Oct-2017 Fix 'erase' bug found by Benoit Judin */
+  /* 1-Oct-2017 nm Fix 'erase' bug found by Benoit Jubin */
   /* Clear firstConst to trigger clearing of lastConst and
      oneConst in mmunif.c */
   nmbrLet(&firstConst, NULL_NMBRSTRING);
+  /* 2-Oct-2017 nm Clear these directly so they will be truly deallocated
+     for valgrind */
+  nmbrLet(&lastConst, NULL_NMBRSTRING);
+  nmbrLet(&oneConst, NULL_NMBRSTRING);
 
   /* 3-May-2016 nm */
   getMarkupFlag(0, RESET); /* Erase the cached markup flag storage */

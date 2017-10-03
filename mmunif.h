@@ -22,6 +22,9 @@ extern flag bracketMatchInit; /* So eraseSource() (mmcmds.c) can clr it */
 
 /* 1-Oct-2017 nm Made this global so eraseSource() (mmcmds.c) can clr it */
 extern nmbrString *firstConst;
+/* 2-Oct-2017 nm Made these global so eraseSource() (mmcmds.c) can clr themt */
+extern nmbrString *lastConst;
+extern nmbrString *oneConst;
 
 
 nmbrString *makeSubstUnif(flag *newVarFlag,

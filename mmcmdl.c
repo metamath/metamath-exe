@@ -81,14 +81,20 @@ flag processCommandLine(void)
           "ASSIGN|REPLACE|MATCH|UNIFY|LET|INITIALIZE|DELETE|IMPROVE|",
           /* 11-Sep-2016 nm Added EXPAND */
           "MINIMIZE_WITH|EXPAND|UNDO|REDO|SAVE|DEMO|INVOKE|CLI|EXPLORE|TEX|",
-          "LATEX|HTML|COMMENTS|MORE|",
+          /*"LATEX|HTML|COMMENTS|MORE|",*/
+          /* 2-Oct-2017 nm Removed HTML */
+          "LATEX|COMMENTS|MORE|",
           "TOOLS|MIDI|$|<$>", NULL))) goto pclbad;
       if (cmdMatches("HELP OPEN")) {
-        if (!getFullArg(2, "LOG|TEX|HTML|<LOG>")) goto pclbad;
+        /*if (!getFullArg(2, "LOG|TEX|HTML|<LOG>")) goto pclbad;*/
+        /* 2-Oct-2017 nm Removed HTML */
+        if (!getFullArg(2, "LOG|TEX|<LOG>")) goto pclbad;
         goto pclgood;
       }
       if (cmdMatches("HELP CLOSE")) {
-        if (!getFullArg(2, "LOG|TEX|HTML|<LOG>")) goto pclbad;
+        /*if (!getFullArg(2, "LOG|TEX|HTML|<LOG>")) goto pclbad;*/
+        /* 2-Oct-2017 nm Removed HTML */
+        if (!getFullArg(2, "LOG|TEX|<LOG>")) goto pclbad;
         goto pclgood;
       }
       if (cmdMatches("HELP SHOW")) {
@@ -270,7 +276,9 @@ flag processCommandLine(void)
     }
 
     if (cmdMatches("OPEN")) {
-      if (!getFullArg(1,"LOG|TEX|HTML|<LOG>")) goto pclbad;
+      /*if (!getFullArg(1,"LOG|TEX|HTML|<LOG>")) goto pclbad;*/
+      /* 2-Oct-2017 nm Removed HTML */
+      if (!getFullArg(1,"LOG|TEX|<LOG>")) goto pclbad;
       if (cmdMatches("OPEN LOG")) {
         if (logFileOpenFlag) {
           printLongLine(cat(
@@ -315,6 +323,9 @@ flag processCommandLine(void)
         } /* End while for switch loop */
 
       }
+
+      /* 2-Oct-2017 nm OPEN HTML is obsolete */
+      /*******
       if (cmdMatches("OPEN HTML")) {
         if (texFileOpenFlag) {
           printLongLine(cat(
@@ -324,10 +335,10 @@ flag processCommandLine(void)
               ,NULL), "", " ");
           goto pclbad;
         }
-        if (!getFullArg(2,"* What is the name of HTML output file? "))
+        if (!getFullArg(2,"@ What is the name of HTML output file? "))
           goto pclbad;
 
-        /* Get any switches */
+        /@ Get any switches @/
         i = 2;
         while (1) {
           i++;
@@ -340,15 +351,18 @@ flag processCommandLine(void)
           } else {
             break;
           }
-          break; /* Break if only 1 switch is allowed */
-        } /* End while for switch loop */
+          break; /@ Break if only 1 switch is allowed @/
+        } /@ End while for switch loop @/
 
       }
+      ****/
       goto pclgood;
     }
 
     if (cmdMatches("CLOSE")) {
-      if (!getFullArg(1,"LOG|TEX|HTML|<LOG>")) goto pclbad;
+      /*if (!getFullArg(1,"LOG|TEX|HTML|<LOG>")) goto pclbad;*/
+      /* 2-Oct-2017 nm Removed HTML */
+      if (!getFullArg(1,"LOG|TEX|<LOG>")) goto pclbad;
       goto pclgood;
     }
 

@@ -10,7 +10,10 @@
    free of any copyright restrictions (i.e. public domain) in order to provide
    this flexibility.  Thank you. - NM */
 
-#define MVERSION "0.153 1-Oct-2017"
+#define MVERSION "0.154 2-Oct-2017"
+/* 0.154 2-Oct-2017 nm mmunif.h,c mmcmds.c - add 2 more variables to ERASE;
+   metamath.c mmcmdl.c - remove obsolete OPEN/CLOSE HTML; mmhlpa.c mmhlpb.c -
+   fix typos reported by Benoit Jubin */
 /* 0.153 1-Oct-2017 nm mmunif.c,h mmcmds.c - Re-initialize internal nmbrStrings
    in unify() after 'erase' command reported by Benoit Jubin */
 /* 0.152 26-Sep-2017 nm mmcmds.c - change default links from mpegif to mpeuni;
@@ -7167,7 +7170,7 @@ void command(int argc, char *argv[])
       if (s < 3) s = 3; /* Less than 3 may cause a segmentation fault */
       i = screenWidth;
       screenWidth = s; /* 26-Sep-2017 nm - print with new screen width */
-      print2("Screen width has been changed from %ld to %ld\n",
+      print2("Screen width has been changed from %ld to %ld.\n",
           i, s);
       continue;
     }
@@ -7176,11 +7179,12 @@ void command(int argc, char *argv[])
     if (cmdMatches("SET HEIGHT")) {  /* 18-Nov-05 nm Added */
       s = (long)val(fullArg[2]); /* Screen height value */
       if (s < 2) s = 2;  /* Less than 2 makes no sense */
-      print2("Screen height has been changed from %ld to %ld\n",
-          screenHeight + 1, s);
+      i = screenHeight;
+      screenHeight = s - 1;
+      print2("Screen height has been changed from %ld to %ld.\n",
+          i + 1, s);
       /* screenHeight is one less than the physical screen to account for the
          prompt line after pausing. */
-      screenHeight = s - 1;
       continue;
     }
 
@@ -7272,25 +7276,33 @@ void command(int argc, char *argv[])
         continue;
     }
 
-    if (cmdMatches("OPEN TEX") || cmdMatches("OPEN HTML")) {
+    if (cmdMatches("OPEN TEX")) {
+    /* 2-Oct-2017 nm OPEN HTML is very obsolete, no need to warn anymore
+    if (cmdMatches("OPEN TEX") || cmdMatches("OPEN HTML") ) {
       if (cmdMatches("OPEN HTML")) {
         print2("?OPEN HTML is obsolete - use SHOW STATEMENT * / HTML\n");
         continue;
       }
+    */
 
       /* 17-Nov-2015 TODO: clean up mixed LaTeX/HTML attempts (check
          texFileOpenFlag when switching to HTML & close LaTeX file) */
 
       if (texDefsRead) {
         /* Current limitation - can only read .def once */
-        if (cmdMatches("OPEN HTML") != htmlFlag) {
+        /* 2-Oct-2017 nm OPEN HTML is obsolete */
+        /*if (cmdMatches("OPEN HTML") != htmlFlag) {*/
+        if (htmlFlag) {
+          /* Actually it isn't clear to me this is still the case, but
+             to be safe I left it in */
           print2("?You cannot use both LaTeX and HTML in the same session.\n");
           print2(
               "?You must EXIT and restart Metamath to switch to the other.\n");
           continue;
         }
       }
-      htmlFlag = cmdMatches("OPEN HTML");
+      /* 2-Oct-2017 nm OPEN HTML is obsolete */
+      /*htmlFlag = cmdMatches("OPEN HTML");*/
 
       /* Open a TeX file */
       let(&texFileName,fullArg[2]);
@@ -7308,6 +7320,7 @@ void command(int argc, char *argv[])
       texFilePtr = fSafeOpen(texFileName,"w");
       if (!texFilePtr) continue; /* Couldn't open it (err msg was provided) */
       texFileOpenFlag = 1;
+      /* 2-Oct-2017 nm OPEN HTML is obsolete */
       print2("Created %s output file \"%s\".\n",
           htmlFlag ? "HTML" : "LaTeX", texFileName);
       printTexHeader(texHeaderFlag);
@@ -7315,18 +7328,35 @@ void command(int argc, char *argv[])
       continue;
     }
 
+    /* 2-Oct-2017 nm CLOSE HTML is obsolete */
+    /******
     if (cmdMatches("CLOSE TEX") || cmdMatches("CLOSE HTML")) {
       if (cmdMatches("CLOSE HTML")) {
-        print2("?CLOSE HTML is obsolete - use SHOW STATEMENT * / HTML\n");
+        print2("?CLOSE HTML is obsolete - use SHOW STATEMENT @ / HTML\n");
         continue;
       }
-      /* Close the TeX file */
+      /@ Close the TeX file @/
       if (!texFileOpenFlag) {
         print2("?Sorry, there is no %s file currently open.\n",
             htmlFlag ? "HTML" : "LaTeX");
       } else {
         print2("The %s output file \"%s\" has been closed.\n",
             htmlFlag ? "HTML" : "LaTeX", texFileName);
+        printTexTrailer(texHeaderFlag);
+        fclose(texFilePtr);
+        texFileOpenFlag = 0;
+      }
+      let(&texFileName,"");
+      continue;
+    }
+    *****/
+    if (cmdMatches("CLOSE TEX")) {
+      /* Close the TeX file */
+      if (!texFileOpenFlag) {
+        print2("?Sorry, there is no LaTeX file currently open.\n");
+      } else {
+        print2("The LaTeX output file \"%s\" has been closed.\n",
+            texFileName);
         printTexTrailer(texHeaderFlag);
         fclose(texFilePtr);
         texFileOpenFlag = 0;

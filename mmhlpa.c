@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2016  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -540,8 +540,8 @@ H("");
 H("  The substitution of symbol strings into variables may be subject to a");
 H("  $d restriction:");
 H("");
-H("  $d - Disjoint variable restriction (meaning substititutions may not");
-H("         share variables in common)");
+H("  $d - Disjoint variable restriction (meaning substitutions may not");
+H("         have variables in common)");
 H("       Syntax:  \"$d <symbol> ... <symbol> $.\" where <symbol> is active");
 H("         and previously declared with $v, and all <symbol>s are distinct");
 H("");
@@ -668,7 +668,7 @@ H("                    ...");
 H("    htmldef \"<mathtoken>\" as \"<HTML code for mathtoken symbol>\" ;");
 H("    htmltitle \"<HTML code for title>\" ;");
 H("    htmlhome \"<HTML code for home link>\" ;");
-H("    htmlvarcolors \"<HTML code for variable color list>\" ;");
+H("    htmlvarcolor \"<HTML code for variable color list>\" ;");
 H("    htmlbibliography \"<HTML file>\" ;");
 H("        (This <HTML file> is assumed to have a <A NAME=...> tag for each");
 H("        bibiographic reference in the database comments.  For example");
@@ -828,7 +828,8 @@ printHelp = !strcmp(saveHelpCmd, "HELP ERASE");
 H("Syntax:  ERASE");
 H("");
 H("This command will reset Metamath to its starting state, deleting any");
-H("database that was READ in.");
+H("database that was READ in.  It does not reset parameters unrelated to the");
+H("database i.e. those listed in SHOW SETTINGS.");
 H("");
 
 
@@ -894,8 +895,8 @@ printHelp = !strcmp(saveHelpCmd, "HELP TOOLS");
 H("Syntax:  TOOLS");
 H("");
 H("This command invokes a utility to manipulate ASCII text files.  Type TOOLS");
-H("to enter this utility, which has its own HELP commands.  Once inside you");
-H("are inside, EXIT will return to Metamath.");
+H("to enter this utility, which has its own HELP commands.  Once you are");
+H("inside, EXIT will return to Metamath.");
 H("");
 
 let(&saveHelpCmd, ""); /* Deallocate memory */
