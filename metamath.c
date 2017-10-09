@@ -10,7 +10,9 @@
    free of any copyright restrictions (i.e. public domain) in order to provide
    this flexibility.  Thank you. - NM */
 
-#define MVERSION "0.154 2-Oct-2017"
+#define MVERSION "0.155 8-Oct-2017"
+/* 0.155 8-Oct-2017 nm mmcmdl.c - restore accidentally removed HELP HTML;
+   improve HELP per Benoit Jubin's suggestions */
 /* 0.154 2-Oct-2017 nm mmunif.h,c mmcmds.c - add 2 more variables to ERASE;
    metamath.c mmcmdl.c - remove obsolete OPEN/CLOSE HTML; mmhlpa.c mmhlpb.c -
    fix typos reported by Benoit Jubin */
@@ -2035,7 +2037,7 @@ void command(int argc, char *argv[])
 
     if (cmdMatches("WRITE THEOREM_LIST")) {
       /* 4-Dec-03 - Write out an HTML summary of the theorems to
-         mmtheorems.html, mmtheorems2.html,... */
+         mmtheorems.html, mmtheorems1.html,... */
       /* THEOREMS_PER_PAGE is the default number of proof descriptions to output. */
 #define THEOREMS_PER_PAGE 100
       /* i is the actual number of proof descriptions to output. */

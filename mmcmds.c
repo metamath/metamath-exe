@@ -20,7 +20,7 @@
 #include "mminou.h"
 #include "mmpars.h"
 #include "mmveri.h"
-#include "mmwtex.h" /* For htmlVarColors,... */
+#include "mmwtex.h" /* For htmlVarColor,... */
 #include "mmpfas.h"
 #include "mmunif.h" /* 26-Sep-2010 nm For bracketMatchInit, minSubstLen */
                     /* 1-Oct-2017 nm ...and firstConst */
@@ -848,7 +848,7 @@ void typeStatement(long showStmt,
               printLongLine(cat(
                   "<CENTER><TABLE CELLSPACING=7><TR><TD ALIGN=LEFT><FONT SIZE=-1>",
                   "<B>Colors of variables:</B> ",
-                  htmlVarColors, "</FONT></TD></TR>",
+                  htmlVarColor, "</FONT></TD></TR>",
                   NULL), "", "\"");
               outputToString = 0;
               break; /* Out of i loop */
@@ -2255,7 +2255,7 @@ void typeProof(long statemNum,
     printLongLine(cat(
         "<CENTER><TABLE CELLSPACING=5><TR><TD ALIGN=LEFT><FONT SIZE=-1>",
         "<B>Colors of variables:</B> ",
-        htmlVarColors, "</FONT></TD></TR>",
+        htmlVarColor, "</FONT></TD></TR>",
         NULL), "", "\"");
 
     if (essentialFlag) {  /* Means this is not a syntax breakdown of a

@@ -81,9 +81,7 @@ flag processCommandLine(void)
           "ASSIGN|REPLACE|MATCH|UNIFY|LET|INITIALIZE|DELETE|IMPROVE|",
           /* 11-Sep-2016 nm Added EXPAND */
           "MINIMIZE_WITH|EXPAND|UNDO|REDO|SAVE|DEMO|INVOKE|CLI|EXPLORE|TEX|",
-          /*"LATEX|HTML|COMMENTS|MORE|",*/
-          /* 2-Oct-2017 nm Removed HTML */
-          "LATEX|COMMENTS|MORE|",
+          "LATEX|HTML|COMMENTS|MORE|",
           "TOOLS|MIDI|$|<$>", NULL))) goto pclbad;
       if (cmdMatches("HELP OPEN")) {
         /*if (!getFullArg(2, "LOG|TEX|HTML|<LOG>")) goto pclbad;*/

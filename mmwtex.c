@@ -75,7 +75,7 @@ long numSymbs;
 /* Some of these are global; see mmwtex.h */
 vstring htmlCSS = ""; /* Set by htmlcss commands */  /* 14-Jan-2016 nm */
 vstring htmlFont = ""; /* Set by htmlfont commands */  /* 14-Jan-2016 nm */
-vstring htmlVarColors = ""; /* Set by htmlvarcolor commands */
+vstring htmlVarColor = ""; /* Set by htmlvarcolor commands */
 vstring htmlTitle = ""; /* Set by htmltitle command */
   /* 16-Aug-2016 nm */
   vstring htmlTitleAbbr = ""; /* Extracted from htmlTitle */
@@ -579,7 +579,7 @@ flag readTexDefs(
           let(&(texDefs[numSymbs].texEquiv), token);
         }
         if (cmd == HTMLVARCOLOR) {
-          let(&htmlVarColors, cat(htmlVarColors, " ", token, NULL));
+          let(&htmlVarColor, cat(htmlVarColor, " ", token, NULL));
         }
         if (cmd == HTMLTITLE) {
           let(&htmlTitle, token);
@@ -3398,9 +3398,9 @@ void printTexTrailer(flag texTrailerFlag) {
       print2("\\end{document}\n");
     } else {
       /*******  10/10/02 Moved to mmcmds.c so it can be printed immediately
-                after proof; made htmlVarColors global for this
+                after proof; made htmlVarColor global for this
       print2("<FONT SIZE=-1 FACE=sans-serif>Colors of variables:\n");
-      printLongLine(cat(htmlVarColors, "</FONT>", NULL), "", " ");
+      printLongLine(cat(htmlVarColor, "</FONT>", NULL), "", " ");
       *******/
       print2("</TABLE></CENTER>\n");
       print2("<TABLE BORDER=0 WIDTH=\"100%s\">\n", "%");
@@ -3449,7 +3449,7 @@ void printTexTrailer(flag texTrailerFlag) {
 
 
 /* Added 4-Dec-03 - WRITE THEOREM_LIST command:  Write out theorem list
-   into mmtheorems.html, mmtheorems2.html,... */
+   into mmtheorems.html, mmtheorems1.html,... */
 void writeTheoremList(long theoremsPerPage, flag showLemmas)
 {
   nmbrString *nmbrStmtNmbr = NULL_NMBRSTRING;
@@ -3507,7 +3507,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
   pntrLet(&pntrHugeHdrComment, pntrSpace(statements + 1)); /* 8-May-2015 nm */
   pntrLet(&pntrBigHdrComment, pntrSpace(statements + 1)); /* 8-May-2015 nm */
   pntrLet(&pntrSmallHdrComment, pntrSpace(statements + 1)); /* 8-May-2015 nm */
-  pntrLet(&pntrTinyHdrComment, pntrSpace(statements + 1)); /* 8-May-2015 nm */
+  pntrLet(&pntrTinyHdrComment, pntrSpace(statements + 1)); /* 21-Aug-2017 nm */
 
   pages = ((assertions - 1) / theoremsPerPage) + 1;
   /* for (page = 1; page <= pages; page++) { */

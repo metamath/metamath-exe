@@ -827,9 +827,10 @@ H("");
 printHelp = !strcmp(saveHelpCmd, "HELP ERASE");
 H("Syntax:  ERASE");
 H("");
-H("This command will reset Metamath to its starting state, deleting any");
-H("database that was READ in.  It does not reset parameters unrelated to the");
-H("database i.e. those listed in SHOW SETTINGS.");
+H("This command will delete the database if one was READ in.  It does not");
+H("affect parameters listed in SHOW SETTINGS that are unrelated to the");
+H("database.  The user will be prompted for confirmation if the database was");
+H("changed but not saved with WRITE SOURCE.");
 H("");
 
 
