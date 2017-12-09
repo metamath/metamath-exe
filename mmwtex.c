@@ -810,7 +810,9 @@ flag readTexDefs(
   let(&htmlTitleAbbr, cat(htmlTitleAbbr, " Home", NULL));
 
   /* 18-Aug-2016 nm Added conditional test for extended section */
-  if (extHtmlStmt < statements + 1) { /* If extended section exists */
+  if (extHtmlStmt < statements + 1 /* If extended section exists */
+      /* nm 8-Dec-2017 nm */
+      && extHtmlStmt != sandboxStmt) { /* and is not an empty dummy section */
     i = instr(1, extHtmlHome, "HREF=\"") + 5;
     if (i == 5) {
       printLongLine(
@@ -3774,7 +3776,10 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
     /* 15-Apr-2015 nm */
     /* Use "extHtmlStmt <= statements" as an indicator that we're doing
        Metamath Proof Explorer; the others don't have mmrecent.html pages */
-    if (extHtmlStmt <= statements) { /* extHtmlStmt = statements + 1
+    /*if (extHtmlStmt <= statements) {*/ /* extHtmlStmt = statements + 1
+                                              unless mmset.html */
+    /* 8-Dec-2017 nm */
+    if (extHtmlStmt < sandboxStmt) { /* extHtmlStmt >= sandboxStmt
                                               unless mmset.html */
       print2("&nbsp;&gt;&nbsp;<A HREF=\"mmrecent.html\">\n");
       print2("Recent Proofs</A>\n");
@@ -4113,7 +4118,9 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
     /* Put in color key */
     outputToString = 1;
     print2("<A NAME=\"mmstmtlst\"></A>\n");
-    if (extHtmlStmt <= statements) { /* extHtmlStmt = statements + 1 in ql.mm */
+    /*if (extHtmlStmt <= statements) {*/ /* extHtmlStmt = statements + 1 in ql.mm */
+    /* 8-Dec-2017 nm */
+    if (extHtmlStmt < sandboxStmt) { /* extHtmlStmt >= sandboxStmt in ql.mm */
       /* ?? Currently this is customized for set.mm only!! */
       print2("<P>\n");
       print2("<CENTER><TABLE CELLSPACING=0 CELLPADDING=5\n");
@@ -4187,7 +4194,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
 
 
       print2("</TR></TABLE></CENTER>\n");
-    } /* end if (extHtmlStmt <= statements) */
+    } /* end if (extHtmlStmt < sandboxStmt) */
 
     /* Write out HTML page so far */
     fprintf(outputFilePtr, "%s", printString);

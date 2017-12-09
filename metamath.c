@@ -10,9 +10,12 @@
    free of any copyright restrictions (i.e. public domain) in order to provide
    this flexibility.  Thank you. - NM */
 
-#define MVERSION "0.155 8-Oct-2017"
+#define MVERSION "0.156 8-Dec-2017"
+/* 0.156 8-Dec-2017 nm mmwtex.c - fix bug that incorrectly gave "verify markup"
+   errors when there was a mathbox statement without an "extended" section */
 /* 0.155 8-Oct-2017 nm mmcmdl.c - restore accidentally removed HELP HTML;
-   improve HELP per Benoit Jubin's suggestions */
+   mmhlpb.c mmwtex.c mmwtex.h,c mmcmds.c metamath.c - improve HELP and make
+   other cosmetic changes per Benoit Jubin's suggestions */
 /* 0.154 2-Oct-2017 nm mmunif.h,c mmcmds.c - add 2 more variables to ERASE;
    metamath.c mmcmdl.c - remove obsolete OPEN/CLOSE HTML; mmhlpa.c mmhlpb.c -
    fix typos reported by Benoit Jubin */
