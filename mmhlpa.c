@@ -586,6 +586,10 @@ H("       recursive, or self reference to a file is ignored");
 H("");
 
 
+printHelp = !strcmp(saveHelpCmd, "HELP MARKUP");
+H("See HELP VERIFY MARKUP.");
+
+
 printHelp = !strcmp(saveHelpCmd, "HELP EXPLORE");
 H("When you first enter Metamath, you will first want to READ in a Metamath");
 H("source file.  The source file provided for set theory is called set.mm;");

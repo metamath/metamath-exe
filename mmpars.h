@@ -10,7 +10,7 @@
 #include "mmvstr.h"
 #include "mmdata.h"
 
-char *readRawSource(vstring inputFn, long bufOffsetSoFar, long *size);
+char *readRawSource(vstring inputFn, vstring inputBuf, long *size);
 void parseKeywords(void);
 void parseLabels(void);
 void parseMathDecl(void);
@@ -50,12 +50,23 @@ int hypAndLocSrchCmp(const void *key, const void *data);
    is returned.  If ptr points to a null character, 0 is returned. */
 long whiteSpaceLen(char *ptr);
 
+/* 31-Dec-2017 nm For .mm file splitting */
+/* Like whiteSpaceLen except comments are not whitespace */
+long rawWhiteSpaceLen(char *ptr);
+
 /* This function returns the length of the token (non-white-space) starting at
    ptr.  Comments are considered white space.  ptr should point to the first
    character of the token.  If ptr points to a white space character, 0
    is returned.  If ptr points to a null character, 0 is returned.  If ptr
    points to a keyword, 0 is returned.  A keyword ends a token. */
 long tokenLen(char *ptr);
+
+/* Unlike tokenLen(), keywords are not treated as special.  In particular:
+   if ptr points to a keyword, 0 is NOT returned (instead, 2 is returned),
+   and a keyword does NOT end a token (which is a relic of days before
+   whitespace surrounding a token was part of the spec, but still serves
+   a useful purpose in token() for friendlier error detection). */
+long rawTokenLen(char *ptr);
 
 /* This function returns the length of the proof token starting at
    ptr.  Comments are considered white space.  ptr should point to the first
@@ -64,6 +75,13 @@ long tokenLen(char *ptr);
    points to a keyword, 0 is returned.  A keyword ends a token.
    ":" is considered a token. */
 long proofTokenLen(char *ptr);
+
+/* 5-Jan-2018 nm */
+/* Counts the number of \n between start for length chars.
+   If length = -1, then use end-of-string 0 to stop.
+   If length >= 0, then scan at most length chars, but stop
+       if end-of-string 0 is found. */
+long countLines(vstring start, long length);
 
 /* Array with sort keys for all possible labels, including the ones for
    hypotheses (which may not always be active) */
@@ -133,5 +151,62 @@ vstring rewrapComment(vstring comment);
 /* Lookup $a or $p label and return statement number.
    Return -1 if not found. */
 long lookupLabel(vstring label);
+
+/* 31-Dec-2017 nm For file splitting */
+
+/* Get the next real $[...$] or virtual $( Begin $[... inclusion */
+void getNextInclusion(char *fileBuf, long startOffset, /* inputs */
+    /* outputs: */
+    long *cmdPos1, long *cmdPos2,
+    long *endPos1, long *endPos2,
+    char *cmdType, /* 'B' = "$( Begin [$..." through "$( End [$...",
+                      'I' = "[$...",
+                      'S' = "$( Skip [$...",
+                      'E' = Start missing matched End
+                      'N' = no include found */
+    vstring *fileName /* name of included file */
+    );
+
+/* This function transfers the content of the statement[] array
+   to a linear buffer in preparation for creating the output file. */
+vstring writeSourceToBuffer(void);
+
+/* 31-Dec-2017 nm */
+/* This function creates split files containing $[ $] inclusions, from
+   a nonsplit source with $( Begin $[... etc. inclusions */
+/* Note that *fileBuf is assigned to the empty string upon return, to
+   conserve memory */
+void writeSplitSource(vstring *fileBuf, vstring fileName,
+    flag noVersioningFlag, flag noDeleteFlag);
+
+/* When "write source" does not have the "/split" qualifier, by default
+   (i.e. without "/no_delete") the included modules are "deleted" (renamed
+   to ~1) since their content will be in the main output file. */
+void deleteSplits(vstring *fileBuf, flag noVersioningFlag);
+
+/* 8-Jan-2018 nm */
+/* Get file name and line number given a pointer into the read buffer */
+/* The user must deallocate the returned string (file name) */
+/* The globals includeCall structure and includeCalls are used */
+vstring getFileAndLineNum(vstring buffPtr/*start of read buffer*/,
+    vstring currentPtr/*place at which to get file name and line no*/,
+    long *lineNum/*return argument*/);
+
+/* 8-Jan-2018 nm */
+/* statement[stmtNum].fileName and .lineNum are initialized to "" and 0.
+   To save CPU time, they aren't normally assigned until needed, but once
+   assigned they can be reused without looking them up again.  This function
+   will assign them if they haven't been assigned yet.  It just returns if
+   they have already been assigned. */
+/* The globals statement[] and sourcePtr are used */
+void assignStmtFileAndLineNum(long stmtNum);
+
+/* Initial read of source file */
+vstring readSourceAndIncludes(vstring inputFn, long *size);
+
+/* Recursively expand the source of an included file */
+char *readInclude(vstring fileBuf, long fileBufOffset,
+    /*vstring inclFileName,*/ vstring sourceFileName,
+    long *size, long parentLineNum, flag *errorFlag);
 
 #endif /* METAMATH_MMPARS_H_ */

@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2018  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -18,6 +18,7 @@
 /* #include "mmcmds.h" */  /* For getContribs() if used */
 #include "mmpfas.h" /* Needed for pipDummyVars, subproofLen() */
 #include "mmunif.h" /* Needed for minSubstLen */
+#include "mmcmdl.h" /* Needed for rootDirectory */
 
 long potentialStatements; /* Potential statements in source file (upper
                                  limit) for memory allocation purposes */
@@ -42,148 +43,28 @@ struct wrkProof_struct wrkProof;
    input file and its 'include' calls.  'Size' returns the buffer's size.
    Partial parsing is done; when 'include' statements are found, this function
    is called recursively.
-   The file input_fn is assumed to be opened when this is called.
-   The includeCall[] structure array is updated.  includeCalls is 0 for
-   the initial call. */
-char *readRawSource(vstring inputFn, long bufOffsetSoFar, long *size)
+   The file input_fn is assumed to be opened when this is called. */
+char *readRawSource(vstring inputFn,
+         vstring fileBuf, /* added 31-Dec-2017 */
+         /*long bufOffsetSoFar,*/  /* deleted 31-Dec-2017 nm */
+         long *size /* 31-Dec-2017 Now an input argument */)
 {
-  FILE *inputFp;
   long charCount = 0;
-  long fileCharCount; /* charCount for user message */
-  long startIncludeCalls;
-  long saveIncludeCalls;
-  long i, j;
-  char *fileBuf;
-  long fileBufSize;
+  /*char *fileBuf;*/ /* 31-Dec-2017 */
   char *fbPtr;
   long lineNum;
   flag insideComment;
   /* flag insideLineComment; */ /* obsolete */
   char mode;
-  char *startSection;
   char tmpch;
-  char *tmpPtr;
-  vstring tmpStr = "";
-  char *memmovePtr; /* For memmove emulation */
 
-  static char* fileNameBufStrt; /* For file-not-found error msg */
-  static char* fileNamePtr; /* For file-not-found error msg */
-  static long fileNameLen; /* For file-not-found error msg */
-
-  /* Initialization to avoid compiler warning (should not be theoretically
-     necessary) */
-  startSection = "";
-  tmpPtr = "";
-
-  startIncludeCalls = includeCalls;
-  if (!startIncludeCalls) {
-    /* This is the initial call */
-    includeCall[startIncludeCalls].includeSource = "";
-    includeCall[startIncludeCalls].bufOffset = 0;
-    includeCall[startIncludeCalls].calledBy_fn = "";
-    includeCall[startIncludeCalls].alreadyIncluded = 0;
-    includeCall[startIncludeCalls].pushOrPop = 1;
-    includeCall[startIncludeCalls].current_fn = "";
-    let(&includeCall[startIncludeCalls].current_fn, inputFn);
-    includeCall[startIncludeCalls].current_line = 1;
-    potentialStatements = 0;
-  }
-
-/*E*/if(db5)print2("Opening file %s in binary mode.\n",inputFn);
-  /* Find out the upper limit of the number of characters in the file. */
-  /* Do this by opening the file in binary and seeking to the end. */
-  inputFp = fopen(inputFn, "rb");
-  if (!inputFp) {
-    /* If this is the top-level source, file-not-found should have been
-       detected earlier; if detected here, the rawSourceError below will
-       cause a crash since fileNamePtr has not been assigned. */
-    if (includeCalls == 0) bug(1720);
-    /* This error call will not be invoked for the original file. */
-    /* (The command line takes care of it.) */
-    rawSourceError(fileNameBufStrt, fileNamePtr, fileNameLen,
-        includeCall[startIncludeCalls].calledBy_line,
-        includeCall[startIncludeCalls].calledBy_fn,
-        cat(
-        "The included file \"",inputFn,"\" does not exist or cannot be opened."
-        ,NULL));
-    *size = 0;
-    return ("");
-  }
-#ifndef SEEK_END
-/* An older GCC compiler didn't have this ANSI standard constant defined. */
-#define SEEK_END 2
-#endif
-  if (fseek(inputFp, 0, SEEK_END)) bug(1701);
-  fileBufSize = ftell(inputFp);
-/*E*/if(db5)print2("In binary mode the file has %ld bytes.\n",fileBufSize);
-
-  /* Close and reopen the input file in text mode */
-  fclose(inputFp);
-  inputFp = fopen(inputFn, "r");
-  if (!inputFp) bug(1702);
-
-  /* Allocate space for the entire input file */
-  fileBufSize = fileBufSize + 10; /* Add a factor for unknown text formats */
-  fileBuf = malloc((size_t)fileBufSize);
-  if (!fileBuf) outOfMemory("#1 (fileBuf)");
-
-  /* Put the entire input file into the buffer as a giant character string */
-  charCount = (long)fread(fileBuf, sizeof(char), (size_t)fileBufSize - 2,
-      inputFp);
-  if (!feof(inputFp)) {
-    print2("Note:  This bug will occur if there is a disk file read error.\n");
-    /* If this bug occurs (due to obscure future format such as compressed
-       text files) we'll have to add a realloc statement. */
-    bug(1703);
-  }
-  fclose(inputFp);
-  fileBuf[charCount] = 0; /* End of string */
-
-  /* nm 6-Feb-04 This was taken from readFileToString in mminou.c.
-     ? ? ? Future: make this whole thing call readFileToString */
-  /* Make sure the file has no carriage-returns */
-  if (strchr(fileBuf, '\r') != NULL) {
-    print2(
-      "?Warning: the source file has carriage-returns.  Cleaning them up...\n");
-    /* Clean up the file, e.g. DOS or Mac file on Unix */
-    i = 0;
-    j = 0;
-    while (j <= charCount) {
-      if (fileBuf[j] == '\r') {
-        if (fileBuf[j + 1] == '\n') {
-          /* DOS file - skip '\r' */
-          j++;
-        } else {
-          /* Mac file - change '\r' to '\n' */
-          fileBuf[j] = '\n';
-        }
-      }
-      fileBuf[i] = fileBuf[j];
-      i++;
-      j++;
-    }
-    charCount = i - 1; /* nm 6-Feb-04 */
-  }
-
-/*E*/if(db5)print2("In text mode the file has %ld bytes.\n",charCount);
-  fileCharCount = charCount; /* Save file size for user message */
-
-  /* See if last char is newline (needed for comment terminator); if not, add */
-  if (fileBuf[charCount - 1] != '\n') {
-    fileBuf[charCount] = '\n';
-    fileBuf[charCount + 1] = 0;
-    rawSourceError(fileBuf, &fileBuf[charCount - 1], 1, 0, inputFn, cat(
-        /* 13-Aug-2016 nm Use updated Macintosh information */
-        "The last line in the file does not end with a \"line break\",",
-        " which is a line feed in Unix/Linux/MacOSX,",
-        " a carriage return on the pre-OSX Macintosh, or a CR/LF in Windows.",
-        NULL));
-    charCount++;
-  }
-
-  if (fileBuf[charCount] != 0) bug(1719);
+  /* 31-Dec-2017 nm */
+  charCount = *size;
 
   /* Look for $[ and $] 'include' statement start and end */
+  /* 31-Dec-2017 nm - these won't happen since they're now expanded earlier */
+  /* But it can't hurt, since the code is already written.
+     TODO - clean it up for speedup? */
   fbPtr = fileBuf;
   lineNum = 1;
   mode = 0; /* 0 = outside of 'include', 1 = inside of 'include' */
@@ -285,11 +166,13 @@ char *readRawSource(vstring inputFn, long bufOffsetSoFar, long *size)
         if (mode != 0) {
           rawSourceError(fileBuf, fbPtr - 1, 2, lineNum, inputFn,
               "Nested include statements are not allowed.");
-          continue;
+        } else {
+          /* 31-Dec-2017 nm */
+          /* $[ ... $] should have been processed by readSourceAndIncludes() */
+          rawSourceError(fileBuf, fbPtr - 1, 2, lineNum, inputFn,
+              "\"$[\" is unterminated or has ill-formed \"$]\".");
+
         }
-        /* Initialize a new include statement */
-        startSection = fbPtr - 1;
-        mode = 1;
         continue;
       case ']':
         if (mode == 0) {
@@ -297,148 +180,12 @@ char *readRawSource(vstring inputFn, long bufOffsetSoFar, long *size)
               "A \"$[\" is required before \"$]\".");
           continue;
         }
-        /* Initialize a new include statement, and open the include file. */
-        includeCalls++;
-        /* We will use two more entries here (include call and return), and
-           in parseKeywords() a dummy additional top entry is assumed to exist.
-           Thus the comparison must be to 3 less than MAX_INCLUDECALLS. */
-        if (includeCalls >= MAX_INCLUDECALLS - 3) {
-          MAX_INCLUDECALLS = MAX_INCLUDECALLS + 20;
-/*E*/if(db5)print2("'Include' call table was increased to %ld entries.\n",
-/*E*/    MAX_INCLUDECALLS);
-          includeCall = realloc(includeCall, (size_t)MAX_INCLUDECALLS *
-              sizeof(struct includeCall_struct));
-          if (!includeCall) outOfMemory("#2 (includeCall)");
-        }
-        includeCall[includeCalls].includeSource = "";
-        i = fbPtr - startSection + 1;
-        let(&includeCall[includeCalls].includeSource, space(i));
-        memcpy(includeCall[includeCalls].includeSource, startSection,
-          (size_t)i);
-        includeCall[includeCalls].bufOffset = startSection - fileBuf
-            + bufOffsetSoFar;
-        includeCall[includeCalls].calledBy_fn = "";
-        let(&includeCall[includeCalls].calledBy_fn, inputFn);
-        includeCall[includeCalls].calledBy_line = lineNum;
-        includeCall[includeCalls].alreadyIncluded = 0;
-        includeCall[includeCalls].pushOrPop = 1;
-        includeCall[includeCalls].length = 0;
-        /* Get the name of the file to be included */
-        i = whiteSpaceLen(startSection + 2);
-        j = tokenLen(startSection + 2 + i);
-        includeCall[includeCalls].current_fn = "";
-        let(&includeCall[includeCalls].current_fn, space(j));
-        memcpy(includeCall[includeCalls].current_fn, startSection + 2 + i,
-            (size_t)j);
-        fileNameBufStrt = fileBuf;  /* For file-not-found error msg */
-        fileNamePtr = startSection + 2 + i; /* For file-not-found error msg */
-        fileNameLen = j; /* For file-not-found error msg */
-        includeCall[includeCalls].current_line = 1;
-        i = i + whiteSpaceLen(startSection + 2 + i + j);
-        if (i + j != fbPtr - startSection - 3) {
-          rawSourceError(fileBuf, startSection + 2 + i + j, tokenLen(
-               startSection + 2 + i + j), lineNum, inputFn,
-               "Expected only one file name between \"$[\" and \"$]\".");
-        }
-        saveIncludeCalls = includeCalls; /* recursive call to readRawSource
-                               will update includeCalls, so save it. */
 
-        /* Ignore files already included */
-        for (i = 0; i < saveIncludeCalls; i++) {
-          if (!strcmp(includeCall[i].current_fn,
-              includeCall[saveIncludeCalls].current_fn)) {
-
-            print2("%s",cat(
-                "(File \"",
-                includeCall[saveIncludeCalls].current_fn,
-                "\", referenced at line ",
-                str((double)(includeCall[saveIncludeCalls].calledBy_line)),
-                " in \"",
-                includeCall[saveIncludeCalls].calledBy_fn,
-                "\", has already been included.)\n",NULL));
-            includeCall[saveIncludeCalls].alreadyIncluded = 1;
-            break;
-          }
-        }
-
-        if (i == saveIncludeCalls) { /* This is a new file */
-          /* See if it matches an old file with case converted to upper; if
-             so, flag an error */
-          for (i = 0; i < saveIncludeCalls; i++) {
-            if (!strcmp(edit(includeCall[i].current_fn,32),
-                edit(includeCall[saveIncludeCalls].current_fn,32))) {
-              rawSourceError(fileBuf, fileNamePtr, fileNameLen, lineNum,
-                  inputFn, cat("Included file \"",
-                  includeCall[saveIncludeCalls].current_fn,
-                  "\" has the same name as earlier included file \"",
-                  includeCall[i].current_fn,"\" except for upper/lower case.",
-                  NULL));
-              break;
-            }
-            let(&tmpStr,""); /* Deallocate temp string stack */
-          }
-
-          tmpPtr = readRawSource(
-              includeCall[saveIncludeCalls].current_fn,
-              startSection - fileBuf + bufOffsetSoFar,
-              &(includeCall[saveIncludeCalls].length));
-        }
-
-        /* Put included text into the present buffer */
-        i = startSection - fileBuf; /* Initial segment */
-        j = charCount - (fbPtr - fileBuf + 1) + 1; /* Final segment, incl null*/
-        charCount = charCount - (fbPtr - startSection + 1)
-            + includeCall[saveIncludeCalls].length;
-        if (includeCall[saveIncludeCalls].length > fbPtr - startSection + 1) {
-          /* Do this only if buffer size increased (if it decreased, doing this
-             would chop off the end before the memmove) */
-          fileBuf = realloc(fileBuf, (size_t)charCount + 1);
-          if (!fileBuf) outOfMemory("#3 (fileBuf)");
-        }
-
-        /* memmove is not implemented on all compilers. */
-        /*
-        memmove(fileBuf + i + includeCall[saveIncludeCalls].length,
-            fileBuf + i + (fbPtr - startSection + 1), j);
-        */
-        /*??? inefficient memory use - rewrite with loop */
-        /* Emulate memmove */
-        memmovePtr = malloc((size_t)j);
-        if (!memmovePtr) outOfMemory("#26 (memmove)");
-        memcpy(memmovePtr,
-            fileBuf + i + (fbPtr - startSection + 1), (size_t)j);
-        memcpy(fileBuf + i + includeCall[saveIncludeCalls].length,
-            memmovePtr, (size_t)j);
-        free(memmovePtr);
-        /* End of memmove emulation */
-
-        if (includeCall[saveIncludeCalls].length) {
-          memcpy(fileBuf + i, tmpPtr,
-              (size_t)(includeCall[saveIncludeCalls].length));
-          free(tmpPtr);
-        }
-        fbPtr = fileBuf + i + includeCall[saveIncludeCalls].length;
-        mode = 0;
-
-
-        /* Create an includeCall[] entry that points to just after the end
-           of the included section.  The pushOrPop flag distinguishes this
-           entry.  This entry is used to determine line numbers and file names
-           for error messages. */
-        includeCalls++;
-        includeCall[includeCalls].bufOffset = fbPtr - fileBuf + bufOffsetSoFar;
-        includeCall[includeCalls].current_fn = "";
-        let(&includeCall[includeCalls].current_fn,inputFn);
-        includeCall[includeCalls].current_line = lineNum;
-        includeCall[includeCalls].calledBy_fn = "";  /* Not used */
-        includeCall[includeCalls].calledBy_line = 0; /* Not used */
-        includeCall[includeCalls].includeSource = ""; /* Not used */
-        includeCall[includeCalls].length = 0; /* Not used */
-        includeCall[includeCalls].pushOrPop = 0; /* 0 = returned from include */
-        includeCall[includeCalls].alreadyIncluded = 0; /* Not used */
+        /* 31-Dec-2017 nm */
+        /* Because $[ $] are already expanded here, this should never happen */
+        bug(1759);
 
         continue;
-
 
       case '{':
       case '}':
@@ -448,35 +195,25 @@ char *readRawSource(vstring inputFn, long bufOffsetSoFar, long *size)
     } /* End switch fbPtr[0] */
   } /* End while */
 
-  if (fbPtr != fileBuf + charCount) bug(1704);
-
-  let(&tmpStr, cat(str((double)lineNum - 1), " lines (", str((double)fileCharCount),
-      " characters) were read from \"", inputFn, "\"", NULL));
-  if (startIncludeCalls == 0) {
-    printLongLine(cat(tmpStr, ".", NULL),
-        "    ", " ");
-  } else {
-    printLongLine(cat(tmpStr, " (included at line ",
-        str((double)(includeCall[startIncludeCalls].calledBy_line)), " of \"",
-        includeCall[startIncludeCalls].calledBy_fn, "\").", NULL),
-        "    ", " ");
+  if (fbPtr != fileBuf + charCount) {
+    /* To help debugging: */
+    printf("fbPtr=%ld fileBuf=%ld charCount=%ld diff=%ld\n",
+        (long)fbPtr, (long)fileBuf, charCount, fbPtr - fileBuf - charCount);
+    bug(1704);
   }
-  let(&tmpStr, ""); /* Deallocate temporary strings */
 
-  if (startIncludeCalls == 0) {
-    /* Main call */
-    includeCall[startIncludeCalls].length = charCount;
-  }
-  *size = charCount;
+  /* 31-Dec-2017 nm */
+  print2("%ld bytes were read into the source buffer.\n", charCount);
+
+  if (*size != charCount) bug(1761);
   return (fileBuf);
 
-}
+} /* readRawSource */
 
 /* This function initializes the statement[] structure array and assigns
    sections of the raw input text.  statements is updated.
    sourcePtr is assumed to point to the raw input buffer.
-   sourceLen is assumed to be length of the raw input buffer.
-   includeCall[] array is assumed to be created with readRawInput. */
+   sourceLen is assumed to be length of the raw input buffer. */
 void parseKeywords(void)
 {
   long i, j, k;
@@ -488,27 +225,17 @@ void parseKeywords(void)
   long dollarPCount = 0; /* For statistics only */
   long dollarACount = 0; /* For statistics only */
 
-  /* Variables needed for line number and file name */
+  /*** 8-Jan-2018 nm Deleted
+  /@ Variables needed for line number and file name @/
   long inclCallNum;
   char *nextInclPtr;
   long lineNum;
   vstring fileName;
+  ***/
 
   /* Initialization to avoid compiler warning (should not be theoretically
      necessary) */
   type = 0;
-
-/*E*/if(db5)print2("The total source length is %ld bytes.\n",sourceLen);
-/*E*/if(db5){ print2("Include call table:\n");
-
-/*E*/  for (i=0; i<=includeCalls; i++) {
-/*E*/  print2(
-/*E*/    "  %ld: file %s, line %ld, source offset %ld, push/pop flag %ld\n",i,
-/*E*/    includeCall[i].current_fn,
-/*E*/    includeCall[i].current_line,
-/*E*/    includeCall[i].bufOffset,
-/*E*/    (long)includeCall[i].pushOrPop);
-/*E*/   } }
 
   /* Determine the upper limit of the number of new statements added for
      allocation purposes (computed in readRawInput) */
@@ -523,8 +250,8 @@ void parseKeywords(void)
 
   /* Initialize the statement array */
   i = 0;
-  statement[i].lineNum = 0;
-  statement[i].fileName = "";
+  statement[i].lineNum = 0;   /* assigned by assignStmtFileAndLineNum() */
+  statement[i].fileName = ""; /* assigned by assignStmtFileAndLineNum() */
   statement[i].labelName = "";
   statement[i].uniqueLabel = 0;
   statement[i].type = illegal_;
@@ -533,6 +260,7 @@ void parseKeywords(void)
   statement[i].labelSectionPtr = "";
   statement[i].labelSectionLen = 0; /* 3-May-2017 nm */
   statement[i].labelSectionChanged = 0;
+  statement[i].statementPtr = ""; /* input to assignStmtFileAndLineNum() */
   statement[i].mathSectionPtr = "";
   statement[i].mathSectionLen = 0;
   statement[i].mathSectionChanged = 0; /* 3-May-2017 nm */
@@ -566,12 +294,6 @@ void parseKeywords(void)
   insideComment = 0; /* 1 = inside comment */
   startSection = fbPtr;
 
-  /* Variables for computing line number and file */
-  inclCallNum = 1;
-  lineNum = 1;
-  fileName = includeCall[0].current_fn;
-  includeCall[includeCalls + 1].bufOffset = sourceLen + 2; /* Dummy entry */
-  nextInclPtr = sourcePtr + includeCall[1].bufOffset;
   while (1) {
     /* Find a keyword or newline */
     /* fbPtr = strpbrk(fbPtr, "\n$"); */ /* Takes 10 msec on VAX 4000/60 ! */
@@ -588,20 +310,9 @@ void parseKeywords(void)
       break;
     }
 
-    /* Get the current line number and file name */
-    if (fbPtr >= nextInclPtr) {
-      while (1) {
-        inclCallNum++;
-        if (fbPtr < sourcePtr + includeCall[inclCallNum].bufOffset) break;
-      }
-      lineNum = includeCall[inclCallNum - 1].current_line;
-      fileName = includeCall[inclCallNum - 1].current_fn;
-      nextInclPtr = sourcePtr + includeCall[inclCallNum].bufOffset;
-    }
-
-
     if (tmpch != '$') {
-      if (tmpch == '\n') lineNum++;
+      /* 8-Jan-2018 nm Deleted - now computed by assignStmtFileAndLineNum() */
+      /* if (tmpch == '\n') lineNum++; */
       fbPtr++;
       continue;
     }
@@ -669,11 +380,18 @@ void parseKeywords(void)
         }
         /* Initialize a new statement */
         statements++;
+        /*** 8-Jan-2018 nm Now assigned by assignStmtFileAndLineNum() as needed
         statement[statements].lineNum = lineNum;
         statement[statements].fileName = fileName;
+        ****/
         statement[statements].type = type;
         statement[statements].labelSectionPtr = startSection;
         statement[statements].labelSectionLen = fbPtr - startSection - 1;
+        /* The character after label section is used by
+           assignStmtFileAndLineNum() to determine the "line number" for the
+           statement as a whole */
+        statement[statements].statementPtr = startSection
+            + statement[statements].labelSectionLen; /* 4-Jan-2018 nm */
         startSection = fbPtr + 1;
         if (type != lb_ && type != rb_) mode = 1;
         continue;
@@ -733,11 +451,15 @@ void parseKeywords(void)
   /* statement[statements + 1].lineNum = lineNum - 1; */
   /* 10/14/02 Changed this to lineNum so mmwtex $t error msgs will be correct */
   /* Here, lineNum will be one plus the number of lines in the file */
-  statement[statements + 1].lineNum = lineNum;
-  statement[statements + 1].fileName = fileName;
+  /*** 8-Jan-2018 nm Now assigned by assignStmtFileAndLineNum() as needed
+  statement[statements].lineNum = lineNum;
+  statement[statements].fileName = fileName;
+  ****/
   statement[statements + 1].type = illegal_;
   statement[statements + 1].labelSectionPtr = startSection;
   statement[statements + 1].labelSectionLen = fbPtr - startSection;
+  /* Point to last character of file in case we ever need lineNum/fileName */
+  statement[statements + 1].statementPtr = fbPtr - 1; /* 4-Jan-2018 */
 
   /* 10/25/02 Initialize the pink number to print after the statement labels
    in HTML output. */
@@ -767,10 +489,11 @@ void parseKeywords(void)
 
 
 /*E*/if(db5){for (i=1; i<=statements; i++){
-/*E*/  if (i == 5) { print2("(etc.)\n");} else { if (i<5)
+/*E*/  if (i == 5) { print2("(etc.)\n");} else { if (i<5) {
+/*E*/  assignStmtFileAndLineNum(i);
 /*E*/  print2("Statement %ld: line %ld file %s.\n",i,statement[i].lineNum,
 /*E*/      statement[i].fileName);
-/*E*/}}}
+/*E*/}}}}
 
 }
 
@@ -1044,6 +767,7 @@ void parseMathDecl(void)
       fbPtr = statement[stmt].labelSectionPtr;
       k = whiteSpaceLen(fbPtr);
       j = tokenLen(fbPtr + k);
+      assignStmtFileAndLineNum(stmt); /* 8-Jan-2018 nm */
       sourceError(fbPtr + k, j, stmt, cat(
          "This label has the same name as the math token declared on line ",
          str((double)(statement[mathToken[i].statement].lineNum)), NULL));
@@ -2256,13 +1980,17 @@ void parseStatements(void)
                   cause memory violation by going out of bounds */
             if ((statement[n].mathString)[1] == tokenNum) {
               /* We found 2 $f's with the same variable */
+              assignStmtFileAndLineNum(n); /* 8-Jan-2018 nm */
               sourceError(statement[m].mathSectionPtr/*fbPtr*/,
                   0/*tokenLen*/,
                   m/*stmt*/, cat(
                   "The variable \"", mathToken[tokenNum].tokenName,
                 "\" already appears in the earlier active \"$f\" statement \"",
                   statement[n].labelName, "\" on line ",
-                  str((double)(statement[n].lineNum)), ".", NULL));
+                  str((double)(statement[n].lineNum)),
+                  " in file \"",           /* 8-Jan-2018 nm */
+                  statement[n].fileName,   /* 8-Jan-2018 nm */
+                  "\".", NULL));
               break; /* Optional: suppresses add'l error msgs for this stmt */
             }
           } /* next k ($f hyp scan) */
@@ -2612,6 +2340,7 @@ char parseProof(long statemNum)
       j = *(long *)voidPtr; /* Statement number */
       if (j <= statemNum) {
         if (!wrkProof.errorCount) {
+          assignStmtFileAndLineNum(j); /* 8-Jan-2018 nm */
           sourceError(fbPtr, tokLength, statemNum,cat(
               "The local label at proof step ",
               str((double)(wrkProof.numSteps + 1)),
@@ -2636,6 +2365,7 @@ char parseProof(long statemNum)
     if (voidPtr) { /* It was found */
       j = ( (struct sortHypAndLoc *)voidPtr)->labelTokenNum; /* Statement number */
       if (!wrkProof.errorCount) {
+        assignStmtFileAndLineNum(j); /* 8-Jan-2018 nm */
         sourceError(fbPtr, tokLength, statemNum,cat(
             "The local label at proof step ",
             str((double)(wrkProof.numSteps + 1)),
@@ -2878,6 +2608,7 @@ char parseProof(long statemNum)
               " is the label of this statement.  A statement may not be used to",
               " prove itself.",NULL));
         } else {
+          assignStmtFileAndLineNum(j); /* 8-Jan-2018 nm */
           sourceError(fbPtr, tokLength, statemNum, cat(
               "The label \"", statement[j].labelName, "\" at proof step ",
               str((double)step + 1),
@@ -3569,6 +3300,7 @@ char parseCompressedProof(long statemNum)
              " is the label of this statement.  A statement may not be used to",
               " prove itself.",NULL));
         } else {
+          assignStmtFileAndLineNum(j); /* 8-Jan-2018 nm */
           sourceError(fbPtr, tokLength, statemNum, cat(
               "The label \"", statement[j].labelName, "\" at proof step ",
               str((double)step + 1),
@@ -4051,38 +3783,34 @@ void rawSourceError(char *startFile, char *ptr, long tokLen, long lineNum,
 /* The global sourcePtr is assumed to point to the start of the raw input
      buffer.
    The global sourceLen is assumed to be length of the raw input buffer.
-   The includeCall array is referenced. */
+   The global includeCall array is referenced. */
 void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
 {
   char *startLine;
   char *endLine;
   vstring errLine = "";
   long lineNum;
-  long i, j;
+  vstring fileName = "";
   vstring errorMsg = "";
 
   /* 3-May-2017 nm */
   /* Used for the case where a source file section has been modified */
   char *locSourcePtr;
-  long locSourceLen;
+  /*long locSourceLen;*/
 
   /* 3-May-2017 nm */
   /* Initialize local pointers to raw input source */
   locSourcePtr = sourcePtr;
-  locSourceLen = sourceLen;
+  /*locSourceLen = sourceLen;*/
 
-  /* Initialization to avoid compiler warning (should not be theoretically
-     necessary) */
-  i = 0;
-
-  let(&errorMsg, errMsg); /* errMsg may be deallocated if this function is
+  let(&errorMsg, errMsg); /* errMsg may become deallocated if this function is
                          called with a string function argument (cat, etc.) */
 
   if (!stmtNum) {
     lineNum = 0;
-    goto skipLineNum; /* This isn't a source file parse */
+    goto SKIP_LINE_NUM; /* This isn't a source file parse */
   }
-  if (ptr < locSourcePtr || ptr > locSourcePtr + locSourceLen) {
+  if (ptr < sourcePtr || ptr > sourcePtr + sourceLen) {
     /* The pointer is outside the raw input buffer, so it must be a
        SAVEd proof or other overwritten section, so there is no line number. */
     /* 3-May-2017 nm */
@@ -4093,43 +3821,35 @@ void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
          && ptr <= statement[stmtNum].labelSectionPtr
              + statement[stmtNum].labelSectionLen) {
       locSourcePtr = statement[stmtNum].labelSectionPtr;
-      locSourceLen = statement[stmtNum].labelSectionLen;
+      /*locSourceLen = statement[stmtNum].labelSectionLen;*/
     } else if (statement[stmtNum].mathSectionChanged == 1
          && ptr >= statement[stmtNum].mathSectionPtr
          && ptr <= statement[stmtNum].mathSectionPtr
              + statement[stmtNum].mathSectionLen) {
       locSourcePtr = statement[stmtNum].mathSectionPtr;
-      locSourceLen = statement[stmtNum].mathSectionLen;
+      /*locSourceLen = statement[stmtNum].mathSectionLen;*/
     } else if (statement[stmtNum].proofSectionChanged == 1
          && ptr >= statement[stmtNum].proofSectionPtr
          && ptr <= statement[stmtNum].proofSectionPtr
              + statement[stmtNum].proofSectionLen) {
       locSourcePtr = statement[stmtNum].proofSectionPtr;
-      locSourceLen = statement[stmtNum].proofSectionLen;
+      /*locSourceLen = statement[stmtNum].proofSectionLen;*/
     } else {
       /* ptr points to neither the original source nor a modified section */
       bug(1741);
     }
 
     lineNum = 0;
-    goto skipLineNum;
+    goto SKIP_LINE_NUM;
   }
 
-  /* Get the line number and the file */
-  /* Scan to start of the included file that ptr is in */
-  for (i = 0; i <= includeCalls; i++) {
-    if (includeCall[i].bufOffset > ptr - locSourcePtr) break;
-  }
-  i--;
-  /* Count lines to ptr */
-  lineNum = includeCall[i].current_line;
-  for (j = includeCall[i].bufOffset; j < ptr - locSourcePtr; j++) {
-    if (locSourcePtr[j] == '\n') lineNum++;
-  }
+  /* 8-Jan-2018 nm */
+  /*let(&fileName, "");*/ /* No need - already assigned to empty string */
+  fileName = getFileAndLineNum(locSourcePtr/*=sourcePtr here*/, ptr, &lineNum);
 
- skipLineNum:
+ SKIP_LINE_NUM:
   /* Get the line with the error on it */
-  if (lineNum && ptr > locSourcePtr) {
+  if (lineNum != 0 && ptr > locSourcePtr) {
     startLine = ptr - 1; /* Allows pointer to point to \n. */
   } else {
     /* Special case:  Error message starts at beginning of file or
@@ -4178,11 +3898,14 @@ void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
     errorMessage(errLine, lineNum,
         ptr - startLine + 1, tokLen, /* column */
         errorMsg,
-        includeCall[i].current_fn, stmtNum,
+        /*includeCall[i].source_fn,*/
+        fileName,
+        stmtNum,
         (char)error_ /* severity */);
   }
   let(&errLine,"");
   let(&errorMsg,"");
+  let(&fileName, "");
 } /* sourceError */
 
 
@@ -4361,12 +4084,31 @@ long whiteSpaceLen(char *ptr)
         }
         return(i);
       }
-    }
+    } /* if (tmpchr == '$') */
     if (isgraph((unsigned char)tmpchr)) return (i);
     i++;
   }
   return(0); /* Dummy return - never happens */
-}
+} /* whiteSpaceLen */
+
+
+/* 31-Dec-2017 nm For .mm file splitting */
+/* This function is like whiteSpaceLen() except that comments are NOT
+   considered white space.  ptr should point to the first character
+   of the white space.  If ptr does not point to a white space character, 0
+   is returned.  If ptr points to a null character, 0 is returned. */
+long rawWhiteSpaceLen(char *ptr)
+{
+  long i = 0;
+  char tmpchr;
+  while (1) {
+    tmpchr = ptr[i];
+    if (!tmpchr) return (i); /* End of string */
+    if (isgraph((unsigned char)tmpchr)) return (i);
+    i++;
+  }
+  return(0); /* Dummy return - never happens */
+} /* rawWhiteSpaceLen */
 
 
 /* This function returns the length of the token (non-white-space) starting at
@@ -4402,7 +4144,29 @@ long tokenLen(char *ptr)
     i++;
   }
   return(0); /* Dummy return (never happens) */
-}
+} /* tokenLen */
+
+
+/* This function returns the length of the token (non-white-space) starting at
+   ptr.  Comments are considered white space.  ptr should point to the first
+   character of the token.  If ptr points to a white space character, 0
+   is returned.  If ptr points to a null character, 0 is returned. */
+/* Unlike tokenLen(), keywords are not treated as special.  In particular:
+   if ptr points to a keyword, 0 is NOT returned (instead, 2 is returned),
+   and a keyword does NOT end a token (which is a relic of days before
+   whitespace surrounding a token was part of the spec, but still serves
+   a useful purpose in token() for friendlier error detection). */
+long rawTokenLen(char *ptr)
+{
+  long i = 0;
+  char tmpchr;
+  while (1) {
+    tmpchr = ptr[i];
+    if (!isgraph((unsigned char)tmpchr)) return (i); /* White space or null */
+    i++;
+  }
+  return(0); /* Dummy return (never happens) */
+} /* rawTokenLen */
 
 
 /* This function returns the length of the proof token starting at
@@ -4443,6 +4207,31 @@ long proofTokenLen(char *ptr)
 }
 
 
+/* 5-Jan-2018 nm */
+/* Counts the number of \n between start for length chars.
+   If length = -1, then use end-of-string 0 to stop.
+   If length >= 0, then scan at most length chars, but stop
+       if end-of-string 0 is found. */
+long countLines(vstring start, long length) {
+  long lines, i;
+  lines = 0;
+  if (length == -1) {
+    i = 0;
+    while (1) {
+      if (start[i] == '\n') lines++;
+      if (start[i] == 0) break;
+      i++;
+    }
+  } else {
+    for (i = 0; i < length; i++) {
+      if (start[i] == '\n') lines++;
+      if (start[i] == 0) break;
+    }
+  }
+  return lines;
+} /* countLines */
+
+
 /* Return (for output) the complete contents of a statement, including all
    white space and comments, from first token through all white space and
    comments after last token. */
@@ -4463,6 +4252,9 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
   vstring labelSection = "";
   vstring mathSection = "";
   vstring proofSection = "";
+  vstring labelSectionSave = "";
+  vstring mathSectionSave = "";
+  vstring proofSectionSave = "";
   vstring output = "";
   /* flag newProofFlag; */ /* deleted 3-May-2017 nm */
   /* For reformatting: */
@@ -4516,6 +4308,11 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
   let(&proofSection, space(statement[stmt].proofSectionLen));
   memcpy(proofSection, statement[stmt].proofSectionPtr,
       (size_t)(statement[stmt].proofSectionLen));
+
+  /* 31-Dec-2017 nm */
+  let(&labelSectionSave, labelSection);
+  let(&mathSectionSave, mathSection);
+  let(&proofSectionSave, proofSection);
 
 
   /* 12-Jun-2011 nm Added this section to reformat statements to match the
@@ -4926,6 +4723,11 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
   /* Added 10/24/03 */
   /* Make sure the line has no carriage-returns */
   if (strchr(output, '\r') != NULL) {
+
+    /* 31-Dec-2017 nm */
+    /* We are now using readFileToString, so this should never happen. */
+    bug(1758);
+
     /* This may happen with Cygwin's gcc, where DOS CR-LF becomes CR-CR-LF
        in the output file */
     /* Someday we should investigate the use of readFileToString() in
@@ -4933,9 +4735,56 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
     let(&output, edit(output, 8192)); /* Discard CR's */
   }
 
+  /* 31-Dec-2017 nm */
+  /* This function is no longer used to supply the output, but just to
+     do any reformatting/wrapping.  Now writeSourceToBuffer() builds the
+     output source.  So instead, we update the statement[] content with
+     any changes, which are read by writeSourceToBuffer() and also saved
+     in the statement[] array for any future write source.  Eventually
+     we should replace WRITE SOURCE.../REWRAP with a REWRAP(?) command. */
+  if (strcmp(labelSection, labelSectionSave)) {
+    statement[stmt].labelSectionLen = (long)strlen(labelSection);
+    if (statement[stmt].labelSectionChanged == 1) {
+      let(&(statement[stmt].labelSectionPtr), labelSection);
+    } else {
+      /* This is the first time we've updated the label section */
+      statement[stmt].labelSectionChanged = 1;
+      statement[stmt].labelSectionPtr = labelSection;
+      labelSection = ""; /* so that labelSectionPtr won't be deallocated */
+    }
+  }
+  if (strcmp(mathSection, mathSectionSave)) {
+    statement[stmt].mathSectionLen = (long)strlen(mathSection);
+    if (statement[stmt].mathSectionChanged == 1) {
+      let(&(statement[stmt].mathSectionPtr), mathSection);
+    } else {
+      /* This is the first time we've updated the math section */
+      statement[stmt].mathSectionChanged = 1;
+      statement[stmt].mathSectionPtr = mathSection;
+      mathSection = ""; /* so that mathSectionPtr won't be deallocated */
+    }
+  }
+  /* (I don't see anywhere that proofSection will change.  So make
+     it a bug check to force us to look into it.) */
+  if (strcmp(proofSection, proofSectionSave)) {
+    bug(1757); /* This may not be a bug */
+    statement[stmt].proofSectionLen = (long)strlen(proofSection);
+    if (statement[stmt].proofSectionChanged == 1) {
+      let(&(statement[stmt].proofSectionPtr), proofSection);
+    } else {
+      /* This is the first time we've updated the proof section */
+      statement[stmt].proofSectionChanged = 1;
+      statement[stmt].proofSectionPtr = proofSection;
+      proofSection = ""; /* so that proofSectionPtr won't be deallocated */
+    }
+  }
+
   let(&labelSection, "");
   let(&mathSection, "");
   let(&proofSection, "");
+  let(&labelSectionSave, "");
+  let(&mathSectionSave, "");
+  let(&proofSectionSave, "");
   let(&comment, "");
   let(&str1, "");
   return output; /* The calling routine must deallocate this vstring */
@@ -5465,4 +5314,1258 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
 } /* parseMathTokens */
 
 
+/* 31-Dec-2017 nm For .mm file splitting */
+/* Get the next real $[...$] or virtual $( Begin $[... inclusion */
+/* This uses the convention of mmvstr.c where beginning of a string
+   is position 1.  However, startOffset = 0 means no offset i.e.
+   start at fileBuf. */
+void getNextInclusion(char *fileBuf, long startOffset, /* inputs */
+    /* outputs: */
+    long *cmdPos1, long *cmdPos2,
+    long *endPos1, long *endPos2,
+    char *cmdType, /* 'B' = "$( Begin [$..." through "$( End [$...",
+                      'I' = "[$...",
+                      'S' = "$( Skip [$...",
+                      'E' = Start missing matched End
+                      'N' = no include found; includeFn = "" */
+    vstring *fileName /* name of included file */
+    )
+{
+
+/*
+cmdType = 'B' or 'E':
+      ....... $( Begin $[ prop.mm $] $)   ......   $( End $[ prop.mm $] $) ...
+       ^      ^           ^^^^^^^       ^          ^                      ^
+  startOffset cmdPos1    fileName  cmdPos2     endPos1              endPos2
+                                             (=0 if no End)   (=0 if no End)
+
+   Note: in the special case of Begin, cmdPos2 points _after_ the whitespace
+   after "$( Begin $[ prop.mm $] $)" i.e. the whitespace is considered part of
+   the Begin command.  The is needed because prop.mm content doesn't
+   necessarily start with whitespace.  prop.mm does, however, end with
+   whitespace (\n) as enforced by readFileToString().
+
+cmdType = 'I':
+      ............... $[ prop.mm $]  ..............
+       ^              ^  ^^^^^^^   ^
+  startOffset   cmdPos1 fileName  cmdPos2     endPos1=0  endPos2=0
+
+cmdType = 'S':
+      ....... $( Skip $[ prop.mm $] $)   ......
+       ^      ^          ^^^^^^^      ^
+  startOffset cmdPos1    fileName  cmdPos2     endPos1=0  endPos2=0
+*/
+  char *fbPtr;
+  char *tmpPtr;
+  flag lookForEndMode = 0; /* 1 if inside of $( Begin, End, Skip... */
+  long i, j;
+
+  fbPtr = fileBuf + startOffset;
+
+  while (1) {
+    fbPtr = fbPtr + rawWhiteSpaceLen(fbPtr); /* Count $( as a token */
+    j = rawTokenLen(fbPtr); /* Treat $(, $[ as tokens */
+    if (j == 0) {
+      *cmdType = 'N'; /* No include found */
+      break;  /* End of file */
+    }
+    if (fbPtr[0] != '$') {
+      fbPtr = fbPtr + j;
+      continue;
+    }
+
+    /* Process normal include $[ $] */
+    if (fbPtr[1] == '[') {
+      if (lookForEndMode == 0) {
+        /* If lookForEndMode is 1, ignore everything until we find a matching
+           "$( End $[..." */
+        *cmdPos1 = fbPtr - fileBuf + 1; /* 1 = beginning of file */
+        fbPtr = fbPtr + j;
+        fbPtr = fbPtr + whiteSpaceLen(fbPtr); /* Comments = whitespace here */
+        j = rawTokenLen(fbPtr); /* Should be file name */
+        /* Note that mid, seg, left, right do not waste time computing
+           the length of the input string fbPtr */
+        let(&(*fileName), left(fbPtr, j));
+        fbPtr = fbPtr + j;
+        fbPtr = fbPtr + whiteSpaceLen(fbPtr); /* Comments = whitespace here */
+        j = rawTokenLen(fbPtr);
+        if (j == 2/*speedup*/ && !strncmp("$]", fbPtr, (size_t)j)) {
+          *cmdPos2 = fbPtr - fileBuf + j + 1;
+          *endPos1 = 0;
+          *endPos2 = 0;
+          *cmdType = 'I';
+          return;
+        }
+        /* TODO - more precise error message */
+        print2("?Missing \"$]\" after \"$[ %s\"\n", *fileName);
+        fbPtr = fbPtr + j;
+        continue; /* Not a completed include */
+      } /* if (lookForEndMode == 0) */
+      fbPtr = fbPtr + j;
+      continue; /* Either not a legal include - error detected later,
+             or we're in lookForEndMode */
+    /* Process markup-type include inside comment */
+    } else if (fbPtr[1] == '(') {
+      /* Process comment starting at "$(" */
+      if (lookForEndMode == 0) {
+        *cmdPos1 = fbPtr - fileBuf + 1;
+      } else {
+        *endPos1 = fbPtr - fileBuf + 1;
+      }
+      fbPtr = fbPtr + j;
+      fbPtr = fbPtr + rawWhiteSpaceLen(fbPtr); /* comment != whitespace */
+      j = rawTokenLen(fbPtr);
+      *cmdType = '?';
+      if (j == 5/*speedup*/ && !strncmp("Begin", fbPtr, (size_t)j)) {
+        /* If lookForEndMode is 1, we're looking for End matching earlier Begin */
+        if (lookForEndMode == 0) {
+          *cmdType = 'B';
+        }
+      } else if (j == 4/*speedup*/ && !strncmp("Skip", fbPtr, (size_t)j)) {
+        /* If lookForEndMode is 1, we're looking for End matching earlier Begin */
+        if (lookForEndMode == 0) {
+          *cmdType = 'S';
+        }
+      } else if (j == 3/*speedup*/ && !strncmp("End", fbPtr, (size_t)j)) {
+        /* If lookForEndMode is 0, there was no matching Begin */
+        if (lookForEndMode == 1) {
+          *cmdType = 'E';
+        }
+      }
+      if (*cmdType == '?') { /* The comment doesn't qualify as $[ $] markup */
+        /* Find end of comment and continue */
+        goto GET_PASSED_END_OF_COMMENT;
+      } else {
+        /* It's Begin or Skip or End */
+        fbPtr = fbPtr + j;
+        fbPtr = fbPtr + rawWhiteSpaceLen(fbPtr);
+        j = rawTokenLen(fbPtr);
+        if (j != 2 || strncmp("$[", fbPtr, (size_t)j)) {
+          /* Find end of comment and continue */
+          goto GET_PASSED_END_OF_COMMENT;
+        }
+        fbPtr = fbPtr + j;
+        fbPtr = fbPtr + rawWhiteSpaceLen(fbPtr);  /* comment != whitespace */
+        j = rawTokenLen(fbPtr);
+        /* Note that mid, seg, left, right do not waste time computing
+           the length of the input string fbPtr */
+        if (lookForEndMode == 0) {
+          /* It's Begin or Skip */
+          let(&(*fileName), left(fbPtr, j));
+        } else {
+          /* It's an End command */
+          if (strncmp(*fileName, fbPtr, (size_t)j)) {
+            /* But the file name didn't match, so it's not a matching End */
+            /* Find end of comment and continue */
+            goto GET_PASSED_END_OF_COMMENT;
+          }
+        }
+        fbPtr = fbPtr + j;
+        fbPtr = fbPtr + rawWhiteSpaceLen(fbPtr);  /* comment != whitespace */
+        j = rawTokenLen(fbPtr);
+        if (j != 2 || strncmp("$]", fbPtr, (size_t)j)) {
+          /* The token after the file name isn't "$]" */
+          /* Find end of comment and continue */
+          goto GET_PASSED_END_OF_COMMENT;
+        }
+        fbPtr = fbPtr + j;
+        fbPtr = fbPtr + rawWhiteSpaceLen(fbPtr);  /* comment != whitespace */
+        j = rawTokenLen(fbPtr);
+        if (j != 2 || strncmp("$)", fbPtr, (size_t)j)) {
+          /* The token after the "$]" isn't "$)" */
+          /* Find end of comment and continue */
+          goto GET_PASSED_END_OF_COMMENT;
+        }
+        /* We are now at the end of "$( Begin/Skip/End $[ file $] $)" */
+        fbPtr = fbPtr + j;
+        if (lookForEndMode == 0) {
+          *cmdPos2 = fbPtr - fileBuf + 1
+            + ((*cmdType == 'B') ? 1 : 0);/*after whitespace for 'B' (see above)*/
+          if (*cmdType == 'S') {  /* Skip command; we're done */
+            *endPos1 = 0;
+            *endPos2 = 0;
+            return;
+          }
+          if (*cmdType != 'B') bug(1742);
+          lookForEndMode = 1;
+        } else { /* We're at an End */
+          if (*cmdType != 'E') bug(1743);
+          /*lookForEndMode = 0;*/ /* Not needed since we will return soon */
+          *cmdType = 'B'; /* Restore it to B for Begin/End pair */
+          *endPos2 = fbPtr - fileBuf + 1;
+          return;
+        }
+        continue; /* We're past Begin; start search for End */
+      } /* Begin, End, or Skip */
+    } else if (i != i + 1) { /* Suppress "unreachable code" warning for bug trap below */
+      /* It's '$' not followed by '[' or '('; j is token length */
+      fbPtr = fbPtr + j;
+      continue;
+    }
+    bug(1746); /* Should never get here */
+   GET_PASSED_END_OF_COMMENT:
+    /* Note that fbPtr should be at beginning of last token found, which
+       may be "$)" (in which case i will be 1 from the instr) */
+
+    /* Don't use instr because it computes string length each call */
+    /*i = instr(1, fbPtr, "$)");*/ /* Normally this will be fast because we only
+        have to find the end of the comment that we're in */
+    /* Emulater the instr() */
+    tmpPtr = fbPtr;
+    i = 0;
+    while (1) {
+
+      /* strchr is incredibly slow under lcc - why?
+         Is it computing strlen internally maybe? */
+      /*
+      tmpPtr = strchr(tmpPtr, '$');
+      if (tmpPtr == NULL) {
+        i = 0;
+        break;
+      }
+      if (tmpPtr[1] == ')') {
+        i = tmpPtr - fbPtr + 1;
+        break;
+      }
+      tmpPtr++;
+      */
+
+      /* Emulate strchr */
+      while (tmpPtr[0] != '$') {
+        if (tmpPtr[0] == 0) break;
+        tmpPtr++;
+      }
+      if (tmpPtr[0] == 0) {
+        i = 0;
+        break;
+      }
+      if (tmpPtr[1] == ')') {
+        i = tmpPtr - fbPtr + 1;
+        break;
+      }
+      tmpPtr++;
+
+    } /* while (1) */
+
+    if (i == 0) {
+      /* TODO: better error msg */
+      printf("?End of comment not found\n");
+      i = (long)strlen(fileBuf); /* Slow, but this is a rare error */
+      fbPtr = fileBuf + i; /* Points to null at end of fileBuf */
+    } else {
+      fbPtr = fbPtr + i + 2 - 1; /* Skip the "$)" - skip 2 characters, then
+           back up 1 since the instr result starts at 1 */
+    }
+    /* continue; */  /* Not necessary since we're at end of loop */
+  } /* while (1) */
+  if (j != 0) bug(1744); /* Should be at end of file */
+  if (lookForEndMode == 1) {
+    /* We didn't find an End */
+    *cmdType = 'E';
+    *endPos1 = 0; *endPos2 = 0;
+  } else {
+    *cmdType = 'N'; /* no include was found */
+    *cmdPos1 = 0; *cmdPos2 = 0; *endPos1 = 0; *endPos2 = 0;
+    let(&(*fileName), "");
+  }
+  return;
+
+} /* getNextInclusion */
+
+
+
+/* This function transfers the content of the statement[] array
+   to a linear buffer in preparation for creating the output file.
+   Any changes such as modified proofs will be updated in the buffer. */
+/* The caller is responsible for deallocating the returned string. */
+vstring writeSourceToBuffer(void)
+{
+  long stmt, size;
+  vstring buf = "";
+  char *ptr;
+
+  /* Compute the size of the buffer */
+  /* Note that statement[statements + 1] is a dummy statement
+     containing the text after the last statement in its
+     labelSection */
+  size = 0;
+  for (stmt = 1; stmt <= statements + 1; stmt++) {
+    /* Add the sizes of the sections.  When sections don't exist
+       (like a proof for a $a statement), the section length is 0. */
+    size += statement[stmt].labelSectionLen
+        + statement[stmt].mathSectionLen
+        + statement[stmt].proofSectionLen;
+    /* Add in the 2-char length of keywords, which aren't stored in
+       the statement sections */
+    switch (statement[stmt].type) {
+      case lb_: /* ${ */
+      case rb_: /* $} */
+        size += 2;
+        break;
+      case v_: /* $v */
+      case c_: /* $c */
+      case d_: /* $d */
+      case e_: /* $e */
+      case f_: /* $f */
+      case a_: /* $a */
+        size += 4;
+        break;
+      case p_: /* $p */
+        size += 6;
+        break;
+      case illegal_: /* dummy */
+        if (stmt != statements + 1) bug(1747);
+        /* The labelLen is text after last statement */
+        size += 0; /* There are no keywords in statements + 1 */
+        break;
+      default: bug(1748);
+    } /* switch (statement[stmt].type) */
+  } /* next stmt */
+
+  /* Create the output buffer */
+  /* We could have created it with let(&buf, space(size)), but malloc should
+     be slightly faster since we don't have to initialize each entry */
+  buf = malloc((size_t)(size + 1) * sizeof(char));
+
+  ptr = buf; /* Pointer to keep track of buf location */
+  /* Transfer the statement[] array to buf */
+  for (stmt = 1; stmt <= statements + 1; stmt++) {
+    /* Always transfer the label section (text before $ keyword) */
+    memcpy(ptr/*dest*/, statement[stmt].labelSectionPtr/*source*/,
+        (size_t)(statement[stmt].labelSectionLen)/*size*/);
+    ptr += statement[stmt].labelSectionLen;
+    switch (statement[stmt].type) {
+      case illegal_:
+        if (stmt != statements + 1) bug(1749);
+        break;
+      case lb_: /* ${ */
+      case rb_: /* $} */
+        ptr[0] = '$';
+        ptr[1] = statement[stmt].type;
+        ptr += 2;
+        break;
+      case v_: /* $v */
+      case c_: /* $c */
+      case d_: /* $d */
+      case e_: /* $e */
+      case f_: /* $f */
+      case a_: /* $a */
+        ptr[0] = '$';
+        ptr[1] = statement[stmt].type;
+        ptr += 2;
+        memcpy(ptr/*dest*/, statement[stmt].mathSectionPtr/*source*/,
+            (size_t)(statement[stmt].mathSectionLen)/*size*/);
+        ptr += statement[stmt].mathSectionLen;
+        ptr[0] = '$';
+        ptr[1] = '.';
+        ptr += 2;
+        break;
+      case p_: /* $p */
+        ptr[0] = '$';
+        ptr[1] = statement[stmt].type;
+        ptr += 2;
+        memcpy(ptr/*dest*/, statement[stmt].mathSectionPtr/*source*/,
+            (size_t)(statement[stmt].mathSectionLen)/*size*/);
+        ptr += statement[stmt].mathSectionLen;
+        ptr[0] = '$';
+        ptr[1] = '=';
+        ptr += 2;
+        memcpy(ptr/*dest*/, statement[stmt].proofSectionPtr/*source*/,
+            (size_t)(statement[stmt].proofSectionLen)/*size*/);
+        ptr += statement[stmt].proofSectionLen;
+        ptr[0] = '$';
+        ptr[1] = '.';
+        ptr += 2;
+        break;
+      default: bug(1750);
+    } /* switch (statement[stmt].type) */
+  } /* next stmt */
+  if (ptr - buf != size) bug(1751);
+  buf[size] = 0; /* End of string marker */
+  return buf;
+} /* writeSourceToBuffer */
+
+
+/* 31-Dec-2017 nm */
+/* This function creates split files containing $[ $] inclusions, from
+   a nonsplit source with $( Begin $[... etc. inclusions */
+/* This function calls itself recursively, and after the recursive call
+   the fileBuf (=includeBuf) argument is deallocated. */
+/* For the top level call, fileName MUST NOT HAVE A DIRECTORY PATH */
+/* Note that fileBuf must be deallocated by initial caller.  This will let the
+   caller decide whether to say re-use fileBuf to create an unsplit version
+   of the .mm file in case the split version generation encounters an error. */
+/*                                     TODO ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ */
+/*flag(TODO)*/ void writeSplitSource(vstring *fileBuf, vstring fileName,
+    flag noVersioningFlag, flag noDeleteFlag) {
+  FILE *fp;
+  vstring tmpStr1 = "";
+  vstring tmpFileName = "";
+  vstring includeBuf = "";
+  vstring includeFn = "";
+  vstring fileNameWithPath = "";
+  long size;
+  flag writeFlag;
+  long startOffset;
+  long cmdPos1;
+  long cmdPos2;
+  long endPos1;
+  long endPos2;
+  char cmdType;
+  startOffset = 0;
+  let(&fileNameWithPath, cat(rootDirectory, fileName, NULL));
+  while (1) {
+    getNextInclusion(*fileBuf, startOffset, /* inputs */
+        /* outputs: */
+        &cmdPos1, &cmdPos2,
+        &endPos1, &endPos2,
+        &cmdType, /* 'B' = "$( Begin [$..." through "$( End [$...",
+                     'I' = "[$...",
+                     'S' = "$( Skip [$...",
+                     'E' = Start missing matched End
+                     'N' = no include found; includeFn = "" */
+        &includeFn /* name of included file */ );
+    if (cmdType == 'N') {
+      writeFlag = 0;
+      /* There are no more includes to expand, so write out the file */
+      if (!strcmp(fileName, output_fn)) {
+        /* We're writing the top-level file - always create new version */
+        writeFlag = 1;
+      } else {
+        /* We're writing an included file */
+        /* See if the file already exists */
+        let(&tmpStr1, "");
+        tmpStr1 = readFileToString(fileNameWithPath, 0/*quiet*/, &size);
+        if (tmpStr1 == NULL) {
+          tmpStr1 = ""; /* Prevent seg fault */
+          /* If it doesn't exist, see if the ~1 version exists */
+          let(&tmpFileName, cat(fileNameWithPath, "~1", NULL));
+          tmpStr1 = readFileToString(tmpFileName, 0/*quiet*/, &size);
+          if (tmpStr1 == NULL) {
+            tmpStr1 = ""; /* Prevent seg fault */
+            /* Create and write the file */
+            writeFlag = 1;
+          } else {
+            /* See if the ~1 backup file content changed */
+            if (strcmp(tmpStr1, *fileBuf)) {
+              /* Content is different; write the file */
+              writeFlag = 1;
+            } else {
+              /* Just rename the ~1 version to the main version */
+              print2("Recovering \"%s\" from \"%s\"...\n",
+                  fileNameWithPath, tmpFileName);
+              rename(tmpFileName/*old*/, fileNameWithPath/*new*/);
+            }
+          } /* if (tmpStr1 == NULL) */
+        } else { /* tmpStr1 != NULL */
+          /* The include file already exists; see if the content changed */
+          if (strcmp(tmpStr1, *fileBuf)) {
+            /* Content is different; write the file */
+            writeFlag = 1;
+          } else {
+            /* Just rename the ~1 version to the main version */
+            print2("Content of \"%s\" did not change.\n",
+                fileNameWithPath);
+            rename(tmpFileName/*old*/, fileNameWithPath/*new*/);
+          }
+        }
+      }
+      if (writeFlag == 1) {
+        fp = fSafeOpen(fileNameWithPath, "w", 0/*noVersioningFlag*/);
+        if (fp == NULL) {
+          /* TODO: better error msg?  Abort and don't split? */
+          print2("?Error: couldn't create the file \"%s\"\n", fileNameWithPath);
+          print2("  Make sure any directories needed have been created.\n");
+          print2("  Try WRITE SOURCE without / SPLIT to recover your work.\n");
+          break;
+        } else {
+          print2("Writing \"%s\"...\n", fileNameWithPath);
+          fprintf(fp, "%s", *fileBuf);
+          fclose(fp);
+          break;
+        }
+      } /* if (writeFlag == 1 ) */
+      break;
+    } else if (cmdType == 'S') {
+      /* Change "Skip" to a real inclusion */
+      let(&tmpStr1, cat("$[ ", includeFn, " $]", NULL));
+      startOffset = cmdPos1 - 1 + (long)strlen(tmpStr1);
+      let(&(*fileBuf), cat(left(*fileBuf, cmdPos1 - 1), tmpStr1,
+          right(*fileBuf, cmdPos2), NULL));
+      continue;
+    } else if (cmdType == 'B') {
+      /* Extract included file content and call this recursively to process */
+      let(&tmpStr1, cat("$[ ", includeFn, " $]", NULL));
+      startOffset = cmdPos1 - 1 + (long)strlen(tmpStr1);
+      /* We start _after_ the whitespace after cmdPos2 because it wasn't
+         in the original included file but was put there by us in
+         readSourceAndIncludes() */
+      let(&includeBuf, seg(*fileBuf, cmdPos2, endPos1 - 1));
+      let(&(*fileBuf), cat(left(*fileBuf, cmdPos1 - 1), tmpStr1,
+          right(*fileBuf, endPos2), NULL));
+      /* TODO: intercept error from deeper calls? */
+      writeSplitSource(&includeBuf, includeFn, noVersioningFlag, noDeleteFlag);
+      continue;
+    } else if (cmdType == 'I') {
+      bug(1752); /* Any real $[ $] should have been converted to commment */
+      /* However in theory, user could have faked an assignable description
+         if modifiable comments are added in the future...*/
+      startOffset = cmdPos2 - 1;
+      continue;
+    } else if (cmdType == 'E') {
+      /* TODO What error message should go here? */
+      print2("?Unterminated \"$( Begin $[...\" inclusion markup in \"%s\".",
+          fileNameWithPath);
+      startOffset = cmdPos2 - 1;
+      continue;
+    } else {
+      /* Should never happen */
+      bug(1753);
+    }
+  } /* while (1) */
+  /* Deallocate memory */
+  /*let(&(*fileBuf), "");*/ /* Let caller decide whether to do this */
+  let(&tmpStr1, "");
+  let(&tmpFileName, "");
+  let(&includeFn, "");
+  let(&includeBuf, "");
+  let(&fileNameWithPath, "");
+} /* writeSplitSource */
+
+
+/* 31-Dec-2017 nm */
+/* When "write source" does not have the "/split" qualifier, by default
+   (i.e. without "/no_delete") the included modules are "deleted" (renamed
+   to ~1) since their content will be in the main output file. */
+/*flag(TODO)*/ void deleteSplits(vstring *fileBuf, flag noVersioningFlag) {
+  FILE *fp;
+  vstring includeFn = "";
+  vstring fileNameWithPath = "";
+  long startOffset;
+  long cmdPos1;
+  long cmdPos2;
+  long endPos1;
+  long endPos2;
+  char cmdType;
+  startOffset = 0;
+  while (1) {
+    /* We scan the source for all "$( Begin $[ file $] $)...$( End $[ file $]"
+       and when found, we "delete" file. */
+    getNextInclusion(*fileBuf, startOffset, /* inputs */
+        /* outputs: */
+        &cmdPos1, &cmdPos2,
+        &endPos1, &endPos2,
+        &cmdType, /* 'B' = "$( Begin [$..." through "$( End [$...",
+                     'I' = "[$...",
+                     'S' = "$( Skip [$...",
+                     'E' = Start missing matched End
+                     'N' = no include found; includeFn = "" */
+        &includeFn /* name of included file */ );
+    /* We only care about the 'B' command */
+    if (cmdType == 'B') {
+      let(&fileNameWithPath, cat(rootDirectory, includeFn, NULL));
+      /* See if the included file exists */
+      fp = fopen(fileNameWithPath, "r");
+      if (fp != NULL) {
+        fclose(fp);
+        if (noVersioningFlag == 1) {
+          print2("Deleting \"%s\"...\n", fileNameWithPath);
+        } else {
+          print2("Renaming \"%s\" to \"%s~1\"...\n", fileNameWithPath,
+              fileNameWithPath);
+        }
+        fp = fSafeOpen(fileNameWithPath, "d", noVersioningFlag);
+      }
+      /* Adjust offset and continue */
+      /* We don't go the the normal end of the 'B' because it may
+         have other 'B's inside.  Instead, just skip past the Begin. */
+      startOffset = cmdPos2 - 1; /* don't use endPos2 */
+    } else if (cmdType == 'N') {
+      /* We're done */
+      break;
+    } else if (cmdType == 'S') {
+      /* Adjust offset and continue */
+      startOffset = cmdPos2 - 1;
+    } else if (cmdType == 'E') {
+      /* There's a problem, but ignore - should have been reported earlier */
+      /* Adjust offset and continue */
+      startOffset = cmdPos2 - 1;
+    } else if (cmdType == 'I') {
+      bug(1755); /* Should never happen */
+    } else {
+      bug(1756);
+    }
+    continue;
+  } /* while (1) */
+  /* Deallocate memory */
+  /*let(&(*fileBuf), "");*/ /* Let caller decide whether to do this */
+  let(&includeFn, "");
+  let(&fileNameWithPath, "");
+  return;
+} /* deleteSplits */
+
+
+/* 8-Jan-2018 nm */
+/* Get file name and line number given a pointer into the read buffer */
+/* The user must deallocate the returned string (file name) */
+/* The globals includeCall structure and includeCalls are used */
+vstring getFileAndLineNum(vstring buffPtr/*start of read buffer*/,
+    vstring currentPtr/*place at which to get file name and line no*/,
+    long *lineNum/*return argument*/) {
+  long i, smallestOffset, smallestNdx;
+  vstring fileName = "";
+
+  /* Make sure it's not outside the read buffer */
+  if (currentPtr < buffPtr
+      || currentPtr >= buffPtr + includeCall[1].current_offset) {
+    bug(1769);
+  }
+
+  /* Find the includeCall that is closest to currentPtr but does not
+     exceed it */
+  smallestOffset = currentPtr - buffPtr; /* Start with includeCall[0] */
+  if (smallestOffset < 0) bug(1767);
+  smallestNdx = 0; /* Point to includeCall[0] */
+  for (i = 0; i <= includeCalls; i++) {
+    if (includeCall[i].current_offset <= currentPtr - buffPtr) {
+      if ((currentPtr - buffPtr) - includeCall[i].current_offset
+          <= smallestOffset) {
+        smallestOffset = (currentPtr - buffPtr) - includeCall[i].current_offset;
+        smallestNdx = i;
+      }
+    }
+  }
+  if (smallestOffset < 0) bug(1768);
+  *lineNum = includeCall[smallestNdx].current_line
+      + countLines(buffPtr + includeCall[smallestNdx].current_offset,
+          smallestOffset);
+  /* Assign to new string to prevent original from being deallocated */
+  let(&fileName, includeCall[smallestNdx].source_fn);
+/*D*//*printf("smallestNdx=%ld smallestOffset=%ld i[].co=%ld\n",smallestNdx,smallestOffset,includeCall[smallestNdx].current_offset);*/
+  return fileName;
+} /* getFileAndLineNo */
+
+
+/* 8-Jan-2018 nm */
+/* statement[stmtNum].fileName and .lineNum are initialized to "" and 0.
+   To save CPU time, they aren't normally assigned until needed, but once
+   assigned they can be reused without looking them up again.  This function
+   will assign them if they haven't been assigned yet.  It just returns if
+   they have been assigned. */
+/* The globals statement[] and sourcePtr are used */
+void assignStmtFileAndLineNum(long stmtNum) {
+  if (statement[stmtNum].lineNum > 0) return; /* Already assigned */
+  if (statement[stmtNum].lineNum < 0) bug(1766);
+  if (statement[stmtNum].fileName[0] != 0) bug(1770);
+  /* We can make a direct string assignment here since previous value was "" */
+  statement[stmtNum].fileName = getFileAndLineNum(sourcePtr,
+      statement[stmtNum].statementPtr, &(statement[stmtNum].lineNum));
+  return;
+} /* assignStmtFileAndLineNum */
+
+
+
+/* This function returns a pointer to a buffer containing the contents of an
+   input file and its 'include' calls.  'Size' returns the buffer's size.  */
+/* TODO - ability to flag error to skip raw source function */
+/* Recursive function that processes a found include */
+/* If NULL is returned, it means a serious error occured (like missing file)
+   and reading should be aborted. */
+/* Globals used:  includeCall[], includeCalls */
+char *readInclude(vstring fileBuf, long fileBufOffset,
+    /*vstring parentFileName,*/ vstring sourceFileName,
+    long *size, long parentLineNum, flag *errorFlag)
+{
+  long i;
+  /*vstring fileBuf = "";*/
+  long inclSize;
+  /* flag insideLineComment; */ /* obsolete */
+  vstring newFileBuf = "";
+  vstring inclPrefix = "";
+  vstring tmpSource = "";
+  vstring inclSource = "";
+  vstring oldSource = "";
+  vstring inclSuffix = "";
+
+  long startOffset;
+  long cmdPos1;
+  long cmdPos2;
+  long endPos1;
+  long endPos2;
+  char cmdType;
+  long oldInclSize = 0; /* Init to avoid compiler warning */
+  long newInclSize = 0; /* Init to avoid compiler warning */
+  long befInclLineNum;
+  long aftInclLineNum;
+  /*long contLineNum;*/
+  vstring includeFn = "";
+  vstring fullInputFn = "";
+  vstring fullIncludeFn = "";
+  long alreadyInclBy;
+  long saveInclCalls;
+
+  let(&newFileBuf, fileBuf);  /* TODO - can this be avoided for speedup? */
+  /* Look for and process includes */
+  startOffset = 0;
+
+  while (1) {
+    getNextInclusion(newFileBuf, startOffset, /* inputs */
+        /* outputs: */
+        &cmdPos1, &cmdPos2,
+        &endPos1, &endPos2,
+        &cmdType, /* 'B' = "$( Begin [$..." through "$( End [$...",
+                     'I' = "[$...",
+                     'S' = "$( Skip [$...",
+           TODO: add error code for missing $]?
+                     'E' = Begin missing matched End
+                     'N' = no include found; includeFn = "" */
+        &includeFn /* name of included file */ );
+    /*
+    cmdType = 'B' or 'E':
+          ....... $( Begin $[ prop.mm $] $)   ......   $( End $[ prop.mm $] $) ...
+           ^      ^           ^^^^^^^       ^          ^                      ^
+      startOffset cmdPos1    fileName  cmdPos2     endPos1              endPos2
+                                                 (=0 if no End)   (=0 if no End)
+
+       Note: in the special case of Begin, cmdPos2 points _after_ the whitespace
+       after "$( Begin $[ prop.mm $] $)" i.e. the whitespace is considered part of
+       the Begin command.  The is needed because prop.mm content doesn't
+       necessarily start with whitespace.  prop.mm does, however, end with
+       whitespace (\n) as enforced by readFileToString().
+
+    cmdType = 'I':
+          ............... $[ prop.mm $]  ..............
+           ^              ^  ^^^^^^^   ^
+      startOffset   cmdPos1 fileName  cmdPos2     endPos1=0  endPos2=0
+
+    cmdType = 'S':
+          ....... $( Skip $[ prop.mm $] $)   ......
+           ^      ^          ^^^^^^^      ^
+      startOffset cmdPos1    fileName  cmdPos2     endPos1=0  endPos2=0
+    */
+
+    if (cmdType == 'N') break; /* No (more) includes */
+    if (cmdType == 'E') {
+      /* TODO: Better error msg here or in getNextInclude */
+      print2("?Error: \"$( Begin $[...\" without matching \"$( End $[...\"\n");
+      startOffset = cmdPos2; /* Get passed the bad "$( Begin $[..." */
+      *errorFlag = 1;
+      continue;
+    }
+
+    /* Count lines between start of last source continuation and end of
+       the inclusion, before the newFileBuf is modified */
+
+    if (includeCall[includeCalls].pushOrPop != 1) bug(1764);
+    /*
+    contLineNum = includeCall[includeCalls].current_line
+      + countLines(newFileBuf, ((cmdType == 'B') ? endPos2 : cmdPos2)
+          - includeCall[includeCalls].current_offset);\
+    */
+
+
+    /* If we're here, cmdType is 'B', 'I', or 'S' */
+
+    /* Create 2 new includeCall entries before recursive call, so that
+       alreadyInclBy will scan entries in proper order (e.g. if this
+       include calls itself at a deeper level - weird but not illegal - the
+       deeper one should be Skip'd per the Metamath spec). */
+    /* This entry is identified by pushOrPop = 0 */
+    includeCalls++;
+    /* We will use two more entries here (include call and return), and
+       in parseKeywords() a dummy additional top entry is assumed to exist.
+       Thus the comparison must be to 3 less than MAX_INCLUDECALLS. */
+    if (includeCalls >= MAX_INCLUDECALLS - 3) {
+      MAX_INCLUDECALLS = MAX_INCLUDECALLS + 20;
+/*E*/if(db5)print2("'Include' call table was increased to %ld entries.\n",
+/*E*/    MAX_INCLUDECALLS);
+      includeCall = realloc(includeCall, (size_t)MAX_INCLUDECALLS *
+          sizeof(struct includeCall_struct));
+      if (includeCall == NULL) outOfMemory("#2 (includeCall)");
+    }
+    includeCall[includeCalls].pushOrPop = 0;
+
+    /* This entry is identified by pushOrPop = 1 */
+    includeCalls++;
+    includeCall[includeCalls].pushOrPop = 1;
+    /* Save the value before recursive calls will increment the global
+       includeCalls */
+    saveInclCalls = includeCalls;
+
+    includeCall[saveInclCalls - 1].included_fn = "";  /* Initialize string */
+    let(&(includeCall[saveInclCalls - 1].included_fn), includeFn); /* Name of the
+       file in the inclusion statement e.g. "$( Begin $[ included_fn..." */
+    includeCall[saveInclCalls].included_fn = "";
+    let(&includeCall[saveInclCalls].included_fn,
+        sourceFileName); /* Continuation of parent file after this include */
+
+
+    /* See if includeFn file has already been included */
+    alreadyInclBy = -1;
+    for (i = 0; i <= saveInclCalls - 2; i++) {
+      if (includeCall[i].pushOrPop == 0
+         && !strcmp(includeCall[i].included_fn, includeFn)) {
+        /*
+        print2("%s",cat(
+            "(File \"",
+            includeCall[includeCalls].source_fn,
+            "\", referenced at line ",
+            str((double)(includeCall[includeCalls].calledBy_line)),
+            " in \"",
+            includeCall[includeCalls].calledBy_fn,
+            "\", has already been included.)\n",NULL));
+        */
+        alreadyInclBy = i;
+        break;
+      }
+    }
+    if (alreadyInclBy == -1) {
+      /* This is the first time the included file has been included */
+      switch (cmdType) {
+        case 'B':
+          let(&inclPrefix, seg(newFileBuf, cmdPos1, cmdPos2 - 1)); /* Keep trailing
+              \n (or other whitespace) as part of prefix for the special
+              case of Begin - cmdPos2 points to char after \n */
+          let(&inclSuffix, seg(newFileBuf, endPos1, endPos2 - 1));
+          let(&tmpSource, seg(newFileBuf, cmdPos2, endPos1 - 1));  /* Save the
+              included source */
+          inclSize = endPos1 - cmdPos2; /* Actual included source size */
+
+          /* Get the parent line number up to the inclusion */
+          befInclLineNum = parentLineNum + countLines(
+              newFileBuf + startOffset + 1,
+              cmdPos2 - 1 - startOffset);
+          includeCall[saveInclCalls - 1].current_line = befInclLineNum - 1;
+          aftInclLineNum = befInclLineNum + countLines(newFileBuf
+              + cmdPos2/*start at (cmdPos2+1)th character*/,
+              endPos2 - cmdPos2 - 1) + 1;
+          includeCall[saveInclCalls].current_line = aftInclLineNum - 1;
+          parentLineNum = aftInclLineNum;
+
+          /* Call recursively to expand any includes in the included source */
+          /* Use parentLineNum since the inclusion source is in the parent file */
+          let(&inclSource, "");
+          inclSource = readInclude(tmpSource,
+              fileBufOffset + cmdPos1 - 1 + (long)strlen(inclPrefix), /*new offset*/
+              /*includeFn,*/ sourceFileName,
+              &inclSize /*input/output*/, befInclLineNum, &(*errorFlag));
+
+          oldInclSize = endPos2 - cmdPos1; /* Includes old prefix and suffix */
+          /*newInclSize = oldInclSize;*/ /* Includes new prefix and suffix */
+          newInclSize = (long)strlen(inclPrefix) + inclSize +
+                (long)strlen(inclSuffix); /* Includes new prefix and suffix */
+          /* It is already a Begin comment, so leave it alone */
+          /* *size = *size; */
+          /* Adjust starting position for next inclusion search */
+          startOffset = cmdPos1 + newInclSize - 1; /* -1 since startOffset is 0-based but
+              cmdPos2 is 1-based */
+          break;
+        case 'I':
+          /* Read the included file */
+          let(&fullIncludeFn, cat(rootDirectory, includeFn, NULL));
+          let(&tmpSource, "");
+          tmpSource = readFileToString(fullIncludeFn, 0/*verbose*/, &inclSize);
+          if (tmpSource == NULL) {
+            /* TODO: print better error msg?*/
+            print2(
+                "?Error: file \"%s\" (included in \"%s\") was not found\n",
+                fullIncludeFn, includeCall[includeCalls].source_fn);
+            tmpSource = "";
+            inclSize = 0;
+            *errorFlag = 1;
+          } else {
+            print2("Reading included file \"%s\"... %ld bytes\n",
+                fullIncludeFn, inclSize);
+          }
+
+          /* Change inclusion command to Begin...End comment */
+          let(&inclPrefix, cat("$( Begin $[ ", includeFn, " $] $)\n", NULL));
+               /* Note that trailing whitespace is part of the prefix in
+                  the special case of Begin, because the included file might
+                  not start with whitespace.  However, the included file
+                  will always end with whitespace i.e. \n as enforced by
+                  readFileToString(). */
+          let(&inclSuffix, cat("$( End $[ ", includeFn, " $] $)", NULL));
+
+          /* Get the parent line number up to the inclusion */
+          /* TODO: compute aftInclLineNum directly and eliminate befInclLineNum */
+          befInclLineNum = parentLineNum + countLines(
+              newFileBuf + startOffset + 1,
+              cmdPos1 - 1 - startOffset);
+          includeCall[saveInclCalls - 1].current_line = 0;
+          aftInclLineNum = befInclLineNum + countLines(newFileBuf
+              + cmdPos1/*start at (cmdPos1+1)th character*/,
+              cmdPos2 - cmdPos1 - 1);
+          includeCall[saveInclCalls].current_line = aftInclLineNum;
+          parentLineNum = aftInclLineNum;
+
+          /* Call recursively to expand includes in the included source */
+          /* Start at line 1 since source is in external file */
+          let(&inclSource, "");
+          inclSource = readInclude(tmpSource,
+              fileBufOffset + cmdPos1 - 1 + (long)strlen(inclPrefix), /*new offset*/
+              /*includeFn,*/ includeFn,
+              &inclSize /*input/output*/, 1/*parentLineNum*/, &(*errorFlag));
+
+          oldInclSize = cmdPos2 - cmdPos1; /* Includes old prefix and suffix */
+          /* "$( Begin $[...$] $)" must have a whitespace
+             after it; we use a newline.  readFileToString will ensure a
+             newline at its end.  We don't add whitespace after
+             "$( End $[...$] $)" but reuse the whitespace after the original
+             "$[...$]". */
+          let(&newFileBuf, cat(left(newFileBuf, cmdPos1 - 1),
+              inclPrefix, inclSource, inclSuffix,
+              right(newFileBuf, cmdPos2), NULL));
+          *size = *size - (cmdPos2 - cmdPos1) + (long)strlen(inclPrefix)
+              + inclSize + (long)strlen(inclSuffix);
+          newInclSize = (long)strlen(inclPrefix) + inclSize +
+                (long)strlen(inclSuffix); /* Includes new prefix and suffix */
+          /* Adjust starting position for next inclusion search (which will
+             be at the start of the included file continuing into the remaining
+             parent file) */
+          startOffset = cmdPos1 + newInclSize - 1; /* -1 since startOffset is
+              0-based but cmdPos2 is 1-based */
+              /*
+              + inclSize  /@ Use instead of strlen for speed @/
+              + (long)strlen(inclSuffix) */
+              ;  /* -1 since startOffset is 0-based but cmdPos1 is 1-based */
+          /* TODO: update line numbers for error msgs */
+          break;
+        case 'S':
+          /* Read the included file */
+          let(&fullIncludeFn, cat(rootDirectory, includeFn, NULL));
+          let(&tmpSource, "");
+          tmpSource = readFileToString(fullIncludeFn, 1/*verbose*/, &inclSize);
+          if (tmpSource == NULL) {
+            /* TODO: print better error msg */
+            print2(
+"?Error: file \"%s\" (included in \"%s\") was not found\n",
+                fullIncludeFn, includeCall[includeCalls].source_fn);
+            *errorFlag = 1;
+            tmpSource = ""; /* Prevent seg fault */
+            inclSize = 0;
+          }
+
+          /* Change Skip comment to Begin...End comment */
+          let(&inclPrefix, cat("$( Begin $[ ", includeFn, " $] $)\n", NULL));
+          let(&inclSuffix, cat("$( End $[ ", includeFn, " $] $)", NULL));
+
+          /* Get the parent line number up to the inclusion */
+          befInclLineNum = parentLineNum + countLines(
+              newFileBuf + startOffset + 1,
+          /* TODO: compute aftInclLineNum directly and eliminate befInclLineNum */
+              cmdPos1 - 1 - startOffset);
+          includeCall[saveInclCalls - 1].current_line = 0;
+          aftInclLineNum = befInclLineNum + countLines(newFileBuf
+              + cmdPos1/*start at (cmdPos1+1)th character*/,
+              cmdPos2 - cmdPos1 - 1);
+          includeCall[saveInclCalls].current_line = aftInclLineNum;
+          parentLineNum = aftInclLineNum;
+
+          /* Call recursively to expand includes in the included source */
+          /* Start at line 1 since source is in external file */
+          let(&inclSource, "");
+          inclSource = readInclude(tmpSource,
+              fileBufOffset + cmdPos1 - 1 + (long)strlen(inclPrefix), /*new offset*/
+              /*includeFn,*/ includeFn,
+              &inclSize /*input/output*/, 1/*parentLineNum*/, &(*errorFlag));
+
+          oldInclSize = cmdPos2 - cmdPos1; /* Includes old prefix and suffix */
+          let(&newFileBuf, cat(left(newFileBuf, cmdPos1 - 1),
+              inclPrefix, inclSource, inclSuffix,
+              right(newFileBuf, cmdPos2), NULL));
+          newInclSize = (long)strlen(inclPrefix) + inclSize +
+                (long)strlen(inclSuffix); /* Includes new prefix and suffix */
+          *size = *size - (cmdPos2 - cmdPos1) + (long)strlen(inclPrefix)
+              + inclSize + (long)strlen(inclSuffix);
+          /* Adjust starting position for next inclusion search */
+          startOffset = cmdPos1 + newInclSize - 1; /* -1 since startOffset is
+              0-based but cmdPos2 is 1-based */
+          /* TODO: update line numbers for error msgs */
+          break;
+        default:
+          bug(1745);
+      } /* end switch (cmdType) */
+    } else {
+      /* This file has already been included.  Change Begin and $[ $] to
+         Skip.  alreadyInclBy is the index of the previous includeCall that
+         included it. */
+      if (!(alreadyInclBy > 0)) bug(1765);
+      switch (cmdType) {
+        case 'B':
+          /* Save the included source temporarily */
+          let(&inclSource,
+              seg(newFileBuf, cmdPos2, endPos1 - 1));
+          /* Make sure it's content matches */
+          let(&oldSource, "");
+          oldSource = includeCall[  /* Connect to source for brevity */
+                  alreadyInclBy
+                  ].current_includeSource;
+          if (strcmp(inclSource, oldSource)) {
+            /* TODO - print better error msg */
+            print2(
+        "?Warning: \"$( Begin $[...\" source, with %ld characters, mismatches\n",
+                (long)strlen(inclSource));
+            print2(
+                "  earlier inclusion, with %ld characters.\n",
+                (long)strlen(oldSource));
+          }
+          oldSource = ""; /* Disconnect from source */
+          /* We need to delete it from the source and change to Skip */
+          let(&inclPrefix, cat("$( Skip $[ ", includeFn, " $] $)", NULL));
+          let(&inclSuffix, "");
+
+          /* Get the parent line number up to the inclusion */
+          befInclLineNum = parentLineNum + countLines(
+              newFileBuf + startOffset + 1,
+              cmdPos2 - 1 - startOffset);
+          includeCall[saveInclCalls - 1].current_line = befInclLineNum;
+          aftInclLineNum = befInclLineNum + countLines(newFileBuf
+              + cmdPos2/*start at (cmdPos2+1)th character*/,
+              endPos2 - cmdPos2 /*- 1*/);
+          includeCall[saveInclCalls].current_line = aftInclLineNum;
+          parentLineNum = aftInclLineNum;
+
+          let(&inclSource, ""); /* Final source to be stored - none */
+          inclSize = 0; /* Size of just the included source */
+          oldInclSize = endPos2 - cmdPos1; /* Includes old prefix and suffix */
+          let(&newFileBuf, cat(left(newFileBuf, cmdPos1 - 1),
+              inclPrefix,
+              right(newFileBuf, endPos2), NULL));
+          newInclSize = (long)strlen(inclPrefix); /* Includes new prefix and suffix */
+          *size = *size - (endPos2 - cmdPos1) + newInclSize;
+          /* Adjust starting position for next inclusion search (which may
+             occur inside the source we just included, so don't skip passed
+             that source) */
+          startOffset = cmdPos1 + newInclSize - 1; /* -1 since startOffset is
+              0-based but cmdPos2 is 1-based */
+          break;
+        case 'I':
+          /* Change inclusion command to Skip comment */
+          let(&inclPrefix, cat("$( Skip $[ ", includeFn, " $] $)", NULL));
+          let(&inclSuffix, "");
+
+          /* Get the parent line number up to the inclusion */
+          befInclLineNum = parentLineNum + countLines(
+              newFileBuf + startOffset + 1,
+              cmdPos1 - 1 - startOffset);
+          includeCall[saveInclCalls - 1].current_line = befInclLineNum;
+          aftInclLineNum = befInclLineNum + countLines(newFileBuf
+              + cmdPos1/*start at (cmdPos1+1)th character*/,
+              cmdPos2 - cmdPos1 /*- 1*/);
+          includeCall[saveInclCalls].current_line = aftInclLineNum;
+          parentLineNum = aftInclLineNum;
+
+          let(&inclSource, ""); /* Final source to be stored - none */
+          inclSize = 0; /* Size of just the included source */
+          oldInclSize = cmdPos2 - cmdPos1; /* Includes old prefix and suffix */
+          let(&newFileBuf, cat(left(newFileBuf, cmdPos1 - 1),
+              inclPrefix,
+              right(newFileBuf, cmdPos2), NULL));
+          newInclSize = (long)strlen(inclPrefix); /* Includes new prefix and suffix */
+          *size = *size - (cmdPos2 - cmdPos1) + (long)strlen(inclPrefix);
+          /* Adjust starting position for next inclusion search */
+          startOffset = cmdPos1 + newInclSize - 1; /* -1 since startOffset is
+              0-based but cmdPos2 is 1-based */
+          break;
+        case 'S':
+          /* It is already Skipped, so leave it alone */
+          /* *size = *size; */
+          /* Adjust starting position for next inclusion search */
+          let(&inclPrefix, seg(newFileBuf, cmdPos1, cmdPos2 - 1));
+          let(&inclSuffix, "");
+
+          /* Get the parent line number up to the inclusion */
+          befInclLineNum = parentLineNum + countLines(
+              newFileBuf + startOffset + 1,
+              cmdPos1 - 1 - startOffset);
+          includeCall[saveInclCalls - 1].current_line = befInclLineNum;
+          aftInclLineNum = befInclLineNum + countLines(newFileBuf
+              + cmdPos1/*start at (cmdPos1+1)th character*/,
+              cmdPos2 - cmdPos1 /*- 1*/);
+          includeCall[saveInclCalls].current_line = aftInclLineNum - 1;
+          parentLineNum = aftInclLineNum;
+
+          let(&inclSource, ""); /* Final source to be stored - none */
+          inclSize = 0; /* Size of just the included source */
+          oldInclSize = cmdPos2 - cmdPos1; /* Includes old prefix and suffix */
+          newInclSize = oldInclSize; /* Includes new prefix and suffix */
+          startOffset = cmdPos1 + newInclSize - 1; /* -1 since startOffset is
+              0-based but cmdPos2 is 1-based */
+          if (startOffset != cmdPos2 - 1) bug(1772);
+          break;
+        default:
+          bug(1745);
+      } /* end switch(cmdType) */
+    } /* if alreadyInclBy == -1 */
+
+    /* Assign structure with information for subsequent passes and
+       (later) error messages */
+    includeCall[saveInclCalls - 1].source_fn = "";  /* Name of the file where the
+       inclusion source is located (= parent file for $( Begin $[... etc.) */
+    includeCall[saveInclCalls - 1].current_offset = fileBufOffset + cmdPos1 - 1
+        + (long)strlen(inclPrefix) - 1; /* This is the starting character position
+            of the included file w.r.t entire source buffer */
+    if (alreadyInclBy >= 0 || cmdType == 'B') {
+      /* No external file was included, so let the includeFn be the
+         same as the source */
+      let(&includeCall[saveInclCalls - 1].source_fn, sourceFileName);
+    } else {
+      /* It hasn't been included yet, and cmdType is 'I' or 'S', meaning
+         that we bring in an external file */
+      let(&includeCall[saveInclCalls - 1].source_fn, includeFn); /* $[ $], Begin,
+          or Skip file name for this inclusion */
+      /*
+      includeCall[saveInclCalls - 1].current_line = 0; */ /* The line number
+          of the start of the included file (=1) */
+    }
+    includeCall[saveInclCalls - 1].current_includeSource = inclSource; /* let() not
+        needed because we're just assigning a new name to inclSource */
+    inclSource = ""; /* Detach from
+        includeCall[saveInclCalls - 1].current_includeSource for later reuse */
+    includeCall[saveInclCalls - 1].current_includeSource = "";
+    includeCall[saveInclCalls - 1].current_includeLength = inclSize; /* Length of the file
+        to be included (0 if the file was previously included) */
+
+
+    /* Initialize a new include call for the continuation of the parent. */
+    /* This entry is identified by pushOrPop = 1 */
+    includeCall[saveInclCalls].source_fn = "";  /* Name of the file to be
+        included */
+    let(&includeCall[saveInclCalls].source_fn,
+        sourceFileName); /* Source file containing
+         this inclusion */
+    includeCall[saveInclCalls].current_offset = fileBufOffset + cmdPos1
+        + newInclSize - 1;
+        /* This is the position of the continuation of the parent */
+    includeCall[saveInclCalls].current_includeSource = ""; /* (Currently) assigned
+        only if we may need it for a later Begin comparison */
+    includeCall[saveInclCalls].current_includeLength = 0; /* Length of the file
+        to be included (0 if the file was previously included) */
+
+  } /* while (1) */
+
+  /* Deallocate strings */
+  let(&inclSource, "");
+  let(&tmpSource, "");
+  let(&oldSource, "");
+  let(&inclPrefix, "");
+  let(&inclSuffix, "");
+  let(&includeFn, "");
+  let(&fullInputFn, "");
+  let(&fullIncludeFn, "");
+
+  return newFileBuf;
+} /* readInclude */
+
+
+/* This function returns a pointer to a buffer containing the contents of an
+   input file and its 'include' calls.  'Size' returns the buffer's size.  */
+/* TODO - ability to flag error to skip raw source function */
+/* If NULL is returned, it means a serious error occured (like missing file)
+   and reading should be aborted. */
+char *readSourceAndIncludes(vstring inputFn /*input*/, long *size /*output*/)
+{
+  long i;
+/*D*//*long j;*/
+/*D*//*vstring s=""; */
+  vstring fileBuf = "";
+  vstring newFileBuf = "";
+
+  vstring fullInputFn = "";
+  flag errorFlag = 0;
+
+  /* Read starting file */
+  let(&fullInputFn, cat(rootDirectory, inputFn, NULL));
+  fileBuf = readFileToString(fullInputFn, 1/*verbose*/, &(*size));
+  if (fileBuf == NULL) {
+    print2(
+        "?Error: file \"%s\" was not found\n", fullInputFn);
+    fileBuf = "";
+    *size = 0;
+    errorFlag = 1;
+    /* goto RETURN_POINT; */ /* Don't go now so that includeCall[]
+         strings will be initialized.  If error, then blank fileBuf will
+         cause main while loop to break immediately after first
+         getNextInclusion() call. */
+  }
+  print2("Reading source file \"%s\"... %ld bytes\n", fullInputFn, *size);
+
+  /* Create a ficticious initial include for the main file (at least 2
+     includeCall structure array entries have been already been allocated
+     in initBigArrays() in mmdata.c) */
+  includeCalls = 0;
+  includeCall[includeCalls].pushOrPop = 0; /* 0 means start of included file,
+       1 means continuation of including file */
+  includeCall[includeCalls].source_fn = "";
+  let(&includeCall[includeCalls].source_fn, inputFn); /* $[ $], Begin,
+      of Skip file name for this inclusion */
+  includeCall[includeCalls].included_fn = "";
+  let(&includeCall[includeCalls].included_fn, inputFn); /* $[ $], Begin,
+      of Skip file name for this inclusion */
+  includeCall[includeCalls].current_offset = 0;  /* This is the starting
+      character position of the included file w.r.t entire source buffer */
+  includeCall[includeCalls].current_line = 1; /* The line number
+      of the start of the included file (=1) or the continuation line of
+      the parent file */
+  includeCall[includeCalls].current_includeSource = ""; /* (Currently) assigned
+      only if we may need it for a later Begin comparison */
+  includeCall[includeCalls].current_includeLength = *size; /* Length of the file
+      to be included (0 if the file was previously included) */
+
+  /* Create a ficticious entry for the "continuation" after the
+     main file, to make error message line searching easier */
+  includeCalls++;
+  includeCall[includeCalls].pushOrPop = 1; /* 0 means start of included file,
+       1 means continuation of including file */
+  includeCall[includeCalls].source_fn = "";
+  /*let(&includeCall[includeCalls].source_fn, inputFn);*/ /* Leave empty;
+        there is no "continuation" file for the main file, so no need to assign
+        (it won't be used) */
+  includeCall[includeCalls].included_fn = "";
+  /*let(&includeCall[includeCalls].included_fn, inputFn);*/ /* $[ $], Begin,
+      of Skip file name for this inclusion */
+  includeCall[includeCalls].current_line = -1; /* Ideally this should be
+      countLines(fileBuf), but since it's never used we don't bother to
+      call countLines(fileBuf) to save CPU time */
+  includeCall[includeCalls].current_includeSource = ""; /* (Currently) assigned
+      only if we may need it for a later Begin comparison */
+  includeCall[includeCalls].current_includeLength = 0; /* The "continuation"
+      of the main file is ficticious, so just set it to 0 length */
+
+  /* Recursively expand the source of an included file */
+  newFileBuf = "";
+  newFileBuf = readInclude(fileBuf, 0, /*inputFn,*/ inputFn, &(*size),
+      1/*parentLineNum*/, &errorFlag);
+  includeCall[1].current_offset = *size;  /* This is the starting
+      character position of the included file w.r.t entire source buffer.
+      Here, it points to the nonexistent character just beyond end of main file
+      (after all includes are expanded).
+      Note that readInclude() may change includeCalls, so use 1 explicitly. */
+  let(&fileBuf, ""); /* Deallocate */
+/*D*//*printf("*size=%ld\n",*size);                                       */
+/*D*//*for(i=0;i<*size;i++){                                              */
+/*D*//*let(&s,"");                                                        */
+/*D*//*s=getFileAndLineNum(newFileBuf,newFileBuf+i,&j);                   */
+/*D*//*printf("i=%ld ln=%ld fn=%s ch=%c\n",i,j,s,(newFileBuf+i)[0]);  }   */
+  if (errorFlag == 1) {
+    /* The read should be aborted by the caller. */
+    /* Deallocate the strings in the includeCall[] structure. */
+    for (i = 0; i <= includeCalls; i++) {
+      let(&includeCall[i].source_fn, "");
+      let(&includeCall[i].included_fn, "");
+      let(&includeCall[i].current_includeSource, "");
+      includeCalls = -1; /* For the eraseSource() function in mmcmds.c */
+    }
+    return NULL;
+  } else {
+/*D*//*for (i=0; i<=includeCalls;i++)                                       */
+/*D*//*  printf("i=%ld p=%ld f=%s,%s l=%ld o=%ld s=%ld\n",                  */
+/*D*//*i,(long)includeCall[i].pushOrPop,includeCall[i].source_fn,           */
+/*D*//*includeCall[i].included_fn,includeCall[i].current_line,              */
+/*D*//*includeCall[i].current_offset,includeCall[i].current_includeLength); */
+    return newFileBuf;
+  }
+
+} /* readSourceAndIncludes */
 

@@ -64,7 +64,14 @@ vstring htmlDummyVars(long showStmt);  /* 12-Aug-2017 nm */
 vstring htmlAllowedSubst(long showStmt);  /* 4-Jan-2014 nm */
 
 void readInput(void);
-void writeInput(/*flag cleanFlag, 3-May-2017*/ flag reformatFlag);
+void writeInput(/* flag cleanFlag, 3-May-2017 */ /* 1 = "/ CLEAN" qualifier was chosen */
+                flag reformatFlag /* 1 = "/ FORMAT", 2 = "/REWRAP" */,
+                /* 31-Dec-2017 nm */
+                flag splitFlag,  /* /SPLIT - write out separate $[ $] includes */
+                flag noVersioningFlag, /* /NO_VERSIONING - no ~1 backup */
+                flag keepSplitsFlag /* /KEEP_SPLITS - don't delete included files
+                                      when /SPIT is not specified */
+                );
 void writeDict(void);
 void eraseSource(void);
 void verifyProofs(vstring labelMatch, flag verifyFlag);
@@ -129,5 +136,6 @@ extern flag midiFlag; /* Set to 1 if typeProof() is to output MIDI file */
 extern vstring midiParam; /* Parameter string for MIDI file */
 void outputMidi(long plen, nmbrString *indentationLevels,
   nmbrString *logicalFlags, vstring midiParameter, vstring statementLabel);
+
 
 #endif /* METAMATH_MMCMDS_H_ */

@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2018  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -83,6 +83,7 @@ void typeStatement(long showStmt,
   if (!showStmt) bug(225); /* Must be 1 or greater */
 
   if (!commentOnlyFlag && !briefFlag) {
+    assignStmtFileAndLineNum(showStmt); /* 8-Jan-2018 nm */
     let(&str1, cat("Statement ", str((double)showStmt),
         " is located on line ", str((double)(statement[showStmt].lineNum)),
         " of the file ", NULL));
@@ -2890,7 +2891,7 @@ void showDetailStep(long statemNum, long detailStep) {
 
 } /* showDetailStep */
 
-/* Summary of statements in proof */
+/* Summary of statements in proof for SHOW PROOF / STATEMENT_SUMMARY */
 void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
 
   long i, j, k, pos, stmt, plen, slen, step;
@@ -2982,8 +2983,9 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
   /* Next, build the output string */
   for (stmt = 1; stmt < statemNum; stmt++) {
     if (statementUsedFlags[stmt] == 'Y') {
-
-      let(&str1, cat(" is located on line ", str((double)(statement[stmt].lineNum)),
+      assignStmtFileAndLineNum(stmt); /* 8-Jan-2018 nm */
+      let(&str1, cat(" is located on line ",
+          str((double)(statement[stmt].lineNum)),
           " of the file ", NULL));
       if (!texFlag) {
         print2("\n");
@@ -3853,24 +3855,29 @@ vstring traceUsage(long statemNum,
    processed separately in metamath.c). */
 void readInput(void)
 {
+  vstring fullInput_fn = "";
 
-/* 28-Dec-05 nm Obsolete---
-  /@ Temporary variables and strings @/
-  long p;
+  let(&fullInput_fn, cat(rootDirectory, input_fn, NULL)); /* 31-Dec-2017 nm */
 
-  p = instr(1,input_fn,".") - 1;
-  if (p == -1) p = len(input_fn);
-  let(&mainFileName,left(input_fn,p));
---- 28-Dec-05 nm End obsolete */
+  /*includeCalls = 0;*/ /* Initialized by readSourceAndIncludes() */
 
-  print2("Reading source file \"%s\"...\n",input_fn);
+  /* 31-Dec-2017 nm */
+  sourcePtr = readSourceAndIncludes(input_fn, &sourceLen);
+  if (sourcePtr == NULL) {
+    print2(
+"?Source was not read due to error(s).  Please correct and try again.\n");
+    goto RETURN_POINT;
+  }
 
-  includeCalls = 0; /* Initialize for readRawSource */
-  sourcePtr = readRawSource(input_fn, 0, &sourceLen);
+  sourcePtr = readRawSource(input_fn, sourcePtr, &sourceLen);
   parseKeywords();
   parseLabels();
   parseMathDecl();
   parseStatements();
+  sourceHasBeenRead = 1;
+
+ RETURN_POINT:
+  let(&fullInput_fn, "");
 
 } /* readInput */
 
@@ -3879,81 +3886,138 @@ void readInput(void)
    contain keywords ($a, $p,...; $=; $.).  The keywords are added
    by outputStatement. */
 void writeInput(/* flag cleanFlag, 3-May-2017 */ /* 1 = "/ CLEAN" qualifier was chosen */
-                flag reformatFlag /* 1 = "/ FORMAT", 2 = "/REWRAP" */ )
+                flag reformatFlag /* 1 = "/ FORMAT", 2 = "/REWRAP" */,
+                /* 31-Dec-2017 nm */
+                flag splitFlag,  /* /SPLIT - write out separate $[ $] includes */
+                flag noVersioningFlag, /* /NO_VERSIONING - no ~1 backup */
+                flag keepSplitsFlag /* /KEEP_INCLUDES - don't delete included
+                                      files when /SPIT is not specified */
+                )
 {
 
   /* Temporary variables and strings */
   long i;
   /* long p; */ /* deleted 3-May-2017 nm */
-  vstring str1 = "";
-  /* vstring str2 = ""; */ /* deleted 3-May-2017 nm */
+  vstring buffer = "";
+  vstring fullOutput_fn = "";
   /* long skippedCount = 0; */ /* deleted 3-May-2017 nm */
+  FILE *fp;
 
-  print2("Creating and writing \"%s\"...\n",output_fn);
+  let(&fullOutput_fn, cat(rootDirectory, output_fn, NULL));
 
-  /* Process statements */
-  for (i = 1; i <= statements + 1; i++) {
-
-    /******** deleted 3-May-2017 nm
-    /@ Added 24-Oct-03 nm @/
-    if (cleanFlag && statement[i].type == (char)p_) {
-      /@ Clean out any proof-in-progress (that user has flagged with a ? in its
-         date comment field) @/
-      /@ Get the comment section after the statement @/
-      let(&str1, space(statement[i + 1].labelSectionLen));
-      memcpy(str1, statement[i + 1].labelSectionPtr,
-          (size_t)(statement[i + 1].labelSectionLen));
-      /@ Make sure it's a date comment @/
-      let(&str1, edit(str1, 2 + 4)); /@ Discard whitespace + control chrs @/
-      p = instr(1, str1, "]$)"); /@ Get end of date comment @/
-      let(&str1, left(str1, p)); /@ Discard stuff after date comment @/
-      if (instr(1, str1, "$([") == 0) {
-        printLongLine(cat(
-            "?Warning: The proof for $p statement \"", statement[i].labelName,
-            "\" does not have a date comment after it and will not be",
-            " removed by the CLEAN qualifier.", NULL), " ", " ");
-      } else {
-        /@ See if the date comment has a "?" in it @/
-        if (instr(1, str1, "?")) {
-          skippedCount++;
-          let(&str2, cat(str2, " ", statement[i].labelName, NULL));
-          /@ Write at least the date from the _previous_ statement's
-             post-comment section so that WRITE RECENT can pick it up. @/
-          let(&str1, space(statement[i].labelSectionLen));
-          memcpy(str1, statement[i].labelSectionPtr,
-              (size_t)(statement[i].labelSectionLen));
-          /@ nm 19-Jan-04 Don't discard w.s. because string will be returned to
-             the source file @/
-          /@let(&str1, edit(str1, 2 + 4));@/ /@ Discard whitespace + ctrl chrs @/
-          p = instr(1, str1, "]$)"); /@ Get end of date comment @/
-          if (p == 0) {
-            /@ In the future, "] $)" may flag date end to conform with
-               space-around-keyword Metamath spec recommendation @/
-            /@ 7-Sep-04 The future is now @/
-            p = instr(1, str1, "] $)"); /@ Get end of date comment @/
-            if (p != 0) p++; /@ Match what it would be for old standard @/
-          }
-          if (p != 0) {  /@ The previous statement has a date comment @/
-            let(&str1, left(str1, p + 2)); /@ Discard stuff after date cmnt @/
-            if (!instr(1, str1, "?"))
-              /@ Don't bother to print $([?]$) of previous statement because
-                 the previous statement was skipped @/
-              fprintf(output_fp, "%s\n", str1);
-                                             /@ Output just the date comment @/
-          }
-
-          /@ Skip the normal output of this statement @/
-          continue;
-        } /@ if (instr(1, str1, "?")) @/
-      } /@ (else clause) if (instr(1, str1, "$([") == 0) @/
-    } /@ if cleanFlag @/
-    ********** end of 3-May-2017 deletion */
-
-    let(&str1,""); /* Deallocate vstring */
-    str1 = outputStatement(i, /* cleanFlag, 3-May-2017 */ reformatFlag);
-    fprintf(output_fp, "%s", str1);
+  if (splitFlag == 0) {  /* If 1, it will have message from writeSplitSource */
+    print2("Writing \"%s\"...\n", fullOutput_fn);
   }
-  print2("%ld source statement(s) were written.\n",statements);
+
+  if (reformatFlag > 0) {
+    /* 31-Dec-2017 nm */
+    /* Now the outputSource function just reformats and puts the
+       source back into the statement[] array.  So we don't need
+       to do it when we're not reformatting/wrapping */
+    /* TODO: turn this into a REWRAP command */
+    /* Process statements */
+    for (i = 1; i <= statements + 1; i++) {
+
+      /******** deleted 3-May-2017 nm
+      /@ Added 24-Oct-03 nm @/
+      if (cleanFlag && statement[i].type == (char)p_) {
+        /@ Clean out any proof-in-progress (that user has flagged with a ? in its
+           date comment field) @/
+        /@ Get the comment section after the statement @/
+        let(&str1, space(statement[i + 1].labelSectionLen));
+        memcpy(str1, statement[i + 1].labelSectionPtr,
+            (size_t)(statement[i + 1].labelSectionLen));
+        /@ Make sure it's a date comment @/
+        let(&str1, edit(str1, 2 + 4)); /@ Discard whitespace + control chrs @/
+        p = instr(1, str1, "]$)"); /@ Get end of date comment @/
+        let(&str1, left(str1, p)); /@ Discard stuff after date comment @/
+        if (instr(1, str1, "$([") == 0) {
+          printLongLine(cat(
+              "?Warning: The proof for $p statement \"", statement[i].labelName,
+              "\" does not have a date comment after it and will not be",
+              " removed by the CLEAN qualifier.", NULL), " ", " ");
+        } else {
+          /@ See if the date comment has a "?" in it @/
+          if (instr(1, str1, "?")) {
+            skippedCount++;
+            let(&str2, cat(str2, " ", statement[i].labelName, NULL));
+            /@ Write at least the date from the _previous_ statement's
+               post-comment section so that WRITE RECENT can pick it up. @/
+            let(&str1, space(statement[i].labelSectionLen));
+            memcpy(str1, statement[i].labelSectionPtr,
+                (size_t)(statement[i].labelSectionLen));
+            /@ nm 19-Jan-04 Don't discard w.s. because string will be returned to
+               the source file @/
+            /@let(&str1, edit(str1, 2 + 4));@/ /@ Discard whitespace + ctrl chrs @/
+            p = instr(1, str1, "]$)"); /@ Get end of date comment @/
+            if (p == 0) {
+              /@ In the future, "] $)" may flag date end to conform with
+                 space-around-keyword Metamath spec recommendation @/
+              /@ 7-Sep-04 The future is now @/
+              p = instr(1, str1, "] $)"); /@ Get end of date comment @/
+              if (p != 0) p++; /@ Match what it would be for old standard @/
+            }
+            if (p != 0) {  /@ The previous statement has a date comment @/
+              let(&str1, left(str1, p + 2)); /@ Discard stuff after date cmnt @/
+              if (!instr(1, str1, "?"))
+                /@ Don't bother to print $([?]$) of previous statement because
+                   the previous statement was skipped @/
+                fprintf(output_fp, "%s\n", str1);
+                                               /@ Output just the date comment @/
+            }
+
+            /@ Skip the normal output of this statement @/
+            continue;
+          } /@ if (instr(1, str1, "?")) @/
+        } /@ (else clause) if (instr(1, str1, "$([") == 0) @/
+      } /@ if cleanFlag @/
+      ********** end of 3-May-2017 deletion */
+
+      let(&buffer,""); /* Deallocate vstring */
+
+      /* 31-Dec-2017 nm This now only affects statement[] array.  It does
+         not write any files. */
+      buffer = outputStatement(i, /* cleanFlag, 3-May-2017 */ reformatFlag);
+
+      /* fprintf(output_fp, "%s", str1); */ /* 31-Dec-2017 nm deleted */
+    } /* next i */
+  } /* if (reformatFlag > 0) */
+
+  /* 31-Dec-2017 nm */
+  /* Get put the statement[] array into one linear buffer */
+  let(&buffer, "");
+  buffer = writeSourceToBuffer();
+  if (splitFlag == 1) { /* Write includes as separate files */
+
+    /* Make sure we aren't overwriting one of the include files */
+    for (i = 1; i <= includeCalls; i++) {  /* Start at 1 to skip main file */
+      if (includeCall[i].pushOrPop == 0 /* Don't include pop back to main file */
+          && !strcmp(output_fn, includeCall[i].included_fn)) {
+        print2(
+"?The output was not written because the main output file name is\n");
+        print2(
+"  the same as an included file.  Use a different name.\n");
+        goto RETURN_POINT;
+      }
+    }
+
+    /* Note that writeSplitSource requires a file name witout path since
+       it is called recursively for file inclusions where path is added */
+    writeSplitSource(&buffer, output_fn, noVersioningFlag, keepSplitsFlag);
+  } else {  /* Write a non-split version */
+    fp = fSafeOpen(fullOutput_fn, "w", noVersioningFlag);
+    if (fp == NULL) {
+      print2("?Error trying to write \"%s\".\n", fp);
+    } else {
+      fprintf(fp, "%s", buffer); /* Write the non-split output file */
+      fclose(fp);
+      if (keepSplitsFlag == 0) {
+        deleteSplits(&buffer, noVersioningFlag); /* Delete any old includes */
+      }
+    }
+  }
+
+  print2("%ld source statement(s) were written.\n", statements);
 
 
   /******** deleted 3-May-2017 nm
@@ -3974,7 +4038,9 @@ void writeInput(/* flag cleanFlag, 3-May-2017 */ /* 1 = "/ CLEAN" qualifier was 
   }
   ********** end of 3-May-2017 deletion */
 
-  let(&str1,""); /* Deallocate vstring */
+ RETURN_POINT:
+  let(&buffer,""); /* Deallocate vstring */
+  let(&fullOutput_fn,""); /* Deallocate vstring */
   /* let(&str2,""); */ /* Deallocate vstring */  /* deleted 3-May-2017 nm */
 } /* writeInput */
 
@@ -4015,10 +4081,12 @@ void eraseSource(void)    /* ERASE command */
   }
 
   for (i = 0; i <= includeCalls; i++) {
-    let(&includeCall[i].current_fn,"");
-    let(&includeCall[i].calledBy_fn,"");
-    let(&includeCall[i].includeSource,"");
+    let(&includeCall[i].source_fn, "");
+    let(&includeCall[i].included_fn, "");
+    let(&includeCall[i].current_includeSource, "");
   }
+  includeCalls = -1;
+
   /* Deallocate the statement[] array */
   for (i = 1; i <= statements + 1; i++) { /* statements + 1 is a dummy statement
                                           to hold source after last statement */
@@ -4107,7 +4175,7 @@ void eraseSource(void)    /* ERASE command */
   errorCount = 0;
 
   free(statement);
-  free(includeCall);
+  free(includeCall);  /* Will be init'ed in initBigArrays */
   free(mathToken);
   dummyVars = 0; /* For Proof Assistant */
   free(sourcePtr);
@@ -4352,6 +4420,7 @@ void verifyMarkup(vstring labelMatch,
         /* 5-Jan-04 mm*.html is reserved for mmtheorems.html, etc. */
         !strcmp(",MM", left(str2, 3))) {
       print2("\n");
+      assignStmtFileAndLineNum(stmtNum); /* 8-Jan-2018 nm */
       printLongLine(cat("?Warning: in statement \"",
           statement[stmtNum].labelName, "\" at line ",
           str((double)(statement[stmtNum].lineNum)),
@@ -4373,6 +4442,7 @@ void verifyMarkup(vstring labelMatch,
           (statement[stmtNum].mathString)[0]].tokenName)) {
         let(&str1, left(statement[stmtNum].labelName, 3));
         if (strcmp("ax-", str1) && strcmp("df-", str1)) {
+          assignStmtFileAndLineNum(stmtNum); /* 8-Jan-2018 nm */
           printLongLine(cat("?Warning: in the $a statement \"",
               statement[stmtNum].labelName, "\" at line ",
               str((double)(statement[stmtNum].lineNum)),
@@ -5471,7 +5541,7 @@ void outputMidi(long plen, nmbrString *indentationLevels,
 
   /* fSafeOpen() renames existing files with ~1,~2,etc.  This way
      existing user files will not be accidentally destroyed. */
-  midiFilePtr = fSafeOpen(midiFileName, "w");
+  midiFilePtr = fSafeOpen(midiFileName, "w", 0/*noVersioningFlag*/);
   if (midiFilePtr == NULL) {
     print2("?Couldn't open %s\n", midiFileName);
     goto midi_return;

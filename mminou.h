@@ -30,7 +30,8 @@ extern flag commandFileSilent[MAX_COMMAND_FILE_NESTING + 1];
 extern flag commandFileSilentFlag;
                                     /* 23-Oct-2006 nm For SUBMIT ... /SILENT */
 
-extern FILE *inputDef_fp,*input_fp,*output_fp;  /* File pointers */
+extern FILE *inputDef_fp, *input_fp /*,*output_fp*/;  /* File pointers */
+                             /* 31-Dec-2017 nm output_fp deleted */
 extern vstring inputDef_fn,input_fn,output_fn;  /* File names */
 
 /* PRINTBUFFERSIZE should be at least as long as the longest string we
@@ -58,7 +59,7 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
 
 /* Opens files with error message; opens output files with
    backup of previous version.   Mode must be "r" or "w". */
-FILE *fSafeOpen(vstring fileName, vstring mode);
+FILE *fSafeOpen(vstring fileName, vstring mode, flag noVersioningFlag);
 
 /* Renames a file with backup of previous version.  If non-zero
    is returned, there was an error. */
@@ -75,7 +76,8 @@ vstring fGetTmpName(vstring filePrefix);
    MUST DEALLOCATE THE RETURNED STRING.  If a NULL is returned, the file
    could not be opened or had a non-ASCII Unicode character or some other
    problem.   If verbose is 0, error and warning messages are suppressed. */
-vstring readFileToString(vstring fileName, char verbose);
+/* 31-Dec-2017 nm Add charCount return argument */
+vstring readFileToString(vstring fileName, char verbose, long *charCount);
 
 /* 16-Aug-2016 nm */
 /* Returns total elapsed time in seconds since starting session (for the

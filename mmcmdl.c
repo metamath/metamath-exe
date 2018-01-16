@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2018  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -39,6 +39,11 @@ flag sourceChanged = 0; /* Flag that user made some change to the source file*/
 flag proofChanged = 0; /* Flag that user made some change to proof in progress*/
 flag commandEcho = 0; /* Echo full command */
 flag memoryStatus = 0; /* Always show memory */
+/* 31-Dec-2017 nm */
+flag sourceHasBeenRead = 0; /* 1 if a source file has been read in */
+/* 31-Dec-2017 nm */
+vstring rootDirectory = ""; /* Directory prefix to use for included files */
+
 
 
 flag processCommandLine(void)
@@ -48,20 +53,20 @@ flag processCommandLine(void)
   long i;
   queryMode = 0; /* If 1, explicit questions will be asked even if
     a field is optional */
-  pntrLet(&fullArg,NULL_PNTRSTRING);
+  pntrLet(&fullArg, NULL_PNTRSTRING);
 
   if (!toolsMode) {
 
     if (!PFASmode) {
       /* Normal mode */
-      let(&tmpStr,cat("DBG|",
+      let(&tmpStr, cat("DBG|",
           "HELP|READ|WRITE|PROVE|SHOW|SEARCH|SAVE|SUBMIT|OPEN|CLOSE|",
           "SET|FILE|BEEP|EXIT|QUIT|ERASE|VERIFY|MORE|TOOLS|",
           "MIDI|<HELP>",
           NULL));
     } else {
       /* Proof assistant mode */
-      let(&tmpStr,cat("DBG|",
+      let(&tmpStr, cat("DBG|",
           "HELP|WRITE|SHOW|SEARCH|SAVE|SUBMIT|OPEN|CLOSE|",
           /* 9-Jun-2016 nm Added _EXIT_PA */
           "SET|FILE|BEEP|EXIT|_EXIT_PA|QUIT|VERIFY|INITIALIZE|ASSIGN|REPLACE|",
@@ -75,7 +80,8 @@ flag processCommandLine(void)
     }
 
     if (cmdMatches("HELP")) {
-      if (!getFullArg(1, cat("LANGUAGE|PROOF_ASSISTANT|MM-PA|",
+          /* 13-Jan-2018 nm Added MARKUP */
+      if (!getFullArg(1, cat("LANGUAGE|MARKUP|PROOF_ASSISTANT|MM-PA|",
           "BEEP|EXIT|QUIT|READ|ERASE|",
           "OPEN|CLOSE|SHOW|SEARCH|SET|VERIFY|SUBMIT|SYSTEM|PROVE|FILE|WRITE|",
           "ASSIGN|REPLACE|MATCH|UNIFY|LET|INITIALIZE|DELETE|IMPROVE|",
@@ -108,6 +114,7 @@ flag processCommandLine(void)
             "ECHO|SCROLL|WIDTH|HEIGHT|UNDO|UNIFICATION_TIMEOUT|",
             "DISCOURAGEMENT|",
             "CONTRIBUTOR|",   /* 14-May-2017 nm */
+            "ROOT_DIRECTORY|",   /* 31-Dec-2017 nm */
             "EMPTY_SUBSTITUTION|SEARCH_LIMIT|JEREMY_HENTY_FILTER|<ECHO>",
             NULL)))
             goto pclbad;
@@ -139,16 +146,16 @@ flag processCommandLine(void)
     }
 
     if (cmdMatches("READ")) {
-      if (!getFullArg(1,"& What is the name of the source input file? "))
+      if (!getFullArg(1, "& What is the name of the source input file? "))
           goto pclbad;
       /* Get any switches */
       i = 1;
       while (1) {
         i++;
-        if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+        if (!getFullArg(i, "/|$|<$>")) goto pclbad;
         if (lastArgMatches("/")) {
           i++;
-          if (!getFullArg(i,"VERIFY|<VERIFY>")) goto pclbad;
+          if (!getFullArg(i, "VERIFY|<VERIFY>")) goto pclbad;
         } else {
           break;
         }
@@ -162,30 +169,32 @@ flag processCommandLine(void)
           "SOURCE|THEOREM_LIST|BIBLIOGRAPHY|RECENT_ADDITIONS|<SOURCE>"))
         goto pclbad;
       if (cmdMatches("WRITE SOURCE")) {
-        if (statements == 0) {
+        if (sourceHasBeenRead == 0) {
           print2("?No source file has been read in.  Use READ first.\n");
           goto pclbad;
         }
-        if (!getFullArg(2,cat(
+        if (!getFullArg(2, cat(
             "* What is the name of the source output file <",
             input_fn, ">? ", NULL)))
           goto pclbad;
         if (!strcmp(input_fn, fullArg[2])) {
           print2(
-          "The input file has been renamed %s~1.\n", input_fn);
+          "The input file will be renamed %s~1.\n", input_fn);
         }
 
         /* Get any switches */
         i = 2;
         while (1) {
           i++;
-          if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+          if (!getFullArg(i, "/|$|<$>")) goto pclbad;
           if (lastArgMatches("/")) {
             i++;
-            if (!getFullArg(i,cat(
+            if (!getFullArg(i, cat(
                 /* 3-May-2017 nm Removed CLEAN */
                 "FORMAT|REWRAP",
-                "|<REWRAP>",NULL)))
+                /* 31-Dec-2017 nm Added SPLIT, NO_VERSIONING, KEEP_INCLUDES */
+                "|SPLIT|NO_VERSIONING|KEEP_INCLUDES",
+                "|<REWRAP>", NULL)))
               goto pclbad;
           } else {
             break;
@@ -196,7 +205,7 @@ flag processCommandLine(void)
         goto pclgood;
       }
       if (cmdMatches("WRITE THEOREM_LIST")) {
-        if (statements == 0) {
+        if (sourceHasBeenRead == 0) {
           print2("?No source file has been read in.  Use READ first.\n");
           goto pclbad;
         }
@@ -204,16 +213,16 @@ flag processCommandLine(void)
         i = 1;
         while (1) {
           i++;
-          if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+          if (!getFullArg(i, "/|$|<$>")) goto pclbad;
           if (lastArgMatches("/")) {
             i++;
-            if (!getFullArg(i,cat(
+            if (!getFullArg(i, cat(
                 "THEOREMS_PER_PAGE|SHOW_LEMMAS|HTML|ALT_HTML",
-                "|<THEOREMS_PER_PAGE>",NULL)))
+                "|<THEOREMS_PER_PAGE>", NULL)))
               goto pclbad;
             if (lastArgMatches("THEOREMS_PER_PAGE")) {
               i++;
-              if (!getFullArg(i,"# How many theorems per page <100>? "))
+              if (!getFullArg(i, "# How many theorems per page <100>? "))
                 goto pclbad;
             }
           } else {
@@ -224,11 +233,11 @@ flag processCommandLine(void)
         goto pclgood;
       }
       if (cmdMatches("WRITE BIBLIOGRAPHY")) {
-        if (statements == 0) {
+        if (sourceHasBeenRead == 0) {
           print2("?No source file has been read in.  Use READ first.\n");
           goto pclbad;
         }
-        if (!getFullArg(2,cat(
+        if (!getFullArg(2, cat(
             "* What is the bibliography HTML input/output file <",
             "mmbiblio.html", ">? ", NULL)))
           goto pclbad;
@@ -237,11 +246,11 @@ flag processCommandLine(void)
         goto pclgood;
       }
       if (cmdMatches("WRITE RECENT_ADDITIONS")) {
-        if (statements == 0) {
+        if (sourceHasBeenRead == 0) {
           print2("?No source file has been read in.  Use READ first.\n");
           goto pclbad;
         }
-        if (!getFullArg(2,cat(
+        if (!getFullArg(2, cat(
             "* What is the Recent Additions HTML input/output file <",
             "mmrecent.html", ">? ", NULL)))
           goto pclbad;
@@ -252,16 +261,16 @@ flag processCommandLine(void)
         i = 2;
         while (1) {
           i++;
-          if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+          if (!getFullArg(i, "/|$|<$>")) goto pclbad;
           if (lastArgMatches("/")) {
             i++;
-            if (!getFullArg(i,cat(
+            if (!getFullArg(i, cat(
                 "LIMIT|HTML|ALT_HTML",
-                "|<LIMIT>",NULL)))
+                "|<LIMIT>", NULL)))
               goto pclbad;
             if (lastArgMatches("LIMIT")) {
               i++;
-              if (!getFullArg(i,"# How many most recent theorems <100>? "))
+              if (!getFullArg(i, "# How many most recent theorems <100>? "))
                 goto pclbad;
             }
           } else {
@@ -274,45 +283,45 @@ flag processCommandLine(void)
     }
 
     if (cmdMatches("OPEN")) {
-      /*if (!getFullArg(1,"LOG|TEX|HTML|<LOG>")) goto pclbad;*/
+      /*if (!getFullArg(1, "LOG|TEX|HTML|<LOG>")) goto pclbad;*/
       /* 2-Oct-2017 nm Removed HTML */
-      if (!getFullArg(1,"LOG|TEX|<LOG>")) goto pclbad;
+      if (!getFullArg(1, "LOG|TEX|<LOG>")) goto pclbad;
       if (cmdMatches("OPEN LOG")) {
         if (logFileOpenFlag) {
           printLongLine(cat(
-              "?Sorry, the log file \"",logFileName,"\" is currently open.  ",
+              "?Sorry, the log file \"", logFileName, "\" is currently open.  ",
   "Type CLOSE LOG to close the current log if you want to open another one."
-              ,NULL), "", " ");
+              , NULL), "", " ");
           goto pclbad;
         }
-        if (!getFullArg(2,"* What is the name of logging output file? "))
+        if (!getFullArg(2, "* What is the name of logging output file? "))
           goto pclbad;
       }
       if (cmdMatches("OPEN TEX")) {
-        if (statements == 0) {
+        if (sourceHasBeenRead == 0) {
           print2("?No source file has been read in.  Use READ first.\n");
           goto pclbad;
         }
         if (texFileOpenFlag) {
           printLongLine(cat(
-              "?Sorry, the LaTeX file \"",texFileName,"\" is currently open.  ",
+              "?Sorry, the LaTeX file \"", texFileName, "\" is currently open.  ",
               "Type CLOSE TEX to close the current LaTeX file",
               " if you want to open another one."
-              ,NULL), "", " ");
+              , NULL), "", " ");
           goto pclbad;
         }
-        if (!getFullArg(2,"* What is the name of LaTeX output file? "))
+        if (!getFullArg(2, "* What is the name of LaTeX output file? "))
           goto pclbad;
 
         /* Get any switches */
         i = 2;
         while (1) {
           i++;
-          if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+          if (!getFullArg(i, "/|$|<$>")) goto pclbad;
           if (lastArgMatches("/")) {
             i++;
-            if (!getFullArg(i,cat(
-                "NO_HEADER|OLD_TEX|<NO_HEADER>",NULL)))
+            if (!getFullArg(i, cat(
+                "NO_HEADER|OLD_TEX|<NO_HEADER>", NULL)))
               goto pclbad;
           } else {
             break;
@@ -327,24 +336,24 @@ flag processCommandLine(void)
       if (cmdMatches("OPEN HTML")) {
         if (texFileOpenFlag) {
           printLongLine(cat(
-              "?Sorry, the HTML file \"",texFileName,"\" is currently open.  ",
+              "?Sorry, the HTML file \"",texFileName, "\" is currently open.  ",
               "Type CLOSE HTML to close the current HTML file",
               " if you want to open another one."
-              ,NULL), "", " ");
+              , NULL), "", " ");
           goto pclbad;
         }
-        if (!getFullArg(2,"@ What is the name of HTML output file? "))
+        if (!getFullArg(2, "@ What is the name of HTML output file? "))
           goto pclbad;
 
         /@ Get any switches @/
         i = 2;
         while (1) {
           i++;
-          if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+          if (!getFullArg(i, "/|$|<$>")) goto pclbad;
           if (lastArgMatches("/")) {
             i++;
-            if (!getFullArg(i,cat(
-                "NO_HEADER|<NO_HEADER>",NULL)))
+            if (!getFullArg(i, cat(
+                "NO_HEADER|<NO_HEADER>", NULL)))
               goto pclbad;
           } else {
             break;
@@ -358,19 +367,19 @@ flag processCommandLine(void)
     }
 
     if (cmdMatches("CLOSE")) {
-      /*if (!getFullArg(1,"LOG|TEX|HTML|<LOG>")) goto pclbad;*/
+      /*if (!getFullArg(1, "LOG|TEX|HTML|<LOG>")) goto pclbad;*/
       /* 2-Oct-2017 nm Removed HTML */
-      if (!getFullArg(1,"LOG|TEX|<LOG>")) goto pclbad;
+      if (!getFullArg(1, "LOG|TEX|<LOG>")) goto pclbad;
       goto pclgood;
     }
 
     if (cmdMatches("FILE")) {
-      if (!getFullArg(1,cat("SEARCH",NULL))) goto pclbad;
+      if (!getFullArg(1, cat("SEARCH", NULL))) goto pclbad;
 
       if (cmdMatches("FILE SEARCH")) {
-        if (!getFullArg(2,"& What is the name of the file to search? "))
+        if (!getFullArg(2, "& What is the name of the file to search? "))
           goto pclbad;
-        if (!getFullArg(3,"* What is the string to search for? "))
+        if (!getFullArg(3, "* What is the string to search for? "))
           goto pclbad;
 
 
@@ -378,31 +387,31 @@ flag processCommandLine(void)
         i = 3;
         while (1) {
           i++;
-          if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+          if (!getFullArg(i, "/|$|<$>")) goto pclbad;
           if (lastArgMatches("/")) {
             i++;
             if (i == 4) {
-              if (!getFullArg(i,cat(
-                  "FROM_LINE|TO_LINE|<FROM_LINE>",NULL)))
+              if (!getFullArg(i, cat(
+                  "FROM_LINE|TO_LINE|<FROM_LINE>", NULL)))
                 goto pclbad;
             } else {
-              if (!getFullArg(i,cat(
-                  "FROM_LINE|TO_LINE|<TO_LINE>",NULL)))
+              if (!getFullArg(i, cat(
+                  "FROM_LINE|TO_LINE|<TO_LINE>", NULL)))
                 goto pclbad;
             }
             if (lastArgMatches("FROM_LINE")) {
               i++;
-              if (!getFullArg(i,"# From what line number <1>? "))
+              if (!getFullArg(i, "# From what line number <1>? "))
                 goto pclbad;
             }
             if (lastArgMatches("TO_LINE")) {
               i++;
-              if (!getFullArg(i,"# To what line number <999999>? "))
+              if (!getFullArg(i, "# To what line number <999999>? "))
                 goto pclbad;
             }
             if (lastArgMatches("WINDOW")) { /* ???Not implemented yet */
               i++;
-              if (!getFullArg(i,"# How big a window around matched lines <0>? "))
+              if (!getFullArg(i, "# How big a window around matched lines <0>? "))
                 goto pclbad;
             }
           } else {
@@ -432,49 +441,49 @@ flag processCommandLine(void)
       }
       if (showStatement) {
         if (showStatement < 1 || showStatement > statements) bug(1110);
-        let(&defaultArg, cat(" <",statement[showStatement].labelName,">",
+        let(&defaultArg, cat(" <",statement[showStatement].labelName, ">",
             NULL));
       } else {
-        let(&defaultArg,"");
+        let(&defaultArg, "");
       }
 
 
       if (cmdMatches("SHOW TRACE_BACK")) {
-        if (statements == 0) {
+        if (sourceHasBeenRead == 0) {
           print2("?No source file has been read in.  Use READ first.\n");
           goto pclbad;
         }
         if (!getFullArg(2,
-            cat("* What is the statement label", defaultArg,"? ", NULL)))
+            cat("* What is the statement label", defaultArg, "? ", NULL)))
           goto pclbad;
 
         /* Get any switches */
         i = 2;
         while (1) {
           i++;
-          if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+          if (!getFullArg(i, "/|$|<$>")) goto pclbad;
           if (lastArgMatches("/")) {
             i++;
-            if (!getFullArg(i,cat(
+            if (!getFullArg(i, cat(
                 /* 19-May-2013 nm Added MATCH */
                 "ALL|ESSENTIAL|AXIOMS|TREE|DEPTH|COUNT_STEPS|MATCH|TO",
-                "|<ALL>",NULL)))
+                "|<ALL>", NULL)))
               goto pclbad;
             if (lastArgMatches("DEPTH")) {
               i++;
-              if (!getFullArg(i,"# How many indentation levels <999>? "))
+              if (!getFullArg(i, "# How many indentation levels <999>? "))
                 goto pclbad;
             }
             /* 13-May-2013 nm Added MATCH */
             if (lastArgMatches("MATCH")) {
               i++;
-              if (!getFullArg(i,"* What statement label? "))
+              if (!getFullArg(i, "* What statement label? "))
                 goto pclbad;
             }
             /* 18-Jul-2015 nm Added MATCH */
             if (lastArgMatches("TO")) {
               i++;
-              if (!getFullArg(i,"* What statement label? "))
+              if (!getFullArg(i, "* What statement label? "))
                 goto pclbad;
             }
           } else {
@@ -487,24 +496,24 @@ flag processCommandLine(void)
       } /* End if (cmdMatches("SHOW TRACE_BACK")) */
 
       if (cmdMatches("SHOW USAGE")) {
-        if (statements == 0) {
+        if (sourceHasBeenRead == 0) {
           print2("?No source file has been read in.  Use READ first.\n");
           goto pclbad;
         }
         if (!getFullArg(2,
-            cat("* What is the statement label",defaultArg,"? ",NULL)))
+            cat("* What is the statement label", defaultArg, "? ", NULL)))
           goto pclbad;
 
         /* Get any switches */
         i = 2;
         while (1) {
           i++;
-          if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+          if (!getFullArg(i, "/|$|<$>")) goto pclbad;
           if (lastArgMatches("/")) {
             i++;
-            if (!getFullArg(i,cat(
+            if (!getFullArg(i, cat(
                 "DIRECT|RECURSIVE|ALL",
-                "|<DIRECT>",NULL)))
+                "|<DIRECT>", NULL)))
               goto pclbad;
           } else {
             break;
@@ -517,7 +526,7 @@ flag processCommandLine(void)
 
 
       if (cmdMatches("SHOW LABELS")) {
-        if (statements == 0) {
+        if (sourceHasBeenRead == 0) {
           print2("?No source file has been read in.  Use READ first.\n");
           goto pclbad;
         }
@@ -528,10 +537,10 @@ flag processCommandLine(void)
         i = 2;
         while (1) {
           i++;
-          if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+          if (!getFullArg(i, "/|$|<$>")) goto pclbad;
           if (lastArgMatches("/")) {
             i++;
-            if (!getFullArg(i,cat("ALL|LINEAR|<ALL>", NULL)))
+            if (!getFullArg(i, cat("ALL|LINEAR|<ALL>", NULL)))
               goto pclbad;
           } else {
             break;
@@ -541,21 +550,21 @@ flag processCommandLine(void)
         goto pclgood;
       }
       if (cmdMatches("SHOW STATEMENT")) {
-        if (statements == 0) {
+        if (sourceHasBeenRead == 0) {
           print2("?No source file has been read in.  Use READ first.\n");
           goto pclbad;
         }
         if (!getFullArg(2,
-            cat("* What is the statement label",defaultArg,"? ",NULL)))
+            cat("* What is the statement label", defaultArg, "? ", NULL)))
           goto pclbad;
         /* Get any switches */
         i = 2;
         while (1) {
           i++;
-          if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+          if (!getFullArg(i, "/|$|<$>")) goto pclbad;
           if (lastArgMatches("/")) {
             i++;
-            if (!getFullArg(i,cat(
+            if (!getFullArg(i, cat(
                 "FULL|COMMENT|TEX|OLD_TEX|HTML|ALT_HTML|TIME|BRIEF_HTML",
                 /* 12-May-2009 sa Added MNEMONICS */
                 "|BRIEF_ALT_HTML|MNEMONICS|NO_VERSIONING|<FULL>", NULL)))
@@ -568,12 +577,12 @@ flag processCommandLine(void)
         goto pclgood;
       }
       if (cmdMatches("SHOW SOURCE")) {
-        if (statements == 0) {
+        if (sourceHasBeenRead == 0) {
           print2("?No source file has been read in.  Use READ first.\n");
           goto pclbad;
         }
         if (!getFullArg(2,
-            cat("* What is the statement label",defaultArg,"? ",NULL))) {
+            cat("* What is the statement label", defaultArg, "? ", NULL))) {
           goto pclbad;
         }
         goto pclgood;
@@ -581,22 +590,22 @@ flag processCommandLine(void)
 
 
       if (cmdMatches("SHOW PROOF")) {
-        if (statements == 0) {
+        if (sourceHasBeenRead == 0) {
           print2("?No source file has been read in.  Use READ first.\n");
           goto pclbad;
         }
         if (!getFullArg(2,
-            cat("* What is the statement label",defaultArg,"? ",NULL)))
+            cat("* What is the statement label", defaultArg, "? ", NULL)))
           goto pclbad;
 
         /* Get any switches */
         i = 2;
         while (1) {
           i++;
-          if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+          if (!getFullArg(i, "/|$|<$>")) goto pclbad;
           if (lastArgMatches("/")) {
             i++;
-            if (!getFullArg(i,cat(
+            if (!getFullArg(i, cat(
                 "ESSENTIAL|ALL|UNKNOWN|FROM_STEP|TO_STEP|DEPTH",
                 /*"|REVERSE|VERBOSE|NORMAL|COMPRESSED",*/
                 "|REVERSE|VERBOSE|NORMAL|PACKED|COMPRESSED|EXPLICIT",
@@ -605,26 +614,26 @@ flag processCommandLine(void)
                 /* 14-Sep-2010 nm Added OLD_TEX */
                 "|STATEMENT_SUMMARY|DETAILED_STEP|TEX|OLD_TEX|HTML",
                 "|LEMMON|START_COLUMN|NO_REPEATED_STEPS",
-                "|RENUMBER|SIZE|<ESSENTIAL>",NULL)))
+                "|RENUMBER|SIZE|<ESSENTIAL>", NULL)))
               goto pclbad;
             if (lastArgMatches("FROM_STEP")) {
               i++;
-              if (!getFullArg(i,"# From what step <1>? "))
+              if (!getFullArg(i, "# From what step <1>? "))
                 goto pclbad;
             }
             if (lastArgMatches("TO_STEP")) {
               i++;
-              if (!getFullArg(i,"# To what step <9999>? "))
+              if (!getFullArg(i, "# To what step <9999>? "))
                 goto pclbad;
             }
             if (lastArgMatches("DEPTH")) {
               i++;
-              if (!getFullArg(i,"# How many indentation levels <999>? "))
+              if (!getFullArg(i, "# How many indentation levels <999>? "))
                 goto pclbad;
             }
             if (lastArgMatches("DETAILED_STEP")) {
               i++;
-              if (!getFullArg(i,"# Display details of what step <1>? "))
+              if (!getFullArg(i, "# Display details of what step <1>? "))
                 goto pclbad;
             }
             if (lastArgMatches("START_COLUMN")) {
@@ -644,7 +653,7 @@ flag processCommandLine(void)
 
 
       if (cmdMatches("SHOW NEW_PROOF")) {
-        if (statements == 0) {
+        if (sourceHasBeenRead == 0) {
           print2("?No source file has been read in.  Use READ first.\n");
           goto pclbad;
         }
@@ -653,31 +662,31 @@ flag processCommandLine(void)
         i = 1;
         while (1) {
           i++;
-          if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+          if (!getFullArg(i, "/|$|<$>")) goto pclbad;
           if (lastArgMatches("/")) {
             i++;
-            if (!getFullArg(i,cat(
+            if (!getFullArg(i, cat(
                 "ESSENTIAL|ALL|UNKNOWN|FROM_STEP|TO_STEP|DEPTH",
                 /*"|REVERSE|VERBOSE|NORMAL|COMPRESSED",*/
                 "|REVERSE|VERBOSE|NORMAL|PACKED|COMPRESSED|EXPLICIT",
                 "|OLD_COMPRESSION",   /* 27-Dec-2013 nm */
                 "|NOT_UNIFIED|TEX|HTML",
                 "|LEMMON|START_COLUMN|NO_REPEATED_STEPS",
-                "|RENUMBER|<ESSENTIAL>",NULL)))
+                "|RENUMBER|<ESSENTIAL>", NULL)))
               goto pclbad;
             if (lastArgMatches("FROM_STEP")) {
               i++;
-              if (!getFullArg(i,"# From what step <1>? "))
+              if (!getFullArg(i, "# From what step <1>? "))
                 goto pclbad;
             }
             if (lastArgMatches("TO_STEP")) {
               i++;
-              if (!getFullArg(i,"# To what step <9999>? "))
+              if (!getFullArg(i, "# To what step <9999>? "))
                 goto pclbad;
             }
             if (lastArgMatches("DEPTH")) {
               i++;
-              if (!getFullArg(i,"# How many indentation levels <999>? "))
+              if (!getFullArg(i, "# How many indentation levels <999>? "))
                 goto pclbad;
             }
             if (lastArgMatches("START_COLUMN")) {
@@ -700,23 +709,23 @@ flag processCommandLine(void)
     } /* End of SHOW */
 
     if (cmdMatches("SEARCH")) {
-      if (statements == 0) {
+      if (sourceHasBeenRead == 0) {
         print2("?No source file has been read in.  Use READ first.\n");
         goto pclbad;
       }
       if (!getFullArg(1,
           "* What are the labels to match (* = wildcard) <*>?"))
         goto pclbad;
-      if (!getFullArg(2,"* Search for what math symbol string? "))
+      if (!getFullArg(2, "* Search for what math symbol string? "))
           goto pclbad;
       /* Get any switches */
       i = 2;
       while (1) {
         i++;
-        if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+        if (!getFullArg(i, "/|$|<$>")) goto pclbad;
         if (lastArgMatches("/")) {
           i++;
-          if (!getFullArg(i,cat("ALL|COMMENTS|JOIN|<ALL>", NULL)))
+          if (!getFullArg(i, cat("ALL|COMMENTS|JOIN|<ALL>", NULL)))
             goto pclbad;
         } else {
           break;
@@ -741,14 +750,14 @@ flag processCommandLine(void)
       }
       if (showStatement) {
         if (showStatement < 0) bug(1111);
-        let(&defaultArg,cat(" <",statement[showStatement].labelName,">",NULL));
+        let(&defaultArg, cat(" <",statement[showStatement].labelName, ">", NULL));
       } else {
-        let(&defaultArg,"");
+        let(&defaultArg, "");
       }
 
 
       if (cmdMatches("SAVE PROOF")) {
-        if (statements == 0) {
+        if (sourceHasBeenRead == 0) {
           print2("?No source file has been read in.  Use READ first.\n");
           goto pclbad;
         }
@@ -760,13 +769,13 @@ flag processCommandLine(void)
         i = 2;
         while (1) {
           i++;
-          if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+          if (!getFullArg(i, "/|$|<$>")) goto pclbad;
           if (lastArgMatches("/")) {
             i++;
-            if (!getFullArg(i,cat(
+            if (!getFullArg(i, cat(
                 "NORMAL|PACKED|COMPRESSED|EXPLICIT",
                 "|FAST|OLD_COMPRESSION",   /* 27-Dec-2013 nm */
-                "|TIME|<NORMAL>",NULL)))
+                "|TIME|<NORMAL>", NULL)))
               goto pclbad;
           } else {
             break;
@@ -778,7 +787,7 @@ flag processCommandLine(void)
 
 
       if (cmdMatches("SAVE NEW_PROOF")) {
-        if (statements == 0) {
+        if (sourceHasBeenRead == 0) {
           print2("?No source file has been read in.  Use READ first.\n");
           goto pclbad;
         }
@@ -787,15 +796,15 @@ flag processCommandLine(void)
         i = 1;
         while (1) {
           i++;
-          if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+          if (!getFullArg(i, "/|$|<$>")) goto pclbad;
           if (lastArgMatches("/")) {
             i++;
-            if (!getFullArg(i,cat(
+            if (!getFullArg(i, cat(
                 "NORMAL|PACKED|COMPRESSED|EXPLICIT",
                 /* 27-Dec-2013 nm Added / OLD_COMPRESSION */
                 /* 3-May-2016 nm Added / OVERRIDE */
                 "|OLD_COMPRESSION|OVERRIDE",
-                "|<NORMAL>",NULL)))
+                "|<NORMAL>", NULL)))
               goto pclbad;
           } else {
             break;
@@ -811,19 +820,19 @@ flag processCommandLine(void)
 
 
     if (cmdMatches("PROVE")) {
-      if (statements == 0) {
+      if (sourceHasBeenRead == 0) {
         print2("?No source file has been read in.  Use READ first.\n");
         goto pclbad;
       }
       if (!proveStatement) proveStatement = showStatement;
       if (proveStatement) {
-        let(&defaultArg,cat(" <",statement[proveStatement].labelName,">",NULL));
+        let(&defaultArg, cat(" <",statement[proveStatement].labelName, ">", NULL));
       } else {
-        let(&defaultArg,"");
+        let(&defaultArg, "");
       }
       if (!getFullArg(1,
           cat("* What is the label of the statement you want to try proving",
-          defaultArg,"? ",NULL)))
+          defaultArg, "? ", NULL)))
         goto pclbad;
 
       /* 10-May-2016 nm */
@@ -831,10 +840,10 @@ flag processCommandLine(void)
       i = 1;
       while (1) {
         i++;
-        if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+        if (!getFullArg(i, "/|$|<$>")) goto pclbad;
         if (lastArgMatches("/")) {
           i++;
-          if (!getFullArg(i,"OVERRIDE|<OVERRIDE>")) goto pclbad;
+          if (!getFullArg(i, "OVERRIDE|<OVERRIDE>")) goto pclbad;
         } else {
           break;
         }
@@ -850,7 +859,7 @@ flag processCommandLine(void)
       if (!getFullArg(1,
           "STEP|ALL|<ALL>")) goto pclbad;
       if (cmdMatches("MATCH STEP")) {
-        if (!getFullArg(2,"# What step number? ")) goto pclbad;
+        if (!getFullArg(2, "# What step number? ")) goto pclbad;
         /* Get any switches */
         i = 2;
         while (1) {
@@ -858,7 +867,7 @@ flag processCommandLine(void)
           if (!getFullArg(i, "/|$|<$>")) goto pclbad;
           if (lastArgMatches("/")) {
             i++;
-            if (!getFullArg(i,cat(
+            if (!getFullArg(i, cat(
                 "MAX_ESSENTIAL_HYP|<MAX_ESSENTIAL_HYP>", NULL)))
               goto pclbad;
             if (lastArgMatches("MAX_ESSENTIAL_HYP")) {
@@ -882,7 +891,7 @@ flag processCommandLine(void)
           if (!getFullArg(i, "/|$|<$>")) goto pclbad;
           if (lastArgMatches("/")) {
             i++;
-            if (!getFullArg(i,cat(
+            if (!getFullArg(i, cat(
                 "ESSENTIAL|MAX_ESSENTIAL_HYP|<ESSENTIAL>", NULL)))
               goto pclbad;
             if (lastArgMatches("MAX_ESSENTIAL_HYP")) {
@@ -905,7 +914,7 @@ flag processCommandLine(void)
       if (!getFullArg(1,
           "STEP|ALL|USER|<ALL>")) goto pclbad;  /* 16-Apr-06 nm Added USER */
       if (cmdMatches("INITIALIZE STEP")) {
-        if (!getFullArg(2,"# What step number? ")) goto pclbad;
+        if (!getFullArg(2, "# What step number? ")) goto pclbad;
       }
       goto pclgood;
     }
@@ -920,7 +929,7 @@ flag processCommandLine(void)
       i = 1;
       while (1) {
         i++;
-        if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+        if (!getFullArg(i, "/|$|<$>")) goto pclbad;
         if (lastArgMatches("/")) {
           i++;
           if (!getFullArg(i,
@@ -947,7 +956,7 @@ flag processCommandLine(void)
           "STEP|ALL|FIRST|LAST|<ALL>")) goto pclbad;
 
       if (cmdMatches("IMPROVE STEP")) {
-        if (!getFullArg(2,"# What step number? ")) goto pclbad;
+        if (!getFullArg(2, "# What step number? ")) goto pclbad;
       }
       if (cmdMatches("IMPROVE STEP") || cmdMatches("IMPROVE ALL")
           || cmdMatches("IMPROVE LAST") || cmdMatches("IMPROVE FIRST")) {
@@ -960,7 +969,7 @@ flag processCommandLine(void)
         }
         while (1) {
           i++;
-          if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+          if (!getFullArg(i, "/|$|<$>")) goto pclbad;
           if (lastArgMatches("/")) {
             i++;
             if (!getFullArg(i,
@@ -984,7 +993,7 @@ flag processCommandLine(void)
 
 
     if (cmdMatches("MINIMIZE_WITH")) {
-      if (!getFullArg(1,"* What statement label? ")) goto pclbad;
+      if (!getFullArg(1, "* What statement label? ")) goto pclbad;
       /* Get any switches */
       i = 1;
       while (1) {
@@ -992,7 +1001,7 @@ flag processCommandLine(void)
         if (!getFullArg(i, "/|$|<$>")) goto pclbad;
         if (lastArgMatches("/")) {
           i++;
-          if (!getFullArg(i,cat(
+          if (!getFullArg(i, cat(
               /*
               "BRIEF|VERBOSE|ALLOW_GROWTH|NO_DISTINCT|EXCEPT|",
               "REVERSE|INCLUDE_MATHBOXES|FORBID|<BRIEF>", NULL)))
@@ -1011,19 +1020,19 @@ flag processCommandLine(void)
           /* 7-Jan-06 nm Added EXCEPT */
           if (lastArgMatches("EXCEPT")) {
             i++;
-            if (!getFullArg(i,"* What statement label match pattern? "))
+            if (!getFullArg(i, "* What statement label match pattern? "))
               goto pclbad;
           }
           /* 20-May-2013 nm Added FORBID */
           if (lastArgMatches("FORBID")) {
             i++;
-            if (!getFullArg(i,"* What statement label match pattern? "))
+            if (!getFullArg(i, "* What statement label match pattern? "))
               goto pclbad;
           }
           /* 22-Nov-2014 nm Added NO_NEW_AXIOMS_FROM */
           if (lastArgMatches("NO_NEW_AXIOMS_FROM")) {
             i++;
-            if (!getFullArg(i,"* What statement label match pattern? "))
+            if (!getFullArg(i, "* What statement label match pattern? "))
               goto pclbad;
           }
         } else {
@@ -1036,7 +1045,7 @@ flag processCommandLine(void)
 
     /* 11-Sep-2016 nm */
     if (cmdMatches("EXPAND")) {
-      if (!getFullArg(1,"* What statement label? ")) goto pclbad;
+      if (!getFullArg(1, "* What statement label? ")) goto pclbad;
       goto pclgood;
     }
 
@@ -1044,7 +1053,7 @@ flag processCommandLine(void)
       if (!getFullArg(1,
           "STEP|ALL|<ALL>")) goto pclbad;
       if (cmdMatches("UNIFY STEP")) {
-        if (!getFullArg(2,"# What step number? ")) goto pclbad;
+        if (!getFullArg(2, "# What step number? ")) goto pclbad;
         goto pclgood;
       }
       if (cmdMatches("UNIFY ALL")) {
@@ -1055,7 +1064,7 @@ flag processCommandLine(void)
           if (!getFullArg(i, "/|$|<$>")) goto pclbad;
           if (lastArgMatches("/")) {
             i++;
-            if (!getFullArg(i,cat(
+            if (!getFullArg(i, cat(
                 "INTERACTIVE|<INTERACTIVE>", NULL)))
               goto pclbad;
           } else {
@@ -1071,7 +1080,7 @@ flag processCommandLine(void)
       if (!getFullArg(1,
           "STEP|ALL|FLOATING_HYPOTHESES|<STEP>")) goto pclbad;
       if (lastArgMatches("STEP")) {
-        if (!getFullArg(2,"# What step number? ")) goto pclbad;
+        if (!getFullArg(2, "# What step number? ")) goto pclbad;
         goto pclgood;
       }
       goto pclgood;
@@ -1086,20 +1095,20 @@ flag processCommandLine(void)
 
     if (cmdMatches("REPLACE")) {
       /* 14-Sep-2012 nm Added FIRST, LAST */
-      if (!getFullArg(1,"* What step number, or FIRST, or LAST <LAST>? "))
+      if (!getFullArg(1, "* What step number, or FIRST, or LAST <LAST>? "))
           goto pclbad;
-      if (!getFullArg(2,"* With what statement label? ")) goto pclbad;
+      if (!getFullArg(2, "* With what statement label? ")) goto pclbad;
       /* Get any switches */
       i = 2;
 
       /* 3-May-2016 nm Added / OVERRIDE */
       while (1) {
         i++;
-        if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+        if (!getFullArg(i, "/|$|<$>")) goto pclbad;
         if (lastArgMatches("/")) {
           i++;
-          if (!getFullArg(i,cat(
-              "OVERRIDE|<OVERRIDE>",NULL)))
+          if (!getFullArg(i, cat(
+              "OVERRIDE|<OVERRIDE>", NULL)))
             goto pclbad;
         } else {
           break;
@@ -1111,16 +1120,16 @@ flag processCommandLine(void)
     }
 
     if (cmdMatches("LET")) {
-      if (!getFullArg(1,"STEP|VARIABLE|<STEP>")) goto pclbad;
+      if (!getFullArg(1, "STEP|VARIABLE|<STEP>")) goto pclbad;
       if (cmdMatches("LET STEP")) {
-        if (!getFullArg(2,"* What step number, or FIRST, or LAST <LAST>? "))
+        if (!getFullArg(2, "* What step number, or FIRST, or LAST <LAST>? "))
           goto pclbad;
       }
       if (cmdMatches("LET VARIABLE")) {
-        if (!getFullArg(2,"* Assign what variable (format $nn)? ")) goto pclbad;
+        if (!getFullArg(2, "* Assign what variable (format $nn)? ")) goto pclbad;
       }
-      if (!getFullArg(3,"=|<=>")) goto pclbad;
-      if (!getFullArg(4,"* With what math symbol string? "))
+      if (!getFullArg(3, "=|<=>")) goto pclbad;
+      if (!getFullArg(4, "* With what math symbol string? "))
           goto pclbad;
       goto pclgood;
     }
@@ -1129,7 +1138,7 @@ flag processCommandLine(void)
       if (!getFullArg(1,
           "* What step number, or FIRST, or LAST <LAST>? ")) goto pclbad;
                                                              /* 11-Dec-05 nm */
-      if (!getFullArg(2,"* With what statement label? ")) goto pclbad;
+      if (!getFullArg(2, "* With what statement label? ")) goto pclbad;
       /* Get any switches */
       i = 2;
       while (1) {
@@ -1137,7 +1146,7 @@ flag processCommandLine(void)
         if (!getFullArg(i, "/|$|<$>")) goto pclbad;
         if (lastArgMatches("/")) {
           i++;
-          if (!getFullArg(i,cat(    /* 3-May-2016 nm Added / OVERRIDE */
+          if (!getFullArg(i, cat(    /* 3-May-2016 nm Added / OVERRIDE */
               "NO_UNIFY|OVERRIDE|<NO_UNIFY>", NULL)))
             goto pclbad;
         } else {
@@ -1163,48 +1172,49 @@ flag processCommandLine(void)
           "DEBUG|MEMORY_STATUS|SEARCH_LIMIT|UNIFICATION_TIMEOUT|",
           "DISCOURAGEMENT|",  /* 10-Jul-2016 nm */
           "CONTRIBUTOR|",  /* 14-May-2017 nm */
+          "ROOT_DIRECTORY|",  /* 31-Dec-2017 nm */
           "EMPTY_SUBSTITUTION|JEREMY_HENTY_FILTER|<WIDTH>", NULL));
       if (!getFullArg(1,tmpStr)) goto pclbad;
       if (cmdMatches("SET DEBUG")) {
-        if (!getFullArg(2,"FLAG|OFF|<OFF>")) goto pclbad;
+        if (!getFullArg(2, "FLAG|OFF|<OFF>")) goto pclbad;
         if (lastArgMatches("FLAG")) {
-          if (!getFullArg(3,"4|5|6|7|8|9|<5>")) goto pclbad;
+          if (!getFullArg(3, "4|5|6|7|8|9|<5>")) goto pclbad;
         }
         goto pclgood;
       }
 
       if (cmdMatches("SET ECHO")) {
         if (commandEcho) {
-          if (!getFullArg(2,"ON|OFF|<OFF>")) goto pclbad;
+          if (!getFullArg(2, "ON|OFF|<OFF>")) goto pclbad;
         } else {
-          if (!getFullArg(2,"ON|OFF|<ON>")) goto pclbad;
+          if (!getFullArg(2, "ON|OFF|<ON>")) goto pclbad;
         }
         goto pclgood;
       }
 
       if (cmdMatches("SET SCROLL")) {
         if (scrollMode == 1) {
-          if (!getFullArg(2,"CONTINUOUS|PROMPTED|<CONTINUOUS>")) goto pclbad;
+          if (!getFullArg(2, "CONTINUOUS|PROMPTED|<CONTINUOUS>")) goto pclbad;
         } else {
-          if (!getFullArg(2,"CONTINUOUS|PROMPTED|<PROMPTED>")) goto pclbad;
+          if (!getFullArg(2, "CONTINUOUS|PROMPTED|<PROMPTED>")) goto pclbad;
         }
         goto pclgood;
       }
 
       if (cmdMatches("SET DISCOURAGEMENT")) {  /* 10-Jul-2016 nm */
         if (globalDiscouragement) {
-          if (!getFullArg(2,"ON|OFF|<OFF>")) goto pclbad;
+          if (!getFullArg(2, "ON|OFF|<OFF>")) goto pclbad;
         } else {
-          if (!getFullArg(2,"ON|OFF|<ON>")) goto pclbad;
+          if (!getFullArg(2, "ON|OFF|<ON>")) goto pclbad;
         }
         goto pclgood;
       }
 
       if (cmdMatches("SET MEMORY_STATUS")) {
         if (memoryStatus) {
-          if (!getFullArg(2,"ON|OFF|<OFF>")) goto pclbad;
+          if (!getFullArg(2, "ON|OFF|<OFF>")) goto pclbad;
         } else {
-          if (!getFullArg(2,"ON|OFF|<ON>")) goto pclbad;
+          if (!getFullArg(2, "ON|OFF|<ON>")) goto pclbad;
         }
         goto pclgood;
       }
@@ -1212,9 +1222,9 @@ flag processCommandLine(void)
 
       if (cmdMatches("SET JEREMY_HENTY_FILTER")) {
         if (hentyFilter) {
-          if (!getFullArg(2,"ON|OFF|<OFF>")) goto pclbad;
+          if (!getFullArg(2, "ON|OFF|<OFF>")) goto pclbad;
         } else {
-          if (!getFullArg(2,"ON|OFF|<ON>")) goto pclbad;
+          if (!getFullArg(2, "ON|OFF|<ON>")) goto pclbad;
         }
         goto pclgood;
       }
@@ -1223,6 +1233,14 @@ flag processCommandLine(void)
         if (!getFullArg(2, cat(
             "* What is the contributor name for SAVE (NEW_)PROOF <",
             contributorName, ">? ", NULL)))
+          goto pclbad;
+        goto pclgood;
+      }
+
+      if (cmdMatches("SET ROOT_DIRECTORY")) {
+        if (!getFullArg(2, cat(
+            "* What is the root directory path (use space if none) <",
+            rootDirectory, ">? ", NULL)))
           goto pclbad;
         goto pclgood;
       }
@@ -1270,32 +1288,34 @@ flag processCommandLine(void)
 
       if (cmdMatches("SET EMPTY_SUBSTITUTION")) {
         if (minSubstLen == 0) {
-          if (!getFullArg(2,"ON|OFF|<OFF>")) goto pclbad;
+          if (!getFullArg(2, "ON|OFF|<OFF>")) goto pclbad;
         } else {
-          if (!getFullArg(2,"ON|OFF|<ON>")) goto pclbad;
+          if (!getFullArg(2, "ON|OFF|<ON>")) goto pclbad;
         }
         goto pclgood;
       }
 
     } /* end if SET */
 
+    /************** 31-Dec-2017 nm Delete unused stuff
     if (cmdMatches("INPUT")) {
-      if (!getFullArg(1,"PROOF|<PROOF>")) goto pclbad;
+      if (!getFullArg(1, "PROOF|<PROOF>")) goto pclbad;
       goto pclgood;
     }
 
     if (cmdMatches("SET UNIVERSE") || cmdMatches("ADD UNIVERSE") ||
         cmdMatches("DELETE UNIVERSE")) {
-      /* Get a list of statement labels */
+      /@ Get a list of statement labels @/
       i = 1;
       while (1) {
         i++;
-        /*??? The user will never be asked this. */
-        if (!getFullArg(i,"* Statement label or '*' or '$f'|$<$>? "))
+        /@??? The user will never be asked this. @/
+        if (!getFullArg(i, "@ Statement label or '@' or '$f'|$<$>? "))
             goto pclbad;
-        if (lastArgMatches("")) goto pclgood; /* End of argument list */
-      } /* end while */
-    } /* end if xxx UNIVERSE */
+        if (lastArgMatches("")) goto pclgood; /@ End of argument list @/
+      } /@ end while @/
+    } /@ end if xxx UNIVERSE @/
+    ************/
 
     if (cmdMatches("ERASE")) {
       goto pclgood;
@@ -1317,7 +1337,7 @@ flag processCommandLine(void)
           "PROOF|MARKUP|<PROOF>"))
         goto pclbad;
       if (cmdMatches("VERIFY PROOF")) {
-        if (statements == 0) {
+        if (sourceHasBeenRead == 0) {
           print2("?No source file has been read in.  Use READ first.\n");
           goto pclbad;
         }
@@ -1329,12 +1349,12 @@ flag processCommandLine(void)
         i = 2;
         while (1) {
           i++;
-          if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+          if (!getFullArg(i, "/|$|<$>")) goto pclbad;
           if (lastArgMatches("/")) {
             i++;
-            if (!getFullArg(i,cat(
+            if (!getFullArg(i, cat(
                 "COMPLETE|SYNTAX_ONLY",
-                "|<COMPLETE>",NULL)))
+                "|<COMPLETE>", NULL)))
               goto pclbad;
           } else {
             break;
@@ -1347,7 +1367,7 @@ flag processCommandLine(void)
 
       /* 7-Nov-2015 nm */
       if (cmdMatches("VERIFY MARKUP")) {
-        if (statements == 0) {
+        if (sourceHasBeenRead == 0) {
           print2("?No source file has been read in.  Use READ first.\n");
           goto pclbad;
         }
@@ -1359,12 +1379,12 @@ flag processCommandLine(void)
         i = 2;
         while (1) {
           i++;
-          if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+          if (!getFullArg(i, "/|$|<$>")) goto pclbad;
           if (lastArgMatches("/")) {
             i++;
-            if (!getFullArg(i,cat(
+            if (!getFullArg(i, cat(
                 "DATE_SKIP|FILE_SKIP|VERBOSE",
-                "|<DATE_SKIP>",NULL)))
+                "|<DATE_SKIP>", NULL)))
               goto pclbad;
           } else {
             break;
@@ -1379,13 +1399,13 @@ flag processCommandLine(void)
     if (cmdMatches("DBG")) {
       /* The debug command fetches an arbitrary 2nd arg in quotes, to be handled
          in whatever way is needed for debugging. */
-      if (!getFullArg(1,"* What is the debugging string? "))
+      if (!getFullArg(1, "* What is the debugging string? "))
         goto pclbad;
       goto pclgood;
     }
 
     if (cmdMatches("MIDI")) {
-      if (statements == 0) {
+      if (sourceHasBeenRead == 0) {
         print2("?No source file has been read in.  Use READ first.\n");
         goto pclbad;
       }
@@ -1396,10 +1416,10 @@ flag processCommandLine(void)
       i = 1;
       while (1) {
         i++;
-        if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+        if (!getFullArg(i, "/|$|<$>")) goto pclbad;
         if (lastArgMatches("/")) {
           i++;
-          if (!getFullArg(i,cat("PARAMETER|<PARAMETER>", NULL)))
+          if (!getFullArg(i, cat("PARAMETER|<PARAMETER>", NULL)))
             goto pclbad;
           i++;
           if (!getFullArg(i,
@@ -1420,11 +1440,11 @@ flag processCommandLine(void)
       i = 0;
       while (1) {
         i++;
-        if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+        if (!getFullArg(i, "/|$|<$>")) goto pclbad;
         if (lastArgMatches("/")) {
           i++;
-          if (!getFullArg(i,cat(
-              "FORCE|<FORCE>",NULL)))
+          if (!getFullArg(i, cat(
+              "FORCE|<FORCE>", NULL)))
             goto pclbad;
         } else {
           break;
@@ -1437,11 +1457,11 @@ flag processCommandLine(void)
 
   } else { /* toolsMode */
     /* Text tools mode */
-    let(&tmpStr,cat(
+    let(&tmpStr, cat(
           "HELP|SUBMIT|",
           "ADD|DELETE|SUBSTITUTE|S|SWAP|CLEAN|INSERT|BREAK|BUILD|MATCH|SORT|",
           "UNDUPLICATE|DUPLICATE|UNIQUE|REVERSE|RIGHT|PARALLEL|NUMBER|COUNT|",
-          "COPY|C|TYPE|T|TAG|UPDATE|BEEP|B|EXIT|QUIT|<HELP>",NULL));
+          "COPY|C|TYPE|T|TAG|UPDATE|BEEP|B|EXIT|QUIT|<HELP>", NULL));
     if (!getFullArg(0,tmpStr))
       goto pclbad;
 
@@ -1455,11 +1475,11 @@ flag processCommandLine(void)
       goto pclgood;
     }
     if (cmdMatches("ADD") || cmdMatches("TAG")) {
-      if (!getFullArg(1,"& Input/output file? "))
+      if (!getFullArg(1, "& Input/output file? "))
         goto pclbad;
-      if (!getFullArg(2,"* String to add to beginning of each line <>? "))
+      if (!getFullArg(2, "* String to add to beginning of each line <>? "))
         goto pclbad;
-      if (!getFullArg(3,"* String to add to end of each line <>? "))
+      if (!getFullArg(3, "* String to add to end of each line <>? "))
         goto pclbad;
       if (cmdMatches("TAG")) {
         if (!getFullArg(4,
@@ -1478,7 +1498,7 @@ flag processCommandLine(void)
       goto pclgood;
     }
     if (cmdMatches("DELETE")) {
-      if (!getFullArg(1,"& Input/output file? "))
+      if (!getFullArg(1, "& Input/output file? "))
         goto pclbad;
       if (!getFullArg(2,
 "* String from which to start deleting (CR = beginning of line) <>? "))
@@ -1489,7 +1509,7 @@ flag processCommandLine(void)
       goto pclgood;
     }
     if (cmdMatches("CLEAN")) {
-      if (!getFullArg(1,"& Input/output file? "))
+      if (!getFullArg(1, "& Input/output file? "))
         goto pclbad;
       if (!getFullArg(2,
           "* Subcommand(s) (D,B,E,R,Q,T,U,P,G,C,L,V) <B,E,R>? "))
@@ -1497,7 +1517,7 @@ flag processCommandLine(void)
       goto pclgood;
     }
     if (cmdMatches("SWAP")) {
-      if (!getFullArg(1,"& Input/output file? "))
+      if (!getFullArg(1, "& Input/output file? "))
         goto pclbad;
       if (!getFullArg(2,
 "* Character string to match between the halves to be swapped? "))
@@ -1505,11 +1525,11 @@ flag processCommandLine(void)
       goto pclgood;
     }
     if (cmdMatches("SUBSTITUTE") || cmdMatches("S")) {
-      if (!getFullArg(1,"& Input/output file? "))
+      if (!getFullArg(1, "& Input/output file? "))
         goto pclbad;
-      if (!getFullArg(2,"* String to replace? "))
+      if (!getFullArg(2, "* String to replace? "))
         goto pclbad;
-      if (!getFullArg(3,"* Replace it with <>? "))
+      if (!getFullArg(3, "* Replace it with <>? "))
         goto pclbad;
       if (!getFullArg(4,
 "* Which occurrence in the line (1,2,... or ALL or EACH) <1>? "))
@@ -1521,16 +1541,16 @@ flag processCommandLine(void)
     }
 
     if (cmdMatches("INSERT")) {
-      if (!getFullArg(1,"& Input/output file? "))
+      if (!getFullArg(1, "& Input/output file? "))
         goto pclbad;
-      if (!getFullArg(2,"* String to insert in each line <!>? "))
+      if (!getFullArg(2, "* String to insert in each line <!>? "))
         goto pclbad;
-      if (!getFullArg(3,"# Column at which to insert the string <1>? "))
+      if (!getFullArg(3, "# Column at which to insert the string <1>? "))
         goto pclbad;
       goto pclgood;
     }
     if (cmdMatches("BREAK")) {
-      if (!getFullArg(1,"& Input/output file? "))
+      if (!getFullArg(1, "& Input/output file? "))
         goto pclbad;
       if (!getFullArg(2,
           "* Special characters to use as token delimiters <()[],=:;{}>? "))
@@ -1538,7 +1558,7 @@ flag processCommandLine(void)
       goto pclgood;
     }
     if (cmdMatches("MATCH")) {
-      if (!getFullArg(1,"& Input/output file? "))
+      if (!getFullArg(1, "& Input/output file? "))
         goto pclbad;
       if (!getFullArg(2,
 "* String to match on each line (null = any non-blank line) <>? "))
@@ -1549,7 +1569,7 @@ flag processCommandLine(void)
       goto pclgood;
     }
     if (cmdMatches("SORT")) {
-      if (!getFullArg(1,"& Input/output file? "))
+      if (!getFullArg(1, "& Input/output file? "))
         goto pclbad;
       if (!getFullArg(2,
           "* String to start key on each line (null string = column 1) <>? "))
@@ -1559,13 +1579,13 @@ flag processCommandLine(void)
     if (cmdMatches("UNDUPLICATE") || cmdMatches("DUPLICATE") ||
         cmdMatches("UNIQUE") || cmdMatches("REVERSE") || cmdMatches("BUILD")
         || cmdMatches("RIGHT")) {
-      if (!getFullArg(1,"& Input/output file? "))
+      if (!getFullArg(1, "& Input/output file? "))
         goto pclbad;
       goto pclgood;
     }
 
     if (cmdMatches("COUNT")) {
-      if (!getFullArg(1,"& Input file? "))
+      if (!getFullArg(1, "& Input file? "))
         goto pclbad;
       if (!getFullArg(2,
 "* String to count <;>? "))
@@ -1574,29 +1594,29 @@ flag processCommandLine(void)
     }
 
     if (cmdMatches("COPY") || cmdMatches("C")) {
-      if (!getFullArg(1,"* Comma-separated list of input files? "))
+      if (!getFullArg(1, "* Comma-separated list of input files? "))
         goto pclbad;
-      if (!getFullArg(2,"* Output file? "))
+      if (!getFullArg(2, "* Output file? "))
         goto pclbad;
       goto pclgood;
     }
 
 
     if (cmdMatches("NUMBER")) {
-      if (!getFullArg(1,"* Output file <n.tmp>? "))
+      if (!getFullArg(1, "* Output file <n.tmp>? "))
         goto pclbad;
-      if (!getFullArg(2,"# First number <1>? "))
+      if (!getFullArg(2, "# First number <1>? "))
         goto pclbad;
-      if (!getFullArg(3,"# Last number <10>? "))
+      if (!getFullArg(3, "# Last number <10>? "))
         goto pclbad;
-      if (!getFullArg(4,"# Increment <1>? "))
+      if (!getFullArg(4, "# Increment <1>? "))
         goto pclbad;
       goto pclgood;
     }
     if (cmdMatches("TYPE") || cmdMatches("T")) {
-      if (!getFullArg(1,"& File to display on the screen? "))
+      if (!getFullArg(1, "& File to display on the screen? "))
         goto pclbad;
-      if (!getFullArg(2,"* Num. lines to type or ALL (nothing = 10) <$>? "))
+      if (!getFullArg(2, "* Num. lines to type or ALL (nothing = 10) <$>? "))
         goto pclbad;
       goto pclgood;
     }
@@ -1609,11 +1629,11 @@ flag processCommandLine(void)
 "rerunning UPDATE, do not tamper with \"start/end of deleted section\" comments!\n");
       print2(
 "Edit out tag on header comment line!  Review the output file!\n");
-      if (!getFullArg(1,"& Original (reference) program input file? "))
+      if (!getFullArg(1, "& Original (reference) program input file? "))
         goto pclbad;
-      if (!getFullArg(2,"& Edited program input file? "))
+      if (!getFullArg(2, "& Edited program input file? "))
         goto pclbad;
-      if (!getFullArg(3,cat(
+      if (!getFullArg(3, cat(
 "* Edited program output file with revisions tagged <",
           fullArg[2], ">? ", NULL)))
         goto pclbad;
@@ -1632,11 +1652,11 @@ flag processCommandLine(void)
     }
 
     if (cmdMatches("PARALLEL")) {
-      if (!getFullArg(1,"& Left file? "))
+      if (!getFullArg(1, "& Left file? "))
         goto pclbad;
-      if (!getFullArg(2,"& Right file? "))
+      if (!getFullArg(2, "& Right file? "))
         goto pclbad;
-      if (!getFullArg(3,cat("* Output file <",
+      if (!getFullArg(3, cat("* Output file <",
           fullArg[1], ">? ", NULL)))
         goto pclbad;
       if (!getFullArg(4,
@@ -1659,7 +1679,7 @@ flag processCommandLine(void)
     } else {
       let(&tmpStr, " <mm.cmd>");
     }
-    if (!getFullArg(1,cat("& What is the name of command file to run",
+    if (!getFullArg(1, cat("& What is the name of command file to run",
         tmpStr, "? ", NULL))) {
       goto pclbad;
     }
@@ -1669,12 +1689,12 @@ flag processCommandLine(void)
     i = 1; /* Number of command words before switch */
     while (1) {
       i++;
-      if (!getFullArg(i,"/|$|<$>")) goto pclbad;
+      if (!getFullArg(i, "/|$|<$>")) goto pclbad;
       if (lastArgMatches("/")) {
         i++;
-        if (!getFullArg(i,cat(
+        if (!getFullArg(i, cat(
             "SILENT",
-            "|<SILENT>",NULL)))
+            "|<SILENT>", NULL)))
           goto pclbad;
       } else {
         break;
@@ -1702,8 +1722,8 @@ flag processCommandLine(void)
 
   /* Strip off the last fullArg if a null argument was added by getFullArg
      in the case when "$" (nothing) is allowed */
-  if (!strcmp(fullArg[pntrLen(fullArg)-1], chr(3))) {
-    let((vstring *)(&fullArg[pntrLen(fullArg)-1]), ""); /* Deallocate */
+  if (!strcmp(fullArg[pntrLen(fullArg) - 1], chr(3))) {
+    let((vstring *)(&fullArg[pntrLen(fullArg) - 1]), ""); /* Deallocate */
     pntrLet(&fullArg, pntrLeft(fullArg, pntrLen(fullArg) - 1));
   }
 
@@ -1725,14 +1745,14 @@ flag processCommandLine(void)
 
 
   /* Deallocate memory */
-  let(&defaultArg,"");
-  let(&tmpStr,"");
+  let(&defaultArg, "");
+  let(&tmpStr, "");
   return (1);
 
  pclbad:
   /* Deallocate memory */
-  let(&defaultArg,"");
-  let(&tmpStr,"");
+  let(&defaultArg, "");
+  let(&tmpStr, "");
   return (0);
 
 } /* processCommandLine */
@@ -1767,12 +1787,12 @@ flag getFullArg(long arg, vstring cmdList1)
   let(&cmdList,cmdList1); /* In case cmdList1 gets deallocated when it comes
                              directly from a vstring function such as cat() */
 
-  let(&errorLine,cat(commandPrompt,commandLine,NULL));
+  let(&errorLine, cat(commandPrompt,commandLine, NULL));
 
   /* Handle special case - integer expected */
   if (cmdList[0] == '#') {
     let(&defaultCmd,
-        seg(cmdList,instr(1,cmdList,"<"),instr(1,cmdList,">")));
+        seg(cmdList,instr(1,cmdList, "<"),instr(1,cmdList, ">")));
 
     /* If the argument has not been entered, prompt the user for it */
     if (rawArgs <= arg) {
@@ -1817,11 +1837,11 @@ flag getFullArg(long arg, vstring cmdList1)
   /* However, "|$<$>" also allows null string (no argument) */
   if (cmdList[0] == '*' || cmdList[0] == '&') {
     let(&defaultCmd,
-        seg(cmdList,instr(1,cmdList,"<"),instr(1,cmdList,">")));
+        seg(cmdList,instr(1,cmdList, "<"),instr(1,cmdList, ">")));
 
     /* If the argument has not been entered, prompt the user for it */
     if (rawArgs <= arg) {
-      if (!strcmp(defaultCmd,"<$>")) { /* End of command acceptable */
+      if (!strcmp(defaultCmd, "<$>")) { /* End of command acceptable */
         /* Note:  in this case, user will never be prompted for anything. */
         let(&keyword,chr(3));
         goto return1;
@@ -1879,10 +1899,12 @@ flag getFullArg(long arg, vstring cmdList1)
     }
     if (cmdList[0] == '&') {
       /* See if file exists */
-      tmpFp = fopen(keyword, "r");
+      let(&tmpStr, cat(rootDirectory, keyword, NULL)); /* 9-Jan-2018 nm */
+      tmpFp = fopen(tmpStr, "r");
       if (!tmpFp) {
         let(&tmpStr,  cat(
-            "?Sorry, couldn't open the file \"", keyword, "\".", NULL));
+/*"?Sorry, couldn't open the file \"", keyword, "\".", NULL));*/
+  "?Sorry, couldn't open the file \"", tmpStr, "\".", NULL)); /* 9-Jan-2018 nm */
         printCommandError(errorLine, arg, tmpStr);
         goto return0;
       }
@@ -1898,24 +1920,24 @@ flag getFullArg(long arg, vstring cmdList1)
   p = 0;
   while (1) {
     q = p;
-    p = instr(p + 1, cat(cmdList,"|",NULL), "|");
+    p = instr(p + 1, cat(cmdList, "|", NULL), "|");
     if (!p) break;
     pntrLet(&possCmd,pntrAddElement(possCmd));
     let((vstring *)(&possCmd[possCmds]),seg(cmdList,q+1,p-1));
     possCmds++;
   }
-  if (!strcmp(left(possCmd[possCmds - 1],1),"<")) {
+  if (!strcmp(left(possCmd[possCmds - 1],1), "<")) {
     /* Get default argument, if any */
     defaultCmd = possCmd[possCmds - 1]; /* re-use old allocation */
-    if (!strcmp(defaultCmd,"<$>")) {
-      let(&defaultCmd,"<nothing>");
+    if (!strcmp(defaultCmd, "<$>")) {
+      let(&defaultCmd, "<nothing>");
     }
     pntrLet(&possCmd,pntrLeft(possCmd,possCmds - 1));
     possCmds--;
   }
-  if (!strcmp(possCmd[possCmds - 1],"$")) {
+  if (!strcmp(possCmd[possCmds - 1], "$")) {
     /* Change "$" to "nothing" for printouts */
-    let((vstring *)(&possCmd[possCmds - 1]),"nothing");
+    let((vstring *)(&possCmd[possCmds - 1]), "nothing");
   }
 
   /* Create a string used for queries and error messages */
@@ -1924,33 +1946,33 @@ flag getFullArg(long arg, vstring cmdList1)
     let(&infoStr,possCmd[0]);
   }
   if (possCmds == 2) {
-    let(&infoStr,cat(possCmd[0]," or ",
-        possCmd[1],NULL));
+    let(&infoStr, cat(possCmd[0], " or ",
+        possCmd[1], NULL));
   }
   if (possCmds > 2) {
-    let(&infoStr,"");
+    let(&infoStr, "");
     for (i = 0; i < possCmds - 1; i++) {
-      let(&infoStr,cat(infoStr,possCmd[i],", ",NULL));
+      let(&infoStr, cat(infoStr,possCmd[i], ", ", NULL));
     }
-    let(&infoStr,cat(infoStr,"or ",possCmd[possCmds - 1],NULL));
+    let(&infoStr, cat(infoStr, "or ",possCmd[possCmds - 1], NULL));
   }
 
   /* If the argument has not been entered, prompt the user for it */
-  if (rawArgs <= arg && (strcmp(possCmd[possCmds - 1],"nothing")
+  if (rawArgs <= arg && (strcmp(possCmd[possCmds - 1], "nothing")
       || queryMode == 1)) {
 
     let(&tmpStr, infoStr);
     if (defaultCmd[0] != 0) {
-      let(&tmpStr,cat(tmpStr," ",defaultCmd,NULL));
+      let(&tmpStr, cat(tmpStr, " ",defaultCmd, NULL));
     }
-    let(&tmpStr,cat(tmpStr,"? ",NULL));
+    let(&tmpStr, cat(tmpStr, "? ", NULL));
     queryMode = 1;
     if (possCmds != 1) {
       tmpArg = cmdInput1(tmpStr);
     } else {
       /* There is only one possibility, so don't ask user */
       /* Don't print the message when "end-of-list" is the only possibility. */
-      if (!strcmp(cmdList,"$|<$>")) {
+      if (!strcmp(cmdList, "$|<$>")) {
         let(&tmpArg, possCmd[0]);
         print2("The command so far is:  ");
         for (i = 0; i < arg; i++) {
@@ -1964,7 +1986,7 @@ flag getFullArg(long arg, vstring cmdList1)
       let(&tmpArg, seg(defaultCmd,2,len(defaultCmd) - 1));
     }
 
-    if (strcmp(tmpArg,"nothing")) {
+    if (strcmp(tmpArg, "nothing")) {
       pntrLet(&rawArgPntr, pntrAddElement(rawArgPntr));
       nmbrLet(&rawArgNmbr, nmbrAddElement(rawArgNmbr, 0));
       rawArgs++;
@@ -1986,7 +2008,7 @@ flag getFullArg(long arg, vstring cmdList1)
   j = 0;
   k = 0;
   m = len(tmpArg);
-  let(&tmpStr,"");
+  let(&tmpStr, "");
   /* Scan the possible arguments for a match */
   for (i = 0; i < possCmds; i++) {
     if (!strcmp(possCmd[i], tmpArg)) {
@@ -2011,14 +2033,14 @@ flag getFullArg(long arg, vstring cmdList1)
       let(&tmpStr, cat("?Expected ", infoStr, ".", NULL));
     } else {
       if (k == 2) {
-        p = instr(1,tmpStr,",");
-        let(&tmpStr,cat(left(tmpStr,p-1)," or",right(tmpStr,p+1),NULL));
+        p = instr(1,tmpStr, ", ");
+        let(&tmpStr, cat(left(tmpStr,p-1), " or",right(tmpStr,p+1), NULL));
       } else {
         p = len(tmpStr) - 1;
         while (tmpStr[p] != ',') p--;
-        let(&tmpStr,cat(left(tmpStr,p+1)," or",right(tmpStr,p+2),NULL));
+        let(&tmpStr, cat(left(tmpStr,p+1), " or",right(tmpStr,p+2), NULL));
       }
-      let(&tmpStr, cat("?Ambiguous keyword - please specify ",tmpStr,".",NULL));
+      let(&tmpStr, cat("?Ambiguous keyword - please specify ",tmpStr, ".", NULL));
     }
     printCommandError(errorLine, arg, tmpStr);
     goto return0;
@@ -2043,29 +2065,29 @@ flag getFullArg(long arg, vstring cmdList1)
 
   /* Deallocate memory */
   j = pntrLen(possCmd);
-  for (i = 0; i < j; i++) let((vstring *)(&possCmd[i]),"");
+  for (i = 0; i < j; i++) let((vstring *)(&possCmd[i]), "");
   pntrLet(&possCmd, NULL_PNTRSTRING);
-  let(&defaultCmd,"");
-  let(&infoStr,"");
-  let(&tmpStr,"");
-  let(&tmpArg,"");
-  let(&errorLine,"");
-  let(&keyword,"");
-  let(&cmdList,"");
+  let(&defaultCmd, "");
+  let(&infoStr, "");
+  let(&tmpStr, "");
+  let(&tmpArg, "");
+  let(&errorLine, "");
+  let(&keyword, "");
+  let(&cmdList, "");
   return(1);
 
  return0:
   /* Deallocate memory */
   j = pntrLen(possCmd);
-  for (i = 0; i < j; i++) let((vstring *)(&possCmd[i]),"");
+  for (i = 0; i < j; i++) let((vstring *)(&possCmd[i]), "");
   pntrLet(&possCmd, NULL_PNTRSTRING);
-  let(&defaultCmd,"");
-  let(&infoStr,"");
-  let(&tmpStr,"");
-  let(&tmpArg,"");
-  let(&errorLine,"");
-  let(&keyword,"");
-  let(&cmdList,"");
+  let(&defaultCmd, "");
+  let(&infoStr, "");
+  let(&tmpStr, "");
+  let(&tmpArg, "");
+  let(&errorLine, "");
+  let(&keyword, "");
+  let(&cmdList, "");
   return(0);
 
 } /* getFullArg */
@@ -2136,7 +2158,7 @@ void parseCommandLine(vstring line)
         pntrLet(&rawArgPntr, pntrAddElement(rawArgPntr));
         nmbrLet(&rawArgNmbr, nmbrAddElement(rawArgNmbr, p+1));
                                                           /* Save token start */
-        let((vstring *)(&rawArgPntr[rawArgs]),chr(line[p]));
+        let((vstring *)(&rawArgPntr[rawArgs]), chr(line[p]));
         rawArgs++;
         continue;
       }
@@ -2162,7 +2184,7 @@ void parseCommandLine(vstring line)
         pntrLet(&rawArgPntr, pntrAddElement(rawArgPntr));
         nmbrLet(&rawArgNmbr, nmbrAddElement(rawArgNmbr, tokenStart));
                                                           /* Save token start */
-        let((vstring *)(&rawArgPntr[rawArgs]), seg(line,tokenStart,p));
+        let((vstring *)(&rawArgPntr[rawArgs]), seg(line, tokenStart, p));
         rawArgs++;
         mode = 0;
         continue;
@@ -2183,12 +2205,12 @@ void parseCommandLine(vstring line)
         pntrLet(&rawArgPntr, pntrAddElement(rawArgPntr));
         nmbrLet(&rawArgNmbr, nmbrAddElement(rawArgNmbr, tokenStart));
                                                           /* Save token start */
-        let((vstring *)(&rawArgPntr[rawArgs]),seg(line,tokenStart,p));
+        let((vstring *)(&rawArgPntr[rawArgs]),seg(line, tokenStart, p));
         rawArgs++;
         pntrLet(&rawArgPntr, pntrAddElement(rawArgPntr));
         nmbrLet(&rawArgNmbr, nmbrAddElement(rawArgNmbr, p + 1));
                                                           /* Save token start */
-        let((vstring *)(&rawArgPntr[rawArgs]),chr(line[p]));
+        let((vstring *)(&rawArgPntr[rawArgs]), chr(line[p]));
         rawArgs++;
         mode = 0;
         continue;
@@ -2198,7 +2220,7 @@ void parseCommandLine(vstring line)
         pntrLet(&rawArgPntr, pntrAddElement(rawArgPntr));
         nmbrLet(&rawArgNmbr, nmbrAddElement(rawArgNmbr, tokenStart));
                                                           /* Save token start */
-        let((vstring *)(&rawArgPntr[rawArgs]),seg(line,tokenStart,p));
+        let((vstring *)(&rawArgPntr[rawArgs]),seg(line, tokenStart,p));
         rawArgs++;
         mode = 2;
         tokenStart = p + 2;
@@ -2208,7 +2230,7 @@ void parseCommandLine(vstring line)
         pntrLet(&rawArgPntr, pntrAddElement(rawArgPntr));
         nmbrLet(&rawArgNmbr, nmbrAddElement(rawArgNmbr, tokenStart));
                                                           /* Save token start */
-        let((vstring *)(&rawArgPntr[rawArgs]),seg(line,tokenStart,p));
+        let((vstring *)(&rawArgPntr[rawArgs]),seg(line, tokenStart,p));
         rawArgs++;
         mode = 3;
         tokenStart = p + 2;
@@ -2233,7 +2255,7 @@ void parseCommandLine(vstring line)
         pntrLet(&rawArgPntr, pntrAddElement(rawArgPntr));
         nmbrLet(&rawArgNmbr, nmbrAddElement(rawArgNmbr, tokenStart));
                                                           /* Save token start */
-        let((vstring *)(&rawArgPntr[rawArgs]),seg(line,tokenStart,p));
+        let((vstring *)(&rawArgPntr[rawArgs]),seg(line, tokenStart,p));
         rawArgs++;
         continue;
       }
@@ -2265,7 +2287,7 @@ void parseCommandLine(vstring line)
 flag lastArgMatches(vstring argString)
 {
   /* This functions checks to see if the last field was argString */
-  if (!strcmp(argString,fullArg[pntrLen(fullArg)-1])) {
+  if (!strcmp(argString, fullArg[pntrLen(fullArg)-1])) {
     return (1);
   } else {
     return (0);
@@ -2288,16 +2310,16 @@ flag cmdMatches(vstring cmdString)
   for (i = 0; i <= j; i++) {
     if (j >= k) {
       /* Command to match is longer than the user's command; assume no match */
-      let(&tmpStr,"");
+      let(&tmpStr, "");
       return (0);
     }
-    let(&tmpStr,cat(tmpStr," ",fullArg[i],NULL));
+    let(&tmpStr, cat(tmpStr, " ", fullArg[i], NULL));
   }
-  if (!strcmp(cat(" ",cmdString,NULL),tmpStr)) {
-    let(&tmpStr,"");
+  if (!strcmp(cat(" ", cmdString, NULL), tmpStr)) {
+    let(&tmpStr, "");
     return (1);
   } else {
-    let(&tmpStr,"");
+    let(&tmpStr, "");
     return (0);
   }
 } /* cmdMatches */
@@ -2322,7 +2344,7 @@ long switchPos(vstring swString)
 
   /* Add a space after the "/" if there is none */
   if (swString[1] != ' ') {
-    let(&swString1,cat("/ ",right(swString,2)," ",NULL));
+    let(&swString1, cat("/ ", right(swString,2), " ", NULL));
   } else {
     let(&swString1,swString);
   }
@@ -2330,13 +2352,13 @@ long switchPos(vstring swString)
   /* Build the complete command */
   k = pntrLen(fullArg);
   for (i = 0; i < k; i++) {
-    let(&tmpStr, cat(tmpStr,fullArg[i]," ",NULL));
+    let(&tmpStr, cat(tmpStr,fullArg[i], " ", NULL));
   }
 
   k = instr(1,tmpStr,swString1);
   if (!k) {
-    let(&swString1,"");
-    let(&tmpStr,"");
+    let(&swString1, "");
+    let(&tmpStr, "");
     return (0);
   }
 
@@ -2347,8 +2369,8 @@ long switchPos(vstring swString)
   for (i = 0; i < k; i++) {
     if (tmpStr[i] == ' ') j++;
   }
-  let(&tmpStr,"");
-  let(&swString1,"");
+  let(&tmpStr, "");
+  let(&swString1, "");
   return (j + 1);
 } /* switchPos */
 
@@ -2376,7 +2398,7 @@ void printCommandError(vstring line1, long arg, vstring errorMsg)
        that the error pointer lines up correctly */
     if (j >= len(line)) bug(1109);
     if (line[j] == '\t') {
-      let(&errorPointer,cat(errorPointer, "\t", NULL));
+      let(&errorPointer, cat(errorPointer, "\t", NULL));
     } else {
       if (line[j] == '\n') {
         let(&errorPointer, "");
@@ -2386,7 +2408,7 @@ void printCommandError(vstring line1, long arg, vstring errorMsg)
     }
   }
   for (j = 0; j < tokenLength; j++)
-    let(&errorPointer,cat(errorPointer, "^", NULL));
+    let(&errorPointer, cat(errorPointer, "^", NULL));
   print2("%s\n", errorPointer);
   printLongLine(errorMsg, "", " ");
   let(&errorPointer, "");

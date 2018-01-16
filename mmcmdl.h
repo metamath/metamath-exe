@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2018  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -39,5 +39,11 @@ extern flag proofChanged; /* Flag that user made some change to proof in
                              progress*/
 extern flag commandEcho; /* Echo full command */
 extern flag memoryStatus; /* Always show memory */
+
+/* 31-Dec-2017 nm */
+extern flag sourceHasBeenRead; /* 1 if a source file has been read in */
+/* 31-Dec-2017 nm */
+extern vstring rootDirectory; /* Directory to use for included files */
+
 
 #endif /* METAMATH_MMCMDL_H_ */

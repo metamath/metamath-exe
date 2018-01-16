@@ -2349,7 +2349,8 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
               print2("Reading HTML bibliographic tags from file \"%s\"...\n",
                   bibFileName);
             }
-            bibFileContents = readFileToString(bibFileName, 0);
+            bibFileContents = readFileToString(bibFileName, 0,
+                &i /* charCount; not used here */); /* 31-Dec-2017 nm */
             if (!bibFileContents) {
               /* The file was not found or had some problem (use verbose mode = 1
                  in 2nd argument of readFileToString for debugging). */
@@ -3521,7 +3522,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
         /* 8-May-2015 nm */
         cat("mmtheorems", (page > 0) ? str((double)page) : "", ".html", NULL));
     print2("Creating %s\n", outputFileName);
-    outputFilePtr = fSafeOpen(outputFileName, "w");
+    outputFilePtr = fSafeOpen(outputFileName, "w", 0/*noVersioningFlag*/);
     if (!outputFilePtr) goto TL_ABORT; /* Couldn't open it (error msg was provided)*/
 
     /* Output header */
@@ -5766,7 +5767,7 @@ flag writeBibliography(vstring bibFile,
   warnFlag = 0; /* 1 means warning was found, 2 that error was found */
   errFlag = 0; /* Error flag to recover input file and to set return value 2 */
   if (noFileCheck == 0) {
-    list1_fp = fSafeOpen(bibFile, "r");
+    list1_fp = fSafeOpen(bibFile, "r", 0/*noVersioningFlag*/);
     if (list1_fp == NULL) {
       /* Couldn't open it (error msg was provided)*/
       return 1;
@@ -5774,7 +5775,7 @@ flag writeBibliography(vstring bibFile,
     if (errorsOnly == 0) {
       fclose(list1_fp);
       /* This will rename the input mmbiblio.html as mmbiblio.html~1 */
-      list2_fp = fSafeOpen(bibFile, "w");
+      list2_fp = fSafeOpen(bibFile, "w", 0/*noVersioningFlag*/);
       if (list2_fp == NULL) {
           /* Couldn't open it (error msg was provided)*/
         return 1;
@@ -5783,7 +5784,7 @@ flag writeBibliography(vstring bibFile,
          don't support VAX or THINK C anymore...  Anyway we reopen it
          here with the renamed file in case the OS won't let us rename
          an opened file during the fSafeOpen for write above. */
-      list1_fp = fSafeOpen(cat(bibFile, "~1", NULL), "r");
+      list1_fp = fSafeOpen(cat(bibFile, "~1", NULL), "r", 0/*noVersioningFlag*/);
       if (list1_fp == NULL) bug(2337);
     }
   }

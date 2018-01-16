@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2018  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -54,7 +54,7 @@ long maxMathTokenLength = 0;
 
 struct includeCall_struct *includeCall = NULL; /* 4-May-2017 Ari Ferrera
                                                             - added "= NULL" */
-long includeCalls = 0;
+long includeCalls = -1;  /* For eraseSouce() in mmcmds.c */
 
 char *sourcePtr = NULL; /* 4-May-2017 Ari Ferrera - added "= NULL" */
 long sourceLen;
@@ -520,9 +520,9 @@ void bug(int bugNum)
     print2(
   "along with the source file that was used.  See HELP LOG for help on\n");
     print2(
-  "recording a session.  See HELP SUBMIT for help on command files. Search\n");
+  "recording a session.  See HELP SUBMIT for help on command files.  Search\n");
     print2(
-  "for \"bug(<bug#>)\" in the m*.c source code to find its origin.\n");
+  "for \"bug(%ld)\" in the m*.c source code to find its origin.\n", bugNum);
     print2("\n");
   }
 

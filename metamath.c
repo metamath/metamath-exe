@@ -1,16 +1,34 @@
 /*****************************************************************************/
 /* Program name:  metamath                                                   */
-/* Copyright (C) 2017 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
+/* Copyright (C) 2018 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
 /* License terms:  GNU General Public License Version 2 or any later version */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
 /* Contributors:  In the future the license may be changed to the MIT license
    or public domain.  Therefore any patches that are contributed should be
-   free of any copyright restrictions (i.e. public domain) in order to provide
+   free of copyright restrictions (i.e. public domain) in order to provide
    this flexibility.  Thank you. - NM */
 
-#define MVERSION "0.156 8-Dec-2017"
+/* This program should compile without warnings using:
+     gcc m*.c -o metamath -O2 -Wall -Wextra -Wmissing-prototypes \
+         -Wmissing-declarations -Wshadow -Wpointer-arith -Wcast-align \
+         -Wredundant-decls -Wnested-externs -Winline -Wno-long-long \
+         -Wconversion -Wstrict-prototypes -ansi -pedantic -Wunused-result
+   For faster runtime, use:
+     gcc m*.c -o metamath -O3 -funroll-loops -finline-functions \
+         -fomit-frame-pointer -Wall -ansi -pedantic  -fno-strict-overflow
+   With the lcc compiler on Windows, use:
+     lc -O m*.c -o metamath.exe
+*/
+
+#define MVERSION "0.157 15-Jan-2018"
+/* 0.157 15-Jan-2018 nm Major rewrite of READ-related functions
+   9-Jan-2018 nm Track line numbers for error messages in included files
+   1-Jan-2018 nm Changed HOME_DIRECTORY to ROOT_DIRECTORY
+   31-Dec-2017 nm metamath.c mmcmdl.c,h mmpars.c,h mmcmds.c,h mminou.c,h
+     mmwtex.c mmhlpb.c mmdata.h - add virtual includes "$( Begin $[...$] $)",
+     $( End $[...$] $)", "$( Skip $[...$] $)" */
 /* 0.156 8-Dec-2017 nm mmwtex.c - fix bug that incorrectly gave "verify markup"
    errors when there was a mathbox statement without an "extended" section */
 /* 0.155 8-Oct-2017 nm mmcmdl.c - restore accidentally removed HELP HTML;
@@ -903,6 +921,39 @@ void command(int argc, char *argv[])
             /* Put quotes so / won't be interpreted as qualifier separator */
             let(&commandLine, cat("READ \"", commandLine, "\"", NULL));
           }
+
+          /***** 3-Jan-2017 nm  This is now done with SET ROOT_DIRECTORY
+          /@ 31-Dec-2017 nm @/
+          /@ This block of code can be removed without side effects @/
+          /@ "Hidden" hack for NM's convenience. :)  If there is an =, change
+             it to space.  This lets users invoke with "metamath set.mm/h=test"
+             or "metamath mbox/aa.mm/home=test" to specify an implicit read with
+             /ROOT_DIRECTORY without having a space in the argument (a space
+             means don't assume a read command). @/
+          i = instr(1, commandLine, "=");
+          if (i != 0) {
+            /@ Change 'READ "set.mm/h=test"' to 'READ "set.mm" / "h" "test"' @/
+            let(&commandLine, cat(left(commandLine, i - 1), "\" \"",
+                right(commandLine, i + 1), NULL));
+            while (i > 0) {
+              if (commandLine[i - 1] == '/') {
+                let(&commandLine, cat(left(commandLine, i - 1),
+                    "\" / \"", right(commandLine, i + 1), NULL));
+                break;
+              }
+              i--;
+            }
+            /@ Change ' to " to prevent mismatched quotes @/
+            i = (long)strlen(commandLine);
+            while (i > 0) {
+              if (commandLine[i - 1] == '\'') {
+                commandLine[i - 1] = '"';
+              }
+              i--;
+            }
+          } /@ if i != 0 (end of 31-Dec-2017 NM hack) @/
+          */
+
         }
       }
       print2("%s\n", cat(commandPrompt, commandLine, NULL));
@@ -1161,7 +1212,8 @@ void command(int argc, char *argv[])
         printf("?The SUBMIT nesting level has been exceeded.\n");
         continue;
       }
-      commandFilePtr[commandFileNestingLevel + 1] = fSafeOpen(fullArg[1], "r");
+      commandFilePtr[commandFileNestingLevel + 1] = fSafeOpen(fullArg[1], "r",
+          0/*noVersioningFlag*/);
       if (!commandFilePtr[commandFileNestingLevel + 1]) continue;
                                       /* Couldn't open (err msg was provided) */
       commandFileNestingLevel++;
@@ -1211,7 +1263,7 @@ void command(int argc, char *argv[])
       else if (cmdMatches("RIGHT")) cmdMode = RIGHT_MODE;
       else if (cmdMatches("TAG")) cmdMode = TAG_MODE;
       if (cmdMode) {
-        list1_fp = fSafeOpen(fullArg[1], "r");
+        list1_fp = fSafeOpen(fullArg[1], "r", 0/*noVersioningFlag*/);
         if (!list1_fp) continue; /* Couldn't open it (error msg was provided) */
         if (cmdMode == RIGHT_MODE) {
           /* Find the longest line */
@@ -1228,7 +1280,7 @@ void command(int argc, char *argv[])
         }
         let(&list2_ftmpname, "");
         list2_ftmpname = fGetTmpName("zz~tools");
-        list2_fp = fSafeOpen(list2_ftmpname, "w");
+        list2_fp = fSafeOpen(list2_ftmpname, "w", 0/*noVersioningFlag*/);
         if (!list2_fp) continue; /* Couldn't open it (error msg was provided) */
         lines = 0;
         changedLines = 0;
@@ -1568,7 +1620,7 @@ void command(int argc, char *argv[])
       else if (cmdMatches("UNIQUE")) cmdMode = UNIQUE_MODE;
       else if (cmdMatches("REVERSE")) cmdMode = REVERSE_MODE;
       if (cmdMode) {
-        list1_fp = fSafeOpen(fullArg[1], "r");
+        list1_fp = fSafeOpen(fullArg[1], "r", 0/*noVersioningFlag*/);
         if (!list1_fp) continue; /* Couldn't open it (error msg was provided) */
         let(&list2_fname, fullArg[1]);
         if (list2_fname[strlen(list2_fname) - 2] == '~') {
@@ -1577,7 +1629,7 @@ void command(int argc, char *argv[])
         }
         let(&list2_ftmpname, "");
         list2_ftmpname = fGetTmpName("zz~tools");
-        list2_fp = fSafeOpen(list2_ftmpname, "w");
+        list2_fp = fSafeOpen(list2_ftmpname, "w", 0/*noVersioningFlag*/);
         if (!list2_fp) continue; /* Couldn't open it (error msg was provided) */
 
         /* Count the lines */
@@ -1589,7 +1641,7 @@ void command(int argc, char *argv[])
 
         /* Close and reopen the input file */
         fclose(list1_fp);
-        list1_fp = fSafeOpen(fullArg[1], "r");
+        list1_fp = fSafeOpen(fullArg[1], "r", 0/*noVersioningFlag*/);
         /* Allocate memory */
         pntrLet(&pntrTmp, pntrSpace(lines));
         /* Assign the lines to string array */
@@ -1691,13 +1743,13 @@ void command(int argc, char *argv[])
       } /* end if cmdMode for SORT, etc. */
 
       if (cmdMatches("PARALLEL")) {
-        list1_fp = fSafeOpen(fullArg[1], "r");
-        list2_fp = fSafeOpen(fullArg[2], "r");
+        list1_fp = fSafeOpen(fullArg[1], "r", 0/*noVersioningFlag*/);
+        list2_fp = fSafeOpen(fullArg[2], "r", 0/*noVersioningFlag*/);
         if (!list1_fp) continue; /* Couldn't open it (error msg was provided) */
         if (!list2_fp) continue; /* Couldn't open it (error msg was provided) */
         let(&list3_ftmpname, "");
         list3_ftmpname = fGetTmpName("zz~tools");
-        list3_fp = fSafeOpen(list3_ftmpname, "w");
+        list3_fp = fSafeOpen(list3_ftmpname, "w", 0/*noVersioningFlag*/);
         if (!list3_fp) continue; /* Couldn't open it (error msg was provided) */
 
         p1 = 1; p2 = 1; /* not eof */
@@ -1747,7 +1799,7 @@ void command(int argc, char *argv[])
 
 
       if (cmdMatches("NUMBER")) {
-        list1_fp = fSafeOpen(fullArg[1], "w");
+        list1_fp = fSafeOpen(fullArg[1], "w", 0/*noVersioningFlag*/);
         if (!list1_fp) continue; /* Couldn't open it (error msg was provided) */
         j = (long)strlen(str(val(fullArg[2])));
         k = (long)strlen(str(val(fullArg[3])));
@@ -1762,7 +1814,7 @@ void command(int argc, char *argv[])
       }
 
       if (cmdMatches("COUNT")) {
-        list1_fp = fSafeOpen(fullArg[1], "r");
+        list1_fp = fSafeOpen(fullArg[1], "r", 0/*noVersioningFlag*/);
         if (!list1_fp) continue; /* Couldn't open it (error msg was provided) */
         p1 = 0;
         p2 = 0;
@@ -1823,7 +1875,7 @@ void command(int argc, char *argv[])
       }
 
       if (cmdMatches("TYPE") || cmdMatches("T")) {
-        list1_fp = fSafeOpen(fullArg[1], "r");
+        list1_fp = fSafeOpen(fullArg[1], "r", 0/*noVersioningFlag*/);
         if (!list1_fp) continue; /* Couldn't open it (error msg was provided) */
         if (rawArgs == 2) {
           n = 10;
@@ -1844,8 +1896,8 @@ void command(int argc, char *argv[])
       } /* end TYPE */
 
       if (cmdMatches("UPDATE")) {
-        list1_fp = fSafeOpen(fullArg[1], "r");
-        list2_fp = fSafeOpen(fullArg[2], "r");
+        list1_fp = fSafeOpen(fullArg[1], "r", 0/*noVersioningFlag*/);
+        list2_fp = fSafeOpen(fullArg[2], "r", 0/*noVersioningFlag*/);
         if (!list1_fp) continue; /* Couldn't open it (error msg was provided) */
         if (!list2_fp) continue; /* Couldn't open it (error msg was provided) */
         if (!getRevision(fullArg[4])) {
@@ -1855,7 +1907,7 @@ void command(int argc, char *argv[])
         }
         let(&list3_ftmpname, "");
         list3_ftmpname = fGetTmpName("zz~tools");
-        list3_fp = fSafeOpen(list3_ftmpname, "w");
+        list3_fp = fSafeOpen(list3_ftmpname, "w", 0/*noVersioningFlag*/);
         if (!list3_fp) continue; /* Couldn't open it (error msg was provided) */
 
         revise(list1_fp, list2_fp, list3_fp, fullArg[4],
@@ -1868,7 +1920,7 @@ void command(int argc, char *argv[])
       if (cmdMatches("COPY") || cmdMatches("C")) {
         let(&list2_ftmpname, "");
         list2_ftmpname = fGetTmpName("zz~tools");
-        list2_fp = fSafeOpen(list2_ftmpname, "w");
+        list2_fp = fSafeOpen(list2_ftmpname, "w", 0/*noVersioningFlag*/);
         if (!list2_fp) continue; /* Couldn't open it (error msg was provided) */
         let(&str4, cat(fullArg[1], ",", NULL));
         lines = 0;
@@ -1878,7 +1930,7 @@ void command(int argc, char *argv[])
           p = instr(1, str4, ",");
           let(&str3, left(str4, p - 1));
           let(&str4, right(str4, p + 1));
-          list1_fp = fSafeOpen((str3), "r");
+          list1_fp = fSafeOpen((str3), "r", 0/*noVersioningFlag*/);
           if (!list1_fp) { /* Couldn't open it (error msg was provided) */
             j = 1; /* Error flag */
             break;
@@ -1912,7 +1964,11 @@ void command(int argc, char *argv[])
     }
 
     if (cmdMatches("READ")) {
-      if (statements) {
+      /*if (statements) {*/
+      /* 31-Dec-2017 nm */
+      /* We can't use 'statements > 0' for the test since the source
+         could be just a comment */
+      if (sourceHasBeenRead == 1) {
         printLongLine(cat(
             "?Sorry, reading of more than one source file is not allowed.  ",
             "The file \"", input_fn, "\" has already been READ in.  ",
@@ -1923,12 +1979,46 @@ void command(int argc, char *argv[])
             NULL),"  "," ");
         continue;
       }
-      let(&input_fn, fullArg[1]);
-      input_fp = fSafeOpen(input_fn, "r");
-      if (!input_fp) continue; /* Couldn't open it (error msg was provided) */
 
+      let(&input_fn, fullArg[1]);
+
+      /***** 3-Jan-2017 nm  This is now done with SET ROOT_DIRECTORY
+      /@ 31-Dec-2017 nm - Added ROOT_DIRECTORY switch @/
+      /@ TODO - remove this and just use SET ROOT_DIRECTORY instead @/
+      i = switchPos("/ ROOT_DIRECTORY"); /@ Statement match to skip @/
+      if (i != 0) {
+        let(&rootDirectory, edit(fullArg[i + 1], 2/@discard spaces,tabs@/));
+        if (rootDirectory[0] != 0) {  /@ Not an empty directory path @/
+          /@ Add trailing "/" to rootDirectory if missing @/
+          if (instr(1, rootDirectory, "\\") != 0
+              || instr(1, input_fn, "\\") != 0 ) {
+            /@ Using Windows-style path (not really supported, but at least
+               make full path consistent) @/
+            if (rootDirectory[strlen(rootDirectory) - 1] != '\\') {
+              let(&rootDirectory, cat(rootDirectory, "\\", NULL));
+            }
+          } else {
+            if (rootDirectory[strlen(rootDirectory) - 1] != '/') {
+              let(&rootDirectory, cat(rootDirectory, "/", NULL));
+            }
+          }
+        }
+      /@
+      } else {
+        let(&rootDirectory, "");
+      @/
+      }
+      */
+
+      let(&str1, cat(rootDirectory, input_fn, NULL));
+      input_fp = fSafeOpen(str1, "r", 0/*noVersioningFlag*/);
+      if (!input_fp) continue; /* Couldn't open it (error msg was provided
+                                     by fSafeOpen) */
       fclose(input_fp);
+
       readInput();
+      /*sourceHasBeenRead = 1;*/ /* Global variable - set in readInput() */
+
       if (switchPos("/ VERIFY")) {
         verifyProofs("*",1); /* Parse and verify */
       } else {
@@ -1960,6 +2050,7 @@ void command(int argc, char *argv[])
             /@ 5-Jan-04 mm@.html is reserved for mmtheorems.html, etc. @/
             !strcmp(",MM", left(str2, 3))) {
           print2("\n");
+          assignStmtFileAndLineNum(j); /@ 8-Jan-2018 nm @/
           printLongLine(cat("?Warning in statement \"",
               statement[i].labelName, "\" at line ",
               str((double)(statement[i].lineNum)),
@@ -1977,31 +2068,36 @@ void command(int argc, char *argv[])
       /@ 10/21/02 end @/
       */
 
-      if (!errorCount) {
-        let(&str1, "No errors were found.");
-        if (!switchPos("/ VERIFY")) {
-            let(&str1, cat(str1,
-       "  However, proofs were not checked.  Type VERIFY PROOF *",
-       " if you want to check them.",
-            NULL));
-        }
-        printLongLine(str1, "", " ");
-      } else {
-        print2("\n");
-        if (errorCount == 1) {
-          print2("One error was found.\n");
+      if (sourceHasBeenRead == 1) {  /* 6-Jan-2018 nm */
+        if (!errorCount) {
+          let(&str1, "No errors were found.");
+          if (!switchPos("/ VERIFY")) {
+              let(&str1, cat(str1,
+         "  However, proofs were not checked.  Type VERIFY PROOF *",
+         " if you want to check them.",
+              NULL));
+          }
+          printLongLine(str1, "", " ");
         } else {
-          print2("%ld errors were found.\n", (long)errorCount);
+          print2("\n");
+          if (errorCount == 1) {
+            print2("One error was found.\n");
+          } else {
+            print2("%ld errors were found.\n", (long)errorCount);
+          }
         }
-      }
+      } /* sourceHasBeenRead == 1 */
 
       continue;
     }
 
     if (cmdMatches("WRITE SOURCE")) {
       let(&output_fn, fullArg[2]);
-      output_fp = fSafeOpen(output_fn, "w");
-      if (!output_fp) continue; /* Couldn't open it (error msg was provided)*/
+
+      /********* Deleted 28-Dec-2013 nm Now opened in writeInput()
+      output_fp = fSafeOpen(output_fn, "w", 0/@noVersioningFlag@/);
+      if (!output_fp) continue; /@ Couldn't open it (error msg was provided)@/
+      ********/
 
       /******* Deleted 3-May-2017 nm
       /@ Added 24-Oct-03 nm @/
@@ -2029,9 +2125,42 @@ void command(int argc, char *argv[])
                                     since some new proofs may not be saved. @/
       ***********/
 
+
+      /***** 3-Jan-2017 nm  This is now done with SET ROOT_DIRECTORY
+      /@ 31-Dec-2017 nm - Added ROOT_DIRECTORY switch @/
+      /@ TODO - remove this qualifier; too confusing.
+         Use SET ROOT_DIRECTORY instead. @/
+      i = switchPos("/ ROOT_DIRECTORY"); /@ Statement match to skip @/
+      if (i != 0) {
+        let(&rootDirectory, edit(fullArg[i + 1], 2/@discard spaces,tabs@/));
+        /@ Add trailing "/" to rootDirectory if missing @/
+        if (instr(1, rootDirectory, "\\") != 0
+            || instr(1, input_fn, "\\") != 0 ) {
+          /@ Using Windows-style path (not really supported, but at least
+             make full path consistent) @/
+          if (rootDirectory[strlen(rootDirectory) - 1] != '\\') {
+            let(&rootDirectory, cat(rootDirectory, "\\", NULL));
+          }
+        } else {
+          if (rootDirectory[strlen(rootDirectory) - 1] != '/') {
+            let(&rootDirectory, cat(rootDirectory, "/", NULL));
+          }
+        }
+      /@
+      } else {
+        let(&rootDirectory, "");
+      @/
+      }
+      */
+
+
       /* 3-May-2017 nm */
-      writeInput((char)r); /* Added arg 12-Jun-2011 nm */
-      fclose(output_fp);
+      writeInput((char)r,  /* Added arg 12-Jun-2011 nm */
+        ((switchPos("/ SPLIT") > 0) ? 1 : 0),          /* 31-Dec-2017 nm */
+        ((switchPos("/ NO_VERSIONING") > 0) ? 1 : 0),  /* 31-Dec-2017 nm */
+        ((switchPos("/ KEEP_INCLUDES") > 0) ? 1 : 0)   /* 31-Dec-2017 nm */
+         );
+      /*fclose(output_fp);*/
       sourceChanged = 0;
 
       continue;
@@ -2168,14 +2297,14 @@ void command(int argc, char *argv[])
       }
 
       tmpFlag = 0; /* Error flag to recover input file */
-      list1_fp = fSafeOpen(fullArg[2], "r");
+      list1_fp = fSafeOpen(fullArg[2], "r", 0/*noVersioningFlag*/);
       if (list1_fp == NULL) {
         /* Couldn't open it (error msg was provided)*/
         continue;
       }
       fclose(list1_fp);
       /* This will rename the input mmrecent.html as mmrecent.html~1 */
-      list2_fp = fSafeOpen(fullArg[2], "w");
+      list2_fp = fSafeOpen(fullArg[2], "w", 0/*noVersioningFlag*/);
       if (list2_fp == NULL) {
           /* Couldn't open it (error msg was provided)*/
         continue;
@@ -2184,7 +2313,8 @@ void command(int argc, char *argv[])
          don't support VAX or THINK C anymore...  Anyway we reopen it
          here with the renamed file in case the OS won't let us rename
          an opened file during the fSafeOpen for write above. */
-      list1_fp = fSafeOpen(cat(fullArg[2], "~1", NULL), "r");
+      list1_fp = fSafeOpen(cat(fullArg[2], "~1", NULL), "r",
+          0/*noVersioningFlag*/);
       if (list1_fp == NULL) bug(1117);
 
       /* Transfer the input file up to the special "<!-- #START# -->" comment */
@@ -2773,7 +2903,7 @@ void command(int argc, char *argv[])
         }
         print2("Creating HTML file \"%s\"...\n", texFileName);
         if (switchPos("/ NO_VERSIONING") == 0) {
-          texFilePtr = fSafeOpen(texFileName, "w");
+          texFilePtr = fSafeOpen(texFileName, "w", 0/*noVersioningFlag*/);
         } else {
           /* 6-Jul-2008 nm Added / NO_VERSIONING */
           /* Don't create the backup versions ~1, ~2,... */
@@ -3131,7 +3261,7 @@ void command(int argc, char *argv[])
       }
 
       let(&texFileName,"mnemosyne.txt");
-      texFilePtr = fSafeOpen(texFileName, "w");
+      texFilePtr = fSafeOpen(texFileName, "w", 0/*noVersioningFlag*/);
       if (!texFilePtr) {
         /* Couldn't open file; error message was provided by fSafeOpen */
         continue;
@@ -3329,12 +3459,14 @@ void command(int argc, char *argv[])
       print2("(SET WIDTH...) Screen display WIDTH is %ld.\n", screenWidth);
       print2("(SET HEIGHT...) Screen display HEIGHT is %ld.\n",
           screenHeight + 1);
-      if (input_fn[0] != 0) {
+      if (sourceHasBeenRead == 1) {
         print2("(READ...) %ld statements have been read from \"%s\".\n",
-          statements, input_fn);
+            statements, input_fn);
       } else {
         print2("(READ...) No source file has been read in yet.\n");
       }
+      print2("(SET ROOT_DIRECTORY...) Root directory is \"%s\".\n",
+          rootDirectory);
       print2(
      "(SET DISCOURAGEMENT...) Blocking based on \"discouraged\" tags is %s.\n",
           (globalDiscouragement ? "ON" : "OFF"));
@@ -7225,6 +7357,35 @@ void command(int argc, char *argv[])
     }
 
 
+    /* 31-Dec-2017 nm */
+    if (cmdMatches("SET ROOT_DIRECTORY")) {
+      let(&str1, rootDirectory); /* Save previous one */
+      let(&rootDirectory, edit(fullArg[2], 2/*discard spaces,tabs*/));
+      if (rootDirectory[0] != 0) {  /* Not an empty directory path */
+        /* Add trailing "/" to rootDirectory if missing */
+        if (instr(1, rootDirectory, "\\") != 0
+            || instr(1, input_fn, "\\") != 0
+            || instr(1, output_fn, "\\") != 0 ) {
+          /* Using Windows-style path (not really supported, but at least
+             make full path consistent) */
+          if (rootDirectory[strlen(rootDirectory) - 1] != '\\') {
+            let(&rootDirectory, cat(rootDirectory, "\\", NULL));
+          }
+        } else {
+          if (rootDirectory[strlen(rootDirectory) - 1] != '/') {
+            let(&rootDirectory, cat(rootDirectory, "/", NULL));
+          }
+        }
+      }
+      if (strcmp(str1, rootDirectory)){
+        print2("Root directory was changed from \"%s\" to \"%s\"\n",
+            str1, rootDirectory);
+      }
+      let(&str1, "");
+      continue;
+    }
+
+
     /* 1-Nov-2013 nm Added UNDO */
     if (cmdMatches("SET UNDO")) {
       s = (long)val(fullArg[2]); /* Maximum UNDOs */
@@ -7259,7 +7420,7 @@ void command(int argc, char *argv[])
     if (cmdMatches("OPEN LOG")) {
         /* Open a log file */
         let(&logFileName, fullArg[2]);
-        logFilePtr = fSafeOpen(logFileName, "w");
+        logFilePtr = fSafeOpen(logFileName, "w", 0/*noVersioningFlag*/);
         if (!logFilePtr) continue; /* Couldn't open it (err msg was provided) */
         logFileOpenFlag = 1;
         print2("The log file \"%s\" was opened %s %s.\n",logFileName,
@@ -7322,7 +7483,7 @@ void command(int argc, char *argv[])
       } else {
         oldTexFlag = 0;
       }
-      texFilePtr = fSafeOpen(texFileName,"w");
+      texFilePtr = fSafeOpen(texFileName, "w", 0/*noVersioningFlag*/);
       if (!texFilePtr) continue; /* Couldn't open it (err msg was provided) */
       texFileOpenFlag = 1;
       /* 2-Oct-2017 nm OPEN HTML is obsolete */
@@ -7372,7 +7533,7 @@ void command(int argc, char *argv[])
 
     /* Similar to Unix 'more' */
     if (cmdMatches("MORE")) {
-      list1_fp = fSafeOpen(fullArg[1], "r");
+      list1_fp = fSafeOpen(fullArg[1], "r", 0/*noVersioningFlag*/);
       if (!list1_fp) continue; /* Couldn't open it (error msg was provided) */
       while (1) {
         if (!linput(list1_fp, NULL, &str1)) break; /* End of file */
@@ -7387,7 +7548,7 @@ void command(int argc, char *argv[])
     if (cmdMatches("FILE SEARCH")) {
       /* Search the contents of a file and type on the screen */
 
-      type_fp = fSafeOpen(fullArg[2], "r");
+      type_fp = fSafeOpen(fullArg[2], "r", 0/*noVersioningFlag*/);
       if (!type_fp) continue; /* Couldn't open it (error msg was provided) */
       fromLine = 0;
       toLine = 0;
@@ -7500,6 +7661,7 @@ void command(int argc, char *argv[])
         sourceChanged = 0;
       }
       eraseSource();
+      sourceHasBeenRead = 0; /* Global variable */ /* 31-Dec-2017 nm */
       showStatement = 0;
       proveStatement = 0;
       print2("Metamath has been reset to the starting state.\n");

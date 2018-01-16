@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2018  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -551,6 +551,20 @@ H("around <name> if it contains spaces.  The current contributor is");
 H("displayed by SHOW SETTINGS.");
 H("");
 
+/* 31-Dec-2017 nm */
+printHelp = !strcmp(saveHelpCmd, "HELP SET ROOT_DIRECTORY");
+H("Syntax:  SET ROOT_DIRECTORY <directory path>");
+H("");
+H("Specify the directory path (relative to the working directory i.e. the");
+H("directory from which the Metamath program was launched) which will be");
+H("prepended to READ, WRITE SOURCE, and files included with $[...$].");
+H("Enclose <directory path> in single or double quotes if the path contains");
+H("\"/\".  A trailing \"/\" will be added automatically if missing.  The");
+H("current directory path is displayed by SHOW SETTINGS.");
+H("");
+H("Use a quoted space (' ' or \" \") for <directory path> if you want to");
+H("reset it to be the working directory.");
+
 printHelp = !strcmp(saveHelpCmd, "HELP SET UNIFICATION_TIMEOUT");
 H("Syntax:  SET UNIFICATION_TIMEOUT <number>");
 H("");
@@ -647,6 +661,9 @@ H("ax4 and ax-4.  It verifies the date consistency of \"(Contributed by...)\",")
 H("\"(Revised by...)\", and \"(Proof shortened by...)\" tags in the comment");
 H("above each $a and $p statement.  See HELP SEARCH for <label-match> rules.");
 H("See HELP LANGUAGE, HELP HTML, and HELP SET DISCOURAGEMENT for markup syntax.");
+H("See also the 10-Mar-2016, 11-May-2016, 14-May-2017, and 21-Dec-2017 entries");
+H("in http://us.metamath.org/mpeuni/mmnotes.txt for further details on several");
+H("kinds of markup.");
 H("Optional qualifiers:");
 H("    / DATE_SKIP - This qualifier will skip date consistency checking,");
 H("        which is usually not required for databases other than set.mm");
@@ -722,7 +739,12 @@ H("");
 
 /* 3-May-2017 nm - removed CLEAN qualifier */
 printHelp = !strcmp(saveHelpCmd, "HELP WRITE SOURCE");
-H("Syntax:  WRITE SOURCE <filename> [/ FORMAT] [/ REWRAP]");
+H("Syntax:  WRITE SOURCE <filename> [/ FORMAT] [/ REWRAP] [/ SPLIT]");
+H("           [/ KEEP_INCLUDES] [/ NO_VERSIONING]");
+H("");
+H("This command will write the contents of a Metamath source (previously");
+H("read with READ) into a file");
+H("(or multiple files if / SPLIT is specified).");
 H("");
 H("Optional qualifiers:");
 H("    / FORMAT - Reformats statements and comments according to the");
@@ -738,10 +760,17 @@ H("        the original source.  The wrapped line length honors the");
 H("        SET WIDTH parameter currently in effect.  Note:  Text");
 H("        enclosed in <HTML>...</HTML> tags is not modified by the");
 H("        / REWRAP qualifier.");
-H("This command will write the contents of the Metamath database into a file.");
-H("Note:  The present version of Metamath will not split the database into");
-H("its constituent files included with $[ $] keywords.  Instead it will write");
-H("the entire database as one big file.");
+H("    / SPLIT - Files included in the source with $[ <inclfile> $] will be");
+H("        written out separately instead of included in a single output");
+H("        file.  The name of each separately written included file will be");
+H("        <inclfile> argument of its inclusion command.");
+H("    / KEEP_INCLUDES - If a source file has includes but is written as a");
+H("        single file by omitting / SPLIT, by default the included files will");
+H("        be deleted (actually just renamed with a ~1 suffix unless");
+H("        / NO_VERSIONING is specified) to prevent the possibly confusing");
+H("        source duplication in both the output file and the included file.");
+H("        The / KEEP_INCLUDES qualifier will prevent this deletion.");
+H("    / NO_VERSIONING - Backup files suffixed with ~1 are not created.");
 H("");
 
 printHelp = !strcmp(saveHelpCmd, "HELP WRITE THEOREM_LIST");

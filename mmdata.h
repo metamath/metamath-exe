@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2018  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -50,7 +50,11 @@ struct statement_struct { /* Array index is statement number, starting at 1 */
   char type;    /* 2nd character of keyword, e.g. 'e' for $e */
   int scope;    /* Block scope level, increased by ${ and decreased by ${ */
   long beginScopeStatementNum;  /* statement of last ${ */
-  vstring labelSectionPtr; /* Source code before statement keyword */
+  vstring statementPtr; /* Pointer to end of (unmodified) label section used
+             to determine file and line number for error or info messages about
+             the statement */
+  vstring labelSectionPtr; /* Source code before statement keyword
+                 - will be updated if labelSection changed */
   long labelSectionLen;
   /* 3-May-2017 nm Added labelSectionChanged */
   char labelSectionChanged; /* Default is 0; if 1, labelSectionPtr points to an
@@ -89,21 +93,21 @@ extern long *labelKey;
 
 struct includeCall_struct {
   /* This structure holds all information related to $[ $] (include) statements
-     in the input source files, for error message processing and for
-     writing out the source files. */
-  long bufOffset; /* Character offset in source buffer that the include
-                      applies to */
-  vstring current_fn;
-  long current_line;
-  vstring calledBy_fn;
-  long calledBy_line;
-  vstring includeSource; /* Source code with the include statement (the include
-                         statement is replaced by the included text; this
-                         is where the include statement itself is stored). */
-  long length; /* length of included file */
-  flag pushOrPop; /* 1 = start of include statement, 0 = end of it */
-  flag alreadyIncluded; /* 1 = this file has already been included; don't
-                           include it again. */
+     in the input source files, for error message processing. */
+  vstring source_fn;  /* Name of the file where the
+       inclusion source is located (= parent file for $( Begin $[... etc.) */
+  vstring included_fn;  /* Name of the file in the
+       inclusion statement e.g. "$( Begin $[ included_fn..." */
+  long current_offset;  /* This is the starting
+      character position of the included file w.r.t entire source buffer */
+  long current_line; /* The line number
+      of the start of the included file (=1) or the continuation line of
+      the parent file */
+  flag pushOrPop; /* 0 means included file, 1 means continuation of parent */
+  vstring current_includeSource; /* (Currently) assigned
+      only if we may need it for a later Begin comparison */
+  long current_includeLength; /* Length of the file
+      to be included (0 if the file was previously included) */
   };
 
 struct mathToken_struct {

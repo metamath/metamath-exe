@@ -54,7 +54,8 @@ flag commandFileSilent[MAX_COMMAND_FILE_NESTING + 1];
 flag commandFileSilentFlag = 0;
                                    /* 23-Oct-2006 nm For SUBMIT ... /SILENT */
 
-FILE *inputDef_fp,*input_fp,*output_fp; /* File pointers */
+FILE *inputDef_fp,*input_fp /*,*output_fp*/; /* File pointers */
+                             /* 31-Dec-2017 nm output_fp deleted */
 vstring inputDef_fn="",input_fn="",output_fn="";        /* File names */
 
 long screenWidth = MAX_LEN; /* Width default = 79 */
@@ -783,7 +784,7 @@ vstring cmdInput(FILE *stream, vstring ask)
       if (g[i - 1] != '\n') {
         /* Warning:  Don't call bug() - it calls print2 which may call this. */
         if (!feof(stream)) {
-          printf("***BUG #1524\n");
+          printf("***BUG #1525\n");
 #if __STDC__
           fflush(stdout);
 #endif
@@ -1028,11 +1029,13 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
   }
   if (lineNum) {
     let(&prntStr, cat(prntStr, " on line ", str((double)lineNum), NULL));
-    if (fileName)
+    if (fileName) {
       let(&prntStr, cat(prntStr, " of file \"", fileName, "\"", NULL));
+    }
   } else {
-    if (fileName)
+    if (fileName) {
       let(&prntStr, cat(prntStr, " in file \"", fileName, "\"", NULL));
+    }
   }
   if (statementNum) {
     let(&prntStr, cat(prntStr, " at statement ", str((double)statementNum), NULL));
@@ -1088,8 +1091,10 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
 
 
 /* Opens files with error message; opens output files with
-   backup of previous version.   Mode must be "r" or "w". */
-FILE *fSafeOpen(vstring fileName, vstring mode)
+   backup of previous version.   Mode must be "r" or "w" or "d" (delete). */
+/* 31-Dec-2017 nm Added "safe" delete */
+/* 31-Dec-2017 nm Added noVersioningFlag = don't create ~1 backup */
+FILE *fSafeOpen(vstring fileName, vstring mode, flag noVersioningFlag)
 {
   FILE *fp;
   vstring prefix = "";
@@ -1107,12 +1112,14 @@ FILE *fSafeOpen(vstring fileName, vstring mode)
     return (fp);
   }
 
-  if (!strcmp(mode, "w")) {
+  if (!strcmp(mode, "w")
+      || !strcmp(mode, "d")) {    /* 31-Dec-2017 */
     /* See if the file already exists. */
     fp = fopen(fileName, "r");
 
     if (fp) {
       fclose(fp);
+      if (noVersioningFlag) goto skip_backup; /* 31-Dec-2017 nm */
 
 #define VERSIONS 9
       /* The file exists.  Rename it. */
@@ -1188,7 +1195,7 @@ FILE *fSafeOpen(vstring fileName, vstring mode)
           if (!fp) continue;
           fclose(fp);
           let(&newBakName, cat(prefix, str((double)v + 1), postfix, NULL));
-          rename(bakName, newBakName);
+          rename(bakName/*old*/, newBakName/*new*/);
         }
 
       }
@@ -1201,11 +1208,20 @@ FILE *fSafeOpen(vstring fileName, vstring mode)
           bakName, "\".", NULL), "  ", " ");
       ***/
     } /* End if file already exists */
-   /*skip_backup:*/
+   skip_backup:
 
-    fp = fopen(fileName, "w");
-    if (!fp) {
-      print2("?Sorry, couldn't open the file \"%s\".\n", fileName);
+    if (!strcmp(mode, "w")) {
+      fp = fopen(fileName, "w");
+      if (!fp) {
+        print2("?Sorry, couldn't open the file \"%s\".\n", fileName);
+      }
+    } else {
+      /* 31-Dec-2017 nm */
+      /* For "safe" delete, we simply skip opening the file. */
+      if (strcmp(mode, "d")) {
+        bug(1526);
+      }
+      fp = NULL;
     }
 
     let(&prefix, "");
@@ -1214,7 +1230,7 @@ FILE *fSafeOpen(vstring fileName, vstring mode)
     let(&newBakName, "");
 
     return (fp);
-  } /* End if mode = "w" */
+  } /* End if mode = "w" or "d" */
 
   bug(1510); /* Illegal mode */
   return(NULL);
@@ -1230,7 +1246,7 @@ int fSafeRename(vstring oldFileName, vstring newFileName)
   int i;
   FILE *fp;
   /* Open the new file to force renaming of existing ones */
-  fp = fSafeOpen(newFileName, "w");
+  fp = fSafeOpen(newFileName, "w", 0/*noVersioningFlag*/);
   if (!fp) error = -1;
   /* Delete the file just created */
   if (!error) {
@@ -1306,10 +1322,11 @@ vstring fGetTmpName(vstring filePrefix)
    must deallocate the returned string.  If a NULL is returned, the file
    could not be opened or had a non-ASCII Unicode character or some other
    problem.   If verbose is 0, error and warning messages are suppressed. */
-vstring readFileToString(vstring fileName, char verbose) {
+/* 31-Dec-2017 nm Added charCount return arg */
+vstring readFileToString(vstring fileName, char verbose, long *charCount) {
   FILE *inputFp;
   long fileBufSize;
-  long charCount;
+  /*long charCount;*/ /* 31-Dec-2017 nm */
   char *fileBuf;
   long i, j;
 
@@ -1346,7 +1363,7 @@ vstring readFileToString(vstring fileName, char verbose) {
   }
 
   /* Put the entire input file into the buffer as a giant character string */
-  charCount = (long)fread(fileBuf, sizeof(char), (size_t)fileBufSize - 2,
+  (* charCount) = (long)fread(fileBuf, sizeof(char), (size_t)fileBufSize - 2,
       inputFp);
   if (!feof(inputFp)) {
     print2("Note:  This bug will occur if there is a disk file read error.\n");
@@ -1356,23 +1373,23 @@ vstring readFileToString(vstring fileName, char verbose) {
   }
   fclose(inputFp);
 
-  fileBuf[charCount] = 0;
+  fileBuf[(*charCount)] = 0;
 
   /* See if it's Unicode */
   /* This only handles the case where all chars are in the ASCII subset */
-  if (charCount > 1) {
+  if ((*charCount) > 1) {
     if (fileBuf[0] == '\377' && fileBuf[1] == '\376') {
       /* Yes, so strip out null high-order bytes */
-      if (2 * (charCount / 2) != charCount) {
+      if (2 * ((*charCount) / 2) != (*charCount)) {
         if (verbose) print2(
 "?Sorry, there are an odd number of characters (%ld) %s \"%s\".\n",
-            charCount, "in Unicode file", fileName);
+            (*charCount), "in Unicode file", fileName);
         free(fileBuf);
         return (NULL);
       }
       i = 0; /* ASCII character position */
       j = 2; /* Unicode character position */
-      while (j < charCount) {
+      while (j < (*charCount)) {
         if (fileBuf[j + 1] != 0) {
           if (verbose) print2(
               "?Sorry, the Unicode file \"%s\" %s %ld at byte %ld.\n",
@@ -1397,7 +1414,7 @@ vstring readFileToString(vstring fileName, char verbose) {
         j = j + 2;
       }
       fileBuf[i] = 0; /* ASCII string terminator */
-      charCount = i;
+      (*charCount) = i;
     }
   }
 
@@ -1409,7 +1426,7 @@ vstring readFileToString(vstring fileName, char verbose) {
     /* Clean up the file, e.g. DOS or Mac file on Unix */
     i = 0;
     j = 0;
-    while (j <= charCount) {
+    while (j <= (*charCount)) {
       if (fileBuf[j] == '\r') {
         if (fileBuf[j + 1] == '\n') {
           /* DOS file - skip '\r' */
@@ -1423,42 +1440,43 @@ vstring readFileToString(vstring fileName, char verbose) {
       i++;
       j++;
     }
-    charCount = i - 1; /* nm 6-Feb-04 */
+    (*charCount) = i - 1; /* nm 6-Feb-04 */
   }
 
   /* Make sure the last line is not a partial line */
-  if (fileBuf[charCount - 1] != '\n') {
+  if (fileBuf[(*charCount) - 1] != '\n') {
     if (verbose) print2(
         "?Warning: the last line in file \"%s\" is incomplete.\n",
         fileName);
     /* Add the end-of-line */
-    fileBuf[charCount] = '\n';
-    charCount++;
-    fileBuf[charCount] = 0;
+    fileBuf[(*charCount)] = '\n';
+    (*charCount)++;
+    fileBuf[(*charCount)] = 0;
   }
 
-  if (fileBuf[charCount] != 0) {  /* nm 6-Feb-04 */
+  if (fileBuf[(*charCount)] != 0) {  /* nm 6-Feb-04 */
     bug(1522); /* Keeping track of charCount went wrong somewhere */
   }
 
   /* Make sure there aren't null characters */
   i = (long)strlen(fileBuf);
-  if (charCount != i) {
+  if ((*charCount) != i) {
     if (verbose) {
       print2(
           "?Warning: the file \"%s\" is not an ASCII file.\n",
           fileName);
       print2(
           "Its size is %ld characters with null at character %ld.\n",
-          charCount, strlen(fileBuf));
+          (*charCount), strlen(fileBuf));
     }
   }
 /*E*/db = db + i;  /* For memory usage tracking (ignore stuff after null) */
 
   /******* For debugging
   print2("In binary mode the file has %ld bytes.\n", fileBufSize - 10);
-  print2("In text mode the file has %ld bytes.\n", charCount);
+  print2("In text mode the file has %ld bytes.\n", (*charCount));
   *******/
+
   return ((char *)fileBuf);
 } /* readFileToString */
 
