@@ -76,7 +76,7 @@ long rawTokenLen(char *ptr);
    ":" is considered a token. */
 long proofTokenLen(char *ptr);
 
-/* 5-Jan-2018 nm */
+/* 9-Jan-2018 nm */
 /* Counts the number of \n between start for length chars.
    If length = -1, then use end-of-string 0 to stop.
    If length >= 0, then scan at most length chars, but stop
@@ -184,7 +184,7 @@ void writeSplitSource(vstring *fileBuf, vstring fileName,
    to ~1) since their content will be in the main output file. */
 void deleteSplits(vstring *fileBuf, flag noVersioningFlag);
 
-/* 8-Jan-2018 nm */
+/* 9-Jan-2018 nm */
 /* Get file name and line number given a pointer into the read buffer */
 /* The user must deallocate the returned string (file name) */
 /* The globals includeCall structure and includeCalls are used */
@@ -192,7 +192,7 @@ vstring getFileAndLineNum(vstring buffPtr/*start of read buffer*/,
     vstring currentPtr/*place at which to get file name and line no*/,
     long *lineNum/*return argument*/);
 
-/* 8-Jan-2018 nm */
+/* 9-Jan-2018 nm */
 /* statement[stmtNum].fileName and .lineNum are initialized to "" and 0.
    To save CPU time, they aren't normally assigned until needed, but once
    assigned they can be reused without looking them up again.  This function

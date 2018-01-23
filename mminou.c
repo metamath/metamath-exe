@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2018  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -876,8 +876,8 @@ vstring cmdInput1(vstring ask)
   vstring ask1 = "";
   long p, i;
 
-  let(&ask1, ask); /* In case ask is temporarily allocated (i.e will become
-                      deallocated at next let() */
+  let(&ask1, ask); /* In case ask is temporarily allocated (i.e in case it
+                      will become deallocated at next let() */
   /* Look for lines too long */
   while ((signed)(strlen(ask1)) > screenWidth) {
     p = screenWidth - 1;
@@ -902,7 +902,7 @@ vstring cmdInput1(vstring ask)
 
   while (1) {
     if (commandFileNestingLevel == 0) {
-      commandLn = cmdInput(stdin,ask1);
+      commandLn = cmdInput(stdin, ask1);
       if (!commandLn) {
         commandLn = ""; /* Init vstring (was NULL) */
         /* 21-Feb-2010 nm Allow ^D to exit */
@@ -945,6 +945,12 @@ vstring cmdInput1(vstring ask)
 
     } else { /* Get line from SUBMIT file */
       commandLn = cmdInput(commandFilePtr[commandFileNestingLevel], NULL);
+
+      /* 22-Jan-2018 nm */
+      /* Tolerate CRs in SUBMIT files (e.g. created on Windows and
+         run on Linux) */
+      let(&commandLn, edit(commandLn, 8192/* remove CR */));
+
       if (!commandLn) { /* EOF found */
         fclose(commandFilePtr[commandFileNestingLevel]);
         print2("%s[End of command file \"%s\".]\n", ask1,

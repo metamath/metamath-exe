@@ -225,7 +225,7 @@ void parseKeywords(void)
   long dollarPCount = 0; /* For statistics only */
   long dollarACount = 0; /* For statistics only */
 
-  /*** 8-Jan-2018 nm Deleted
+  /*** 9-Jan-2018 nm Deleted
   /@ Variables needed for line number and file name @/
   long inclCallNum;
   char *nextInclPtr;
@@ -311,7 +311,7 @@ void parseKeywords(void)
     }
 
     if (tmpch != '$') {
-      /* 8-Jan-2018 nm Deleted - now computed by assignStmtFileAndLineNum() */
+      /* 9-Jan-2018 nm Deleted - now computed by assignStmtFileAndLineNum() */
       /* if (tmpch == '\n') lineNum++; */
       fbPtr++;
       continue;
@@ -380,7 +380,7 @@ void parseKeywords(void)
         }
         /* Initialize a new statement */
         statements++;
-        /*** 8-Jan-2018 nm Now assigned by assignStmtFileAndLineNum() as needed
+        /*** 9-Jan-2018 nm Now assigned by assignStmtFileAndLineNum() as needed
         statement[statements].lineNum = lineNum;
         statement[statements].fileName = fileName;
         ****/
@@ -391,7 +391,7 @@ void parseKeywords(void)
            assignStmtFileAndLineNum() to determine the "line number" for the
            statement as a whole */
         statement[statements].statementPtr = startSection
-            + statement[statements].labelSectionLen; /* 4-Jan-2018 nm */
+            + statement[statements].labelSectionLen; /* 9-Jan-2018 nm */
         startSection = fbPtr + 1;
         if (type != lb_ && type != rb_) mode = 1;
         continue;
@@ -451,7 +451,7 @@ void parseKeywords(void)
   /* statement[statements + 1].lineNum = lineNum - 1; */
   /* 10/14/02 Changed this to lineNum so mmwtex $t error msgs will be correct */
   /* Here, lineNum will be one plus the number of lines in the file */
-  /*** 8-Jan-2018 nm Now assigned by assignStmtFileAndLineNum() as needed
+  /*** 9-Jan-2018 nm Now assigned by assignStmtFileAndLineNum() as needed
   statement[statements].lineNum = lineNum;
   statement[statements].fileName = fileName;
   ****/
@@ -459,7 +459,7 @@ void parseKeywords(void)
   statement[statements + 1].labelSectionPtr = startSection;
   statement[statements + 1].labelSectionLen = fbPtr - startSection;
   /* Point to last character of file in case we ever need lineNum/fileName */
-  statement[statements + 1].statementPtr = fbPtr - 1; /* 4-Jan-2018 */
+  statement[statements + 1].statementPtr = fbPtr - 1; /* 9-Jan-2018 */
 
   /* 10/25/02 Initialize the pink number to print after the statement labels
    in HTML output. */
@@ -767,7 +767,7 @@ void parseMathDecl(void)
       fbPtr = statement[stmt].labelSectionPtr;
       k = whiteSpaceLen(fbPtr);
       j = tokenLen(fbPtr + k);
-      assignStmtFileAndLineNum(stmt); /* 8-Jan-2018 nm */
+      assignStmtFileAndLineNum(stmt); /* 9-Jan-2018 nm */
       sourceError(fbPtr + k, j, stmt, cat(
          "This label has the same name as the math token declared on line ",
          str((double)(statement[mathToken[i].statement].lineNum)), NULL));
@@ -1980,7 +1980,7 @@ void parseStatements(void)
                   cause memory violation by going out of bounds */
             if ((statement[n].mathString)[1] == tokenNum) {
               /* We found 2 $f's with the same variable */
-              assignStmtFileAndLineNum(n); /* 8-Jan-2018 nm */
+              assignStmtFileAndLineNum(n); /* 9-Jan-2018 nm */
               sourceError(statement[m].mathSectionPtr/*fbPtr*/,
                   0/*tokenLen*/,
                   m/*stmt*/, cat(
@@ -1988,8 +1988,8 @@ void parseStatements(void)
                 "\" already appears in the earlier active \"$f\" statement \"",
                   statement[n].labelName, "\" on line ",
                   str((double)(statement[n].lineNum)),
-                  " in file \"",           /* 8-Jan-2018 nm */
-                  statement[n].fileName,   /* 8-Jan-2018 nm */
+                  " in file \"",           /* 9-Jan-2018 nm */
+                  statement[n].fileName,   /* 9-Jan-2018 nm */
                   "\".", NULL));
               break; /* Optional: suppresses add'l error msgs for this stmt */
             }
@@ -2340,7 +2340,7 @@ char parseProof(long statemNum)
       j = *(long *)voidPtr; /* Statement number */
       if (j <= statemNum) {
         if (!wrkProof.errorCount) {
-          assignStmtFileAndLineNum(j); /* 8-Jan-2018 nm */
+          assignStmtFileAndLineNum(j); /* 9-Jan-2018 nm */
           sourceError(fbPtr, tokLength, statemNum,cat(
               "The local label at proof step ",
               str((double)(wrkProof.numSteps + 1)),
@@ -2365,7 +2365,7 @@ char parseProof(long statemNum)
     if (voidPtr) { /* It was found */
       j = ( (struct sortHypAndLoc *)voidPtr)->labelTokenNum; /* Statement number */
       if (!wrkProof.errorCount) {
-        assignStmtFileAndLineNum(j); /* 8-Jan-2018 nm */
+        assignStmtFileAndLineNum(j); /* 9-Jan-2018 nm */
         sourceError(fbPtr, tokLength, statemNum,cat(
             "The local label at proof step ",
             str((double)(wrkProof.numSteps + 1)),
@@ -2608,7 +2608,7 @@ char parseProof(long statemNum)
               " is the label of this statement.  A statement may not be used to",
               " prove itself.",NULL));
         } else {
-          assignStmtFileAndLineNum(j); /* 8-Jan-2018 nm */
+          assignStmtFileAndLineNum(j); /* 9-Jan-2018 nm */
           sourceError(fbPtr, tokLength, statemNum, cat(
               "The label \"", statement[j].labelName, "\" at proof step ",
               str((double)step + 1),
@@ -3300,7 +3300,7 @@ char parseCompressedProof(long statemNum)
              " is the label of this statement.  A statement may not be used to",
               " prove itself.",NULL));
         } else {
-          assignStmtFileAndLineNum(j); /* 8-Jan-2018 nm */
+          assignStmtFileAndLineNum(j); /* 9-Jan-2018 nm */
           sourceError(fbPtr, tokLength, statemNum, cat(
               "The label \"", statement[j].labelName, "\" at proof step ",
               str((double)step + 1),
@@ -3843,7 +3843,7 @@ void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
     goto SKIP_LINE_NUM;
   }
 
-  /* 8-Jan-2018 nm */
+  /* 9-Jan-2018 nm */
   /*let(&fileName, "");*/ /* No need - already assigned to empty string */
   fileName = getFileAndLineNum(locSourcePtr/*=sourcePtr here*/, ptr, &lineNum);
 
@@ -4207,7 +4207,7 @@ long proofTokenLen(char *ptr)
 }
 
 
-/* 5-Jan-2018 nm */
+/* 9-Jan-2018 nm */
 /* Counts the number of \n between start for length chars.
    If length = -1, then use end-of-string 0 to stop.
    If length >= 0, then scan at most length chars, but stop
@@ -5905,7 +5905,7 @@ vstring writeSourceToBuffer(void)
 } /* deleteSplits */
 
 
-/* 8-Jan-2018 nm */
+/* 9-Jan-2018 nm */
 /* Get file name and line number given a pointer into the read buffer */
 /* The user must deallocate the returned string (file name) */
 /* The globals includeCall structure and includeCalls are used */
@@ -5946,7 +5946,7 @@ vstring getFileAndLineNum(vstring buffPtr/*start of read buffer*/,
 } /* getFileAndLineNo */
 
 
-/* 8-Jan-2018 nm */
+/* 9-Jan-2018 nm */
 /* statement[stmtNum].fileName and .lineNum are initialized to "" and 0.
    To save CPU time, they aren't normally assigned until needed, but once
    assigned they can be reused without looking them up again.  This function

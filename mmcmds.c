@@ -83,7 +83,7 @@ void typeStatement(long showStmt,
   if (!showStmt) bug(225); /* Must be 1 or greater */
 
   if (!commentOnlyFlag && !briefFlag) {
-    assignStmtFileAndLineNum(showStmt); /* 8-Jan-2018 nm */
+    assignStmtFileAndLineNum(showStmt); /* 9-Jan-2018 nm */
     let(&str1, cat("Statement ", str((double)showStmt),
         " is located on line ", str((double)(statement[showStmt].lineNum)),
         " of the file ", NULL));
@@ -2983,7 +2983,7 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
   /* Next, build the output string */
   for (stmt = 1; stmt < statemNum; stmt++) {
     if (statementUsedFlags[stmt] == 'Y') {
-      assignStmtFileAndLineNum(stmt); /* 8-Jan-2018 nm */
+      assignStmtFileAndLineNum(stmt); /* 9-Jan-2018 nm */
       let(&str1, cat(" is located on line ",
           str((double)(statement[stmt].lineNum)),
           " of the file ", NULL));
@@ -4420,7 +4420,7 @@ void verifyMarkup(vstring labelMatch,
         /* 5-Jan-04 mm*.html is reserved for mmtheorems.html, etc. */
         !strcmp(",MM", left(str2, 3))) {
       print2("\n");
-      assignStmtFileAndLineNum(stmtNum); /* 8-Jan-2018 nm */
+      assignStmtFileAndLineNum(stmtNum); /* 9-Jan-2018 nm */
       printLongLine(cat("?Warning: in statement \"",
           statement[stmtNum].labelName, "\" at line ",
           str((double)(statement[stmtNum].lineNum)),
@@ -4442,7 +4442,7 @@ void verifyMarkup(vstring labelMatch,
           (statement[stmtNum].mathString)[0]].tokenName)) {
         let(&str1, left(statement[stmtNum].labelName, 3));
         if (strcmp("ax-", str1) && strcmp("df-", str1)) {
-          assignStmtFileAndLineNum(stmtNum); /* 8-Jan-2018 nm */
+          assignStmtFileAndLineNum(stmtNum); /* 9-Jan-2018 nm */
           printLongLine(cat("?Warning: in the $a statement \"",
               statement[stmtNum].labelName, "\" at line ",
               str((double)(statement[stmtNum].lineNum)),

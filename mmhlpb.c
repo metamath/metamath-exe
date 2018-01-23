@@ -660,10 +660,7 @@ H("\"ax\" and \"ax-\" respectively but are otherwise identical, for example");
 H("ax4 and ax-4.  It verifies the date consistency of \"(Contributed by...)\",");
 H("\"(Revised by...)\", and \"(Proof shortened by...)\" tags in the comment");
 H("above each $a and $p statement.  See HELP SEARCH for <label-match> rules.");
-H("See HELP LANGUAGE, HELP HTML, and HELP SET DISCOURAGEMENT for markup syntax.");
-H("See also the 10-Mar-2016, 11-May-2016, 14-May-2017, and 21-Dec-2017 entries");
-H("in http://us.metamath.org/mpeuni/mmnotes.txt for further details on several");
-H("kinds of markup.");
+H("");
 H("Optional qualifiers:");
 H("    / DATE_SKIP - This qualifier will skip date consistency checking,");
 H("        which is usually not required for databases other than set.mm");
@@ -673,6 +670,13 @@ H("        bibliographic links to mmset.html or equivalent.  It is useful");
 H("        for doing a quick check from a directory without these files");
 H("    / VERBOSE - Provides more information.  Currently it provides a list");
 H("        of axXXX vs. ax-XXX matches.");
+H("");
+H("See also HELP LANGUAGE, HELP HTML, HELP WRITE THEOREM_LIST, and");
+H("HELP SET DISCOURAGEMENT for more details on the markup syntax.");
+H("See the 11-May-2016 (\"is discouraged\"), 14-May-2017 (date format), and");
+H("21-Dec-2017 (file inclusion) entries in");
+H("http://us.metamath.org/mpeuni/mmnotes.txt for further details on several");
+H("kinds of markup.  See HELP WRITE THEOREM_LIST for format of section headers.");
 H("");
 
 

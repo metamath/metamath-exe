@@ -80,7 +80,7 @@ flag processCommandLine(void)
     }
 
     if (cmdMatches("HELP")) {
-          /* 13-Jan-2018 nm Added MARKUP */
+          /* 15-Jan-2018 nm Added MARKUP */
       if (!getFullArg(1, cat("LANGUAGE|MARKUP|PROOF_ASSISTANT|MM-PA|",
           "BEEP|EXIT|QUIT|READ|ERASE|",
           "OPEN|CLOSE|SHOW|SEARCH|SET|VERIFY|SUBMIT|SYSTEM|PROVE|FILE|WRITE|",

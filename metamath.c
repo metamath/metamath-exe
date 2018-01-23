@@ -22,8 +22,11 @@
      lc -O m*.c -o metamath.exe
 */
 
-#define MVERSION "0.157 15-Jan-2018"
-/* 0.157 15-Jan-2018 nm Major rewrite of READ-related functions
+#define MVERSION "0.158 22-Jan-2018"
+/* 0.158 22-Jan-2018 nm mminou.c - strip CRs from Windows SUBMIT files
+   run on Linux */
+/* 0.157 15-Jan-2018 nm Major rewrite of READ-related functions.
+     Added HELP MARKUP.
    9-Jan-2018 nm Track line numbers for error messages in included files
    1-Jan-2018 nm Changed HOME_DIRECTORY to ROOT_DIRECTORY
    31-Dec-2017 nm metamath.c mmcmdl.c,h mmpars.c,h mmcmds.c,h mminou.c,h
@@ -2050,7 +2053,7 @@ void command(int argc, char *argv[])
             /@ 5-Jan-04 mm@.html is reserved for mmtheorems.html, etc. @/
             !strcmp(",MM", left(str2, 3))) {
           print2("\n");
-          assignStmtFileAndLineNum(j); /@ 8-Jan-2018 nm @/
+          assignStmtFileAndLineNum(j); /@ 9-Jan-2018 nm @/
           printLongLine(cat("?Warning in statement \"",
               statement[i].labelName, "\" at line ",
               str((double)(statement[i].lineNum)),
@@ -2068,7 +2071,7 @@ void command(int argc, char *argv[])
       /@ 10/21/02 end @/
       */
 
-      if (sourceHasBeenRead == 1) {  /* 6-Jan-2018 nm */
+      if (sourceHasBeenRead == 1) {  /* 9-Jan-2018 nm */
         if (!errorCount) {
           let(&str1, "No errors were found.");
           if (!switchPos("/ VERIFY")) {
