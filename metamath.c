@@ -22,7 +22,8 @@
      lc -O m*.c -o metamath.exe
 */
 
-#define MVERSION "0.158 22-Jan-2018"
+#define MVERSION "0.159 23-Jan-2018"
+/* 0.159 23-Jan-2017 nm mmpars.c - fix crash due to missing include file */
 /* 0.158 22-Jan-2018 nm mminou.c - strip CRs from Windows SUBMIT files
    run on Linux */
 /* 0.157 15-Jan-2018 nm Major rewrite of READ-related functions.

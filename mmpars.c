@@ -6168,8 +6168,9 @@ char *readInclude(vstring fileBuf, long fileBufOffset,
           if (tmpSource == NULL) {
             /* TODO: print better error msg?*/
             print2(
-                "?Error: file \"%s\" (included in \"%s\") was not found\n",
-                fullIncludeFn, includeCall[includeCalls].source_fn);
+                /* 23-Jan-2018 nm */
+                "?Error: file \"%s%s\" (included in \"%s\") was not found\n",
+                fullIncludeFn, rootDirectory, sourceFileName);
             tmpSource = "";
             inclSize = 0;
             *errorFlag = 1;
@@ -6239,8 +6240,9 @@ char *readInclude(vstring fileBuf, long fileBufOffset,
           if (tmpSource == NULL) {
             /* TODO: print better error msg */
             print2(
-"?Error: file \"%s\" (included in \"%s\") was not found\n",
-                fullIncludeFn, includeCall[includeCalls].source_fn);
+                /* 23-Jan-2018 nm */
+                "?Error: file \"%s%s\" (included in \"%s\") was not found\n",
+                fullIncludeFn, rootDirectory, sourceFileName);
             *errorFlag = 1;
             tmpSource = ""; /* Prevent seg fault */
             inclSize = 0;
