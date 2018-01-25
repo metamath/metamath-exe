@@ -22,7 +22,8 @@
      lc -O m*.c -o metamath.exe
 */
 
-#define MVERSION "0.159 23-Jan-2018"
+#define MVERSION "0.160 24-Jan-2018"
+/* 0.160 24-Jan-2017 nm mmpars.c - fix bug introduced in version 0.158 */
 /* 0.159 23-Jan-2017 nm mmpars.c - fix crash due to missing include file */
 /* 0.158 22-Jan-2018 nm mminou.c - strip CRs from Windows SUBMIT files
    run on Linux */

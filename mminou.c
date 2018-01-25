@@ -945,12 +945,6 @@ vstring cmdInput1(vstring ask)
 
     } else { /* Get line from SUBMIT file */
       commandLn = cmdInput(commandFilePtr[commandFileNestingLevel], NULL);
-
-      /* 22-Jan-2018 nm */
-      /* Tolerate CRs in SUBMIT files (e.g. created on Windows and
-         run on Linux) */
-      let(&commandLn, edit(commandLn, 8192/* remove CR */));
-
       if (!commandLn) { /* EOF found */
         fclose(commandFilePtr[commandFileNestingLevel]);
         print2("%s[End of command file \"%s\".]\n", ask1,
@@ -967,6 +961,12 @@ vstring cmdInput1(vstring ask)
         }
         break; /*continue;*/
       }
+
+      /* 22-Jan-2018 nm */
+      /* Tolerate CRs in SUBMIT files (e.g. created on Windows and
+         run on Linux) */
+      let(&commandLn, edit(commandLn, 8192/* remove CR */));
+
       print2("%s%s\n", ask1, commandLn);
     }
     break;
