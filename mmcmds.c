@@ -3869,7 +3869,8 @@ void readInput(void)
     goto RETURN_POINT;
   }
 
-  sourcePtr = readRawSource(input_fn, sourcePtr, &sourceLen);
+  sourcePtr = readRawSource(/*input_fn,*/  /* 2-Feb-2018 nm */
+      sourcePtr, &sourceLen);
   parseKeywords();
   parseLabels();
   parseMathDecl();

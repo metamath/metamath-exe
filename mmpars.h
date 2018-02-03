@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2018  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -10,7 +10,8 @@
 #include "mmvstr.h"
 #include "mmdata.h"
 
-char *readRawSource(vstring inputFn, vstring inputBuf, long *size);
+char *readRawSource(/*vstring inputFn,*/ /* 2-Feb-2018 nm Unused argument */
+    vstring inputBuf, long *size);
 void parseKeywords(void);
 void parseLabels(void);
 void parseMathDecl(void);
@@ -19,8 +20,9 @@ char parseProof(long statemNum);
 char parseCompressedProof(long statemNum);
 nmbrString *getProof(long statemNum, flag printFlag);
 
-void rawSourceError(char *startFile, char *ptr, long tokenLen, long lineNum,
-    vstring fileName, vstring errMsg);
+void rawSourceError(char *startFile, char *ptr, long tokenLen,
+    /*long lineNum,*/                       /* 2-Feb-2018 nm */
+    /*vstring fileName,*/ vstring errMsg);  /* 2-Feb-2018 nm */
 void sourceError(char *ptr, long tokenLen, long stmtNum, vstring errMsg);
 void mathTokenError(long tokenNum /* 0 is 1st one */,
     nmbrString *tokenList, long stmtNum, vstring errMsg);

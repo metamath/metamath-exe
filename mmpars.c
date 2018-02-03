@@ -44,7 +44,7 @@ struct wrkProof_struct wrkProof;
    Partial parsing is done; when 'include' statements are found, this function
    is called recursively.
    The file input_fn is assumed to be opened when this is called. */
-char *readRawSource(vstring inputFn,
+char *readRawSource(/*vstring inputFn,*/ /* 2-Feb-2018 nm Unused argument */
          vstring fileBuf, /* added 31-Dec-2017 */
          /*long bufOffsetSoFar,*/  /* deleted 31-Dec-2017 nm */
          long *size /* 31-Dec-2017 Now an input argument */)
@@ -52,7 +52,7 @@ char *readRawSource(vstring inputFn,
   long charCount = 0;
   /*char *fileBuf;*/ /* 31-Dec-2017 */
   char *fbPtr;
-  long lineNum;
+  /*long lineNum;*/ /* 2-Feb-2018 Now computed in rawSourceError() */
   flag insideComment;
   /* flag insideLineComment; */ /* obsolete */
   char mode;
@@ -66,7 +66,7 @@ char *readRawSource(vstring inputFn,
   /* But it can't hurt, since the code is already written.
      TODO - clean it up for speedup? */
   fbPtr = fileBuf;
-  lineNum = 1;
+  /*lineNum = 1;*/
   mode = 0; /* 0 = outside of 'include', 1 = inside of 'include' */
   insideComment = 0; /* 1 = inside $( $) comment */
   /* insideLineComment = 0; */ /* 1 = inside $! comment */
@@ -76,11 +76,11 @@ char *readRawSource(vstring inputFn,
     tmpch = fbPtr[0];
     if (!tmpch) { /* End of file */
       if (insideComment) {
-        rawSourceError(fileBuf, fbPtr - 1, 2, lineNum - 1, inputFn,
+        rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum - 1, inputFn,*/
          "The last comment in the file is incomplete.  \"$)\" was expected.");
       } else {
         if (mode != 0) {
-          rawSourceError(fileBuf, fbPtr - 1, 2, lineNum - 1, inputFn,
+          rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum - 1, inputFn,*/
    "The last include statement in the file is incomplete.  \"$]\" was expected."
            );
         }
@@ -90,13 +90,13 @@ char *readRawSource(vstring inputFn,
     if (tmpch != '$') {
       if (tmpch == '\n') {
         /* insideLineComment = 0; */ /* obsolete */
-        lineNum++;
+        /*lineNum++;*/
       } else {
         /* if (!insideComment && !insideLineComment) { */
           if (!isgraph((unsigned char)tmpch) && !isspace((unsigned char)tmpch)) {
             /* 19-Oct-2010 nm Used to bypass "lineNum++" below, which messed up
                line numbering. */
-            rawSourceError(fileBuf, fbPtr, 1, lineNum, inputFn,
+            rawSourceError(fileBuf, fbPtr, 1, /*lineNum, inputFn,*/
                 cat("Illegal character (ASCII code ",
                 str((double)((unsigned char)tmpch)),
                 " decimal).",NULL));
@@ -115,7 +115,7 @@ char *readRawSource(vstring inputFn,
         /* The character before the '$' is not white space */
         if (!insideComment || fbPtr[1] == ')') {
           /* Inside comments, we only care about the "$)" keyword */
-          rawSourceError(fileBuf, fbPtr, 2, lineNum, inputFn,
+          rawSourceError(fileBuf, fbPtr, 2, /*lineNum, inputFn,*/
               "A keyword must be preceded by white space.");
         }
       }
@@ -128,7 +128,7 @@ char *readRawSource(vstring inputFn,
            space (nor end of file) */
         if (!insideComment || fbPtr[0] == ')') {
           /* Inside comments, we only care about the "$)" keyword */
-          rawSourceError(fileBuf, fbPtr + 1, 1, lineNum, inputFn,
+          rawSourceError(fileBuf, fbPtr + 1, 1, /*lineNum, inputFn,*/
               "A keyword must be followed by white space.");
           }
       }
@@ -138,14 +138,14 @@ char *readRawSource(vstring inputFn,
     switch (fbPtr[0]) {
       case '(': /* Start of comment */
         if (insideComment) {
-          rawSourceError(fileBuf, fbPtr - 1, 2, lineNum,
-              inputFn, "Nested comments are not allowed.");
+          rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum, inputFn,*/
+          "Nested comments are not allowed.");
         }
         insideComment = 1;
         continue;
       case ')': /* End of comment */
         if (!insideComment) {
-          rawSourceError(fileBuf, fbPtr - 1, 2, lineNum, inputFn,
+          rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum, inputFn,*/
               "A comment terminator was found outside of a comment.");
         }
         insideComment = 0;
@@ -164,19 +164,19 @@ char *readRawSource(vstring inputFn,
     switch (fbPtr[0]) {
       case '[':
         if (mode != 0) {
-          rawSourceError(fileBuf, fbPtr - 1, 2, lineNum, inputFn,
+          rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum, inputFn,*/
               "Nested include statements are not allowed.");
         } else {
           /* 31-Dec-2017 nm */
           /* $[ ... $] should have been processed by readSourceAndIncludes() */
-          rawSourceError(fileBuf, fbPtr - 1, 2, lineNum, inputFn,
+          rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum, inputFn,*/
               "\"$[\" is unterminated or has ill-formed \"$]\".");
 
         }
         continue;
       case ']':
         if (mode == 0) {
-          rawSourceError(fileBuf, fbPtr - 1, 2, lineNum, inputFn,
+          rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum, inputFn,*/
               "A \"$[\" is required before \"$]\".");
           continue;
         }
@@ -2063,7 +2063,7 @@ void parseStatements(void)
   free(wrkNmbrPtr);
   free(wrkStrPtr);
   free(symbolLenExists);
-  let(&tmpStr,"");
+  let(&tmpStr, "");
 
 
 
@@ -2647,7 +2647,7 @@ char parseProof(long statemNum)
             str((double)step + 1),", statement \"",
             statement[j].labelName,"\" requires ",
             tmpStrPtr,".",NULL));
-        let(&tmpStrPtr,"");
+        let(&tmpStrPtr, "");
       }
       /* Treat it like an unknown step so stack won't get exhausted */
       wrkProof.errorCount++;
@@ -3439,7 +3439,7 @@ char parseCompressedProof(long statemNum)
                   str((double)(wrkProof.numSteps + 1)),", statement \"",
                   statement[stmt].labelName,"\" requires ",
                   tmpStrPtr,".",NULL));
-              let(&tmpStrPtr,"");
+              let(&tmpStrPtr, "");
             }
             /* Treat it like an unknown step so stack won't get exhausted */
             wrkProof.errorCount++;
@@ -3748,14 +3748,24 @@ nmbrString *getProof(long statemNum, flag printFlag) {
 
 
 
-void rawSourceError(char *startFile, char *ptr, long tokLen, long lineNum,
-    vstring fileName, vstring errMsg)
+/* 2-Feb-2018 nm - lineNum and fileName are now computed by
+   getFileAndLineNum() */
+void rawSourceError(char *startFile, char *ptr, long tokLen,
+    /*long lineNum, vstring fileName,*/ vstring errMsg)
 {
   char *startLine;
   char *endLine;
   vstring errLine = "";
   vstring errorMsg = "";
+
+  /* 2-Feb-2018 nm */
+  vstring fileName = "";
+  long lineNum;
+
   let(&errorMsg, errMsg); /* Prevent deallocation of errMsg */
+
+  /* 2-Feb-2018 nm */
+  fileName = getFileAndLineNum(startFile/*=sourcePtr*/, ptr, &lineNum);
 
   /* Get the line with the error on it */
   startLine = ptr;
@@ -3776,8 +3786,9 @@ void rawSourceError(char *startFile, char *ptr, long tokLen, long lineNum,
   errorMessage(errLine, lineNum, ptr - startLine + 1, tokLen, errorMsg,
       fileName, 0, (char)error_);
   print2("\n");
-  let(&errLine,"");
-  let(&errorMsg,"");
+  let(&errLine, "");
+  let(&errorMsg, "");
+  let(&fileName, ""); /* 2-Feb-2018 nm */
 } /* rawSourceError */
 
 /* The global sourcePtr is assumed to point to the start of the raw input
@@ -3903,8 +3914,8 @@ void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
         stmtNum,
         (char)error_ /* severity */);
   }
-  let(&errLine,"");
-  let(&errorMsg,"");
+  let(&errLine, "");
+  let(&errorMsg, "");
   let(&fileName, "");
 } /* sourceError */
 
@@ -3961,7 +3972,7 @@ vstring shortDumpRPNStack(void) {
   }
   let(&tmpStr2,cat("RPN stack contains ",tmpStr2,NULL));
   if (wrkProof.RPNStackPtr == 0) let(&tmpStr2,"RPN stack is empty");
-  let(&tmpStr,"");
+  let(&tmpStr, "");
   return(tmpStr2);
 } /* shortDumpRPNStack */
 
@@ -5306,8 +5317,8 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
   free(wrkNmbrPtr);
   free(wrkStrPtr);
   free(symbolLenExists);
-  let(&tmpStr,"");
-  let(&nlUserText,"");
+  let(&tmpStr, "");
+  let(&nlUserText, "");
 
   return (mathString);
 

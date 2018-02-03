@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2018  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -154,6 +154,8 @@ flag readTexDefs(
   static flag saveHtmlFlag = -1; /* -1 to force 1st read */  /* 17-Nov-2015 nm */
   static flag saveAltHtmlFlag = 1; /* -1 to force 1st read */ /* 17-Nov-2015 nm */
   flag warningFound = 0; /* 1 if a warning was found */
+  char *dollarTStmtPtr = NULL; /* Pointer to label section of statement with
+                              the $t comment */ /* 2-Feb-2018 nm */
 
   /* bsearch returned values for use in error-checking */
   void *mathKeyPtr; /* bsearch returned value for math symbol lookup */
@@ -223,6 +225,7 @@ flag readTexDefs(
       }
       let(&fileBuf, tmpPtr);
       tmpPtr[j] = zapChar;
+      dollarTStmtPtr = statement[i].labelSectionPtr; /* 2-Feb-2018 nm */
       /* break; */ /* Continue to end to detect double $t */
     }
     tmpPtr[j] = zapChar; /* Restore the xxx.mm input file buffer */
@@ -348,7 +351,10 @@ flag readTexDefs(
         for (i = 0; i < (fbPtr - fileBuf); i++) {
           if (fileBuf[i] == '\n') lineNum++;
         }
-        rawSourceError(fileBuf, fbPtr, tokenLength, lineNum, input_fn,
+        rawSourceError(/*fileBuf*/sourcePtr,  /* 2-Feb-2018 nm */
+            /*fbPtr*/dollarTStmtPtr + (fbPtr - fileBuf), tokenLength,
+            /*lineNum, input_fn,*/   /* 2-Feb-2018 nm These arguments are now
+                computed in rawSourceError() */
             cat("Expected \"latexdef\", \"htmldef\", \"htmlvarcolor\",",
             " \"htmltitle\", \"htmlhome\", \"althtmldef\",",
             " \"exthtmltitle\", \"exthtmlhome\", \"exthtmllabel\",",
@@ -382,7 +388,9 @@ flag readTexDefs(
           for (i = 0; i < (fbPtr - fileBuf); i++) {
             if (fileBuf[i] == '\n') lineNum++;
           }
-          rawSourceError(fileBuf, fbPtr, tokenLength, lineNum, input_fn,
+          rawSourceError(/*fileBuf*/sourcePtr,  /* 2-Feb-2018 nm */
+            /*fbPtr*/dollarTStmtPtr + (fbPtr - fileBuf),
+              tokenLength, /*lineNum, input_fn,*/
               "Expected a quoted string here.");
           let(&fileBuf, "");  /* was: free(fileBuf); */
           return 2;
@@ -440,7 +448,9 @@ flag readTexDefs(
           for (i = 0; i < (fbPtr - fileBuf); i++) {
             if (fileBuf[i] == '\n') lineNum++;
           }
-          rawSourceError(fileBuf, fbPtr, tokenLength, lineNum, input_fn,
+          rawSourceError(/*fileBuf*/sourcePtr,  /* 2-Feb-2018 nm */
+            /*fbPtr*/dollarTStmtPtr + (fbPtr - fileBuf),
+              tokenLength, /*lineNum, input_fn,*/
               "Expected the keyword \"as\" here.");
           let(&fileBuf, "");  /* was: free(fileBuf); */
           return 2;
@@ -469,7 +479,9 @@ flag readTexDefs(
           for (i = 0; i < (fbPtr - fileBuf); i++) {
             if (fileBuf[i] == '\n') lineNum++;
           }
-          rawSourceError(fileBuf, fbPtr, tokenLength, lineNum, input_fn,
+          rawSourceError(/*fileBuf*/sourcePtr,  /* 2-Feb-2018 nm */
+            /*fbPtr*/dollarTStmtPtr + (fbPtr - fileBuf),
+              tokenLength, /*lineNum, input_fn,*/
               "Expected a quoted string here.");
           let(&fileBuf, "");  /* was: free(fileBuf); */
           return 2;
@@ -509,9 +521,10 @@ flag readTexDefs(
               if (fileBuf[i] == '\n') lineNum++;
             }
 
-            rawSourceError(fileBuf, fbPtr,
+            rawSourceError(/*fileBuf*/sourcePtr,  /* 2-Feb-2018 nm */
+                /*fbPtr*/dollarTStmtPtr + (fbPtr - fileBuf),
                 tmpPtr2 - partialToken + 1 /*tokenLength on current line*/,
-                lineNum, input_fn,
+                /*lineNum, input_fn,*/
                 "String should be on a single line.");
           }
 
@@ -538,7 +551,9 @@ flag readTexDefs(
               lineNum++;
             }
           }
-          rawSourceError(fileBuf, fbPtr, tokenLength, lineNum, input_fn,
+          rawSourceError(/*fileBuf*/sourcePtr,  /* 2-Feb-2018 nm */
+            /*fbPtr*/dollarTStmtPtr + (fbPtr - fileBuf),
+              tokenLength, /*lineNum, input_fn,*/
               "Expected \"+\" or \";\" here.");
           let(&fileBuf, "");  /* was: free(fileBuf); */
          return 2;

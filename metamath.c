@@ -22,7 +22,9 @@
      lc -O m*.c -o metamath.exe
 */
 
-#define MVERSION "0.160 24-Jan-2018"
+#define MVERSION "0.161 2-Feb-2018"
+/* 0.161 2-Feb-2018 nm mmpars.c,h mmcmds.c mmwtex.c - fix wrong file name
+   and line number in error messages */
 /* 0.160 24-Jan-2017 nm mmpars.c - fix bug introduced in version 0.158 */
 /* 0.159 23-Jan-2017 nm mmpars.c - fix crash due to missing include file */
 /* 0.158 22-Jan-2018 nm mminou.c - strip CRs from Windows SUBMIT files
@@ -6770,7 +6772,7 @@ void command(int argc, char *argv[])
       /* 16-Aug-2016 nm */
       if (printTime == 1) {
         getRunTime(&timeIncr);
-        print2("MINIMIZE_WITH run time = %6.2f sec for \"%s\"\n", timeIncr,
+        print2("MINIMIZE_WITH run time = %7.2f sec for \"%s\"\n", timeIncr,
             statement[proveStatement].labelName);
       }
 
