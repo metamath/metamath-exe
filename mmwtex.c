@@ -5966,6 +5966,7 @@ flag writeBibliography(vstring bibFile,
               || !strcmp(mid(str2, k, (long)strlen("LINE")), "LINE")
               || !strcmp(mid(str2, k, (long)strlen("LINES")), "LINES")
               || !strcmp(mid(str2, k, (long)strlen("NOTATION")), "NOTATION")
+              || !strcmp(mid(str2, k, (long)strlen("OBSERVATION")), "OBSERVATION")
               || !strcmp(mid(str2, k, (long)strlen("PART")), "PART")
               || !strcmp(mid(str2, k, (long)strlen("POSTULATE")), "POSTULATE")
               || !strcmp(mid(str2, k, (long)strlen("PROBLEM")), "PROBLEM")
@@ -5975,6 +5976,9 @@ flag writeBibliography(vstring bibFile,
               || !strcmp(mid(str2, k, (long)strlen("RULE")), "RULE")
               || !strcmp(mid(str2, k, (long)strlen("SCHEME")), "SCHEME")
               || !strcmp(mid(str2, k, (long)strlen("SECTION")), "SECTION")
+              /* Added 3-Jun-2018 nm */
+              || !strcmp(mid(str2, k, (long)strlen("PROOF")), "PROOF")
+              || !strcmp(mid(str2, k, (long)strlen("STATEMENT")), "STATEMENT")
               ) {
             m = k;
             break;

@@ -22,7 +22,11 @@
      lc -O m*.c -o metamath.exe
 */
 
-#define MVERSION "0.161 2-Feb-2018"
+#define MVERSION "0.162 3-Jun-2018"
+/* 0.162 3-Jun-2018 nm mmpars.c - re-enabled error check for $c not in
+   outermost scope.  mmhlpa.c mmhlpb.c- improve some help messages.
+   mmwtex.c - added "Observation", "Proof", and "Statement" keywords for
+   WRITE BIBLIOGRAPHY */
 /* 0.161 2-Feb-2018 nm mmpars.c,h mmcmds.c mmwtex.c - fix wrong file name
    and line number in error messages */
 /* 0.160 24-Jan-2017 nm mmpars.c - fix bug introduced in version 0.158 */

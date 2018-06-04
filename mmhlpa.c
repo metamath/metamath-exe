@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2018  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -62,47 +62,52 @@ H("  UNDUPLICATE - Eliminate duplicate occurrences of lines in a file");
 H("  DUPLICATE - Extract first occurrence of any line occurring more than");
 H("      once in a file, discarding lines occurring exactly once");
 H("  UNIQUE - Extract lines occurring exactly once in a file");
-H("  UPDATE - Update a C program for revision control");
 H(
 "  (UNDUPLICATE, DUPLICATE, and UNIQUE also sort the lines as a side effect.)");
+H("  UPDATE (deprecated) - Update a C program for revision control");
 H("  TYPE (10 lines) - Display 10 lines of a file; similar to Unix \"head\"");
 /*H("  COPY, RENAME - Similar to Unix cat, mv but with backups created");*/
 H(
 "  COPY - Similar to Unix \"cat\" but safe (same input & output name allowed)");
 H("  SUBMIT - Run a script containing Tools commands.");
 H("");
-if (listMode) {
+/* 3-Jun-2016 nm Reorganize a little */
 H("Command syntax ([] means optional):");
-H("  From TOOLS prompt:  Tools> <command> [<arg1> <arg2>...]");
+H("  From TOOLS prompt:  TOOLS> <command> [<arg1> <arg2>...]");
+/*
+if (listMode) {
 H("  From VMS shell:  $ DO TOOLS [<command>] [<arg1> <arg2>...]");
 H("  From Unix/DOS shell:  tools [<command>] [<arg1> <arg2>...]");
+}
+*/
 H("You need to type only as many characters of the command as are needed to");
 H("uniquely specify it.  Any arguments will answer questions automatically");
 H("until the argument list is exhausted; the remaining questions will be");
 H("prompted.  An argument may be optionally enclosed in quotes.  Use \"\" for");
-H("default or null argument.  [Note:  VMS does not allow single quotes (')");
-H("around DCL arguments; use double quotes (\").  Single quotes are OK in");
-H("immediate mode.] [Note: Quotes MUST be put around Unix pathname arguments");
-H("with a \"/\" in them, except they may be omitted in direct response to");
-H("an argument prompt.]");
+H("default or null argument.");
 H("");
 H("Notes:");
 H("(1) The commands are not case sensitive.  File names and match strings");
 H("are case sensitive.");
+/*
 H("(2) Output files are created only after a command finishes running.");
 H("Therefore it is usually safe to hit ^C before a command is completed.");
 H("(3) The file \"zztools.tmp\", which is always created, can be used as a");
 H("command file to re-run the command sequence with the SUBMIT command.");
-H("(4) Previous versions of output files (except under VMS) are renamed with");
-H("~1 (most recent), ~2,...,~9 (oldest) appended to file name.  Purge them");
-H("periodically.");
-H("(5) The command B(EEP) will make the terminal beep.  It can be useful to");
+*/
+H("(2) Previous versions of output files (except under VMS) are renamed with");
+H("~1 (most recent), ~2,...,~9 (oldest) appended to file name.  You may want");
+H("to purge them periodically.");
+H("(3) The command B(EEP) will make the terminal beep.  It can be useful to");
 H("type it ahead to let you know when the current command is finished.");
+/*
 H("(6) It is suggested you use a \".tmp\" file extension for intermediate");
 H("results to eliminate directory clutter.");
+*/
 H("");
+/*
 H("Please see NDM if you have any suggestions for this program.");
-} /* if listMode */
+*/
 
 
 printHelp = !strcmp(saveHelpCmd, "HELP ADD");
@@ -797,6 +802,17 @@ H("        behavior.");
 H("");
 H("**Warning**  Pressing CTRL-C will abort the Metamath program");
 H("unconditionally.  This means any unsaved work will be lost.");
+H("");
+
+
+/* Added 3-Jun-2018 nm */
+printHelp = !strcmp(saveHelpCmd, "HELP _EXIT_PA");
+H("Syntax:  _EXIT_PA [/ FORCE]");
+H("");
+H("This command is a synonym for EXIT inside the Proof Assistant but will");
+H("generate an error message (and otherwise have no effect) elsewhere.  It");
+H("can help prevent accidentally exiting Metamath when a script fails to");
+H("enter the Proof Assistant (PROVE command).  See HELP EXIT.");
 H("");
 
 

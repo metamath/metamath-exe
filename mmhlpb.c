@@ -38,6 +38,7 @@ H("");
 H("For help using the command line, type HELP CLI.");
 H("For help invoking Metamath, type HELP INVOKE.");
 H("For a summary of the Metamath language, type HELP LANGUAGE.");
+H("For a summary of comment markup, type HELP VERIFY MARKUP.");
 H("For help getting started, type HELP DEMO.");
 H("For help exploring the data base, type HELP EXPLORE.");
 H("For help creating a LaTeX file, type HELP TEX.");
@@ -50,8 +51,7 @@ H("To exit Metamath, type EXIT (or its synonym QUIT).");
 H("");
 H(cat("If you need technical support, contact Norman Megill at nm",
     "@", "alum.mit.edu.", NULL));
-H("Copyright (C) 2013 Norman Megill");
-H("License terms:  GNU General Public License");
+H("Copyright (C) 2018 Norman Megill  License terms:  GPL 2.0 or later");
 H("");
 
 printHelp = !strcmp(saveHelpCmd, "HELP COMMENTS");
@@ -851,8 +851,8 @@ H("The <keyword>, which is not case-sensitive, must be one of the following:");
 H("");
 H("    Axiom, Chapter, Compare, Condition, Corollary, Definition, Equation,");
 H("    Example, Exercise, Figure, Item, Lemma, Lemmas, Line, Lines,");
-H("    Notation, Part, Postulate, Problem, Property, Proposition, Remark,");
-H("    Rule, Scheme, Section, Theorem");
+H("    Notation, Observation, Part, Postulate, Problem, Proof, Property,");
+H("    Proposition, Remark, Rule, Scheme, Section, Statement, Theorem");
 H("");
 H("The <identifier> is optional, as in for example \"Remark in [Monk] p. 22\".");
 H("");

@@ -1059,8 +1059,8 @@ void parseStatements(void)
         /* Scan all symbols declared (they have already been parsed) and
            flag them as active, add to stack, and check for errors */
 
-        /* (Not true anymore) */
-    /*
+        /* 3-Jun-2018 nm Added this check back in (see 1-May-2018 Google
+           Group post) */
         if (type == c_) {
           if (currentScope > 0) {
             sourceError(statement[stmt].labelSectionPtr +
@@ -1068,7 +1068,6 @@ void parseStatements(void)
         "A \"$c\" constant declaration may occur in the outermost scope only.");
           }
         }
-     */
 
 
         i = 0; /* Symbol position in mathString */

@@ -139,7 +139,7 @@ extern long includeCalls;
 extern char *sourcePtr; /* Pointer to buffer in memory with input source */
 extern long sourceLen; /* Number of chars. in all inputs files combined (after includes)*/
 
-/* 4-May-2015 nm */
+/* 4-May-2016 nm */
 /* For use by getMarkupFlag() */
 #define PROOF_DISCOURAGED_MARKUP "(Proof modification is discouraged.)"
 #define USAGE_DISCOURAGED_MARKUP "(New usage is discouraged.)"
