@@ -22,7 +22,9 @@
      lc -O m*.c -o metamath.exe
 */
 
-#define MVERSION "0.162 3-Jun-2018"
+#define MVERSION "0.162-thierry 3-Jun-2018"
+/* 0.162-thierry 3-Jun-2017 nm mmwtex.c - add link to tirix.org structured
+   proofs */
 /* 0.162 3-Jun-2018 nm mmpars.c - re-enabled error check for $c not in
    outermost scope.  mmhlpa.c mmhlpb.c- improve some help messages.
    mmwtex.c - added "Observation", "Proof", and "Statement" keywords for

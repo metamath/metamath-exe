@@ -406,8 +406,10 @@ H("        compute the list.  For example, / MATCH ax-* will show set.mm");
 H("        axioms but not definitions.");
 H("    / TO <label-match> - include only statements  that depend on the");
 H("        <label-match> statement(s).  For example,");
-H("        SHOW TRACE_BACK ac6s / TO ax-reg will all statements requiring");
-H("        ax-reg that ac6s depends on.");
+H("        SHOW TRACE_BACK ac6s / TO ax-reg will list all statements");
+H("        requiring ax-reg that ac6s depends on.  In case there are");
+H("        multiple paths from ac6s back to ax-reg, all statements involved");
+H("        in all paths are listed.");
 H("");
 
 

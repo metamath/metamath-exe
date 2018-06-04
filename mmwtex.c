@@ -1878,6 +1878,16 @@ void printTexHeader(flag texHeaderFlag)
       print2("    </TD>\n");
       print2("    <TD COLSPAN=1 ALIGN=RIGHT VALIGN=TOP>\n");
       print2("      <FONT SIZE=-2 FACE=sans-serif>\n");
+
+
+      /* 3-Jun-2018 nm Add link to Thierry Arnoux's site */
+      /* This was added to version 0.162 to become 0.162-thierry */
+      /****** THIS IS TEMPORARY AND MAY BE CHANGED OR DELETED *********/
+      printLongLine(cat("      <A HREF=\"",
+          "http://metamath.tirix.org/", texFileName,
+          "\">Structured version</A>&nbsp;&nbsp;", NULL), "", " ");
+      /****** END OF LINKING TO THIERRY ARNOUX'S SITE ************/
+
       /* Print the GIF/Unicode Font choice, if directories are specified */
       if (htmlDir[0]) {
 
@@ -2444,9 +2454,9 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
           if (!instr(1, bibTags, bibTag)) {
             printLongLine(cat("?Error: The bibliographic reference \"", bibTag,
                 "\" in statement \"", statement[showStatement].labelName,
-                "\" was not found as an an <A NAME=\"",
+                "\" was not found as an <A NAME=\"",
                 seg(bibTag, 2, pos2 - pos1),
-                "\"></A> tag in the file \"", bibFileName, "\".", NULL),
+                "\"></A> anchor in the file \"", bibFileName, "\".", NULL),
                 "", " ");
             returnVal = 1; /* Error/warning printed */ /* 17-Nov-2015 nm */
           }
