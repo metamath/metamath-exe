@@ -3513,6 +3513,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
   pntrString *pntrBigHdrComment = NULL_PNTRSTRING; /* 8-May-2015 nm */
   pntrString *pntrSmallHdrComment = NULL_PNTRSTRING; /* 8-May-2015 nm */
   pntrString *pntrTinyHdrComment = NULL_PNTRSTRING; /* 21-Aug-2017 nm */
+  vstring hdrCommentMarker = ""; /* 4-Aug-2018 nm */
 
   /* Populate the statement map */
   /* ? ? ? Future:  is assertions same as statement[statements].pinkNumber? */
@@ -3743,11 +3744,19 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
     /* Print the GIF/Unicode Font choice, if directories are specified */
     if (htmlDir[0]) {
       if (altHtmlFlag) {
+        /* 4-Aug-2018 nm */
+        print2("</FONT></TD></TR><TR><TD ALIGN=RIGHT><FONT FACE=sans-serif\n");
+        print2("SIZE=-2>Bad symbols? Try the\n");
+        print2("<BR><A HREF=\"%s%s\">GIF\n",
+            htmlDir, outputFileName);
+        print2("version</A>.</FONT></TD>\n");
+        /* 4-Aug-2018 nm - removed Firefox and IE browser references
         print2("</FONT></TD></TR><TR><TD ALIGN=RIGHT><FONT FACE=sans-serif\n");
         print2("SIZE=-2>Bad symbols?\n");
         print2("Use <A HREF=\"http://mozilla.org\">Firefox</A><BR>\n");
         print2("(or <A HREF=\"%s%s\">GIF version</A> for IE).</FONT></TD>\n",
             htmlDir, outputFileName);
+        */
       } else {
         print2("</FONT></TD></TR><TR><TD ALIGN=RIGHT><FONT FACE=sans-serif\n");
         print2("SIZE=-2>Browser slow? Try the\n");
@@ -3756,8 +3765,15 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
         print2("version</A>.</FONT></TD>\n");
       }
     }
-    print2("</TR></TABLE>\n");
-    print2("<HR NOSHADE SIZE=1>\n");
+    /*print2("</TR></TABLE>\n");*/
+    /*print2("<HR NOSHADE SIZE=1>\n");*/
+
+    /* 4-Aug-2018 nm */
+    /* Make breadcrumb font to match other pages */
+    print2("<TR>\n");
+    print2(
+      "<TD COLSPAN=3 ALIGN=LEFT VALIGN=TOP><FONT SIZE=-2 FACE=sans-serif>\n");
+    print2("<BR>\n");  /* Add a little more vertical space */
 
     /* Print some useful links */
     /* print2("<CENTER>\n"); */
@@ -3828,6 +3844,13 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
     }
 
     print2("<A HREF=\"#mmpglst\">Page List</A>\n");
+
+    /* 4-Aug-2018 nm */
+    /* Change breadcrumb font to match other pages */
+    print2("</FONT>\n");
+    print2("</TD>\n");
+    print2("</TR></TABLE>\n");
+
     /* print2("</CENTER>\n"); */
     print2("<HR NOSHADE SIZE=1>\n");
 
@@ -3890,7 +3913,12 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
               "<P><CENTER><B>Table of Contents Summary</B></CENTER>\n");
         } else {
           print2(
-"<P><CENTER><A NAME=\"mmdtoc\"></A><B>Detailed Table of Contents</B></CENTER>\n");
+  "<P><CENTER><A NAME=\"mmdtoc\"></A><B>Detailed Table of Contents</B><BR>\n");
+
+          /* 4-Aug-2018 nm */
+          print2(
+           "<B>(* means the section header has a description)</B></CENTER>\n");
+
         }
 
         fprintf(outputFilePtr, "%s", printString);
@@ -3951,6 +3979,15 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                 let(&hugeHdr, cat("PART ", str((double)partCntr), "&nbsp;&nbsp;",
                     hugeHdr, NULL));
 
+                /* 4-Aug-2018 nm */
+                /* Put an asterisk before the header if the header has
+                   a comment */
+                if (hugeHdrComment[0] != 0 && passNumber == 2) {
+                  let(&hdrCommentMarker, "*");
+                } else {
+                  let(&hdrCommentMarker, "");
+                }
+
                 printLongLine(cat(
 
                     /* 18-Oct-2015 nm */
@@ -3964,7 +4001,10 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                     /* 21-Jun-2014 nm We use "sandbox:bighdr" for both here and
                        below so that either huge or big header type could
                        be used to start mathbox sections */
-                    (stmt == sandboxStmt && bigHdr[0] == 0) ?
+                    (stmt == sandboxStmt && bigHdr[0] == 0
+                          /* 4-Aug-2018 nm */
+                          && passNumber == 1 /* Only in summary TOC */
+                          ) ?
                         /* Note the colon so it won't conflict w/ theorem
                            name anchor */
                         "<A NAME=\"sandbox:bighdr\"></A>" : "",
@@ -3977,6 +4017,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                         : cat(str3, "h", NULL), /* Link to thm list */
 
                     "\"><B>",
+                    hdrCommentMarker, /* 4-Aug-2018 */
                     hugeHdr, "</B></A>",
                     /*
                     " &nbsp; <A HREF=\"",
@@ -4005,6 +4046,15 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                     "&nbsp;&nbsp;",
                     bigHdr, NULL));
 
+                /* 4-Aug-2018 nm */
+                /* Put an asterisk before the header if the header has
+                   a comment */
+                if (bigHdrComment[0] != 0 && passNumber == 2) {
+                  let(&hdrCommentMarker, "*");
+                } else {
+                  let(&hdrCommentMarker, "");
+                }
+
                 printLongLine(cat("&nbsp; &nbsp; &nbsp; ",
 
                     /* 18-Oct-2015 nm */
@@ -4017,7 +4067,10 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
 
                     /* 29-Jul-2008 nm Add an anchor to the "sandbox" theorem
                        for use by mmrecent.html */
-                    stmt == sandboxStmt ?
+                    (stmt == sandboxStmt
+                          /* 4-Aug-2018 nm */
+                          && passNumber == 1 /* Only in summary TOC */
+                          ) ?
                         /* Note the colon so it won't conflict w/ theorem
                            name anchor */
                         "<A NAME=\"sandbox:bighdr\"></A>" : "",
@@ -4031,6 +4084,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                         : cat(str3, "b", NULL), /* Link to thm list */
 
                     "\"><B>",
+                    hdrCommentMarker, /* 4-Aug-2018 */
                     bigHdr, "</B></A>",
                     /*
                     " &nbsp; <A HREF=\"",
@@ -4060,6 +4114,15 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                     ".", str((double)subsectionCntr), "&nbsp;&nbsp;",
                     smallHdr, NULL));
 
+                /* 4-Aug-2018 nm */
+                /* Put an asterisk before the header if the header has
+                   a comment */
+                if (smallHdrComment[0] != 0 && passNumber == 2) {
+                  let(&hdrCommentMarker, "*");
+                } else {
+                  let(&hdrCommentMarker, "");
+                }
+
                 printLongLine(cat("&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; ",
 
                     /* 23-May-2008 nm Add an anchor to the "sandbox" theorem
@@ -4070,6 +4133,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                     */
 
                     "<A HREF=\"", str3, "s\">",
+                    hdrCommentMarker, /* 4-Aug-2018 */
                     smallHdr, "</A>",
                     " &nbsp; <A HREF=\"",
                     statement[stmt].labelName, ".html\">",
@@ -4097,6 +4161,15 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                     ".", str((double)subsubsectionCntr), "&nbsp;&nbsp;",
                     tinyHdr, NULL));
 
+                /* 4-Aug-2018 nm */
+                /* Put an asterisk before the header if the header has
+                   a comment */
+                if (tinyHdrComment[0] != 0 && passNumber == 2) {
+                  let(&hdrCommentMarker, "*");
+                } else {
+                  let(&hdrCommentMarker, "");
+                }
+
                 printLongLine(cat(
          "&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; ",
                     /* 23-May-2008 nm Add an anchor to the "sandbox" theorem
@@ -4107,6 +4180,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                     */
 
                     "<A HREF=\"", str3, "s\">",
+                    hdrCommentMarker, /* 4-Aug-2018 */
                     tinyHdr, "</A>",
                     " &nbsp; <A HREF=\"",
                     statement[stmt].labelName, ".html\">",
@@ -4277,13 +4351,19 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
     for (assertion = (page - 1) * theoremsPerPage + 1;
         assertion <= page * theoremsPerPage; assertion++) {
       if (assertion > assertions) break; /* We're beyond the end */
+
       /* nm 22-Jan-04 Don't count statements whose names begin with "xxx"
          because they will not be output */
       /* 9-May-2015 nm Can this be deleted?  Do we need it anymore? */
+      /* Deleted 4-Aug-2018 nm
       if (strcmp("xxx", left(statement[s].labelName, 3))) {
         lastAssertion = assertion;
       }
-      let(&str1, ""); /* Purge string stack if too many left()'s */
+      let(&str1, ""); /@ Purge string stack if too many left()'s @/
+      */
+
+      /* 4-Aug-2018 nm The above was replaced with: */
+      lastAssertion = assertion;
     }
 
     /* Output theorems on the page */
@@ -4904,6 +4984,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
   let(&bigHdr, "");
   let(&smallHdr, "");
   let(&tinyHdr, ""); /* 21-Aug-2017 nm */
+  let(&hdrCommentMarker, ""); /* 4-Aug-2018 */
   for (i = 0; i <= statements; i++) let((vstring *)(&pntrHugeHdr[i]), "");
   pntrLet(&pntrHugeHdr, NULL_PNTRSTRING);
   for (i = 0; i <= statements; i++) let((vstring *)(&pntrBigHdr[i]), "");

@@ -5,9 +5,9 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-/* Contributors:  In the future the license may be changed to the MIT license
-   or public domain.  Therefore any patches that are contributed should be
-   free of copyright restrictions (i.e. public domain) in order to provide
+/* Contributors:  In the future, the license may be changed to the MIT license
+   or public domain.  Therefore I request that any patches that are contributed
+   be free of copyright restrictions (i.e. public domain) in order to provide
    this flexibility.  Thank you. - NM */
 
 /* This program should compile without warnings using:
@@ -22,7 +22,13 @@
      lc -O m*.c -o metamath.exe
 */
 
-#define MVERSION "0.162-thierry 3-Jun-2018"
+#define MVERSION "0.163 4-Aug-2018"
+/* 0.163 4-Aug-2017 nm mmwtex.c - removed 2nd "sandbox:bighdr" anchor
+   in mmtheorems.html; removed Firefox and IE references; changed breadcrumb
+   font to be consistent with other pages; put asterisk next to TOC entries
+   that have associated comments */
+/* FOR FUTURE REFERENCE: search for "Thierry" in mmwtex.c to modify the link
+   to tirix.org structured proof site */
 /* 0.162-thierry 3-Jun-2017 nm mmwtex.c - add link to tirix.org structured
    proofs */
 /* 0.162 3-Jun-2018 nm mmpars.c - re-enabled error check for $c not in

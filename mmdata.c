@@ -3515,6 +3515,7 @@ flag getContrib(long stmtNum,
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         "?Warning:  There is no comma between contributor and date",
+        ", or period is missing,",   /* 5-Aug-2017 nm */
         " in the comment above statement ",
         str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
@@ -3523,6 +3524,7 @@ flag getContrib(long stmtNum,
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         "?Warning:  There is no comma between reviser and date",
+        ", or period is missing,",   /* 5-Aug-2017 nm */
         " in the comment above statement ",
         str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
@@ -3531,6 +3533,7 @@ flag getContrib(long stmtNum,
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         "?Warning:  There is no comma between proof shortener and date",
+        ", or period is missing,",   /* 5-Aug-2017 nm */
         " in the comment above statement ",
         str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
