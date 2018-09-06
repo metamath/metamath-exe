@@ -680,6 +680,9 @@ H("21-Dec-2017 (file inclusion) entries in");
 H("http://us.metamath.org/mpeuni/mmnotes.txt for further details on several");
 H("kinds of markup.  See HELP WRITE THEOREM_LIST for format of section headers.");
 H("");
+H("For help with modularization tags such as \"$( Begin $[ set-header.mm $] $)\",");
+H("see the 21-Dec-2017 entry in http://us.metamath.org/mpeuni/mmnotes.txt .");
+H("");
 
 
 printHelp = !strcmp(saveHelpCmd, "HELP SUBMIT");
@@ -852,8 +855,8 @@ H("");
 H("The <keyword>, which is not case-sensitive, must be one of the following:");
 H("");
 H("    Axiom, Chapter, Compare, Condition, Corollary, Definition, Equation,");
-H("    Example, Exercise, Figure, Item, Lemma, Lemmas, Line, Lines,");
-H("    Notation, Observation, Part, Postulate, Problem, Proof, Property,");
+H("    Example, Exercise, Figure, Item, Lemma, Lemmas, Line, Lines, Notation,");
+H("    Note, Observation, Part, Postulate, Problem, Proof, Property,");
 H("    Proposition, Remark, Rule, Scheme, Section, Statement, Theorem");
 H("");
 H("The <identifier> is optional, as in for example \"Remark in [Monk] p. 22\".");

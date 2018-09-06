@@ -22,7 +22,10 @@
      lc -O m*.c -o metamath.exe
 */
 
-#define MVERSION "0.163 4-Aug-2018"
+#define MVERSION "0.164 5-Sep-2018"
+/* 0.164 5-Sep-2017 nm mmwtex.c, mmhlpb.c - added NOTE to bib keywords
+   14-Aug-2017 nm metamath.c - added defaultScrollMode to prevent
+   SET SCROLL CONTINUOUS from reverting to PROMPTED after a SUBMIT command */
 /* 0.163 4-Aug-2017 nm mmwtex.c - removed 2nd "sandbox:bighdr" anchor
    in mmtheorems.html; removed Firefox and IE references; changed breadcrumb
    font to be consistent with other pages; put asterisk next to TOC entries
@@ -805,6 +808,9 @@ void command(int argc, char *argv[])
   double timeIncr = 0;
   flag printTime;  /* Set by "/ TIME" in SAVE PROOF and others */
 
+  /* 14-Aug-2018 nm */
+  flag defaultScrollMode = 1; /* Default to prompted mode */
+
   /* Initialization to avoid compiler warning (should not be theoretically
      necessary) */
   p = 0;
@@ -982,7 +988,7 @@ void command(int argc, char *argv[])
     }
     if (argsProcessed == argc && !commandProcessedFlag) {
       commandProcessedFlag = 1;
-      scrollMode = 1; /* Set prompted (default) scroll mode */
+      scrollMode = defaultScrollMode; /* Set prompted (default) scroll mode */
     }
     if (argsProcessed == argc - 1) {
       argsProcessed++; /* Indicates restore scroll mode next time around */
@@ -1090,9 +1096,11 @@ void command(int argc, char *argv[])
 
     if (cmdMatches("SET SCROLL")) {
       if (cmdMatches("SET SCROLL CONTINUOUS")) {
+        defaultScrollMode = 0;
         scrollMode = 0;
         print2("Continuous scrolling is now in effect.\n");
       } else {
+        defaultScrollMode = 1;
         scrollMode = 1;
         print2("Prompted scrolling is now in effect.\n");
       }
@@ -3470,7 +3478,7 @@ void command(int argc, char *argv[])
       } else {
         print2("(SET ECHO...) Command ECHO is OFF.\n");
       }
-      if (scrollMode) {
+      if (defaultScrollMode == 1) {
         print2("(SET SCROLL...) SCROLLing mode is PROMPTED.\n");
       } else {
         print2("(SET SCROLL...) SCROLLing mode is CONTINUOUS.\n");
@@ -4502,7 +4510,7 @@ void command(int argc, char *argv[])
             /* 24-Apr-2015 nm Reverted */
             /*print2("\n");*/ /* Add a blank line to make clipping easier */
             print2(cat(
-                "---------The proof of \"",statement[outStatement].labelName,
+                "---------The proof of \"", statement[outStatement].labelName,
                 /* "\" to clip out ends above this line.\n",NULL)); */
                 /* 24-Apr-2015 nm */
                 "\" (", str((double)l), " bytes) ends above this line.\n", NULL));

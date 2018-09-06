@@ -6057,6 +6057,7 @@ flag writeBibliography(vstring bibFile,
               || !strcmp(mid(str2, k, (long)strlen("LINE")), "LINE")
               || !strcmp(mid(str2, k, (long)strlen("LINES")), "LINES")
               || !strcmp(mid(str2, k, (long)strlen("NOTATION")), "NOTATION")
+              || !strcmp(mid(str2, k, (long)strlen("NOTE")), "NOTE")
               || !strcmp(mid(str2, k, (long)strlen("OBSERVATION")), "OBSERVATION")
               || !strcmp(mid(str2, k, (long)strlen("PART")), "PART")
               || !strcmp(mid(str2, k, (long)strlen("POSTULATE")), "POSTULATE")
