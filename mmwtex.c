@@ -1988,6 +1988,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
   /* Note that DOLLAR_SUBST will replace the old $. */
   vstring cmt = "";
   vstring cmtMasked = ""; /* cmt with math syms blanked */ /* 20-Aug-2014 nm */
+          /* 20-Oct-2018 - also mask ~ label */
   vstring tmpMasked = ""; /* tmp with math syms blanked */ /* 20-Aug-2014 nm */
   vstring tmpStrMasked = ""; /* tmpStr w/ math syms blanked */ /* 20-Aug-2014 */
   long i, clen;
@@ -2018,8 +2019,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
      math symbols are replaced with blanks in cmdMasked */
   let(&cmtMasked, cmt); /* 20-Aug-2014 nm */
 
-  /* 10/10/02 Add leading and trailing HTML markup to comment here
-     (instead of in caller).  Also convert special characters. */
+
   /* This section is independent and can be removed without side effects */
   if (htmlFlag) {
     /* Convert special characters <, &, etc. to HTML entities */
@@ -2070,7 +2070,12 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
     let(&cmtMasked, tmpMasked);
     let(&tmpStr, ""); /* Deallocate */
     let(&tmpStrMasked, "");
+  }
 
+
+  /* 10/10/02 Add leading and trailing HTML markup to comment here
+     (instead of in caller).  Also convert special characters. */
+  if (htmlFlag) {
     /* This used to be done in mmcmds.c */
     if (htmlCenterFlag) {
       let(&cmt, cat("<CENTER><TABLE><TR><TD ALIGN=LEFT><B>Description: </B>",
@@ -2080,6 +2085,48 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
           cmtMasked, "</TD></TR></TABLE></CENTER>", NULL));
     }
   }
+
+
+  /* Added Oct-20-2018 nm */
+  /* Mask out _ (underscore) in labels so they won't become subscripts
+     (reported by Benoit Jubin) */
+  /* This section is independent and can be removed without side effects */
+  if (htmlFlag) {
+    pos1 = 0;
+    while (1) {   /* Look for label start */
+      pos1 = instr(pos1 + 1, cmtMasked, "~");
+      if (!pos1) break;
+      if (cmtMasked[pos1] == '~') {
+        pos1++;  /* Skip ~~ escape */
+        continue;
+      }
+      /* Skip whitespace after ~ */
+      while (1) {
+        if (cmtMasked[pos1] == 0) break;  /* End of line */
+        if (isspace((unsigned char)(cmtMasked[pos1]))) {
+          pos1++;
+          continue;
+        } else { /* Found start of label */
+          break;
+        }
+      }
+      /* Skip non-whitespace after ~ find end of label */
+      while (1) {
+        if (cmtMasked[pos1] == 0) break;  /* End of line */
+        if (!(isspace((unsigned char)(cmtMasked[pos1])))) {
+          if (cmtMasked[pos1] == '_') {
+            /* Put an "?" in place of label character in mask */
+            cmtMasked[pos1] = '?';
+          }
+          pos1++;
+          continue;
+        } else { /* Found end of label */
+          break;
+        }
+      }  /* while (1) */
+    } /* while (1) */
+  } /* if htmlFlag */
+
 
   /* 5-Dec-03 Handle dollar signs in comments converted to LaTeX */
   /* This section is independent and can be removed without side effects */
@@ -2197,6 +2244,10 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
       }
       /* 20-Aug-2014 nm Add https */
       if (!strcmp(mid(cmt, pos2 + 2, 8), "https://")) {
+        continue;
+      }
+      /* 20-Oct-2018 nm Add mm */
+      if (!strcmp(mid(cmt, pos2 + 2, 2), "mm")) {
         continue;
       }
 
@@ -2780,10 +2831,13 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
 
           if (!strcmp("http://", left(tmpStr, 7))
               || !strcmp("https://", left(tmpStr, 8)) /* 20-Aug-2014 nm */
+              || !strcmp("mm", left(tmpStr, 2)) /* 20-Oct-2018 nm */
               ) {
             /* 4/13/04 nm - If the "label" begins with 'http://', then
                assume it is an external hyperlink and not a real label.
-               This is kind of a syntax kludge but it is easy to do. */
+               This is kind of a syntax kludge but it is easy to do.
+               20-Oct-2018 nm - Added starting with 'mm', which is illegal
+               for set.mm labels - e.g. mmtheorems.html#abc */
 
             if (htmlFlag) {
               let(&outputLine, cat(outputLine, "<A HREF=\"", tmpStr,
@@ -3514,6 +3568,8 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
   pntrString *pntrSmallHdrComment = NULL_PNTRSTRING; /* 8-May-2015 nm */
   pntrString *pntrTinyHdrComment = NULL_PNTRSTRING; /* 21-Aug-2017 nm */
   vstring hdrCommentMarker = ""; /* 4-Aug-2018 nm */
+  vstring hdrCommentAnchor = ""; /* 20-Oct-2018 nm */
+  flag hdrCommentAnchorDone = 0; /* 20-Oct-2018 nm */
 
   /* Populate the statement map */
   /* ? ? ? Future:  is assertions same as statement[statements].pinkNumber? */
@@ -3909,6 +3965,19 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
         */
         /* 18-Oct-2015 nm */
         if (passNumber == 1) {
+
+/* 24-Oct-2018 nm Temporary hopefully */
+print2("<P><CENTER><B><FONT COLOR=RED>The Chrome browser has a\n");
+print2("bug that hyperlinks to incorrect anchors.\n");
+print2("If you click on PART 2 in the summary, it should go to PART 2 in\n");
+print2("the detailed section.  If it goes to PART 1, your browser has the bug.\n");
+print2("If your Chrome version works, let me (Norm Megill) know\n");
+print2("the version number so I can mention it here.  Otherwise you will\n");
+print2("need another browser to navigate. This page works with Firefox\n");
+print2("and Internet Explorer and passes validator.w3.org.\n");
+print2("</FONT></B></CENTER>\n");
+
+
           print2(
               "<P><CENTER><B>Table of Contents Summary</B></CENTER>\n");
         } else {
@@ -3948,6 +4017,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
 
           /* Output the headers for $a and $p statements */
           if (statement[stmt].type == p_ || statement[stmt].type == a_) {
+            hdrCommentAnchorDone = 0; /* 20-Oct-2018 nm */
             getSectionHeadings(stmt, &hugeHdr, &bigHdr, &smallHdr,
                 &tinyHdr, /* 21-Aug-2017 nm */
                 /* 5-May-2015 nm */
@@ -3984,8 +4054,17 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                    a comment */
                 if (hugeHdrComment[0] != 0 && passNumber == 2) {
                   let(&hdrCommentMarker, "*");
+                  /* 20-Oct-2018 nm */
+                  if (hdrCommentAnchorDone == 0) {
+                    let(&hdrCommentAnchor, cat("<A NAME=\"",
+                        statement[stmt].labelName, "\"></A> ", NULL));
+                    hdrCommentAnchorDone = 1;
+                  } else {
+                    let(&hdrCommentAnchor, "");
+                  }
                 } else {
                   let(&hdrCommentMarker, "");
+                  let(&hdrCommentAnchor, "");
                 }
 
                 printLongLine(cat(
@@ -3994,7 +4073,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                     /* In detailed section, add an anchor to reach it from
                        summary section */
                     (passNumber == 2) ?
-                         cat("<A NAME=\"", str((double)partCntr), "\"></A>", NULL) : "",
+                         cat("<A NAME=\"dtl:", str((double)partCntr), "\"></A>", NULL) : "",
 
                     /* 29-Jul-2008 nm Add an anchor to the "sandbox" theorem
                        for use by mmrecent.html */
@@ -4009,15 +4088,16 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                            name anchor */
                         "<A NAME=\"sandbox:bighdr\"></A>" : "",
 
+                    hdrCommentAnchor, /* 20-Oct-2018 nm */
                     " <A HREF=\"",
 
                     /* 18-Oct-2015 nm */
                     (passNumber == 1) ?
-                        cat("#", str((double)partCntr), NULL)  /* Link to detailed toc */
+                        cat("#dtl:", str((double)partCntr), NULL)  /* Link to detailed toc */
                         : cat(str3, "h", NULL), /* Link to thm list */
 
                     "\"><B>",
-                    hdrCommentMarker, /* 4-Aug-2018 */
+                    hdrCommentMarker, /* 4-Aug-2018 nm */
                     hugeHdr, "</B></A>",
                     /*
                     " &nbsp; <A HREF=\"",
@@ -4051,8 +4131,17 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                    a comment */
                 if (bigHdrComment[0] != 0 && passNumber == 2) {
                   let(&hdrCommentMarker, "*");
+                  /* 20-Oct-2018 nm */
+                  if (hdrCommentAnchorDone == 0) {
+                    let(&hdrCommentAnchor, cat("<A NAME=\"",
+                        statement[stmt].labelName, "\"></A> ", NULL));
+                    hdrCommentAnchorDone = 1;
+                  } else {
+                    let(&hdrCommentAnchor, "");
+                  }
                 } else {
                   let(&hdrCommentMarker, "");
+                  let(&hdrCommentAnchor, "");
                 }
 
                 printLongLine(cat("&nbsp; &nbsp; &nbsp; ",
@@ -4061,7 +4150,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                     /* In detailed section, add an anchor to reach it from
                        summary section */
                     (passNumber == 2) ?
-                         cat("<A NAME=\"", str((double)partCntr), ".",
+                         cat("<A NAME=\"dtl:", str((double)partCntr), ".",
                              str((double)sectionCntr), "\"></A>", NULL)
                          : "",
 
@@ -4075,11 +4164,13 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                            name anchor */
                         "<A NAME=\"sandbox:bighdr\"></A>" : "",
 
+                    hdrCommentAnchor, /* 20-Oct-2018 nm */
                     " <A HREF=\"",
 
                     /* 18-Oct-2015 nm */
                     (passNumber == 1) ?
-                         cat("#", str((double)partCntr), ".", str((double)sectionCntr),
+                         cat("#dtl:", str((double)partCntr), ".",
+                             str((double)sectionCntr),
                              NULL)   /* Link to detailed toc */
                         : cat(str3, "b", NULL), /* Link to thm list */
 
@@ -4119,8 +4210,17 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                    a comment */
                 if (smallHdrComment[0] != 0 && passNumber == 2) {
                   let(&hdrCommentMarker, "*");
+                  /* 20-Oct-2018 nm */
+                  if (hdrCommentAnchorDone == 0) {
+                    let(&hdrCommentAnchor, cat("<A NAME=\"",
+                        statement[stmt].labelName, "\"></A> ", NULL));
+                    hdrCommentAnchorDone = 1;
+                  } else {
+                    let(&hdrCommentAnchor, "");
+                  }
                 } else {
                   let(&hdrCommentMarker, "");
+                  let(&hdrCommentAnchor, "");
                 }
 
                 printLongLine(cat("&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; ",
@@ -4132,6 +4232,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                         "<A NAME=\"sandbox:smallhdr\"></A>" : "",
                     */
 
+                    hdrCommentAnchor, /* 20-Oct-2018 nm */
                     "<A HREF=\"", str3, "s\">",
                     hdrCommentMarker, /* 4-Aug-2018 */
                     smallHdr, "</A>",
@@ -4166,8 +4267,17 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                    a comment */
                 if (tinyHdrComment[0] != 0 && passNumber == 2) {
                   let(&hdrCommentMarker, "*");
+                  /* 20-Oct-2018 nm */
+                  if (hdrCommentAnchorDone == 0) {
+                    let(&hdrCommentAnchor, cat("<A NAME=\"",
+                        statement[stmt].labelName, "\"></A> ", NULL));
+                    hdrCommentAnchorDone = 1;
+                  } else {
+                    let(&hdrCommentAnchor, "");
+                  }
                 } else {
                   let(&hdrCommentMarker, "");
+                  let(&hdrCommentAnchor, "");
                 }
 
                 printLongLine(cat(
@@ -4179,6 +4289,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
                         "<A NAME=\"sandbox:tinyhdr\"></A>" : "",
                     */
 
+                    hdrCommentAnchor, /* 20-Oct-2018 nm */
                     "<A HREF=\"", str3, "s\">",
                     hdrCommentMarker, /* 4-Aug-2018 */
                     tinyHdr, "</A>",
@@ -5620,6 +5731,13 @@ vstring getTexLongMath(nmbrString *mathString, long statemNum)
         if (!strcmp(mathToken[mathString[pos - 2]].tokenName, "e.")
             && (!strcmp(mathToken[mathString[pos - 4]].tokenName, "E.")
               || !strcmp(mathToken[mathString[pos - 4]].tokenName, "A.")
+
+              /* 20-Oct-2018 nm per Benoit's 3-Sep, 18-Sep, 9-Oct emails */
+              || !strcmp(mathToken[mathString[pos - 4]].tokenName, "prod_")
+              || !strcmp(mathToken[mathString[pos - 4]].tokenName, "E*")
+              || !strcmp(mathToken[mathString[pos - 4]].tokenName, "iota_")
+              || !strcmp(mathToken[mathString[pos - 4]].tokenName, "Disj_")
+
               /* 6-Apr-04 nm - indexed E! */
               || !strcmp(mathToken[mathString[pos - 4]].tokenName, "E!")
               /* 12-Nov-05 nm - finite sums */

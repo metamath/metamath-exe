@@ -22,7 +22,12 @@
      lc -O m*.c -o metamath.exe
 */
 
-#define MVERSION "0.164 5-Sep-2018"
+#define MVERSION "0.165 20-Oct-2018"
+/* 0.165 20-Oct-2017 nm mmwtex.c - added ~ mmtheorems#abc type anchor
+   in TOC details.  mmwtex.c - fix bug (reported by Benoit Jubin) that
+   changes "_" in labels to subscript.  mmcmdl.c - remove unused COMPLETE
+   qualifier from SHOW PROOF.  mmwtex.c - enhance special cases of web page
+   spacing identified by Benoit Jubin */
 /* 0.164 5-Sep-2017 nm mmwtex.c, mmhlpb.c - added NOTE to bib keywords
    14-Aug-2017 nm metamath.c - added defaultScrollMode to prevent
    SET SCROLL CONTINUOUS from reverting to PROMPTED after a SUBMIT command */

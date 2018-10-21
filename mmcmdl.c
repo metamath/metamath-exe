@@ -1353,8 +1353,8 @@ flag processCommandLine(void)
           if (lastArgMatches("/")) {
             i++;
             if (!getFullArg(i, cat(
-                "COMPLETE|SYNTAX_ONLY",
-                "|<COMPLETE>", NULL)))
+                "SYNTAX_ONLY",
+                "|<SYNTAX_ONLY>", NULL)))
               goto pclbad;
           } else {
             break;
