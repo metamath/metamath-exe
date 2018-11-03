@@ -989,24 +989,31 @@ void typeStatement(long showStmt,
           0 /* cutoffStmt */);
       /* if (str1[0]) { */ /* Used by at least one */
       /* 18-Jul-2015 nm */
+
+      /* 30-Oct-2018 nm Commented out, and block unindented: */
+      /*if (str1[0] == 'Y') {*/ /* Used by at least one */
+
+      /* 30-Oct-2018 nm */
+      /* We now output this all the time, using "(None)" if none, per
+         request of Benoit Jubin */
+
+      /* str1[i] will be 'Y' if used by showStmt */
+      /* Convert usage list str1 to html links */
+      switch (subType) {
+        case AXIOM:  let(&str3, "axiom"); break;
+        case DEFINITION: let(&str3, "definition"); break;
+        case THEOREM: let(&str3, "theorem"); break;
+        default: bug(233);
+      }
+      /******* pre 10/10/02
+      let(&str2, cat("<FONT SIZE=-1 FACE=sans-serif>This ", str3,
+          " is referenced by: ", NULL));
+      *******/
+      /* 10/10/02 */
+      let(&str2, cat("<TR><TD ALIGN=LEFT><FONT SIZE=-1><B>This ", str3,
+          " is referenced by:</B>", NULL));
+
       if (str1[0] == 'Y') { /* Used by at least one */
-        /* str1[i] will be 'Y' if used by showStmt */
-        /* Convert usage list str1 to html links */
-        switch (subType) {
-          case AXIOM:  let(&str3, "axiom"); break;
-          case DEFINITION: let(&str3, "definition"); break;
-          case THEOREM: let(&str3, "theorem"); break;
-          default: bug(233);
-        }
-        /******* pre 10/10/02
-        let(&str2, cat("<FONT SIZE=-1 FACE=sans-serif>This ", str3,
-            " is referenced by: ", NULL));
-        *******/
-        /* 10/10/02 */
-        let(&str2, cat("<TR><TD ALIGN=LEFT><FONT SIZE=-1><B>This ", str3,
-            " is referenced by:</B>", NULL));
-
-
         /********* 18-Jul-2015 Deleted code *********************/
         /*
         /@ Convert str1 to trailing space after each label @/
@@ -1122,13 +1129,21 @@ void typeStatement(long showStmt,
           }
           /* End 19-Sep-2012 */
         } /* next m (statement number) */
-        /* let(&str2, cat(str2, "</FONT></TD></TR>", NULL)); */ /* old */
-         /* 19-Sep-2012 nm Include buffer in output string*/
-        let(&str2, cat(str5, str2, "</FONT></TD></TR>", NULL));
-        /*printLongLine(str2, "", "\"");*/ /* 18-Jul-2015 nm Deleted */
-        if (printString[0]) bug(256);  /* 18-Jul-2015 nm */
-        let(&printString, str2); /* 18-Jul-2015 nm */
+
+
+      /* 30-Oct-2018 nm Added "else" clause to print "(None)" if no refs */
+      } else {
+        /* There is no usage of this statement; print "(None)" */
+        let(&str5, "");
+        let(&str2, cat(str2, " (None)", NULL));
+
       } /* if (str1[0] == 'Y') */
+      /* let(&str2, cat(str2, "</FONT></TD></TR>", NULL)); */ /* old */
+       /* 19-Sep-2012 nm Include buffer in output string*/
+      let(&str2, cat(str5, str2, "</FONT></TD></TR>", NULL));
+      /*printLongLine(str2, "", "\"");*/ /* 18-Jul-2015 nm Deleted */
+      if (printString[0]) bug(256);  /* 18-Jul-2015 nm */
+      let(&printString, str2); /* 18-Jul-2015 nm */
     } /* if (subType != SYNTAX) */
     if (subType == THEOREM) {
       /* 10/25/02 The "referenced by" does not show up after the proof
@@ -2457,14 +2472,17 @@ void typeProof(long statemNum,
 
 
       /* 10/25/02 Output "referenced by" list here */
+      /* 30-Oct-2018 nm Moved this block to after axioms/defs lists */
+      /*
       if (printStringForReferencedBy[0]) {
-        /* printLongLine takes 130 sec for 'sh st syl/a' */
-        /*printLongLine(printStringForReferencedBy, "", "\"");*/
-        /* 18-Jul-2015 nm Speedup for 'sh st syl/a' */
+        /@ printLongLine takes 130 sec for 'sh st syl/a' @/
+        /@printLongLine(printStringForReferencedBy, "", "\"");@/
+        /@ 18-Jul-2015 nm Speedup for 'sh st syl/a' @/
         if (outputToString != 1) bug(257);
         let(&printString, cat(printString, printStringForReferencedBy, NULL));
         let(&printStringForReferencedBy, "");
       }
+      */
 
 
       /* Get list of axioms and definitions assumed by proof */
@@ -2535,13 +2553,14 @@ void typeProof(long statemNum,
              proof (or it has a proof, but is incomplete and all earlier
              ones do have complete proofs). */
           printLongLine(cat(
-"<TR><TD ALIGN=left >&nbsp;<B><FONT COLOR=\"#FF6600\">WARNING: This theorem has an",
-              " incomplete proof.</FONT></B><BR></TD></TR>", NULL), "", "\"");
+"<TR><TD ALIGN=left >&nbsp;<B><FONT COLOR=\"#FF6600\">",
+"WARNING: This theorem has an incomplete proof.</FONT></B><BR></TD></TR>",
+              NULL), "", "\"");
 
         } else {
           printLongLine(cat(
-"<TR><TD ALIGN=left >&nbsp;</TD><TD><B><FONT COLOR=\"#FF6600\">WARNING: This proof depends",
-              " on the following unproved theorem(s): ",
+"<TR><TD ALIGN=left >&nbsp;</TD><TD><B><FONT COLOR=\"#FF6600\">",
+"WARNING: This proof depends on the following unproved theorem(s): ",
               NULL), "", "\"");
           let(&tmpStr, "");
           for (i = 0; i < nmbrLen(unprovedList); i++) {
@@ -2555,6 +2574,25 @@ void typeProof(long statemNum,
       }
 
       /* End of axiom list */
+
+      /* 30-Oct-2018 nm Moved down from above to put referenced by list last */
+      if (printStringForReferencedBy[0]) {
+        /* printLongLine takes 130 sec for 'sh st syl/a' */
+        /*printLongLine(printStringForReferencedBy, "", "\"");*/
+        /* 18-Jul-2015 nm Speedup for 'sh st syl/a' */
+        if (outputToString != 1) bug(257);
+        /* 30-Oct-2018 nm Deleted line: */
+        /*let(&printString, cat(printString, printStringForReferencedBy, NULL));*/
+        /* 30-Oct-2018 nm Added line: */
+        printLongLine(printStringForReferencedBy, "", "\"");
+        let(&printStringForReferencedBy, "");
+
+      /* 30-Oct-2018 nm */
+      } else {
+        /* Since we now always print ref-by list even if "(None)",
+           printStringForReferencedBy should never be empty */
+        bug(263);
+      }
 
     }  /* if essentialFlag */
 

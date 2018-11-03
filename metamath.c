@@ -22,7 +22,11 @@
      lc -O m*.c -o metamath.exe
 */
 
-#define MVERSION "0.165 20-Oct-2018"
+#define MVERSION "0.166 31-Oct-2018"
+/* 0.166 31-Oct-2018 nm mmwtex.c - workaround Chrome anchor bug
+   30-Oct-2018 nm mmcmds.c - put "This theorem is referenced by" after
+   axioms and definitions used in HTML; use "(None)" instead of suppressing
+   line if nothing is referenced */
 /* 0.165 20-Oct-2017 nm mmwtex.c - added ~ mmtheorems#abc type anchor
    in TOC details.  mmwtex.c - fix bug (reported by Benoit Jubin) that
    changes "_" in labels to subscript.  mmcmdl.c - remove unused COMPLETE

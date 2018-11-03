@@ -3967,6 +3967,8 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
         if (passNumber == 1) {
 
 /* 24-Oct-2018 nm Temporary hopefully */
+/* 31-Oct-2018 nm Implemented workaround; see below under this date */
+/*
 print2("<P><CENTER><B><FONT COLOR=RED>The Chrome browser has a\n");
 print2("bug that hyperlinks to incorrect anchors.\n");
 print2("If you click on PART 2 in the summary, it should go to PART 2 in\n");
@@ -3976,6 +3978,7 @@ print2("the version number so I can mention it here.  Otherwise you will\n");
 print2("need another browser to navigate. This page works with Firefox\n");
 print2("and Internet Explorer and passes validator.w3.org.\n");
 print2("</FONT></B></CENTER>\n");
+*/
 
 
           print2(
@@ -4056,8 +4059,14 @@ print2("</FONT></B></CENTER>\n");
                   let(&hdrCommentMarker, "*");
                   /* 20-Oct-2018 nm */
                   if (hdrCommentAnchorDone == 0) {
-                    let(&hdrCommentAnchor, cat("<A NAME=\"",
-                        statement[stmt].labelName, "\"></A> ", NULL));
+                    let(&hdrCommentAnchor, cat(
+
+                        /* 31-Oct-2018 nm "&#8203;" is a "zero-width" space to
+                           workaround Chrome bug that jumps to wrong anchor. */
+                        "&#8203;",
+
+                        "<A NAME=\"",
+                        statement[stmt].labelName, "\"></A>", NULL));
                     hdrCommentAnchorDone = 1;
                   } else {
                     let(&hdrCommentAnchor, "");
@@ -4073,7 +4082,8 @@ print2("</FONT></B></CENTER>\n");
                     /* In detailed section, add an anchor to reach it from
                        summary section */
                     (passNumber == 2) ?
-                         cat("<A NAME=\"dtl:", str((double)partCntr), "\"></A>", NULL) : "",
+                         cat("<A NAME=\"dtl:", str((double)partCntr),
+                             "\"></A>", NULL) : "",
 
                     /* 29-Jul-2008 nm Add an anchor to the "sandbox" theorem
                        for use by mmrecent.html */
@@ -4089,7 +4099,7 @@ print2("</FONT></B></CENTER>\n");
                         "<A NAME=\"sandbox:bighdr\"></A>" : "",
 
                     hdrCommentAnchor, /* 20-Oct-2018 nm */
-                    " <A HREF=\"",
+                    "<A HREF=\"",
 
                     /* 18-Oct-2015 nm */
                     (passNumber == 1) ?
@@ -4133,8 +4143,14 @@ print2("</FONT></B></CENTER>\n");
                   let(&hdrCommentMarker, "*");
                   /* 20-Oct-2018 nm */
                   if (hdrCommentAnchorDone == 0) {
-                    let(&hdrCommentAnchor, cat("<A NAME=\"",
-                        statement[stmt].labelName, "\"></A> ", NULL));
+                    let(&hdrCommentAnchor, cat(
+
+                        /* 31-Oct-2018 nm "&#8203;" is a "zero-width" space to
+                           workaround Chrome bug that jumps to wrong anchor. */
+                        "&#8203;",
+
+                        "<A NAME=\"",
+                        statement[stmt].labelName, "\"></A>", NULL));
                     hdrCommentAnchorDone = 1;
                   } else {
                     let(&hdrCommentAnchor, "");
@@ -4144,7 +4160,8 @@ print2("</FONT></B></CENTER>\n");
                   let(&hdrCommentAnchor, "");
                 }
 
-                printLongLine(cat("&nbsp; &nbsp; &nbsp; ",
+                printLongLine(cat(
+                    "&nbsp; &nbsp; &nbsp; ", /* Indentation spacing */
 
                     /* 18-Oct-2015 nm */
                     /* In detailed section, add an anchor to reach it from
@@ -4163,9 +4180,8 @@ print2("</FONT></B></CENTER>\n");
                         /* Note the colon so it won't conflict w/ theorem
                            name anchor */
                         "<A NAME=\"sandbox:bighdr\"></A>" : "",
-
                     hdrCommentAnchor, /* 20-Oct-2018 nm */
-                    " <A HREF=\"",
+                    "<A HREF=\"",
 
                     /* 18-Oct-2015 nm */
                     (passNumber == 1) ?
@@ -4213,7 +4229,7 @@ print2("</FONT></B></CENTER>\n");
                   /* 20-Oct-2018 nm */
                   if (hdrCommentAnchorDone == 0) {
                     let(&hdrCommentAnchor, cat("<A NAME=\"",
-                        statement[stmt].labelName, "\"></A> ", NULL));
+                        statement[stmt].labelName, "\"></A>", NULL));
                     hdrCommentAnchorDone = 1;
                   } else {
                     let(&hdrCommentAnchor, "");
