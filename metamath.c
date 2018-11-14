@@ -22,7 +22,13 @@
      lc -O m*.c -o metamath.exe
 */
 
-#define MVERSION "0.166 31-Oct-2018"
+#define MVERSION "0.167 13-Nov-2018"
+/* 0.167 13-Nov-2018 nm mmcmds.c - SHOW TRACE_BACK .../COUNT now uses proof
+   the way it's stored (previously, it always uncompressed the proof).  The
+   new step count (for compressed proofs) corresponds to the step count the
+   user would see on the web pages.
+   12-Nov-2018 nm mmcmds.c - added unlimited precision arithmetic
+   for SHOW TRACE_BACK .../COUNT/ESSENTIAL */
 /* 0.166 31-Oct-2018 nm mmwtex.c - workaround Chrome anchor bug
    30-Oct-2018 nm mmcmds.c - put "This theorem is referenced by" after
    axioms and definitions used in HTML; use "(None)" instead of suppressing

@@ -25,6 +25,11 @@
 #include "mmunif.h" /* 26-Sep-2010 nm For bracketMatchInit, minSubstLen */
                     /* 1-Oct-2017 nm ...and firstConst */
 
+/* 12-Nov-2018 nm */
+/* Local prototypes */
+vstring bigAdd(vstring bignum1, vstring bignum2);
+vstring bigSub(vstring bignum1, vstring bignum2);
+
 /* vstring mainFileName = ""; */ /* 28-Dec-05 nm Obsolete */
 flag printHelp = 0;
 
@@ -3537,7 +3542,13 @@ double countSteps(long statemNum, flag essentialFlag)
   long stmt, plen, step, i, j, k;
   long essentialplen;
   nmbrString *proof = NULL_NMBRSTRING;
-  double stepCount;
+  double stepCount; /* The total steps if fully expanded */
+
+  /* 12-Nov-2018 nm */
+  static vstring *stmtBigCount; /* Unlimited precision stmtCount */
+  vstring stepBigCount = ""; /* Unlimited precision stepCount */
+  vstring tmpBig1 = "";
+
   double stepNodeCount;
   double stepDistSum;
   nmbrString *essentialFlags = NULL_NMBRSTRING;
@@ -3552,6 +3563,8 @@ double countSteps(long statemNum, flag essentialFlag)
   /* If this is the top level of recursion, initialize things */
   if (!level) {
     stmtCount = malloc((sizeof(double) * ((size_t)statements + 1)));
+    stmtBigCount = malloc((sizeof(vstring) * ((size_t)statements + 1)));
+                                                           /* 12-Nov-2018 nm */
     stmtNodeCount = malloc(sizeof(double) * ((size_t)statements + 1));
     stmtDist = malloc(sizeof(long) * ((size_t)statements + 1));
     stmtMaxPath = malloc(sizeof(long) * ((size_t)statements + 1));
@@ -3562,6 +3575,7 @@ double countSteps(long statemNum, flag essentialFlag)
         !stmtAveDist || !stmtProofLen || !stmtUsage) {
       print2("?Memory overflow.  Step count will be wrong.\n");
       if (stmtCount) free(stmtCount);
+      if (stmtBigCount) free(stmtBigCount); /* 12-Nov-2018 nm */
       if (stmtNodeCount) free(stmtNodeCount);
       if (stmtDist) free(stmtDist);
       if (stmtMaxPath) free(stmtMaxPath);
@@ -3572,6 +3586,7 @@ double countSteps(long statemNum, flag essentialFlag)
     }
     for (stmt = 1; stmt < statements + 1; stmt++) {
       stmtCount[stmt] = 0;
+      stmtBigCount[stmt] = ""; /* 12-Nov-2018 nm */
       stmtUsage[stmt] = 0;
       stmtDist[stmt] = 0; /* 18-Sep-2013 Initialize */
     }
@@ -3579,6 +3594,7 @@ double countSteps(long statemNum, flag essentialFlag)
   }
   level++;
   stepCount = 0;
+  let(&stepBigCount, "0"); /* "" and "0" both mean 0 */ /* 12-Nov-2018 nm */
   stepNodeCount = 0;
   stepDistSum = 0;
   stmtDist[statemNum] = -2; /* Forces at least one assignment */
@@ -3586,6 +3602,7 @@ double countSteps(long statemNum, flag essentialFlag)
   if (statement[statemNum].type != (char)p_) {
     /* $a, $e, or $f */
     stepCount = 1;
+    let(&stepBigCount, "1"); /* 12-Nov-2018 nm */
     stepNodeCount = 0;
     stmtDist[statemNum] = 0;
     goto returnPoint;
@@ -3596,7 +3613,10 @@ double countSteps(long statemNum, flag essentialFlag)
     /* The proof has an error, so use the empty proof */
     nmbrLet(&proof, nmbrAddElement(NULL_NMBRSTRING, -(long)'?'));
   } else {
-    nmbrLet(&proof, nmbrUnsquishProof(wrkProof.proofString)); /* The proof */
+    /*nmbrLet(&proof, nmbrUnsquishProof(wrkProof.proofString));*/ /* The proof */
+    /* 13-Nov-2018 nm - Use proof as it is saved (so user can choose
+       compressed or not) */
+    nmbrLet(&proof, wrkProof.proofString); /* The proof */
   }
 
   plen = nmbrLen(proof);
@@ -3608,7 +3628,6 @@ double countSteps(long statemNum, flag essentialFlag)
   for (step = 0; step < plen; step++) {
   /* 12-May-04 nm Use the following loop instead to get an alternate maximum
      path */
-  /*for (step = plen-1; step >= 0; step--) {*/
     if (essentialFlag) {
       if (!essentialFlags[step]) continue;     /* Ignore floating hypotheses */
     }
@@ -3616,28 +3635,54 @@ double countSteps(long statemNum, flag essentialFlag)
     stmt = proof[step];
     if (stmt < 0) {
       if (stmt <= -1000) {
-        bug(215); /* The proof was expanded; there should be no local labels */
+        /* Pre-13-Nov-2010: */
+        /*bug(215);*/ /* The proof was expanded; there should be no local labels */
+        /* 13-Nov-2018 nm */
+        /* User can choose to count compressed or normal steps by saving
+           the proof that way */
+        /* A local label does not add a proof step in the web page proof */
+        continue;
       } else {
         /* '?' */
         unprovedFlag = 1;
         stepCount = stepCount + 1;
+
+        /* 12-Nov-2018 nm */
+        let(&tmpBig1, "");
+        tmpBig1 = bigAdd(stepBigCount, "1");
+        let(&stepBigCount, tmpBig1);
+
         stepNodeCount = stepNodeCount + 1;
         stepDistSum = stepDistSum + 1;
       }
     } else {
       if (stmtCount[stmt] == 0) {
-        /* It has not been computed yet */
+        /* It has not been computed yet - call this function recursively */
         stepCount = stepCount + countSteps(stmt, essentialFlag);
       } else {
         /* It has already been computed */
         stepCount = stepCount + stmtCount[stmt];
       }
+
+      /* 12-Nov-2018 nm */
+      /* In either case, stmtBigCount[stmt] will be populated now */
+      let(&tmpBig1, "");
+      tmpBig1 = bigAdd(stepBigCount, stmtBigCount[stmt]);
+      let(&stepBigCount, tmpBig1);
+
       if (statement[stmt].type == (char)p_) {
         /*stepCount--;*/ /* -1 to account for the replacement of this step */
         for (j = 0; j < statement[stmt].numReqHyp; j++) {
           k = statement[stmt].reqHypList[j];
           if (!essentialFlag || statement[k].type == (char)e_) {
             stepCount--;
+
+            /* 12-Nov-2018 nm */
+            /* In either case, stmtBigCount[stmt] will be populated now */
+            let(&tmpBig1, "");
+            tmpBig1 = bigSub(stepBigCount, "1");
+            let(&stepBigCount, tmpBig1);
+
           }
         }
       }
@@ -3656,6 +3701,11 @@ double countSteps(long statemNum, flag essentialFlag)
 
   /* Assign step count to statement list */
   stmtCount[statemNum] = stepCount;
+
+  /* 12-Nov-2018 nm */
+  if ((stmtBigCount[statemNum])[0] != 0) bug(264);
+  let(&stmtBigCount[statemNum], stepBigCount);
+
   stmtNodeCount[statemNum] = stepNodeCount + 1;
   stmtAveDist[statemNum] = (double)stepDistSum / (double)essentialplen;
   stmtProofLen[statemNum] = essentialplen;
@@ -3712,11 +3762,27 @@ double countSteps(long statemNum, flag essentialFlag)
            str((double)actualSubTheorems2), " subtheorems, and ",
        "the statement and subtheorems would have a total of ",
            str((double)actualSteps2), " steps.  ",
+       "The proof would have ",
+
+       /* This is the old stepCount; can be enabled to troubleshoot
+          the new unlimited precision algorithm */
        /* 27-May-05 nm stepCount is inaccurate for over 16 or so digits due
           to roundoff errors. */
-       "The proof would have ",
-         stepCount > 1000000000 ? ">1000000000" : str((double)stepCount),
-       " steps if fully expanded.  ",
+       /*stepCount > 1000000000 ? ">1000000000" : str((double)stepCount),*/
+
+       /* 12-Nov-2018 nm */
+       stepBigCount,
+       strlen(stepBigCount) < 6 ? ""
+           : cat(" =~ ",
+                 left(
+                    str((double)
+                        ((5.0 + val(left(stepBigCount, 3))) / 100.0)),
+                    3),
+                 " x 10^",
+                 str((double)strlen(stepBigCount) - 1), NULL),
+
+
+       " steps if fully expanded back to axiom references.  ",
        /*
        "The proof tree has ", str((double)stmtNodeCount[statemNum])," nodes.  ",
        "A random backtrack path has an average path length of ",
@@ -3736,11 +3802,177 @@ double countSteps(long statemNum, flag essentialFlag)
     free(stmtAveDist);
     free(stmtProofLen);
     free(stmtUsage);
+
+    /* 12-Nov-2018 nm */
+    /* Deallocate the big number strings */
+    for (stmt = 1; stmt < statements + 1; stmt++) {
+      let(&stmtBigCount[stmt], "");
+    }
+    free(stmtBigCount);
+
   }
+
+  /* Deallocate local strings */ /* 12-Nov-2018 nm */
+  let(&tmpBig1, "");
+  let(&stepBigCount, "");
 
   return(stepCount);
 
 } /* countSteps */
+
+
+/* 12-Nov-2018 nm */
+/* Add two arbitrary precision nonnegative integers represented
+   as strings of digits e.g. bigAdd("1234", "55") returns "1289".
+   Zero can be represented by "", "0", "00", etc. */
+/* This is a slow, unsophisticated algorithm intended for use by
+   countSteps() i.e. SHOW TRACE_BACK .../COUNT_STEPS */
+/* The caller must deallocate the returned string, and the string arguments
+   must not be volatile i.e. will not be freed by unrelated 'let()' */
+vstring bigAdd(vstring bignum1, vstring bignum2) {
+  long len1, len2, maxlen, p, p1, p2, p3;
+  char d1, d2, carry, dsum;
+  vstring bignum3 = "";
+  len1 = (long)strlen(bignum1);
+  len2 = (long)strlen(bignum2);
+  maxlen = (len1 < len2 ? len2 : len1);
+  let(&bignum3, space(maxlen + 1)); /* +1 to allow for final carry */
+  carry = 0;
+  for (p = 1; p <= maxlen; p++) {
+    p1 = len1 - p;
+    p2 = len2 - p;
+    d1 = (char)(p1 >= 0 ? bignum1[p1] - '0' : 0);
+    d2 = (char)(p2 >= 0 ? bignum2[p2] - '0' : 0);
+    dsum = (char)(d1 + d2 + carry);
+    if (dsum > 9) {
+      dsum = (char)(dsum - 10);
+      carry = 1;
+    } else {
+      carry = 0;
+    }
+    p3 = maxlen + 1 - p;
+    bignum3[p3] = (char)(dsum + '0');
+  }
+  bignum3[0] = (char)(carry + '0');
+  while (bignum3[0] == '0') {
+    /* Supress leading 0s */
+    let(&bignum3, right(bignum3, 2));
+  }
+  return bignum3;
+}
+
+
+/* 12-Nov-2018 nm */
+/* Subtract a nonnegative number (2nd arg) from a larger nonnegative number
+   (1st arg).  If the 1st arg is smaller than the 2nd, results are
+   not meaningful; there is no error checking for this.  */
+/* This is a slow, unsophisticated algorithm intended for use by
+   countSteps() i.e. SHOW TRACE_BACK .../COUNT_STEPS */
+/* The caller must deallocate the returned string */
+/* The arguments must be strings that will not be freed by unrelated 'let()' */
+vstring bigSub(vstring bignum1, vstring bignum2) {
+  long len1, len3, p;
+  vstring bignum3 = "";
+  vstring bignum1cmpl = "";
+  len1 = (long)strlen(bignum1);
+  let(&bignum1cmpl, space(len1));
+  for (p = 0; p <= len1 - 1; p++) {
+    /* Take 9s complement of 1st arg */
+    bignum1cmpl[p] = (char)(9 - (bignum1[p] - '0') + '0');
+  }
+  bignum3 = bigAdd(bignum1cmpl, bignum2);
+  len3 = (long)strlen(bignum3);
+  if (len3 < len1) {
+    /* We need to pad 0s before taking 9s complement */
+    let(&bignum3, cat(string(len1 - len3, '0'), bignum3, NULL));
+    len3 = len1;
+  }
+  for (p = 0; p <= len3 - 1; p++) {
+    /* Take 9s complement of result */
+    bignum3[p] = (char)(9 - (bignum3[p] - '0') + '0');
+  }
+  while (bignum3[0] == '0') {
+    /* Supress leading 0s */
+    let(&bignum3, right(bignum3, 2));
+  }
+  let(&bignum1cmpl, ""); /* Deallocate */
+  return bignum3;
+}
+
+
+/**** 12-Nov-2018 nm In case multiplication is ever needed, this
+  code will do it but is commented out because currently there
+  is no need for it.
+****************************************************************************
+/@ Multiply an arbitrary precision nonnegative integers by a positive
+   digit e.g. bigMulDigit("123", 9) returns "1107".
+   Zero can be represented by "", "0", "00", etc. @/
+/@ This is a slow, unsophisticated algorithm intended for use by
+   SHOW TRACE_BACK .../COUNT_STEPS @/
+/@ The caller must deallocate the returned string @/
+/@ The arguments must be strings that will not be freed by unrelated 'let()' @/
+vstring bigMulDigit(vstring bignum1, long digit) {
+  long len1, p, p1, p3;
+  char d1, carry, dprod;
+  vstring bignum3 = "";
+  len1 = (long)strlen(bignum1);
+  let(&bignum3, space(len1 + 1)); /@ +1 to allow for final carry @/
+  carry = 0;
+  for (p = 1; p <= len1; p++) {
+    p1 = len1 - p;
+    d1 = (char)(bignum1[p1] - '0');
+    dprod = (char)((d1 @ digit) + carry);
+    if (dprod > 9) {
+      carry = dprod / 10;
+      dprod = dprod % 10;
+    } else {
+      carry = 0;
+    }
+    p3 = len1 + 1 - p;
+    bignum3[p3] = (char)(dprod + '0');
+  }
+  bignum3[0] = (char)(carry + '0');
+  while (bignum3[0] == '0') {
+    /@ Supress leading 0s @/
+    let(&bignum3, right(bignum3, 2));
+  }
+  return bignum3;
+}
+
+/@ Multiply two arbitrary precision nonnegative integers represented
+   as strings of digits e.g. bigMul("1234", "55") returns "67870".
+   Zero can be represented by "", "0", "00", etc. @/
+/@ This is a slow, unsophisticated algorithm intended for use by
+   SHOW TRACE_BACK .../COUNT_STEPS @/
+/@ The caller must deallocate the returned string @/
+/@ The arguments must be strings that will not be freed by 'let()' @/
+vstring bigMul(vstring bignum1, vstring bignum2) {
+  long len2, p, p2;
+  char d2;
+  vstring bignum3 = "";
+  vstring bigdprod = "";
+  vstring bigpprod = "";
+  len2 = (long)strlen(bignum2);
+  for (p = 1; p <= len2; p++) {
+    p2 = len2 - p;
+    d2 = (char)(bignum2[p2] - '0');
+    if (d2 > 0) {
+      let(&bigdprod, "");
+      bigdprod = bigMulDigit(bignum1, d2);
+      if (p > 1) {
+        /@ Shift the digit product by adding trailing 0s @/
+        let(&bigdprod, cat(bigdprod, string(p - 1, '0'), NULL));
+      }
+      let(&bigpprod, "");
+      bigpprod = bigAdd(bignum3, bigdprod); /@ Accumulate partial product @/
+      let(&bignum3, bigpprod);
+    }
+  } /@ next p @/
+  let(&bigdprod, "");
+  let(&bigpprod, "");
+  return bignum3;
+}
+**** end commented out section added 12-Nov-2018 ***/
 
 
 /* Traces what statements require the use of a given statement */
