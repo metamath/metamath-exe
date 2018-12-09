@@ -22,7 +22,12 @@
      lc -O m*.c -o metamath.exe
 */
 
-#define MVERSION "0.167 13-Nov-2018"
+#define MVERSION "0.168 8-Dec-2018"
+
+/* 0.168 8-Dec-2018 nm metamath.c - validate that /NO_REPEATED_STEPS is used
+   only with /LEMMON.
+   8-Dec-2018 nm mmcmds.c - fix bug #256 reported by Jim Kingdon
+   (https://github.com/metamath/set.mm/issues/497). */
 /* 0.167 13-Nov-2018 nm mmcmds.c - SHOW TRACE_BACK .../COUNT now uses proof
    the way it's stored (previously, it always uncompressed the proof).  The
    new step count (for compressed proofs) corresponds to the step count the
@@ -33,21 +38,21 @@
    30-Oct-2018 nm mmcmds.c - put "This theorem is referenced by" after
    axioms and definitions used in HTML; use "(None)" instead of suppressing
    line if nothing is referenced */
-/* 0.165 20-Oct-2017 nm mmwtex.c - added ~ mmtheorems#abc type anchor
+/* 0.165 20-Oct-2018 nm mmwtex.c - added ~ mmtheorems#abc type anchor
    in TOC details.  mmwtex.c - fix bug (reported by Benoit Jubin) that
    changes "_" in labels to subscript.  mmcmdl.c - remove unused COMPLETE
    qualifier from SHOW PROOF.  mmwtex.c - enhance special cases of web page
    spacing identified by Benoit Jubin */
-/* 0.164 5-Sep-2017 nm mmwtex.c, mmhlpb.c - added NOTE to bib keywords
-   14-Aug-2017 nm metamath.c - added defaultScrollMode to prevent
+/* 0.164 5-Sep-2018 nm mmwtex.c, mmhlpb.c - added NOTE to bib keywords
+   14-Aug-2018 nm metamath.c - added defaultScrollMode to prevent
    SET SCROLL CONTINUOUS from reverting to PROMPTED after a SUBMIT command */
-/* 0.163 4-Aug-2017 nm mmwtex.c - removed 2nd "sandbox:bighdr" anchor
+/* 0.163 4-Aug-2018 nm mmwtex.c - removed 2nd "sandbox:bighdr" anchor
    in mmtheorems.html; removed Firefox and IE references; changed breadcrumb
    font to be consistent with other pages; put asterisk next to TOC entries
    that have associated comments */
 /* FOR FUTURE REFERENCE: search for "Thierry" in mmwtex.c to modify the link
    to tirix.org structured proof site */
-/* 0.162-thierry 3-Jun-2017 nm mmwtex.c - add link to tirix.org structured
+/* 0.162-thierry 3-Jun-2018 nm mmwtex.c - add link to tirix.org structured
    proofs */
 /* 0.162 3-Jun-2018 nm mmpars.c - re-enabled error check for $c not in
    outermost scope.  mmhlpa.c mmhlpb.c- improve some help messages.
@@ -55,8 +60,8 @@
    WRITE BIBLIOGRAPHY */
 /* 0.161 2-Feb-2018 nm mmpars.c,h mmcmds.c mmwtex.c - fix wrong file name
    and line number in error messages */
-/* 0.160 24-Jan-2017 nm mmpars.c - fix bug introduced in version 0.158 */
-/* 0.159 23-Jan-2017 nm mmpars.c - fix crash due to missing include file */
+/* 0.160 24-Jan-2018 nm mmpars.c - fix bug introduced in version 0.158 */
+/* 0.159 23-Jan-2018 nm mmpars.c - fix crash due to missing include file */
 /* 0.158 22-Jan-2018 nm mminou.c - strip CRs from Windows SUBMIT files
    run on Linux */
 /* 0.157 15-Jan-2018 nm Major rewrite of READ-related functions.
@@ -4025,6 +4030,16 @@ void command(int argc, char *argv[])
       if (i) splitColumn = (long)val(fullArg[i + 1]);
       i = switchPos("/ NO_REPEATED_STEPS"); /* 28-Jun-2013 nm */
       if (i) skipRepeatedSteps = 1;         /* 28-Jun-2013 nm */
+
+      /* 8-Dec-2018 nm */
+      /* If NO_REPEATED_STEPS is specified, indentation (tree) mode will be
+         misleading because a hypothesis assignment will be suppressed if the
+         same assignment occurred earlier, i.e. it is no longer a "tree". */
+      if (skipRepeatedSteps == 1 && noIndentFlag == 0) {
+        print2("?You must specify / LEMMON with / NO_REPEATED_STEPS\n");
+        continue;
+      }
+
       i = switchPos("/ TEX") || switchPos("/ HTML")
           /* 14-Sep-2010 nm Added OLDE_TEX */
           || switchPos("/ OLD_TEX");

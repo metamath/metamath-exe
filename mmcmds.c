@@ -989,9 +989,12 @@ void typeStatement(long showStmt,
     if (subType != SYNTAX) { /* Only do this for
         definitions, axioms, and theorems, not syntax statements */
       let(&str1, "");
+      outputToString = 0; /* Switch output to console in case
+            traceUsage reports an error */ /* 8-Dec-2018 nm */
       str1 = traceUsage(showStmt,
           0, /* recursiveFlag */
           0 /* cutoffStmt */);
+      outputToString = 1; /* Restore output to string */ /* 8-Dec-2018 nm */
       /* if (str1[0]) { */ /* Used by at least one */
       /* 18-Jul-2015 nm */
 
@@ -1147,7 +1150,9 @@ void typeStatement(long showStmt,
        /* 19-Sep-2012 nm Include buffer in output string*/
       let(&str2, cat(str5, str2, "</FONT></TD></TR>", NULL));
       /*printLongLine(str2, "", "\"");*/ /* 18-Jul-2015 nm Deleted */
-      if (printString[0]) bug(256);  /* 18-Jul-2015 nm */
+      if (printString[0]) {
+        bug(256);  /* 18-Jul-2015 nm */
+      }
       let(&printString, str2); /* 18-Jul-2015 nm */
     } /* if (subType != SYNTAX) */
     if (subType == THEOREM) {
