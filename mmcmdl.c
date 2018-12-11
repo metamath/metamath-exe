@@ -61,7 +61,8 @@ flag processCommandLine(void)
       /* Normal mode */
       let(&tmpStr, cat("DBG|",
           "HELP|READ|WRITE|PROVE|SHOW|SEARCH|SAVE|SUBMIT|OPEN|CLOSE|",
-          "SET|FILE|BEEP|EXIT|QUIT|ERASE|VERIFY|MORE|TOOLS|",
+          /* 10-Dec-2018 nm Added MARKUP */
+          "SET|FILE|BEEP|EXIT|QUIT|ERASE|VERIFY|MARKUP|MORE|TOOLS|",
           "MIDI|<HELP>",
           NULL));
     } else {
@@ -72,7 +73,8 @@ flag processCommandLine(void)
           "SET|FILE|BEEP|EXIT|_EXIT_PA|QUIT|VERIFY|INITIALIZE|ASSIGN|REPLACE|",
           /* 11-Sep-2016 nm Added EXPAND */
           "LET|UNIFY|IMPROVE|MINIMIZE_WITH|EXPAND|MATCH|DELETE|UNDO|REDO|",
-          "MORE|TOOLS|MIDI|<HELP>",
+          /* 10-Dec-2018 nm Added MARKUP */
+          "MARKUP|MORE|TOOLS|MIDI|<HELP>",
           NULL));
     }
     if (!getFullArg(0,tmpStr)) {
@@ -81,10 +83,11 @@ flag processCommandLine(void)
 
     if (cmdMatches("HELP")) {
           /* 15-Jan-2018 nm Added MARKUP */
-      if (!getFullArg(1, cat("LANGUAGE|MARKUP|PROOF_ASSISTANT|MM-PA|",
+      if (!getFullArg(1, cat("LANGUAGE|PROOF_ASSISTANT|MM-PA|",
           "BEEP|EXIT|QUIT|READ|ERASE|",
           "OPEN|CLOSE|SHOW|SEARCH|SET|VERIFY|SUBMIT|SYSTEM|PROVE|FILE|WRITE|",
-          "ASSIGN|REPLACE|MATCH|UNIFY|LET|INITIALIZE|DELETE|IMPROVE|",
+          /* 10-Dec-2018 nm Added MARKUP */
+          "MARKUP|ASSIGN|REPLACE|MATCH|UNIFY|LET|INITIALIZE|DELETE|IMPROVE|",
           /* 11-Sep-2016 nm Added EXPAND */
           "MINIMIZE_WITH|EXPAND|UNDO|REDO|SAVE|DEMO|INVOKE|CLI|EXPLORE|TEX|",
           "LATEX|HTML|COMMENTS|MORE|",
@@ -1401,6 +1404,38 @@ flag processCommandLine(void)
          in whatever way is needed for debugging. */
       if (!getFullArg(1, "* What is the debugging string? "))
         goto pclbad;
+      goto pclgood;
+    }
+
+    /* 10-Dec-2018 nm Added MARKUP command*/
+    if (cmdMatches("MARKUP")) {
+      if (sourceHasBeenRead == 0) {
+        print2("?No source file has been read in.  Use READ first.\n");
+        goto pclbad;
+      }
+      if (!getFullArg(1,
+          "* What is the name of the input file with markup? "))
+        goto pclbad;
+      if (!getFullArg(2,
+          "* What is the name of the HTML output file? "))
+        goto pclbad;
+
+      /* Get any switches */
+      i = 2;
+      while (1) {
+        i++;
+        if (!getFullArg(i, "/|$|<$>")) goto pclbad;
+        if (lastArgMatches("/")) {
+          i++;
+          if (!getFullArg(i, cat(
+              "HTML|ALT_HTML|SYMBOLS_ONLY",
+              "|<ALT_HTML>", NULL)))
+            goto pclbad;
+        } else {
+          break;
+        }
+        /*break;*/ /* Break if only 1 switch is allowed */
+      }
       goto pclgood;
     }
 

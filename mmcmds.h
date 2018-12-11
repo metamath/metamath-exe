@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2018  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -82,6 +82,10 @@ void verifyProofs(vstring labelMatch, flag verifyFlag);
    If checkFiles = 1, check mm*.html, presence of gifs, etc. */
 void verifyMarkup(vstring labelMatch, flag dateSkip,
     flag fileSkip, flag verboseMode); /* 26-Dec-2016 nm */
+
+/* 10-Dec-2018 nm Added */
+void processMarkup(vstring inputFileName, vstring outputFileName,
+    flag symbolsOnly);
 
 /* 3-May-2016 nm */
 /* List "discouraged" statements with "(Proof modification is discouraged."

@@ -5159,6 +5159,68 @@ void verifyMarkup(vstring labelMatch,
 } /* verifyMarkup */
 
 
+
+/* 10-Dec-2018 nm Added */
+/* Function to process markup in an arbitrary non-Metamath HTML file, treating
+   the file as a giant comment. */
+void processMarkup(vstring inputFileName, vstring outputFileName,
+    flag symbolsOnly) {
+  FILE *outputFilePtr;
+  vstring inputFileContent = "";
+  long size;
+
+  /* Check that globals aren't in a weird state */
+  if (outputToString == 1 || printString[0] != 0) {
+    bug(265);
+  }
+
+  /* readTexDefs() rereads based on changed in htmlFlag, altHtmlFlag */
+  if (2/*error*/ == readTexDefs(0 /* 1 = check errors only */,
+      1 /* 1 = no GIF file existence check */  )) {
+    goto PROCESS_MARKUP_RETURN; /* An error occurred */
+  }
+
+  print2("Reading \"%s\"...\n", inputFileName);
+
+  let(&inputFileContent, "");
+  inputFileContent = readFileToString(inputFileName, 1/*verbose*/, &size);
+  if (inputFileContent == NULL) {
+    /* Couldn't open the file; error msg provided by readFileToString */
+    inputFileContent = ""; /* Restore to normal vstring to prevent seg fault */
+    goto PROCESS_MARKUP_RETURN;
+  }
+
+  print2("Creating \"%s\"...\n", outputFileName);
+
+  /* fSafeOpen() renames existing files with ~1,~2,etc.  This way
+     existing user files will not be accidentally destroyed. */
+  outputFilePtr = fSafeOpen(outputFileName, "w", 0/*noVersioningFlag*/);
+  if (outputFilePtr == NULL) {
+    /* (Error msg already provided by fSafeOpen) */
+    /* print2("?Couldn't open \"%s\"\n", outputFileName); */
+    goto PROCESS_MARKUP_RETURN;
+  }
+
+  outputToString = 0;
+  let(&printString, "");
+  showStatement = 0; /* For printTexComment */
+  texFilePtr = outputFilePtr; /* For printTexComment */
+  printTexComment(  /* Sends result to texFilePtr */
+      inputFileContent,
+      0, /* 1 = htmlCenterFlag */
+      symbolsOnly ? 3 : 2, /* 2 = everything, 3 = process only symbols */
+      0 /* 1 = noFileCheck */);
+  fclose(texFilePtr);
+  texFilePtr = NULL;
+
+ PROCESS_MARKUP_RETURN:
+  /* Deallocate */
+  let(&inputFileContent, "");
+  let(&printString, "");
+  return;
+}
+
+
 /* 3-May-2016 nm */
 /* List "discouraged" statements with "(Proof modification is discouraged."
    and "(New usage is discourged.)" comment markup tags. */

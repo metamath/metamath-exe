@@ -22,8 +22,10 @@
      lc -O m*.c -o metamath.exe
 */
 
-#define MVERSION "0.168 8-Dec-2018"
-
+#define MVERSION "0.169 10-Dec-2018"
+/* 0.169 10-Dec-2018 nm metamath.c, mmcmds.c,h, mmcmdl.c, mmpars.c, mmhlpa.c,
+   mmwtex.c - Add MARKUP command.
+   9-Dec-2018 nm mmwtex.c - escape literal "[" with "[[" in comments. */
 /* 0.168 8-Dec-2018 nm metamath.c - validate that /NO_REPEATED_STEPS is used
    only with /LEMMON.
    8-Dec-2018 nm mmcmds.c - fix bug #256 reported by Jim Kingdon
@@ -7743,6 +7745,25 @@ void command(int argc, char *argv[])
           (flag)i, /* 1 = skip checking date consistency */
           (flag)j, /* 1 = skip checking external files GIF, mmset.html,... */
           (flag)k); /* 1 = verbose mode */  /* 26-Dec-2016 nm */
+      continue;
+    }
+
+    /* 10-Dec-2018 nm Added */
+    if (cmdMatches("MARKUP")) {
+      htmlFlag = 1;
+      /* If not specified, leave altHtmlFlag at current value */
+      if (switchPos("/ HTML") != 0) {
+        if (switchPos("/ ALT_HTML") != 0) {
+          print2("?Please specify only one of / HTML and / ALT_HTML.\n");
+          continue;
+        }
+        altHtmlFlag = 0;
+      } else {
+        if (switchPos("/ ALT_HTML") != 0) altHtmlFlag = 1;
+      }
+      processMarkup(fullArg[1], /* Input file */
+          fullArg[2],  /* Output file */
+          (switchPos("/ SYMBOLS_ONLY") != 0) ? 1 : 0); /* Math symbols only */
       continue;
     }
 

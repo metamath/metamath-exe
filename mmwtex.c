@@ -1944,11 +1944,12 @@ void printTexHeader(flag texHeaderFlag)
 
 } /* printTexHeader */
 
-/* Prints an embedded comment in TeX.  The commentPtr must point to the first
+/* Prints an embedded comment in TeX or HTML.  The commentPtr must point to the first
    character after the "$(" in the comment.  The printout ends when the first
    "$)" or null character is encountered.   commentPtr must not be a temporary
    allocation.   htmlCenterFlag, if 1, means to center the HTML and add a
    "Description:" prefix. */
+/* The output is printed to the global texFilePtr. */
 /* Note: the global long "showStatement" is referenced to determine whether
    to read bibliography from mmset.html or mmhilbert.html (or other
    htmlBibliography or extHtmlBibliography file pair). */
@@ -1956,6 +1957,13 @@ void printTexHeader(flag texHeaderFlag)
 flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
     /* 17-Nov-2015 nm */
     flag errorsOnly, /* 1 = no output, just warning msgs if any */
+        /* 10-Dec-2018 nm - expanded meaning of errorsOnly for MARKUP commmand:
+             2 = process as if in <HTML>...</HTML> preformatted mode but
+                 don't strip <HTML>...</HTML> tags
+             3 = same as 2, but convert ONLY math symbols
+           (These new values were added instead of addina a new argument,
+           so as not to have to modify ~60 other calls to this function) */
+
     flag noFileCheck)  /* 1 = ignore missing external files (gifs, bib, etc.) */
 {
   vstring cmtptr; /* Not allocated */
@@ -1994,6 +2002,11 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
   long i, clen;
   flag returnVal = 0; /* 1 means error/warning */ /* 17-Nov-2015 nm */
 
+  /* 10-Dec-2018 nm */
+  /* Internal flag derived from errorsOnly argument, for MARKUP command use */
+  flag markupCommandMode; /* 2 means everything, 3 means symbols only, 0 is
+           for normal use */
+
   /* We must let this procedure handle switching output to string mode */
   if (outputToString) bug(2309);
   /* The LaTeX (or HTML) file must be open */
@@ -2008,11 +2021,24 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
                                and flagged to the user elsewhere) */
   }
 
+  /* 10-Dec-2018 nm */
+  /* Extract markupCommandMode from errorsOnly argument */
+  if (errorsOnly == 2 || errorsOnly == 3) { /* Called from processMarkup() */
+    markupCommandMode = errorsOnly;
+    errorsOnly = 0; /* For normal use from here on */
+  } else {
+    markupCommandMode = 0;
+  }
+
   /* Convert line to the old $m..$n and $l..$n formats (using DOLLAR_SUBST
      instead of "$") - the old syntax is obsolete but we do this conversion
      to re-use some old code */
-  i = instr(1, cmtptr, "$)");      /* If it points to source buffer */
-  if (!i) i = (long)strlen(cmtptr) + 1;  /* If it's a stand-alone string */
+  if (markupCommandMode == 0) {
+    i = instr(1, cmtptr, "$)");      /* If it points to source buffer */
+    if (!i) i = (long)strlen(cmtptr) + 1;  /* If it's a stand-alone string */
+  } else {
+    i = (long)strlen(cmtptr) + 1;
+  }
   let(&cmt, left(cmtptr, i - 1));
 
   /* All actions on cmt should be mirrored on cmdMasked, except that
@@ -2026,7 +2052,9 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
     /* But skip converting math symbols inside ` ` */
     /* 26-Dec-2011 nm Detect preformatted HTML (this is crude, since it
        will apply to whole comment - perhaps fine-tune this later) */
-    if (instr(1, cmt, "<HTML>")) preformattedMode = 1;
+    if (instr(1, cmt, "<HTML>") != 0
+        || markupCommandMode != 0 /* 10-Dec-2018 nm */
+        ) preformattedMode = 1;
     mode = 1; /* 1 normal, -1 math token */
     let(&tmp, "");
     let(&tmpMasked, "");
@@ -2091,7 +2119,9 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
   /* Mask out _ (underscore) in labels so they won't become subscripts
      (reported by Benoit Jubin) */
   /* This section is independent and can be removed without side effects */
-  if (htmlFlag) {
+  if (htmlFlag
+      && markupCommandMode != 3 /* Mode 3 processes symbols only */
+      ) {
     pos1 = 0;
     while (1) {   /* Look for label start */
       pos1 = instr(pos1 + 1, cmtMasked, "~");
@@ -2133,6 +2163,10 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
   /* This must be done before the underscores below so subscript $'s */
   /* won't be converted to \$'s */
   if (!htmlFlag) {  /* LaTeX */
+
+    /* MARKUP command doesn't handle LaTeX */
+    if (markupCommandMode != 0) bug(2343);
+
     pos1 = 0;
     while (1) {
       pos1 = instr(pos1 + 1, cmt, "$");
@@ -2150,7 +2184,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
       let(&cmtMasked, cat(left(cmtMasked, pos1 - 1), "\\$",
           right(cmtMasked, pos1 + 1), NULL));
       pos1 = pos1 + 1; /* Adjust for 2-1 extra chars in "let" above */
-    }
+    } /* while (1) */
   }
 
   /* 15-Feb-2014 nm */
@@ -2209,7 +2243,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
      subscripts */
   /* 5-Dec-03 Added LaTeX handling */
   /* This section is independent and can be removed without side effects */
-  if (i == i + 0 /*was htmlFlag*/) {  /* 5-Dec-03 */
+  if (markupCommandMode != 3 /*was htmlFlag*/) {  /* 5-Dec-03 */
     pos1 = 0;
     while (1) {
       /* pos1 = instr(pos1 + 1, cmt, "_"); */
@@ -2362,7 +2396,9 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
   /* 10/10/02 Put bibliography hyperlinks in comments converted to HTML:
         [Monk2] becomes <A HREF="mmset.html#monk2>[Monk2]</A> etc. */
   /* This section is independent and can be removed without side effects */
-  if (htmlFlag) {
+  if (htmlFlag
+      && markupCommandMode != 3 /* Mode 3 processes symbols only */
+      ) {
     /* Assign local tag list and local HTML file name */
     if (showStatement < extHtmlStmt) {
       let(&bibTags, htmlBibliographyTags);
@@ -2388,6 +2424,19 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
         /* pos1 = instr(pos1 + 1, cmt, "["); */
         /* 20-Aug-2014 nm Only look at non-math part of comment */
         pos1 = instr(pos1 + 1, cmtMasked, "[");
+
+        /* 9-Dec-2018 nm */
+        /* Escape a double [[ */
+        if (cmtMasked[pos1] == '[') {  /* This is the char after "[" above */
+          /* Remove the first "[" */
+          let(&cmt, cat(left(cmt, pos1 - 1),
+              right(cmt, pos1 + 1), NULL));
+          let(&cmtMasked, cat(left(cmtMasked, pos1 - 1),
+              right(cmtMasked, pos1 + 1), NULL));
+          /* The pos1-th position (starting at 1) is now the "[" that remains */
+          continue;
+        }
+
         if (!pos1) break;
         /* pos2 = instr(pos1 + 1, cmt, "]"); */
         /* 20-Aug-2014 nm Only look at non-math part of comment */
@@ -2598,10 +2647,14 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
       }
     }
     if (cmt[i] == '~' && mode != 'm') {
-      if (cmt[i + 1] == '~') {
-        /* Escaped ~ = actual ~ */
-        let(&cmt, cat(left(cmt, i + 1), right(cmt, i + 3), NULL));
-        clen--;
+      if (cmt[i + 1] == '~' /* Escaped ~ */
+          || markupCommandMode == 3 /* Process only symbols */
+          ) {
+        if (cmt[i + 1] == '~') {
+          /* Escaped ~ = actual ~ */
+          let(&cmt, cat(left(cmt, i + 1), right(cmt, i + 3), NULL));
+          clen--;
+        }
       } else {
         /* Enter or exit label mode */
         if (mode != 'l') {
@@ -2659,6 +2712,18 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
             || cmt[i] == '<') /* 17-Nov-2012 nm If the label ends the comment,
                "</TD>" with no space will be appended before this section. */
         && mode == 'l') {
+
+      /* 10-Dec-2018 nm */
+      /* I'm not sure if markupCommandMode=3 can ever get here; if it does,
+         I'm not sure of the side effects.  Call it a bug for now so it
+         will get reported and I can analyze it.  I don't think it can get
+         here because we should never be in label mode if markupCommandMode=3. */
+      if (markupCommandMode == 3) {
+        print2("This may or may not be a real bug in the MARKUP command.\n");
+        print2("But please report it to NM for analysis.\n");
+        bug(2344);
+      }
+
       /* Whitespace exits label mode */
       mode = 'n';
       let(&cmt, cat(left(cmt, i), chr(DOLLAR_SUBST) /*$*/, chr(mode),
@@ -2695,7 +2760,9 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
   pos1 = -1; /* So -1 + 2 = 1 = start of string for instr() */
   while (1) {
     pos1 = instr(pos1 + 2/*skip new \n*/, cmt, "<HTML>");
-    if (pos1 == 0) break;
+    if (pos1 == 0
+      || markupCommandMode != 0 /* Don't touch <HTML> in MARKUP command */
+      ) break;
 
     /* If <HTML> begins a line (after stripping spaces), don't put a \n so
        that we don't trigger new paragraph mode */
@@ -2709,7 +2776,9 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
   pos1 = -1; /* So -1 + 2 = 1 = start of string for instr() */
   while (1) {
     pos1 = instr(pos1 + 2/*skip new \n*/, cmt, "</HTML>");
-    if (pos1 == 0) break;
+    if (pos1 == 0
+      || markupCommandMode != 0 /* Don't touch <HTML> in MARKUP command */
+      ) break;
 
     /* If </HTML> begins a line (after stripping spaces), don't put a \n so
        that we don't trigger new paragraph mode */
@@ -2790,6 +2859,18 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
           let(&outputLine, cat(outputLine, modeSection, NULL));
           break;
         case 'l': /* Label mode */
+
+          /* 10-Dec-2018 nm */
+          /* I'm not sure if markupCommandMode=3 can ever get here; if it does,
+             I'm not sure of the side effects.  Call it a bug for now so it
+             will get reported and I can analyze it.  I don't think it can get
+             here because we should never be in label mode if markupCommandMode=3. */
+          if (markupCommandMode == 3) {
+            print2("This may or may not be a real MARKUP command bug.\n");
+            print2("But please report it to NM for analysis.\n");
+            bug(2345);
+          }
+
           let(&modeSection, edit(modeSection, 8 + 128 + 16));  /* Discard
                       leading and trailing blanks; reduce spaces to one space */
           let(&tmpStr, "");
@@ -2941,7 +3022,9 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
       /* pos1 = instr(1, outputLine, "<PRE>"); */
       /* 26-Dec-2011 nm - changed <PRE> to more general <HTML> */
       pos1 = instr(1, outputLine, "<HTML>");
-      if (pos1) {
+      if (pos1 != 0
+          && markupCommandMode == 0
+          ) {
         /* 26-Dec-2011 nm - The line below is probably redundant since we
            set preformattedMode ealier.  Maybe add a bug check to make sure
            it is 1 here. */
@@ -2958,8 +3041,9 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
             right(outputLine, pos1 + 6), NULL));
       }
       /* pos1 = instr(1, outputLine, "</PRE>"); */
-      pos1 = instr(1, outputLine, "</HTML>");
-      if (pos1) {
+      if (pos1 != 0
+          && markupCommandMode == 0
+          ) {
         preformattedMode = 0;
         /* 26-Dec-2011 nm - Took out fancy table for simplicity
         let(&outputLine, cat(left(outputLine, pos1 + 5),

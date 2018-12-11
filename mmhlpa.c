@@ -591,8 +591,43 @@ H("       recursive, or self reference to a file is ignored");
 H("");
 
 
+/* 10-Dec-2018 nm */
 printHelp = !strcmp(saveHelpCmd, "HELP MARKUP");
-H("See HELP VERIFY MARKUP.");
+H("Syntax:  MARKUP <inpfile> <outfile> [/ HTML] [/ ALT_HTML] [/ SYMBOLS_ONLY]");
+H("");
+H("This command will read an arbitrary <inpfile>, normally an HTML file");
+H("with markup, treating it as if it were a giant comment in a database file");
+H("and translating any markup into HTML.  The translated result is written to");
+H("<outfile>.  Note that the file names may be enclosed in single or double");
+H("quotes; this is required if a file name contains slashes, as might be the");
+H("case with Unix file path names.");
+H("");
+H("See HELP VERIFY MARKUP for the markup language used in database");
+H("comments.");
+H("");
+H("This command requires that a database source be read.  See HELP READ.");
+H("The math symbols and other information are taken from that database.");
+H("Also, the use of VERIFY MARKUP * is recommended to help ensure the");
+H("database has no errors in its symbol definitions.");
+H("");
+H("Note:  The existence of GIF files isn't checked.  Use VERIFY MARKUP * for");
+H("that.  However, validity of bibliographical references is checked since");
+H("VERIFY MARKUP can't do that.  To avoid literal \"~\" and \"[\" from being");
+H("interpreted as label and bibliography references, escape them with \"~~\"");
+H("and \"[[\" in the input file.  Alternately, use the / SYMBOLS_ONLY");
+H("qualifier to ignore \"[\" and \"~\".");
+H("");
+H("Optional qualifiers:");
+H("    / HTML (/ ALT_HTML) - use the symbols defined by the htmldef");
+H("        (althtmldef) statements in the $t comment in the .mm database.");
+H("        Usually these are GIF or Unicode math symbols respectively.");
+H("    / SYMBOLS_ONLY - process only symbols inside backquotes, and ignore");
+H("        label and bibliography references.");
+H("");
+H("If neither / HTML nor / ALT_HTML is specified, the output will default to");
+H("/ HTML unless / ALT_HTML was set by a previous command; the current state");
+H("is shown in SHOW SETTINGS.  If in doubt, specify the one you want.");
+H("");
 
 
 printHelp = !strcmp(saveHelpCmd, "HELP EXPLORE");
@@ -878,7 +913,7 @@ H("");
 
 
 printHelp = !strcmp(saveHelpCmd, "HELP OPEN TEX");
-H("Syntax:  OPEN TEX <file>");
+H("Syntax:  OPEN TEX <file> [/ NO_HEADER] [/ OLD_TEX]");
 H("");
 H("This command opens a file for writing LaTeX source and writes a LaTeX");
 H("header to the file.  LaTeX source can be written with the SHOW PROOF,");
@@ -890,10 +925,9 @@ H("To format and print the LaTeX source, you will need the TeX program,");
 H("which is standard in most Linux, Unix, and MacOSX installations and");
 H("available for Windows.");
 H("");
-H("Optional qualifier:");
+H("Optional qualifiers:");
 H("    / NO_HEADER - This qualifier prevents a standard LaTeX header and");
 H("        trailer from being included with the output LaTeX code.");
-H("Optional qualifier:");
 H("    / OLD_TEX - This qualifier produces a header with macro definitions");
 H("        for use with / OLD_TEX qualifiers of SHOW STATEMENT and SHOW");
 H("        PROOF.  It is obsolete and will be removed eventually.");

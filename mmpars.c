@@ -286,6 +286,12 @@ void parseKeywords(void)
   for (i = 1; i < potentialStatements; i++) {
     statement[i] = statement[0];
   }
+
+  /* 10-Dec-2018 nm */
+  /* In case there is no relevant statement (originally added for MARKUP
+     command) */
+  statement[0].labelName = "(N/A)";
+
 /*E*/if(db5)print2("Finished initializing statement array.\n");
 
   /* Fill in the statement array with raw source text */
