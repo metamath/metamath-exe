@@ -22,7 +22,8 @@
      lc -O m*.c -o metamath.exe
 */
 
-#define MVERSION "0.169 10-Dec-2018"
+#define MVERSION "0.170 12-Dec-2018"
+/* 0.170 12-Dec-2018 nm mmwtex.c - restore line accidentally deleted in 0.169 */
 /* 0.169 10-Dec-2018 nm metamath.c, mmcmds.c,h, mmcmdl.c, mmpars.c, mmhlpa.c,
    mmwtex.c - Add MARKUP command.
    9-Dec-2018 nm mmwtex.c - escape literal "[" with "[[" in comments. */

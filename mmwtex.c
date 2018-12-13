@@ -3041,6 +3041,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
             right(outputLine, pos1 + 6), NULL));
       }
       /* pos1 = instr(1, outputLine, "</PRE>"); */
+      pos1 = instr(1, outputLine, "</HTML>");
       if (pos1 != 0
           && markupCommandMode == 0
           ) {
