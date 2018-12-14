@@ -1428,8 +1428,8 @@ flag processCommandLine(void)
         if (lastArgMatches("/")) {
           i++;
           if (!getFullArg(i, cat(
-              "HTML|ALT_HTML|SYMBOLS_ONLY",
-              "|<ALT_HTML>", NULL)))
+              "HTML|ALT_HTML|SYMBOLS|LABELS|NUMBER_AFTER_LABEL|BIB_REFS",
+              "|UNDERSCORES|CSS|<ALT_HTML>", NULL)))
             goto pclbad;
         } else {
           break;

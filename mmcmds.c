@@ -232,7 +232,7 @@ void typeStatement(long showStmt,
         /* 17-Nov-2015 nm Add 3rd & 4th arguments */
         printTexComment(str1,              /* Sends result to texFilePtr */
             1, /* 1 = htmlCenterFlag */
-            0, /* 1 = errorsOnly */
+            PROCESS_EVERYTHING, /* actionBits */ /* 13-Dec-2018 nm */
             0  /* 1 = noFileCheck */);
       }
     }
@@ -3075,7 +3075,7 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
           /* 17-Nov-2015 nm Added 3rd & 4th arguments */
           printTexComment(str1,              /* Sends result to texFilePtr */
               1, /* 1 = htmlCenterFlag */
-              0, /* 1 = errorsOnly */
+              PROCESS_EVERYTHING, /* actionBits */ /* 13-Dec-2018 nm */
               0 /* 1 = noFileCheck */);
         }
       }
@@ -5002,7 +5002,7 @@ void verifyMarkup(vstring labelMatch,
     /* Use the errors-only (no output) feature of printTexComment() */
     f = printTexComment(descr,
         0, /* 1 = htmlCenterFlag (irrelevant for this call) */
-        1, /* 1 = errorsOnly */
+        PROCESS_EVERYTHING + ERRORS_ONLY, /* actionBits */ /* 13-Dec-2018 nm */
         fileSkip /* 1 = noFileCheck */);
     if (f == 1) errFound = 1;
 
@@ -5081,24 +5081,24 @@ void verifyMarkup(vstring labelMatch,
     if (hugeHdrComment[0] != 0)
       f = (char)(f + printTexComment(hugeHdrComment,
           0, /* 1 = htmlCenterFlag (irrelevant for this call) */
-          1, /* 1 = errorsOnly */
+          PROCESS_EVERYTHING + ERRORS_ONLY, /* actionBits */ /* 13-Dec-2018 nm */
           fileSkip /* 1 = noFileCheck */));
     if (bigHdrComment[0] != 0)
       f = (char)(f + printTexComment(bigHdrComment,
           0, /* 1 = htmlCenterFlag (irrelevant for this call) */
-          1, /* 1 = errorsOnly */
+          PROCESS_EVERYTHING + ERRORS_ONLY, /* actionBits */ /* 13-Dec-2018 nm */
           fileSkip /* 1 = noFileCheck */));
     if (smallHdrComment[0] != 0)
       f = (char)(f + printTexComment(smallHdrComment,
           0, /* 1 = htmlCenterFlag (irrelevant for this call) */
-          1, /* 1 = errorsOnly */
+          PROCESS_EVERYTHING + ERRORS_ONLY, /* actionBits */ /* 13-Dec-2018 nm */
           fileSkip /* 1 = noFileCheck */));
 
     /* Added 21-Aug-2017 nm */
     if (tinyHdrComment[0] != 0)
       f = (char)(f + printTexComment(tinyHdrComment,
           0, /* 1 = htmlCenterFlag (irrelevant for this call) */
-          1, /* 1 = errorsOnly */
+          PROCESS_EVERYTHING + ERRORS_ONLY, /* actionBits */ /* 13-Dec-2018 nm */
           fileSkip /* 1 = noFileCheck */));
     /* (End of 21-Aug-2017 addition) */
 
@@ -5164,10 +5164,11 @@ void verifyMarkup(vstring labelMatch,
 /* Function to process markup in an arbitrary non-Metamath HTML file, treating
    the file as a giant comment. */
 void processMarkup(vstring inputFileName, vstring outputFileName,
-    flag symbolsOnly) {
+    flag processCss, long actionBits) {
   FILE *outputFilePtr;
   vstring inputFileContent = "";
   long size;
+  long p;
 
   /* Check that globals aren't in a weird state */
   if (outputToString == 1 || printString[0] != 0) {
@@ -5192,6 +5193,15 @@ void processMarkup(vstring inputFileName, vstring outputFileName,
 
   print2("Creating \"%s\"...\n", outputFileName);
 
+  /* Insert CSS from .mm file before "</HEAD>" if it isn't already there */
+  if (processCss != 0 && instr(1, inputFileContent, htmlCSS) == 0) {
+    p = instr(1, edit(inputFileContent, 32/*uppercase*/), "</HEAD>");
+    if (p != 0) {
+      let(&inputFileContent, cat(left(inputFileContent, p - 1),
+          htmlCSS, "\n", right(inputFileContent, p), NULL));
+    }
+  }
+
   /* fSafeOpen() renames existing files with ~1,~2,etc.  This way
      existing user files will not be accidentally destroyed. */
   outputFilePtr = fSafeOpen(outputFileName, "w", 0/*noVersioningFlag*/);
@@ -5208,7 +5218,7 @@ void processMarkup(vstring inputFileName, vstring outputFileName,
   printTexComment(  /* Sends result to texFilePtr */
       inputFileContent,
       0, /* 1 = htmlCenterFlag */
-      symbolsOnly ? 3 : 2, /* 2 = everything, 3 = process only symbols */
+      actionBits, /* bit-mapped list of actions */
       0 /* 1 = noFileCheck */);
   fclose(texFilePtr);
   texFilePtr = NULL;

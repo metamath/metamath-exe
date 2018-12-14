@@ -85,7 +85,7 @@ void verifyMarkup(vstring labelMatch, flag dateSkip,
 
 /* 10-Dec-2018 nm Added */
 void processMarkup(vstring inputFileName, vstring outputFileName,
-    flag symbolsOnly);
+    flag processCss, long actionBits);
 
 /* 3-May-2016 nm */
 /* List "discouraged" statements with "(Proof modification is discouraged."

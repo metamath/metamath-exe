@@ -44,6 +44,7 @@ extern vstring htmlHome; /* Set by htmlhome command */
 extern vstring htmlBibliography; /* Optional; set by htmlbibliography command */
 extern vstring extHtmlBibliography; /* Optional; set by exthtmlbibliography
                                        command */
+extern vstring htmlCSS; /* Set by htmlcss commands */  /* 14-Jan-2016 nm */
 /* Added 14-Jan-2016 */
 extern vstring htmlFont; /* Optional; set by htmlfont command */
 
@@ -96,8 +97,23 @@ void printTexHeader(flag texHeaderFlag);
 /* 17-Nov-2015 nm Added 3rd & 4th arguments; returns 1 if error/warning */
 flag printTexComment(vstring commentPtr,    /* Sends result to texFilePtr */
     flag htmlCenterFlag, /* 1 = htmlCenterFlag */
-    flag errorsOnly, /* 1 = errorsOnly */
+    long actionBits, /* see indicators below */
     flag noFileCheck /* 1 = noFileCheck */);
+/* Indicators for actionBits */
+#define ERRORS_ONLY 1
+#define PROCESS_SYMBOLS 2
+#define PROCESS_LABELS 4
+#define ADD_COLORED_LABEL_NUMBER 8
+#define PROCESS_BIBREFS 16
+#define PROCESS_UNDERSCORES 32
+/* CONVERT_TO_HTML means '<' to '&lt;'; unless <HTML> in comment (and strip it) */
+#define CONVERT_TO_HTML 64
+/* METAMATH_COMMENT means $) (as well as end-of-string) terminates string. */
+#define METAMATH_COMMENT 128
+/* PROCESS_ALL is for convenience */
+#define PROCESS_EVERYTHING PROCESS_SYMBOLS + PROCESS_LABELS \
+     + ADD_COLORED_LABEL_NUMBER + PROCESS_BIBREFS \
+     + PROCESS_UNDERSCORES + CONVERT_TO_HTML + METAMATH_COMMENT
 
 void printTexLongMath(nmbrString *proofStep, vstring startPrefix,
     vstring contPrefix, long hypStmt, long indentationLevel);
