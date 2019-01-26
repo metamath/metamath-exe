@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2018  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2019  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -2190,7 +2190,9 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
   if (!htmlFlag) {  /* LaTeX */
 
     /* MARKUP command doesn't handle LaTeX */
-    if (metamathComment != 0) bug(2343);
+    /* 25-Jan-2019 nm - this gets set by PROCESS_EVERYTHING in many calls;
+       it's not specific to MARKUP and not a bug. */
+    /* if (metamathComment != 0) bug(2343); */
 
     pos1 = 0;
     while (1) {

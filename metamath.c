@@ -1,6 +1,6 @@
 /*****************************************************************************/
 /* Program name:  metamath                                                   */
-/* Copyright (C) 2018 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
+/* Copyright (C) 2019 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
 /* License terms:  GNU General Public License Version 2 or any later version */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -22,7 +22,8 @@
      lc -O m*.c -o metamath.exe
 */
 
-#define MVERSION "0.171 13-Dec-2018"
+#define MVERSION "0.172 25-Jan-2019"
+/* 0.172 25-Jan-2019 nm mmwtex.c - comment out bug 2343 trap (not a bug) */
 /* 0.171 13-Dec-2018 nm metamath.c, mmcmdl.c, mmhlpa.c, mmcmds.c,h, mmwtex.c,h
    - add fine-grained qualfiers to MARKUP command */
 /* 0.170 12-Dec-2018 nm mmwtex.c - restore line accidentally deleted in 0.169 */
