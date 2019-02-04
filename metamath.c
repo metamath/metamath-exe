@@ -22,7 +22,9 @@
      lc -O m*.c -o metamath.exe
 */
 
-#define MVERSION "0.172 25-Jan-2019"
+#define MVERSION "0.173 3-Feb-2019"
+/* 0.173 3-Feb-2019 nm mmwtex.c - fixed infinite loop when "[" was the first
+   character in a comment */
 /* 0.172 25-Jan-2019 nm mmwtex.c - comment out bug 2343 trap (not a bug) */
 /* 0.171 13-Dec-2018 nm metamath.c, mmcmdl.c, mmhlpa.c, mmcmds.c,h, mmwtex.c,h
    - add fine-grained qualfiers to MARKUP command */

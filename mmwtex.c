@@ -2452,6 +2452,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
         /* pos1 = instr(pos1 + 1, cmt, "["); */
         /* 20-Aug-2014 nm Only look at non-math part of comment */
         pos1 = instr(pos1 + 1, cmtMasked, "[");
+        if (!pos1) break; /* 3-Feb-2019 nm Moved this to before block below */
 
         /* 9-Dec-2018 nm */
         /* Escape a double [[ */
@@ -2465,7 +2466,6 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
           continue;
         }
 
-        if (!pos1) break;
         /* pos2 = instr(pos1 + 1, cmt, "]"); */
         /* 20-Aug-2014 nm Only look at non-math part of comment */
         pos2 = instr(pos1 + 1, cmtMasked, "]");
