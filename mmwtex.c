@@ -6296,7 +6296,12 @@ flag writeBibliography(vstring bibFile,
            for space since we already reduced \n \t to space (\f is probably
            overkill, and any \r's are removed during the READ command) */
         if (instr(1, seg(str1, j, jend), " ")) continue;
-
+        /* 22-Feb-2019 nm */
+        /* Skip escaped bracket "[[" */
+        if (str1[j] == '[') {  /* (j+1)th character in str1 */
+          j++; /* Skip over 2nd "[" */
+          continue;
+        }
         if (!isalnum((unsigned char)(str1[j]))) continue; /* Not start of reference */
         n++;
         /* Backtrack from [reference] to a starting keyword */
