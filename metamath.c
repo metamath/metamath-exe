@@ -22,7 +22,9 @@
      lc -O m*.c -o metamath.exe
 */
 
-#define MVERSION "0.174 22-Feb-2019"
+#define MVERSION "0.175 8-Mar-2019"
+/* 0.175 8-Mar-2019 nm mmvstr.c - eliminate warning in gcc 8.3 (patch
+   provided by David Starner) */
 /* 0.174 22-Feb-2019 nm mmwtex.c - fix erroneous warnng when using "[["
    bracket escape in comment */
 /* 0.173 3-Feb-2019 nm mmwtex.c - fix infinite loop when "[" was the first

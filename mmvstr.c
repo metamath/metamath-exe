@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2016  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2019  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -744,7 +744,8 @@ vstring date()
 
   time(&time_val); /* Retrieve time */
   time_structure = localtime(&time_val); /* Translate to time structure */
-  sout = tempAlloc(12);
+  sout = tempAlloc(15); /* 8-Mar-2019 nm Changed from 12 to 15 to prevent
+                           gcc 8.3 warning (patch provided by David Starner) */
   /* "%02d" means leading zeros with min. field width of 2 */
   /* sprintf(sout,"%d-%s-%02d", */
   sprintf(sout,"%d-%s-%04d", /* 10-Apr-06 nm 4-digit year */
