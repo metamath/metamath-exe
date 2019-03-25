@@ -652,7 +652,8 @@ H("");
 
 
 printHelp = !strcmp(saveHelpCmd, "HELP VERIFY MARKUP");
-H("Syntax:  VERIFY MARKUP <label-match> [/ DATE_SKIP] [/ FILE_SKIP] [/VERBOSE]");
+H("Syntax:  VERIFY MARKUP <label-match> [/ DATE_SKIP] [/ TOP_DATE_SKIP]");
+H("             [/ FILE_SKIP] [/VERBOSE]");
 H("");
 H("This command checks comment markup and other informal conventions we have");
 H("adopted.  It error-checks the latexdef, htmldef, and althtmldef statements");
@@ -667,6 +668,10 @@ H("");
 H("Optional qualifiers:");
 H("    / DATE_SKIP - This qualifier will skip date consistency checking,");
 H("        which is usually not required for databases other than set.mm");
+H("    / TOP_DATE_SKIP - This qualifier will check date consistency except");
+H("        that the version date at the top of the database file will not");
+H("        be checked.  Only one of / DATE_SKIP and / TOP_DATE_SKIP may be");
+H("        specified.");
 H("    / FILE_SKIP - This qualifier will skip checks that require");
 H("        external files to be present, such as checking GIF existence and");
 H("        bibliographic links to mmset.html or equivalent.  It is useful");

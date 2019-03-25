@@ -4626,8 +4626,10 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
 /* 17-Nov-2015 nm Added htmldefs, bib, markup checking */
 /* 13-Dec-2016 nm Added checks for undesireable labels (mm*,
    Microsoft conflicts) */
+/* 24-Mar-2019 nm Added topDateSkip */
 void verifyMarkup(vstring labelMatch,
     flag dateSkip, /* 1 = don't check date consistency */
+    flag topDateSkip, /* 1 = don't check top date but check others */
     flag fileSkip, /* 1 = don't check external files (gifs, mmset.html,...) */
     flag verboseMode) /* 1 = more details */ {   /* 26-Dec-2016 nm */
   flag f;
@@ -5013,7 +5015,7 @@ void verifyMarkup(vstring labelMatch,
   /* This code expects a version date at the top of the file such as:
          $( set.mm - Version of 13-Dec-2016 $)
      If we later want a different format, this code should be modified. */
-  if (dateSkip == 0) {
+  if (dateSkip == 0  && topDateSkip == 0) {
     /* Get the top of the .mm file */
     let(&str1, space(statement[1].labelSectionLen));
     memcpy(str1, statement[1].labelSectionPtr,

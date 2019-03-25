@@ -22,7 +22,9 @@
      lc -O m*.c -o metamath.exe
 */
 
-#define MVERSION "0.175 8-Mar-2019"
+#define MVERSION "0.176 25-Mar-2019"
+/* 0.176 25-Mar-2019 nm metamath.c mmcmds.h mmcmds.c mmcmdl.c mmhlpb.c -
+   add /TOP_DATE_SKIP to VERIFY MARKUP */
 /* 0.175 8-Mar-2019 nm mmvstr.c - eliminate warning in gcc 8.3 (patch
    provided by David Starner) */
 /* 0.174 22-Feb-2019 nm mmwtex.c - fix erroneous warnng when using "[["
@@ -7757,10 +7759,17 @@ void command(int argc, char *argv[])
     /* 7-Nov-2015 nm Added */  /* 17-Nov-2015 nm Updated */
     if (cmdMatches("VERIFY MARKUP")) {
       i = (switchPos("/ DATE_SKIP") != 0) ? 1 : 0;
+      m = (switchPos("/ TOP_DATE_SKIP") != 0) ? 1 : 0;
       j = (switchPos("/ FILE_SKIP") != 0) ? 1 : 0;
       k = (switchPos("/ VERBOSE") != 0) ? 1 : 0;
+      if (i == 1 && m == 1) {
+        printf(
+            "?Only one of / DATE_SKIP and / TOP_DATE_SKIP may be specified.\n");
+        continue;
+      }
       verifyMarkup(fullArg[2],
           (flag)i, /* 1 = skip checking date consistency */
+          (flag)m, /* 1 = skip checking top date only */
           (flag)j, /* 1 = skip checking external files GIF, mmset.html,... */
           (flag)k); /* 1 = verbose mode */  /* 26-Dec-2016 nm */
       continue;

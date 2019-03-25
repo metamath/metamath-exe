@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2018  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2019  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -80,7 +80,7 @@ void verifyProofs(vstring labelMatch, flag verifyFlag);
 /* 7-Nov-2015 nm Added this function for date consistency */
 /* If checkFiles = 0, do not open external files.
    If checkFiles = 1, check mm*.html, presence of gifs, etc. */
-void verifyMarkup(vstring labelMatch, flag dateSkip,
+void verifyMarkup(vstring labelMatch, flag dateSkip, flag topDateSkip,
     flag fileSkip, flag verboseMode); /* 26-Dec-2016 nm */
 
 /* 10-Dec-2018 nm Added */
