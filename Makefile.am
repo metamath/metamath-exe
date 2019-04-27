@@ -50,4 +50,4 @@ EXTRA_DIST = \
 	README.TXT \
 	__README.TXT
 
-
+man_MANS = metamath.1
