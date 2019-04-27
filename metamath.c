@@ -22,7 +22,9 @@
      lc -O m*.c -o metamath.exe
 */
 
-#define MVERSION "0.176 25-Mar-2019"
+#define MVERSION "0.177 27-Apr-2019"
+/* 0.177 27-Apr-2019 nm mmcmds.c -"set" -> "setvar" in htmlAllowedSubst.
+   mmhlpb.c - fix typos in HELP IMPROVE. */
 /* 0.176 25-Mar-2019 nm metamath.c mmcmds.h mmcmds.c mmcmdl.c mmhlpb.c -
    add /TOP_DATE_SKIP to VERIFY MARKUP */
 /* 0.175 8-Mar-2019 nm mmvstr.c - eliminate warning in gcc 8.3 (patch

@@ -1409,7 +1409,7 @@ vstring htmlAllowedSubst(long showStmt)
   /* First, count the number of set variables */
   setVars = 0;
   for (i = 0; i < numReqHyps; i++) {
-    /* Scan "set" variables */
+    /* Scan "setvar" variables */
     if (statement[reqHyp[i]].type == (char)e_) continue;
     if (statement[reqHyp[i]].type != (char)f_) bug(251);
     if (statement[reqHyp[i]].mathStringLen != 2)
@@ -1417,7 +1417,7 @@ vstring htmlAllowedSubst(long showStmt)
     strptr = mathToken[
               (statement[reqHyp[i]].mathString)[0]].tokenName;
     /* THE FOLLOWING IS SPECIFIC TO set.mm */
-    if (strcmp("set", strptr)) continue;
+    if (strcmp("setvar", strptr)) continue;
                                   /* Not a set variable */
     setVars++;
   }
@@ -1425,11 +1425,11 @@ vstring htmlAllowedSubst(long showStmt)
   j = 0;
   nmbrLet(&setVar, nmbrSpace(setVars));
   for (i = 0; i < numReqHyps; i++) {
-    /* Scan "set" variables */
+    /* Scan "setvar" variables */
     if (statement[reqHyp[i]].type == (char)e_) continue;
     strptr = mathToken[
               (statement[reqHyp[i]].mathString)[0]].tokenName;
-    if (strcmp("set", strptr)) continue;
+    if (strcmp("setvar", strptr)) continue;
                                   /* Not a set variable */
     setVar[j] = (statement[reqHyp[i]].mathString)[1];
     j++;
