@@ -1004,7 +1004,7 @@ H("");
 
 printHelp = !strcmp(saveHelpCmd, "HELP WRITE THEOREM_LIST");
 H("Syntax:  WRITE THEOREM_LIST [/ THEOREMS_PER_PAGE <number>] [/ SHOW_LEMMAS]");
-H("               [/ HTML] [/ALT_HTML]");
+H("               [/ HTML] [/ALT_HTML] [/ NO_VERSIONING]");
 H("");
 H("Optional qualifiers:");
 H("    / THEOREMS_PER_PAGE <number> - specifies the number of theorems to");
@@ -1015,6 +1015,7 @@ H("        suppressed to reduce the web page file size).");
 H("    / HTML (/ ALT_HTML) - use the symbols defined by the htmldef");
 H("        (althtmldef) statements in the $t comment in the .mm database.");
 H("        Usually these are GIF or Unicode math symbols respectively.");
+H("    / NO_VERSIONING - Backup files suffixed with ~1 are not created.");
 H("");
 H("This command writes a list of the $a and $p statements in the database");
 H("into web page files called \"mmtheorems.html\", \"mmtheorems1.html\",");

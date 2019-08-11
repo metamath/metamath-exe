@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2019  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -121,12 +121,14 @@ void printTexTrailer(flag texHeaderFlag);
 
 /* Added 4-Dec-03
    Function implementing WRITE THEOREM_LIST / THEOREMS_PER_PAGE nn */
-void writeTheoremList(long theoremsPerPage, flag showLemmas);
+void writeTheoremList(long theoremsPerPage, flag showLemmas,
+    flag noVersioning);
 
 /* 2-Aug-2009 nm - broke this function out from writeTheoremList() */
 /* 20-Jun-2014 nm - added hugeHdrAddr */
 /* 21-Aug-2017 nm - added tinyHdrAddr */
-void getSectionHeadings(long stmt, vstring *hugeHdrTitle,
+/* 6-Aug-2019 mm - changed return type from void to flag (=char) */
+flag getSectionHeadings(long stmt, vstring *hugeHdrTitle,
     vstring *bigHdrTitle,
     vstring *smallHdrTitle,
     vstring *tinyHdrTitle,

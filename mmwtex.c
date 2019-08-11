@@ -3679,7 +3679,7 @@ void printTexTrailer(flag texTrailerFlag) {
 
 /* Added 4-Dec-03 - WRITE THEOREM_LIST command:  Write out theorem list
    into mmtheorems.html, mmtheorems1.html,... */
-void writeTheoremList(long theoremsPerPage, flag showLemmas)
+void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
 {
   nmbrString *nmbrStmtNmbr = NULL_NMBRSTRING;
   long pages, page, assertion, assertions, lastAssertion;
@@ -3751,7 +3751,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas)
         /* 8-May-2015 nm */
         cat("mmtheorems", (page > 0) ? str((double)page) : "", ".html", NULL));
     print2("Creating %s\n", outputFileName);
-    outputFilePtr = fSafeOpen(outputFileName, "w", 0/*noVersioningFlag*/);
+    outputFilePtr = fSafeOpen(outputFileName, "w", noVersioning);
     if (!outputFilePtr) goto TL_ABORT; /* Couldn't open it (error msg was provided)*/
 
     /* Output header */
@@ -5305,9 +5305,13 @@ ignores headers for empty sections; for example, a mathbox user might
 have a bunch of headers for sections planned for the future, but we
 ignore them if those sections are empty (no $a or $p in them).
 
-21-Aug-2017: added "tiny" to "big, medium, small".
+ 6-Aug-2019 nm: added error checking; added error checking
+21-Aug-2017 nm: added "tiny" to "big, medium, small".
+
 */
-void getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
+/*void getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,*/
+/* Return 1 if error found, 0 otherwise */ /* 6-Aug-2019 nm */
+flag getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
     vstring *smallHdrTitle,
     vstring *tinyHdrTitle,  /* 21-Aug-2017 nm */
     /* Added 8-May-2015 nm */
@@ -5316,9 +5320,21 @@ void getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
     vstring *smallHdrComment,
     vstring *tinyHdrComment) {  /* 21-Aug-2017 nm */
 
+#define HUGE_DECORATION "####"
+#define BIG_DECORATION "#*#*"
+#define SMALL_DECORATION "=-=-"
+#define TINY_DECORATION "-.-."
+
   /* 31-Jul-2006 for table of contents mod */
   vstring labelStr = "";
   long pos, pos1, pos2, pos3, pos4;
+  flag errorFound = 0; /* 6-Aug-2019 nm */
+  flag saveOutputToString; /* 6-Aug-2019 nm */
+
+  /* 6-Aug-2019 nm */
+  /* Print any error messages to screen */
+  saveOutputToString = outputToString; /* To restore when returning */
+  outputToString = 0;
 
   /* 18-Dec-2016 nm */
   /* We now process only $a or $p statements */
@@ -5356,13 +5372,13 @@ void getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
        and perhaps slow things down, and I don't think it is worth it.  I
        put a note in HELP WRITE THEOREM_LIST. */
     pos1 = pos; /* 23-May-2008 */
-    pos = instr(pos + 1, labelStr, "$(\n####");
+    pos = instr(pos + 1, labelStr, "$(\n" HUGE_DECORATION);
 
     /* 23-May-2008 nm Tolerate one space after "$(", to handle case of
       one space added to the end of each line with TOOLS to make global
       label changes are easier (still a kludge; this should be made
       white-space insensitive some day) */
-    pos1 = instr(pos1 + 1, labelStr, "$( \n####");
+    pos1 = instr(pos1 + 1, labelStr, "$( \n" HUGE_DECORATION);
     if (pos1 > pos) pos = pos1;
 
     if (!pos) break;
@@ -5371,6 +5387,15 @@ void getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
   if (pos2) { /* Extract "huge" header */
     pos = instr(pos2 + 4, labelStr, "\n"); /* Get to end of #### line */
     pos2 = instr(pos + 1, labelStr, "\n"); /* Find end of title line */
+
+    /* Error check - can't have more than 1 title line */ /* 6-Aug-2019 nm */
+    if (strcmp(mid(labelStr, pos2 + 1, 4), HUGE_DECORATION)) {
+      print2(
+       "?Warning: missing closing \"%s\" decoration above statement \"%s\".\n",
+          HUGE_DECORATION, statement[stmt].labelName);
+      errorFound = 1;
+    }
+
     pos3 = instr(pos2 + 1, labelStr, "\n"); /* Get to end of 2nd #### line */
     while (labelStr[(pos3 - 1) + 1] == '\n') pos3++; /* Skip 1st blank lines */
     pos4 = instr(pos3, labelStr, "$)"); /* Get to end of title comment */
@@ -5392,13 +5417,13 @@ void getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
        perhaps slow things down, and I don't think it is worth it.  I
        put a note in HELP WRITE THEOREM_LIST. */
     pos1 = pos; /* 23-May-2008 */
-    pos = instr(pos + 1, labelStr, "$(\n#*#*");
+    pos = instr(pos + 1, labelStr, "$(\n" BIG_DECORATION);
 
     /* 23-May-2008 nm Tolerate one space after "$(", to handle case of
       one space added to the end of each line with TOOLS to make global
       label changes are easier (still a kludge; this should be made
       white-space insensitive some day) */
-    pos1 = instr(pos1 + 1, labelStr, "$( \n#*#*");
+    pos1 = instr(pos1 + 1, labelStr, "$( \n" BIG_DECORATION);
     if (pos1 > pos) pos = pos1;
 
     if (!pos) break;
@@ -5407,6 +5432,15 @@ void getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
   if (pos2) { /* Extract "big" header */
     pos = instr(pos2 + 4, labelStr, "\n"); /* Get to end of #*#* line */
     pos2 = instr(pos + 1, labelStr, "\n"); /* Find end of title line */
+
+    /* Error check - can't have more than 1 title line */ /* 6-Aug-2019 nm */
+    if (strcmp(mid(labelStr, pos2 + 1, 4), BIG_DECORATION)) {
+      print2(
+       "?Warning: missing closing \"%s\" decoration above statement \"%s\".\n",
+          BIG_DECORATION, statement[stmt].labelName);
+      errorFound = 1;
+    }
+
     pos3 = instr(pos2 + 1, labelStr, "\n"); /* Get to end of 2nd #*#* line */
     while (labelStr[(pos3 - 1) + 1] == '\n') pos3++; /* Skip 1st blank lines */
     pos4 = instr(pos3, labelStr, "$)"); /* Get to end of title comment */
@@ -5422,13 +5456,13 @@ void getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
   pos2 = 0;
   while (1) {  /* Find last "small" header, if any */
     pos1 = pos; /* 23-May-2008 */
-    pos = instr(pos + 1, labelStr, "$(\n=-=-");
+    pos = instr(pos + 1, labelStr, "$(\n" SMALL_DECORATION);
 
     /* 23-May-2008 nm Tolerate one space after "$(", to handle case of
       one space added to the end of each line with TOOLS to make global
       label changes are easier (still a kludge; this should be made
       white-space insensitive some day) */
-    pos1 = instr(pos1 + 1, labelStr, "$( \n=-=-");
+    pos1 = instr(pos1 + 1, labelStr, "$( \n" SMALL_DECORATION);
     if (pos1 > pos) pos = pos1;
 
     if (!pos) break;
@@ -5437,6 +5471,15 @@ void getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
   if (pos2) { /* Extract "small" header */
     pos = instr(pos2 + 4, labelStr, "\n"); /* Get to end of =-=- line */
     pos2 = instr(pos + 1, labelStr, "\n"); /* Find end of title line */
+
+    /* Error check - can't have more than 1 title line */ /* 6-Aug-2019 nm */
+    if (strcmp(mid(labelStr, pos2 + 1, 4), SMALL_DECORATION)) {
+      print2(
+       "?Warning: missing closing \"%s\" decoration above statement \"%s\".\n",
+          SMALL_DECORATION, statement[stmt].labelName);
+      errorFound = 1;
+    }
+
     pos3 = instr(pos2 + 1, labelStr, "\n"); /* Get to end of 2nd =-=- line */
     while (labelStr[(pos3 - 1) + 1] == '\n') pos3++; /* Skip 1st blank lines */
     pos4 = instr(pos3, labelStr, "$)"); /* Get to end of title comment */
@@ -5454,13 +5497,13 @@ void getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
   pos2 = 0;
   while (1) {  /* Find last "tiny" header, if any */
     pos1 = pos; /* 23-May-2008 */
-    pos = instr(pos + 1, labelStr, "$(\n-.-.");
+    pos = instr(pos + 1, labelStr, "$(\n" TINY_DECORATION);
 
     /* 23-May-2008 nm Tolerate one space after "$(", to handle case of
       one space added to the end of each line with TOOLS to make global
       label changes are easier (still a kludge; this should be made
       white-space insensitive some day) */
-    pos1 = instr(pos1 + 1, labelStr, "$( \n-.-.");
+    pos1 = instr(pos1 + 1, labelStr, "$( \n" TINY_DECORATION);
     if (pos1 > pos) pos = pos1;
 
     if (!pos) break;
@@ -5469,6 +5512,15 @@ void getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
   if (pos2) { /* Extract "tiny" header */
     pos = instr(pos2 + 4, labelStr, "\n"); /* Get to end of -.-. line */
     pos2 = instr(pos + 1, labelStr, "\n"); /* Find end of title line */
+
+    /* Error check - can't have more than 1 title line */ /* 6-Aug-2019 nm */
+    if (strcmp(mid(labelStr, pos2 + 1, 4), TINY_DECORATION)) {
+      print2(
+       "?Warning: missing closing \"%s\" decoration above statement \"%s\".\n",
+          TINY_DECORATION, statement[stmt].labelName);
+      errorFound = 1;
+    }
+
     pos3 = instr(pos2 + 1, labelStr, "\n"); /* Get to end of 2nd -.-. line */
     while (labelStr[(pos3 - 1) + 1] == '\n') pos3++; /* Skip 1st blank lines */
     pos4 = instr(pos3, labelStr, "$)"); /* Get to end of title comment */
@@ -5481,8 +5533,15 @@ void getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
   }
   /* (End of 21-Aug-2017 addition) */
 
+  /* 6-Aug-2019 nm */
+  if (errorFound == 1) {
+    print2("  (Note that section titles may not be longer than one line.)\n");
+  }
+  /* Restore output stream */
+  outputToString = saveOutputToString;
+
   let(&labelStr, "");  /* Deallocate string memory */
-  return;
+  return errorFound;  /* 6-Aug-2019 nm */
 } /* getSectionHeadings */
 
 

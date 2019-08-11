@@ -1241,9 +1241,16 @@ H("Syntax:  MINIMIZE_WITH <label-match> [/ BRIEF] [/ ALLOW_GROWTH]");
 H("             [/ NO_DISTINCT] [/ EXCEPT <label-match>]");
 H("              [/ FORBID <label-match>] [/ REVERSE] [/ INCLUDE_MATHBOXES]");
 */
+/*
 H("Syntax:  MINIMIZE_WITH <label-match> [/ VERBOSE] [/ ALLOW_GROWTH]");
 H("              [/ EXCEPT <label-match>] [/ FORBID <label-match>]");
 H("              [/ INCLUDE_MATHBOXES] [/ NO_NEW_AXIOMS_FROM <label-match>]");
+H("              [/ OVERRIDE] [/ TIME]");
+*/
+H("Syntax:  MINIMIZE_WITH <label-match> [/ VERBOSE] [/ MAY_GROW]");
+H("              [/ EXCEPT <label-match>] [/ INCLUDE_MATHBOXES]");
+H("              [/ ALLOW_NEW_AXIOMS <label-match>]");
+H("              [/ NO_NEW_AXIOMS_FROM <label-match>] [/ FORBID <label-match>]");
 H("              [/ OVERRIDE] [/ TIME]");
 H("");
 H("This command, available in the Proof Assistant only, checks whether");
@@ -1271,9 +1278,10 @@ H("        the proof length will not be listed, for brevity.  (This qualifier");
 H("        is the default and is never needed, but is retained for backwards");
 H("        compatibility with older program versions.)");
 */
-H("    / ALLOW_GROWTH - If a substitution is possible, it will be made even");
+H("    / MAY_GROW - If a substitution is possible, it will be made even");
 H("        if the proof length increases.  This is useful if we are just");
 H("        updating the proof with a newer version of an obsolete theorem.");
+H("        (Note: this qualifier used to be named / ALLOW_GROWTH).");
 /*
 H("    / NO_DISTINCT - Skip the trial statement if it has a $d requirement.");
 H("        This qualifier is useful when <label-match> has wildcards, to");
@@ -1284,24 +1292,44 @@ H("    / EXCEPT <label-match> - Skip trial statements matching <label-match>,");
 H("        which may contain * and ? wildcard characters; see HELP SEARCH");
 H("        for wildcard matching rules.  Note:  Multiple EXCEPT qualifiers");
 H("        are not allowed; use wildcards instead.");
-/* 20-May-2013 nm - Added FORBID */
-H("    / FORBID <label-match> - Like EXCEPT but stronger: skip any trial");
-H("        statement whose backtrack (from SHOW TRACE_BACK) contains any");
-H("        statement matching <label-match>.  This is useful for avoiding");
-H("        the use of undesired axioms when reducing proof length.  For");
-H("        example, MINIMIZE_WITH ... / FORBID ax-ac,ax-inf* will not shorten");
-H("        the proof with any statement that depends on ax-ac, ax-inf, or");
-H("        ax-inf2 (in the set.mm as of this writing).");
+/* 28-Jun-2011 nm - Added INCLUDE_MATHBOXES */
+/* 14-Aug-2012 nm - Added note about current mathbox */
+H("    / INCLUDE_MATHBOXES - By default, MINIMIZE_WITH skips statements");
+H("        beyond the one with label \"mathbox\" and not in the mathbox of");
+H("        the PROVE argument.  This qualifier allows them to be included.");
+/* 28-Jun-2011 nm - Added INCLUDE_MATHBOXES */
+/* 14-Aug-2012 nm - Added note about current mathbox */
+H("    / ALLOW_NEW_AXIOMS <label-match> - By default, MINIMIZE_WITH skips");
+H("        statements that depend on $a statements not already used by the");
+H("        proof.  This qualifier allows new $a consequences to be used.");
+H("        To better fine-tune which axioms are used, you may use / FORBID");
+H("        and / NO_NEW_AXIOMS, which take priority over / ALLOW_NEW_AXOMS.");
+H("        Example:  / ALLOW_NEW_AXIOMS df-* will allow new definitions to be");
+H("        used. / ALLOW_NEW_AXIOMS * / NO_NEW_AXIOMS_FROM ax-ac*,ax-reg");
+H("        will allow any new axioms except those matching ax-ac*,ax-reg.");
 /* 22-Nov-2014 nm - Added NO_NEW_AXIOMS_FROM */
 H("    / NO_NEW_AXIOMS_FROM <label-match> - skip any trial statement whose");
 H("        proof depends on a $a statement matching <label-match> but that");
 H("        isn't used by the current proof.  This makes it easier to avoid");
 H("        say ax-ac if the current proof doesn't already use ax-ac, but it");
-H("        permits ax-ac otherwise.  Examples:");
-H("        MINIMIZE_WITH ... / NO_NEW_AXIOMS_FROM ax-* will avoid the use");
-H("        of any new proper axioms (ax-*) but will allow the use of new");
-H("        definitions (df-*).  MINIMIZE_WITH ... / NO_NEW_AXIOMS_FROM *");
-H("        will avoid any new axioms as well as new definitions.");
+H("        permits ax-ac otherwise.  Example:");
+H("        / ALLOW_NEW_AXIOMS * / NO_NEW_AXIOMS_FROM ax-ac*,ax-reg");
+H("        will allow any new axioms except those matching ax-ac*,ax-reg.");
+H("        Notes:  1. In this example, if ax-reg is already used by the proof,");
+H("        statements depending on ax-reg WILL be tried. 2. The use of");
+H("        / NO_NEW_AXIOMS_FROM without / ALLOW_NEW_AXIOMS has no effect.");
+/* 20-May-2013 nm - Added FORBID */
+H("    / FORBID <label-match> - Skip any trial");
+H("        statement whose backtrack (from SHOW TRACE_BACK) contains any");
+H("        statement matching <label-match>.  This is useful for avoiding");
+H("        the use of undesired axioms when reducing proof length.  For");
+H("        example, MINIMIZE_WITH ... / FORBID ax-ac,ax-inf* will not shorten");
+H("        the proof with any statement that depends on ax-ac, ax-inf, or");
+H("        ax-inf2 (in the set.mm as of this writing).  Notes: 1. / FORBID");
+H("        can be less useful than / NO_NEW_AXIOMS_FROM because it will");
+H("        also suppress trying statements that depend on <label-list> axioms");
+H("        already used by the proof.  / FORBID may become deprecated.  2. The");
+H("        use of / FORBID without / ALLOW_NEW_AXIOMS has no effect.");
 /* 10-Nov-2011 nm - Added REVERSE */
 /*
 H("    / REVERSE - Reverse the order of statement scanning.  By default,");
@@ -1310,15 +1338,10 @@ H("        usually leads to better results.  With this qualifier they are");
 H("        scanned from first to last.  You may wish to try both ways");
 H("        (from the same starting proof) and choose the shorter result.");
 */
-/* 28-Jun-2011 nm - Added INCLUDE_MATHBOXES */
-/* 14-Aug-2012 nm - Added note about current mathbox */
-H("    / INCLUDE_MATHBOXES - By default, MINIMIZE_WITH skips statements");
-H("        beyond the one with label \"mathbox\" and not in the mathbox of");
-H("        the PROVE argument.  This qualifier allows them to be included.");
 /* 3-May-2016 nm - Added OVERRIDE */
 H("    / OVERRIDE - By default, MINIMIZE_WITH skips statements that have");
 H("        \"(New usage is discouraged.)\" in their description comment.");
-H("        This qualifier tries to use them anyway.");
+H("        With this qualifier it will try to use them anyway.");
 H("    / TIME - prints out the run time used by the MINIMIZE_WITH run.");
 H("");
 

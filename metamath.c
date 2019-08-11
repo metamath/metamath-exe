@@ -22,7 +22,16 @@
      lc -O m*.c -o metamath.exe
 */
 
-#define MVERSION "0.177 27-Apr-2019"
+#define MVERSION "0.178 10-Aug-2019"
+/* 0.178 10-Aug-2019 nm mminou.c - eliminate redundant fopen in fSafeOpen
+   6-Aug-2019 nm mmwtex.c,h, mmcmds.c - Added error check for >1 line
+     section name or missing closing decoration line in getSectionHeadings()
+   4-Aug-2019 nm mmhlpb.c, mmcmdl.c, metamath.c - Added /ALLOW_NEW_AXIOMS,
+     renamed /ALLOW_GROWTH to /MAY_GROW
+   17-Jul-2019 nm mmcmdl.c, mmhlpa.c, metamath.c - Added /NO_VERSIONING to
+     WRITE THEOREM_LIST
+   17-Jul-2019 nm metamath.c - Changed line of dashes between SHOW STATEMENT
+     output from hardcoded 79 to current screenWidth */
 /* 0.177 27-Apr-2019 nm mmcmds.c -"set" -> "setvar" in htmlAllowedSubst.
    mmhlpb.c - fix typos in HELP IMPROVE. */
 /* 0.176 25-Mar-2019 nm metamath.c mmcmds.h mmcmds.c mmcmdl.c mmhlpb.c -
@@ -775,7 +784,7 @@ void command(int argc, char *argv[])
   vstring bgcolor = ""; /* For SHOW STATEMENT definition list */
                                                             /* 8-Aug-2008 nm */
 
-  flag verboseMode, allowGrowthFlag /*, noDistinctFlag*/; /* For MINIMIZE_WITH */
+  flag verboseMode, mayGrowFlag /*, noDistinctFlag*/; /* For MINIMIZE_WITH */
   long prntStatus; /* For MINIMIZE_WITH */
   flag hasWildCard; /* For MINIMIZE_WITH */
   long exceptPos; /* For MINIMIZE_WITH */
@@ -786,6 +795,8 @@ void command(int argc, char *argv[])
   vstring forbidMatchList = "";  /* For MINIMIZE_WITH */ /* 20-May-2013 nm */
   long noNewAxiomsMatchPos;  /* For NO_NEW_AXIOMS_FROM */ /* 22-Nov-2014 nm */
   vstring noNewAxiomsMatchList = "";  /* For NO_NEW_AXIOMS_FROM */ /* 22-Nov-2014 */
+  long allowNewAxiomsMatchPos;  /* For NO_NEW_AXIOMS_FROM */ /* 4-Aug-2019 nm */
+  vstring allowNewAxiomsMatchList = "";  /* For NO_NEW_AXIOMS_FROM */ /* 4-Aug-2019 */
   vstring traceProofFlags = ""; /* For NO_NEW_AXIOMS_FROM */ /* 22-Nov-2014 nm */
   vstring traceTrialFlags = ""; /* For NO_NEW_AXIOMS_FROM */ /* 22-Nov-2014 nm */
   flag overrideFlag; /* For discouraged statement /OVERRIDE */ /* 3-May-2016 nm */
@@ -813,6 +824,8 @@ void command(int argc, char *argv[])
   long sourceStatement; /* For EXPAND */ /* 11-Sep-2016 nm */
 
   flag showLemmas; /* For WRITE THEOREM_LIST */ /* 10-Oct-2012 nm */
+  flag noVersioning; /* For WRITE THEOREM_LIST & others */ /* 17-Jul-2019 nm */
+  long theoremsPerPage; /* For WRITE THEOREM_LIST */ /* 17-Jul-2019 nm */
 
   /* toolsMode-specific variables */
   flag commandProcessedFlag = 0; /* Set when the first command line processed;
@@ -2235,15 +2248,16 @@ void command(int argc, char *argv[])
          mmtheorems.html, mmtheorems1.html,... */
       /* THEOREMS_PER_PAGE is the default number of proof descriptions to output. */
 #define THEOREMS_PER_PAGE 100
-      /* i is the actual number of proof descriptions to output. */
+      /* theoremsPerPage is the actual number of proof descriptions to output. */
       /* See if the user overrode the default. */
       i = switchPos("/ THEOREMS_PER_PAGE");
-      if (i) {
-        i = (long)val(fullArg[i + 1]); /* Use user's value */
+      if (i != 0) {
+        theoremsPerPage = (long)val(fullArg[i + 1]); /* Use user's value */
       } else {
-        i = THEOREMS_PER_PAGE; /* Use the default value */
+        theoremsPerPage = THEOREMS_PER_PAGE; /* Use the default value */
       }
       showLemmas = (switchPos("/ SHOW_LEMMAS") != 0);
+      noVersioning = (switchPos("/ NO_VERSIONING") != 0);
 
       /**** 17-Nov-2015 nm Deleted, no longer need this restriction
       if (!texDefsRead) {
@@ -2283,7 +2297,8 @@ void command(int argc, char *argv[])
       }
 
       /* Output the theorem list */
-      writeTheoremList(i, showLemmas); /* (located in mmwtex.c) */
+      writeTheoremList(theoremsPerPage, showLemmas,
+          noVersioning); /* (located in mmwtex.c) */
       continue;
     }  /* End of "WRITE THEOREM_LIST" */
 
@@ -2846,8 +2861,9 @@ void command(int argc, char *argv[])
       /* if (rawArgs != 5) { */  /* obsolete */
 
       /* 16-Aug-2016 nm */
+      noVersioning = (switchPos("/ NO_VERSIONING") != 0);
       i = 5;  /* # arguments with only / HTML or / ALT_HTML */
-      if (switchPos("/ NO_VERSIONING")) i = i + 2;
+      if (noVersioning) i = i + 2;
       if (switchPos("/ TIME")) i = i + 2;
       if (rawArgs != i) {
         printLongLine(cat("?The HTML qualifiers may not be combined with",
@@ -2973,15 +2989,19 @@ void command(int argc, char *argv[])
                 NULL));
         }
         print2("Creating HTML file \"%s\"...\n", texFileName);
+        texFilePtr = fSafeOpen(texFileName, "w",    /* 17-Jul-2019 nm */
+            noVersioning /*noVersioningFlag*/);
+        /****** old code before 17-Jul-2019 *******
         if (switchPos("/ NO_VERSIONING") == 0) {
-          texFilePtr = fSafeOpen(texFileName, "w", 0/*noVersioningFlag*/);
+          texFilePtr = fSafeOpen(texFileName, "w", 0/@noVersioningFlag@/);
         } else {
-          /* 6-Jul-2008 nm Added / NO_VERSIONING */
-          /* Don't create the backup versions ~1, ~2,... */
+          /@ 6-Jul-2008 nm Added / NO_VERSIONING @/
+          /@ Don't create the backup versions ~1, ~2,... @/
           texFilePtr = fopen(texFileName, "w");
           if (!texFilePtr) print2("?Could not open the file \"%s\".\n",
               texFileName);
         }
+        ********* end of old code before 17-Jul-2019 *******/
         if (!texFilePtr) goto htmlDone; /* Couldn't open it (err msg was
             provided) */
         texFileOpenFlag = 1;
@@ -3480,7 +3500,8 @@ void command(int argc, char *argv[])
         }
 
         if (q && !texFlag) {
-          if (!print2("%s\n", string(79, '-'))) /* Put line between
+          /* 17-Jul-2019 nm Changed "79" to "screenWidth" */
+          if (!print2("%s\n", string(screenWidth, '-'))) /* Put line between
                                                    statements */
             break; /* Break for speedup if user quit */
         }
@@ -6299,7 +6320,7 @@ void command(int argc, char *argv[])
           /* 16-Feb-05 If no wildcard was used, switch to non-verbose mode
              since there is no point to it and an annoying extra blank line
              results */
-      allowGrowthFlag = (switchPos("/ ALLOW_GROWTH") != 0);
+      mayGrowFlag = (switchPos("/ MAY_GROW") != 0);
                   /* Mode to replace even if it doesn't reduce proof length */
       /* 25-Jun-2014 nm /NO_DISTINCT is obsolete
       noDistinctFlag = (switchPos("/ NO_DISTINCT") != 0);
@@ -6308,12 +6329,12 @@ void command(int argc, char *argv[])
       exceptPos = switchPos("/ EXCEPT"); /* Statement match to skip */
                                                                /* 7-Jan-06 */
 
-      /* 20-May-2013 nm */
-      forbidMatchPos = switchPos("/ FORBID");
-      if (forbidMatchPos != 0) {
-        let(&forbidMatchList, fullArg[forbidMatchPos + 1]);
+      /* 4-Aug-2019 nm */
+      allowNewAxiomsMatchPos = switchPos("/ ALLOW_NEW_AXIOMS");
+      if (allowNewAxiomsMatchPos != 0) {
+        let(&allowNewAxiomsMatchList, fullArg[allowNewAxiomsMatchPos + 1]);
       } else {
-        let(&forbidMatchList, "");
+        let(&allowNewAxiomsMatchList, "");
       }
 
       /* 20-May-2013 nm */
@@ -6322,6 +6343,14 @@ void command(int argc, char *argv[])
         let(&noNewAxiomsMatchList, fullArg[noNewAxiomsMatchPos + 1]);
       } else {
         let(&noNewAxiomsMatchList, "");
+      }
+
+      /* 20-May-2013 nm */
+      forbidMatchPos = switchPos("/ FORBID");
+      if (forbidMatchPos != 0) {
+        let(&forbidMatchList, fullArg[forbidMatchPos + 1]);
+      } else {
+        let(&forbidMatchList, "");
       }
 
       mathboxFlag = (switchPos("/ INCLUDE_MATHBOXES") != 0); /* 28-Jun-2011 */
@@ -6397,7 +6426,7 @@ void command(int argc, char *argv[])
           forwFlag = 1;
         } else {
           /* If growth allowed, don't bother with reverse pass */
-          if (allowGrowthFlag) break;
+          if (mayGrowFlag) break;
           /* If nothing was found on forward pass, don't bother with rev pass */
           if (!proofChangedFlag) break;
           /* If only one statement was specified, don't bother with rev pass */
@@ -6503,11 +6532,11 @@ void command(int argc, char *argv[])
           nmbrLet(&nmbrTmp, proofInProgress.proof);
           minimizeProof(k /* trial statement */,
               proveStatement /* statement being proved in MM-PA */,
-              (char)allowGrowthFlag /* allowGrowthFlag */);
+              (char)mayGrowFlag /* mayGrowFlag */);
 
           n = nmbrLen(proofInProgress.proof); /* New proof length */
           if (!nmbrEq(nmbrTmp, proofInProgress.proof)) {
-            /* The proof got shorter (or it changed if ALLOW_GROWTH) */
+            /* The proof got shorter (or it changed if MAY_GROW) */
 
             /* 20-May-2013 nm Because of the slow speed of traceBack(),
                we only want to check the /FORBID list in the relatively
@@ -6540,7 +6569,9 @@ void command(int argc, char *argv[])
                relatively rare case where a minimization occurred.  If the
                NO_NEW_AXIOMS_FROM condition applies, we then need to revert
                back to the original proof. */
-            if (noNewAxiomsMatchList[0]) { /* User provided /NO_NEW_AXIOMS_FROM */
+            /* 4-Aug-2019 nm */
+            if (n == n + 0) {  /* By default, no new axioms are permitted */
+            /*if (noNewAxiomsMatchList[0]) {*/ /* User provided /NO_NEW_AXIOMS_FROM */
               /* If we haven't called trace yet for the theorem being proved,
                  do it now. */
               if (traceProofFlags[0] == 0) {
@@ -6564,12 +6595,24 @@ void command(int argc, char *argv[])
                 if (traceProofFlags[i] == 'Y') continue;
                          /* If the axiom is already used by the proof, we
                             don't care if the trial statement depends on it */
-                if (matchesList(statement[i].labelName, noNewAxiomsMatchList,
-                    '*', '?') != 1) {
-                  /* If the axiom isn't in the list to avoid, we don't
-                     care if the trial statement depends on it */
+                if (matchesList(statement[i].labelName, allowNewAxiomsMatchList,
+                    '*', '?') == 1
+                      &&
+                    matchesList(statement[i].labelName, noNewAxiomsMatchList,
+                    '*', '?') != 1) { /* 4-Aug-2019 nm */
+                  /* If the axiom is in the list to allow and not in the list
+                     to disallow, we don't care if the trial statement depends
+                     on it */
                   continue;
                 }
+                /*
+                if (matchesList(statement[i].labelName, noNewAxiomsMatchList,
+                    '@', '?') != 1) {
+                  /@ If the axiom isn't in the list to avoid, we don't
+                     care if the trial statement depends on it @/
+                  continue;
+                }
+                */
                 if (traceTrialFlags[i] == 'Y') {
                   /* The trial statement uses an axiom that the current
                      proof should avoid, so we abort it */
@@ -6584,13 +6627,13 @@ void command(int argc, char *argv[])
                 /* Skip further printout and flag setting */
                 continue; /* Continue at 'Next k' loop end below */
               }
-            } /* end if noNewAxiomsMatchList[0] */
+            } /* end if (true) */
 
 
             /* 25-Jun-2014 nm Make sure the compressed proof length
                decreased, otherwise revert.  Also, we will use the
                compressed proof for the $d check next */
-            if (nmbrLen(statement[k].reqDisjVarsA) || !allowGrowthFlag) {
+            if (nmbrLen(statement[k].reqDisjVarsA) || !mayGrowFlag) {
               nmbrLet(&nmbrSaveProof, proofInProgress.proof);
               nmbrLet(&nmbrSaveProof, nmbrSquishProof(proofInProgress.proof));
               let(&str1, compressProof(nmbrSaveProof,
@@ -6598,7 +6641,7 @@ void command(int argc, char *argv[])
                   0 /* Normal (not "fast") compression */
                   ));
               newCompressedLength = (long)strlen(str1);
-              if (!allowGrowthFlag && newCompressedLength > oldCompressedLength) {
+              if (!mayGrowFlag && newCompressedLength > oldCompressedLength) {
                 /* The compressed proof length increased, so don't use it.
                    (If it stayed the same, we will use it because the uncompressed
                    length did decrease.) */
@@ -6616,7 +6659,7 @@ void command(int argc, char *argv[])
                 /* Skip further printout and flag setting */
                 continue; /* Continue at 'Next k' loop end below */
               }
-            } /* if (nmbrLen(statement[k].reqDisjVarsA) || !allowGrowthFlag) */
+            } /* if (nmbrLen(statement[k].reqDisjVarsA) || !mayGrowFlag) */
 
             /* 25-Jun-2014 nm */
             /* Make sure there are no $d violations, otherwise revert */
@@ -6706,7 +6749,7 @@ void command(int argc, char *argv[])
             }
             */
 
-            /*if (nmbrLen(statement[k].reqDisjVarsA) || !allowGrowthFlag) {*/
+            /*if (nmbrLen(statement[k].reqDisjVarsA) || !mayGrowFlag) {*/
 
             /* 3-May-2016 nm */
             /* Warn user if a discouraged statement is overridden */
@@ -6719,7 +6762,7 @@ void command(int argc, char *argv[])
               /* print2("\n"); */ /* Enable for more emphasis */
             }
 
-            if (!allowGrowthFlag) {
+            if (!mayGrowFlag) {
               /* Note:  this is the length BEFORE indentation and wrapping,
                  so it is less than SHOW PROOF ... /SIZE */
               if (newCompressedLength < oldCompressedLength) {
@@ -6739,23 +6782,23 @@ void command(int argc, char *argv[])
     "    (Uncompressed steps decreased from %ld to %ld).\n",
                     m, n );
               }
-              /* (We don't care about compressed length if ALLOW_GROWTH) */
+              /* (We don't care about compressed length if MAY_GROW) */
               oldCompressedLength = newCompressedLength;
             }
 
-            if (n < m && (allowGrowthFlag || verboseMode)) {
+            if (n < m && (mayGrowFlag || verboseMode)) {
               print2(
       "%sProof of \"%s\" decreased from %ld to %ld steps using \"%s\".\n",
-                (allowGrowthFlag ? "" : "    "),
+                (mayGrowFlag ? "" : "    "),
                 statement[proveStatement].labelName,
                 m, n, statement[k].labelName);
             }
-            /* ALLOW_GROWTH possibility */
+            /* MAY_GROW possibility */
             if (m < n) print2(
       "Proof of \"%s\" increased from %ld to %ld steps using \"%s\".\n",
                 statement[proveStatement].labelName,
                 m, n, statement[k].labelName);
-            /* ALLOW_GROWTH possibility */
+            /* MAY_GROW possibility */
             if (m == n) print2(
                 "Proof of \"%s\" remained at %ld steps using \"%s\".\n",
                 statement[proveStatement].labelName,
@@ -6821,9 +6864,9 @@ void command(int argc, char *argv[])
 
       } /* next forwRevPass */
 
-      if (prntStatus == 1 && !allowGrowthFlag)
+      if (prntStatus == 1 && !mayGrowFlag)
         print2("No shorter proof was found.\n");
-      if (prntStatus == 1 && allowGrowthFlag)
+      if (prntStatus == 1 && mayGrowFlag)
         print2("The proof was not changed.\n");
       if (!prntStatus /* && !noDistinctFlag */)
         print2("?No earlier %s$p or $a label matches \"%s\".\n",
@@ -6850,17 +6893,24 @@ void command(int argc, char *argv[])
             statement[proveStatement].labelName);
       }
 
+      /* 4-Aug-2019 nm */
+      if (allowNewAxiomsMatchList[0]) { /* User provided /NO_NEW_AXIOMS_FROM list */
+        let(&allowNewAxiomsMatchList, ""); /* Deallocate memory */
+        let(&traceProofFlags, ""); /* Deallocate memory */
+        let(&traceTrialFlags, ""); /* Deallocate memory */
+      }
+
+      /* 22-Nov-2014 nm */
+      if (noNewAxiomsMatchList[0]) { /* User provided /ALLOW_NEW_AXIOMS list */
+        let(&noNewAxiomsMatchList, ""); /* Deallocate memory */
+        let(&traceProofFlags, ""); /* Deallocate memory */
+        let(&traceTrialFlags, ""); /* Deallocate memory */
+      }
+
       /* 20-May-2013 nm */
       if (forbidMatchList[0]) { /* User provided a /FORBID list */
         /*deallocProofStruct(&saveProofForReverting);*/ /* Deallocate memory */
         let(&forbidMatchList, ""); /* Deallocate memory */
-      }
-
-      /* 22-Nov-2014 nm */
-      if (noNewAxiomsMatchList[0]) { /* User provided /NO_NEW_AXIOMS_FROM list */
-        let(&noNewAxiomsMatchList, ""); /* Deallocate memory */
-        let(&traceProofFlags, ""); /* Deallocate memory */
-        let(&traceTrialFlags, ""); /* Deallocate memory */
       }
 
       /* 25-Jun-2014 nm */

@@ -4849,11 +4849,15 @@ void verifyMarkup(vstring labelMatch,
       /* (Don't print status - this runs very fast) */
   let(&str1, ""); /* Prepare to use as pointer */
   let(&str2, ""); /* Prepare to use as pointer */
-  if (statements >= 1  /* Skip empty .mm */
-      && includeCalls == 0) { /* No $[...$] */ /* TODO - handle $[...$] */
+  if (statements >= /*1*/0
+          /* 6-Aug-2019 nm - no reason to skip empty .mm */
+      /*&& includeCalls == 0*/) { /* No $[...$] */ /* TODO - handle $[...$] */
+          /* 6-Aug-2019 nm - includeCalls is alway nonzero now - but check
+             anyway; line numbers may be off if there are >1 files. */
     str1 = statement[1].labelSectionPtr; /* Start of input file */
     str2 = statement[statements + 1].labelSectionPtr
        + statement[statements + 1].labelSectionLen; /* End of input file */
+        /* statements + 1 is dummy statement to hold text after last statement */
     if (str2[0] != 0) bug(258); /* Should be end of (giant) string */
     if (str2[-1] != '\n') bug(259); /* End of last line */
     flen = str2 - str1;  /* Length of input file */
@@ -5070,11 +5074,12 @@ void verifyMarkup(vstring labelMatch,
     let(&bigHdrComment, "");
     let(&smallHdrComment, "");
     let(&tinyHdrComment, ""); /* 21-Aug-2017 nm */
-    getSectionHeadings(stmtNum, &hugeHdr, &bigHdr, &smallHdr,
+    f = getSectionHeadings(stmtNum, &hugeHdr, &bigHdr, &smallHdr,
         &tinyHdr, /* 21-Aug-2017 nm */
         /* 5-May-2015 nm */
         &hugeHdrComment, &bigHdrComment, &smallHdrComment,
         &tinyHdrComment); /* 21-Aug-2017 nm */
+    if (f != 0) errFound = 1;  /* 6-Aug-2019 nm */
 
     showStatement /* global */ = stmtNum; /* For printTexComment() */
     texFilePtr /* global */  = NULL; /* Not used, but set to something */

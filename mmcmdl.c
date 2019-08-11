@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2018  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2019  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -220,7 +220,7 @@ flag processCommandLine(void)
           if (lastArgMatches("/")) {
             i++;
             if (!getFullArg(i, cat(
-                "THEOREMS_PER_PAGE|SHOW_LEMMAS|HTML|ALT_HTML",
+                "THEOREMS_PER_PAGE|SHOW_LEMMAS|HTML|ALT_HTML|NO_VERSIONING",
                 "|<THEOREMS_PER_PAGE>", NULL)))
               goto pclbad;
             if (lastArgMatches("THEOREMS_PER_PAGE")) {
@@ -1009,8 +1009,8 @@ flag processCommandLine(void)
               "BRIEF|VERBOSE|ALLOW_GROWTH|NO_DISTINCT|EXCEPT|",
               "REVERSE|INCLUDE_MATHBOXES|FORBID|<BRIEF>", NULL)))
               */
-              "VERBOSE|ALLOW_GROWTH|EXCEPT|OVERRIDE|",
-              "INCLUDE_MATHBOXES|FORBID|NO_NEW_AXIOMS_FROM|TIME|<VERBOSE>",
+              "VERBOSE|MAY_GROW|EXCEPT|OVERRIDE|INCLUDE_MATHBOXES|",
+              "ALLOW_NEW_AXIOMS|NO_NEW_AXIOMS_FROM|FORBID|TIME|<VERBOSE>",
               NULL)))
                               /* 7-Jan-06 nm Added EXCEPT */
                               /* 28-Jun-2011 nm Added INCLUDE_MATHBOXES */
@@ -1018,6 +1018,8 @@ flag processCommandLine(void)
                               /* 25-Jun-2014 nm Removed REVERSE, NO_DISTINCT */
                               /* 22-Nov-2014 nm Added NO_NEW_AXIOMS_FROM */
                               /* 3-May-2016 nm Added / OVERRIDE */
+                              /* 4-Aug-2019 nm Added ALLOW_NEW_AXIOMS; changed
+                                     ALLOW_GROWTH to MAY_GROW */
             goto pclbad;
 
           /* 7-Jan-06 nm Added EXCEPT */
@@ -1026,14 +1028,20 @@ flag processCommandLine(void)
             if (!getFullArg(i, "* What statement label match pattern? "))
               goto pclbad;
           }
-          /* 20-May-2013 nm Added FORBID */
-          if (lastArgMatches("FORBID")) {
+          /* 4-Aug-2019 nm Added ALLOW_NEW_AXIOMS */
+          if (lastArgMatches("ALLOW_NEW_AXIOMS")) {
             i++;
             if (!getFullArg(i, "* What statement label match pattern? "))
               goto pclbad;
           }
           /* 22-Nov-2014 nm Added NO_NEW_AXIOMS_FROM */
           if (lastArgMatches("NO_NEW_AXIOMS_FROM")) {
+            i++;
+            if (!getFullArg(i, "* What statement label match pattern? "))
+              goto pclbad;
+          }
+          /* 20-May-2013 nm Added FORBID */
+          if (lastArgMatches("FORBID")) {
             i++;
             if (!getFullArg(i, "* What statement label match pattern? "))
               goto pclbad;

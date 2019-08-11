@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2018  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2019  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -1100,6 +1100,7 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
    backup of previous version.   Mode must be "r" or "w" or "d" (delete). */
 /* 31-Dec-2017 nm Added "safe" delete */
 /* 31-Dec-2017 nm Added noVersioningFlag = don't create ~1 backup */
+/* 10-Aug-2019 nm Fixed problem w/ delete + noVersioningFlag */
 FILE *fSafeOpen(vstring fileName, vstring mode, flag noVersioningFlag)
 {
   FILE *fp;
@@ -1120,12 +1121,12 @@ FILE *fSafeOpen(vstring fileName, vstring mode, flag noVersioningFlag)
 
   if (!strcmp(mode, "w")
       || !strcmp(mode, "d")) {    /* 31-Dec-2017 */
+    if (noVersioningFlag) goto skip_backup; /* 10-Aug-2019 nm */
     /* See if the file already exists. */
     fp = fopen(fileName, "r");
 
     if (fp) {
       fclose(fp);
-      if (noVersioningFlag) goto skip_backup; /* 31-Dec-2017 nm */
 
 #define VERSIONS 9
       /* The file exists.  Rename it. */
@@ -1222,14 +1223,23 @@ FILE *fSafeOpen(vstring fileName, vstring mode, flag noVersioningFlag)
         print2("?Sorry, couldn't open the file \"%s\".\n", fileName);
       }
     } else {
-      /* 31-Dec-2017 nm */
-      /* For "safe" delete, we simply skip opening the file. */
       if (strcmp(mode, "d")) {
         bug(1526);
       }
+      /* 31-Dec-2017 nm */
+      /* For "safe" delete, the file was renamed to ~1, so there is nothing
+         to do. */
       fp = NULL;
+      /* 10-Aug-2019 nm */
+      /* For non-safe (noVersioning) delete, we actually delete */
+      if (noVersioningFlag) {
+        if(remove(fileName) != 0) {
+          print2("?Sorry, couldn't delete the file \"%s\".\n", fileName);
+        }
+      }
     }
 
+    /* Deallocate local strings */
     let(&prefix, "");
     let(&postfix, "");
     let(&bakName, "");
