@@ -22,7 +22,17 @@
      lc -O m*.c -o metamath.exe
 */
 
-#define MVERSION "0.178 10-Aug-2019"
+#define MVERSION "0.179 29-Nov-2019"
+/* 0.179
+   29-Nov-2019 nm metamath.c - MINIMIZE_WITH axiom trace now starts from
+     current NEW_PROOF instead of SAVEd proof.
+   23-Nov-2019 nm metamath.c - make sure traceback flags are cleared
+     after MINIMIZE_WITH
+   20-Nov-2019 nm mmhlpa.c - add url pointer to HELP WRITE SOURCE /SPLIT
+   18-Nov-2019 nm mmhlpa.c - clarify HELP WRITE SOURCE /REWRAP
+   15-Oct-2019 nm mmdata.c - added bug check info for user
+   14-Oct-2019 nm mmcmds.c - use '|->' (not 'e.') as syntax hint for maps-to
+   14-Oct-2019 nm mmwtex.c - remove extraneous </TD> */
 /* 0.178 10-Aug-2019 nm mminou.c - eliminate redundant fopen in fSafeOpen
    6-Aug-2019 nm mmwtex.c,h, mmcmds.c - Added error check for >1 line
      section name or missing closing decoration line in getSectionHeadings()
@@ -38,7 +48,7 @@
    add /TOP_DATE_SKIP to VERIFY MARKUP */
 /* 0.175 8-Mar-2019 nm mmvstr.c - eliminate warning in gcc 8.3 (patch
    provided by David Starner) */
-/* 0.174 22-Feb-2019 nm mmwtex.c - fix erroneous warnng when using "[["
+/* 0.174 22-Feb-2019 nm mmwtex.c - fix erroneous warning when using "[["
    bracket escape in comment */
 /* 0.173 3-Feb-2019 nm mmwtex.c - fix infinite loop when "[" was the first
    character in a comment */
@@ -569,12 +579,11 @@
     mmhlpa.c - The help file, part 1.
     mmhlpb.c - The help file, part 2.
     mminou.c - Basic input and output interface
-    mmmaci.c - THINK C Macintosh interface (probably obsolete now)
+    mmmaci.c - THINK C Macintosh interface (obsolete)
     mmpars.c - Parses the source file
     mmpfas.c - Proof Assistant
     mmunif.c - Unification algorithm for Proof Assistant
-    mmutil.c - Miscellaneous I/O utilities for non-ANSI compilers (has become
-               obsolete and is now an empty shell)
+    mmutil.c - Miscellaneous I/O utilities (reserved for future use)
     mmveri.c - Proof verifier for source file
     mmvstr.c - BASIC-like string functions
     mmwtex.c - LaTeX/HTML source generation
@@ -6309,7 +6318,8 @@ void command(int argc, char *argv[])
 
       /* q = 0; */ /* Line length */  /* 25-Jun-2014 deleted */
       prntStatus = 0; /* Status flag to help determine messages
-                         0 = no statement was matched during scan
+                         0 = no statement was matched during scan (mainly for
+                             error message if user typo in label field)
                          1 = a statement was matched but no shorter proof
                          2 = shorter proof found */
       /* verboseMode = (switchPos("/ BRIEF") == 0); */ /* Non-verbose mode */
@@ -6575,12 +6585,57 @@ void command(int argc, char *argv[])
               /* If we haven't called trace yet for the theorem being proved,
                  do it now. */
               if (traceProofFlags[0] == 0) {
+
+                /******** start of 29-Nov-2019 nm ************/
+                /* traceProofWork() was written to use the SAVEd proof and
+                   not the proof in progress.  So we temporarily put the
+                   proof in progress into the (SAVEd) statement structure
+                   to trick traceProofWork() into using the proof in progress
+                   instead of the SAVEd proof */
+                nmbrLet(&nmbrSaveProof, proofInProgress.proof);
+                nmbrLet(&nmbrSaveProof, nmbrSquishProof(proofInProgress.proof));
+                let(&str1, compressProof(nmbrSaveProof,
+                    proveStatement, /* statement being proved in MM-PA */
+                    0 /* Normal (not "fast") compression */
+                    ));
+                saveZappedProofSectionPtr
+                    = statement[proveStatement].proofSectionPtr;
+                saveZappedProofSectionLen
+                    = statement[proveStatement].proofSectionLen;
+                saveZappedProofSectionChanged
+                    = statement[proveStatement].proofSectionChanged;
+                /* Set flag that this is not the original source */
+                statement[proveStatement].proofSectionChanged = 1;
+                /* str1 has the new compressed trial proof after minimization */
+                /* Put space before and after to satisfy "space around token"
+                   requirement, to prevent possible error messages, and also
+                   add "$." since parseCompressedProof() expects it */
+                let(&str1, cat(" ", str1, " $.", NULL));
+                /* Don't include the "$." in the length */
+                statement[proveStatement].proofSectionLen
+                    = (long)strlen(str1) - 2;
+                /* We don't deallocate previous proofSectionPtr content because
+                   we will recover it after the verifyProof() */
+                statement[proveStatement].proofSectionPtr = str1;
+                /******** end of 29-Nov-2019 nm ************/
+
                 traceProofWork(proveStatement,
                     1 /*essentialFlag*/,
                     "", /*traceToList*/ /* 18-Jul-2015 nm */
                     &traceProofFlags, /* y/n list of flags */
                     &nmbrTmp /* unproved list - ignored */);
                 nmbrLet(&nmbrTmp, NULL_NMBRSTRING); /* Discard */
+
+                /******** start of 29-Nov-2019 nm ************/
+                /* Restore the SAVEd proof */
+                statement[proveStatement].proofSectionPtr
+                    = saveZappedProofSectionPtr;
+                statement[proveStatement].proofSectionLen
+                    = saveZappedProofSectionLen;
+                statement[proveStatement].proofSectionChanged
+                    = saveZappedProofSectionChanged; /* 16-Jun-2017 nm */
+                /******** end of 29-Nov-2019 nm ************/
+
               }
               let(&traceTrialFlags, "");
               traceProofWork(k,
@@ -6619,7 +6674,7 @@ void command(int argc, char *argv[])
                   j = 0; /* 0 = don't use trial statement */
                   break;
                 }
-              }
+              } /* next i */
               if (j == 0) {
                 /* A forbidden axiom is used by the trial proof */
                 /* Revert the proof to before minimization */
@@ -6893,18 +6948,25 @@ void command(int argc, char *argv[])
             statement[proveStatement].labelName);
       }
 
+      /* 23-Nov-2019 nm */
+      let(&str1, ""); /* Deallocate memory */
+      nmbrLet(&nmbrSaveProof, NULL_NMBRSTRING); /* Deallocate memory */
+
+      /* 23-Nov-2019 nm */
+      /* Clear these Y/N trace strings unconditionally since new axioms are no
+        longer  allowed by default, so they may become set regardless of
+        qualifiers */
+      let(&traceProofFlags, ""); /* Deallocate memory */
+      let(&traceTrialFlags, ""); /* Deallocate memory */
+
       /* 4-Aug-2019 nm */
       if (allowNewAxiomsMatchList[0]) { /* User provided /NO_NEW_AXIOMS_FROM list */
         let(&allowNewAxiomsMatchList, ""); /* Deallocate memory */
-        let(&traceProofFlags, ""); /* Deallocate memory */
-        let(&traceTrialFlags, ""); /* Deallocate memory */
       }
 
       /* 22-Nov-2014 nm */
       if (noNewAxiomsMatchList[0]) { /* User provided /ALLOW_NEW_AXIOMS list */
         let(&noNewAxiomsMatchList, ""); /* Deallocate memory */
-        let(&traceProofFlags, ""); /* Deallocate memory */
-        let(&traceTrialFlags, ""); /* Deallocate memory */
       }
 
       /* 20-May-2013 nm */

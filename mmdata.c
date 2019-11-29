@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2018  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2019  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -523,6 +523,11 @@ void bug(int bugNum)
   "recording a session.  See HELP SUBMIT for help on command files.  Search\n");
     print2(
   "for \"bug(%ld)\" in the m*.c source code to find its origin.\n", bugNum);
+    /* 15-Oct-2019 nm Added the next 2 info lines */
+    print2(
+  "If earlier errors were reported, try fixing them first, because they\n");
+    print2(
+  "may occasionally lead to false bug detection\n");
     print2("\n");
   }
 

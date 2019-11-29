@@ -2431,6 +2431,11 @@ void typeProof(long statemNum,
                       ].tokenName, ")")
                   && strcmp(mathToken[(statement[stmt].mathString)[i]
                       ].tokenName, ":")
+                  /* 14-Oct-2019 nm Use |-> rather than e. for cmpt, cmpt2 */
+                  && !(!strcmp(mathToken[(statement[stmt].mathString)[i]
+                      ].tokenName, "e.")
+                      && (!strcmp(statement[stmt].labelName, "cmpt")
+                          || !strcmp(statement[stmt].labelName, "cmpt2")))
                   ) {
                 tmpStr1 =
                     tokenToTex(mathToken[(statement[stmt].mathString)[i]

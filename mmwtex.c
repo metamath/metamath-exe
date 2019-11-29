@@ -1903,7 +1903,10 @@ void printTexHeader(flag texHeaderFlag)
       }
 
     } else { /* texHeaderFlag=0 for HTML means not to put prev/next links */
-      print2("      </TD><TD ALIGN=RIGHT VALIGN=TOP\n");
+      /*print2("      </TD><TD ALIGN=RIGHT VALIGN=TOP\n");*/
+      /* 14-Oct-2019 there is no table open (mmascii, mmdefinitions), so don't
+         add </TD> which caused HTML validation failure */
+      print2("      <TD ALIGN=RIGHT VALIGN=TOP\n");
       print2("       ><FONT FACE=sans-serif SIZE=-2>\n", "%");
 
       /* Print the GIF/Unicode Font choice, if directories are specified */
@@ -4198,13 +4201,14 @@ print2("</FONT></B></CENTER>\n");
                   /* 20-Oct-2018 nm */
                   if (hdrCommentAnchorDone == 0) {
                     let(&hdrCommentAnchor, cat(
+                        "<A NAME=\"",
+                        statement[stmt].labelName, "\"></A>",
 
-                        /* 31-Oct-2018 nm "&#8203;" is a "zero-width" space to
+                        /* 27-Aug-2019 nm "&#8203;" is a "zero-width" space to
                            workaround Chrome bug that jumps to wrong anchor. */
                         "&#8203;",
 
-                        "<A NAME=\"",
-                        statement[stmt].labelName, "\"></A>", NULL));
+                        NULL));
                     hdrCommentAnchorDone = 1;
                   } else {
                     let(&hdrCommentAnchor, "");
@@ -4220,8 +4224,14 @@ print2("</FONT></B></CENTER>\n");
                     /* In detailed section, add an anchor to reach it from
                        summary section */
                     (passNumber == 2) ?
-                         cat("<A NAME=\"dtl:", str((double)partCntr),
-                             "\"></A>", NULL) : "",
+                        cat("<A NAME=\"dtl:", str((double)partCntr),
+                            "\"></A>",
+
+                            /* 27-Aug-2019 nm "&#8203;" is a "zero-width" space to
+                               workaround Chrome bug that jumps to wrong anchor. */
+                            "&#8203;",
+
+                            NULL) : "",
 
                     /* 29-Jul-2008 nm Add an anchor to the "sandbox" theorem
                        for use by mmrecent.html */
@@ -4234,7 +4244,10 @@ print2("</FONT></B></CENTER>\n");
                           ) ?
                         /* Note the colon so it won't conflict w/ theorem
                            name anchor */
-                        "<A NAME=\"sandbox:bighdr\"></A>" : "",
+                        /*"<A NAME=\"sandbox:bighdr\"></A>" : "",*/
+                        /* 27-Aug-2019 nm "&#8203;" is a "zero-width" space to
+                           workaround Chrome bug that jumps to wrong anchor. */
+                        "<A NAME=\"sandbox:bighdr\"></A>&#8203;" : "",
 
                     hdrCommentAnchor, /* 20-Oct-2018 nm */
                     "<A HREF=\"",
@@ -4282,13 +4295,14 @@ print2("</FONT></B></CENTER>\n");
                   /* 20-Oct-2018 nm */
                   if (hdrCommentAnchorDone == 0) {
                     let(&hdrCommentAnchor, cat(
+                        "<A NAME=\"",
+                        statement[stmt].labelName, "\"></A>",
 
-                        /* 31-Oct-2018 nm "&#8203;" is a "zero-width" space to
+                        /* 27-Aug-2019 nm "&#8203;" is a "zero-width" space to
                            workaround Chrome bug that jumps to wrong anchor. */
                         "&#8203;",
 
-                        "<A NAME=\"",
-                        statement[stmt].labelName, "\"></A>", NULL));
+                        NULL));
                     hdrCommentAnchorDone = 1;
                   } else {
                     let(&hdrCommentAnchor, "");
@@ -4305,9 +4319,15 @@ print2("</FONT></B></CENTER>\n");
                     /* In detailed section, add an anchor to reach it from
                        summary section */
                     (passNumber == 2) ?
-                         cat("<A NAME=\"dtl:", str((double)partCntr), ".",
-                             str((double)sectionCntr), "\"></A>", NULL)
-                         : "",
+                        cat("<A NAME=\"dtl:", str((double)partCntr), ".",
+                            str((double)sectionCntr), "\"></A>",
+
+                            /* 27-Aug-2019 nm "&#8203;" is a "zero-width" space to
+                               workaround Chrome bug that jumps to wrong anchor. */
+                            "&#8203;",
+
+                            NULL)
+                        : "",
 
                     /* 29-Jul-2008 nm Add an anchor to the "sandbox" theorem
                        for use by mmrecent.html */
@@ -4317,7 +4337,10 @@ print2("</FONT></B></CENTER>\n");
                           ) ?
                         /* Note the colon so it won't conflict w/ theorem
                            name anchor */
-                        "<A NAME=\"sandbox:bighdr\"></A>" : "",
+                        /*"<A NAME=\"sandbox:bighdr\"></A>" : "",*/
+                        /* 27-Aug-2019 nm "&#8203;" is a "zero-width" space to
+                           workaround Chrome bug that jumps to wrong anchor. */
+                        "<A NAME=\"sandbox:bighdr\"></A>&#8203;" : "",
                     hdrCommentAnchor, /* 20-Oct-2018 nm */
                     "<A HREF=\"",
 
@@ -4367,7 +4390,13 @@ print2("</FONT></B></CENTER>\n");
                   /* 20-Oct-2018 nm */
                   if (hdrCommentAnchorDone == 0) {
                     let(&hdrCommentAnchor, cat("<A NAME=\"",
-                        statement[stmt].labelName, "\"></A>", NULL));
+                        statement[stmt].labelName, "\"></A>",
+
+                        /* 27-Aug-2019 nm "&#8203;" is a "zero-width" space to
+                           workaround Chrome bug that jumps to wrong anchor. */
+                        "&#8203;",
+
+                        NULL));
                     hdrCommentAnchorDone = 1;
                   } else {
                     let(&hdrCommentAnchor, "");
@@ -4383,7 +4412,7 @@ print2("</FONT></B></CENTER>\n");
                        for use by mmrecent.html */
                     /*
                     !strcmp(statement[stmt].labelName, "sandbox") ?
-                        "<A NAME=\"sandbox:smallhdr\"></A>" : "",
+                        "<A NAME=\"sandbox:smallhdr\"></A>&#8203;" : "",
                     */
 
                     hdrCommentAnchor, /* 20-Oct-2018 nm */
@@ -4424,7 +4453,13 @@ print2("</FONT></B></CENTER>\n");
                   /* 20-Oct-2018 nm */
                   if (hdrCommentAnchorDone == 0) {
                     let(&hdrCommentAnchor, cat("<A NAME=\"",
-                        statement[stmt].labelName, "\"></A> ", NULL));
+                        statement[stmt].labelName, "\"></A> ",
+
+                        /* 27-Aug-2019 nm "&#8203;" is a "zero-width" space to
+                           workaround Chrome bug that jumps to wrong anchor. */
+                        "&#8203;",
+
+                        NULL));
                     hdrCommentAnchorDone = 1;
                   } else {
                     let(&hdrCommentAnchor, "");
@@ -4440,7 +4475,7 @@ print2("</FONT></B></CENTER>\n");
                        for use by mmrecent.html */
                     /*
                     !strcmp(statement[stmt].labelName, "sandbox") ?
-                        "<A NAME=\"sandbox:tinyhdr\"></A>" : "",
+                        "<A NAME=\"sandbox:tinyhdr\"></A>&#8203;" : "",
                     */
 
                     hdrCommentAnchor, /* 20-Oct-2018 nm */
