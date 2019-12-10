@@ -1357,7 +1357,15 @@ vstring readFileToString(vstring fileName, char verbose, long *charCount) {
 /* An older GCC compiler didn't have this ANSI standard constant defined. */
 #define SEEK_END 2
 #endif
-  if (fseek(inputFp, 0, SEEK_END)) bug(1511);
+  if (fseek(inputFp, 0, SEEK_END)) { /* fseek returns non-zero on error */
+    /*bug(1511);*/
+    /* 8-Dec-2019 nm Changed bug to error message, which occurs if input "file"
+       is a piped stream */
+    if (verbose) print2(
+        "?Sorry, \"%s\" doesn't seem to be a regular file.\n",
+        fileName);
+    return (NULL);
+  }
   fileBufSize = ftell(inputFp);
 
   /* Close and reopen the input file in text mode */

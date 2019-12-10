@@ -22,25 +22,35 @@
      lc -O m*.c -o metamath.exe
 */
 
-#define MVERSION "0.179 29-Nov-2019"
-/* 0.179
-   29-Nov-2019 nm metamath.c - MINIMIZE_WITH axiom trace now starts from
-     current NEW_PROOF instead of SAVEd proof.
-   23-Nov-2019 nm metamath.c - make sure traceback flags are cleared
-     after MINIMIZE_WITH
+#define MVERSION "0.180 10-Dec-2019"
+/* 0.180 10-Dec-2019 nm (bj 13-Sep-2019) mmpars.c - fix "line 0" in error msg
+     when label clashes with math symbol
+   8-Dec-2019 nm (bj 13-Oct-2019) mmhlpa.c - improve TOOLS> HELP INSERT, DELETE
+   8-Dec-2019 nm (bj 19-Sep-2019) mminou.c - change bug 1511 to error message
+   30-Nov-2019 nm (bj 12-Oct-2019) mmwtex.c - trigger Most Recent link on
+     mmtheorems.html when there is a mathbox statement (currently set.mm and
+     iset.mm).
+   30-Nov-2019 nm (bj 13-Sep-2019) mmhlpa.c - improve help for TOOLS> DELETE and
+     SUBSTITUTE.
+   30-Nov-2019 nm (bj 13-Sep-2019) mmwtex.c - change "htmlHome" in warnings to
+     "htmlhome". */
+/* 0.179 29-Nov-2019 nm (bj 22-Sep-2019) metamath.c - MINIMIZE_WITH axiom trace
+     now starts from current NEW_PROOF instead of SAVEd proof.
+   23-Nov-2019 nm (bj 4-Oct-2019) metamath.c - make sure traceback flags are
+     cleared after MINIMIZE_WITH
    20-Nov-2019 nm mmhlpa.c - add url pointer to HELP WRITE SOURCE /SPLIT
    18-Nov-2019 nm mmhlpa.c - clarify HELP WRITE SOURCE /REWRAP
-   15-Oct-2019 nm mmdata.c - added bug check info for user
+   15-Oct-2019 nm mmdata.c - add bug check info for user
    14-Oct-2019 nm mmcmds.c - use '|->' (not 'e.') as syntax hint for maps-to
    14-Oct-2019 nm mmwtex.c - remove extraneous </TD> */
 /* 0.178 10-Aug-2019 nm mminou.c - eliminate redundant fopen in fSafeOpen
-   6-Aug-2019 nm mmwtex.c,h, mmcmds.c - Added error check for >1 line
+   6-Aug-2019 nm mmwtex.c,h, mmcmds.c - Add error check for >1 line
      section name or missing closing decoration line in getSectionHeadings()
-   4-Aug-2019 nm mmhlpb.c, mmcmdl.c, metamath.c - Added /ALLOW_NEW_AXIOMS,
+   4-Aug-2019 nm mmhlpb.c, mmcmdl.c, metamath.c - Add /ALLOW_NEW_AXIOMS,
      renamed /ALLOW_GROWTH to /MAY_GROW
-   17-Jul-2019 nm mmcmdl.c, mmhlpa.c, metamath.c - Added /NO_VERSIONING to
+   17-Jul-2019 nm mmcmdl.c, mmhlpa.c, metamath.c - Add /NO_VERSIONING to
      WRITE THEOREM_LIST
-   17-Jul-2019 nm metamath.c - Changed line of dashes between SHOW STATEMENT
+   17-Jul-2019 nm metamath.c - Change line of dashes between SHOW STATEMENT
      output from hardcoded 79 to current screenWidth */
 /* 0.177 27-Apr-2019 nm mmcmds.c -"set" -> "setvar" in htmlAllowedSubst.
    mmhlpb.c - fix typos in HELP IMPROVE. */

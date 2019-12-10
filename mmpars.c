@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2018  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2019  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -773,10 +773,16 @@ void parseMathDecl(void)
       fbPtr = statement[stmt].labelSectionPtr;
       k = whiteSpaceLen(fbPtr);
       j = tokenLen(fbPtr + k);
+      /* Note that the line and file are only assigned when requested,
+         for speedup. */
       assignStmtFileAndLineNum(stmt); /* 9-Jan-2018 nm */
+      assignStmtFileAndLineNum(mathToken[i].statement); /* 10-Dec-2019 nm */
       sourceError(fbPtr + k, j, stmt, cat(
          "This label has the same name as the math token declared on line ",
-         str((double)(statement[mathToken[i].statement].lineNum)), NULL));
+         str((double)(statement[mathToken[i].statement].lineNum)),
+         " of file \"",
+         statement[mathToken[i].statement].fileName,
+         "\".", NULL));
     }
   }
   /* End of 4-Jun-06 */

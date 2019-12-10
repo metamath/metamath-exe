@@ -138,8 +138,12 @@ H("so that later, SUBSTITUTE can be used to affect only those lines.  You");
 H("can remove the \"@@@\" tags with SUBSTITUTE when done.");
 
 printHelp = !strcmp(saveHelpCmd, "HELP DELETE");
-H("This command deletes the part of a line between (and including)");
-H("two specified strings for all lines in a file.");
+H("This command deletes the part of a line between (and including) the first");
+H("occurrence of <startstr> and the first occurrence of <endstr> (when both");
+H("exist) for all lines in a file.  If either string doesn't exist in a line,");
+H("the line will be unchanged.  If <startstr> is blank (''), the deletion");
+H("will start from the beginning of the line.  If <endstr> is blank, the");
+H("deletion will end at the end of the line.");
 H("Syntax:  DELETE <iofile> <startstr> <endstr>");
 
 printHelp = !strcmp(saveHelpCmd, "HELP CLEAN");
@@ -169,8 +173,11 @@ H("be joined to the one below it.  If the replacement string is \"\\n\", then");
 H("each line will be split into two if there is a match.");
 H("The <matchstr> specifies a string that must also exist on a line");
 H("before the substitution takes place; null means match any line.");
+H("The <occurrence> is an integer (1 = first occurrence on each line, etc.)");
+H("or A for all occurrences on each line.");
 H("Syntax:  SUBSTITUTE <iofile> <oldstr> <newstr> <occurrence> <matchstr>");
 H("Note: The SUBSTITUTE command may be abbreviated by S.");
+
 
 printHelp = !strcmp(saveHelpCmd, "HELP SWAP");
 H("This command swaps the parts of each line before and after a");
@@ -180,7 +187,9 @@ H("specified string.");
 printHelp = !strcmp(saveHelpCmd, "HELP INSERT");
 H("This command inserts a string at a specifed column in each line");
 H("in a file.  It is intended to aid further processing of column-");
-H("sensitive files.");
+H("sensitive files.  Note: the index of the first column is 1, not 0.  If a");
+H("line is shorter than <column>, then it is padded with spaces so that");
+H("<string> is still added at <column>.");
 H("Syntax:  INSERT <iofile> <string> <column>");
 
 

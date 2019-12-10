@@ -807,7 +807,7 @@ flag readTexDefs(
   i = instr(1, htmlHome, "HREF=\"") + 5;
   if (i == 5) {
     printLongLine(
-        "?Warning: In the $t comment, htmlHome has no 'HREF=\"'.", "", " ");
+        "?Warning: In the $t comment, htmlhome has no 'HREF=\"'.", "", " ");
     warningFound = 1;
   }
   j = instr(i + 1, htmlHome, "\"");
@@ -815,7 +815,7 @@ flag readTexDefs(
   i = instr(1, htmlHome, "IMG SRC=\"") + 8;
   if (i == 8) {
     printLongLine(
-        "?Warning: In the $t comment, htmlHome has no 'IMG SRC=\"'.", "", " ");
+        "?Warning: In the $t comment, htmlhome has no 'IMG SRC=\"'.", "", " ");
     warningFound = 1;
   }
   j = instr(i + 1, htmlHome, "\"");
@@ -840,7 +840,7 @@ flag readTexDefs(
     i = instr(1, extHtmlHome, "HREF=\"") + 5;
     if (i == 5) {
       printLongLine(
-          "?Warning: In the $t comment, extHtmlHome has no 'HREF=\"'.", "", " ");
+          "?Warning: In the $t comment, exthtmlhome has no 'HREF=\"'.", "", " ");
       warningFound = 1;
     }
     j = instr(i + 1, extHtmlHome, "\"");
@@ -848,7 +848,7 @@ flag readTexDefs(
     i = instr(1, extHtmlHome, "IMG SRC=\"") + 8;
     if (i == 8) {
       printLongLine(
-          "?Warning: In the $t comment, extHtmlHome has no 'IMG SRC=\"'.", "", " ");
+          "?Warning: In the $t comment, exthtmlhome has no 'IMG SRC=\"'.", "", " ");
       warningFound = 1;
     }
     j = instr(i + 1, extHtmlHome, "\"");
@@ -4012,14 +4012,20 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
       print2("Theorem List Contents\n");
     }
 
-    /* 15-Apr-2015 nm */
-    /* Use "extHtmlStmt <= statements" as an indicator that we're doing
-       Metamath Proof Explorer; the others don't have mmrecent.html pages */
-    /*if (extHtmlStmt <= statements) {*/ /* extHtmlStmt = statements + 1
-                                              unless mmset.html */
-    /* 8-Dec-2017 nm */
-    if (extHtmlStmt < sandboxStmt) { /* extHtmlStmt >= sandboxStmt
-                                              unless mmset.html */
+    /*****
+    /@ 15-Apr-2015 nm @/
+    /@ Use "extHtmlStmt <= statements" as an indicator that we're doing
+       Metamath Proof Explorer; the others don't have mmrecent.html pages @/
+    /@if (extHtmlStmt <= statements) {@/ /@ extHtmlStmt = statements + 1
+                                              unless mmset.html @/
+    /@ 8-Dec-2017 nm @/
+    if (extHtmlStmt < sandboxStmt) { /@ extHtmlStmt >= sandboxStmt
+                                              unless mmset.html @/
+    *****/
+    /* 30-Nov-2019 nm */
+    /* Assume there is a Most Recent page when the .mm has a mathbox stmt
+       (currently set.mm and iset.mm)  */
+    if (sandboxStmt < statements + 1) {
       print2("&nbsp;&gt;&nbsp;<A HREF=\"mmrecent.html\">\n");
       print2("Recent Proofs</A>\n");
     }
