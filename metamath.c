@@ -1,6 +1,6 @@
 /*****************************************************************************/
 /* Program name:  metamath                                                   */
-/* Copyright (C) 2019 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
+/* Copyright (C) 2020 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
 /* License terms:  GNU General Public License Version 2 or any later version */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -10,19 +10,27 @@
    be free of copyright restrictions (i.e. public domain) in order to provide
    this flexibility.  Thank you. - NM */
 
-/* This program should compile without warnings using:
-     gcc m*.c -o metamath -O2 -Wall -Wextra -Wmissing-prototypes \
-         -Wmissing-declarations -Wshadow -Wpointer-arith -Wcast-align \
-         -Wredundant-decls -Wnested-externs -Winline -Wno-long-long \
-         -Wconversion -Wstrict-prototypes -ansi -pedantic -Wunused-result
-   For faster runtime, use:
-     gcc m*.c -o metamath -O3 -funroll-loops -finline-functions \
-         -fomit-frame-pointer -Wall -ansi -pedantic  -fno-strict-overflow
-   With the lcc compiler on Windows, use:
-     lc -O m*.c -o metamath.exe
+/* Compilation instructions (gcc on Unix/Linus/Cygwin, lcc on Windows):
+   1. Make sure each .c file above is present in the compilation directory and
+      that each .c file (except metamath.c) has its corresponding .h file
+      present.
+   2. In the directory where these files are present, type:
+         gcc m*.c -o metamath
+   3. For full error checking, use:
+         gcc m*.c -o metamath -O2 -Wall -Wextra -Wmissing-prototypes \
+             -Wmissing-declarations -Wshadow -Wpointer-arith -Wcast-align \
+             -Wredundant-decls -Wnested-externs -Winline -Wno-long-long \
+             -Wconversion -Wstrict-prototypes -ansi -pedantic -Wunused-result
+   4. For faster runtime, use these gcc options:
+         gcc m*.c -o metamath -O3 -funroll-loops -finline-functions \
+             -fomit-frame-pointer -Wall -ansi -pedantic  -fno-strict-overflow
+   5. The Windows version in the download was compiled with LCC-Win32:
+         lc -O m*.c -o metamath.exe
 */
 
-#define MVERSION "0.180 10-Dec-2019"
+#define MVERSION "0.181 12-Feb-2020"
+/* 0.181 12-Feb-2020 nm (reported by David Starner) metamath.c - fix bug causing
+     new axioms to be used by MINIMIZE_WITH */
 /* 0.180 10-Dec-2019 nm (bj 13-Sep-2019) mmpars.c - fix "line 0" in error msg
      when label clashes with math symbol
    8-Dec-2019 nm (bj 13-Oct-2019) mmhlpa.c - improve TOOLS> HELP INSERT, DELETE
@@ -599,25 +607,6 @@
     mmwtex.c - LaTeX/HTML source generation
     mmword.c - File revision utility (for TOOLS> UPDATE) (not generally useful)
 */
-
-/*****************************************************************************/
-/* ------------- Compilation Instructions ---------------------------------- */
-/*****************************************************************************/
-
-/* These are the instructions for the gcc compiler (standard in Linux and
-   Cygwin for Windows).
-   1. Make sure each .c file above is present in the compilation directory and
-      that each .c file (except metamath.c) has its corresponding .h file
-      present.
-   2. In the directory where these files are present, type:
-         gcc metamath.c m*.c -o metamath
-   3. For better speed and error checking, use these gcc options:
-         gcc m*.c -o metamath -O3 -funroll-loops -finline-functions \
-             -fomit-frame-pointer -Wall -ansi -pedantic
-   4. The Windows version in the download was compiled with LCC-Win32:
-         lc -O m*.c -o metamath.exe
-*/
-
 
 /*****************************************************************************/
 
@@ -6598,12 +6587,16 @@ void command(int argc, char *argv[])
 
                 /******** start of 29-Nov-2019 nm ************/
                 /* traceProofWork() was written to use the SAVEd proof and
-                   not the proof in progress.  So we temporarily put the
-                   proof in progress into the (SAVEd) statement structure
-                   to trick traceProofWork() into using the proof in progress
-                   instead of the SAVEd proof */
-                nmbrLet(&nmbrSaveProof, proofInProgress.proof);
-                nmbrLet(&nmbrSaveProof, nmbrSquishProof(proofInProgress.proof));
+                   not the proof in progress.  In order to use the proof in
+                   progress, we temporarily put the proof in progress into the
+                   (SAVEd) statement structure to trick traceProofWork() into using
+                   the proof in progress instead of the SAVEd proof */
+                /* Bad code line between 4-Aug-2019 and 12-Feb-2020: */
+                /*nmbrLet(&nmbrSaveProof, nmbrSquishProof(proofInProgress.proof));*/ /* Bad! */
+                /* 12-Feb-2020 nm */
+                /* Use the version of the proof in progress that existed *before* the
+                   MINIMIZE_WITH command was invoked */
+                nmbrLet(&nmbrSaveProof, nmbrSquishProof(saveProofForReverting.proof));
                 let(&str1, compressProof(nmbrSaveProof,
                     proveStatement, /* statement being proved in MM-PA */
                     0 /* Normal (not "fast") compression */
@@ -6648,7 +6641,7 @@ void command(int argc, char *argv[])
 
               }
               let(&traceTrialFlags, "");
-              traceProofWork(k,
+              traceProofWork(k, /* The trial statement */
                   1 /*essentialFlag*/,
                   "", /*traceToList*/ /* 18-Jul-2015 nm */
                   &traceTrialFlags, /* Y/N list of flags */
@@ -6881,8 +6874,8 @@ void command(int argc, char *argv[])
             prntStatus = 2; /* Found one */
             proofChangedFlag = 1;
 
-            /* 20-May-2012 nm */
-            /*
+            /* deleted 25-Jun-2014:
+            /@ 20-May-2012 nm @/
             if (forbidMatchList[0]) { /@ User provided a /FORBID list @/
               /@ Save the changed proof in case we have to restore
                  it later @/

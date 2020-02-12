@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2018  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2020  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -3175,7 +3175,7 @@ flag traceProof(long statemNum, /* 20-May-2013 nm */
 
   traceProofWork(statemNum,
       essentialFlag,
-      traceToList, /* 18-Jul-2015 nm */
+      traceToList, /* /TO argument of SHOW TRACE_BACK */ /* 18-Jul-2015 nm */
       &statementUsedFlags,
       &unprovedList);
   if ((signed)(strlen(statementUsedFlags)) != statements + 1) bug(226);
@@ -3252,7 +3252,7 @@ flag traceProof(long statemNum, /* 20-May-2013 nm */
    a nmbrString with a list of statements and unproved statements */
 void traceProofWork(long statemNum,
   flag essentialFlag,
-  vstring traceToList, /* 18-Jul-2015 nm */
+  vstring traceToList, /* /TO argument of SHOW TRACE_BACK */ /* 18-Jul-2015 nm */
   vstring *statementUsedFlagsP, /* 'Y'/'N' flag that statement is used */
   nmbrString **unprovedListP)
 {
@@ -3345,7 +3345,7 @@ void traceProofWork(long statemNum,
           statementList[slen] = stmt;
           slen++;
           (*statementUsedFlagsP)[stmt] = 'Y';
-        } else {
+        } else { /* TRACE_BACK / TO */
           if (traceToFilter[stmt] == 'Y') {
             statementList[slen] = stmt;
             slen++;
