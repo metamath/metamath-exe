@@ -668,7 +668,7 @@ flag readTexDefs(
   /* Check for duplicate definitions */
   for (i = 1; i < numSymbs; i++) {
     if (!strcmp(texDefs[i].tokenName, texDefs[i - 1].tokenName)) {
-      printLongLine(cat("?Warning:  Token ", texDefs[i].tokenName,
+      printLongLine(cat("?Warning: Token ", texDefs[i].tokenName,
           " is defined more than once in ",
           htmlFlag ? "an htmldef" : "a latexdef", " statement.", NULL),
           "", " ");
@@ -683,7 +683,7 @@ flag readTexDefs(
     mathKeyPtr = (void *)bsearch(texDefs[i].tokenName, mathKey,
         (size_t)mathTokens, sizeof(long), mathSrchCmp);
     if (!mathKeyPtr) {
-      printLongLine(cat("?Warning:  The token \"", texDefs[i].tokenName,
+      printLongLine(cat("?Warning: The token \"", texDefs[i].tokenName,
           "\", which was defined in ", htmlFlag ? "an htmldef" : "a latexdef",
           " statement, was not declared in any $v or $c statement.", NULL),
           "", " ");
@@ -696,7 +696,7 @@ flag readTexDefs(
     texDefsPtr = (void *)bsearch(mathToken[i].tokenName, texDefs,
         (size_t)numSymbs, sizeof(struct texDef_struct), texSrchCmp);
     if (!texDefsPtr) {
-      printLongLine(cat("?Warning:  The token \"", mathToken[i].tokenName,
+      printLongLine(cat("?Warning: The token \"", mathToken[i].tokenName,
        "\", which was defined in a $v or $c statement, was not declared in ",
           htmlFlag ? "an htmldef" : "a latexdef", " statement.", NULL),
           "", " ");
@@ -727,7 +727,7 @@ flag readTexDefs(
         if (noGifCheck == 0) { /* 17-Nov-2015 nm */
           tmpFp = fopen(token, "r"); /* See if it exists */
           if (!tmpFp) {
-            printLongLine(cat("?Warning:  The file \"", token,
+            printLongLine(cat("?Warning: The file \"", token,
                 "\", which is referenced in an htmldef",
                 " statement, was not found.", NULL),
                 "", " ");
@@ -2510,7 +2510,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
             if (!bibFileContents) {
               /* The file was not found or had some problem (use verbose mode = 1
                  in 2nd argument of readFileToString for debugging). */
-              printLongLine(cat("?Warning:  Couldn't open or read the file \"",
+              printLongLine(cat("?Warning: Couldn't open or read the file \"",
                   bibFileName,
                   "\".  The bibliographic hyperlinks will not be checked for",
                   " correctness.  The first one is \"", bibTag,
@@ -2725,7 +2725,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
           /* bug(2310); */
           /* 2-Oct-2015 nm Changed to error message */
           outputToString = 0;
-          printLongLine(cat("?Warning:  There is a \"~\" inside of a label",
+          printLongLine(cat("?Warning: There is a \"~\" inside of a label",
               " in the comment of statement \"",
               statement[showStatement].labelName,
               "\".  Use \"~~\" to escape \"~\" in an http reference.",
@@ -2915,7 +2915,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
             /* 2-Oct-2015 nm */
             /* This can happen if ~ is followed by ` (start of math string) */
             outputToString = 0;
-            printLongLine(cat("?Error:  There is a \"~\" with no label",
+            printLongLine(cat("?Error: There is a \"~\" with no label",
                 " in the comment of statement \"",
                 statement[showStatement].labelName,
                 "\".  Check that \"`\" inside of a math symbol is",
@@ -6422,7 +6422,8 @@ flag writeBibliography(vstring bibFile,
               || !strcmp(mid(str2, k, (long)strlen("LEMMA")), "LEMMA")
               || !strcmp(mid(str2, k, (long)strlen("EXERCISE")), "EXERCISE")
               || !strcmp(mid(str2, k, (long)strlen("AXIOM")), "AXIOM")
-
+              /* 12-Apr-2020 nm Added CLAIM */
+              || !strcmp(mid(str2, k, (long)strlen("CLAIM")), "CLAIM")
               || !strcmp(mid(str2, k, (long)strlen("CHAPTER")), "CHAPTER")
               || !strcmp(mid(str2, k, (long)strlen("COMPARE")), "COMPARE")
               || !strcmp(mid(str2, k, (long)strlen("CONDITION")), "CONDITION")

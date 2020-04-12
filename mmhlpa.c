@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2019  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2020  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -1087,10 +1087,10 @@ H("    Theorem 3.1 of [Monk] p. 22,");
 H("");
 H("The <keyword>, which is not case-sensitive, must be one of the following:");
 H("");
-H("    Axiom, Chapter, Compare, Condition, Corollary, Definition, Equation,");
-H("    Example, Exercise, Figure, Item, Lemma, Lemmas, Line, Lines, Notation,");
-H("    Note, Observation, Part, Postulate, Problem, Proof, Property,");
-H("    Proposition, Remark, Rule, Scheme, Section, Statement, Theorem");
+H("    Axiom, Chapter, Claim, Compare, Condition, Corollary, Definition,");
+H("    Equation, Example, Exercise, Figure, Item, Lemma, Lemmas, Line, Lines,");
+H("    Notation, Note, Observation, Part, Postulate, Problem, Proof,");
+H("    Property, Proposition, Remark, Rule, Scheme, Section, Statement, Theorem");
 H("");
 H("The <identifier> is optional, as in for example \"Remark in [Monk] p. 22\".");
 H("");

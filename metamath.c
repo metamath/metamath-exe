@@ -10,6 +10,28 @@
    be free of copyright restrictions (i.e. public domain) in order to provide
    this flexibility.  Thank you. - NM */
 
+/* The overall functionality of the modules is as follows:
+    metamath.c - Contains main(); executes or calls commands
+    mmcmdl.c - Command line interpreter
+    mmcmds.c - Extends metamath.c command() to execute SHOW and other
+               commands; added after command() became too bloated (still is:)
+    mmdata.c - Defines global data structures and manipulates arrays
+               with functions similar to BASIC string functions;
+               memory management; converts between proof formats
+    mmhlpa.c - The help file, part 1.
+    mmhlpb.c - The help file, part 2.
+    mminou.c - Basic input and output interface
+    mmmaci.c - THINK C Macintosh interface (obsolete)
+    mmpars.c - Parses the source file
+    mmpfas.c - Proof Assistant
+    mmunif.c - Unification algorithm for Proof Assistant
+    mmutil.c - Miscellaneous I/O utilities (reserved for future use)
+    mmveri.c - Proof verifier for source file
+    mmvstr.c - BASIC-like string functions
+    mmwtex.c - LaTeX/HTML source generation
+    mmword.c - File revision utility (for TOOLS> UPDATE) (not generally useful)
+*/
+
 /* Compilation instructions (gcc on Unix/Linus/Cygwin, lcc on Windows):
    1. Make sure each .c file above is present in the compilation directory and
       that each .c file (except metamath.c) has its corresponding .h file
@@ -28,7 +50,8 @@
          lc -O m*.c -o metamath.exe
 */
 
-#define MVERSION "0.181 12-Feb-2020"
+#define MVERSION "0.182 12-Apr-2020"
+/* 0.182 12-Apr-2020 nm mmwtex.c, mmphlpa.c - add "Claim" to bib ref types */
 /* 0.181 12-Feb-2020 nm (reported by David Starner) metamath.c - fix bug causing
      new axioms to be used by MINIMIZE_WITH */
 /* 0.180 10-Dec-2019 nm (bj 13-Sep-2019) mmpars.c - fix "line 0" in error msg
@@ -585,28 +608,6 @@
    generated and permitted (old one is tolerated too for compatibility) */
 /* Metamath Proof Verifier - main program */
 /* See the book "Metamath" for description of Metamath and run instructions */
-
-/* The overall functionality of the modules is as follows:
-    metamath.c - Contains main(); executes or calls commands
-    mmcmdl.c - Command line interpreter
-    mmcmds.c - Extends metamath.c command() to execute SHOW and other
-               commands; added after command() became too bloated (still is:)
-    mmdata.c - Defines global data structures and manipulates arrays
-               with functions similar to BASIC string functions;
-               memory management; converts between proof formats
-    mmhlpa.c - The help file, part 1.
-    mmhlpb.c - The help file, part 2.
-    mminou.c - Basic input and output interface
-    mmmaci.c - THINK C Macintosh interface (obsolete)
-    mmpars.c - Parses the source file
-    mmpfas.c - Proof Assistant
-    mmunif.c - Unification algorithm for Proof Assistant
-    mmutil.c - Miscellaneous I/O utilities (reserved for future use)
-    mmveri.c - Proof verifier for source file
-    mmvstr.c - BASIC-like string functions
-    mmwtex.c - LaTeX/HTML source generation
-    mmword.c - File revision utility (for TOOLS> UPDATE) (not generally useful)
-*/
 
 /*****************************************************************************/
 
