@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2019  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2020  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -2782,13 +2782,18 @@ char parseProof(long statemNum)
     } /* if explicitTargets */
     /**** End of 25-Jan-2016 ***/
 
-    /* Error check for $e <- $f assignments (illegal) */
-    nmbrTmpPtr = statement[j].reqHypList;
     numReqHyp = statement[j].numReqHyp;
+
+    /* Error check for $e <- $f assignments (illegal) */
+    /* 18-Jun-2020 nm: Although it would be unusual to to this,
+       it is not illegal per the spec.  See
+       https://groups.google.com/d/msg/metamath/Cx_d84uorf8/0FrNYTM9BAAJ */
+    /**** Deleted 18-Jun-2020 nm ****
+    nmbrTmpPtr = statement[j].reqHypList;
     for (i = 0; i < numReqHyp; i++) {
 
-      /* 25-Jan-2016 nm */
-      /* Skip this check if /EXPLICIT since hyps may be in random order */
+      /@ 25-Jan-2016 nm @/
+      /@ Skip this check if /EXPLICIT since hyps may be in random order @/
       if (explicitTargets == 1) break;
 
       if (statement[nmbrTmpPtr[i]].type == e_) {
@@ -2814,6 +2819,7 @@ char parseProof(long statemNum)
         }
       }
     }
+    **** End of 18-Jun-2020 deletion ****/
 
     /* Pop the stack */
     wrkProof.RPNStackPtr = wrkProof.RPNStackPtr - numReqHyp;
@@ -3023,7 +3029,8 @@ char parseProof(long statemNum)
 char parseCompressedProof(long statemNum)
 {
 
-  long i, j, k, m, step, stmt;
+  long i, j, k, step, stmt;
+  /* long m; */ /* 18-Jun-2020 nm No longer needed */
   char *fbPtr;
   char *fbStartProof;
   char *labelStart;
@@ -3462,9 +3469,13 @@ char parseCompressedProof(long statemNum)
             continue;
           } /* End if stack exhausted */
 
-          /* Error check for $e <- $f assignments (illegal) */
-          nmbrTmpPtr = statement[stmt].reqHypList;
           numReqHyp = statement[stmt].numReqHyp;
+          /* Error check for $e <- $f assignments (illegal) */
+          /* 18-Jun-2020 nm: Although it would be unusual to to this,
+             it is not illegal per the spec.  See
+             https://groups.google.com/d/msg/metamath/Cx_d84uorf8/0FrNYTM9BAAJ */
+          /**** Deleted 18-Jun-2020 nm ****
+          nmbrTmpPtr = statement[stmt].reqHypList;
           for (i = 0; i < numReqHyp; i++) {
             if (statement[nmbrTmpPtr[i]].type == e_) {
               m = wrkProof.RPNStackPtr - numReqHyp + i;
@@ -3490,6 +3501,7 @@ char parseCompressedProof(long statemNum)
               }
             }
           }
+          **** End of 18-Jun-2020 deletion ****/
 
           /* Pop the stack */
           wrkProof.RPNStackPtr = wrkProof.RPNStackPtr - numReqHyp;
@@ -4289,6 +4301,7 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
   vstring comment = "";
   vstring str1 = "";
   long length;
+  flag nowrapHtml;
 
   /* For getContribs in-line error insertion to assist massive corrections
   long i;
@@ -4425,7 +4438,10 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
         commentStart = rinstr(labelSection,  "$(");
         /* Get last $) */
         commentEnd = rinstr(labelSection, "$)") + 1;
-        if (commentEnd < commentStart) bug(1725);
+        if (commentEnd < commentStart) {
+          print2("?Make sure syntax passes before running / REWRAP.\n");
+          bug(1725);
+        }
         if (commentStart != 0) {
           let(&comment, seg(labelSection, commentStart, commentEnd));
         } else {
@@ -4531,62 +4547,88 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
               "\n", NULL));
           pos = (long)strlen(labelSection) + 1;
         }
-        let(&labelSection, left(labelSection, pos));
 
-        /* If / REWRAP was specified, unwrap and rewrap the line */
-        if (reformatFlag == 2) {
-          let(&str1, "");
-          str1 = rewrapComment(comment);
-          let(&comment, str1);
+        /* 30-Jun-2020 nm */
+        /* If comment has "<HTML>", don't reformat. */
+        if (instr(1, comment, "<HTML>") != 0) {
+          nowrapHtml = 1;
+        } else {
+          nowrapHtml = 0;
         }
 
-        /* Make sure that start of new lines inside the comment have no
-           trailing space (because printLongLine doesn't do this after
-           explict break) */
-        pos = 0;
-        while (1) {
-          pos = instr(pos + 1, comment, "\n");
-          if (pos == 0) break;
-          length = 0;
-          while (1) {  /* Get past any existing leading blanks */
-            if (comment[pos + length] != ' ') break;
-            length++;
+        /* 30-Jun-2020 nm Added nowrapHtml condition */
+        if (nowrapHtml == 0) {
+
+          /* 30-Jun-2020 nm */
+          /* This strips off leading spaces before $( (start of comment).  Don't
+             do it for <HTML>, since spacing before $( is manual. */
+          let(&labelSection, left(labelSection, pos));
+
+          if (reformatFlag == 2) {
+            /* If / REWRAP was specified, unwrap and rewrap the line */
+            let(&str1, "");
+            str1 = rewrapComment(comment);
+            let(&comment, str1);
           }
-          let(&comment, cat(left(comment, pos),
-              (comment[pos + length] != '\n')
-                  ? space(indent + 3)
-                  : "",  /* Don't add indentation if line is blank */
-              right(comment, pos + length + 1), NULL));
+
+          /* Make sure that start of new lines inside the comment have no
+             trailing space (because printLongLine doesn't do this after
+             explict break) */
+          pos = 0;
+          while (1) {
+            pos = instr(pos + 1, comment, "\n");
+            if (pos == 0) break; /* Beyond last line in comment */
+            /* Remove leading spaces from comment line */
+            length = 0;
+            while (1) {
+              if (comment[pos + length] != ' ') break;
+              length++;
+            }
+            /* Add back indent+3 spaces to beginning of line in comment */
+            let(&comment, cat(left(comment, pos),
+                (comment[pos + length] != '\n')
+                    ? space(indent + 3)
+                    : "",  /* Don't add indentation if line is blank */
+                right(comment, pos + length + 1), NULL));
+          }
+
+          /* Reformat the comment to wrap if necessary */
+          if (outputToString == 1) bug(1726);
+          outputToString = 1;
+          let(&printString, "");
+          /* 7-Nov-2015 nm For getContribs in-line error insertion to assist
+             massive corrections; maybe delete someday */
+          /***********
+          saveWidth = screenWidth;
+          screenWidth = 9999;
+          /@i=getContrib(stmt, &ca, &cd, &ra, &rd, &sa, &sd, &md, 1);@/
+          let(&ca, "");
+          /@ 3-May-2017 nm @/
+          ca = getContrib(stmt, ERROR_CHECK);
+          screenWidth = saveWidth;
+          ************/
+          printLongLine(cat(space(indent), comment, NULL),
+              space(indent + 3), " ");
+          let(&comment, printString);
+          let(&printString, "");
+          outputToString = 0;
+#define ASCII_4 4
+          /* Restore ASCII_4 characters put in by rewrapComment() to space */
+          length = (long)strlen(comment);
+          for (pos = 2; pos < length - 2; pos++) {
+             /* For debugging: */
+             /* if (comment[pos] == ASCII_4) comment[pos] = '#'; */
+             if (comment[pos] == ASCII_4) comment[pos] = ' ';
+          }
+        } /* if nowrapHtml == 0 */ else {
+          /* 30-Jun-2020 nm */
+          /* If there was an <HTML> tag, we don't modify the comment. */
+          /* However, we need "\n" after "$)" (end of comment), corresponding to
+             the one that was put there by printLongLine() in the normal
+             non-<HTML> case above */
+          let(&comment, cat(comment, "\n", NULL));
         }
 
-        /* Reformat the comment to wrap if necessary */
-        if (outputToString == 1) bug(1726);
-        outputToString = 1;
-        let(&printString, "");
-        /* 7-Nov-2015 nm For getContribs in-line error insertion to assist
-           massive corrections; maybe delete someday */
-        /***********
-        saveWidth = screenWidth;
-        screenWidth = 9999;
-        /@i=getContrib(stmt, &ca, &cd, &ra, &rd, &sa, &sd, &md, 1);@/
-        let(&ca, "");
-        /@ 3-May-2017 nm @/
-        ca = getContrib(stmt, ERROR_CHECK);
-        screenWidth = saveWidth;
-        ************/
-        printLongLine(cat(space(indent), comment, NULL),
-            space(indent + 3), " ");
-        let(&comment, printString);
-        let(&printString, "");
-        outputToString = 0;
-#define ASCII_4 4
-        /* Restore ASCII_4 characters put in by rewrapComment() to space */
-        length = (long)strlen(comment);
-        for (pos = 2; pos < length - 2; pos++) {
-           /* For debugging: */
-           /* if (comment[pos] == ASCII_4) comment[pos] = '#'; */
-           if (comment[pos] == ASCII_4) comment[pos] = ' ';
-        }
         /* Remove any trailing spaces */
         pos = 2;
         while(1) {
@@ -4834,7 +4876,12 @@ vstring rewrapComment(vstring comment1)
 
   /* Ignore pre-formatted comments */
   /* if (instr(1, comment, "<PRE>") != 0) return comment; */
-  if (instr(1, comment, "<HTML>") != 0) return comment;  /* 26-Dec-2011 nm */
+  /* 30-Jun-2020 nm This is now done in the calling program */
+  /*
+  if (instr(1, comment, "<HTML>") != 0) {
+    return comment;  /@ 26-Dec-2011 nm @/
+  }
+  */
 
   /* Make sure back quotes are surrounded by space */
   pos = 2;

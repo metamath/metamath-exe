@@ -3147,7 +3147,11 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
     saveScreenWidth = screenWidth;
     /* 26-Dec-2011 nm - in <PRE> mode, we don't want to wrap the HTML
        output with spurious newlines */
-    if (preformattedMode) screenWidth = PRINTBUFFERSIZE - 2;
+    /*if (preformattedMode) screenWidth = PRINTBUFFERSIZE - 2;*/
+    /* 19-Jun-2010 nm PRINTBUFFERSIZE was removed.  Any large value will
+       do; we just need to accomodate the worst case line length that will
+       result from converting ~ label, [author], ` math ` to HTML */
+    if (preformattedMode) screenWidth = 50000;
     if (errorsOnly == 0) {
       printLongLine(outputLine, "", htmlFlag ? "\"" : "\\");
     }

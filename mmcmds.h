@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2019  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2020  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -81,7 +81,9 @@ void verifyProofs(vstring labelMatch, flag verifyFlag);
 /* If checkFiles = 0, do not open external files.
    If checkFiles = 1, check mm*.html, presence of gifs, etc. */
 void verifyMarkup(vstring labelMatch, flag dateSkip, flag topDateSkip,
-    flag fileSkip, flag verboseMode); /* 26-Dec-2016 nm */
+    flag fileSkip,
+    flag underscoreSkip, /* 25-Jun-2020 nm */
+    flag verboseMode); /* 26-Dec-2016 nm */
 
 /* 10-Dec-2018 nm Added */
 void processMarkup(vstring inputFileName, vstring outputFileName,

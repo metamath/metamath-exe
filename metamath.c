@@ -42,15 +42,30 @@
          gcc m*.c -o metamath -O2 -Wall -Wextra -Wmissing-prototypes \
              -Wmissing-declarations -Wshadow -Wpointer-arith -Wcast-align \
              -Wredundant-decls -Wnested-externs -Winline -Wno-long-long \
-             -Wconversion -Wstrict-prototypes -ansi -pedantic -Wunused-result
+             -Wconversion -Wstrict-prototypes -std=c99 -pedantic -Wunused-result
    4. For faster runtime, use these gcc options:
          gcc m*.c -o metamath -O3 -funroll-loops -finline-functions \
-             -fomit-frame-pointer -Wall -ansi -pedantic  -fno-strict-overflow
-   5. The Windows version in the download was compiled with LCC-Win32:
+             -fomit-frame-pointer -Wall -std=c99 -pedantic -fno-strict-overflow
+   5. The Windows version in the download was compiled with lcc-win32 version 3.8:
          lc -O m*.c -o metamath.exe
+   6. On Linux, if you have autoconf, automake, and a C compiler, you
+      can compile with the command "autoreconf -i && ./configure && make".
+      See the README.TXT file for more information.
 */
 
-#define MVERSION "0.182 12-Apr-2020"
+#define MVERSION "0.183 30-Jun-2020"
+/* 0.183 30-Jun-2020 30-Jun-2020 nm mmpars.c - refine prevention of
+     WRITE SOURCE.../REWRAP from modifying comments containing "<HTML>"
+     (specifically, remove indentation alignment).
+   25-Jun-2020 nm metamath.c, mmcmds.c,h mmcmdl.c mmhlpb.c - add underscore
+     checking in VERIFY MARKUP and add /UNDERSCORE_SKIP qualifier; also check
+     for trailing space on lines.
+   20-Jun-2020 nm mmcmds.c - check for discouragement tags in *ALT, *OLD
+     labels in VERIFY MARKUP.
+   19-Jun-2020 nm mminou.c,h, metamath.c, mmwtex.c - dynamically allocate
+     buffer in print2() using vsnprintf() to calculate size needed
+   18-Jun-2020 nm mmpars.c - remove error check for $e <- $f assignments.  See
+     https://groups.google.com/d/msg/metamath/Cx_d84uorf8/0FrNYTM9BAAJ */
 /* 0.182 12-Apr-2020 nm mmwtex.c, mmphlpa.c - add "Claim" to bib ref types */
 /* 0.181 12-Feb-2020 nm (reported by David Starner) metamath.c - fix bug causing
      new axioms to be used by MINIMIZE_WITH */
@@ -7492,6 +7507,8 @@ void command(int argc, char *argv[])
 
     if (cmdMatches("SET WIDTH")) { /* 18-Nov-85 nm Was SCREEN_WIDTH */
       s = (long)val(fullArg[2]); /* Screen width value */
+
+      /************ 19-Jun-2020 nm printBuffer is now dynamically allocated
       if (s >= PRINTBUFFERSIZE - 1) {
         print2(
 "?Maximum screen width is %ld.  Recompile with larger PRINTBUFFERSIZE in\n",
@@ -7499,6 +7516,8 @@ void command(int argc, char *argv[])
         print2("mminou.h if you need more.\n");
         continue;
       }
+      *************/
+
       /* 26-Sep-2017 nm */
       /* TODO: figure out why s=2 crashes program! */
       if (s < 3) s = 3; /* Less than 3 may cause a segmentation fault */
@@ -7874,22 +7893,25 @@ void command(int argc, char *argv[])
       continue;
     }
 
-    /* 7-Nov-2015 nm Added */  /* 17-Nov-2015 nm Updated */
+    /* 7-Nov-2015 nm New */  /* 17-Nov-2015 nm Updated */
+    /* 25-Jun-2020 nm Added UNDERSCORE_SKIP */
     if (cmdMatches("VERIFY MARKUP")) {
       i = (switchPos("/ DATE_SKIP") != 0) ? 1 : 0;
-      m = (switchPos("/ TOP_DATE_SKIP") != 0) ? 1 : 0;
-      j = (switchPos("/ FILE_SKIP") != 0) ? 1 : 0;
-      k = (switchPos("/ VERBOSE") != 0) ? 1 : 0;
-      if (i == 1 && m == 1) {
+      j = (switchPos("/ TOP_DATE_SKIP") != 0) ? 1 : 0;
+      k = (switchPos("/ FILE_SKIP") != 0) ? 1 : 0;
+      l = (switchPos("/ UNDERSCORE_SKIP") != 0) ? 1 : 0;
+      m = (switchPos("/ VERBOSE") != 0) ? 1 : 0;
+      if (i == 1 && j == 1) {
         printf(
             "?Only one of / DATE_SKIP and / TOP_DATE_SKIP may be specified.\n");
         continue;
       }
       verifyMarkup(fullArg[2],
           (flag)i, /* 1 = skip checking date consistency */
-          (flag)m, /* 1 = skip checking top date only */
-          (flag)j, /* 1 = skip checking external files GIF, mmset.html,... */
-          (flag)k); /* 1 = verbose mode */  /* 26-Dec-2016 nm */
+          (flag)j, /* 1 = skip checking top date only */
+          (flag)k, /* 1 = skip checking external files GIF, mmset.html,... */
+          (flag)l, /* 1 = skip checking labels for underscores */
+          (flag)m); /* 1 = verbose mode */  /* 26-Dec-2016 nm */
       continue;
     }
 

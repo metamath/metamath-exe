@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2019  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2020  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -1395,7 +1395,7 @@ flag processCommandLine(void)
             i++;
             if (!getFullArg(i, cat(
                 "DATE_SKIP|FILE_SKIP|TOP_DATE_SKIP|VERBOSE",
-                "|<DATE_SKIP>", NULL)))
+                "|UNDERSCORE_SKIP|<DATE_SKIP>", NULL)))
               goto pclbad;
           } else {
             break;

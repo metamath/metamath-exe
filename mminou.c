@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2019  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2020  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -54,9 +54,9 @@ flag commandFileSilent[MAX_COMMAND_FILE_NESTING + 1];
 flag commandFileSilentFlag = 0;
                                    /* 23-Oct-2006 nm For SUBMIT ... /SILENT */
 
-FILE *inputDef_fp,*input_fp /*,*output_fp*/; /* File pointers */
+FILE *inputDef_fp, *input_fp /*,*output_fp*/; /* File pointers */
                              /* 31-Dec-2017 nm output_fp deleted */
-vstring inputDef_fn="",input_fn="",output_fn="";        /* File names */
+vstring inputDef_fn="", input_fn="", output_fn="";        /* File names */
 
 long screenWidth = MAX_LEN; /* Width default = 79 */
 /* screenHeight is one less than the physical screen to account for the
@@ -88,8 +88,19 @@ flag print2(char* fmt,...)
 #ifdef THINK_C
   int ii, jj;
 #endif
-  char printBuffer[PRINTBUFFERSIZE];
   long i;
+
+  /* char printBuffer[PRINTBUFFERSIZE]; */ /* 19-Jun-2020 nm Deleted */
+  /* 19-Jun-2020 nm */
+  char *printBuffer; /* Allocated dynamically */
+  /* See https://sourceforge.net/p/predef/wiki/Compilers/ for __LCC__ */
+#ifdef __LCC__   /* 19-Jun-2020 nm ssize_t not defined for lcc compiler */
+  long bufsiz;
+#else
+  ssize_t bufsiz; /* ssize_t (signed size_t) can represent the number -1 for
+                     error checking */
+#endif
+
 
   if (backBufferPos == 0) {
     /* Initialize backBuffer - 1st time in program */
@@ -214,29 +225,51 @@ flag print2(char* fmt,...)
 
 
 
-  if (quitPrint && !outputToString)
+  if (quitPrint && !outputToString) {
     goto PRINT2_RETURN;    /* User typed 'q'
       above or earlier; 8/27/99: don't return if we're outputting to
       a string since we want to complete the writing to the string. */
+  }
 
+
+  /* 19-Jun-2020 nm Allow unlimited output size */
+  va_start(ap, fmt);
+  bufsiz = vsnprintf(NULL, 0, fmt, ap); /* Get the buffer size we need */
+  va_end(ap);
+  /* Warning: some older complilers, including lcc-win32 version 3.8 (2004),
+     return -1 instead of the buffer size */
+  if (bufsiz == -1) bug(1527);
+  printBuffer = malloc((size_t)bufsiz + 1);
+
+  /* 19-Jun-2020 nm Let each vs[n]printf have its own va_start...va_end
+     in an attempt to fix crash with some compilers (e.g. gcc 4.9.2) */
   va_start(ap, fmt);
   charsPrinted = vsprintf(printBuffer, fmt, ap); /* Put formatted string into
       buffer */
   va_end(ap);
+  if (charsPrinted != bufsiz) {
+    /* Give some info with printf in case print2 crashes during bug() call */
+    printf("For bug #1528: charsPrinted = %ld != bufsiz = %ld\n", charsPrinted,
+        (long)bufsiz);
+    bug(1528);
+  }
 
-  /* Normally, long proofs are broken up into 80-or-less char lines
+  /* 19-Jun-2020 nm We are now dynamically allocating printBuffer, so
+     there is no longer a possibility of overflow. */
+  /********** 19-Jun-2020 nm Deleted ***********
+  /@ Normally, long proofs are broken up into 80-or-less char lines
      by this point (via printLongLine) so this should never be a problem
      for them.  But in principle a very long line argument to print2
      could be a problem, although currently it should never occur
      (except maybe in long lines in tools? - if so, switch to printLongLine
-     there to fix the bug). */
-  /* Warning:  Don't call bug(), because it calls print2. */
+     there to fix the bug). @/
+  /@ Warning:  Don't call bug(), because it calls print2. @/
   if (charsPrinted >= PRINTBUFFERSIZE
-      /* || charsPrinted < 0 */
-      /* There is a bug on the Sun with gcc version 2.7.2.2 where
-         vsprintf returns approx. -268437768, so ignore the bug */
+      /@ || charsPrinted < 0 @/
+      /@ There is a bug on the Sun with gcc version 2.7.2.2 where
+         vsprintf returns approx. -268437768, so ignore the bug @/
       ) {
-    printf("*** BUG 1503\n");
+    printf("@@@ BUG 1503\n");
     printf("?PRINTBUFFERSIZE %ld <= charsPrinted %ld in mminou.c\n",
         (long)PRINTBUFFERSIZE, charsPrinted);
     printf("?Memory may now be corrupted.\n");
@@ -246,6 +279,7 @@ flag print2(char* fmt,...)
     fflush(stdout);
 #endif
   }
+  ********** 19-Jun-2020 nm End of deletion ***********/
 
   nlpos = instr(1, printBuffer, "\n");
   lineLen = (long)strlen(printBuffer);
@@ -350,6 +384,7 @@ flag print2(char* fmt,...)
   /* Check for lines too long */
   if (lineLen > screenWidth + 1) { /* The +1 ignores \n */
     /* Warning:  Don't call bug(), because it calls print2. */
+    /* If this bug occurs, the calling function should be fixed. */
     printf("*** PROGRAM BUG #1505 (not serious, but please report it)\n");
     printf("Line exceeds screen width; caller should use printLongLine.\n");
     printf("%ld %s\n", lineLen, printBuffer);
@@ -359,6 +394,9 @@ flag print2(char* fmt,...)
 #endif
   }
   /* \n not allowed in middle of line */
+  /* If this bug occurs, it means print2() is being called with \n in the
+     middle of the line and should be fixed in the caller.  printLongLine()
+     may be used if this is necessary. */
   /* Warning:  Don't call bug(), because it calls print2. */
   if (nlpos != 0 && nlpos != lineLen) {
     printf("*** PROGRAM BUG #1506\n");
@@ -366,6 +404,8 @@ flag print2(char* fmt,...)
     fflush(stdout);
 #endif
   }
+
+  free(printBuffer); /* 19-Jun-2020 nm */
 
  PRINT2_RETURN:
   return (!quitPrint);
@@ -641,7 +681,9 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
             ********* end debug */
             /* If this bug happens, we'll have to increase PRINTBUFFERSIZE
                or change the HTML code being printed. */
-            if (screenWidth >= PRINTBUFFERSIZE - 1) bug(1517);
+            /* 19-Jun-2020 nm We no longer care about buffer size since
+               printBuffer is dynamically allocated in print2() */
+            /*if (screenWidth >= PRINTBUFFERSIZE - 1) bug(1517);*/
             goto HTML_RESTART; /* Ugly but another while loop nesting would
                                   be even more confusing */
           }

@@ -314,7 +314,7 @@ nmbrString *proveByReplacement(long prfStmt,
       if (overrideFlag == 1 && getMarkupFlag(trialStmt, USAGE_DISCOURAGED)) {
         /* print2("\n"); */ /* Enable for more emphasis */
         print2(
-          ">>> ?Warning:  Overriding discouraged usage of statement \"%s\".\n",
+          ">>> ?Warning: Overriding discouraged usage of statement \"%s\".\n",
             statement[trialStmt].labelName);
         /* print2("\n"); */ /* Enable for more emphasis */
       }
@@ -1689,7 +1689,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
     nmbrLet(&proof, NULL_NMBRSTRING);
 /*??? Document in Metamath manual. */
     printLongLine(cat(
-       "?Warning:  A possible infinite loop was found in $f hypothesis ",
+       "?Warning: A possible infinite loop was found in $f hypothesis ",
        "backtracking (i.e., depth > ", str((double)MAX_DEPTH),
        ").  The last proof attempt was for math string \"",
        nmbrCvtMToVString(mString),
@@ -2048,7 +2048,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
           case 1:  /* Normal override */
             /* print2("\n"); */ /* Enable for more emphasis */
             print2(
-          ">>> ?Warning:  Overriding discouraged usage of statement \"%s\".\n",
+          ">>> ?Warning: Overriding discouraged usage of statement \"%s\".\n",
                 statement[stmt].labelName);
             /* print2("\n"); */ /* Enable for more emphasis */
             break;

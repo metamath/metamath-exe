@@ -178,7 +178,7 @@ void typeStatement(long showStmt,
 #endif /* 12-May-2017 nm */
 
         ) {
-      print2("?Warning:  Statement \"%s\" has no comment\n",
+      print2("?Warning: Statement \"%s\" has no comment\n",
           statement[showStmt].labelName);
       /* 14-Sep-2010 nm We must print a blank comment to have \begin{lemma} */
       if (texFlag && !htmlFlg && !oldTexFlag) {
@@ -955,7 +955,7 @@ void typeStatement(long showStmt,
           /* Proof was not found - probable syntax error */
           if (outputToString != 0) bug(246);
           printLongLine(cat(
-              "?Warning:  Unable to generate syntax breakdown for \"",
+              "?Warning: Unable to generate syntax breakdown for \"",
               statement[showStmt].labelName,
               "\".", NULL), "    ", " ");
         }
@@ -3230,7 +3230,7 @@ flag traceProof(long statemNum, /* 20-May-2013 nm */
 
   /* Print any unproved statements */
   if (nmbrLen(unprovedList)) {
-    print2("Warning:  the following traced statement(s) were not proved:\n");
+    print2("Warning: The following traced statement(s) were not proved:\n");
     let(&outputString, "");
     for (pos = 0; pos < nmbrLen(unprovedList); pos++) {
       let(&outputString, cat(outputString, " ", statement[unprovedList[
@@ -4606,7 +4606,7 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
 
   if (emptyProofList[0]) {
     printLongLine(cat(
-        "Warning:  The following $p statement(s) were not proved:  ",
+        "Warning: The following $p statement(s) were not proved:  ",
         right(emptyProofList,3), NULL)," ","  ");
   }
   if (!emptyProofList[0] && !errorFound && !strcmp("*", labelMatch)) {
@@ -4632,10 +4632,12 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
 /* 13-Dec-2016 nm Added checks for undesireable labels (mm*,
    Microsoft conflicts) */
 /* 24-Mar-2019 nm Added topDateSkip */
+/* 25-Jun-2020 nm Added underscoreSkip */
 void verifyMarkup(vstring labelMatch,
     flag dateSkip, /* 1 = don't check date consistency */
     flag topDateSkip, /* 1 = don't check top date but check others */
     flag fileSkip, /* 1 = don't check external files (gifs, mmset.html,...) */
+    flag underscoreSkip, /* 1 = don't check labels for "_" characters) */
     flag verboseMode) /* 1 = more details */ {   /* 26-Dec-2016 nm */
   flag f;
   flag saveHtmlFlag, saveAltHtmlFlag;
@@ -4690,11 +4692,31 @@ void verifyMarkup(vstring labelMatch,
      ",CON,PRN,AUX,NUL,COM1,COM2,COM3,COM4,COM5,COM6,COM7,",
      "COM8,COM9,LPT1,LPT2,LPT3,LPT4,LPT5,LPT6,LPT7,LPT8,LPT9,", NULL));
   for (stmtNum = 1; stmtNum <= statements; stmtNum++) {
-    /* Only $a and $p can produce web pages, so check only them */
-    if (statement[stmtNum].type != a_ && statement[stmtNum].type != p_) {
+    if (!matchesList(statement[stmtNum].labelName, labelMatch, '*', '?')) {
       continue;
     }
-    if (!matchesList(statement[stmtNum].labelName, labelMatch, '*', '?')) {
+
+    /* 25-Jun-2020 nm */
+    /* Check labels for "_" characters */
+    /* See discussion in https://github.com/metamath/set.mm/pull/1691 */
+    if (underscoreSkip == 0
+        && instr(1, statement[stmtNum].labelName, "_") != 0) {
+      assignStmtFileAndLineNum(stmtNum);
+      printLongLine(cat("?Warning: In statement \"",
+          statement[stmtNum].labelName, "\" at line ",
+          str((double)(statement[stmtNum].lineNum)),
+          " in file \"", statement[stmtNum].fileName,
+          "\".  Underscores in labels are not recommended per our conventions.  ",
+          "Use the / UNDERSCORE_SKIP ",
+          "qualifier to skip this check.",
+          NULL),
+          "    ", " ");
+      /* errorCount++; */
+      errFound = 1;
+    }
+
+    /* Only $a and $p can produce web pages, so check only them */
+    if (statement[stmtNum].type != a_ && statement[stmtNum].type != p_) {
       continue;
     }
     let(&str2, cat(",", edit(statement[stmtNum].labelName, 32/*uppercase*/),
@@ -4702,9 +4724,9 @@ void verifyMarkup(vstring labelMatch,
     if (instr(1, str1, str2) ||
         /* 5-Jan-04 mm*.html is reserved for mmtheorems.html, etc. */
         !strcmp(",MM", left(str2, 3))) {
-      print2("\n");
+      /*print2("\n");*/ /* 25-Jun-2020 nm Deleted */
       assignStmtFileAndLineNum(stmtNum); /* 9-Jan-2018 nm */
-      printLongLine(cat("?Warning: in statement \"",
+      printLongLine(cat("?Warning: In statement \"",
           statement[stmtNum].labelName, "\" at line ",
           str((double)(statement[stmtNum].lineNum)),
           " in file \"", statement[stmtNum].fileName,
@@ -4726,7 +4748,7 @@ void verifyMarkup(vstring labelMatch,
         let(&str1, left(statement[stmtNum].labelName, 3));
         if (strcmp("ax-", str1) && strcmp("df-", str1)) {
           assignStmtFileAndLineNum(stmtNum); /* 9-Jan-2018 nm */
-          printLongLine(cat("?Warning: in the $a statement \"",
+          printLongLine(cat("?Warning: In the $a statement \"",
               statement[stmtNum].labelName, "\" at line ",
               str((double)(statement[stmtNum].lineNum)),
               " in file \"", statement[stmtNum].fileName,
@@ -4877,6 +4899,18 @@ void verifyMarkup(vstring labelMatch,
       if (str1[p1] == '\n') {
         /* End of a line found */
         lnum++;
+
+        /* 25-Jun-2020 nm */
+        if (p1 > 0) { /* Not 1st character in file */
+          if (str1[p1 - 1] == ' ') {
+            printLongLine(cat("?Warning: Line number ",
+                str((double)lnum),
+                " ends with a space character, which is discouraged.",
+                NULL), "    ", " ");
+            errFound = 1;
+          }
+        }
+
         if (p1 - lstart > screenWidth) { /* Normally 79; see mminou.c */
           /* Put line in str2 for error message */
           let(&str2, space(p1 - lstart));
@@ -4959,7 +4993,7 @@ void verifyMarkup(vstring labelMatch,
     str1 = getContrib(stmtNum, CONTRIBUTOR);
     if (!strcmp(str1, DEFAULT_CONTRIBUTOR)) {
       printLongLine(cat(
-          "?Warning: contributor \"", DEFAULT_CONTRIBUTOR,  /* 14-May-2017 nm */
+          "?Warning: Contributor \"", DEFAULT_CONTRIBUTOR,  /* 14-May-2017 nm */
           "\" should be updated in statement \"",
           statement[stmtNum].labelName, "\".", NULL), "    ", " ");
       errFound = 1;
@@ -4969,7 +5003,7 @@ void verifyMarkup(vstring labelMatch,
     str1 = getContrib(stmtNum, REVISER);
     if (!strcmp(str1, DEFAULT_CONTRIBUTOR)) {
       printLongLine(cat(
-          "?Warning: reviser \"", DEFAULT_CONTRIBUTOR,  /* 14-May-2017 nm */
+          "?Warning: Reviser \"", DEFAULT_CONTRIBUTOR,  /* 14-May-2017 nm */
           "\" should be updated in statement \"",
           statement[stmtNum].labelName, "\".", NULL), "    ", " ");
       errFound = 1;
@@ -5017,6 +5051,42 @@ void verifyMarkup(vstring labelMatch,
         fileSkip /* 1 = noFileCheck */);
     if (f == 1) errFound = 1;
 
+    /* 20-Jun-2020 nm */
+    /* Check that $a has no "(Proof modification is discouraged.)" */
+    if (statement[stmtNum].type == a_) {
+      if (getMarkupFlag(stmtNum, PROOF_DISCOURAGED) == 1) {
+        printLongLine(cat(
+            "?Warning: Statement \"", statement[stmtNum].labelName,
+            "\" is a $a but has a \"(Proof modification is discouraged.)\" tag.",
+            NULL), "    ", " ");
+        errFound = 1;
+      }
+    }
+    /* Check that *OLD and *ALT have both discouragements */
+    /* See discussion at
+       https://groups.google.com/d/msg/metamath/NhPM9XNNh1E/otl0uskKBgAJ */
+    p1 = (long)strlen(statement[stmtNum].labelName);
+    let(&str1, right(statement[stmtNum].labelName, p1 - 2)); /* Last 3 chars. */
+    if (!strcmp(str1, "OLD") || !strcmp(str1, "ALT")) {
+      if (getMarkupFlag(stmtNum, PROOF_DISCOURAGED) != 1
+          && statement[stmtNum].type == p_ /* Ignore $a's */
+          ) {
+        printLongLine(cat(
+            "?Warning: Statement \"", statement[stmtNum].labelName,
+            "\" has suffix \"", str1,
+            "\" but has no \"(Proof modification is discouraged.)\" tag.",
+            NULL), "    ", " ");
+        errFound = 1;
+      }
+      if (getMarkupFlag(stmtNum, USAGE_DISCOURAGED) != 1) {
+        printLongLine(cat(
+            "?Warning: Statement \"", statement[stmtNum].labelName,
+            "\" has suffix \"", str1,
+            "\" but has no \"(New usage is discouraged.)\" tag.",
+            NULL), "    ", " ");
+        errFound = 1;
+      }
+    }
   } /* next stmtNum */
 
   /* 13-Dec-2016 nm */
@@ -5033,7 +5103,7 @@ void verifyMarkup(vstring labelMatch,
     p1 = instr(1, str1, "Version of ");
     if (p1 == 0) {
       printLongLine(cat(
-          "?Warning: there is no \"Version of \" comment at the top of the",
+          "?Warning: There is no \"Version of \" comment at the top of the",
           " file \"", input_fn, "\".", NULL), "    ", " ");
       errFound = 1;
     } else {
@@ -5042,13 +5112,13 @@ void verifyMarkup(vstring labelMatch,
       f = parseDate(str2, &p1, &p2, &p3);
       if (f == 1) {
         printLongLine(cat(
-            "?Warning: the Version date \"", str2, "\" at the top of file \"",
+            "?Warning: The Version date \"", str2, "\" at the top of file \"",
             input_fn, "\" is not a valid date.", NULL), "    ", " ");
         errFound = 1;
       } else {
         if (compareDates(mostRecentDate, str2) == 1) {
           printLongLine(cat(
-              "?Warning: the \"Version of\" date ", str2,
+              "?Warning: The \"Version of\" date ", str2,
               " at the top of file \"",
               input_fn,
               "\" is less recent than the date ", mostRecentDate,

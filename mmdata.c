@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2019  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2020  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -3495,7 +3495,7 @@ flag getContrib(long stmtNum,
         statement[stmtNum].labelName, " [",
         contributor, "/", reviser, "/", shortener, "] ",
         */
-        "?Warning:  There is no \"", edit(CONTRIB_MATCH, 8+128),
+        "?Warning: There is no \"", edit(CONTRIB_MATCH, 8+128),
         "...)\" in the comment above statement ",
         str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
@@ -3508,7 +3508,7 @@ flag getContrib(long stmtNum,
         statement[stmtNum].labelName, " [",
         contributor, "/", reviser, "/", shortener, "] ",
         */
-        "?Warning:  There is more than one \"", edit(CONTRIB_MATCH, 8+128),
+        "?Warning: There is more than one \"", edit(CONTRIB_MATCH, 8+128),
         "...)\" ",
         "in the comment above statement ",
         str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
@@ -3519,7 +3519,7 @@ flag getContrib(long stmtNum,
   if (cStart != 0 && description[cMid - 2] != ',') {
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
-        "?Warning:  There is no comma between contributor and date",
+        "?Warning: There is no comma between contributor and date",
         ", or period is missing,",   /* 5-Aug-2017 nm */
         " in the comment above statement ",
         str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
@@ -3528,7 +3528,7 @@ flag getContrib(long stmtNum,
   if (rStart != 0 && description[rMid - 2] != ',') {
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
-        "?Warning:  There is no comma between reviser and date",
+        "?Warning: There is no comma between reviser and date",
         ", or period is missing,",   /* 5-Aug-2017 nm */
         " in the comment above statement ",
         str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
@@ -3537,7 +3537,7 @@ flag getContrib(long stmtNum,
   if (sStart != 0 && description[sMid - 2] != ',') {
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
-        "?Warning:  There is no comma between proof shortener and date",
+        "?Warning: There is no comma between proof shortener and date",
         ", or period is missing,",   /* 5-Aug-2017 nm */
         " in the comment above statement ",
         str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
@@ -3546,7 +3546,7 @@ flag getContrib(long stmtNum,
   if (instr(1, contributor, ",") != 0) {
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
-        "?Warning:  There is a comma in the contributor name \"",
+        "?Warning: There is a comma in the contributor name \"",
         contributor,
         "\" in the comment above statement ",
         str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
@@ -3555,7 +3555,7 @@ flag getContrib(long stmtNum,
   if (instr(1, reviser, ",") != 0) {
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
-        "?Warning:  There is a comma in the reviser name \"",
+        "?Warning: There is a comma in the reviser name \"",
         reviser,
         "\" in the comment above statement ",
         str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
@@ -3564,7 +3564,7 @@ flag getContrib(long stmtNum,
   if (instr(1, shortener, ",") != 0) {
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
-        "?Warning:  There is a comma in the proof shortener name \"",
+        "?Warning: There is a comma in the proof shortener name \"",
         shortener,
         "\" in the comment above statement ",
         str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
@@ -3598,7 +3598,7 @@ flag getContrib(long stmtNum,
         statement[stmtNum].labelName, " [",
         contributor, "/", reviser, "/", shortener, "] ",
         */
-        "?Warning:  \"", edit(CONTRIB_MATCH, 8+128),
+        "?Warning: \"", edit(CONTRIB_MATCH, 8+128),
         "...)\" is placed after \"",
         edit(REVISE_MATCH, 8+128) , "...)\" or \"",
         edit(SHORTEN_MATCH, 8+128) ,
@@ -3693,7 +3693,7 @@ flag getContrib(long stmtNum,
         statement[stmtNum].labelName, " [",
         contributor, "/", reviser, "/", shortener, "] ",
         */
-        "?Warning:  The \"", edit(CONTRIB_MATCH, 8+128),
+        "?Warning: The \"", edit(CONTRIB_MATCH, 8+128),
         "...)\" date is not earlier than the \"",
         edit(REVISE_MATCH, 8+128), "...)\" or \"",
         edit(SHORTEN_MATCH, 8+128),
@@ -3712,7 +3712,7 @@ flag getContrib(long stmtNum,
         statement[stmtNum].labelName, " [",
         contributor, "/", reviser, "/", shortener, "] ",
         */
-          "?Warning:  The \"", edit(REVISE_MATCH, 8+128), "...)\" and \"",
+          "?Warning: The \"", edit(REVISE_MATCH, 8+128), "...)\" and \"",
           edit(SHORTEN_MATCH, 8+128),
          "...)\" dates are in the wrong order in the comment above statement ",
           str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
@@ -3735,7 +3735,7 @@ flag getContrib(long stmtNum,
         statement[stmtNum].labelName, " [",
         contributor, "/", reviser, "/", shortener, "] ",
         */
-        "?Warning:  There is no date below the proof in statement ",
+        "?Warning: There is no date below the proof in statement ",
         str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
@@ -3747,7 +3747,7 @@ flag getContrib(long stmtNum,
         statement[stmtNum].labelName, " [",
         contributor, "/", reviser, "/", shortener, "] ",
         */
-        "?Warning:  The comment has \"",
+        "?Warning: The comment has \"",
         edit(REVISE_MATCH, 8+128), "...)\" or \"",
         edit(SHORTEN_MATCH, 8+128),
         "...)\" but there is only one date below the proof",
@@ -3762,7 +3762,7 @@ flag getContrib(long stmtNum,
         statement[stmtNum].labelName, " [",
         contributor, "/", reviser, "/", shortener, "] ",
         */
-        "?Warning:  There are two dates below the proof but no \"",
+        "?Warning: There are two dates below the proof but no \"",
         edit(REVISE_MATCH, 8+128), "...)\" or \"",
         edit(SHORTEN_MATCH, 8+128),
         "...)\" entry in statement ",
@@ -3779,7 +3779,7 @@ flag getContrib(long stmtNum,
         statement[stmtNum].labelName, " [",
         contributor, "/", reviser, "/", shortener, "] ",
         */
-        "?Warning:  Neither a \"",
+        "?Warning: Neither a \"",
         edit(REVISE_MATCH, 8+128), "...)\" date ",
         "nor a \"", edit(SHORTEN_MATCH, 8+128), "...)\" date ",
         "matches the date ", tmpDate1,
@@ -3796,7 +3796,7 @@ flag getContrib(long stmtNum,
         statement[stmtNum].labelName, " [",
         contributor, "/", reviser, "/", shortener, "] ",
         */
-        "?Warning:  The \"",
+        "?Warning: The \"",
         edit(REVISE_MATCH, 8+128), "...)\" date ", reviseDate,
         " is later than the date ", tmpDate1,
         " below the proof in statement ",
@@ -3812,7 +3812,7 @@ flag getContrib(long stmtNum,
         statement[stmtNum].labelName, " [",
         contributor, "/", reviser, "/", shortener, "] ",
         */
-        "?Warning:  The \"",
+        "?Warning: The \"",
         edit(SHORTEN_MATCH, 8+128), "...)\" date ", shortenDate,
         " is later than the date ", tmpDate1,
         " below the proof in statement ",
@@ -3826,7 +3826,7 @@ flag getContrib(long stmtNum,
         statement[stmtNum].labelName, " [",
         contributor, "/", reviser, "/", shortener, "] ",
         */
-        "?Warning:  The first date below the proof, ", tmpDate1,
+        "?Warning: The first date below the proof, ", tmpDate1,
         ", is not newer than the second, ", tmpDate2,
         ", in statement ",
         str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
@@ -3845,7 +3845,7 @@ flag getContrib(long stmtNum,
         statement[stmtNum].labelName, " [",
         contributor, "/", reviser, "/", shortener, "] ",
         */
-        "?Warning:  The \"", edit(CONTRIB_MATCH, 8+128), "...)\" date ",
+        "?Warning: The \"", edit(CONTRIB_MATCH, 8+128), "...)\" date ",
         contribDate,
         " doesn't match the date ", tmpDate0,
         " below the proof in statement ",

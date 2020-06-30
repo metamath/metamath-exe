@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2020  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -34,10 +34,15 @@ extern FILE *inputDef_fp, *input_fp /*,*output_fp*/;  /* File pointers */
                              /* 31-Dec-2017 nm output_fp deleted */
 extern vstring inputDef_fn,input_fn,output_fn;  /* File names */
 
-/* PRINTBUFFERSIZE should be at least as long as the longest string we
+/* 19-Jun-2020 nm No longer needed since printBuffer is now dynamically
+   allocated. */
+/*****************************
+/@ PRINTBUFFERSIZE should be at least as long as the longest string we
    expect (an unfortunate, dangerous limitation of C?) - although if >79
-   chars are output on a line bug #1505 warning will occur */
+   chars are output on a line bug #1505 warning will occur @/
 #define PRINTBUFFERSIZE 10001
+**********************************/
+
 /* Warning:  never call print2 with string longer than PRINTBUFFERSIZE - 1 */
 /* print2 returns 0 if the user has quit the printout. */
 flag print2(char* fmt,...);
