@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2018  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2020  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -128,6 +128,8 @@ extern long MAX_STATEMENTS;
 extern long MAX_MATHTOKENS;
 extern struct statement_struct *statement;
 /*Obs*/ /*extern struct label_struct *label;*/
+
+/* Warning: mathToken[i] is 0-based, not 1-based! */
 extern struct mathToken_struct *mathToken;
 extern long statements, /*labels,*/ mathTokens;
 extern long maxMathTokenLength;

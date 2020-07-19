@@ -6025,7 +6025,7 @@ vstring getFileAndLineNum(vstring buffPtr/*start of read buffer*/,
 void assignStmtFileAndLineNum(long stmtNum) {
   if (statement[stmtNum].lineNum > 0) return; /* Already assigned */
   if (statement[stmtNum].lineNum < 0) bug(1766);
-  if (statement[stmtNum].fileName[0] != 0) bug(1770);
+  if (statement[stmtNum].fileName[0] != 0) bug(1770); /* Should be empty string */
   /* We can make a direct string assignment here since previous value was "" */
   statement[stmtNum].fileName = getFileAndLineNum(sourcePtr,
       statement[stmtNum].statementPtr, &(statement[stmtNum].lineNum));

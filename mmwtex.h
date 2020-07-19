@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2019  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2020  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -48,8 +48,8 @@ extern vstring htmlCSS; /* Set by htmlcss commands */  /* 14-Jan-2016 nm */
 /* Added 14-Jan-2016 */
 extern vstring htmlFont; /* Optional; set by htmlfont command */
 
-/* 29-Jul-2008 nm Sandbox stuff */
-extern long sandboxStmt; /* At this statement and above, use sandbox stuff */
+/* 29-Jul-2008 nm Mathbox stuff */
+extern long mathboxStmt; /* At this statement and above, use sandbox stuff */
 
 void eraseTexDefs(void); /* Undo readTexDefs() */
 
@@ -201,5 +201,19 @@ flag writeBibliography(vstring bibFile,
     vstring labelMatch, /* Normally "*" except by verifyMarkup() */
     flag errorsOnly,  /* 1 = no output, just warning msgs if any */
     flag noFileCheck); /* 1 = ignore missing external files (gifs, bib, etc.) */
+
+/* 17-Jul-2020 nm */
+/* Assign the global mathboxStmt */
+void getMathboxStmt(void);
+
+/* 17-Jul-2020 nm */
+/* Get mathbox information; returns number of mathboxes */
+long getMathboxLoc(nmbrString **mathboxStart, nmbrString **mathboxEnd,
+    pntrString **mathboxUser);
+
+/* 17-Jul-2020 nm */
+/* Given a statement number, find out what mathbox it's in; if it's
+   not in a mathbox, return 0.  Uses arrays assigned by getMathboxLoc(). */
+long findMathbox(long stmt, nmbrString *mathboxStart);
 
 #endif /* METAMATH_MMWTEX_H_ */

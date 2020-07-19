@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2019  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2020  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -51,7 +51,7 @@ H("To exit Metamath, type EXIT (or its synonym QUIT).");
 H("");
 H(cat("If you need technical support, contact Norman Megill at nm",
     "@", "alum.mit.edu.", NULL));
-H("Copyright (C) 2018 Norman Megill  License terms:  GPL 2.0 or later");
+H("Copyright (C) 2020 Norman Megill  License terms:  GPL 2.0 or later");
 H("");
 
 printHelp = !strcmp(saveHelpCmd, "HELP COMMENTS");
@@ -653,7 +653,7 @@ H("");
 
 printHelp = !strcmp(saveHelpCmd, "HELP VERIFY MARKUP");
 H("Syntax:  VERIFY MARKUP <label-match> [/ DATE_SKIP] [/ TOP_DATE_SKIP]");
-H("             [/ FILE_SKIP] [/ UNDERSCORE_SKIP] [/VERBOSE]");
+H("            [/ FILE_SKIP] [/ UNDERSCORE_SKIP] [/ MATHBOX_SKIP] [/VERBOSE]");
 H("");
 H("This command checks comment markup and other informal conventions we have");
 H("adopted.  It error-checks the latexdef, htmldef, and althtmldef statements");
@@ -676,12 +676,17 @@ H("    / FILE_SKIP - This qualifier will skip checks that require");
 H("        external files to be present, such as checking GIF existence and");
 H("        bibliographic links to mmset.html or equivalent.  It is useful");
 H("        for doing a quick check from a directory without these files");
+       /* 25-Jun-2020 nm Added UNDERSCORE_SKIP */
 H("    / UNDERSCORE_SKIP - This qualifier will skip warnings for labels");
 H("        containing underscore (\"_\") characters.  Although they are");
 H("        legal per the Metamath spec, they may cause ambiguities with");
 H("        certain translators (such as to MM0) that convert \"-\" to \"_\".");
 H("        bibliographic links to mmset.html or equivalent.  It is useful");
 H("        for doing a quick check from a directory without these files");
+       /* 17-Jul-2020 nm Added MATHBOX_SKIP */
+H("    / MATHBOX_SKIP - This qualifier will skip checking for mathbox");
+H("        independence i.e. that no mathbox proof references a statement");
+H("        in another (earlier) mathbox.");
 H("    / VERBOSE - Provides more information.  Currently it provides a list");
 H("        of axXXX vs. ax-XXX matches.");
 H("");

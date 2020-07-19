@@ -196,6 +196,9 @@ H("Syntax:  INSERT <iofile> <string> <column>");
 printHelp = !strcmp(saveHelpCmd, "HELP BREAK");
 H("This command breaks up a file into tokens, one per line, breaking at");
 H("whitespace and any special characters you specify as delimiters.");
+/* 3-Jul-2020 nm Added: */
+H("Use an explicit (quoted) space as <specchars> to avoid the default");
+H("special characters and break only on whitespace.");
 H("Syntax:  BREAK <iofile> <specchars>");
 
 printHelp = !strcmp(saveHelpCmd, "HELP BUILD");
@@ -590,6 +593,7 @@ H("             \"</HTML>\" (deprecated) is discarded and ignored.  Note that");
 H("             the entire comment (not just sections delineated by");
 H("             \"<HTML>...</HTML>\") is treated as HTML code if any");
 H("             \"<HTML>\" is present anywhere in the comment.");
+H("             See also HELP WRITE SOURCE for more information.");
 H("         (Contributed by <author>, <date>.)");
 H("         (Revised by <author>, <date>.)");
 H("         (Proof shortened by <author>, <date>.)");
@@ -693,6 +697,7 @@ H("");
 
 
 printHelp = !strcmp(saveHelpCmd, "HELP HTML");
+H("(Note: See HELP WRITE SOURCE for the \"<HTML>\" tag in comments.)");
 H("To create an HTML output file for a $a or $p statement, use");
 H("    SHOW STATEMENT <label> / HTML");
 H("The created web page will include a Description taken from the comment");
@@ -999,10 +1004,12 @@ H("        lines in the comment before each $a and $p statement, then it");
 H("        rewraps the line.  You should compare the output to the original");
 H("        to make sure that the desired effect results; if not, go back to");
 H("        the original source.  The wrapped line length honors the");
-H("        SET WIDTH parameter currently in effect.  Note 1:  A comment");
-H("        containing an <HTML> tag is not rewrapped.  Note 2:  Comments not");
-H("        immediately preceding a $a or $p statement are not rewrapped.");
-H("        Note 3:  Math symbol strings are not rewrapped.");
+H("        SET WIDTH parameter currently in effect.  Note 1: A comment");
+H("        containing an <HTML> tag is not rewrapped (see also HELP LANGUAGE");
+H("        and");
+H("   https://github.com/metamath/set.mm/pull/1695#issuecomment-652129129 .)");
+H("        Note 2: Comments not immediately preceding a $a or $p statement");
+H("        are not rewrapped.  Note 3: Math symbol strings are not rewrapped.");
 H("    / SPLIT - Files included in the source with $[ <inclfile> $] will be");
 H("        written out separately instead of included in a single output");
 H("        file.  The name of each separately written included file will be");

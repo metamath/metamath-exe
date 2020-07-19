@@ -93,6 +93,8 @@ flag print2(char* fmt,...)
   /* char printBuffer[PRINTBUFFERSIZE]; */ /* 19-Jun-2020 nm Deleted */
   /* 19-Jun-2020 nm */
   char *printBuffer; /* Allocated dynamically */
+  /* gcc (Debian 4.9.2-10+deb8u2) 4.9.2 gives error for ssize_t if -c99
+     is specified; gcc (GCC) 7.3.0 doesn't complain if -c99 is specified */
   /* See https://sourceforge.net/p/predef/wiki/Compilers/ for __LCC__ */
 #ifdef __LCC__   /* 19-Jun-2020 nm ssize_t not defined for lcc compiler */
   long bufsiz;

@@ -83,6 +83,7 @@ void verifyProofs(vstring labelMatch, flag verifyFlag);
 void verifyMarkup(vstring labelMatch, flag dateSkip, flag topDateSkip,
     flag fileSkip,
     flag underscoreSkip, /* 25-Jun-2020 nm */
+    flag mathboxSkip, /* 17-Jul-2020 nm */
     flag verboseMode); /* 26-Dec-2016 nm */
 
 /* 10-Dec-2018 nm Added */

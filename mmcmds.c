@@ -4470,7 +4470,7 @@ void eraseSource(void)    /* ERASE command */
   /* Deallocate the texdef/htmldef storage */ /* Added 27-Oct-2012 nm */
   eraseTexDefs(); /* 17-Nov-2015 nm */
 
-  sandboxStmt = 0; /* Used by a non-zero test in mmwtex.c to see if assigned */
+  mathboxStmt = 0; /* Used by a non-zero test in mmwtex.c to see if assigned */
   extHtmlStmt = 0; /* May be used by a non-zero test; init to be safe */
 
   /* Allocate big arrays */
@@ -4633,11 +4633,13 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
    Microsoft conflicts) */
 /* 24-Mar-2019 nm Added topDateSkip */
 /* 25-Jun-2020 nm Added underscoreSkip */
+/* 17-Jul-2020 nm Added mathboxSkip */
 void verifyMarkup(vstring labelMatch,
     flag dateSkip, /* 1 = don't check date consistency */
     flag topDateSkip, /* 1 = don't check top date but check others */
     flag fileSkip, /* 1 = don't check external files (gifs, mmset.html,...) */
     flag underscoreSkip, /* 1 = don't check labels for "_" characters) */
+    flag mathboxSkip, /* 1 = don't check mathbox cross-references) */
     flag verboseMode) /* 1 = more details */ {   /* 26-Dec-2016 nm */
   flag f;
   flag saveHtmlFlag, saveAltHtmlFlag;
@@ -4668,6 +4670,14 @@ void verifyMarkup(vstring labelMatch,
   vstring str1 = ""; vstring str2 = "";
 
   saveHtmlFlag = htmlFlag;  saveAltHtmlFlag = altHtmlFlag;
+
+  /* 17-Jul-2020 nm */ /* For mathbox check */
+  long mathboxes, mbox, pmbox, stmt, pstmt, plen, step;
+  nmbrString *mathboxStart = NULL_NMBRSTRING;
+  nmbrString *mathboxEnd = NULL_NMBRSTRING;
+  pntrString *mathboxUser = NULL_PNTRSTRING;
+  nmbrString *proof = NULL_NMBRSTRING;
+  vstring dupCheck = "";
 
 
   print2("Checking statement label conventions...\n");
@@ -4763,6 +4773,29 @@ void verifyMarkup(vstring labelMatch,
 
   } /* next stmtNum */
   /* 10/21/02 end */  /* 13-Dec-2016 nm end */
+
+
+  /* 5-Jul-2020 nm */
+  /* Check for math tokens containing "@" */
+  /* Note:  mathToken[] is 0-based, not 1-based */
+  for (p1 = 0; p1 < mathTokens; p1++) {
+    if (strchr(mathToken[p1].tokenName, '@') != NULL) {
+      stmtNum = mathToken[p1].statement;
+      assignStmtFileAndLineNum(stmtNum);
+      printLongLine(cat("?Warning: The token \"",
+          mathToken[p1].tokenName,
+          "\" declared at line ",
+          str((double)(statement[stmtNum].lineNum)),
+          " in file \"", statement[stmtNum].fileName,
+          "\" has an \"@\" character, which is not recommended because ",
+          "\"@\" is traditionally used to replace \"$\" in commented-out ",
+          "database source code.",
+          NULL),
+          "    ", " ");
+      /* errorCount++; */
+      errFound = 1;
+    }
+  }
 
 
   /* 20-Dec-2016 nm */
@@ -5197,6 +5230,96 @@ void verifyMarkup(vstring labelMatch,
           1,  /* 1 = no output, just warning msgs if any */
           fileSkip); /* 1 = ignore missing external files (gifs, bib, etc.) */
   if (f != 0) errFound = 1;
+
+  /* 17-Jul-2020 nm */
+  /* Check mathboxes for cross-references */
+  if (mathboxSkip == 0) {
+    print2("Checking mathbox independence...\n");
+    mathboxes = getMathboxLoc(&mathboxStart, &mathboxEnd, &mathboxUser);
+    /* Scan proofs in mathboxes to see if earlier mathbox is referenced */
+    for (pmbox = 2; pmbox <= mathboxes; pmbox++) {
+      for (pstmt = mathboxStart[pmbox - 1]; pstmt <= mathboxEnd[pmbox - 1]; pstmt++) {
+        if (statement[pstmt].type != (char)p_)
+          continue; /* Not a $p statement; skip it */
+        /* Don't use bad proofs (incomplete proofs are ok) */
+        if (parseProof(pstmt) > 1) {
+          /* The proof has an error, so use the empty proof */
+          nmbrLet(&proof, nmbrAddElement(NULL_NMBRSTRING, -(long)'?'));
+        } else {
+          nmbrLet(&proof, wrkProof.proofString);
+        }
+        plen = nmbrLen(proof);
+        /* Get the essential step flags, if required */
+        /*
+        if (essentialFlag) {
+          nmbrLet(&essentialFlags, nmbrGetEssential(proof));
+        }
+        */
+        for (step = 0; step < plen; step++) {
+          /*
+          if (essentialFlag) {
+            if (!essentialFlags[step]) continue;  /@ Ignore floating hypotheses @/
+          }
+          */
+          stmt = proof[step];
+          if (stmt < 0) continue; /* Local step or '?' step */
+          if (stmt == 0) bug(266);
+          if (stmt > mathboxStmt && stmt < mathboxStart[pmbox - 1]) {
+            /* A statement in another mathbox is referenced */
+
+            /* Eliminate duplicate error messages: */
+            let(&str1, cat(str((double)pstmt), "-", str((double)stmt), NULL));
+            if (lookup(str1, dupCheck) != 0) {
+              continue;
+            } else {
+              let(&dupCheck, cat(dupCheck,
+                  (dupCheck[0] == 0) ? "" : ",", str1, NULL)); /* Add to list */
+            }
+
+            mbox = findMathbox(stmt, mathboxStart);
+            if (mbox == 0) bug(267);
+            if (verboseMode == 0) {
+              printLongLine(cat("?Warning: The proof of \"",
+                  statement[pstmt].labelName,
+                  "\" in the mathbox for ", (vstring *)(mathboxUser[pmbox - 1]),
+                  " references \"", statement[stmt].labelName,
+                  "\" in the mathbox for ", (vstring *)(mathboxUser[mbox - 1]),
+                  ".",
+                  NULL),
+                  "    ", " ");
+            } else {
+              /* Verbose output experiment */
+              assignStmtFileAndLineNum(stmt);
+              assignStmtFileAndLineNum(pstmt);
+              printLongLine(cat("?Warning: The proof of statement \"",
+                  statement[pstmt].labelName,
+                  "\" in the mathbox for \"", (vstring *)(mathboxUser[pmbox - 1]),
+                  "\" at line ", str((double)(statement[pstmt].lineNum)),
+                  " in file \"", statement[pstmt].fileName,
+                  "\" references statement \"", statement[stmt].labelName,
+                  "\" in the mathbox for \"", (vstring *)(mathboxUser[mbox - 1]),
+                  "\" at line ", str((double)(statement[stmt].lineNum)),
+                  " in file \"", statement[stmt].fileName,
+                  "\".  ",
+                  "(Use the / MATHBOX_SKIP qualifier to skip this check.)",
+                  NULL),
+                  "    ", " ");
+            }
+            /* errorCount++; */
+            errFound = 1;
+          } /* if stmt in another mathbox */
+        } /* next step */
+      } /* next pstmt */
+    } /* next pmbox */
+    /* Deallocate */
+    let(&dupCheck, "");
+    nmbrLet(&mathboxStart, NULL_NMBRSTRING);
+    nmbrLet(&mathboxEnd, NULL_NMBRSTRING);
+    for (mbox = 1; mbox <= mathboxes; mbox++) {
+      let((vstring *)(&mathboxUser[mbox - 1]), "");
+    }
+    pntrLet(&mathboxUser, NULL_PNTRSTRING);
+  }
 
   if (errFound == 0) {
     print2("No errors were found.\n");

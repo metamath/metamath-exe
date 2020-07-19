@@ -43,6 +43,8 @@
              -Wmissing-declarations -Wshadow -Wpointer-arith -Wcast-align \
              -Wredundant-decls -Wnested-externs -Winline -Wno-long-long \
              -Wconversion -Wstrict-prototypes -std=c99 -pedantic -Wunused-result
+      Note: gcc 4.9.2 (on Debian) fails with "unknown type name `ssize_t'" if
+      -std=c99 is used, so omit -std=c99 to work around this problem.
    4. For faster runtime, use these gcc options:
          gcc m*.c -o metamath -O3 -funroll-loops -finline-functions \
              -fomit-frame-pointer -Wall -std=c99 -pedantic -fno-strict-overflow
@@ -53,7 +55,11 @@
       See the README.TXT file for more information.
 */
 
-#define MVERSION "0.183 30-Jun-2020"
+#define MVERSION "0.184 17-Jul-2020"
+/* 0.184 17-Jul-2020 nm metamath.c mmcmdl.c mmcmds.c,h mmhlpb.c mmwtex.c,h -
+     add checking for mathbox independence to VERIFY MARKUP; add /MATHBOX_SKIP
+   4-Jul-2020 nm mmwtex.c - correct error msg for missing althtmldef
+   3-Jul-2020 nm metamath.c, mmhlpa.c - allow space in TOOLS> BREAK */
 /* 0.183 30-Jun-2020 30-Jun-2020 nm mmpars.c - refine prevention of
      WRITE SOURCE.../REWRAP from modifying comments containing "<HTML>"
      (specifically, remove indentation alignment).
@@ -1585,7 +1591,11 @@ void command(int argc, char *argv[])
                   let(&str2, cat(left(str2, p - 1), " ",
                       mid(str2, p, 1),
                       " ", right(str2, p + 1), NULL));
-                  p++;
+                  /*p++;*/
+                  /* Even though space is always a separator, it can be used
+                     to suppress all default tokens.  Go past 2nd space to prevent
+                     infinite loop in that case. */
+                  p += 2; /* 3-Jul-2020 nm */
                 }
               }
               let(&str2, edit(str2, 8 + 16 + 128)); /* Reduce & trim spaces */
@@ -2546,7 +2556,7 @@ void command(int argc, char *argv[])
                 /* 29-Jul-2008 nm Sandbox stuff */
                 (stmt < extHtmlStmt)
                    ? "<TR>"
-                   : (stmt < sandboxStmt)
+                   : (stmt < mathboxStmt)
                        ? cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">",
                            NULL)
                        : cat("<TR BGCOLOR=", SANDBOX_COLOR, ">", NULL),
@@ -2591,7 +2601,7 @@ void command(int argc, char *argv[])
                   /* 29-Jul-2008 nm Sandbox stuff */
                   (stmt < extHtmlStmt)
                      ? ">"
-                     : (stmt < sandboxStmt)
+                     : (stmt < mathboxStmt)
                          ? cat(" BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">",
                              NULL)
                          : cat(" BGCOLOR=", SANDBOX_COLOR, ">", NULL),
@@ -3121,7 +3131,7 @@ void command(int argc, char *argv[])
             */
 
             /* 8-Aug-2008 nm */
-            if (s != -2 && (i == extHtmlStmt || i == sandboxStmt)) {
+            if (s != -2 && (i == extHtmlStmt || i == mathboxStmt)) {
               /* Print a row that identifies the start of the extended
                  database (e.g. Hilbert Space Explorer) or the user
                  sandboxes */
@@ -6382,11 +6392,14 @@ void command(int argc, char *argv[])
       /* 25-Jun-2014 nm /REVERSE is obsolete
       forwFlag = (switchPos("/ REVERSE") != 0); /@ 10-Nov-2011 nm @/
       */
-      if (sandboxStmt == 0) { /* Look up "mathbox" label if it hasn't been */
-        sandboxStmt = lookupLabel("mathbox");
-        if (sandboxStmt == -1)
-          sandboxStmt = statements + 1;  /* Default beyond db end if none */
+      /* replaced w/ function call 17-Jul-2020
+      if (mathboxStmt == 0) { /@ Look up "mathbox" label if it hasn't been @/
+        mathboxStmt = lookupLabel("mathbox");
+        if (mathboxStmt == -1)
+          mathboxStmt = statements + 1;  /@ Default beyond db end if none @/
       }
+      */
+      getMathboxStmt(); /* 17-Jul-2020 nm */
 
       /* 3-May-2016 nm */
       /* Flag to override any "usage locks" placed in the comment markup */
@@ -6407,11 +6420,11 @@ void command(int argc, char *argv[])
       /* Added 14-Aug-2012 nm */
       /* Always scan statements in current mathbox, even if
          "/ INCLUDE_MATHBOXES" is omitted */
-      thisMathboxStmt = sandboxStmt;
+      thisMathboxStmt = mathboxStmt;
                 /* Will become start of current (proveStatement's) mathbox */
-      if (proveStatement > sandboxStmt) {
+      if (proveStatement > mathboxStmt) {
         /* We're in a mathbox */
-        for (k = proveStatement; k >= sandboxStmt; k--) {
+        for (k = proveStatement; k >= mathboxStmt; k--) {
           let(&str1, left(statement[k].labelSectionPtr,
               statement[k].labelSectionLen));
           /* Heuristic to match beginning of mathbox */
@@ -6490,9 +6503,9 @@ void command(int argc, char *argv[])
              k = k + (forwFlag ? 1 : -1)) {
           /* 28-Jun-2011 */
           /* Scan mathbox statements only if INCLUDE_MATHBOXES specified */
-          /*if (!mathboxFlag && k >= sandboxStmt) continue;*/
+          /*if (!mathboxFlag && k >= mathboxStmt) continue;*/
           /* 14-Aug-2012 nm */
-          if (!mathboxFlag && k >= sandboxStmt && k < thisMathboxStmt) continue;
+          if (!mathboxFlag && k >= mathboxStmt && k < thisMathboxStmt) continue;
 
           if (statement[k].type != (char)p_ && statement[k].type != (char)a_)
             continue;
@@ -6955,7 +6968,7 @@ void command(int argc, char *argv[])
       }
       */
       /* 28-Jun-2011 nm */
-      if (!mathboxFlag && proveStatement >= sandboxStmt) {
+      if (!mathboxFlag && proveStatement >= mathboxStmt) {
         print2(
   "(Other mathboxes were not checked.  Use / INCLUDE_MATHBOXES to include them.)\n");
       }
@@ -7895,12 +7908,14 @@ void command(int argc, char *argv[])
 
     /* 7-Nov-2015 nm New */  /* 17-Nov-2015 nm Updated */
     /* 25-Jun-2020 nm Added UNDERSCORE_SKIP */
+    /* 17-Jul-2020 nm Added MATHBOX_SKIP */
     if (cmdMatches("VERIFY MARKUP")) {
       i = (switchPos("/ DATE_SKIP") != 0) ? 1 : 0;
       j = (switchPos("/ TOP_DATE_SKIP") != 0) ? 1 : 0;
       k = (switchPos("/ FILE_SKIP") != 0) ? 1 : 0;
       l = (switchPos("/ UNDERSCORE_SKIP") != 0) ? 1 : 0;
-      m = (switchPos("/ VERBOSE") != 0) ? 1 : 0;
+      m = (switchPos("/ MATHBOX_SKIP") != 0) ? 1 : 0;
+      n = (switchPos("/ VERBOSE") != 0) ? 1 : 0;
       if (i == 1 && j == 1) {
         printf(
             "?Only one of / DATE_SKIP and / TOP_DATE_SKIP may be specified.\n");
@@ -7911,7 +7926,8 @@ void command(int argc, char *argv[])
           (flag)j, /* 1 = skip checking top date only */
           (flag)k, /* 1 = skip checking external files GIF, mmset.html,... */
           (flag)l, /* 1 = skip checking labels for underscores */
-          (flag)m); /* 1 = verbose mode */  /* 26-Dec-2016 nm */
+          (flag)m, /* 1 = skip checking mathbox cross-references */
+          (flag)n); /* 1 = verbose mode */  /* 26-Dec-2016 nm */
       continue;
     }
 
