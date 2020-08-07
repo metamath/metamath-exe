@@ -39,11 +39,20 @@ long extHtmlStmt = 0; /* At this statement and above, use the exthtmlxxx
     generation of the Hilbert Space Explorer extension to the set.mm
     database. */
 
-/* 29-Jul-2008 nm Sandbox stuff */
-long mathboxStmt = 0; /* At this statement and above, use SANDBOX_COLOR
+/* 5-Aug-2020 nm */
+/* Globals to hold mathbox information.  They should be re-initialized
+   by the ERASE command (eraseSource()).  g_mathboxStmt = 0 indicates
+   it and the other variables haven't been initialized. */
+long g_mathboxStmt = 0; /* At this statement and above, use SANDBOX_COLOR
     background for theorem, mmrecent, & mmbiblio lists */
     /* 0 means it hasn't been looked up yet; statements + 1 means
        there is no mathbox */
+long g_mathboxes = 0; /* # of mathboxes */
+/* The following 3 strings are 0-based e.g. g_mathboxStart[0] is for
+   mathbox #1 */
+nmbrString *g_mathboxStart = NULL_NMBRSTRING; /* Start stmt vs. mathbox # */
+nmbrString *g_mathboxEnd = NULL_NMBRSTRING; /* End stmt vs. mathbox # */
+pntrString *g_mathboxUser = NULL_PNTRSTRING; /* User name vs. mathbox # */
 
 /* This is the list of characters causing the space before the opening "`"
    in a math string in a comment to be removed for HTML output. */
@@ -772,13 +781,13 @@ flag readTexDefs(
   /* 24-Jul-2009 nm Changed name of sandbox to "mathbox" */
   /* 28-Jun-2011 nm Use lookupLabel for speedup */
   /* replaced w/ function call 17-Jul-2020
-  if (mathboxStmt == 0) { /@ Look up "mathbox" label if it hasn't been @/
-    mathboxStmt = lookupLabel("mathbox");
-    if (mathboxStmt == -1)
-      mathboxStmt = statements + 1;  /@ Default beyond db end if none @/
+  if (g_mathboxStmt == 0) { /@ Look up "mathbox" label if it hasn't been @/
+    g_mathboxStmt = lookupLabel("mathbox");
+    if (g_mathboxStmt == -1)
+      g_mathboxStmt = statements + 1;  /@ Default beyond db end if none @/
   }
   */
-  getMathboxStmt(); /* 17-Jul-2020 nm */
+  assignMathboxInfo(); /* 17-Jul-2020 nm */
   /*
   for (i = 1; i <= statements; i++) {
     /@ For now (and probably forever) the sandbox start theorem is
@@ -786,14 +795,14 @@ flag readTexDefs(
     /@ if (!strcmp("sandbox", statement[i].labelName)) { @/
     /@ 24-Jul-2009 nm Changed name of sandbox to "mathbox" @/
     if (!strcmp("mathbox", statement[i].labelName)) {
-      mathboxStmt = i;
+      g_mathboxStmt = i;
       break;
     }
   }
   */
   /* In case there is not extended (Hilbert Space Explorer) section,
      but there is a sandbox section, make the extended section "empty". */
-  if (extHtmlStmt == statements + 1) extHtmlStmt = mathboxStmt;
+  if (extHtmlStmt == statements + 1) extHtmlStmt = g_mathboxStmt;
   let(&sandboxHome, cat("<A HREF=\"mmtheorems.html#sandbox:bighdr\">",
     "<FONT SIZE=-2 FACE=sans-serif>",
     "<IMG SRC=\"_sandbox.gif\" BORDER=0 ALT=",
@@ -848,7 +857,7 @@ flag readTexDefs(
   /* 18-Aug-2016 nm Added conditional test for extended section */
   if (extHtmlStmt < statements + 1 /* If extended section exists */
       /* nm 8-Dec-2017 nm */
-      && extHtmlStmt != mathboxStmt) { /* and is not an empty dummy section */
+      && extHtmlStmt != g_mathboxStmt) { /* and is not an empty dummy section */
     i = instr(1, extHtmlHome, "HREF=\"") + 5;
     if (i == 5) {
       printLongLine(
@@ -1574,7 +1583,7 @@ void printTexHeader(flag texHeaderFlag)
           " - ", htmlTitle,
           "</TITLE>", NULL));
     /*} else {*/
-    } else if (showStatement < mathboxStmt) { /* 29-Jul-2008 nm Sandbox stuff */
+    } else if (showStatement < g_mathboxStmt) { /* 29-Jul-2008 nm Sandbox stuff */
       print2("%s\n", cat("<TITLE>",
           /* Strip off ".html" */
           left(texFileName, (long)strlen(texFileName) - 5),
@@ -1587,7 +1596,7 @@ void printTexHeader(flag texHeaderFlag)
 
       /* 2-Aug-2009 nm - "Mathbox for <username>" mod */
       /* Scan from this statement backwards until a big header is found */
-      for (i = showStatement; i > mathboxStmt; i--) {
+      for (i = showStatement; i > g_mathboxStmt; i--) {
         if (statement[i].type == a_ || statement[i].type == p_) {
                                                             /* 18-Dec-2016 nm */
           /* Note: only bigHdr is used; the other 5 returned strings are
@@ -1648,20 +1657,20 @@ void printTexHeader(flag texHeaderFlag)
     print2("    <TD ALIGN=LEFT VALIGN=TOP WIDTH=\"25%s\"><A HREF=\n", "%");
     print2("    \"%s\"><IMG SRC=\"%s\"\n",
         (showStatement < extHtmlStmt ? htmlHomeHREF :
-             (showStatement < mathboxStmt ? extHtmlHomeHREF :
+             (showStatement < g_mathboxStmt ? extHtmlHomeHREF :
              sandboxHomeHREF)),
         /* Note that we assume that the upper-left image is 32x32 */
         (showStatement < extHtmlStmt ? htmlHomeIMG :
-             (showStatement < mathboxStmt ? extHtmlHomeIMG :
+             (showStatement < g_mathboxStmt ? extHtmlHomeIMG :
              sandboxHomeIMG)));
     print2("      BORDER=0\n");
     print2("      ALT=\"%s\"\n",
         (showStatement < extHtmlStmt ? htmlTitleAbbr :
-             (showStatement < mathboxStmt ? extHtmlTitleAbbr :
+             (showStatement < g_mathboxStmt ? extHtmlTitleAbbr :
              sandboxTitleAbbr)));
     print2("      TITLE=\"%s\"\n",
         (showStatement < extHtmlStmt ? htmlTitleAbbr :
-             (showStatement < mathboxStmt ? extHtmlTitleAbbr :
+             (showStatement < g_mathboxStmt ? extHtmlTitleAbbr :
              sandboxTitleAbbr)));
     print2(
       "      HEIGHT=32 WIDTH=32 ALIGN=TOP STYLE=\"margin-bottom:0px\"></A>\n");
@@ -1672,7 +1681,7 @@ void printTexHeader(flag texHeaderFlag)
        trigger bug 1505). */
     print2("%s\n",
         (showStatement < extHtmlStmt ? htmlTitle :
-             (showStatement < mathboxStmt ? extHtmlTitle :
+             (showStatement < g_mathboxStmt ? extHtmlTitle :
              localSandboxTitle)));
     print2("      </B></FONT></TD>\n");
     /* print2("    </TD>\n"); */ /* 26-Dec-2016 nm Delete extra </TD> */
@@ -1694,7 +1703,7 @@ void printTexHeader(flag texHeaderFlag)
     if (showStatement < extHtmlStmt) {
       printLongLine(cat("ROWSPAN=2>", htmlHome, "</TD>", NULL), "", "\"");
     /@} else {@/
-    } else if (showStatement < mathboxStmt) { /@ 29-Jul-2008 nm Sandbox stuff @/
+    } else if (showStatement < g_mathboxStmt) { /@ 29-Jul-2008 nm Sandbox stuff @/
       printLongLine(cat("ROWSPAN=2>", extHtmlHome, "</TD>", NULL), "", "\"");
 
     /@ 29-Jul-2008 nm Sandbox stuff @/
@@ -1708,7 +1717,7 @@ void printTexHeader(flag texHeaderFlag)
           "<TD ALIGN=CENTER VALIGN=TOP ROWSPAN=2><FONT SIZE=\"+3\" COLOR=",
           GREEN_TITLE_COLOR, "><B>", htmlTitle, "</B></FONT>", NULL), "", "\"");
     /@} else {@/
-    } else if (showStatement < mathboxStmt) { /@ 29-Jul-2008 nm Sandbox stuff @/
+    } else if (showStatement < g_mathboxStmt) { /@ 29-Jul-2008 nm Sandbox stuff @/
       printLongLine(cat(
           "<TD ALIGN=CENTER VALIGN=TOP ROWSPAN=2><FONT SIZE=\"+3\" COLOR=",
           GREEN_TITLE_COLOR, "><B>", extHtmlTitle, "</B></FONT>", NULL), "", "\"");
@@ -1873,13 +1882,13 @@ void printTexHeader(flag texHeaderFlag)
       print2("      &nbsp;<A HREF=\"../index.html\">Home</A>&nbsp; &gt;\n");
       print2("      &nbsp;<A HREF=\"%s\">%s</A>&nbsp; &gt;\n",
           (showStatement < extHtmlStmt ? htmlHomeHREF :
-               (showStatement < mathboxStmt ? extHtmlHomeHREF :
+               (showStatement < g_mathboxStmt ? extHtmlHomeHREF :
                htmlHomeHREF)),
           (showStatement < extHtmlStmt ? htmlTitleAbbr :
-               (showStatement < mathboxStmt ? extHtmlTitleAbbr :
+               (showStatement < g_mathboxStmt ? extHtmlTitleAbbr :
                htmlTitleAbbr)));
       print2("      &nbsp;<A HREF=\"mmtheorems.html\">Th. List</A>&nbsp; &gt;\n");
-      if (showStatement >= mathboxStmt) {
+      if (showStatement >= g_mathboxStmt) {
         print2("      &nbsp;<A HREF=\"mmtheorems.html#sandbox:bighdr\">\n");
         print2("      Mathboxes</A>&nbsp; &gt;\n");
       }
@@ -2447,7 +2456,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
       let(&bibTags, htmlBibliographyTags);
       let(&bibFileName, htmlBibliography);
     /*} else {*/
-    } else if (showStatement < mathboxStmt) { /* 29-Jul-2008 nm Sandbox stuff */
+    } else if (showStatement < g_mathboxStmt) { /* 29-Jul-2008 nm Sandbox stuff */
       let(&bibTags, extHtmlBibliographyTags);
       let(&bibFileName, extHtmlBibliography);
 
@@ -2580,7 +2589,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
           if (showStatement < extHtmlStmt) {
             let(&htmlBibliographyTags, bibTags);
           /*} else {*/
-          } else if (showStatement < mathboxStmt) {
+          } else if (showStatement < g_mathboxStmt) {
                                              /* 29-Jul-2008 nm Sandbox stuff */
             let(&extHtmlBibliographyTags, bibTags);
 
@@ -4035,13 +4044,13 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
     /@if (extHtmlStmt <= statements) {@/ /@ extHtmlStmt = statements + 1
                                               unless mmset.html @/
     /@ 8-Dec-2017 nm @/
-    if (extHtmlStmt < mathboxStmt) { /@ extHtmlStmt >= mathboxStmt
+    if (extHtmlStmt < g_mathboxStmt) { /@ extHtmlStmt >= g_mathboxStmt
                                               unless mmset.html @/
     *****/
     /* 30-Nov-2019 nm */
     /* Assume there is a Most Recent page when the .mm has a mathbox stmt
        (currently set.mm and iset.mm)  */
-    if (mathboxStmt < statements + 1) {
+    if (g_mathboxStmt < statements + 1) {
       print2("&nbsp;&gt;&nbsp;<A HREF=\"mmrecent.html\">\n");
       print2("Recent Proofs</A>\n");
     }
@@ -4260,7 +4269,7 @@ print2("</FONT></B></CENTER>\n");
                     /* 21-Jun-2014 nm We use "sandbox:bighdr" for both here and
                        below so that either huge or big header type could
                        be used to start mathbox sections */
-                    (stmt == mathboxStmt && bigHdr[0] == 0
+                    (stmt == g_mathboxStmt && bigHdr[0] == 0
                           /* 4-Aug-2018 nm */
                           && passNumber == 1 /* Only in summary TOC */
                           ) ?
@@ -4353,7 +4362,7 @@ print2("</FONT></B></CENTER>\n");
 
                     /* 29-Jul-2008 nm Add an anchor to the "sandbox" theorem
                        for use by mmrecent.html */
-                    (stmt == mathboxStmt
+                    (stmt == g_mathboxStmt
                           /* 4-Aug-2018 nm */
                           && passNumber == 1 /* Only in summary TOC */
                           ) ?
@@ -4542,7 +4551,7 @@ print2("</FONT></B></CENTER>\n");
     print2("<A NAME=\"mmstmtlst\"></A>\n");
     /*if (extHtmlStmt <= statements) {*/ /* extHtmlStmt = statements + 1 in ql.mm */
     /* 8-Dec-2017 nm */
-    if (extHtmlStmt < mathboxStmt) { /* extHtmlStmt >= mathboxStmt in ql.mm */
+    if (extHtmlStmt < g_mathboxStmt) { /* extHtmlStmt >= g_mathboxStmt in ql.mm */
       /* ?? Currently this is customized for set.mm only!! */
       print2("<P>\n");
       print2("<CENTER><TABLE CELLSPACING=0 CELLPADDING=5\n");
@@ -4576,9 +4585,9 @@ print2("</FONT></B></CENTER>\n");
 
       let(&str3, "");
       /* str3 = pinkRangeHTML(extHtmlStmt, nmbrStmtNmbr[assertions]); */
-      if (statement[mathboxStmt].pinkNumber <= 0) bug(2333);
+      if (statement[g_mathboxStmt].pinkNumber <= 0) bug(2333);
       str3 = pinkRangeHTML(extHtmlStmt,
-         nmbrStmtNmbr[statement[mathboxStmt].pinkNumber - 1]);
+         nmbrStmtNmbr[statement[g_mathboxStmt].pinkNumber - 1]);
       printLongLine(cat("<BR>(", str3, ")", NULL),
         " ",  /* Start continuation line with space */
         "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
@@ -4604,7 +4613,7 @@ print2("</FONT></B></CENTER>\n");
       print2("&nbsp;Users' Mathboxes</A>\n");
 
       let(&str3, "");
-      str3 = pinkRangeHTML(mathboxStmt, nmbrStmtNmbr[assertions]);
+      str3 = pinkRangeHTML(g_mathboxStmt, nmbrStmtNmbr[assertions]);
       printLongLine(cat("<BR>(", str3, ")", NULL),
         " ",  /* Start continuation line with space */
         "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
@@ -4616,7 +4625,7 @@ print2("</FONT></B></CENTER>\n");
 
 
       print2("</TR></TABLE></CENTER>\n");
-    } /* end if (extHtmlStmt < mathboxStmt) */
+    } /* end if (extHtmlStmt < g_mathboxStmt) */
 
     /* Write out HTML page so far */
     fprintf(outputFilePtr, "%s", printString);
@@ -5019,7 +5028,7 @@ print2("</FONT></B></CENTER>\n");
       printLongLine(cat(
             (s < extHtmlStmt)
                ? "<TR>"
-               : (s < mathboxStmt)
+               : (s < g_mathboxStmt)
                    ? cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL)
                    /* 29-Jul-2008 nm Sandbox stuff */
                    : cat("<TR BGCOLOR=", SANDBOX_COLOR, ">", NULL),
@@ -5079,7 +5088,7 @@ print2("</FONT></B></CENTER>\n");
               /* 29-Jul-2008 nm Sandbox stuff */
               (s < extHtmlStmt)
                  ? ">"
-                 : (s < mathboxStmt)
+                 : (s < g_mathboxStmt)
                      ? cat(" BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL)
                      : cat(" BGCOLOR=", SANDBOX_COLOR, ">", NULL),
 
@@ -6550,7 +6559,7 @@ flag writeBibliography(vstring bibFile,
             /* 29-Jul-2008 nm Sandbox stuff */
             (i < extHtmlStmt)
                ? "<TR>"
-               : (i < mathboxStmt)
+               : (i < g_mathboxStmt)
                    ? cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL)
                    : cat("<TR BGCOLOR=", SANDBOX_COLOR, ">", NULL),
 
@@ -6565,7 +6574,7 @@ flag writeBibliography(vstring bibFile,
             /* 29-Jul-2008 nm Sandbox stuff */
             (i < extHtmlStmt)
                ? htmlBibliography
-               : (i < mathboxStmt)
+               : (i < g_mathboxStmt)
                    ? extHtmlBibliography
                    /* Note that the sandbox uses the mmset.html
                       bibliography */
@@ -6710,20 +6719,72 @@ flag writeBibliography(vstring bibFile,
 }  /* writeBibliography */
 
 
-/* 17-Jul-2020 nm */
-/* Assign the global variable mathboxStmt.
-   For speed, we do the lookup only if it's not assigned.
-   Note that the ERASE command should set this global to zero. */
-void getMathboxStmt(void) {
-  if (mathboxStmt == 0) { /* Look up "mathbox" label if it hasn't been */
-    mathboxStmt = lookupLabel("mathbox");
-    if (mathboxStmt == -1)
-      mathboxStmt = statements + 1;  /* Default beyond db end if none */
+/* 5-Aug-2020 nm */
+/* Returns 1 if stmt1 and stmt2 are in different mathboxes, 0 if
+   they are in the same mathbox or if one of them is not in a mathbox. */
+flag inDiffMathboxes(long stmt1, long stmt2) {
+  long mbox1, mbox2;
+  mbox1 = getMathboxNum(stmt1);
+  mbox2 = getMathboxNum(stmt2);
+  if (mbox1 == 0 || mbox2 == 0) return 0;
+  if (mbox1 != mbox2) return 1;
+  return 0;
+}
+
+/* 5-Aug-2020 nm */
+/* Returns the user of the mathbox that a statement is in, or ""
+   if the statement is not in a mathbox. */
+/* Caller should NOT deallocate returned string (it points directly to
+   g_mathboxUser[] entry) */
+vstring getMathboxUser(long stmt) {
+  long mbox;
+  mbox = getMathboxNum(stmt);
+  if (mbox == 0) return "";
+  return g_mathboxUser[mbox - 1];
+}
+
+/* 5-Aug-2020 nm */
+/* Given a statement number, find out what mathbox it's in (numbered starting
+   at 1) mainly for error messages; if it's not in a mathbox, return 0. */
+/* We assume the number of mathboxes is small enough that a linear search
+   won't slow things too much. */
+long getMathboxNum(long stmt) {
+  assignMathboxInfo(); /* In case it's not yet initialized */
+  long mbox;
+  for (mbox = 0; mbox < g_mathboxes; mbox++) {
+    if (stmt < g_mathboxStart[mbox]) break;
+  }
+  return mbox;
+} /* getMathboxNum */
+
+
+/* 5-Aug-2020 nm */
+/* Assign the global variable g_mathboxStmt, the statement number with the
+   label "mathbox", as well as g_mathboxes, g_mathboxStart[], g_mathboxEnd[],
+   and g_mathboxUser[].  For speed, we do the lookup only if it hasn't been
+   done yet.   Note that the ERASE command (eraseSource()) should set
+   g_mathboxStmt to zero as well as deallocate the strings. */
+/* This function will just return if g_mathboxStmt is already nonzero. */
+#define MB_LABEL "mathbox"
+void assignMathboxInfo(void) {
+  if (g_mathboxStmt == 0) { /* Look up "mathbox" label if it hasn't been */
+    g_mathboxStmt = lookupLabel(MB_LABEL);
+    if (g_mathboxStmt == -1) { /* There are no mathboxes */
+      g_mathboxStmt = statements + 1;  /* Default beyond db end if none */
+      g_mathboxes = 0;
+    } else {
+      /* Population mathbox information variables */
+      g_mathboxes = getMathboxLoc(&g_mathboxStart, &g_mathboxEnd,
+          &g_mathboxUser);
+    }
   }
   return;
-} /* getMathboxStmt */
+} /* assignMathboxInfo */
 
 
+/* 5-Aug-2020 nm */ /* (This was originally written to be able to deal with
+   local mathboxStart,End,User, which were later made global.  But there should
+   be no significant slowdown so we've kept this ability.) */
 /* 17-Jul-2020 nm */
 /* Returns the number of mathboxes, while assigning start statement, end
    statement, and mathbox name. */
@@ -6734,13 +6795,13 @@ long getMathboxLoc(nmbrString **mathboxStart, nmbrString **mathboxEnd,
   long mathboxes = 0;
   vstring comment = "";
   vstring user = "";
-  getMathboxStmt(); /* Assign mathboxStmt */
+  assignMathboxInfo(); /* Assign g_mathboxStmt */
   tagLen = (long)strlen(MB_TAG);
   /* Ensure lists are initialized */
   if (pntrLen((pntrString *)(*mathboxUser)) != 0) bug(2347);
   if (nmbrLen((nmbrString *)(*mathboxStart)) != 0) bug(2348);
   if (nmbrLen((nmbrString *)(*mathboxEnd)) != 0) bug(2349);
-  for (stmt = mathboxStmt + 1; stmt <= statements; stmt++) {
+  for (stmt = g_mathboxStmt + 1; stmt <= statements; stmt++) {
     /* Heuristic to match beginning of mathbox */
     let(&comment, left(statement[stmt].labelSectionPtr,
         statement[stmt].labelSectionLen));
@@ -6776,18 +6837,3 @@ long getMathboxLoc(nmbrString **mathboxStart, nmbrString **mathboxEnd,
   let(&user, "");
   return mathboxes;
 } /* getMathboxLoc */
-
-
-/* 17-Jul-2020 nm */
-/* Given a statement number, find out what mathbox it's in (numbered starting
-   at 1) mainly for error messages; if it's not in a mathbox, return 0.
-   mathboxStart is assigned by getMathboxLoc(). */
-long findMathbox(long stmt, nmbrString *mathboxStart) {
-  long mboxes;
-  long mbox = 0;
-  mboxes = nmbrLen(mathboxStart);
-  for (mbox = 0; mbox < mboxes; mbox++) {
-    if (stmt < mathboxStart[mbox]) break;
-  }
-  return mbox;
-} /* findMathbox */

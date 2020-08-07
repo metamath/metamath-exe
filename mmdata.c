@@ -605,13 +605,16 @@ flag matchesList(vstring testString, vstring pattern, char wildCard,
   flag matchVal = 0;
   vstring entryPattern = "";
 
+  /* Done so we can use string functions like left() in call arguments */
   long saveTempAllocStack;
   saveTempAllocStack = startTempAllocStack; /* For let() stack cleanup */
   startTempAllocStack = tempAllocStackTop;
 
   entries = numEntries(pattern);
   for (i = 1; i <= entries; i++) {
-    let(&entryPattern, entry(i, pattern));
+    let(&entryPattern, entry(i, pattern)); /* If we didn't modify
+          startTempAllocStack above, this let() would corrupt string
+          functions in the matchesList() call arguments */
     matchVal = matches(testString, entryPattern, wildCard, oneCharWildCard);
     if (matchVal) break;
   }
@@ -630,7 +633,8 @@ flag matchesList(vstring testString, vstring pattern, char wildCard,
 /* 30-Jan-06 nm Added single-character-match wildcard argument */
 /* 19-Apr-2015 so, nm - Added "=" to match statement being proved */
 /* 19-Apr-2015 so, nm - Added "%" to match changed proofs */
-/* 8-Mar-2016 nm Added "#12345" to match internal statement number */
+/* 8-Mar-2016 nm Added "#1234" to match internal statement number */
+/* 18-Jul-2020 nm Added "@1234" to match web statement number */
 flag matches(vstring testString, vstring pattern, char wildCard,
     char oneCharWildCard) {
   long i, ppos, pctr, tpos, s1, s2, s3;
@@ -638,21 +642,52 @@ flag matches(vstring testString, vstring pattern, char wildCard,
 
   /* 21-Nov-2014 Stefan O'Rear - added label ranges - see HELP SEARCH */
   if (wildCard == '*') {
-    /* Checking for wildCard = * means this is only for label listing */
+    /* Checking for wildCard = * meaning this is only for labels, not
+       math tokens */
+
+    /* The following special chars are handled in this block:
+       "~" Statement range
+       "=" Most recent PROVE command statement
+       "%" List of modified statements
+       "#" Internal statement number
+       "@" Web page statement number */
+
     i = instr(1, pattern, "~");
     if (i != 0) {
-      s1 = lookupLabel(left(pattern, i - 1));
+      if (i == 1) {
+        s1 = 1; /* empty string before "~" */
+      } else {
+        s1 = lookupLabel(left(pattern, i - 1));
+      }
       s2 = lookupLabel(testString);
-      s3 = lookupLabel(right(pattern, i + 1));
+      if (i == (long)strlen(pattern)) {
+        s3 = statements; /* empty string after "~" */
+      } else {
+        s3 = lookupLabel(right(pattern, i + 1));
+      }
       let(&tmpStr, ""); /* Clean up temporary allocations of left and right */
-      return ((s1 >= 0 && s2 >= 0 && s3 >= 0 && s1 <= s2 && s2 <= s3)
+      return ((s1 >= 1 && s2 >= 1 && s3 >= 1 && s1 <= s2 && s2 <= s3)
           ? 1 : 0);
     }
 
     /* 8-Mar-2016 nm Added "#12345" to match internal statement number */
     if (pattern[0] == '#') {
       s1 = (long)val(right(pattern, 2));
+      if (s1 < 1 || s1 > statements)
+        return 0; /* # arg is out of range */
       if (!strcmp(statement[s1].labelName, testString)) {
+        return 1;
+      } else {
+        return 0;
+      }
+    }
+
+    /* 18-Jul-2020 nm Added "@12345" to match web statement number */
+    if (pattern[0] == '@') {
+      s1 = lookupLabel(testString);
+      if (s1 < 1) return 0;
+      s2 = (long)val(right(pattern, 2));
+      if (statement[s1].pinkNumber == s2) {
         return 1;
       } else {
         return 0;
@@ -662,7 +697,11 @@ flag matches(vstring testString, vstring pattern, char wildCard,
     /* 19-Apr-2015 so, nm - Added "=" to match statement being proved */
     if (!strcmp(pattern,"=")) {
       s1 = lookupLabel(testString);
-      return (PFASmode && proveStatement == s1);
+      /*return (PFASmode && proveStatement == s1);*/
+      /* 18-Jul-2020 nm */
+      /* We might as well use proveStatement outside of MM-PA, so =
+         can be argument to PROVE command */
+      return (proveStatement == s1);
     }
 
     /* 19-Apr-2015 so, nm - Added "%" to match changed proofs */
@@ -688,8 +727,8 @@ flag matches(vstring testString, vstring pattern, char wildCard,
       /*
       return nmbrElementIn(1, changedStmtNmbr, s1);
       */
-    }
-  }
+    } /* if (!strcmp(pattern,"%")) */
+  } /* if (wildCard == '*') */
 
   /* Get to first wild card character */
   ppos = 0;

@@ -55,7 +55,18 @@
       See the README.TXT file for more information.
 */
 
-#define MVERSION "0.184 17-Jul-2020"
+
+
+
+
+#define MVERSION "0.185 6-Aug-2020"
+/* 0.185
+   5-Aug-2020 nm metamath.c mmcmdl.c mmhlpb.c mmpfas.c,h mmcmds.c mmwtex.c,h -
+     add /INCLUDE_MATHBOXES to to IMPROVE; notify user upon ASSIGN from another
+     mathbox.
+   18-Jul-2020 nm mmcmds.c, mmdata.c, mmhlpb.c, metamath.c - "PROVE =" will now
+     resume the previous MM-PA session if there was one; allow "~" to start/end
+     with blank (meaning first/last statement); add "@1234" */
 /* 0.184 17-Jul-2020 nm metamath.c mmcmdl.c mmcmds.c,h mmhlpb.c mmwtex.c,h -
      add checking for mathbox independence to VERIFY MARKUP; add /MATHBOX_SKIP
    4-Jul-2020 nm mmwtex.c - correct error msg for missing althtmldef
@@ -819,7 +830,7 @@ void command(int argc, char *argv[])
   flag hasWildCard; /* For MINIMIZE_WITH */
   long exceptPos; /* For MINIMIZE_WITH */
   flag mathboxFlag; /* For MINIMIZE_WITH */ /* 28-Jun-2011 nm */
-  long thisMathboxStmt; /* For MINIMIZE_WITH */ /* 14-Aug-2012 nm */
+  long thisMathboxStartStmt; /* For MINIMIZE_WITH */ /* 14-Aug-2012 nm */
   flag forwFlag; /* For MINIMIZE_WITH */ /* 11-Nov-2011 nm */
   long forbidMatchPos;  /* For MINIMIZE_WITH */ /* 20-May-2013 nm */
   vstring forbidMatchList = "";  /* For MINIMIZE_WITH */ /* 20-May-2013 nm */
@@ -2556,7 +2567,7 @@ void command(int argc, char *argv[])
                 /* 29-Jul-2008 nm Sandbox stuff */
                 (stmt < extHtmlStmt)
                    ? "<TR>"
-                   : (stmt < mathboxStmt)
+                   : (stmt < g_mathboxStmt)
                        ? cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">",
                            NULL)
                        : cat("<TR BGCOLOR=", SANDBOX_COLOR, ">", NULL),
@@ -2601,7 +2612,7 @@ void command(int argc, char *argv[])
                   /* 29-Jul-2008 nm Sandbox stuff */
                   (stmt < extHtmlStmt)
                      ? ">"
-                     : (stmt < mathboxStmt)
+                     : (stmt < g_mathboxStmt)
                          ? cat(" BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">",
                              NULL)
                          : cat(" BGCOLOR=", SANDBOX_COLOR, ">", NULL),
@@ -3131,7 +3142,7 @@ void command(int argc, char *argv[])
             */
 
             /* 8-Aug-2008 nm */
-            if (s != -2 && (i == extHtmlStmt || i == mathboxStmt)) {
+            if (s != -2 && (i == extHtmlStmt || i == g_mathboxStmt)) {
               /* Print a row that identifies the start of the extended
                  database (e.g. Hilbert Space Explorer) or the user
                  sandboxes */
@@ -4813,7 +4824,7 @@ void command(int argc, char *argv[])
       for (j = 0; j < 3; j++) {
         print2("Trying depth %ld\n", j);
         nmbrTmpPtr = proveFloating(nmbrTmp, proveStatement, j, 0, 0,
-            1/*overrideFlag*/);
+            1/*overrideFlag*/, 1/*mathboxFlag*/);
         if (nmbrLen(nmbrTmpPtr)) break;
       }
 
@@ -5581,6 +5592,19 @@ void command(int argc, char *argv[])
               "", " ");
       */
 
+      /* 5-Aug-2020 nm */
+      /* See if it's in another mathbox; if so, let user know */
+      assignMathboxInfo();
+      if (k > g_mathboxStmt && proveStatement > g_mathboxStmt) {
+        if (k < g_mathboxStart[getMathboxNum(proveStatement) - 1]) {
+          printLongLine(cat("\"", statement[k].labelName,
+                "\" is in the mathbox for ",
+                g_mathboxUser[getMathboxNum(k) - 1], ".",
+                NULL),
+              "", " ");
+        }
+      }
+
       /* 6/14/98 - Automatically display new unknown steps
          ???Future - add switch to enable/defeat this */
       typeProof(proveStatement,
@@ -5744,7 +5768,10 @@ void command(int argc, char *argv[])
           0/*noDistinct*/,
           1/* try to prove $e's */,
           1/*improveDepth*/,
-          overrideFlag   /* 3-May-2016 nm */
+          overrideFlag,   /* 3-May-2016 nm */
+          /* Currently REPLACE (not often used) allows other mathboxes
+             silently; TODO: we may want to notify user like for ASSIGN */
+          1/*mathboxFlag*/ /* 5-Aug-2020 nm */
           );
       if (!nmbrLen(nmbrTmpPtr)) {
         print2(
@@ -5883,6 +5910,18 @@ void command(int argc, char *argv[])
       /* 4-Sep-2012 nm Added */
       searchUnkSubproofs = 0;
       if (switchPos("/ SUBPROOFS")) searchUnkSubproofs = 1;
+
+      mathboxFlag = (switchPos("/ INCLUDE_MATHBOXES") != 0); /* 5-Aug-2020 */
+      /* 5-Aug-2020 nm */
+      assignMathboxInfo(); /* In case it hasn't been assigned yet */
+      if (proveStatement > g_mathboxStmt) {
+        /* We're in a mathbox */
+        i = getMathboxNum(proveStatement);
+        if (i <= 0) bug(1130);
+        thisMathboxStartStmt = g_mathboxStart[i - 1];
+      } else {
+        thisMathboxStartStmt = g_mathboxStmt;
+      }
 
       /* 3-May-2016 nm */
       /* 1 means to override usage locks */
@@ -6056,7 +6095,8 @@ void command(int argc, char *argv[])
           /* Only use proveFloating if no dummy vars */
           nmbrTmpPtr = proveFloating((proofInProgress.target)[s - 1],
               proveStatement, improveDepth, s - 1, (char)p/*NO_DISTINCT*/,
-              overrideFlag  /* 3-May-2016 nm */
+              overrideFlag,  /* 3-May-2016 nm */
+              mathboxFlag /* 5-Aug-2020 nm */
               );
         } else {
           nmbrTmpPtr = NULL_NMBRSTRING; /* Initialize */ /* 25-Aug-2012 nm */
@@ -6072,7 +6112,8 @@ void command(int argc, char *argv[])
               dummyVarIsoFlag,
               (char)(searchAlg - 2), /*0=proveFloat for $fs, 1=$e's also */
               improveDepth, /* 4-Sep-2012 */
-              overrideFlag  /* 3-May-2016 nm */
+              overrideFlag,  /* 3-May-2016 nm */
+              mathboxFlag /* 5-Aug-2020 nm */
               );
           }
           if (!nmbrLen(nmbrTmpPtr)) {
@@ -6222,7 +6263,8 @@ void command(int argc, char *argv[])
               nmbrTmpPtr = proveFloating((proofInProgress.target)[s - 1],
                   proveStatement, improveDepth, s - 1,
                   (char)p/*NO_DISTINCT*/,
-                  overrideFlag  /* 3-May-2016 nm */
+                  overrideFlag,  /* 3-May-2016 nm */
+                  mathboxFlag /* 5-Aug-2020 nm */
                   );
             } else {
               nmbrTmpPtr = NULL_NMBRSTRING; /* Init */ /* 25-Aug-2012 nm */
@@ -6241,7 +6283,8 @@ void command(int argc, char *argv[])
                   dummyVarIsoFlag,
                   (char)(searchAlg - 2),/*searchMethod: 0 or 1*/
                   improveDepth,                        /* 4-Sep-2012 */
-                  overrideFlag   /* 3-May-2016 nm */
+                  overrideFlag,   /* 3-May-2016 nm */
+                  mathboxFlag /* 5-Aug-2020 nm */
                   );
 
               }
@@ -6392,14 +6435,13 @@ void command(int argc, char *argv[])
       /* 25-Jun-2014 nm /REVERSE is obsolete
       forwFlag = (switchPos("/ REVERSE") != 0); /@ 10-Nov-2011 nm @/
       */
-      /* replaced w/ function call 17-Jul-2020
-      if (mathboxStmt == 0) { /@ Look up "mathbox" label if it hasn't been @/
-        mathboxStmt = lookupLabel("mathbox");
-        if (mathboxStmt == -1)
-          mathboxStmt = statements + 1;  /@ Default beyond db end if none @/
+      /****** 5-Aug-2020 nm Replaced w/ assignMathboxInfo() below
+      if (g_mathboxStmt == 0) { /@ Look up "mathbox" label if it hasn't been @/
+        g_mathboxStmt = lookupLabel("mathbox");
+        if (g_mathboxStmt == -1)
+          g_mathboxStmt = statements + 1;  /@ Default beyond db end if none @/
       }
-      */
-      getMathboxStmt(); /* 17-Jul-2020 nm */
+      *******/
 
       /* 3-May-2016 nm */
       /* Flag to override any "usage locks" placed in the comment markup */
@@ -6409,32 +6451,64 @@ void command(int argc, char *argv[])
       /* 25-Jun-2014 nm */
       /* If a single statement is specified, don't bother to do certain
          actions or print some of the messages */
+      /* 18-Jul-2020 nm New code*/
+      hasWildCard = 0;
+      /* (Note strpbrk warning in mmpars.c) */
+      /*if (strpbrk(fullArg[1], "*?=~%#@,") != NULL) {*/
+      /* Set hasWildCard only when there are potentially > 1 matches */
+      if (strpbrk(fullArg[1], "*?~%,") != NULL) {
+        /* (See matches() function for processing of these)
+           "*" 0 or more char match
+           "?" 1 char match
+           "=" Most recent PROVE command statement  = one statement match
+           "~" Statement range
+           "%" List of modified statements
+           "#" Internal statement number            = one statement match
+           "@" Web page statement number            = one statement match
+           "," Comma-separated fields */
+        hasWildCard = 1;
+      }
+      /****** 18-Jul-2020 nm Deleted old code:
       hasWildCard = (instr(1, fullArg[1], "*")
           || instr(1, fullArg[1], "?")
           || instr(1, fullArg[1], ",")
-          || instr(1, fullArg[1], "~") /* 3-May-2014 nm label~label range */
+          || instr(1, fullArg[1], "~") /@ 3-May-2014 nm label~label range @/
           );
+      ********/
 
       proofChangedFlag = 0;
 
       /* Added 14-Aug-2012 nm */
       /* Always scan statements in current mathbox, even if
          "/ INCLUDE_MATHBOXES" is omitted */
-      thisMathboxStmt = mathboxStmt;
-                /* Will become start of current (proveStatement's) mathbox */
-      if (proveStatement > mathboxStmt) {
+
+      /* 5-Aug-2020 nm */
+      assignMathboxInfo(); /* In case it hasn't been assigned yet */
+      if (proveStatement > g_mathboxStmt) {
         /* We're in a mathbox */
-        for (k = proveStatement; k >= mathboxStmt; k--) {
+        i = getMathboxNum(proveStatement);
+        if (i <= 0) bug(1130);
+        thisMathboxStartStmt = g_mathboxStart[i - 1];
+      } else {
+        thisMathboxStartStmt = g_mathboxStmt;
+      }
+      /****** 5-Aug-2020 deleted old code
+      thisMathboxStartStmt = g_mathboxStmt;
+                /@ Will become start of current (proveStatement's) mathbox @/
+      if (proveStatement > g_mathboxStmt) {
+        /@ We're in a mathbox @/
+        for (k = proveStatement; k >= g_mathboxStmt; k--) {
           let(&str1, left(statement[k].labelSectionPtr,
               statement[k].labelSectionLen));
-          /* Heuristic to match beginning of mathbox */
+          /@ Heuristic to match beginning of mathbox @/
           if (instr(1, str1, "Mathbox for") != 0) {
-             /* Found beginning of current mathbox */
-             thisMathboxStmt = k;
+             /@ Found beginning of current mathbox @/
+             thisMathboxStartStmt = k;
              break;
           }
         }
       }
+      **************/
 
       /* 25-Jun-2014 nm */
       copyProofStruct(&saveOrigProof, proofInProgress);
@@ -6494,8 +6568,6 @@ void command(int argc, char *argv[])
 
         /* for (k = 1; k < proveStatement; k++) { */
         /* 10-Nov-2011 nm */
-        /* We use bottom-up scanning as the default (forwFlag=0) since empirically
-           it seems to lead to shorter proofs */
         /* If forwFlag is 0, scan from proveStatement-1 to 1
            If forwFlag is 1, scan from 1 to proveStatement-1 */
         for (k = forwFlag ? 1 : (proveStatement - 1);
@@ -6503,9 +6575,11 @@ void command(int argc, char *argv[])
              k = k + (forwFlag ? 1 : -1)) {
           /* 28-Jun-2011 */
           /* Scan mathbox statements only if INCLUDE_MATHBOXES specified */
-          /*if (!mathboxFlag && k >= mathboxStmt) continue;*/
+          /*if (!mathboxFlag && k >= g_mathboxStmt) continue;*/
           /* 14-Aug-2012 nm */
-          if (!mathboxFlag && k >= mathboxStmt && k < thisMathboxStmt) continue;
+          if (!mathboxFlag && k >= g_mathboxStmt && k < thisMathboxStartStmt) {
+            continue;
+          }
 
           if (statement[k].type != (char)p_ && statement[k].type != (char)a_)
             continue;
@@ -6968,7 +7042,7 @@ void command(int argc, char *argv[])
       }
       */
       /* 28-Jun-2011 nm */
-      if (!mathboxFlag && proveStatement >= mathboxStmt) {
+      if (!mathboxFlag && proveStatement >= g_mathboxStmt) {
         print2(
   "(Other mathboxes were not checked.  Use / INCLUDE_MATHBOXES to include them.)\n");
       }

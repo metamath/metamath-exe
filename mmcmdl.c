@@ -937,7 +937,8 @@ flag processCommandLine(void)
           i++;
           if (!getFullArg(i,
               /* 3-May-2016 nm Added / OVERRIDE */
-              "DEPTH|NO_DISTINCT|1|2|3|SUBPROOFS|OVERRIDE|<DEPTH>")
+              /* 5-Aug-2020 nm Added / INCLUDE_MATHBOXES */
+         "DEPTH|NO_DISTINCT|1|2|3|SUBPROOFS|OVERRIDE|INCLUDE_MATHBOXES|<DEPTH>")
               ) goto pclbad;
           if (lastArgMatches("DEPTH")) {
             i++;

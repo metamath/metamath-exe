@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2016  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2020  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -20,6 +20,8 @@
 #include "mmpars.h"
 #include "mmunif.h"
 #include "mmpfas.h"
+/* For mathbox stuff: */ /* 5-Aug-2020 nm */
+#include "mmwtex.h"
 
 /* Allow user to define INLINE as "inline".  lcc doesn't support inline. */
 #ifndef INLINE
@@ -270,15 +272,19 @@ nmbrString *proveByReplacement(long prfStmt,
     flag searchMethod, /* 1 means to try proveFloating on $e's also */
     long improveDepth, /* depth for proveFloating() */
     /* 3-May-2016 nm */
-    flag overrideFlag /* 1 means to override usage locks */
+    flag overrideFlag, /* 1 means to override usage locks */
+    /* 5-Aug-2020 nm */
+    flag mathboxFlag
     )
 {
 
   long trialStmt;
   nmbrString *prfMath;
   nmbrString *trialPrf = NULL_NMBRSTRING;
-  prfMath = (proofInProgress.target)[prfStep];
+  long prfMbox; /* 5-Aug-2020 nm */
 
+  prfMath = (proofInProgress.target)[prfStep];
+  prfMbox = getMathboxNum(prfStmt); /* 5-Aug-2020 nm */
   for (trialStmt = 1; trialStmt < prfStmt; trialStmt++) {
 
     if (quickMatchFilter(trialStmt, prfMath, dummyVarFlag) == 0) continue;
@@ -287,6 +293,16 @@ nmbrString *proveByReplacement(long prfStmt,
     /* Skip statements with discouraged usage (the above skips non-$a,p) */
     if (overrideFlag == 0 && getMarkupFlag(trialStmt, USAGE_DISCOURAGED)) {
       continue;
+    }
+
+    /* 5-Aug-2020 nm */
+    /* Skip statements in other mathboxes unless /INCLUDE_MATHBOXES.  (We don't
+       care about the first mathbox since there are no others above it.) */
+    if (mathboxFlag == 0 && prfMbox >= 2) {
+      /* Note that g_mathboxStart[] starts a 0 */
+      if (trialStmt > g_mathboxStmt && trialStmt < g_mathboxStart[prfMbox - 1]) {
+        continue;
+      }
     }
 
     /* noDistinct is set by NO_DISTICT qualifier in IMPROVE */
@@ -304,7 +320,8 @@ nmbrString *proveByReplacement(long prfStmt,
         noDistinct,
         searchMethod,
         improveDepth,
-        overrideFlag  /* 3-May-2016 nm */
+        overrideFlag,  /* 3-May-2016 nm */
+        mathboxFlag /* 1 means allow mathboxes */ /* 5-Aug-2020 nm */
         );
     if (nmbrLen(trialPrf) > 0) {
       /* A proof for the step was found. */
@@ -336,7 +353,8 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
     flag searchMethod, /* 1 means to try proveFloating on $e's also */
     long improveDepth, /* Depth for proveFloating */
     /* 3-May-2016 nm */
-    flag overrideFlag  /* 1 means to override statement usage locks */
+    flag overrideFlag,  /* 1 means to override statement usage locks */
+    flag mathboxFlag /* 1 means allow mathboxes */ /* 5-Aug-2020 nm */
     ) {
   nmbrString *prfMath; /* Pointer only */
   long reqHyps;
@@ -868,7 +886,7 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
             hypProofPtr =
                 proveFloating(hypMakeSubstList[hypSortMap[hyp]],
                     provStmtNum, improveDepth, prfStep, noDistinct,
-                    overrideFlag /* 3-May-2016 nm */
+                    overrideFlag, mathboxFlag /* 5-Aug-2020 nm */
                     );
             unifTrialCount = saveUnifTrialCount; /* Restore unif. timeout */
             if (nmbrLen(hypProofPtr)) { /* Proof was found */
@@ -922,7 +940,8 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
             hypProofPtr =
                 proveFloating(hypMakeSubstList[hypSortMap[i]],
                     provStmtNum, improveDepth, prfStep, noDistinct,
-                    overrideFlag  /* 3-May-2016 nm */
+                    overrideFlag,  /* 3-May-2016 nm */
+                    mathboxFlag /* 5-Aug-2020 nm */
                     );
             unifTrialCount = saveUnifTrialCount; /* Restore unif. timeout */
             if (nmbrLen(hypProofPtr)) { /* Proof was found */
@@ -1629,8 +1648,9 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
     long step, /* 0 means step 1; used for messages */
     flag noDistinct, /* 1 means don't try statements with $d's  16-Aug-04 */
     /* 3-May-2016 nm */
-    flag overrideFlag /* 1 means to override usage locks, 2 means to
+    flag overrideFlag, /* 1 means to override usage locks, 2 means to
               override silently (for web-page syntax breakdown in mmcmds.c) */
+    flag mathboxFlag /* 5-Aug-2020 nm */
     )
 {
 
@@ -1658,9 +1678,13 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
   static flag maxDepthExceeded; /* 2-Oct-2015 nm */
   long selfScanSteps;
   long selfScanStep;
+  long prfMbox; /* 5-Aug-2020 nm */
+
 /*E*/  long unNum;
 /*E*/if (db8)print2("%s\n", cat(space(depth+2), "Entered: ",
 /*E*/   nmbrCvtMToVString(mString), NULL));
+
+  prfMbox = getMathboxNum(statemNum); /* 5-Aug-2020 nm */
 
   if (depth == 0) {
     trials = 0; /* Initialize trials */
@@ -1790,6 +1814,16 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
     if (!overrideFlag && getMarkupFlag(stmt, USAGE_DISCOURAGED)) {
       /* Skip usage-discouraged statements */
       continue;
+    }
+
+    /* 5-Aug-2020 nm */
+    /* Skip statements in other mathboxes unless /INCLUDE_MATHBOXES.  (We don't
+       care about the first mathbox since there are no others above it.) */
+    if (mathboxFlag == 0 && prfMbox >= 2) {
+      /* Note that g_mathboxStart[] starts a 0 */
+      if (stmt > g_mathboxStmt && stmt < g_mathboxStart[prfMbox - 1]) {
+        continue;
+      }
     }
 
     /* 22-Aug-2012 nm Now done with quickMatchFilter() ****
@@ -1983,7 +2017,8 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
         saveUnifTrialCount = unifTrialCount; /* Save unification timeout */
         hypProofPtr = proveFloating(makeSubstPtr, statemNum, maxEDepth, step,
             noDistinct,
-            overrideFlag /* 3-May-2016 nm */
+            overrideFlag, /* 3-May-2016 nm */
+            mathboxFlag /* 5-Aug-2020 nm */
             );
         unifTrialCount = saveUnifTrialCount; /* Restore unification timeout */
 
@@ -2250,12 +2285,13 @@ void minimizeProof(long repStatemNum, long prvStatemNum,
         newSubProofPtr = replaceStatement(repStatemNum,
             step,
             prvStatemNum,
-            1/*scan just subproof for speed*/,
-            0/*noDistinct=0 OK since searchMethod=0 will only
-               call proveFloating for $f's */,
-            0/*searchMethod=0: call proveFloating only for $f's*/,
-            0/*improveDepth=0 OK since we call proveFloating only for $f's*/,
-            2/*overrideFlag=2(silent) OK since MINIMIZE_WITH checked it*/
+            1,/*scan just subproof for speed*/
+            0,/*noDistinct=0 OK since searchMethod=0 will only
+               call proveFloating for $f's */
+            0,/*searchMethod=0: call proveFloating only for $f's*/
+            0,/*improveDepth=0 OK since we call proveFloating only for $f's*/
+            2,/*overrideFlag=2(silent) OK since MINIMIZE_WITH checked it*/
+            1/*mathboxFlag=1 since MINIMIZE_WITH has checked it before here*/
             );
       }
       if (!nmbrLen(newSubProofPtr)) continue;

@@ -48,9 +48,6 @@ extern vstring htmlCSS; /* Set by htmlcss commands */  /* 14-Jan-2016 nm */
 /* Added 14-Jan-2016 */
 extern vstring htmlFont; /* Optional; set by htmlfont command */
 
-/* 29-Jul-2008 nm Mathbox stuff */
-extern long mathboxStmt; /* At this statement and above, use sandbox stuff */
-
 void eraseTexDefs(void); /* Undo readTexDefs() */
 
 /* TeX/HTML/ALT_HTML word-processor-specific routines */
@@ -202,18 +199,33 @@ flag writeBibliography(vstring bibFile,
     flag errorsOnly,  /* 1 = no output, just warning msgs if any */
     flag noFileCheck); /* 1 = ignore missing external files (gifs, bib, etc.) */
 
-/* 17-Jul-2020 nm */
-/* Assign the global mathboxStmt */
-void getMathboxStmt(void);
+/* 5-Aug-2020 nm */
+/* Globals to hold mathbox information.  They should be re-initialized
+   by the ERASE command (eraseSource()).  g_mathboxStmt = 0 indicates
+   it and the other variables haven't been initialized. */
+extern long g_mathboxStmt; /* stmt# of "mathbox" label; statements+1 if none */
+extern long g_mathboxes; /* # of mathboxes */
+/* The following 3 "strings" are 0-based e.g. g_mathboxStart[0] is for
+   mathbox #1 */
+extern nmbrString *g_mathboxStart; /* Start stmt vs. mathbox # */
+extern nmbrString *g_mathboxEnd; /* End stmt vs. mathbox # */
+extern pntrString *g_mathboxUser; /* User name vs. mathbox # */
 
-/* 17-Jul-2020 nm */
-/* Get mathbox information; returns number of mathboxes */
+/* 5-Aug-2020 nm */
+/* Returns 1 if statements are in different mathboxes */
+flag inDiffMathboxes(long stmt1, long stmt2);
+/* Returns the user of the mathbox that a statement is in, or ""
+   if the statement is not in a mathbox. */
+/* Caller should NOT deallocate returned string (it points directly to
+   g_mathboxUser[] entry); use directly in print2() messages */
+vstring getMathboxUser(long stmt);
+/* Returns the mathbox number (starting at 1) that stmt is in, or 0 if not
+   in a mathbox */
+long getMathboxNum(long stmt);
+/* Populates mathbox information */
+void assignMathboxInfo(void);
+/* Creates lists of mathbox starts and user names */
 long getMathboxLoc(nmbrString **mathboxStart, nmbrString **mathboxEnd,
     pntrString **mathboxUser);
-
-/* 17-Jul-2020 nm */
-/* Given a statement number, find out what mathbox it's in; if it's
-   not in a mathbox, return 0.  Uses arrays assigned by getMathboxLoc(). */
-long findMathbox(long stmt, nmbrString *mathboxStart);
 
 #endif /* METAMATH_MMWTEX_H_ */

@@ -93,6 +93,11 @@ void typeStatement(long showStmt,
         " is located on line ", str((double)(statement[showStmt].lineNum)),
         " of the file ", NULL));
     if (!texFlag) {
+      assignMathboxInfo(); /* In case it hasn't been assigned yet */
+          /* We need to call assignMathboxInfo() to do the initial assignment,
+             in order to prevent "let(&" from executing during the
+             getMathboxUser() call below, which would corrupt the "cat()"
+             temporary stack (since "let(&" empties the stack). */
       printLongLine(cat(str1,
         "\"", statement[showStmt].fileName,
         "\".",
@@ -101,6 +106,11 @@ void typeStatement(long showStmt,
            "" :
            cat("  Its statement number for HTML pages is ",
                str((double)(statement[showStmt].pinkNumber)), ".", NULL),
+        /* 5-Aug-2020 nm Added mathbox user to SHOW STATEMENT ... /FULL */
+        ((getMathboxUser(showStmt))[0] == 0) ?
+           "" :
+           cat("  It is in the mathbox for ", getMathboxUser(showStmt), ".",
+               NULL),
         NULL), "", " ");
     } else {
       if (!htmlFlg) let(&printString, "");
@@ -905,7 +915,8 @@ void typeStatement(long showStmt,
             0, /*step:  0 = step 1 */ /*For messages*/
             0,  /*not noDistinct*/
             /* 3-May-2016 nm */
-            2 /* override discouraged-usage statements silently */
+            2, /* override discouraged-usage statements silently */
+            1 /* Always allow other mathboxes */ /* 5-Aug-2020 nm */
             );
 
         if (nmbrLen(nmbrTmpPtr2)) {
@@ -2360,7 +2371,8 @@ void typeProof(long statemNum,
               0, /* step; 0 = step 1 */ /*For messages*/
               0,  /*not noDistinct*/
               /* 3-May-2016 nm */
-              2 /* override discouraged-usage statements silently */
+              2, /* override discouraged-usage statements silently */
+              1 /* Always allow other mathboxes */ /* 5-Aug-2020 nm */
               );
           if (!nmbrLen(nmbrTmpPtr2)) {
             /* 1-Oct-05 nm Since a proof may not be found for non-standard
@@ -4470,8 +4482,18 @@ void eraseSource(void)    /* ERASE command */
   /* Deallocate the texdef/htmldef storage */ /* Added 27-Oct-2012 nm */
   eraseTexDefs(); /* 17-Nov-2015 nm */
 
-  mathboxStmt = 0; /* Used by a non-zero test in mmwtex.c to see if assigned */
   extHtmlStmt = 0; /* May be used by a non-zero test; init to be safe */
+
+  /* 5-Aug-2020 nm */
+  /* Initialize and deallocate mathbox information */
+  g_mathboxStmt = 0; /* Used by a non-zero test in mmwtex.c to see if assigned */
+  nmbrLet(&g_mathboxStart, NULL_NMBRSTRING);
+  nmbrLet(&g_mathboxEnd, NULL_NMBRSTRING);
+  for (i = 1; i <= g_mathboxes; i++) {
+    let((vstring *)(&g_mathboxUser[i - 1]), "");
+  }
+  pntrLet(&g_mathboxUser, NULL_PNTRSTRING);
+  g_mathboxes = 0;
 
   /* Allocate big arrays */
   initBigArrays();
@@ -4672,10 +4694,13 @@ void verifyMarkup(vstring labelMatch,
   saveHtmlFlag = htmlFlag;  saveAltHtmlFlag = altHtmlFlag;
 
   /* 17-Jul-2020 nm */ /* For mathbox check */
-  long mathboxes, mbox, pmbox, stmt, pstmt, plen, step;
+  long mbox, pmbox, stmt, pstmt, plen, step;
+  /**** 5-Aug-2020 nm These are now globals
+  long mathboxes;
   nmbrString *mathboxStart = NULL_NMBRSTRING;
   nmbrString *mathboxEnd = NULL_NMBRSTRING;
   pntrString *mathboxUser = NULL_PNTRSTRING;
+  ****/
   nmbrString *proof = NULL_NMBRSTRING;
   vstring dupCheck = "";
 
@@ -4777,6 +4802,8 @@ void verifyMarkup(vstring labelMatch,
 
   /* 5-Jul-2020 nm */
   /* Check for math tokens containing "@" */
+  /* 18-Jul-2020 nm */
+  /* Check for math tokens containing "?" */
   /* Note:  mathToken[] is 0-based, not 1-based */
   for (p1 = 0; p1 < mathTokens; p1++) {
     if (strchr(mathToken[p1].tokenName, '@') != NULL) {
@@ -4787,9 +4814,24 @@ void verifyMarkup(vstring labelMatch,
           "\" declared at line ",
           str((double)(statement[stmtNum].lineNum)),
           " in file \"", statement[stmtNum].fileName,
-          "\" has an \"@\" character, which is not recommended because ",
+          "\" has an \"@\" character, which is discouraged because ",
           "\"@\" is traditionally used to replace \"$\" in commented-out ",
           "database source code.",
+          NULL),
+          "    ", " ");
+      /* errorCount++; */
+      errFound = 1;
+    }
+    if (strchr(mathToken[p1].tokenName, '?') != NULL) {
+      stmtNum = mathToken[p1].statement;
+      assignStmtFileAndLineNum(stmtNum);
+      printLongLine(cat("?Warning: The token \"",
+          mathToken[p1].tokenName,
+          "\" declared at line ",
+          str((double)(statement[stmtNum].lineNum)),
+          " in file \"", statement[stmtNum].fileName,
+          "\" has a \"?\" character, which is discouraged because ",
+          "\"?\" is sometimes used as a math token search wildcard.",
           NULL),
           "    ", " ");
       /* errorCount++; */
@@ -5235,10 +5277,14 @@ void verifyMarkup(vstring labelMatch,
   /* Check mathboxes for cross-references */
   if (mathboxSkip == 0) {
     print2("Checking mathbox independence...\n");
-    mathboxes = getMathboxLoc(&mathboxStart, &mathboxEnd, &mathboxUser);
+    /* 5-Aug-2020 nm Deleted; these are now globals */
+    /*mathboxes = getMathboxLoc(&mathboxStart, &mathboxEnd, &mathboxUser);*/
+    assignMathboxInfo();  /* Populate global mathbox variables */
     /* Scan proofs in mathboxes to see if earlier mathbox is referenced */
-    for (pmbox = 2; pmbox <= mathboxes; pmbox++) {
-      for (pstmt = mathboxStart[pmbox - 1]; pstmt <= mathboxEnd[pmbox - 1]; pstmt++) {
+    for (pmbox = 2; pmbox <= g_mathboxes; pmbox++) {
+      /* Note g_mathboxStart, etc. are 0-based */
+      for (pstmt = g_mathboxStart[pmbox - 1]; pstmt <= g_mathboxEnd[pmbox - 1];
+          pstmt++) {
         if (statement[pstmt].type != (char)p_)
           continue; /* Not a $p statement; skip it */
         /* Don't use bad proofs (incomplete proofs are ok) */
@@ -5264,7 +5310,7 @@ void verifyMarkup(vstring labelMatch,
           stmt = proof[step];
           if (stmt < 0) continue; /* Local step or '?' step */
           if (stmt == 0) bug(266);
-          if (stmt > mathboxStmt && stmt < mathboxStart[pmbox - 1]) {
+          if (stmt > g_mathboxStmt && stmt < g_mathboxStart[pmbox - 1]) {
             /* A statement in another mathbox is referenced */
 
             /* Eliminate duplicate error messages: */
@@ -5276,14 +5322,14 @@ void verifyMarkup(vstring labelMatch,
                   (dupCheck[0] == 0) ? "" : ",", str1, NULL)); /* Add to list */
             }
 
-            mbox = findMathbox(stmt, mathboxStart);
+            mbox = getMathboxNum(stmt);
             if (mbox == 0) bug(267);
             if (verboseMode == 0) {
               printLongLine(cat("?Warning: The proof of \"",
                   statement[pstmt].labelName,
-                  "\" in the mathbox for ", (vstring *)(mathboxUser[pmbox - 1]),
+                  "\" in the mathbox for ", (vstring *)(g_mathboxUser[pmbox - 1]),
                   " references \"", statement[stmt].labelName,
-                  "\" in the mathbox for ", (vstring *)(mathboxUser[mbox - 1]),
+                  "\" in the mathbox for ", (vstring *)(g_mathboxUser[mbox - 1]),
                   ".",
                   NULL),
                   "    ", " ");
@@ -5293,11 +5339,11 @@ void verifyMarkup(vstring labelMatch,
               assignStmtFileAndLineNum(pstmt);
               printLongLine(cat("?Warning: The proof of statement \"",
                   statement[pstmt].labelName,
-                  "\" in the mathbox for \"", (vstring *)(mathboxUser[pmbox - 1]),
+                  "\" in the mathbox for \"", (vstring *)(g_mathboxUser[pmbox - 1]),
                   "\" at line ", str((double)(statement[pstmt].lineNum)),
                   " in file \"", statement[pstmt].fileName,
                   "\" references statement \"", statement[stmt].labelName,
-                  "\" in the mathbox for \"", (vstring *)(mathboxUser[mbox - 1]),
+                  "\" in the mathbox for \"", (vstring *)(g_mathboxUser[mbox - 1]),
                   "\" at line ", str((double)(statement[stmt].lineNum)),
                   " in file \"", statement[stmt].fileName,
                   "\".  ",
@@ -5313,12 +5359,15 @@ void verifyMarkup(vstring labelMatch,
     } /* next pmbox */
     /* Deallocate */
     let(&dupCheck, "");
+    /**** 5-Aug-2020 nm Deleted
     nmbrLet(&mathboxStart, NULL_NMBRSTRING);
     nmbrLet(&mathboxEnd, NULL_NMBRSTRING);
     for (mbox = 1; mbox <= mathboxes; mbox++) {
       let((vstring *)(&mathboxUser[mbox - 1]), "");
     }
     pntrLet(&mathboxUser, NULL_PNTRSTRING);
+    ****/
+    nmbrLet(&proof, NULL_NMBRSTRING);
   }
 
   if (errFound == 0) {
@@ -5663,7 +5712,7 @@ nmbrString *getRelStepNums(nmbrString *pfInProgress) {
 /* 19-Sep-2012 nm */
 /* This procedure finds the next statement number whose label matches
    stmtName.  Wildcards are allowed.  If uniqueFlag is 1,
-   there must be exactly one match, otherwise an error message is printed,
+   there must be exactly one match, otherwise an error message is printed
    and -1 is returned.  If uniqueFlag is 0, the next match is
    returned, or -1 if there are no more matches.  No error messages are
    printed when uniqueFlag is 0, except for the special case of
@@ -5684,11 +5733,29 @@ long getStatementNum(vstring stmtName, /* Possibly with wildcards */
   flag laterMatchFound = 0; /* For better error message */ /* 16-Jan-2014 nm */
 
   hasWildcard = 0;
-  if (instr(1, stmtName, "*") || instr(1, stmtName, "?"))
-    hasWildcard = 1;
+  /* (Note strpbrk warning in mmpars.c) */
+  if (strpbrk(stmtName, "*?=~%#@,") != NULL) {
+    /* (See matches() function for processing of these)
+       "*" 0 or more char match
+       "?" 1 char match
+       "=" Most recent PROVE command statement
+       "~" Statement range
+       "%" List of modified statements
+       "#" Internal statement number
+       "@" Web page statement number
+       "," Comma-separated fields */
+    hasWildcard = 1; /* I.e. stmtName is not a simple label */
+  }
   matchesFound = 0;
   matchStmt = 1; /* Set to a legal value in case of bug */
   matchStmt2 = 1; /* Set to a legal value in case of bug */
+
+  /**** 18-Jul-2020 nm No longer needed; done in matches() (called by
+     matchesList() below) @/
+  if (!strcmp(stmtName, "=") && proveStatement != 0) {
+     let(&stmtName, statement[proveStatement].labelName);
+  }
+  *****/
 
   for (stmt = startStmt; stmt <= statements; stmt++) {
 
@@ -5715,6 +5782,12 @@ long getStatementNum(vstring stmtName, /* Possibly with wildcards */
         continue;
       }
     } else {
+      /* When hasWildcard = 0, this code is very inefficient - all we need to
+         do is call lookupLabel(stmtName) outside of the stmt loop and take
+         actions based on whether the label exists and its statement number
+         and type compared to what's expected.  However, from a user
+         perspective, the current code has no noticeable delay, so there's no
+         pressing need to improve it at this point. */
       if (strcmp(stmtName, statement[stmt].labelName)) {
         continue;
       }

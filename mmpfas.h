@@ -48,9 +48,9 @@ nmbrString *proveByReplacement(long prfStmt,
     flag dummyVarFlag, /* 0 means no dummy vars are in prfStmt */
     flag searchMethod, /* 1 means to try proveFloating on $e's also */
     long improveDepth,
-    /* 3-May-2016 nm */
-    flag overrideFlag /* 1 means to override usage locks */
-     );
+    flag overrideFlag, /* 1 means to override usage locks */ /* 3-May-2016 nm */
+    flag mathboxFlag /* 1 means allow mathboxes */ /* 5-Aug-2020 nm */
+    );
 
 nmbrString *replaceStatement(long replStatemNum,
     long prfStep,
@@ -60,8 +60,8 @@ nmbrString *replaceStatement(long replStatemNum,
     flag noDistinct, /* 1 means don't try statements with $d's */
     flag searchMethod, /* 1 means to try proveFloating on $e's also */
     long improveDepth,
-    /* 3-May-2016 nm */
-    flag overrideFlag /* 1 means to override usage locks */
+    flag overrideFlag, /* 1 means to override usage locks */ /* 3-May-2016 nm */
+    flag mathboxFlag /* 1 means allow mathboxes */ /* 5-Aug-2020 nm */
     );
 
 /* 22-Aug-2012 nm Added this function */
@@ -116,9 +116,10 @@ char checkMStringMatch(nmbrString *mString, long step);
 nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
     long step, flag noDistinct,
     /* 3-May-2016 nm */
-    flag overrideFlag /* 0 means respect usage locks
+    flag overrideFlag, /* 0 means respect usage locks
                          1 means to override usage locks
                          2 means override silently */
+    flag mathboxFlag /* 1 means allow mathboxes */ /* 5-Aug-2020 nm */
 );
 
 /* 22-Aug-2012 nm Added this function */
