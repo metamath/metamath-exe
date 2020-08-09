@@ -57,13 +57,14 @@
 
 
 
-
-
-#define MVERSION "0.185 6-Aug-2020"
-/* 0.185
-   5-Aug-2020 nm metamath.c mmcmdl.c mmhlpb.c mmpfas.c,h mmcmds.c mmwtex.c,h -
-     add /INCLUDE_MATHBOXES to to IMPROVE; notify user upon ASSIGN from another
-     mathbox.
+#define MVERSION "0.186 8-Aug-2020"
+/* 0.186 8-Aug-2020 nm mmwtex.c, mmhlpa.c - add Conjecture, Result to [bib]
+     keywords
+   8-Aug-2020 nm mmpfas.c, metamath.c - print message when IMPROVE or
+     MINIMIZE_WITH uses another mathbox */
+/* 0.185 5-Aug-2020 nm metamath.c mmcmdl.c mmhlpb.c mmpfas.c,h mmcmds.c
+     mmwtex.c,h - add /INCLUDE_MATHBOXES to to IMPROVE; notify user upon ASSIGN
+     from another mathbox.
    18-Jul-2020 nm mmcmds.c, mmdata.c, mmhlpb.c, metamath.c - "PROVE =" will now
      resume the previous MM-PA session if there was one; allow "~" to start/end
      with blank (meaning first/last statement); add "@1234" */
@@ -5930,7 +5931,7 @@ void command(int argc, char *argv[])
 
       /* 14-Sep-2012 nm */
       s = getStepNum(fullArg[1], proofInProgress.proof,
-          1 /* ALL not allowed */);
+          1 /* 1 = "ALL" is permissable; returns 0 */);
       if (s == -1) continue;  /* Error; message was provided already */
 
       if (s != 0) {  /* s=0 means ALL */
@@ -6974,6 +6975,20 @@ void command(int argc, char *argv[])
             }
             */
             /* q = 0; */ /* Line length for label list */ /* 25-Jun-2014 del */
+
+            /* 8-Aug-2020 nm */
+            /* See if it's in another mathbox; if so, let user know */
+            assignMathboxInfo();
+            if (k > g_mathboxStmt && proveStatement > g_mathboxStmt) {
+              if (k < g_mathboxStart[getMathboxNum(proveStatement) - 1]) {
+                printLongLine(cat("\"", statement[k].labelName,
+                      "\" is in the mathbox for ",
+                      g_mathboxUser[getMathboxNum(k) - 1], ".",
+                      NULL),
+                    "  ", " ");
+              }
+            }
+
             prntStatus = 2; /* Found one */
             proofChangedFlag = 1;
 

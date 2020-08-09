@@ -6452,6 +6452,8 @@ flag writeBibliography(vstring bibFile,
               || !strcmp(mid(str2, k, (long)strlen("CHAPTER")), "CHAPTER")
               || !strcmp(mid(str2, k, (long)strlen("COMPARE")), "COMPARE")
               || !strcmp(mid(str2, k, (long)strlen("CONDITION")), "CONDITION")
+              /* 8-Aug-2020 nm Added CONJECTURE, RESULT */
+              || !strcmp(mid(str2, k, (long)strlen("CONJECTURE")), "CONJECTURE")
               || !strcmp(mid(str2, k, (long)strlen("COROLLARY")), "COROLLARY")
               || !strcmp(mid(str2, k, (long)strlen("EXAMPLE")), "EXAMPLE")
               || !strcmp(mid(str2, k, (long)strlen("FIGURE")), "FIGURE")
@@ -6468,6 +6470,7 @@ flag writeBibliography(vstring bibFile,
               || !strcmp(mid(str2, k, (long)strlen("PROPERTY")), "PROPERTY")
               || !strcmp(mid(str2, k, (long)strlen("PROPOSITION")), "PROPOSITION")
               || !strcmp(mid(str2, k, (long)strlen("REMARK")), "REMARK")
+              || !strcmp(mid(str2, k, (long)strlen("RESULT")), "RESULT")
               || !strcmp(mid(str2, k, (long)strlen("RULE")), "RULE")
               || !strcmp(mid(str2, k, (long)strlen("SCHEME")), "SCHEME")
               || !strcmp(mid(str2, k, (long)strlen("SECTION")), "SECTION")

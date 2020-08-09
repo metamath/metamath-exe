@@ -2091,6 +2091,23 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
         } /* end switch (overrideFlag) */
       } /* end if (getMarkupFlag(stmt, USAGE_DISCOURAGED)) */
 
+      /* 8-Aug-2020 nm */
+      /* TODO: Put this in proveByReplacement? */
+      /* Notify mathbox user when other mathboxes are used */
+      if (mathboxFlag != 0) {  /* Skip unless /INCLUDE_MATHBOXES was specified */
+        /* See if it's in another mathbox; if so, let user know */
+        assignMathboxInfo();
+        if (stmt > g_mathboxStmt && proveStatement > g_mathboxStmt) {
+          if (stmt < g_mathboxStart[getMathboxNum(proveStatement) - 1]) {
+            printLongLine(cat("Used \"", statement[stmt].labelName,
+                  "\" from the mathbox for ",
+                  g_mathboxUser[getMathboxNum(stmt) - 1], ".",
+                  NULL),
+                "  ", " ");
+          }
+        }
+      }
+
       nmbrLet(&proof, nmbrAddElement(proof, stmt)); /* Complete the proof */
 
       /* Deallocate hypothesis schemes and proofs */
