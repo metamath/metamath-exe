@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2020  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -9,22 +9,22 @@
 
 #include "mmdata.h"
 
-extern long minSubstLen; /* User-settable value - 0 or 1 */
-extern long userMaxUnifTrials;
+extern long g_minSubstLen; /* User-settable value - 0 or 1 */
+extern long g_userMaxUnifTrials;
             /* User-defined upper limit (# backtracks) for unification trials */
-extern long unifTrialCount;
+extern long g_unifTrialCount;
                      /* 0 means don't time out; 1 means start counting trials */
-extern long unifTimeouts; /* Number of timeouts so far for this command */
-extern flag hentyFilter; /* Turns Henty filter on or off */
+extern long g_unifTimeouts; /* Number of timeouts so far for this command */
+extern flag g_hentyFilter; /* Turns Henty filter on or off */
 
 /* 26-Sep-2010 nm */
-extern flag bracketMatchInit; /* So eraseSource() (mmcmds.c) can clr it */
+extern flag g_bracketMatchInit; /* So eraseSource() (mmcmds.c) can clr it */
 
 /* 1-Oct-2017 nm Made this global so eraseSource() (mmcmds.c) can clr it */
-extern nmbrString *firstConst;
+extern nmbrString *g_firstConst;
 /* 2-Oct-2017 nm Made these global so eraseSource() (mmcmds.c) can clr them */
-extern nmbrString *lastConst;
-extern nmbrString *oneConst;
+extern nmbrString *g_lastConst;
+extern nmbrString *g_oneConst;
 
 
 nmbrString *makeSubstUnif(flag *newVarFlag,

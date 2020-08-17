@@ -187,8 +187,8 @@ vstring quo$(vstring sout);
 /******* Special purpose routines for better
       memory allocation (use with caution) *******/
 
-extern long tempAllocStackTop;   /* Top of stack for tempAlloc functon */
-extern long startTempAllocStack; /* Where to start freeing temporary allocation
+extern long g_tempAllocStackTop;   /* Top of stack for tempAlloc functon */
+extern long g_startTempAllocStack; /* Where to start freeing temporary allocation
     when let() is called (normally 0, except for nested vstring functions) */
 
 /* Make string have temporary allocation to be released by next let() */

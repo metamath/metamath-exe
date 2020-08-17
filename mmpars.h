@@ -90,12 +90,12 @@ long countLines(vstring start, long length);
 /* This array is used to see if any label is used anywhere, and is used
    to make sure there are no conflicts when local labels inside of compact
    proofs are generated. */
-extern long *allLabelKeyBase;
-extern long numAllLabelKeys;
+extern long *g_allLabelKeyBase;
+extern long g_numAllLabelKeys;
 
 /* Working structure for parsing proofs */
 /* This structure should be deallocated by the ERASE command. */
-extern long wrkProofMaxSize; /* Maximum size so far - it may grow */
+extern long g_wrkProofMaxSize; /* Maximum size so far - it may grow */
 struct sortHypAndLoc {  /* Used for sorting hypAndLocLabel field */
   long labelTokenNum;
   void *labelName;
@@ -111,9 +111,9 @@ struct wrkProof_struct {
   flag errorSeverity; /* 0 = OK, 1 = unk step, 2 = error, 3 = severe error,
                           4 = not a $p statement */
 
-  /* The following pointers will always be allocated with wrkProofMaxSize
-     entries.  If a function needs more than wrkProofMaxSize, it must
-     reallocate all of these and increase wrkProofMaxSize. */
+  /* The following pointers will always be allocated with g_wrkProofMaxSize
+     entries.  If a function needs more than g_wrkProofMaxSize, it must
+     reallocate all of these and increase g_wrkProofMaxSize. */
   nmbrString *tokenSrcPtrNmbr; /* Source parsed into tokens vs. token number
                                     - token size */
   pntrString *tokenSrcPtrPntr; /* Source parsed into tokens vs. token number
@@ -137,7 +137,7 @@ struct wrkProof_struct {
   long compressedPfNumLabels; /* Number of compressed labels */
 
 };
-extern struct wrkProof_struct wrkProof;
+extern struct wrkProof_struct g_WrkProof;
 
 /* Converts an ASCII string to a nmbrString of math symbols.  statemNum
    provides the context for the parse (to get correct active symbols) */

@@ -16,8 +16,8 @@
 typedef char flag; /* A "flag" is simply a character intended for use as a
                       yes/no logical Boolean; 0 = no and 1 = yes */
 
-extern flag listMode; /* 0 = metamath, 1 = list utility */
-extern flag toolsMode; /* In metamath mode:  0 = metamath, 1 = tools */
+extern flag g_listMode; /* 0 = metamath, 1 = list utility */
+extern flag g_toolsMode; /* In metamath mode:  0 = metamath, 1 = tools */
 
 typedef long nmbrString; /* String of numbers */
 typedef void* pntrString; /* String of pointers */
@@ -38,8 +38,8 @@ enum mTokenType { var_, con_ };
 #define sc_ '.' /* $. (historically, used to be $; (semicolon) ) */
 #define illegal_ '?' /* anything else */
 /* Global variables related to current statement */
-extern int currentScope;
-extern long beginScopeStatementNum;
+extern int g_currentScope;
+/*extern long beginScopeStmtNum;*/ /* 15-Aug-2020 nm changed to local in mmpars.c */
 
 struct statement_struct { /* Array index is statement number, starting at 1 */
   long lineNum; /* Line number in file; 0 means not yet determined */
@@ -89,7 +89,7 @@ struct statement_struct { /* Array index is statement number, starting at 1 */
   };
 
 /* Sort keys for statement labels (allocated by parseLabels) */
-extern long *labelKey;
+extern long *g_labelKey;
 
 struct includeCall_struct {
   /* This structure holds all information related to $[ $] (include) statements
@@ -122,24 +122,24 @@ struct mathToken_struct {
   };
 
 /* Sort keys for math tokens (allocated by parseMathDecl) */
-extern long *mathKey;
+extern long *g_mathKey;
 
-extern long MAX_STATEMENTS;
-extern long MAX_MATHTOKENS;
-extern struct statement_struct *statement;
+extern long g_MAX_STATEMENTS;
+extern long g_MAX_MATHTOKENS;
+extern struct statement_struct *g_Statement;
 /*Obs*/ /*extern struct label_struct *label;*/
 
 /* Warning: mathToken[i] is 0-based, not 1-based! */
-extern struct mathToken_struct *mathToken;
-extern long statements, /*labels,*/ mathTokens;
-extern long maxMathTokenLength;
+extern struct mathToken_struct *g_MathToken;
+extern long g_statements, /*labels,*/ g_mathTokens;
+/*extern long maxMathTokenLength;*/ /* 15-Aug-2020 nm Not used */
 
-extern long MAX_INCLUDECALLS;
-extern struct includeCall_struct *includeCall;
-extern long includeCalls;
+extern long g_MAX_INCLUDECALLS;
+extern struct includeCall_struct *g_IncludeCall;
+extern long g_includeCalls;
 
-extern char *sourcePtr; /* Pointer to buffer in memory with input source */
-extern long sourceLen; /* Number of chars. in all inputs files combined (after includes)*/
+extern char *g_sourcePtr; /* Pointer to buffer in memory with input source */
+extern long g_sourceLen; /* Number of chars. in all inputs files combined (after includes)*/
 
 /* 4-May-2016 nm */
 /* For use by getMarkupFlag() */
@@ -171,12 +171,12 @@ extern long sourceLen; /* Number of chars. in all inputs files combined (after i
 /* 14-May-2017 nm */
 /* TODO: someday we should create structures to hold global vars, and
    clear their string components in eraseSource() */
-extern vstring contributorName;
+extern vstring g_contributorName;
 #define DEFAULT_CONTRIBUTOR "?who?"
 
-extern vstring proofDiscouragedMarkup;
-extern vstring usageDiscouragedMarkup;
-extern flag globalDiscouragement; /* SET DISCOURAGEMENT */
+extern vstring g_proofDiscouragedMarkup;
+extern vstring g_usageDiscouragedMarkup;
+extern flag g_globalDiscouragement; /* SET DISCOURAGEMENT */
 
 /* Allocation and deallocation in memory pool */
 void *poolFixedMalloc(long size /* bytes */);
@@ -207,8 +207,8 @@ struct nullNmbrStruct {
     long allocSize;
     long actualSize;
     nmbrString nullElement; };
-extern struct nullNmbrStruct nmbrNull;
-#define NULL_NMBRSTRING &(nmbrNull.nullElement)
+extern struct nullNmbrStruct g_NmbrNull;
+#define NULL_NMBRSTRING &(g_NmbrNull.nullElement)
 
 /* Null pntrString -- NULL flags the end of a pntrString */
 struct nullPntrStruct {
@@ -216,8 +216,8 @@ struct nullPntrStruct {
     long allocSize;
     long actualSize;
     pntrString nullElement; };
-extern struct nullPntrStruct pntrNull;
-#define NULL_PNTRSTRING &(pntrNull.nullElement)
+extern struct nullPntrStruct g_PntrNull;
+#define NULL_PNTRSTRING &(g_PntrNull.nullElement)
 
 
 /* 26-Apr-2008 nm Added */
@@ -242,8 +242,8 @@ flag matches(vstring testString, vstring pattern, char wildCard,
 /******* Special pupose routines for better
       memory allocation (use with caution) *******/
 
-extern long nmbrTempAllocStackTop;   /* Top of stack for nmbrTempAlloc funct */
-extern long nmbrStartTempAllocStack; /* Where to start freeing temporary
+extern long g_nmbrTempAllocStackTop;   /* Top of stack for nmbrTempAlloc funct */
+extern long g_nmbrStartTempAllocStack; /* Where to start freeing temporary
     allocation when nmbrLet() is called (normally 0, except for nested
     nmbrString functions) */
 
@@ -379,8 +379,8 @@ long compressedProofSize(nmbrString *proof, long statemNum);
 /******* Special pupose routines for better
       memory allocation (use with caution) *******/
 
-extern long pntrTempAllocStackTop;   /* Top of stack for pntrTempAlloc funct */
-extern long pntrStartTempAllocStack; /* Where to start freeing temporary
+extern long g_pntrTempAllocStackTop;   /* Top of stack for pntrTempAlloc funct */
+extern long g_pntrStartTempAllocStack; /* Where to start freeing temporary
     allocation when pntrLet() is called (normally 0, except for nested
     pntrString functions) */
 
@@ -497,7 +497,7 @@ void buildDate(long dd, long mmm, long yyyy, vstring *dateStr);
 flag compareDates(vstring date1, vstring date2);
 
 /* 17-Nov-2015 nm */
-extern vstring qsortKey;
+extern vstring g_qsortKey;
       /* Used by qsortStringCmp; pointer only, do not deallocate */
 /* Comparison function for qsort */
 int qsortStringCmp(const void *p1, const void *p2);

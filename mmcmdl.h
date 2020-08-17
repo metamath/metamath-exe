@@ -20,30 +20,31 @@ void printCommandError(vstring line, long arg, vstring errorMsg);
 void freeCommandLine(void); /* 4-May-2017 Ari Ferrera */
 
 #define DEFAULT_COLUMN 16
-extern pntrString *rawArgPntr;
-extern nmbrString *rawArgNmbr;
-extern long rawArgs;
-extern pntrString *fullArg;
-extern vstring fullArgString; /* 1-Nov-2013 nm fullArg as one string */
-extern vstring commandPrompt;
-extern vstring commandLine;
-extern long showStatement;
-extern vstring logFileName;
-extern vstring texFileName;
-extern flag PFASmode; /* Proof assistant mode, invoked by PROVE command */
-extern flag queryMode; /* If 1, explicit questions will be asked even if
+extern pntrString *g_rawArgPntr;
+extern nmbrString *g_rawArgNmbr;
+extern long g_rawArgs;
+extern pntrString *g_fullArg;
+extern vstring g_fullArgString; /* 1-Nov-2013 nm g_fullArg as one string */
+extern vstring g_commandPrompt;
+extern vstring g_commandLine;
+extern long g_showStatement;
+extern vstring g_logFileName;
+extern vstring g_texFileName;
+extern flag g_PFASmode; /* Proof assistant mode, invoked by PROVE command */
+/* 15-Aug-2020 nm g_queryMode is global only within mmcmdl.c */
+/* extern flag g_queryMode; */ /* If 1, explicit questions will be asked even if
                           a field in the input command line is optional */
-extern flag sourceChanged; /* Flag that user made some change to the source
+extern flag g_sourceChanged; /* Flag that user made some change to the source
                               file*/
-extern flag proofChanged; /* Flag that user made some change to proof in
+extern flag g_proofChanged; /* Flag that user made some change to proof in
                              progress*/
-extern flag commandEcho; /* Echo full command */
-extern flag memoryStatus; /* Always show memory */
+extern flag g_commandEcho; /* Echo full command */
+extern flag g_memoryStatus; /* Always show memory */
 
 /* 31-Dec-2017 nm */
-extern flag sourceHasBeenRead; /* 1 if a source file has been read in */
+extern flag g_sourceHasBeenRead; /* 1 if a source file has been read in */
 /* 31-Dec-2017 nm */
-extern vstring rootDirectory; /* Directory to use for included files */
+extern vstring g_rootDirectory; /* Directory to use for included files */
 
 
 #endif /* METAMATH_MMCMDL_H_ */

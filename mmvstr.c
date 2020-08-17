@@ -40,8 +40,8 @@ This is an emulation of the string functions available in VMS BASIC.
 #endif
 
 #define MAX_ALLOC_STACK 100
-long tempAllocStackTop = 0;      /* Top of stack for tempAlloc functon */
-long startTempAllocStack = 0;    /* Where to start freeing temporary allocation
+long g_tempAllocStackTop = 0;      /* Top of stack for tempAlloc functon */
+long g_startTempAllocStack = 0;    /* Where to start freeing temporary allocation
                                     when let() is called (normally 0, except in
                                     special nested vstring functions) */
 void *tempAllocStack[MAX_ALLOC_STACK];
@@ -49,28 +49,28 @@ void *tempAllocStack[MAX_ALLOC_STACK];
 static void freeTempAlloc(void)
 {
   /* All memory previously allocated with tempAlloc is deallocated. */
-  /* EXCEPT:  When startTempAllocStack != 0, the freeing will start at
-     startTempAllocStack. */
+  /* EXCEPT:  When g_startTempAllocStack != 0, the freeing will start at
+     g_startTempAllocStack. */
   long i;
-  for (i = startTempAllocStack; i < tempAllocStackTop; i++) {
+  for (i = g_startTempAllocStack; i < g_tempAllocStackTop; i++) {
 /*E*/INCDB1(-1 - (long)strlen(tempAllocStack[i]));
 /*E* /printf("%ld removing [%s]\n", db1, tempAllocStack[i]);*/
     free(tempAllocStack[i]);
   }
-  tempAllocStackTop = startTempAllocStack;
+  g_tempAllocStackTop = g_startTempAllocStack;
 } /* freeTempAlloc */
 
 
 static void pushTempAlloc(void *mem)
 {
-  if (tempAllocStackTop >= (MAX_ALLOC_STACK-1)) {
+  if (g_tempAllocStackTop >= (MAX_ALLOC_STACK-1)) {
     printf("*** FATAL ERROR ***  Temporary string stack overflow\n");
 #if __STDC__
     fflush(stdout);
 #endif
     bug(2201);
   }
-  tempAllocStack[tempAllocStackTop++] = mem;
+  tempAllocStack[g_tempAllocStackTop++] = mem;
 } /* pushTempAlloc */
 
 

@@ -21,32 +21,32 @@
 #define SANDBOX_COLOR "\"#FFFFD9\""
 
 /* TeX flags */
-/* 14-Sep-2010 nm Removed simpleTexFlag; added oldTexFlag */
-extern flag oldTexFlag; /* Use macros in output; obsolete; take out someday */
+/* 14-Sep-2010 nm Removed simpleTexFlag; added g_oldTexFlag */
+extern flag g_oldTexFlag; /* Use macros in output; obsolete; take out someday */
 
 /* HTML flags */
-extern flag htmlFlag;  /* HTML flag: 0 = TeX, 1 = HTML */
-extern flag altHtmlFlag;  /* Use "althtmldef" instead of "htmldef".  This is
+extern flag g_htmlFlag;  /* HTML flag: 0 = TeX, 1 = HTML */
+extern flag g_altHtmlFlag;  /* Use "althtmldef" instead of "htmldef".  This is
     intended to allow the generation of pages with the old Symbol font
     instead of the individual GIF files. */
-extern flag briefHtmlFlag;  /* Output statement only, for statement display
+extern flag g_briefHtmlFlag;  /* Output statement only, for statement display
                 in other HTML pages, such as the Proof Explorer home page */
-extern long extHtmlStmt; /* At this statement and above, use the exthtmlxxx
+extern long g_extHtmlStmt; /* At this statement and above, use the exthtmlxxx
     variables for title, links, etc.  This was put in to allow proper
     generation of the Hilbert Space Explorer extension to the set.mm
     database. */
-extern vstring extHtmlTitle; /* Title of extended section if any; set by
+extern vstring g_extHtmlTitle; /* Title of extended section if any; set by
     by exthtmltitle command in special $t comment of database source */
-extern vstring htmlVarColor; /* Set by htmlvarcolor commands */
+extern vstring g_htmlVarColor; /* Set by htmlvarcolor commands */
 /* Added 26-Aug-2017 nm for use by mmcmds.c */
-extern vstring htmlHome; /* Set by htmlhome command */
+extern vstring g_htmlHome; /* Set by htmlhome command */
 /* Added 10/13/02 for use in metamath.c bibliography cross-reference */
-extern vstring htmlBibliography; /* Optional; set by htmlbibliography command */
-extern vstring extHtmlBibliography; /* Optional; set by exthtmlbibliography
+extern vstring g_htmlBibliography; /* Optional; set by htmlbibliography command */
+extern vstring g_extHtmlBibliography; /* Optional; set by exthtmlbibliography
                                        command */
-extern vstring htmlCSS; /* Set by htmlcss commands */  /* 14-Jan-2016 nm */
+extern vstring g_htmlCSS; /* Set by htmlcss commands */  /* 14-Jan-2016 nm */
 /* Added 14-Jan-2016 */
-extern vstring htmlFont; /* Optional; set by htmlfont command */
+extern vstring g_htmlFont; /* Optional; set by g_htmlFont command */
 
 void eraseTexDefs(void); /* Undo readTexDefs() */
 
@@ -57,12 +57,12 @@ flag readTexDefs(
   flag errorsOnly,  /* 1 = supprees non-error messages */
   flag noGifCheck   /* 1 = don't check for missing GIFs */);
 
-extern flag texDefsRead;
+extern flag g_texDefsRead;
 struct texDef_struct {  /* 27-Oct-2012 nm Made global for "erase" */
   vstring tokenName; /* ASCII token */
   vstring texEquiv; /* Converted to TeX */
 };
-extern struct texDef_struct *texDefs; /* 27-Oct-2012 nm Now glob for "erase" */
+extern struct texDef_struct *g_TexDefs; /* 27-Oct-2012 nm Now glob for "erase" */
 
 
 long texDefWhiteSpaceLen(char *ptr);
@@ -92,7 +92,7 @@ void printTexHeader(flag texHeaderFlag);
    "Description:" prefix.*/
 /* void printTexComment(vstring commentPtr, char htmlCenterFlag); */
 /* 17-Nov-2015 nm Added 3rd & 4th arguments; returns 1 if error/warning */
-flag printTexComment(vstring commentPtr,    /* Sends result to texFilePtr */
+flag printTexComment(vstring commentPtr,    /* Sends result to g_texFilePtr */
     flag htmlCenterFlag, /* 1 = htmlCenterFlag */
     long actionBits, /* see indicators below */
     flag noFileCheck /* 1 = noFileCheck */);
@@ -121,6 +121,11 @@ void printTexTrailer(flag texHeaderFlag);
 void writeTheoremList(long theoremsPerPage, flag showLemmas,
     flag noVersioning);
 
+#define HUGE_DECORATION "####"
+#define BIG_DECORATION "#*#*"
+#define SMALL_DECORATION "=-=-"
+#define TINY_DECORATION "-.-."
+
 /* 2-Aug-2009 nm - broke this function out from writeTheoremList() */
 /* 20-Jun-2014 nm - added hugeHdrAddr */
 /* 21-Aug-2017 nm - added tinyHdrAddr */
@@ -135,13 +140,15 @@ flag getSectionHeadings(long stmt, vstring *hugeHdrTitle,
     vstring *smallHdrComment,
     vstring *tinyHdrComment);
 
-/* TeX symbol dictionary */
-extern FILE *tex_dict_fp;     /* File pointers */
-extern vstring tex_dict_fn;   /* File names */
+/****** 15-Aug-2020 nm Obsolete
+/@ TeX symbol dictionary @/
+extern FILE @g_tex_dict_fp;     /@ File pointers @/
+extern vstring g_tex_dict_fn;   /@ File names @/
+******/
 
 /* TeX normal output */
-extern flag texFileOpenFlag;
-extern FILE *texFilePtr;
+extern flag g_texFileOpenFlag;
+extern FILE *g_texFilePtr;
 
 /* Pink statement number for HTML pages */
 /* 10/10/02 (This is no longer used?) */
@@ -177,15 +184,15 @@ vstring spectrumToRGB(long color, long maxColor);
 
 /* Added 20-Sep-03 (broken out of printTexLongMath() for better
    modularization) */
-/* Returns the HTML code for GIFs (!altHtmlFlag) or Unicode (altHtmlFlag),
-   or LaTeX when !htmlFlag, for the math string (hypothesis or conclusion) that
+/* Returns the HTML code for GIFs (!g_altHtmlFlag) or Unicode (g_altHtmlFlag),
+   or LaTeX when !g_htmlFlag, for the math string (hypothesis or conclusion) that
    is passed in. */
 /* Warning: The caller must deallocate the returned vstring. */
 vstring getTexLongMath(nmbrString *mathString, long statemNum);
 
 /* Added 18-Sep-03 (transferred from metamath.c) */
-/* Returns the TeX, or HTML code for GIFs (!altHtmlFlag) or Unicode
-   (altHtmlFlag), for a statement's hypotheses and assertion in the form
+/* Returns the TeX, or HTML code for GIFs (!g_altHtmlFlag) or Unicode
+   (g_altHtmlFlag), for a statement's hypotheses and assertion in the form
    hyp & ... & hyp => assertion */
 /* Warning: The caller must deallocate the returned vstring. */
 /* 14-Sep-2010 nm Changed name from getHTMLHypAndAssertion() */

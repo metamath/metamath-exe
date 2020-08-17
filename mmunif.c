@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2020  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -37,7 +37,7 @@ functions.
 
 11[3] is the number of entries in the "Henty filter", used by unifyH() (only).
 
-  hentyFilterSize = ((nmbrString *)((*stateVector)[11]))[3];
+  g_hentyFilterSize = ((nmbrString *)((*stateVector)[11]))[3];
 
 Entry 8 is the result of unifying schemeA and schemeB, which are the two
 schemes being unified.
@@ -84,14 +84,14 @@ Entries 9 and 10 save the contents of 2 and 3 in oneDirUnif (only)
 
 Entries 12 through 15 hold the "Henty filter", i.e. a list of all "normalized"
 unifications so far.  Used by unifyH() (only).  Each entry 12 through 15 is a
-list of pointers of length hentyFilterSize, each pointing to hentyFilterSize
+list of pointers of length g_hentyFilterSize, each pointing to g_hentyFilterSize
 nmbrString's.  The Henty filter eliminates redundant equivalent unifications.
 
 Entry 12[i] is a list of variables substituted by the normalized unification.
 Entry 13[i] is the start of each substitution in hentySubstList.
 Entry 14[i] is the length of each substitution in hentySubstList.
 Entry 15[i] is the unified scheme that resulted from the particular unification.
-Note:  i = 0 through hentyFilterSize-1 below.
+Note:  i = 0 through g_hentyFilterSize-1 below.
 
   hentyVars = (nmbrString *)(((pntrString *)((*stateVector)[12]))[i]);
   hentyVarStart = (nmbrString *)(((pntrString *)((*stateVector)[13]))[i]);
@@ -115,21 +115,21 @@ Note:  i = 0 through hentyFilterSize-1 below.
 #include "mmunif.h"
 #include "mmpfas.h" /* 8/28/99 For proveStatement global variable */
 
-/*long minSubstLen = 0;*/ /* User-settable value - 0 or 1 */
-long minSubstLen = 1; /* It was decided to disallow empty subst. by default
+/*long g_minSubstLen = 0;*/ /* User-settable value - 0 or 1 */
+long g_minSubstLen = 1; /* It was decided to disallow empty subst. by default
                          since most formal systems don't need it */
-long userMaxUnifTrials = 100000; /* Initial value */
+long g_userMaxUnifTrials = 100000; /* Initial value */
            /* User-defined upper limit (# backtracks) for unification trials */
-           /* 1-Jun-04 nm Changed userMaxUnifTrials from 1000 to 100000, which
+           /* 1-Jun-04 nm Changed g_userMaxUnifTrials from 1000 to 100000, which
               is not a problem with today's faster computers.  This results in
               fewer annoying "Unification timed out" messages, but the drawback
               is that (rarely) there may be hundreds of unification
               choices for the user (which the user can quit from though). */
-long unifTrialCount = 0;
+long g_unifTrialCount = 0;
                     /* 0 means don't time out; 1 means start counting trials */
-long unifTimeouts = 0; /* Number of timeouts so far for this command */
-flag hentyFilter = 1; /* Default to ON (turn OFF for debugging). */
-flag bracketMatchInit = 0; /* Global so eraseSource() (mmcmds.c) can clr it */
+long g_unifTimeouts = 0; /* Number of timeouts so far for this command */
+flag g_hentyFilter = 1; /* Default to ON (turn OFF for debugging). */
+flag g_bracketMatchInit = 0; /* Global so eraseSource() (mmcmds.c) can clr it */
 
 /* Additional local prototypes */
 void hentyNormalize(nmbrString **hentyVars, nmbrString **hentyVarStart,
@@ -148,11 +148,11 @@ int maxNestingLevel = -1;
 int nestingLevel = 0;
 
 /* 8/29/99 For improving rejection of impossible substitutions */
-/* 1-Oct-2017 nm Made firstConst global so eraseSource() can clear it */
+/* 1-Oct-2017 nm Made g_firstConst global so eraseSource() can clear it */
 /* 2-Oct-2017 nm Made them all global so valgrind won't complain */
-nmbrString *firstConst = NULL_NMBRSTRING;
-nmbrString *lastConst = NULL_NMBRSTRING;
-nmbrString *oneConst = NULL_NMBRSTRING;
+nmbrString *g_firstConst = NULL_NMBRSTRING;
+nmbrString *g_lastConst = NULL_NMBRSTRING;
+nmbrString *g_oneConst = NULL_NMBRSTRING;
 
 
 
@@ -196,7 +196,7 @@ nmbrString *makeSubstUnif(flag *newVarFlag,
 /*E*/if(db7)print2("stackTop is %ld.\n",stackTop);
 /*E*/for (d = 0; d <= stackTop; d++) {
 /*E*/  if(db7)print2("Unknown var %ld is %s.\n",d,
-/*E*/      mathToken[stackUnkVar[d]].tokenName);
+/*E*/      g_MathToken[stackUnkVar[d]].tokenName);
 /*E*/  if(db7)print2("  Its start is %ld; its length is %ld.\n",
 /*E*/      stackUnkVarStart[d],stackUnkVarLen[d]);
 /*E*/}
@@ -209,26 +209,26 @@ nmbrString *makeSubstUnif(flag *newVarFlag,
   for (p = 0; p < schemeLen; p++) {
 /*E*/if(db7)print2("p is %ld.\n",p);
     tokenNum = trialScheme[p];
-/*E*/if(db7)print2("token is %s, tokenType is %ld\n",mathToken[tokenNum].tokenName,
-/*E*/  (long)mathToken[tokenNum].tokenType);
-    if (mathToken[tokenNum].tokenType == (char)con_) {
+/*E*/if(db7)print2("token is %s, tokenType is %ld\n",g_MathToken[tokenNum].tokenName,
+/*E*/  (long)g_MathToken[tokenNum].tokenType);
+    if (g_MathToken[tokenNum].tokenType == (char)con_) {
       q++;
     } else {
-      if (tokenNum > mathTokens) {
+      if (tokenNum > g_mathTokens) {
         /* It's a candidate for substitution */
         m = nmbrElementIn(1,stackUnkVar,tokenNum);
-/*E*/if(db7)print2("token is %s, m is %ld\n",mathToken[tokenNum].tokenName,m);
+/*E*/if(db7)print2("token is %s, m is %ld\n",g_MathToken[tokenNum].tokenName,m);
         if (m) {
           /* It will be substituted */
           q = q + stackUnkVarLen[m - 1];
           /* Flag the token position */
-          mathToken[tokenNum].tmp = m - 1;
+          g_MathToken[tokenNum].tmp = m - 1;
         } else {
           /* It will not be substituted */
           *newVarFlag = 1; /* The result will contain an "unknown" variable */
           q++;
           /* Flag the token position */
-          mathToken[tokenNum].tmp = -1;
+          g_MathToken[tokenNum].tmp = -1;
         }
       } else {
         /* It's not an "unknown" variable, so it won't be substituted */
@@ -242,13 +242,13 @@ nmbrString *makeSubstUnif(flag *newVarFlag,
   q = 0;
   for (p = 0; p < schemeLen; p++) {
     tokenNum = trialScheme[p];
-    if (mathToken[tokenNum].tokenType == (char)con_) {
+    if (g_MathToken[tokenNum].tokenType == (char)con_) {
       result[q] = tokenNum;
       q++;
     } else {
-      if (tokenNum > mathTokens) {
+      if (tokenNum > g_mathTokens) {
         /* It's a candidate for substitution */
-        k = mathToken[tokenNum].tmp; /* Position in stackUnkVar */
+        k = g_MathToken[tokenNum].tmp; /* Position in stackUnkVar */
         if (k != -1) {
           /* It will be substituted */
           m = stackUnkVarStart[k]; /* Start of substitution */
@@ -300,7 +300,7 @@ char unify(
    The caller must assign (*stateVector) to a legal pntrString
    (e.g. NULL_PNTRSTRING) before calling.
 
-   All variables with a tokenNum > mathTokens are assumed
+   All variables with a tokenNum > g_mathTokens are assumed
    to be "unknown" variables that can be assigned; all other
    variables are treated like constants in the unification
    algorithm.
@@ -349,7 +349,7 @@ char unify(
 
   /* 26-Sep-2010 nm For bracket matching heuristic for set.mm */
   static char bracketMatchOn; /* 26-Sep-2010 nm Default is 'on' */
-  /* static char bracketMatchInit = 0; */ /* Global so ERASE can init it */
+  /* static char g_bracketMatchInit = 0; */ /* Global so ERASE can init it */
   long bracketScanStart, bracketScanStop; /* For one-time $a scan */
   flag bracketMismatchFound;
 
@@ -370,8 +370,8 @@ char unify(
   bracketMismatchFound = 0;
 
   /* Fast early exit -- first or last constants of schemes don't match */
-  if (mathToken[schemeA[0]].tokenType == (char)con_) {
-    if (mathToken[schemeB[0]].tokenType == (char)con_) {
+  if (g_MathToken[schemeA[0]].tokenType == (char)con_) {
+    if (g_MathToken[schemeB[0]].tokenType == (char)con_) {
       if (schemeA[0] != schemeB[0]) {
         return (0);
       }
@@ -381,8 +381,8 @@ char unify(
   j = nmbrLen(schemeA);
   k = nmbrLen(schemeB);
   if (!j || !k) bug(1901);
-  if (mathToken[schemeA[j-1]].tokenType == (char)con_) {
-    if (mathToken[schemeB[k-1]].tokenType == (char)con_) {
+  if (g_MathToken[schemeA[j-1]].tokenType == (char)con_) {
+    if (g_MathToken[schemeB[k-1]].tokenType == (char)con_) {
       if (schemeA[j-1] != schemeB[k-1]) {
         return (0);
       }
@@ -390,37 +390,37 @@ char unify(
   }
   /* Add dummy token to end of schemeA and schemeB */
   /* Use one beyond the last mathTokenArray entry for this */
-  nmbrLet(&schA, nmbrAddElement(schemeA, mathTokens));
-  nmbrLet(&schB, nmbrAddElement(schemeB, mathTokens));
+  nmbrLet(&schA, nmbrAddElement(schemeA, g_mathTokens));
+  nmbrLet(&schB, nmbrAddElement(schemeB, g_mathTokens));
 
   /* 8/29/99 Initialize the usage of constants as the first, last,
      only constant in a $a statement - for rejecting some simple impossible
      substitutions - Speed-up: this is now done once and never deallocated*/
-  /* 1-Oct-2017 nm firstConst is now cleared in eraseSource.c() (mmcmds.c)
+  /* 1-Oct-2017 nm g_firstConst is now cleared in eraseSource.c() (mmcmds.c)
      to trigger this initialization after "erase" */
-  if (!nmbrLen(firstConst)) {
+  if (!nmbrLen(g_firstConst)) {
     /* nmbrSpace() sets all entries to 0, not 32 (ASCII space) */
-    nmbrLet(&firstConst, nmbrSpace(mathTokens));
-    nmbrLet(&lastConst, nmbrSpace(mathTokens));
-    nmbrLet(&oneConst, nmbrSpace(mathTokens));
+    nmbrLet(&g_firstConst, nmbrSpace(g_mathTokens));
+    nmbrLet(&g_lastConst, nmbrSpace(g_mathTokens));
+    nmbrLet(&g_oneConst, nmbrSpace(g_mathTokens));
     /*for (stmt = 1; stmt < proveStatement; stmt++) {*/
     /* Do it for all statements since we do it once permanently now */
-    for (stmt = 1; stmt <= statements; stmt++) {
-      if (statement[stmt].type != (char)a_)
+    for (stmt = 1; stmt <= g_statements; stmt++) {
+      if (g_Statement[stmt].type != (char)a_)
         continue; /* Not $a */
-      if (statement[stmt].mathStringLen < 2) continue;
+      if (g_Statement[stmt].mathStringLen < 2) continue;
       /* Look at first symbol after variable type symbol */
-      if (mathToken[(statement[stmt].mathString)[1]].tokenType == (char)con_) {
-        firstConst[(statement[stmt].mathString)[1]] = 1; /* Set flag */
-        if (statement[stmt].mathStringLen == 2) {
-          oneConst[(statement[stmt].mathString)[1]] = 1; /* Set flag */
+      if (g_MathToken[(g_Statement[stmt].mathString)[1]].tokenType == (char)con_) {
+        g_firstConst[(g_Statement[stmt].mathString)[1]] = 1; /* Set flag */
+        if (g_Statement[stmt].mathStringLen == 2) {
+          g_oneConst[(g_Statement[stmt].mathString)[1]] = 1; /* Set flag */
         }
       }
       /* Look at last symbol */
-      if (mathToken[(statement[stmt].mathString)[
-          statement[stmt].mathStringLen - 1]].tokenType == (char)con_) {
-        lastConst[(statement[stmt].mathString)[
-          statement[stmt].mathStringLen - 1]] = 1; /* Set flag for const */
+      if (g_MathToken[(g_Statement[stmt].mathString)[
+          g_Statement[stmt].mathStringLen - 1]].tokenType == (char)con_) {
+        g_lastConst[(g_Statement[stmt].mathString)[
+          g_Statement[stmt].mathStringLen - 1]] = 1; /* Set flag for const */
       }
     } /* Next stmt */
   }
@@ -437,7 +437,7 @@ char unify(
     nmbrLet(&unkVars, nmbrSpace(j + k));
     unkVarsLen = 0;
     for (i = 0; i < j; i++) {
-      if (schemeA[i] > mathTokens) {
+      if (schemeA[i] > g_mathTokens) {
         /* It's an "unknown" variable */
         breakFlag = 0;
         for (m = 0; m < unkVarsLen; m++) {
@@ -455,7 +455,7 @@ char unify(
     /* Save the length of the list of unknown variables in schemeA */
     schemeAUnkVarsLen = unkVarsLen;
     for (i = 0; i < k; i++) {
-      if (schemeB[i] > mathTokens) {
+      if (schemeB[i] > g_mathTokens) {
         /* It's an "unknown" variable */
         breakFlag = 0;
         for (m = 0; m < unkVarsLen; m++) {
@@ -540,7 +540,7 @@ char unify(
     /* Set a flag that the "unknown" variables are not on the stack yet */
     /* (Otherwise this will be the position on the stack) */
     for (i = 0; i < unkVarsLen; i++) {
-      mathToken[unkVars[i]].tmp = -1;
+      g_MathToken[unkVars[i]].tmp = -1;
     }
 
   } else { /* reEntryFlag != 0 */
@@ -565,10 +565,10 @@ char unify(
     /* Set the location of the "unknown" variables on the stack */
     /* (This may have been corrupted outside this function) */
     for (i = 0; i < unkVarsLen; i++) {
-      mathToken[unkVars[i]].tmp = -1; /* Not on the stack */
+      g_MathToken[unkVars[i]].tmp = -1; /* Not on the stack */
     }
     for (i = 0; i <= stackTop; i++) {
-      mathToken[stackUnkVar[i]].tmp = i;
+      g_MathToken[stackUnkVar[i]].tmp = i;
     }
 
     /* Force a backtrack to the next assignment */
@@ -592,13 +592,13 @@ char unify(
   }
 /*E*/if(db6)print2("First mismatch: p=%ld\n",p);
 
-  if (schA[p] == mathTokens
-      || schB[p] == mathTokens) {
+  if (schA[p] == g_mathTokens
+      || schB[p] == g_mathTokens) {
     /* One of the strings is at the end. */
     if (schA[p] != schB[p]) {
       /* But one is longer than the other. */
-      if (schA[p] <= mathTokens &&
-          schB[p] <= mathTokens) {
+      if (schA[p] <= g_mathTokens &&
+          schB[p] <= g_mathTokens) {
         /* Neither token is an unknown variable.  (Otherwise we might be able
            to assign the unknown variable to a null string, thus making
            the schemes match, so we shouldn't backtrack.) */
@@ -612,7 +612,7 @@ char unify(
       }
       /* Otherwise, we are in the middle of several schemes being unified
          simultaneously, so just continue. */
-      /* (mathTokens should be used by the caller to separate
+      /* (g_mathTokens should be used by the caller to separate
          schemes that are joined together for simultaneous unification) */
     }
   }
@@ -627,7 +627,7 @@ char unify(
    schemeA is $$ |- ( ( ?463 -> -. -. ph ) -> ( -. ph -> ( ph -> -. -. ph ) ) ).
    schemeB is $$ |- ( ?464 -> ( ?465 -> ?464 ) ).
   */
-  if (schB[p] > mathTokens && schA[p] > mathTokens) {
+  if (schB[p] > g_mathTokens && schA[p] > g_mathTokens) {
     /* Both scheme A and scheme B have variables in the match position.
        Which one to use? */
     /* If neither A nor B is on the stack, use A.   Backtrack will put B
@@ -636,30 +636,30 @@ char unify(
     /* If B is on the stack, use B. */
     /* If A and B are on the stack, bug. */
     /* In other words:  if B is not on the stack, use A. */
-    if (mathToken[schB[p]].tmp == -1) {
+    if (g_MathToken[schB[p]].tmp == -1) {
       /* B is not on the stack */
       goto schAUnk;
     } else {
-      if (mathToken[schA[p]].tmp != -1) bug(1902); /* Both are on the stack */
+      if (g_MathToken[schA[p]].tmp != -1) bug(1902); /* Both are on the stack */
       goto schBUnk;
     }
   }
 
  schBUnk:
-  if (schB[p] > mathTokens) {
+  if (schB[p] > g_mathTokens) {
 /*E*/if(db6)print2("schB has unknown variable\n");
     /* An "unknown" variable is in scheme B */
     schemeAFlag = 0;
     substToken = schB[p];
 
-    if (mathToken[substToken].tmp == -1) {
+    if (g_MathToken[substToken].tmp == -1) {
       /* The "unknown" variable is not on the stack; add it */
       stackTop++;
       stackUnkVar[stackTop] = substToken;
-      mathToken[substToken].tmp = stackTop;
+      g_MathToken[substToken].tmp = stackTop;
       stackUnkVarStart[stackTop] = p;
       /* Start with a variable length of 0 or 1 */
-      stackUnkVarLen[stackTop] = minSubstLen;
+      stackUnkVarLen[stackTop] = g_minSubstLen;
       /* Save the rest of the current state for backtracking */
       nmbrTmpPtr = (nmbrString *)(stackSaveUnkVarStart[stackTop]);
       for (i = 0; i <= stackTop; i++) {
@@ -677,10 +677,10 @@ char unify(
 
     if (substToken != stackUnkVar[stackTop]) {
       print2("PROGRAM BUG #1903\n");
-      print2("substToken is %s\n", mathToken[substToken].tokenName);
+      print2("substToken is %s\n", g_MathToken[substToken].tokenName);
       print2("stackTop %ld\n", stackTop);
       print2("p %ld stackUnkVar[stackTop] %s\n", p,
-        mathToken[stackUnkVar[stackTop]].tokenName);
+        g_MathToken[stackUnkVar[stackTop]].tokenName);
       print2("schA %s\nschB %s\n", nmbrCvtMToVString(schA),
         nmbrCvtMToVString(schB));
       bug(1903);
@@ -691,19 +691,19 @@ char unify(
   }
 
  schAUnk:
-  if (schA[p] > mathTokens) {
+  if (schA[p] > g_mathTokens) {
 /*E*/if(db6)print2("schA has unknown variable\n");
     /* An "unknown" variable is in scheme A */
     schemeAFlag = 1;
     substToken = schA[p];
-    if (mathToken[substToken].tmp == -1) {
+    if (g_MathToken[substToken].tmp == -1) {
       /* The "unknown" variable is not on the stack; add it */
       stackTop++;
       stackUnkVar[stackTop] = substToken;
-      mathToken[substToken].tmp = stackTop;
+      g_MathToken[substToken].tmp = stackTop;
       stackUnkVarStart[stackTop] = p;
       /* Start with a variable length of 0 or 1 */
-      stackUnkVarLen[stackTop] = minSubstLen;
+      stackUnkVarLen[stackTop] = g_minSubstLen;
       /* Save the rest of the current state for backtracking */
       nmbrTmpPtr = (nmbrString *)(stackSaveUnkVarStart[stackTop]);
       for (i = 0; i <= stackTop; i++) {
@@ -721,10 +721,10 @@ char unify(
 
     if (substToken != stackUnkVar[stackTop]) {
 /*E*/print2("PROGRAM BUG #1904\n");
-/*E*/print2("\nsubstToken is %s\n",mathToken[substToken].tokenName);
+/*E*/print2("\nsubstToken is %s\n",g_MathToken[substToken].tokenName);
 /*E*/print2("stack top %ld\n",stackTop);
 /*E*/print2("p %ld stUnV[stakTop] %s\n",p,
-/*E*/mathToken[stackUnkVar[stackTop]].tokenName);
+/*E*/g_MathToken[stackUnkVar[stackTop]].tokenName);
 /*E*/print2("schA %s\nschB %s\n",nmbrCvtMToVString(schA),nmbrCvtMToVString(schB));
       bug(1904);
     }
@@ -743,7 +743,7 @@ char unify(
 /*E*/if(db6)print2("Entering substitute...\n");
 /*E*/for (d = 0; d <= stackTop; d++) {
 /*E*/  if(db6)print2("Unknown var %ld is %s.\n",d,
-/*E*/      mathToken[stackUnkVar[d]].tokenName);
+/*E*/      g_MathToken[stackUnkVar[d]].tokenName);
 /*E*/  if(db6)print2("  Its start is %ld; its length is %ld.\n",
 /*E*/      stackUnkVarStart[d],stackUnkVarLen[d]);
 /*E*/}
@@ -765,14 +765,14 @@ char unify(
      end of string character; in this case, only a null substitution is
      permissable.  If the substitution length is 1 or greater, this "if"
      statement will detect it.) */
-  if (substitution[0] == mathTokens) {
+  if (substitution[0] == g_mathTokens) {
 /*E*/if(db6)print2("End of string token occurs in substitution string\n");
     /* We must pop the stack here rather than in backtrack, because we
        are already one token beyond the end of a scheme, and backtrack
        would therefore test one token beyond that, missing the fact that
        the substitution has overflowed beyond the end of a scheme. */
     /* Set the flag that it's not on the stack and pop stack */
-    mathToken[stackUnkVar[stackTop]].tmp = -1;
+    g_MathToken[stackUnkVar[stackTop]].tmp = -1;
     stackTop--;
     goto backtrack;
   }
@@ -782,23 +782,23 @@ char unify(
      unifications. */
   /* 26-Sep-2010 nm Automatically disable bracket matching if any $a has
      unmatched brackets */
-  /* The static variable bracketMatchInit tells us to check all $a's
+  /* The static variable g_bracketMatchInit tells us to check all $a's
      if it is 0; if 1, skip the $a checking.  Make sure that the RESET
-     command sets bracketMatchInit=0. */
+     command sets g_bracketMatchInit=0. */
   /* ???  To do:  put individual bracket type checks into a loop or
      function call for code efficiency (but don't slow down program); maybe
      read the bracket types to check from a list; maybe refine so that only
      the mismatched bracket types found in the $a scan are skipped, but
      matched one are not */
-  for (i = bracketMatchInit; i <= 1; i++) {
-    /* This loop has 2 passes (0 and 1) if bracketMatchInit=0 to set
+  for (i = g_bracketMatchInit; i <= 1; i++) {
+    /* This loop has 2 passes (0 and 1) if g_bracketMatchInit=0 to set
        bracketMatchOn = 0 or 1, and 1 pass otherwise */
     bracketMismatchFound = 0;  /* Don't move down; needed for break below */
-    if (bracketMatchInit == 0) {  /* Initialization pass */
+    if (g_bracketMatchInit == 0) {  /* Initialization pass */
       if (i != 0) bug(1908);
       /* Scan all ($a) statements */
       bracketScanStart = 1;
-      bracketScanStop = statements;
+      bracketScanStop = g_statements;
     } else {    /* Normal pass */
       if (i != 1) bug(1909);
       if (!bracketMatchOn) break; /* Skip the whole bracket check because a
@@ -808,9 +808,9 @@ char unify(
       bracketScanStop = 0;
     }
     for (m = bracketScanStart; m <= bracketScanStop; m++) {
-      if (bracketMatchInit == 0) {  /* Initialization pass */
-        if (statement[m].type != a_) continue;
-        nmbrTmpPtr = statement[m].mathString;
+      if (g_bracketMatchInit == 0) {  /* Initialization pass */
+        if (g_Statement[m].type != a_) continue;
+        nmbrTmpPtr = g_Statement[m].mathString;
       } else {  /* Normal pass */
         nmbrTmpPtr = substitution;
       }
@@ -819,7 +819,7 @@ char unify(
       /* Make sure left and right parentheses match */
       pairingMismatches = 0; /* Counter of parens: + for "(" and - for ")" */
       for (k = 0; k < j; k++) {
-        mToken = mathToken[nmbrTmpPtr[k]].tokenName;
+        mToken = g_MathToken[nmbrTmpPtr[k]].tokenName;
         if (mToken[0] == '(' && mToken[1] == 0 ) {
           pairingMismatches++;
         } else if (mToken[0] == ')' && mToken[1] == 0 ) {
@@ -835,7 +835,7 @@ char unify(
       /* Make sure left and right braces match */
       pairingMismatches = 0; /* Counter of braces: + for "{" and - for "}" */
       for (k = 0; k < j; k++) {
-        mToken = mathToken[nmbrTmpPtr[k]].tokenName;
+        mToken = g_MathToken[nmbrTmpPtr[k]].tokenName;
         if (mToken[0] == '{' && mToken[1] == 0 ) pairingMismatches++;
         else
           if (mToken[0] == '}' && mToken[1] == 0 ) {
@@ -851,7 +851,7 @@ char unify(
       /* Make sure left and right brackets match */  /* Added 12-Nov-05 nm */
       pairingMismatches = 0; /* Counter of brackets: + for "[" and - for "]" */
       for (k = 0; k < j; k++) {
-        mToken = mathToken[nmbrTmpPtr[k]].tokenName;
+        mToken = g_MathToken[nmbrTmpPtr[k]].tokenName;
         if (mToken[0] == '[' && mToken[1] == 0 )
           pairingMismatches++;
         else
@@ -868,7 +868,7 @@ char unify(
       /* Make sure left and right triangle brackets match */
       pairingMismatches = 0; /* Counter of brackets: + for "<.", - for ">." */
       for (k = 0; k < j; k++) {
-        mToken = mathToken[nmbrTmpPtr[k]].tokenName;
+        mToken = g_MathToken[nmbrTmpPtr[k]].tokenName;
         if (mToken[1] == 0) continue;
         if (mToken[0] == '<' && mToken[1] == '.' && mToken[2] == 0 )
             pairingMismatches++;
@@ -886,7 +886,7 @@ char unify(
       /* Make sure underlined brackets match */  /* Added 12-Nov-05 nm */
       pairingMismatches = 0; /* Counter of brackets: + for "[_", - for "]_" */
       for (k = 0; k < j; k++) {
-        mToken = mathToken[nmbrTmpPtr[k]].tokenName;
+        mToken = g_MathToken[nmbrTmpPtr[k]].tokenName;
         if (mToken[1] == 0) continue;
         if (mToken[0] == '[' && mToken[1] == '_' && mToken[2] == 0 )
             pairingMismatches++;
@@ -902,15 +902,15 @@ char unify(
       }
     } /* next m */
 
-    if (bracketMatchInit == 0) {   /* Initialization pass */
+    if (g_bracketMatchInit == 0) {   /* Initialization pass */
       /* We've finished the one-time $a scan.  Set flags accordingly. */
       if (bracketMismatchFound) { /* Some $a has a bracket mismatch */
-        if (m < 1 || m > statements) bug(1910);
+        if (m < 1 || m > g_statements) bug(1910);
         printLongLine(cat("The bracket matching unification heuristic was",
            " turned off for this database because of a bracket mismatch in",
            " statement \"",
            /* (m should be accurate due to break above) */
-           statement[m].labelName,
+           g_Statement[m].labelName,
            "\".", NULL),
            "    ", " ");
         /*
@@ -923,7 +923,7 @@ char unify(
         bracketMatchOn = 1; /* Turn it on */
       }
 /*E*/if(db6)print2("bracketMatchOn = %ld\n", (long)bracketMatchOn);
-      bracketMatchInit = 1; /* We're done with the one-time $a scan */
+      g_bracketMatchInit = 1; /* We're done with the one-time $a scan */
     }
   } /* next i */
 
@@ -938,18 +938,18 @@ char unify(
      "class <", "Ord (/)" matches "class Ord A").  Same applies to
      last symbol. */
   /* 10/12/02 - This prefilter is too aggressive when empty substitutions
-     are allowed.  Therefore added "minSubstLen > 0" to fix miu.mm theorem1
+     are allowed.  Therefore added "g_minSubstLen > 0" to fix miu.mm theorem1
      Proof Assistant failure reported by Josh Purinton. */
-  if (j/*subst len*/ > 0 && minSubstLen > 0) {
+  if (j/*subst len*/ > 0 && g_minSubstLen > 0) {
     impossible = 0;
-    if (mathToken[substitution[0]].tokenType == (char)con_) {
-      if (!firstConst[substitution[0]]
-         || (j == 1 && !oneConst[substitution[0]])) {
+    if (g_MathToken[substitution[0]].tokenType == (char)con_) {
+      if (!g_firstConst[substitution[0]]
+         || (j == 1 && !g_oneConst[substitution[0]])) {
         impossible = 1;
       }
     }
-    if (mathToken[substitution[j - 1]].tokenType == (char)con_) {
-      if (!lastConst[substitution[j - 1]]) {
+    if (g_MathToken[substitution[j - 1]].tokenType == (char)con_) {
+      if (!g_lastConst[substitution[j - 1]]) {
         impossible = 1;
       }
     }
@@ -1031,7 +1031,7 @@ char unify(
 /*E*/if(db6)print2("after sub sbB %s\n",nmbrCvtMToVString(schB));
 /*E*/for (d = 0; d <= stackTop; d++) {
 /*E*/  if(db6)print2("Unknown var %ld is %s.\n",d,
-/*E*/      mathToken[stackUnkVar[d]].tokenName);
+/*E*/      g_MathToken[stackUnkVar[d]].tokenName);
 /*E*/  if(db6)print2("  Its start is %ld; its length is %ld.\n",
 /*E*/      stackUnkVarStart[d],stackUnkVarLen[d]);
 /*E*/}
@@ -1042,12 +1042,12 @@ char unify(
   if (stackTop < 0) {
     goto abort;
   }
-  if (unifTrialCount > 0) { /* Flag that timeout is active */
-    unifTrialCount++;
-    if (unifTrialCount > userMaxUnifTrials) {
-      unifTimeouts++; /* Update number of timeouts found */
+  if (g_unifTrialCount > 0) { /* Flag that timeout is active */
+    g_unifTrialCount++;
+    if (g_unifTrialCount > g_userMaxUnifTrials) {
+      g_unifTimeouts++; /* Update number of timeouts found */
 /*E*/if(db5)print2("Aborted due to timeout: %ld > %ld\n",
-/*E*/    unifTrialCount, userMaxUnifTrials);
+/*E*/    g_unifTrialCount, g_userMaxUnifTrials);
       timeoutAbortFlag = 1;
       goto abort;
     }
@@ -1068,32 +1068,32 @@ char unify(
   /* If the variable overflows the end of the scheme its assigned to,
      pop the stack */
 /*E*/if(db6)print2("Backtracked to token %s.\n",
-/*E*/  mathToken[stackUnkVar[stackTop]].tokenName);
+/*E*/  g_MathToken[stackUnkVar[stackTop]].tokenName);
   if (stackUnkVar[stackTop] == schA[p]) {
     /* It was in scheme A; see if it overflows scheme B */
     if (schB[p - 1 + stackUnkVarLen[stackTop]]
-        == mathTokens) {
+        == g_mathTokens) {
 /*E*/if(db6)print2("It was in scheme A; overflowed scheme B: p=%ld, len=%ld.\n",
 /*E*/  p,stackUnkVarLen[stackTop]);
       /* Set the flag that it's not on the stack */
-      mathToken[stackUnkVar[stackTop]].tmp = -1;
+      g_MathToken[stackUnkVar[stackTop]].tmp = -1;
 
       /* See if the token in scheme B at this position is also a variable */
       /* If so, switch the stack top variable to the one in scheme B and
          restart the scan on its length */
-      if (schB[p] > mathTokens) {
+      if (schB[p] > g_mathTokens) {
 /*E*/if(db6)print2("Switched var-var match to scheme B token %s\n",
-/*E*/     mathToken[stackUnkVar[stackTop]].tokenName);
+/*E*/     g_MathToken[stackUnkVar[stackTop]].tokenName);
         /* The scheme B variable will not be on the stack. */
-        if (mathToken[schB[p]].tmp != -1) bug(1905);
+        if (g_MathToken[schB[p]].tmp != -1) bug(1905);
         /* Make the token in scheme B become the variable at the stack top */
         stackUnkVar[stackTop] = schB[p];
-        mathToken[schB[p]].tmp = stackTop;
+        g_MathToken[schB[p]].tmp = stackTop;
         /* Start with a variable length of 0 or 1 */
-        stackUnkVarLen[stackTop] = minSubstLen;
+        stackUnkVarLen[stackTop] = g_minSubstLen;
         /* Initialize stackTop variable length */
         nmbrTmpPtr = (nmbrString *)(stackSaveUnkVarLen[stackTop]);
-        nmbrTmpPtr[stackTop] = minSubstLen;
+        nmbrTmpPtr[stackTop] = g_minSubstLen;
         /* Restart the backtrack with double variable switched to scheme B */
         goto switchVarToB;
       }
@@ -1105,11 +1105,11 @@ char unify(
   } else {
     /* It was in scheme B; see if it overflows scheme A */
     if (schA[p - 1 + stackUnkVarLen[stackTop]]
-        == mathTokens) {
+        == g_mathTokens) {
 /*E*/if(db6)print2("It was in scheme B; overflowed scheme A: p=%ld, len=%ld.\n",
 /*E*/  p,stackUnkVarLen[stackTop]);
       /* Set the flag that it's not on the stack and pop stack */
-      mathToken[stackUnkVar[stackTop]].tmp = -1;
+      g_MathToken[stackUnkVar[stackTop]].tmp = -1;
       stackTop--;
       goto backtrack;
     }
@@ -1122,7 +1122,7 @@ char unify(
 
   /* Assign the final result */
   nmbrLet(&unifiedScheme, nmbrLeft(schA, nmbrLen(schA) - 1));
-/*E*/if(db5)print2("Backtrack count was %ld\n",unifTrialCount);
+/*E*/if(db5)print2("Backtrack count was %ld\n",g_unifTrialCount);
 /*E*/if(db5)printLongLine(cat("Unified scheme is ",
 /*E*/    nmbrCvtMToVString(unifiedScheme),".",NULL),"    ","  ");
   /* Assign the 12 components of (*stateVector).  Some of the components hold
@@ -1153,7 +1153,7 @@ char unify(
   return (1);
 
  abort:
-/*E*/if(db5)print2("Backtrack count was %ld\n",unifTrialCount);
+/*E*/if(db5)print2("Backtrack count was %ld\n",g_unifTrialCount);
   /* Deallocate stateVector contents */
   nmbrLet(&unkVars,NULL_NMBRSTRING);
   nmbrLet(&stackUnkVar,NULL_NMBRSTRING);
@@ -1469,7 +1469,7 @@ void printSubst(pntrString *stateVector)
 
   for (d = 0; d <= stackTop; d++) {
     printLongLine(cat(" Variable '",
-        mathToken[stackUnkVar[d]].tokenName,"' was replaced with '",
+        g_MathToken[stackUnkVar[d]].tokenName,"' was replaced with '",
         nmbrCvtMToVString(
             nmbrMid(unifiedScheme,stackUnkVarStart[d] + 1,
             stackUnkVarLen[d])),"'.",NULL),"    "," ");
@@ -1499,7 +1499,7 @@ char unifyH(
   nmbrString *hentySubstList = NULL_NMBRSTRING;
 
   /* Bypass this filter if SET HENTY_FILTER OFF is selected. */
-  if (!hentyFilter) return unify(schemeA, schemeB, stateVector, reEntryFlag);
+  if (!g_hentyFilter) return unify(schemeA, schemeB, stateVector, reEntryFlag);
 
   if (!reEntryFlag) {
 
@@ -1587,7 +1587,7 @@ void hentyNormalize(nmbrString **hentyVars, nmbrString **hentyVarStart,
   for (i = 0; i < vars; i++) {
     if ((*hentyVarLen)[i] == 1) {
       var2 = (*hentySubstList)[(*hentyVarStart)[i]];
-      if (var2 > mathTokens) {
+      if (var2 > g_mathTokens) {
         /* It's a variable-for-variable substitution */
         var1 = (*hentyVars)[i];
         if (var1 > var2) {
@@ -1600,7 +1600,7 @@ void hentyNormalize(nmbrString **hentyVars, nmbrString **hentyVarStart,
             }
           } /* Next j */
         } /* End if (var1 > var2) */
-      } /* End if (var2 > mathTokens) */
+      } /* End if (var2 > g_mathTokens) */
     } /* End if ((*hentyVarLen)[i] == 1) */
   } /* Next i */
 

@@ -132,17 +132,17 @@ long getStatementNum(vstring stmtName, /* Possibly with wildcards */
     flag efOnlyForMaxStmt, /* If 1, $e and $f must belong to maxStmt */
     flag uniqueFlag); /* If 1, match must be unique */
 
-extern vstring mainFileName;
+/*extern vstring mainFileName;*/  /* 15-Aug-2020 nm Obsolete on 28-Dec-05 */
 
 /* For HELP processing */
-extern flag printHelp;
+extern flag g_printHelp;
 void H(vstring helpLine);
 
 /* For MIDI files - added 8/28/00 */
-extern flag midiFlag; /* Set to 1 if typeProof() is to output MIDI file */
-extern vstring midiParam; /* Parameter string for MIDI file */
+extern flag g_midiFlag; /* Set to 1 if typeProof() is to output MIDI file */
+extern vstring g_midiParam; /* Parameter string for MIDI file */
 void outputMidi(long plen, nmbrString *indentationLevels,
-  nmbrString *logicalFlags, vstring midiParameter, vstring statementLabel);
+  nmbrString *logicalFlags, vstring g_midiParameter, vstring statementLabel);
 
 
 #endif /* METAMATH_MMCMDS_H_ */
