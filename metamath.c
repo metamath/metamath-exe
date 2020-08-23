@@ -5,10 +5,15 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-/* Contributors:  In the future, the license may be changed to the MIT license
-   or public domain.  Therefore I request that any patches that are contributed
-   be free of copyright restrictions (i.e. public domain) in order to provide
-   this flexibility.  Thank you. - NM */
+/* Copyright notice:  All code in this program that was written by Norman
+   Megill is public domain.  However, the project includes code contributions
+   from other people which may be GPL licensed.  For more details see:
+   https://github.com/metamath/metamath-exe/issues/7#issuecomment-675555069 */
+
+/* Contributors:  In the future, the copyright may be changed to the MIT
+   license or public domain.  Therefore I request that any patches that are
+   contributed be free of copyright restrictions (i.e. public domain) in order
+   to provide this flexibility.  Thank you. - NM */
 
 /* The overall functionality of the modules is as follows:
     metamath.c - Contains main(); executes or calls commands
@@ -57,13 +62,15 @@
 
 
 
-#define MVERSION "0.187 16-Aug-2020"
+#define MVERSION "0.188 23-Aug-2020"
+/* 0.188 23-Aug-2020 nm mmwtex.c, mmhlpa.c Added CONCLUSION FACT INTRODUCTION
+     PARAGRAPH SCOLIA SCOLION SUBSECTION TABLE to [bib] keywords */
 /* 0.187 15-Aug-2020 nm All m*.c, m*.h - put "g_" in front of all global
      variable names e.g. "statements" becomes "g_statements"; also capitalized
      1st letter of original name in case of global structs e.g. "statement"
      becomes "g_Statement".
    9-Aug-2020 nm mmcmdl.c, mmhlpa.c - add HELP BIBLIOGRAPHY */
-/* 0.186 8-Aug-2020 nm mmwtex.c, mmhlpa.c - add Conjecture, Result to [bib]
+/* 0.186 8-Aug-2020 nm mmwtex.c, mmhlpa.c - add CONJECTURE, RESULT to [bib]
      keywords
    8-Aug-2020 nm mmpfas.c, metamath.c - print message when IMPROVE or
      MINIMIZE_WITH uses another mathbox */
@@ -170,7 +177,7 @@
    proofs */
 /* 0.162 3-Jun-2018 nm mmpars.c - re-enabled error check for $c not in
    outermost scope.  mmhlpa.c mmhlpb.c- improve some help messages.
-   mmwtex.c - added "Observation", "Proof", and "Statement" keywords for
+   mmwtex.c - added "OBSERVATION", "PROOF", AND "STATEMENT" keywords for
    WRITE BIBLIOGRAPHY */
 /* 0.161 2-Feb-2018 nm mmpars.c,h mmcmds.c mmwtex.c - fix wrong file name
    and line number in error messages */
@@ -374,7 +381,7 @@
    to wildcards; see HELP SEARCH */
 /* 0.110 2-Nov-2014 nm mmcmds.c - fixed bug 1114 (reported by Stefan O'Rear);
    metamath.c, mmhlpb.c - added "SHOW STATEMENT =" to show the statement
-   being proved in MM-PA */
+   being proved in MM-PA (based on patch submitted by Stefan O'Rear) */
 /* 0.109 20-Aug-2014 nm mmwtex.c - fix corrupted HTML caused by misinterpreting
    math symbols as comment markup (math symbols with _ [ ] or ~).  Also,
    allow https:// as well as http:// in ~ label markup.
@@ -5569,7 +5576,7 @@ void command(int argc, char *argv[])
                                                  already unified */
       } /* if NO_UNIFY flag not set */
 
-      /* 8-Apr-05 nm Commented out:
+      /******* 8-Apr-05 nm Commented out:
       if (m == n) {
         print2("Step %ld was assigned statement %s.\n",
           s, g_Statement[k].labelName);
@@ -5589,7 +5596,7 @@ void command(int argc, char *argv[])
               "", " ");
         }
       }
-      */
+      *********/
       /* 8-Apr-05 nm Added: */
       /* 1-Nov-2013 nm No longer needed because of UNDO
       printLongLine(cat("To undo the assignment, DELETE STEP ",

@@ -6436,20 +6436,24 @@ flag writeBibliography(vstring bibFile,
           /* **IMPORTANT** Make sure to update mmhlpb.c HELP WRITE BIBLIOGRAPHY
              if new items are added to this list. */
           if (0
+              /* 3-Jun-2018 nm Added PROOF, STATEMENT */
+              /* 12-Apr-2020 nm Added CLAIM */
+              /* 8-Aug-2020 nm Added CONJECTURE, RESULT */
+              /* 23-Aug-2020 nm Added CONCLUSION FACT INTRODUCTION PARAGRAPH
+                      SCOLIA SCOLION SUBSECTION TABLE */
               /* Do not add SCHEMA but use AXIOM SCHEMA or THEOREM SCHEMA */
-              /* Put the most frequent ones first to speed up search */
+              /* Put the most frequent ones first to speed up search;
+                 TODO: count occurrences in mmbiblio.html to find optimal order */
               || !strcmp(mid(str2, k, (long)strlen("THEOREM")), "THEOREM")
               || !strcmp(mid(str2, k, (long)strlen("EQUATION")), "EQUATION")
               || !strcmp(mid(str2, k, (long)strlen("DEFINITION")), "DEFINITION")
               || !strcmp(mid(str2, k, (long)strlen("LEMMA")), "LEMMA")
               || !strcmp(mid(str2, k, (long)strlen("EXERCISE")), "EXERCISE")
               || !strcmp(mid(str2, k, (long)strlen("AXIOM")), "AXIOM")
-              /* 12-Apr-2020 nm Added CLAIM */
               || !strcmp(mid(str2, k, (long)strlen("CLAIM")), "CLAIM")
               || !strcmp(mid(str2, k, (long)strlen("CHAPTER")), "CHAPTER")
               || !strcmp(mid(str2, k, (long)strlen("COMPARE")), "COMPARE")
               || !strcmp(mid(str2, k, (long)strlen("CONDITION")), "CONDITION")
-              /* 8-Aug-2020 nm Added CONJECTURE, RESULT */
               || !strcmp(mid(str2, k, (long)strlen("CONJECTURE")), "CONJECTURE")
               || !strcmp(mid(str2, k, (long)strlen("COROLLARY")), "COROLLARY")
               || !strcmp(mid(str2, k, (long)strlen("EXAMPLE")), "EXAMPLE")
@@ -6471,9 +6475,16 @@ flag writeBibliography(vstring bibFile,
               || !strcmp(mid(str2, k, (long)strlen("RULE")), "RULE")
               || !strcmp(mid(str2, k, (long)strlen("SCHEME")), "SCHEME")
               || !strcmp(mid(str2, k, (long)strlen("SECTION")), "SECTION")
-              /* Added 3-Jun-2018 nm */
               || !strcmp(mid(str2, k, (long)strlen("PROOF")), "PROOF")
               || !strcmp(mid(str2, k, (long)strlen("STATEMENT")), "STATEMENT")
+              || !strcmp(mid(str2, k, (long)strlen("CONCLUSION")), "CONCLUSION")
+              || !strcmp(mid(str2, k, (long)strlen("FACT")), "FACT")
+              || !strcmp(mid(str2, k, (long)strlen("INTRODUCTION")), "INTRODUCTION")
+              || !strcmp(mid(str2, k, (long)strlen("PARAGRAPH")), "PARAGRAPH")
+              || !strcmp(mid(str2, k, (long)strlen("SCOLIA")), "SCOLIA")
+              || !strcmp(mid(str2, k, (long)strlen("SCOLION")), "SCOLION")
+              || !strcmp(mid(str2, k, (long)strlen("SUBSECTION")), "SUBSECTION")
+              || !strcmp(mid(str2, k, (long)strlen("TABLE")), "TABLE")
               ) {
             m = k;
             break;
