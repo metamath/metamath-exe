@@ -129,7 +129,8 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas,
 /* 2-Aug-2009 nm - broke this function out from writeTheoremList() */
 /* 20-Jun-2014 nm - added hugeHdrAddr */
 /* 21-Aug-2017 nm - added tinyHdrAddr */
-/* 6-Aug-2019 mm - changed return type from void to flag (=char) */
+/* 6-Aug-2019 nm - changed return type from void to flag (=char) */
+/* 24-Aug-2020 nm - added fineResolution */
 flag getSectionHeadings(long stmt, vstring *hugeHdrTitle,
     vstring *bigHdrTitle,
     vstring *smallHdrTitle,
@@ -138,7 +139,10 @@ flag getSectionHeadings(long stmt, vstring *hugeHdrTitle,
     vstring *hugeHdrComment,
     vstring *bigHdrComment,
     vstring *smallHdrComment,
-    vstring *tinyHdrComment);
+    vstring *tinyHdrComment,
+    /* Added 24-Aug-2020 nm */
+    flag fineResolution /* 0 = consider just successive $a/$p, 1 = all stmts */
+    );
 
 /****** 15-Aug-2020 nm Obsolete
 /@ TeX symbol dictionary @/

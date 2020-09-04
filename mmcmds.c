@@ -4071,7 +4071,7 @@ vstring traceUsage(long statemNum,
            parse. */
         continue;
       } else {
-        /* The label was found in the ASCII source.  Procede with parse. */
+        /* The label was found in the ASCII source.  Proceed with parse. */
         fbPtr2[0] = zapSave; /* Restore source buffer */
       }
     } /* (End of speed-up code) */
@@ -4178,13 +4178,14 @@ void readInput(void)
 /* Note that the labelSection, mathSection, and proofSection do not
    contain keywords ($a, $p,...; $=; $.).  The keywords are added
    by outputStatement. */
-void writeInput(/* flag cleanFlag, 3-May-2017 */ /* 1 = "/ CLEAN" qualifier was chosen */
+void writeSource(/* flag cleanFlag, 3-May-2017 */ /* 1 = "/ CLEAN" qualifier was chosen */
                 flag reformatFlag /* 1 = "/ FORMAT", 2 = "/REWRAP" */,
                 /* 31-Dec-2017 nm */
                 flag splitFlag,  /* /SPLIT - write out separate $[ $] includes */
                 flag noVersioningFlag, /* /NO_VERSIONING - no ~1 backup */
-                flag keepSplitsFlag /* /KEEP_INCLUDES - don't delete included
+                flag keepSplitsFlag, /* /KEEP_INCLUDES - don't delete included
                                       files when /SPIT is not specified */
+                vstring extractLabelList /* "" means /EXTRACT wasn't specified */
                 )
 {
 
@@ -4198,8 +4199,21 @@ void writeInput(/* flag cleanFlag, 3-May-2017 */ /* 1 = "/ CLEAN" qualifier was 
 
   let(&fullOutput_fn, cat(g_rootDirectory, g_output_fn, NULL));
 
-  if (splitFlag == 0) {  /* If 1, it will have message from writeSplitSource */
+  if (splitFlag == 0 /* If 1, it will have message from writeSplitSource() */
+      && extractLabelList[0] == 0) {  /* If non-zero, it will have messages
+                     from writeExtractedSource() */
     print2("Writing \"%s\"...\n", fullOutput_fn);
+  }
+
+  /* 24-Aug-2020 nm */
+  if (extractLabelList[0] != 0) {
+    writeExtractedSource(
+       extractLabelList, /* EXTRACT label list argument provided by user */
+       fullOutput_fn,
+       noVersioningFlag
+       );
+    /* All the writing was done by writeExtractedSource() so just return */
+    goto RETURN_POINT;
   }
 
   if (reformatFlag > 0) {
@@ -4334,8 +4348,641 @@ void writeInput(/* flag cleanFlag, 3-May-2017 */ /* 1 = "/ CLEAN" qualifier was 
  RETURN_POINT:
   let(&buffer,""); /* Deallocate vstring */
   let(&fullOutput_fn,""); /* Deallocate vstring */
+  return;
   /* let(&str2,""); */ /* Deallocate vstring */  /* deleted 3-May-2017 nm */
-} /* writeInput */
+} /* writeSource */
+
+
+/* 24-Aug-2020 nm */
+/* Get info for WRITE SOURCE ... / EXTRACT */
+void writeExtractedSource(
+    vstring extractLabelList, /* EXTRACT argument provided by user */
+    vstring fullOutput_fn,
+    flag noVersioningFlag)
+{
+  vstring statementUsedFlags = ""; /* Y/N flags that statement is used */
+  long stmt, stmtj, scpStmt, strtScpStmt, endScpStmt, j, p1, p2;
+  vstring extractNeeded = "";
+  nmbrString *unprovedList = NULL_NMBRSTRING; /* Needed for traceProofWork()
+                                                 but not used */
+  nmbrString *mstring = NULL_NMBRSTRING; /* Temporary holder for math string */
+  long maxStmt; /* The largest statement number (excluding $t) */
+  long hyp, hyps, mtkn, mtkns, dv, dvs;
+  long dollarTStmt; /* $t statement */
+  vstring dollarTCmt = ""; /* $t comment */
+  char zapChar; /* For finding $t statement */
+  char *tmpPtr; /* For finding $t statement */
+  vstring hugeHdrNeeded = ""; /* N/M/Y that output needs the huge header */
+  vstring bigHdrNeeded = "";                              /* big */
+  vstring smallHdrNeeded = "";                            /* small */
+  vstring tinyHdrNeeded = "";                             /* tiny */
+  char hdrNeeded;
+  /* The following 8 are needed for getSectionHeadings() */
+  vstring hugeHdr = "";
+  vstring bigHdr = "";
+  vstring smallHdr = "";
+  vstring tinyHdr = "";
+  vstring hugeHdrComment = "";
+  vstring bigHdrComment = "";
+  vstring smallHdrComment = "";
+  vstring tinyHdrComment = "";
+
+  vstring mathTokenDeclared = "";
+  vstring undeclaredC = "";
+  vstring undeclaredV = "";
+  long extractedStmts;
+  FILE *fp;
+  vstring buf = "";
+
+
+  /* Note that extractNeeded is 1-based to match 1-based
+     indices of the g_Statement array.  We also may need labelSection of entry
+     g_statements + 1 for text after last statement, which explains the +2. */
+  let(&extractNeeded, string(g_statements + 2, 'N'));
+
+  /* First, do the trace_backs for the statements in user's / EXTRACT argument */
+  /* By scanning backwards, we get a speedup by not having to trace
+     a statement twice, especially if we did "/ EXTRACT *" */
+  print2("Tracing back through proofs for $a and $p statements needed...\n");
+  if (!strcmp(extractLabelList, "*")) {
+    /*
+    print2(
+       "   This may take up to 10 minutes.  If you want a beep alert when done,\n");
+    print2("   type ahead \"b\" then \"<enter>\".\n");
+    */
+    print2(
+       "   This may take up to 10 minutes.\n");
+  }
+
+  for (stmt = g_statements; stmt >= 1; stmt--) {
+    if (extractNeeded[stmt] == 'Y') {
+      /* We've already traced this back, so skip it */
+      continue;
+    }
+    /* Wildcard matching */
+    if (!matchesList(g_Statement[stmt].labelName, extractLabelList, '*', '?'))
+      continue;
+    if (g_Statement[stmt].type == (char)a_) {
+      extractNeeded[stmt] = 'Y'; /* Add in axioms but don't trace */
+      continue;
+    }
+    if (g_Statement[stmt].type != (char)p_)
+      continue; /* Not a $p statement; skip it */
+    traceProofWork(stmt,
+        0, /*essentialFlag,*/
+        "", /*traceToList,*/ /* /TO argument of SHOW TRACE_BACK */
+        &statementUsedFlags,
+        &unprovedList);
+    if ((signed)(strlen(statementUsedFlags)) != g_statements + 1) bug(268);
+    /* OR in all the statements found by the trace */
+    for (stmtj = 1; stmtj <= stmt; stmtj++) {
+      if (statementUsedFlags[stmtj] == 'Y')
+        extractNeeded[stmtj] = 'Y';
+    }
+  } /* next stmt */
+
+  /* Next, we add in all necessary  ${ $} scoping statements */
+  print2("Determining which ${ and $} scoping statements are needed...\n");
+  for (stmt = 1; stmt <= g_statements; stmt++) {
+    if (extractNeeded[stmt] == 'Y'
+        /* All flagged statements so far will be $a or $p */
+        /* Skip the forward $}'s that this loop populates (is it
+           necessary? */
+        && (g_Statement[stmt].type == a_ || g_Statement[stmt].type == p_)) {
+      scpStmt = stmt;
+      while (g_Statement[scpStmt].beginScopeStatementNum != 0) {
+        /* We're still in an inner scope */
+        strtScpStmt = g_Statement[scpStmt].beginScopeStatementNum;
+        if (g_Statement[strtScpStmt].type != lb_) bug(269);
+        if (extractNeeded[strtScpStmt] == 'Y')
+          /* We've already processed this ${ */
+          break;
+        endScpStmt = g_Statement[strtScpStmt].endScopeStatementNum;
+        if (g_Statement[endScpStmt].type != rb_) bug(270);
+        extractNeeded[strtScpStmt] = 'Y';
+        extractNeeded[endScpStmt] = 'Y';
+        scpStmt = strtScpStmt;
+      }
+    } /* if extraction needed */
+  } /* next stmt */
+
+  /* Next, we add in hypotheses and variable declarations for all $a's and $p's */
+  print2("Adding in $e and $f hypotheses and $d provisos...\n");
+  for (stmt = 1; stmt <= g_statements; stmt++) {
+    if (extractNeeded[stmt] == 'Y'
+        /* All flagged statements so far will be $a or $p */
+        /* Skip the ${'s and $}'s that earlier loop populates (is it
+           necessary? */
+        && (g_Statement[stmt].type == a_ || g_Statement[stmt].type == p_)) {
+      hyps = g_Statement[stmt].numReqHyp;
+      for (hyp = 0; hyp < hyps; hyp++) {
+        extractNeeded[g_Statement[stmt].reqHypList[hyp]] = 'Y';
+      }
+      hyps = nmbrLen(g_Statement[stmt].optHypList);
+      for (hyp = 0; hyp < hyps; hyp++) {
+        extractNeeded[g_Statement[stmt].optHypList[hyp]] = 'Y';
+      }
+      mtkns = nmbrLen(g_Statement[stmt].reqVarList);
+      for (mtkn = 0; mtkn < mtkns; mtkn++) {
+        /* Flag the $v statement for a required variable */
+        /* (This may be redundant because of next stmt loop below) */
+        extractNeeded[g_MathToken[
+            (g_Statement[stmt].reqVarList)[mtkn]].statement] = 'Y';
+      }
+      mtkns = nmbrLen(g_Statement[stmt].optVarList);
+      for (mtkn = 0; mtkn < mtkns; mtkn++) {
+        /* Flag the $v statement for an optional variable */
+        extractNeeded[g_MathToken[
+            (g_Statement[stmt].optVarList)[mtkn]].statement] = 'Y';
+      }
+      dvs = nmbrLen(g_Statement[stmt].reqDisjVarsStmt);
+      for (dv = 0; dv < dvs; dv++) {
+        /* Flag the $d statement */
+        extractNeeded[(g_Statement[stmt].reqDisjVarsStmt)[dv]] = 'Y';
+      }
+      dvs = nmbrLen(g_Statement[stmt].optDisjVarsStmt);
+      for (dv = 0; dv < dvs; dv++) {
+        /* Flag the $d statement */
+        extractNeeded[(g_Statement[stmt].optDisjVarsStmt)[dv]] = 'Y';
+      }
+    } /* if extraction needed */
+  } /* next stmt */
+
+  /* Next, add in the $c, $v required by all statements */
+  print2("Determining which $c and $v statements are needed...\n");
+  for (stmt = 1; stmt <= g_statements; stmt++) {
+    if (extractNeeded[stmt] == 'Y'
+        /* All $a, $p, $f, $e */
+        && (g_Statement[stmt].type == a_
+             || g_Statement[stmt].type == p_
+             || g_Statement[stmt].type == e_
+             || g_Statement[stmt].type == f_
+           )) {
+      nmbrLet(&mstring, g_Statement[stmt].mathString);
+      mtkns = g_Statement[stmt].mathStringLen;
+      for (mtkn = 0; mtkn < mtkns; mtkn++) {
+        /* Flag the $c or $v statement for the token */
+        extractNeeded[g_MathToken[mstring[mtkn]].statement] = 'Y';
+      }
+    } /* if extract needed */
+  } /* next stmt */
+
+  /* Get largest statement number (excluding $t comment) */
+  maxStmt = 0;
+  for (stmt = g_statements; stmt >= 1; stmt--) {
+    if (extractNeeded[stmt] == 'Y') {
+      maxStmt = stmt;
+      break;
+    }
+  }
+
+  /* Find the $t statement */  /* (Should this be done globally somewhere?) */
+  print2("Locating the $t statement if any...\n");
+  dollarTStmt = 0;
+  let(&dollarTCmt, "");
+  /* Note that g_Statement[g_statements + 1] is a special (empty) statement whose
+     labelSection holds any comment after the last statement.  It is possible
+     that the $t statement could be there. */
+  for (stmt = 1; stmt <= g_statements + 1; stmt++) {
+    /* We do low-level zapping in the xxx.mm input file buffer for speed */
+    tmpPtr = g_Statement[stmt].labelSectionPtr;
+    j = g_Statement[stmt].labelSectionLen;
+    zapChar = tmpPtr[j]; /* Save the original character */
+    tmpPtr[j] = 0; /* Create an end-of-string */
+    p1 = instr(1, tmpPtr, "$t");
+    if (p1 != 0) { /* Found the $t */
+      dollarTStmt = stmt;
+      /* Get the full $t comment */
+      p2 = instr(p1, tmpPtr, "$)");
+      let(&dollarTCmt, left(tmpPtr, p2 + 1));
+      /* We need the above because rinstr doesn't have starting arg */
+      p1 = rinstr(dollarTCmt, "$(");
+      /* Search backwards for non-space or beginning of string */
+      p1--;
+      while (p1 != 0) {
+        if (dollarTCmt[p1 - 1] != ' ') break;
+        p1--;
+      }
+      let(&dollarTCmt, cat("\n", seg(dollarTCmt, p1 + 1, p2 + 1), NULL));
+    }
+    tmpPtr[j] = zapChar; /* Restore the xxx.mm input file buffer */
+    if (dollarTStmt != 0) {
+      break; /* Found the $t, so no reason to continue */
+    }
+  }
+
+
+  /* Get header information about which headers to use */
+  print2("Analyzing scopes of section headings...\n");
+  let(&hugeHdrNeeded, string(g_statements + 2, 'N'));
+  let(&bigHdrNeeded, string(g_statements + 2, 'N'));
+  let(&smallHdrNeeded, string(g_statements + 2, 'N'));
+  let(&tinyHdrNeeded, string(g_statements + 2, 'N'));
+  /* Scan the database to determine which headers exist */
+  for (stmt = 1; stmt <= maxStmt; stmt++) {
+    getSectionHeadings(stmt, &hugeHdr, &bigHdr, &smallHdr,
+        &tinyHdr,
+        &hugeHdrComment, &bigHdrComment, &smallHdrComment,
+        &tinyHdrComment,
+        1 /* fineResolution */);
+    if (hugeHdr[0] != 0) hugeHdrNeeded[stmt] = '?'; /* Don't know yet */
+    if (bigHdr[0] != 0) bigHdrNeeded[stmt] = '?';
+    if (smallHdr[0] != 0) smallHdrNeeded[stmt] = '?';
+    if (tinyHdr[0] != 0) tinyHdrNeeded[stmt] = '?';
+  } /* next stmt */
+
+  /* For each tiny header, scan until next tiny, small, big, or huge header
+     is found (which means end of the tiny header's scope).  Set '?' to
+     'Y' if a used stmt is found along the way (meaning the header should
+     be in the output file) or to 'N' otherwise.  Then do the same starting
+     from small, then big, then huge header. */
+  for (stmt = 1; stmt <= maxStmt; stmt++) {
+    /***** We do ALL statements so headers will go to right place in output
+    if (g_Statement[stmt].type != a_ && g_Statement[stmt].type != p_)
+      continue;
+    *****/
+    if (tinyHdrNeeded[stmt] == '?') {
+      hdrNeeded = 0;
+      for (stmtj = stmt; stmtj <= maxStmt; stmtj++) {
+        if (hugeHdrNeeded[stmtj] != 'N' || bigHdrNeeded[stmtj] != 'N'
+            || smallHdrNeeded[stmtj] != 'N' || tinyHdrNeeded[stmtj] != 'N') {
+          /* The scope of header at stmt has ended with no used statement
+             found, so header is not needed; abort the scan */
+          if (stmtj > stmt) break; /* Ignore starting point of scan since we
+              are looking for a later header to end the scope */
+        }
+        if (extractNeeded[stmtj] == 'Y') {
+          hdrNeeded = 1;
+          /* We now know the header is needed, so abort the scan */
+          break;
+        }
+      }
+      if (hdrNeeded == 1) {
+        tinyHdrNeeded[stmt] = 'Y';
+      } else {
+        tinyHdrNeeded[stmt] = 'N';
+      }
+    } /* if tinyHdrNeeded[stmt] == '?' */
+    if (smallHdrNeeded[stmt] == '?') {
+      hdrNeeded = 0;
+      for (stmtj = stmt; stmtj <= maxStmt; stmtj++) {
+        if (hugeHdrNeeded[stmtj] != 'N' || bigHdrNeeded[stmtj] != 'N'
+            || smallHdrNeeded[stmtj] != 'N') {
+          /* The scope of header at stmt has ended with no used statement
+             found, so header is not needed; abort the scan */
+          if (stmtj > stmt) break; /* Ignore starting point of scan since we
+              are looking for a later header to end the scope */
+        }
+        if (extractNeeded[stmtj] == 'Y') {
+          hdrNeeded = 1;
+          /* We now know the header is needed, so abort the scan */
+          break;
+        }
+      }
+      if (hdrNeeded == 1) {
+        smallHdrNeeded[stmt] = 'Y';
+      } else {
+        smallHdrNeeded[stmt] = 'N';
+      }
+    } /* if smallHdrNeeded[stmt] == '?' */
+    if (bigHdrNeeded[stmt] == '?') {
+      hdrNeeded = 0;
+      /*for (stmtj = stmt + 1; stmtj <= maxStmt; stmtj++) {*/
+      for (stmtj = stmt; stmtj <= maxStmt; stmtj++) {
+        if (hugeHdrNeeded[stmtj] != 'N' || bigHdrNeeded[stmtj] != 'N') {
+          /* The scope of header at stmt has ended with no used statement
+             found, so header is not needed; abort the scan */
+          if (stmtj > stmt) break;
+        }
+        if (extractNeeded[stmtj] == 'Y') {
+          hdrNeeded = 1;
+          /* We now know the header is needed, so abort the scan */
+          break;
+          /*if (stmtj > stmt) break;*/ /* Ignore starting point of scan since we
+              are looking for a later header to end the scope */
+        }
+      }
+      if (hdrNeeded == 1) {
+        bigHdrNeeded[stmt] = 'Y';
+      } else {
+        bigHdrNeeded[stmt] = 'N';
+      }
+    } /* if bigHdrNeeded[stmt] == '?' */
+    if (hugeHdrNeeded[stmt] == '?') {
+      hdrNeeded = 0;
+      for (stmtj = stmt; stmtj <= maxStmt; stmtj++) {
+        if (hugeHdrNeeded[stmtj] != 'N') {
+          /* The scope of header at stmt has ended with no used statement
+             found, so header is not needed; abort the scan */
+          if (stmtj > stmt) break; /* Ignore starting point of scan since we
+              are looking for a later header to end the scope */
+        }
+        if (extractNeeded[stmtj] == 'Y') {
+          hdrNeeded = 1;
+          /* We now know the header is needed, so abort the scan */
+          break;
+        }
+      }
+      if (hdrNeeded == 1) {
+        hugeHdrNeeded[stmt] = 'Y';
+      } else {
+        hugeHdrNeeded[stmt] = 'N';
+      }
+    } /* if hugeHdrNeeded[stmt] == '?' */
+  } /* next stmt */
+
+  /* Collect all $c and $v tokens that are not declared in the
+     extract, so they can be included in the output .mm to satisfy
+     the htmldefs and for use in ` math ` comment markup */
+  print2("Building $c and $v statements for unused math tokens...\n");
+  let(&mathTokenDeclared, string(g_mathTokens, 'N'));
+  for (stmt = 1; stmt <= g_statements; stmt++) {
+    if (extractNeeded[stmt] == 'Y'
+       && (g_Statement[stmt].type == c_
+           || g_Statement[stmt].type == v_)) {
+      mtkns = g_Statement[stmt].mathStringLen;
+      for (mtkn = 0; mtkn < mtkns; mtkn++) {
+        /* Flag the math token as being declared */
+        mathTokenDeclared[(g_Statement[stmt].mathString)[mtkn]] = 'Y';
+      }
+    }
+  }
+  /* Build $c and $v statements for undeclared math tokens.  They are used to
+     make the database consistent with the htmldef's in the $t comment. */
+  let(&undeclaredC, "");
+  let(&undeclaredV, "");
+  for (mtkn = 0; mtkn < g_mathTokens; mtkn++) {
+    if (mathTokenDeclared[mtkn] == 'N') {
+      if (g_MathToken[mtkn].tokenType == con_) {
+        let(&undeclaredC, cat(undeclaredC, " ", g_MathToken[mtkn].tokenName,
+            NULL));
+      } else {
+        if (g_MathToken[mtkn].tokenType != var_) bug(271);
+        /* Before adding it to the unused var list, make sure it isn't declared
+           in another scope */
+        p1 = 0;
+        for (j = 0; j < g_mathTokens; j++) {
+          if (j == mtkn) continue;
+          if (!strcmp(g_MathToken[mtkn].tokenName, g_MathToken[j].tokenName)) {
+            /* See if it the $v was already declared in another scope */
+            if (mathTokenDeclared[j] == 'Y') {
+              p1 = 1;
+              break;
+            }
+          }
+        }
+        if (p1 == 0)
+          let(&undeclaredV, cat(undeclaredV, " ", g_MathToken[mtkn].tokenName,
+            NULL));
+      }
+    }
+  } /* next mtkn */
+
+/*
+/@D@/for(stmt=1;stmt<=2;stmt++)
+/@D@/printf("s=%ld t=%c cs=%ld bs=%ld es=%ld en=%c %c%c%c%c\n",
+/@D@/  stmt,g_Statement[stmt].type,(long)g_Statement[stmt].scope,
+/@D@/ g_Statement[stmt].beginScopeStatementNum,
+/@D@/ g_Statement[stmt].endScopeStatementNum,extractNeeded[stmt],
+/@D@/ hugeHdrNeeded[stmt],bigHdrNeeded[stmt],
+/@D@/ smallHdrNeeded[stmt],tinyHdrNeeded[stmt]);
+*/
+
+  /* Write the output file */
+  /* (We don't call the standard output functions because there's too
+     much customization needed) */
+  print2("Creating the final output file \"%s\"...\n", fullOutput_fn);
+
+  fp = fSafeOpen(fullOutput_fn, "w", noVersioningFlag);
+  if (fp == NULL) {
+    print2("?Error trying to write \"%s\".\n", fp);
+    goto EXTRACT_RETURN;
+  }
+
+  /* Get the first line of the .mm file */
+  /* (The memcpy to buf is not really necessary, just a safety
+     measure in case the input file has garbage with no "\n".) */
+  let(&buf, space(g_Statement[1].labelSectionLen));
+  memcpy(buf, g_Statement[1].labelSectionPtr,
+      (size_t)(g_Statement[1].labelSectionLen));
+  let(&buf, left(buf, instr(1, buf, "\n") - 1)); /* This will not include the \n */
+  let(&buf, right(edit(buf, 8/*leading space*/), 3)); /* Take off $( */
+  fprintf(fp,
+      "$( Extracted from: ");
+  fprintf(fp, "%s", buf);
+  if (instr(1, buf, "$)") == 0) fprintf(fp, " $)");
+  fprintf(fp,
+      "\n$( Created %s %s using\n   \"write source %s /extract %s\" $)\n",
+      date(), time_(), fullOutput_fn, extractLabelList);
+
+  extractedStmts = 0; /* How many statements were extracted */
+  for (stmt = 1; stmt <= g_statements + 1; stmt++) {
+    /* Output headers if needed */
+    if (hugeHdrNeeded[stmt] == 'Y'
+        || bigHdrNeeded[stmt] == 'Y'
+        || smallHdrNeeded[stmt] == 'Y'
+        || tinyHdrNeeded[stmt] == 'Y') {
+      getSectionHeadings(stmt, &hugeHdr, &bigHdr, &smallHdr,
+          &tinyHdr,
+          &hugeHdrComment, &bigHdrComment, &smallHdrComment,
+          &tinyHdrComment,
+          1 /* fineResolution */);
+      let(&buf, "");
+      if (hugeHdrNeeded[stmt] == 'Y') {
+        fixUndefinedLabels(extractNeeded, &hugeHdrComment);
+        let(&buf, "");
+        buf = buildHeader(hugeHdr, hugeHdrComment, HUGE_DECORATION);
+        fprintf(fp, "%s\n", buf);
+      }
+      if (bigHdrNeeded[stmt] == 'Y') {
+        fixUndefinedLabels(extractNeeded, &bigHdrComment);
+        let(&buf, "");
+        buf = buildHeader(bigHdr, bigHdrComment, BIG_DECORATION);
+        fprintf(fp, "%s\n", buf);
+      }
+      if (smallHdrNeeded[stmt] == 'Y') {
+        fixUndefinedLabels(extractNeeded, &smallHdrComment);
+        let(&buf, "");
+        buf = buildHeader(smallHdr, smallHdrComment, SMALL_DECORATION);
+        fprintf(fp, "%s\n", buf);
+      }
+      if (tinyHdrNeeded[stmt] == 'Y') {
+        fixUndefinedLabels(extractNeeded, &tinyHdrComment);
+        let(&buf, "");
+        buf = buildHeader(tinyHdr, tinyHdrComment, TINY_DECORATION);
+        fprintf(fp, "%s\n", buf);
+      }
+    } /* if header(s) needed */
+
+    /* Output $t statement if needed */
+    if (dollarTStmt == stmt) {
+      fprintf(fp, "%s\n", dollarTCmt);
+    }
+
+    /* Output statement if needed */
+    if (extractNeeded[stmt] == 'Y') {
+      let(&buf, "");
+      buf = getDescriptionAndLabel(stmt);
+
+      fixUndefinedLabels(extractNeeded, &buf);
+
+      fprintf(fp, "%s", buf);
+      if (stmt == g_statements + 1) bug(272); /* Text below last statement
+           isn't (currently) used - do we need it? */
+      if (stmt != g_statements + 1) {
+        extractedStmts++; /* For final message */
+        fprintf(fp, "$%c", g_Statement[stmt].type);
+        if (g_Statement[stmt].type != lb_ && g_Statement[stmt].type != rb_) {
+          /* $v $c $d $e $f $a $p */
+          let(&buf, space(g_Statement[stmt].mathSectionLen));
+          memcpy(buf, g_Statement[stmt].mathSectionPtr,
+              (size_t)(g_Statement[stmt].mathSectionLen));
+          fprintf(fp, "%s", buf);
+          if (g_Statement[stmt].type != p_) {
+            fprintf(fp, "$.");
+          } else {
+            /* $p */
+            fprintf(fp, "$=");
+            let(&buf, space(g_Statement[stmt].proofSectionLen));
+            memcpy(buf, g_Statement[stmt].proofSectionPtr,
+                (size_t)(g_Statement[stmt].proofSectionLen));
+            fprintf(fp, "%s$.", buf);
+          }
+        } /* if not ${ $} */
+        if (extractNeeded[stmt + 1] == 'N') {
+          /* Put a newline following end of statement since the next
+             statement's label section will be suppressed */
+          fprintf(fp, "\n");
+        }
+      } /* if (stmt != statements + 1) */
+
+    } /* if (extractNeeded[stmt] == 'Y') */
+  } /* next stmt */
+
+  /* Add in unused $c, $v at the end to satisfy htmldefs */
+  if (g_outputToString == 1) bug(273); /* Should be turned off here */
+  if (g_printString[0] != 0) bug(274);
+  g_outputToString = 1;
+  if (undeclaredC[0] != 0) {
+    print2("\n");
+    print2(
+"  $( Unused constants to satisfy the htmldef's in the $t comment. $)\n");
+    printLongLine(cat("  $c", undeclaredC, " $.", NULL), "    ", " ");
+  }
+  if (undeclaredV[0] != 0) {
+    print2("\n");
+    print2(
+"  $( Unused variables to satisfy the htmldef's in the $t comment. $)\n");
+    printLongLine(cat("  $v", undeclaredV, " $.", NULL), "    ", " ");
+  }
+  g_outputToString = 0;
+  if (g_printString[0] != 0) {
+    fprintf(fp, "%s", g_printString);
+    let(&g_printString, "");
+  }
+
+  /* Write the non-split output file */
+  fclose(fp);
+  print2("%ld source statement(s) were extracted.\n", extractedStmts);
+
+
+ EXTRACT_RETURN:
+  /* Deallocate */
+  let(&extractNeeded, "");
+  let(&statementUsedFlags, "");
+  nmbrLet(&unprovedList, NULL_NMBRSTRING);
+  nmbrLet(&mstring, NULL_NMBRSTRING);
+  let(&dollarTCmt, "");
+  let(&hugeHdrNeeded, "");
+  let(&bigHdrNeeded, "");
+  let(&smallHdrNeeded, "");
+  let(&tinyHdrNeeded, "");
+  let(&hugeHdr, "");   /* Deallocate memory */
+  let(&bigHdr, "");   /* Deallocate memory */
+  let(&smallHdr, ""); /* Deallocate memory */
+  let(&tinyHdr, ""); /* Deallocate memory */
+  let(&hugeHdrComment, "");   /* Deallocate memory */
+  let(&bigHdrComment, "");   /* Deallocate memory */
+  let(&smallHdrComment, ""); /* Deallocate memory */
+  let(&tinyHdrComment, ""); /* Deallocate memory */
+  let(&mathTokenDeclared, "");
+  let(&undeclaredC, "");
+  let(&undeclaredV, "");
+  let(&buf, "");
+  return;
+} /* getExtractionInfo */
+
+
+/* 24-Aug-2020 nm */
+/* ************ TODO Bypass ~ in math strings!!! ************ */
+/* ************ TODO Tolerate no space after ~ ? ************ */
+/* Some labels in comments may not exist in statements extracted
+   with WRITE SOURCE ... / EXTRACT.  This function changes them
+   to external links to us.metamath.org. */
+void fixUndefinedLabels(vstring extractNeeded/*'Y'/'N' list*/,
+    vstring *buf/*header comment*/) {
+  long p1, p2, p3;
+  vstring label = "";
+  vstring newLabelWithTilde = "";
+  vstring restOfComment = "";
+  p1 = 0;
+  let(&(*buf), cat(*buf, " \n", NULL)); /* Ensure white space after last label */
+  while (1) {
+    p1 = instr(p1 + 1, *buf, "~ ");
+    if (p1 == 0) break;
+    if (p1 - 2 >= 0) { /* Prevent out-of-bounds access */
+      if ((*buf)[p1 - 2] == '~') {
+        continue; /* it is a ~~ escape; don't process */
+      }
+    }
+    while (1) {
+      /* Get beyond any whitespace between ~ and label */
+      if ((*buf)[p1 + 1] == 0) break; /* end of string */
+      if ((*buf)[p1 + 1] != ' ' && (*buf)[p1 + 1] != '\n') {
+        /* Found a non-space character, assume it is start of label */
+        break;
+      }
+      p1++; /* Move past the whitespace */
+    }
+    if ((*buf)[p1 + 1] == 0) break; /* Ignore stray ~ at end of comment */
+    p2 = instr(p1 + 2, *buf, " ");
+    p3 = instr(p1 + 2, *buf, "\n");
+    if (p3 < p2) p2 = p3;  /* p2 is end of label */
+    let(&label, seg(*buf, p1 + 2, p2 - 1));
+    let(&restOfComment, right(*buf, p2));
+    /*** 4-Sep-2020 nm This is taken care of by lookupLabel
+    if (instr(1, label, "//" /@ http[s]:// @/) continue; /@ Ignore special case @/
+    if (!strcmp(left(label, 2)), "mm") continue; /@ Ignore special case @/
+    ***/
+    p3 = lookupLabel(label);
+    if (p3 == -1) continue; /* Not a statement label */
+    if (extractNeeded[p3] == 'Y') continue; /* Label link won't be broken */
+    /* Change label to external link */
+    let(&newLabelWithTilde, cat(label,
+        "\n ~ http://us.metamath.org/mpeuni/",
+        label, ".html", NULL));
+    let(&(*buf), cat(left(*buf, p1 - 1), newLabelWithTilde, NULL));
+    /* Adjust pointer to go past the modified label */
+    p1 = p1 + (long)strlen(newLabelWithTilde)
+          - ((long)strlen(label) + 2/*for "~ "*/);
+    /* 4-Sep-2020 nm */
+    /* Put newline if not at end of line - assumes no trailing spaces in .mm! */
+    /* We do this to prevent too-long lines.  But if we're already at end
+       of line, we don't want to create a paragraph, so we don't add newline. */
+    if (restOfComment[0] == '\n') {
+      let(&(*buf), cat(*buf, restOfComment, NULL));
+    } else {
+      let(&(*buf), cat(*buf, "\n", restOfComment, NULL));
+    }
+  }
+  let(&(*buf), left(*buf, (long)strlen(*buf) - 2));
+       /* Take off the '\n' we added at beginning of this function */
+  let(&label, ""); /* Deallocate */
+  let(&newLabelWithTilde, ""); /* Deallocate */
+  let(&restOfComment, ""); /* Deallocate */
+  return;
+} /* fixUndefinedLabels */
+
 
 void writeDict(void)
 {
@@ -4690,9 +5337,6 @@ void verifyMarkup(vstring labelMatch,
 
   vstring descr = "";
   vstring str1 = ""; vstring str2 = "";
-
-  saveHtmlFlag = g_htmlFlag;  saveAltHtmlFlag = g_altHtmlFlag;
-
   /* 17-Jul-2020 nm */ /* For mathbox check */
   long mbox, pmbox, stmt, pstmt, plen, step;
   /**** 5-Aug-2020 nm These are now globals
@@ -4704,6 +5348,7 @@ void verifyMarkup(vstring labelMatch,
   nmbrString *proof = NULL_NMBRSTRING;
   vstring dupCheck = "";
 
+  saveHtmlFlag = g_htmlFlag;  saveAltHtmlFlag = g_altHtmlFlag;
 
   print2("Checking statement label conventions...\n");
 
@@ -5228,7 +5873,8 @@ void verifyMarkup(vstring labelMatch,
         &tinyHdr, /* 21-Aug-2017 nm */
         /* 5-May-2015 nm */
         &hugeHdrComment, &bigHdrComment, &smallHdrComment,
-        &tinyHdrComment); /* 21-Aug-2017 nm */
+        &tinyHdrComment,
+        0 /* fineResolution */);
     if (f != 0) errFound = 1;  /* 6-Aug-2019 nm */
 
     g_showStatement /* global */ = stmtNum; /* For printTexComment() */
@@ -5260,7 +5906,7 @@ void verifyMarkup(vstring labelMatch,
     /* (End of 21-Aug-2017 addition) */
 
     if (f != 0) printf(
-        "    (Statement refers to the first $a or $p after the header.)\n");
+"    (The warning above refers to a header above the referenced statement.)\n");
     if (f != 0) errFound = 1;
   } /* next stmtNum */
 
@@ -5562,7 +6208,7 @@ void showDiscouraged(void) {   /* was: showRestricted */
    step and is returned as is.  If format is illegal, -1 is returned.  */
 long getStepNum(vstring relStep, /* User's argument */
    nmbrString *pfInProgress, /* g_ProofInProgress.proof */
-   flag allFlag /* 1 = "ALL" is permissable */)
+   flag allFlag /* 1 = "ALL" is permissible */)
 {
   long pfLen, i, j, relStepVal, actualStepVal;
   flag negFlag = 0;

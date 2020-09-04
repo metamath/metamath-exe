@@ -403,8 +403,8 @@ H("        expansions of floating hypotheses are not counted.  The steps are");
 H("        counted based on how the proof is stored (compressed or normal).");
 H("    / MATCH <label-match> - include only statements matching <label-match>");
 H("        in the output display.  Undisplayed statements are still used to");
-H("        compute the list.  For example, / MATCH ax-* will show set.mm");
-H("        axioms but not definitions.");
+H("        compute the list.  For example, / AXIOMS / MATCH ax-* will show");
+H("        set.mm axioms but not definitions.");
 H("    / TO <label-match> - include only statements  that depend on the");
 H("        <label-match> statement(s).  For example,");
 H("        SHOW TRACE_BACK ac6s / TO ax-reg will list all statements");
@@ -606,11 +606,11 @@ H("in a valid proof.  Allowing for this possibility increases the likelihood");
 H("of ambiguous unifications during proof creation.  The default is that");
 H("empty substitutions are not allowed; for formal systems requiring them,");
 H("you must SET EMPTY_SUBSTITUTION ON.  Note that empty substitutions are");
-H("always permissable in proof verification (VERIFY PROOF...) outside the");
+H("always permissible in proof verification (VERIFY PROOF...) outside the");
 H("Proof Assistant.  (See the MIU system in the Metamath book for an example");
 H("of a system needing empty substitutions; another example would be a");
 H("system that implements a Deduction Rule and in which deductions from");
-H("empty assumption lists would be permissable.)");
+H("empty assumption lists would be permissible.)");
 H("");
 
 
@@ -1284,6 +1284,11 @@ H("than one statement, but each statement is tested independently from the");
 H("others.  Note:  In the informational output, if the size is given in");
 H("bytes, it refers to the compressed proof size, otherwise it refers to the");
 H("number of steps in the uncompressed proof.");
+H("");
+H("For ordinary use with set.mm, we recommend running it as follows:");
+H("   MINIMIZE_WITH * / ALLOW_NEW_AXIOMS * / NO_NEW_AXIOMS_FROM ax-*");
+H("For some additional information on the qualifiers see");
+H("    https://groups.google.com/d/msg/metamath/f-L91-1jI24/3KJnGa8qCgAJ");
 /*
 H("  Warning:  MINIMIZE_WITH does not check for $d violations, so");
 H("SAVE PROOF then VERIFY PROOF should be run afterwards to check for them");

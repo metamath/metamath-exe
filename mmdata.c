@@ -20,6 +20,7 @@ mmdata.c
 #include "mmpars.h"
 #include "mmcmdl.h" /* Needed for g_logFileName */
 #include "mmpfas.h" /* Needed for g_proveStatement */
+#include "mmwtex.h" /* Needed for SMALL_DECORATION etc. */
 
 #include <limits.h>
 #include <setjmp.h>
@@ -3103,6 +3104,89 @@ vstring getDescription(long statemNum) {
 
 } /* getDescription */
 
+
+/* 24-Aug-2020 nm */
+/* Returns the label section of a statement with all comments except the
+   last removed.  Unlike getDescription, this function returns the comment
+   surrounded by $( and $) as well as the leading indentation space
+   and everything after this comment (such as the actual label).
+   Since this is used for arbitrary (other than $a, $p) statements by the
+   EXPAND command, we also suppress section headers if they are the last
+   comment.  The caller must deallocate the result. */
+vstring getDescriptionAndLabel(long stmt) {
+  vstring descriptionAndLabel = "";
+  long p1, p2;
+
+  let(&descriptionAndLabel, space(g_Statement[stmt].labelSectionLen));
+  memcpy(descriptionAndLabel, g_Statement[stmt].labelSectionPtr,
+      (size_t)(g_Statement[stmt].labelSectionLen));
+  p1 = rinstr(descriptionAndLabel, "$(");
+  p2 = rinstr(descriptionAndLabel, "$)");
+  if (p1 == 0 || p2 == 0 || p2 < p1) {
+    /* The statement has no comment; just return the label and
+       surrounding spacing if any */
+    return descriptionAndLabel;
+  }
+  /* Search backwards for non-space or beginning of string */
+  p1--;
+  while (p1 != 0) {
+    if (descriptionAndLabel[p1 - 1] != ' '
+          && descriptionAndLabel[p1 - 1] != '\n') break;
+    p1--;
+  }
+  let(&descriptionAndLabel, right(descriptionAndLabel, p1 + 1));
+  /* Ignore descriptionAndLabels that are section headers */
+  /* TODO: make this more precise here and in mmwtex.c - use 79-char decorations? */
+  if (instr(1, descriptionAndLabel, cat("\n", TINY_DECORATION, NULL)) != 0
+      || instr(1, descriptionAndLabel, cat("\n", SMALL_DECORATION, NULL)) != 0
+      || instr(1, descriptionAndLabel, cat("\n", BIG_DECORATION, NULL)) != 0
+      || instr(1, descriptionAndLabel, cat("\n", HUGE_DECORATION, NULL)) != 0) {
+    let(&descriptionAndLabel, "");
+  }
+  /* Remove comments with file inclusion markup */
+  if (instr(1, descriptionAndLabel, "$[") != 0) {
+    let(&descriptionAndLabel, "");
+  }
+
+  /* If the cleaned description is empty, e.g. ${ after a header,
+     add in spaces corresponding to the scope */
+  if (descriptionAndLabel[0] == 0) {
+    let(&descriptionAndLabel, space(2 * (g_Statement[stmt].scope + 1)));
+  }
+
+  return descriptionAndLabel;
+} /* getDescriptionAndLabel */
+
+
+/* 24-Aug-2020 nm */
+/* Reconstruct the full header from the strings returned by
+   getSectionHeadings().  The caller should deallocate the returned string. */
+/* getSectionHeadings() currently return strings extracted from headers,
+   but not the full header needed for writeExtractedSource().  Maybe we
+   should have it return the full header in the future, but for now this
+   function reconstructs the full header. */
+vstring buildHeader(vstring header, vstring hdrComment, vstring decoration) {
+  long i;
+  vstring fullDecoration = "";
+  vstring fullHeader = "";
+  /* The HUGE_DECORATION etc. have only the 1st 4 chars of the full line.
+     Build the full line. */
+  let(&fullDecoration, "");
+  for (i = 1; i <= 5; i++) {
+    let(&fullDecoration, cat(fullDecoration, decoration, decoration,
+        decoration, decoration, NULL));
+  }
+  let(&fullDecoration, left(fullDecoration, 79));
+  i = (long)strlen(hdrComment);
+  let(&fullHeader, cat("\n\n$(\n", fullDecoration, "\n",
+      space((79 - (long)strlen(header))/2), header, "\n", fullDecoration,
+      "\n", hdrComment,
+      (i == 0) ? "$)\n" :
+          (hdrComment[i - 1] == ' ') ? "$)\n" : "\n$)\n",
+      NULL));
+  let(&fullDecoration, "");
+  return fullHeader;
+} /* buildHeader */
 
 
 /* Returns 0 or 1 to indicate absence or presence of an indicator in

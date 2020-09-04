@@ -258,6 +258,7 @@ void parseKeywords(void)
   g_Statement[i].type = illegal_;
   g_Statement[i].scope = 0;
   g_Statement[i].beginScopeStatementNum = 0;
+  g_Statement[i].endScopeStatementNum = 0; /* 24-Aug-2020 nm */
   g_Statement[i].labelSectionPtr = "";
   g_Statement[i].labelSectionLen = 0; /* 3-May-2017 nm */
   g_Statement[i].labelSectionChanged = 0;
@@ -1005,12 +1006,14 @@ void parseStatements(void)
     /* This line fixes an obscure bug with the VAXC compiler.  If it is taken
        out, the variable 'stmt' does not get referenced properly when used as
        an array index.  May be due to some boundary condition in optimization?
-       The machine code is significantly different with this statement
+       The assembly code is significantly different with this statement
        removed. */
     stmt = stmt;  /* Work around VAXC bug */
 #endif
 
     g_Statement[stmt].beginScopeStatementNum = beginScopeStmtNum;
+    /* endScopeStatementNum is always 0 except in ${ statements */
+    g_Statement[stmt].endScopeStatementNum = 0; /* 24-Aug-2020 nm */
     g_Statement[stmt].scope = g_currentScope;
     type = g_Statement[stmt].type;
     /******* Determine scope, stack active variables, process math strings ****/
@@ -1020,6 +1023,11 @@ void parseStatements(void)
         g_currentScope++;
         if (g_currentScope > 32000) outOfMemory("#16 (more than 32000 \"${\"s)");
             /* Not really an out-of-memory situation, but use the error msg. */
+        /* Note that g_Statement[stmt].beginScopeStatementNum for this ${
+           points to the previous ${ (or 0 if in outermost scope) */
+        beginScopeStmtNum = stmt; /* 24-Aug-2020 nm */
+        /* Note that g_Statement[stmt].endScopeStatementNum for this ${
+           will be assigned in the rb_ case below. */
         break;
       case rb_:
         /* Remove all variables and hypotheses in current scope from stack */
@@ -1068,6 +1076,18 @@ void parseStatements(void)
               g_Statement[stmt].labelSectionLen, 2, stmt,
               "Too many \"$}\"s at this point.");
         }
+
+        /* 24-Aug-2020 nm */
+        if (beginScopeStmtNum > 0) { /* We're not in outermost scope
+                  (precaution if there were too many $}'s) */
+          if (g_Statement[beginScopeStmtNum].type != lb_) bug(1773);
+          /* Populate the previous ${ with a pointer to this $} */
+          g_Statement[beginScopeStmtNum].endScopeStatementNum = stmt;
+          /* Update beginScopeStmtNum with start of outer scope */
+          beginScopeStmtNum
+              = g_Statement[beginScopeStmtNum].beginScopeStatementNum;
+        }
+
         break;
       case c_:
       case v_:
@@ -3360,7 +3380,7 @@ char parseCompressedProof(long statemNum)
 
   /* 15-Oct-05 nm - Check to see if the old buggy compression is used.  If so,
      warn the user to reformat, and switch to the buggy algorithm so that
-     parsing can procede. */
+     parsing can proceed. */
   bggyProofLen = g_Statement[statemNum].proofSectionLen -
              (fbPtr - g_Statement[statemNum].proofSectionPtr);
   /* Zap a zero at the end of the proof so we can use C string operations */
@@ -4324,7 +4344,7 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
   if (cleanFlag) {
     /@ cleanFlag = 1: User is removing theorems with $( [?] $) dates @/
     /@ Most of the WRITE SOURCE / CLEAN processing is done in the
-       writeInput() that calls this.  Here, we just remove any
+       writeSource() that calls this.  Here, we just remove any
        $( [?} $) date comment missed by that algorithm. @/
     if (labelSection[0] == '\n') { /@ True unless user edited source @/
       pos = instr(1, labelSection, "$( [?] $)");

@@ -1607,7 +1607,8 @@ void printTexHeader(flag texHeaderFlag)
               &tinyHdr,
               /* 5-May-2015 nm */
               &hugeHdrComment, &bigHdrComment, &smallHdrComment,
-              &tinyHdrComment);
+              &tinyHdrComment,
+              0 /* fineResolution */);
           if (bigHdr[0] != 0) break;
         } /* 18-Dec-2016 nm */
       } /* next i */
@@ -4199,7 +4200,8 @@ print2("</FONT></B></CENTER>\n");
                 &tinyHdr, /* 21-Aug-2017 nm */
                 /* 5-May-2015 nm */
                 &hugeHdrComment, &bigHdrComment, &smallHdrComment,
-                &tinyHdrComment);  /* 21-Aug-2017 nm */
+                &tinyHdrComment,
+                0 /* fineResolution */);
             if (hugeHdr[0] || bigHdr[0] || smallHdr[0] || tinyHdr[0]) {
               /* Write to the table of contents */
               g_outputToString = 1;
@@ -4711,7 +4713,7 @@ print2("</FONT></B></CENTER>\n");
       /********* Deleted 3-May-2017 nm
       /@ nm 22-Jan-04 Skip statements whose labels begin "xxx" - this
          means they are temporary placeholders created by
-         WRITE SOURCE / CLEAN in writeInput() in mmcmds.c @/
+         WRITE SOURCE / CLEAN in writeSource() in mmcmds.c @/
       let(&str1, ""); /@ Purge string stack if too many left()'s @/
       /@ 9-May-2015 nm Can this be deleted?  Do we need it anymore? @/
       if (!strcmp("xxx", left(g_Statement[s].labelName, 3))) continue;
@@ -5331,6 +5333,10 @@ print2("</FONT></B></CENTER>\n");
 } /* writeTheoremList */
 
 
+/* 24-Aug-2020 nm - added fineResolution flag, where "header area" is
+   just the labelSection (text before statement) instead of all of the
+   content between a $a/$p and next $a/$p.  This is used by
+   WRITE SOURCE ... / EXTRACT. */
 /* 18-Dec-2016 nm - use true "header area" as described below, and
    ensure statement argument is $p or $a */
 /* 2-Aug-2009 nm - broke this function out from writeTheoremList() */
@@ -5386,7 +5392,10 @@ flag getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
     vstring *hugeHdrComment,
     vstring *bigHdrComment,
     vstring *smallHdrComment,
-    vstring *tinyHdrComment) {  /* 21-Aug-2017 nm */
+    vstring *tinyHdrComment,
+    flag fineResolution  /* 24-Aug-2020 nm */
+    )
+{  /* 21-Aug-2017 nm */
 
   /* 31-Jul-2006 for table of contents mod */
   vstring labelStr = "";
@@ -5399,17 +5408,37 @@ flag getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
   saveOutputToString = g_outputToString; /* To restore when returning */
   g_outputToString = 0;
 
+  /* 24-Aug-2020 nm */
+  /* (This initialization seems to be done redundantly by caller elsewhere,
+     but for  WRITE SOURCE ... / EXTRACT we need to do it explicitly.) */
+  let(&(*hugeHdrTitle), "");
+  let(&(*bigHdrTitle), "");
+  let(&(*smallHdrTitle), "");
+  let(&(*tinyHdrTitle), "");
+  let(&(*hugeHdrComment), "");
+  let(&(*bigHdrComment), "");
+  let(&(*smallHdrComment), "");
+  let(&(*tinyHdrComment), "");
+
   /* 18-Dec-2016 nm */
   /* We now process only $a or $p statements */
-  if (g_Statement[stmt].type != a_ && g_Statement[stmt].type != p_) bug(2340);
+  if (fineResolution == 0) { /* 24-Aug-2020 nm */
+    if (g_Statement[stmt].type != a_ && g_Statement[stmt].type != p_) bug(2340);
+  }
 
   /* 18-Dec-2016 nm */
   /* Get header area between this statement and the statement after the
      previous $a or $p statement */
   /* pos3 and pos4 are used temporarily here; not related to later use */
-  pos3 = g_Statement[stmt].headerStartStmt;  /* Statement immediately after the
+  if (fineResolution == 0) {
+    pos3 = g_Statement[stmt].headerStartStmt;  /* Statement immediately after the
                 previous $a or $p statement (will be this statement if previous
                 statement is $a or $p) */
+  } else {
+    /* 24-Aug-2020 nm */
+    pos3 = stmt; /* For WRITE SOURCE ... / EXTRACT, we want every statement
+                    treated equally */
+  }
   if (pos3 == 0 || pos3 > stmt) bug(2241);
   pos4 = (g_Statement[stmt].labelSectionPtr
         - g_Statement[pos3].labelSectionPtr)
@@ -5466,8 +5495,10 @@ flag getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
     let(&(*hugeHdrTitle), edit((*hugeHdrTitle), 8 + 128));
                                                 /* Trim leading, trailing sp */
     let(&(*hugeHdrComment), seg(labelStr, pos3 + 1, pos4 - 2));
-    let(&(*hugeHdrComment), edit((*hugeHdrComment), 8 + 16384));
-                                        /* Trim leading sp, trailing sp & lf */
+    /* 24-Aug-2020 nm No reason to do this, I don't think.  It makes
+       WRITE SOURCE ... / EXTRACT a little ugly sometimes. */
+    /*let(&(*hugeHdrComment), edit((*hugeHdrComment), 8 + 16384));*/
+        /* Trim leading sp, trailing sp & lf */
   }
   /* pos = 0; */ /* Leave pos alone so that we start with "huge" header pos,
                     to ignore any earlier "tiny" or "small" or "big" header */
@@ -5511,7 +5542,9 @@ flag getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
     let(&(*bigHdrTitle), edit((*bigHdrTitle), 8 + 128));
                                                 /* Trim leading, trailing sp */
     let(&(*bigHdrComment), seg(labelStr, pos3 + 1, pos4 - 2));
-    let(&(*bigHdrComment), edit((*bigHdrComment), 8 + 16384));
+    /* 24-Aug-2020 nm No reason to do this, I don't think.  It makes
+       WRITE SOURCE ... / EXTRACT a little ugly sometimes. */
+    /* let(&(*bigHdrComment), edit((*bigHdrComment), 8 + 16384)); */
                                         /* Trim leading sp, trailing sp & lf */
   }
   /* pos = 0; */ /* Leave pos alone so that we start with "big" header pos,
@@ -5550,7 +5583,9 @@ flag getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
     let(&(*smallHdrTitle), edit((*smallHdrTitle), 8 + 128));
                                                 /* Trim leading, trailing sp */
     let(&(*smallHdrComment), seg(labelStr, pos3 + 1, pos4 - 2));
-    let(&(*smallHdrComment), edit((*smallHdrComment), 8 + 16384));
+    /* 24-Aug-2020 nm No reason to do this, I don't think.  It makes
+       WRITE SOURCE ... / EXTRACT a little ugly sometimes. */
+    /*let(&(*smallHdrComment), edit((*smallHdrComment), 8 + 16384)); */
                                         /* Trim leading sp, trailing sp & lf */
   }
 
@@ -5591,7 +5626,9 @@ flag getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
     let(&(*tinyHdrTitle), edit((*tinyHdrTitle), 8 + 128));
                                                 /* Trim leading, trailing sp */
     let(&(*tinyHdrComment), seg(labelStr, pos3 + 1, pos4 - 2));
-    let(&(*tinyHdrComment), edit((*tinyHdrComment), 8 + 16384));
+    /* 24-Aug-2020 nm No reason to do this, I don't think.  It makes
+       WRITE SOURCE ... / EXTRACT a little ugly sometimes. */
+    /* let(&(*tinyHdrComment), edit((*tinyHdrComment), 8 + 16384)); */
                                         /* Trim leading sp, trailing sp & lf */
   }
   /* (End of 21-Aug-2017 addition) */
@@ -6760,8 +6797,8 @@ vstring getMathboxUser(long stmt) {
 /* We assume the number of mathboxes is small enough that a linear search
    won't slow things too much. */
 long getMathboxNum(long stmt) {
-  assignMathboxInfo(); /* In case it's not yet initialized */
   long mbox;
+  assignMathboxInfo(); /* In case it's not yet initialized */
   for (mbox = 0; mbox < g_mathboxes; mbox++) {
     if (stmt < g_mathboxStart[mbox]) break;
   }

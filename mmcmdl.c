@@ -196,9 +196,16 @@ flag processCommandLine(void)
                 /* 3-May-2017 nm Removed CLEAN */
                 "FORMAT|REWRAP",
                 /* 31-Dec-2017 nm Added SPLIT, NO_VERSIONING, KEEP_INCLUDES */
-                "|SPLIT|NO_VERSIONING|KEEP_INCLUDES",
+                /* 24-Aug-2020 nm Added EXTRACT */
+                "|SPLIT|NO_VERSIONING|KEEP_INCLUDES|EXTRACT",
                 "|<REWRAP>", NULL)))
               goto pclbad;
+            /* 24-Aug-2020 nm Added EXTRACT */
+            if (lastArgMatches("EXTRACT")) {
+              i++;
+              if (!getFullArg(i, "* What statement label? "))
+                goto pclbad;
+            }
           } else {
             break;
           }
@@ -483,7 +490,7 @@ flag processCommandLine(void)
               if (!getFullArg(i, "* What statement label? "))
                 goto pclbad;
             }
-            /* 18-Jul-2015 nm Added MATCH */
+            /* 18-Jul-2015 nm Added TO */
             if (lastArgMatches("TO")) {
               i++;
               if (!getFullArg(i, "* What statement label? "))

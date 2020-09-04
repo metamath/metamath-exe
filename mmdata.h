@@ -48,8 +48,13 @@ struct statement_struct { /* Array index is statement number, starting at 1 */
   flag uniqueLabel; /* Flag that label is unique (future implementations may
                       allow duplicate labels on hypotheses) */
   char type;    /* 2nd character of keyword, e.g. 'e' for $e */
-  int scope;    /* Block scope level, increased by ${ and decreased by ${ */
-  long beginScopeStatementNum;  /* statement of last ${ */
+  int scope;    /* Block scope level, increased by ${ and decreased by $};
+       ${ has scope _before_ the increase; $} has scope _before_ the decrease */
+  long beginScopeStatementNum;  /* statement of previous ${ ; 0 if we're in
+                outermost block */
+  long endScopeStatementNum;  /* statement of next $} (populated for opening
+                                 ${ only, 0 otherwise); g_statements+1 if
+                              we're in outermost block */ /* 24-Aug-2020 nm */
   vstring statementPtr; /* Pointer to end of (unmodified) label section used
              to determine file and line number for error or info messages about
              the statement */
@@ -454,6 +459,14 @@ long getSourceIndentation(long statemNum);
 
 /* Returns any comment (description) that occurs just before a statement */
 vstring getDescription(long statemNum);
+
+/* Returns the label section of a statement with all comments except the
+   last removed. */
+vstring getDescriptionAndLabel(long statemNum);
+
+/* Reconstruct the full header from the strings returned by
+   getSectionHeadings() */
+vstring buildHeader(vstring header, vstring hdrComment, vstring decoration);
 
 /* Returns 1 if comment has an "is discouraged" markup tag */
 flag getMarkupFlag(long statemNum, char mode);

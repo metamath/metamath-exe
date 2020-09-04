@@ -2618,7 +2618,7 @@ void assignKnownSteps(long startStep, long sbProofLen)
             "\nwith the following statement list:\n    ",
             nmbrCvtMToVString(instance),
             "\n(The $|$ tokens are internal statement separation markers)",
-            "\nZapping targets so we can procede (but you should exit the ",
+            "\nZapping targets so we can proceed (but you should exit the ",
             "Proof Assistant and fix this problem)",
             "\n(This may take a while; please wait...)",
             NULL), "", " ");

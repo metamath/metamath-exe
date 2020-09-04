@@ -763,7 +763,7 @@ char unify(
      substutition. */
   /* (This takes care of the case where the unknown variable aligns with
      end of string character; in this case, only a null substitution is
-     permissable.  If the substitution length is 1 or greater, this "if"
+     permissible.  If the substitution length is 1 or greater, this "if"
      statement will detect it.) */
   if (substitution[0] == g_mathTokens) {
 /*E*/if(db6)print2("End of string token occurs in substitution string\n");

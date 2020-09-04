@@ -185,7 +185,7 @@ H("specified string.");
 
 
 g_printHelp = !strcmp(saveHelpCmd, "HELP INSERT");
-H("This command inserts a string at a specifed column in each line");
+H("This command inserts a string at a specified column in each line");
 H("in a file.  It is intended to aid further processing of column-");
 H("sensitive files.  Note: the index of the first column is 1, not 0.  If a");
 H("line is shorter than <column>, then it is padded with spaces so that");
@@ -1023,6 +1023,11 @@ H("        / NO_VERSIONING is specified) to prevent the possibly confusing");
 H("        source duplication in both the output file and the included file.");
 H("        The / KEEP_INCLUDES qualifier will prevent this deletion.");
 H("    / NO_VERSIONING - Backup files suffixed with ~1 are not created.");
+/* 4-Sep-2020 nm Added EXTRACT */
+H("    / EXTRACT <label-match> - Extract a stand-alone database containing");
+H("        only those statements needed to support and prove the statements");
+H("        matching <label-match>.  See HELP SEARCH for wildcard matching");
+H("        rules in <label-match>.");
 H("");
 
 g_printHelp = !strcmp(saveHelpCmd, "HELP WRITE THEOREM_LIST");

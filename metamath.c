@@ -62,7 +62,11 @@
 
 
 
-#define MVERSION "0.188 23-Aug-2020"
+#define MVERSION "0.189 4-Sep-2020"
+/* 0.189 4-Sep-2020 nm mmhlpa.c - add help for WRITE SOURCE .. /EXTRACT ...
+   24-Aug-2020 nm metamath.c mmcmdl.c mmcmds.c,h mmdata.c,h mmhlpa.c
+     mmpars.c mmpfas.c mmunif.c mmwtex.c,h - Added
+     WRITE SOURCE ... /EXTRACT ... */
 /* 0.188 23-Aug-2020 nm mmwtex.c, mmhlpa.c Added CONCLUSION FACT INTRODUCTION
      PARAGRAPH SCOLIA SCOLION SUBSECTION TABLE to [bib] keywords */
 /* 0.187 15-Aug-2020 nm All m*.c, m*.h - put "g_" in front of all global
@@ -2228,7 +2232,7 @@ void command(int argc, char *argv[])
     if (cmdMatches("WRITE SOURCE")) {
       let(&g_output_fn, g_fullArg[2]);
 
-      /********* Deleted 28-Dec-2013 nm Now opened in writeInput()
+      /********* Deleted 28-Dec-2013 nm Now opened in writeSource()
       g_output_fp = fSafeOpen(g_output_fn, "w", 0/@noVersioningFlag@/);
       if (!g_output_fp) continue; /@ Couldn't open it (error msg was provided)@/
       ********/
@@ -2243,17 +2247,8 @@ void command(int argc, char *argv[])
       }
       *******/
 
-      /* Added 12-Jun-2011 nm */
-      if (switchPos("/ REWRAP") > 0) {
-        r = 2; /* Re-wrap then format (more aggressive than / FORMAT) */
-      } else if (switchPos("/ FORMAT") > 0) {
-        r = 1; /* Format output according to set.mm standard */
-      } else {
-        r = 0; /* Keep formatting as-is */
-      }
-
       /********* Deleted 3-May-2017 nm
-      writeInput((char)c, (char)r); /@ Added arg 24-Oct-03 nm 12-Jun-2011 nm @/
+      writeSource((char)c, (char)r); /@ Added arg 24-Oct-03 nm 12-Jun-2011 nm @/
       fclose(g_output_fp);
       if (c == 0) g_sourceChanged = 0; /@ Don't unset flag if CLEAN option
                                     since some new proofs may not be saved. @/
@@ -2287,16 +2282,42 @@ void command(int argc, char *argv[])
       }
       */
 
+      /* Added 12-Jun-2011 nm */
+      if (switchPos("/ REWRAP") > 0) {
+        r = 2; /* Re-wrap then format (more aggressive than / FORMAT) */
+      } else if (switchPos("/ FORMAT") > 0) {
+        r = 1; /* Format output according to set.mm standard */
+      } else {
+        r = 0; /* Keep formatting as-is */
+      }
+
+      /* 24-Aug-2020 nm */
+      i = switchPos("/ EXTRACT");
+      if (i > 0) {
+        let(&str1, g_fullArg[i + 1]); /* List of labels */
+        if (r > 0
+            || switchPos("/ SPLIT") > 0
+            || switchPos("/ KEEP_INCLUDES") > 0) {
+          print2(
+"?You may not use / SPLIT, / REWRAP, or / KEEP_INCLUDES with / EXTRACT.\n");
+          continue;
+        }
+      } else {
+        let(&str1, ""); /* Empty string means full db */
+      }
+      if (i > 0)
 
       /* 3-May-2017 nm */
-      writeInput((char)r,  /* Added arg 12-Jun-2011 nm */
+      writeSource((char)r, /* Rewrap type */ /* Added arg 12-Jun-2011 nm */
         ((switchPos("/ SPLIT") > 0) ? 1 : 0),          /* 31-Dec-2017 nm */
         ((switchPos("/ NO_VERSIONING") > 0) ? 1 : 0),  /* 31-Dec-2017 nm */
-        ((switchPos("/ KEEP_INCLUDES") > 0) ? 1 : 0)   /* 31-Dec-2017 nm */
-         );
+        ((switchPos("/ KEEP_INCLUDES") > 0) ? 1 : 0),   /* 31-Dec-2017 nm */
+        str1 /* Label list to extract */  /* 24-Aug-2020 nm */
+          );
       /*fclose(g_output_fp);*/
       g_sourceChanged = 0;
 
+      let(&str1, ""); /* Deallocate */ /* 24-Aug-2020 nm */
       continue;
     } /* End of WRITE SOURCE */
 
@@ -5943,7 +5964,7 @@ void command(int argc, char *argv[])
 
       /* 14-Sep-2012 nm */
       s = getStepNum(g_fullArg[1], g_ProofInProgress.proof,
-          1 /* 1 = "ALL" is permissable; returns 0 */);
+          1 /* 1 = "ALL" is permissible; returns 0 */);
       if (s == -1) continue;  /* Error; message was provided already */
 
       if (s != 0) {  /* s=0 means ALL */
