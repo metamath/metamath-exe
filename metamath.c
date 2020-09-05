@@ -62,7 +62,8 @@
 
 
 
-#define MVERSION "0.190 4-Sep-2020"
+#define MVERSION "0.191 4-Sep-2020"
+/* 0.191 4-Sep-2020 nm metamath.c - add comment close */
 /* 0.190 4-Sep-2020 nm mmcmds.c - fix bug in writeExtractedSource() */
 /* 0.189 4-Sep-2020 nm mmhlpa.c - add help for WRITE SOURCE .. /EXTRACT ...
    24-Aug-2020 nm metamath.c mmcmdl.c mmcmds.c,h mmdata.c,h mmhlpa.c
