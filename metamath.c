@@ -62,7 +62,8 @@
 
 
 
-#define MVERSION "0.191 4-Sep-2020"
+#define MVERSION "0.192 4-Sep-2020"
+/* 0.192 4-Sep-2020 nm metamath.c - fix bug */
 /* 0.191 4-Sep-2020 nm metamath.c - add comment close */
 /* 0.190 4-Sep-2020 nm mmcmds.c - fix bug in writeExtractedSource() */
 /* 0.189 4-Sep-2020 nm mmhlpa.c - add help for WRITE SOURCE .. /EXTRACT ...
@@ -2307,7 +2308,6 @@ void command(int argc, char *argv[])
       } else {
         let(&str1, ""); /* Empty string means full db */
       }
-      if (i > 0)
 
       /* 3-May-2017 nm */
       writeSource((char)r, /* Rewrap type */ /* Added arg 12-Jun-2011 nm */
