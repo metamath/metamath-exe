@@ -4731,9 +4731,14 @@ void writeExtractedSource(
             }
           }
         }
-        if (p1 == 0)
+        if (p1 == 0) {
           let(&undeclaredV, cat(undeclaredV, " ", g_MathToken[mtkn].tokenName,
             NULL));
+        }
+        /* 4-Sep-2020 nm */
+        /* Tag the variable as declared for use in later j loops above, so it
+           won't be added to the undeclaredV twice */
+        mathTokenDeclared[mtkn] = 'Y';
       }
     }
   } /* next mtkn */
@@ -4865,14 +4870,14 @@ void writeExtractedSource(
   g_outputToString = 1;
   if (undeclaredC[0] != 0) {
     print2("\n");
-    print2(
-"  $( Unused constants to satisfy the htmldef's in the $t comment. $)\n");
+    print2(  /* 4-Sep-2020 nm Can't use literal "$t"; change to $ t. */
+"  $( Unused constants to satisfy the htmldef's in the $ t comment. $)\n");
     printLongLine(cat("  $c", undeclaredC, " $.", NULL), "    ", " ");
   }
   if (undeclaredV[0] != 0) {
     print2("\n");
-    print2(
-"  $( Unused variables to satisfy the htmldef's in the $t comment. $)\n");
+    print2(  /* 4-Sep-2020 nm Can't use literal "$t"; change to $ t. */
+"  $( Unused variables to satisfy the htmldef's in the $ t comment. $)\n");
     printLongLine(cat("  $v", undeclaredV, " $.", NULL), "    ", " ");
   }
   g_outputToString = 0;
