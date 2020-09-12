@@ -1608,7 +1608,8 @@ void printTexHeader(flag texHeaderFlag)
               /* 5-May-2015 nm */
               &hugeHdrComment, &bigHdrComment, &smallHdrComment,
               &tinyHdrComment,
-              0 /* fineResolution */);
+              0, /* fineResolution */
+              0  /* fullComment */);
           if (bigHdr[0] != 0) break;
         } /* 18-Dec-2016 nm */
       } /* next i */
@@ -4201,7 +4202,8 @@ print2("</FONT></B></CENTER>\n");
                 /* 5-May-2015 nm */
                 &hugeHdrComment, &bigHdrComment, &smallHdrComment,
                 &tinyHdrComment,
-                0 /* fineResolution */);
+                0, /* fineResolution */
+                0  /* fullComment */);
             if (hugeHdr[0] || bigHdr[0] || smallHdr[0] || tinyHdr[0]) {
               /* Write to the table of contents */
               g_outputToString = 1;
@@ -5333,10 +5335,16 @@ print2("</FONT></B></CENTER>\n");
 } /* writeTheoremList */
 
 
+/* 12-Sep-2020 nm - added fullComment, which puts the entire header
+   (including any comment and $( $) keywords) into xxxHdrTitle and
+   xxxHdrComment.  If there is no comment below header, xxxHdrComment
+   will be "$)".   No \n follows "$)".  Any leading whitespace will
+   be prefixed before the "$(".  This mode is used for /EXTRACT
+   and was added to make white space match original source. */
 /* 24-Aug-2020 nm - added fineResolution flag, where "header area" is
    just the labelSection (text before statement) instead of all of the
    content between a $a/$p and next $a/$p.  This is used by
-   WRITE SOURCE ... / EXTRACT. */
+   WRITE SOURCE ... /EXTRACT. */
 /* 18-Dec-2016 nm - use true "header area" as described below, and
    ensure statement argument is $p or $a */
 /* 2-Aug-2009 nm - broke this function out from writeTheoremList() */
@@ -5385,15 +5393,18 @@ ignore them if those sections are empty (no $a or $p in them).
 */
 /*void getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,*/
 /* Return 1 if error found, 0 otherwise */ /* 6-Aug-2019 nm */
-flag getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
+flag getSectionHeadings(long stmt,
+    vstring *hugeHdrTitle,
+    vstring *bigHdrTitle,
     vstring *smallHdrTitle,
     vstring *tinyHdrTitle,  /* 21-Aug-2017 nm */
-    /* Added 8-May-2015 nm */
+    /* 8-May-2015 nm Added huge,big,smallHdrComment */
     vstring *hugeHdrComment,
     vstring *bigHdrComment,
     vstring *smallHdrComment,
-    vstring *tinyHdrComment,
-    flag fineResolution  /* 24-Aug-2020 nm */
+    vstring *tinyHdrComment,  /* 21-Aug-2017 nm */
+    flag fineResolution,  /* 24-Aug-2020 nm */
+    flag fullComment  /* 12-Sep-2020 nm */
     )
 {  /* 21-Aug-2017 nm */
 
@@ -5475,8 +5486,9 @@ flag getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
 
     if (!pos) break;
     if (pos) pos2 = pos;
-  }
+  } /* while(1) */
   if (pos2) { /* Extract "huge" header */
+    pos1 = pos2; /* Save "$(" position */ /* 12-Sep-2020 nm */
     pos = instr(pos2 + 4, labelStr, "\n"); /* Get to end of #### line */
     pos2 = instr(pos + 1, labelStr, "\n"); /* Find end of title line */
 
@@ -5491,14 +5503,30 @@ flag getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
     pos3 = instr(pos2 + 1, labelStr, "\n"); /* Get to end of 2nd #### line */
     while (labelStr[(pos3 - 1) + 1] == '\n') pos3++; /* Skip 1st blank lines */
     pos4 = instr(pos3, labelStr, "$)"); /* Get to end of title comment */
-    let(&(*hugeHdrTitle), seg(labelStr, pos + 1, pos2 - 1));
-    let(&(*hugeHdrTitle), edit((*hugeHdrTitle), 8 + 128));
+    if (fullComment == 0) {  /* 12-Sep-2020 nm */
+      let(&(*hugeHdrTitle), seg(labelStr, pos + 1, pos2 - 1));
+      let(&(*hugeHdrTitle), edit((*hugeHdrTitle), 8 + 128));
                                                 /* Trim leading, trailing sp */
-    let(&(*hugeHdrComment), seg(labelStr, pos3 + 1, pos4 - 2));
-    /* 24-Aug-2020 nm No reason to do this, I don't think.  It makes
-       WRITE SOURCE ... / EXTRACT a little ugly sometimes. */
-    /*let(&(*hugeHdrComment), edit((*hugeHdrComment), 8 + 16384));*/
-        /* Trim leading sp, trailing sp & lf */
+      let(&(*hugeHdrComment), seg(labelStr, pos3 + 1, pos4 - 2));
+      let(&(*hugeHdrComment), edit((*hugeHdrComment), 8 + 16384));
+          /* Trim leading sp, trailing sp & lf */
+    } else {
+      /* 12-Sep-2020 nm */
+      /* Put entire comment in hugeHdrTitle and hugeHdrComment for /EXTRACT */
+      /* Search backwards for non-space or beginning of string: */
+      pos = pos1; /* pos1 is the "$" in "$(" */
+      pos--;
+      while (pos > 0) {
+        if (labelStr[pos - 1] != ' '
+              && labelStr[pos - 1] != '\n') break;
+        pos--;
+      }
+      /* pos + 1 is the start of whitespace preceding "$(" */
+      /* pos4 is the "$" in "$)" */
+      /* pos3 is the \n after the 2nd decoration line */
+      let(&(*hugeHdrTitle), seg(labelStr, pos + 1, pos3));
+      let(&(*hugeHdrComment), seg(labelStr, pos3 + 1, pos4 + 1));
+    }
   }
   /* pos = 0; */ /* Leave pos alone so that we start with "huge" header pos,
                     to ignore any earlier "tiny" or "small" or "big" header */
@@ -5524,6 +5552,7 @@ flag getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
     if (pos) pos2 = pos;
   }
   if (pos2) { /* Extract "big" header */
+    pos1 = pos2; /* Save "$(" position */ /* 12-Sep-2020 nm */
     pos = instr(pos2 + 4, labelStr, "\n"); /* Get to end of #*#* line */
     pos2 = instr(pos + 1, labelStr, "\n"); /* Find end of title line */
 
@@ -5538,14 +5567,30 @@ flag getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
     pos3 = instr(pos2 + 1, labelStr, "\n"); /* Get to end of 2nd #*#* line */
     while (labelStr[(pos3 - 1) + 1] == '\n') pos3++; /* Skip 1st blank lines */
     pos4 = instr(pos3, labelStr, "$)"); /* Get to end of title comment */
-    let(&(*bigHdrTitle), seg(labelStr, pos + 1, pos2 - 1));
-    let(&(*bigHdrTitle), edit((*bigHdrTitle), 8 + 128));
-                                                /* Trim leading, trailing sp */
-    let(&(*bigHdrComment), seg(labelStr, pos3 + 1, pos4 - 2));
-    /* 24-Aug-2020 nm No reason to do this, I don't think.  It makes
-       WRITE SOURCE ... / EXTRACT a little ugly sometimes. */
-    /* let(&(*bigHdrComment), edit((*bigHdrComment), 8 + 16384)); */
-                                        /* Trim leading sp, trailing sp & lf */
+    if (fullComment == 0) {  /* 12-Sep-2020 nm */
+      let(&(*bigHdrTitle), seg(labelStr, pos + 1, pos2 - 1));
+      let(&(*bigHdrTitle), edit((*bigHdrTitle), 8 + 128));
+                                                  /* Trim leading, trailing sp */
+      let(&(*bigHdrComment), seg(labelStr, pos3 + 1, pos4 - 2));
+      let(&(*bigHdrComment), edit((*bigHdrComment), 8 + 16384));
+          /* Trim leading sp, trailing sp & lf */
+    } else {
+      /* 12-Sep-2020 nm */
+      /* Put entire comment in bigHdrTitle and bigHdrComment for /EXTRACT */
+      /* Search backwards for non-space or beginning of string: */
+      pos = pos1; /* pos1 is the "$" in "$(" */
+      pos--;
+      while (pos > 0) {
+        if (labelStr[pos - 1] != ' '
+              && labelStr[pos - 1] != '\n') break;
+        pos--;
+      }
+      /* pos + 1 is the start of whitespace preceding "$(" */
+      /* pos4 is the "$" in "$)" */
+      /* pos3 is the \n after the 2nd decoration line */
+      let(&(*bigHdrTitle), seg(labelStr, pos + 1, pos3));
+      let(&(*bigHdrComment), seg(labelStr, pos3 + 1, pos4 + 1));
+    }
   }
   /* pos = 0; */ /* Leave pos alone so that we start with "big" header pos,
                     to ignore any earlier "tiny" or "small" header */
@@ -5565,6 +5610,7 @@ flag getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
     if (pos) pos2 = pos;
   }
   if (pos2) { /* Extract "small" header */
+    pos1 = pos2; /* Save "$(" position */ /* 12-Sep-2020 nm */
     pos = instr(pos2 + 4, labelStr, "\n"); /* Get to end of =-=- line */
     pos2 = instr(pos + 1, labelStr, "\n"); /* Find end of title line */
 
@@ -5579,14 +5625,30 @@ flag getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
     pos3 = instr(pos2 + 1, labelStr, "\n"); /* Get to end of 2nd =-=- line */
     while (labelStr[(pos3 - 1) + 1] == '\n') pos3++; /* Skip 1st blank lines */
     pos4 = instr(pos3, labelStr, "$)"); /* Get to end of title comment */
-    let(&(*smallHdrTitle), seg(labelStr, pos + 1, pos2 - 1));
-    let(&(*smallHdrTitle), edit((*smallHdrTitle), 8 + 128));
+    if (fullComment == 0) {  /* 12-Sep-2020 nm */
+      let(&(*smallHdrTitle), seg(labelStr, pos + 1, pos2 - 1));
+      let(&(*smallHdrTitle), edit((*smallHdrTitle), 8 + 128));
                                                 /* Trim leading, trailing sp */
-    let(&(*smallHdrComment), seg(labelStr, pos3 + 1, pos4 - 2));
-    /* 24-Aug-2020 nm No reason to do this, I don't think.  It makes
-       WRITE SOURCE ... / EXTRACT a little ugly sometimes. */
-    /*let(&(*smallHdrComment), edit((*smallHdrComment), 8 + 16384)); */
-                                        /* Trim leading sp, trailing sp & lf */
+      let(&(*smallHdrComment), seg(labelStr, pos3 + 1, pos4 - 2));
+      let(&(*smallHdrComment), edit((*smallHdrComment), 8 + 16384));
+          /* Trim leading sp, trailing sp & lf */
+    } else {
+      /* 12-Sep-2020 nm */
+      /* Put entire comment in smallHdrTitle and smallHdrComment for /EXTRACT */
+      /* Search backwards for non-space or beginning of string: */
+      pos = pos1; /* pos1 is the "$" in "$(" */
+      pos--;
+      while (pos > 0) {
+        if (labelStr[pos - 1] != ' '
+              && labelStr[pos - 1] != '\n') break;
+        pos--;
+      }
+      /* pos + 1 is the start of whitespace preceding "$(" */
+      /* pos4 is the "$" in "$)" */
+      /* pos3 is the \n after the 2nd decoration line */
+      let(&(*smallHdrTitle), seg(labelStr, pos + 1, pos3));
+      let(&(*smallHdrComment), seg(labelStr, pos3 + 1, pos4 + 1));
+    }
   }
 
   /* Added 21-Aug-2017 nm */
@@ -5608,6 +5670,7 @@ flag getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
     if (pos) pos2 = pos;
   }
   if (pos2) { /* Extract "tiny" header */
+    pos1 = pos2; /* Save "$(" position */ /* 12-Sep-2020 nm */
     pos = instr(pos2 + 4, labelStr, "\n"); /* Get to end of -.-. line */
     pos2 = instr(pos + 1, labelStr, "\n"); /* Find end of title line */
 
@@ -5622,14 +5685,30 @@ flag getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
     pos3 = instr(pos2 + 1, labelStr, "\n"); /* Get to end of 2nd -.-. line */
     while (labelStr[(pos3 - 1) + 1] == '\n') pos3++; /* Skip 1st blank lines */
     pos4 = instr(pos3, labelStr, "$)"); /* Get to end of title comment */
-    let(&(*tinyHdrTitle), seg(labelStr, pos + 1, pos2 - 1));
-    let(&(*tinyHdrTitle), edit((*tinyHdrTitle), 8 + 128));
-                                                /* Trim leading, trailing sp */
-    let(&(*tinyHdrComment), seg(labelStr, pos3 + 1, pos4 - 2));
-    /* 24-Aug-2020 nm No reason to do this, I don't think.  It makes
-       WRITE SOURCE ... / EXTRACT a little ugly sometimes. */
-    /* let(&(*tinyHdrComment), edit((*tinyHdrComment), 8 + 16384)); */
-                                        /* Trim leading sp, trailing sp & lf */
+    if (fullComment == 0) {  /* 12-Sep-2020 nm */
+      let(&(*tinyHdrTitle), seg(labelStr, pos + 1, pos2 - 1));
+      let(&(*tinyHdrTitle), edit((*tinyHdrTitle), 8 + 128));
+                                                  /* Trim leading, trailing sp */
+      let(&(*tinyHdrComment), seg(labelStr, pos3 + 1, pos4 - 2));
+      let(&(*tinyHdrComment), edit((*tinyHdrComment), 8 + 16384));
+          /* Trim leading sp, trailing sp & lf */
+    } else {
+      /* 12-Sep-2020 nm */
+      /* Put entire comment in tinyHdrTitle and tinyHdrComment for /EXTRACT */
+      /* Search backwards for non-space or beginning of string: */
+      pos = pos1; /* pos1 is the "$" in "$(" */
+      pos--;
+      while (pos > 0) {
+        if (labelStr[pos - 1] != ' '
+              && labelStr[pos - 1] != '\n') break;
+        pos--;
+      }
+      /* pos + 1 is the start of whitespace preceding "$(" */
+      /* pos4 is the "$" in "$)" */
+      /* pos3 is the \n after the 2nd decoration line */
+      let(&(*tinyHdrTitle), seg(labelStr, pos + 1, pos3));
+      let(&(*tinyHdrComment), seg(labelStr, pos3 + 1, pos4 + 1));
+    }
   }
   /* (End of 21-Aug-2017 addition) */
 

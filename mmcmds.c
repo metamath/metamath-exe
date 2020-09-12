@@ -4361,7 +4361,7 @@ void writeExtractedSource(
     flag noVersioningFlag)
 {
   vstring statementUsedFlags = ""; /* Y/N flags that statement is used */
-  long stmt, stmtj, scpStmt, strtScpStmt, endScpStmt, j, p1, p2;
+  long stmt, stmtj, scpStmt, strtScpStmt, endScpStmt, j, p1, p2, p3, p4;
   vstring extractNeeded = "";
   nmbrString *unprovedList = NULL_NMBRSTRING; /* Needed for traceProofWork()
                                                  but not used */
@@ -4391,6 +4391,7 @@ void writeExtractedSource(
   vstring undeclaredC = "";
   vstring undeclaredV = "";
   long extractedStmts;
+  vstring hdrSuffix = "";
   FILE *fp;
   vstring buf = "";
 
@@ -4405,13 +4406,15 @@ void writeExtractedSource(
      a statement twice, especially if we did "/ EXTRACT *" */
   print2("Tracing back through proofs for $a and $p statements needed...\n");
   if (!strcmp(extractLabelList, "*")) {
+    /**/
+    print2(
+       "   This may take up to 10 minutes.  (For audio alert when done,\n");
+    print2("   type ahead \"b\" then \"<enter>\".)\n");
+    /**/
     /*
     print2(
-       "   This may take up to 10 minutes.  If you want a beep alert when done,\n");
-    print2("   type ahead \"b\" then \"<enter>\".\n");
+       "   This may take up to 10 minutes.  (\n");
     */
-    print2(
-       "   This may take up to 10 minutes.\n");
   }
 
   for (stmt = g_statements; stmt >= 1; stmt--) {
@@ -4584,7 +4587,8 @@ void writeExtractedSource(
         &tinyHdr,
         &hugeHdrComment, &bigHdrComment, &smallHdrComment,
         &tinyHdrComment,
-        1 /* fineResolution */);
+        1, /* fineResolution */
+        1 /* fullComment */);
     if (hugeHdr[0] != 0) hugeHdrNeeded[stmt] = '?'; /* Don't know yet */
     if (bigHdr[0] != 0) bigHdrNeeded[stmt] = '?';
     if (smallHdr[0] != 0) smallHdrNeeded[stmt] = '?';
@@ -4597,10 +4601,15 @@ void writeExtractedSource(
      be in the output file) or to 'N' otherwise.  Then do the same starting
      from small, then big, then huge header. */
   for (stmt = 1; stmt <= maxStmt; stmt++) {
-    /***** We do ALL statements so headers will go to right place in output
+    /***** deleted
     if (g_Statement[stmt].type != a_ && g_Statement[stmt].type != p_)
       continue;
     *****/
+    /* We do ALL statements, not just $a, $p, so that headers will go to
+       the right place in the output file.  We called getSectionHeadings()
+       with fineResolution=1 above so that "header area" will be 1 statement
+       rather than the multiple-statement content between successive $a/$p
+       statements. */
     if (tinyHdrNeeded[stmt] == '?') {
       hdrNeeded = 0;
       for (stmtj = stmt; stmtj <= maxStmt; stmtj++) {
@@ -4764,7 +4773,7 @@ void writeExtractedSource(
     goto EXTRACT_RETURN;
   }
 
-  /* Get the first line of the .mm file */
+  /* Get the first line of the .mm file that normally has version and date */
   /* (The memcpy to buf is not really necessary, just a safety
      measure in case the input file has garbage with no "\n".) */
   let(&buf, space(g_Statement[1].labelSectionLen));
@@ -4772,56 +4781,88 @@ void writeExtractedSource(
       (size_t)(g_Statement[1].labelSectionLen));
   let(&buf, left(buf, instr(1, buf, "\n") - 1)); /* This will not include the \n */
   let(&buf, right(edit(buf, 8/*leading space*/), 3)); /* Take off $( */
-  fprintf(fp,
-      "$( Extracted from: ");
-  fprintf(fp, "%s", buf);
+  j = (long)strlen(" Extracted from: ");
+  if (!strcmp(left(buf, j), " Extracted from: ")) {
+    /* Prevent "Extracted from:" accumulation if sent through /EXTRACT again */
+    let(&buf, right(buf, j + 1));
+  }
+  fprintf(fp, "$( Extracted from: %s", buf);
   if (instr(1, buf, "$)") == 0) fprintf(fp, " $)");
   fprintf(fp,
-      "\n$( Created %s %s using\n   \"write source %s /extract %s\" $)\n",
-      date(), time_(), fullOutput_fn, extractLabelList);
+      "\n$( Created %s %s using \"READ '%s'\" then\n",
+      date(), time_(), g_input_fn);
+  fprintf(fp,
+      "   \"WRITE SOURCE '%s' /EXTRACT %s\" $)",
+      fullOutput_fn, extractLabelList);
 
   extractedStmts = 0; /* How many statements were extracted */
   for (stmt = 1; stmt <= g_statements + 1; stmt++) {
+    /* If the header is part of the labelSection of an extracted stmt,
+       we don't want to add a newline in order for extractions to be
+       stable (i.e. more lines aren't added when we extract from an
+       extraction). */
+    if (extractNeeded[stmt] == 'Y') {
+      let(&hdrSuffix, "");
+    } else {
+      let(&hdrSuffix, "\n");
+    }
     /* Output headers if needed */
     if (hugeHdrNeeded[stmt] == 'Y'
         || bigHdrNeeded[stmt] == 'Y'
         || smallHdrNeeded[stmt] == 'Y'
         || tinyHdrNeeded[stmt] == 'Y') {
-      getSectionHeadings(stmt, &hugeHdr, &bigHdr, &smallHdr,
-          &tinyHdr,
+      getSectionHeadings(stmt, &hugeHdr, &bigHdr, &smallHdr, &tinyHdr,
           &hugeHdrComment, &bigHdrComment, &smallHdrComment,
           &tinyHdrComment,
-          1 /* fineResolution */);
+          1, /*fineResolution*/
+          1 /*fullComment*/ /* 12-Sep-2020 nm */
+          );
       let(&buf, "");
       if (hugeHdrNeeded[stmt] == 'Y') {
         fixUndefinedLabels(extractNeeded, &hugeHdrComment);
+        /**** 12-Sep-2020 nm Deleted
         let(&buf, "");
         buf = buildHeader(hugeHdr, hugeHdrComment, HUGE_DECORATION);
-        fprintf(fp, "%s\n", buf);
+        fprintf(fp, "%s", buf);
+        ****/
+        /* 12-Sep-2020 nm */
+        fprintf(fp, "%s", cat(hugeHdr, hugeHdrComment, hdrSuffix, NULL));
       }
       if (bigHdrNeeded[stmt] == 'Y') {
         fixUndefinedLabels(extractNeeded, &bigHdrComment);
+        /**** 12-Sep-2020 nm Deleted
         let(&buf, "");
-        buf = buildHeader(bigHdr, bigHdrComment, BIG_DECORATION);
-        fprintf(fp, "%s\n", buf);
+        buf = buildHeader(bigHdr, bigHdrComment, HUGE_DECORATION);
+        fprintf(fp, "%s", buf);
+        ****/
+        /* 12-Sep-2020 nm */
+        fprintf(fp, "%s", cat(bigHdr, bigHdrComment, hdrSuffix, NULL));
       }
       if (smallHdrNeeded[stmt] == 'Y') {
         fixUndefinedLabels(extractNeeded, &smallHdrComment);
+        /**** 12-Sep-2020 nm Deleted
         let(&buf, "");
         buf = buildHeader(smallHdr, smallHdrComment, SMALL_DECORATION);
-        fprintf(fp, "%s\n", buf);
+        fprintf(fp, "%s", buf);
+        ****/
+        /* 12-Sep-2020 nm */
+        fprintf(fp, "%s", cat(smallHdr, smallHdrComment, hdrSuffix, NULL));
       }
       if (tinyHdrNeeded[stmt] == 'Y') {
         fixUndefinedLabels(extractNeeded, &tinyHdrComment);
+        /**** 12-Sep-2020 nm Deleted
         let(&buf, "");
         buf = buildHeader(tinyHdr, tinyHdrComment, TINY_DECORATION);
-        fprintf(fp, "%s\n", buf);
+        fprintf(fp, "%s", buf);
+        ****/
+        /* 12-Sep-2020 nm */
+        fprintf(fp, "%s", cat(tinyHdr, tinyHdrComment, hdrSuffix, NULL));
       }
     } /* if header(s) needed */
 
     /* Output $t statement if needed */
     if (dollarTStmt == stmt) {
-      fprintf(fp, "%s\n", dollarTCmt);
+      fprintf(fp, "\n%s", dollarTCmt);
     }
 
     /* Output statement if needed */
@@ -4845,6 +4886,7 @@ void writeExtractedSource(
           fprintf(fp, "%s", buf);
           if (g_Statement[stmt].type != p_) {
             fprintf(fp, "$.");
+/*D*//*fprintf(fp, "#%ld#",stmt);*/
           } else {
             /* $p */
             fprintf(fp, "$=");
@@ -4855,6 +4897,7 @@ void writeExtractedSource(
           }
         } /* if not ${ $} */
         if (extractNeeded[stmt + 1] == 'N') {
+/*D*//*printf("added \\n stmt=%ld type=%c,%c\n",stmt+1,g_Statement[stmt].type,g_Statement[stmt+1].type);*/
           /* Put a newline following end of statement since the next
              statement's label section will be suppressed */
           fprintf(fp, "\n");
@@ -4888,8 +4931,24 @@ void writeExtractedSource(
 
   /* Write the non-split output file */
   fclose(fp);
-  print2("%ld source statement(s) were extracted.\n", extractedStmts);
-
+  /*print2("%ld source statement(s) were extracted.\n", extractedStmts);*/
+  /* 5-Sep-2020 nm */
+  j = 0; p1 = 0; p2 = 0; p3 = 0; p4 = 0;
+  for (stmt = 1; stmt <= g_statements; stmt++) {
+    if (extractNeeded[stmt] == 'Y') {
+      j++;
+      if (g_Statement[stmt].type == a_) {
+        p1++;
+        if (!strcmp("ax-", left(g_Statement[stmt].labelName, 3))) p3++;
+        if (!strcmp("df-", left(g_Statement[stmt].labelName, 3))) p4++;
+        let(&buf, ""); /* Deallocate stack created by left() */
+      }
+      if (g_Statement[stmt].type == p_) p2++;
+    }
+  }
+  print2(
+"Extracted %ld statements incl. %ld $a (%ld \"ax-\", %ld \"df-\"), %ld $p.\n",
+      j, p1, p3, p4, p2);
 
  EXTRACT_RETURN:
   /* Deallocate */
@@ -4930,10 +4989,28 @@ void fixUndefinedLabels(vstring extractNeeded/*'Y'/'N' list*/,
   vstring label = "";
   vstring newLabelWithTilde = "";
   vstring restOfComment = "";
+  int mathMode; /* char gives Wconversion gcc warning */
+#define ASCII_4 4
+
+  /* 12-Sep-2020 nm */
+  /* Change ~ in math symbols to nonprintable ASCII 4 to prevent
+     interpretation as label indicator */
+  p1 = (long)strlen(*buf);
+  mathMode = 0;
+  for (p2 = 0; p2 < p1; p2++) {
+    if ((*buf)[p2] == '`') {
+      mathMode = 1 - mathMode;
+      continue;
+    }
+    if ((*buf)[p2] == '~' && mathMode == 1) {
+      (*buf)[p2] = ASCII_4;
+    }
+  }
+
   p1 = 0;
   let(&(*buf), cat(*buf, " \n", NULL)); /* Ensure white space after last label */
   while (1) {
-    p1 = instr(p1 + 1, *buf, "~ ");
+    p1 = instr(p1 + 1, *buf, "~");
     if (p1 == 0) break;
     if (p1 - 2 >= 0) { /* Prevent out-of-bounds access */
       if ((*buf)[p1 - 2] == '~') {
@@ -4960,7 +5037,7 @@ void fixUndefinedLabels(vstring extractNeeded/*'Y'/'N' list*/,
     if (!strcmp(left(label, 2)), "mm") continue; /@ Ignore special case @/
     ***/
     p3 = lookupLabel(label);
-    if (p3 == -1) continue; /* Not a statement label */
+    if (p3 == -1) continue; /* Not a statement label (e.g. ~ http://...) */
     if (extractNeeded[p3] == 'Y') continue; /* Label link won't be broken */
     /* Change label to external link */
     let(&newLabelWithTilde, cat(label,
@@ -4982,6 +5059,14 @@ void fixUndefinedLabels(vstring extractNeeded/*'Y'/'N' list*/,
   }
   let(&(*buf), left(*buf, (long)strlen(*buf) - 2));
        /* Take off the '\n' we added at beginning of this function */
+
+  /* 12-Sep-2020 nm */
+  /* Restore ASCII 4 to ~ */
+  p1 = (long)strlen(*buf);
+  for (p2 = 0; p2 < p1; p2++) {
+    if ((*buf)[p2] == ASCII_4) (*buf)[p2] = '~';
+  }
+
   let(&label, ""); /* Deallocate */
   let(&newLabelWithTilde, ""); /* Deallocate */
   let(&restOfComment, ""); /* Deallocate */
@@ -5879,7 +5964,8 @@ void verifyMarkup(vstring labelMatch,
         /* 5-May-2015 nm */
         &hugeHdrComment, &bigHdrComment, &smallHdrComment,
         &tinyHdrComment,
-        0 /* fineResolution */);
+        0, /* fineResolution */
+        0 /* fullComment */);
     if (f != 0) errFound = 1;  /* 6-Aug-2019 nm */
 
     g_showStatement /* global */ = stmtNum; /* For printTexComment() */

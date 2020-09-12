@@ -466,7 +466,9 @@ vstring getDescriptionAndLabel(long statemNum);
 
 /* Reconstruct the full header from the strings returned by
    getSectionHeadings() */
+/*** deleted 12-Sep-2020
 vstring buildHeader(vstring header, vstring hdrComment, vstring decoration);
+***/
 
 /* Returns 1 if comment has an "is discouraged" markup tag */
 flag getMarkupFlag(long statemNum, char mode);

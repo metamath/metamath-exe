@@ -131,6 +131,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas,
 /* 21-Aug-2017 nm - added tinyHdrAddr */
 /* 6-Aug-2019 nm - changed return type from void to flag (=char) */
 /* 24-Aug-2020 nm - added fineResolution */
+/* 12-Sep-2020 nm - added fullComment */
 flag getSectionHeadings(long stmt, vstring *hugeHdrTitle,
     vstring *bigHdrTitle,
     vstring *smallHdrTitle,
@@ -141,7 +142,8 @@ flag getSectionHeadings(long stmt, vstring *hugeHdrTitle,
     vstring *smallHdrComment,
     vstring *tinyHdrComment,
     /* Added 24-Aug-2020 nm */
-    flag fineResolution /* 0 = consider just successive $a/$p, 1 = all stmts */
+    flag fineResolution, /* 0 = consider just successive $a/$p, 1 = all stmts */
+    flag fullComment /* 1 = put $( + header + comment + $) into xxxHdrTitle */
     );
 
 /****** 15-Aug-2020 nm Obsolete

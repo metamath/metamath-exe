@@ -5,6 +5,9 @@
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
 /* Part 1 of help file for Metamath */
+/* The content here was split into help0() and help1() because the original
+   help() overflowed the lcc compiler (at least before version 3.8; not
+   tested with 3.8 and above). */
 /* To add a new help entry, you must add the command syntax to mmcmdl.c
    as well as adding it here. */
 
@@ -15,7 +18,7 @@
 #include "mmcmds.h"
 #include "mmhlpa.h"
 
-/* help0 is for toolsMode */
+/* help0 is mostly for TOOLS help */
 void help0(vstring helpCmd)
 {
 
@@ -1024,10 +1027,9 @@ H("        source duplication in both the output file and the included file.");
 H("        The / KEEP_INCLUDES qualifier will prevent this deletion.");
 H("    / NO_VERSIONING - Backup files suffixed with ~1 are not created.");
 /* 4-Sep-2020 nm Added EXTRACT */
-H("    / EXTRACT <label-match> - Extract a stand-alone database containing");
-H("        only those statements needed to support and prove the statements");
-H("        matching <label-match>.  See HELP SEARCH for wildcard matching");
-H("        rules in <label-match>.");
+H("    / EXTRACT <label-match> - Write to the output file only those");
+H("        statements needed to support and prove the statements matching");
+H("        <label-match>.  See HELP SEARCH for the format of <label-match>.");
 H("");
 
 g_printHelp = !strcmp(saveHelpCmd, "HELP WRITE THEOREM_LIST");

@@ -62,7 +62,14 @@
 
 
 
-#define MVERSION "0.192 4-Sep-2020"
+#define MVERSION "0.193 12-Sep-2020"
+/* 0.193 12-Sep-2020 nm mmcmds.c mmdata.c,h mmwtex.c,h mmhlpa.c - make the
+   output of /EXTRACT stable in the sense that, with the same <label-list>
+   parameter, extract(extract(file)) = extract(file) except that the date
+   stamp at the top will be updated.  (The first extraction even if "*" will
+   usually be different because it discards non-relevant content.  Note that
+   the include file directives "$( $[ Begin..." etc. and comments with "$j" are
+   currently discarded.) */
 /* 0.192 4-Sep-2020 nm metamath.c - fix bug */
 /* 0.191 4-Sep-2020 nm metamath.c - add comment close */
 /* 0.190 4-Sep-2020 nm mmcmds.c - fix bug in writeExtractedSource() */

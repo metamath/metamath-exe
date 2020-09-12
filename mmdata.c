@@ -3116,6 +3116,7 @@ vstring getDescription(long statemNum) {
 vstring getDescriptionAndLabel(long stmt) {
   vstring descriptionAndLabel = "";
   long p1, p2;
+  flag dontUseComment = 0; /* 12-Sep-2020 nm */
 
   let(&descriptionAndLabel, space(g_Statement[stmt].labelSectionLen));
   memcpy(descriptionAndLabel, g_Statement[stmt].labelSectionPtr,
@@ -3141,36 +3142,54 @@ vstring getDescriptionAndLabel(long stmt) {
       || instr(1, descriptionAndLabel, cat("\n", SMALL_DECORATION, NULL)) != 0
       || instr(1, descriptionAndLabel, cat("\n", BIG_DECORATION, NULL)) != 0
       || instr(1, descriptionAndLabel, cat("\n", HUGE_DECORATION, NULL)) != 0) {
-    let(&descriptionAndLabel, "");
+    /*let(&descriptionAndLabel, "");*/
+    dontUseComment = 1; /* 12-Sep-2020 nm */
   }
   /* Remove comments with file inclusion markup */
   if (instr(1, descriptionAndLabel, "$[") != 0) {
-    let(&descriptionAndLabel, "");
+    /*let(&descriptionAndLabel, "");*/
+    dontUseComment = 1; /* 12-Sep-2020 nm */
   }
 
-  /* If the cleaned description is empty, e.g. ${ after a header,
-     add in spaces corresponding to the scope */
+  /* Remove comments with $j markup */
+  if (instr(1, descriptionAndLabel, "$j") != 0) {
+    /*let(&descriptionAndLabel, "");*/
+    dontUseComment = 1; /* 12-Sep-2020 nm */
+  }
+
+  /****** deleted 12-Sep-2020
+  /@ If the cleaned description is empty, e.g. ${ after a header,
+     add in spaces corresponding to the scope @/
   if (descriptionAndLabel[0] == 0) {
     let(&descriptionAndLabel, space(2 * (g_Statement[stmt].scope + 1)));
+  }
+  *******/
+
+  if (dontUseComment == 1) {
+    /* Get everything that follows the comment */
+    p2 = rinstr(descriptionAndLabel, "$)");
+    if (p2 == 0) bug(1401); /* Should have exited earlier if no "$)" */
+    let(&descriptionAndLabel, right(descriptionAndLabel, p2 + 2));
   }
 
   return descriptionAndLabel;
 } /* getDescriptionAndLabel */
 
 
-/* 24-Aug-2020 nm */
-/* Reconstruct the full header from the strings returned by
-   getSectionHeadings().  The caller should deallocate the returned string. */
-/* getSectionHeadings() currently return strings extracted from headers,
+/**** Deleted 12-Sep-2020 nm
+/@ 24-Aug-2020 nm @/
+/@ Reconstruct the full header from the strings returned by
+   getSectionHeadings().  The caller should deallocate the returned string. @/
+/@ getSectionHeadings() currently return strings extracted from headers,
    but not the full header needed for writeExtractedSource().  Maybe we
    should have it return the full header in the future, but for now this
-   function reconstructs the full header. */
+   function reconstructs the full header. @/
 vstring buildHeader(vstring header, vstring hdrComment, vstring decoration) {
   long i;
   vstring fullDecoration = "";
   vstring fullHeader = "";
-  /* The HUGE_DECORATION etc. have only the 1st 4 chars of the full line.
-     Build the full line. */
+  /@ The HUGE_DECORATION etc. have only the 1st 4 chars of the full line.
+     Build the full line. @/
   let(&fullDecoration, "");
   for (i = 1; i <= 5; i++) {
     let(&fullDecoration, cat(fullDecoration, decoration, decoration,
@@ -3186,7 +3205,8 @@ vstring buildHeader(vstring header, vstring hdrComment, vstring decoration) {
       NULL));
   let(&fullDecoration, "");
   return fullHeader;
-} /* buildHeader */
+} /@ buildHeader @/
+*******/
 
 
 /* Returns 0 or 1 to indicate absence or presence of an indicator in
