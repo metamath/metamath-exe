@@ -87,6 +87,7 @@ long numSymbs;
 vstring g_htmlCSS = ""; /* Set by g_htmlCSS commands */  /* 14-Jan-2016 nm */
 vstring g_htmlFont = ""; /* Set by htmlfont commands */  /* 14-Jan-2016 nm */
 vstring g_htmlVarColor = ""; /* Set by htmlvarcolor commands */
+vstring htmlExtUrl = ""; /* Set by htmlexturl command */
 vstring htmlTitle = ""; /* Set by htmltitle command */
   /* 16-Aug-2016 nm */
   vstring htmlTitleAbbr = ""; /* Extracted from htmlTitle */
@@ -269,6 +270,8 @@ flag readTexDefs(
 /* Added 14-Jan-2016 nm */
 #define HTMLCSS 14
 #define HTMLFONT 15
+/* Added 26-Dec-2020 nm */
+#define HTMLEXTURL 16
 
   startPtr = fileBuf;
 
@@ -354,7 +357,7 @@ flag readTexDefs(
           "latexdef,htmldef,htmlvarcolor,htmltitle,htmlhome"
           ",althtmldef,exthtmltitle,exthtmlhome,exthtmllabel,htmldir"
           ",althtmldir,htmlbibliography,exthtmlbibliography"
-          ",htmlcss,htmlfont"   /* 14-Jan-2016 nm */
+          ",htmlcss,htmlfont,htmlexturl"   /* 26-Dec-2020 nm */
           );
       fbPtr[tokenLength] = zapChar;
       if (cmd == 0) {
@@ -371,7 +374,8 @@ flag readTexDefs(
             " \"exthtmltitle\", \"exthtmlhome\", \"exthtmllabel\",",
             " \"htmldir\", \"althtmldir\",",
             " \"htmlbibliography\", \"exthtmlbibliography\",",
-            " \"htmlCSS\", or \"htmlfont\" here.",     /* 14-Jan-2016 nm */
+            " \"htmlcss\", \"htmlfont\",",    /* 14-Jan-2016 nm */
+            " or \"htmlexturl\" here.",       /* 26-Dec-2020 nm */
             NULL));
         let(&fileBuf, "");  /* was: free(fileBuf); */
         return 2;
@@ -384,6 +388,7 @@ flag readTexDefs(
           && cmd != HTMLBIBLIOGRAPHY && cmd != EXTHTMLBIBLIOGRAPHY
           && cmd != HTMLCSS /* 14-Jan-2016 nm */
           && cmd != HTMLFONT /* 14-Jan-2016 nm */
+          && cmd != HTMLEXTURL /* 26-Dec-2020 nm */
           ) {
          /* Get next token - string in quotes */
         fbPtr = fbPtr + texDefWhiteSpaceLen(fbPtr);
@@ -444,6 +449,7 @@ flag readTexDefs(
           && cmd != HTMLBIBLIOGRAPHY && cmd != EXTHTMLBIBLIOGRAPHY
           && cmd != HTMLCSS /* 14-Jan-2016 nm */
           && cmd != HTMLFONT /* 14-Jan-2016 nm */
+          && cmd != HTMLEXTURL /* 26-Dec-2020 nm */
           ) {
         /* Get next token -- "as" */
         fbPtr = fbPtr + texDefWhiteSpaceLen(fbPtr);
@@ -648,6 +654,9 @@ flag readTexDefs(
         }
         if (cmd == HTMLFONT) {
           let(&g_htmlFont, token);
+        }
+        if (cmd == HTMLEXTURL) {
+          let(&htmlExtUrl, token);  /* 26-Dec-2020 nm */
         }
       }
 
@@ -1905,13 +1914,37 @@ void printTexHeader(flag texHeaderFlag)
       print2("      <FONT SIZE=-2 FACE=sans-serif>\n");
 
 
-      /* 3-Jun-2018 nm Add link to Thierry Arnoux's site */
-      /* This was added to version 0.162 to become 0.162-thierry */
-      /****** THIS IS TEMPORARY AND MAY BE CHANGED OR DELETED *********/
+      /**** Deleted 26-Dec-2020 nm
+      /@ 3-Jun-2018 nm Add link to Thierry Arnoux's site @/
+      /@ This was added to version 0.162 to become 0.162-thierry @/
+      /@@@@@@ THIS IS TEMPORARY AND MAY BE CHANGED OR DELETED @@@@@@@@@/
       printLongLine(cat("      <A HREF=\"",
           "http://metamath.tirix.org/", g_texFileName,
           "\">Structured version</A>&nbsp;&nbsp;", NULL), "", " ");
-      /****** END OF LINKING TO THIERRY ARNOUX'S SITE ************/
+      /@@@@@@ END OF LINKING TO THIERRY ARNOUX'S SITE @@@@@@@@@@@@/
+      ***** End of 26-Dec-2020 deletion *****/
+
+      /* 26-Dec-2020 nm Add link(s) specified by htmlexturl in $t statement */
+      /* The position of the theorem name is indicated with "*" in the
+         htmlexturl $t variable.  If a literal "*" is part of the URL,
+         use the alternate URL encoding "%2A" */
+      /* Example:
+          htmlexturl '<A HREF="http://metamath.tirix.org/*.html">' +
+              'Structured version</A>&nbsp;&nbsp;' +
+              '<A HREF="https://expln.github.io/metamath/asrt/*.html">' +
+              'ASCII version</A>&nbsp;&nbsp;';
+      */
+      let(&tmpStr, htmlExtUrl);
+      i = 1;
+      while (1) {
+        i = instr(i, tmpStr, "*");
+        if (i == 0) break;
+        let(&tmpStr, cat(left(tmpStr, i - 1),
+            g_Statement[g_showStatement].labelName,
+            right(tmpStr, i + 1), NULL));
+      }
+      printLongLine(tmpStr, "", " ");
+      /* End of 26-Dec-2020 mod */
 
       /* Print the GIF/Unicode Font choice, if directories are specified */
       if (htmlDir[0]) {
@@ -5367,6 +5400,7 @@ print2("</FONT></B></CENTER>\n");
    In all 4 cases, only the last occurrence of a header is considered. */
 /*
 20-Jun-2015 metamath Google group email:
+https://groups.google.com/g/metamath/c/QE0lwg9f5Ho/m/J8ekl_lH1I8J
 
 There are 3 kinds of section headers, big (####...), medium (#*#*#*...),
 and small (=-=-=-).

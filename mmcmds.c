@@ -4978,8 +4978,6 @@ void writeExtractedSource(
 
 
 /* 24-Aug-2020 nm */
-/* ************ TODO Bypass ~ in math strings!!! ************ */
-/* ************ TODO Tolerate no space after ~ ? ************ */
 /* Some labels in comments may not exist in statements extracted
    with WRITE SOURCE ... / EXTRACT.  This function changes them
    to external links to us.metamath.org. */

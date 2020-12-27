@@ -10,11 +10,6 @@
    from other people which may be GPL licensed.  For more details see:
    https://github.com/metamath/metamath-exe/issues/7#issuecomment-675555069 */
 
-/* Contributors:  In the future, the copyright may be changed to the MIT
-   license or public domain.  Therefore I request that any patches that are
-   contributed be free of copyright restrictions (i.e. public domain) in order
-   to provide this flexibility.  Thank you. - NM */
-
 /* The overall functionality of the modules is as follows:
     metamath.c - Contains main(); executes or calls commands
     mmcmdl.c - Command line interpreter
@@ -62,7 +57,9 @@
 
 
 
-#define MVERSION "0.193 12-Sep-2020"
+#define MVERSION "0.194 26-Dec-2020"
+/* 0.194 26-Dec-2020 nm mmwtex.c - add keyword "htmlexturl" to $t
+   statement in .mm file */
 /* 0.193 12-Sep-2020 nm mmcmds.c mmdata.c,h mmwtex.c,h mmhlpa.c - make the
    output of /EXTRACT stable in the sense that, with the same <label-list>
    parameter, extract(extract(file)) = extract(file) except that the date
@@ -3701,6 +3698,10 @@ void command(int argc, char *argv[])
       /* 21-Jun-2014 */
       print2("The program is compiled for a %ld-bit CPU.\n",
           (long)(8 * sizeof(long)));
+      print2(
+ "sizeof(short)=%ld, sizeof(int)=%ld, sizeof(long)=%ld, sizeof(size_t)=%ld.\n",
+        (long)(sizeof(short)),
+        (long)(sizeof(int)), (long)(sizeof(long)), (long)(sizeof(size_t)));
       continue;
     }
 
