@@ -1688,7 +1688,9 @@ void printTexHeader(flag texHeaderFlag)
     print2(
       "      HEIGHT=32 WIDTH=32 ALIGN=TOP STYLE=\"margin-bottom:0px\"></A>\n");
     print2("    </TD>\n");
-    print2("    <TD ALIGN=CENTER VALIGN=TOP><FONT SIZE=\"+3\" COLOR=%s><B>\n",
+    print2(
+"    <TD ALIGN=CENTER COLSPAN=2 VALIGN=TOP><FONT SIZE=\"+3\" COLOR=%s><B>\n",
+                              /* Change COLSPAN=1 -> 2 */ /* 27-Dec-2020 nm */
       GREEN_TITLE_COLOR);
     /* Allow plenty of room for long titles (although over 79 chars. will
        trigger bug 1505). */
@@ -1910,7 +1912,8 @@ void printTexHeader(flag texHeaderFlag)
           left(g_texFileName, (long)strlen(g_texFileName) - 5));
       print2("      </FONT>\n");
       print2("    </TD>\n");
-      print2("    <TD COLSPAN=1 ALIGN=RIGHT VALIGN=TOP>\n");
+      print2("    <TD COLSPAN=2 ALIGN=RIGHT VALIGN=TOP>\n");
+                              /* Change COLSPAN=1 -> 2 */ /* 27-Dec-2020 nm */
       print2("      <FONT SIZE=-2 FACE=sans-serif>\n");
 
 
