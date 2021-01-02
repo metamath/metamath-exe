@@ -4303,6 +4303,9 @@ long countLines(vstring start, long length) {
 /* Note that the labelSection, mathSection, and proofSection do not
    contain keywords ($a, $p,...; $=; $.).  The keywords are added
    by this function when the statement is written. */
+/* 31-Dec-2020 nm This must be called in sequence for all statements,
+   since the previous statement is needed to populate dollarDpos
+   and previousType */
 vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
     flag reformatFlag)
 {
@@ -4315,6 +4318,7 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
   vstring output = "";
   /* flag newProofFlag; */ /* deleted 3-May-2017 nm */
   /* For reformatting: */
+  long slen; /* To save local string length */ /* 31-Dec-2020 nm */
   long pos;
   long indent;
   static long dollarDpos = 0;
@@ -4332,6 +4336,12 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
   long saveWidth;
   */
 
+  /* 31-Dec-2020 nm */
+  /* Re-initialize static variables for a second 'write source' */
+  if (stmt == 1) {
+    previousType = illegal_;  /* '?' in mmdata.h */
+    dollarDpos = 0;
+  }
 
   let(&labelSection, space(g_Statement[stmt].labelSectionLen));
   memcpy(labelSection, g_Statement[stmt].labelSectionPtr,
@@ -4407,7 +4417,9 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
 
     /* Don't allow more than 2 consecutive blank lines */
     while (1) {
+      /* Match to 3 or more blank lines */
       pos = instr(1, labelSection, "\n\n\n\n");
+      /* If it matches, remove one of the \n and restart loop */
       if (pos == 0) break;
       let(&labelSection, cat(left(labelSection, pos - 1),
           right(labelSection, pos + 1), NULL));
@@ -4419,42 +4431,82 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
       case v_: /* $v */
       case c_: /* $c */
       case d_: /* $d */
-        /* Get the last newline */
-        pos = rinstr(labelSection, "\n");
-        /* If there is none, insert it (unless first line in file) */
-        if (pos == 0 && stmt > 1) {
-          let(&labelSection, cat(edit(labelSection, 128 /* trailing spaces */),
-              "\n", NULL));
-          pos = (long)strlen(labelSection) + 1;
+        /* These 5 cases are for keywords that don't have labels, so that
+           labelSection is simply the text before the keyword. */
+
+        /*** 31-Dec-2020 nm ${, $}, $v, $c, $d cases completely rewritten */
+        /* Strip any trailing spaces */
+        let(&labelSection, edit(labelSection, 128 /*trailing spaces*/));
+        slen = (long)strlen(labelSection); /* Save to avoid recomputing */
+        /* See if last character is \n; if not, add it */
+        /* (If there's no text - just spaces - they've been stripped, and
+            leave labelSection as an empty string.) */
+        /* We use slen - 1 because native C strings start at index 0. */
+        if (slen != 0 && labelSection[slen - 1] != '\n') {
+          let(&labelSection, cat(labelSection, "\n", NULL));
+          slen++;
         }
-        /* Put a blank line between $} and ${ if there is none */
-        if (stmt > 1) {
-          if (pos == 1 && g_Statement[stmt].type == lb_
-              && g_Statement[stmt - 1].type == rb_) {
+        /* Put a blank line between $} and ${ if there is none. */
+        if (g_Statement[stmt].type == lb_
+            && previousType == rb_) {
+          if (slen == 0) {
+            /* There's no text (comment) between $} and ${, so make it
+               a blank line */
             let(&labelSection, "\n\n");
-            pos = 2;
-          }
-        }
-        let(&labelSection, cat(left(labelSection, pos),
-            space(indent), NULL));
-        if (g_Statement[stmt].type == d_) {
-          let(&mathSection, edit(mathSection,
-              4 /* discard LF */ + 16 /* reduce spaces */));
-          if (previousType == d_) {
-            /* See if the $d can be added to the current line */
-            if (dollarDpos + 2 + (signed)(strlen(mathSection)) + 4
-                <= g_screenWidth) {
-              let(&labelSection, "  ");  /* 2 spaces between $d's */
-              dollarDpos = dollarDpos + 2 + (long)strlen(mathSection) + 4;
-            } else {
-              /* Add 4 = '$d' length + '$.' length */
-              dollarDpos = indent + (long)strlen(mathSection) + 4;
-            }
           } else {
+            /* There's text between $} and ${ */
+            if (instr(1, labelSection, "\n\n") == 0) {
+              /* If there's no blank line, add one (note that code above
+                 ensures non-empty labelSection will end with \n, so
+                 add just 1 more) */
+              let(&labelSection, cat(labelSection, "\n", NULL));
+            }
+          } /* if slen == 0 else */
+        } /* if $}...${ */
+        /* Add indentation to end of labelSection i.e. before the keyword */
+        /* If there was text (comment) before the keyword on the same line,
+           it now has a \n after it, thus the indentation of the keyword will be
+           consistent. */
+        let(&labelSection, cat(labelSection, space(indent), NULL));
+        if (g_Statement[stmt].type == d_/*$d*/) {
+          /* Try to put as many $d's on one line as will fit.
+             First we remove redundant spaces in mathSection. */
+          let(&mathSection, edit(mathSection,
+              /*4*//*discard \n*/ + 16/*reduce spaces*/));
+              /* 31-Dec-2020: No longer discard \n so that user can
+                 insert \n to break a huge $d with say >40 variables,
+                 which itself can exceed line length. */
+          if (strlen(edit(labelSection, 4/*discard \n*/ + 2/*discard spaces*/))
+              == 0) /* This and previous $d are separated by spaces
+                       and newlines only */
+              {
+            if (previousType == d_) { /* The previous statement was a $d */
+              /* See if the $d will fit on the current line */
+              if (dollarDpos + 2 + (signed)(strlen(mathSection)) + 4
+                  <= g_screenWidth) {
+                let(&labelSection, "  ");  /* 2 spaces between $d's */
+                dollarDpos = dollarDpos + 2 + (long)strlen(mathSection) + 4;
+              } else {
+                /* The $d assembly overflowed; start on new line */
+                /* Add 4 = '$d' length + '$.' length */
+                dollarDpos = indent + (long)strlen(mathSection) + 4;
+                /* Start new line */
+                let(&labelSection, cat("\n", space(indent), NULL));
+              }
+            } else { /* previousType != $d */
+              /* If the previous statement type (keyword) was not $d,
+                 we want to start the assembly of $d statements here. */
+              dollarDpos = indent + (long)strlen(mathSection) + 4;
+            } /* if previousType == $d else */
+          } else {
+            /* There is some text (comment) between this $d and previous,
+               so we restart assembling $d groups on this line */
             dollarDpos = indent + (long)strlen(mathSection) + 4;
-          }
-        }
-        break;
+          } /* if labelSection = spaces and newlines only else */
+        } /* if g_Statement[stmt].type == d_ */
+        /*** (End of 31-Dec-2020 rewrite) ***/
+
+        break; /* End of ${, $}, $v, $c, $d cases */
       case a_:    /* $a */
       case p_:    /* $p */
         /* Get last $( */
@@ -4665,7 +4717,7 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
         /* Complete the label section */
         let(&labelSection, cat(labelSection, comment,
             space(indent), g_Statement[stmt].labelName, " ", NULL));
-        break;
+        break; /* End of $a, $p cases */
       case e_:    /* $e */
       case f_:    /* $f */
         pos = rinstr(labelSection, g_Statement[stmt].labelName);
@@ -4680,17 +4732,15 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
         let(&labelSection, left(labelSection, pos));
         /* If previous statement is $d or $e and there is no comment after it,
            discard entire rest of label to get rid of redundant blank lines */
-        if (stmt > 1) {
-          if ((g_Statement[stmt - 1].type == d_
-                || g_Statement[stmt - 1].type == e_)
-              && instr(1, labelSection, "$(") == 0) {
-            let(&labelSection, "\n");
-          }
+        if ((previousType == d_       /* 31-Dec-2020 nm (simplified) */
+              || previousType == e_)
+            && instr(1, labelSection, "$(") == 0) {
+          let(&labelSection, "\n");
         }
         /* Complete the label section */
         let(&labelSection, cat(labelSection,
             space(indent), g_Statement[stmt].labelName, " ", NULL));
-        break;
+        break; /* End of $e, $f cases */
       default: bug(1727);
     } /* switch (g_Statement[stmt].type) */
 

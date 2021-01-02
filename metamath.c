@@ -57,7 +57,9 @@
 
 
 
-#define MVERSION "0.195 30-Dec-2020"
+#define MVERSION "0.196 31-Dec-2020"
+/* 0.196 nm 31-Dec-2020 metamath.c mmpars.c - fix bug that deleted comments
+   that were followed by ${, $}, $c, $v, $d on the same line */
 /* 0.195 nm 30-Dec-2020 metamath.c - temporarily disable /REWRAP until bug fixed
    27-Sep-2020 nm mmwtex.c - prevent "htmlexturl" links from wrapping */
 /* 0.194 26-Dec-2020 nm mmwtex.c - add keyword "htmlexturl" to $t
@@ -2298,14 +2300,6 @@ void command(int argc, char *argv[])
         r = 1; /* Format output according to set.mm standard */
       } else {
         r = 0; /* Keep formatting as-is */
-      }
-      /* 30-Dec-2020 nm Temporarily disable / REWRAP until bug fixed */
-      if (r > 0) {
-        print2(
-"*** (30-Dec-2020) /REWRAP and /FORMAT are temporarily bypassed in\n");
-        print2(
-"*** version 0.195 while a bug is being fixed.\n");
-        r = 0;
       }
 
       /* 24-Aug-2020 nm */
