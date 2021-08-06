@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2020  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2021  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -582,7 +582,7 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
 #endif
 /**************** END OF OBSOLETE SECTION ********/
 
-  }
+  } /* if (breakMatch1[0] == '\"') */
 
 
   /* The tilde is a special flag for printLongLine to print a
@@ -593,7 +593,7 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
   }
 
 
-  while (multiLine[0]) { /* While there are multi caller-inserted newlines */
+  while (multiLine[0]) { /* While there are multiple caller-inserted newlines */
 
     /* Process caller-inserted newlines */
     p = instr(1, multiLine, "\n");
@@ -617,7 +617,8 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
 
     saveScreenWidth = g_screenWidth;
    HTML_RESTART:
-    /* Now we will break up one caller's line */
+    /* Now we will break up one line from the caller i.e. longLine;
+       multiLine has any remaining lines to be processed in next pass */
     firstLine = 1;
 
     startNextLineLen = (long)strlen(startNextLine1);
@@ -626,8 +627,16 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
       startNextLineLen = g_screenWidth - 4;
       let(&startNextLine1, left(startNextLine1, g_screenWidth - 4));
     }
+
+    /* If startNextLine starts with "~" means (I think - check this) add tilde
+       after broken line (used for command input comment continuation); if
+       breakMatch is "\\" i.e. single \, then put % at end of previous line
+       for LaTeX */
+    /* Otherwise, if first line:  use length of longLine;
+       if not first line:  use length of longLine - startNextLineLen */
     while ((signed)(strlen(longLine)) + (1 - firstLine) * startNextLineLen >
         g_screenWidth - (long)tildeFlag - (long)(breakMatch1[0] == '\\')) {
+      /* Get screen width + 1 (default is 79 + 1)*/
       p = g_screenWidth - (long)tildeFlag - (long)(breakMatch1[0] == '\\') + 1;
       if (!firstLine) p = p - startNextLineLen;
 
@@ -667,10 +676,10 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
             p--;
             if (!p) break;
           }
-          /* if (p <= 0 && g_htmlFlag) { */
           /* 25-Jun-2014 nm We will now not break any line at non-space,
              since it causes more problems that it solves e.g. with
              WRITE SOURCE.../REWRAP with long URLs */
+          /* if (p <= 0 && g_htmlFlag) { */
           if (p <= 0) {
             /* The line couldn't be broken.  Since it's an HTML line, we
                can increase g_screenWidth until it will fit. */

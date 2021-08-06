@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2020  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2021  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -1931,10 +1931,11 @@ void printTexHeader(flag texHeaderFlag)
       /* The position of the theorem name is indicated with "*" in the
          htmlexturl $t variable.  If a literal "*" is part of the URL,
          use the alternate URL encoding "%2A" */
-      /* Example:
-          htmlexturl '<A HREF="http://metamath.tirix.org/*.html">' +
+      /* Example: (take out space in "/ *" below that was put there to prevent
+                   compiler warnings)
+          htmlexturl '<A HREF="http://metamath.tirix.org/ *.html">' +
               'Structured version</A>&nbsp;&nbsp;' +
-              '<A HREF="https://expln.github.io/metamath/asrt/*.html">' +
+              '<A HREF="https://expln.github.io/metamath/asrt/ *.html">' +
               'ASCII version</A>&nbsp;&nbsp;';
       */
       let(&tmpStr, htmlExtUrl);

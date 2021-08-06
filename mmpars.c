@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2020  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2021  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -4453,6 +4453,7 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
             /* There's no text (comment) between $} and ${, so make it
                a blank line */
             let(&labelSection, "\n\n");
+            slen = 2; /* 2-Aug-2021 */
           } else {
             /* There's text between $} and ${ */
             if (instr(1, labelSection, "\n\n") == 0) {
@@ -4460,14 +4461,23 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
                  ensures non-empty labelSection will end with \n, so
                  add just 1 more) */
               let(&labelSection, cat(labelSection, "\n", NULL));
+              slen++; /* 2-Aug-2021 */
             }
           } /* if slen == 0 else */
         } /* if $}...${ */
-        /* Add indentation to end of labelSection i.e. before the keyword */
-        /* If there was text (comment) before the keyword on the same line,
-           it now has a \n after it, thus the indentation of the keyword will be
-           consistent. */
-        let(&labelSection, cat(labelSection, space(indent), NULL));
+        if (slen == 0) {
+          /* 2-Aug-2021 */
+          /* If the statement continues on this line, put 2 spaces before it */
+          let(&labelSection, cat(labelSection, "  ", NULL));
+          slen = 2;
+        } else {
+          /* Add indentation to end of labelSection i.e. before the keyword */
+          /* If there was text (comment) before the keyword on the same line,
+             it now has a \n after it, thus the indentation of the keyword will
+             be consistent. */
+          let(&labelSection, cat(labelSection, space(indent), NULL));
+          slen = slen + indent;
+        }
         if (g_Statement[stmt].type == d_/*$d*/) {
           /* Try to put as many $d's on one line as will fit.
              First we remove redundant spaces in mathSection. */
@@ -4515,6 +4525,7 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
         commentEnd = rinstr(labelSection, "$)") + 1;
         if (commentEnd < commentStart) {
           print2("?Make sure syntax passes before running / REWRAP.\n");
+          print2("(Forcing a bug check since output may be corrupted.)\n");
           bug(1725);
         }
         if (commentStart != 0) {
@@ -5031,7 +5042,9 @@ vstring rewrapComment(vstring comment1)
 
   /* Put period at end of comment ending with lowercase letter */
   /* Note:  This will not detect a '~ label' at end of comment.
-     A diff by the user is needed to verify it doesn't happen.
+     However, user should have ended it with a period, and if not the
+     label + period is unlikly to be valid and thus will
+     usually be detected by 'verify markup'.
      (We could enhace the code here to do that if it becomes a problem.) */
   length = (long)strlen(comment);
   if (islower((unsigned char)(comment[length - 4]))) {

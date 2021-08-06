@@ -1,6 +1,6 @@
 /*****************************************************************************/
 /* Program name:  metamath                                                   */
-/* Copyright (C) 2020 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
+/* Copyright (C) 2021 NORMAN MEGILL  nm at alum.mit.edu  http://metamath.org */
 /* License terms:  GNU General Public License Version 2 or any later version */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -57,7 +57,9 @@
 
 
 
-#define MVERSION "0.196 31-Dec-2020"
+#define MVERSION "0.197 2-Aug-2021"
+/* 0.197 nm 2-Aug-2021 - mmpars.c - put two spaces between $c,v on same line
+   in /rewrap; mmwtex.c, mmhlpa.c, mminou.c - minor edits */
 /* 0.196 nm 31-Dec-2020 metamath.c mmpars.c - fix bug that deleted comments
    that were followed by ${, $}, $c, $v, $d on the same line */
 /* 0.195 nm 30-Dec-2020 metamath.c - temporarily disable /REWRAP until bug fixed

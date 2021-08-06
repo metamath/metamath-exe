@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2020  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2021  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -619,6 +619,9 @@ H("");
 H("Syntax:  MARKUP <inpfile> <outfile> [/ HTML] [/ ALT_HTML] [/ SYMBOLS]");
 H("    [/ LABELS] [/ NUMBER_AFTER_LABEL] [/ BIBLIOGRAPHY] [/ UNDERSCORES]");
 H("    [/ CSS]");
+H("");
+H("Note:  In most cases, use / ALT_HTML / SYMBOLS / LABELS / CSS.");
+H("");
 H("This command will read an arbitrary <inpfile>, normally an HTML file");
 H("with markup, treating it as if it were a giant comment in a database file");
 H("and translating any markup into HTML.  The translated result is written to");
