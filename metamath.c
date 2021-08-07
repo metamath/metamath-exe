@@ -57,9 +57,12 @@
 
 
 
-#define MVERSION "0.197 2-Aug-2021"
-/* 0.197 nm 2-Aug-2021 - mmpars.c - put two spaces between $c,v on same line
-   in /rewrap; mmwtex.c, mmhlpa.c, mminou.c - minor edits */
+#define MVERSION "0.198 7-Aug-2021"
+/* 0.198 nm 7-Aug-2021 mmpars.c - Fix cosmetic bug in WRITE SOURCE ... /REWRAP
+   that prevented end of sentence (e.g. period) from appearing in column 79,
+   thus causing some lines to be shorter than necessary. */
+/* 0.197 nm 2-Aug-2021 mmpars.c - put two spaces between $c,v on same line
+   in /rewrap; mmwtex.c mmhlpa.c mminou.c - minor edits */
 /* 0.196 nm 31-Dec-2020 metamath.c mmpars.c - fix bug that deleted comments
    that were followed by ${, $}, $c, $v, $d on the same line */
 /* 0.195 nm 30-Dec-2020 metamath.c - temporarily disable /REWRAP until bug fixed

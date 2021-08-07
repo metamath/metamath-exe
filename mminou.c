@@ -628,7 +628,7 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
       let(&startNextLine1, left(startNextLine1, g_screenWidth - 4));
     }
 
-    /* If startNextLine starts with "~" means (I think - check this) add tilde
+    /* If startNextLine starts with "~" means add tilde
        after broken line (used for command input comment continuation); if
        breakMatch is "\\" i.e. single \, then put % at end of previous line
        for LaTeX */
@@ -754,6 +754,8 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
       }
       if (longLine[p - 1] == ' ' &&
           breakMatch1[0] /* But not "break anywhere" line */) {
+        /* (Note:  search for "p--" ~100 lines above for the place
+           where the backward search for space happens.) */
         /* Remove leading space for neatness */
         if (longLine[p] == ' ') {
           /* There could be 2 spaces at the end of a sentence. */

@@ -5127,8 +5127,21 @@ vstring rewrapComment(vstring comment1)
       if (comment[pos] != ' ') continue;
       if ((comment[pos + 1] >= 'A' && comment[pos + 1] <= 'Z')
           || strchr(OPENING_PUNCTUATION, comment[pos + 1]) != NULL) {
-        comment[pos] = ASCII_4; /* Prevent break so next line won't have
-                                   leading space; instead, break at 2nd space */
+        /* 7-Aug-2021 nm A change of space to ASCII_4 is not needed, and in fact
+           prevents end of sentence e.g. "." from ever appearing at column 79,
+           triggering an earlier break that makes line unnecessarily short.
+           Contrary to the deleted comment below, there is no problem with
+           next line having leading space:  it is removed in mminou.c (search
+           for "Remove leading space for neatness" there).  (Note that we use
+           ASCII_4 to prevent bad line breaks, then later change them to
+           spaces.) */
+        /***** 7-Aug-2021 nm Deleted
+        comment[pos] = ASCII_4; /@ Prevent break so next line won't have
+                                  leading space; instead, break at 2nd space @/
+        *****/
+        /* Add a second space after end of sentence, which is recommended for
+           monospaced (typewriter) fonts to more easily see sentence
+           separation. */
         let(&comment, cat(left(comment, pos + 1), " ",
             right(comment, pos + 2), NULL));
       }
