@@ -19,7 +19,7 @@
 #include "mmpars.h" /* For rawSourceError and mathSrchCmp and lookupLabel */
 #include "mmcmdl.h" /* For texFileName */
 #include "mmwsts.h"
-#include "mmwtex.h" /* For texDefsRead */
+#include "mmwtex.h" /* For g_texDefsRead */
 #include "mmhtbl.h" /* For caching results */
 
 #define STS_MAX_TYPES 10		/* basic types. For set.mm, there are 4 (|-,wff,class,set) */
@@ -118,16 +118,16 @@ hashtable stsCache;
 int mathSrchGlbCmp(const void *key, const void *data)
 {
   /* Returns -1 if key < data, 1 if key > data */
-  int ret = strcmp(key, mathToken[ *((long *)data) ].tokenName);
+  int ret = strcmp(key, g_MathToken[ *((long *)data) ].tokenName);
   if(ret != 0) return ret;
 
   /* We have found two identical entries.
    * However we shall return 0 (match) only if the token is global. */
-  if(mathToken[ *((long *)data) ].endStatement == statements) return 0;
+  if(g_MathToken[ *((long *)data) ].endStatement == g_statements) return 0;
 
   /* Find the direction in which the target token is */
-  for(long *ptr = (long*)data; !strcmp(key, mathToken[ *ptr ].tokenName); ptr++)
-    if(mathToken[ *ptr ].endStatement == statements) return 1;
+  for(long *ptr = (long*)data; !strcmp(key, g_MathToken[ *ptr ].tokenName); ptr++)
+    if(g_MathToken[ *ptr ].endStatement == g_statements) return 1;
   return -1;
 }
 
@@ -147,10 +147,10 @@ nmbrString *parseMathStrict(vstring text)
   long i;
   char *fbPtr;
   long textLen, tokenLen_;
-  long *mathKeyPtr; /* bsearch returned value */
+  long *g_mathKeyPtr; /* bsearch returned value */
 
-  /* Make sure that mathTokens has been initialized */
-  if (!mathTokens) bug(1717);
+  /* Make sure that g_mathTokens has been initialized */
+  if (!g_mathTokens) bug(1717);
 
   textLen = (long)strlen(text);
 
@@ -169,15 +169,15 @@ nmbrString *parseMathStrict(vstring text)
 
     fbPtr[tokenLen_] = 0; /* End token - There's no come back */
     //printf("Searching for %s\n", fbPtr);
-    mathKeyPtr = (long *)bsearch(fbPtr, mathKey,
-	(size_t)mathTokens, sizeof(long), mathSrchGlbCmp);
-    if (!mathKeyPtr) {
+    g_mathKeyPtr = (long *)bsearch(fbPtr, g_mathKey,
+	(size_t)g_mathTokens, sizeof(long), mathSrchGlbCmp);
+    if (!g_mathKeyPtr) {
       /* Unknown token, escape. */
       print2("?Unknown token %s\n", fbPtr);
       free(wrkNmbrPtr);
       return NULL_NMBRSTRING;
     }
-    wrkNmbrPtr[mathStringLen] = *mathKeyPtr;
+    wrkNmbrPtr[mathStringLen] = *g_mathKeyPtr;
     mathStringLen++;
     fbPtr = fbPtr + tokenLen_ + 1; /* Move on to next token */
     if(fbPtr >= text + textLen) break;
@@ -218,8 +218,8 @@ int parsetSTSRules(vstring format) {
   vstring inputFn = "";
   vstring chunk = "";
   char chunkType = 0;
-  flag ots = outputToString;
-  outputToString = 0;
+  flag ots = g_outputToString;
+  g_outputToString = 0;
 
   /* If the same format was already parsed, nothing to do. */
   if(strcmp(stsFormat, format) == 0) {
@@ -236,8 +236,8 @@ int parsetSTSRules(vstring format) {
   }
 
   /* Build the name of the MMTS file to load */
-  let(&inputFn, cat(rootDirectory ,
-      left(input_fn, instr(1,input_fn,".mm")-1), "-", format, ".mmts", NULL));
+  let(&inputFn, cat(g_rootDirectory ,
+      left(g_input_fn, instr(1,g_input_fn,".mm")-1), "-", format, ".mmts", NULL));
 
   FILE *sts_fp = fSafeOpen(inputFn, "r", 1);
   if(!sts_fp) return 0; /* Error message is provided by fSafeOpen */
@@ -270,7 +270,7 @@ int parsetSTSRules(vstring format) {
   fileBuf[charCount] = 0; /* End of string */
 
   /* Initialize the STS Schemes list */
-  stsScheme = malloc((size_t)MAX_MATHTOKENS * sizeof(struct stsScheme_struct));
+  stsScheme = malloc((size_t)g_MAX_MATHTOKENS * sizeof(struct stsScheme_struct));
   if (!stsScheme) {
     print2("*** FATAL ***  Could not allocate stsScheme space\n");
     bug(5001);
@@ -278,7 +278,7 @@ int parsetSTSRules(vstring format) {
   stsSchemes = 0;
 
   /* Initialize and clear the STS Variable list */
-  stsVar = calloc((size_t)MAX_MATHTOKENS, sizeof(struct stsVar_struct));
+  stsVar = calloc((size_t)g_MAX_MATHTOKENS, sizeof(struct stsVar_struct));
   if (!stsVar) {
     print2("*** FATAL ***  Could not allocate stsVar space\n");
     bug(5002);
@@ -409,7 +409,7 @@ int parsetSTSRules(vstring format) {
         stsScheme[stsSchemes].type = chunkType;
         stsScheme[stsSchemes].scheme = NULL_NMBRSTRING;
 	// parseMathTokens is too permissive. Wrote own token parser.
-        //nmbrLet(&(stsScheme[stsSchemes].scheme), parseMathTokens(text, statements));
+        //nmbrLet(&(stsScheme[stsSchemes].scheme), parseMathTokens(text, g_statements));
         nmbrLet(&(stsScheme[stsSchemes].scheme), parseMathStrict(text));
 
         int l = nmbrLen(stsScheme[stsSchemes].scheme);
@@ -431,7 +431,7 @@ int parsetSTSRules(vstring format) {
         /* Store the number of variables in the scheme (each shall be different)  */
         stsScheme[stsSchemes].varCount = 0;
         for(int i=0;i<l;i++)
-          if(mathToken[stsScheme[stsSchemes].scheme[i]].tokenType == var_)
+          if(g_MathToken[stsScheme[stsSchemes].scheme[i]].tokenType == var_)
             stsScheme[stsSchemes].varCount++;
 
         /* Store the variable "type" (wff, set or class for set.mm)  */
@@ -444,13 +444,13 @@ int parsetSTSRules(vstring format) {
           stsVar[index].stsSchemeId = stsSchemes + 1;
           stsVar[index].anchor = "";
 
-          if(mathToken[stsVar[index].stsType].tokenType != con_)
+          if(g_MathToken[stsVar[index].stsType].tokenType != con_)
             rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum, inputFn,*/
                 "An identifier definition shall start with a constant.");
-          if(mathToken[index].tokenType != var_)
+          if(g_MathToken[index].tokenType != var_)
             rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum, inputFn,*/
                 "An identifier definition shall end with a variable.");
-	    //print2("Token %s has type %s\n", mathToken[index].tokenName, mathToken[stsVar[index].stsType].tokenName);
+	    //print2("Token %s has type %s\n", g_MathToken[index].tokenName, g_MathToken[stsVar[index].stsType].tokenName);
         }
 
         startPtr = fbPtr + 1;
@@ -539,13 +539,13 @@ int parsetSTSRules(vstring format) {
   /* Format is invalid */
   let(&stsFormat, format);
 
-  if (!errorCount) {
+  if (!g_errorCount) {
     print2("No errors were found.\n");
   } else {
-    if (errorCount == 1) {
+    if (g_errorCount == 1) {
       print2("One error was found.\n");
     } else {
-      print2("%ld errors were found.\n", (long)errorCount);
+      print2("%ld errors were found.\n", (long)g_errorCount);
     }
   }
 
@@ -554,9 +554,9 @@ int parsetSTSRules(vstring format) {
   free(fileBuf);
 
   /* Return back to outputting in a string */
-  outputToString = ots;
+  g_outputToString = ots;
 
-  texDefsRead = 1;
+  g_texDefsRead = 1;
   return 1;
 }
 
@@ -570,8 +570,8 @@ flag nmbrBalanced(nmbrString *str, long start, long len) {
   /* TODO we could use the global bracketMatchOn to detect if we are in set.mm */
   /*if(!bracketMatchOn) return 1;*/
   if(bracketsOpn == NULL_NMBRSTRING) {
-    nmbrLet(&bracketsOpn, parseMathTokens(bracketsOpnStr, statements));
-    nmbrLet(&bracketsCls, parseMathTokens(bracketsClsStr, statements));
+    nmbrLet(&bracketsOpn, parseMathTokens(bracketsOpnStr, g_statements));
+    nmbrLet(&bracketsCls, parseMathTokens(bracketsClsStr, g_statements));
   }
   long brackets = nmbrLen(bracketsOpn);
   for(int i = 0;i<brackets; i++) {
@@ -584,8 +584,8 @@ flag nmbrBalanced(nmbrString *str, long start, long len) {
     }
     if(pairingMismatches != 0) {
       if(dbs7) print2("Bracket mismatch for %s%s in %s (mismatch=%ld)\n",
-		      mathToken[open].tokenName,
-		      mathToken[close].tokenName,
+		      g_MathToken[open].tokenName,
+		      g_MathToken[close].tokenName,
 		      nmbrCvtMToVString(nmbrMid(str, start, len)),
 		      pairingMismatches);
       return 0;
@@ -598,7 +598,7 @@ flag nmbrBalanced(nmbrString *str, long start, long len) {
 vstring getAnchor(long tokenId) {
   vstring anchor = stsVar[tokenId].anchor;
   if(strlen(anchor) == 0 ) {
-    let(&anchor, cat("#", mathToken[tokenId].tokenName, "#", NULL));
+    let(&anchor, cat("#", g_MathToken[tokenId].tokenName, "#", NULL));
     stsVar[tokenId].anchor = anchor;
   }
   return anchor;
@@ -631,7 +631,7 @@ flag unifySts(nmbrString *mathString, nmbrString *scheme, nmbrString *varPos, nm
 
   /* Count the number of variables in the scheme, and note their positions */
   for(int i=0;i<lenScheme;i++)
-    if(mathToken[scheme[i]].tokenType == var_)
+    if(g_MathToken[scheme[i]].tokenType == var_)
       varPos[varCount++] = i+1;
   if(varCount > STS_MAX_SCHEME_VAR) bug(5003);
 
@@ -650,7 +650,7 @@ flag unifySts(nmbrString *mathString, nmbrString *scheme, nmbrString *varPos, nm
 //	varLen[0] = lenString - lenScheme + 1;
 //	if(!nmbrSubEq(scheme, 1, mathString, 1, varStart[0]-1)) return 0;
 //	if(!nmbrSubEq(scheme, varPos[0]+1, mathString, varPos[0] + varLen[0], lenScheme - varPos[0])) return 0;
-//	if(dbs7) print2("Found unification for %s : %s (start=%ld, len=%ld)\n",mathToken[scheme[varPos[0]-1]].tokenName, nmbrCvtMToVString(nmbrMid(mathString, varStart[0], varLen[0])), varStart[0], varLen[0]);
+//	if(dbs7) print2("Found unification for %s : %s (start=%ld, len=%ld)\n",g_MathToken[scheme[varPos[0]-1]].tokenName, nmbrCvtMToVString(nmbrMid(mathString, varStart[0], varLen[0])), varStart[0], varLen[0]);
 //	return 1;
 
       default:
@@ -674,7 +674,7 @@ flag unifySts(nmbrString *mathString, nmbrString *scheme, nmbrString *varPos, nm
 	  varStart[i+1] = position + conLength;
 	}
 	varLen[varCount-1] = lenString - (lenScheme - varPos[varCount-1]) - varStart[varCount-1] + 1;
-	if(dbs7) for(int i=0;i<varCount;i++) print2("Found unification for %s : %s (start=%ld, len=%ld)\n",mathToken[scheme[varPos[i]-1]].tokenName, nmbrCvtMToVString(nmbrMid(mathString, varStart[i], varLen[i])), varStart[i], varLen[i]);
+	if(dbs7) for(int i=0;i<varCount;i++) print2("Found unification for %s : %s (start=%ld, len=%ld)\n",g_MathToken[scheme[varPos[i]-1]].tokenName, nmbrCvtMToVString(nmbrMid(mathString, varStart[i], varLen[i])), varStart[i], varLen[i]);
 	break;
     }
 
@@ -718,7 +718,7 @@ flag getSTSLongMathRec(vstring *mmlLine, nmbrString *mathString, long statemNum,
   }
 
   // Pruning - if matching a single token (type + token), simply look it up.
-  if(lenString == 2 && mathToken[mathString[1]].tokenType == con_) {
+  if(lenString == 2 && g_MathToken[mathString[1]].tokenType == con_) {
     stsIndex = stsVar[mathString[1]].stsSchemeId;
     if(stsIndex == 0) {
       //print2("Did not find token for %s.\n", nmbrCvtMToVString(mathString));
@@ -757,7 +757,7 @@ flag getSTSLongMathRec(vstring *mmlLine, nmbrString *mathString, long statemNum,
 
     /* This case was handled above - skip it here */
     if(nmbrLen(stsScheme[stsIndex].scheme) == 2
-	&& mathToken[stsScheme[stsIndex].scheme[1]].tokenType == con_) {
+	&& g_MathToken[stsScheme[stsIndex].scheme[1]].tokenType == con_) {
       continue;
     }
 
@@ -800,7 +800,7 @@ flag getSTSLongMathRec(vstring *mmlLine, nmbrString *mathString, long statemNum,
 	success = 1; /* Be optimistic an assume next level substitutions will succeed */
 	for(int i=0;i<varCount && success;i++) {
 	  long varToken = stsScheme[stsIndex].scheme[varPos[i]-1];
-	  if(dbs5) print2("%sVariable %d : %s , from %ld len %ld (%s)\n", space(recursionLevel), i, mathToken[varToken].tokenName, varStart[i], varLen[i], mathToken[stsVar[varToken].stsType].tokenName);
+	  if(dbs5) print2("%sVariable %d : %s , from %ld len %ld (%s)\n", space(recursionLevel), i, g_MathToken[varToken].tokenName, varStart[i], varLen[i], g_MathToken[stsVar[varToken].stsType].tokenName);
 
 	  /* Build the new math string */
 	  nmbrString *newMathString = NULL_NMBRSTRING;
@@ -828,7 +828,7 @@ flag getSTSLongMathRec(vstring *mmlLine, nmbrString *mathString, long statemNum,
 	  /* Deallocate local strings */
 	  let(&substitution, "");
 	  if(!success && recursionError) {
-	    //print2("When unifying %s with scheme %s (token type %s)\n", nmbrCvtMToVString(mathString), nmbrCvtMToVString(stsScheme[stsIndex].scheme), mathToken[stsVar[varToken].stsType].tokenName);
+	    //print2("When unifying %s with scheme %s (token type %s)\n", nmbrCvtMToVString(mathString), nmbrCvtMToVString(stsScheme[stsIndex].scheme), g_MathToken[stsVar[varToken].stsType].tokenName);
 	    return 0;
 	  }
 	} /* end of for loop on variable substitutions */
@@ -841,7 +841,7 @@ flag getSTSLongMathRec(vstring *mmlLine, nmbrString *mathString, long statemNum,
   } /* end of for loop on  schemes */
 
   /* Caching - store result if successful */
-  if(stsUseCache && success && (lenString > 2 || mathToken[mathString[1]].tokenType != con_) && lenString < STS_MAX_LEN_FOR_CACHE) {
+  if(stsUseCache && success && (lenString > 2 || g_MathToken[mathString[1]].tokenType != con_) && lenString < STS_MAX_LEN_FOR_CACHE) {
     htput(&stsCache, mathString, *mmlLine);
   }
 
@@ -861,15 +861,15 @@ int zzz=0;
    conclusion) that is passed in. */
 /* Warning: The caller must deallocate the returned vstring. */
 flag getSTSLongMath(vstring *mmlLine, nmbrString *mathString, flag displayed, long statemNum, flag textwarn) {
-  if(dbs1 || dbs3 || dbs5) outputToString = 0;
+  if(dbs1 || dbs3 || dbs5) g_outputToString = 0;
   if(dbs1) print2("Printing \"%s\"!\n", nmbrCvtMToVString(mathString));
   /* Call the recursive function - here we don't care about the return value. */
   flag success = getSTSLongMathRec(mmlLine, mathString, statemNum, 0);
-  outputToString = 1;
+  g_outputToString = 1;
 
   if(!success) {
 //    // Try again with traces on
-//    outputToString = 0;
+//    g_outputToString = 0;
 //    debugOn();
 //    getSTSLongMathRec(mmlLine, mathString, statemNum, 0);
 //    debugOff();
@@ -890,10 +890,10 @@ flag getSTSLongMath(vstring *mmlLine, nmbrString *mathString, flag displayed, lo
   }
 
   if(stsUseCache) {
-    outputToString = 0;
+    g_outputToString = 0;
     htstats(&stsCache);
     if(++zzz%100==0)htdump(&stsCache);
-    outputToString = 1;
+    g_outputToString = 1;
   }
   return success;
 }
@@ -921,14 +921,14 @@ void verifySts(vstring format) {
     }
   }
 
-  for(int statemNum=0;statemNum<statements;statemNum++) {
+  for(int statemNum=0;statemNum<g_statements;statemNum++) {
     /* Skip non-axioms and definitions */
-    if(statement[statemNum].type != (char)a_) continue;
-    if(strncmp(statement[statemNum].labelName,"df-",3) == 0) continue;
-    if(strncmp(statement[statemNum].labelName,"ax-",3) == 0) continue;
+    if(g_Statement[statemNum].type != (char)a_) continue;
+    if(strncmp(g_Statement[statemNum].labelName,"df-",3) == 0) continue;
+    if(strncmp(g_Statement[statemNum].labelName,"ax-",3) == 0) continue;
 
-    flag success = getSTSLongMath(&texLine, statement[statemNum].mathString, 1, statemNum, 1);
-    outputToString = 0;
+    flag success = getSTSLongMath(&texLine, g_Statement[statemNum].mathString, 1, statemNum, 1);
+    g_outputToString = 0;
     if(!success) {
       print2("?Warning: %s\n", texLine);
       warnCount++;
@@ -954,7 +954,7 @@ void verifySts(vstring format) {
 /* Returns the token ID for a given token */
 long tokenId(vstring token) {
   void *mathKeyPtr; /* For binary search */
-  mathKeyPtr = (void *)bsearch(token, mathKey, (size_t)mathTokens,
+  mathKeyPtr = (void *)bsearch(token, g_mathKey, (size_t)g_mathTokens,
       sizeof(long), mathSrchCmp);
   if (!mathKeyPtr) return -1;
   return *((long *)mathKeyPtr);
@@ -976,16 +976,16 @@ vstring stsToken(long tokenId, long stateNum) {
 
   // Expect to find
   long schemeId = stsVar[tokenId].stsSchemeId;
-  //printf("Printing token %s, schemeId = %ld\n", mathToken[tokenId].tokenName, schemeId);
+  //printf("Printing token %s, schemeId = %ld\n", g_MathToken[tokenId].tokenName, schemeId);
   //if(schemeId == 0)
-  //  printf("Var not found : %s\n", mathToken[tokenId].tokenName);
+  //  printf("Var not found : %s\n", g_MathToken[tokenId].tokenName);
   if(schemeId >= 1 && schemeId <= stsSchemes && stsVar[stsScheme[schemeId - 1].scheme[0]].isTerminal) {
     /* If there is a single token scheme, build the token from the scheme itself. */
     getSTSLongMath(&str2, stsScheme[schemeId - 1].scheme, 0, 0, 0);
   }
   else {
     /* Otherwise fallback to metamath token in case token unavailable */
-    let(&str2, cat("<code style=\"color:red;\">",mathToken[tokenId].tokenName,"</code>", NULL));
+    let(&str2, cat("<code style=\"color:red;\">",g_MathToken[tokenId].tokenName,"</code>", NULL));
   }
   return str2;
 }
@@ -1001,14 +1001,14 @@ vstring asciiToMathSts(vstring text, long statemNum) {
   nmbrString *mathString = NULL_NMBRSTRING;
   flag result = 0;
 
-//  outputToString = 0;
+//  g_outputToString = 0;
 //  print2("Going to try %ld types!\n", stsTypes);
 //  dbs5=1;
-  /* 20-Jan-2019 tar - use "statements" as stateNum, since all tokens are valid. */
-  nmbrLet(&orgString, parseMathTokens(text, statements));
+  /* 20-Jan-2019 tar - use "g_statements" as stateNum, since all tokens are valid. */
+  nmbrLet(&orgString, parseMathTokens(text, g_statements));
   for(int i=0;!result && i<nmbrLen(stsTerminalTypes);i++) {
     nmbrLet(&mathString, nmbrUnshiftElement(orgString, stsTerminalTypes[i])); // was 39
-    outputToString = 0;
+    g_outputToString = 0;
 //    print2("Trying to print \"%s\"!\n", nmbrCvtMToVString(mathString));
     result = getSTSLongMath(&mmlLine, mathString, 0, statemNum, 1);
   }
