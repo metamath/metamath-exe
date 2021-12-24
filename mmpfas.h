@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2016  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2020  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -10,13 +10,13 @@
 #include "mmvstr.h"
 #include "mmdata.h"
 
-extern long proveStatement; /* The statement to be proved */
-extern flag proofChangedFlag; /* Flag to push 'undo' stack */
+extern long g_proveStatement; /* The statement to be proved */
+extern flag g_proofChangedFlag; /* Flag to push 'undo' stack */
 
-extern long userMaxProveFloat; /* Upper limit for proveFloating */
+extern long g_userMaxProveFloat; /* Upper limit for proveFloating */
 
-extern long dummyVars; /* The number of dummy variables currently declared */
-extern long pipDummyVars; /* Number of dummy vars used by proof in progress */
+extern long g_dummyVars; /* The number of dummy variables currently declared */
+extern long g_pipDummyVars; /* Number of dummy vars used by proof in progress */
 
 /* Structure for holding a proof in progress. */
 /* This structure should be deallocated after use. */
@@ -26,7 +26,7 @@ struct pip_struct {
   pntrString *source; /* Right hand side of = in display */
   pntrString *user; /* User-specified math string assignments to step */
 };
-extern struct pip_struct proofInProgress;
+extern struct pip_struct g_ProofInProgress;
 
 /* Interactively select statement assignments that match */
 /* maxEssential is the maximum number of essential hypotheses that a
@@ -48,9 +48,9 @@ nmbrString *proveByReplacement(long prfStmt,
     flag dummyVarFlag, /* 0 means no dummy vars are in prfStmt */
     flag searchMethod, /* 1 means to try proveFloating on $e's also */
     long improveDepth,
-    /* 3-May-2016 nm */
-    flag overrideFlag /* 1 means to override usage locks */
-     );
+    flag overrideFlag, /* 1 means to override usage locks */ /* 3-May-2016 nm */
+    flag mathboxFlag /* 1 means allow mathboxes */ /* 5-Aug-2020 nm */
+    );
 
 nmbrString *replaceStatement(long replStatemNum,
     long prfStep,
@@ -60,8 +60,8 @@ nmbrString *replaceStatement(long replStatemNum,
     flag noDistinct, /* 1 means don't try statements with $d's */
     flag searchMethod, /* 1 means to try proveFloating on $e's also */
     long improveDepth,
-    /* 3-May-2016 nm */
-    flag overrideFlag /* 1 means to override usage locks */
+    flag overrideFlag, /* 1 means to override usage locks */ /* 3-May-2016 nm */
+    flag mathboxFlag /* 1 means allow mathboxes */ /* 5-Aug-2020 nm */
     );
 
 /* 22-Aug-2012 nm Added this function */
@@ -75,13 +75,13 @@ nmbrString *replaceStatement(long replStatemNum,
 vstring getIndepKnownSteps(long proofStmt, long refStep);
 
 /* 22-Aug-2012 nm Added this function */
-/* This function classifies each proof step in proofInProgress.proof
+/* This function classifies each proof step in g_ProofInProgress.proof
    as known or unknown ('K' or 'U' in the returned string) depending
    on whether the step has a completely known subproof.
    Note: The caller must deallocate the returned vstring. */
 vstring getKnownSubProofs(void);
 
-/* Add a subproof in place of an unknown step to proofInProgress.  The
+/* Add a subproof in place of an unknown step to g_ProofInProgress.  The
    .target, .source, and .user fields are initialized to empty (except
    .target of the deleted unknown step is retained). */
 void addSubProof(nmbrString *subProof, long step);
@@ -90,7 +90,7 @@ void addSubProof(nmbrString *subProof, long step);
 /* This function eliminates any occurrences of statement sourceStmtNum in the
    targetProof by substituting it with the proof of sourceStmtNum.  An empty
    nmbrString is returned if there was an error. */
-/* Normally, targetProof is the global proofInProgress.proof.  However,
+/* Normally, targetProof is the global g_ProofInProgress.proof.  However,
    we make it an argument in case in the future we'd like to do this
    outside of the proof assistant. */
 nmbrString *expandProof(nmbrString *targetProof,
@@ -100,13 +100,13 @@ nmbrString *expandProof(nmbrString *targetProof,
    with an unknown step, and its .target field is retained. */
 void deleteSubProof(long step);
 
-/* Check to see if a statement will match the proofInProgress.target (or .user)
+/* Check to see if a statement will match the g_ProofInProgress.target (or .user)
    of an unknown step.  Returns 1 if match, 0 if not, 2 if unification
    timed out. */
 char checkStmtMatch(long statemNum, long step);
 
 /* Check to see if a (user-specified) math string will match the
-   proofInProgress.target (or .user) of an step.  Returns 1 if match, 0 if
+   g_ProofInProgress.target (or .user) of an step.  Returns 1 if match, 0 if
    not, 2 if unification timed out. */
 char checkMStringMatch(nmbrString *mString, long step);
 
@@ -116,9 +116,10 @@ char checkMStringMatch(nmbrString *mString, long step);
 nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
     long step, flag noDistinct,
     /* 3-May-2016 nm */
-    flag overrideFlag /* 0 means respect usage locks
+    flag overrideFlag, /* 0 means respect usage locks
                          1 means to override usage locks
                          2 means override silently */
+    flag mathboxFlag /* 1 means allow mathboxes */ /* 5-Aug-2020 nm */
 );
 
 /* 22-Aug-2012 nm Added this function */
@@ -132,15 +133,15 @@ char quickMatchFilter(long trialStmt, nmbrString *mString,
 void minimizeProof(long repStatemNum, long prvStatemNum, flag
     allowGrowthFlag);
 
-/* Initialize proofInProgress.source of the step, and .target of all
+/* Initialize g_ProofInProgress.source of the step, and .target of all
    hypotheses, to schemes using new dummy variables. */
 void initStep(long step);
 
-/* Look for completely known subproofs in proofInProgress.proof and
-   assign proofInProgress.target and .source.  Calls assignKnownSteps(). */
+/* Look for completely known subproofs in g_ProofInProgress.proof and
+   assign g_ProofInProgress.target and .source.  Calls assignKnownSteps(). */
 void assignKnownSubProofs(void);
 
-/* This function assigns math strings to all steps (proofInProgress.target and
+/* This function assigns math strings to all steps (g_ProofInProgress.target and
    .source fields) in a subproof with all known steps. */
 void assignKnownSteps(long startStep, long sbProofLen);
 

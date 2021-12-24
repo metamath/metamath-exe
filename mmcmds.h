@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2019  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2020  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -64,14 +64,24 @@ vstring htmlDummyVars(long showStmt);  /* 12-Aug-2017 nm */
 vstring htmlAllowedSubst(long showStmt);  /* 4-Jan-2014 nm */
 
 void readInput(void);
-void writeInput(/* flag cleanFlag, 3-May-2017 */ /* 1 = "/ CLEAN" qualifier was chosen */
+/* WRITE SOURCE command */
+void writeSource(/* flag cleanFlag, 3-May-2017 */ /* 1 = "/ CLEAN" qualifier was chosen */
                 flag reformatFlag /* 1 = "/ FORMAT", 2 = "/REWRAP" */,
                 /* 31-Dec-2017 nm */
                 flag splitFlag,  /* /SPLIT - write out separate $[ $] includes */
                 flag noVersioningFlag, /* /NO_VERSIONING - no ~1 backup */
-                flag keepSplitsFlag /* /KEEP_SPLITS - don't delete included files
+                flag keepSplitsFlag, /* /KEEP_SPLITS - don't delete included files
                                       when /SPIT is not specified */
+                vstring extractLabels /* "" means write everything */
                 );
+
+/* 24-Aug-2020 nm */
+/* Get info for WRITE SOURCE ... / EXTRACT */
+void writeExtractedSource(vstring extractLabels, /* EXTRACT argument provided by user */
+  vstring fullOutput_fn, flag noVersioningFlag);
+
+void fixUndefinedLabels(vstring extractNeeded, vstring *buf);
+
 void writeDict(void);
 void eraseSource(void);
 void verifyProofs(vstring labelMatch, flag verifyFlag);
@@ -81,7 +91,10 @@ void verifyProofs(vstring labelMatch, flag verifyFlag);
 /* If checkFiles = 0, do not open external files.
    If checkFiles = 1, check mm*.html, presence of gifs, etc. */
 void verifyMarkup(vstring labelMatch, flag dateSkip, flag topDateSkip,
-    flag fileSkip, flag verboseMode); /* 26-Dec-2016 nm */
+    flag fileSkip,
+    flag underscoreSkip, /* 25-Jun-2020 nm */
+    flag mathboxSkip, /* 17-Jul-2020 nm */
+    flag verboseMode); /* 26-Dec-2016 nm */
 
 /* 10-Dec-2018 nm Added */
 void processMarkup(vstring inputFileName, vstring outputFileName,
@@ -129,17 +142,17 @@ long getStatementNum(vstring stmtName, /* Possibly with wildcards */
     flag efOnlyForMaxStmt, /* If 1, $e and $f must belong to maxStmt */
     flag uniqueFlag); /* If 1, match must be unique */
 
-extern vstring mainFileName;
+/*extern vstring mainFileName;*/  /* 15-Aug-2020 nm Obsolete on 28-Dec-05 */
 
 /* For HELP processing */
-extern flag printHelp;
+extern flag g_printHelp;
 void H(vstring helpLine);
 
 /* For MIDI files - added 8/28/00 */
-extern flag midiFlag; /* Set to 1 if typeProof() is to output MIDI file */
-extern vstring midiParam; /* Parameter string for MIDI file */
+extern flag g_midiFlag; /* Set to 1 if typeProof() is to output MIDI file */
+extern vstring g_midiParam; /* Parameter string for MIDI file */
 void outputMidi(long plen, nmbrString *indentationLevels,
-  nmbrString *logicalFlags, vstring midiParameter, vstring statementLabel);
+  nmbrString *logicalFlags, vstring g_midiParameter, vstring statementLabel);
 
 
 #endif /* METAMATH_MMCMDS_H_ */

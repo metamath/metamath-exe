@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2019  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2021  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -18,7 +18,7 @@
 #include "mminou.h"
 #include "mmpars.h" /* For rawSourceError and mathSrchCmp and lookupLabel */
 #include "mmwtex.h"
-#include "mmcmdl.h" /* For texFileName */
+#include "mmcmdl.h" /* For g_texFileName */
 #include "mmwsts.h" /* For MathML/STS */
 
 /* 6/27/99 - Now, all LaTeX and HTML definitions are taken from the source
@@ -27,28 +27,37 @@
    start after the $t and end at the $).  Between $t and $), the definition
    source should exist.  See the file set.mm for an example. */
 
-flag oldTexFlag = 0; /* Use TeX macros in output (obsolete) */
+flag g_oldTexFlag = 0; /* Use TeX macros in output (obsolete) */
 
-flag htmlFlag = 0;  /* HTML flag: 0 = TeX, 1 = HTML */
-flag altHtmlFlag = 0;  /* Use "althtmldef" instead of "htmldef".  This is
+flag g_htmlFlag = 0;  /* HTML flag: 0 = TeX, 1 = HTML */
+flag g_altHtmlFlag = 0;  /* Use "althtmldef" instead of "htmldef".  This is
     intended to allow the generation of pages with the Unicode font
     instead of the individual GIF files. */
 /* 19-Jul-2017 tar Added for STS/MathML output */
 flag stsFlag = 0; /* STS output (for "structural typesetting") */
 vstring stsOutput = ""; /* output mode chosen for STS (follows STS flag) */
 vstring postProcess = ""; /* command to pipe the output into (used for MathJax prerendering) */
-flag briefHtmlFlag = 0;  /* Output statement lists only, for statement display
+flag g_briefHtmlFlag = 0;  /* Output statement lists only, for statement display
                 in other HTML pages, such as the Proof Explorer home page */
-long extHtmlStmt = 0; /* At this statement and above, use the exthtmlxxx
+long g_extHtmlStmt = 0; /* At this statement and above, use the exthtmlxxx
     variables for title, links, etc.  This was put in to allow proper
     generation of the Hilbert Space Explorer extension to the set.mm
     database. */
 
-/* 29-Jul-2008 nm Sandbox stuff */
-long sandboxStmt = 0; /* At this statement and above, use SANDBOX_COLOR
+/* 5-Aug-2020 nm */
+/* Globals to hold mathbox information.  They should be re-initialized
+   by the ERASE command (eraseSource()).  g_mathboxStmt = 0 indicates
+   it and the other variables haven't been initialized. */
+long g_mathboxStmt = 0; /* At this statement and above, use SANDBOX_COLOR
     background for theorem, mmrecent, & mmbiblio lists */
-    /* 0 means it hasn't been looked up yet; statements + 1 means
+    /* 0 means it hasn't been looked up yet; g_statements + 1 means
        there is no mathbox */
+long g_mathboxes = 0; /* # of mathboxes */
+/* The following 3 strings are 0-based e.g. g_mathboxStart[0] is for
+   mathbox #1 */
+nmbrString *g_mathboxStart = NULL_NMBRSTRING; /* Start stmt vs. mathbox # */
+nmbrString *g_mathboxEnd = NULL_NMBRSTRING; /* End stmt vs. mathbox # */
+pntrString *g_mathboxUser = NULL_PNTRSTRING; /* User name vs. mathbox # */
 
 /* This is the list of characters causing the space before the opening "`"
    in a math string in a comment to be removed for HTML output. */
@@ -58,16 +67,18 @@ long sandboxStmt = 0; /* At this statement and above, use SANDBOX_COLOR
 #define CLOSING_PUNCTUATION ".,;)?!:]'\"_-"
 
 /* Tex output file */
-FILE *texFilePtr = NULL;
-flag texFileOpenFlag = 0;
+FILE *g_texFilePtr = NULL;
+flag g_texFileOpenFlag = 0;
 
-/* Tex dictionary */
+/********* 15-Aug-2020 nm Obsolete
+/@ Tex dictionary @/
 FILE *tex_dict_fp;
 vstring tex_dict_fn = "";
+********/
 
 /* Global variables */
-flag texDefsRead = 0;
-struct texDef_struct *texDefs; /* 27-Oct-2012 nm Made global for "erase" */
+flag g_texDefsRead = 0;
+struct texDef_struct *g_TexDefs; /* 27-Oct-2012 nm Made global for "erase" */
 
 /* Variables local to this module (except some $t variables) */
 long numSymbs;
@@ -78,24 +89,25 @@ long numSymbs;
 
 /* Variables set by the language in the set.mm etc. $t statement */
 /* Some of these are global; see mmwtex.h */
-vstring htmlCSS = ""; /* Set by htmlcss commands */  /* 14-Jan-2016 nm */
-vstring htmlFont = ""; /* Set by htmlfont commands */  /* 14-Jan-2016 nm */
-vstring htmlVarColor = ""; /* Set by htmlvarcolor commands */
+vstring g_htmlCSS = ""; /* Set by g_htmlCSS commands */  /* 14-Jan-2016 nm */
+vstring g_htmlFont = ""; /* Set by htmlfont commands */  /* 14-Jan-2016 nm */
+vstring g_htmlVarColor = ""; /* Set by htmlvarcolor commands */
+vstring htmlExtUrl = ""; /* Set by htmlexturl command */
 vstring htmlTitle = ""; /* Set by htmltitle command */
   /* 16-Aug-2016 nm */
   vstring htmlTitleAbbr = ""; /* Extracted from htmlTitle */
-vstring htmlHome = ""; /* Set by htmlhome command */
+vstring g_htmlHome = ""; /* Set by htmlhome command */
   /* 16-Aug-2016 nm */
-  /* Future - assign these in the $t set.mm comment instead of htmlHome */
-  vstring htmlHomeHREF = ""; /* Extracted from htmlHome */
-  vstring htmlHomeIMG = ""; /* Extracted from htmlHome */
-vstring htmlBibliography = ""; /* Optional; set by htmlbibliography command */
+  /* Future - assign these in the $t set.mm comment instead of g_htmlHome */
+  vstring g_htmlHomeHREF = ""; /* Extracted from g_htmlHome */
+  vstring g_htmlHomeIMG = ""; /* Extracted from g_htmlHome */
+vstring g_htmlBibliography = ""; /* Optional; set by htmlbibliography command */
 vstring extHtmlLabel = ""; /* Set by exthtmllabel command - where extHtml starts */
-vstring extHtmlTitle = ""; /* Set by exthtmltitle command (global!) */
-  vstring extHtmlTitleAbbr = ""; /* Extracted from htmlTitle */
+vstring g_extHtmlTitle = ""; /* Set by exthtmltitle command (global!) */
+  vstring g_extHtmlTitleAbbr = ""; /* Extracted from htmlTitle */
 vstring extHtmlHome = ""; /* Set by exthtmlhome command */
   /* 16-Aug-2016 nm */
-  /* Future - assign these in the $t set.mm comment instead of htmlHome */
+  /* Future - assign these in the $t set.mm comment instead of g_htmlHome */
   vstring extHtmlHomeHREF = ""; /* Extracted from extHtmlHome */
   vstring extHtmlHomeIMG = ""; /* Extracted from extHtmlHome */
 vstring extHtmlBibliography = ""; /* Optional; set by exthtmlbibliography command */
@@ -112,7 +124,7 @@ vstring sandboxTitle = "";
   vstring sandboxTitleAbbr = "";
 
 /* Variables holding all HTML <a name..> tags from bibiography pages  */
-vstring htmlBibliographyTags = "";
+vstring g_htmlBibliographyTags = "";
 vstring extHtmlBibliographyTags = "";
 
 
@@ -120,14 +132,14 @@ vstring extHtmlBibliographyTags = "";
 void eraseTexDefs(void) {
   /* Deallocate the texdef/htmldef storage */ /* Added 27-Oct-2012 nm */
   long i;
-  if (texDefsRead) {  /* If not (already deallocated or never allocated) */
-    texDefsRead = 0;
+  if (g_texDefsRead) {  /* If not (already deallocated or never allocated) */
+    g_texDefsRead = 0;
 
     for (i = 0; i < numSymbs; i++) {  /* Deallocate structure member i */
-      let(&(texDefs[i].tokenName), "");
-      let(&(texDefs[i].texEquiv), "");
+      let(&(g_TexDefs[i].tokenName), "");
+      let(&(g_TexDefs[i].texEquiv), "");
     }
-    free(texDefs); /* Deallocate the structure */
+    free(g_TexDefs); /* Deallocate the structure */
   }
   return;
 } /* eraseTexDefs */
@@ -163,18 +175,18 @@ flag readTexDefs(
                               the $t comment */ /* 2-Feb-2018 nm */
 
   /* bsearch returned values for use in error-checking */
-  void *mathKeyPtr; /* bsearch returned value for math symbol lookup */
+  void *g_mathKeyPtr; /* bsearch returned value for math symbol lookup */
   void *texDefsPtr; /* For binary search */
 
   /* 17-Nov-2015 nm */
-  /* if (texDefsRead) { */
-  if (saveHtmlFlag != htmlFlag || saveAltHtmlFlag != altHtmlFlag
-      || !texDefsRead) {   /* 3-Jan-2016 nm */
+  /* if (g_texDefsRead) { */
+  if (saveHtmlFlag != g_htmlFlag || saveAltHtmlFlag != g_altHtmlFlag
+      || !g_texDefsRead) {   /* 3-Jan-2016 nm */
     /* One or both changed - we need to erase and re-read */
     eraseTexDefs();
-    saveHtmlFlag = htmlFlag; /* Save for next call to readTexDefs() */
-    saveAltHtmlFlag = altHtmlFlag;  /* Save for next call to readTexDefs() */
-    if (htmlFlag == 0 /* Tex */ && altHtmlFlag == 1) {
+    saveHtmlFlag = g_htmlFlag; /* Save for next call to readTexDefs() */
+    saveAltHtmlFlag = g_altHtmlFlag;  /* Save for next call to readTexDefs() */
+    if (g_htmlFlag == 0 /* Tex */ && g_altHtmlFlag == 1) {
       bug(2301); /* Nonsensical combination */
     }
   } else {
@@ -187,16 +199,16 @@ flag readTexDefs(
      $t comment of the xxx.mm input file */
   let(&htmlTitle, "Metamath Test Page"); /* Set by htmltitle command in $t
                                                  comment */
-  /* let(&htmlHome, "<A HREF=\"http://metamath.org\">Home</A>"); */
+  /* let(&g_htmlHome, "<A HREF=\"http://metamath.org\">Home</A>"); */
   /* 16-Aug-2016 nm */
-  let(&htmlHome, cat("<A HREF=\"mmset.html\"><FONT SIZE=-2 FACE=sans-serif>",
+  let(&g_htmlHome, cat("<A HREF=\"mmset.html\"><FONT SIZE=-2 FACE=sans-serif>",
     "<IMG SRC=\"mm.gif\" BORDER=0 ALT=",
     "\"Home\" HEIGHT=32 WIDTH=32 ALIGN=MIDDLE STYLE=\"margin-bottom:0px\">",
     "Home</FONT></A>", NULL));
                                      /* Set by htmlhome command in $t comment */
 
   if (errorsOnly == 0) {
-    print2("Reading definitions from $t statement of %s...\n", input_fn);
+    print2("Reading definitions from $t statement of %s...\n", g_input_fn);
   }
   /******* 10/14/02 Rewrote this section so xxx.mm is not read again *******/
   /* Find the comment with the $t */
@@ -204,15 +216,15 @@ flag readTexDefs(
                    latex.def file; now it's from the xxx.mm $t comment, so we
                    make it a normal string */
   let(&fileBuf, "");
-  /* Note that statement[statements + 1] is a special (empty) statement whose
+  /* Note that g_Statement[g_statements + 1] is a special (empty) statement whose
      labelSection holds any comment after the last statement. */
-  for (i = 1; i <= statements + 1; i++) {
+  for (i = 1; i <= g_statements + 1; i++) {
     /* We do low-level stuff on the xxx.mm input file buffer for speed */
-    tmpPtr = statement[i].labelSectionPtr;
-    j = statement[i].labelSectionLen;
-    /* Note that for statement[statements + 1], the lineNum is one plus the
+    tmpPtr = g_Statement[i].labelSectionPtr;
+    j = g_Statement[i].labelSectionLen;
+    /* Note that for g_Statement[g_statements + 1], the lineNum is one plus the
        number of lines in the file */
-    if (!fileBuf[0]) lineNumOffset = statement[i].lineNum; /* Save for later */
+    if (!fileBuf[0]) lineNumOffset = g_Statement[i].lineNum; /* Save for later */
         /* (Don't save if we're in scan to end for double $t detection) */
     zapChar = tmpPtr[j]; /* Save the original character */
     tmpPtr[j] = 0; /* Create an end-of-string */
@@ -224,19 +236,19 @@ flag readTexDefs(
       if (fileBuf[0]) {
         print2(
   "?Error: There are two comments containing a $t keyword in \"%s\".\n",
-            input_fn);
+            g_input_fn);
         let(&fileBuf, "");
         return 2;
       }
       let(&fileBuf, tmpPtr);
       tmpPtr[j] = zapChar;
-      dollarTStmtPtr = statement[i].labelSectionPtr; /* 2-Feb-2018 nm */
+      dollarTStmtPtr = g_Statement[i].labelSectionPtr; /* 2-Feb-2018 nm */
       /* break; */ /* Continue to end to detect double $t */
     }
     tmpPtr[j] = zapChar; /* Restore the xxx.mm input file buffer */
   } /* next i */
   /* If the $t wasn't found, fileBuf will be "", causing error message below. */
-  /* Compute line number offset of beginning of statement[i].labelSection for
+  /* Compute line number offset of beginning of g_Statement[i].labelSection for
      use in error messages */
   j = (long)strlen(fileBuf);
   for (i = 0; i < j; i++) {
@@ -263,6 +275,8 @@ flag readTexDefs(
 /* Added 14-Jan-2016 nm */
 #define HTMLCSS 14
 #define HTMLFONT 15
+/* Added 26-Dec-2020 nm */
+#define HTMLEXTURL 16
 
   startPtr = fileBuf;
 
@@ -278,7 +292,7 @@ flag readTexDefs(
     startPtr++;
   }
   if (startPtr[0] == 0) {
-    print2("?Error: There is no $t command in the file \"%s\".\n", input_fn);
+    print2("?Error: There is no $t command in the file \"%s\".\n", g_input_fn);
     print2(
 "The file should have exactly one comment of the form $(...$t...$) with\n");
     print2("the LaTeX and HTML definitions between $t and $).\n");
@@ -301,7 +315,7 @@ flag readTexDefs(
   if (tmpPtr[0] == 0) {
     print2(
   "?Error: There is no $) comment closure after the $t keyword in \"%s\".\n",
-        input_fn);
+        g_input_fn);
     let(&fileBuf, "");  /* was: free(fileBuf); */
     return 2;
   }
@@ -313,7 +327,7 @@ flag readTexDefs(
       if (tmpPtr2[1] == 't') {
         print2(
   "?Error: There are two comments containing a $t keyword in \"%s\".\n",
-            input_fn);
+            g_input_fn);
         let(&fileBuf, "");  /* was: free(fileBuf); */
         return 2;
       }
@@ -329,7 +343,7 @@ flag readTexDefs(
   charCount = tmpPtr + 1 - fileBuf; /* For bugcheck */
 
   for (parsePass = 1; parsePass <= 2; parsePass++) {
-    /* Pass 1 - Count the number of symbols defined and alloc texDefs array */
+    /* Pass 1 - Count the number of symbols defined and alloc g_TexDefs array */
     /* Pass 2 - Assign the texDefs array */
     numSymbs = 0;
     fbPtr = startPtr;
@@ -348,7 +362,7 @@ flag readTexDefs(
           "latexdef,htmldef,htmlvarcolor,htmltitle,htmlhome"
           ",althtmldef,exthtmltitle,exthtmlhome,exthtmllabel,htmldir"
           ",althtmldir,htmlbibliography,exthtmlbibliography"
-          ",htmlcss,htmlfont"   /* 14-Jan-2016 nm */
+          ",htmlcss,htmlfont,htmlexturl"   /* 26-Dec-2020 nm */
           );
       fbPtr[tokenLength] = zapChar;
       if (cmd == 0) {
@@ -356,16 +370,17 @@ flag readTexDefs(
         for (i = 0; i < (fbPtr - fileBuf); i++) {
           if (fileBuf[i] == '\n') lineNum++;
         }
-        rawSourceError(/*fileBuf*/sourcePtr,  /* 2-Feb-2018 nm */
+        rawSourceError(/*fileBuf*/g_sourcePtr,  /* 2-Feb-2018 nm */
             /*fbPtr*/dollarTStmtPtr + (fbPtr - fileBuf), tokenLength,
-            /*lineNum, input_fn,*/   /* 2-Feb-2018 nm These arguments are now
+            /*lineNum, g_input_fn,*/   /* 2-Feb-2018 nm These arguments are now
                 computed in rawSourceError() */
             cat("Expected \"latexdef\", \"htmldef\", \"htmlvarcolor\",",
             " \"htmltitle\", \"htmlhome\", \"althtmldef\",",
             " \"exthtmltitle\", \"exthtmlhome\", \"exthtmllabel\",",
             " \"htmldir\", \"althtmldir\",",
             " \"htmlbibliography\", \"exthtmlbibliography\",",
-            " \"htmlcss\", or \"htmlfont\" here.",     /* 14-Jan-2016 nm */
+            " \"htmlcss\", \"htmlfont\",",    /* 14-Jan-2016 nm */
+            " or \"htmlexturl\" here.",       /* 26-Dec-2020 nm */
             NULL));
         let(&fileBuf, "");  /* was: free(fileBuf); */
         return 2;
@@ -378,6 +393,7 @@ flag readTexDefs(
           && cmd != HTMLBIBLIOGRAPHY && cmd != EXTHTMLBIBLIOGRAPHY
           && cmd != HTMLCSS /* 14-Jan-2016 nm */
           && cmd != HTMLFONT /* 14-Jan-2016 nm */
+          && cmd != HTMLEXTURL /* 26-Dec-2020 nm */
           ) {
          /* Get next token - string in quotes */
         fbPtr = fbPtr + texDefWhiteSpaceLen(fbPtr);
@@ -393,9 +409,9 @@ flag readTexDefs(
           for (i = 0; i < (fbPtr - fileBuf); i++) {
             if (fileBuf[i] == '\n') lineNum++;
           }
-          rawSourceError(/*fileBuf*/sourcePtr,  /* 2-Feb-2018 nm */
+          rawSourceError(/*fileBuf*/g_sourcePtr,  /* 2-Feb-2018 nm */
             /*fbPtr*/dollarTStmtPtr + (fbPtr - fileBuf),
-              tokenLength, /*lineNum, input_fn,*/
+              tokenLength, /*lineNum, g_input_fn,*/
               "Expected a quoted string here.");
           let(&fileBuf, "");  /* was: free(fileBuf); */
           return 2;
@@ -421,11 +437,11 @@ flag readTexDefs(
             }
           }
 
-          if ((cmd == LATEXDEF && !htmlFlag)
-              || (cmd == HTMLDEF && htmlFlag && !altHtmlFlag)
-              || (cmd == ALTHTMLDEF && htmlFlag && altHtmlFlag)) {
-            texDefs[numSymbs].tokenName = "";
-            let(&(texDefs[numSymbs].tokenName), token);
+          if ((cmd == LATEXDEF && !g_htmlFlag)
+              || (cmd == HTMLDEF && g_htmlFlag && !g_altHtmlFlag)
+              || (cmd == ALTHTMLDEF && g_htmlFlag && g_altHtmlFlag)) {
+            g_TexDefs[numSymbs].tokenName = "";
+            let(&(g_TexDefs[numSymbs].tokenName), token);
           }
         } /* if (parsePass == 2) */
 
@@ -438,6 +454,7 @@ flag readTexDefs(
           && cmd != HTMLBIBLIOGRAPHY && cmd != EXTHTMLBIBLIOGRAPHY
           && cmd != HTMLCSS /* 14-Jan-2016 nm */
           && cmd != HTMLFONT /* 14-Jan-2016 nm */
+          && cmd != HTMLEXTURL /* 26-Dec-2020 nm */
           ) {
         /* Get next token -- "as" */
         fbPtr = fbPtr + texDefWhiteSpaceLen(fbPtr);
@@ -453,9 +470,9 @@ flag readTexDefs(
           for (i = 0; i < (fbPtr - fileBuf); i++) {
             if (fileBuf[i] == '\n') lineNum++;
           }
-          rawSourceError(/*fileBuf*/sourcePtr,  /* 2-Feb-2018 nm */
+          rawSourceError(/*fileBuf*/g_sourcePtr,  /* 2-Feb-2018 nm */
             /*fbPtr*/dollarTStmtPtr + (fbPtr - fileBuf),
-              tokenLength, /*lineNum, input_fn,*/
+              tokenLength, /*lineNum, g_input_fn,*/
               "Expected the keyword \"as\" here.");
           let(&fileBuf, "");  /* was: free(fileBuf); */
           return 2;
@@ -484,9 +501,9 @@ flag readTexDefs(
           for (i = 0; i < (fbPtr - fileBuf); i++) {
             if (fileBuf[i] == '\n') lineNum++;
           }
-          rawSourceError(/*fileBuf*/sourcePtr,  /* 2-Feb-2018 nm */
+          rawSourceError(/*fileBuf*/g_sourcePtr,  /* 2-Feb-2018 nm */
             /*fbPtr*/dollarTStmtPtr + (fbPtr - fileBuf),
-              tokenLength, /*lineNum, input_fn,*/
+              tokenLength, /*lineNum, g_input_fn,*/
               "Expected a quoted string here.");
           let(&fileBuf, "");  /* was: free(fileBuf); */
           return 2;
@@ -526,10 +543,10 @@ flag readTexDefs(
               if (fileBuf[i] == '\n') lineNum++;
             }
 
-            rawSourceError(/*fileBuf*/sourcePtr,  /* 2-Feb-2018 nm */
+            rawSourceError(/*fileBuf*/g_sourcePtr,  /* 2-Feb-2018 nm */
                 /*fbPtr*/dollarTStmtPtr + (fbPtr - fileBuf),
                 tmpPtr2 - partialToken + 1 /*tokenLength on current line*/,
-                /*lineNum, input_fn,*/
+                /*lineNum, g_input_fn,*/
                 "String should be on a single line.");
           }
 
@@ -556,9 +573,9 @@ flag readTexDefs(
               lineNum++;
             }
           }
-          rawSourceError(/*fileBuf*/sourcePtr,  /* 2-Feb-2018 nm */
+          rawSourceError(/*fileBuf*/g_sourcePtr,  /* 2-Feb-2018 nm */
             /*fbPtr*/dollarTStmtPtr + (fbPtr - fileBuf),
-              tokenLength, /*lineNum, input_fn,*/
+              tokenLength, /*lineNum, g_input_fn,*/
               "Expected \"+\" or \";\" here.");
           let(&fileBuf, "");  /* was: free(fileBuf); */
          return 2;
@@ -592,23 +609,23 @@ flag readTexDefs(
         */
         /* end of old before 6-Aug-2011 */
 
-        if ((cmd == LATEXDEF && !htmlFlag)
-            || (cmd == HTMLDEF && htmlFlag && !altHtmlFlag)
-            || (cmd == ALTHTMLDEF && htmlFlag && altHtmlFlag)) {
-          texDefs[numSymbs].texEquiv = "";
-          let(&(texDefs[numSymbs].texEquiv), token);
+        if ((cmd == LATEXDEF && !g_htmlFlag)
+            || (cmd == HTMLDEF && g_htmlFlag && !g_altHtmlFlag)
+            || (cmd == ALTHTMLDEF && g_htmlFlag && g_altHtmlFlag)) {
+          g_TexDefs[numSymbs].texEquiv = "";
+          let(&(g_TexDefs[numSymbs].texEquiv), token);
         }
         if (cmd == HTMLVARCOLOR) {
-          let(&htmlVarColor, cat(htmlVarColor, " ", token, NULL));
+          let(&g_htmlVarColor, cat(g_htmlVarColor, " ", token, NULL));
         }
         if (cmd == HTMLTITLE) {
           let(&htmlTitle, token);
         }
         if (cmd == HTMLHOME) {
-          let(&htmlHome, token);
+          let(&g_htmlHome, token);
         }
         if (cmd == EXTHTMLTITLE) {
-          let(&extHtmlTitle, token);
+          let(&g_extHtmlTitle, token);
         }
         if (cmd == EXTHTMLHOME) {
           let(&extHtmlHome, token);
@@ -623,31 +640,34 @@ flag readTexDefs(
           let(&altHtmlDir, token);
         }
         if (cmd == HTMLBIBLIOGRAPHY) {
-          let(&htmlBibliography, token);
+          let(&g_htmlBibliography, token);
         }
         if (cmd == EXTHTMLBIBLIOGRAPHY) {
           let(&extHtmlBibliography, token);
         }
         if (cmd == HTMLCSS) {
-          let(&htmlCSS, token);
+          let(&g_htmlCSS, token);
           /* 14-Jan-2016 nm User's CSS */ /* 13-Dec-2018 nm Moved up to here */
           /* Convert characters "\n" to new line - maybe do for other fields too? */
           do {
-            p = instr(1, htmlCSS, "\\n");
+            p = instr(1, g_htmlCSS, "\\n");
             if (p != 0) {
-              let(&htmlCSS, cat(left(htmlCSS, p - 1), "\n",
-                  right(htmlCSS, p + 2), NULL));
+              let(&g_htmlCSS, cat(left(g_htmlCSS, p - 1), "\n",
+                  right(g_htmlCSS, p + 2), NULL));
             }
           } while (p != 0);
         }
         if (cmd == HTMLFONT) {
-          let(&htmlFont, token);
+          let(&g_htmlFont, token);
+        }
+        if (cmd == HTMLEXTURL) {
+          let(&htmlExtUrl, token);  /* 26-Dec-2020 nm */
         }
       }
 
-      if ((cmd == LATEXDEF && !htmlFlag)
-          || (cmd == HTMLDEF && htmlFlag && !altHtmlFlag)
-          || (cmd == ALTHTMLDEF && htmlFlag && altHtmlFlag)) {
+      if ((cmd == LATEXDEF && !g_htmlFlag)
+          || (cmd == HTMLDEF && g_htmlFlag && !g_altHtmlFlag)
+          || (cmd == ALTHTMLDEF && g_htmlFlag && g_altHtmlFlag)) {
         numSymbs++;
       }
 
@@ -658,24 +678,27 @@ flag readTexDefs(
     if (parsePass == 1 ) {
       if (errorsOnly == 0) {
         print2("%ld typesetting statements were read from \"%s\".\n",
-            numSymbs, input_fn);
+            numSymbs, g_input_fn);
       }
-      texDefs = malloc((size_t)numSymbs * sizeof(struct texDef_struct));
-      if (!texDefs) outOfMemory("#99 (TeX symbols)");
+      g_TexDefs = malloc((size_t)numSymbs * sizeof(struct texDef_struct));
+      if (!g_TexDefs) outOfMemory("#99 (TeX symbols)");
     }
 
   } /* next parsePass */
 
 
   /* Sort the tokens for later lookup */
-  qsort(texDefs, (size_t)numSymbs, sizeof(struct texDef_struct), texSortCmp);
+  qsort(g_TexDefs, (size_t)numSymbs, sizeof(struct texDef_struct), texSortCmp);
 
   /* Check for duplicate definitions */
   for (i = 1; i < numSymbs; i++) {
-    if (!strcmp(texDefs[i].tokenName, texDefs[i - 1].tokenName)) {
-      printLongLine(cat("?Warning:  Token ", texDefs[i].tokenName,
+    if (!strcmp(g_TexDefs[i].tokenName, g_TexDefs[i - 1].tokenName)) {
+      printLongLine(cat("?Warning: Token ", g_TexDefs[i].tokenName,
           " is defined more than once in ",
-          htmlFlag ? "an htmldef" : "a latexdef", " statement.", NULL),
+          g_htmlFlag
+            ? (g_altHtmlFlag ? "an althtmldef" : "an htmldef") /* 4-Jul-2020 nm */
+            : "a latexdef",
+          " statement.", NULL),
           "", " ");
       warningFound = 1;
     }
@@ -683,13 +706,16 @@ flag readTexDefs(
 
   /* Check to make sure all definitions are for a real math token */
   for (i = 0; i < numSymbs; i++) {
-    /* Note:  mathKey, mathTokens, and mathSrchCmp are assigned or defined
+    /* Note:  g_mathKey, g_mathTokens, and mathSrchCmp are assigned or defined
        in mmpars.c. */
-    mathKeyPtr = (void *)bsearch(texDefs[i].tokenName, mathKey,
-        (size_t)mathTokens, sizeof(long), mathSrchCmp);
-    if (!mathKeyPtr) {
-      printLongLine(cat("?Warning:  The token \"", texDefs[i].tokenName,
-          "\", which was defined in ", htmlFlag ? "an htmldef" : "a latexdef",
+    g_mathKeyPtr = (void *)bsearch(g_TexDefs[i].tokenName, g_mathKey,
+        (size_t)g_mathTokens, sizeof(long), mathSrchCmp);
+    if (!g_mathKeyPtr) {
+      printLongLine(cat("?Warning: The token \"", g_TexDefs[i].tokenName,
+          "\", which was defined in ",
+          g_htmlFlag
+            ? (g_altHtmlFlag ? "an althtmldef" : "an htmldef")  /* 4-Jul-2020 nm */
+            : "a latexdef",
           " statement, was not declared in any $v or $c statement.", NULL),
           "", " ");
       warningFound = 1;
@@ -697,13 +723,16 @@ flag readTexDefs(
   }
 
   /* Check to make sure all math tokens have typesetting definitions */
-  for (i = 0; i < mathTokens; i++) {
-    texDefsPtr = (void *)bsearch(mathToken[i].tokenName, texDefs,
+  for (i = 0; i < g_mathTokens; i++) {
+    texDefsPtr = (void *)bsearch(g_MathToken[i].tokenName, g_TexDefs,
         (size_t)numSymbs, sizeof(struct texDef_struct), texSrchCmp);
     if (!texDefsPtr) {
-      printLongLine(cat("?Warning:  The token \"", mathToken[i].tokenName,
+      printLongLine(cat("?Warning: The token \"", g_MathToken[i].tokenName,
        "\", which was defined in a $v or $c statement, was not declared in ",
-          htmlFlag ? "an htmldef" : "a latexdef", " statement.", NULL),
+          g_htmlFlag
+            ? (g_altHtmlFlag ? "an althtmldef" : "an htmldef") /* 4-Jul-2020 nm */
+            : "a latexdef",
+          " statement.", NULL),
           "", " ");
       warningFound = 1;
     }
@@ -711,17 +740,17 @@ flag readTexDefs(
 
   /* 26-Jun-2011 nm Added this check */
   /* Check to make sure all GIFs are present */
-  if (htmlFlag
+  if (g_htmlFlag
       && !stsFlag) { /* 22-Mar-2018 Added for STS */
     for (i = 0; i < numSymbs; i++) {
-      tmpPtr = texDefs[i].texEquiv;
+      tmpPtr = g_TexDefs[i].texEquiv;
       k = 0;
       while (1) {
         j = instr(k + 1, tmpPtr, "IMG SRC=");
                    /* Note that only an exact match with
                       "IMG SRC=" is currently handled */
         if (j == 0) break;
-        k = instr(j + 9, texDefs[i].texEquiv, mid(tmpPtr, j + 8, 1));
+        k = instr(j + 9, g_TexDefs[i].texEquiv, mid(tmpPtr, j + 8, 1));
                                            /* Get position of trailing quote */
                                     /* Future:  use strchr instead of mid()
                                        for efficiency? */
@@ -733,7 +762,7 @@ flag readTexDefs(
         if (noGifCheck == 0) { /* 17-Nov-2015 nm */
           tmpFp = fopen(token, "r"); /* See if it exists */
           if (!tmpFp) {
-            printLongLine(cat("?Warning:  The file \"", token,
+            printLongLine(cat("?Warning: The file \"", token,
                 "\", which is referenced in an htmldef",
                 " statement, was not found.", NULL),
                 "", " ");
@@ -749,45 +778,48 @@ flag readTexDefs(
 
   /* Look up the extended database start label */
   if (extHtmlLabel[0]) {
-    for (i = 1; i <= statements; i++) {
-      if (!strcmp(extHtmlLabel, statement[i].labelName)) break;
+    for (i = 1; i <= g_statements; i++) {
+      if (!strcmp(extHtmlLabel, g_Statement[i].labelName)) break;
     }
-    if (i > statements) {
+    if (i > g_statements) {
       printLongLine(cat("?Warning: There is no statement with label \"",
           extHtmlLabel,
           "\" (specified by exthtmllabel in the database source $t comment).  ",
           "Use SHOW LABELS for a list of valid labels.", NULL), "", " ");
       warningFound = 1;
     }
-    extHtmlStmt = i;
+    g_extHtmlStmt = i;
   } else {
     /* There is no extended database; set threshold to beyond end of db */
-    extHtmlStmt = statements + 1;
+    g_extHtmlStmt = g_statements + 1;
   }
 
   /* 29-Jul-2008 nm Sandbox stuff */
   /* 24-Jul-2009 nm Changed name of sandbox to "mathbox" */
   /* 28-Jun-2011 nm Use lookupLabel for speedup */
-  if (sandboxStmt == 0) {
-    sandboxStmt = lookupLabel("mathbox");
-    if (sandboxStmt == -1)
-      sandboxStmt = statements + 1;  /* Default beyond db end if none */
+  /* replaced w/ function call 17-Jul-2020
+  if (g_mathboxStmt == 0) { /@ Look up "mathbox" label if it hasn't been @/
+    g_mathboxStmt = lookupLabel("mathbox");
+    if (g_mathboxStmt == -1)
+      g_mathboxStmt = g_statements + 1;  /@ Default beyond db end if none @/
   }
+  */
+  assignMathboxInfo(); /* 17-Jul-2020 nm */
   /*
-  for (i = 1; i <= statements; i++) {
+  for (i = 1; i <= g_statements; i++) {
     /@ For now (and probably forever) the sandbox start theorem is
        hardcoded to "sandbox", like in set.mm @/
-    /@ if (!strcmp("sandbox", statement[i].labelName)) { @/
+    /@ if (!strcmp("sandbox", g_Statement[i].labelName)) { @/
     /@ 24-Jul-2009 nm Changed name of sandbox to "mathbox" @/
-    if (!strcmp("mathbox", statement[i].labelName)) {
-      sandboxStmt = i;
+    if (!strcmp("mathbox", g_Statement[i].labelName)) {
+      g_mathboxStmt = i;
       break;
     }
   }
   */
   /* In case there is not extended (Hilbert Space Explorer) section,
      but there is a sandbox section, make the extended section "empty". */
-  if (extHtmlStmt == statements + 1) extHtmlStmt = sandboxStmt;
+  if (g_extHtmlStmt == g_statements + 1) g_extHtmlStmt = g_mathboxStmt;
   let(&sandboxHome, cat("<A HREF=\"mmtheorems.html#sandbox:bighdr\">",
     "<FONT SIZE=-2 FACE=sans-serif>",
     "<IMG SRC=\"_sandbox.gif\" BORDER=0 ALT=",
@@ -810,22 +842,22 @@ flag readTexDefs(
   /* 16-Aug-2016 nm */
   /* Extract derived variables from the $t variables */
   /* (In the future, it might be better to do this directly in the $t.) */
-  i = instr(1, htmlHome, "HREF=\"") + 5;
+  i = instr(1, g_htmlHome, "HREF=\"") + 5;
   if (i == 5) {
     printLongLine(
         "?Warning: In the $t comment, htmlhome has no 'HREF=\"'.", "", " ");
     warningFound = 1;
   }
-  j = instr(i + 1, htmlHome, "\"");
-  let(&htmlHomeHREF, seg(htmlHome, i + 1, j - 1));
-  i = instr(1, htmlHome, "IMG SRC=\"") + 8;
+  j = instr(i + 1, g_htmlHome, "\"");
+  let(&g_htmlHomeHREF, seg(g_htmlHome, i + 1, j - 1));
+  i = instr(1, g_htmlHome, "IMG SRC=\"") + 8;
   if (i == 8) {
     printLongLine(
         "?Warning: In the $t comment, htmlhome has no 'IMG SRC=\"'.", "", " ");
     warningFound = 1;
   }
-  j = instr(i + 1, htmlHome, "\"");
-  let(&htmlHomeIMG, seg(htmlHome, i + 1, j - 1));
+  j = instr(i + 1, g_htmlHome, "\"");
+  let(&g_htmlHomeIMG, seg(g_htmlHome, i + 1, j - 1));
 
 
   /* 16-Aug-2016 nm */
@@ -840,9 +872,9 @@ flag readTexDefs(
   let(&htmlTitleAbbr, cat(htmlTitleAbbr, " Home", NULL));
 
   /* 18-Aug-2016 nm Added conditional test for extended section */
-  if (extHtmlStmt < statements + 1 /* If extended section exists */
+  if (g_extHtmlStmt < g_statements + 1 /* If extended section exists */
       /* nm 8-Dec-2017 nm */
-      && extHtmlStmt != sandboxStmt) { /* and is not an empty dummy section */
+      && g_extHtmlStmt != g_mathboxStmt) { /* and is not an empty dummy section */
     i = instr(1, extHtmlHome, "HREF=\"") + 5;
     if (i == 5) {
       printLongLine(
@@ -860,21 +892,21 @@ flag readTexDefs(
     j = instr(i + 1, extHtmlHome, "\"");
     let(&extHtmlHomeIMG, seg(extHtmlHome, i + 1, j - 1));
     /* Compose abbreviated title from capital letters */
-    j = (long)strlen(extHtmlTitle);
-    let(&extHtmlTitleAbbr, "");
+    j = (long)strlen(g_extHtmlTitle);
+    let(&g_extHtmlTitleAbbr, "");
     for (i = 1; i <= j; i++) {
-      if (extHtmlTitle[i - 1] >= 'A' && extHtmlTitle[i -1] <= 'Z') {
-        let(&extHtmlTitleAbbr, cat(extHtmlTitleAbbr,
-            chr(extHtmlTitle[i - 1]), NULL));
+      if (g_extHtmlTitle[i - 1] >= 'A' && g_extHtmlTitle[i -1] <= 'Z') {
+        let(&g_extHtmlTitleAbbr, cat(g_extHtmlTitleAbbr,
+            chr(g_extHtmlTitle[i - 1]), NULL));
       }
     }
-    let(&extHtmlTitleAbbr, cat(extHtmlTitleAbbr, " Home", NULL));
+    let(&g_extHtmlTitleAbbr, cat(g_extHtmlTitleAbbr, " Home", NULL));
   }
 
   /* 16-Aug-2016 nm For debugging - remove later */
   /*
-  printf("h=%s i=%s a=%s\n",htmlHomeHREF,htmlHomeIMG,htmlTitleAbbr);
-  printf("eh=%s ei=%s ea=%s\n",extHtmlHomeHREF,extHtmlHomeIMG,extHtmlTitleAbbr);
+  printf("h=%s i=%s a=%s\n",g_htmlHomeHREF,g_htmlHomeIMG,htmlTitleAbbr);
+  printf("eh=%s ei=%s ea=%s\n",extHtmlHomeHREF,extHtmlHomeIMG,g_extHtmlTitleAbbr);
   */
 
 
@@ -882,7 +914,7 @@ flag readTexDefs(
   let(&token, ""); /* Deallocate */
   let(&partialToken, ""); /* Deallocate */  /* 6-Aug-2011 nm */
   let(&fileBuf, "");  /* was: free(fileBuf); */
-  texDefsRead = 1;  /* Set global flag that it's been read in */
+  g_texDefsRead = 1;  /* Set global flag that it's been read in */
   return warningFound; /* Return indicator that parsing passed (0) or
                            had warning(s) (1) */
 
@@ -1014,7 +1046,7 @@ vstring asciiToTt(vstring s)
   /* Put special \tt font characters in a form that TeX can understand */
   for (i = 0; i < j; i++) {
     k = 1;
-    if (!htmlFlag) {
+    if (!g_htmlFlag) {
       switch (ttstr[i]) {
         /* For all unspecified cases, TeX will accept the character 'as is' */
         case ' ':
@@ -1118,27 +1150,27 @@ vstring tokenToTex(vstring mtoken, long statemNum /*for error msgs*/)
   void *texDefsPtr; /* For binary search */
   flag saveOutputToString;
 
-  if (!texDefsRead) {
+  if (!g_texDefsRead) {
     bug(2320); /* This shouldn't be called if definitions weren't read */
   }
 
-  texDefsPtr = (void *)bsearch(mtoken, texDefs, (size_t)numSymbs,
+  texDefsPtr = (void *)bsearch(mtoken, g_TexDefs, (size_t)numSymbs,
       sizeof(struct texDef_struct), texSrchCmp);
   if (texDefsPtr) { /* Found it */
     let(&tex, ((struct texDef_struct *)texDefsPtr)->texEquiv);
   } else {
     /* 9/5/99 If it wasn't found, give user a warning... */
-    saveOutputToString = outputToString;
-    outputToString = 0;
-    /* if (statemNum <= 0 || statemNum > statements) bug(2331); */ /* OLD */
+    saveOutputToString = g_outputToString;
+    g_outputToString = 0;
+    /* if (statemNum <= 0 || statemNum > g_statements) bug(2331); */ /* OLD */
     /* 19-Sep-2012 nm It is possible for statemNum to be 0 when
        tokenToTex() is called (via getTexLongMath()) from
        printTexLongMath(), when its hypStmt argument is 0 (= not associated
        with a statement).  (Reported by Wolf Lammen.) */
-    if (statemNum < 0 || statemNum > statements) bug(2331);
+    if (statemNum < 0 || statemNum > g_statements) bug(2331);
     if (statemNum > 0) {   /* Include statement label in error message */
       printLongLine(cat("?Warning: In the comment for statement \"",
-          statement[statemNum].labelName,
+          g_Statement[statemNum].labelName,
           "\", math symbol token \"", mtoken,
           "\" does not have a LaTeX and/or an HTML definition.", NULL),
           "", " ");
@@ -1147,7 +1179,7 @@ vstring tokenToTex(vstring mtoken, long statemNum /*for error msgs*/)
           "\" does not have a LaTeX and/or an HTML definition.", NULL),
           "", " ");
     }
-    outputToString = saveOutputToString;
+    g_outputToString = saveOutputToString;
     /* ... but we'll still leave in the old default conversion anyway: */
 
     /* If it wasn't found, use built-in conversion rules */
@@ -1167,7 +1199,7 @@ vstring tokenToTex(vstring mtoken, long statemNum /*for error msgs*/)
     for (i = 0; i < j; i++) {
       if (ispunct((unsigned char)(tex[i]))) {
         tmpStr = asciiToTt(chr(tex[i]));
-        if (!htmlFlag)
+        if (!g_htmlFlag)
           let(&tmpStr, cat("{\\tt ", tmpStr, "}", NULL));
         k = (long)strlen(tmpStr);
         let(&tex,
@@ -1179,7 +1211,7 @@ vstring tokenToTex(vstring mtoken, long statemNum /*for error msgs*/)
     } /* Next i */
 
     /* Make all letters Roman; put inside mbox */
-    if (!htmlFlag)
+    if (!g_htmlFlag)
       let(&tex, cat("\\mbox{\\rm ", tex, "}", NULL));
 
   } /* End if */
@@ -1232,7 +1264,7 @@ vstring asciiMathToTexNoSts(vstring mathComment, long statemNum)
     else tex = tokenToTex(token, statemNum); /* Convert token to TeX */
               /* tokenToTex allocates tex; we must deallocate it */
 
-    if (!htmlFlag) {
+    if (!g_htmlFlag) {
       /* If this token and previous token begin with letter, add a thin
            space between them */
       /* Also, anything not in table will have space added */
@@ -1283,7 +1315,7 @@ vstring getCommentModeSection(vstring *srcptr, char *mode)
   vstring modeSection = "";
   vstring ptr; /* Not allocated */
   flag addMode = 0;
-  if (!outputToString) bug(2319);  /* 10/10/02 */
+  if (!g_outputToString) bug(2319);  /* 10/10/02 */
 
   if ((*srcptr)[0] != DOLLAR_SUBST /*'$'*/) {
     if ((*srcptr)[0] == 0) { /* End of string */
@@ -1350,9 +1382,9 @@ vstring getCommentModeSection(vstring *srcptr, char *mode)
 
 
 /* The texHeaderFlag means this:
-    If !htmlFlag (i.e. TeX mode), then 1 means print header
-    If htmlFlag, then 1 means include "Previous Next" links on page,
-    based on the global showStatement variable
+    If !g_htmlFlag (i.e. TeX mode), then 1 means print header
+    If g_htmlFlag, then 1 means include "Previous Next" links on page,
+    based on the global g_showStatement variable
 */
 void printTexHeader(flag texHeaderFlag)
 {
@@ -1371,7 +1403,7 @@ void printTexHeader(flag texHeaderFlag)
   vstring smallHdrComment = ""; /* 8-May-2015 nm */
   vstring tinyHdrComment = ""; /* 21-Aug-2017 nm */
 
-  /*if (!texDefsRead) {*/ /* 17-Nov-2015 nm Now done in readTexDefs() */
+  /*if (!g_texDefsRead) {*/ /* 17-Nov-2015 nm Now done in readTexDefs() */
   if (2/*error*/ == readTexDefs(0/*errorsOnly=0*/, 0 /*noGifCheck=0*/)) {
     print2(
        "?There was an error in the $t comment's LaTeX/HTML definitions.\n");
@@ -1379,14 +1411,14 @@ void printTexHeader(flag texHeaderFlag)
   }
   /*}*/
 
-  outputToString = 1;  /* Redirect print2 and printLongLine to printString */
-  /*let(&printString, "");*/ /* May have stuff to be printed 7/4/98 */
-  if (!htmlFlag) {
+  g_outputToString = 1;  /* Redirect print2 and printLongLine to g_printString */
+  /*let(&g_printString, "");*/ /* May have stuff to be printed 7/4/98 */
+  if (!g_htmlFlag) {
     print2("%s This LaTeX file was created by Metamath on %s %s.\n",
        "%", date(), time_());
 
-    /* 14-Sep-2010 nm Added OLD_TEX (oldTexFlag) */
-    if (texHeaderFlag && !oldTexFlag) {
+    /* 14-Sep-2010 nm Added OLD_TEX (g_oldTexFlag) */
+    if (texHeaderFlag && !g_oldTexFlag) {
       print2("\\documentclass{article}\n");
       print2("\\usepackage{graphicx} %% For rotated iota\n"); /* 29-Nov-2013 nm */
       print2("\\usepackage{amssymb}\n");
@@ -1405,7 +1437,7 @@ void printTexHeader(flag texHeaderFlag)
       print2("\n");
     }
 
-    if (texHeaderFlag && oldTexFlag) {
+    if (texHeaderFlag && g_oldTexFlag) {
       /******* LaTeX 2.09
       print2(
 "\\documentstyle[leqno]{article}\n");
@@ -1474,7 +1506,7 @@ void printTexHeader(flag texHeaderFlag)
       print2(
 "}\n");
     }
-  } else { /* htmlFlag */
+  } else { /* g_htmlFlag */
 
     print2(
         "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"\n");
@@ -1535,7 +1567,7 @@ void printTexHeader(flag texHeaderFlag)
 #endif
     print2("-->\n");
     print2("</STYLE>\n");
-    printLongLine(htmlCSS, "", " ");
+    printLongLine(g_htmlCSS, "", " ");
 
     /*
     /@ 12-Jan-2016 nm Per Mario Carneiro's suggestion @/
@@ -1559,17 +1591,17 @@ void printTexHeader(flag texHeaderFlag)
     print2("<META NAME=\"GENERATOR\" CONTENT=\"Metamath\">\n");
     */
     /*
-    if (showStatement < extHtmlStmt) {
+    if (g_showStatement < g_extHtmlStmt) {
       print2("%s\n", cat("<TITLE>", htmlTitle, " - ",
           / * Strip off ".html" * /
-          left(texFileName, (long)strlen(texFileName) - 5),
-          / *left(texFileName, instr(1, texFileName, ".htm") - 1),* /
+          left(g_texFileName, (long)strlen(g_texFileName) - 5),
+          / *left(g_texFileName, instr(1, g_texFileName, ".htm") - 1),* /
           "</TITLE>", NULL));
     } else {
-      print2("%s\n", cat("<TITLE>", extHtmlTitle, " - ",
+      print2("%s\n", cat("<TITLE>", g_extHtmlTitle, " - ",
           / * Strip off ".html" * /
-          left(texFileName, (long)strlen(texFileName) - 5),
-          / *left(texFileName, instr(1, texFileName, ".htm") - 1),* /
+          left(g_texFileName, (long)strlen(g_texFileName) - 5),
+          / *left(g_texFileName, instr(1, g_texFileName, ".htm") - 1),* /
           "</TITLE>", NULL));
     }
     */
@@ -1577,20 +1609,20 @@ void printTexHeader(flag texHeaderFlag)
     if(stsFlag) printLongLine(getSTSHeader(), "", "\n");
 
     /* 4-Jun-06 nm - Put theorem name before "Metamath Proof Explorer" etc. */
-    if (showStatement < extHtmlStmt) {
+    if (g_showStatement < g_extHtmlStmt) {
       print2("%s\n", cat("<TITLE>",
           /* Strip off ".html" */
-          left(texFileName, (long)strlen(texFileName) - 5),
-          /*left(texFileName, instr(1, texFileName, ".htm") - 1),*/
+          left(g_texFileName, (long)strlen(g_texFileName) - 5),
+          /*left(g_texFileName, instr(1, g_texFileName, ".htm") - 1),*/
           " - ", htmlTitle,
           "</TITLE>", NULL));
     /*} else {*/
-    } else if (showStatement < sandboxStmt) { /* 29-Jul-2008 nm Sandbox stuff */
+    } else if (g_showStatement < g_mathboxStmt) { /* 29-Jul-2008 nm Sandbox stuff */
       print2("%s\n", cat("<TITLE>",
           /* Strip off ".html" */
-          left(texFileName, (long)strlen(texFileName) - 5),
-          /*left(texFileName, instr(1, texFileName, ".htm") - 1),*/
-          " - ", extHtmlTitle,
+          left(g_texFileName, (long)strlen(g_texFileName) - 5),
+          /*left(g_texFileName, instr(1, g_texFileName, ".htm") - 1),*/
+          " - ", g_extHtmlTitle,
           "</TITLE>", NULL));
 
     /* 29-Jul-2008 nm Sandbox stuff */
@@ -1598,8 +1630,8 @@ void printTexHeader(flag texHeaderFlag)
 
       /* 2-Aug-2009 nm - "Mathbox for <username>" mod */
       /* Scan from this statement backwards until a big header is found */
-      for (i = showStatement; i > sandboxStmt; i--) {
-        if (statement[i].type == a_ || statement[i].type == p_) {
+      for (i = g_showStatement; i > g_mathboxStmt; i--) {
+        if (g_Statement[i].type == a_ || g_Statement[i].type == p_) {
                                                             /* 18-Dec-2016 nm */
           /* Note: only bigHdr is used; the other 5 returned strings are
              ignored */
@@ -1607,7 +1639,9 @@ void printTexHeader(flag texHeaderFlag)
               &tinyHdr,
               /* 5-May-2015 nm */
               &hugeHdrComment, &bigHdrComment, &smallHdrComment,
-              &tinyHdrComment);
+              &tinyHdrComment,
+              0, /* fineResolution */
+              0  /* fullComment */);
           if (bigHdr[0] != 0) break;
         } /* 18-Dec-2016 nm */
       } /* next i */
@@ -1631,8 +1665,8 @@ void printTexHeader(flag texHeaderFlag)
 
       printLongLine(cat("<TITLE>",
           /* Strip off ".html" */
-          left(texFileName, (long)strlen(texFileName) - 5),
-          /*left(texFileName, instr(1, texFileName, ".htm") - 1),*/
+          left(g_texFileName, (long)strlen(g_texFileName) - 5),
+          /*left(g_texFileName, instr(1, g_texFileName, ".htm") - 1),*/
           /*" - ", sandboxTitle,*/
           /* 2-Aug-2009 nm - "Mathbox for <username>" mod */
           " - ", localSandboxTitle,
@@ -1658,32 +1692,34 @@ void printTexHeader(flag texHeaderFlag)
     print2("  <TR>\n");
     print2("    <TD ALIGN=LEFT VALIGN=TOP WIDTH=\"25%s\"><A HREF=\n", "%");
     print2("    \"%s\"><IMG SRC=\"%s\"\n",
-        (showStatement < extHtmlStmt ? htmlHomeHREF :
-             (showStatement < sandboxStmt ? extHtmlHomeHREF :
+        (g_showStatement < g_extHtmlStmt ? g_htmlHomeHREF :
+             (g_showStatement < g_mathboxStmt ? extHtmlHomeHREF :
              sandboxHomeHREF)),
         /* Note that we assume that the upper-left image is 32x32 */
-        (showStatement < extHtmlStmt ? htmlHomeIMG :
-             (showStatement < sandboxStmt ? extHtmlHomeIMG :
+        (g_showStatement < g_extHtmlStmt ? g_htmlHomeIMG :
+             (g_showStatement < g_mathboxStmt ? extHtmlHomeIMG :
              sandboxHomeIMG)));
     print2("      BORDER=0\n");
     print2("      ALT=\"%s\"\n",
-        (showStatement < extHtmlStmt ? htmlTitleAbbr :
-             (showStatement < sandboxStmt ? extHtmlTitleAbbr :
+        (g_showStatement < g_extHtmlStmt ? htmlTitleAbbr :
+             (g_showStatement < g_mathboxStmt ? g_extHtmlTitleAbbr :
              sandboxTitleAbbr)));
     print2("      TITLE=\"%s\"\n",
-        (showStatement < extHtmlStmt ? htmlTitleAbbr :
-             (showStatement < sandboxStmt ? extHtmlTitleAbbr :
+        (g_showStatement < g_extHtmlStmt ? htmlTitleAbbr :
+             (g_showStatement < g_mathboxStmt ? g_extHtmlTitleAbbr :
              sandboxTitleAbbr)));
     print2(
       "      HEIGHT=32 WIDTH=32 ALIGN=TOP STYLE=\"margin-bottom:0px\"></A>\n");
     print2("    </TD>\n");
-    print2("    <TD ALIGN=CENTER VALIGN=TOP><FONT SIZE=\"+3\" COLOR=%s><B>\n",
+    print2(
+"    <TD ALIGN=CENTER COLSPAN=2 VALIGN=TOP><FONT SIZE=\"+3\" COLOR=%s><B>\n",
+                              /* Change COLSPAN=1 -> 2 */ /* 27-Dec-2020 nm */
       GREEN_TITLE_COLOR);
     /* Allow plenty of room for long titles (although over 79 chars. will
        trigger bug 1505). */
     print2("%s\n",
-        (showStatement < extHtmlStmt ? htmlTitle :
-             (showStatement < sandboxStmt ? extHtmlTitle :
+        (g_showStatement < g_extHtmlStmt ? htmlTitle :
+             (g_showStatement < g_mathboxStmt ? g_extHtmlTitle :
              localSandboxTitle)));
     print2("      </B></FONT></TD>\n");
     /* print2("    </TD>\n"); */ /* 26-Dec-2016 nm Delete extra </TD> */
@@ -1702,10 +1738,10 @@ void printTexHeader(flag texHeaderFlag)
     print2("</FONT></A>");
     */
     /*
-    if (showStatement < extHtmlStmt) {
-      printLongLine(cat("ROWSPAN=2>", htmlHome, "</TD>", NULL), "", "\"");
+    if (g_showStatement < g_extHtmlStmt) {
+      printLongLine(cat("ROWSPAN=2>", g_htmlHome, "</TD>", NULL), "", "\"");
     /@} else {@/
-    } else if (showStatement < sandboxStmt) { /@ 29-Jul-2008 nm Sandbox stuff @/
+    } else if (g_showStatement < g_mathboxStmt) { /@ 29-Jul-2008 nm Sandbox stuff @/
       printLongLine(cat("ROWSPAN=2>", extHtmlHome, "</TD>", NULL), "", "\"");
 
     /@ 29-Jul-2008 nm Sandbox stuff @/
@@ -1714,15 +1750,15 @@ void printTexHeader(flag texHeaderFlag)
 
     }
 
-    if (showStatement < extHtmlStmt) {
+    if (g_showStatement < g_extHtmlStmt) {
       printLongLine(cat(
           "<TD ALIGN=CENTER VALIGN=TOP ROWSPAN=2><FONT SIZE=\"+3\" COLOR=",
           GREEN_TITLE_COLOR, "><B>", htmlTitle, "</B></FONT>", NULL), "", "\"");
     /@} else {@/
-    } else if (showStatement < sandboxStmt) { /@ 29-Jul-2008 nm Sandbox stuff @/
+    } else if (g_showStatement < g_mathboxStmt) { /@ 29-Jul-2008 nm Sandbox stuff @/
       printLongLine(cat(
           "<TD ALIGN=CENTER VALIGN=TOP ROWSPAN=2><FONT SIZE=\"+3\" COLOR=",
-          GREEN_TITLE_COLOR, "><B>", extHtmlTitle, "</B></FONT>", NULL), "", "\"");
+          GREEN_TITLE_COLOR, "><B>", g_extHtmlTitle, "</B></FONT>", NULL), "", "\"");
 
     /@ 29-Jul-2008 nm Sandbox stuff @/
     } else {
@@ -1745,16 +1781,16 @@ void printTexHeader(flag texHeaderFlag)
       /* Find the previous statement with a web page */
       j = 0;
       k = 0;
-      for (i = showStatement - 1; i >= 1; i--) {
-        if ((statement[i].type == (char)p_ ||
-            statement[i].type == (char)a_ )
+      for (i = g_showStatement - 1; i >= 1; i--) {
+        if ((g_Statement[i].type == (char)p_ ||
+            g_Statement[i].type == (char)a_ )
             /* Skip dummy "xxx..." statements.  We rely on lazy
                evaluation to prevent array bound overflow. */
             /* 16-Aug-2016 nm Took out this obsolete feature */
             /*
-            && (statement[i].labelName[0] != 'x'
-              || statement[i].labelName[1] != 'x'
-              || statement[i].labelName[2] != 'x')
+            && (g_Statement[i].labelName[0] != 'x'
+              || g_Statement[i].labelName[1] != 'x'
+              || g_Statement[i].labelName[2] != 'x')
             */
             ) {
           j = i;
@@ -1764,16 +1800,16 @@ void printTexHeader(flag texHeaderFlag)
       if (j == 0) {
         k = 1; /* First statement flag */
         /* For the first statement, wrap to last one */
-        for (i = statements; i >= 1; i--) {
-          if ((statement[i].type == (char)p_ ||
-              statement[i].type == (char)a_ )
+        for (i = g_statements; i >= 1; i--) {
+          if ((g_Statement[i].type == (char)p_ ||
+              g_Statement[i].type == (char)a_ )
               /* Skip dummy "xxx..." statements.  We rely on lazy
                  evaluation to prevent array bound overflow. */
               /* 16-Aug-2016 nm Took out this obsolete feature */
               /*
-              && (statement[i].labelName[0] != 'x'
-                || statement[i].labelName[1] != 'x'
-                || statement[i].labelName[2] != 'x')
+              && (g_Statement[i].labelName[0] != 'x'
+                || g_Statement[i].labelName[1] != 'x'
+                || g_Statement[i].labelName[2] != 'x')
               */
               ) {
             j = i;
@@ -1783,7 +1819,7 @@ void printTexHeader(flag texHeaderFlag)
       }
       if (j == 0) bug(2314);
       print2("      <A HREF=\"%s.html\">\n",
-          statement[j].labelName);
+          g_Statement[j].labelName);
       if (!k) {
         print2("      &lt; Previous</A>&nbsp;&nbsp;\n");
       } else {
@@ -1792,16 +1828,16 @@ void printTexHeader(flag texHeaderFlag)
       /* Find the next statement with a web page */
       j = 0;
       k = 0;
-      for (i = showStatement + 1; i <= statements; i++) {
-        if ((statement[i].type == (char)p_ ||
-            statement[i].type == (char)a_ )
+      for (i = g_showStatement + 1; i <= g_statements; i++) {
+        if ((g_Statement[i].type == (char)p_ ||
+            g_Statement[i].type == (char)a_ )
             /* Skip dummy "xxx..." statements.  We rely on lazy
                evaluation to prevent array bound overflow. */
             /* 16-Aug-2016 nm Took out this obsolete feature */
             /*
-            && (statement[i].labelName[0] != 'x'
-              || statement[i].labelName[1] != 'x'
-              || statement[i].labelName[2] != 'x')
+            && (g_Statement[i].labelName[0] != 'x'
+              || g_Statement[i].labelName[1] != 'x'
+              || g_Statement[i].labelName[2] != 'x')
             */
             ) {
           j = i;
@@ -1811,16 +1847,16 @@ void printTexHeader(flag texHeaderFlag)
       if (j == 0) {
         k = 1; /* Last statement flag */
         /* For the last statement, wrap to first one */
-        for (i = 1; i <= statements; i++) {
-          if ((statement[i].type == (char)p_ ||
-              statement[i].type == (char)a_ )
+        for (i = 1; i <= g_statements; i++) {
+          if ((g_Statement[i].type == (char)p_ ||
+              g_Statement[i].type == (char)a_ )
               /* Skip dummy "xxx..." statements.  We rely on lazy
                  evaluation to prevent array bound overflow. */
               /* 16-Aug-2016 nm Took out this obsolete feature */
               /*
-              && (statement[i].labelName[0] != 'x'
-                || statement[i].labelName[1] != 'x'
-                || statement[i].labelName[2] != 'x')
+              && (g_Statement[i].labelName[0] != 'x'
+                || g_Statement[i].labelName[1] != 'x'
+                || g_Statement[i].labelName[2] != 'x')
               */
               ) {
             j = i;
@@ -1832,10 +1868,10 @@ void printTexHeader(flag texHeaderFlag)
       /*print2("<A HREF=\"%s.html\">Next</A></FONT>\n",*/
       if (!k) {
         print2("      <A HREF=\"%s.html\">Next &gt;</A>\n",
-            statement[j].labelName);
+            g_Statement[j].labelName);
       } else {
         print2("      <A HREF=\"%s.html\">Wrap &gt;</A>\n",
-            statement[j].labelName);
+            g_Statement[j].labelName);
       }
 
       print2("      </FONT><FONT FACE=sans-serif SIZE=-2>\n");
@@ -1847,12 +1883,12 @@ void printTexHeader(flag texHeaderFlag)
          we assume it to be 100 (hardcoded).  Todo: This should be fixed to use
          the same as the THEOREMS_PER_PAGE in WRITE THEOREMS (have a SET
          global variable in place of THEOREMS_PER_PAGE?) */
-      i = ((statement[showStatement].pinkNumber - 1) / 100) + 1; /* Page # */
+      i = ((g_Statement[g_showStatement].pinkNumber - 1) / 100) + 1; /* Page # */
       /* let(&tmpStr, cat("mmtheorems", (i == 1) ? "" : str(i), ".html#", */
       /* 18-Jul-2015 nm - all thm pages now have page num after mmtheorems
          since mmtheorems.html is now just the table of contents */
       let(&tmpStr, cat("mmtheorems", str((double)i), ".html#",
-          statement[showStatement].labelName, NULL)); /* Link to page/stmt */
+          g_Statement[g_showStatement].labelName, NULL)); /* Link to page/stmt */
       /*print2("      <BR><A HREF=\"%s\">Nearby theorems</A>\n",
             tmpStr);*/
       /* 3-May-2017 nm Break up lines w/ long labels to prevent bug 1505 */
@@ -1863,13 +1899,13 @@ void printTexHeader(flag texHeaderFlag)
       /*
       if (htmlDir[0]) {
 
-        if (altHtmlFlag) {
+        if (g_altHtmlFlag) {
           print2("      <BR><A HREF=\"%s%s\">GIF version</A>\n",
-                htmlDir, texFileName);
+                htmlDir, g_texFileName);
 
         } else {
           print2("      <BR><A HREF=\"%s%s\">Unicode version</A>\n",
-                altHtmlDir, texFileName);
+                altHtmlDir, g_texFileName);
 
         }
       }
@@ -1883,44 +1919,70 @@ void printTexHeader(flag texHeaderFlag)
       print2("      <A HREF=\"../mm.html\">Mirrors</A>&nbsp; &gt;\n");
       print2("      &nbsp;<A HREF=\"../index.html\">Home</A>&nbsp; &gt;\n");
       print2("      &nbsp;<A HREF=\"%s\">%s</A>&nbsp; &gt;\n",
-          (showStatement < extHtmlStmt ? htmlHomeHREF :
-               (showStatement < sandboxStmt ? extHtmlHomeHREF :
-               htmlHomeHREF)),
-          (showStatement < extHtmlStmt ? htmlTitleAbbr :
-               (showStatement < sandboxStmt ? extHtmlTitleAbbr :
+          (g_showStatement < g_extHtmlStmt ? g_htmlHomeHREF :
+               (g_showStatement < g_mathboxStmt ? extHtmlHomeHREF :
+               g_htmlHomeHREF)),
+          (g_showStatement < g_extHtmlStmt ? htmlTitleAbbr :
+               (g_showStatement < g_mathboxStmt ? g_extHtmlTitleAbbr :
                htmlTitleAbbr)));
       print2("      &nbsp;<A HREF=\"mmtheorems.html\">Th. List</A>&nbsp; &gt;\n");
-      if (showStatement >= sandboxStmt) {
+      if (g_showStatement >= g_mathboxStmt) {
         print2("      &nbsp;<A HREF=\"mmtheorems.html#sandbox:bighdr\">\n");
         print2("      Mathboxes</A>&nbsp; &gt;\n");
       }
       print2("      &nbsp;%s\n",
           /* Strip off ".html" */
-          left(texFileName, (long)strlen(texFileName) - 5));
+          left(g_texFileName, (long)strlen(g_texFileName) - 5));
       print2("      </FONT>\n");
       print2("    </TD>\n");
-      print2("    <TD COLSPAN=1 ALIGN=RIGHT VALIGN=TOP>\n");
+      print2("    <TD COLSPAN=2 ALIGN=RIGHT VALIGN=TOP>\n");
+                              /* Change COLSPAN=1 -> 2 */ /* 27-Dec-2020 nm */
       print2("      <FONT SIZE=-2 FACE=sans-serif>\n");
 
 
-      /* 3-Jun-2018 nm Add link to Thierry Arnoux's site */
-      /* This was added to version 0.162 to become 0.162-thierry */
-      /****** THIS IS TEMPORARY AND MAY BE CHANGED OR DELETED *********/
+      /**** Deleted 26-Dec-2020 nm
+      /@ 3-Jun-2018 nm Add link to Thierry Arnoux's site @/
+      /@ This was added to version 0.162 to become 0.162-thierry @/
+      /@@@@@@ THIS IS TEMPORARY AND MAY BE CHANGED OR DELETED @@@@@@@@@/
       printLongLine(cat("      <A HREF=\"",
-          "http://metamath.tirix.org/", texFileName,
+          "http://metamath.tirix.org/", g_texFileName,
           "\">Structured version</A>&nbsp;&nbsp;", NULL), "", " ");
-      /****** END OF LINKING TO THIERRY ARNOUX'S SITE ************/
+      /@@@@@@ END OF LINKING TO THIERRY ARNOUX'S SITE @@@@@@@@@@@@/
+      ***** End of 26-Dec-2020 deletion *****/
+
+      /* 26-Dec-2020 nm Add link(s) specified by htmlexturl in $t statement */
+      /* The position of the theorem name is indicated with "*" in the
+         htmlexturl $t variable.  If a literal "*" is part of the URL,
+         use the alternate URL encoding "%2A" */
+      /* Example: (take out space in "/ *" below that was put there to prevent
+                   compiler warnings)
+          htmlexturl '<A HREF="http://metamath.tirix.org/ *.html">' +
+              'Structured version</A>&nbsp;&nbsp;' +
+              '<A HREF="https://expln.github.io/metamath/asrt/ *.html">' +
+              'ASCII version</A>&nbsp;&nbsp;';
+      */
+      let(&tmpStr, htmlExtUrl);
+      i = 1;
+      while (1) {
+        i = instr(i, tmpStr, "*");
+        if (i == 0) break;
+        let(&tmpStr, cat(left(tmpStr, i - 1),
+            g_Statement[g_showStatement].labelName,
+            right(tmpStr, i + 1), NULL));
+      }
+      printLongLine(tmpStr, "", " ");
+      /* End of 26-Dec-2020 mod */
 
       /* Print the GIF/Unicode Font choice, if directories are specified */
       if (htmlDir[0]) {
 
-        if (altHtmlFlag) {
+        if (g_altHtmlFlag) {
           print2("      <A HREF=\"%s%s\">GIF version</A>\n",
-                htmlDir, texFileName);
+                htmlDir, g_texFileName);
 
         } else {
           print2("      <A HREF=\"%s%s\">Unicode version</A>\n",
-                altHtmlDir, texFileName);
+                altHtmlDir, g_texFileName);
 
         }
       }
@@ -1935,14 +1997,14 @@ void printTexHeader(flag texHeaderFlag)
       /* Print the GIF/Unicode Font choice, if directories are specified */
       if (htmlDir[0]) {
         print2("\n");
-        if (altHtmlFlag) {
+        if (g_altHtmlFlag) {
           print2("This is the Unicode version.<BR>\n");
           print2("<A HREF=\"%s%s\">Change to GIF version</A>\n",
-              htmlDir, texFileName);
+              htmlDir, g_texFileName);
         } else {
           print2("This is the GIF version.<BR>\n");
           print2("<A HREF=\"%s%s\">Change to Unicode version</A>\n",
-              altHtmlDir, texFileName);
+              altHtmlDir, g_texFileName);
         }
       }
       else {
@@ -1960,10 +2022,10 @@ void printTexHeader(flag texHeaderFlag)
 
     print2("<HR NOSHADE SIZE=1>\n");
 
-  } /* htmlFlag */
-  fprintf(texFilePtr, "%s", printString);
-  outputToString = 0;
-  let(&printString, "");
+  } /* g_htmlFlag */
+  fprintf(g_texFilePtr, "%s", g_printString);
+  g_outputToString = 0;
+  let(&g_printString, "");
 
   /* Deallocate strings */
   let(&tmpStr, "");
@@ -1975,10 +2037,10 @@ void printTexHeader(flag texHeaderFlag)
    "$)" or null character is encountered.   commentPtr must not be a temporary
    allocation.   htmlCenterFlag, if 1, means to center the HTML and add a
    "Description:" prefix. */
-/* The output is printed to the global texFilePtr. */
-/* Note: the global long "showStatement" is referenced to determine whether
+/* The output is printed to the global g_texFilePtr. */
+/* Note: the global long "g_showStatement" is referenced to determine whether
    to read bibliography from mmset.html or mmhilbert.html (or other
-   htmlBibliography or extHtmlBibliography file pair). */
+   g_htmlBibliography or extHtmlBibliography file pair). */
 /* Returns 1 if an error or warning message was printed */ /* 17-Nov-2015 */
 flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
     /* 17-Nov-2015 nm */
@@ -2065,15 +2127,15 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
   metamathComment = (actionBits & METAMATH_COMMENT ) != 0;
 
   /* We must let this procedure handle switching output to string mode */
-  if (outputToString) bug(2309);
+  if (g_outputToString) bug(2309);
   /* The LaTeX (or HTML) file must be open */
   if (errorsOnly == 0) {   /* 17-Nov-2015 nm */
-    if (!texFilePtr) bug(2321);
+    if (!g_texFilePtr) bug(2321);
   }
 
   cmtptr = commentPtr;
 
-  if (!texDefsRead) {
+  if (!g_texDefsRead) {
     return returnVal; /* TeX defs were not read (error was detected
                                and flagged to the user elsewhere) */
   }
@@ -2095,7 +2157,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
 
 
   /* This section is independent and can be removed without side effects */
-  if (htmlFlag) {
+  if (g_htmlFlag) {
     /* Convert special characters <, &, etc. to HTML entities */
     /* But skip converting math symbols inside ` ` */
     /* 26-Dec-2011 nm Detect preformatted HTML (this is crude, since it
@@ -2153,7 +2215,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
 
   /* 10/10/02 Add leading and trailing HTML markup to comment here
      (instead of in caller).  Also convert special characters. */
-  if (htmlFlag) {
+  if (g_htmlFlag) {
     /* This used to be done in mmcmds.c */
     if (htmlCenterFlag) {  /* Note:  this should be 0 in MARKUP command */
       let(&cmt, cat("<CENTER><TABLE><TR><TD ALIGN=LEFT><B>Description: </B>",
@@ -2169,7 +2231,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
   /* Mask out _ (underscore) in labels so they won't become subscripts
      (reported by Benoit Jubin) */
   /* This section is independent and can be removed without side effects */
-  if (htmlFlag != 0
+  if (g_htmlFlag != 0
       /* && processSymbols != 0*/ /* Mode 3 processes symbols only */
          /* (Actually we should do this all the time; this is the mask) */
       ) {
@@ -2206,14 +2268,14 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
         }
       }  /* while (1) */
     } /* while (1) */
-  } /* if htmlFlag */
+  } /* if g_htmlFlag */
 
 
   /* 5-Dec-03 Handle dollar signs in comments converted to LaTeX */
   /* This section is independent and can be removed without side effects */
   /* This must be done before the underscores below so subscript $'s */
   /* won't be converted to \$'s */
-  if (!htmlFlag) {  /* LaTeX */
+  if (!g_htmlFlag) {  /* LaTeX */
 
     /* MARKUP command doesn't handle LaTeX */
     /* 25-Jan-2019 nm - this gets set by PROCESS_EVERYTHING in many calls;
@@ -2245,7 +2307,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
      below, so that "{\em...}" won't be converted to "\}\em...\}" */
   /* Convert any remaining special characters for LaTeX */
   /* This section is independent and can be removed without side effects */
-  if (!htmlFlag) { /* i.e. LaTeX mode */
+  if (!g_htmlFlag) { /* i.e. LaTeX mode */
     /* At this point, the comment begins e.g "\begin{lemma}\label{lem:abc}" */
     pos1 = instr(1, cmt, "} ");
     if (pos1) {
@@ -2289,14 +2351,14 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
         pos2 += (long)strlen(tmpStr) - 1;
       }
     } /* Next pos1 */
-  } /* if (!htmlFlag) */
+  } /* if (!g_htmlFlag) */
 
   /* 10-Oct-02 Handle underscores in comments converted to HTML:  Convert _abc_
      to <I>abc</I> for book titles, etc.; convert a_n to a<SUB>n</SUB> for
      subscripts */
   /* 5-Dec-03 Added LaTeX handling */
   /* This section is independent and can be removed without side effects */
-  if (htmlFlag != 0     /* 5-Dec-03 */
+  if (g_htmlFlag != 0     /* 5-Dec-03 */
       && processUnderscores != 0) {  /* 13-Dec-2018 nm */
     pos1 = 0;
     while (1) {
@@ -2365,7 +2427,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
               pos2++; /* Move forward through subscript */
             }
             pos2++; /* Adjust for left, seg, etc. that start at 1 not 0 */
-            if (htmlFlag) {  /* HTML */
+            if (g_htmlFlag) {  /* HTML */
               /* Put <SUB>...</SUB> around subscript */
               let(&cmt, cat(left(cmt, pos1 - 1),
                   "<SUB><FONT SIZE=\"-1\">",
@@ -2404,7 +2466,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
       /* Closing "_" must be <alphanum>_<nonalphanum> */
       if (!isalnum((unsigned char)(cmt[pos2 - 2]))) continue;
       if (isalnum((unsigned char)(cmt[pos2]))) continue;
-      if (htmlFlag) {  /* HTML */
+      if (g_htmlFlag) {  /* HTML */
         let(&cmt, cat(left(cmt, pos1 - 1), "<I>",
             seg(cmt, pos1 + 1, pos2 - 1),
             "</I>", right(cmt, pos2 + 1), NULL));
@@ -2427,7 +2489,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
   /* 1-May-2017 nm */
   /* Convert opening double quote to `` for LaTeX */
   /* This section is independent and can be removed without side effects */
-  if (!htmlFlag) { /* If LaTeX mode */
+  if (!g_htmlFlag) { /* If LaTeX mode */
     i = 1; /* Even/odd counter: 1 = left quote, 0 = right quote */
     pos1 = 0;
     while (1) {
@@ -2450,22 +2512,22 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
   /* 10/10/02 Put bibliography hyperlinks in comments converted to HTML:
         [Monk2] becomes <A HREF="mmset.html#monk2>[Monk2]</A> etc. */
   /* This section is independent and can be removed without side effects */
-  if (htmlFlag
+  if (g_htmlFlag
       && processBibrefs != 0 /* 13-Dec-2018 nm */
       ) {
     /* Assign local tag list and local HTML file name */
-    if (showStatement < extHtmlStmt) {
-      let(&bibTags, htmlBibliographyTags);
-      let(&bibFileName, htmlBibliography);
+    if (g_showStatement < g_extHtmlStmt) {
+      let(&bibTags, g_htmlBibliographyTags);
+      let(&bibFileName, g_htmlBibliography);
     /*} else {*/
-    } else if (showStatement < sandboxStmt) { /* 29-Jul-2008 nm Sandbox stuff */
+    } else if (g_showStatement < g_mathboxStmt) { /* 29-Jul-2008 nm Sandbox stuff */
       let(&bibTags, extHtmlBibliographyTags);
       let(&bibFileName, extHtmlBibliography);
 
     /* 29-Jul-2008 nm Sandbox stuff */
     } else {
-      let(&bibTags, htmlBibliographyTags);  /* Go back to Mm Prf Explorer */
-      let(&bibFileName, htmlBibliography);
+      let(&bibTags, g_htmlBibliographyTags);  /* Go back to Mm Prf Explorer */
+      let(&bibFileName, g_htmlBibliography);
 
     }
     if (bibFileName[0]) {
@@ -2533,12 +2595,12 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
             if (!bibFileContents) {
               /* The file was not found or had some problem (use verbose mode = 1
                  in 2nd argument of readFileToString for debugging). */
-              printLongLine(cat("?Warning:  Couldn't open or read the file \"",
+              printLongLine(cat("?Warning: Couldn't open or read the file \"",
                   bibFileName,
                   "\".  The bibliographic hyperlinks will not be checked for",
                   " correctness.  The first one is \"", bibTag,
                   "\" in the comment for statement \"",
-                  statement[showStatement].labelName, "\".",
+                  g_Statement[g_showStatement].labelName, "\".",
                   NULL), "", " ");
               returnVal = 1; /* Error/warning printed */ /* 17-Nov-2015 nm */
               bibFileContents = ""; /* Restore to normal string */
@@ -2588,16 +2650,16 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
             } /* end if (!bibFIleContents) */
           } /* end if (noFileCheck == 0) */
           /* Assign to permanent tag list for next time */
-          if (showStatement < extHtmlStmt) {
-            let(&htmlBibliographyTags, bibTags);
+          if (g_showStatement < g_extHtmlStmt) {
+            let(&g_htmlBibliographyTags, bibTags);
           /*} else {*/
-          } else if (showStatement < sandboxStmt) {
+          } else if (g_showStatement < g_mathboxStmt) {
                                              /* 29-Jul-2008 nm Sandbox stuff */
             let(&extHtmlBibliographyTags, bibTags);
 
           /* 29-Jul-2008 nm Sandbox stuff */
           } else {
-            let(&htmlBibliographyTags, bibTags);
+            let(&g_htmlBibliographyTags, bibTags);
 
           }
           /* Done reading in HTML file with bibliography */
@@ -2607,7 +2669,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
           /* We have a tag list from the bibliography file */
           if (!instr(1, bibTags, bibTag)) {
             printLongLine(cat("?Error: The bibliographic reference \"", bibTag,
-                "\" in statement \"", statement[showStatement].labelName,
+                "\" in statement \"", g_Statement[g_showStatement].labelName,
                 "\" was not found as an <A NAME=\"",
                 seg(bibTag, 2, pos2 - pos1),
                 "\"></A> anchor in the file \"", bibFileName, "\".", NULL),
@@ -2628,7 +2690,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
         pos1 = pos1 + (long)strlen(tmp) - (long)strlen(bibTag); /* Adjust comment position */
       } /* end while(1) */
     } /* end if (bibFileName[0]) */
-  } /* end of if (htmlFlag) */
+  } /* end of if (g_htmlFlag) */
   /* 10/10/02 End of bibliography hyperlinks */
 
   /* All actions on cmt should be mirrored on cmdMasked, except that
@@ -2747,14 +2809,14 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
              meaningful error message that doesn't abort the program.) */
           /* bug(2310); */
           /* 2-Oct-2015 nm Changed to error message */
-          outputToString = 0;
-          printLongLine(cat("?Warning:  There is a \"~\" inside of a label",
+          g_outputToString = 0;
+          printLongLine(cat("?Warning: There is a \"~\" inside of a label",
               " in the comment of statement \"",
-              statement[showStatement].labelName,
+              g_Statement[g_showStatement].labelName,
               "\".  Use \"~~\" to escape \"~\" in an http reference.",
               NULL), "", " ");
           returnVal = 1; /* Error/warning printed */ /* 17-Nov-2015 nm */
-          outputToString = 1;
+          g_outputToString = 1;
           mode = 'n';
         }
         let(&cmt, cat(left(cmt, i), chr(DOLLAR_SUBST) /*$*/, chr(mode),
@@ -2856,8 +2918,8 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
 
   cmtptr = cmt; /* cmtptr is for scanning cmt */
 
-  outputToString = 1; /* Redirect print2 and printLongLine to printString */
-  /*let(&printString, "");*/ /* May have stuff to be printed 7/4/98 */
+  g_outputToString = 1; /* Redirect print2 and printLongLine to g_printString */
+  /*let(&g_printString, "");*/ /* May have stuff to be printed 7/4/98 */
 
   while (1) {
     /* Get a "line" of text, up to the next new-line.  New-lines embedded
@@ -2937,15 +2999,15 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
 
             /* 2-Oct-2015 nm */
             /* This can happen if ~ is followed by ` (start of math string) */
-            outputToString = 0;
-            printLongLine(cat("?Error:  There is a \"~\" with no label",
+            g_outputToString = 0;
+            printLongLine(cat("?Error: There is a \"~\" with no label",
                 " in the comment of statement \"",
-                statement[showStatement].labelName,
+                g_Statement[g_showStatement].labelName,
                 "\".  Check that \"`\" inside of a math symbol is",
                 " escaped with \"``\".",
                 NULL), "", " ");
             returnVal = 1; /* Error/warning printed */ /* 17-Nov-2015 nm */
-            outputToString = 1;
+            g_outputToString = 1;
 
           }
 
@@ -2955,14 +3017,14 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
              LaTeX information) - since label references in comments are
              rare, we just do a linear scan instead of binary search */
           /******* 10/10/02
-          for (i = 1; i <= statements; i++) {
-            if (!strcmp(statement[i].labelName, tmpStr)) break;
+          for (i = 1; i <= g_statements; i++) {
+            if (!strcmp(g_Statement[i].labelName, tmpStr)) break;
           }
-          if (i > statements) {
-            outputToString = 0;
+          if (i > g_statements) {
+            g_outputToString = 0;
             printLongLine(cat("?Error: Statement \"", tmpStr,
                "\" (referenced in comment) does not exist.", NULL), "", " ");
-            outputToString = 1;
+            g_outputToString = 1;
             returnVal = 1;
           }
           *******/
@@ -2977,7 +3039,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
                20-Oct-2018 nm - Added starting with 'mm', which is illegal
                for set.mm labels - e.g. mmtheorems.html#abc */
 
-            if (htmlFlag) {
+            if (g_htmlFlag) {
               let(&outputLine, cat(outputLine, "<A HREF=\"", tmpStr,
                   "\">", tmpStr, "</A>", tmp, NULL));
             } else {
@@ -2999,16 +3061,16 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
                are no html pages for local labels) */
             i = lookupLabel(tmpStr);
             if (i < 0) {
-              outputToString = 0;
+              g_outputToString = 0;
               printLongLine(cat("?Warning: The label token \"", tmpStr,
                   "\" (referenced in comment of statement \"",
-                  statement[showStatement].labelName,
+                  g_Statement[g_showStatement].labelName,
                   "\") is not a $a or $p statement label.", NULL), "", " ");
-              outputToString = 1;
+              g_outputToString = 1;
               returnVal = 1; /* Error/warning printed */ /* 17-Nov-2015 nm */
             }
 
-            if (!htmlFlag) {
+            if (!g_htmlFlag) {
               let(&outputLine, cat(outputLine, "{\\tt ", tmpStr,
                  "}", NULL));
             } else {
@@ -3035,12 +3097,12 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
 
           if (processSymbols == 0) { /* 13-Dec-2018 nm */
             /* Math symbols should be treated as normal text */
-            bug(2345);
+            bug(2346);
           }
 
           let(&tmpStr, "");
-          tmpStr = asciiMathToTex(modeSection, showStatement);
-          if (!htmlFlag) {
+          tmpStr = asciiMathToTex(modeSection, g_showStatement);
+          if (!g_htmlFlag) {
             if (displayMode) {
               /* It the user's responsibility to establish equation environment
                  in displayMode. */
@@ -3057,10 +3119,10 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
             /* 14-Jan-2016 nm */
             /* Enclose math symbols in a span to be used for font selection */
             let(&tmpStr, cat(
-                (altHtmlFlag ? cat("<SPAN ", htmlFont, ">", NULL) : ""),
+                (g_altHtmlFlag ? cat("<SPAN ", g_htmlFont, ">", NULL) : ""),
                                                /* 14-Jan-2016 nm */
                 tmpStr,
-                (altHtmlFlag ? "</SPAN>" : ""),    /* 14-Jan-2016 nm */
+                (g_altHtmlFlag ? "</SPAN>" : ""),    /* 14-Jan-2016 nm */
                 NULL));
             let(&outputLine, cat(outputLine, tmpStr, NULL)); /* html */
           }
@@ -3071,7 +3133,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
     }
     let(&outputLine, edit(outputLine, 128)); /* remove trailing spaces */
 
-    if (htmlFlag) {
+    if (g_htmlFlag) {
       /* Change blank lines into paragraph breaks except in <HTML> mode */
       if (!outputLine[0]) { /* Blank line */
         if (preformattedMode == 0
@@ -3123,7 +3185,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
       }
     }
 
-    if (!htmlFlag) { /* LaTeX */
+    if (!g_htmlFlag) { /* LaTeX */
       /* Convert <PRE>...</PRE> HTML tags to LaTeX */
       /* 26-Dec-2011 nm - leave this in for now */
       while (1) {
@@ -3167,29 +3229,33 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
       }
     }
 
-    saveScreenWidth = screenWidth;
+    saveScreenWidth = g_screenWidth;
     /* 26-Dec-2011 nm - in <PRE> mode, we don't want to wrap the HTML
        output with spurious newlines */
-    if (preformattedMode) screenWidth = PRINTBUFFERSIZE - 2;
+    /*if (preformattedMode) g_screenWidth = PRINTBUFFERSIZE - 2;*/
+    /* 19-Jun-2010 nm PRINTBUFFERSIZE was removed.  Any large value will
+       do; we just need to accomodate the worst case line length that will
+       result from converting ~ label, [author], ` math ` to HTML */
+    if (preformattedMode) g_screenWidth = 50000;
     if (errorsOnly == 0) {
-      printLongLine(outputLine, "", htmlFlag ? "\"" : "\\");
+      printLongLine(outputLine, "", g_htmlFlag ? "\"" : "\\");
     }
-    screenWidth = saveScreenWidth;
+    g_screenWidth = saveScreenWidth;
 
     let(&tmp, ""); /* Clear temporary allocation stack */
 
     if (lastLineFlag) break; /* Done */
   } /* end while(1) */
 
-  if (htmlFlag) {
+  if (g_htmlFlag) {
     if (convertToHtml != 0) { /* Not MARKUP command */ /* 13-Dec-2018 nm */
       print2("\n"); /* Don't change what the previous code did */
     } else {
       /* 13-Dec-2018 nm */
       /* Add newline if string is not empty and has no newline at end */
-      if (printString[0] != 0) {
-        i = (long)strlen(printString);
-        if (printString[i - 1] != '\n')  {
+      if (g_printString[0] != 0) {
+        i = (long)strlen(g_printString);
+        if (g_printString[i - 1] != '\n')  {
           print2("\n");
         } else {
           /* 13-Dec-2018 nm */
@@ -3197,15 +3263,15 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
              we figure out what, take it off so that MARKUP output will
              equal input when no processing qualifiers are used. */
           if (i > 1) {
-            if (printString[i - 2] == '\n') {
-              let(&printString, left(printString, i - 1));
+            if (g_printString[i - 2] == '\n') {
+              let(&g_printString, left(g_printString, i - 1));
             }
           }
         }
       }
     }
   } else { /* LaTeX mode */
-    if (!oldTexFlag) {
+    if (!g_oldTexFlag) {
       /* 14-Sep-2010 nm Suppress blank line for LaTeX */
       /* print2("\n"); */
     } else {
@@ -3213,12 +3279,12 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
     }
   }
 
-  outputToString = 0; /* Restore normal output */
+  g_outputToString = 0; /* Restore normal output */
   if (errorsOnly == 0) { /* 17-Nov-2015 nm */
-    fprintf(texFilePtr, "%s", printString);
+    fprintf(g_texFilePtr, "%s", g_printString);
   }
 
-  let(&printString, ""); /* Deallocate strings */
+  let(&g_printString, ""); /* Deallocate strings */
   let(&sourceLine, "");
   let(&outputLine, "");
   let(&cmt, "");
@@ -3272,40 +3338,40 @@ void printTexLongMath(nmbrString *mathString,
 
   let(&sPrefix, startPrefix); /* 7/3/98 Save it; it may be temp alloc */
 
-  if (!texDefsRead) return; /* TeX defs were not read (error was printed) */
-  outputToString = 1; /* Redirect print2 and printLongLine to printString */
+  if (!g_texDefsRead) return; /* TeX defs were not read (error was printed) */
+  g_outputToString = 1; /* Redirect print2 and printLongLine to g_printString */
   /* May have stuff to be printed 7/4/98 */
-  /*if (!htmlFlag) let(&printString, "");*/ /* Removed 6-Dec-03 */
+  /*if (!g_htmlFlag) let(&g_printString, "");*/ /* Removed 6-Dec-03 */
 
-  /* Note that the "tex" assignment below will be used only when !htmlFlag
-     and oldTexFlag, or when htmlFlag and len(sPrefix)>0 */
+  /* Note that the "tex" assignment below will be used only when !g_htmlFlag
+     and g_oldTexFlag, or when g_htmlFlag and len(sPrefix)>0 */
   let(&tex, "");
   tex = asciiToTt(sPrefix); /* asciiToTt allocates; we must deallocate */
       /* Example: sPrefix = " 4 2,3 ax-mp  $a " */
-      /*          tex = "\ 4\ 2,3\ ax-mp\ \ \$a\ " in !htmlFlag mode */
-      /*          tex = " 4 2,3 ax-qmp  $a " in htmlFlag mode */
+      /*          tex = "\ 4\ 2,3\ ax-mp\ \ \$a\ " in !g_htmlFlag mode */
+      /*          tex = " 4 2,3 ax-qmp  $a " in g_htmlFlag mode */
   let(&texLine, "");
 
   /* 14-Sep-2010 nm Get statement type of proof step reference */
   i = instr(1, sPrefix, "$");
   if (i) refType = sPrefix[i]; /* Character after the "$" */
 
-  /* 14-Sep-2010 nm Moved this code from below to use for !oldTexFlag */
-  if (htmlFlag || !oldTexFlag) {
+  /* 14-Sep-2010 nm Moved this code from below to use for !g_oldTexFlag */
+  if (g_htmlFlag || !g_oldTexFlag) {
 
     /* Process a proof step prefix */
     if (strlen(sPrefix)) { /* It's a proof step */
       /* Make each token a separate table column for HTML */
       /* This is a kludge that only works with /LEMMON style proofs! */
       /* 14-Sep-2010 nm Note that asciiToTt() above puts "\ " when not in
-         htmlFlag mode, so use sPrefix instead of tex so it will work in
-         !oldTexFlag mode */
+         g_htmlFlag mode, so use sPrefix instead of tex so it will work in
+         !g_oldTexFlag mode */
 
       /* 1-May-2017 nm Fix for non-/LEMMON format used by TeX mode */
       /* In HTML mode, sPrefix has two possible formats:
            "2 ax-1  $a "
            "3 1,2 ax-mp  $a "
-         In LaTeX mode (!htmlFlag), sPrefix has one format:
+         In LaTeX mode (!g_htmlFlag), sPrefix has one format:
            "8   maj=ax-1  $a "
            "9 a1i=ax-mp $a " */
       /* Later on 1-May-2017: the LaTeX mode now returns same as HTML mode. */
@@ -3327,7 +3393,7 @@ void printTexLongMath(nmbrString *mathString,
              could have starting tex="2 1 a4s @2: $p" which will result
              in pos=4, i=3.  "show proof drsb1/tex" triggered this bug. */
           /*
-          if (!htmlFlag && i > 2) { /@ 1-May-2017 nm @/
+          if (!g_htmlFlag && i > 2) { /@ 1-May-2017 nm @/
             bug(2341);
           }
           */
@@ -3367,7 +3433,7 @@ void printTexLongMath(nmbrString *mathString,
            output. */
         /* 1-May-2017 nm - Delete the below if we keep the noIndentFlag solution. */
         /*
-        if (!htmlFlag) {
+        if (!g_htmlFlag) {
           pos = instr(1, htmRef, "=");
           if (!pos) bug(2342);
           let(&htmRef, right(htmRef, pos + 1));
@@ -3375,7 +3441,7 @@ void printTexLongMath(nmbrString *mathString,
         */
         /* We now consider "=" a bug since the call via typeProof() in
            metamath.c now always has noIndentFlag = 1. */
-        if (!htmlFlag) {
+        if (!g_htmlFlag) {
           pos = instr(1, htmRef, "=");
           if (pos) bug(2342);
         }
@@ -3385,10 +3451,10 @@ void printTexLongMath(nmbrString *mathString,
     } /* if (strlen(sPrefix)) (end processing proof step prefix) */
   }
 
-  if (!htmlFlag) {
+  if (!g_htmlFlag) {
 
     /* 27-Jul-05 nm Added SIMPLE_TEX */
-    if (!oldTexFlag) {
+    if (!g_oldTexFlag) {
       /* 14-Sep-2010 nm Old 27-Jul-05 version commented out: */
       /* printLongLine(cat("\\texttt{", tex, "}", NULL), "", " ");  */
       /* let(&tex, ""); */ /* Deallocate */
@@ -3419,7 +3485,7 @@ void printTexLongMath(nmbrString *mathString,
           "\\setbox\\contprefix=\\hbox{\\tt ", tex, "}", NULL), "", "\\");
       print2("\\startm\n");
     }
-  } else { /* htmlFlag */
+  } else { /* g_htmlFlag */
     if (strlen(sPrefix)) { /* It's a proof step */
 
       if (htmHyp[0] == 0)
@@ -3547,7 +3613,7 @@ void printTexLongMath(nmbrString *mathString,
       let(&tmp, "");
 #endif
     } /* strlen(sPrefix) */
-  } /* htmlFlag */
+  } /* g_htmlFlag */
   let(&tex, ""); /* Deallocate */
   let(&sPrefix, ""); /* Deallocate */
 
@@ -3555,9 +3621,9 @@ void printTexLongMath(nmbrString *mathString,
   tex = getTexLongMath(mathString, hypStmt); /* 20-Sep-03 */
   let(&texLine, cat(texLine, tex, NULL));
 
-  if (!htmlFlag) {  /* LaTeX */
-    /* 27-Jul-05 nm Added for new LaTeX (!oldTexFlag) */
-    if (!oldTexFlag) {
+  if (!g_htmlFlag) {  /* LaTeX */
+    /* 27-Jul-05 nm Added for new LaTeX (!g_oldTexFlag) */
+    if (!g_oldTexFlag) {
       /* 14-Sep-2010 nm */
       if (refType == 'e' || refType == 'f') {
         /* A hypothesis - don't include \ref{} */
@@ -3628,9 +3694,9 @@ void printTexLongMath(nmbrString *mathString,
     printLongLine(cat(texLine, "</TD></TR>", NULL), "", "\"");
   }
 
-  outputToString = 0; /* Restore normal output */
-  fprintf(texFilePtr, "%s", printString);
-  let(&printString, "");
+  g_outputToString = 0; /* Restore normal output */
+  fprintf(g_texFilePtr, "%s", g_printString);
+  let(&g_printString, "");
 
   let(&descr, ""); /*Deallocate */  /* 17-Nov-2007 nm */
   let(&htmStep, ""); /* Deallocate */
@@ -3646,16 +3712,16 @@ void printTexLongMath(nmbrString *mathString,
 void printTexTrailer(flag texTrailerFlag) {
 
   if (texTrailerFlag) {
-    outputToString = 1; /* Redirect print2 and printLongLine to printString */
-    if (!htmlFlag) let(&printString, "");
+    g_outputToString = 1; /* Redirect print2 and printLongLine to g_printString */
+    if (!g_htmlFlag) let(&g_printString, "");
         /* May have stuff to be printed 7/4/98 */
-    if (!htmlFlag) {
+    if (!g_htmlFlag) {
       print2("\\end{document}\n");
     } else {
       /*******  10/10/02 Moved to mmcmds.c so it can be printed immediately
-                after proof; made htmlVarColor global for this
+                after proof; made g_htmlVarColor global for this
       print2("<FONT SIZE=-1 FACE=sans-serif>Colors of variables:\n");
-      printLongLine(cat(htmlVarColor, "</FONT>", NULL), "", " ");
+      printLongLine(cat(g_htmlVarColor, "</FONT>", NULL), "", " ");
       *******/
       print2("</TABLE></CENTER>\n");
       print2("<TABLE BORDER=0 WIDTH=\"100%s\">\n", "%");
@@ -3695,9 +3761,9 @@ void printTexTrailer(flag texTrailerFlag) {
 
       print2("</BODY></HTML>\n");
     }
-    outputToString = 0; /* Restore normal output */
-    fprintf(texFilePtr, "%s", printString);
-    let(&printString, "");
+    g_outputToString = 0; /* Restore normal output */
+    fprintf(g_texFilePtr, "%s", g_printString);
+    let(&g_printString, "");
   }
 
 } /* printTexTrailer */
@@ -3745,27 +3811,27 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
   flag hdrCommentAnchorDone = 0; /* 20-Oct-2018 nm */
 
   /* Populate the statement map */
-  /* ? ? ? Future:  is assertions same as statement[statements].pinkNumber? */
-  nmbrLet(&nmbrStmtNmbr, nmbrSpace(statements + 1));
+  /* ? ? ? Future:  is assertions same as g_Statement[g_statements].pinkNumber? */
+  nmbrLet(&nmbrStmtNmbr, nmbrSpace(g_statements + 1));
   assertions = 0; /* Number of $p's + $a's */
-  for (s = 1; s <= statements; s++) {
-    if (statement[s].type == a_ || statement[s].type == p_) {
+  for (s = 1; s <= g_statements; s++) {
+    if (g_Statement[s].type == a_ || g_Statement[s].type == p_) {
       assertions++; /* Corresponds to pink number */
       nmbrStmtNmbr[assertions] = s;
     }
   }
-  if (assertions != statement[statements].pinkNumber) bug(2328);
+  if (assertions != g_Statement[g_statements].pinkNumber) bug(2328);
 
   /* 31-Jul-2006 nm Table of contents mod */
   /* Allocate array for section headers found */
-  pntrLet(&pntrHugeHdr, pntrSpace(statements + 1));
-  pntrLet(&pntrBigHdr, pntrSpace(statements + 1));
-  pntrLet(&pntrSmallHdr, pntrSpace(statements + 1));
-  pntrLet(&pntrTinyHdr, pntrSpace(statements + 1)); /* 21-Aug-2017 nm */
-  pntrLet(&pntrHugeHdrComment, pntrSpace(statements + 1)); /* 8-May-2015 nm */
-  pntrLet(&pntrBigHdrComment, pntrSpace(statements + 1)); /* 8-May-2015 nm */
-  pntrLet(&pntrSmallHdrComment, pntrSpace(statements + 1)); /* 8-May-2015 nm */
-  pntrLet(&pntrTinyHdrComment, pntrSpace(statements + 1)); /* 21-Aug-2017 nm */
+  pntrLet(&pntrHugeHdr, pntrSpace(g_statements + 1));
+  pntrLet(&pntrBigHdr, pntrSpace(g_statements + 1));
+  pntrLet(&pntrSmallHdr, pntrSpace(g_statements + 1));
+  pntrLet(&pntrTinyHdr, pntrSpace(g_statements + 1)); /* 21-Aug-2017 nm */
+  pntrLet(&pntrHugeHdrComment, pntrSpace(g_statements + 1)); /* 8-May-2015 nm */
+  pntrLet(&pntrBigHdrComment, pntrSpace(g_statements + 1)); /* 8-May-2015 nm */
+  pntrLet(&pntrSmallHdrComment, pntrSpace(g_statements + 1)); /* 8-May-2015 nm */
+  pntrLet(&pntrTinyHdrComment, pntrSpace(g_statements + 1)); /* 21-Aug-2017 nm */
 
   pages = ((assertions - 1) / theoremsPerPage) + 1;
   /* for (page = 1; page <= pages; page++) { */
@@ -3783,7 +3849,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
     /* Output header */
     /* TODO 14-Jan-2016: why aren't we using printTexHeader? */
 
-    outputToString = 1;
+    g_outputToString = 1;
     print2(
         "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"\n");
     print2(     "    \"http://www.w3.org/TR/html4/loose.dtd\">\n");
@@ -3817,7 +3883,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
 #endif
     print2("-->\n");
     print2("</STYLE>\n");
-    printLongLine(htmlCSS, "", " ");
+    printLongLine(g_htmlCSS, "", " ");
 
     /*
     print2("%s\n", cat("<TITLE>", htmlTitle, " - ",
@@ -3876,7 +3942,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
     print2("<BODY BGCOLOR=\"#FFFFFF\">\n");
     print2("<TABLE BORDER=0 WIDTH=\"100%s\"><TR>\n", "%");
     print2("<TD ALIGN=LEFT VALIGN=TOP WIDTH=\"25%s\"\n", "%");
-    printLongLine(cat("ROWSPAN=2>", htmlHome, "</TD>", NULL), "", "\"");
+    printLongLine(cat("ROWSPAN=2>", g_htmlHome, "</TD>", NULL), "", "\"");
     printLongLine(cat(
         "<TD NOWRAP ALIGN=CENTER ROWSPAN=2><FONT SIZE=\"+3\" COLOR=",
         GREEN_TITLE_COLOR, "><B>", htmlTitle, "</B></FONT>",
@@ -3963,7 +4029,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
     /* Finish up header */
     /* Print the GIF/Unicode Font choice, if directories are specified */
     if (htmlDir[0]) {
-      if (altHtmlFlag) {
+      if (g_altHtmlFlag) {
         /* 4-Aug-2018 nm */
         print2("</FONT></TD></TR><TR><TD ALIGN=RIGHT><FONT FACE=sans-serif\n");
         print2("SIZE=-2>Bad symbols? Try the\n");
@@ -4003,10 +4069,10 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
 
     /* print2("&nbsp;&gt;&nbsp;<A HREF=\"mmset.html\">\n"); */
     /* 15-Apr-2015 nm */
-    /* Normally, htmlBibliography in the .mm file will have the
+    /* Normally, g_htmlBibliography in the .mm file will have the
        project home page, and we depend on this here rather than
-       extracting from htmlHome */
-    print2("&nbsp;&gt;&nbsp;<A HREF=\"%s\">\n", htmlBibliography);
+       extracting from g_htmlHome */
+    print2("&nbsp;&gt;&nbsp;<A HREF=\"%s\">\n", g_htmlBibliography);
 
     /* print2("MPE Home Page</A>\n"); */
     /* 15-Apr-2015 nm */
@@ -4037,18 +4103,18 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
 
     /*****
     /@ 15-Apr-2015 nm @/
-    /@ Use "extHtmlStmt <= statements" as an indicator that we're doing
+    /@ Use "g_extHtmlStmt <= g_statements" as an indicator that we're doing
        Metamath Proof Explorer; the others don't have mmrecent.html pages @/
-    /@if (extHtmlStmt <= statements) {@/ /@ extHtmlStmt = statements + 1
+    /@if (g_extHtmlStmt <= g_statements) {@/ /@ g_extHtmlStmt = g_statements + 1
                                               unless mmset.html @/
     /@ 8-Dec-2017 nm @/
-    if (extHtmlStmt < sandboxStmt) { /@ extHtmlStmt >= sandboxStmt
+    if (g_extHtmlStmt < g_mathboxStmt) { /@ g_extHtmlStmt >= g_mathboxStmt
                                               unless mmset.html @/
     *****/
     /* 30-Nov-2019 nm */
     /* Assume there is a Most Recent page when the .mm has a mathbox stmt
        (currently set.mm and iset.mm)  */
-    if (sandboxStmt < statements + 1) {
+    if (g_mathboxStmt < g_statements + 1) {
       print2("&nbsp;&gt;&nbsp;<A HREF=\"mmrecent.html\">\n");
       print2("Recent Proofs</A>\n");
     }
@@ -4081,9 +4147,9 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
     print2("<HR NOSHADE SIZE=1>\n");
 
     /* Write out HTML page so far */
-    fprintf(outputFilePtr, "%s", printString);
-    outputToString = 0;
-    let(&printString, "");
+    fprintf(outputFilePtr, "%s", g_printString);
+    g_outputToString = 0;
+    let(&g_printString, "");
 
     /***** 21-Jun-2014 Moved to bottom of page ********
     /@ Output links to the other pages @/
@@ -4127,7 +4193,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
       /* Pass 1: table of contents summary; pass 2: detail */ /* 18-Oct-2015 */
       for (passNumber = 1; passNumber <= 2; passNumber++) {
 
-        outputToString = 1;
+        g_outputToString = 1;
 
         /* 18-Oct-2015 deleted
         print2(
@@ -4163,10 +4229,10 @@ print2("</FONT></B></CENTER>\n");
 
         }
 
-        fprintf(outputFilePtr, "%s", printString);
+        fprintf(outputFilePtr, "%s", g_printString);
 
-        outputToString = 0;
-        let(&printString, "");
+        g_outputToString = 0;
+        let(&g_printString, "");
 
         let(&hugeHdr, "");
         let(&bigHdr, "");
@@ -4180,7 +4246,7 @@ print2("</FONT></B></CENTER>\n");
         sectionCntr = 0;
         subsectionCntr = 0;
         subsubsectionCntr = 0; /* 21-Aug-2017 nm */
-        for (stmt = 1; stmt <= statements; stmt++) {
+        for (stmt = 1; stmt <= g_statements; stmt++) {
 
           /* 18-Dec-2016 nm moved to below the "if"
           getSectionHeadings(stmt, &hugeHdr, &bigHdr, &smallHdr,
@@ -4189,24 +4255,26 @@ print2("</FONT></B></CENTER>\n");
           */
 
           /* Output the headers for $a and $p statements */
-          if (statement[stmt].type == p_ || statement[stmt].type == a_) {
+          if (g_Statement[stmt].type == p_ || g_Statement[stmt].type == a_) {
             hdrCommentAnchorDone = 0; /* 20-Oct-2018 nm */
             getSectionHeadings(stmt, &hugeHdr, &bigHdr, &smallHdr,
                 &tinyHdr, /* 21-Aug-2017 nm */
                 /* 5-May-2015 nm */
                 &hugeHdrComment, &bigHdrComment, &smallHdrComment,
-                &tinyHdrComment);  /* 21-Aug-2017 nm */
+                &tinyHdrComment,
+                0, /* fineResolution */
+                0  /* fullComment */);
             if (hugeHdr[0] || bigHdr[0] || smallHdr[0] || tinyHdr[0]) {
               /* Write to the table of contents */
-              outputToString = 1;
-              i = ((statement[stmt].pinkNumber - 1) / theoremsPerPage)
+              g_outputToString = 1;
+              i = ((g_Statement[stmt].pinkNumber - 1) / theoremsPerPage)
                   + 1; /* Page # */
               /* let(&str3, cat("mmtheorems", (i == 1) ? "" : str(i), ".html#", */
                           /* Note that page 1 has no number after mmtheorems */
               /* 8-May-2015 nm */
               let(&str3, cat("mmtheorems", str((double)i), ".html#",
-                  /* statement[stmt].labelName, NULL)); */
-                  "mm", str((double)(statement[stmt].pinkNumber)), NULL));
+                  /* g_Statement[stmt].labelName, NULL)); */
+                  "mm", str((double)(g_Statement[stmt].pinkNumber)), NULL));
                      /* Link to page/location - no theorem can be named "mm*" */
               let(&str4, "");
               str4 = pinkHTML(stmt);
@@ -4231,7 +4299,7 @@ print2("</FONT></B></CENTER>\n");
                   if (hdrCommentAnchorDone == 0) {
                     let(&hdrCommentAnchor, cat(
                         "<A NAME=\"",
-                        statement[stmt].labelName, "\"></A>",
+                        g_Statement[stmt].labelName, "\"></A>",
 
                         /* 27-Aug-2019 nm "&#8203;" is a "zero-width" space to
                            workaround Chrome bug that jumps to wrong anchor. */
@@ -4267,7 +4335,7 @@ print2("</FONT></B></CENTER>\n");
                     /* 21-Jun-2014 nm We use "sandbox:bighdr" for both here and
                        below so that either huge or big header type could
                        be used to start mathbox sections */
-                    (stmt == sandboxStmt && bigHdr[0] == 0
+                    (stmt == g_mathboxStmt && bigHdr[0] == 0
                           /* 4-Aug-2018 nm */
                           && passNumber == 1 /* Only in summary TOC */
                           ) ?
@@ -4291,8 +4359,8 @@ print2("</FONT></B></CENTER>\n");
                     hugeHdr, "</B></A>",
                     /*
                     " &nbsp; <A HREF=\"",
-                    statement[stmt].labelName, ".html\">",
-                    statement[stmt].labelName, "</A>",
+                    g_Statement[stmt].labelName, ".html\">",
+                    g_Statement[stmt].labelName, "</A>",
                     str4,
                     */
                     "<BR>", NULL),
@@ -4325,7 +4393,7 @@ print2("</FONT></B></CENTER>\n");
                   if (hdrCommentAnchorDone == 0) {
                     let(&hdrCommentAnchor, cat(
                         "<A NAME=\"",
-                        statement[stmt].labelName, "\"></A>",
+                        g_Statement[stmt].labelName, "\"></A>",
 
                         /* 27-Aug-2019 nm "&#8203;" is a "zero-width" space to
                            workaround Chrome bug that jumps to wrong anchor. */
@@ -4360,7 +4428,7 @@ print2("</FONT></B></CENTER>\n");
 
                     /* 29-Jul-2008 nm Add an anchor to the "sandbox" theorem
                        for use by mmrecent.html */
-                    (stmt == sandboxStmt
+                    (stmt == g_mathboxStmt
                           /* 4-Aug-2018 nm */
                           && passNumber == 1 /* Only in summary TOC */
                           ) ?
@@ -4385,8 +4453,8 @@ print2("</FONT></B></CENTER>\n");
                     bigHdr, "</B></A>",
                     /*
                     " &nbsp; <A HREF=\"",
-                    statement[stmt].labelName, ".html\">",
-                    statement[stmt].labelName, "</A>",
+                    g_Statement[stmt].labelName, ".html\">",
+                    g_Statement[stmt].labelName, "</A>",
                     str4,
                     */
                     "<BR>", NULL),
@@ -4419,7 +4487,7 @@ print2("</FONT></B></CENTER>\n");
                   /* 20-Oct-2018 nm */
                   if (hdrCommentAnchorDone == 0) {
                     let(&hdrCommentAnchor, cat("<A NAME=\"",
-                        statement[stmt].labelName, "\"></A>",
+                        g_Statement[stmt].labelName, "\"></A>",
 
                         /* 27-Aug-2019 nm "&#8203;" is a "zero-width" space to
                            workaround Chrome bug that jumps to wrong anchor. */
@@ -4440,7 +4508,7 @@ print2("</FONT></B></CENTER>\n");
                     /* 23-May-2008 nm Add an anchor to the "sandbox" theorem
                        for use by mmrecent.html */
                     /*
-                    !strcmp(statement[stmt].labelName, "sandbox") ?
+                    !strcmp(g_Statement[stmt].labelName, "sandbox") ?
                         "<A NAME=\"sandbox:smallhdr\"></A>&#8203;" : "",
                     */
 
@@ -4449,8 +4517,8 @@ print2("</FONT></B></CENTER>\n");
                     hdrCommentMarker, /* 4-Aug-2018 */
                     smallHdr, "</A>",
                     " &nbsp; <A HREF=\"",
-                    statement[stmt].labelName, ".html\">",
-                    statement[stmt].labelName, "</A>",
+                    g_Statement[stmt].labelName, ".html\">",
+                    g_Statement[stmt].labelName, "</A>",
                     str4,
                     "<BR>", NULL),
                     " ",  /* Start continuation line with space */
@@ -4482,7 +4550,7 @@ print2("</FONT></B></CENTER>\n");
                   /* 20-Oct-2018 nm */
                   if (hdrCommentAnchorDone == 0) {
                     let(&hdrCommentAnchor, cat("<A NAME=\"",
-                        statement[stmt].labelName, "\"></A> ",
+                        g_Statement[stmt].labelName, "\"></A> ",
 
                         /* 27-Aug-2019 nm "&#8203;" is a "zero-width" space to
                            workaround Chrome bug that jumps to wrong anchor. */
@@ -4503,7 +4571,7 @@ print2("</FONT></B></CENTER>\n");
                     /* 23-May-2008 nm Add an anchor to the "sandbox" theorem
                        for use by mmrecent.html */
                     /*
-                    !strcmp(statement[stmt].labelName, "sandbox") ?
+                    !strcmp(g_Statement[stmt].labelName, "sandbox") ?
                         "<A NAME=\"sandbox:tinyhdr\"></A>&#8203;" : "",
                     */
 
@@ -4512,8 +4580,8 @@ print2("</FONT></B></CENTER>\n");
                     hdrCommentMarker, /* 4-Aug-2018 */
                     tinyHdr, "</A>",
                     " &nbsp; <A HREF=\"",
-                    statement[stmt].labelName, ".html\">",
-                    statement[stmt].labelName, "</A>",
+                    g_Statement[stmt].labelName, ".html\">",
+                    g_Statement[stmt].labelName, "</A>",
                     str4,
                     "<BR>", NULL),
                     " ",  /* Start continuation line with space */
@@ -4526,9 +4594,9 @@ print2("</FONT></B></CENTER>\n");
               }
               /* (End of 21-Aug-2017 addition) */
 
-              fprintf(outputFilePtr, "%s", printString);
-              outputToString = 0;
-              let(&printString, "");
+              fprintf(outputFilePtr, "%s", g_printString);
+              g_outputToString = 0;
+              let(&g_printString, "");
             } /* if huge or big or small or tiny header */
           } /* if $a or $p */
         } /* next stmt */
@@ -4545,11 +4613,11 @@ print2("</FONT></B></CENTER>\n");
 
 
     /* Put in color key */
-    outputToString = 1;
+    g_outputToString = 1;
     print2("<A NAME=\"mmstmtlst\"></A>\n");
-    /*if (extHtmlStmt <= statements) {*/ /* extHtmlStmt = statements + 1 in ql.mm */
+    /*if (g_extHtmlStmt <= g_statements) {*/ /* g_extHtmlStmt = g_statements + 1 in ql.mm */
     /* 8-Dec-2017 nm */
-    if (extHtmlStmt < sandboxStmt) { /* extHtmlStmt >= sandboxStmt in ql.mm */
+    if (g_extHtmlStmt < g_mathboxStmt) { /* g_extHtmlStmt >= g_mathboxStmt in ql.mm */
       /* ?? Currently this is customized for set.mm only!! */
       print2("<P>\n");
       print2("<CENTER><TABLE CELLSPACING=0 CELLPADDING=5\n");
@@ -4562,9 +4630,9 @@ print2("</FONT></B></CENTER>\n");
       print2("ALIGN=MIDDLE> &nbsp;Metamath Proof Explorer</A>\n");
 
       let(&str3, "");
-      if (statement[extHtmlStmt].pinkNumber <= 0) bug(2332);
+      if (g_Statement[g_extHtmlStmt].pinkNumber <= 0) bug(2332);
       str3 = pinkRangeHTML(nmbrStmtNmbr[1],
-          nmbrStmtNmbr[statement[extHtmlStmt].pinkNumber - 1]);
+          nmbrStmtNmbr[g_Statement[g_extHtmlStmt].pinkNumber - 1]);
       printLongLine(cat("<BR>(", str3, ")", NULL),
         " ",  /* Start continuation line with space */
         "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
@@ -4582,10 +4650,10 @@ print2("</FONT></B></CENTER>\n");
       print2("&nbsp;Hilbert Space Explorer</A>\n");
 
       let(&str3, "");
-      /* str3 = pinkRangeHTML(extHtmlStmt, nmbrStmtNmbr[assertions]); */
-      if (statement[sandboxStmt].pinkNumber <= 0) bug(2333);
-      str3 = pinkRangeHTML(extHtmlStmt,
-         nmbrStmtNmbr[statement[sandboxStmt].pinkNumber - 1]);
+      /* str3 = pinkRangeHTML(g_extHtmlStmt, nmbrStmtNmbr[assertions]); */
+      if (g_Statement[g_mathboxStmt].pinkNumber <= 0) bug(2333);
+      str3 = pinkRangeHTML(g_extHtmlStmt,
+         nmbrStmtNmbr[g_Statement[g_mathboxStmt].pinkNumber - 1]);
       printLongLine(cat("<BR>(", str3, ")", NULL),
         " ",  /* Start continuation line with space */
         "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
@@ -4611,7 +4679,7 @@ print2("</FONT></B></CENTER>\n");
       print2("&nbsp;Users' Mathboxes</A>\n");
 
       let(&str3, "");
-      str3 = pinkRangeHTML(sandboxStmt, nmbrStmtNmbr[assertions]);
+      str3 = pinkRangeHTML(g_mathboxStmt, nmbrStmtNmbr[assertions]);
       printLongLine(cat("<BR>(", str3, ")", NULL),
         " ",  /* Start continuation line with space */
         "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
@@ -4623,16 +4691,16 @@ print2("</FONT></B></CENTER>\n");
 
 
       print2("</TR></TABLE></CENTER>\n");
-    } /* end if (extHtmlStmt < sandboxStmt) */
+    } /* end if (g_extHtmlStmt < g_mathboxStmt) */
 
     /* Write out HTML page so far */
-    fprintf(outputFilePtr, "%s", printString);
-    outputToString = 0;
-    let(&printString, "");
+    fprintf(outputFilePtr, "%s", g_printString);
+    g_outputToString = 0;
+    let(&g_printString, "");
 
 
     /* Write the main table header */
-    outputToString = 1;
+    g_outputToString = 1;
     print2("\n");
     print2("<P><CENTER>\n");
     print2("<TABLE BORDER CELLSPACING=0 CELLPADDING=3 BGCOLOR=%s\n",
@@ -4670,9 +4738,9 @@ print2("</FONT></B></CENTER>\n");
     print2("\n");
     print2("<TR BGCOLOR=white><TD COLSPAN=3><FONT SIZE=-3>&nbsp;</FONT></TD></TR>\n");
     print2("\n");
-    fprintf(outputFilePtr, "%s", printString);
-    outputToString = 0;
-    let(&printString, "");
+    fprintf(outputFilePtr, "%s", g_printString);
+    g_outputToString = 0;
+    let(&g_printString, "");
 
     /* Find the last assertion that will be printed on the page, so
        we will know when a separator between theorems is not needed */
@@ -4685,7 +4753,7 @@ print2("</FONT></B></CENTER>\n");
          because they will not be output */
       /* 9-May-2015 nm Can this be deleted?  Do we need it anymore? */
       /* Deleted 4-Aug-2018 nm
-      if (strcmp("xxx", left(statement[s].labelName, 3))) {
+      if (strcmp("xxx", left(g_Statement[s].labelName, 3))) {
         lastAssertion = assertion;
       }
       let(&str1, ""); /@ Purge string stack if too many left()'s @/
@@ -4702,23 +4770,23 @@ print2("</FONT></B></CENTER>\n");
 
       s = nmbrStmtNmbr[assertion]; /* Statement number */
       /* Output only $p's, not $a's */
-      /*if (statement[s].type != p_) continue;*/ /* Now do everything */
+      /*if (g_Statement[s].type != p_) continue;*/ /* Now do everything */
 
       /********* Deleted 3-May-2017 nm
       /@ nm 22-Jan-04 Skip statements whose labels begin "xxx" - this
          means they are temporary placeholders created by
-         WRITE SOURCE / CLEAN in writeInput() in mmcmds.c @/
+         WRITE SOURCE / CLEAN in writeSource() in mmcmds.c @/
       let(&str1, ""); /@ Purge string stack if too many left()'s @/
       /@ 9-May-2015 nm Can this be deleted?  Do we need it anymore? @/
-      if (!strcmp("xxx", left(statement[s].labelName, 3))) continue;
+      if (!strcmp("xxx", left(g_Statement[s].labelName, 3))) continue;
       ******/
 
       /* Construct the statement type label */
-      if (statement[s].type == p_) {
+      if (g_Statement[s].type == p_) {
         let(&str1, "Theorem");
-      } else if (!strcmp("ax-", left(statement[s].labelName, 3))) {
+      } else if (!strcmp("ax-", left(g_Statement[s].labelName, 3))) {
         let(&str1, "<B><FONT COLOR=red>Axiom</FONT></B>");
-      } else if (!strcmp("df-", left(statement[s].labelName, 3))) {
+      } else if (!strcmp("df-", left(g_Statement[s].labelName, 3))) {
         let(&str1, "<B><FONT COLOR=blue>Definition</FONT></B>");
       } else {
         let(&str1, "<B><FONT COLOR=\"#00CC00\">Syntax</FONT></B>");
@@ -4727,9 +4795,9 @@ print2("</FONT></B></CENTER>\n");
       if (s == s + 0) goto skip_date;
       /* OBSOLETE */
       /* Get the date in the comment section after the statement */
-      let(&str1, space(statement[s + 1].labelSectionLen));
-      memcpy(str1, statement[s + 1].labelSectionPtr,
-          (size_t)(statement[s + 1].labelSectionLen));
+      let(&str1, space(g_Statement[s + 1].labelSectionLen));
+      memcpy(str1, g_Statement[s + 1].labelSectionPtr,
+          (size_t)(g_Statement[s + 1].labelSectionLen));
       let(&str1, edit(str1, 2)); /* Discard spaces and tabs */
       i1 = instr(1, str1, "$([");
       i2 = instr(i1, str1, "]$)");
@@ -4746,8 +4814,8 @@ print2("</FONT></B></CENTER>\n");
       str4 = pinkHTML(s); /* Get little pink number */
       /* Output the description comment */
       /* Break up long lines for text editors with printLongLine */
-      let(&printString, "");
-      outputToString = 1;
+      let(&g_printString, "");
+      g_outputToString = 1;
       print2("\n"); /* Blank line for HTML source human readability */
 
       /* 31-Jul-2006 nm Table of contents mod */
@@ -4758,7 +4826,7 @@ print2("</FONT></B></CENTER>\n");
                  /* " ALIGN=CENTER><FONT SIZE=\"+1\"><B>", */
                  /* 9-May-2015 nm */
                  "><CENTER><FONT SIZE=\"+1\"><B>",
-                 "<A NAME=\"mm", str((double)(statement[s].pinkNumber)),
+                 "<A NAME=\"mm", str((double)(g_Statement[s].pinkNumber)),
                      "h\"></A>",   /* Anchor for table of contents */
                  (vstring)(pntrHugeHdr[s]),
                  /* "</B></FONT></TD></TR>", */
@@ -4777,30 +4845,30 @@ print2("</FONT></B></CENTER>\n");
           /* 9-May-2015 nm - keep comment in same table cell */
           print2("%s\n", "<P STYLE=\"margin-bottom:0em\">");
 
-          /* We are currently printing to printString to allow use of
+          /* We are currently printing to g_printString to allow use of
              printLongLine(); however, the rendering function
-             printTexComment uses printString internally, so we have to
-             flush the current printString and turn off outputToString mode
+             printTexComment uses g_printString internally, so we have to
+             flush the current g_printString and turn off g_outputToString mode
              in order to call the rendering function printTexComment. */
           /* (Question:  why do the calls to printTexComment for statement
-             descriptions, later, not need to flush the printString?  Is the
+             descriptions, later, not need to flush the g_printString?  Is the
              flushing code here redundant?) */
-          /* Clear out the printString output in prep for printTexComment */
-          outputToString = 0;
-          fprintf(outputFilePtr, "%s", printString);
-          let(&printString, "");
-          showStatement = s; /* For printTexComment */
-          texFilePtr = outputFilePtr; /* For printTexComment */
+          /* Clear out the g_printString output in prep for printTexComment */
+          g_outputToString = 0;
+          fprintf(outputFilePtr, "%s", g_printString);
+          let(&g_printString, "");
+          g_showStatement = s; /* For printTexComment */
+          g_texFilePtr = outputFilePtr; /* For printTexComment */
           /* 8-May-2015 ???Future - make this just return a string??? */
           /* printTexComment((vstring)(pntrHugeHdrComment[s]), 0); */
           /* 17-Nov-2015 nm Add 3rd & 4th arguments */
-          printTexComment(  /* Sends result to texFilePtr */
+          printTexComment(  /* Sends result to g_texFilePtr */
               (vstring)(pntrHugeHdrComment[s]),
               0, /* 1 = htmlCenterFlag */
               PROCESS_EVERYTHING, /* actionBits */ /* 13-Dec-2018 nm */
               0 /* 1 = noFileCheck */);
-          texFilePtr = NULL;
-          outputToString = 1; /* Restore after printTexComment */
+          g_texFilePtr = NULL;
+          g_outputToString = 1; /* Restore after printTexComment */
 
           /* Close the table row */
           /* print2("%s\n", "</TD></TR>"); */ /* 9-May-2015 nm */
@@ -4825,7 +4893,7 @@ print2("</FONT></B></CENTER>\n");
                  /* " ALIGN=CENTER><FONT SIZE=\"+1\"><B>", */
                  /* 9-May-2015 nm */
                  "><CENTER><FONT SIZE=\"+1\"><B>",
-                 "<A NAME=\"mm", str((double)(statement[s].pinkNumber)),
+                 "<A NAME=\"mm", str((double)(g_Statement[s].pinkNumber)),
                      "b\"></A>",      /* Anchor for table of contents */
                  (vstring)(pntrBigHdr[s]),
                  /* "</B></FONT></TD></TR>", */
@@ -4844,30 +4912,30 @@ print2("</FONT></B></CENTER>\n");
           /* 9-May-2015 nm - keep comment in same table cell */
           print2("%s\n", "<P STYLE=\"margin-bottom:0em\">");
 
-          /* We are currently printing to printString to allow use of
+          /* We are currently printing to g_printString to allow use of
              printLongLine(); however, the rendering function
-             printTexComment uses printString internally, so we have to
-             flush the current printString and turn off outputToString mode
+             printTexComment uses g_printString internally, so we have to
+             flush the current g_printString and turn off g_outputToString mode
              in order to call the rendering function printTexComment. */
           /* (Question:  why do the calls to printTexComment for statement
-             descriptions, later, not need to flush the printString?  Is the
+             descriptions, later, not need to flush the g_printString?  Is the
              flushing code here redundant?) */
-          /* Clear out the printString output in prep for printTexComment */
-          outputToString = 0;
-          fprintf(outputFilePtr, "%s", printString);
-          let(&printString, "");
-          showStatement = s; /* For printTexComment */
-          texFilePtr = outputFilePtr; /* For printTexComment */
+          /* Clear out the g_printString output in prep for printTexComment */
+          g_outputToString = 0;
+          fprintf(outputFilePtr, "%s", g_printString);
+          let(&g_printString, "");
+          g_showStatement = s; /* For printTexComment */
+          g_texFilePtr = outputFilePtr; /* For printTexComment */
           /* 8-May-2015 ???Future - make this just return a string??? */
           /* printTexComment((vstring)(pntrBigHdrComment[s]), 0); */
           /* 17-Nov-2015 nm Add 3rd & 4th arguments */
-          printTexComment(  /* Sends result to texFilePtr */
+          printTexComment(  /* Sends result to g_texFilePtr */
               (vstring)(pntrBigHdrComment[s]),
               0, /* 1 = htmlCenterFlag */
               PROCESS_EVERYTHING, /* actionBits */ /* 13-Dec-2018 nm */
               0  /* 1 = noFileCheck */);
-          texFilePtr = NULL;
-          outputToString = 1; /* Restore after printTexComment */
+          g_texFilePtr = NULL;
+          g_outputToString = 1; /* Restore after printTexComment */
 
           /* Close the table row */
           /* print2("%s\n", "</TD></TR>"); */ /* 9-May-2015 nm */
@@ -4892,7 +4960,7 @@ print2("</FONT></B></CENTER>\n");
                  /* " ALIGN=CENTER><B>", */
                  /* 9-May-2015 nm */
                  "><CENTER><B>",
-                 "<A NAME=\"mm", str((double)(statement[s].pinkNumber)),
+                 "<A NAME=\"mm", str((double)(g_Statement[s].pinkNumber)),
                      "s\"></A>",    /* Anchor for table of contents */
                  (vstring)(pntrSmallHdr[s]),
                  /* "</B></TD></TR>", */
@@ -4911,30 +4979,30 @@ print2("</FONT></B></CENTER>\n");
           /* 9-May-2015 nm - keep comment in same table cell */
           print2("%s\n", "<P STYLE=\"margin-bottom:0em\">");
 
-          /* We are currently printing to printString to allow use of
+          /* We are currently printing to g_printString to allow use of
              printLongLine(); however, the rendering function
-             printTexComment uses printString internally, so we have to
-             flush the current printString and turn off outputToString mode
+             printTexComment uses g_printString internally, so we have to
+             flush the current g_printString and turn off g_outputToString mode
              in order to call the rendering function printTexComment. */
           /* (Question:  why do the calls to printTexComment for statement
-             descriptions, later, not need to flush the printString?  Is the
+             descriptions, later, not need to flush the g_printString?  Is the
              flushing code here redundant?) */
-          /* Clear out the printString output in prep for printTexComment */
-          outputToString = 0;
-          fprintf(outputFilePtr, "%s", printString);
-          let(&printString, "");
-          showStatement = s; /* For printTexComment */
-          texFilePtr = outputFilePtr; /* For printTexComment */
+          /* Clear out the g_printString output in prep for printTexComment */
+          g_outputToString = 0;
+          fprintf(outputFilePtr, "%s", g_printString);
+          let(&g_printString, "");
+          g_showStatement = s; /* For printTexComment */
+          g_texFilePtr = outputFilePtr; /* For printTexComment */
           /* 8-May-2015 ???Future - make this just return a string??? */
           /* printTexComment((vstring)(pntrSmallHdrComment[s]), 0); */
           /* 17-Nov-2015 nm Add 3rd & 4th arguments */
-          printTexComment(  /* Sends result to texFilePtr */
+          printTexComment(  /* Sends result to g_texFilePtr */
               (vstring)(pntrSmallHdrComment[s]),
               0, /* 1 = htmlCenterFlag */
               PROCESS_EVERYTHING, /* actionBits */ /* 13-Dec-2018 nm */
               0  /* 1 = noFileCheck */);
-          texFilePtr = NULL;
-          outputToString = 1; /* Restore after printTexComment */
+          g_texFilePtr = NULL;
+          g_outputToString = 1; /* Restore after printTexComment */
 
           /* Close the table row */
           /* print2("%s\n", "</TD></TR>"); */ /* 9-May-2015 nm */
@@ -4961,7 +5029,7 @@ print2("</FONT></B></CENTER>\n");
                  /* " ALIGN=CENTER><B>", */
                  /* 9-May-2015 nm */
                  "><CENTER><B>",
-                 "<A NAME=\"mm", str((double)(statement[s].pinkNumber)),
+                 "<A NAME=\"mm", str((double)(g_Statement[s].pinkNumber)),
                      "s\"></A>",    /* Anchor for table of contents */
                  (vstring)(pntrTinyHdr[s]),
                  /* "</B></TD></TR>", */
@@ -4980,30 +5048,30 @@ print2("</FONT></B></CENTER>\n");
           /* 9-May-2015 nm - keep comment in same table cell */
           print2("%s\n", "<P STYLE=\"margin-bottom:0em\">");
 
-          /* We are currently printing to printString to allow use of
+          /* We are currently printing to g_printString to allow use of
              printLongLine(); however, the rendering function
-             printTexComment uses printString internally, so we have to
-             flush the current printString and turn off outputToString mode
+             printTexComment uses g_printString internally, so we have to
+             flush the current g_printString and turn off g_outputToString mode
              in order to call the rendering function printTexComment. */
           /* (Question:  why do the calls to printTexComment for statement
-             descriptions, later, not need to flush the printString?  Is the
+             descriptions, later, not need to flush the g_printString?  Is the
              flushing code here redundant?) */
-          /* Clear out the printString output in prep for printTexComment */
-          outputToString = 0;
-          fprintf(outputFilePtr, "%s", printString);
-          let(&printString, "");
-          showStatement = s; /* For printTexComment */
-          texFilePtr = outputFilePtr; /* For printTexComment */
+          /* Clear out the g_printString output in prep for printTexComment */
+          g_outputToString = 0;
+          fprintf(outputFilePtr, "%s", g_printString);
+          let(&g_printString, "");
+          g_showStatement = s; /* For printTexComment */
+          g_texFilePtr = outputFilePtr; /* For printTexComment */
           /* 8-May-2015 ???Future - make this just return a string??? */
           /* printTexComment((vstring)(pntrTinyHdrComment[s]), 0); */
           /* 17-Nov-2015 nm Add 3rd & 4th arguments */
-          printTexComment(  /* Sends result to texFilePtr */
+          printTexComment(  /* Sends result to g_texFilePtr */
               (vstring)(pntrTinyHdrComment[s]),
               0, /* 1 = htmlCenterFlag */
               PROCESS_EVERYTHING, /* actionBits */ /* 13-Dec-2018 nm */
               0  /* 1 = noFileCheck */);
-          texFilePtr = NULL;
-          outputToString = 1; /* Restore after printTexComment */
+          g_texFilePtr = NULL;
+          g_outputToString = 1; /* Restore after printTexComment */
 
           /* Close the table row */
           /* print2("%s\n", "</TD></TR>"); */ /* 9-May-2015 nm */
@@ -5024,44 +5092,44 @@ print2("</FONT></B></CENTER>\n");
       /* (End of 21-Aug-2017 addition) */
 
       printLongLine(cat(
-            (s < extHtmlStmt)
+            (s < g_extHtmlStmt)
                ? "<TR>"
-               : (s < sandboxStmt)
+               : (s < g_mathboxStmt)
                    ? cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL)
                    /* 29-Jul-2008 nm Sandbox stuff */
                    : cat("<TR BGCOLOR=", SANDBOX_COLOR, ">", NULL),
             "<TD NOWRAP>",  /* IE breaks up the date */
             str1, /* Date */
             "</TD><TD ALIGN=CENTER><A HREF=\"",
-            statement[s].labelName, ".html\">",
-            statement[s].labelName, "</A>",
+            g_Statement[s].labelName, ".html\">",
+            g_Statement[s].labelName, "</A>",
             str4,
 
             /* 5-Jan-2014 nm */
             /* Add asterisk if statement has distinct var groups */
-            (nmbrLen(statement[s].reqDisjVarsA) > 0) ? "*" : "",
+            (nmbrLen(g_Statement[s].reqDisjVarsA) > 0) ? "*" : "",
 
             "</TD><TD ALIGN=LEFT>",
             /* 15-Aug-04 nm - Add anchor for hyperlinking to the table row */
-            "<A NAME=\"", statement[s].labelName, "\"></A>",
+            "<A NAME=\"", g_Statement[s].labelName, "\"></A>",
 
             NULL),  /* Description */
           " ",  /* Start continuation line with space */
           "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
 
-      showStatement = s; /* For printTexComment */
-      outputToString = 0; /* For printTexComment */
-      texFilePtr = outputFilePtr; /* For printTexComment */
+      g_showStatement = s; /* For printTexComment */
+      g_outputToString = 0; /* For printTexComment */
+      g_texFilePtr = outputFilePtr; /* For printTexComment */
       /* 18-Sep-03 ???Future - make this just return a string??? */
-      /* printTexComment(str3, 0); */ /* Sends result to texFilePtr */
+      /* printTexComment(str3, 0); */ /* Sends result to g_texFilePtr */
       /* 17-Nov-2015 nm Add 3rd & 4th arguments */
-      printTexComment(  /* Sends result to texFilePtr */
+      printTexComment(  /* Sends result to g_texFilePtr */
           str3,
           0, /* 1 = htmlCenterFlag */
           PROCESS_EVERYTHING, /* actionBits */ /* 13-Dec-2018 nm */
           0  /* 1 = noFileCheck */);
-      texFilePtr = NULL;
-      outputToString = 1; /* Restore after printTexComment */
+      g_texFilePtr = NULL;
+      g_outputToString = 1; /* Restore after printTexComment */
 
       /* Get HTML hypotheses => assertion */
       let(&str4, "");
@@ -5078,15 +5146,15 @@ print2("</FONT></B></CENTER>\n");
         printLongLine(cat("</TD></TR><TR",
 
               /*
-              (s < extHtmlStmt) ?
+              (s < g_extHtmlStmt) ?
                    ">" :
                    cat(" BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL),
               */
 
               /* 29-Jul-2008 nm Sandbox stuff */
-              (s < extHtmlStmt)
+              (s < g_extHtmlStmt)
                  ? ">"
-                 : (s < sandboxStmt)
+                 : (s < g_mathboxStmt)
                      ? cat(" BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL)
                      : cat(" BGCOLOR=", SANDBOX_COLOR, ">", NULL),
 
@@ -5103,31 +5171,31 @@ print2("</FONT></B></CENTER>\n");
             "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
       }
 
-      outputToString = 0;
-      fprintf(outputFilePtr, "%s", printString);
-      let(&printString, "");
+      g_outputToString = 0;
+      fprintf(outputFilePtr, "%s", g_printString);
+      let(&g_printString, "");
 
       if (assertion != lastAssertion) {
         /* Put separator row if not last theorem */
-        outputToString = 1;
+        g_outputToString = 1;
         printLongLine(cat("<TR BGCOLOR=white><TD COLSPAN=3>",
             "<FONT SIZE=-3>&nbsp;</FONT></TD></TR>", NULL),
             " ",  /* Start continuation line with space */
             "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
-        outputToString = 0;
-        fprintf(outputFilePtr, "%s", printString);
-        let(&printString, "");
+        g_outputToString = 0;
+        fprintf(outputFilePtr, "%s", g_printString);
+        let(&g_printString, "");
       }
     } /* next assertion */
 
     /* Output trailer */
-    outputToString = 1;
+    g_outputToString = 1;
     print2("</TABLE></CENTER>\n");
     print2("\n");
 
     /* 8-May-2015 */
    SKIP_LIST: /* (skipped when page == 0) */
-    outputToString = 1; /* To compensate for skipped assignment above */
+    g_outputToString = 1; /* To compensate for skipped assignment above */
 
 
     /* 21-Jun-2014 nm Put extra Prev/Next hyperlinks here for convenience */
@@ -5156,9 +5224,9 @@ print2("</FONT></B></CENTER>\n");
     print2("<HR NOSHADE SIZE=1>\n");
 
 
-    outputToString = 0;
-    fprintf(outputFilePtr, "%s", printString);
-    let(&printString, "");
+    g_outputToString = 0;
+    fprintf(outputFilePtr, "%s", g_printString);
+    let(&g_printString, "");
 
 
     fprintf(outputFilePtr, "<A NAME=\"mmpglst\"></A>\n");
@@ -5212,7 +5280,7 @@ print2("</FONT></B></CENTER>\n");
     /* End of 21-Jun-2014 */
 
 
-    outputToString = 1;
+    g_outputToString = 1;
     print2("<HR NOSHADE SIZE=1>\n");
     /* nm 22-Jan-04 Take out date because it causes an unnecessary incremental
        site update */
@@ -5294,9 +5362,9 @@ print2("</FONT></B></CENTER>\n");
     */
 
     print2("</BODY></HTML>\n");
-    outputToString = 0;
-    fprintf(outputFilePtr, "%s", printString);
-    let(&printString, "");
+    g_outputToString = 0;
+    fprintf(outputFilePtr, "%s", g_printString);
+    let(&g_printString, "");
 
     /* Close file */
     fclose(outputFilePtr);
@@ -5314,19 +5382,29 @@ print2("</FONT></B></CENTER>\n");
   let(&smallHdr, "");
   let(&tinyHdr, ""); /* 21-Aug-2017 nm */
   let(&hdrCommentMarker, ""); /* 4-Aug-2018 */
-  for (i = 0; i <= statements; i++) let((vstring *)(&pntrHugeHdr[i]), "");
+  for (i = 0; i <= g_statements; i++) let((vstring *)(&pntrHugeHdr[i]), "");
   pntrLet(&pntrHugeHdr, NULL_PNTRSTRING);
-  for (i = 0; i <= statements; i++) let((vstring *)(&pntrBigHdr[i]), "");
+  for (i = 0; i <= g_statements; i++) let((vstring *)(&pntrBigHdr[i]), "");
   pntrLet(&pntrBigHdr, NULL_PNTRSTRING);
-  for (i = 0; i <= statements; i++) let((vstring *)(&pntrSmallHdr[i]), "");
+  for (i = 0; i <= g_statements; i++) let((vstring *)(&pntrSmallHdr[i]), "");
   pntrLet(&pntrSmallHdr, NULL_PNTRSTRING);
   /* 21-Aug-2017 nm */
-  for (i = 0; i <= statements; i++) let((vstring *)(&pntrTinyHdr[i]), "");
+  for (i = 0; i <= g_statements; i++) let((vstring *)(&pntrTinyHdr[i]), "");
   pntrLet(&pntrTinyHdr, NULL_PNTRSTRING);
 
 } /* writeTheoremList */
 
 
+/* 12-Sep-2020 nm - added fullComment, which puts the entire header
+   (including any comment and $( $) keywords) into xxxHdrTitle and
+   xxxHdrComment.  If there is no comment below header, xxxHdrComment
+   will be "$)".   No \n follows "$)".  Any leading whitespace will
+   be prefixed before the "$(".  This mode is used for /EXTRACT
+   and was added to make white space match original source. */
+/* 24-Aug-2020 nm - added fineResolution flag, where "header area" is
+   just the labelSection (text before statement) instead of all of the
+   content between a $a/$p and next $a/$p.  This is used by
+   WRITE SOURCE ... /EXTRACT. */
 /* 18-Dec-2016 nm - use true "header area" as described below, and
    ensure statement argument is $p or $a */
 /* 2-Aug-2009 nm - broke this function out from writeTheoremList() */
@@ -5349,6 +5427,7 @@ print2("</FONT></B></CENTER>\n");
    In all 4 cases, only the last occurrence of a header is considered. */
 /*
 20-Jun-2015 metamath Google group email:
+https://groups.google.com/g/metamath/c/QE0lwg9f5Ho/m/J8ekl_lH1I8J
 
 There are 3 kinds of section headers, big (####...), medium (#*#*#*...),
 and small (=-=-=-).
@@ -5375,19 +5454,20 @@ ignore them if those sections are empty (no $a or $p in them).
 */
 /*void getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,*/
 /* Return 1 if error found, 0 otherwise */ /* 6-Aug-2019 nm */
-flag getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
+flag getSectionHeadings(long stmt,
+    vstring *hugeHdrTitle,
+    vstring *bigHdrTitle,
     vstring *smallHdrTitle,
     vstring *tinyHdrTitle,  /* 21-Aug-2017 nm */
-    /* Added 8-May-2015 nm */
+    /* 8-May-2015 nm Added huge,big,smallHdrComment */
     vstring *hugeHdrComment,
     vstring *bigHdrComment,
     vstring *smallHdrComment,
-    vstring *tinyHdrComment) {  /* 21-Aug-2017 nm */
-
-#define HUGE_DECORATION "####"
-#define BIG_DECORATION "#*#*"
-#define SMALL_DECORATION "=-=-"
-#define TINY_DECORATION "-.-."
+    vstring *tinyHdrComment,  /* 21-Aug-2017 nm */
+    flag fineResolution,  /* 24-Aug-2020 nm */
+    flag fullComment  /* 12-Sep-2020 nm */
+    )
+{  /* 21-Aug-2017 nm */
 
   /* 31-Jul-2006 for table of contents mod */
   vstring labelStr = "";
@@ -5397,33 +5477,53 @@ flag getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
 
   /* 6-Aug-2019 nm */
   /* Print any error messages to screen */
-  saveOutputToString = outputToString; /* To restore when returning */
-  outputToString = 0;
+  saveOutputToString = g_outputToString; /* To restore when returning */
+  g_outputToString = 0;
+
+  /* 24-Aug-2020 nm */
+  /* (This initialization seems to be done redundantly by caller elsewhere,
+     but for  WRITE SOURCE ... / EXTRACT we need to do it explicitly.) */
+  let(&(*hugeHdrTitle), "");
+  let(&(*bigHdrTitle), "");
+  let(&(*smallHdrTitle), "");
+  let(&(*tinyHdrTitle), "");
+  let(&(*hugeHdrComment), "");
+  let(&(*bigHdrComment), "");
+  let(&(*smallHdrComment), "");
+  let(&(*tinyHdrComment), "");
 
   /* 18-Dec-2016 nm */
   /* We now process only $a or $p statements */
-  if (statement[stmt].type != a_ && statement[stmt].type != p_) bug(2340);
+  if (fineResolution == 0) { /* 24-Aug-2020 nm */
+    if (g_Statement[stmt].type != a_ && g_Statement[stmt].type != p_) bug(2340);
+  }
 
   /* 18-Dec-2016 nm */
   /* Get header area between this statement and the statement after the
      previous $a or $p statement */
   /* pos3 and pos4 are used temporarily here; not related to later use */
-  pos3 = statement[stmt].headerStartStmt;  /* Statement immediately after the
+  if (fineResolution == 0) {
+    pos3 = g_Statement[stmt].headerStartStmt;  /* Statement immediately after the
                 previous $a or $p statement (will be this statement if previous
                 statement is $a or $p) */
+  } else {
+    /* 24-Aug-2020 nm */
+    pos3 = stmt; /* For WRITE SOURCE ... / EXTRACT, we want every statement
+                    treated equally */
+  }
   if (pos3 == 0 || pos3 > stmt) bug(2241);
-  pos4 = (statement[stmt].labelSectionPtr
-        - statement[pos3].labelSectionPtr)
-        + statement[stmt].labelSectionLen;  /* Length of the header area */
+  pos4 = (g_Statement[stmt].labelSectionPtr
+        - g_Statement[pos3].labelSectionPtr)
+        + g_Statement[stmt].labelSectionLen;  /* Length of the header area */
   let(&labelStr, space(pos4));
-  memcpy(labelStr, statement[pos3].labelSectionPtr,
+  memcpy(labelStr, g_Statement[pos3].labelSectionPtr,
       (size_t)(pos4));
 
   /* Old code before 18-Dec-2016
   /@ Get headers from comment section between statements @/
-  let(&labelStr, space(statement[stmt].labelSectionLen));
-  memcpy(labelStr, statement[stmt].labelSectionPtr,
-      (size_t)(statement[stmt].labelSectionLen));
+  let(&labelStr, space(g_Statement[stmt].labelSectionLen));
+  memcpy(labelStr, g_Statement[stmt].labelSectionPtr,
+      (size_t)(g_Statement[stmt].labelSectionLen));
   */
 
   pos = 0;
@@ -5447,8 +5547,9 @@ flag getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
 
     if (!pos) break;
     if (pos) pos2 = pos;
-  }
+  } /* while(1) */
   if (pos2) { /* Extract "huge" header */
+    pos1 = pos2; /* Save "$(" position */ /* 12-Sep-2020 nm */
     pos = instr(pos2 + 4, labelStr, "\n"); /* Get to end of #### line */
     pos2 = instr(pos + 1, labelStr, "\n"); /* Find end of title line */
 
@@ -5456,19 +5557,37 @@ flag getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
     if (strcmp(mid(labelStr, pos2 + 1, 4), HUGE_DECORATION)) {
       print2(
        "?Warning: missing closing \"%s\" decoration above statement \"%s\".\n",
-          HUGE_DECORATION, statement[stmt].labelName);
+          HUGE_DECORATION, g_Statement[stmt].labelName);
       errorFound = 1;
     }
 
     pos3 = instr(pos2 + 1, labelStr, "\n"); /* Get to end of 2nd #### line */
     while (labelStr[(pos3 - 1) + 1] == '\n') pos3++; /* Skip 1st blank lines */
     pos4 = instr(pos3, labelStr, "$)"); /* Get to end of title comment */
-    let(&(*hugeHdrTitle), seg(labelStr, pos + 1, pos2 - 1));
-    let(&(*hugeHdrTitle), edit((*hugeHdrTitle), 8 + 128));
+    if (fullComment == 0) {  /* 12-Sep-2020 nm */
+      let(&(*hugeHdrTitle), seg(labelStr, pos + 1, pos2 - 1));
+      let(&(*hugeHdrTitle), edit((*hugeHdrTitle), 8 + 128));
                                                 /* Trim leading, trailing sp */
-    let(&(*hugeHdrComment), seg(labelStr, pos3 + 1, pos4 - 2));
-    let(&(*hugeHdrComment), edit((*hugeHdrComment), 8 + 16384));
-                                        /* Trim leading sp, trailing sp & lf */
+      let(&(*hugeHdrComment), seg(labelStr, pos3 + 1, pos4 - 2));
+      let(&(*hugeHdrComment), edit((*hugeHdrComment), 8 + 16384));
+          /* Trim leading sp, trailing sp & lf */
+    } else {
+      /* 12-Sep-2020 nm */
+      /* Put entire comment in hugeHdrTitle and hugeHdrComment for /EXTRACT */
+      /* Search backwards for non-space or beginning of string: */
+      pos = pos1; /* pos1 is the "$" in "$(" */
+      pos--;
+      while (pos > 0) {
+        if (labelStr[pos - 1] != ' '
+              && labelStr[pos - 1] != '\n') break;
+        pos--;
+      }
+      /* pos + 1 is the start of whitespace preceding "$(" */
+      /* pos4 is the "$" in "$)" */
+      /* pos3 is the \n after the 2nd decoration line */
+      let(&(*hugeHdrTitle), seg(labelStr, pos + 1, pos3));
+      let(&(*hugeHdrComment), seg(labelStr, pos3 + 1, pos4 + 1));
+    }
   }
   /* pos = 0; */ /* Leave pos alone so that we start with "huge" header pos,
                     to ignore any earlier "tiny" or "small" or "big" header */
@@ -5494,6 +5613,7 @@ flag getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
     if (pos) pos2 = pos;
   }
   if (pos2) { /* Extract "big" header */
+    pos1 = pos2; /* Save "$(" position */ /* 12-Sep-2020 nm */
     pos = instr(pos2 + 4, labelStr, "\n"); /* Get to end of #*#* line */
     pos2 = instr(pos + 1, labelStr, "\n"); /* Find end of title line */
 
@@ -5501,19 +5621,37 @@ flag getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
     if (strcmp(mid(labelStr, pos2 + 1, 4), BIG_DECORATION)) {
       print2(
        "?Warning: missing closing \"%s\" decoration above statement \"%s\".\n",
-          BIG_DECORATION, statement[stmt].labelName);
+          BIG_DECORATION, g_Statement[stmt].labelName);
       errorFound = 1;
     }
 
     pos3 = instr(pos2 + 1, labelStr, "\n"); /* Get to end of 2nd #*#* line */
     while (labelStr[(pos3 - 1) + 1] == '\n') pos3++; /* Skip 1st blank lines */
     pos4 = instr(pos3, labelStr, "$)"); /* Get to end of title comment */
-    let(&(*bigHdrTitle), seg(labelStr, pos + 1, pos2 - 1));
-    let(&(*bigHdrTitle), edit((*bigHdrTitle), 8 + 128));
-                                                /* Trim leading, trailing sp */
-    let(&(*bigHdrComment), seg(labelStr, pos3 + 1, pos4 - 2));
-    let(&(*bigHdrComment), edit((*bigHdrComment), 8 + 16384));
-                                        /* Trim leading sp, trailing sp & lf */
+    if (fullComment == 0) {  /* 12-Sep-2020 nm */
+      let(&(*bigHdrTitle), seg(labelStr, pos + 1, pos2 - 1));
+      let(&(*bigHdrTitle), edit((*bigHdrTitle), 8 + 128));
+                                                  /* Trim leading, trailing sp */
+      let(&(*bigHdrComment), seg(labelStr, pos3 + 1, pos4 - 2));
+      let(&(*bigHdrComment), edit((*bigHdrComment), 8 + 16384));
+          /* Trim leading sp, trailing sp & lf */
+    } else {
+      /* 12-Sep-2020 nm */
+      /* Put entire comment in bigHdrTitle and bigHdrComment for /EXTRACT */
+      /* Search backwards for non-space or beginning of string: */
+      pos = pos1; /* pos1 is the "$" in "$(" */
+      pos--;
+      while (pos > 0) {
+        if (labelStr[pos - 1] != ' '
+              && labelStr[pos - 1] != '\n') break;
+        pos--;
+      }
+      /* pos + 1 is the start of whitespace preceding "$(" */
+      /* pos4 is the "$" in "$)" */
+      /* pos3 is the \n after the 2nd decoration line */
+      let(&(*bigHdrTitle), seg(labelStr, pos + 1, pos3));
+      let(&(*bigHdrComment), seg(labelStr, pos3 + 1, pos4 + 1));
+    }
   }
   /* pos = 0; */ /* Leave pos alone so that we start with "big" header pos,
                     to ignore any earlier "tiny" or "small" header */
@@ -5533,6 +5671,7 @@ flag getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
     if (pos) pos2 = pos;
   }
   if (pos2) { /* Extract "small" header */
+    pos1 = pos2; /* Save "$(" position */ /* 12-Sep-2020 nm */
     pos = instr(pos2 + 4, labelStr, "\n"); /* Get to end of =-=- line */
     pos2 = instr(pos + 1, labelStr, "\n"); /* Find end of title line */
 
@@ -5540,19 +5679,37 @@ flag getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
     if (strcmp(mid(labelStr, pos2 + 1, 4), SMALL_DECORATION)) {
       print2(
        "?Warning: missing closing \"%s\" decoration above statement \"%s\".\n",
-          SMALL_DECORATION, statement[stmt].labelName);
+          SMALL_DECORATION, g_Statement[stmt].labelName);
       errorFound = 1;
     }
 
     pos3 = instr(pos2 + 1, labelStr, "\n"); /* Get to end of 2nd =-=- line */
     while (labelStr[(pos3 - 1) + 1] == '\n') pos3++; /* Skip 1st blank lines */
     pos4 = instr(pos3, labelStr, "$)"); /* Get to end of title comment */
-    let(&(*smallHdrTitle), seg(labelStr, pos + 1, pos2 - 1));
-    let(&(*smallHdrTitle), edit((*smallHdrTitle), 8 + 128));
+    if (fullComment == 0) {  /* 12-Sep-2020 nm */
+      let(&(*smallHdrTitle), seg(labelStr, pos + 1, pos2 - 1));
+      let(&(*smallHdrTitle), edit((*smallHdrTitle), 8 + 128));
                                                 /* Trim leading, trailing sp */
-    let(&(*smallHdrComment), seg(labelStr, pos3 + 1, pos4 - 2));
-    let(&(*smallHdrComment), edit((*smallHdrComment), 8 + 16384));
-                                        /* Trim leading sp, trailing sp & lf */
+      let(&(*smallHdrComment), seg(labelStr, pos3 + 1, pos4 - 2));
+      let(&(*smallHdrComment), edit((*smallHdrComment), 8 + 16384));
+          /* Trim leading sp, trailing sp & lf */
+    } else {
+      /* 12-Sep-2020 nm */
+      /* Put entire comment in smallHdrTitle and smallHdrComment for /EXTRACT */
+      /* Search backwards for non-space or beginning of string: */
+      pos = pos1; /* pos1 is the "$" in "$(" */
+      pos--;
+      while (pos > 0) {
+        if (labelStr[pos - 1] != ' '
+              && labelStr[pos - 1] != '\n') break;
+        pos--;
+      }
+      /* pos + 1 is the start of whitespace preceding "$(" */
+      /* pos4 is the "$" in "$)" */
+      /* pos3 is the \n after the 2nd decoration line */
+      let(&(*smallHdrTitle), seg(labelStr, pos + 1, pos3));
+      let(&(*smallHdrComment), seg(labelStr, pos3 + 1, pos4 + 1));
+    }
   }
 
   /* Added 21-Aug-2017 nm */
@@ -5574,6 +5731,7 @@ flag getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
     if (pos) pos2 = pos;
   }
   if (pos2) { /* Extract "tiny" header */
+    pos1 = pos2; /* Save "$(" position */ /* 12-Sep-2020 nm */
     pos = instr(pos2 + 4, labelStr, "\n"); /* Get to end of -.-. line */
     pos2 = instr(pos + 1, labelStr, "\n"); /* Find end of title line */
 
@@ -5581,19 +5739,37 @@ flag getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
     if (strcmp(mid(labelStr, pos2 + 1, 4), TINY_DECORATION)) {
       print2(
        "?Warning: missing closing \"%s\" decoration above statement \"%s\".\n",
-          TINY_DECORATION, statement[stmt].labelName);
+          TINY_DECORATION, g_Statement[stmt].labelName);
       errorFound = 1;
     }
 
     pos3 = instr(pos2 + 1, labelStr, "\n"); /* Get to end of 2nd -.-. line */
     while (labelStr[(pos3 - 1) + 1] == '\n') pos3++; /* Skip 1st blank lines */
     pos4 = instr(pos3, labelStr, "$)"); /* Get to end of title comment */
-    let(&(*tinyHdrTitle), seg(labelStr, pos + 1, pos2 - 1));
-    let(&(*tinyHdrTitle), edit((*tinyHdrTitle), 8 + 128));
-                                                /* Trim leading, trailing sp */
-    let(&(*tinyHdrComment), seg(labelStr, pos3 + 1, pos4 - 2));
-    let(&(*tinyHdrComment), edit((*tinyHdrComment), 8 + 16384));
-                                        /* Trim leading sp, trailing sp & lf */
+    if (fullComment == 0) {  /* 12-Sep-2020 nm */
+      let(&(*tinyHdrTitle), seg(labelStr, pos + 1, pos2 - 1));
+      let(&(*tinyHdrTitle), edit((*tinyHdrTitle), 8 + 128));
+                                                  /* Trim leading, trailing sp */
+      let(&(*tinyHdrComment), seg(labelStr, pos3 + 1, pos4 - 2));
+      let(&(*tinyHdrComment), edit((*tinyHdrComment), 8 + 16384));
+          /* Trim leading sp, trailing sp & lf */
+    } else {
+      /* 12-Sep-2020 nm */
+      /* Put entire comment in tinyHdrTitle and tinyHdrComment for /EXTRACT */
+      /* Search backwards for non-space or beginning of string: */
+      pos = pos1; /* pos1 is the "$" in "$(" */
+      pos--;
+      while (pos > 0) {
+        if (labelStr[pos - 1] != ' '
+              && labelStr[pos - 1] != '\n') break;
+        pos--;
+      }
+      /* pos + 1 is the start of whitespace preceding "$(" */
+      /* pos4 is the "$" in "$)" */
+      /* pos3 is the \n after the 2nd decoration line */
+      let(&(*tinyHdrTitle), seg(labelStr, pos + 1, pos3));
+      let(&(*tinyHdrComment), seg(labelStr, pos3 + 1, pos4 + 1));
+    }
   }
   /* (End of 21-Aug-2017 addition) */
 
@@ -5602,7 +5778,7 @@ flag getSectionHeadings(long stmt, vstring *hugeHdrTitle, vstring *bigHdrTitle,
     print2("  (Note that section titles may not be longer than one line.)\n");
   }
   /* Restore output stream */
-  outputToString = saveOutputToString;
+  g_outputToString = saveOutputToString;
 
   let(&labelStr, "");  /* Deallocate string memory */
   return errorFound;  /* 6-Aug-2019 nm */
@@ -5618,14 +5794,14 @@ long pinkNumber(long statemNum)
 {
   long statemMap = 0;
   long i;
-  /* Statement map for number of showStatement - this makes the statement
+  /* Statement map for number of g_showStatement - this makes the statement
      number more meaningful, by counting only $a and $p. */
   /* ???This could be done once if we want to speed things up, but
      be careful because it will have to be redone if ERASE then READ.
-     For the future it could be added to the statement[] structure. */
+     For the future it could be added to the g_Statement[] structure. */
   statemMap = 0;
   for (i = 1; i <= statemNum; i++) {
-    if (statement[i].type == a_ || statement[i].type == p_)
+    if (g_Statement[i].type == a_ || g_Statement[i].type == p_)
       statemMap++;
   }
   return statemMap;
@@ -5646,16 +5822,16 @@ vstring pinkHTML(long statemNum)
 
   /* The pink number only counts $a and $p statements, unlike the statement
      number which also counts $f, $e, $c, $v, ${, $} */
-  /* 10/25/02 Added pinkNumber to the statement[] structure for speedup. */
+  /* 10/25/02 Added pinkNumber to the g_Statement[] structure for speedup. */
   /*
   statemMap = 0;
   for (i = 1; i <= statemNum; i++) {
-    if (statement[i].type == a_ || statement[i].type == p_)
+    if (g_Statement[i].type == a_ || g_Statement[i].type == p_)
       statemMap++;
   }
   */
   if (statemNum > 0) {
-    statemMap = statement[statemNum].pinkNumber;
+    statemMap = g_Statement[statemNum].pinkNumber;
   } else {
     /* -1 means the label wasn't found */
     statemMap = -1;
@@ -5681,7 +5857,7 @@ vstring pinkHTML(long statemNum)
 #ifdef RAINBOW_OPTION
   /* ndm 10-Jan-04 With style sheet and explicit color */
   let(&hexValue, "");
-  hexValue = spectrumToRGB(statemMap, statement[statements].pinkNumber);
+  hexValue = spectrumToRGB(statemMap, g_Statement[g_statements].pinkNumber);
   let(&htmlCode, cat(PINK_NBSP,
       "<SPAN CLASS=r STYLE=\"color:#", hexValue, "\">",
       (statemMap != -1) ? str((double)statemMap) : "(future)", "</SPAN>", NULL));
@@ -5923,8 +6099,8 @@ vstring spectrumToRGB(long color, long maxColor) {
           fractionInPartition *
               (blueRef[partition + 1] - blueRef[partition])));
   /* debug */
-  /* i=1;if (outputToString==0) {i=0;outputToString=1;} */
-  /*   print2("p%ldc%ld\n", partition, color); outputToString=i; */
+  /* i=1;if (g_outputToString==0) {i=0;g_outputToString=1;} */
+  /*   print2("p%ldc%ld\n", partition, color); g_outputToString=i; */
   /*printf("red %ld green %ld blue %ld\n", red, green, blue);*/
 
   if (red < 0 || green < 0 || blue < 0
@@ -5945,8 +6121,8 @@ vstring spectrumToRGB(long color, long maxColor) {
 
 /* Added 20-Sep-03 (broken out of printTexLongMath() for better
    modularization) */
-/* Returns the HTML code for GIFs (!altHtmlFlag) or Unicode (altHtmlFlag),
-   or LaTeX when !htmlFlag, for the math string (hypothesis or conclusion) that
+/* Returns the HTML code for GIFs (!g_altHtmlFlag) or Unicode (g_altHtmlFlag),
+   or LaTeX when !g_htmlFlag, for the math string (hypothesis or conclusion) that
    is passed in. */
 /* Warning: The caller must deallocate the returned vstring. */
 vstring getTexLongMath(nmbrString *mathString, long statemNum)
@@ -5963,15 +6139,15 @@ vstring getTexLongMath(nmbrString *mathString, long statemNum)
     return texLine;
   }
 
-  if (!texDefsRead) bug(2322); /* TeX defs were not read */
+  if (!g_texDefsRead) bug(2322); /* TeX defs were not read */
   let(&texLine, "");
 
   let(&lastTex, "");
   for (pos = 0; pos < nmbrLen(mathString); pos++) {
     let(&tex, "");
-    tex = tokenToTex(mathToken[mathString[pos]].tokenName, statemNum);
+    tex = tokenToTex(g_MathToken[mathString[pos]].tokenName, statemNum);
               /* tokenToTex allocates tex; we must deallocate it */
-    if (!htmlFlag) {  /* LaTeX */
+    if (!g_htmlFlag) {  /* LaTeX */
       /* If this token and previous token begin with letter, add a thin
            space between them */
       /* Also, anything not in table will have space added */
@@ -5990,14 +6166,14 @@ vstring getTexLongMath(nmbrString *mathString, long statemNum)
       if ((alphold || unknownold) && (alphnew || unknownnew)) {
         /* Put additional thin space between two letters */
         /* 27-Jul-05 nm Added for new LaTeX output */
-        if (!oldTexFlag) {
+        if (!g_oldTexFlag) {
           let(&texLine, cat(texLine, "\\,", tex, " ", NULL));
         } else {
           let(&texLine, cat(texLine, "\\m{\\,", tex, "}", NULL));
         }
       } else {
         /* 27-Jul-05 nm Added for new LaTeX output */
-        if (!oldTexFlag) {
+        if (!g_oldTexFlag) {
           let(&texLine, cat(texLine, "", tex, " ", NULL));
         } else {
           let(&texLine, cat(texLine, "\\m{", tex, "}", NULL));
@@ -6011,35 +6187,35 @@ vstring getTexLongMath(nmbrString *mathString, long statemNum)
          to make the web page look a little nicer.  E.g. onminex. */
       /* Note that the space is put between the pos-1 and the pos tokens */
       if (pos >=4) {
-        if (!strcmp(mathToken[mathString[pos - 2]].tokenName, "e.")
-            && (!strcmp(mathToken[mathString[pos - 4]].tokenName, "E.")
-              || !strcmp(mathToken[mathString[pos - 4]].tokenName, "A.")
+        if (!strcmp(g_MathToken[mathString[pos - 2]].tokenName, "e.")
+            && (!strcmp(g_MathToken[mathString[pos - 4]].tokenName, "E.")
+              || !strcmp(g_MathToken[mathString[pos - 4]].tokenName, "A.")
 
               /* 20-Oct-2018 nm per Benoit's 3-Sep, 18-Sep, 9-Oct emails */
-              || !strcmp(mathToken[mathString[pos - 4]].tokenName, "prod_")
-              || !strcmp(mathToken[mathString[pos - 4]].tokenName, "E*")
-              || !strcmp(mathToken[mathString[pos - 4]].tokenName, "iota_")
-              || !strcmp(mathToken[mathString[pos - 4]].tokenName, "Disj_")
+              || !strcmp(g_MathToken[mathString[pos - 4]].tokenName, "prod_")
+              || !strcmp(g_MathToken[mathString[pos - 4]].tokenName, "E*")
+              || !strcmp(g_MathToken[mathString[pos - 4]].tokenName, "iota_")
+              || !strcmp(g_MathToken[mathString[pos - 4]].tokenName, "Disj_")
 
               /* 6-Apr-04 nm - indexed E! */
-              || !strcmp(mathToken[mathString[pos - 4]].tokenName, "E!")
+              || !strcmp(g_MathToken[mathString[pos - 4]].tokenName, "E!")
               /* 12-Nov-05 nm - finite sums */
-              || !strcmp(mathToken[mathString[pos - 4]].tokenName, "sum_")
+              || !strcmp(g_MathToken[mathString[pos - 4]].tokenName, "sum_")
               /* 30-Sep-06 nm - infinite cartesian product */
-              || !strcmp(mathToken[mathString[pos - 4]].tokenName, "X_")
+              || !strcmp(g_MathToken[mathString[pos - 4]].tokenName, "X_")
               /* 23-Jan-04 nm - indexed union, intersection */
-              || !strcmp(mathToken[mathString[pos - 4]].tokenName, "U_")
-              || !strcmp(mathToken[mathString[pos - 4]].tokenName, "|^|_"))
+              || !strcmp(g_MathToken[mathString[pos - 4]].tokenName, "U_")
+              || !strcmp(g_MathToken[mathString[pos - 4]].tokenName, "|^|_"))
             /* 23-Jan-04 nm - add space even for parenthesized arg */
-            /*&& strcmp(mathToken[mathString[pos]].tokenName, "(")*/
-            && strcmp(mathToken[mathString[pos]].tokenName, ")")
+            /*&& strcmp(g_MathToken[mathString[pos]].tokenName, "(")*/
+            && strcmp(g_MathToken[mathString[pos]].tokenName, ")")
             /* It also shouldn't be restricted _to_ an expression in parens. */
-            && strcmp(mathToken[mathString[pos - 1]].tokenName, "(")
+            && strcmp(g_MathToken[mathString[pos - 1]].tokenName, "(")
             /* ...or restricted _to_ a union or intersection 1-Feb-05 */
-            && strcmp(mathToken[mathString[pos - 1]].tokenName, "U.")
-            && strcmp(mathToken[mathString[pos - 1]].tokenName, "|^|")
+            && strcmp(g_MathToken[mathString[pos - 1]].tokenName, "U.")
+            && strcmp(g_MathToken[mathString[pos - 1]].tokenName, "|^|")
             /* ...or restricted _to_ an expression in braces */
-            && strcmp(mathToken[mathString[pos - 1]].tokenName, "{")) {
+            && strcmp(g_MathToken[mathString[pos - 1]].tokenName, "{")) {
           let(&texLine, cat(texLine, " ", NULL)); /* Add a space */
         }
       }
@@ -6047,29 +6223,29 @@ vstring getTexLongMath(nmbrString *mathString, long statemNum)
          "E. x x = y".  E.g. cla4egf */
       if (pos >=2) {
         /* Match a token starting with a letter */
-        if (isalpha((unsigned char)(mathToken[mathString[pos]].tokenName[0]))) {
+        if (isalpha((unsigned char)(g_MathToken[mathString[pos]].tokenName[0]))) {
           /* and make sure its length is 1 */
-          if (!(mathToken[mathString[pos]].tokenName[1])) {
+          if (!(g_MathToken[mathString[pos]].tokenName[1])) {
 
             /* 20-Sep-2017 nm */
             /* Make sure previous token is a letter also, to prevent unneeded
                space in "ran ( A ..." (e.g. rncoeq, dfiun3g) */
             /* Match a token starting with a letter */
-            if (isalpha((unsigned char)(mathToken[mathString[pos - 1]].tokenName[0]))) {
+            if (isalpha((unsigned char)(g_MathToken[mathString[pos - 1]].tokenName[0]))) {
               /* and make sure its length is 1 */
-              if (!(mathToken[mathString[pos - 1]].tokenName[1])) {
+              if (!(g_MathToken[mathString[pos - 1]].tokenName[1])) {
 
                 /* See if it's 1st letter in a quantified expression */
-                if (!strcmp(mathToken[mathString[pos - 2]].tokenName, "E.")
-                    || !strcmp(mathToken[mathString[pos - 2]].tokenName, "A.")
+                if (!strcmp(g_MathToken[mathString[pos - 2]].tokenName, "E.")
+                    || !strcmp(g_MathToken[mathString[pos - 2]].tokenName, "A.")
                     /* 26-Dec-2016 nm - "not free in" binder */
-                    || !strcmp(mathToken[mathString[pos - 2]].tokenName, "F/")
+                    || !strcmp(g_MathToken[mathString[pos - 2]].tokenName, "F/")
                     /* 6-Apr-04 nm added E!, E* */
-                    || !strcmp(mathToken[mathString[pos - 2]].tokenName, "E!")
+                    || !strcmp(g_MathToken[mathString[pos - 2]].tokenName, "E!")
       /* 4-Jun-06 nm added dom, ran for space btwn A,x in "E! x e. dom A x A y" */
-                    || !strcmp(mathToken[mathString[pos - 2]].tokenName, "ran")
-                    || !strcmp(mathToken[mathString[pos - 2]].tokenName, "dom")
-                    || !strcmp(mathToken[mathString[pos - 2]].tokenName, "E*")) {
+                    || !strcmp(g_MathToken[mathString[pos - 2]].tokenName, "ran")
+                    || !strcmp(g_MathToken[mathString[pos - 2]].tokenName, "dom")
+                    || !strcmp(g_MathToken[mathString[pos - 2]].tokenName, "E*")) {
                   let(&texLine, cat(texLine, " ", NULL)); /* Add a space */
                 }
 
@@ -6083,12 +6259,12 @@ vstring getTexLongMath(nmbrString *mathString, long statemNum)
          e.g. "A" and "suc" in "A. x e. U. A suc" in limuni2  1-Feb-05 */
       if (pos >= 1) {
         /* See if the next token is "suc" */
-        if (!strcmp(mathToken[mathString[pos]].tokenName, "suc")) {
+        if (!strcmp(g_MathToken[mathString[pos]].tokenName, "suc")) {
           /* Match a token starting with a letter for the current token */
           if (isalpha(
-              (unsigned char)(mathToken[mathString[pos - 1]].tokenName[0]))) {
+              (unsigned char)(g_MathToken[mathString[pos - 1]].tokenName[0]))) {
             /* and make sure its length is 1 */
-            if (!(mathToken[mathString[pos - 1]].tokenName[1])) {
+            if (!(g_MathToken[mathString[pos - 1]].tokenName[1])) {
               let(&texLine, cat(texLine, " ", NULL)); /* Add a space */
             }
           }
@@ -6098,16 +6274,16 @@ vstring getTexLongMath(nmbrString *mathString, long statemNum)
          a parentheses e.g. ax-6 has both cases */
       if (pos >=1) {
         /* See if we have a non-parenthesis followed by not */
-        if (strcmp(mathToken[mathString[pos - 1]].tokenName, "(")
-            && !strcmp(mathToken[mathString[pos]].tokenName, "-.")) {
+        if (strcmp(g_MathToken[mathString[pos - 1]].tokenName, "(")
+            && !strcmp(g_MathToken[mathString[pos]].tokenName, "-.")) {
           let(&texLine, cat(texLine, " ", NULL)); /* Add a space */
         }
       }
       /* nm 9-Feb-04 This one puts a space between "S" and "(" in df-iso. */
       if (pos >=4) {
-        if (!strcmp(mathToken[mathString[pos - 4]].tokenName, "Isom")
-            && !strcmp(mathToken[mathString[pos - 2]].tokenName, ",")
-            && !strcmp(mathToken[mathString[pos]].tokenName, "(")) {
+        if (!strcmp(g_MathToken[mathString[pos - 4]].tokenName, "Isom")
+            && !strcmp(g_MathToken[mathString[pos - 2]].tokenName, ",")
+            && !strcmp(g_MathToken[mathString[pos]].tokenName, "(")) {
           let(&texLine, cat(texLine, " ", NULL)); /* Add a space */
         }
       }
@@ -6115,8 +6291,8 @@ vstring getTexLongMath(nmbrString *mathString, long statemNum)
          funcnvuni proof. */
       if (pos >=1) {
         /* See if we have "}" followed by "(" */
-        if (!strcmp(mathToken[mathString[pos - 1]].tokenName, "}")
-            && !strcmp(mathToken[mathString[pos]].tokenName, "(")) {
+        if (!strcmp(g_MathToken[mathString[pos - 1]].tokenName, "}")
+            && !strcmp(g_MathToken[mathString[pos]].tokenName, "(")) {
           let(&texLine, cat(texLine, " ", NULL)); /* Add a space */
         }
       }
@@ -6124,15 +6300,15 @@ vstring getTexLongMath(nmbrString *mathString, long statemNum)
          konigsberg proof. */
       if (pos >=1) {
         /* See if we have "}" followed by "(" */
-        if (!strcmp(mathToken[mathString[pos - 1]].tokenName, "}")
-            && !strcmp(mathToken[mathString[pos]].tokenName, "{")) {
+        if (!strcmp(g_MathToken[mathString[pos - 1]].tokenName, "}")
+            && !strcmp(g_MathToken[mathString[pos]].tokenName, "{")) {
           let(&texLine, cat(texLine, " ", NULL)); /* Add a space */
         }
       }
       /* 7/27/03 end */
 
       let(&texLine, cat(texLine, tex, NULL));
-    } /* if !htmlFlag */
+    } /* if !g_htmlFlag */
     let(&lastTex, tex); /* Save for next pass */
   } /* Next pos */
 
@@ -6142,9 +6318,9 @@ vstring getTexLongMath(nmbrString *mathString, long statemNum)
   /* 1-Feb-2016 nm */
   /* Enclose math symbols in a span to be used for font selection */
   let(&texLine, cat(
-      (altHtmlFlag ? cat("<SPAN ", htmlFont, ">", NULL) : ""),
+      (g_altHtmlFlag ? cat("<SPAN ", g_htmlFont, ">", NULL) : ""),
       texLine,
-      (altHtmlFlag ? "</SPAN>" : ""), NULL));
+      (g_altHtmlFlag ? "</SPAN>" : ""), NULL));
 
   let(&tex, "");
   let(&lastTex, "");
@@ -6153,8 +6329,8 @@ vstring getTexLongMath(nmbrString *mathString, long statemNum)
 
 
 /* Added 18-Sep-03 (broken out of metamath.c for better modularization) */
-/* Returns the TeX, or HTML code for GIFs (!altHtmlFlag) or Unicode
-   (altHtmlFlag), for a statement's hypotheses and assertion in the form
+/* Returns the TeX, or HTML code for GIFs (!g_altHtmlFlag) or Unicode
+   (g_altHtmlFlag), for a statement's hypotheses and assertion in the form
    hyp & ... & hyp => assertion */
 /* Warning: The caller must deallocate the returned vstring (i.e. this
    function cannot be used in let statements but must be assigned to
@@ -6167,26 +6343,26 @@ vstring getTexOrHtmlHypAndAssertion(long statemNum)
   vstring str2 = "";
   /* Count the number of essential hypotheses essHyps */
   essHyps = 0;
-  reqHyps = nmbrLen(statement[statemNum].reqHypList);
+  reqHyps = nmbrLen(g_Statement[statemNum].reqHypList);
   let(&texOrHtmlCode, "");
   for (n = 0; n < reqHyps; n++) {
-    if (statement[statement[statemNum].reqHypList[n]].type
+    if (g_Statement[g_Statement[statemNum].reqHypList[n]].type
         == (char)e_) {
       essHyps++;
       if (texOrHtmlCode[0]) { /* Add '&' between hypotheses */
-        if (!htmlFlag) {
+        if (!g_htmlFlag) {
           /* Hard-coded for set.mm! */
           let(&texOrHtmlCode, cat(texOrHtmlCode,
                  "\\quad\\&\\quad "
               ,NULL));
         } else {
-          if (altHtmlFlag
+          if (g_altHtmlFlag
         	  || stsFlag) { /* 22-Mar-2018 Added for STS */
             /* Hard-coded for set.mm! */
             let(&texOrHtmlCode, cat(texOrHtmlCode,
                 /* 8/8/03 - Changed from Symbol to Unicode */
 /* "&nbsp;&nbsp;&nbsp;<FONT FACE=\"Symbol\"> &#38;</FONT>&nbsp;&nbsp;&nbsp;" */
-                "<SPAN ", htmlFont, ">",  /* 1-Feb-2016 nm */
+                "<SPAN ", g_htmlFont, ">",  /* 1-Feb-2016 nm */
                 "&nbsp;&nbsp;&nbsp; &amp;&nbsp;&nbsp;&nbsp;",
                 "</SPAN>",   /* 1-Feb-2016 nm */
                 NULL));
@@ -6200,20 +6376,20 @@ vstring getTexOrHtmlHypAndAssertion(long statemNum)
         }
       } /* if texOrHtmlCode[0] */
       /* Construct HTML hypothesis */
-      nmbrTmpPtr = statement[statement[statemNum].reqHypList[n]].mathString;
+      nmbrTmpPtr = g_Statement[g_Statement[statemNum].reqHypList[n]].mathString;
       let(&str2, "");
       str2 = getTexLongMath(nmbrTmpPtr, statemNum);
       let(&texOrHtmlCode, cat(texOrHtmlCode, str2, NULL));
     }
   }
   if (essHyps) {  /* Add big arrow if there were hypotheses */
-    if (!htmlFlag) {
+    if (!g_htmlFlag) {
       /* Hard-coded for set.mm! */
       let(&texOrHtmlCode, cat(texOrHtmlCode,
                  "\\quad\\Rightarrow\\quad "
           ,NULL));
     } else {
-      if (altHtmlFlag
+      if (g_altHtmlFlag
       	  || stsFlag) { /* 22-Mar-2018 Added for STS */
         /* Hard-coded for set.mm! */
         let(&texOrHtmlCode, cat(texOrHtmlCode,
@@ -6234,7 +6410,7 @@ vstring getTexOrHtmlHypAndAssertion(long statemNum)
     }
   }
   /* Construct TeX or HTML assertion */
-  nmbrTmpPtr = statement[statemNum].mathString;
+  nmbrTmpPtr = g_Statement[statemNum].mathString;
   let(&str2, "");
   str2 = getTexLongMath(nmbrTmpPtr, statemNum);
   let(&texOrHtmlCode, cat(texOrHtmlCode, str2, NULL));
@@ -6297,11 +6473,11 @@ flag writeBibliography(vstring bibFile,
       if (list1_fp == NULL) bug(2337);
     }
   }
-  if (!texDefsRead) {
-    htmlFlag = 1;
+  if (!g_texDefsRead) {
+    g_htmlFlag = 1;
     /* Now done in readTexDefs() *
     if (errorsOnly == 0 ) {
-      print2("Reading definitions from $t statement of %s...\n", input_fn);
+      print2("Reading definitions from $t statement of %s...\n", g_input_fn);
     }
     */
     if (2/*error*/ == readTexDefs(errorsOnly, noFileCheck)) {
@@ -6339,20 +6515,20 @@ flag writeBibliography(vstring bibFile,
     }
 
     /* Scan all $a and $p statements */
-    for (i = 1; i <= statements; i++) {
-      if (statement[i].type != (char)p_ &&
-        statement[i].type != (char)a_) continue;
+    for (i = 1; i <= g_statements; i++) {
+      if (g_Statement[i].type != (char)p_ &&
+        g_Statement[i].type != (char)a_) continue;
 
       /* 13-Dec-2016 nm */
       /* Normally labelMatch is *, but may be more specific for
          use by verifyMarkup() */
-      if (!matchesList(statement[i].labelName, labelMatch, '*', '?')) {
+      if (!matchesList(g_Statement[i].labelName, labelMatch, '*', '?')) {
         continue;
       }
 
       /* Omit ...OLD (obsolete) and ...NEW (to be implemented) statements */
-      if (instr(1, statement[i].labelName, "NEW")) continue;
-      if (instr(1, statement[i].labelName, "OLD")) continue;
+      if (instr(1, g_Statement[i].labelName, "NEW")) continue;
+      if (instr(1, g_Statement[i].labelName, "OLD")) continue;
       let(&str1, "");
       str1 = getDescription(i); /* Get the statement's comment */
       if (!instr(1, str1, "[")) continue;
@@ -6445,18 +6621,25 @@ flag writeBibliography(vstring bibFile,
           /* **IMPORTANT** Make sure to update mmhlpb.c HELP WRITE BIBLIOGRAPHY
              if new items are added to this list. */
           if (0
+              /* 3-Jun-2018 nm Added PROOF, STATEMENT */
+              /* 12-Apr-2020 nm Added CLAIM */
+              /* 8-Aug-2020 nm Added CONJECTURE, RESULT */
+              /* 23-Aug-2020 nm Added CONCLUSION FACT INTRODUCTION PARAGRAPH
+                      SCOLIA SCOLION SUBSECTION TABLE */
               /* Do not add SCHEMA but use AXIOM SCHEMA or THEOREM SCHEMA */
-              /* Put the most frequent ones first to speed up search */
+              /* Put the most frequent ones first to speed up search;
+                 TODO: count occurrences in mmbiblio.html to find optimal order */
               || !strcmp(mid(str2, k, (long)strlen("THEOREM")), "THEOREM")
               || !strcmp(mid(str2, k, (long)strlen("EQUATION")), "EQUATION")
               || !strcmp(mid(str2, k, (long)strlen("DEFINITION")), "DEFINITION")
               || !strcmp(mid(str2, k, (long)strlen("LEMMA")), "LEMMA")
               || !strcmp(mid(str2, k, (long)strlen("EXERCISE")), "EXERCISE")
               || !strcmp(mid(str2, k, (long)strlen("AXIOM")), "AXIOM")
-
+              || !strcmp(mid(str2, k, (long)strlen("CLAIM")), "CLAIM")
               || !strcmp(mid(str2, k, (long)strlen("CHAPTER")), "CHAPTER")
               || !strcmp(mid(str2, k, (long)strlen("COMPARE")), "COMPARE")
               || !strcmp(mid(str2, k, (long)strlen("CONDITION")), "CONDITION")
+              || !strcmp(mid(str2, k, (long)strlen("CONJECTURE")), "CONJECTURE")
               || !strcmp(mid(str2, k, (long)strlen("COROLLARY")), "COROLLARY")
               || !strcmp(mid(str2, k, (long)strlen("EXAMPLE")), "EXAMPLE")
               || !strcmp(mid(str2, k, (long)strlen("FIGURE")), "FIGURE")
@@ -6473,12 +6656,20 @@ flag writeBibliography(vstring bibFile,
               || !strcmp(mid(str2, k, (long)strlen("PROPERTY")), "PROPERTY")
               || !strcmp(mid(str2, k, (long)strlen("PROPOSITION")), "PROPOSITION")
               || !strcmp(mid(str2, k, (long)strlen("REMARK")), "REMARK")
+              || !strcmp(mid(str2, k, (long)strlen("RESULT")), "RESULT")
               || !strcmp(mid(str2, k, (long)strlen("RULE")), "RULE")
               || !strcmp(mid(str2, k, (long)strlen("SCHEME")), "SCHEME")
               || !strcmp(mid(str2, k, (long)strlen("SECTION")), "SECTION")
-              /* Added 3-Jun-2018 nm */
               || !strcmp(mid(str2, k, (long)strlen("PROOF")), "PROOF")
               || !strcmp(mid(str2, k, (long)strlen("STATEMENT")), "STATEMENT")
+              || !strcmp(mid(str2, k, (long)strlen("CONCLUSION")), "CONCLUSION")
+              || !strcmp(mid(str2, k, (long)strlen("FACT")), "FACT")
+              || !strcmp(mid(str2, k, (long)strlen("INTRODUCTION")), "INTRODUCTION")
+              || !strcmp(mid(str2, k, (long)strlen("PARAGRAPH")), "PARAGRAPH")
+              || !strcmp(mid(str2, k, (long)strlen("SCOLIA")), "SCOLIA")
+              || !strcmp(mid(str2, k, (long)strlen("SCOLION")), "SCOLION")
+              || !strcmp(mid(str2, k, (long)strlen("SUBSECTION")), "SUBSECTION")
+              || !strcmp(mid(str2, k, (long)strlen("TABLE")), "TABLE")
               ) {
             m = k;
             break;
@@ -6489,7 +6680,7 @@ flag writeBibliography(vstring bibFile,
           if (p2 == 1) {
             print2(
              "?Warning: Bibliography keyword missing in comment for \"%s\".\n",
-                statement[i].labelName);
+                g_Statement[i].labelName);
             print2(
                 "    (See HELP WRITE BIBLIOGRAPHY for list of keywords.)\n");
             warnFlag = 1;
@@ -6503,7 +6694,7 @@ flag writeBibliography(vstring bibFile,
           if (p2 == 1) {
             print2(
         "?Warning: Bibliography reference not found in HTML file in \"%s\".\n",
-              statement[i].labelName);
+              g_Statement[i].labelName);
             warnFlag = 1;
           }
           continue; /* Pretend it is not a bib ref - ignore */
@@ -6513,7 +6704,7 @@ flag writeBibliography(vstring bibFile,
           if (p2 == 1) {
             print2(
           "?Warning: No page number after [<author>] bib ref in \"%s\".\n",
-              statement[i].labelName);
+              g_Statement[i].labelName);
             warnFlag = 1;
           }
           continue; /* No page number given - ignore */
@@ -6548,49 +6739,49 @@ flag writeBibliography(vstring bibFile,
             str3, " ", str4, space(20 - (long)strlen(str2)), str2,
             "|||",  /* ||| means end of sort key */
             /* Construct just the statement href for combining dup refs */
-            "<A HREF=\"", statement[i].labelName,
-            ".html\">", statement[i].labelName, "</A>",
+            "<A HREF=\"", g_Statement[i].labelName,
+            ".html\">", g_Statement[i].labelName, "</A>",
             newstr,
             "&&&",  /* &&& means end of statement href */
             /* Construct actual HTML table row (without ending tag
                so duplicate references can be added) */
 
             /*
-            (i < extHtmlStmt) ?
+            (i < g_extHtmlStmt) ?
                "<TR>" :
                cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL),
             */
 
             /* 29-Jul-2008 nm Sandbox stuff */
-            (i < extHtmlStmt)
+            (i < g_extHtmlStmt)
                ? "<TR>"
-               : (i < sandboxStmt)
+               : (i < g_mathboxStmt)
                    ? cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL)
                    : cat("<TR BGCOLOR=", SANDBOX_COLOR, ">", NULL),
 
             "<TD NOWRAP>[<A HREF=\"",
 
             /*
-            (i < extHtmlStmt) ?
-               htmlBibliography :
+            (i < g_extHtmlStmt) ?
+               g_htmlBibliography :
                extHtmlBibliography,
             */
 
             /* 29-Jul-2008 nm Sandbox stuff */
-            (i < extHtmlStmt)
-               ? htmlBibliography
-               : (i < sandboxStmt)
+            (i < g_extHtmlStmt)
+               ? g_htmlBibliography
+               : (i < g_mathboxStmt)
                    ? extHtmlBibliography
                    /* Note that the sandbox uses the mmset.html
                       bibliography */
-                   : htmlBibliography,
+                   : g_htmlBibliography,
 
             "#",
             str3,
             "\">", str3, "</A>]", str4,
             "</TD><TD>", str2, "</TD><TD><A HREF=\"",
-            statement[i].labelName,
-            ".html\">", statement[i].labelName, "</A>",
+            g_Statement[i].labelName,
+            ".html\">", g_Statement[i].labelName, "</A>",
             newstr, NULL));
         /* Put construction into string array for sorting */
         let((vstring *)(&pntrTmp[lines - 1]), oldstr);
@@ -6615,7 +6806,7 @@ flag writeBibliography(vstring bibFile,
   } /* while(1) */
 
   /* Sort */
-  qsortKey = "";
+  g_qsortKey = "";
   qsort(pntrTmp, (size_t)lines, sizeof(void *), qsortStringCmp);
 
   /* Combine duplicate references */
@@ -6647,14 +6838,14 @@ flag writeBibliography(vstring bibFile,
         let(&str1, edit(right((vstring)(pntrTmp[i]), j + 3), 16));
         j = 1;
         /* Break up long lines for text editors */
-        let(&printString, "");
-        outputToString = 1;
+        let(&g_printString, "");
+        g_outputToString = 1;
         printLongLine(cat(str1, "</TD></TR>", NULL),
             " ",  /* Start continuation line with space */
             "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
-        outputToString = 0;
-        fprintf(list2_fp, "%s", printString);
-        let(&printString, "");
+        g_outputToString = 0;
+        fprintf(list2_fp, "%s", g_printString);
+        let(&g_printString, "");
       }
     }
   }
@@ -6713,9 +6904,9 @@ flag writeBibliography(vstring bibFile,
       if (errFlag) {
         /* Recover input files in case of error */
         remove(bibFile);  /* Delete output file */
-        rename(cat(bibFile, "~1", NULL), fullArg[2]);
+        rename(cat(bibFile, "~1", NULL), g_fullArg[2]);
             /* Restore input file name */
-        print2("?The file \"%s\" was not modified.\n", fullArg[2]);
+        print2("?The file \"%s\" was not modified.\n", g_fullArg[2]);
       }
     }
   }
@@ -6724,3 +6915,121 @@ flag writeBibliography(vstring bibFile,
 }  /* writeBibliography */
 
 
+/* 5-Aug-2020 nm */
+/* Returns 1 if stmt1 and stmt2 are in different mathboxes, 0 if
+   they are in the same mathbox or if one of them is not in a mathbox. */
+flag inDiffMathboxes(long stmt1, long stmt2) {
+  long mbox1, mbox2;
+  mbox1 = getMathboxNum(stmt1);
+  mbox2 = getMathboxNum(stmt2);
+  if (mbox1 == 0 || mbox2 == 0) return 0;
+  if (mbox1 != mbox2) return 1;
+  return 0;
+}
+
+/* 5-Aug-2020 nm */
+/* Returns the user of the mathbox that a statement is in, or ""
+   if the statement is not in a mathbox. */
+/* Caller should NOT deallocate returned string (it points directly to
+   g_mathboxUser[] entry) */
+vstring getMathboxUser(long stmt) {
+  long mbox;
+  mbox = getMathboxNum(stmt);
+  if (mbox == 0) return "";
+  return g_mathboxUser[mbox - 1];
+}
+
+/* 5-Aug-2020 nm */
+/* Given a statement number, find out what mathbox it's in (numbered starting
+   at 1) mainly for error messages; if it's not in a mathbox, return 0. */
+/* We assume the number of mathboxes is small enough that a linear search
+   won't slow things too much. */
+long getMathboxNum(long stmt) {
+  long mbox;
+  assignMathboxInfo(); /* In case it's not yet initialized */
+  for (mbox = 0; mbox < g_mathboxes; mbox++) {
+    if (stmt < g_mathboxStart[mbox]) break;
+  }
+  return mbox;
+} /* getMathboxNum */
+
+
+/* 5-Aug-2020 nm */
+/* Assign the global variable g_mathboxStmt, the statement number with the
+   label "mathbox", as well as g_mathboxes, g_mathboxStart[], g_mathboxEnd[],
+   and g_mathboxUser[].  For speed, we do the lookup only if it hasn't been
+   done yet.   Note that the ERASE command (eraseSource()) should set
+   g_mathboxStmt to zero as well as deallocate the strings. */
+/* This function will just return if g_mathboxStmt is already nonzero. */
+#define MB_LABEL "mathbox"
+void assignMathboxInfo(void) {
+  if (g_mathboxStmt == 0) { /* Look up "mathbox" label if it hasn't been */
+    g_mathboxStmt = lookupLabel(MB_LABEL);
+    if (g_mathboxStmt == -1) { /* There are no mathboxes */
+      g_mathboxStmt = g_statements + 1;  /* Default beyond db end if none */
+      g_mathboxes = 0;
+    } else {
+      /* Population mathbox information variables */
+      g_mathboxes = getMathboxLoc(&g_mathboxStart, &g_mathboxEnd,
+          &g_mathboxUser);
+    }
+  }
+  return;
+} /* assignMathboxInfo */
+
+
+/* 5-Aug-2020 nm */ /* (This was originally written to be able to deal with
+   local mathboxStart,End,User, which were later made global.  But there should
+   be no significant slowdown so we've kept this ability.) */
+/* 17-Jul-2020 nm */
+/* Returns the number of mathboxes, while assigning start statement, end
+   statement, and mathbox name. */
+#define MB_TAG "Mathbox for "
+long getMathboxLoc(nmbrString **mathboxStart, nmbrString **mathboxEnd,
+    pntrString **mathboxUser) {
+  long m, p, q, tagLen, stmt;
+  long mathboxes = 0;
+  vstring comment = "";
+  vstring user = "";
+  assignMathboxInfo(); /* Assign g_mathboxStmt */
+  tagLen = (long)strlen(MB_TAG);
+  /* Ensure lists are initialized */
+  if (pntrLen((pntrString *)(*mathboxUser)) != 0) bug(2347);
+  if (nmbrLen((nmbrString *)(*mathboxStart)) != 0) bug(2348);
+  if (nmbrLen((nmbrString *)(*mathboxEnd)) != 0) bug(2349);
+  for (stmt = g_mathboxStmt + 1; stmt <= g_statements; stmt++) {
+    /* Heuristic to match beginning of mathbox */
+    let(&comment, left(g_Statement[stmt].labelSectionPtr,
+        g_Statement[stmt].labelSectionLen));
+    p = 0;
+    /* This loop will skip empty mathboxes i.e. it will get the last
+       "Mathbox for " in the label section comment(s) */
+    while (1) {
+      q = instr(p + 1, comment, MB_TAG);
+      if (q == 0) break;
+      p = q; /* Save last "Mathbox for " */
+    }
+    if (p == 0) continue; /* No "Mathbox for " in this statement's comment */
+
+    /* Found a mathbox; assign user and start statement */
+    mathboxes++;
+    q = instr(p, comment, "\n");
+    if (q == 0) bug(2350); /* No end of line */
+    let(&user, seg(comment, p + tagLen, q - 1));
+    pntrLet(&(*mathboxUser), pntrAddElement(*mathboxUser));
+    (*mathboxUser)[mathboxes - 1] = "";
+    let((vstring *)(&((*mathboxUser)[mathboxes - 1])), user);
+    nmbrLet(&(*mathboxStart), nmbrAddElement(*mathboxStart, stmt));
+  } /* next stmt */
+  if (mathboxes == 0) goto RETURN_POINT;
+  /* Assign end statements */
+  nmbrLet(&(*mathboxEnd), nmbrSpace(mathboxes)); /* Pre-allocate */
+  for (m = 0; m < mathboxes - 1; m++) {
+    (*mathboxEnd)[m] = (*mathboxStart)[m + 1] - 1;
+  }
+  (*mathboxEnd)[mathboxes - 1] = g_statements; /* Assumed end of last mathbox */
+ RETURN_POINT:
+  let(&comment, "");
+  let(&user, "");
+  return mathboxes;
+} /* getMathboxLoc */

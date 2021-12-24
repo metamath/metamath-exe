@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2019  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2021  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -15,7 +15,7 @@
 #include "mmvstr.h"
 #include "mmdata.h"
 #include "mminou.h"
-#include "mmcmdl.h" /* 9/3/99 - for commandPrompt global */
+#include "mmcmdl.h" /* 9/3/99 - for g_commandPrompt global */
 
 #ifdef __WATCOMC__
   /* Bugs in WATCOMC:
@@ -37,34 +37,35 @@ extern int cprintf(const char *f__mt,...);
 #define QUOTED_SPACE 3 /* ASCII 3 that temporarily zaps a space */
 
 
-int errorCount = 0;
+int g_errorCount = 0;
 
 /* Global variables used by print2() */
-flag logFileOpenFlag = 0;
-FILE *logFilePtr;
-FILE *listFile_fp = NULL;
+flag g_logFileOpenFlag = 0;
+FILE *g_logFilePtr;
+FILE *g_listFile_fp = NULL;
 /* Global variables used by print2() */
-flag outputToString = 0;
-vstring printString = "";
+flag g_outputToString = 0;
+vstring g_printString = "";
 /* Global variables used by cmdInput() */
-long commandFileNestingLevel = 0;
-FILE *commandFilePtr[MAX_COMMAND_FILE_NESTING + 1];
-vstring commandFileName[MAX_COMMAND_FILE_NESTING + 1];
-flag commandFileSilent[MAX_COMMAND_FILE_NESTING + 1];
-flag commandFileSilentFlag = 0;
+long g_commandFileNestingLevel = 0;
+FILE *g_commandFilePtr[MAX_COMMAND_FILE_NESTING + 1];
+vstring g_commandFileName[MAX_COMMAND_FILE_NESTING + 1];
+flag g_commandFileSilent[MAX_COMMAND_FILE_NESTING + 1];
+flag g_commandFileSilentFlag = 0;
                                    /* 23-Oct-2006 nm For SUBMIT ... /SILENT */
 
-FILE *inputDef_fp,*input_fp /*,*output_fp*/; /* File pointers */
-                             /* 31-Dec-2017 nm output_fp deleted */
-vstring inputDef_fn="",input_fn="",output_fn="";        /* File names */
+FILE /* *inputDef_fp,*/ *g_input_fp /*,*g_output_fp*/; /* File pointers */
+                             /* 31-Dec-2017 nm g_output_fp deleted */
+                             /* 15-Aug-2020 nm inputDef_fp,fn deleted */
+vstring /* inputDef_fn="",*/ g_input_fn="", g_output_fn="";        /* File names */
 
-long screenWidth = MAX_LEN; /* Width default = 79 */
-/* screenHeight is one less than the physical screen to account for the
+long g_screenWidth = MAX_LEN; /* Width default = 79 */
+/* g_screenHeight is one less than the physical screen to account for the
    prompt line after pausing. */
-long screenHeight = SCREEN_HEIGHT; /* Default = 23 */ /* 18-Nov-05 nm */
+long g_screenHeight = SCREEN_HEIGHT; /* Default = 23 */ /* 18-Nov-05 nm */
 int printedLines = 0; /* Lines printed since last user input (mod scrn hght) */
-flag scrollMode = 1; /* Flag for continuous (0) or prompted (1) scroll */
-flag quitPrint = 0; /* Flag that user quit the output */
+flag g_scrollMode = 1; /* Flag for continuous (0) or prompted (1) scroll */
+flag g_quitPrint = 0; /* Flag that user quit the output */
 flag localScrollMode = 1; /* 0 = Scroll continuously only till next prompt */
 
 /* Buffer for B (back) command at end-of-page prompt - for future use */
@@ -72,8 +73,8 @@ pntrString *backBuffer = NULL_PNTRSTRING;
 long backBufferPos = 0;
 flag backFromCmdInput = 0; /* User typed "B" at main prompt */
 
-/* Special:  if global flag outputToString = 1, then the output is not
-             printed but is added to global string printString */
+/* Special:  if global flag g_outputToString = 1, then the output is not
+             printed but is added to global string g_printString */
 /* Returns 0 if user typed "q" during scroll prompt; this lets a procedure
    interrupt it's output for speedup (rest of output will be suppressed anyway
    until next command line prompt) */
@@ -88,8 +89,21 @@ flag print2(char* fmt,...)
 #ifdef THINK_C
   int ii, jj;
 #endif
-  char printBuffer[PRINTBUFFERSIZE];
   long i;
+
+  /* char printBuffer[PRINTBUFFERSIZE]; */ /* 19-Jun-2020 nm Deleted */
+  /* 19-Jun-2020 nm */
+  char *printBuffer; /* Allocated dynamically */
+  /* gcc (Debian 4.9.2-10+deb8u2) 4.9.2 gives error for ssize_t if -c99
+     is specified; gcc (GCC) 7.3.0 doesn't complain if -c99 is specified */
+  /* See https://sourceforge.net/p/predef/wiki/Compilers/ for __LCC__ */
+#ifdef __LCC__   /* 19-Jun-2020 nm ssize_t not defined for lcc compiler */
+  long bufsiz;
+#else
+  ssize_t bufsiz; /* ssize_t (signed size_t) can represent the number -1 for
+                     error checking */
+#endif
+
 
   if (backBufferPos == 0) {
     /* Initialize backBuffer - 1st time in program */
@@ -107,10 +121,10 @@ flag print2(char* fmt,...)
     /* backBuffer[backBufferPos - 1] = ""; */  /* already done */
   }
 
-  if ((!quitPrint && commandFileNestingLevel == 0 && (scrollMode == 1
+  if ((!g_quitPrint && g_commandFileNestingLevel == 0 && (g_scrollMode == 1
            && localScrollMode == 1)
       /* 18-Nov-05 nm - now a variable settable with SET HEIGHT */
-      && printedLines >= /*SCREEN_HEIGHT*/ screenHeight && !outputToString)
+      && printedLines >= /*SCREEN_HEIGHT*/ g_screenHeight && !g_outputToString)
       || backFromCmdInput) {
     /* It requires a scrolling prompt */
     while(1) {
@@ -156,7 +170,7 @@ flag print2(char* fmt,...)
       if (getchar() == '\n') {
         if (c == 'q' || c == 'Q') {
           if (!backFromCmdInput)
-            quitPrint = 1;
+            g_quitPrint = 1;
           break;
         }
         if (c == 's' || c == 'S') {
@@ -203,7 +217,7 @@ flag print2(char* fmt,...)
     if (backFromCmdInput)
       goto PRINT2_RETURN;
     printedLines = 0; /* Reset the number of lines printed on the screen */
-    if (!quitPrint) {
+    if (!g_quitPrint) {
       backBufferPos++;
       pntrLet(&backBuffer, pntrAddElement(backBuffer));
       /* Note: pntrAddElement() initializes the added element to the
@@ -214,29 +228,51 @@ flag print2(char* fmt,...)
 
 
 
-  if (quitPrint && !outputToString)
+  if (g_quitPrint && !g_outputToString) {
     goto PRINT2_RETURN;    /* User typed 'q'
       above or earlier; 8/27/99: don't return if we're outputting to
       a string since we want to complete the writing to the string. */
+  }
 
+
+  /* 19-Jun-2020 nm Allow unlimited output size */
+  va_start(ap, fmt);
+  bufsiz = vsnprintf(NULL, 0, fmt, ap); /* Get the buffer size we need */
+  va_end(ap);
+  /* Warning: some older complilers, including lcc-win32 version 3.8 (2004),
+     return -1 instead of the buffer size */
+  if (bufsiz == -1) bug(1527);
+  printBuffer = malloc((size_t)bufsiz + 1);
+
+  /* 19-Jun-2020 nm Let each vs[n]printf have its own va_start...va_end
+     in an attempt to fix crash with some compilers (e.g. gcc 4.9.2) */
   va_start(ap, fmt);
   charsPrinted = vsprintf(printBuffer, fmt, ap); /* Put formatted string into
       buffer */
   va_end(ap);
+  if (charsPrinted != bufsiz) {
+    /* Give some info with printf in case print2 crashes during bug() call */
+    printf("For bug #1528: charsPrinted = %ld != bufsiz = %ld\n", charsPrinted,
+        (long)bufsiz);
+    bug(1528);
+  }
 
-  /* Normally, long proofs are broken up into 80-or-less char lines
+  /* 19-Jun-2020 nm We are now dynamically allocating printBuffer, so
+     there is no longer a possibility of overflow. */
+  /********** 19-Jun-2020 nm Deleted ***********
+  /@ Normally, long proofs are broken up into 80-or-less char lines
      by this point (via printLongLine) so this should never be a problem
      for them.  But in principle a very long line argument to print2
      could be a problem, although currently it should never occur
      (except maybe in long lines in tools? - if so, switch to printLongLine
-     there to fix the bug). */
-  /* Warning:  Don't call bug(), because it calls print2. */
+     there to fix the bug). @/
+  /@ Warning:  Don't call bug(), because it calls print2. @/
   if (charsPrinted >= PRINTBUFFERSIZE
-      /* || charsPrinted < 0 */
-      /* There is a bug on the Sun with gcc version 2.7.2.2 where
-         vsprintf returns approx. -268437768, so ignore the bug */
+      /@ || charsPrinted < 0 @/
+      /@ There is a bug on the Sun with gcc version 2.7.2.2 where
+         vsprintf returns approx. -268437768, so ignore the bug @/
       ) {
-    printf("*** BUG 1503\n");
+    printf("@@@ BUG 1503\n");
     printf("?PRINTBUFFERSIZE %ld <= charsPrinted %ld in mminou.c\n",
         (long)PRINTBUFFERSIZE, charsPrinted);
     printf("?Memory may now be corrupted.\n");
@@ -246,6 +282,7 @@ flag print2(char* fmt,...)
     fflush(stdout);
 #endif
   }
+  ********** 19-Jun-2020 nm End of deletion ***********/
 
   nlpos = instr(1, printBuffer, "\n");
   lineLen = (long)strlen(printBuffer);
@@ -256,8 +293,8 @@ flag print2(char* fmt,...)
     if (printBuffer[i] == QUOTED_SPACE) printBuffer[i] = ' ';
   }
 
-  if ((lineLen > screenWidth + 1) /* && (screenWidth != MAX_LEN) */
-         && !outputToString  /* for HTML 7/3/98 */ ) {
+  if ((lineLen > g_screenWidth + 1) /* && (g_screenWidth != MAX_LEN) */
+         && !g_outputToString  /* for HTML 7/3/98 */ ) {
     /* Force wrapping of lines that are too long by recursively calling
        print2() via printLongLine().  Note:  "+ 1" above accounts for \n. */
     /* Note that breakMatch is "" so it may break in middle of a word */
@@ -270,8 +307,8 @@ flag print2(char* fmt,...)
     goto PRINT2_RETURN;
   }
 
-  if (!outputToString && !commandFileSilentFlag) {
-           /* 22-Oct-2006 nm Added commandFileSilentFlag for SUBMIT /SILENT,
+  if (!g_outputToString && !g_commandFileSilentFlag) {
+           /* 22-Oct-2006 nm Added g_commandFileSilentFlag for SUBMIT /SILENT,
               here and elsewhere in mminou.c */
     if (nlpos == 0) { /* Partial line (usu. status bar) - print immediately */
 
@@ -303,12 +340,12 @@ flag print2(char* fmt,...)
       fflush(stdout);
 #endif
       printedLines++;
-      if (!(scrollMode == 1 && localScrollMode == 1)) {
+      if (!(g_scrollMode == 1 && localScrollMode == 1)) {
         /* Even in non-scroll (continuous output) mode, still put paged-mode
            lines into backBuffer in case user types a "B" command later,
            so user can page back from end. */
         /* 18-Nov-05 nm - now a variable settable with SET HEIGHT */
-        if (printedLines > /*SCREEN_HEIGHT*/ screenHeight) {
+        if (printedLines > /*SCREEN_HEIGHT*/ g_screenHeight) {
           printedLines = 1;
           backBufferPos++;
           pntrLet(&backBuffer, pntrAddElement(backBuffer));
@@ -328,28 +365,29 @@ flag print2(char* fmt,...)
     }
     let((vstring *)(&(backBuffer[backBufferPos - 1])), cat(
         (vstring)(backBuffer[backBufferPos - 1]), printBuffer, NULL));
-  } /* End if !outputToString */
+  } /* End if !g_outputToString */
 
-  if (logFileOpenFlag && !outputToString /* && !commandFileSilentFlag */) {
-    fprintf(logFilePtr, "%s", printBuffer);  /* Print to log file */
+  if (g_logFileOpenFlag && !g_outputToString /* && !g_commandFileSilentFlag */) {
+    fprintf(g_logFilePtr, "%s", printBuffer);  /* Print to log file */
 #if __STDC__
     /* 10-Oct-2016 nm */
-    fflush(logFilePtr);
+    fflush(g_logFilePtr);
 #endif
   }
 
-  if (listMode && listFile_fp != NULL && !outputToString) {
+  if (g_listMode && g_listFile_fp != NULL && !g_outputToString) {
     /* Put line in list.tmp as comment */
-    fprintf(listFile_fp, "! %s", printBuffer);  /* Print to list command file */
+    fprintf(g_listFile_fp, "! %s", printBuffer);  /* Print to list command file */
   }
 
-  if (outputToString) {
-    let(&printString, cat(printString, printBuffer, NULL));
+  if (g_outputToString) {
+    let(&g_printString, cat(g_printString, printBuffer, NULL));
   }
 
   /* Check for lines too long */
-  if (lineLen > screenWidth + 1) { /* The +1 ignores \n */
+  if (lineLen > g_screenWidth + 1) { /* The +1 ignores \n */
     /* Warning:  Don't call bug(), because it calls print2. */
+    /* If this bug occurs, the calling function should be fixed. */
     printf("*** PROGRAM BUG #1505 (not serious, but please report it)\n");
     printf("Line exceeds screen width; caller should use printLongLine.\n");
     printf("%ld %s\n", lineLen, printBuffer);
@@ -359,6 +397,9 @@ flag print2(char* fmt,...)
 #endif
   }
   /* \n not allowed in middle of line */
+  /* If this bug occurs, it means print2() is being called with \n in the
+     middle of the line and should be fixed in the caller.  printLongLine()
+     may be used if this is necessary. */
   /* Warning:  Don't call bug(), because it calls print2. */
   if (nlpos != 0 && nlpos != lineLen) {
     printf("*** PROGRAM BUG #1506\n");
@@ -367,8 +408,10 @@ flag print2(char* fmt,...)
 #endif
   }
 
+  free(printBuffer); /* 19-Jun-2020 nm */
+
  PRINT2_RETURN:
-  return (!quitPrint);
+  return (!g_quitPrint);
 }
 
 
@@ -400,13 +443,13 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
 
   /* 10/14/02 added for HTML handling */
   /* 26-Jun-2014 nm No longer needed? */
-  /* flag htmlFlag = 0; */
+  /* flag g_htmlFlag = 0; */
                /* 1 means printLongLine was called with "\"" as
                         breakMatch argument (for HTML code) */
   flag quoteMode = 0; /* 1 means inside quote */
   /*char quoteChar = '"';*/ /* Current quote character */
   /*long quoteStartPos = 0;*/ /* Start of quote */
-  long saveScreenWidth; /* To let screenWidth grow temporarily */
+  long saveScreenWidth; /* To let g_screenWidth grow temporarily */
 
   long saveTempAllocStack;
 
@@ -424,15 +467,15 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
      deallocated.  We need to do this because more than one argument
      may be passed in with cat(), chr(), etc. and let() can only grab
      one, destroying the others  */
-  saveTempAllocStack = startTempAllocStack;
-  startTempAllocStack = tempAllocStackTop; /* For let() stack cleanup */
+  saveTempAllocStack = g_startTempAllocStack;
+  g_startTempAllocStack = g_tempAllocStackTop; /* For let() stack cleanup */
   /* Added 10/14/02 */
   /* Grab the input arguments */
   let(&multiLine, line);
   let(&startNextLine1, startNextLine);
   let(&breakMatch1, breakMatch);
   /* Now relax - back to normal; we can let temporary allocation stack die. */
-  startTempAllocStack = saveTempAllocStack;
+  g_startTempAllocStack = saveTempAllocStack;
 
   /* 10/14/02 */
   /* We must copy input argument breakMatch to a variable string because we
@@ -465,7 +508,7 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
     if (multiLine[i] == QUOTED_SPACE) bug(1514); /* Should never be the case */
   }
   if (breakMatch1[0] == '\"') {
-    /* htmlFlag = 1; */ /* 26-Jun-2014 nm No longer needed? */
+    /* g_htmlFlag = 1; */ /* 26-Jun-2014 nm No longer needed? */
     breakMatch1[0] = ' '; /* Change to a space (the real break character) */
     /* Scan string for quoted strings */
     quoteMode = 0;
@@ -539,7 +582,7 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
 #endif
 /**************** END OF OBSOLETE SECTION ********/
 
-  }
+  } /* if (breakMatch1[0] == '\"') */
 
 
   /* The tilde is a special flag for printLongLine to print a
@@ -550,7 +593,7 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
   }
 
 
-  while (multiLine[0]) { /* While there are multi caller-inserted newlines */
+  while (multiLine[0]) { /* While there are multiple caller-inserted newlines */
 
     /* Process caller-inserted newlines */
     p = instr(1, multiLine, "\n");
@@ -572,20 +615,29 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
       let(&multiLine, "");
     }
 
-    saveScreenWidth = screenWidth;
+    saveScreenWidth = g_screenWidth;
    HTML_RESTART:
-    /* Now we will break up one caller's line */
+    /* Now we will break up one line from the caller i.e. longLine;
+       multiLine has any remaining lines to be processed in next pass */
     firstLine = 1;
 
     startNextLineLen = (long)strlen(startNextLine1);
     /* Prevent infinite loop if next line prefix is longer than screen */
-    if (startNextLineLen > screenWidth - 4) {
-      startNextLineLen = screenWidth - 4;
-      let(&startNextLine1, left(startNextLine1, screenWidth - 4));
+    if (startNextLineLen > g_screenWidth - 4) {
+      startNextLineLen = g_screenWidth - 4;
+      let(&startNextLine1, left(startNextLine1, g_screenWidth - 4));
     }
+
+    /* If startNextLine starts with "~" means add tilde
+       after broken line (used for command input comment continuation); if
+       breakMatch is "\\" i.e. single \, then put % at end of previous line
+       for LaTeX */
+    /* Otherwise, if first line:  use length of longLine;
+       if not first line:  use length of longLine - startNextLineLen */
     while ((signed)(strlen(longLine)) + (1 - firstLine) * startNextLineLen >
-        screenWidth - (long)tildeFlag - (long)(breakMatch1[0] == '\\')) {
-      p = screenWidth - (long)tildeFlag - (long)(breakMatch1[0] == '\\') + 1;
+        g_screenWidth - (long)tildeFlag - (long)(breakMatch1[0] == '\\')) {
+      /* Get screen width + 1 (default is 79 + 1)*/
+      p = g_screenWidth - (long)tildeFlag - (long)(breakMatch1[0] == '\\') + 1;
       if (!firstLine) p = p - startNextLineLen;
 
       if (p < 4) bug(1524);  /* This may cause out-of-string ref below */
@@ -599,7 +651,7 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
         p = p + 0;  /* Don't change position */
         /* 27-Dec-2013 nm */
         /* In the case where the last space occurs at column 79 i.e.
-           screenWidth, break the line at column 78.  This can happen
+           g_screenWidth, break the line at column 78.  This can happen
            when compressed proof ends at column 78, followed by space
            and "$."  It prevents an extraneous trailing space on the line. */
         if (longLine[p - 2] == ' ') p--; /* 27-Dec-2013 */
@@ -624,24 +676,26 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
             p--;
             if (!p) break;
           }
-          /* if (p <= 0 && htmlFlag) { */
           /* 25-Jun-2014 nm We will now not break any line at non-space,
              since it causes more problems that it solves e.g. with
              WRITE SOURCE.../REWRAP with long URLs */
+          /* if (p <= 0 && g_htmlFlag) { */
           if (p <= 0) {
             /* The line couldn't be broken.  Since it's an HTML line, we
-               can increase screenWidth until it will fit. */
-            screenWidth++;
+               can increase g_screenWidth until it will fit. */
+            g_screenWidth++;
             /******* for debugging screen width change
-            if (outputToString){
-              outputToString = 0;
-              print2("debug: screenWidth = %ld\n", screenWidth);
-              outputToString = 1;
+            if (g_outputToString){
+              g_outputToString = 0;
+              print2("debug: g_screenWidth = %ld\n", g_screenWidth);
+              g_outputToString = 1;
             }
             ********* end debug */
             /* If this bug happens, we'll have to increase PRINTBUFFERSIZE
                or change the HTML code being printed. */
-            if (screenWidth >= PRINTBUFFERSIZE - 1) bug(1517);
+            /* 19-Jun-2020 nm We no longer care about buffer size since
+               printBuffer is dynamically allocated in print2() */
+            /*if (g_screenWidth >= PRINTBUFFERSIZE - 1) bug(1517);*/
             goto HTML_RESTART; /* Ugly but another while loop nesting would
                                   be even more confusing */
           }
@@ -657,8 +711,8 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
 
       if (p <= 0) {
         /* Break character not found; give up at
-           screenWidth - (long)tildeFlag  - (long)(breakMatch1[0] == '\\')+ 1 */
-        p = screenWidth - (long)tildeFlag  - (long)(breakMatch1[0] == '\\')+ 1;
+           g_screenWidth - (long)tildeFlag  - (long)(breakMatch1[0] == '\\')+ 1 */
+        p = g_screenWidth - (long)tildeFlag  - (long)(breakMatch1[0] == '\\')+ 1;
         if (!firstLine) p = p - startNextLineLen;
         if (p <= 0) p = 1; /* If startNextLine too long */
       }
@@ -673,9 +727,9 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
       } else {
         let(&prefix, startNextLine1);
         if (treeIndentationFlag) {
-          if (startNextLineLen + p - 1 < screenWidth) {
+          if (startNextLineLen + p - 1 < g_screenWidth) {
             /* Right justify output for continuation lines */
-            let(&prefix, cat(prefix, space(screenWidth - startNextLineLen
+            let(&prefix, cat(prefix, space(g_screenWidth - startNextLineLen
                 - p + 1), NULL));
           }
         }
@@ -700,6 +754,8 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
       }
       if (longLine[p - 1] == ' ' &&
           breakMatch1[0] /* But not "break anywhere" line */) {
+        /* (Note:  search for "p--" ~100 lines above for the place
+           where the backward search for space happens.) */
         /* Remove leading space for neatness */
         if (longLine[p] == ' ') {
           /* There could be 2 spaces at the end of a sentence. */
@@ -714,7 +770,7 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
     if (!firstLine) {
       if (treeIndentationFlag) {
         /* Right justify output for continuation lines */
-        print2("%s\n",cat(startNextLine1, space(screenWidth
+        print2("%s\n",cat(startNextLine1, space(g_screenWidth
             - startNextLineLen - (long)(strlen(longLine))), longLine, NULL));
       } else {
         print2("%s\n",cat(startNextLine1, longLine, NULL));
@@ -722,7 +778,7 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
     } else {
       print2("%s\n",longLine);
     }
-    screenWidth = saveScreenWidth; /* Restore to normal */
+    g_screenWidth = saveScreenWidth; /* Restore to normal */
 
   } /* end while multiLine != "" */
 
@@ -747,7 +803,7 @@ vstring cmdInput(FILE *stream, vstring ask)
 #define CMD_BUFFER_SIZE 2000
 
   while (1) { /* For "B" backup loop */
-    if (ask != NULL && !commandFileSilentFlag) {
+    if (ask != NULL && !g_commandFileSilentFlag) {
       printf("%s",ask);
 #if __STDC__
       fflush(stdout);
@@ -826,9 +882,9 @@ vstring cmdInput(FILE *stream, vstring ask)
     if ((!strcmp(g, "B") || !strcmp(g, "b")) /* User typed "B" */
         && pntrLen(backBuffer) > 1   /* The back-buffer still exists and
                                          there was a previous page */
-        && commandFileNestingLevel == 0
-        && (scrollMode == 1 && localScrollMode == 1)
-        && !outputToString) {
+        && g_commandFileNestingLevel == 0
+        && (g_scrollMode == 1 && localScrollMode == 1)
+        && !g_outputToString) {
       /* Set variables so only backup buffer will be looked at in print2() */
       backBufferPos = pntrLen(backBuffer) - 1;
       printf("%s", (vstring)(backBuffer[backBufferPos - 1]));
@@ -842,7 +898,7 @@ vstring cmdInput(FILE *stream, vstring ask)
       /* If the command line is empty (at main prompt), let user still
          type "B" for convenience in case too many
          returns where hit while scrolling */
-      if (commandFileNestingLevel > 0) break;
+      if (g_commandFileNestingLevel > 0) break;
                             /* 23-Aug-04 We're taking from a SUBMIT
                               file so break out of loop that looks for "B" */
       if (ask == NULL) {
@@ -856,9 +912,9 @@ vstring cmdInput(FILE *stream, vstring ask)
                           that looks for "B" */
       if (ask != NULL &&
           /* User entered empty command line but not at a prompt */
-          /* commandPrompt is assigned in metamath.c and declared in
+          /* g_commandPrompt is assigned in metamath.c and declared in
              mmcmdl.h */
-          strcmp(ask, commandPrompt)) {
+          strcmp(ask, g_commandPrompt)) {
         break; /* Break out of loop that looks for "B" */
       }
     }
@@ -870,7 +926,7 @@ vstring cmdInput(FILE *stream, vstring ask)
 vstring cmdInput1(vstring ask)
 {
   /* This function gets a line from either the terminal or the command file
-    stream depending on commandFileNestingLevel > 0.  It calls cmdInput(). */
+    stream depending on g_commandFileNestingLevel > 0.  It calls cmdInput(). */
   /* Warning: the calling program must deallocate the returned string. */
   vstring commandLn = "";
   vstring ask1 = "";
@@ -879,16 +935,16 @@ vstring cmdInput1(vstring ask)
   let(&ask1, ask); /* In case ask is temporarily allocated (i.e in case it
                       will become deallocated at next let() */
   /* Look for lines too long */
-  while ((signed)(strlen(ask1)) > screenWidth) {
-    p = screenWidth - 1;
+  while ((signed)(strlen(ask1)) > g_screenWidth) {
+    p = g_screenWidth - 1;
     while (ask1[p] != ' ' && p > 0) p--;
-    if (!p) p = screenWidth - 1;
+    if (!p) p = g_screenWidth - 1;
     print2("%s\n", left(ask1, p));
     let(&ask1, right(ask1, p + 1));
   }
   /* Allow 10 characters for answer */
-  if ((signed)(strlen(ask1)) > screenWidth - 10) {
-    p = screenWidth - 11;
+  if ((signed)(strlen(ask1)) > g_screenWidth - 10) {
+    p = g_screenWidth - 11;
     while (ask1[p] != ' ' && p > 0) p--;
     if (p) {  /* (Give up if no spaces) */
       print2("%s\n", left(ask1, p));
@@ -897,11 +953,11 @@ vstring cmdInput1(vstring ask)
   }
 
   printedLines = 0; /* Reset number of lines printed since last user input */
-  quitPrint = 0; /* Reset quit print flag */
+  g_quitPrint = 0; /* Reset quit print flag */
   localScrollMode = 1; /* Reset to prompted scroll */
 
   while (1) {
-    if (commandFileNestingLevel == 0) {
+    if (g_commandFileNestingLevel == 0) {
       commandLn = cmdInput(stdin, ask1);
       if (!commandLn) {
         commandLn = ""; /* Init vstring (was NULL) */
@@ -920,7 +976,7 @@ vstring cmdInput1(vstring ask)
         printf("%s\n", commandLn); /* Let user see what's happening */
         /* 21-Feb-2010 end of change */
       }
-      if (logFileOpenFlag) fprintf(logFilePtr, "%s%s\n", ask1, commandLn);
+      if (g_logFileOpenFlag) fprintf(g_logFilePtr, "%s%s\n", ask1, commandLn);
 
       /* Clear backBuffer from previous scroll session */
       for (i = 0; i < pntrLen(backBuffer); i++) {
@@ -938,25 +994,25 @@ vstring cmdInput1(vstring ask)
           (vstring)(backBuffer[backBufferPos - 1]), ask1,
           commandLn, "\n", NULL));
 
-      if (listMode && listFile_fp != NULL) {
+      if (g_listMode && g_listFile_fp != NULL) {
         /* Put line in list.tmp as comment */
-        fprintf(listFile_fp, "! %s\n", commandLn);
+        fprintf(g_listFile_fp, "! %s\n", commandLn);
       }
 
     } else { /* Get line from SUBMIT file */
-      commandLn = cmdInput(commandFilePtr[commandFileNestingLevel], NULL);
+      commandLn = cmdInput(g_commandFilePtr[g_commandFileNestingLevel], NULL);
       if (!commandLn) { /* EOF found */
-        fclose(commandFilePtr[commandFileNestingLevel]);
+        fclose(g_commandFilePtr[g_commandFileNestingLevel]);
         print2("%s[End of command file \"%s\".]\n", ask1,
-            commandFileName[commandFileNestingLevel]);
-        let(&(commandFileName[commandFileNestingLevel]), "");
+            g_commandFileName[g_commandFileNestingLevel]);
+        let(&(g_commandFileName[g_commandFileNestingLevel]), "");
                                                         /* Deallocate string */
-        commandFileNestingLevel--;
+        g_commandFileNestingLevel--;
         commandLn = "";
-        if (commandFileNestingLevel == 0) {
-          commandFileSilentFlag = 0; /* 23-Oct-2006 nm Added SUBMIT / SILENT */
+        if (g_commandFileNestingLevel == 0) {
+          g_commandFileSilentFlag = 0; /* 23-Oct-2006 nm Added SUBMIT / SILENT */
         } else {
-          commandFileSilentFlag = commandFileSilent[commandFileNestingLevel];
+          g_commandFileSilentFlag = g_commandFileSilent[g_commandFileNestingLevel];
                /* Revert to previous nesting level's silent flag */
         }
         break; /*continue;*/
@@ -991,14 +1047,14 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
   /*flag saveOutputToString;*/ /* 22-May-2016 nm */ /* 9-Jun-2016 reverted */
 
   /* 22-May-2016 nm */
-  /* Prevent putting error message in printString */
+  /* Prevent putting error message in g_printString */
   /* 9-Jun-2016 nm Revert this change, because 'minimize_with' makes
      use of the string to hold the DV violation error message.
      We can reinstate this fix when 'minimize_with' is improved to
      call a DV-checking function directly. */
   /*
-  saveOutputToString = outputToString;
-  outputToString = 0;
+  saveOutputToString = g_outputToString;
+  g_outputToString = 0;
   */
 
   /* Make sure vstring argument doesn't get deallocated with another let */
@@ -1045,11 +1101,11 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
   }
   if (statementNum) {
     let(&prntStr, cat(prntStr, " at statement ", str((double)statementNum), NULL));
-    if (statement[statementNum].labelName[0]) {
+    if (g_Statement[statementNum].labelName[0]) {
       let(&prntStr, cat(prntStr, ", label \"",
-          statement[statementNum].labelName, "\"", NULL));
+          g_Statement[statementNum].labelName, "\"", NULL));
     }
-    let(&prntStr, cat(prntStr, ", type \"$", chr(statement[statementNum].type),
+    let(&prntStr, cat(prntStr, ", type \"$", chr(g_Statement[statementNum].type),
         "\"", NULL));
   }
   printLongLine(cat(prntStr, ":", NULL), "", " ");
@@ -1067,19 +1123,19 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
     printLongLine(errorPointer, "", "");
   }
   printLongLine(error,""," ");
-  if (severity == 2) errorCount++;
+  if (severity == 2) g_errorCount++;
 
   /* ???Should there be a limit? */
-  /* if (errorCount > 1000) {
+  /* if (g_errorCount > 1000) {
     print2("\n"); print2("?Too many errors - aborting Metamath.\n");
     exit(0);
   } */
 
   /* 22-May-2016 nm */
-  /* Restore output to printString if it was enabled before */
+  /* Restore output to g_printString if it was enabled before */
   /* 9-Jun-2016 nm Reverted */
   /*
-  outputToString = saveOutputToString;
+  g_outputToString = saveOutputToString;
   */
 
   if (severity == 3) {

@@ -45,33 +45,33 @@ char verifyProof(long statemNum)
   flag unkHypFlag;
   nmbrString *nmbrTmp = NULL_NMBRSTRING; /* Used to force tmp stack dealloc */
 
-  if (statement[statemNum].type != p_) return (4); /* Do nothing if not $p */
+  if (g_Statement[statemNum].type != p_) return (4); /* Do nothing if not $p */
 
   /* Initialize pointers to math strings in RPN stack and vs. statement. */
   /* (Must be initialized, even if severe error, to prevent crashes later.) */
-  for (i = 0; i < wrkProof.numSteps; i++) {
-    wrkProof.mathStringPtrs[i] = NULL_NMBRSTRING;
+  for (i = 0; i < g_WrkProof.numSteps; i++) {
+    g_WrkProof.mathStringPtrs[i] = NULL_NMBRSTRING;
   }
 
-  if (wrkProof.errorSeverity > 2) return (wrkProof.errorSeverity);
+  if (g_WrkProof.errorSeverity > 2) return (g_WrkProof.errorSeverity);
                                     /* Error too severe to check here */
-  wrkProof.RPNStackPtr = 0;
+  g_WrkProof.RPNStackPtr = 0;
 
-  if (wrkProof.numSteps == 0) return (2);
+  if (g_WrkProof.numSteps == 0) return (2);
                         /* Empty proof caused by error found by in parseProof */
 
-  for (step = 0; step < wrkProof.numSteps; step++) {
+  for (step = 0; step < g_WrkProof.numSteps; step++) {
 
-    stmt = wrkProof.proofString[step];
+    stmt = g_WrkProof.proofString[step];
 
     /* Handle unknown proof steps */
     if (stmt == -(long)'?') {
       if (returnFlag < 1) returnFlag = 1;
                                       /* Flag that proof is partially unknown */
       /* Treat "?" like a hypothesis - push stack and continue */
-      wrkProof.RPNStack[wrkProof.RPNStackPtr] = step;
+      g_WrkProof.RPNStack[g_WrkProof.RPNStackPtr] = step;
 
-      wrkProof.RPNStackPtr++;
+      g_WrkProof.RPNStackPtr++;
       /* Leave the step's math string empty and continue */
       continue;
     }
@@ -83,31 +83,31 @@ char verifyProof(long statemNum)
       i = -1000 - stmt; /* Get the step number it refers to */
 
       /* Push the stack */
-      wrkProof.RPNStack[wrkProof.RPNStackPtr] = step;
-      wrkProof.RPNStackPtr++;
+      g_WrkProof.RPNStack[g_WrkProof.RPNStackPtr] = step;
+      g_WrkProof.RPNStackPtr++;
 
       /* Assign a math string to the step (must not be deallocated by
          cleanWrkProof()!) */
-      wrkProof.mathStringPtrs[step] =
-          wrkProof.mathStringPtrs[i];
+      g_WrkProof.mathStringPtrs[step] =
+          g_WrkProof.mathStringPtrs[i];
 
       continue;
     }
 
-    type = statement[stmt].type;
+    type = g_Statement[stmt].type;
 
     /* See if the proof token is a hypothesis */
     if (type == e_ || type == f_) {
       /* It's a hypothesis reference */
 
       /* Push the stack */
-      wrkProof.RPNStack[wrkProof.RPNStackPtr] = step;
-      wrkProof.RPNStackPtr++;
+      g_WrkProof.RPNStack[g_WrkProof.RPNStackPtr] = step;
+      g_WrkProof.RPNStackPtr++;
 
       /* Assign a math string to the step (must not be deallocated by
          cleanWrkProof()!) */
-      wrkProof.mathStringPtrs[step] =
-          statement[stmt].mathString;
+      g_WrkProof.mathStringPtrs[step] =
+          g_Statement[stmt].mathString;
 
       continue;
     }
@@ -116,42 +116,42 @@ char verifyProof(long statemNum)
     if (type != a_ && type != p_) bug(2102);
 
     /* It's an valid assertion. */
-    numReqHyp = statement[stmt].numReqHyp;
-    nmbrHypPtr = statement[stmt].reqHypList;
+    numReqHyp = g_Statement[stmt].numReqHyp;
+    nmbrHypPtr = g_Statement[stmt].reqHypList;
 
     /* Assemble the hypotheses into two big math strings for unification */
-    /* Use a "dummy" token, the top of mathTokens array, to separate them. */
+    /* Use a "dummy" token, the top of g_mathTokens array, to separate them. */
     /* This is already done by the source parsing routines:
-    mathToken[mathTokens].tokenType = (char)con_;
-    mathToken[mathTokens].tokenName = "$|$"; */ /* Don't deallocate! */
+    g_MathToken[g_mathTokens].tokenType = (char)con_;
+    g_MathToken[g_mathTokens].tokenName = "$|$"; */ /* Don't deallocate! */
 
-    nmbrLet(&bigSubstSchemeHyp, nmbrAddElement(NULL_NMBRSTRING, mathTokens));
-    nmbrLet(&bigSubstInstHyp, nmbrAddElement(NULL_NMBRSTRING, mathTokens));
+    nmbrLet(&bigSubstSchemeHyp, nmbrAddElement(NULL_NMBRSTRING, g_mathTokens));
+    nmbrLet(&bigSubstInstHyp, nmbrAddElement(NULL_NMBRSTRING, g_mathTokens));
     unkHypFlag = 0; /* Flag that there are unknown hypotheses */
     j = 0;
-    for (i = wrkProof.RPNStackPtr - numReqHyp; i < wrkProof.RPNStackPtr; i++) {
-      nmbrTmpPtr = wrkProof.mathStringPtrs[
-          wrkProof.RPNStack[i]];
+    for (i = g_WrkProof.RPNStackPtr - numReqHyp; i < g_WrkProof.RPNStackPtr; i++) {
+      nmbrTmpPtr = g_WrkProof.mathStringPtrs[
+          g_WrkProof.RPNStack[i]];
       if (nmbrTmpPtr[0] == -1) { /* If length is zero, hyp is unknown */
         unkHypFlag = 1;
         /* Assign scheme to empty nmbrString so it will always match instance */
         nmbrLet(&bigSubstSchemeHyp,
             nmbrCat(bigSubstSchemeHyp,
-            nmbrAddElement(nmbrTmpPtr, mathTokens), NULL));
+            nmbrAddElement(nmbrTmpPtr, g_mathTokens), NULL));
       } else {
         nmbrLet(&bigSubstSchemeHyp,
             nmbrCat(bigSubstSchemeHyp,
-            nmbrAddElement(statement[nmbrHypPtr[j]].mathString,
-            mathTokens), NULL));
+            nmbrAddElement(g_Statement[nmbrHypPtr[j]].mathString,
+            g_mathTokens), NULL));
       }
       nmbrLet(&bigSubstInstHyp,
           nmbrCat(bigSubstInstHyp,
-          nmbrAddElement(nmbrTmpPtr, mathTokens), NULL));
+          nmbrAddElement(nmbrTmpPtr, g_mathTokens), NULL));
       j++;
 
       /* Get information about the step if requested */
       if (getStep.stepNum) { /* If non-zero, step info is requested */
-        if (wrkProof.RPNStack[i] == getStep.stepNum - 1) {
+        if (g_WrkProof.RPNStack[i] == getStep.stepNum - 1) {
           /* Get parent of target if this is one of its hyp's */
           getStep.targetParentStep = step + 1;
           getStep.targetParentStmt = stmt;
@@ -159,7 +159,7 @@ char verifyProof(long statemNum)
         if (step == getStep.stepNum - 1) {
           /* Add to source hypothesis list */
           nmbrLet(&getStep.sourceHyps, nmbrAddElement(getStep.sourceHyps,
-              wrkProof.RPNStack[i]));
+              g_WrkProof.RPNStack[i]));
         }
       } /* End of if (getStep.stepNum) */
 
@@ -183,7 +183,7 @@ char verifyProof(long statemNum)
 
     /* Assign the substituted assertion (must be deallocated by
          cleanWrkProof()!) */
-    wrkProof.mathStringPtrs[step] = nmbrTmpPtr;
+    g_WrkProof.mathStringPtrs[step] = nmbrTmpPtr;
     if (nmbrTmpPtr[0] == -1) {
       if (!unkHypFlag) {
         returnFlag = 2; /* An error occurred (assignVar printed it) */
@@ -192,35 +192,35 @@ char verifyProof(long statemNum)
 
 
     /* Pop the stack */
-    wrkProof.RPNStackPtr = wrkProof.RPNStackPtr - numReqHyp;
-    wrkProof.RPNStack[wrkProof.RPNStackPtr] = step;
-    wrkProof.RPNStackPtr++;
+    g_WrkProof.RPNStackPtr = g_WrkProof.RPNStackPtr - numReqHyp;
+    g_WrkProof.RPNStack[g_WrkProof.RPNStackPtr] = step;
+    g_WrkProof.RPNStackPtr++;
 
   } /* Next step */
 
   /* If there was a stack error, the verifier should have never been
      called. */
-  if (wrkProof.RPNStackPtr != 1) bug(2108);
+  if (g_WrkProof.RPNStackPtr != 1) bug(2108);
 
   /* See if the result matches the statement to be proved */
   if (returnFlag == 0) {
-    if (!nmbrEq(statement[statemNum].mathString,
-        wrkProof.mathStringPtrs[wrkProof.numSteps - 1])) {
-      if (!wrkProof.errorCount) {
-        fbPtr = wrkProof.stepSrcPtrPntr[wrkProof.numSteps - 1];
-        tokenLength = wrkProof.stepSrcPtrNmbr[wrkProof.numSteps - 1];
+    if (!nmbrEq(g_Statement[statemNum].mathString,
+        g_WrkProof.mathStringPtrs[g_WrkProof.numSteps - 1])) {
+      if (!g_WrkProof.errorCount) {
+        fbPtr = g_WrkProof.stepSrcPtrPntr[g_WrkProof.numSteps - 1];
+        tokenLength = g_WrkProof.stepSrcPtrNmbr[g_WrkProof.numSteps - 1];
         /*??? Make sure suggested commands are correct. */
         sourceError(fbPtr, tokenLength, statemNum, cat(
-            "The result of the proof (step ", str((double)(wrkProof.numSteps)),
+            "The result of the proof (step ", str((double)(g_WrkProof.numSteps)),
             ") does not match the statement being proved.  The result is \"",
             nmbrCvtMToVString(
-            wrkProof.mathStringPtrs[wrkProof.numSteps - 1]),
+            g_WrkProof.mathStringPtrs[g_WrkProof.numSteps - 1]),
             "\" but the statement is \"",
-            nmbrCvtMToVString(statement[statemNum].mathString),
-            "\".  Type \"SHOW PROOF ",statement[statemNum].labelName,
+            nmbrCvtMToVString(g_Statement[statemNum].mathString),
+            "\".  Type \"SHOW PROOF ",g_Statement[statemNum].labelName,
             "\" to see the proof attempt.",NULL));
       }
-      wrkProof.errorCount++;
+      g_WrkProof.errorCount++;
     }
   }
 
@@ -287,8 +287,8 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
   nmbrTmpPtrAIO = NULL_NMBRSTRING;
   nmbrTmpPtrBIO = NULL_NMBRSTRING;
 
-  nmbrSaveTempAllocStack = nmbrStartTempAllocStack;
-  nmbrStartTempAllocStack = nmbrTempAllocStackTop; /* For nmbrLet() stack cleanup*/
+  nmbrSaveTempAllocStack = g_nmbrStartTempAllocStack;
+  g_nmbrStartTempAllocStack = g_nmbrTempAllocStackTop; /* For nmbrLet() stack cleanup*/
 
   bigSubstSchemeLen = nmbrLen(bigSubstSchemeAss);
   bigSubstInstLen = nmbrLen(bigSubstInstAss);
@@ -299,8 +299,8 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
      assertion (unless there was a previously detected error).  In this case,
      the unification is just the assertion itself. */
   if (!bigSubstSchemeVarLen) {
-    if (!nmbrLen(statement[substScheme].reqVarList)) {
-      nmbrLet(&result,statement[substScheme].mathString);
+    if (!nmbrLen(g_Statement[substScheme].reqVarList)) {
+      nmbrLet(&result,g_Statement[substScheme].mathString);
     } else {
       /* There must have been a previous error; let result remain empty */
       if (!unkHypFlag) bug(2109);
@@ -320,7 +320,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
   nmbrLet(&varAssLen,substSchemeFrstVarOcc);
   nmbrLet(&substInstFrstVarOcc,substSchemeFrstVarOcc);
 
-  if (bigSubstSchemeVarLen != nmbrLen(statement[substScheme].reqVarList)) {
+  if (bigSubstSchemeVarLen != nmbrLen(g_Statement[substScheme].reqVarList)) {
     if (unkHypFlag) {
       /* If there are unknown hypotheses and all variables aren't present,
          give up here */
@@ -328,7 +328,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
     } else {
       /* Actually, this could happen if there was a previous error,
          which would have already been reported. */
-      if (!wrkProof.errorCount) bug(2103); /* There must have been an error */
+      if (!g_WrkProof.errorCount) bug(2103); /* There must have been an error */
       goto returnPoint;
     }
   }
@@ -339,20 +339,20 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
        all initialized to 0 by nmbrSpace().) */
   }
 
-  /* Use the .tmp field of mathToken[]. to hold position of variable in
+  /* Use the .tmp field of g_MathToken[]. to hold position of variable in
      bigSubstSchemeVars for quicker lookup */
   for (i = 0; i < bigSubstSchemeVarLen; i++) {
-    mathToken[bigSubstSchemeVars[i]].tmp = i;
+    g_MathToken[bigSubstSchemeVars[i]].tmp = i;
   }
 
   /* Scan bigSubstSchemeAss to get substSchemeFrstVarOcc[] (1st var
      occurrence) */
   for (i = 0; i < bigSubstSchemeLen; i++) {
-    if (mathToken[bigSubstSchemeAss[i]].tokenType ==
+    if (g_MathToken[bigSubstSchemeAss[i]].tokenType ==
         (char)var_) {
-      if (substSchemeFrstVarOcc[mathToken[bigSubstSchemeAss[
+      if (substSchemeFrstVarOcc[g_MathToken[bigSubstSchemeAss[
           i]].tmp] == -1) {
-        substSchemeFrstVarOcc[mathToken[bigSubstSchemeAss[
+        substSchemeFrstVarOcc[g_MathToken[bigSubstSchemeAss[
             i]].tmp] = i;
       }
     }
@@ -371,7 +371,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
 /*E*/if(db7)nmbrLet(&bigSubstInstAss,bigSubstInstAss);
 /*E*/if(db7){print2("Enter scan: v=%ld,p=%ld,q=%ld\n",v,p,q); let(&tmpStr,"");}
     tokenNum = bigSubstSchemeAss[p];
-    if (mathToken[tokenNum].tokenType == (char)con_) {
+    if (g_MathToken[tokenNum].tokenType == (char)con_) {
       /* Constants must match in both substScheme and definiendum assumptions */
       if (tokenNum == bigSubstInstAss[q]) {
         p++;
@@ -391,7 +391,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
           p = substSchemeFrstVarOcc[v] + 1;
           q = substInstFrstVarOcc[v] + varAssLen[v];
           contFlag = 0;
-          if (bigSubstInstAss[q-1] == mathTokens) {
+          if (bigSubstInstAss[q-1] == g_mathTokens) {
             /* It ran into the dummy token separating the assumptions.
                A variable cannot be assigned this dummy token.  Therefore,
                we must pop back a variable.  (This test speeds up
@@ -416,7 +416,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
       }
     } else {
       /* It's a variable.  If its the first occurrence, init length to 0 */
-      v1 = mathToken[tokenNum].tmp;
+      v1 = g_MathToken[tokenNum].tmp;
       if (v1 > v) {
         if (v1 != v + 1) bug(2105);
         v = v1;
@@ -453,7 +453,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
             p = substSchemeFrstVarOcc[v] + 1;
             q = substInstFrstVarOcc[v] + varAssLen[v];
             contFlag = 0;
-            if (bigSubstInstAss[q-1] == mathTokens) {
+            if (bigSubstInstAss[q-1] == g_mathTokens) {
               /* It ran into the dummy token separating the assumptions.
                  A variable cannot be assigned this dummy token.  Therefore,
                  we must pop back a variable.  (This test speeds up
@@ -497,43 +497,43 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
       /* This is what we wanted to see -- no further unification possible */
       goto returnPoint;
     }
-    if (!wrkProof.errorCount) {
+    if (!g_WrkProof.errorCount) {
       let(&tmpStr, "");
-      j = statement[substScheme].numReqHyp;
+      j = g_Statement[substScheme].numReqHyp;
       for (i = 0; i < j; i++) {
-        k = wrkProof.RPNStack[wrkProof.RPNStackPtr - j + i]; /* Step */
-        let(&tmpStr2, nmbrCvtMToVString(wrkProof.mathStringPtrs[k]));
+        k = g_WrkProof.RPNStack[g_WrkProof.RPNStackPtr - j + i]; /* Step */
+        let(&tmpStr2, nmbrCvtMToVString(g_WrkProof.mathStringPtrs[k]));
         if (tmpStr2[0] == 0) let(&tmpStr2,
             "? (Unknown step or previous error; unification ignored)");
         let(&tmpStr, cat(tmpStr, "\n  Hypothesis ", str((double)i + 1), ":  ",
             nmbrCvtMToVString(
-                statement[statement[substScheme].reqHypList[i]].mathString),
+                g_Statement[g_Statement[substScheme].reqHypList[i]].mathString),
             "\n  Step ", str((double)k + 1),
             ":  ", tmpStr2, NULL));
       } /* Next i */
       /* tmpStr = shortDumpRPNStack(); */ /* Old version */
-      sourceError(wrkProof.stepSrcPtrPntr[step],
-          wrkProof.stepSrcPtrNmbr[step],
+      sourceError(g_WrkProof.stepSrcPtrPntr[step],
+          g_WrkProof.stepSrcPtrNmbr[step],
           statementNum, cat(
-          "The hypotheses of statement \"", statement[substScheme].labelName,
+          "The hypotheses of statement \"", g_Statement[substScheme].labelName,
           "\" at proof step ", str((double)step + 1),
           " cannot be unified.", tmpStr, NULL));
-      /* sourceError(wrkProof.stepSrcPtrPntr[step],
-          wrkProof.stepSrcPtrNmbr[step],
+      /* sourceError(g_WrkProof.stepSrcPtrPntr[step],
+          g_WrkProof.stepSrcPtrNmbr[step],
           statementNum, cat(
           "The hypotheses of the statement at proof step ",
           str(step + 1),
           " cannot be unified.  The statement \"",
-          statement[substScheme].labelName,
+          g_Statement[substScheme].labelName,
           "\" requires ",
-          str(statement[substScheme].numReqHyp),
+          str(g_Statement[substScheme].numReqHyp),
           " hypotheses.  The ",tmpStr,
-          ".  Type \"SHOW PROOF ",statement[statementNum].labelName,
+          ".  Type \"SHOW PROOF ",g_Statement[statementNum].labelName,
           "\" to see the proof attempt.",NULL)); */ /* Old version */
       let(&tmpStr, "");
       let(&tmpStr2, "");
     }
-    wrkProof.errorCount++;
+    g_WrkProof.errorCount++;
     goto returnPoint;
   }
   if (p != bigSubstSchemeLen - 1 || q != bigSubstInstLen - 1
@@ -559,12 +559,12 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
       /* See if this step is the requested step; if so get source substitutions */
       if (step + 1 == getStep.stepNum) {
         nmbrLet(&getStep.sourceSubstsNmbr, nmbrExtractVars(
-            statement[substScheme].mathString));
+            g_Statement[substScheme].mathString));
         k = nmbrLen(getStep.sourceSubstsNmbr);
         pntrLet(&getStep.sourceSubstsPntr,
             pntrNSpace(k));
         for (m = 0; m < k; m++) {
-          pos = mathToken[getStep.sourceSubstsNmbr[m]].tmp; /* Subst pos */
+          pos = g_MathToken[getStep.sourceSubstsNmbr[m]].tmp; /* Subst pos */
           nmbrLet((nmbrString **)(&getStep.sourceSubstsPntr[m]),
               nmbrMid(bigSubstInstAss,
               substInstFrstVarOcc[pos] + 1, /* Subst pos */
@@ -573,24 +573,24 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
       }
       /* See if this step is a target hyp; if so get target substitutions */
       j = 0;
-      numReqHyp = statement[substScheme].numReqHyp;
-      nmbrHypPtr = statement[substScheme].reqHypList;
-      for (i = wrkProof.RPNStackPtr - numReqHyp; i < wrkProof.RPNStackPtr; i++) {
-        if (wrkProof.RPNStack[i] == getStep.stepNum - 1) {
+      numReqHyp = g_Statement[substScheme].numReqHyp;
+      nmbrHypPtr = g_Statement[substScheme].reqHypList;
+      for (i = g_WrkProof.RPNStackPtr - numReqHyp; i < g_WrkProof.RPNStackPtr; i++) {
+        if (g_WrkProof.RPNStack[i] == getStep.stepNum - 1) {
           /* This is parent of target; get hyp's variable substitutions */
           nmbrLet(&getStep.targetSubstsNmbr, nmbrExtractVars(
-              statement[nmbrHypPtr[j]].mathString));
+              g_Statement[nmbrHypPtr[j]].mathString));
           k = nmbrLen(getStep.targetSubstsNmbr);
           pntrLet(&getStep.targetSubstsPntr, pntrNSpace(k));
           for (m = 0; m < k; m++) {
-            pos = mathToken[getStep.targetSubstsNmbr[m]].tmp;
+            pos = g_MathToken[getStep.targetSubstsNmbr[m]].tmp;
                                                      /* Substitution position */
             nmbrLet((nmbrString **)(&getStep.targetSubstsPntr[m]),
                 nmbrMid(bigSubstInstAss,
                 substInstFrstVarOcc[pos] + 1, /* Subst pos */
                 varAssLen[pos]) /* Subst length */ );
           } /* Next m */
-        } /* End if (wrkProof.RPNStack[i] == getStep.stepNum - 1) */
+        } /* End if (g_WrkProof.RPNStack[i] == getStep.stepNum - 1) */
         j++;
       } /* Next i */
     } /* End if (getStep.stepNum) */
@@ -600,28 +600,28 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
 
   /***** Check for $d violations *****/
   if (!ambiguityCheckFlag) { /* This is the real (first) unification */
-    nmbrTmpPtrAS = statement[substScheme].reqDisjVarsA;
-    nmbrTmpPtrBS = statement[substScheme].reqDisjVarsB;
+    nmbrTmpPtrAS = g_Statement[substScheme].reqDisjVarsA;
+    nmbrTmpPtrBS = g_Statement[substScheme].reqDisjVarsB;
     dLen = nmbrLen(nmbrTmpPtrAS); /* Number of disjoint variable pairs */
     if (dLen) { /* There is a disjoint variable requirement */
       /* (Speedup) Save pointers and lengths for statement being proved */
-      nmbrTmpPtrAIR = statement[statementNum].reqDisjVarsA;
-      nmbrTmpPtrBIR = statement[statementNum].reqDisjVarsB;
+      nmbrTmpPtrAIR = g_Statement[statementNum].reqDisjVarsA;
+      nmbrTmpPtrBIR = g_Statement[statementNum].reqDisjVarsB;
       dILenR = nmbrLen(nmbrTmpPtrAIR); /* Number of disj hypotheses */
-      nmbrTmpPtrAIO = statement[statementNum].optDisjVarsA;
-      nmbrTmpPtrBIO = statement[statementNum].optDisjVarsB;
+      nmbrTmpPtrAIO = g_Statement[statementNum].optDisjVarsA;
+      nmbrTmpPtrBIO = g_Statement[statementNum].optDisjVarsB;
       dILenO = nmbrLen(nmbrTmpPtrAIO); /* Number of disj hypotheses */
     }
     for (pos = 0; pos < dLen; pos++) { /* Scan the disj var pairs */
-      substAPos = mathToken[nmbrTmpPtrAS[pos]].tmp;
+      substAPos = g_MathToken[nmbrTmpPtrAS[pos]].tmp;
       substALen = varAssLen[substAPos];
       instAPos = substInstFrstVarOcc[substAPos];
-      substBPos = mathToken[nmbrTmpPtrBS[pos]].tmp;
+      substBPos = g_MathToken[nmbrTmpPtrBS[pos]].tmp;
       substBLen = varAssLen[substBPos];
       instBPos = substInstFrstVarOcc[substBPos];
       for (a = 0; a < substALen; a++) { /* Scan subst of 1st var in disj pair */
         aToken = bigSubstInstAss[instAPos + a];
-        if (mathToken[aToken].tokenType == (char)con_) continue; /* Ignore */
+        if (g_MathToken[aToken].tokenType == (char)con_) continue; /* Ignore */
 
         /* Speed up:  find the 1st occurrence of aToken in the disjoint variable
            list of the statement being proved. */
@@ -658,36 +658,36 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
 
         for (b = 0; b < substBLen; b++) { /* Scan subst of 2nd var in pair */
           bToken = bigSubstInstAss[instBPos + b];
-          if (mathToken[bToken].tokenType == (char)con_) continue; /* Ignore */
+          if (g_MathToken[bToken].tokenType == (char)con_) continue; /* Ignore */
           if (aToken == bToken) {
-            if (!wrkProof.errorCount) { /* No previous errors in this proof */
-              sourceError(wrkProof.stepSrcPtrPntr[step], /* source ptr */
-                  wrkProof.stepSrcPtrNmbr[step], /* size of token */
+            if (!g_WrkProof.errorCount) { /* No previous errors in this proof */
+              sourceError(g_WrkProof.stepSrcPtrPntr[step], /* source ptr */
+                  g_WrkProof.stepSrcPtrNmbr[step], /* size of token */
                   statementNum, cat(
                   "There is a disjoint variable ($d) violation at proof step ",
                   str((double)step + 1),".  Assertion \"",
-                  statement[substScheme].labelName,
+                  g_Statement[substScheme].labelName,
                   "\" requires that variables \"",
-                  mathToken[nmbrTmpPtrAS[pos]].tokenName,
+                  g_MathToken[nmbrTmpPtrAS[pos]].tokenName,
                   "\" and \"",
-                  mathToken[nmbrTmpPtrBS[pos]].tokenName,
+                  g_MathToken[nmbrTmpPtrBS[pos]].tokenName,
                   "\" be disjoint.  But \"",
-                  mathToken[nmbrTmpPtrAS[pos]].tokenName,
+                  g_MathToken[nmbrTmpPtrAS[pos]].tokenName,
                   "\" was substituted with \"",
                   nmbrCvtMToVString(nmbrMid(bigSubstInstAss,instAPos + 1,
                       substALen)),
                   "\" and \"",
-                  mathToken[nmbrTmpPtrBS[pos]].tokenName,
+                  g_MathToken[nmbrTmpPtrBS[pos]].tokenName,
                   "\" was substituted with \"",
                   nmbrCvtMToVString(nmbrMid(bigSubstInstAss,instBPos + 1,
                       substBLen)),
                   "\".  These substitutions have variable \"",
-                  mathToken[aToken].tokenName,
+                  g_MathToken[aToken].tokenName,
                   "\" in common.",
                   NULL));
               let(&tmpStr, ""); /* Force tmp string stack dealloc */
               nmbrLet(&nmbrTmp,NULL_NMBRSTRING); /* Force tmp stack dealloc */
-            } /* (End if (!wrkProof.errorCount) ) */
+            } /* (End if (!g_WrkProof.errorCount) ) */
           } else { /* aToken != bToken */
             /* The variables are different.  We're still not done though:  We
                must make sure that the $d's of the statement being proved
@@ -729,24 +729,24 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
             } /* (End if (!foundFlag)) */
             /* If they were in neither place, we have a violation. */
             if (!foundFlag) {
-              if (!wrkProof.errorCount) { /* No previous errors in this proof */
-                sourceError(wrkProof.stepSrcPtrPntr[step], /* source */
-                    wrkProof.stepSrcPtrNmbr[step], /* size of token */
+              if (!g_WrkProof.errorCount) { /* No previous errors in this proof */
+                sourceError(g_WrkProof.stepSrcPtrPntr[step], /* source */
+                    g_WrkProof.stepSrcPtrNmbr[step], /* size of token */
                     statementNum, cat(
                    "There is a disjoint variable ($d) violation at proof step ",
                     str((double)step + 1), ".  Assertion \"",
-                    statement[substScheme].labelName,
+                    g_Statement[substScheme].labelName,
                     "\" requires that variables \"",
-                    mathToken[nmbrTmpPtrAS[pos]].tokenName,
+                    g_MathToken[nmbrTmpPtrAS[pos]].tokenName,
                     "\" and \"",
-                    mathToken[nmbrTmpPtrBS[pos]].tokenName,
+                    g_MathToken[nmbrTmpPtrBS[pos]].tokenName,
                     "\" be disjoint.  But \"",
-                    mathToken[nmbrTmpPtrAS[pos]].tokenName,
+                    g_MathToken[nmbrTmpPtrAS[pos]].tokenName,
                     "\" was substituted with \"",
                     nmbrCvtMToVString(nmbrMid(bigSubstInstAss, instAPos + 1,
                         substALen)),
                     "\" and \"",
-                    mathToken[nmbrTmpPtrBS[pos]].tokenName,
+                    g_MathToken[nmbrTmpPtrBS[pos]].tokenName,
                     "\" was substituted with \"",
                     nmbrCvtMToVString(nmbrMid(bigSubstInstAss, instBPos + 1,
                         substBLen)),
@@ -757,22 +757,22 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
                     /* 30-Apr-04 nm Put in alphabetic order for easier use if
                        user sorts the list of errors */
                     /* strcmp returns <0 if 1st<2nd */
-                    (strcmp(mathToken[aToken].tokenName,
-                        mathToken[bToken].tokenName) < 0)
-                      ? mathToken[aToken].tokenName
-                      : mathToken[bToken].tokenName,
+                    (strcmp(g_MathToken[aToken].tokenName,
+                        g_MathToken[bToken].tokenName) < 0)
+                      ? g_MathToken[aToken].tokenName
+                      : g_MathToken[bToken].tokenName,
                     "\" and \"",
-                    (strcmp(mathToken[aToken].tokenName,
-                        mathToken[bToken].tokenName) < 0)
-                      ? mathToken[bToken].tokenName
-                      : mathToken[aToken].tokenName,
+                    (strcmp(g_MathToken[aToken].tokenName,
+                        g_MathToken[bToken].tokenName) < 0)
+                      ? g_MathToken[bToken].tokenName
+                      : g_MathToken[aToken].tokenName,
                     "\" do not have a disjoint variable requirement in the ",
                     "assertion being proved, \"",
-                    statement[statementNum].labelName,
+                    g_Statement[statementNum].labelName,
                     "\".", NULL), "", " ");
                 let(&tmpStr, ""); /* Force tmp string stack dealloc */
                 nmbrLet(&nmbrTmp,NULL_NMBRSTRING); /* Force tmp stack dealloc */
-              } /* (End if (!wrkProof.errorCount) ) */
+              } /* (End if (!g_WrkProof.errorCount) ) */
             } /* (End if (!foundFlag)) */
           } /* (End if (aToken == bToken)) */
         } /* (Next b) */
@@ -782,15 +782,15 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
   /***** (End of $d violation check) *****/
 
   /* Assemble the final result */
-  substSchemeLen = nmbrLen(statement[substScheme].mathString);
+  substSchemeLen = nmbrLen(g_Statement[substScheme].mathString);
   /* Calculate the length of the final result */
   q = 0;
   for (p = 0; p < substSchemeLen; p++) {
-    tokenNum = statement[substScheme].mathString[p];
-    if (mathToken[tokenNum].tokenType == (char)con_) {
+    tokenNum = g_Statement[substScheme].mathString[p];
+    if (g_MathToken[tokenNum].tokenType == (char)con_) {
       q++;
     } else {
-      q = q + varAssLen[mathToken[tokenNum].tmp];
+      q = q + varAssLen[g_MathToken[tokenNum].tmp];
     }
   }
   /* Allocate space for the final result */
@@ -799,14 +799,14 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
   /* Assign the final result */
   q = 0;
   for (p = 0; p < substSchemeLen; p++) {
-    tokenNum = statement[substScheme].mathString[p];
-    if (mathToken[tokenNum].tokenType == (char)con_) {
+    tokenNum = g_Statement[substScheme].mathString[p];
+    if (g_MathToken[tokenNum].tokenType == (char)con_) {
       result[q] = tokenNum;
       q++;
     } else {
-      for (i = 0; i < varAssLen[mathToken[tokenNum].tmp]; i++){
+      for (i = 0; i < varAssLen[g_MathToken[tokenNum].tmp]; i++){
         result[q + i] = bigSubstInstAss[i +
-            substInstFrstVarOcc[mathToken[tokenNum].tmp]];
+            substInstFrstVarOcc[g_MathToken[tokenNum].tmp]];
       }
       q = q + i;
     }
@@ -814,20 +814,20 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
 /*E*/if(db7)printLongLine(cat("result ", nmbrCvtMToVString(result), NULL),""," ");
 
   if (ambiguityCheckFlag) {
-    if (!wrkProof.errorCount) {
+    if (!g_WrkProof.errorCount) {
       /*??? Make sure suggested commands are correct. */
-      sourceError(wrkProof.stepSrcPtrPntr[step],
-          wrkProof.stepSrcPtrNmbr[step],
+      sourceError(g_WrkProof.stepSrcPtrPntr[step],
+          g_WrkProof.stepSrcPtrNmbr[step],
           statementNum, cat(
           "The unification with the hypotheses of the statement at proof step ",
           str((double)step + 1),
           " is not unique.  Two possible results at this step are \"",
           nmbrCvtMToVString(saveResult),
           "\" and \"",nmbrCvtMToVString(result),
-          "\".  Type \"SHOW PROOF ",statement[statementNum].labelName,
+          "\".  Type \"SHOW PROOF ",g_Statement[statementNum].labelName,
           "\" to see the proof attempt.",NULL));
     }
-    wrkProof.errorCount++;
+    g_WrkProof.errorCount++;
     goto returnPoint;
   } else {
 
@@ -840,7 +840,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
       varAssLen[v]++;
       p = substSchemeFrstVarOcc[v] + 1;
       q = substInstFrstVarOcc[v] + varAssLen[v];
-      if (bigSubstInstAss[q - 1] != mathTokens) break;
+      if (bigSubstInstAss[q - 1] != g_mathTokens) break;
       if (q >= bigSubstInstLen) bug(2110);
     }
     ambiguityCheckFlag = 1;
@@ -864,7 +864,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
   nmbrLet(&substInstFrstVarOcc,NULL_NMBRSTRING);
   nmbrLet(&saveResult,NULL_NMBRSTRING);
 
-  nmbrStartTempAllocStack = nmbrSaveTempAllocStack;
+  g_nmbrStartTempAllocStack = nmbrSaveTempAllocStack;
   return(result);
 
 }
@@ -873,20 +873,20 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
 /* Deallocate the math symbol strings assigned in wrkProof structure during
    proof verification.  This should be called after verifyProof() and after the
    math symbol strings have been used for proof printouts, etc. */
-/* Note that this does NOT free the other allocations in wrkProof.  The
+/* Note that this does NOT free the other allocations in g_WrkProof.  The
    ERASE command will do this. */
 void cleanWrkProof(void) {
 
   long step;
   char type;
 
-  for (step = 0; step < wrkProof.numSteps; step++) {
-    if (wrkProof.proofString[step] > 0) {
-      type = statement[wrkProof.proofString[step]].type;
+  for (step = 0; step < g_WrkProof.numSteps; step++) {
+    if (g_WrkProof.proofString[step] > 0) {
+      type = g_Statement[g_WrkProof.proofString[step]].type;
       if (type == a_ || type == p_) {
         /* Allocation was only done if: (1) it's not a local label reference
            and (2) it's not a hypothesis.  In this case, deallocate. */
-        nmbrLet((nmbrString **)(&wrkProof.mathStringPtrs[step]),
+        nmbrLet((nmbrString **)(&g_WrkProof.mathStringPtrs[step]),
             NULL_NMBRSTRING);
       }
     }

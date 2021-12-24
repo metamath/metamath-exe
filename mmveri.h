@@ -18,10 +18,10 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
     /* For error messages: */
   long statementNum, long step, flag unkHypFlag);
 
-/* Deallocate the math symbol strings assigned in wrkProof structure during
+/* Deallocate the math symbol strings assigned in g_WrkProof structure during
    proof verification.  This should be called after verifyProof() and after the
    math symbol strings have been used for proof printouts, etc. */
-/* Note that this does NOT free the other allocations in wrkProof.  The
+/* Note that this does NOT free the other allocations in g_WrkProof.  The
    ERASE command will do this. */
 void cleanWrkProof(void);
 

@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2019  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2020  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -28,7 +28,7 @@ vstring saveHelpCmd = "";
    for the same reason.)  */
 let(&saveHelpCmd, helpCmd);
 
-printHelp = !strcmp(saveHelpCmd, "HELP");
+g_printHelp = !strcmp(saveHelpCmd, "HELP");
 H("Welcome to Metamath.  Here are some general guidelines.");
 H("");
 H("To make the most effective use of Metamath, you should become familiar");
@@ -51,16 +51,16 @@ H("To exit Metamath, type EXIT (or its synonym QUIT).");
 H("");
 H(cat("If you need technical support, contact Norman Megill at nm",
     "@", "alum.mit.edu.", NULL));
-H("Copyright (C) 2018 Norman Megill  License terms:  GPL 2.0 or later");
+H("Copyright (C) 2020 Norman Megill  License terms:  GPL 2.0 or later");
 H("");
 
-printHelp = !strcmp(saveHelpCmd, "HELP COMMENTS");
+g_printHelp = !strcmp(saveHelpCmd, "HELP COMMENTS");
 H("Comment markup is described near the end of HELP LANGUAGE.  See also");
 H("HELP HTML for the $t comment and HTML definitions.");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP INVOKE");
+g_printHelp = !strcmp(saveHelpCmd, "HELP INVOKE");
 H("To invoke Metamath from a Unix/Linux/MacOSX prompt, assuming that the");
 H("Metamath program is in the current directory, type");
 H("");
@@ -100,7 +100,7 @@ H("");
 H("are equivalent.");
 H("");
 
-printHelp = !strcmp(saveHelpCmd, "HELP SHOW MEMORY");
+g_printHelp = !strcmp(saveHelpCmd, "HELP SHOW MEMORY");
 H("Syntax:  SHOW MEMORY");
 H("");
 H("This command shows the available memory left.  It is not meaningful");
@@ -108,14 +108,14 @@ H("on modern machines with virtual memory.");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP SHOW SETTINGS");
+g_printHelp = !strcmp(saveHelpCmd, "HELP SHOW SETTINGS");
 H("Syntax:  SHOW SETTINGS");
 H("");
 H("This command shows the state of various parameters.");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP SHOW ELAPSED_TIME");
+g_printHelp = !strcmp(saveHelpCmd, "HELP SHOW ELAPSED_TIME");
 H("Syntax:  SHOW ELAPSED_TIME");
 H("");
 H("This command shows the time elapsed in the session and from any");
@@ -123,7 +123,7 @@ H("previous use of SHOW ELAPSED_TIME.");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP SHOW LABELS");
+g_printHelp = !strcmp(saveHelpCmd, "HELP SHOW LABELS");
 H("Syntax:  SHOW LABELS <label-match> [/ ALL] [/ LINEAR]");
 H("");
 H("This command shows the labels of $a and $p statements that match");
@@ -137,7 +137,7 @@ H("        building scripts in conjunction with the TOOLS utility.");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP SHOW DISCOURAGED");
+g_printHelp = !strcmp(saveHelpCmd, "HELP SHOW DISCOURAGED");
 H("Syntax:  SHOW DISCOURAGED");
 H("");
 H("This command shows the usage and proof statistics for statements with");
@@ -147,7 +147,7 @@ H("is intended to be used by scripts that compare a modified .mm file");
 H("to a previous version.");
 H("");
 
-printHelp = !strcmp(saveHelpCmd, "HELP SHOW SOURCE");
+g_printHelp = !strcmp(saveHelpCmd, "HELP SHOW SOURCE");
 H("Syntax:  SHOW SOURCE <label>");
 H("");
 H("This command shows the ASCII source code associated with a statement.");
@@ -157,7 +157,7 @@ H("and to see the exact content of the Metamath database.");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP SHOW STATEMENT");
+g_printHelp = !strcmp(saveHelpCmd, "HELP SHOW STATEMENT");
 /* 14-Sep-2010 nm Added OLD_TEX */
 H(
 "Syntax:  SHOW STATEMENT <label-match> [/ COMMENT] [/ FULL] [/ TEX]");
@@ -211,7 +211,7 @@ H("        not be used with any other qualifier.");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP SHOW PROOF");
+g_printHelp = !strcmp(saveHelpCmd, "HELP SHOW PROOF");
 H("Syntax:  SHOW PROOF <label-match> [<qualifiers (see below)>]");
 H("");
 H("This command displays the proof of the specified $p statement various");
@@ -281,7 +281,7 @@ H("        HELP SAVE PROOF.");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP MIDI");
+g_printHelp = !strcmp(saveHelpCmd, "HELP MIDI");
 H("Syntax:  MIDI <label> [/ PARAMETER \"<parameter string>\"]");
 H("");
 H("This will create a MIDI sound file for the proof of <label>, where <label>");
@@ -324,7 +324,7 @@ H("Quotes around the parameter string are optional if it has no spaces.");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP SHOW NEW_PROOF");
+g_printHelp = !strcmp(saveHelpCmd, "HELP SHOW NEW_PROOF");
 H("Syntax:  SHOW NEW_PROOF [<qualifiers (see below)]");
 H("");
 H("This command (available only in Proof Assistant mode) displays the proof");
@@ -348,7 +348,7 @@ H("See also:  SHOW PROOF");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP SHOW USAGE");
+g_printHelp = !strcmp(saveHelpCmd, "HELP SHOW USAGE");
 H("Syntax:  SHOW USAGE <label-match> [/ RECURSIVE]");
 H("");
 H("This command lists the statements whose proofs make direct reference to");
@@ -388,7 +388,7 @@ let(&saveHelpCmd, helpCmd);
 
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP SHOW TRACE_BACK");
+g_printHelp = !strcmp(saveHelpCmd, "HELP SHOW TRACE_BACK");
 H("Syntax:  SHOW TRACE_BACK <label-match> [/ ESSENTIAL] [/ AXIOMS] [/ TREE]");
 H("             [/ DEPTH <number>] [/ COUNT_STEPS] [/MATCH <label-match>]");
 H("             [/TO <label-match>]");
@@ -410,8 +410,8 @@ H("        expansions of floating hypotheses are not counted.  The steps are");
 H("        counted based on how the proof is stored (compressed or normal).");
 H("    / MATCH <label-match> - include only statements matching <label-match>");
 H("        in the output display.  Undisplayed statements are still used to");
-H("        compute the list.  For example, / MATCH ax-* will show set.mm");
-H("        axioms but not definitions.");
+H("        compute the list.  For example, / AXIOMS / MATCH ax-* will show");
+H("        set.mm axioms but not definitions.");
 H("    / TO <label-match> - include only statements  that depend on the");
 H("        <label-match> statement(s).  For example,");
 H("        SHOW TRACE_BACK ac6s / TO ax-reg will list all statements");
@@ -421,7 +421,7 @@ H("        in all paths are listed.");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP SEARCH");
+g_printHelp = !strcmp(saveHelpCmd, "HELP SEARCH");
 H("Syntax:  SEARCH <label-match> \"<symbol-match>\" [/ ALL] [/ COMMENTS]");
 H("             [/ JOIN]");
 H("");
@@ -429,48 +429,56 @@ H("This command searches all $a and $p statements matching <label-match>");
 H("for occurrences of <symbol-match>.");
 H("");
 H("A * in <label-match> matches any zero or more characters in a label.");
+H("");
 H("A ? in <label-match> matches any single character.  For example,");
 H("SEARCH p?4* \"ph <-> ph\" will check statements whose labels have p and 4");
 H("in their first and third character positions, and display them when their");
 H("math strings contain \"ph <-> ph\".");
+H("");
 H("A ~ in <label-match> divides the match into two labels, <from>~<to>, and");
 H("matches statements located in the source file range between <from> and");
-H("<to> inclusive; <from> and <to> may not have * or ? wildcards.");
+H("<to> inclusive; <from> and <to> may not have * or ? wildcards; if <from>");
+H("(or <to>) is empty, the first (or last) statement will be assumed.");
+H("");
 H("If <label-match> is % (percent sign), it will match all statements with");
 H("proofs that were changed in the current session; cannot be used with");
 H("wildcards.");
-H("If <label-match> is = (equals sign), it will match the statement being");
-H("proved the Proof Assistant (MM-PA); cannot be used with wildcards.");
-H("If <label-match> is #nnn e.g. #1234, it will match the numeric statement");
-H("number nnn; primarily useful for debugging purposes; cannot be used with");
-H("wildcards.");
 H("");
-H("A $* in <symbol-match> matches any sequence of zero or more characters");
-H("in the statement's math string.  A $? in <symbol-match> matches any");
-H("single non-space character in the statement's math string.  The quotes");
-H("surrounding <symbol-match> may be single or double quotes.  For example,");
+H("If <label-match> is = (equals sign), it will match the statement being");
+H("proved or last proved in the Proof Assistant (MM-PA); note that");
+H("\"PROVE =\" is a quick way to return to the previous MM-PA session.");
+H("");
+H("If <label-match> is #nnn e.g. #1234, it will match the numeric statement");
+H("number nnn; digits cannot contain wildcards.");
+H("");
+H("If <label-match> is @nnn e.g. @1234, it will match the web page statement");
+H("number (small colored number) nnn; digits cannot contain wildcards.");
+H("");
+H("Multiple <label-match> forms may be joined with commas e.g.");
+H("SEARCH ab*,cd* ... will match all labels starting with ab or cd.");
+H("");
+H("");
+H("A $* in <symbol-match> matches any sequence of zero or more tokens");
+H("in the statement's math string.");
+H("");
+H("A $? in <symbol-match> matches zero or one character in a math token.");
+H("The quotes surrounding <symbol-match> may be single or double quotes.");
+H("For example,");
 H("SEARCH * 'E. $? A. $? $?$? -> $* E.' using the set.mm database will find");
 H("\"E. x A. y ph -> A. y E. x ph\".  As this example shows, $? is");
-H("particularly useful when you don't know the variable names used in a");
-H("theorem of interest.");
+H("particularly useful when you don't know what variable names were used in");
+H("a theorem of interest.");
 H("");
-H("Note 1. Multiple wildcard patterns and ranges may be specified");
-H("using a comma-separated list for <label-match>, with no spaces around");
-H("the commas.  Example:  SEARCH df-*,ax-ext~ax-ac 'E. x'.");
 H("");
-H("Note 2. The first and last characters of <label-match>, if they are not");
-H("wildcards, will be matched against the first and last characters of the");
-H("label.  In contrast, <symbol-match> is a substring match, i.e. it has");
-H("implicit $* wildcards before and after it.");
+H("Note 1. The first and last characters of <label-match>, if they are not");
+H("wildcards (nor part of ~, =, %, #, or @ forms), will be matched against");
+H("the first and last characters of the label.  In contrast, <symbol-match>");
+H("is a substring match, i.e. it has implicit $* wildcards before and after");
+H("it.");
 H("");
-H("Note 3. An \"unofficial\" <symbol-match> feature is that $ and ? can be");
-H("used instead of $* and $? for brevity.  The drawback is that matching a");
-H("math symbol containing a ? character may yield additional unwanted");
-H("matches, but this was felt to be a minor nuisance outweighed by the");
-H("convenience of this feature.  (Note that $ is not a legal math symbol");
-H("character, which is the reason for its use in the official $* and $?");
-H("wildcards.)  The official wildcards are processed before the unofficial");
-H("ones, so that $? will not be interpreted as $ followed by ?.");
+H("Note 2. An \"unofficial\" <symbol-match> feature is that $ and ? can be");
+H("used instead of $* and $? for brevity provided that no math token");
+H("contains a ? character.");
 H("");
 H("Optional qualifiers:");
 H("    / ALL - Also search $e and $f statements.");
@@ -488,7 +496,7 @@ H("characters.");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP SET ECHO");
+g_printHelp = !strcmp(saveHelpCmd, "HELP SET ECHO");
 H("Syntax:  SET ECHO ON or SET ECHO OFF");
 H("");
 H("The SET ECHO ON command will cause command lines to be echoed with any");
@@ -501,7 +509,7 @@ H("prepended to each echoed command line.");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP SET SCROLL");
+g_printHelp = !strcmp(saveHelpCmd, "HELP SET SCROLL");
 H("Syntax:  SET SCROLL PROMPTED or SET SCROLL CONTINUOUS");
 H("");
 H("The Metamath command line interface starts off in the PROMPTED mode,");
@@ -511,7 +519,7 @@ H("scrolled without pausing.");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP SET WIDTH"); /* 18-Nov-05 nm Revised */
+g_printHelp = !strcmp(saveHelpCmd, "HELP SET WIDTH"); /* 18-Nov-05 nm Revised */
 H("Syntax:  SET WIDTH <number>");
 H("");
 H("Metamath assumes the width of your screen is 79 characters.  If your");
@@ -529,7 +537,7 @@ H("Note:  This command was SET SCREEN_WIDTH prior to Version 0.07.9.");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP SET HEIGHT"); /* 18-Nov-05 nm New */
+g_printHelp = !strcmp(saveHelpCmd, "HELP SET HEIGHT"); /* 18-Nov-05 nm New */
 H("Syntax:  SET HEIGHT <number>");
 H("");
 H("Metamath assumes your screen height is 24 lines of characters.  If your");
@@ -538,7 +546,7 @@ H("of lines at which the display pauses and prompts you to continue.");
 H("");
 
 /* 10-Jul-2015 nm */
-printHelp = !strcmp(saveHelpCmd, "HELP SET DISCOURAGEMENT");
+g_printHelp = !strcmp(saveHelpCmd, "HELP SET DISCOURAGEMENT");
 H("Syntax:  SET DISCOURAGEMENT OFF or SET DISCOURAGEMENT ON");
 H("");
 H("By default this is set to ON, which means that statements whose");
@@ -552,7 +560,7 @@ H("the current value.");
 H("");
 
 /* 14-May-2017 nm */
-printHelp = !strcmp(saveHelpCmd, "HELP SET CONTRIBUTOR");
+g_printHelp = !strcmp(saveHelpCmd, "HELP SET CONTRIBUTOR");
 H("Syntax:  SET CONTRIBUTOR <name>");
 H("");
 H("Specify the contributor name for new \"(Contributed by...\" comment");
@@ -562,7 +570,7 @@ H("displayed by SHOW SETTINGS.");
 H("");
 
 /* 31-Dec-2017 nm */
-printHelp = !strcmp(saveHelpCmd, "HELP SET ROOT_DIRECTORY");
+g_printHelp = !strcmp(saveHelpCmd, "HELP SET ROOT_DIRECTORY");
 H("Syntax:  SET ROOT_DIRECTORY <directory path>");
 H("");
 H("Specify the directory path (relative to the working directory i.e. the");
@@ -575,7 +583,7 @@ H("");
 H("Use a quoted space (' ' or \" \") for <directory path> if you want to");
 H("reset it to be the working directory.");
 
-printHelp = !strcmp(saveHelpCmd, "HELP SET UNIFICATION_TIMEOUT");
+g_printHelp = !strcmp(saveHelpCmd, "HELP SET UNIFICATION_TIMEOUT");
 H("Syntax:  SET UNIFICATION_TIMEOUT <number>");
 H("");
 H("(This command affects the Proof Assistant only.)");
@@ -593,7 +601,7 @@ H("again.");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP SET EMPTY_SUBSTITUTION");
+g_printHelp = !strcmp(saveHelpCmd, "HELP SET EMPTY_SUBSTITUTION");
 H("Syntax:  SET EMPTY_SUBSTITUTION ON or SET EMPTY_SUBSTITUTION OFF");
 H("");
 H("(This command affects the Proof Assistant only.  It may be issued");
@@ -605,15 +613,15 @@ H("in a valid proof.  Allowing for this possibility increases the likelihood");
 H("of ambiguous unifications during proof creation.  The default is that");
 H("empty substitutions are not allowed; for formal systems requiring them,");
 H("you must SET EMPTY_SUBSTITUTION ON.  Note that empty substitutions are");
-H("always permissable in proof verification (VERIFY PROOF...) outside the");
+H("always permissible in proof verification (VERIFY PROOF...) outside the");
 H("Proof Assistant.  (See the MIU system in the Metamath book for an example");
 H("of a system needing empty substitutions; another example would be a");
 H("system that implements a Deduction Rule and in which deductions from");
-H("empty assumption lists would be permissable.)");
+H("empty assumption lists would be permissible.)");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP SET SEARCH_LIMIT");
+g_printHelp = !strcmp(saveHelpCmd, "HELP SET SEARCH_LIMIT");
 H("Syntax:  SET SEARCH_LIMIT <number>");
 H("");
 H("(This command affects the Proof Assistant only.)");
@@ -625,7 +633,7 @@ H("value.");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP SET JEREMY_HENTY_FILTER");
+g_printHelp = !strcmp(saveHelpCmd, "HELP SET JEREMY_HENTY_FILTER");
 H("Syntax:  SET JEREMY_HENTY_FILTER ON or SET JEREMY_HENTY_FILTER OFF");
 H("");
 H("(This command affects the Proof Assistant only.)");
@@ -637,7 +645,7 @@ H("is ON, and the only reason to turn it off would be for debugging.");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP VERIFY PROOF");
+g_printHelp = !strcmp(saveHelpCmd, "HELP VERIFY PROOF");
 H("Syntax:  VERIFY PROOF <label-match> [/ SYNTAX_ONLY]");
 H("");
 H("This command verifies the proofs of the specified statements.");
@@ -658,9 +666,9 @@ H("in comments.  See HELP VERIFY MARKUP.");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP VERIFY MARKUP");
+g_printHelp = !strcmp(saveHelpCmd, "HELP VERIFY MARKUP");
 H("Syntax:  VERIFY MARKUP <label-match> [/ DATE_SKIP] [/ TOP_DATE_SKIP]");
-H("             [/ FILE_SKIP] [/VERBOSE]");
+H("            [/ FILE_SKIP] [/ UNDERSCORE_SKIP] [/ MATHBOX_SKIP] [/VERBOSE]");
 H("");
 H("This command checks comment markup and other informal conventions we have");
 H("adopted.  It error-checks the latexdef, htmldef, and althtmldef statements");
@@ -683,6 +691,17 @@ H("    / FILE_SKIP - This qualifier will skip checks that require");
 H("        external files to be present, such as checking GIF existence and");
 H("        bibliographic links to mmset.html or equivalent.  It is useful");
 H("        for doing a quick check from a directory without these files");
+       /* 25-Jun-2020 nm Added UNDERSCORE_SKIP */
+H("    / UNDERSCORE_SKIP - This qualifier will skip warnings for labels");
+H("        containing underscore (\"_\") characters.  Although they are");
+H("        legal per the Metamath spec, they may cause ambiguities with");
+H("        certain translators (such as to MM0) that convert \"-\" to \"_\".");
+H("        bibliographic links to mmset.html or equivalent.  It is useful");
+H("        for doing a quick check from a directory without these files");
+       /* 17-Jul-2020 nm Added MATHBOX_SKIP */
+H("    / MATHBOX_SKIP - This qualifier will skip checking for mathbox");
+H("        independence i.e. that no mathbox proof references a statement");
+H("        in another (earlier) mathbox.");
 H("    / VERBOSE - Provides more information.  Currently it provides a list");
 H("        of axXXX vs. ax-XXX matches.");
 H("");
@@ -698,7 +717,7 @@ H("see the 21-Dec-2017 entry in http://us.metamath.org/mpeuni/mmnotes.txt .");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP VERIFY STS");
+g_printHelp = !strcmp(saveHelpCmd, "HELP VERIFY STS");
 H("Syntax:  VERIFY STS <format>");
 H("");
 H("This command error-checks that the STS rules definition covers all syntax");
@@ -708,7 +727,7 @@ H("corresponding STS rules. ");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP SUBMIT");
+g_printHelp = !strcmp(saveHelpCmd, "HELP SUBMIT");
 H("Syntax:  SUBMIT <filename> [/ SILENT]");
 H("");
 H("This command causes further command lines to be taken from the specified");
@@ -730,7 +749,7 @@ H("        file itself).  The screen output of any operating system commands");
 H("        inside the command file (see HELP SYSTEM) is not suppressed.");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP SYSTEM");
+g_printHelp = !strcmp(saveHelpCmd, "HELP SYSTEM");
 H("A line enclosed in single or double quotes will be executed by your");
 H("computer's operating system, if it has such a feature.  For example, on a");
 H("GNU/Linux system,");
@@ -743,11 +762,11 @@ H("    MM> 'ls | less -EX");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP MM-PA");
+g_printHelp = !strcmp(saveHelpCmd, "HELP MM-PA");
 H("See HELP PROOF_ASSISTANT");
 H("");
 
-printHelp = !strcmp(saveHelpCmd, "HELP MORE");
+g_printHelp = !strcmp(saveHelpCmd, "HELP MORE");
 H("Syntax:  MORE <filename>");
 H("");
 H("This command will type (i.e. display) the contents of an ASCII file on");
@@ -757,7 +776,7 @@ H("do this, such as \"less -EX\" in Linux.)");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP FILE SEARCH");
+g_printHelp = !strcmp(saveHelpCmd, "HELP FILE SEARCH");
 H("Syntax:  FILE SEARCH <filename> \"<search string>\" [/ FROM_LINE");
 H("             <number>] [/ TO_LINE <number>]");
 H("");
@@ -769,7 +788,7 @@ H("equivalent command, such as \"grep\" in Linux.)");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP PROVE");
+g_printHelp = !strcmp(saveHelpCmd, "HELP PROVE");
 H("Syntax:  PROVE <label> [/ OVERRIDE]");
 H("");
 H("This command will enter the Proof Assistant, which will allow you to");
@@ -785,7 +804,7 @@ H("See also:  HELP PROOF_ASSISTANT and HELP EXIT");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP PROOF_ASSISTANT");
+g_printHelp = !strcmp(saveHelpCmd, "HELP PROOF_ASSISTANT");
 H("Before using the Proof Assistant, you must add a $p to your source file");
 H("(using a text editor) containing the statement you want to prove.  Its");
 H("proof should consist of a single ?, meaning \"unknown step.\"  Example:");
@@ -886,7 +905,7 @@ H("Type EXIT to exit the MM-PA> prompt and get back to the MM> prompt.");
 H("Another EXIT will then get you out of Metamath.");
 H("");
 
-printHelp = !strcmp(saveHelpCmd, "HELP UNDO");
+g_printHelp = !strcmp(saveHelpCmd, "HELP UNDO");
 H("Syntax:  UNDO");
 H("");
 H("This command, available in the Proof Assistant only, allows any command");
@@ -895,7 +914,7 @@ H("See also HELP REDO and HELP SET UNDO.");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP REDO");
+g_printHelp = !strcmp(saveHelpCmd, "HELP REDO");
 H("Syntax:  REDO");
 H("");
 H("This command, available in the Proof Assistant only, reverses the");
@@ -906,7 +925,7 @@ H("many UNDOs as were issued since the last proof-changing command.");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP SET UNDO"); /* 1-Nov-2013 nm */
+g_printHelp = !strcmp(saveHelpCmd, "HELP SET UNDO"); /* 1-Nov-2013 nm */
 H("Syntax:  SET UNDO <number>");
 H("");
 H("(This command affects the Proof Assistant only.)");
@@ -920,7 +939,7 @@ H("UNDO stack is reset (i.e. previous possible UNDOs will be lost).");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP ASSIGN");
+g_printHelp = !strcmp(saveHelpCmd, "HELP ASSIGN");
 H("Syntax:  ASSIGN <step> <label> [/ NO_UNIFY] [/ OVERRIDE]");
 H("         ASSIGN FIRST <label> [/ NO_UNIFY] [/ OVERRIDE]");  /* 11-Dec-05 nm */
 H("         ASSIGN LAST <label> [/ NO_UNIFY] [/ OVERRIDE]");
@@ -953,7 +972,7 @@ H("        description comment.  This qualifier will allow the assignment.");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP REPLACE");
+g_printHelp = !strcmp(saveHelpCmd, "HELP REPLACE");
 H("Syntax:  REPLACE <step> <label> [/ OVERRIDE]");
 H("Syntax:  REPLACE FIRST <label> [/ OVERRIDE]");
 H("Syntax:  REPLACE LAST <label> [/ OVERRIDE]");
@@ -1005,7 +1024,7 @@ H("        if \"(New usage is discouraged.)\" is present in the statement's");
 H("        description comment.  This qualifier will allow the assignment.");
 H("");
 
-printHelp = !strcmp(saveHelpCmd, "HELP MATCH");
+g_printHelp = !strcmp(saveHelpCmd, "HELP MATCH");
 H("Syntax:  MATCH STEP <step> [/ MAX_ESSENTIAL_HYP <number>]");
 H("    or:  MATCH ALL [/ ESSENTIAL_ONLY] [/ MAX_ESSENTIAL_HYP <number>]");
 H("");
@@ -1020,7 +1039,7 @@ H("        would be listed in SHOW NEW_PROOF display are matched.");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP LET");
+g_printHelp = !strcmp(saveHelpCmd, "HELP LET");
 H("Syntax:  LET VARIABLE <variable> = \"<symbol sequence>\"");
 H("         LET STEP <step> = \"<symbol sequence>\"");
 H("         LET STEP FIRST = \"<symbol sequence>\"");
@@ -1090,7 +1109,7 @@ H("  MM-PA> SHOW NEW_PROOF/UNKNOWN");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP UNIFY");
+g_printHelp = !strcmp(saveHelpCmd, "HELP UNIFY");
 H("HELP UNIFY");
 H("Syntax:  UNIFY STEP <step>");
 H("         UNIFY ALL [/ INTERACTIVE]");
@@ -1112,7 +1131,7 @@ H("manually assign unknown variables also helps difficult cases.");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP INITIALIZE");
+g_printHelp = !strcmp(saveHelpCmd, "HELP INITIALIZE");
 H("Syntax:  INITIALIZE ALL");
 H("         INITIALIZE USER");
 H("         INITIALIZE STEP <step>");
@@ -1138,7 +1157,7 @@ H("See also:  UNIFY and DELETE");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP DELETE");
+g_printHelp = !strcmp(saveHelpCmd, "HELP DELETE");
 H("Syntax:  DELETE STEP <step>");
 H("         DELETE ALL");
 H("         DELETE FLOATING_HYPOTHESES");
@@ -1157,16 +1176,16 @@ H("command can usually fill in the proof for that step.");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP IMPROVE");
+g_printHelp = !strcmp(saveHelpCmd, "HELP IMPROVE");
 H("Syntax:  IMPROVE <step> [/ DEPTH <number>] [/ NO_DISTINCT] [/ 2] [/ 3]");
-H("                           [/ SUBPROOFS] [/ OVERRIDE]");
+H("                       [/ SUBPROOFS] [/ INCLUDE_MATHBOXES] [/ OVERRIDE]");
                               /* 26-Aug-2006 nm */ /* 4-Sep-2012 */
 H("         IMPROVE FIRST [/ DEPTH <number>] [/ NO_DISTINCT] [/ 2] [/ 3]");
-H("                           [/ SUBPROOFS] [/ OVERRIDE]");
+H("                       [/ SUBPROOFS] [/ INCLUDE_MATHBOXES] [/ OVERRIDE]");
 H("         IMPROVE LAST [/ DEPTH <number>] [/ NO_DISTINCT] [/ 2] [/ 3]");
-H("                           [/ SUBPROOFS] [/ OVERRIDE]");
+H("                       [/ SUBPROOFS] [/ INCLUDE_MATHBOXES] [/ OVERRIDE]");
 H("         IMPROVE ALL [/ DEPTH <number>] [/ NO_DISTINCT] [/ 2] [/ 3]");
-H("                           [/ SUBPROOFS] [/ OVERRIDE]");
+H("                       [/ SUBPROOFS] [/ INCLUDE_MATHBOXES] [/ OVERRIDE]");
 H("");
 H("This command, available in the Proof Assistant only, tries to");
 H("find proofs automatically for unknown steps whose symbol sequences are");
@@ -1228,6 +1247,10 @@ H("    / SUBPROOFS - Look at each subproof that isn't completely known, and");
 H("        try to see if it can be proved independently.  This qualifier is");
 H("        meaningful only for IMPROVE ALL / 2 or IMPROVE ALL / 3.  It may");
 H("        take a very long time to run, especially with / 3.");
+/* 5-Aug-2020 nm - Added INCLUDE_MATHBOXES */
+H("    / INCLUDE_MATHBOXES - By default, MINIMIZE_WITH skips statements");
+H("        beyond the one with label \"mathbox\" and not in the mathbox of");
+H("        the PROVE argument.  This qualifier allows them to be included.");
 /* 3-May-2016 nm - Added OVERRIDE */
 H("    / OVERRIDE - By default, IMPROVE skips statements that have");
 H("        \"(New usage is discouraged.)\" in their description comment.");
@@ -1252,7 +1275,7 @@ H("See also:  HELP SET SEARCH_LIMIT");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP MINIMIZE_WITH");
+g_printHelp = !strcmp(saveHelpCmd, "HELP MINIMIZE_WITH");
 /*
 H("Syntax:  MINIMIZE_WITH <label-match> [/ BRIEF] [/ ALLOW_GROWTH]");
 H("             [/ NO_DISTINCT] [/ EXCEPT <label-match>]");
@@ -1278,6 +1301,11 @@ H("than one statement, but each statement is tested independently from the");
 H("others.  Note:  In the informational output, if the size is given in");
 H("bytes, it refers to the compressed proof size, otherwise it refers to the");
 H("number of steps in the uncompressed proof.");
+H("");
+H("For ordinary use with set.mm, we recommend running it as follows:");
+H("   MINIMIZE_WITH * / ALLOW_NEW_AXIOMS * / NO_NEW_AXIOMS_FROM ax-*");
+H("For some additional information on the qualifiers see");
+H("    https://groups.google.com/d/msg/metamath/f-L91-1jI24/3KJnGa8qCgAJ");
 /*
 H("  Warning:  MINIMIZE_WITH does not check for $d violations, so");
 H("SAVE PROOF then VERIFY PROOF should be run afterwards to check for them");
@@ -1364,7 +1392,7 @@ H("");
 
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP EXPAND");
+g_printHelp = !strcmp(saveHelpCmd, "HELP EXPAND");
 H("Syntax:  EXPAND <label-match>");
 H("");
 H("This command, available in the Proof Assistant only, replaces any");
@@ -1380,7 +1408,7 @@ H("each layer is eliminated.");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP SAVE PROOF");
+g_printHelp = !strcmp(saveHelpCmd, "HELP SAVE PROOF");
 H("Syntax:  SAVE PROOF <label-match> [/ <qualifier>] [/ <qualfier>]...");
 H("");
 H("The SAVE PROOF command will reformat a proof in one of two formats and");
@@ -1420,7 +1448,7 @@ H("affecting any proofs.");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP SAVE NEW_PROOF");
+g_printHelp = !strcmp(saveHelpCmd, "HELP SAVE NEW_PROOF");
 H("Syntax:  SAVE NEW_PROOF <label-match> [/ <qualifier>] [/ <qualfier>]...");
 H("");
 H("The SAVE NEW_PROOF command is available in the Proof Assistant only. It");
@@ -1448,7 +1476,7 @@ H("Note that if no qualifier is specified, / NORMAL is assumed.");
 H("");
 
 
-printHelp = !strcmp(saveHelpCmd, "HELP DEMO");
+g_printHelp = !strcmp(saveHelpCmd, "HELP DEMO");
 H("For a quick demo that enables you to see Metamath do something, type");
 H("the following:");
 H("    READ set.mm");

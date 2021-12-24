@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2017  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2020  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -12,41 +12,46 @@
 #include "mmvstr.h"
 #include "mmdata.h"
 
-extern int errorCount;     /* Total error count */
+extern int g_errorCount;     /* Total error count */
 
 /* Global variables used by print2() */
-extern flag logFileOpenFlag;
-extern FILE *logFilePtr;
-extern FILE *listFile_fp;
+extern flag g_logFileOpenFlag;
+extern FILE *g_logFilePtr;
+extern FILE *g_listFile_fp;
 /* Global variables used by print2() */
-extern flag outputToString;
-extern vstring printString;
+extern flag g_outputToString;
+extern vstring g_printString;
 /* Global variables used by cmdInput() */
 #define MAX_COMMAND_FILE_NESTING 10
-extern long commandFileNestingLevel;
-extern FILE *commandFilePtr[MAX_COMMAND_FILE_NESTING + 1];
-extern vstring commandFileName[MAX_COMMAND_FILE_NESTING + 1];
-extern flag commandFileSilent[MAX_COMMAND_FILE_NESTING + 1];
-extern flag commandFileSilentFlag;
+extern long g_commandFileNestingLevel;
+extern FILE *g_commandFilePtr[MAX_COMMAND_FILE_NESTING + 1];
+extern vstring g_commandFileName[MAX_COMMAND_FILE_NESTING + 1];
+extern flag g_commandFileSilent[MAX_COMMAND_FILE_NESTING + 1];
+extern flag g_commandFileSilentFlag;
                                     /* 23-Oct-2006 nm For SUBMIT ... /SILENT */
 
-extern FILE *inputDef_fp, *input_fp /*,*output_fp*/;  /* File pointers */
-                             /* 31-Dec-2017 nm output_fp deleted */
-extern vstring inputDef_fn,input_fn,output_fn;  /* File names */
+extern FILE /* *inputDef_fp,*/ *g_input_fp /*,*g_output_fp*/;  /* File pointers */
+                             /* 31-Dec-2017 nm g_output_fp deleted */
+extern vstring /* inputDef_fn,*/ g_input_fn, g_output_fn;  /* File names */
 
-/* PRINTBUFFERSIZE should be at least as long as the longest string we
+/* 19-Jun-2020 nm No longer needed since printBuffer is now dynamically
+   allocated. */
+/*****************************
+/@ PRINTBUFFERSIZE should be at least as long as the longest string we
    expect (an unfortunate, dangerous limitation of C?) - although if >79
-   chars are output on a line bug #1505 warning will occur */
+   chars are output on a line bug #1505 warning will occur @/
 #define PRINTBUFFERSIZE 10001
+**********************************/
+
 /* Warning:  never call print2 with string longer than PRINTBUFFERSIZE - 1 */
 /* print2 returns 0 if the user has quit the printout. */
 flag print2(char* fmt,...);
-extern long screenHeight; /* Height of screen */ /* 18-Nov-05 nm Added */
-extern long screenWidth; /* Width of screen */
+extern long g_screenHeight; /* Height of screen */ /* 18-Nov-05 nm Added */
+extern long g_screenWidth; /* Width of screen */
 #define MAX_LEN 79 /* Default width of screen */
 #define SCREEN_HEIGHT 23 /* Lines on screen, minus 1 to account for prompt */
-extern flag scrollMode; /* Flag for continuous or prompted scroll */
-extern flag quitPrint; /* Flag that user typed 'q' to last scrolling prompt */
+extern flag g_scrollMode; /* Flag for continuous or prompted scroll */
+extern flag g_quitPrint; /* Flag that user typed 'q' to last scrolling prompt */
 
 /* printLongLine automatically puts a newline \n in the output line. */
 void printLongLine(vstring line, vstring startNextLine, vstring breakMatch);

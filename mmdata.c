@@ -1,5 +1,5 @@
 /*****************************************************************************/
-/*        Copyright (C) 2019  NORMAN MEGILL  nm at alum.mit.edu              */
+/*        Copyright (C) 2020  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
@@ -18,46 +18,47 @@ mmdata.c
 #include "mmdata.h"
 #include "mminou.h"
 #include "mmpars.h"
-#include "mmcmdl.h" /* Needed for logFileName */
-#include "mmpfas.h" /* Needed for proveStatement */
+#include "mmcmdl.h" /* Needed for g_logFileName */
+#include "mmpfas.h" /* Needed for g_proveStatement */
+#include "mmwtex.h" /* Needed for SMALL_DECORATION etc. */
 
 #include <limits.h>
 #include <setjmp.h>
 /*E*/long db=0,db0=0,db2=0,db3=0,db4=0,db5=0,db6=0,db7=0,db8=0,db9=0;
-flag listMode = 0; /* 0 = metamath, 1 = list utility */
-flag toolsMode = 0; /* In metamath: 0 = metamath, 1 = text tools utility */
+flag g_listMode = 0; /* 0 = metamath, 1 = list utility */
+flag g_toolsMode = 0; /* In metamath: 0 = metamath, 1 = text tools utility */
 
 
 /* 4-May-2015 nm */
 /* For use by getMarkupFlag() */
-vstring proofDiscouragedMarkup = "";
-vstring usageDiscouragedMarkup = "";
-flag globalDiscouragement = 1; /* SET DISCOURAGEMENT ON */
+vstring g_proofDiscouragedMarkup = "";
+vstring g_usageDiscouragedMarkup = "";
+flag g_globalDiscouragement = 1; /* SET DISCOURAGEMENT ON */
 
 /* 14-May-2017 nm */
-vstring contributorName = "";
+vstring g_contributorName = "";
 
 /* Global variables related to current statement */
-int currentScope = 0;
-long beginScopeStatementNum = 0;
+int g_currentScope = 0;
+/*long beginScopeStatementNum = 0;*/
 
-long MAX_STATEMENTS = 1;
-long MAX_MATHTOKENS = 1;
-long MAX_INCLUDECALLS = 2; /* Must be at least 2 (the single-file case) !!!
+long g_MAX_STATEMENTS = 1;
+long g_MAX_MATHTOKENS = 1;
+long g_MAX_INCLUDECALLS = 2; /* Must be at least 2 (the single-file case) !!!
                          (A dummy extra top entry is used by parseKeywords().) */
-struct statement_struct *statement = NULL;
-long *labelKey = NULL; /* 4-May-2017 Ari Ferrera - added "= NULL" */
-struct mathToken_struct *mathToken;
-long *mathKey = NULL;
-long statements = 0, labels = 0, mathTokens = 0;
-long maxMathTokenLength = 0;
+struct statement_struct *g_Statement = NULL;
+long *g_labelKey = NULL; /* 4-May-2017 Ari Ferrera - added "= NULL" */
+struct mathToken_struct *g_MathToken;
+long *g_mathKey = NULL;
+long g_statements = 0, labels = 0, g_mathTokens = 0;
+/*long maxMathTokenLength = 0;*/ /* 15-Aug-2020 nm Not used */
 
-struct includeCall_struct *includeCall = NULL; /* 4-May-2017 Ari Ferrera
+struct includeCall_struct *g_IncludeCall = NULL; /* 4-May-2017 Ari Ferrera
                                                             - added "= NULL" */
-long includeCalls = -1;  /* For eraseSouce() in mmcmds.c */
+long g_includeCalls = -1;  /* For eraseSouce() in mmcmds.c */
 
-char *sourcePtr = NULL; /* 4-May-2017 Ari Ferrera - added "= NULL" */
-long sourceLen;
+char *g_sourcePtr = NULL; /* 4-May-2017 Ari Ferrera - added "= NULL" */
+long g_sourceLen;
 
 /* 18-Jan-05 nm The structs below, and several other places, were changed
    from hard-coded byte lengths to 'sizeof's by Waldek Hebisch
@@ -65,10 +66,10 @@ long sourceLen;
    AMD64. */
 
 /* Null numString */
-struct nullNmbrStruct nmbrNull = {-1, sizeof(long), sizeof(long), -1};
+struct nullNmbrStruct g_NmbrNull = {-1, sizeof(long), sizeof(long), -1};
 
 /* Null ptrString */
-struct nullPntrStruct pntrNull = {-1, sizeof(long), sizeof(long), NULL};
+struct nullPntrStruct g_PntrNull = {-1, sizeof(long), sizeof(long), NULL};
 
 nmbrString *nmbrTempAlloc(long size);
         /* nmbrString memory allocation/deallocation */
@@ -80,7 +81,7 @@ pntrString *pntrTempAlloc(long size);
 void pntrCpy(pntrString *sout, pntrString *sin);
 void pntrNCpy(pntrString *s, pntrString *t, long n);
 
-vstring qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate */
+vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate */
 
 
 /* Memory pools are used to reduce the number of malloc and alloc calls that
@@ -416,22 +417,22 @@ void initBigArrays(void)
 {
 
 /*??? This should all become obsolete. */
-  statement = malloc((size_t)MAX_STATEMENTS * sizeof(struct statement_struct));
-/*E*//*db=db+MAX_STATEMENTS * sizeof(struct statement_struct);*/
-  if (!statement) {
-    print2("*** FATAL ***  Could not allocate statement space\n");
+  g_Statement = malloc((size_t)g_MAX_STATEMENTS * sizeof(struct statement_struct));
+/*E*//*db=db+g_MAX_STATEMENTS * sizeof(struct statement_struct);*/
+  if (!g_Statement) {
+    print2("*** FATAL ***  Could not allocate g_Statement space\n");
     bug(1363);
     }
-  mathToken = malloc((size_t)MAX_MATHTOKENS * sizeof(struct mathToken_struct));
-/*E*//*db=db+MAX_MATHTOKENS * sizeof(struct mathToken_struct);*/
-  if (!mathToken) {
-    print2("*** FATAL ***  Could not allocate mathToken space\n");
+  g_MathToken = malloc((size_t)g_MAX_MATHTOKENS * sizeof(struct mathToken_struct));
+/*E*//*db=db+g_MAX_MATHTOKENS * sizeof(struct mathToken_struct);*/
+  if (!g_MathToken) {
+    print2("*** FATAL ***  Could not allocate g_MathToken space\n");
     bug(1364);
     }
-  includeCall = malloc((size_t)MAX_INCLUDECALLS * sizeof(struct includeCall_struct));
-/*E*//*db=db+MAX_INCLUDECALLS * sizeof(struct includeCall_struct);*/
-  if (!includeCall) {
-    print2("*** FATAL ***  Could not allocate includeCall space\n");
+  g_IncludeCall = malloc((size_t)g_MAX_INCLUDECALLS * sizeof(struct includeCall_struct));
+/*E*//*db=db+g_MAX_INCLUDECALLS * sizeof(struct includeCall_struct);*/
+  if (!g_IncludeCall) {
+    print2("*** FATAL ***  Could not allocate g_IncludeCall space\n");
     bug(1365);
     }
 }
@@ -481,9 +482,9 @@ void outOfMemory(vstring msg)
   /* let(&tmpStr, ""); */
   let(&tmpStr, left(tmpStr, 0)); /* Prevent "not used" compiler warning */
   /* Close the log to make sure error log is saved */
-  if (logFileOpenFlag) {
-    fclose(logFilePtr);
-    logFileOpenFlag = 0;
+  if (g_logFileOpenFlag) {
+    fclose(g_logFilePtr);
+    g_logFileOpenFlag = 0;
   }
 
   exit(1);
@@ -500,8 +501,8 @@ void bug(int bugNum)
   static flag mode = 0; /* 1 = run to next bug, 2 = continue and ignore bugs */
 
   /* 10/10/02 */
-  flag saveOutputToString = outputToString;
-  outputToString = 0; /* Make sure we print to screen and not to string */
+  flag saveOutputToString = g_outputToString;
+  g_outputToString = 0; /* Make sure we print to screen and not to string */
 
   if (mode == 2) {
     /* If user chose to ignore bugs, print brief info and return */
@@ -573,7 +574,7 @@ void bug(int bugNum)
   }
   if (mode > 0) {
     /* 10/10/02 */
-    outputToString = saveOutputToString; /* Restore for continuation */
+    g_outputToString = saveOutputToString; /* Restore for continuation */
     return;
   }
   let(&tmpStr, "");
@@ -583,11 +584,11 @@ void bug(int bugNum)
 
   print2("\n");
   /* Close the log to make sure error log is saved */
-  if (logFileOpenFlag) {
-    print2("The log file \"%s\" was closed %s %s.\n",logFileName,
-        date(),time_());
-    fclose(logFilePtr);
-    logFileOpenFlag = 0;
+  if (g_logFileOpenFlag) {
+    print2("The log file \"%s\" was closed %s %s.\n", g_logFileName,
+        date(), time_());
+    fclose(g_logFilePtr);
+    g_logFileOpenFlag = 0;
   }
   print2("The program was aborted.\n");
   exit(1); /* Use 1 instead of 0 to flag abnormal termination to scripts */
@@ -605,20 +606,23 @@ flag matchesList(vstring testString, vstring pattern, char wildCard,
   flag matchVal = 0;
   vstring entryPattern = "";
 
+  /* Done so we can use string functions like left() in call arguments */
   long saveTempAllocStack;
-  saveTempAllocStack = startTempAllocStack; /* For let() stack cleanup */
-  startTempAllocStack = tempAllocStackTop;
+  saveTempAllocStack = g_startTempAllocStack; /* For let() stack cleanup */
+  g_startTempAllocStack = g_tempAllocStackTop;
 
   entries = numEntries(pattern);
   for (i = 1; i <= entries; i++) {
-    let(&entryPattern, entry(i, pattern));
+    let(&entryPattern, entry(i, pattern)); /* If we didn't modify
+          g_startTempAllocStack above, this let() would corrupt string
+          functions in the matchesList() call arguments */
     matchVal = matches(testString, entryPattern, wildCard, oneCharWildCard);
     if (matchVal) break;
   }
 
   let(&entryPattern, ""); /* Deallocate */ /* 3-Jul-2011 nm Added to fix
                                               memory leak */
-  startTempAllocStack = saveTempAllocStack;
+  g_startTempAllocStack = saveTempAllocStack;
   return (matchVal);
 }
 
@@ -630,7 +634,8 @@ flag matchesList(vstring testString, vstring pattern, char wildCard,
 /* 30-Jan-06 nm Added single-character-match wildcard argument */
 /* 19-Apr-2015 so, nm - Added "=" to match statement being proved */
 /* 19-Apr-2015 so, nm - Added "%" to match changed proofs */
-/* 8-Mar-2016 nm Added "#12345" to match internal statement number */
+/* 8-Mar-2016 nm Added "#1234" to match internal statement number */
+/* 18-Jul-2020 nm Added "@1234" to match web statement number */
 flag matches(vstring testString, vstring pattern, char wildCard,
     char oneCharWildCard) {
   long i, ppos, pctr, tpos, s1, s2, s3;
@@ -638,21 +643,52 @@ flag matches(vstring testString, vstring pattern, char wildCard,
 
   /* 21-Nov-2014 Stefan O'Rear - added label ranges - see HELP SEARCH */
   if (wildCard == '*') {
-    /* Checking for wildCard = * means this is only for label listing */
+    /* Checking for wildCard = * meaning this is only for labels, not
+       math tokens */
+
+    /* The following special chars are handled in this block:
+       "~" Statement range
+       "=" Most recent PROVE command statement
+       "%" List of modified statements
+       "#" Internal statement number
+       "@" Web page statement number */
+
     i = instr(1, pattern, "~");
     if (i != 0) {
-      s1 = lookupLabel(left(pattern, i - 1));
+      if (i == 1) {
+        s1 = 1; /* empty string before "~" */
+      } else {
+        s1 = lookupLabel(left(pattern, i - 1));
+      }
       s2 = lookupLabel(testString);
-      s3 = lookupLabel(right(pattern, i + 1));
+      if (i == (long)strlen(pattern)) {
+        s3 = g_statements; /* empty string after "~" */
+      } else {
+        s3 = lookupLabel(right(pattern, i + 1));
+      }
       let(&tmpStr, ""); /* Clean up temporary allocations of left and right */
-      return ((s1 >= 0 && s2 >= 0 && s3 >= 0 && s1 <= s2 && s2 <= s3)
+      return ((s1 >= 1 && s2 >= 1 && s3 >= 1 && s1 <= s2 && s2 <= s3)
           ? 1 : 0);
     }
 
     /* 8-Mar-2016 nm Added "#12345" to match internal statement number */
     if (pattern[0] == '#') {
       s1 = (long)val(right(pattern, 2));
-      if (!strcmp(statement[s1].labelName, testString)) {
+      if (s1 < 1 || s1 > g_statements)
+        return 0; /* # arg is out of range */
+      if (!strcmp(g_Statement[s1].labelName, testString)) {
+        return 1;
+      } else {
+        return 0;
+      }
+    }
+
+    /* 18-Jul-2020 nm Added "@12345" to match web statement number */
+    if (pattern[0] == '@') {
+      s1 = lookupLabel(testString);
+      if (s1 < 1) return 0;
+      s2 = (long)val(right(pattern, 2));
+      if (g_Statement[s1].pinkNumber == s2) {
         return 1;
       } else {
         return 0;
@@ -662,7 +698,11 @@ flag matches(vstring testString, vstring pattern, char wildCard,
     /* 19-Apr-2015 so, nm - Added "=" to match statement being proved */
     if (!strcmp(pattern,"=")) {
       s1 = lookupLabel(testString);
-      return (PFASmode && proveStatement == s1);
+      /*return (PFASmode && g_proveStatement == s1);*/
+      /* 18-Jul-2020 nm */
+      /* We might as well use g_proveStatement outside of MM-PA, so =
+         can be argument to PROVE command */
+      return (g_proveStatement == s1);
     }
 
     /* 19-Apr-2015 so, nm - Added "%" to match changed proofs */
@@ -672,14 +712,14 @@ flag matches(vstring testString, vstring pattern, char wildCard,
       if (s1 > 0) { /* It's a $a or $p statement */
         /* (If it's not $p, we don't want to peek at proofSectionPtr[-1]
            to prevent bad pointer. */
-        if (statement[s1].type == (char)p_) { /* $p so it has a proof */
+        if (g_Statement[s1].type == (char)p_) { /* $p so it has a proof */
           /*
           /@ ASCII 1 is flag that proof is not from original source file @/
-          if (statement[s1].proofSectionPtr[-1] == 1) {
+          if (g_Statement[s1].proofSectionPtr[-1] == 1) {
           */
           /* 3-May-2017 nm */
           /* The proof is not from the original source file */
-          if (statement[s1].proofSectionChanged == 1) {
+          if (g_Statement[s1].proofSectionChanged == 1) {
             return 1;
           }
         }
@@ -688,8 +728,8 @@ flag matches(vstring testString, vstring pattern, char wildCard,
       /*
       return nmbrElementIn(1, changedStmtNmbr, s1);
       */
-    }
-  }
+    } /* if (!strcmp(pattern,"%")) */
+  } /* if (wildCard == '*') */
 
   /* Get to first wild card character */
   ppos = 0;
@@ -746,8 +786,8 @@ flag matches(vstring testString, vstring pattern, char wildCard,
 /*********** Number string functions *******************************/
 /*******************************************************************/
 
-long nmbrTempAllocStackTop = 0;     /* Top of stack for nmbrTempAlloc functon */
-long nmbrStartTempAllocStack = 0;   /* Where to start freeing temporary allocation
+long g_nmbrTempAllocStackTop = 0;     /* Top of stack for nmbrTempAlloc functon */
+long g_nmbrStartTempAllocStack = 0;   /* Where to start freeing temporary allocation
                                     when nmbrLet() is called (normally 0, except in
                                     special nested vstring functions) */
 nmbrString *nmbrTempAllocStack[M_MAX_ALLOC_STACK];
@@ -758,34 +798,34 @@ nmbrString *nmbrTempAlloc(long size)
 {
   /* When "size" is >0, "size" instances of nmbrString are allocated. */
   /* When "size" is 0, all memory previously allocated with this */
-  /* function is deallocated, down to nmbrStartTempAllocStack. */
+  /* function is deallocated, down to g_nmbrStartTempAllocStack. */
   /* int i; */  /* 11-Jul-2014 WL old code deleted */
   if (size) {
-    if (nmbrTempAllocStackTop>=(M_MAX_ALLOC_STACK-1)) {
+    if (g_nmbrTempAllocStackTop>=(M_MAX_ALLOC_STACK-1)) {
       /*??? Fix to allocate more */
       outOfMemory("#105 (nmbrString stack array)");
     }
-    if (!(nmbrTempAllocStack[nmbrTempAllocStackTop++]=poolMalloc(size
+    if (!(nmbrTempAllocStack[g_nmbrTempAllocStackTop++]=poolMalloc(size
         *(long)(sizeof(nmbrString)))))
       /* outOfMemory("#106 (nmbrString stack)"); */ /*???Unnec. w/ poolMalloc*/
 /*E*/db2=db2+size*(long)(sizeof(nmbrString));
-    return (nmbrTempAllocStack[nmbrTempAllocStackTop-1]);
+    return (nmbrTempAllocStack[g_nmbrTempAllocStackTop-1]);
   } else {
     /* 11-Jul-2014 WL old code deleted */
     /*
-    for (i=nmbrStartTempAllocStack; i < nmbrTempAllocStackTop; i++) {
+    for (i=g_nmbrStartTempAllocStack; i < g_nmbrTempAllocStackTop; i++) {
 /@E@/db2=db2-(nmbrLen(nmbrTempAllocStack[i])+1)*(long)(sizeof(nmbrString));
       poolFree(nmbrTempAllocStack[i]);
     }
     */
     /* 11-Jul-2014 WL new code */
-    while(nmbrTempAllocStackTop != nmbrStartTempAllocStack) {
-/*E*/db2=db2-(nmbrLen(nmbrTempAllocStack[nmbrTempAllocStackTop-1])+1)
+    while(g_nmbrTempAllocStackTop != g_nmbrStartTempAllocStack) {
+/*E*/db2=db2-(nmbrLen(nmbrTempAllocStack[g_nmbrTempAllocStackTop-1])+1)
 /*E*/                                              *(long)(sizeof(nmbrString));
-      poolFree(nmbrTempAllocStack[--nmbrTempAllocStackTop]);
+      poolFree(nmbrTempAllocStack[--g_nmbrTempAllocStackTop]);
     }
     /* end of 11-Jul-2014 WL new code */
-    nmbrTempAllocStackTop=nmbrStartTempAllocStack;
+    g_nmbrTempAllocStackTop=g_nmbrStartTempAllocStack;
     return (0);
   }
 }
@@ -796,7 +836,7 @@ nmbrString *nmbrTempAlloc(long size)
    assigned again with nmbrLet() */
 void nmbrMakeTempAlloc(nmbrString *s)
 {
-    if (nmbrTempAllocStackTop>=(M_MAX_ALLOC_STACK-1)) {
+    if (g_nmbrTempAllocStackTop>=(M_MAX_ALLOC_STACK-1)) {
       printf(
       "*** FATAL ERROR ***  Temporary nmbrString stack overflow in nmbrMakeTempAlloc()\n");
 #if __STDC__
@@ -806,7 +846,7 @@ void nmbrMakeTempAlloc(nmbrString *s)
     }
     if (s[0] != -1) { /* End of string */
       /* Do it only if nmbrString is not empty */
-      nmbrTempAllocStack[nmbrTempAllocStackTop++] = s;
+      nmbrTempAllocStack[g_nmbrTempAllocStackTop++] = s;
     }
 /*E*/db2=db2+(nmbrLen(s)+1)*(long)(sizeof(nmbrString));
 /*E*/db3=db3-(nmbrLen(s)+1)*(long)(sizeof(nmbrString));
@@ -1243,26 +1283,26 @@ vstring nmbrCvtMToVString(nmbrString *s)
   vstring ptr2;
 
   long saveTempAllocStack;
-  saveTempAllocStack = startTempAllocStack; /* For let() stack cleanup */
-  startTempAllocStack = tempAllocStackTop;
+  saveTempAllocStack = g_startTempAllocStack; /* For let() stack cleanup */
+  g_startTempAllocStack = g_tempAllocStackTop;
 
   mstrLen = nmbrLen(s);
   /* Precalculate output length */
   outputLen = -1;
   for (i = 0; i < mstrLen; i++) {
-    outputLen = outputLen + (long)strlen(mathToken[s[i]].tokenName) + 1;
+    outputLen = outputLen + (long)strlen(g_MathToken[s[i]].tokenName) + 1;
   }
   let(&tmpStr, space(outputLen)); /* Preallocate output string */
   /* Assign output string */
   ptr = tmpStr;
   for (i = 0; i < mstrLen; i++) {
-    ptr2 = mathToken[s[i]].tokenName;
+    ptr2 = g_MathToken[s[i]].tokenName;
     j = (long)strlen(ptr2);
     memcpy(ptr, ptr2, (size_t)j);
     ptr = ptr + j + 1;
   }
 
-  startTempAllocStack = saveTempAllocStack;
+  g_startTempAllocStack = saveTempAllocStack;
   if (tmpStr[0]) makeTempAlloc(tmpStr); /* Flag it for deallocation */
   return (tmpStr);
 }
@@ -1289,11 +1329,11 @@ vstring nmbrCvtRToVString(nmbrString *proof,
 
   long saveTempAllocStack;
   long nmbrSaveTempAllocStack;
-  saveTempAllocStack = startTempAllocStack; /* For let() stack cleanup */
-  startTempAllocStack = tempAllocStackTop;
-  nmbrSaveTempAllocStack = nmbrStartTempAllocStack;
+  saveTempAllocStack = g_startTempAllocStack; /* For let() stack cleanup */
+  g_startTempAllocStack = g_tempAllocStackTop;
+  nmbrSaveTempAllocStack = g_nmbrStartTempAllocStack;
                                            /* For nmbrLet() stack cleanup*/
-  nmbrStartTempAllocStack = nmbrTempAllocStackTop;
+  g_nmbrStartTempAllocStack = g_nmbrTempAllocStackTop;
 
   plen = nmbrLen(proof);
 
@@ -1326,15 +1366,15 @@ vstring nmbrCvtRToVString(nmbrString *proof,
     } else {
 
       /* 11-Sep-2016 nm */
-      if (stmt < 1 || stmt > statements) {
+      if (stmt < 1 || stmt > g_statements) {
         maxLabelLen = 100; /* For safety */
         maxTargetLabelLen = 100; /* For safety */
         continue; /* Ignore bad entry */
       }
 
       if (stmt > 0) {
-        if ((signed)(strlen(statement[stmt].labelName)) > maxLabelLen) {
-          maxLabelLen = (long)strlen(statement[stmt].labelName);
+        if ((signed)(strlen(g_Statement[stmt].labelName)) > maxLabelLen) {
+          maxLabelLen = (long)strlen(g_Statement[stmt].labelName);
         }
       }
     }
@@ -1344,8 +1384,8 @@ vstring nmbrCvtRToVString(nmbrString *proof,
       /* Also consider longest target label name */
       stmt = targetHyps[step];
       if (stmt <= 0) bug(1390);
-      if ((signed)(strlen(statement[stmt].labelName)) > maxTargetLabelLen) {
-        maxTargetLabelLen = (long)strlen(statement[stmt].labelName);
+      if ((signed)(strlen(g_Statement[stmt].labelName)) > maxTargetLabelLen) {
+        maxTargetLabelLen = (long)strlen(g_Statement[stmt].labelName);
       }
     }
 
@@ -1372,7 +1412,7 @@ vstring nmbrCvtRToVString(nmbrString *proof,
         let(&tmpStr, cat(
 
             /* 25-Jan-2016 nm */
-            ((explicitTargets == 1) ? statement[targetHyps[step]].labelName : ""),
+            ((explicitTargets == 1) ? g_Statement[targetHyps[step]].labelName : ""),
             ((explicitTargets == 1) ? "=" : ""),
 
             str((double)(localLabelNames[stmt])), " ", NULL));
@@ -1386,14 +1426,14 @@ vstring nmbrCvtRToVString(nmbrString *proof,
         let(&tmpStr, cat(
 
             /* 25-Jan-2016 nm */
-            ((explicitTargets == 1) ? statement[targetHyps[step]].labelName : ""),
+            ((explicitTargets == 1) ? g_Statement[targetHyps[step]].labelName : ""),
             ((explicitTargets == 1) ? "=" : ""),
 
             chr(-stmt), " ", NULL));
       }
 
     /* 11-Sep-2016 nm */
-    } else if (stmt < 1 || stmt > statements) {
+    } else if (stmt < 1 || stmt > g_statements) {
       let(&tmpStr, cat("??", str((double)stmt), " ", NULL)); /* For safety */
 
     } else {
@@ -1405,7 +1445,7 @@ vstring nmbrCvtRToVString(nmbrString *proof,
         let(&tmpStr, str((double)nextLocLabNum));
         while (1) {
           voidPtr = (void *)bsearch(tmpStr,
-              allLabelKeyBase, (size_t)numAllLabelKeys,
+              g_allLabelKeyBase, (size_t)g_numAllLabelKeys,
               sizeof(long), labelSrchCmp);
           if (!voidPtr) break; /* It does not conflict */
           nextLocLabNum++; /* Try the next one */
@@ -1418,10 +1458,10 @@ vstring nmbrCvtRToVString(nmbrString *proof,
       let(&tmpStr, cat(tmpStr,
 
           /* 25-Jan-2016 nm */
-          ((explicitTargets == 1) ? statement[targetHyps[step]].labelName : ""),
+          ((explicitTargets == 1) ? g_Statement[targetHyps[step]].labelName : ""),
           ((explicitTargets == 1) ? "=" : ""),
 
-          statement[stmt].labelName, " ", NULL));
+          g_Statement[stmt].labelName, " ", NULL));
     }
     j = (long)strlen(tmpStr);
     memcpy(ptr, tmpStr, (size_t)j);
@@ -1438,8 +1478,8 @@ vstring nmbrCvtRToVString(nmbrString *proof,
   nmbrLet(&localLabels, NULL_NMBRSTRING);
   nmbrLet(&localLabelNames, NULL_NMBRSTRING);
 
-  startTempAllocStack = saveTempAllocStack;
-  nmbrStartTempAllocStack = nmbrSaveTempAllocStack;
+  g_startTempAllocStack = saveTempAllocStack;
+  g_nmbrStartTempAllocStack = nmbrSaveTempAllocStack;
   if (proofStr[0]) makeTempAlloc(proofStr); /* Flag it for deallocation */
   return (proofStr);
 }
@@ -1458,7 +1498,7 @@ nmbrString *nmbrGetProofStepNumbs(nmbrString *reason)
                                         to 0 by nmbrSpace() */
   if (!rlen) return (stepNumbs);
   if (reason[1] == -(long)'=') {
-    /* The proof is in "internal" format, with "proveStatement = (...)" added */
+    /* The proof is in "internal" format, with "g_proveStatement = (...)" added */
     start = 2; /* 2, not 3, so empty proof '?' will be seen */
     if (rlen == 3) {
       end = rlen; /* Empty proof case */
@@ -1498,14 +1538,14 @@ vstring nmbrCvtAnyToVString(nmbrString *s)
   vstring tmpStr = "";
 
   long saveTempAllocStack;
-  saveTempAllocStack = startTempAllocStack; /* For let() stack cleanup */
-  startTempAllocStack = tempAllocStackTop;
+  saveTempAllocStack = g_startTempAllocStack; /* For let() stack cleanup */
+  g_startTempAllocStack = g_tempAllocStackTop;
 
   for (i = 1; i <= nmbrLen(s); i++) {
     let(&tmpStr,cat(tmpStr," ", str((double)(s[i-1])),NULL));
   }
 
-  startTempAllocStack = saveTempAllocStack;
+  g_startTempAllocStack = saveTempAllocStack;
   if (tmpStr[0]) makeTempAlloc(tmpStr); /* Flag it for deallocation */
   return (tmpStr);
 }
@@ -1521,11 +1561,11 @@ nmbrString *nmbrExtractVars(nmbrString *m)
   v[0] = *NULL_NMBRSTRING;
   j = 0; /* Length of output string */
   for (i = 0; i < length; i++) {
-    /*if (m[i] < 0 || m[i] >= mathTokens) {*/
-    /* Changed >= to > because tokenNum=mathTokens is used by mmveri.c for
+    /*if (m[i] < 0 || m[i] >= g_mathTokens) {*/
+    /* Changed >= to > because tokenNum=g_mathTokens is used by mmveri.c for
        dummy token */
-    if (m[i] < 0 || m[i] > mathTokens) bug(1328);
-    if (mathToken[m[i]].tokenType == (char)var_) {
+    if (m[i] < 0 || m[i] > g_mathTokens) bug(1328);
+    if (g_MathToken[m[i]].tokenType == (char)var_) {
       if (!nmbrElementIn(1, v, m[i])) { /* Don't duplicate variable */
         v[j] = m[i];
         j++;
@@ -1669,9 +1709,9 @@ long nmbrGetSubproofLen(nmbrString *proof, long step)
   if (step < 0) bug(1329);
   stmt = proof[step];
   if (stmt < 0) return (1); /* Unknown or label ref */
-  type = statement[stmt].type;
+  type = g_Statement[stmt].type;
   if (type == f_ || type == e_) return (1); /* Hypothesis */
-  hyps = statement[stmt].numReqHyp;
+  hyps = g_Statement[stmt].numReqHyp;
   pos = step - 1;
   for (i = 0; i < hyps; i++) {
     pos = pos - nmbrGetSubproofLen(proof, pos);
@@ -1786,7 +1826,7 @@ nmbrString *nmbrGetIndentation(nmbrString *proof,
     nmbrMakeTempAlloc(indentationLevel); /* Flag it for deallocation */
     return (indentationLevel);
   }
-  type = statement[stmt].type;
+  type = g_Statement[stmt].type;
   if (type == f_ || type == e_) { /* A hypothesis */
     if (plen != 1) bug(1331);
     nmbrMakeTempAlloc(indentationLevel); /* Flag it for deallocation */
@@ -1794,7 +1834,7 @@ nmbrString *nmbrGetIndentation(nmbrString *proof,
   }
   /* An assertion */
   if (type != a_ && type != p_) bug(1332);
-  hyps = statement[stmt].numReqHyp;
+  hyps = g_Statement[stmt].numReqHyp;
   pos = plen - 2;
   for (i = 0; i < hyps; i++) {
     splen = nmbrGetSubproofLen(proof, pos);
@@ -1840,7 +1880,7 @@ nmbrString *nmbrGetEssential(nmbrString *proof)
     nmbrMakeTempAlloc(essentialFlags); /* Flag it for deallocation */
     return (essentialFlags);
   }
-  type = statement[stmt].type;
+  type = g_Statement[stmt].type;
   if (type == f_ || type == e_) { /* A hypothesis */
     /* The only time it should get here is if the original proof has only one
        step */
@@ -1850,12 +1890,12 @@ nmbrString *nmbrGetEssential(nmbrString *proof)
   }
   /* An assertion */
   if (type != a_ && type != p_) bug(1337);
-  hyps = statement[stmt].numReqHyp;
+  hyps = g_Statement[stmt].numReqHyp;
   pos = plen - 2;
-  nmbrTmpPtr2 = statement[stmt].reqHypList;
+  nmbrTmpPtr2 = g_Statement[stmt].reqHypList;
   for (i = 0; i < hyps; i++) {
     splen = nmbrGetSubproofLen(proof, pos);
-    if (statement[nmbrTmpPtr2[hyps - i - 1]].type == e_) {
+    if (g_Statement[nmbrTmpPtr2[hyps - i - 1]].type == e_) {
       nmbrLet(&subProof, nmbrSeg(proof, pos - splen + 2, pos + 1));
       nmbrLet(&nmbrTmp, nmbrGetEssential(subProof));
       for (j = 0; j < splen; j++) {
@@ -1901,7 +1941,7 @@ nmbrString *nmbrGetTargetHyp(nmbrString *proof, long statemNum)
     nmbrMakeTempAlloc(targetHyp); /* Flag it for deallocation */
     return (targetHyp);
   }
-  type = statement[stmt].type;
+  type = g_Statement[stmt].type;
   if (type == f_ || type == e_) { /* A hypothesis */
     /* The only time it should get here is if the original proof has only one
        step */
@@ -1911,20 +1951,20 @@ nmbrString *nmbrGetTargetHyp(nmbrString *proof, long statemNum)
   }
   /* An assertion */
   if (type != a_ && type != p_) bug(1342);
-  hyps = statement[stmt].numReqHyp;
+  hyps = g_Statement[stmt].numReqHyp;
   pos = plen - 2;
   for (i = 0; i < hyps; i++) {
     splen = nmbrGetSubproofLen(proof, pos);
     if (splen > 1) {
       nmbrLet(&subProof, nmbrSeg(proof, pos - splen + 2, pos + 1));
       nmbrLet(&nmbrTmp, nmbrGetTargetHyp(subProof,
-          statement[stmt].reqHypList[hyps - i - 1]));
+          g_Statement[stmt].reqHypList[hyps - i - 1]));
       for (j = 0; j < splen; j++) {
         targetHyp[j + pos - splen + 1] = nmbrTmp[j];
       }
     } else {
       /* A one-step subproof; don't bother with recursive call */
-      targetHyp[pos] = statement[stmt].reqHypList[hyps - i - 1];
+      targetHyp[pos] = g_Statement[stmt].reqHypList[hyps - i - 1];
     }
     pos = pos - splen;
   }
@@ -2001,11 +2041,11 @@ vstring compressProof(nmbrString *proof, long statemNum,
 
   nmbrLet(&saveProof, proof); /* In case of temp. alloc. of proof */
 
-  if (statement[statemNum].type != (char)p_) bug(1344);
+  if (g_Statement[statemNum].type != (char)p_) bug(1344);
   plen = nmbrLen(saveProof);
 
   /* Create the initial label list of required hypotheses */
-  nmbrLet(&labelList, statement[statemNum].reqHypList);
+  nmbrLet(&labelList, g_Statement[statemNum].reqHypList);
 
   /* Add the other statement labels to the list */
 
@@ -2033,8 +2073,8 @@ vstring compressProof(nmbrString *proof, long statemNum,
         if (stmt != -(long)'?') bug(1346);
       }
     } else {
-      if (statement[stmt].type != (char)a_ &&
-          statement[stmt].type != (char)p_) {
+      if (g_Statement[stmt].type != (char)a_ &&
+          g_Statement[stmt].type != (char)p_) {
         hypList[hypLabels] = stmt;
         hypLabels++;
       } else {
@@ -2075,7 +2115,7 @@ vstring compressProof(nmbrString *proof, long statemNum,
   /* Get the list of explicit labels */
   nmbrLet(&explList, nmbrCat(
       /* Trim off leading implicit required hypotheses */
-      nmbrRight(hypList, statement[statemNum].numReqHyp + 1),
+      nmbrRight(hypList, g_Statement[statemNum].numReqHyp + 1),
       /* Add in the list of assertion ($a, $p) references */
       assertionList, NULL));
   explLabels = nmbrLen(explList);
@@ -2124,7 +2164,7 @@ vstring compressProof(nmbrString *proof, long statemNum,
       if (explRefCount[j] == i) {
         /* Find length, numchrs, of compressed label */
         /* If there are no req hyps, 0 = 1st label in explict list */
-        lab = statement[statemNum].numReqHyp + explSortPosition;
+        lab = g_Statement[statemNum].numReqHyp + explSortPosition;
 
         /* The following 7 lines are from the compressed label length
            determination algorithm below */
@@ -2151,7 +2191,7 @@ vstring compressProof(nmbrString *proof, long statemNum,
   /* Populate list of label lengths for knapsack01() "size" */
   for (i = 0; i < explLabels; i++) {
     stmt = explList[i];
-    explLabelLen[i] = (long)(strlen(statement[stmt].labelName)) + 1;
+    explLabelLen[i] = (long)(strlen(g_Statement[stmt].labelName)) + 1;
                                      /* +1 accounts for space between labels */
   }
 
@@ -2188,7 +2228,7 @@ vstring compressProof(nmbrString *proof, long statemNum,
       /* Note that the actual line wrapping will happen with printLongLine
          far in the future.  Here we will just put the labels in the order
          that will cause it to wrap at the desired place. */
-      explWidth = screenWidth - indentation - explOffset + 1;
+      explWidth = g_screenWidth - indentation - explOffset + 1;
 
       /* Fill in the label list output line with labels that fit best */
       /* The knapsack01() call below is always given the entire set of
@@ -2244,7 +2284,7 @@ vstring compressProof(nmbrString *proof, long statemNum,
 
   /* "hypList" is truncated to have only the required hypotheses with no
      optional ones */
-  nmbrLet(&hypList, nmbrLeft(hypList, statement[statemNum].numReqHyp));
+  nmbrLet(&hypList, nmbrLeft(hypList, g_Statement[statemNum].numReqHyp));
   /* "assertionList" will have both the optional hypotheses and the assertions,
      reordered */
   nmbrLet(&assertionList, newExplList);
@@ -2401,7 +2441,7 @@ vstring compressProof(nmbrString *proof, long statemNum,
   /* Create the final compressed proof */
   let(&output, cat("( ", nmbrCvtRToVString(nmbrCat(
       /* Trim off leading implicit required hypotheses */
-      nmbrRight(hypList, statement[statemNum].numReqHyp + 1),
+      nmbrRight(hypList, g_Statement[statemNum].numReqHyp + 1),
       assertionList, NULL),
                 /* 25-Jan-2016 nm */
                 0, /*explicitTargets*/
@@ -2458,8 +2498,8 @@ long compressedProofSize(nmbrString *proof, long statemNum) {
 /*********** Pointer string functions ******************************/
 /*******************************************************************/
 
-long pntrTempAllocStackTop = 0;     /* Top of stack for pntrTempAlloc functon */
-long pntrStartTempAllocStack = 0;   /* Where to start freeing temporary allocation
+long g_pntrTempAllocStackTop = 0;     /* Top of stack for pntrTempAlloc functon */
+long g_pntrStartTempAllocStack = 0;   /* Where to start freeing temporary allocation
                                     when pntrLet() is called (normally 0, except in
                                     special nested vstring functions) */
 pntrString *pntrTempAllocStack[M_MAX_ALLOC_STACK];
@@ -2470,33 +2510,33 @@ pntrString *pntrTempAlloc(long size)
 {
   /* When "size" is >0, "size" instances of pntrString are allocated. */
   /* When "size" is 0, all memory previously allocated with this */
-  /* function is deallocated, down to pntrStartTempAllocStack. */
+  /* function is deallocated, down to g_pntrStartTempAllocStack. */
   /* int i; */   /* 11-Jul-2014 WL old code deleted */
   if (size) {
-    if (pntrTempAllocStackTop>=(M_MAX_ALLOC_STACK-1))
+    if (g_pntrTempAllocStackTop>=(M_MAX_ALLOC_STACK-1))
       /*??? Fix to allocate more */
       outOfMemory("#109 (pntrString stack array)");
-    if (!(pntrTempAllocStack[pntrTempAllocStackTop++]=poolMalloc(size
+    if (!(pntrTempAllocStack[g_pntrTempAllocStackTop++]=poolMalloc(size
         *(long)(sizeof(pntrString)))))
       /* outOfMemory("#110 (pntrString stack)"); */ /*???Unnec. w/ poolMalloc*/
 /*E*/db2=db2+(size)*(long)(sizeof(pntrString));
-    return (pntrTempAllocStack[pntrTempAllocStackTop-1]);
+    return (pntrTempAllocStack[g_pntrTempAllocStackTop-1]);
   } else {
     /* 11-Jul-2014 WL old code deleted */
     /*
-    for (i=pntrStartTempAllocStack; i < pntrTempAllocStackTop; i++) {
+    for (i=g_pntrStartTempAllocStack; i < g_pntrTempAllocStackTop; i++) {
 /@E@/db2=db2-(pntrLen(pntrTempAllocStack[i])+1)*(long)(sizeof(pntrString));
       poolFree(pntrTempAllocStack[i]);
     }
     */
     /* 11-Jul-2014 WL new code */
-    while(pntrTempAllocStackTop != pntrStartTempAllocStack) {
-/*E*/db2=db2-(pntrLen(pntrTempAllocStack[pntrTempAllocStackTop-1])+1)
+    while(g_pntrTempAllocStackTop != g_pntrStartTempAllocStack) {
+/*E*/db2=db2-(pntrLen(pntrTempAllocStack[g_pntrTempAllocStackTop-1])+1)
 /*E*/                                              *(long)(sizeof(pntrString));
-      poolFree(pntrTempAllocStack[--pntrTempAllocStackTop]);
+      poolFree(pntrTempAllocStack[--g_pntrTempAllocStackTop]);
     }
     /* end of 11-Jul-2014 WL new code */
-    pntrTempAllocStackTop=pntrStartTempAllocStack;
+    g_pntrTempAllocStackTop=g_pntrStartTempAllocStack;
     return (0);
   }
 }
@@ -2507,7 +2547,7 @@ pntrString *pntrTempAlloc(long size)
    assigned again with pntrLet() */
 void pntrMakeTempAlloc(pntrString *s)
 {
-    if (pntrTempAllocStackTop>=(M_MAX_ALLOC_STACK-1)) {
+    if (g_pntrTempAllocStackTop>=(M_MAX_ALLOC_STACK-1)) {
       printf(
       "*** FATAL ERROR ***  Temporary pntrString stack overflow in pntrMakeTempAlloc()\n");
 #if __STDC__
@@ -2516,7 +2556,7 @@ void pntrMakeTempAlloc(pntrString *s)
       bug(1370);
     }
     if (s[0] != NULL) { /* Don't do it if pntrString is empty */
-      pntrTempAllocStack[pntrTempAllocStackTop++] = s;
+      pntrTempAllocStack[g_pntrTempAllocStackTop++] = s;
     }
 /*E*/db2=db2+(pntrLen(s)+1)*(long)(sizeof(pntrString));
 /*E*/db3=db3-(pntrLen(s)+1)*(long)(sizeof(pntrString));
@@ -3057,9 +3097,9 @@ long getSourceIndentation(long statemNum) {
   char *startLabel;
   long indentation = 0;
 
-  fbPtr = statement[statemNum].mathSectionPtr;
+  fbPtr = g_Statement[statemNum].mathSectionPtr;
   if (fbPtr[0] == 0) return 0;
-  startLabel = statement[statemNum].labelSectionPtr;
+  startLabel = g_Statement[statemNum].labelSectionPtr;
   if (startLabel[0] == 0) return 0;
   while (1) { /* Go back to first line feed prior to the label */
     if (fbPtr <= startLabel) break;
@@ -3082,9 +3122,9 @@ vstring getDescription(long statemNum) {
   vstring description = "";
   long p1, p2;
 
-  let(&description, space(statement[statemNum].labelSectionLen));
-  memcpy(description, statement[statemNum].labelSectionPtr,
-      (size_t)(statement[statemNum].labelSectionLen));
+  let(&description, space(g_Statement[statemNum].labelSectionLen));
+  memcpy(description, g_Statement[statemNum].labelSectionPtr,
+      (size_t)(g_Statement[statemNum].labelSectionLen));
   p1 = rinstr(description, "$(");
   p2 = rinstr(description, "$)");
   if (p1 == 0 || p2 == 0 || p2 < p1) {
@@ -3096,7 +3136,7 @@ vstring getDescription(long statemNum) {
   return description;
 
   /* 3-May-2017 nm Old code may have been somewhat faster, but it doesn't
-     work when statement[statemNum].labelSectionChanged */
+     work when g_Statement[statemNum].labelSectionChanged */
   /************* deleted *******
   char @fbPtr; /@ Source buffer pointer @/
   vstring description = "";
@@ -3104,9 +3144,9 @@ vstring getDescription(long statemNum) {
   char @endDescription;
   char @startLabel;
 
-  fbPtr = statement[statemNum].mathSectionPtr;
+  fbPtr = g_Statement[statemNum].mathSectionPtr;
   if (!fbPtr[0]) return (description);
-  startLabel = statement[statemNum].labelSectionPtr;
+  startLabel = g_Statement[statemNum].labelSectionPtr;
   if (!startLabel[0]) return (description);
   endDescription = NULL;
   while (1) { /@ Get end of embedded comment @/
@@ -3141,6 +3181,109 @@ vstring getDescription(long statemNum) {
 } /* getDescription */
 
 
+/* 24-Aug-2020 nm */
+/* Returns the label section of a statement with all comments except the
+   last removed.  Unlike getDescription, this function returns the comment
+   surrounded by $( and $) as well as the leading indentation space
+   and everything after this comment (such as the actual label).
+   Since this is used for arbitrary (other than $a, $p) statements by the
+   EXPAND command, we also suppress section headers if they are the last
+   comment.  The caller must deallocate the result. */
+vstring getDescriptionAndLabel(long stmt) {
+  vstring descriptionAndLabel = "";
+  long p1, p2;
+  flag dontUseComment = 0; /* 12-Sep-2020 nm */
+
+  let(&descriptionAndLabel, space(g_Statement[stmt].labelSectionLen));
+  memcpy(descriptionAndLabel, g_Statement[stmt].labelSectionPtr,
+      (size_t)(g_Statement[stmt].labelSectionLen));
+  p1 = rinstr(descriptionAndLabel, "$(");
+  p2 = rinstr(descriptionAndLabel, "$)");
+  if (p1 == 0 || p2 == 0 || p2 < p1) {
+    /* The statement has no comment; just return the label and
+       surrounding spacing if any */
+    return descriptionAndLabel;
+  }
+  /* Search backwards for non-space or beginning of string */
+  p1--;
+  while (p1 != 0) {
+    if (descriptionAndLabel[p1 - 1] != ' '
+          && descriptionAndLabel[p1 - 1] != '\n') break;
+    p1--;
+  }
+  let(&descriptionAndLabel, right(descriptionAndLabel, p1 + 1));
+  /* Ignore descriptionAndLabels that are section headers */
+  /* TODO: make this more precise here and in mmwtex.c - use 79-char decorations? */
+  if (instr(1, descriptionAndLabel, cat("\n", TINY_DECORATION, NULL)) != 0
+      || instr(1, descriptionAndLabel, cat("\n", SMALL_DECORATION, NULL)) != 0
+      || instr(1, descriptionAndLabel, cat("\n", BIG_DECORATION, NULL)) != 0
+      || instr(1, descriptionAndLabel, cat("\n", HUGE_DECORATION, NULL)) != 0) {
+    /*let(&descriptionAndLabel, "");*/
+    dontUseComment = 1; /* 12-Sep-2020 nm */
+  }
+  /* Remove comments with file inclusion markup */
+  if (instr(1, descriptionAndLabel, "$[") != 0) {
+    /*let(&descriptionAndLabel, "");*/
+    dontUseComment = 1; /* 12-Sep-2020 nm */
+  }
+
+  /* Remove comments with $j markup */
+  if (instr(1, descriptionAndLabel, "$j") != 0) {
+    /*let(&descriptionAndLabel, "");*/
+    dontUseComment = 1; /* 12-Sep-2020 nm */
+  }
+
+  /****** deleted 12-Sep-2020
+  /@ If the cleaned description is empty, e.g. ${ after a header,
+     add in spaces corresponding to the scope @/
+  if (descriptionAndLabel[0] == 0) {
+    let(&descriptionAndLabel, space(2 * (g_Statement[stmt].scope + 1)));
+  }
+  *******/
+
+  if (dontUseComment == 1) {
+    /* Get everything that follows the comment */
+    p2 = rinstr(descriptionAndLabel, "$)");
+    if (p2 == 0) bug(1401); /* Should have exited earlier if no "$)" */
+    let(&descriptionAndLabel, right(descriptionAndLabel, p2 + 2));
+  }
+
+  return descriptionAndLabel;
+} /* getDescriptionAndLabel */
+
+
+/**** Deleted 12-Sep-2020 nm
+/@ 24-Aug-2020 nm @/
+/@ Reconstruct the full header from the strings returned by
+   getSectionHeadings().  The caller should deallocate the returned string. @/
+/@ getSectionHeadings() currently return strings extracted from headers,
+   but not the full header needed for writeExtractedSource().  Maybe we
+   should have it return the full header in the future, but for now this
+   function reconstructs the full header. @/
+vstring buildHeader(vstring header, vstring hdrComment, vstring decoration) {
+  long i;
+  vstring fullDecoration = "";
+  vstring fullHeader = "";
+  /@ The HUGE_DECORATION etc. have only the 1st 4 chars of the full line.
+     Build the full line. @/
+  let(&fullDecoration, "");
+  for (i = 1; i <= 5; i++) {
+    let(&fullDecoration, cat(fullDecoration, decoration, decoration,
+        decoration, decoration, NULL));
+  }
+  let(&fullDecoration, left(fullDecoration, 79));
+  i = (long)strlen(hdrComment);
+  let(&fullHeader, cat("\n\n$(\n", fullDecoration, "\n",
+      space((79 - (long)strlen(header))/2), header, "\n", fullDecoration,
+      "\n", hdrComment,
+      (i == 0) ? "$)\n" :
+          (hdrComment[i - 1] == ' ') ? "$)\n" : "\n$)\n",
+      NULL));
+  let(&fullDecoration, "");
+  return fullHeader;
+} /@ buildHeader @/
+*******/
+
 
 /* Returns 0 or 1 to indicate absence or presence of an indicator in
    the comment of the statement. */
@@ -3162,8 +3305,8 @@ flag getMarkupFlag(long statemNum, flag mode) {
   /* These are global in mmdata.h
 #define PROOF_DISCOURAGED_MARKUP "(Proof modification is discouraged.)"
 #define USAGE_DISCOURAGED_MARKUP "(New usage is discouraged.)"
-  extern vstring proofDiscouragedMarkup;
-  extern vstring usageDiscouragedMarkup;
+  extern vstring g_proofDiscouragedMarkup;
+  extern vstring g_usageDiscouragedMarkup;
   */
 
   if (mode == RESET) { /* Deallocate */ /* Should be called by ERASE command */
@@ -3176,43 +3319,43 @@ flag getMarkupFlag(long statemNum, flag mode) {
 
   if (init == 0) {
     init = 1;
-    /* The global variables proofDiscouragedMarkup and usageDiscouragedMarkup
+    /* The global variables g_proofDiscouragedMarkup and g_usageDiscouragedMarkup
        are initialized to "" like all vstrings to allow them to be reassigned
        by a possible future SET command.  So the first time this is called
        we need to assign them to the default markup strings. */
-    if (proofDiscouragedMarkup[0] == 0) {
-      let(&proofDiscouragedMarkup, PROOF_DISCOURAGED_MARKUP);
+    if (g_proofDiscouragedMarkup[0] == 0) {
+      let(&g_proofDiscouragedMarkup, PROOF_DISCOURAGED_MARKUP);
     }
-    if (usageDiscouragedMarkup[0] == 0) {
-      let(&usageDiscouragedMarkup, USAGE_DISCOURAGED_MARKUP);
+    if (g_usageDiscouragedMarkup[0] == 0) {
+      let(&g_usageDiscouragedMarkup, USAGE_DISCOURAGED_MARKUP);
     }
     /* Initialize flag strings */
-    let(&commentSearchedFlags, string(statements + 1, 'N'));
-    let(&proofFlags, space(statements + 1));
-    let(&usageFlags, space(statements + 1));
+    let(&commentSearchedFlags, string(g_statements + 1, 'N'));
+    let(&proofFlags, space(g_statements + 1));
+    let(&usageFlags, space(g_statements + 1));
   }
 
-  if (statemNum < 1 || statemNum > statements) bug(1392);
+  if (statemNum < 1 || statemNum > g_statements) bug(1392);
 
   if (commentSearchedFlags[statemNum] == 'N') {
-    if (statement[statemNum].type == f_
-        || statement[statemNum].type == e_ /* 24-May-2016 nm */ ) {
+    if (g_Statement[statemNum].type == f_
+        || g_Statement[statemNum].type == e_ /* 24-May-2016 nm */ ) {
       /* Any comment before a $f, $e statement is assumed irrelevant */
       proofFlags[statemNum] = 'N';
       usageFlags[statemNum] = 'N';
     } else {
-      if (statement[statemNum].type != a_ && statement[statemNum].type != p_) {
+      if (g_Statement[statemNum].type != a_ && g_Statement[statemNum].type != p_) {
         bug(1393);
       }
       str1 = getDescription(statemNum);  /* str1 must be deallocated here */
       /* Strip linefeeds and reduce spaces */
       let(&str1, edit(str1, 4 + 8 + 16 + 128));
-      if (instr(1, str1, proofDiscouragedMarkup)) {
+      if (instr(1, str1, g_proofDiscouragedMarkup)) {
         proofFlags[statemNum] = 'Y';
       } else {
         proofFlags[statemNum] = 'N';
       }
-      if (instr(1, str1, usageDiscouragedMarkup)) {
+      if (instr(1, str1, g_usageDiscouragedMarkup)) {
         usageFlags[statemNum] = 'Y';
       } else {
         usageFlags[statemNum] = 'N';
@@ -3325,13 +3468,13 @@ flag getContrib(long stmtNum,
   if (mode == GC_RESET) {
     /* This is normally called by the ERASE command only */
     if (init != 0) {
-      if ((long)strlen(commentSearchedFlags) != statements + 1) {
+      if ((long)strlen(commentSearchedFlags) != g_statements + 1) {
         bug(1395);
       }
       if (stmtNum != 0) {
         bug(1400);
       }
-      for (stmt = 1; stmt <= statements; stmt++) {
+      for (stmt = 1; stmt <= g_statements; stmt++) {
         if (commentSearchedFlags[stmt] == 'Y') {
           /* Deallocate cached strings */
           let((vstring *)(&(contributorList[stmt])), "");
@@ -3362,10 +3505,10 @@ flag getContrib(long stmtNum,
     /* This should be called whenever the labelSection is changed e.g. by
        SAVE PROOF. */
     if (init != 0) {
-      if ((long)strlen(commentSearchedFlags) != statements + 1) {
+      if ((long)strlen(commentSearchedFlags) != g_statements + 1) {
         bug(1398);
       }
-      if (stmtNum < 1 || stmtNum > statements + 1) {
+      if (stmtNum < 1 || stmtNum > g_statements + 1) {
         bug(1399);
       }
       if (commentSearchedFlags[stmtNum] == 'Y') {
@@ -3384,25 +3527,25 @@ flag getContrib(long stmtNum,
   }
 
   /* We now check only $a and $p statements - should we do others? */
-  if (statement[stmtNum].type != a_ && statement[stmtNum].type != p_) {
+  if (g_Statement[stmtNum].type != a_ && g_Statement[stmtNum].type != p_) {
     goto RETURN_POINT;
   }
 
   if (init == 0) {
     init = 1;
     /* Initialize flag string */
-    let(&commentSearchedFlags, string(statements + 1, 'N'));
+    let(&commentSearchedFlags, string(g_statements + 1, 'N'));
     /* Initialize pointers to "" (null vstring) */
-    pntrLet(&contributorList, pntrSpace(statements + 1));
-    pntrLet(&contribDateList, pntrSpace(statements + 1));
-    pntrLet(&reviserList, pntrSpace(statements + 1));
-    pntrLet(&reviseDateList, pntrSpace(statements + 1));
-    pntrLet(&shortenerList, pntrSpace(statements + 1));
-    pntrLet(&shortenDateList, pntrSpace(statements + 1));
-    pntrLet(&mostRecentDateList, pntrSpace(statements + 1));
+    pntrLet(&contributorList, pntrSpace(g_statements + 1));
+    pntrLet(&contribDateList, pntrSpace(g_statements + 1));
+    pntrLet(&reviserList, pntrSpace(g_statements + 1));
+    pntrLet(&reviseDateList, pntrSpace(g_statements + 1));
+    pntrLet(&shortenerList, pntrSpace(g_statements + 1));
+    pntrLet(&shortenDateList, pntrSpace(g_statements + 1));
+    pntrLet(&mostRecentDateList, pntrSpace(g_statements + 1));
   }
 
-  if (stmtNum < 1 || stmtNum > statements) bug(1396);
+  if (stmtNum < 1 || stmtNum > g_statements) bug(1396);
 
   if (commentSearchedFlags[stmtNum] == 'N' /* Not in cache */
       || errorCheckFlag == 1 /* Needed to get sStart, rStart, cStart */) {
@@ -3558,9 +3701,9 @@ flag getContrib(long stmtNum,
 
   /* For error checking, we don't require dates in syntax statements
      (**** Note that this is set.mm-specific! ****) */
-  if (statement[stmtNum].type == a_   /* Don't check syntax statements */
-      && strcmp(left(statement[stmtNum].labelName, 3), "df-")
-      && strcmp(left(statement[stmtNum].labelName, 3), "ax-")) {
+  if (g_Statement[stmtNum].type == a_   /* Don't check syntax statements */
+      && strcmp(left(g_Statement[stmtNum].labelName, 3), "df-")
+      && strcmp(left(g_Statement[stmtNum].labelName, 3), "ax-")) {
     goto RETURN_POINT;
   }
 
@@ -3568,12 +3711,12 @@ flag getContrib(long stmtNum,
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /* convenience prefix to assist massive revisions
-        statement[stmtNum].labelName, " [",
+        g_Statement[stmtNum].labelName, " [",
         contributor, "/", reviser, "/", shortener, "] ",
         */
-        "?Warning:  There is no \"", edit(CONTRIB_MATCH, 8+128),
+        "?Warning: There is no \"", edit(CONTRIB_MATCH, 8+128),
         "...)\" in the comment above statement ",
-        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
 
@@ -3581,13 +3724,13 @@ flag getContrib(long stmtNum,
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /* convenience prefix to assist massive revisions
-        statement[stmtNum].labelName, " [",
+        g_Statement[stmtNum].labelName, " [",
         contributor, "/", reviser, "/", shortener, "] ",
         */
-        "?Warning:  There is more than one \"", edit(CONTRIB_MATCH, 8+128),
+        "?Warning: There is more than one \"", edit(CONTRIB_MATCH, 8+128),
         "...)\" ",
         "in the comment above statement ",
-        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
 
@@ -3595,55 +3738,55 @@ flag getContrib(long stmtNum,
   if (cStart != 0 && description[cMid - 2] != ',') {
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
-        "?Warning:  There is no comma between contributor and date",
+        "?Warning: There is no comma between contributor and date",
         ", or period is missing,",   /* 5-Aug-2017 nm */
         " in the comment above statement ",
-        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
   if (rStart != 0 && description[rMid - 2] != ',') {
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
-        "?Warning:  There is no comma between reviser and date",
+        "?Warning: There is no comma between reviser and date",
         ", or period is missing,",   /* 5-Aug-2017 nm */
         " in the comment above statement ",
-        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
   if (sStart != 0 && description[sMid - 2] != ',') {
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
-        "?Warning:  There is no comma between proof shortener and date",
+        "?Warning: There is no comma between proof shortener and date",
         ", or period is missing,",   /* 5-Aug-2017 nm */
         " in the comment above statement ",
-        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
   if (instr(1, contributor, ",") != 0) {
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
-        "?Warning:  There is a comma in the contributor name \"",
+        "?Warning: There is a comma in the contributor name \"",
         contributor,
         "\" in the comment above statement ",
-        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
   if (instr(1, reviser, ",") != 0) {
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
-        "?Warning:  There is a comma in the reviser name \"",
+        "?Warning: There is a comma in the reviser name \"",
         reviser,
         "\" in the comment above statement ",
-        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
   if (instr(1, shortener, ",") != 0) {
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
-        "?Warning:  There is a comma in the proof shortener name \"",
+        "?Warning: There is a comma in the proof shortener name \"",
         shortener,
         "\" in the comment above statement ",
-        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
 
@@ -3653,14 +3796,14 @@ flag getContrib(long stmtNum,
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /@ convenience prefix to assist massive revisions
-        statement[stmtNum].labelName, " [",
+        g_Statement[stmtNum].labelName, " [",
         @contributor, "/", @reviser, "/", @shortener, "] ",
         @/
         "?Warning: There are multiple \"",
         edit(REVISE_MATCH, 8+128) , "...)\" or \"",
         edit(SHORTEN_MATCH, 8+128) ,
         "...)\" entries in the comment above statement ",
-        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
         "  The last one of each type was used.",
         NULL), "    ", " ");
   }
@@ -3671,15 +3814,15 @@ flag getContrib(long stmtNum,
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /* convenience prefix to assist massive revisions
-        statement[stmtNum].labelName, " [",
+        g_Statement[stmtNum].labelName, " [",
         contributor, "/", reviser, "/", shortener, "] ",
         */
-        "?Warning:  \"", edit(CONTRIB_MATCH, 8+128),
+        "?Warning: \"", edit(CONTRIB_MATCH, 8+128),
         "...)\" is placed after \"",
         edit(REVISE_MATCH, 8+128) , "...)\" or \"",
         edit(SHORTEN_MATCH, 8+128) ,
         "...)\" in the comment above statement ",
-        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
 
@@ -3692,7 +3835,7 @@ flag getContrib(long stmtNum,
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /* convenience prefix to assist massive revisions
-        statement[stmtNum].labelName, " [",
+        g_Statement[stmtNum].labelName, " [",
         contributor, "/", reviser, "/", shortener, "] ",
         */
         "?Warning: There is a formatting error in a",
@@ -3700,7 +3843,7 @@ flag getContrib(long stmtNum,
         edit(REVISE_MATCH, 8+128) , "...)\", or \"",
         edit(SHORTEN_MATCH, 8+128),
         "...)\" entry in the comment above statement ",
-        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
 
@@ -3711,13 +3854,13 @@ flag getContrib(long stmtNum,
       err = 1;
       if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
           /* convenience prefix to assist massive revisions
-          statement[stmtNum].labelName, " [",
+          g_Statement[stmtNum].labelName, " [",
           contributor, "/", reviser, "/", shortener, "] ",
           */
           "?Warning: There is a formatting error in the \"",
           edit(CONTRIB_MATCH, 8+128),  "...)\" date \"", contribDate, "\""
           " in the comment above statement ",
-          str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+          str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
           NULL), "    ", " ");
     }
   }
@@ -3729,13 +3872,13 @@ flag getContrib(long stmtNum,
       err = 1;
       if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
           /* convenience prefix to assist massive revisions
-          statement[stmtNum].labelName, " [",
+          g_Statement[stmtNum].labelName, " [",
           contributor, "/", reviser, "/", shortener, "] ",
           */
           "?Warning: There is a formatting error in the \"",
           edit(REVISE_MATCH, 8+128) , "...)\" date \"", reviseDate, "\""
           " in the comment above statement ",
-          str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+          str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
           NULL), "    ", " ");
     }
   }
@@ -3747,13 +3890,13 @@ flag getContrib(long stmtNum,
       err = 1;
       if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
           /* convenience prefix to assist massive revisions
-          statement[stmtNum].labelName, " [",
+          g_Statement[stmtNum].labelName, " [",
           contributor, "/", reviser, "/", shortener, "] ",
           */
           "?Warning: There is a formatting error in the \"",
           edit(SHORTEN_MATCH, 8+128) , "...)\" date \"", shortenDate, "\""
           " in the comment above statement ",
-          str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+          str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
           NULL), "    ", " ");
     }
   }
@@ -3766,15 +3909,15 @@ flag getContrib(long stmtNum,
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /* convenience prefix to assist massive revisions
-        statement[stmtNum].labelName, " [",
+        g_Statement[stmtNum].labelName, " [",
         contributor, "/", reviser, "/", shortener, "] ",
         */
-        "?Warning:  The \"", edit(CONTRIB_MATCH, 8+128),
+        "?Warning: The \"", edit(CONTRIB_MATCH, 8+128),
         "...)\" date is not earlier than the \"",
         edit(REVISE_MATCH, 8+128), "...)\" or \"",
         edit(SHORTEN_MATCH, 8+128),
         "...)\" date in the comment above statement ",
-        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
 
@@ -3785,13 +3928,13 @@ flag getContrib(long stmtNum,
       err = 1;
       if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /* convenience prefix to assist massive revisions
-        statement[stmtNum].labelName, " [",
+        g_Statement[stmtNum].labelName, " [",
         contributor, "/", reviser, "/", shortener, "] ",
         */
-          "?Warning:  The \"", edit(REVISE_MATCH, 8+128), "...)\" and \"",
+          "?Warning: The \"", edit(REVISE_MATCH, 8+128), "...)\" and \"",
           edit(SHORTEN_MATCH, 8+128),
          "...)\" dates are in the wrong order in the comment above statement ",
-          str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+          str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
           NULL), "    ", " ");
     }
   }
@@ -3800,7 +3943,7 @@ flag getContrib(long stmtNum,
 
   /* TODO ******** The rest of the checks should be deleted if we decide
      to drop the date after the proof */
-  if (statement[stmtNum].type != p_) {
+  if (g_Statement[stmtNum].type != p_) {
     goto RETURN_POINT;
   }
   getProofDate(stmtNum, &tmpDate1, &tmpDate2);
@@ -3808,11 +3951,11 @@ flag getContrib(long stmtNum,
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /* convenience prefix to assist massive revisions
-        statement[stmtNum].labelName, " [",
+        g_Statement[stmtNum].labelName, " [",
         contributor, "/", reviser, "/", shortener, "] ",
         */
-        "?Warning:  There is no date below the proof in statement ",
-        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        "?Warning: There is no date below the proof in statement ",
+        str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
   if (tmpDate2[0] == 0
@@ -3820,29 +3963,29 @@ flag getContrib(long stmtNum,
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /* convenience prefix to assist massive revisions
-        statement[stmtNum].labelName, " [",
+        g_Statement[stmtNum].labelName, " [",
         contributor, "/", reviser, "/", shortener, "] ",
         */
-        "?Warning:  The comment has \"",
+        "?Warning: The comment has \"",
         edit(REVISE_MATCH, 8+128), "...)\" or \"",
         edit(SHORTEN_MATCH, 8+128),
         "...)\" but there is only one date below the proof",
         " in statement ",
-        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
   if (tmpDate2[0] != 0 && reviseDate[0] == 0 && shortenDate[0] == 0) {
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /* convenience prefix to assist massive revisions
-        statement[stmtNum].labelName, " [",
+        g_Statement[stmtNum].labelName, " [",
         contributor, "/", reviser, "/", shortener, "] ",
         */
-        "?Warning:  There are two dates below the proof but no \"",
+        "?Warning: There are two dates below the proof but no \"",
         edit(REVISE_MATCH, 8+128), "...)\" or \"",
         edit(SHORTEN_MATCH, 8+128),
         "...)\" entry in statement ",
-        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
   if (tmpDate2[0] != 0
@@ -3852,15 +3995,15 @@ flag getContrib(long stmtNum,
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /* convenience prefix to assist massive revisions
-        statement[stmtNum].labelName, " [",
+        g_Statement[stmtNum].labelName, " [",
         contributor, "/", reviser, "/", shortener, "] ",
         */
-        "?Warning:  Neither a \"",
+        "?Warning: Neither a \"",
         edit(REVISE_MATCH, 8+128), "...)\" date ",
         "nor a \"", edit(SHORTEN_MATCH, 8+128), "...)\" date ",
         "matches the date ", tmpDate1,
         " below the proof in statement ",
-        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
   if (tmpDate2[0] != 0
@@ -3869,14 +4012,14 @@ flag getContrib(long stmtNum,
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /* convenience prefix to assist massive revisions
-        statement[stmtNum].labelName, " [",
+        g_Statement[stmtNum].labelName, " [",
         contributor, "/", reviser, "/", shortener, "] ",
         */
-        "?Warning:  The \"",
+        "?Warning: The \"",
         edit(REVISE_MATCH, 8+128), "...)\" date ", reviseDate,
         " is later than the date ", tmpDate1,
         " below the proof in statement ",
-        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
   if (tmpDate2[0] != 0
@@ -3885,27 +4028,27 @@ flag getContrib(long stmtNum,
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /* convenience prefix to assist massive revisions
-        statement[stmtNum].labelName, " [",
+        g_Statement[stmtNum].labelName, " [",
         contributor, "/", reviser, "/", shortener, "] ",
         */
-        "?Warning:  The \"",
+        "?Warning: The \"",
         edit(SHORTEN_MATCH, 8+128), "...)\" date ", shortenDate,
         " is later than the date ", tmpDate1,
         " below the proof in statement ",
-        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
   if (tmpDate2[0] != 0 && compareDates(tmpDate2, tmpDate1) != -1) {
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /* convenience prefix to assist massive revisions
-        statement[stmtNum].labelName, " [",
+        g_Statement[stmtNum].labelName, " [",
         contributor, "/", reviser, "/", shortener, "] ",
         */
-        "?Warning:  The first date below the proof, ", tmpDate1,
+        "?Warning: The first date below the proof, ", tmpDate1,
         ", is not newer than the second, ", tmpDate2,
         ", in statement ",
-        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
   if (tmpDate2[0] == 0) {
@@ -3918,14 +4061,14 @@ flag getContrib(long stmtNum,
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         /* convenience prefix to assist massive revisions
-        statement[stmtNum].labelName, " [",
+        g_Statement[stmtNum].labelName, " [",
         contributor, "/", reviser, "/", shortener, "] ",
         */
-        "?Warning:  The \"", edit(CONTRIB_MATCH, 8+128), "...)\" date ",
+        "?Warning: The \"", edit(CONTRIB_MATCH, 8+128), "...)\" date ",
         contribDate,
         " doesn't match the date ", tmpDate0,
         " below the proof in statement ",
-        str((double)stmtNum), ", label \"", statement[stmtNum].labelName, "\".",
+        str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
   }
   /***** End of section to delete if date after proof is dropped */
@@ -3969,9 +4112,9 @@ flag getContrib(long stmtNum,
 void getProofDate(long stmtNum, vstring *date1, vstring *date2) {
   vstring textAfterProof = "";
   long p1, p2;
-  let(&textAfterProof, space(statement[stmtNum + 1].labelSectionLen));
-  memcpy(textAfterProof, statement[stmtNum + 1].labelSectionPtr,
-      (size_t)(statement[stmtNum + 1].labelSectionLen));
+  let(&textAfterProof, space(g_Statement[stmtNum + 1].labelSectionLen));
+  memcpy(textAfterProof, g_Statement[stmtNum + 1].labelSectionPtr,
+      (size_t)(g_Statement[stmtNum + 1].labelSectionLen));
   let(&textAfterProof, edit(textAfterProof, 2)); /* Discard spaces and tabs */
   p1 = instr(1, textAfterProof, "$([");
   p2 = instr(p1, textAfterProof, "]$)");
@@ -4069,7 +4212,7 @@ flag compareDates(vstring date1, vstring date2) {
 
 /* 17-Nov-2015 Moved out of metamath.c for better modularization */
 /* Compare strings via pointers for qsort */
-/* qsortKey is a global string key at which the sort starts; if empty,
+/* g_qsortKey is a global string key at which the sort starts; if empty,
    start at the beginning of each line. */
 int qsortStringCmp(const void *p1, const void *p2)
 {
@@ -4077,12 +4220,12 @@ int qsortStringCmp(const void *p1, const void *p2)
   long n1, n2;
   int r;
   /* Returns -1 if p1 < p2, 0 if equal, 1 if p1 > p2 */
-  if (qsortKey[0] == 0) {
+  if (g_qsortKey[0] == 0) {
     /* No key, use full line */
     return strcmp(*(char * const *)p1, *(char * const *)p2);
   } else {
-    n1 = instr(1, *(char * const *)p1, qsortKey);
-    n2 = instr(1, *(char * const *)p2, qsortKey);
+    n1 = instr(1, *(char * const *)p1, g_qsortKey);
+    n2 = instr(1, *(char * const *)p2, g_qsortKey);
     r = strcmp(
         right(*(char * const *)p1, n1),
         right(*(char * const *)p2, n2));
@@ -4093,9 +4236,10 @@ int qsortStringCmp(const void *p1, const void *p2)
 
 /* 4-May-2017 Ari Ferrera */
 void freeData() {
-  free(includeCall);
-  free(statement);
-  free(mathToken);
+  /* 15-Aug-2020 nm TODO: are some of these called twice? (in eraseSource) */
+  free(g_IncludeCall);
+  free(g_Statement);
+  free(g_MathToken);
   free(memFreePool);
   free(memUsedPool);
 }

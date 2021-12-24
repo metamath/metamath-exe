@@ -38,14 +38,6 @@ metamath_SOURCES = \
 	mmwsts.c \
 	$(noinst_HEADERS)
 
-dist_pkgdata_DATA = \
-	big-unifier.mm \
-	demo0.mm \
-	miu.mm \
-	peano.mm \
-	ql.mm \
-	set.mm
-
 
 EXTRA_DIST = \
 	LICENSE.TXT \
