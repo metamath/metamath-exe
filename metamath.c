@@ -604,6 +604,7 @@
     mmutil.c - Miscellaneous I/O utilities (reserved for future use)
     mmveri.c - Proof verifier for source file
     mmvstr.c - BASIC-like string functions
+    mmwsts.c - Structured typesetting (MathML) generation
     mmwtex.c - LaTeX/HTML source generation
     mmword.c - File revision utility (for TOOLS> UPDATE) (not generally useful)
 */
@@ -638,6 +639,7 @@
 #include "mmunif.h"
 #include "mmword.h"
 #include "mmwtex.h"
+#include "mmwsts.h"
 #ifdef THINK_C
 #include "mmmaci.h"
 #endif
@@ -2289,14 +2291,25 @@ void command(int argc, char *argv[])
       htmlFlag = 1;
       /* If not specified, for backwards compatibility in scripts
          leave altHtmlFlag at current value */
+      /* 7-Jul-17 - MathML/STS handling */
       if (switchPos("/ HTML") != 0) {
-        if (switchPos("/ ALT_HTML") != 0) {
-          print2("?Please specify only one of / HTML and / ALT_HTML.\n");
+        if (switchPos("/ ALT_HTML") != 0 || switchPos("/ STS") != 0 ) {
+          print2("?Please specify only one of / HTML , / ALT_HTML and / STS.\n");
           continue;
         }
         altHtmlFlag = 0;
-      } else {
-        if (switchPos("/ ALT_HTML") != 0) altHtmlFlag = 1;
+      } else if (switchPos("/ ALT_HTML") != 0) {
+        if (switchPos ("/ STS") != 0) {
+          print2 ("?Please specify only one of / HTML , / ALT_HTML and / STS.\n");
+          continue;
+        }
+        altHtmlFlag = 1;
+            } else if (switchPos ("/ STS") != 0) {
+        stsFlag = 1;
+        let(&stsOutput, fullArg[5]);
+
+        /* Parse the STS rules corresponding to the expected output . */
+        parsetSTSRules(stsOutput);
       }
 
       if (2/*error*/ == readTexDefs(0 /* 1 = check errors only */,
@@ -2861,6 +2874,8 @@ void command(int argc, char *argv[])
         switchPos("/ HTML")
         || switchPos("/ BRIEF_HTML")
         || switchPos("/ ALT_HTML")
+      	/* 7-Jul-2017 added MathML/STS */
+        || switchPos("/ STS")
         || switchPos("/ BRIEF_ALT_HTML"))) {
       /* Special processing for the / HTML qualifiers - for each matching
          statement, a .html file is opened, the statement is output,
@@ -2873,6 +2888,8 @@ void command(int argc, char *argv[])
       i = 5;  /* # arguments with only / HTML or / ALT_HTML */
       if (noVersioning) i = i + 2;
       if (switchPos("/ TIME")) i = i + 2;
+      /* 7-Jul-2017 added MathML/STS */
+      if (switchPos("/ STS")) i = i + 1;
       if (rawArgs != i) {
         printLongLine(cat("?The HTML qualifiers may not be combined with",
             " others except / NO_VERSIONING and / TIME.\n", NULL), "  ", " ");
@@ -2923,6 +2940,15 @@ void command(int argc, char *argv[])
         altHtmlFlag = 1;
       } else {
         altHtmlFlag = 0;
+      }
+
+      /* 7-Jul-2017 added MathML/STS */
+      if (switchPos("/ STS")) {
+        stsFlag = 1;
+        let(&stsOutput, fullArg[5]);
+
+        /* Parse the STS rules corresponding to the expected output. */
+        parsetSTSRules(stsOutput);
       }
 
       q = 0;
@@ -2996,20 +3022,32 @@ void command(int argc, char *argv[])
             let(&texFileName, cat(statement[showStatement].labelName, ".html",
                 NULL));
         }
-        print2("Creating HTML file \"%s\"...\n", texFileName);
-        texFilePtr = fSafeOpen(texFileName, "w",    /* 17-Jul-2019 nm */
-            noVersioning /*noVersioningFlag*/);
-        /****** old code before 17-Jul-2019 *******
-        if (switchPos("/ NO_VERSIONING") == 0) {
-          texFilePtr = fSafeOpen(texFileName, "w", 0/@noVersioningFlag@/);
-        } else {
-          /@ 6-Jul-2008 nm Added / NO_VERSIONING @/
-          /@ Don't create the backup versions ~1, ~2,... @/
-          texFilePtr = fopen(texFileName, "w");
-          if (!texFilePtr) print2("?Could not open the file \"%s\".\n",
-              texFileName);
+        /* 29-Sep-17 Thierry Arnoux - Post processing (for pre-rendering) */
+        if(stsFlag && strlen(postProcess) != 0) {
+          vstring pipeCommand = "";
+          print2("Creating and processing HTML file \"%s\"...\n", texFileName);
+          let(&pipeCommand, cat(postProcess, " > ", texFileName, NULL));
+          texFilePtr = popen(pipeCommand, "w");
+          if (!texFilePtr) print2("?Could not execute the command \"%s\".\n",
+	          pipeCommand);
+          let(&pipeCommand, "");
         }
-        ********* end of old code before 17-Jul-2019 *******/
+        else {
+          print2("Creating HTML file \"%s\"...\n", texFileName);
+          texFilePtr = fSafeOpen(texFileName, "w",    /* 17-Jul-2019 nm */
+              noVersioning /*noVersioningFlag*/);
+          /****** old code before 17-Jul-2019 *******
+          if (switchPos("/ NO_VERSIONING") == 0) {
+            texFilePtr = fSafeOpen(texFileName, "w", 0/@noVersioningFlag@/);
+          } else {
+            /@ 6-Jul-2008 nm Added / NO_VERSIONING @/
+            /@ Don't create the backup versions ~1, ~2,... @/
+            texFilePtr = fopen(texFileName, "w");
+            if (!texFilePtr) print2("?Could not open the file \"%s\".\n",
+                texFileName);
+          }
+          ********* end of old code before 17-Jul-2019 *******/
+        }
         if (!texFilePtr) goto htmlDone; /* Couldn't open it (err msg was
             provided) */
         texFileOpenFlag = 1;
@@ -3144,7 +3182,10 @@ void command(int argc, char *argv[])
                   if (!instr(1, str3, cat(" ", str1, " ", NULL))) {
                     let(&str3, cat(str3, " ", str1, " ", NULL));
                     let(&str2, "");
-                    str2 = tokenToTex(mathToken[(statement[i].mathString)[j]
+                    /* 27 Jul 2017 tar For MathML/STS */
+                    if(stsFlag) str2 = stsToken((statement[i].mathString)[j], i);
+                    else
+                      str2 = tokenToTex(mathToken[(statement[i].mathString)[j]
                         ].tokenName, i/*stmt# for error msgs*/);
                     /* 2/9/02  Skip any tokens (such as |- in QL Explorer) that
                        may be suppressed */
@@ -3294,7 +3335,8 @@ void command(int argc, char *argv[])
        ABORT_S:
         /*** Close the html file ***/
         printTexTrailer(1 /*texHeaderFlag*/);
-        fclose(texFilePtr);
+        if(stsFlag && strlen(postProcess) != 0) pclose(texFilePtr);
+        else fclose(texFilePtr);
         texFileOpenFlag = 0;
         let(&texFileName,"");
 
@@ -7910,6 +7952,13 @@ void command(int argc, char *argv[])
           fullArg[2],  /* Output file */
           (switchPos("/ CSS") != 0),
           i); /* Action bits */
+      continue;
+    }
+
+    if (cmdMatches("VERIFY STS")) {
+      /* 12-Dec-17 - Go through all non-definition axioms,
+       * and check whether there is a corresponding STS scheme */
+      verifySts(fullArg[2]);
       continue;
     }
 

@@ -15,7 +15,8 @@ noinst_HEADERS = \
 	mmveri.h \
 	mmvstr.h \
 	mmword.h \
-	mmwtex.h
+	mmwtex.h \
+	mmwsts.h
 
 metamath_SOURCES = \
 	metamath.c \
@@ -34,6 +35,7 @@ metamath_SOURCES = \
 	mmvstr.c \
 	mmword.c \
 	mmwtex.c \
+	mmwsts.c \
 	$(noinst_HEADERS)
 
 dist_pkgdata_DATA = \

@@ -90,7 +90,7 @@ flag processCommandLine(void)
           "MARKUP|ASSIGN|REPLACE|MATCH|UNIFY|LET|INITIALIZE|DELETE|IMPROVE|",
           /* 11-Sep-2016 nm Added EXPAND */
           "MINIMIZE_WITH|EXPAND|UNDO|REDO|SAVE|DEMO|INVOKE|CLI|EXPLORE|TEX|",
-          "LATEX|HTML|COMMENTS|MORE|",
+          "LATEX|HTML|STS|COMMENTS|MORE|",
           "TOOLS|MIDI|$|<$>", NULL))) goto pclbad;
       if (cmdMatches("HELP OPEN")) {
         /*if (!getFullArg(2, "LOG|TEX|HTML|<LOG>")) goto pclbad;*/
@@ -124,7 +124,7 @@ flag processCommandLine(void)
         goto pclgood;
       }
       if (cmdMatches("HELP VERIFY")) {
-        if (!getFullArg(2, "PROOF|MARKUP|<PROOF>"))
+        if (!getFullArg(2, "PROOF|MARKUP|STS|<PROOF>"))
             goto pclbad;
         goto pclgood;
       }
@@ -570,8 +570,20 @@ flag processCommandLine(void)
             if (!getFullArg(i, cat(
                 "FULL|COMMENT|TEX|OLD_TEX|HTML|ALT_HTML|TIME|BRIEF_HTML",
                 /* 12-May-2009 sa Added MNEMONICS */
-                "|BRIEF_ALT_HTML|MNEMONICS|NO_VERSIONING|<FULL>", NULL)))
+                "|BRIEF_ALT_HTML|MNEMONICS|NO_VERSIONING|<FULL>"
+                /* 7-Jul-2017 added MATHML/STS */
+                "|STS", NULL)))
               goto pclbad;
+            if (lastArgMatches("STS")) {
+              i++;
+              if (strlen(stsOutput)) {
+              if (!getFullArg(i,cat("* Using which output mode <",stsOutput,">? ",NULL)))
+                goto pclbad;
+                        } else {
+              if (!getFullArg(i,"* Using which output mode <mathml>? "))
+                goto pclbad;
+              }
+            }
           } else {
             break;
           }
@@ -1345,7 +1357,7 @@ flag processCommandLine(void)
 
     if (cmdMatches("VERIFY")) {
       if (!getFullArg(1,
-          "PROOF|MARKUP|<PROOF>"))
+          "PROOF|MARKUP|STS|<PROOF>"))
         goto pclbad;
       if (cmdMatches("VERIFY PROOF")) {
         if (sourceHasBeenRead == 0) {
@@ -1403,6 +1415,21 @@ flag processCommandLine(void)
           /* break; */  /* Break if only 1 switch is allowed */
         }
 
+        goto pclgood;
+      }
+
+      if (cmdMatches("VERIFY STS")) {
+        if (statements == 0) {
+          print2("?No source file has been read in.  Use READ first.\n");
+          goto pclbad;
+        }
+        if (strlen(stsOutput)) {
+          if (!getFullArg(2,cat("* Using which output mode <",stsOutput,">? ",NULL)))
+            goto pclbad;
+        } else {
+          if (!getFullArg(2,"* Using which output mode <mathml>? "))
+            goto pclbad;
+        }
         goto pclgood;
       }
     }
