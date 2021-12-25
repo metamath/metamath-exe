@@ -196,7 +196,7 @@ H("    / ALT_HTML, / BRIEF_HTML, / BRIEF_ALT_HTML - See HELP HTML for more");
 H("        information on these.");
 /* 13-Jan-2018 tar Added STS */
 H("    / STS This qualifier invokes the HTML mode of SHOW STATEMENT, for");
-H("        creating a Web page for the statement. However it does not so by");
+H("        creating a Web page for the statement.  However it does not so by");
 H("        mapping symbols one-to-one with their HTML representation, but");
 H("        uses an approach based on the structure of the statement.");
 H("        See HELP STS for more information.");
