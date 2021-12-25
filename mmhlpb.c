@@ -722,7 +722,7 @@ g_printHelp = !strcmp(saveHelpCmd, "HELP VERIFY STS");
 H("Syntax:  VERIFY STS <format>");
 H("");
 H("This command error-checks that the STS rules definition covers all syntax");
-H("defined in the Metamath source file loaded. It runs through all non");
+H("defined in the Metamath source file loaded.  It runs through all non-");
 H("definitional axioms and prints a warning on those which do not have ");
 H("corresponding STS rules. ");
 H("");
