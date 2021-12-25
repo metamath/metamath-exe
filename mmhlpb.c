@@ -42,6 +42,7 @@ H("For a summary of comment markup, type HELP VERIFY MARKUP.");
 H("For help getting started, type HELP DEMO.");
 H("For help exploring the data base, type HELP EXPLORE.");
 H("For help creating a LaTeX file, type HELP TEX.");
+H("For help with structured typesetting, type HELP STS.");
 H("For help creating Web pages, type HELP HTML.");
 H("For help proving new theorems, type HELP PROOF_ASSISTANT.");
 H("For a list of help topics, type HELP ? (to force an error message).");

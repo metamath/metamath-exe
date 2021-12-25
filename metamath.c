@@ -2389,7 +2389,7 @@ void command(int argc, char *argv[])
           continue;
         }
         g_altHtmlFlag = 1;
-            } else if (switchPos ("/ STS") != 0) {
+      } else if (switchPos ("/ STS") != 0) {
         stsFlag = 1;
         let(&stsOutput, g_fullArg[5]);
 
