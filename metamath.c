@@ -20,6 +20,7 @@
                memory management; converts between proof formats
     mmhlpa.c - The help file, part 1.
     mmhlpb.c - The help file, part 2.
+    mmhtbl.c - Hashtable implementation
     mminou.c - Basic input and output interface
     mmmaci.c - THINK C Macintosh interface (obsolete)
     mmpars.c - Parses the source file
@@ -29,6 +30,7 @@
     mmveri.c - Proof verifier for source file
     mmvstr.c - BASIC-like string functions
     mmwtex.c - LaTeX/HTML source generation
+    mmwsts.c - STS source generation
     mmword.c - File revision utility (for TOOLS> UPDATE) (not generally useful)
 */
 
@@ -57,7 +59,16 @@
 
 
 
-#define MVERSION "0.198 7-Aug-2021"
+#define MVERSION "0.199 24-Dec-2021"
+/* 0.199 tar 24-Dec-2021 mmwsts.c and others - Merge STS source generation code
+   originally developped in July 2017.  STS stands for Structured TypeSetting and
+   can be used to generate MathML, which can in turn be postprocessed by MathJAX
+   to output mathematical typesetting (this includes indices, exponents, summands
+   and integrals with sets specifed below the sign, square roots with overhangs,
+   fraction bars, sized parentheses, etc.)  The code introduces a new / STS flag
+   as a third alternative to / HTML and / ALT_HTML for HTML page generation, and
+   a / VERIFY STS option to only check the integrity of the external STS command
+   file.  */
 /* 0.198 nm 7-Aug-2021 mmpars.c - Fix cosmetic bug in WRITE SOURCE ... /REWRAP
    that prevented end of sentence (e.g. period) from appearing in column 79,
    thus causing some lines to be shorter than necessary. */
@@ -2973,7 +2984,7 @@ void command(int argc, char *argv[])
       i = 5;  /* # arguments with only / HTML or / ALT_HTML */
       if (noVersioning) i = i + 2;
       if (switchPos("/ TIME")) i = i + 2;
-      /* 7-Jul-2017 added MathML/STS */
+      /* 7-Jul-2017 added MathML/STS : one more argument for STS */
       if (switchPos("/ STS")) i = i + 1;
       if (g_rawArgs != i) {
         printLongLine(cat("?The HTML qualifiers may not be combined with",
