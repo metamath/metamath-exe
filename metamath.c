@@ -2394,7 +2394,7 @@ void command(int argc, char *argv[])
         let(&stsOutput, g_fullArg[5]);
 
         /* Parse the STS rules corresponding to the expected output . */
-        parsetSTSRules(stsOutput);
+        parseSTSRules(stsOutput);
       }
 
       if (2/*error*/ == readTexDefs(0 /* 1 = check errors only */,
@@ -3033,7 +3033,7 @@ void command(int argc, char *argv[])
         let(&stsOutput, g_fullArg[5]);
 
         /* Parse the STS rules corresponding to the expected output. */
-        parsetSTSRules(stsOutput);
+        parseSTSRules(stsOutput);
       }
 
       q = 0;

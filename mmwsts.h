@@ -11,7 +11,7 @@
 #include "mmdata.h"
 
 /* Parse an STS file */
-int parsetSTSRules(vstring format);
+int parseSTSRules(vstring format);
 
 /* Returns the HTML code for MathML, for the math string (hypothesis or
    conclusion) that is passed in. */

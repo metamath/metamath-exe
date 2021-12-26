@@ -214,7 +214,7 @@ void stsDumpCache(nmbrString *key, vstring object) {
 }
 
 /* Parse a file containing the structured typesetting rules. */
-int parsetSTSRules(vstring format) {
+int parseSTSRules(vstring format) {
   vstring inputFn = "";
   vstring chunk = "";
   char chunkType = 0;
@@ -915,7 +915,7 @@ void verifySts(vstring format) {
 
   print2("Verifying axioms have %s STS schemes...\n", format);
   if(strcmp(stsFormat, format)) {
-    if(!parsetSTSRules(format)) {
+    if(!parseSTSRules(format)) {
       print2("?Aborting verify.\n");
       return;
     }
