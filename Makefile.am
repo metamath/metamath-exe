@@ -7,7 +7,6 @@ noinst_HEADERS = \
 	mmhlpa.h \
 	mmhlpb.h \
 	mminou.h \
-	mmmaci.h \
 	mmpars.h \
 	mmpfas.h \
 	mmunif.h \
@@ -25,7 +24,6 @@ metamath_SOURCES = \
 	mmhlpa.c \
 	mmhlpb.c \
 	mminou.c \
-	mmmaci.c \
 	mmpars.c \
 	mmpfas.c \
 	mmunif.c \

@@ -21,7 +21,6 @@
     mmhlpa.c - The help file, part 1.
     mmhlpb.c - The help file, part 2.
     mminou.c - Basic input and output interface
-    mmmaci.c - THINK C Macintosh interface (obsolete)
     mmpars.c - Parses the source file
     mmpfas.c - Proof Assistant
     mmunif.c - Unification algorithm for Proof Assistant
@@ -57,7 +56,10 @@
 
 
 
-#define MVERSION "0.198 7-Aug-2021"
+#define MVERSION "0.199.pre 7-Aug-2021"
+/* 0.199.pre
+   30-Dec-2021 mc metamath.c mmdata.c mminou.c mmmaci.c -
+     Remove mmmaci and everything related to THINK_C compiler */
 /* 0.198 nm 7-Aug-2021 mmpars.c - Fix cosmetic bug in WRITE SOURCE ... /REWRAP
    that prevented end of sentence (e.g. period) from appearing in column 79,
    thus causing some lines to be shorter than necessary. */
@@ -687,9 +689,6 @@
 #include <ctype.h>
 #include <stdarg.h>
 /* #include <time.h> */ /* 21-Jun-2014 nm For ELAPSED_TIME */
-#ifdef THINK_C
-#include <console.h>
-#endif
 #include "mmutil.h"
 #include "mmvstr.h"
 #include "mmdata.h"
@@ -704,9 +703,6 @@
 #include "mmunif.h"
 #include "mmword.h"
 #include "mmwtex.h"
-#ifdef THINK_C
-#include "mmmaci.h"
-#endif
 
 void command(int argc, char *argv[]);
 
@@ -714,29 +710,6 @@ int main(int argc, char *argv[])
 {
 
 /* argc is the number of arguments; argv points to an array containing them */
-#ifdef THINK_C
-/* Set console attributes */
-console_options.pause_atexit = 0; /* No pause at exit */
-console_options.title = (unsigned char*)"\pMetamath";
-#endif
-
-#ifdef THINK_C
-  /* The standard stream triggers the console package to initialize the
-     Macintosh Toolbox managers and use the console interface.  cshow must
-     be called before using our own window to prevent crashing (THINK C
-     Standard Library Reference p. 43). */
-  cshow(stdout);
-  /* Initialize MacIntosh interface */
-  /*ToolBoxInit(); */ /* cshow did this automatically */
-  /* Display opening window */
-  /*
-  WindowInit();
-  DrawMyPicture();
-  */
-  /* Wait for mouse click or key */
-  /*while (!Button());*/
-#endif
-
 
   /****** If g_listMode is set to 1 here, the startup will be Text Tools
           utilities, and Metamath will be disabled ***************************/
@@ -999,13 +972,7 @@ void command(int argc, char *argv[])
 
     if (g_memoryStatus) {
       /*??? Change to user-friendly message */
-#ifdef THINK_C
-      print2("Memory:  string %ld xxxString %ld free %ld\n",db,db3,(long)FreeMem());
-      getPoolStats(&i, &j, &k);
-      print2("Pool:  free alloc %ld  used alloc %ld  used actual %ld\n",i,j,k);
-#else
       print2("Memory:  string %ld xxxString %ld\n",db,db3);
-#endif
       getPoolStats(&i, &j, &k);
       print2("Pool:  free alloc %ld  used alloc %ld  used actual %ld\n",i,j,k);
     }
@@ -3717,11 +3684,7 @@ void command(int argc, char *argv[])
     if (cmdMatches("SHOW MEMORY")) {
       /*print2("%ld bytes of data memory have been used.\n",db+db3);*/
       j = 32000000; /* The largest we'ed ever look for */
-#ifdef THINK_C
-      i = FreeMem();
-#else
       i = getFreeSpace(j);
-#endif
       if (i > j-3) {
         print2("At least %ld bytes of memory are free.\n",j);
       } else {
