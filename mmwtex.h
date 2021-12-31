@@ -174,17 +174,11 @@ vstring pinkRangeHTML(long statemNum1, long statemNum2);
 #define PINK_NBSP "&nbsp;" /* Either "" or "&nbsp;" depending on taste, it is
                   the separator between a statement href and its pink number */
 
-/* 30-Jan-04 nm Comment out the following line to go back to the pink-only
-   color for the little statement numbers on the HTML pages */
-#define RAINBOW_OPTION /* "Rainbow" instead of pink color for little numbers */
-
-#ifdef RAINBOW_OPTION
 /* This function converts a "spectrum" color (1 to maxColor) to an
    RBG value in hex notation for HTML.  The caller must deallocate the
    returned vstring.  color = 1 (red) to maxColor (violet). */
 /* ndm 10-Jan-04 */
 vstring spectrumToRGB(long color, long maxColor);
-#endif
 
 #define INDENT_HTML_PROOFS /* nm 3-Feb-04 - indentation experiment */
 
