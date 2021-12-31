@@ -180,8 +180,6 @@ vstring pinkRangeHTML(long statemNum1, long statemNum2);
 /* ndm 10-Jan-04 */
 vstring spectrumToRGB(long color, long maxColor);
 
-#define INDENT_HTML_PROOFS /* nm 3-Feb-04 - indentation experiment */
-
 /* Added 20-Sep-03 (broken out of printTexLongMath() for better
    modularization) */
 /* Returns the HTML code for GIFs (!g_altHtmlFlag) or Unicode (g_altHtmlFlag),

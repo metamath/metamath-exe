@@ -1526,7 +1526,6 @@ void printTexHeader(flag texHeaderFlag)
     /* There is no color */
     print2("   }\n");
 
-#ifdef INDENT_HTML_PROOFS
     /* nm 3-Feb-04 Experiment to indent web proof displays */
     /* Print style sheet for HTML proof indentation number */
     /* ??? Future - combine with above style sheet */
@@ -1534,7 +1533,6 @@ void printTexHeader(flag texHeaderFlag)
     print2("     font-size: x-small;\n");
     print2("     color: gray;\n");
     print2("   }\n");
-#endif
     print2("-->\n");
     print2("</STYLE>\n");
     printLongLine(g_htmlCSS, "", " ");
@@ -3566,7 +3564,7 @@ void printTexLongMath(nmbrString *mathString,
               NULL), "", "\"");
         }
       }
-#ifdef INDENT_HTML_PROOFS
+
       /* nm 3-Feb-04 Experiment to indent web proof displays */
       let(&tmp, "");
       for (i = 1; i <= indentationLevel; i++) {
@@ -3578,7 +3576,6 @@ void printTexLongMath(nmbrString *mathString,
           NULL));
       printLongLine(tmp, "", "\"");
       let(&tmp, "");
-#endif
     } /* strlen(sPrefix) */
   } /* g_htmlFlag */
   let(&tex, ""); /* Deallocate */
