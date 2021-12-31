@@ -1519,22 +1519,12 @@ void printTexHeader(flag texHeaderFlag)
         "   shift with STYLE=\"margin-bottom:0px\". @/\n");
     */
     print2("img { margin-bottom: -4px }\n");
-#ifndef RAINBOW_OPTION
-    /* Print style sheet for pink number that goes after statement label */
-    print2(".p { font-family: \"Arial Narrow\";\n");
-    print2("     font-size: x-small;\n");
-    /* Strip off quotes from color (css doesn't like them) */
-    printLongLine(cat("     color: ", seg(PINK_NUMBER_COLOR, 2,
-        (long)strlen(PINK_NUMBER_COLOR) - 1), ";", NULL), "", "&");
-    print2("   }\n");
-#else
     /* Print style sheet for rainbow-colored number that goes after
        statement label */
     print2(".r { font-family: \"Arial Narrow\";\n");
     print2("     font-size: x-small;\n");
     /* There is no color */
     print2("   }\n");
-#endif
 
 #ifdef INDENT_HTML_PROOFS
     /* nm 3-Feb-04 Experiment to indent web proof displays */
@@ -3844,20 +3834,10 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
     print2("<!--\n");
     /* 15-Apr-2015 nm - align math symbol images to text */
     print2("img { margin-bottom: -4px }\n");
-#ifndef RAINBOW_OPTION
-    /* Print style sheet for pink number that goes after statement label */
-    print2(".p { font-family: \"Arial Narrow\";\n");
-    print2("     font-size: x-small;\n");
-    /* Strip off quotes from color (css doesn't like them) */
-    printLongLine(cat("     color: ", seg(PINK_NUMBER_COLOR, 2,
-        (long)strlen(PINK_NUMBER_COLOR) - 1), ";", NULL), "", "&");
-    print2("   }\n");
-#else
     /* Print style sheet for colored number that goes after statement label */
     print2(".r { font-family: \"Arial Narrow\";\n");
     print2("     font-size: x-small;\n");
     print2("   }\n");
-#endif
     print2("-->\n");
     print2("</STYLE>\n");
     printLongLine(g_htmlCSS, "", " ");
@@ -5824,21 +5804,12 @@ vstring pinkHTML(long statemNum)
       (statemMap != -1) ? str(statemMap) : "(future)", "</FONT>", NULL));
   */
 
-#ifndef RAINBOW_OPTION
-  /* With style sheet */
-  let(&htmlCode, cat(PINK_NBSP,
-      "<SPAN CLASS=p>",
-      (statemMap != -1) ? str((double)statemMap) : "(future)", "</SPAN>", NULL));
-#endif
-
-#ifdef RAINBOW_OPTION
   /* ndm 10-Jan-04 With style sheet and explicit color */
   let(&hexValue, "");
   hexValue = spectrumToRGB(statemMap, g_Statement[g_statements].pinkNumber);
   let(&htmlCode, cat(PINK_NBSP,
       "<SPAN CLASS=r STYLE=\"color:#", hexValue, "\">",
       (statemMap != -1) ? str((double)statemMap) : "(future)", "</SPAN>", NULL));
-#endif
   let(&hexValue, "");
 
   return htmlCode;
@@ -5870,7 +5841,6 @@ vstring pinkRangeHTML(long statemNum1, long statemNum2)
 } /* pinkRangeHTML */
 
 
-#ifdef RAINBOW_OPTION
 /* 20-Aug-2006 nm This section was revised so that all colors have
    the same grayscale brightness. */
 
@@ -6093,7 +6063,6 @@ vstring spectrumToRGB(long color, long maxColor) {
   /*printf("<FONT COLOR='#%02X%02X%02X'>a </FONT>\n", red, green, blue);*/
   return str1;
 } /* spectrumToRGB */
-#endif    /* #ifdef RAINBOW_OPTION */
 
 
 /* Added 20-Sep-03 (broken out of printTexLongMath() for better
