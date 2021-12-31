@@ -4459,60 +4459,6 @@ void command(int argc, char *argv[])
                 /* Reset the cache for this statement in getContrib() */
                 str3 = getContrib(outStatement, GC_RESET_STMT);
               } /* if i != 0 */
-
-#ifdef DATE_BELOW_PROOF /* 12-May-2017 nm */
-
-              /* Add a date below the proof.  It actually goes in the
-                 label section of the next statement; the proof section
-                 is not changed. */
-              /* (This will become obsolete eventually) */
-              let(&str3, space(g_Statement[outStatement + 1].labelSectionLen));
-              /* str3 will have the next statement's label section w/ comment */
-              memcpy(str3, g_Statement[outStatement + 1].labelSectionPtr,
-                  (size_t)(g_Statement[outStatement + 1].labelSectionLen));
-              let(&str5, ""); /* We need to guarantee this
-                                for the screen printout later */
-              if (instr(1, str3, "$( [") == 0) {
-                /* There is no date below proof (if there is, don't do
-                   anything; if it is wrong, 'verify markup' will check it) */
-
-                /* Save str5 for screen printout later! */
-                let(&str5, cat(space(indentation),
-                    "$( [", date(), "] $)", NULL)); /* str4 will be used
-                                          for the screen printout later */
-
-                if (saveFlag) { /* save proof, not show proof */
-
-                  if (g_Statement[outStatement + 1].labelSectionChanged == 1) {
-                    /* Deallocate old comment if not original source */
-                    let(&str4, ""); /* Deallocate any previous str4 content */
-                    str4 = g_Statement[outStatement + 1].labelSectionPtr;
-                    let(&str4, ""); /* Deallocate the old content */
-                  }
-                  /* str3 starts after the "$." ending the proof, and should
-                     start with "\n" */
-                  let(&str3, edit(str3, 8/* Discard leading spaces and tabs */));
-                  if (str3[0] != '\n') let(&str3, cat("\n", str3, NULL));
-                  /* Add the date after the proof */
-                  let(&str3, cat("\n", str5, str3, NULL));
-                  /* Set flag that this is not the original source */
-                  g_Statement[outStatement + 1].labelSectionChanged = 1;
-                  g_Statement[outStatement + 1].labelSectionLen
-                      = (long)strlen(str3);
-                  /* We do a direct assignment instead of let(&...) because
-                     labelSectionPtr may point to the middle of the giant input
-                     file buffer, which we don't want to deallocate */
-                  g_Statement[outStatement + 1].labelSectionPtr = str3;
-                  /* Reset str3 without deallocating with let(), since it
-                     was assigned to labelSectionPtr */
-                  str3 = "";
-                  /* Reset the cache for this statement in getContrib() */
-                  str3 = getContrib(outStatement + 1, GC_RESET_STMT);
-                } /* if saveFlag */
-              } /* if (instr(1, str3, "$( [") == 0) */
-
-#endif /* end #ifdef DATE_BELOW_PROOF */ /* 12-May-2017 nm */
-
             } /* if str2[0] == 0 */
 
             /* At this point, str4 contains the "$( [date] $)" comment
@@ -4671,14 +4617,6 @@ void command(int argc, char *argv[])
             }
 
           } else {
-
-#ifdef DATE_BELOW_PROOF /* 12-May-2017 nm */
-
-            /* Print the date on the screen if it would be added to the file */
-            if (str5[0] != 0) print2("%s\n", str5);
-
-#endif /*#ifdef DATE_BELOW_PROOF*/ /* 12-May-2017 nm */
-
             /* 19-Apr-2015 so */
             /* 24-Apr-2015 nm Reverted */
             /*print2("\n");*/ /* Add a blank line to make clipping easier */

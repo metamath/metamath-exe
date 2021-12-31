@@ -3863,141 +3863,6 @@ flag getContrib(long stmtNum,
     }
   }
 
-  #ifdef DATE_BELOW_PROOF /* 12-May-2017 nm */
-
-  /* TODO ******** The rest of the checks should be deleted if we decide
-     to drop the date after the proof */
-  if (g_Statement[stmtNum].type != p_) {
-    goto RETURN_POINT;
-  }
-  getProofDate(stmtNum, &tmpDate1, &tmpDate2);
-  if (tmpDate1[0] == 0) {
-    err = 1;
-    if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
-        /* convenience prefix to assist massive revisions
-        g_Statement[stmtNum].labelName, " [",
-        contributor, "/", reviser, "/", shortener, "] ",
-        */
-        "?Warning: There is no date below the proof in statement ",
-        str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
-        NULL), "    ", " ");
-  }
-  if (tmpDate2[0] == 0
-      && (reviseDate[0] != 0 || shortenDate[0] != 0)) {
-    err = 1;
-    if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
-        /* convenience prefix to assist massive revisions
-        g_Statement[stmtNum].labelName, " [",
-        contributor, "/", reviser, "/", shortener, "] ",
-        */
-        "?Warning: The comment has \"",
-        edit(REVISE_MATCH, 8+128), "...)\" or \"",
-        edit(SHORTEN_MATCH, 8+128),
-        "...)\" but there is only one date below the proof",
-        " in statement ",
-        str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
-        NULL), "    ", " ");
-  }
-  if (tmpDate2[0] != 0 && reviseDate[0] == 0 && shortenDate[0] == 0) {
-    err = 1;
-    if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
-        /* convenience prefix to assist massive revisions
-        g_Statement[stmtNum].labelName, " [",
-        contributor, "/", reviser, "/", shortener, "] ",
-        */
-        "?Warning: There are two dates below the proof but no \"",
-        edit(REVISE_MATCH, 8+128), "...)\" or \"",
-        edit(SHORTEN_MATCH, 8+128),
-        "...)\" entry in statement ",
-        str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
-        NULL), "    ", " ");
-  }
-  if (tmpDate2[0] != 0
-      && (reviseDate[0] != 0 || shortenDate[0] != 0)
-      && strcmp(tmpDate1, reviseDate)
-      && strcmp(tmpDate1, shortenDate)) {
-    err = 1;
-    if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
-        /* convenience prefix to assist massive revisions
-        g_Statement[stmtNum].labelName, " [",
-        contributor, "/", reviser, "/", shortener, "] ",
-        */
-        "?Warning: Neither a \"",
-        edit(REVISE_MATCH, 8+128), "...)\" date ",
-        "nor a \"", edit(SHORTEN_MATCH, 8+128), "...)\" date ",
-        "matches the date ", tmpDate1,
-        " below the proof in statement ",
-        str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
-        NULL), "    ", " ");
-  }
-  if (tmpDate2[0] != 0
-      && reviseDate[0] != 0
-      && compareDates(tmpDate1, reviseDate) == -1) {
-    err = 1;
-    if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
-        /* convenience prefix to assist massive revisions
-        g_Statement[stmtNum].labelName, " [",
-        contributor, "/", reviser, "/", shortener, "] ",
-        */
-        "?Warning: The \"",
-        edit(REVISE_MATCH, 8+128), "...)\" date ", reviseDate,
-        " is later than the date ", tmpDate1,
-        " below the proof in statement ",
-        str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
-        NULL), "    ", " ");
-  }
-  if (tmpDate2[0] != 0
-      && shortenDate[0] != 0
-      && compareDates(tmpDate1, shortenDate) == -1) {
-    err = 1;
-    if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
-        /* convenience prefix to assist massive revisions
-        g_Statement[stmtNum].labelName, " [",
-        contributor, "/", reviser, "/", shortener, "] ",
-        */
-        "?Warning: The \"",
-        edit(SHORTEN_MATCH, 8+128), "...)\" date ", shortenDate,
-        " is later than the date ", tmpDate1,
-        " below the proof in statement ",
-        str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
-        NULL), "    ", " ");
-  }
-  if (tmpDate2[0] != 0 && compareDates(tmpDate2, tmpDate1) != -1) {
-    err = 1;
-    if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
-        /* convenience prefix to assist massive revisions
-        g_Statement[stmtNum].labelName, " [",
-        contributor, "/", reviser, "/", shortener, "] ",
-        */
-        "?Warning: The first date below the proof, ", tmpDate1,
-        ", is not newer than the second, ", tmpDate2,
-        ", in statement ",
-        str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
-        NULL), "    ", " ");
-  }
-  if (tmpDate2[0] == 0) {
-    let(&tmpDate0, tmpDate1);
-  } else {
-    let(&tmpDate0, tmpDate2);
-  }
-  if (contribDate[0] != 0
-      && tmpDate0[0] != 0 && strcmp(contribDate, tmpDate0)) {
-    err = 1;
-    if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
-        /* convenience prefix to assist massive revisions
-        g_Statement[stmtNum].labelName, " [",
-        contributor, "/", reviser, "/", shortener, "] ",
-        */
-        "?Warning: The \"", edit(CONTRIB_MATCH, 8+128), "...)\" date ",
-        contribDate,
-        " doesn't match the date ", tmpDate0,
-        " below the proof in statement ",
-        str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
-        NULL), "    ", " ");
-  }
-  /***** End of section to delete if date after proof is dropped */
-#endif /* #ifdef DATE_BELOW_PROOF */
-
   if (err == 1) {
     let(&returnStr, "F");  /* fail */
   } else {
@@ -4026,8 +3891,6 @@ flag getContrib(long stmtNum,
 } /* getContrib */
 
 
-/*#ifdef DATE_BELOW_PROOF*/ /* 12-May-2017 nm */
-/* 14-May-2017 nm - re-enabled (temporarily?) for converting old .mm's */
 /* 4-Nov-2015 nm */
 /* Extract up to 2 dates after a statement's proof.  If no date is present,
    date1 will be blank.  If no 2nd date is present, date2 will be blank.
@@ -4058,8 +3921,6 @@ void getProofDate(long stmtNum, vstring *date1, vstring *date2) {
   let(&textAfterProof, ""); /* Deallocate */
   return;
 } /* getProofDate */
-
-/*#endif*/ /*#ifdef DATE_BELOW_PROOF*/ /* 12-May-2017 nm */
 
 
 /* 4-Nov-2015 nm */
