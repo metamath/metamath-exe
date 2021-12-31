@@ -12,7 +12,6 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdarg.h>
-#include "mmutil.h"
 #include "mmvstr.h"
 #include "mmdata.h"
 #include "mminou.h"
