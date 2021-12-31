@@ -175,19 +175,7 @@ void typeStatement(long showStmt,
   if (!briefFlag || commentOnlyFlag) {
     let(&str1, "");
     str1 = getDescription(showStmt);
-    if (!str1[0]    /* No comment */
-
-#ifdef DATE_BELOW_PROOF /* 12-May-2017 nm */
-
-        || (str1[0] == '[' && str1[strlen(str1) - 1] == ']')
-        /* 7-Sep-04 Allow both "$([<date>])$" and "$( [<date>] )$" */
-        || (strlen(str1) > 1 &&
-            str1[1] == '[' && str1[strlen(str1) - 2] == ']') /* Make sure
-            getDescription() didn't pick up date stamp from previous proof */
-
-#endif /* 12-May-2017 nm */
-
-        ) {
+    if (!str1[0] /* No comment */) {
       print2("?Warning: Statement \"%s\" has no comment\n",
           g_Statement[showStmt].labelName);
       /* 14-Sep-2010 nm We must print a blank comment to have \begin{lemma} */

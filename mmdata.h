@@ -167,12 +167,6 @@ extern long g_sourceLen; /* Number of chars. in all inputs files combined (after
 #define GC_ERROR_CHECK_SILENT 8
 #define GC_ERROR_CHECK_PRINT 9
 
-/* 12-May-2017 nm */
-/* DATE_BELOW_PROOF, if defined, causes generation and error-checking of
-   the date below the proof (which some day will be obsolete).  Comment
-   it out when this checking is no longer needed. */
-/*#define DATE_BELOW_PROOF*/
-
 /* 14-May-2017 nm */
 /* TODO: someday we should create structures to hold global vars, and
    clear their string components in eraseSource() */
@@ -492,12 +486,9 @@ flag getContrib(long stmtNum,
 vstring getContrib(long stmtNum, char mode);
 
 
-/*#ifdef DATE_BELOW_PROOF*/ /* 12-May-2017 nm */
-/* 14-May-2017 nm - re-enabled for purpose of converting old .mm's */
 /* Extract up to 2 dates after a statement's proof.  If no date is present,
    date1 will be blank.  If no 2nd date is present, date2 will be blank. */
 void getProofDate(long stmtNum, vstring *date1, vstring *date2);
-/*#endif*/
 
 /* Get date, month, year fields from a dd-mmm-yyyy date string,
    where dd may be 1 or 2 digits, mmm is 1st 3 letters of month,
