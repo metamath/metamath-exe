@@ -39,7 +39,6 @@ enum mTokenType { var_, con_ };
 #define illegal_ '?' /* anything else */
 /* Global variables related to current statement */
 extern int g_currentScope;
-/*extern long beginScopeStmtNum;*/ /* 15-Aug-2020 nm changed to local in mmpars.c */
 
 struct statement_struct { /* Array index is statement number, starting at 1 */
   long lineNum; /* Line number in file; 0 means not yet determined */
@@ -54,24 +53,21 @@ struct statement_struct { /* Array index is statement number, starting at 1 */
                 outermost block */
   long endScopeStatementNum;  /* statement of next $} (populated for opening
                                  ${ only, 0 otherwise); g_statements+1 if
-                              we're in outermost block */ /* 24-Aug-2020 nm */
+                              we're in outermost block */
   vstring statementPtr; /* Pointer to end of (unmodified) label section used
              to determine file and line number for error or info messages about
              the statement */
   vstring labelSectionPtr; /* Source code before statement keyword
                  - will be updated if labelSection changed */
   long labelSectionLen;
-  /* 3-May-2017 nm Added labelSectionChanged */
   char labelSectionChanged; /* Default is 0; if 1, labelSectionPtr points to an
                                allocated vstring that must be freed by ERASE */
   vstring mathSectionPtr; /* Source code between keyword and $= or $. */
   long mathSectionLen;
-  /* 3-May-2017 nm Added mathSectionChanged */
   char mathSectionChanged; /* Default is 0; if 1, mathSectionPtr points to an
                                allocated vstring that must be freed by ERASE */
   vstring proofSectionPtr; /* Source code between $= and $. */
   long proofSectionLen;
-  /* 3-May-2017 nm Added proofSectionChanged */
   char proofSectionChanged; /* Default is 0; if 1, proofSectionPtr points to an
                                allocated vstring that must be freed by ERASE */
   nmbrString *mathString; /* Parsed mathSection */
@@ -88,8 +84,7 @@ struct statement_struct { /* Array index is statement number, starting at 1 */
   nmbrString *optDisjVarsA; /* Optional disjoint variables, 1st of pair */
   nmbrString *optDisjVarsB; /* Optional disjoint variables, 2nd of pair */
   nmbrString *optDisjVarsStmt; /* Opt disjoint variables, statem number */
-  long pinkNumber; /* 25-Oct-02 The $a/$p sequence number for web pages */
-  /* 18-Dec-2016 nm */
+  long pinkNumber; /* The $a/$p sequence number for web pages */
   long headerStartStmt; /* # of stmt following previous $a, $p */
   };
 
@@ -137,7 +132,6 @@ extern struct statement_struct *g_Statement;
 /* Warning: mathToken[i] is 0-based, not 1-based! */
 extern struct mathToken_struct *g_MathToken;
 extern long g_statements, /*labels,*/ g_mathTokens;
-/*extern long maxMathTokenLength;*/ /* 15-Aug-2020 nm Not used */
 
 extern long g_MAX_INCLUDECALLS;
 extern struct includeCall_struct *g_IncludeCall;
@@ -146,7 +140,6 @@ extern long g_includeCalls;
 extern char *g_sourcePtr; /* Pointer to buffer in memory with input source */
 extern long g_sourceLen; /* Number of chars. in all inputs files combined (after includes)*/
 
-/* 4-May-2016 nm */
 /* For use by getMarkupFlag() */
 #define PROOF_DISCOURAGED_MARKUP "(Proof modification is discouraged.)"
 #define USAGE_DISCOURAGED_MARKUP "(New usage is discouraged.)"
@@ -167,9 +160,8 @@ extern long g_sourceLen; /* Number of chars. in all inputs files combined (after
 #define GC_ERROR_CHECK_SILENT 8
 #define GC_ERROR_CHECK_PRINT 9
 
-/* 14-May-2017 nm */
-/* TODO: someday we should create structures to hold global vars, and
-   clear their string components in eraseSource() */
+/* 14-May-2017 nm - TODO: someday we should create structures to
+   hold global vars, and clear their string components in eraseSource() */
 extern vstring g_contributorName;
 #define DEFAULT_CONTRIBUTOR "?who?"
 
@@ -219,7 +211,6 @@ extern struct nullPntrStruct g_PntrNull;
 #define NULL_PNTRSTRING &(g_PntrNull.nullElement)
 
 
-/* 26-Apr-2008 nm Added */
 /* This function returns a 1 if any entry in a comma-separated list
    matches using the matches() function. */
 flag matchesList(vstring testString, vstring pattern, char wildCard,
@@ -228,7 +219,6 @@ flag matchesList(vstring testString, vstring pattern, char wildCard,
 /* This function returns a 1 if the first argument matches the pattern of
    the second argument.  The second argument may have 0-or-more and
    exactly-1 character match wildcards, typically '*' and '?'.*/
-/* 30-Jan-06 nm Added single-character-match argument */
 flag matches(vstring testString, vstring pattern, char wildCard,
     char oneCharWildCard);
 
@@ -290,10 +280,9 @@ int nmbrEq(nmbrString *sout,nmbrString *sin);
 vstring nmbrCvtMToVString(nmbrString *s);
 
 /* Converts rString to a vstring with one space between tokens */
-/* 25-Jan-2016 nm Added explicitFormat, statemNum */
 vstring nmbrCvtRToVString(nmbrString *s,
-    flag explicitTargets,    /* 25-Jan-2016 */
-    long statemNum);        /* 25-Jan-2016 */
+    flag explicitTargets,
+    long statemNum);
 
 /* Get step numbers in an rString - needed by cvtRToVString & elsewhere */
 nmbrString *nmbrGetProofStepNumbs(nmbrString *reason);
@@ -484,13 +473,11 @@ void buildDate(long dd, long mmm, long yyyy, vstring *dateStr);
    0 = date1 = date2,  1 = date1 > date2.  There is no error checking. */
 flag compareDates(vstring date1, vstring date2);
 
-/* 17-Nov-2015 nm */
 extern vstring g_qsortKey;
       /* Used by qsortStringCmp; pointer only, do not deallocate */
 /* Comparison function for qsort */
 int qsortStringCmp(const void *p1, const void *p2);
 
-/* 4-May-2017 Ari Ferrera */
 /* Call on exit to free memory */
 void freeData(void);
 

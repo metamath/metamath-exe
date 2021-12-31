@@ -172,7 +172,7 @@ long rinstr(vstring string1, vstring string2);
 long ascii_(vstring c);
 double val(vstring s);
 
-/* Emulation of Progress 4GL string functions, added 11/25/98 */
+/* Emulation of Progress 4GL string functions */
 vstring entry(long element, vstring list);
 long lookup(vstring expression, vstring list);
 long numEntries(vstring list);

@@ -27,8 +27,7 @@ extern long g_commandFileNestingLevel;
 extern FILE *g_commandFilePtr[MAX_COMMAND_FILE_NESTING + 1];
 extern vstring g_commandFileName[MAX_COMMAND_FILE_NESTING + 1];
 extern flag g_commandFileSilent[MAX_COMMAND_FILE_NESTING + 1];
-extern flag g_commandFileSilentFlag;
-                                    /* 23-Oct-2006 nm For SUBMIT ... /SILENT */
+extern flag g_commandFileSilentFlag; /* For SUBMIT ... /SILENT */
 
 extern FILE *g_input_fp;  /* File pointers */
 extern vstring g_input_fn, g_output_fn;  /* File names */
@@ -71,7 +70,6 @@ vstring fGetTmpName(vstring filePrefix);
    MUST DEALLOCATE THE RETURNED STRING.  If a NULL is returned, the file
    could not be opened or had a non-ASCII Unicode character or some other
    problem.   If verbose is 0, error and warning messages are suppressed. */
-/* 31-Dec-2017 nm Add charCount return argument */
 vstring readFileToString(vstring fileName, char verbose, long *charCount);
 
 /* Returns total elapsed time in seconds since starting session (for the

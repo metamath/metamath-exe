@@ -19,7 +19,6 @@
 void help2(vstring helpCmd)
 {
 
-/* 5-Sep-2012 nm */
 vstring saveHelpCmd = "";
 /* help2() may be called with a temporarily allocated argument (left(),
    cat(), etc.), and the let()s in the eventual print2() calls will
@@ -158,9 +157,7 @@ H("");
 
 
 g_printHelp = !strcmp(saveHelpCmd, "HELP SHOW STATEMENT");
-/* 14-Sep-2010 nm Added OLD_TEX */
-H(
-"Syntax:  SHOW STATEMENT <label-match> [/ COMMENT] [/ FULL] [/ TEX]");
+H("Syntax:  SHOW STATEMENT <label-match> [/ COMMENT] [/ FULL] [/ TEX]");
 H("             [/ OLD_TEX] [/ HTML] [/ ALT_HTML] [/ BRIEF_HTML]");
 H("             [/ BRIEF_ALT_HTML] [/ NO_VERSIONING] [/ MNEMONICS]");
 H("");
@@ -183,7 +180,6 @@ H("    / FULL - Show complete information about each statement, and show all");
 H("        statements matching <label> (including $e and $f statements).");
 H("    / TEX - This qualifier will write the statement information to the");
 H("        LaTeX file previously opened with OPEN TEX.");
-/* 14-Sep-2010 nm Added OLD_TEX */
 H("    / OLD_TEX - Same as / TEX, except that LaTeX macros are used to fit");
 H("        equations into line.  This mode is obsolete and will be");
 H("        removed eventually.");
@@ -197,7 +193,6 @@ H("        above, a backup file suffixed with ~1 is not created (i.e. the");
 H("        previous version is overwritten).");
 H("    / TIME - When used with / HTML or the 3 HTML qualifiers, prints");
 H("        the run time used by each statement.");
-/* 12-May-2009 nm  Added MNEMONICS */
 H("    / MNEMONICS - Produces the output file mnemosyne.txt for use with");
 H("        Mnemosyne http://www.mnemosyne-proj.org/principles.php.  Should");
 H("        not be used with any other qualifier.");
@@ -362,14 +357,9 @@ return;
 } /* help2 */
 
 
-/* 18-Jul-2015 nm Split up help2 into help2 and help3 so lcc
-   optimizer wouldn't overflow */
+/* Split up help2 into help2 and help3 so lcc optimizer wouldn't overflow */
+void help3(vstring helpCmd) {
 
-
-void help3(vstring helpCmd)
-{
-
-/* 5-Sep-2012 nm */
 vstring saveHelpCmd = "";
 /* help3() may be called with a temporarily allocated argument (left(),
    cat(), etc.), and the let()s in the eventual print2() calls will
@@ -512,7 +502,7 @@ H("scrolled without pausing.");
 H("");
 
 
-g_printHelp = !strcmp(saveHelpCmd, "HELP SET WIDTH"); /* 18-Nov-05 nm Revised */
+g_printHelp = !strcmp(saveHelpCmd, "HELP SET WIDTH");
 H("Syntax:  SET WIDTH <number>");
 H("");
 H("Metamath assumes the width of your screen is 79 characters.  If your");
@@ -530,7 +520,7 @@ H("Note:  This command was SET SCREEN_WIDTH prior to Version 0.07.9.");
 H("");
 
 
-g_printHelp = !strcmp(saveHelpCmd, "HELP SET HEIGHT"); /* 18-Nov-05 nm New */
+g_printHelp = !strcmp(saveHelpCmd, "HELP SET HEIGHT");
 H("Syntax:  SET HEIGHT <number>");
 H("");
 H("Metamath assumes your screen height is 24 lines of characters.  If your");
@@ -538,7 +528,6 @@ H("screen is taller or shorter, this command lets you to change the number");
 H("of lines at which the display pauses and prompts you to continue.");
 H("");
 
-/* 10-Jul-2015 nm */
 g_printHelp = !strcmp(saveHelpCmd, "HELP SET DISCOURAGEMENT");
 H("Syntax:  SET DISCOURAGEMENT OFF or SET DISCOURAGEMENT ON");
 H("");
@@ -552,7 +541,6 @@ H("when maintaining \"discouraged\" statements.  SHOW SETTINGS will show you");
 H("the current value.");
 H("");
 
-/* 14-May-2017 nm */
 g_printHelp = !strcmp(saveHelpCmd, "HELP SET CONTRIBUTOR");
 H("Syntax:  SET CONTRIBUTOR <name>");
 H("");
@@ -562,7 +550,6 @@ H("around <name> if it contains spaces.  The current contributor is");
 H("displayed by SHOW SETTINGS.");
 H("");
 
-/* 31-Dec-2017 nm */
 g_printHelp = !strcmp(saveHelpCmd, "HELP SET ROOT_DIRECTORY");
 H("Syntax:  SET ROOT_DIRECTORY <directory path>");
 H("");
@@ -684,14 +671,12 @@ H("    / FILE_SKIP - This qualifier will skip checks that require");
 H("        external files to be present, such as checking GIF existence and");
 H("        bibliographic links to mmset.html or equivalent.  It is useful");
 H("        for doing a quick check from a directory without these files");
-       /* 25-Jun-2020 nm Added UNDERSCORE_SKIP */
 H("    / UNDERSCORE_SKIP - This qualifier will skip warnings for labels");
 H("        containing underscore (\"_\") characters.  Although they are");
 H("        legal per the Metamath spec, they may cause ambiguities with");
 H("        certain translators (such as to MM0) that convert \"-\" to \"_\".");
 H("        bibliographic links to mmset.html or equivalent.  It is useful");
 H("        for doing a quick check from a directory without these files");
-       /* 17-Jul-2020 nm Added MATHBOX_SKIP */
 H("    / MATHBOX_SKIP - This qualifier will skip checking for mathbox");
 H("        independence i.e. that no mathbox proof references a statement");
 H("        in another (earlier) mathbox.");
@@ -908,7 +893,7 @@ H("many UNDOs as were issued since the last proof-changing command.");
 H("");
 
 
-g_printHelp = !strcmp(saveHelpCmd, "HELP SET UNDO"); /* 1-Nov-2013 nm */
+g_printHelp = !strcmp(saveHelpCmd, "HELP SET UNDO");
 H("Syntax:  SET UNDO <number>");
 H("");
 H("(This command affects the Proof Assistant only.)");
@@ -924,7 +909,7 @@ H("");
 
 g_printHelp = !strcmp(saveHelpCmd, "HELP ASSIGN");
 H("Syntax:  ASSIGN <step> <label> [/ NO_UNIFY] [/ OVERRIDE]");
-H("         ASSIGN FIRST <label> [/ NO_UNIFY] [/ OVERRIDE]");  /* 11-Dec-05 nm */
+H("         ASSIGN FIRST <label> [/ NO_UNIFY] [/ OVERRIDE]");
 H("         ASSIGN LAST <label> [/ NO_UNIFY] [/ OVERRIDE]");
 H("");
 H("This command, available in the Proof Assistant only, assigns an unknown");
@@ -1162,7 +1147,6 @@ H("");
 g_printHelp = !strcmp(saveHelpCmd, "HELP IMPROVE");
 H("Syntax:  IMPROVE <step> [/ DEPTH <number>] [/ NO_DISTINCT] [/ 2] [/ 3]");
 H("                       [/ SUBPROOFS] [/ INCLUDE_MATHBOXES] [/ OVERRIDE]");
-                              /* 26-Aug-2006 nm */ /* 4-Sep-2012 */
 H("         IMPROVE FIRST [/ DEPTH <number>] [/ NO_DISTINCT] [/ 2] [/ 3]");
 H("                       [/ SUBPROOFS] [/ INCLUDE_MATHBOXES] [/ OVERRIDE]");
 H("         IMPROVE LAST [/ DEPTH <number>] [/ NO_DISTINCT] [/ 2] [/ 3]");
@@ -1230,11 +1214,9 @@ H("    / SUBPROOFS - Look at each subproof that isn't completely known, and");
 H("        try to see if it can be proved independently.  This qualifier is");
 H("        meaningful only for IMPROVE ALL / 2 or IMPROVE ALL / 3.  It may");
 H("        take a very long time to run, especially with / 3.");
-/* 5-Aug-2020 nm - Added INCLUDE_MATHBOXES */
 H("    / INCLUDE_MATHBOXES - By default, MINIMIZE_WITH skips statements");
 H("        beyond the one with label \"mathbox\" and not in the mathbox of");
 H("        the PROVE argument.  This qualifier allows them to be included.");
-/* 3-May-2016 nm - Added OVERRIDE */
 H("    / OVERRIDE - By default, IMPROVE skips statements that have");
 H("        \"(New usage is discouraged.)\" in their description comment.");
 H("        This qualifier tries to use them anyway.");
@@ -1245,31 +1227,11 @@ H("there is no need to specify more than one.  Finally, since / 1 is the");
 H("default, you never need to use it; it is included for completeness (or");
 H("in case the default is changed in the future).");
 H("");
-/*   This seems obsolete now with today's computers.  4-Sep-2012 nm
-H("Note:  If memory is limited, IMPROVE ALL on a large proof may overflow");
-H("memory.  If you use SET UNIFICATION_TIMEOUT 1 before IMPROVE ALL,");
-H("there will usually be sufficient improvement to later easily recover and");
-H("completely IMPROVE the proof on a larger computer.  Warning:  Once");
-H("memory has overflowed, there is no recovery.  If in doubt, save the");
-H("intermediate proof (SAVE NEW_PROOF then WRITE SOURCE) before IMPROVE ALL.");
-H("");
-*/
 H("See also:  HELP SET SEARCH_LIMIT");
 H("");
 
 
 g_printHelp = !strcmp(saveHelpCmd, "HELP MINIMIZE_WITH");
-/*
-H("Syntax:  MINIMIZE_WITH <label-match> [/ BRIEF] [/ ALLOW_GROWTH]");
-H("             [/ NO_DISTINCT] [/ EXCEPT <label-match>]");
-H("              [/ FORBID <label-match>] [/ REVERSE] [/ INCLUDE_MATHBOXES]");
-*/
-/*
-H("Syntax:  MINIMIZE_WITH <label-match> [/ VERBOSE] [/ ALLOW_GROWTH]");
-H("              [/ EXCEPT <label-match>] [/ FORBID <label-match>]");
-H("              [/ INCLUDE_MATHBOXES] [/ NO_NEW_AXIOMS_FROM <label-match>]");
-H("              [/ OVERRIDE] [/ TIME]");
-*/
 H("Syntax:  MINIMIZE_WITH <label-match> [/ VERBOSE] [/ MAY_GROW]");
 H("              [/ EXCEPT <label-match>] [/ INCLUDE_MATHBOXES]");
 H("              [/ ALLOW_NEW_AXIOMS <label-match>]");
@@ -1289,44 +1251,21 @@ H("For ordinary use with set.mm, we recommend running it as follows:");
 H("   MINIMIZE_WITH * / ALLOW_NEW_AXIOMS * / NO_NEW_AXIOMS_FROM ax-*");
 H("For some additional information on the qualifiers see");
 H("    https://groups.google.com/d/msg/metamath/f-L91-1jI24/3KJnGa8qCgAJ");
-/*
-H("  Warning:  MINIMIZE_WITH does not check for $d violations, so");
-H("SAVE PROOF then VERIFY PROOF should be run afterwards to check for them");
-H("if you don't use / NO_DISTINCT.");
-*/
 H("");
 H("Optional qualifiers:");
-/* 4-Feb-2013 nm - Added VERBOSE */
 H("    / VERBOSE - Shows additional information such as uncompressed proof");
 H("        lengths and reverted shortening attempts");
-/* 25-Jun-2014 nm Removed BRIEF, NO_DISTINCT, REVERSE */
-/*
-H("    / BRIEF - The labels of statements that were tested but didn't reduce");
-H("        the proof length will not be listed, for brevity.  (This qualifier");
-H("        is the default and is never needed, but is retained for backwards");
-H("        compatibility with older program versions.)");
-*/
 H("    / MAY_GROW - If a substitution is possible, it will be made even");
 H("        if the proof length increases.  This is useful if we are just");
 H("        updating the proof with a newer version of an obsolete theorem.");
 H("        (Note: this qualifier used to be named / ALLOW_GROWTH).");
-/*
-H("    / NO_DISTINCT - Skip the trial statement if it has a $d requirement.");
-H("        This qualifier is useful when <label-match> has wildcards, to");
-H("        prevent illegal shortenings that would violate $d requirements.");
-*/
-/* 7-Jan-06 nm - Added EXCEPT */
 H("    / EXCEPT <label-match> - Skip trial statements matching <label-match>,");
 H("        which may contain * and ? wildcard characters; see HELP SEARCH");
 H("        for wildcard matching rules.  Note:  Multiple EXCEPT qualifiers");
 H("        are not allowed; use wildcards instead.");
-/* 28-Jun-2011 nm - Added INCLUDE_MATHBOXES */
-/* 14-Aug-2012 nm - Added note about current mathbox */
 H("    / INCLUDE_MATHBOXES - By default, MINIMIZE_WITH skips statements");
 H("        beyond the one with label \"mathbox\" and not in the mathbox of");
 H("        the PROVE argument.  This qualifier allows them to be included.");
-/* 28-Jun-2011 nm - Added INCLUDE_MATHBOXES */
-/* 14-Aug-2012 nm - Added note about current mathbox */
 H("    / ALLOW_NEW_AXIOMS <label-match> - By default, MINIMIZE_WITH skips");
 H("        statements that depend on $a statements not already used by the");
 H("        proof.  This qualifier allows new $a consequences to be used.");
@@ -1335,7 +1274,6 @@ H("        and / NO_NEW_AXIOMS, which take priority over / ALLOW_NEW_AXOMS.");
 H("        Example:  / ALLOW_NEW_AXIOMS df-* will allow new definitions to be");
 H("        used. / ALLOW_NEW_AXIOMS * / NO_NEW_AXIOMS_FROM ax-ac*,ax-reg");
 H("        will allow any new axioms except those matching ax-ac*,ax-reg.");
-/* 22-Nov-2014 nm - Added NO_NEW_AXIOMS_FROM */
 H("    / NO_NEW_AXIOMS_FROM <label-match> - skip any trial statement whose");
 H("        proof depends on a $a statement matching <label-match> but that");
 H("        isn't used by the current proof.  This makes it easier to avoid");
@@ -1346,7 +1284,6 @@ H("        will allow any new axioms except those matching ax-ac*,ax-reg.");
 H("        Notes:  1. In this example, if ax-reg is already used by the proof,");
 H("        statements depending on ax-reg WILL be tried. 2. The use of");
 H("        / NO_NEW_AXIOMS_FROM without / ALLOW_NEW_AXIOMS has no effect.");
-/* 20-May-2013 nm - Added FORBID */
 H("    / FORBID <label-match> - Skip any trial");
 H("        statement whose backtrack (from SHOW TRACE_BACK) contains any");
 H("        statement matching <label-match>.  This is useful for avoiding");
@@ -1358,15 +1295,6 @@ H("        can be less useful than / NO_NEW_AXIOMS_FROM because it will");
 H("        also suppress trying statements that depend on <label-list> axioms");
 H("        already used by the proof.  / FORBID may become deprecated.  2. The");
 H("        use of / FORBID without / ALLOW_NEW_AXIOMS has no effect.");
-/* 10-Nov-2011 nm - Added REVERSE */
-/*
-H("    / REVERSE - Reverse the order of statement scanning.  By default,");
-H("        statements are scanned from last to first, since empirically this");
-H("        usually leads to better results.  With this qualifier they are");
-H("        scanned from first to last.  You may wish to try both ways");
-H("        (from the same starting proof) and choose the shorter result.");
-*/
-/* 3-May-2016 nm - Added OVERRIDE */
 H("    / OVERRIDE - By default, MINIMIZE_WITH skips statements that have");
 H("        \"(New usage is discouraged.)\" in their description comment.");
 H("        With this qualifier it will try to use them anyway.");

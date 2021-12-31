@@ -296,7 +296,7 @@ void poolFree(void *ptr)
   /* In theory, [-3] should never get referenced for an entry in the
      memFreePool. However, here we make it a definite (illegal) value in
      case it is referenced by code with a bug. */
-  ((long *)ptr)[-3] = -2;  /* 11-Jul-2014 WL */
+  ((long *)ptr)[-3] = -2;
   memFreePoolSize++;
   poolTotalFree = poolTotalFree + ((long *)ptr)[-2];
 /*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("e: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
@@ -1188,7 +1188,6 @@ vstring nmbrCvtRToVString(nmbrString *proof,
   nmbrString *localLabelNames = NULL_NMBRSTRING;
   long nextLocLabNum = 1; /* Next number to be used for a local label */
   void *voidPtr; /* bsearch result */
-  /* 26-Jan-2016 nm */
   nmbrString *targetHyps = NULL_NMBRSTRING; /* Targets for /EXPLICIT format */
 
   long saveTempAllocStack;
@@ -2203,7 +2202,7 @@ vstring compressProof(nmbrString *proof, long statemNum,
       /* CPU-intensive bug check due to strlen; enable only if required: */
       /* if (outputAllocated != (long)strlen(output)) bug(1352); */
       if (output[outputAllocated - 1] == 0 ||
-          output[outputAllocated] != 0) bug(1352); /* 13-Oct-05 nm */
+          output[outputAllocated] != 0) bug(1352);
     }
     output[outputLen] = labelChar;
     outputLen++;
@@ -2215,7 +2214,6 @@ vstring compressProof(nmbrString *proof, long statemNum,
       /* Trim off leading implicit required hypotheses */
       nmbrRight(hypList, g_Statement[statemNum].numReqHyp + 1),
       assertionList, NULL),
-                /* 25-Jan-2016 nm */
                 0, /*explicitTargets*/
                 0 /*statemNum used only if explicitTargets*/),
       " ) ", left(output, outputLen), NULL));
@@ -3358,12 +3356,11 @@ vstring getContrib(long stmtNum, char mode) {
         NULL), "    ", " ");
   }
 
-  /* 3-May-2017 nm */
   if (cStart != 0 && description[cMid - 2] != ',') {
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         "?Warning: There is no comma between contributor and date",
-        ", or period is missing,",   /* 5-Aug-2017 nm */
+        ", or period is missing,",
         " in the comment above statement ",
         str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
@@ -3372,7 +3369,7 @@ vstring getContrib(long stmtNum, char mode) {
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         "?Warning: There is no comma between reviser and date",
-        ", or period is missing,",   /* 5-Aug-2017 nm */
+        ", or period is missing,",
         " in the comment above statement ",
         str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
@@ -3381,7 +3378,7 @@ vstring getContrib(long stmtNum, char mode) {
     err = 1;
     if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
         "?Warning: There is no comma between proof shortener and date",
-        ", or period is missing,",   /* 5-Aug-2017 nm */
+        ", or period is missing,",
         " in the comment above statement ",
         str((double)stmtNum), ", label \"", g_Statement[stmtNum].labelName, "\".",
         NULL), "    ", " ");
@@ -3642,7 +3639,7 @@ flag parseDate(vstring dateStr, long *dd, long *mmm, long *yyyy) {
       *yyyy = *yyyy + 1900;
     }
   }
-  if (*dd < 1 || *dd > 31 || *mmm < 1 || *mmm > 12) err = 1; /* 13-Dec-2016 nm */
+  if (*dd < 1 || *dd > 31 || *mmm < 1 || *mmm > 12) err = 1;
   return err;
 } /* parseDate */
 
@@ -3690,7 +3687,6 @@ flag compareDates(vstring date1, vstring date2) {
 
 
 
-/* 17-Nov-2015 Moved out of metamath.c for better modularization */
 /* Compare strings via pointers for qsort */
 /* g_qsortKey is a global string key at which the sort starts; if empty,
    start at the beginning of each line. */

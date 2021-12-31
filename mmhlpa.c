@@ -19,10 +19,8 @@
 #include "mmhlpa.h"
 
 /* help0 is mostly for TOOLS help */
-void help0(vstring helpCmd)
-{
+void help0(vstring helpCmd) {
 
-/* 5-Sep-2012 nm */
 vstring saveHelpCmd = "";
 /* help0() may be called with a temporarily allocated argument (left(),
    cat(), etc.), and the let()s in the eventual print2() calls will
@@ -47,20 +45,17 @@ H("  DELETE - Delete a section of each line in a file");
 H("  INSERT - Insert a string at a specified column in each line of a file");
 H("  SUBSTITUTE - Make a simple substitution on each line of the file");
 H("  TAG - Like ADD, but restricted to a range of lines");
-/*H("  LSUBSTITUTE - Substitute according to a match-and-substitute list");*/
 H("  SWAP - Swap the two halves of each line in a file");
 H("Other file processing commands:");
 H("  BREAK - Break up (parse) a file into a list of tokens (one per line)");
 H("  BUILD - Build a file with multiple tokens per line from a list");
 H("  COUNT - Count the occurrences in a file of a specified string");
-/*H("  FORMAT - Produce a formatted list of tokens for documentation");*/
 H("  NUMBER - Create a list of numbers");
 H("  PARALLEL - Put two files in parallel");
 H("  REVERSE - Reverse the order of the lines in a file");
 H("  RIGHT - Right-justify lines in a file (useful before sorting numbers)");
 H("  SORT - Sort the lines in a file with key starting at specified string");
 H("  MATCH - Extract lines containing (or not) a specified string");
-/*H("  LEXTRACT - Extract lines containing (or not) strings from a list");*/
 H("  UNDUPLICATE - Eliminate duplicate occurrences of lines in a file");
 H("  DUPLICATE - Extract first occurrence of any line occurring more than");
 H("      once in a file, discarding lines occurring exactly once");
@@ -69,20 +64,12 @@ H(
 "  (UNDUPLICATE, DUPLICATE, and UNIQUE also sort the lines as a side effect.)");
 H("  UPDATE (deprecated) - Update a C program for revision control");
 H("  TYPE (10 lines) - Display 10 lines of a file; similar to Unix \"head\"");
-/*H("  COPY, RENAME - Similar to Unix cat, mv but with backups created");*/
 H(
 "  COPY - Similar to Unix \"cat\" but safe (same input & output name allowed)");
 H("  SUBMIT - Run a script containing Tools commands.");
 H("");
-/* 3-Jun-2016 nm Reorganize a little */
 H("Command syntax ([] means optional):");
 H("  From TOOLS prompt:  TOOLS> <command> [<arg1> <arg2>...]");
-/*
-if (listMode) {
-H("  From VMS shell:  $ DO TOOLS [<command>] [<arg1> <arg2>...]");
-H("  From Unix/DOS shell:  tools [<command>] [<arg1> <arg2>...]");
-}
-*/
 H("You need to type only as many characters of the command as are needed to");
 H("uniquely specify it.  Any arguments will answer questions automatically");
 H("until the argument list is exhausted; the remaining questions will be");
@@ -92,25 +79,12 @@ H("");
 H("Notes:");
 H("(1) The commands are not case sensitive.  File names and match strings");
 H("are case sensitive.");
-/*
-H("(2) Output files are created only after a command finishes running.");
-H("Therefore it is usually safe to hit ^C before a command is completed.");
-H("(3) The file \"zztools.tmp\", which is always created, can be used as a");
-H("command file to re-run the command sequence with the SUBMIT command.");
-*/
 H("(2) Previous versions of output files (except under VMS) are renamed with");
 H("~1 (most recent), ~2,...,~9 (oldest) appended to file name.  You may want");
 H("to purge them periodically.");
 H("(3) The command B(EEP) will make the terminal beep.  It can be useful to");
 H("type it ahead to let you know when the current command is finished.");
-/*
-H("(6) It is suggested you use a \".tmp\" file extension for intermediate");
-H("results to eliminate directory clutter.");
-*/
 H("");
-/*
-H("Please see NDM if you have any suggestions for this program.");
-*/
 
 
 g_printHelp = !strcmp(saveHelpCmd, "HELP ADD");
@@ -118,7 +92,6 @@ H("This command adds a character string prefix and/or suffix to each");
 H("line in a file.");
 H("Syntax:  ADD <iofile> <begstr> <endstr>");
 
-/* 2-Jul-2011 nm Added TAG command */
 g_printHelp = !strcmp(saveHelpCmd, "HELP TAG");
 H("TAG is the same as ADD but has 4 additional arguments that let you");
 H("specify a range of lines.  Syntax:");
@@ -199,7 +172,6 @@ H("Syntax:  INSERT <iofile> <string> <column>");
 g_printHelp = !strcmp(saveHelpCmd, "HELP BREAK");
 H("This command breaks up a file into tokens, one per line, breaking at");
 H("whitespace and any special characters you specify as delimiters.");
-/* 3-Jul-2020 nm Added: */
 H("Use an explicit (quoted) space as <specchars> to avoid the default");
 H("special characters and break only on whitespace.");
 H("Syntax:  BREAK <iofile> <specchars>");
@@ -380,10 +352,8 @@ return;
 
 
 /* Note: help1 should contain Metamath help */
-void help1(vstring helpCmd)
-{
+void help1(vstring helpCmd) {
 
-/* 5-Sep-2012 nm */
 vstring saveHelpCmd = "";
 /* help1() may be called with a temporarily allocated argument (left(),
    cat(), etc.), and the let()s in the eventual print2() calls will
@@ -452,10 +422,10 @@ H("Some additional CLI-related features are explained by:");
 H("");
 H("    HELP SET ECHO");
 H("    HELP SET SCROLL");
-H("    HELP SET WIDTH");  /* 18-Nov-05 nm Was SCREEN_WIDTH */
-H("    HELP SET HEIGHT"); /* 18-Nov-05 nm New */
+H("    HELP SET WIDTH");
+H("    HELP SET HEIGHT");
 H("    HELP SUBMIT");
-H("    HELP UNDO (or REDO) - in Proof Assistant only");  /* 21-Oct-2016 */
+H("    HELP UNDO (or REDO) - in Proof Assistant only");
 H("");
 
 
@@ -611,7 +581,6 @@ H("       recursive, or self reference to a file is ignored");
 H("");
 
 
-/* 10-Dec-2018 nm */
 g_printHelp = !strcmp(saveHelpCmd, "HELP MARKUP");
 H("(See HELP VERIFY MARKUP for the markup language used in database");
 H("comments.)");
@@ -876,7 +845,6 @@ H("unconditionally.  This means any unsaved work will be lost.");
 H("");
 
 
-/* Added 3-Jun-2018 nm */
 g_printHelp = !strcmp(saveHelpCmd, "HELP _EXIT_PA");
 H("Syntax:  _EXIT_PA [/ FORCE]");
 H("");
@@ -990,7 +958,6 @@ H("to enter this utility, which has its own HELP commands.  Once you are");
 H("inside, EXIT will return to Metamath.");
 H("");
 
-/* 3-May-2017 nm - removed CLEAN qualifier */
 g_printHelp = !strcmp(saveHelpCmd, "HELP WRITE SOURCE");
 H("Syntax:  WRITE SOURCE <filename> [/ FORMAT] [/ REWRAP] [/ SPLIT]");
 H("           [/ KEEP_INCLUDES] [/ NO_VERSIONING]");
@@ -1030,7 +997,6 @@ H("        / NO_VERSIONING is specified) to prevent the possibly confusing");
 H("        source duplication in both the output file and the included file.");
 H("        The / KEEP_INCLUDES qualifier will prevent this deletion.");
 H("    / NO_VERSIONING - Backup files suffixed with ~1 are not created.");
-/* 4-Sep-2020 nm Added EXTRACT */
 H("    / EXTRACT <label-match> - Write to the output file only those");
 H("        statements needed to support and prove the statements matching");
 H("        <label-match>.  See HELP SEARCH for the format of <label-match>.");

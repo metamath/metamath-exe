@@ -345,7 +345,7 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
     flag searchMethod, /* 1 means to try proveFloating on $e's also */
     long improveDepth, /* Depth for proveFloating */
     flag overrideFlag,  /* 1 means to override statement usage locks */
-    flag mathboxFlag /* 1 means allow mathboxes */ /* 5-Aug-2020 nm */
+    flag mathboxFlag /* 1 means allow mathboxes */
     ) {
   nmbrString *prfMath; /* Pointer only */
   long reqHyps;
@@ -383,7 +383,7 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
   long scanLowerBound;
   vstring hasFloatingProof = "";  /* 'N' or 'Y' for $e hyps */
   vstring tryFloatingProofLater = "";  /* 'N' or 'Y' */
-  flag hasDummyVar;     /* 4-Sep-2012 nm */
+  flag hasDummyVar;
 
   /* If we are overriding discouraged usage, a warning has already been
      printed.  If we are not, then we should never get here. */
@@ -600,9 +600,7 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
            we will have an infinite loop.)  Note that for $f's, all
            variables will be known so there will only be one unification
            anyway. */
-        if (hyp >= schEHyps
-            || hasFloatingProof[hyp] == 'Y' /* 5-Sep-2012 nm */
-            ) {
+        if (hyp >= schEHyps || hasFloatingProof[hyp] == 'Y') {
           reenterFFlag = 1;
         }
       } else {
@@ -942,13 +940,6 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
     nmbrLet(&proof, nmbrAddElement(proof, replStatemNum));
                                                      /* Complete the proof */
 
-    /* Deallocate hypothesis schemes and proofs */
-    /* 25-Jun-2014 This is now done after returnPoint (why was it incomplete?)
-    for (hyp = 0; hyp < schReqHyps; hyp++) {
-      nmbrLet((nmbrString **)(&hypList[hyp]), NULL_NMBRSTRING);
-      nmbrLet((nmbrString **)(&hypProofList[hyp]), NULL_NMBRSTRING);
-    }
-    */
     goto returnPoint;
 
   } /* End while (next unifyH() call for main replacement statement) */
@@ -1249,7 +1240,6 @@ nmbrString *expandProof(
       nmbrLet(&expandedSubproof, NULL_NMBRSTRING);
       /* Scan the proof of the statement to be expanded */
       for (srcStep = 0; srcStep < sourcePLen; srcStep++) {
-        /* 14-Sep-2016 nm */
         if (sourceProof[srcStep] < 0) {
           if (sourceProof[srcStep] == -(long)'?') {
             /* It's an unknown step in the source proof; make it an
@@ -1847,10 +1837,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
 
         saveUnifTrialCount = g_unifTrialCount; /* Save unification timeout */
         hypProofPtr = proveFloating(makeSubstPtr, statemNum, maxEDepth, step,
-            noDistinct,
-            overrideFlag, /* 3-May-2016 nm */
-            mathboxFlag /* 5-Aug-2020 nm */
-            );
+            noDistinct, overrideFlag, mathboxFlag);
         g_unifTrialCount = saveUnifTrialCount; /* Restore unification timeout */
 
         nmbrLet(&makeSubstPtr, NULL_NMBRSTRING); /* Deallocate */
@@ -2138,7 +2125,7 @@ void minimizeProof(long repStatemNum, long prvStatemNum,
                                            /* Replacement was not successful */
 
       if (nmbrElementIn(1, newSubProofPtr, -(long)'?')) {
-        /* 8/28/99 Don't do a replacement if the replacement has unknown
+        /* Don't do a replacement if the replacement has unknown
            steps - this causes assignKnownSteps to abort, and it's not
            clear if we should do that anyway since it doesn't necessarily
            minimize the proof */
@@ -2150,10 +2137,10 @@ void minimizeProof(long repStatemNum, long prvStatemNum,
       sublen = subproofLen(g_ProofInProgress.proof, step);
       if (sublen > nmbrLen(newSubProofPtr) || allowGrowthFlag) {
         /* Success - proof length was reduced */
-        /* 7-Jun-2011 nm Delete the old subproof only if it is not an unknown
+        /* Delete the old subproof only if it is not an unknown
            step (since if it is an unknown step, it is already deleted) */
         if ((g_ProofInProgress.proof)[step] == -(long)'?') {
-          /* 7-Jun-2011 nm This can only occur in / ALLOW_GROWTH mode */
+          /* This can only occur in / ALLOW_GROWTH mode */
           if (!allowGrowthFlag) bug(1831);
         } else {
           deleteSubProof(step);

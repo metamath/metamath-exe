@@ -11,11 +11,11 @@
 #include <ctype.h>
 #include <stdarg.h>
 #include <setjmp.h>
-#include <time.h>  /* 16-Aug-2016 nm For ELAPSED_TIME */
+#include <time.h>  /* For ELAPSED_TIME */
 #include "mmvstr.h"
 #include "mmdata.h"
 #include "mminou.h"
-#include "mmcmdl.h" /* 9/3/99 - for g_commandPrompt global */
+#include "mmcmdl.h" /* for g_commandPrompt global */
 
 #ifdef __WATCOMC__
   /* Bugs in WATCOMC:
@@ -47,8 +47,7 @@ long g_commandFileNestingLevel = 0;
 FILE *g_commandFilePtr[MAX_COMMAND_FILE_NESTING + 1];
 vstring g_commandFileName[MAX_COMMAND_FILE_NESTING + 1];
 flag g_commandFileSilent[MAX_COMMAND_FILE_NESTING + 1];
-flag g_commandFileSilentFlag = 0;
-                                   /* 23-Oct-2006 nm For SUBMIT ... /SILENT */
+flag g_commandFileSilentFlag = 0; /* For SUBMIT ... /SILENT */
 
 FILE *g_input_fp; /* File pointers */
 vstring g_input_fn="", g_output_fn="";        /* File names */
@@ -56,7 +55,7 @@ vstring g_input_fn="", g_output_fn="";        /* File names */
 long g_screenWidth = MAX_LEN; /* Width default = 79 */
 /* g_screenHeight is one less than the physical screen to account for the
    prompt line after pausing. */
-long g_screenHeight = SCREEN_HEIGHT; /* Default = 23 */ /* 18-Nov-05 nm */
+long g_screenHeight = SCREEN_HEIGHT; /* Default = 23 */
 int printedLines = 0; /* Lines printed since last user input (mod scrn hght) */
 flag g_scrollMode = 1; /* Flag for continuous (0) or prompted (1) scroll */
 flag g_quitPrint = 0; /* Flag that user quit the output */
@@ -85,7 +84,7 @@ flag print2(char* fmt, ...) {
   /* gcc (Debian 4.9.2-10+deb8u2) 4.9.2 gives error for ssize_t if -c99
      is specified; gcc (GCC) 7.3.0 doesn't complain if -c99 is specified */
   /* See https://sourceforge.net/p/predef/wiki/Compilers/ for __LCC__ */
-#ifdef __LCC__   /* 19-Jun-2020 nm ssize_t not defined for lcc compiler */
+#ifdef __LCC__   /* ssize_t not defined for lcc compiler */
   long bufsiz;
 #else
   ssize_t bufsiz; /* ssize_t (signed size_t) can represent the number -1 for
@@ -275,7 +274,7 @@ flag print2(char* fmt, ...) {
       system to get the `verify proof *' progress bar to display
       progressively (rather than all at once). I've conditionalized it on
       __STDC__, since it should be harmless on any ANSI C system.
-        -- Stephen McCamant  smccam @ uclink4.berkeley.edu 12/9/00
+        -- Stephen McCamant  smccam @ uclink4.berkeley.edu 12-Sep-00
       */
       fflush(stdout);
 #endif
@@ -371,7 +370,7 @@ flag print2(char* fmt, ...) {
 /* Special:  if breakMatch is \, then put % at end of previous line for LaTeX*/
 /* Special:  if breakMatch is " (quote), treat as if space but don't break
              quotes, and also let lines grow long - use this call for all HTML
-             code */ /* Added 10/14/02 */
+             code */
 void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
 {
   vstring longLine = "";
@@ -435,7 +434,7 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
   /* Whenever we are inside of a quote, we change a space to ASCII 3 to
      prevent matching it.  The reverse is done in the print2() function,
      where all ASCII 3's are converted back to space. */
-  /* Note added 10/20/02: tidy.exe breaks HREF quotes with new line.
+  /* Note added 20-Oct-02: tidy.exe breaks HREF quotes with new line.
      Check HTML spec - do we really need this code? */
   j = (long)strlen(multiLine);
   /* Do a bug check to make sure no real ASCII 3's are ever printed */
@@ -1180,9 +1179,7 @@ vstring fGetTmpName(vstring filePrefix)
     let(&fname, cat(filePrefix, str((double)counter), ".tmp", NULL));
     fp = fopen(fname, "r");
     if (!fp) break;
-
-    /* Fix resource leak reported by David Binderman 10-Oct-2016 */
-    fclose(fp);  /* 10-Oct-2016 nm */
+    fclose(fp);
 
     if (counter > 1000) {
       print2("?Warning: too many %snnn.tmp files - will reuse %s\n",
@@ -1322,7 +1319,7 @@ vstring readFileToString(vstring fileName, char verbose, long *charCount) {
       i++;
       j++;
     }
-    (*charCount) = i - 1; /* nm 6-Feb-04 */
+    (*charCount) = i - 1;
   }
 
   /* Make sure the last line is not a partial line */
@@ -1336,7 +1333,7 @@ vstring readFileToString(vstring fileName, char verbose, long *charCount) {
     fileBuf[(*charCount)] = 0;
   }
 
-  if (fileBuf[(*charCount)] != 0) {  /* nm 6-Feb-04 */
+  if (fileBuf[(*charCount)] != 0) {
     bug(1522); /* Keeping track of charCount went wrong somewhere */
   }
 

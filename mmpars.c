@@ -940,7 +940,7 @@ void parseStatements(void) {
             /* Not really an out-of-memory situation, but use the error msg. */
         /* Note that g_Statement[stmt].beginScopeStatementNum for this ${
            points to the previous ${ (or 0 if in outermost scope) */
-        beginScopeStmtNum = stmt; /* 24-Aug-2020 nm */
+        beginScopeStmtNum = stmt;
         /* Note that g_Statement[stmt].endScopeStatementNum for this ${
            will be assigned in the rb_ case below. */
         break;
@@ -1037,10 +1037,9 @@ void parseStatements(void) {
             }
             for (j = lowerKey; j <= upperKey; j++) {
               if (g_MathToken[g_mathKey[j]].active) {
-                /* 18-Jun-2011 nm Detect conflicting active vars declared
+                /* Detect conflicting active vars declared
                    in multiple scopes */
                 if (g_MathToken[g_mathKey[j]].scope <= g_currentScope) {
-                /* if (g_MathToken[g_mathKey[j]].scope == g_currentScope) { bad */
                   mathTokenError(i, nmbrTmpPtr, stmt,
                       "This symbol has already been declared in this scope.");
                 }
@@ -1966,7 +1965,7 @@ char parseProof(long statemNum)
   flag subProofMoved; /* Flag to restart scan after moving subproof */
 
   if (g_Statement[statemNum].type != p_) {
-    bug(1723); /* 13-Oct-05 nm - should never get here */
+    bug(1723); /* should never get here */
     g_WrkProof.errorSeverity = 4;
     return 4; /* Do nothing if not $p */
   }
@@ -2220,7 +2219,7 @@ char parseProof(long statemNum)
     if (voidPtr) { /* It was found */
       j = ( (struct sortHypAndLoc *)voidPtr)->labelTokenNum; /* Statement number */
       if (!g_WrkProof.errorCount) {
-        assignStmtFileAndLineNum(j); /* 9-Jan-2018 nm */
+        assignStmtFileAndLineNum(j);
         sourceError(fbPtr, tokLength, statemNum,cat(
             "The local label at proof step ",
             str((double)(g_WrkProof.numSteps + 1)),
@@ -2461,7 +2460,7 @@ char parseProof(long statemNum)
               " is the label of this statement.  A statement may not be used to",
               " prove itself.",NULL));
         } else {
-          assignStmtFileAndLineNum(j); /* 9-Jan-2018 nm */
+          assignStmtFileAndLineNum(j);
           sourceError(fbPtr, tokLength, statemNum, cat(
               "The label \"", g_Statement[j].labelName, "\" at proof step ",
               str((double)step + 1),
@@ -2819,7 +2818,7 @@ char parseCompressedProof(long statemNum)
   static long lettersLen;
   static long digitsLen;
 
-  /* 15-Oct-05 nm - Used to detect old buggy compression */
+  /* Used to detect old buggy compression */
   long bggyProofLen;
   char bggyZapSave;
   flag bggyAlgo;
@@ -3080,7 +3079,7 @@ char parseCompressedProof(long statemNum)
              " is the label of this statement.  A statement may not be used to",
               " prove itself.",NULL));
         } else {
-          assignStmtFileAndLineNum(j); /* 9-Jan-2018 nm */
+          assignStmtFileAndLineNum(j);
           sourceError(fbPtr, tokLength, statemNum, cat(
               "The label \"", g_Statement[j].labelName, "\" at proof step ",
               str((double)step + 1),
@@ -3268,7 +3267,6 @@ char parseCompressedProof(long statemNum)
 
         hypLocUnkFlag = 0;
 
-        /* 21-Mar-06 nm Fix bug reported by o'cat */
         if (g_WrkProof.numSteps == 0) {
           /* This will happen if labelChar (Z) is in 1st char pos of
              compressed proof */
@@ -3782,7 +3780,7 @@ long whiteSpaceLen(char *ptr) {
 } /* whiteSpaceLen */
 
 
-/* 31-Dec-2017 nm For .mm file splitting */
+/* For .mm file splitting */
 /* This function is like whiteSpaceLen() except that comments are NOT
    considered white space.  ptr should point to the first character
    of the white space.  If ptr does not point to a white space character, 0
@@ -3863,7 +3861,7 @@ long rawTokenLen(char *ptr)
    character of the token.  If ptr points to a white space character, 0
    is returned.  If ptr points to a null character, 0 is returned.  If ptr
    points to a keyword, 0 is returned.  A keyword ends a token.
-   ":" and "?" and "(" and ")" and "=" (25-Jan-2016) are considered tokens. */
+   ":" and "?" and "(" and ")" and "=" are considered tokens. */
 long proofTokenLen(char *ptr)
 {
   long i = 0;
@@ -3933,7 +3931,7 @@ long countLines(vstring start, long length) {
 /* Note that the labelSection, mathSection, and proofSection do not
    contain keywords ($a, $p,...; $=; $.).  The keywords are added
    by this function when the statement is written. */
-/* 31-Dec-2020 nm This must be called in sequence for all statements,
+/* This must be called in sequence for all statements,
    since the previous statement is needed to populate dollarDpos
    and previousType */
 vstring outputStatement(long stmt, flag reformatFlag) {

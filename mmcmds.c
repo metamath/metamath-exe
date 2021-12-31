@@ -12,7 +12,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdarg.h>
-#include <time.h>  /* 28-May-04 nm For clock() */
+#include <time.h>  /* For clock() */
 #include "mmvstr.h"
 #include "mmdata.h"
 #include "mmcmdl.h" /* For g_texFileName */
@@ -86,7 +86,7 @@ void typeStatement(long showStmt,
   if (!showStmt) bug(225); /* Must be 1 or greater */
 
   if (!commentOnlyFlag && !briefFlag) {
-    assignStmtFileAndLineNum(showStmt); /* 9-Jan-2018 nm */
+    assignStmtFileAndLineNum(showStmt);
     let(&str1, cat("Statement ", str((double)showStmt),
         " is located on line ", str((double)(g_Statement[showStmt].lineNum)),
         " of the file ", NULL));
@@ -222,7 +222,7 @@ void typeStatement(long showStmt,
       htmlDistinctVarsCommaFlag = 0;
     }
 
-    /* Note added 22-Aug-04:  This algorithm is used to re-merge $d pairs
+    /* This algorithm is used to re-merge $d pairs
        into groups of 3 or more when possible, for a more compact display.
        The algorithm does not merge groups optimally, but it should be
        adequate.  For example, in set.mm (e.g. old r19.23aivv):
@@ -282,14 +282,12 @@ void typeStatement(long showStmt,
                 if (k == 0) let(&str1, "$d");
                 else let(&str1, cat(str1, " $.  $d", NULL));
               } else {
-
-                /* 12/23/01 */
                 let(&htmlDistinctVars, cat(htmlDistinctVars, " &nbsp; ",
                     NULL));
                 htmlDistinctVarsCommaFlag = 0;
-                distVarGrps++;  /* 11-Aug-2006 nm */
-
+                distVarGrps++;
               }
+
               nmbrLet(&nmbrDDList, NULL_NMBRSTRING);
               break; /* Out of n loop */
             }
@@ -302,7 +300,6 @@ void typeStatement(long showStmt,
                 NULL));
           } else {
 
-            /* 12/23/01 */
             if (htmlDistinctVarsCommaFlag) {
               let(&htmlDistinctVars, cat(htmlDistinctVars, ",", NULL));
             }
@@ -509,13 +506,10 @@ void typeStatement(long showStmt,
 
   if (briefFlag) goto returnPoint;
 
-  /* 6-Dec-03 In the LaTeX output, the hypotheses used to be printed after the
-     statement.  Now they are printed before (see above 6-Dec-03 comments),
-     so some code below is commented out. */
   switch (type) {
     case a_:
     case p_:
-      /* 6-Dec-03  This is not really needed but keeps output consistent
+      /* This is not really needed but keeps output consistent
          with previous version.  It puts a blank line before the HTML
          "distinct variable" list. */
       if (texFlag && htmlFlg) {
@@ -540,7 +534,7 @@ void typeStatement(long showStmt,
               "      "," ");
         }
       }
-      /* 6-Dec-03  This is not really needed but keeps output consistent
+      /* This is not really needed but keeps output consistent
          with previous version.  It puts a blank line before the HTML
          "distinct variable" list. */
       if (texFlag && htmlFlg) {
@@ -941,7 +935,7 @@ void typeStatement(long showStmt,
       let(&g_printString, str2);
     } /* if (subType != SYNTAX) */
     if (subType == THEOREM) {
-      /* 10/25/02 The "referenced by" does not show up after the proof
+      /* The "referenced by" does not show up after the proof
          because we moved the typeProof() to below.  Therefore, we save
          g_printString into a temporary global holding variable to print
          at the proper place inside of typeProof().  Ugly but necessary
@@ -1105,7 +1099,7 @@ vstring htmlDummyVars(long showStmt)
              "mmset.html" :
              /* The following link will work in the NF and other
                 "Proof Explorers" */
-             "../mpeuni/mmset.html",  /* 19-Aug-2017, 26-Sep-2017 nm */
+             "../mpeuni/mmset.html",
 
         "#dvnote1\">Dummy variable",
         /* Determine whether singular or plural */
@@ -1310,7 +1304,7 @@ vstring htmlAllowedSubst(long showStmt)
 /* Note that parseProof() and verifyProof() are assumed to have been called,
    so that the g_WrkProof structure elements are assigned for the current
    statement. */
-/* 8/28/00 - this is also used for the MIDI output, since we conveniently
+/* This is also used for the MIDI output, since we conveniently
    have the necessary proof information here.  The function outputMidi()
    is called from within. */
 void typeProof(long statemNum,
@@ -1374,7 +1368,7 @@ void typeProof(long statemNum,
         qualifier except / ESSENTIAL.
     / DETAILED_STEP <step> - Shows the details of what is happening at
         a specific proof step.  May not be used with any other qualifier.
-    / MIDI - 8/28/00 - puts out a midi sound file instead of a proof
+    / MIDI - puts out a midi sound file instead of a proof
         - determined by the global variable g_midiFlag, not by a parameter to
         typeProof()
   */
@@ -1412,8 +1406,8 @@ void typeProof(long statemNum,
   nmbrString *hypPtr;
   long hyp, hypStep;
 
-  /* For statement syntax breakdown (see section below added 2/5/02 for better
-     syntax hints), we declare the following 3 variables. */
+  /* For statement syntax breakdown (see "syntax hints" section below),
+    we declare the following 3 variables. */
   static long wffToken = -1; /* array index of the hard-coded token "wff" -
       static so we only have to look it up once - set to -2 if not found */
   nmbrString *nmbrTmpPtr1; /* Pointer only; not allocated directly */
@@ -1572,8 +1566,7 @@ void typeProof(long statemNum,
     nmbrLet(&essentialFlags, NULL_NMBRSTRING);
   }
 
-  /* 8/28/00 We now have enough information for the MIDI output, so
-     do it */
+  /* We now have enough information for the MIDI output, so do it */
   if (g_midiFlag) {
     outputMidi(plen, indentationLevel,
         essentialFlags, g_midiParam, g_Statement[statemNum].labelName);
@@ -1583,7 +1576,7 @@ void typeProof(long statemNum,
   /* Get the step renumbering */
   nmbrLet(&stepRenumber, nmbrSpace(plen)); /* This initializes all step
       renumbering to step 0.  Later, we will use (for html) the fact that
-      a step renumbered to 0 is a step to be skipped (6/27/99). */
+      a step renumbered to 0 is a step to be skipped. */
   i = 0;
   maxStepNum = 0;
   for (step = 0; step < plen; step++) {
@@ -1668,7 +1661,7 @@ void typeProof(long statemNum,
     } else {
       if (nmbrElementIn(1, localLabels, step)) {
 
-        /* 6/27/99 The new philosophy is to number all local labels with the
+        /* The philosophy is to number all local labels with the
            actual step number referenced, for better readability.  This means
            that if a *.mm label is a pure number, there may be ambiguity in
            the proof display, but this is felt to be too rare to be a serious
@@ -2032,7 +2025,7 @@ void typeProof(long statemNum,
       }
 
       /******************************************************************/
-      /* Start of section added 2/5/02 - for a more complete syntax hints
+      /* Start of syntax hints section - for a more complete syntax hints
          list in the HTML pages, parse the wffs comprising the hypotheses
          and the statement, and add their syntax to the hints list. */
 
@@ -2130,7 +2123,7 @@ void typeProof(long statemNum,
         nmbrLet(&nmbrTmpPtr2, NULL_NMBRSTRING);
         nmbrLet(&nmbrTmpPtr1, NULL_NMBRSTRING);
       } /* if (wffToken >= 0) */
-      /* End of section added 2/5/02 */
+      /* End of syntax hints section */
       /******************************************************************/
 
       let(&tmpStr, "");
@@ -2141,7 +2134,7 @@ void typeProof(long statemNum,
                "<TR><TD ALIGN=LEFT><FONT SIZE=-1><B>Syntax hints:</B> ");
           }
 
-          /* 10/6/99 - Get the main symbol in the syntax */
+          /* Get the main symbol in the syntax */
           /* This section can be deleted if not wanted - it is custom
              for set.mm and might not work with other .mm's */
           let(&tmpStr1, "");
@@ -2186,7 +2179,7 @@ void typeProof(long statemNum,
           if (!strcmp(g_Statement[stmt].labelName, "co")) /* operation */
             let(&tmpStr1, "(<i>class class class</i>)");
           let(&tmpStr, cat(tmpStr, " &nbsp;", tmpStr1, NULL));
-          /* End of 10/6/99 section - Get the main symbol in the syntax */
+          /* End section - Get the main symbol in the syntax */
 
           let(&tmpStr1, "");
           tmpStr1 = pinkHTML(stmt);
@@ -2323,8 +2316,8 @@ void typeProof(long statemNum,
   let(&userPrefix, "");
   let(&contPrefix, "");
   let(&hypStr, "");
-  let(&startStringWithNum, ""); /* 22-Apr-2015 nm */
-  let(&startStringWithoutNum, ""); /* 22-Apr-2015 nm */
+  let(&startStringWithNum, "");
+  let(&startStringWithoutNum, "");
   nmbrLet(&unprovedList, NULL_NMBRSTRING);
   nmbrLet(&localLabels, NULL_NMBRSTRING);
   nmbrLet(&localLabelNames, NULL_NMBRSTRING);
@@ -2651,7 +2644,7 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
   nmbrString *proof = NULL_NMBRSTRING;
   nmbrString *essentialFlags = NULL_NMBRSTRING;
 
-  /* 10/10/02 This section is never called in HTML mode anymore.  The code is
+  /* This section is never called in HTML mode anymore.  The code is
      left in though just in case we somehow get here and the user continues
      through the bug. */
   if (texFlag && g_htmlFlag) bug(239);
@@ -2730,7 +2723,7 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
   /* Next, build the output string */
   for (stmt = 1; stmt < statemNum; stmt++) {
     if (statementUsedFlags[stmt] == 'Y') {
-      assignStmtFileAndLineNum(stmt); /* 9-Jan-2018 nm */
+      assignStmtFileAndLineNum(stmt);
       let(&str1, cat(" is located on line ",
           str((double)(g_Statement[stmt].lineNum)),
           " of the file ", NULL));
@@ -2763,7 +2756,6 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
         let(&g_printString, "");
       }
 
-      /* type = g_Statement[stmt].type; */ /* 18-Sep-2013 Not used */
       let(&str1, "");
       str1 = getDescription(stmt);
       if (str1[0]) {
@@ -3144,7 +3136,7 @@ void traceProofTreeRec(long statemNum,
     }
   }
 
-  /* 20-Oct-2013 nm Don't use bad proofs (incomplete proofs are ok) */
+  /* Don't use bad proofs (incomplete proofs are ok) */
   if (parseProof(statemNum) > 1) {
     /* The proof has an error, so use the empty proof */
     nmbrLet(&proof, nmbrAddElement(NULL_NMBRSTRING, -(long)'?'));
@@ -4588,20 +4580,6 @@ void eraseSource(void)    /* ERASE command */
   for (i = 1; i <= g_statements + 1; i++) { /* g_statements + 1 is a dummy statement
                                           to hold source after last statement */
 
-    /* 28-Aug-2013 am - g_Statement[stmt].reqVarList allocated in
-       parseStatements() was not always freed by eraseSource().  If reqVars==0
-       (in parseStatements()) then g_Statement[i].reqVarList[0]==-1 (in
-       eraseSource()) and so eraseSource() thought that
-       g_Statement[stmt].reqVarList was not allocated and should not be freed.
-
-       There were similar problems for reqHypList, reqDisjVarsA, reqDisjVarsB,
-       reqDisjVarsStmt, optDisjVarsA, optDisjVarsB, optDisjVarsStmt.
-
-       These were fixed by comparing to NULL_NMBRSTRING instead of -1.
-
-       I think other files (mathString, proofString, optHypList, optVarList)
-       should be also fixed, but I could not find simple example for memory
-       leak and leave it as it was.  */
     if (g_Statement[i].labelName[0]) free(g_Statement[i].labelName);
     if (g_Statement[i].mathString != NULL_NMBRSTRING)
         poolFree(g_Statement[i].mathString);
@@ -4643,7 +4621,7 @@ void eraseSource(void)    /* ERASE command */
 
   } /* Next i (statement) */
 
-  /* 28-Aug-2013 am - g_MathToken[g_mathTokens].tokenName is assigned in
+  /* g_MathToken[g_mathTokens].tokenName is assigned in
      parseMathDecl() by let().  eraseSource() should free every g_MathToken and
      there are (g_mathTokens + g_dummyVars) tokens. */
   for (i = 0; i <= g_mathTokens + g_dummyVars; i++) {
@@ -5360,8 +5338,6 @@ void verifyMarkup(vstring labelMatch,
   /* Check mathboxes for cross-references */
   if (mathboxSkip == 0) {
     print2("Checking mathbox independence...\n");
-    /* 5-Aug-2020 nm Deleted; these are now globals */
-    /*mathboxes = getMathboxLoc(&mathboxStart, &mathboxEnd, &mathboxUser);*/
     assignMathboxInfo();  /* Populate global mathbox variables */
     /* Scan proofs in mathboxes to see if earlier mathbox is referenced */
     for (pmbox = 2; pmbox <= g_mathboxes; pmbox++) {
@@ -6007,7 +5983,7 @@ void outputMidi(long plen, nmbrString *indentationLevels,
   long keyboardOctave; /* The number of keys spanning an octave */
   long i;
 
-  /******** Define the keyboard to midi maps (added 5/17/04 nm) *************/
+  /*** Define the keyboard to midi maps ***/
   /* The idea here is to map the proof step to pressing "keyboard" keys
      on keyboards that have all keys, or only the white keys, or only the
      black keys.   The default is all keys, the parameter b means black,
