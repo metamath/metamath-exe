@@ -5863,19 +5863,18 @@ vstring spectrumToRGB(long color, long maxColor) {
   if (i > -1) goto SKIP_INIT; /* 20-Aug-2006 nm - Speedup */
   i = -1; /* For safety */
 
-#define L53empirical
-#ifdef L53empirical
   /* Here, we use the maximum saturation possible for a fixed L*a*b color L
      (lightness) value of 53, which corresponds to 50% gray scale.
      Each pure color had either brightness reduced or saturation reduced,
      as required, to achieve L = 53.
 
-     The partitions in the 'ifdef L53obsolete' below were divided into 1000
-     subpartitions, then new partitions were determined by reselecting
-     partition boundaries based on where their color difference was
-     distinguishable (i.e. could semi-comfortably read letters of one color
-     with the other as a background, on an LCD display).  Some human judgment
-     was involved, and it is probably not completely uniform or optimal.
+     An initial partition was formed from hues 0, 15, 30, ..., 345, then the
+     result was divided into 1000 subpartitions, and the new partitions were
+     determined by reselecting partition boundaries based on where their color
+     difference was distinguishable (i.e. could semi-comfortably read letters
+     of one color with the other as a background, on an LCD display).  Some
+     human judgment was involved, and it is probably not completely uniform or
+     optimal.
 
      A Just Noticeable Difference (JND) algorithm for spacing might be more
      accurate, especially if averaged over several subjects and different
@@ -5922,98 +5921,6 @@ vstring spectrumToRGB(long color, long maxColor) {
   i++; redRef[i] = 239; greenRef[i] = 0; blueRef[i] = 132;     /* 948 */
   /*i++; redRef[i] = 242; greenRef[i] = 0; blueRef[i] = 98;*/  /* 973 */
   /*i++; redRef[i] = 244; greenRef[i] = 0; blueRef[i] = 62;*/  /* 1000 */
-#endif
-
-#ifdef L53obsolete
-  /* THIS IS OBSOLETE AND FOR HISTORICAL REFERENCE ONLY; IT MAY BE DELETED. */
-  /* Here, we use the maximum saturation possible for a given L value of 53.
-     Each pure color has either brightness reduced or saturation reduced,
-     as appropriate, until the LAB color L (lightness) value is 53.  The
-     comment at the end of each line is the hue (0 to 360).
-
-     Unfortunately, equal hue differences are not equally distinguishable.
-     The commented-out lines were an unsuccessful attempt to make them more
-     uniform before the final empirical table above was determined. */
-  i++; redRef[i] = 251; greenRef[i] = 0; blueRef[i] = 0; /* 0 r */
-  i++; redRef[i] = 234; greenRef[i] = 59; blueRef[i] = 0; /* 15 */
-  i++; redRef[i] = 196; greenRef[i] = 98; blueRef[i] = 0; /* 30 */
-  i++; redRef[i] = 160; greenRef[i] = 120; blueRef[i] = 0; /* 45 */
-  /*i++; redRef[i] = 131; greenRef[i] = 131; blueRef[i] = 0;*/ /* 60 */
-  i++; redRef[i] = 104; greenRef[i] = 138; blueRef[i] = 0; /* 75 */
-  /*i++; redRef[i] = 72; greenRef[i] = 144; blueRef[i] = 0;*/ /* 90 */
-  /*i++; redRef[i] = 37; greenRef[i] = 147; blueRef[i] = 0;*/ /* 105 */
-  i++; redRef[i] = 0; greenRef[i] = 148; blueRef[i] = 0; /* 120 g */
-  /*i++; redRef[i] = 0; greenRef[i] = 148; blueRef[i] = 37;*/ /* 135 */
-  /*i++; redRef[i] = 0; greenRef[i] = 145; blueRef[i] = 73;*/ /* 150 */
-  i++; redRef[i] = 0; greenRef[i] = 145; blueRef[i] = 109; /* 165 */
-  /*i++; redRef[i] = 0; greenRef[i] = 142; blueRef[i] = 142;*/ /* 180 */
-  /*i++; redRef[i] = 0; greenRef[i] = 139; blueRef[i] = 185;*/ /* 195 */
-  i++; redRef[i] = 0; greenRef[i] = 128; blueRef[i] = 255; /* 210 */
-  /*i++; redRef[i] = 73; greenRef[i] = 119; blueRef[i] = 255;*/ /* 225 */
-  i++; redRef[i] = 110; greenRef[i] = 110; blueRef[i] = 255; /* 240 b */
-  i++; redRef[i] = 138; greenRef[i] = 99; blueRef[i] = 255; /* 255 */
-  i++; redRef[i] = 168; greenRef[i] = 81; blueRef[i] = 255; /* 270 */
-  i++; redRef[i] = 201; greenRef[i] = 40; blueRef[i] = 255; /* 285 */
-  i++; redRef[i] = 222; greenRef[i] = 0; blueRef[i] = 222; /* 300 */
-  i++; redRef[i] = 233; greenRef[i] = 0; blueRef[i] = 175; /* 315 */
-  i++; redRef[i] = 241; greenRef[i] = 0; blueRef[i] = 120; /* 330 */
-  /*i++; redRef[i] = 245; greenRef[i] = 0; blueRef[i] = 61;*/ /* 345 */
-#endif
-
-#ifdef L68obsolete
-  /* THIS IS OBSOLETE AND FOR HISTORICAL REFERENCE ONLY; IT MAY BE DELETED. */
-  /* Each pure color has either brightness reduced or saturation reduced,
-     as appropriate, until the LAB color L (lightness) value is 68.
-
-     L = 68 was for the original pink color #FA8072, but the purples end
-     up too light to be seen easily on some monitors */
-  i++; redRef[i] = 255; greenRef[i] = 122; blueRef[i] = 122; /* 0 r */
-  i++; redRef[i] = 255; greenRef[i] = 127; blueRef[i] = 0; /* 30 */
-  i++; redRef[i] = 207; greenRef[i] = 155; blueRef[i] = 0; /* 45 */
-  i++; redRef[i] = 170; greenRef[i] = 170; blueRef[i] = 0; /* 60 */
-  i++; redRef[i] = 93; greenRef[i] = 186; blueRef[i] = 0; /* 90 */
-  i++; redRef[i] = 0; greenRef[i] = 196; blueRef[i] = 0; /* 120 g */
-  i++; redRef[i] = 0; greenRef[i] = 190; blueRef[i] = 94; /* 150 */
-  i++; redRef[i] = 0; greenRef[i] = 185; blueRef[i] = 185; /* 180 */
-  i++; redRef[i] = 87; greenRef[i] = 171; blueRef[i] = 255; /* 210 */
-  i++; redRef[i] = 156; greenRef[i] = 156; blueRef[i] = 255; /* 240 b */
-  i++; redRef[i] = 197; greenRef[i] = 140; blueRef[i] = 255; /* 270 */
-  /*i++; redRef[i] = 223; greenRef[i] = 126; blueRef[i] = 255;*/ /* 285 */
-  i++; redRef[i] = 255; greenRef[i] = 100; blueRef[i] = 255; /* 300 */
-  i++; redRef[i] = 255; greenRef[i] = 115; blueRef[i] = 185; /* 330 */
-#endif
-
-#ifdef L53S57obsolete
-  /* THIS IS OBSOLETE AND FOR HISTORICAL REFERENCE ONLY; IT MAY BE DELETED. */
-  /* Saturation is constant 57%; LAB color L (lightness) is constant 53.
-     This looks nice - colors are consistent pastels due to holding saturation
-     constant (the maximum possible due to blue) - but we lose some of the
-     distinguishability provided by saturated colors */
-  i++; redRef[i] = 206; greenRef[i] = 89; blueRef[i] = 89; /* 0 r */
-  i++; redRef[i] = 184; greenRef[i] = 105; blueRef[i] = 79; /* 15 */
-  i++; redRef[i] = 164; greenRef[i] = 117; blueRef[i] = 71; /* 30 */
-  i++; redRef[i] = 145; greenRef[i] = 124; blueRef[i] = 62; /* 45 */
-  /*i++; redRef[i] = 130; greenRef[i] = 130; blueRef[i] = 56;*/ /* 60 */
-  /*i++; redRef[i] = 116; greenRef[i] = 135; blueRef[i] = 58;*/ /* 75 */
-  i++; redRef[i] = 98; greenRef[i] = 137; blueRef[i] = 59; /* 90 */
-  /*i++; redRef[i] = 80; greenRef[i] = 140; blueRef[i] = 60;*/ /* 105 */
-  i++; redRef[i] = 62; greenRef[i] = 144; blueRef[i] = 62; /* 120 g */
-  /*i++; redRef[i] = 61; greenRef[i] = 143; blueRef[i] = 82;*/ /* 135 */
-  i++; redRef[i] = 61; greenRef[i] = 142; blueRef[i] = 102; /* 150 */
-  /*i++; redRef[i] = 60; greenRef[i] = 139; blueRef[i] = 119;*/ /* 165 */
-  /*i++; redRef[i] = 60; greenRef[i] = 140; blueRef[i] = 140;*/ /* 180 */
-  /*i++; redRef[i] = 68; greenRef[i] = 136; blueRef[i] = 159;*/ /* 195 */
-  i++; redRef[i] = 80; greenRef[i] = 132; blueRef[i] = 185; /* 210 */
-  /*i++; redRef[i] = 93; greenRef[i] = 124; blueRef[i] = 216;*/ /* 225 */
-  i++; redRef[i] = 110; greenRef[i] = 110; blueRef[i] = 255; /* 240 b */
-  i++; redRef[i] = 139; greenRef[i] = 104; blueRef[i] = 242; /* 255 */
-  i++; redRef[i] = 159; greenRef[i] = 96; blueRef[i] = 223; /* 270 */
-  i++; redRef[i] = 178; greenRef[i] = 89; blueRef[i] = 207; /* 285 */
-  i++; redRef[i] = 191; greenRef[i] = 82; blueRef[i] = 191; /* 300 */
-  i++; redRef[i] = 194; greenRef[i] = 83; blueRef[i] = 166; /* 315 */
-  i++; redRef[i] = 199; greenRef[i] = 86; blueRef[i] = 142; /* 330 */
-  /*i++; redRef[i] = 202; greenRef[i] = 87; blueRef[i] = 116;*/ /* 345 */
-#endif
 
   if (i != PARTITIONS) { /* Double-check future edits */
     print2("? %ld partitions but PARTITIONS = %ld\n", i, (long)PARTITIONS);
