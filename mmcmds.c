@@ -4366,6 +4366,7 @@ void writeExtractedSource(
           fprintf(fp, "%s", buf);
           if (g_Statement[stmt].type != p_) {
             fprintf(fp, "$.");
+/*D*//*fprintf(fp, "#%ld#",stmt);*/
           } else {
             /* $p */
             fprintf(fp, "$=");
@@ -4376,6 +4377,7 @@ void writeExtractedSource(
           }
         } /* if not ${ $} */
         if (extractNeeded[stmt + 1] == 'N') {
+/*D*//*printf("added \\n stmt=%ld type=%c,%c\n",stmt+1,g_Statement[stmt].type,g_Statement[stmt+1].type);*/
           /* Put a newline following end of statement since the next
              statement's label section will be suppressed */
           fprintf(fp, "\n");

@@ -3652,6 +3652,12 @@ void command(int argc, char *argv[])
       if (i) endStep = (long)val(g_fullArg[i + 1]);
       i = switchPos("/ DEPTH");
       if (i) endIndent = (long)val(g_fullArg[i + 1]);
+      /* ESSENTIAL is retained for downwards compatibility, but is
+         now the default, so we ignore it. */
+      /*
+      i = switchPos("/ ESSENTIAL");
+      if (i) essentialFlag = 1;
+      */
       i = switchPos("/ ALL");
       if (i) essentialFlag = 0;
       if (i && switchPos("/ ESSENTIAL")) {
@@ -6577,3 +6583,5 @@ void command(int argc, char *argv[])
 
   }
 } /* command */
+
+
