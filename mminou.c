@@ -30,10 +30,6 @@ extern int cprintf(const char *f__mt,...);
 #endif
 #endif  /* End #ifdef __WATCOMC__ */
 
-#ifdef THINK_C
-#include <console.h>
-#endif
-
 #define QUOTED_SPACE 3 /* ASCII 3 that temporarily zaps a space */
 
 
@@ -86,9 +82,6 @@ flag print2(char* fmt,...)
   va_list ap;
   char c;
   long nlpos, lineLen, charsPrinted;
-#ifdef THINK_C
-  int ii, jj;
-#endif
   long i;
 
   /* char printBuffer[PRINTBUFFERSIZE]; */ /* 19-Jun-2020 nm Deleted */
@@ -316,11 +309,6 @@ flag print2(char* fmt,...)
       cprintf("%s", printBuffer); /* Immediate console I/O (printf buffers it)*/
 #else
       printf("%s", printBuffer);
-#endif
-
-#ifdef THINK_C
-      /* Force a console flush to see it (otherwise only CR flushes it) */
-      cgetxy(&ii, &jj, stdout);
 #endif
 
 #if __STDC__
@@ -1202,10 +1190,6 @@ FILE *fSafeOpen(vstring fileName, vstring mode, flag noVersioningFlag)
       if (0) goto skip_backup; /* Prevent compiler warning */
 
 #elif defined __GNUC__ /* Assume unix */
-      let(&prefix, cat(fileName, "~", NULL));
-      let(&postfix, "");
-
-#elif defined THINK_C /* Assume Macintosh */
       let(&prefix, cat(fileName, "~", NULL));
       let(&postfix, "");
 
