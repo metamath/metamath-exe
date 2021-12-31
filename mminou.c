@@ -50,10 +50,8 @@ flag g_commandFileSilent[MAX_COMMAND_FILE_NESTING + 1];
 flag g_commandFileSilentFlag = 0;
                                    /* 23-Oct-2006 nm For SUBMIT ... /SILENT */
 
-FILE /* *inputDef_fp,*/ *g_input_fp /*,*g_output_fp*/; /* File pointers */
-                             /* 31-Dec-2017 nm g_output_fp deleted */
-                             /* 15-Aug-2020 nm inputDef_fp,fn deleted */
-vstring /* inputDef_fn="",*/ g_input_fn="", g_output_fn="";        /* File names */
+FILE *g_input_fp; /* File pointers */
+vstring g_input_fn="", g_output_fn="";        /* File names */
 
 long g_screenWidth = MAX_LEN; /* Width default = 79 */
 /* g_screenHeight is one less than the physical screen to account for the
@@ -74,8 +72,7 @@ flag backFromCmdInput = 0; /* User typed "B" at main prompt */
 /* Returns 0 if user typed "q" during scroll prompt; this lets a procedure
    interrupt it's output for speedup (rest of output will be suppressed anyway
    until next command line prompt) */
-flag print2(char* fmt,...)
-{
+flag print2(char* fmt, ...) {
   /* This performs the same operations as printf, except that if a log file is
     open, the characters will also be printed to the log file. */
   /* Also, scrolling is paused at each page if in scroll-prompted mode. */
@@ -84,8 +81,6 @@ flag print2(char* fmt,...)
   long nlpos, lineLen, charsPrinted;
   long i;
 
-  /* char printBuffer[PRINTBUFFERSIZE]; */ /* 19-Jun-2020 nm Deleted */
-  /* 19-Jun-2020 nm */
   char *printBuffer; /* Allocated dynamically */
   /* gcc (Debian 4.9.2-10+deb8u2) 4.9.2 gives error for ssize_t if -c99
      is specified; gcc (GCC) 7.3.0 doesn't complain if -c99 is specified */
@@ -116,8 +111,7 @@ flag print2(char* fmt,...)
 
   if ((!g_quitPrint && g_commandFileNestingLevel == 0 && (g_scrollMode == 1
            && localScrollMode == 1)
-      /* 18-Nov-05 nm - now a variable settable with SET HEIGHT */
-      && printedLines >= /*SCREEN_HEIGHT*/ g_screenHeight && !g_outputToString)
+      && printedLines >= g_screenHeight && !g_outputToString)
       || backFromCmdInput) {
     /* It requires a scrolling prompt */
     while(1) {
@@ -170,11 +164,6 @@ flag print2(char* fmt,...)
 
           if (backBufferPos < pntrLen(backBuffer)) {
             /* Print rest of buffer to screen */
-            /*
-            for (backBufferPos = backBufferPos + 1; backBufferPos <=
-                pntrLen(backBuffer); backBufferPos++) {
-            */
-            /* 11-Sep-04 Don't use global var as loop var */
             while (backBufferPos + 1 <= pntrLen(backBuffer)) {
               backBufferPos++;
               printf("%s", (vstring)(backBuffer[backBufferPos - 1]));
@@ -221,14 +210,12 @@ flag print2(char* fmt,...)
 
 
 
-  if (g_quitPrint && !g_outputToString) {
-    goto PRINT2_RETURN;    /* User typed 'q'
-      above or earlier; 8/27/99: don't return if we're outputting to
-      a string since we want to complete the writing to the string. */
-  }
+  /* User typed 'q' above or earlier; don't return if we're outputting to
+    a string since we want to complete the writing to the string. */
+  if (g_quitPrint && !g_outputToString) goto PRINT2_RETURN;
 
 
-  /* 19-Jun-2020 nm Allow unlimited output size */
+  /* Allow unlimited output size */
   va_start(ap, fmt);
   bufsiz = vsnprintf(NULL, 0, fmt, ap); /* Get the buffer size we need */
   va_end(ap);
@@ -237,7 +224,7 @@ flag print2(char* fmt,...)
   if (bufsiz == -1) bug(1527);
   printBuffer = malloc((size_t)bufsiz + 1);
 
-  /* 19-Jun-2020 nm Let each vs[n]printf have its own va_start...va_end
+  /* Let each vs[n]printf have its own va_start...va_end
      in an attempt to fix crash with some compilers (e.g. gcc 4.9.2) */
   va_start(ap, fmt);
   charsPrinted = vsprintf(printBuffer, fmt, ap); /* Put formatted string into
@@ -250,44 +237,17 @@ flag print2(char* fmt,...)
     bug(1528);
   }
 
-  /* 19-Jun-2020 nm We are now dynamically allocating printBuffer, so
-     there is no longer a possibility of overflow. */
-  /********** 19-Jun-2020 nm Deleted ***********
-  /@ Normally, long proofs are broken up into 80-or-less char lines
-     by this point (via printLongLine) so this should never be a problem
-     for them.  But in principle a very long line argument to print2
-     could be a problem, although currently it should never occur
-     (except maybe in long lines in tools? - if so, switch to printLongLine
-     there to fix the bug). @/
-  /@ Warning:  Don't call bug(), because it calls print2. @/
-  if (charsPrinted >= PRINTBUFFERSIZE
-      /@ || charsPrinted < 0 @/
-      /@ There is a bug on the Sun with gcc version 2.7.2.2 where
-         vsprintf returns approx. -268437768, so ignore the bug @/
-      ) {
-    printf("@@@ BUG 1503\n");
-    printf("?PRINTBUFFERSIZE %ld <= charsPrinted %ld in mminou.c\n",
-        (long)PRINTBUFFERSIZE, charsPrinted);
-    printf("?Memory may now be corrupted.\n");
-    printf("?Save your work, exit, and verify output files.\n");
-    printf("?You should recompile with increased PRINTBUFFERSIZE.\n");
-#if __STDC__
-    fflush(stdout);
-#endif
-  }
-  ********** 19-Jun-2020 nm End of deletion ***********/
-
   nlpos = instr(1, printBuffer, "\n");
   lineLen = (long)strlen(printBuffer);
 
-  /* 10/14/02 Change any ASCII 3's back to spaces, where they were set in
+  /* Change any ASCII 3's back to spaces, where they were set in
      printLongLine to handle the broken quote problem */
   for (i = 0; i < lineLen; i++) {
     if (printBuffer[i] == QUOTED_SPACE) printBuffer[i] = ' ';
   }
 
-  if ((lineLen > g_screenWidth + 1) /* && (g_screenWidth != MAX_LEN) */
-         && !g_outputToString  /* for HTML 7/3/98 */ ) {
+  if ((lineLen > g_screenWidth + 1)
+         && !g_outputToString  /* for HTML */ ) {
     /* Force wrapping of lines that are too long by recursively calling
        print2() via printLongLine().  Note:  "+ 1" above accounts for \n. */
     /* Note that breakMatch is "" so it may break in middle of a word */
@@ -301,8 +261,6 @@ flag print2(char* fmt,...)
   }
 
   if (!g_outputToString && !g_commandFileSilentFlag) {
-           /* 22-Oct-2006 nm Added g_commandFileSilentFlag for SUBMIT /SILENT,
-              here and elsewhere in mminou.c */
     if (nlpos == 0) { /* Partial line (usu. status bar) - print immediately */
 
 #ifdef __WATCOMC__
@@ -332,8 +290,7 @@ flag print2(char* fmt,...)
         /* Even in non-scroll (continuous output) mode, still put paged-mode
            lines into backBuffer in case user types a "B" command later,
            so user can page back from end. */
-        /* 18-Nov-05 nm - now a variable settable with SET HEIGHT */
-        if (printedLines > /*SCREEN_HEIGHT*/ g_screenHeight) {
+        if (printedLines > g_screenHeight) {
           printedLines = 1;
           backBufferPos++;
           pntrLet(&backBuffer, pntrAddElement(backBuffer));
@@ -355,10 +312,9 @@ flag print2(char* fmt,...)
         (vstring)(backBuffer[backBufferPos - 1]), printBuffer, NULL));
   } /* End if !g_outputToString */
 
-  if (g_logFileOpenFlag && !g_outputToString /* && !g_commandFileSilentFlag */) {
+  if (g_logFileOpenFlag && !g_outputToString) {
     fprintf(g_logFilePtr, "%s", printBuffer);  /* Print to log file */
 #if __STDC__
-    /* 10-Oct-2016 nm */
     fflush(g_logFilePtr);
 #endif
   }
@@ -396,10 +352,10 @@ flag print2(char* fmt,...)
 #endif
   }
 
-  free(printBuffer); /* 19-Jun-2020 nm */
+  free(printBuffer);
 
  PRINT2_RETURN:
-  return (!g_quitPrint);
+  return !g_quitPrint;
 }
 
 
@@ -428,22 +384,14 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
   flag firstLine;
   flag tildeFlag = 0;
   flag treeIndentationFlag = 0;
-
-  /* 10/14/02 added for HTML handling */
-  /* 26-Jun-2014 nm No longer needed? */
-  /* flag g_htmlFlag = 0; */
-               /* 1 means printLongLine was called with "\"" as
-                        breakMatch argument (for HTML code) */
   flag quoteMode = 0; /* 1 means inside quote */
-  /*char quoteChar = '"';*/ /* Current quote character */
-  /*long quoteStartPos = 0;*/ /* Start of quote */
   long saveScreenWidth; /* To let g_screenWidth grow temporarily */
 
   long saveTempAllocStack;
 
   /* Blank line (the rest of algorithm would ignore it; output and return) */
   if (!line[0]) {
-    /* 10/14/02 Do a dummy let() so caller can always depend on printLongLine
+    /* Do a dummy let() so caller can always depend on printLongLine
        to empty the tempalloc string stack (for the rest of this code, the
        first let() will do this) */
     let(&longLine, "");
@@ -457,7 +405,7 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
      one, destroying the others  */
   saveTempAllocStack = g_startTempAllocStack;
   g_startTempAllocStack = g_tempAllocStackTop; /* For let() stack cleanup */
-  /* Added 10/14/02 */
+
   /* Grab the input arguments */
   let(&multiLine, line);
   let(&startNextLine1, startNextLine);
@@ -465,7 +413,6 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
   /* Now relax - back to normal; we can let temporary allocation stack die. */
   g_startTempAllocStack = saveTempAllocStack;
 
-  /* 10/14/02 */
   /* We must copy input argument breakMatch to a variable string because we
      will be zapping one of its characters, and ordinarily breakMatch is
      passed in as a constant string.  However, this is now done with argument
@@ -477,7 +424,7 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
     breakMatch1[0] = ' '; /* Change to a space (the real break character) */
   }
 
-  /* HTML mode */   /* Added 10/14/02 */
+  /* HTML mode */
   /* The HTML mode is intended not to break inside quoted HTML tag
      strings.  All HTML output should be called with this mode.
      Since we don't parse HTML this method is not perfect.  Only double
@@ -496,12 +443,11 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
     if (multiLine[i] == QUOTED_SPACE) bug(1514); /* Should never be the case */
   }
   if (breakMatch1[0] == '\"') {
-    /* g_htmlFlag = 1; */ /* 26-Jun-2014 nm No longer needed? */
     breakMatch1[0] = ' '; /* Change to a space (the real break character) */
     /* Scan string for quoted strings */
     quoteMode = 0;
 
-    /* 19-Nov-2007 nm  New algorithm:  don't put line breaks in anything inside
+    /* Don't put line breaks in anything inside
        _double_ quotes that follows an = sign, such as TITLE="abc def".  Ignore
        _single_ quotes (which could be apostrophes).  The HTML output code
        must be (and so far is) written to conform to this. */
@@ -517,59 +463,6 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
         multiLine[i] = QUOTED_SPACE;
       i++;
     }
-
-/* 19-Nov-2007 nm  Bypass old complex code that doesn't work right */
-/**************** THE CODE BELOW IS OBSOLETE AND WILL BE DELETED. ********/
-#ifdef OBSOLETE_QUOTE_HANDLING_CODE
-    for (i = 0; i < j; i++) {
-
-      /* 10/24/02 - This code has problems with SHOW STATEMENT/ALT_HTML
-         It is bypassed completely now. */
-      if (i == i) break;
-
-      /* Special case: ignore ALT='"' in set.mm */
-      if (multiLine[i] == '"' && i >= 5
-          && !strncmp("ALT='\"'\"", multiLine + i - 5, 7))
-        continue;
-      if (!quoteMode) {
-        /* If we wanted to handle double and single nested quotes: */
-        /* if (multiLine[i] == '\'' || multiLine[i] == '"') { */
-        /* But since single quotes are ambiguous with apostrophes, we will
-           demand that only double quotes be used around HTML tag strings
-           that have spaces such as <FONT FACE="Arial Narrow">. */
-        if (multiLine[i] == '"') {
-          quoteMode = 1;
-          quoteStartPos = i;
-          quoteChar = multiLine[i];
-        }
-      } else {
-        if (multiLine[i] == quoteChar) {
-          quoteMode = 0;
-        }
-      }
-      if (quoteMode == 1 && multiLine[i] == ' ') {
-        /* Zap the space with ASCII 3 */
-        multiLine[i] = QUOTED_SPACE;
-      }
-    }
-    /* If we ended in quoteMode, it wasn't a real quote.  Revert the
-       space zapping. */
-    if (quoteMode == 1) {
-      for (i = quoteStartPos; i < j; i++) {
-        if (multiLine[i] == QUOTED_SPACE) multiLine[i] = ' ';
-      }
-    }
-    /* As a special case for more safety, we'll zap the ubiquitous
-       "Arial Narrow" used for the little pink numbers. */
-    i = 0;
-    while (1) {
-      i = instr(i + 1, multiLine, "Arial Narrow");
-      if (i) multiLine[i + 4] = QUOTED_SPACE;
-      else break;
-    }
-#endif
-/**************** END OF OBSOLETE SECTION ********/
-
   } /* if (breakMatch1[0] == '\"') */
 
 
@@ -588,16 +481,7 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
     if (p) {
       /* Get the next caller's line */
       let(&longLine, left(multiLine, p - 1));
-      /* Postpone the remaining lines to multiLine for next time around */
-      /* /@ 12-Jun-2011 nm Put continuation line start (normally spaces) at
-         the beginning of explicit new line, removing spaces that may
-         already be there - for use after blank line in outputStatement()
-         in mmpars.c @/
-      let(&multiLine, cat(startNextLine1,
-          edit(right(multiLine, p + 1), 8 /@ Discard leading spaces @/),
-          NULL)); */
-     /* The above is bad, because it doesn't allow flexible user indentation */
-      /* OLD */ let(&multiLine, right(multiLine, p + 1));
+      let(&multiLine, right(multiLine, p + 1));
     } else {
       let(&longLine, multiLine);
       let(&multiLine, "");
@@ -633,66 +517,37 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
       if (breakMatch1[0] == '&'
           && ((!instr(p, left(longLine, (long)strlen(longLine) - 3), " ")
               && longLine[p - 3] != ' ') /* Don't split trailing "$." */
-            /* 2-Jan-2014 nm Added the condition below: */
             || longLine[p - 4] == ')')) /* Label sect ends in col 77 */ {
         /* We're in the compressed proof section; break line anywhere */
         p = p + 0;  /* Don't change position */
-        /* 27-Dec-2013 nm */
         /* In the case where the last space occurs at column 79 i.e.
            g_screenWidth, break the line at column 78.  This can happen
            when compressed proof ends at column 78, followed by space
            and "$."  It prevents an extraneous trailing space on the line. */
-        if (longLine[p - 2] == ' ') p--; /* 27-Dec-2013 */
+        if (longLine[p - 2] == ' ') p--;
       } else {
         if (!breakMatch1[0]) {
           p = p + 0; /* Break line anywhere; don't change position */
         } else {
-          if (breakMatch1[0] == '&') {
-            /* Compressed proof */
-            /* 27-Dec-2013 nm - no longer add the trailing space */
-            /* p = p - 1; */ /* We will add a trailing space to line for easier
-                          label searches by the user during editing */
-          }
           if (p <= 0) bug(1518);
-          /*while (!instr(1, breakMatch1, mid(longLine,p,1)) && p > 0) {*/
-          /* Speedup */
-          /* while (strchr(breakMatch1, longLine[p - 1]) == NULL) { */
-          /* 24-Feb-2010 nm For LaTeX, match space, not backslash */
+          /* For LaTeX, match space, not backslash */
           /* (Todo:  is backslash match mode really needed?) */
           while (strchr(breakMatch1[0] != '\\' ? breakMatch1 : " ",
               longLine[p - 1]) == NULL) {
             p--;
             if (!p) break;
           }
-          /* 25-Jun-2014 nm We will now not break any line at non-space,
+          /* We will now not break any line at non-space,
              since it causes more problems that it solves e.g. with
              WRITE SOURCE.../REWRAP with long URLs */
-          /* if (p <= 0 && g_htmlFlag) { */
           if (p <= 0) {
             /* The line couldn't be broken.  Since it's an HTML line, we
                can increase g_screenWidth until it will fit. */
             g_screenWidth++;
-            /******* for debugging screen width change
-            if (g_outputToString){
-              g_outputToString = 0;
-              print2("debug: g_screenWidth = %ld\n", g_screenWidth);
-              g_outputToString = 1;
-            }
-            ********* end debug */
             /* If this bug happens, we'll have to increase PRINTBUFFERSIZE
                or change the HTML code being printed. */
-            /* 19-Jun-2020 nm We no longer care about buffer size since
-               printBuffer is dynamically allocated in print2() */
-            /*if (g_screenWidth >= PRINTBUFFERSIZE - 1) bug(1517);*/
             goto HTML_RESTART; /* Ugly but another while loop nesting would
                                   be even more confusing */
-          }
-
-          if (breakMatch1[0] == '&') {
-            /* Compressed proof */
-            /* 27-Dec-2013 nm - no longer add the trailing space */
-            /* p = p + 1; */ /* We will add a trailing space to line for easier
-                          label searches by the user during editing */
           }
         } /* end if (!breakMatch1[0]) else */
       } /* end if (breakMatch1[0] == '&' &&... else */
@@ -723,20 +578,7 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
         }
       }
       if (!tildeFlag) {
-        /* 7-Sep-2010 nm - Don't do this anymore with new (24-Feb-2010) LaTeX
-           output, since it isn't needed, and worse, it causes words in the
-           description to be joined together without space.  (It might be better
-           to analyze if breakMatch1[0] == '\\' is needed at all.) */
-        /*** start of 7-Sep-2010 commented out code
-        if (breakMatch1[0] == '\\') {
-          /@ Add LaTeX comment char to ignore carriage return @/
-          print2("%s\n",cat(prefix, left(longLine,p - 1), "%", NULL));
-        } else {
-        *** end of 7-Sep-2010 commented out code */
-          print2("%s\n",cat(prefix, left(longLine,p - 1), NULL));
-        /*** start of 7-Sep-2010 commented out code
-        }
-        *** end of 7-Sep-2010 commented out code */
+        print2("%s\n",cat(prefix, left(longLine,p - 1), NULL));
       } else {
         print2("%s\n",cat(prefix, left(longLine,p - 1), "~", NULL));
       }
@@ -780,8 +622,7 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
 } /* printLongLine */
 
 
-vstring cmdInput(FILE *stream, vstring ask)
-{
+vstring cmdInput(FILE *stream, vstring ask) {
   /* This function prints a prompt (if 'ask' is not NULL) and gets a line from
     the input stream.  NULL is returned when end-of-file is encountered.
     New memory is allocated each time linput is called.  This space must
@@ -822,9 +663,8 @@ vstring cmdInput(FILE *stream, vstring ask)
       fflush(stdout);
 #endif
 
-    /* 12-Oct-2006 Fix bug that occurs when the last line in the file has
-       no new-line (reported by Marnix Klooster) */
     } else {
+      /* The last line in the file has no new-line */
       if (g[i - 1] != '\n') {
         /* Warning:  Don't call bug() - it calls print2 which may call this. */
         if (!feof(stream)) {
@@ -838,8 +678,6 @@ vstring cmdInput(FILE *stream, vstring ask)
 /*E*/db = db + (CMD_BUFFER_SIZE - i); /* Cancel extra piece of string */
         i++;
       }
-    /* 12-Oct-2006 End of new code */
-
     }
 
     if (g[1]) {
@@ -887,16 +725,16 @@ vstring cmdInput(FILE *stream, vstring ask)
          type "B" for convenience in case too many
          returns where hit while scrolling */
       if (g_commandFileNestingLevel > 0) break;
-                            /* 23-Aug-04 We're taking from a SUBMIT
+                            /* We're taking from a SUBMIT
                               file so break out of loop that looks for "B" */
       if (ask == NULL) {
-        printf("***BUG #1523\n"); /* 23-Aug-04 In non-SUBMIT
+        printf("***BUG #1523\n"); /* In non-SUBMIT
           mode 'ask' won't be NULL, so flag non-fatal bug here just in case */
 #if __STDC__
         fflush(stdout);
 #endif
       }
-      if (g[0]) break; /* 23-Aug-04 Command line not empty so break out of loop
+      if (g[0]) break; /* Command line not empty so break out of loop
                           that looks for "B" */
       if (ask != NULL &&
           /* User entered empty command line but not at a prompt */
@@ -949,10 +787,7 @@ vstring cmdInput1(vstring ask)
       commandLn = cmdInput(stdin, ask1);
       if (!commandLn) {
         commandLn = ""; /* Init vstring (was NULL) */
-        /* 21-Feb-2010 nm Allow ^D to exit */
-        /* 21-Feb-2010 Removed line: */
-        /* let(&commandLn, "^Z"); */
-        /* 21-Feb-2010 Added lines: */
+        /* Allow ^D to exit */
         if (strcmp(left(ask1, 2), "Do")) {
           /* ^Z or ^D found at MM>, MM-PA>, or TOOLS> prompt */
           let(&commandLn, "EXIT");
@@ -962,7 +797,6 @@ vstring cmdInput1(vstring ask)
           let(&commandLn, "Y");
         }
         printf("%s\n", commandLn); /* Let user see what's happening */
-        /* 21-Feb-2010 end of change */
       }
       if (g_logFileOpenFlag) fprintf(g_logFilePtr, "%s%s\n", ask1, commandLn);
 
@@ -998,7 +832,7 @@ vstring cmdInput1(vstring ask)
         g_commandFileNestingLevel--;
         commandLn = "";
         if (g_commandFileNestingLevel == 0) {
-          g_commandFileSilentFlag = 0; /* 23-Oct-2006 nm Added SUBMIT / SILENT */
+          g_commandFileSilentFlag = 0;
         } else {
           g_commandFileSilentFlag = g_commandFileSilent[g_commandFileNestingLevel];
                /* Revert to previous nesting level's silent flag */
@@ -1006,7 +840,6 @@ vstring cmdInput1(vstring ask)
         break; /*continue;*/
       }
 
-      /* 22-Jan-2018 nm */
       /* Tolerate CRs in SUBMIT files (e.g. created on Windows and
          run on Linux) */
       let(&commandLn, edit(commandLn, 8192/* remove CR */));
@@ -1016,7 +849,7 @@ vstring cmdInput1(vstring ask)
     break;
   }
 
-  let(&ask1, ""); /* 10/20/02 Deallocate */
+  let(&ask1, "");
   return commandLn;
 } /* cmdInput1 */
 
@@ -1032,9 +865,7 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
   vstring prntStr = "";
   vstring line1 = "";
   int j;
-  /*flag saveOutputToString;*/ /* 22-May-2016 nm */ /* 9-Jun-2016 reverted */
 
-  /* 22-May-2016 nm */
   /* Prevent putting error message in g_printString */
   /* 9-Jun-2016 nm Revert this change, because 'minimize_with' makes
      use of the string to hold the DV violation error message.
@@ -1119,7 +950,6 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
     exit(0);
   } */
 
-  /* 22-May-2016 nm */
   /* Restore output to g_printString if it was enabled before */
   /* 9-Jun-2016 nm Reverted */
   /*
@@ -1142,18 +972,14 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
 
 /* Opens files with error message; opens output files with
    backup of previous version.   Mode must be "r" or "w" or "d" (delete). */
-/* 31-Dec-2017 nm Added "safe" delete */
-/* 31-Dec-2017 nm Added noVersioningFlag = don't create ~1 backup */
-/* 10-Aug-2019 nm Fixed problem w/ delete + noVersioningFlag */
-FILE *fSafeOpen(vstring fileName, vstring mode, flag noVersioningFlag)
-{
+FILE *fSafeOpen(vstring fileName, vstring mode, flag noVersioningFlag) {
   FILE *fp;
   vstring prefix = "";
   vstring postfix = "";
   vstring bakName = "";
   vstring newBakName = "";
   long v;
-  long lastVersion; /* Last version before gap */ /* nm 29-Apr-2007 */
+  long lastVersion; /* Last version before gap */
 
   if (!strcmp(mode, "r")) {
     fp = fopen(fileName, "r");
@@ -1163,9 +989,8 @@ FILE *fSafeOpen(vstring fileName, vstring mode, flag noVersioningFlag)
     return (fp);
   }
 
-  if (!strcmp(mode, "w")
-      || !strcmp(mode, "d")) {    /* 31-Dec-2017 */
-    if (noVersioningFlag) goto skip_backup; /* 10-Aug-2019 nm */
+  if (!strcmp(mode, "w") || !strcmp(mode, "d")) {
+    if (noVersioningFlag) goto skip_backup;
     /* See if the file already exists. */
     fp = fopen(fileName, "r");
 
@@ -1215,7 +1040,7 @@ FILE *fSafeOpen(vstring fileName, vstring mode, flag noVersioningFlag)
         fclose(fp);
         /* The lowest version already exists; rename all to higher versions. */
 
-        /* Find last version before gap, if any */ /* 29-Apr-2007 nm */
+        /* Find last version before gap, if any */
         lastVersion = 0;
         for (v = 1; v <= VERSIONS; v++) {
           let(&bakName, cat(prefix, str((double)v), postfix, NULL));
@@ -1226,17 +1051,17 @@ FILE *fSafeOpen(vstring fileName, vstring mode, flag noVersioningFlag)
         }
 
         /* If there are no gaps before version VERSIONS, delete it. */
-        if (lastVersion == VERSIONS) {  /* 29-Apr-2007 nm */
+        if (lastVersion == VERSIONS) {
           let(&bakName, cat(prefix, str((double)VERSIONS), postfix, NULL));
           fp = fopen(bakName, "r");
           if (fp) {
             fclose(fp);
             remove(bakName);
           }
-          lastVersion--;  /* 29-Apr-2007 nm */
+          lastVersion--;
         }
 
-        for (v = lastVersion; v >= 1; v--) {  /* 29-Apr-2007 nm */
+        for (v = lastVersion; v >= 1; v--) {
           let(&bakName, cat(prefix, str((double)v), postfix, NULL));
           fp = fopen(bakName, "r");
           if (!fp) continue;
@@ -1266,11 +1091,9 @@ FILE *fSafeOpen(vstring fileName, vstring mode, flag noVersioningFlag)
       if (strcmp(mode, "d")) {
         bug(1526);
       }
-      /* 31-Dec-2017 nm */
       /* For "safe" delete, the file was renamed to ~1, so there is nothing
          to do. */
       fp = NULL;
-      /* 10-Aug-2019 nm */
       /* For non-safe (noVersioning) delete, we actually delete */
       if (noVersioningFlag) {
         if(remove(fileName) != 0) {
@@ -1371,18 +1194,15 @@ vstring fGetTmpName(vstring filePrefix)
 } /* fGetTmpName() */
 
 
-/* Added 10/10/02 */
 /* This function returns a character string containing the entire contents of
    an ASCII file, or Unicode file with only ASCII characters.   On some
    systems it is faster than reading the file line by line.  The caller
    must deallocate the returned string.  If a NULL is returned, the file
    could not be opened or had a non-ASCII Unicode character or some other
    problem.   If verbose is 0, error and warning messages are suppressed. */
-/* 31-Dec-2017 nm Added charCount return arg */
 vstring readFileToString(vstring fileName, char verbose, long *charCount) {
   FILE *inputFp;
   long fileBufSize;
-  /*long charCount;*/ /* 31-Dec-2017 nm */
   char *fileBuf;
   long i, j;
 
@@ -1398,9 +1218,7 @@ vstring readFileToString(vstring fileName, char verbose, long *charCount) {
 #define SEEK_END 2
 #endif
   if (fseek(inputFp, 0, SEEK_END)) { /* fseek returns non-zero on error */
-    /*bug(1511);*/
-    /* 8-Dec-2019 nm Changed bug to error message, which occurs if input "file"
-       is a piped stream */
+    /* Error message which occurs if input "file" is a piped stream */
     if (verbose) print2(
         "?Sorry, \"%s\" doesn't seem to be a regular file.\n",
         fileName);
@@ -1545,7 +1363,6 @@ vstring readFileToString(vstring fileName, char verbose, long *charCount) {
 } /* readFileToString */
 
 
-/* 16-Aug-2016 nm */
 /* Returns total elapsed time in seconds since starting session (for the
    lcc compiler) or the CPU time used (for the gcc compiler).  The
    argument is assigned the time since the last call to this function. */
@@ -1568,7 +1385,6 @@ double getRunTime(double *timeSinceLastCall) {
 }
 
 
-/* 4-May-2017 Ari Ferrera */
 void freeInOu() {
   long i, j;
   j = pntrLen(backBuffer);

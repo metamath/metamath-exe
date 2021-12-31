@@ -458,26 +458,8 @@ vstring getDescription(long statemNum);
    last removed. */
 vstring getDescriptionAndLabel(long statemNum);
 
-/* Reconstruct the full header from the strings returned by
-   getSectionHeadings() */
-/*** deleted 12-Sep-2020
-vstring buildHeader(vstring header, vstring hdrComment, vstring decoration);
-***/
-
 /* Returns 1 if comment has an "is discouraged" markup tag */
 flag getMarkupFlag(long statemNum, char mode);
-
-/***** deleted 3-May-2017
-/@ Extract any contributors and dates from statement description.
-   If missing, the corresponding return strings are blank. @/
-flag getContrib(long stmtNum,
-    vstring @contributor, vstring @contribDate,
-    vstring @revisor, vstring @reviseDate,
-    vstring @shortener, vstring @shortenDate,
-    vstring @mostRecentDate,
-    flag printErrorsFlag,
-    flag mode /@ 0 == RESET = reset, 1 = normal @/);
-************/
 
 /* Extract any contributors and dates from statement description.
    If missing, the corresponding return string is blank.

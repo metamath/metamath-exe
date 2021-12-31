@@ -45,43 +45,32 @@ struct wrkProof_struct g_WrkProof;
    Partial parsing is done; when 'include' statements are found, this function
    is called recursively.
    The file g_input_fn is assumed to be opened when this is called. */
-char *readRawSource(/*vstring inputFn,*/ /* 2-Feb-2018 nm Unused argument */
-         vstring fileBuf, /* added 31-Dec-2017 */
-         /*long bufOffsetSoFar,*/  /* deleted 31-Dec-2017 nm */
-         long *size /* 31-Dec-2017 Now an input argument */)
-{
+char *readRawSource(vstring fileBuf, long *size) {
   long charCount = 0;
-  /*char *fileBuf;*/ /* 31-Dec-2017 */
   char *fbPtr;
-  /*long lineNum;*/ /* 2-Feb-2018 Now computed in rawSourceError() */
   flag insideComment;
-  /* flag insideLineComment; */ /* obsolete */
   char mode;
   char tmpch;
 
-  /* 31-Dec-2017 nm */
   charCount = *size;
 
   /* Look for $[ and $] 'include' statement start and end */
-  /* 31-Dec-2017 nm - these won't happen since they're now expanded earlier */
+  /* These won't happen since they're now expanded earlier */
   /* But it can't hurt, since the code is already written.
      TODO - clean it up for speedup? */
   fbPtr = fileBuf;
-  /*lineNum = 1;*/
   mode = 0; /* 0 = outside of 'include', 1 = inside of 'include' */
   insideComment = 0; /* 1 = inside $( $) comment */
-  /* insideLineComment = 0; */ /* 1 = inside $! comment */
   while (1) {
     /* Find a keyword or newline */
-    /* fbPtr = strpbrk(fbPtr, "\n$"); */ /* Takes 10 msec on VAX 4000/60 ! */
     tmpch = fbPtr[0];
     if (!tmpch) { /* End of file */
       if (insideComment) {
-        rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum - 1, inputFn,*/
+        rawSourceError(fileBuf, fbPtr - 1, 2,
          "The last comment in the file is incomplete.  \"$)\" was expected.");
       } else {
         if (mode != 0) {
-          rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum - 1, inputFn,*/
+          rawSourceError(fileBuf, fbPtr - 1, 2,
    "The last include statement in the file is incomplete.  \"$]\" was expected."
            );
         }
@@ -89,39 +78,30 @@ char *readRawSource(/*vstring inputFn,*/ /* 2-Feb-2018 nm Unused argument */
       break;
     }
     if (tmpch != '$') {
-      if (tmpch == '\n') {
-        /* insideLineComment = 0; */ /* obsolete */
-        /*lineNum++;*/
-      } else {
-        /* if (!insideComment && !insideLineComment) { */
-          if (!isgraph((unsigned char)tmpch) && !isspace((unsigned char)tmpch)) {
-            /* 19-Oct-2010 nm Used to bypass "lineNum++" below, which messed up
-               line numbering. */
-            rawSourceError(fileBuf, fbPtr, 1, /*lineNum, inputFn,*/
-                cat("Illegal character (ASCII code ",
-                str((double)((unsigned char)tmpch)),
-                " decimal).",NULL));
-        /* } */
-        }
+      if (!isgraph((unsigned char)tmpch) && !isspace((unsigned char)tmpch)) {
+        rawSourceError(fileBuf, fbPtr, 1,
+            cat("Illegal character (ASCII code ",
+            str((double)((unsigned char)tmpch)),
+            " decimal).",NULL));
       }
       fbPtr++;
       continue;
     }
 
 
-    /* 11-Sep-2009 nm Detect missing whitespace around keywords (per current
+    /* Detect missing whitespace around keywords (per current
        Metamath language spec) */
     if (fbPtr > fileBuf) {  /* If this '$' is not the 1st file character */
       if (isgraph((unsigned char)(fbPtr[-1]))) {
         /* The character before the '$' is not white space */
         if (!insideComment || fbPtr[1] == ')') {
           /* Inside comments, we only care about the "$)" keyword */
-          rawSourceError(fileBuf, fbPtr, 2, /*lineNum, inputFn,*/
+          rawSourceError(fileBuf, fbPtr, 2,
               "A keyword must be preceded by white space.");
         }
       }
     }
-    fbPtr++; /* (This line was already here before 11-Sep-2009 mod) */
+    fbPtr++;
     if (fbPtr[0]) {  /* If the character after '$' is not end of file (which
                         would be an error anyway, but detected elsewhere) */
       if (isgraph((unsigned char)(fbPtr[1]))) {
@@ -129,60 +109,48 @@ char *readRawSource(/*vstring inputFn,*/ /* 2-Feb-2018 nm Unused argument */
            space (nor end of file) */
         if (!insideComment || fbPtr[0] == ')') {
           /* Inside comments, we only care about the "$)" keyword */
-          rawSourceError(fileBuf, fbPtr + 1, 1, /*lineNum, inputFn,*/
+          rawSourceError(fileBuf, fbPtr + 1, 1,
               "A keyword must be followed by white space.");
           }
       }
     }
-    /* End of 11-Sep-2009 mod */
 
     switch (fbPtr[0]) {
       case '(': /* Start of comment */
         if (insideComment) {
-          rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum, inputFn,*/
+          rawSourceError(fileBuf, fbPtr - 1, 2,
           "Nested comments are not allowed.");
         }
         insideComment = 1;
         continue;
       case ')': /* End of comment */
         if (!insideComment) {
-          rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum, inputFn,*/
+          rawSourceError(fileBuf, fbPtr - 1, 2,
               "A comment terminator was found outside of a comment.");
         }
         insideComment = 0;
         continue;
-      /* Comment to end-of-line */  /* obsolete */
-      /*
-      case '!':
-        if (!insideComment) {
-          insideLineComment = 1;
-          fbPtr++;
-          continue;
-        }
-      */
     }
     if (insideComment) continue;
     switch (fbPtr[0]) {
       case '[':
         if (mode != 0) {
-          rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum, inputFn,*/
+          rawSourceError(fileBuf, fbPtr - 1, 2,
               "Nested include statements are not allowed.");
         } else {
-          /* 31-Dec-2017 nm */
           /* $[ ... $] should have been processed by readSourceAndIncludes() */
-          rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum, inputFn,*/
+          rawSourceError(fileBuf, fbPtr - 1, 2,
               "\"$[\" is unterminated or has ill-formed \"$]\".");
 
         }
         continue;
       case ']':
         if (mode == 0) {
-          rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum, inputFn,*/
+          rawSourceError(fileBuf, fbPtr - 1, 2,
               "A \"$[\" is required before \"$]\".");
           continue;
         }
 
-        /* 31-Dec-2017 nm */
         /* Because $[ $] are already expanded here, this should never happen */
         bug(1759);
 
@@ -203,7 +171,6 @@ char *readRawSource(/*vstring inputFn,*/ /* 2-Feb-2018 nm Unused argument */
     bug(1704);
   }
 
-  /* 31-Dec-2017 nm */
   print2("%ld bytes were read into the source buffer.\n", charCount);
 
   if (*size != charCount) bug(1761);
@@ -225,14 +192,6 @@ void parseKeywords(void)
   char tmpch;
   long dollarPCount = 0; /* For statistics only */
   long dollarACount = 0; /* For statistics only */
-
-  /*** 9-Jan-2018 nm Deleted
-  /@ Variables needed for line number and file name @/
-  long inclCallNum;
-  char *nextInclPtr;
-  long lineNum;
-  vstring fileName;
-  ***/
 
   /* Initialization to avoid compiler warning (should not be theoretically
      necessary) */
@@ -258,17 +217,17 @@ void parseKeywords(void)
   g_Statement[i].type = illegal_;
   g_Statement[i].scope = 0;
   g_Statement[i].beginScopeStatementNum = 0;
-  g_Statement[i].endScopeStatementNum = 0; /* 24-Aug-2020 nm */
+  g_Statement[i].endScopeStatementNum = 0;
   g_Statement[i].labelSectionPtr = "";
-  g_Statement[i].labelSectionLen = 0; /* 3-May-2017 nm */
+  g_Statement[i].labelSectionLen = 0;
   g_Statement[i].labelSectionChanged = 0;
   g_Statement[i].statementPtr = ""; /* input to assignStmtFileAndLineNum() */
   g_Statement[i].mathSectionPtr = "";
   g_Statement[i].mathSectionLen = 0;
-  g_Statement[i].mathSectionChanged = 0; /* 3-May-2017 nm */
+  g_Statement[i].mathSectionChanged = 0;
   g_Statement[i].proofSectionPtr = "";
   g_Statement[i].proofSectionLen = 0;
-  g_Statement[i].proofSectionChanged = 0; /* 3-May-2017 nm */
+  g_Statement[i].proofSectionChanged = 0;
   g_Statement[i].mathString = NULL_NMBRSTRING;
   g_Statement[i].mathStringLen = 0;
   g_Statement[i].proofString = NULL_NMBRSTRING;
@@ -284,12 +243,11 @@ void parseKeywords(void)
   g_Statement[i].optDisjVarsB = NULL_NMBRSTRING;
   g_Statement[i].optDisjVarsStmt = NULL_NMBRSTRING;
   g_Statement[i].pinkNumber = 0;
-  g_Statement[i].headerStartStmt = 0; /* 18-Dec-2016 nm */
+  g_Statement[i].headerStartStmt = 0;
   for (i = 1; i < potentialStatements; i++) {
     g_Statement[i] = g_Statement[0];
   }
 
-  /* 10-Dec-2018 nm */
   /* In case there is no relevant statement (originally added for MARKUP
      command) */
   g_Statement[0].labelName = "(N/A)";
@@ -304,7 +262,6 @@ void parseKeywords(void)
 
   while (1) {
     /* Find a keyword or newline */
-    /* fbPtr = strpbrk(fbPtr, "\n$"); */ /* Takes 10 msec on VAX 4000/60 ! */
     tmpch = fbPtr[0];
     if (!tmpch) { /* End of file */
       if (mode != 0) {
@@ -319,8 +276,6 @@ void parseKeywords(void)
     }
 
     if (tmpch != '$') {
-      /* 9-Jan-2018 nm Deleted - now computed by assignStmtFileAndLineNum() */
-      /* if (tmpch == '\n') lineNum++; */
       fbPtr++;
       continue;
     }
@@ -330,29 +285,11 @@ void parseKeywords(void)
         fbPtr++;
         continue;
       case '(': /* Start of comment */
-        /* if (insideComment) { */
-          /* "Nested comments are not allowed." - detected by readRawSource */
-        /* } */
         insideComment = 1;
         continue;
       case ')': /* End of comment */
-        /* if (!insideComment) { */
-          /* "Comment terminator found outside of comment."- detected by
-             readRawSource */
-        /* } */
         insideComment = 0;
         continue;
-      case '!': /* Comment to end-of-line */
-        if (insideComment) continue; /* Not really a comment */
-        /* 8/23/99 - Made this syntax obsolete.  It was really obsolete
-           before but tolerating it created problems with LaTeX output. */
-        /******* Commented out these lines to force an error upon "$!"
-        fbPtr = strchr(fbPtr, (int)'\n');
-        if (!fbPtr) bug(1705);
-        lineNum++;
-        fbPtr++;
-        continue;
-        *******/
     }
     if (insideComment) continue;
     switch (fbPtr[0]) {
@@ -388,10 +325,6 @@ void parseKeywords(void)
         }
         /* Initialize a new statement */
         g_statements++;
-        /*** 9-Jan-2018 nm Now assigned by assignStmtFileAndLineNum() as needed
-        g_Statement[g_statements].lineNum = lineNum;
-        g_Statement[g_statements].fileName = fileName;
-        ****/
         g_Statement[g_statements].type = type;
         g_Statement[g_statements].labelSectionPtr = startSection;
         g_Statement[g_statements].labelSectionLen = fbPtr - startSection - 1;
@@ -399,7 +332,7 @@ void parseKeywords(void)
            assignStmtFileAndLineNum() to determine the "line number" for the
            statement as a whole */
         g_Statement[g_statements].statementPtr = startSection
-            + g_Statement[g_statements].labelSectionLen; /* 9-Jan-2018 nm */
+            + g_Statement[g_statements].labelSectionLen;
         startSection = fbPtr + 1;
         if (type != lb_ && type != rb_) mode = 1;
         continue;
@@ -456,29 +389,21 @@ void parseKeywords(void)
        g_statements, dollarACount, dollarPCount);
 
   /* Put chars after the last $. into the label section of a dummy statement */
-  /* g_Statement[g_statements + 1].lineNum = lineNum - 1; */
-  /* 10/14/02 Changed this to lineNum so mmwtex $t error msgs will be correct */
-  /* Here, lineNum will be one plus the number of lines in the file */
-  /*** 9-Jan-2018 nm Now assigned by assignStmtFileAndLineNum() as needed
-  g_Statement[g_statements].lineNum = lineNum;
-  g_Statement[g_statements].fileName = fileName;
-  ****/
   g_Statement[g_statements + 1].type = illegal_;
   g_Statement[g_statements + 1].labelSectionPtr = startSection;
   g_Statement[g_statements + 1].labelSectionLen = fbPtr - startSection;
   /* Point to last character of file in case we ever need lineNum/fileName */
-  g_Statement[g_statements + 1].statementPtr = fbPtr - 1; /* 9-Jan-2018 */
+  g_Statement[g_statements + 1].statementPtr = fbPtr - 1;
 
-  /* 10/25/02 Initialize the pink number to print after the statement labels
+  /* Initialize the pink number to print after the statement labels
    in HTML output. */
   /* The pink number only counts $a and $p statements, unlike the statement
      number which also counts $f, $e, $c, $v, ${, $} */
   j = 0;
-  k = 0; /* 18-Dec-2016 nm */
+  k = 0;
   for (i = 1; i <= g_statements; i++) {
     if (g_Statement[i].type == a_ || g_Statement[i].type == p_) {
 
-      /* 18-Dec-2016 nm */
       /* Use the statement _after_ the previous $a or $p; that is the start
          of the "header area" for use by getSectionHeadings() in mmwtex.c.
          headerStartStmt will be equal to the current statement if the
@@ -490,7 +415,7 @@ void parseKeywords(void)
       g_Statement[i].pinkNumber = j;
     }
   }
-  /* 10-Jan-04  Also, put the largest pink number in the last statement, no
+  /* Also, put the largest pink number in the last statement, no
      matter what it kind it is, so we can look up the largest number in
      pinkHTML() in mmwtex.c */
   g_Statement[g_statements].pinkNumber = j;
@@ -508,8 +433,7 @@ void parseKeywords(void)
 /* This function parses the label sections of the g_Statement[] structure array.
    g_sourcePtr is assumed to point to the beginning of the raw input buffer.
    g_sourceLen is assumed to be length of the raw input buffer. */
-void parseLabels(void)
-{
+void parseLabels(void) {
   long i, j, k;
   char *fbPtr;
   char type;
@@ -615,9 +539,6 @@ void parseLabels(void)
   /* Now back to the regular label stuff. */
   /* Check for duplicate labels */
   /* (This will go away if local labels on hypotheses are allowed.) */
-  /* 17-Sep-2005 nm - This code was reinstated to conform to strict spec.
-     The old check for duplicate active labels (see other comment for this
-     date below) was removed since it becomes redundant . */
   dupFlag = 0;
   for (i = 0; i < g_numLabelKeys; i++) {
     if (dupFlag) {
@@ -644,8 +565,7 @@ void parseLabels(void)
 
 /* This functions retrieves all possible math symbols from $c and $v
    statements. */
-void parseMathDecl(void)
-{
+void parseMathDecl(void) {
   long potentialSymbols;
   long stmt;
   char *fbPtr;
@@ -653,7 +573,7 @@ void parseMathDecl(void)
   char *tmpPtr;
   nmbrString *nmbrTmpPtr;
   long oldG_mathTokens;
-  void *voidPtr; /* bsearch returned value */  /* 4-Jun-06 nm */
+  void *voidPtr; /* bsearch returned value */
 
   /* Find the upper limit of the number of symbols declared for
      pre-allocation:  at most, the number of symbols is half the number of
@@ -710,7 +630,6 @@ void parseMathDecl(void)
         /* Create the symbol list for this statement */
         j = g_mathTokens - oldG_mathTokens; /* Number of tokens in this statement */
         nmbrTmpPtr = poolFixedMalloc((j + 1) * (long)(sizeof(nmbrString)));
-        /* if (!nmbrTmpPtr) outOfMemory("#9 (symbol table)"); */ /*??? Not nec. with poolMalloc */
         nmbrTmpPtr[j] = -1;
         for (i = 0; i < j; i++) {
           nmbrTmpPtr[i] = oldG_mathTokens + i;
@@ -759,7 +678,7 @@ void parseMathDecl(void)
 /*E*/  } print2("\n");}
 
 
-  /* 4-Jun-06 nm Check for labels with the same name as math tokens */
+  /* Check for labels with the same name as math tokens */
   /* (This section implements the Metamath spec change proposed by O'Cat that
      lets labels and math tokens occupy the same namespace and thus forbids
      them from having common names.) */
@@ -777,8 +696,8 @@ void parseMathDecl(void)
       j = tokenLen(fbPtr + k);
       /* Note that the line and file are only assigned when requested,
          for speedup. */
-      assignStmtFileAndLineNum(stmt); /* 9-Jan-2018 nm */
-      assignStmtFileAndLineNum(g_MathToken[i].statement); /* 10-Dec-2019 nm */
+      assignStmtFileAndLineNum(stmt);
+      assignStmtFileAndLineNum(g_MathToken[i].statement);
       sourceError(fbPtr + k, j, stmt, cat(
          "This label has the same name as the math token declared on line ",
          str((double)(g_Statement[g_MathToken[i].statement].lineNum)),
@@ -787,15 +706,11 @@ void parseMathDecl(void)
          "\".", NULL));
     }
   }
-  /* End of 4-Jun-06 */
-
-
 }
 
 
 /* This functions parses statement contents, except for proofs */
-void parseStatements(void)
-{
+void parseStatements(void) {
   long stmt;
   char type;
   long i, j, k, m, n, p;
@@ -1013,7 +928,7 @@ void parseStatements(void)
 
     g_Statement[stmt].beginScopeStatementNum = beginScopeStmtNum;
     /* endScopeStatementNum is always 0 except in ${ statements */
-    g_Statement[stmt].endScopeStatementNum = 0; /* 24-Aug-2020 nm */
+    g_Statement[stmt].endScopeStatementNum = 0;
     g_Statement[stmt].scope = g_currentScope;
     type = g_Statement[stmt].type;
     /******* Determine scope, stack active variables, process math strings ****/
@@ -1077,7 +992,6 @@ void parseStatements(void)
               "Too many \"$}\"s at this point.");
         }
 
-        /* 24-Aug-2020 nm */
         if (beginScopeStmtNum > 0) { /* We're not in outermost scope
                   (precaution if there were too many $}'s) */
           if (g_Statement[beginScopeStmtNum].type != lb_) bug(1773);
@@ -1093,9 +1007,6 @@ void parseStatements(void)
       case v_:
         /* Scan all symbols declared (they have already been parsed) and
            flag them as active, add to stack, and check for errors */
-
-        /* 3-Jun-2018 nm Added this check back in (see 1-May-2018 Google
-           Group post) */
         if (type == c_) {
           if (g_currentScope > 0) {
             sourceError(g_Statement[stmt].labelSectionPtr +
@@ -1137,8 +1048,7 @@ void parseStatements(void)
             }
 
 
-            /************** Start of 9-Dec-2010 ****************/
-            /* 9-Dec-2010 nm Make sure that no constant has the same name
+            /* Make sure that no constant has the same name
                as a variable or vice-versa */
             k = 0; /* Flag for $c */
             m = 0; /* Flag for $v */
@@ -1151,8 +1061,6 @@ void parseStatements(void)
                mathTokenError(i, nmbrTmpPtr, stmt,
                    "A symbol may not be both a constant and a variable.");
             }
-            /************** End of 9-Dec-2010 ****************/
-
           }
 
           /* Flag the token as active */
@@ -1176,7 +1084,6 @@ void parseStatements(void)
             activeConstStack[activeConstStackPtr].tokenNum = tokenNum;
             activeConstStack[activeConstStackPtr].scope = g_currentScope;
             activeConstStackPtr++;
-
           }
 
           i++;
@@ -1209,24 +1116,11 @@ void parseStatements(void)
 
           /* Scan for largest matching token from the left */
          nextAdjToken:
-          /* maxSymbolLen is the longest declared symbol */
-          /* 18-Sep-2013 Disable unused old code
-          if (origSymbolLen > maxSymbolLen) {
-            symbolLen = maxSymbolLen;
-          } else {
-            symbolLen = origSymbolLen;
-          }
-          */
-
-          /* New code: don't allow missing white space */
+          /* don't allow missing white space */
           symbolLen = origSymbolLen;
 
           memcpy(wrkStrPtr, fbPtr, (size_t)symbolLen);
 
-          /* Old code: tolerate unambiguous missing white space
-          for (; symbolLen > 0; symbolLen--) {
-          */
-          /* New code: don't allow missing white space */
           /* ???Speed-up is possible by rewriting this now unnec. code */
           for (; symbolLen > 0; symbolLen = 0) {
 
@@ -1305,7 +1199,6 @@ void parseStatements(void)
             undeclErrorCount++;
             tokenNum = g_mathTokens + undeclErrorCount;
             if (tokenNum >= g_MAX_MATHTOKENS) {
-              /* 21-Aug-04 nm */
               /* There are current 100 places for bad tokens */
               print2(
 "?Error: The temporary space for holding bad tokens has run out, because\n");
@@ -1391,7 +1284,6 @@ void parseStatements(void)
         /* Assign mathString to statement array */
         nmbrTmpPtr = poolFixedMalloc(
             (mathStringLen + 1) * (long)(sizeof(nmbrString)));
-        /*if (!nmbrTmpPtr) outOfMemory("#24 (mathString)");*/ /*???Not nec. w/ poolMalloc */
         for (i = 0; i < mathStringLen; i++) {
           nmbrTmpPtr[i] = wrkNmbrPtr[i];
         }
@@ -1418,44 +1310,6 @@ void parseStatements(void)
       case e_:
       case a_:
       case p_:
-        /* These types have labels.  Make the label active, and make sure that
-           there is no other identical label that is also active. */
-        /* (If the label name is unique, we don't have to worry about this.) */
-        /* 17-Sep-05 nm - This check is no longer needed since all labels
-           must now be unique according to strict spec (see the other comment
-           for this date above).  So the code below was commented out. */
-        /*
-        if (labelTokenSameAs[reverseLabelKey[stmt]]) {
-          /@ The label is not unique.  Find out if there's a
-             conflict with the others. @/
-          lowerKey = reverseLabelKey[stmt];
-          upperKey = lowerKey;
-          j = labelTokenSameAs[lowerKey];
-          while (lowerKey > 1) {
-            if (j != labelTokenSameAs[lowerKey - 1]) break;
-            lowerKey--;
-          }
-          while (upperKey < g_statements) {
-            if (j != labelTokenSameAs[upperKey + 1]) break;
-            upperKey++;
-          }
-          for (j = lowerKey; j <= upperKey; j++) {
-            if (labelActiveFlag[g_labelKey[j]]) {
-              fbPtr = g_Statement[stmt].labelSectionPtr;
-              fbPtr = fbPtr + whiteSpaceLen(fbPtr);
-              sourceError(fbPtr, tokenLen(fbPtr), g_labelKey[j], cat(
-                  "This label name is currently active (i.e. in use).",
-                  "  It became active at statement ",
-                  str(g_labelKey[j]),
-                  ", line ", str(g_Statement[g_labelKey[j]].lineNum),
-                  ", file \"", g_Statement[g_labelKey[j]].fileName,
-                  "\".  Use another name for this label.", NULL));
-              break;
-            }
-          }
-        }
-        */
-
         /* Flag the label as active */
         labelActiveFlag[stmt] = 1;
 
@@ -1601,13 +1455,6 @@ void parseStatements(void)
           activeEHypStack[activeEHypStackPtr].varList = nmbrTmpPtr;
           activeEHypStackPtr++;
         } else {
-          /* Taken care of earlier.
-          if (nmbrTmpPtr[0] == -1) {
-            sourceError(g_Statement[stmt].mathSectionPtr +
-                g_Statement[stmt].mathSectionLen, 2, stmt,
-                "A \"$f\" statement requires at least one variable.");
-          }
-          */
           activeFHypStack[activeFHypStackPtr].varList = nmbrTmpPtr;
           activeFHypStackPtr++;
         }
@@ -1802,7 +1649,6 @@ void parseStatements(void)
         if (type == p_) { /* Optional ones are not used by $a statements */
           nmbrTmpPtr = poolFixedMalloc((optHyps + 1)
               * (long)(sizeof(nmbrString)));
-          /* if (!nmbrTmpPtr) outOfMemory("#34 (optHyps)"); */ /* Not nec. w/ poolMalloc */
           memcpy(nmbrTmpPtr, wrkHypPtr2, (size_t)optHyps * sizeof(nmbrString));
           nmbrTmpPtr[optHyps] = -1;
           g_Statement[stmt].optHypList = nmbrTmpPtr;
@@ -1841,7 +1687,6 @@ void parseStatements(void)
 
         nmbrTmpPtr = poolFixedMalloc((reqHyps + 1)
             * (long)(sizeof(nmbrString)));
-        /* if (!nmbrTmpPtr) outOfMemory("#40 (reqDisjHyps)"); */ /* Not nec. w/ poolMalloc */
         memcpy(nmbrTmpPtr, wrkDisjHPtr1A, (size_t)reqHyps
             * sizeof(nmbrString));
         nmbrTmpPtr[reqHyps] = -1;
@@ -1849,7 +1694,6 @@ void parseStatements(void)
 
         nmbrTmpPtr = poolFixedMalloc((reqHyps + 1)
             * (long)(sizeof(nmbrString)));
-        /* if (!nmbrTmpPtr) outOfMemory("#41 (reqDisjHyps)"); */ /* Not nec. w/ poolMalloc */
         memcpy(nmbrTmpPtr, wrkDisjHPtr1B, (size_t)reqHyps
             * sizeof(nmbrString));
         nmbrTmpPtr[reqHyps] = -1;
@@ -1857,7 +1701,6 @@ void parseStatements(void)
 
         nmbrTmpPtr = poolFixedMalloc((reqHyps + 1)
             * (long)(sizeof(nmbrString)));
-        /* if (!nmbrTmpPtr) outOfMemory("#42 (reqDisjHyps)"); */ /* Not nec. w/ poolMalloc */
         memcpy(nmbrTmpPtr, wrkDisjHPtr1Stmt, (size_t)reqHyps
             * sizeof(nmbrString));
         nmbrTmpPtr[reqHyps] = -1;
@@ -1870,7 +1713,6 @@ void parseStatements(void)
 
           nmbrTmpPtr = poolFixedMalloc((optHyps + 1)
               * (long)(sizeof(nmbrString)));
-          /* if (!nmbrTmpPtr) outOfMemory("#43 (optDisjHyps)"); */ /* Not nec. w/ poolMalloc */
           memcpy(nmbrTmpPtr, wrkDisjHPtr2A, (size_t)optHyps
               * sizeof(nmbrString));
           nmbrTmpPtr[optHyps] = -1;
@@ -1878,7 +1720,6 @@ void parseStatements(void)
 
           nmbrTmpPtr = poolFixedMalloc((optHyps + 1)
               * (long)(sizeof(nmbrString)));
-          /* if (!nmbrTmpPtr) outOfMemory("#44 (optDisjHyps)"); */ /* Not nec. w/ poolMalloc */
           memcpy(nmbrTmpPtr, wrkDisjHPtr2B, (size_t)optHyps
               * sizeof(nmbrString));
           nmbrTmpPtr[optHyps] = -1;
@@ -1886,7 +1727,6 @@ void parseStatements(void)
 
           nmbrTmpPtr = poolFixedMalloc((optHyps + 1)
               * (long)(sizeof(nmbrString)));
-          /* if (!nmbrTmpPtr) outOfMemory("#45 (optDisjHyps)"); */ /* Not nec. w/ poolMalloc */
           memcpy(nmbrTmpPtr, wrkDisjHPtr2Stmt, (size_t)optHyps
               * sizeof(nmbrString));
           nmbrTmpPtr[optHyps] = -1;
@@ -1910,7 +1750,6 @@ void parseStatements(void)
         if (type == p_) { /* Optional ones are not used by $a statements */
           nmbrTmpPtr = poolFixedMalloc((optVars + 1)
               * (long)(sizeof(nmbrString)));
-          /* if (!nmbrTmpPtr) outOfMemory("#31 (optVars)"); */ /* Not nec. w/ poolMalloc */
           memcpy(nmbrTmpPtr, wrkVarPtr2, (size_t)optVars * sizeof(nmbrString));
           nmbrTmpPtr[optVars] = -1;
           g_Statement[stmt].optVarList = nmbrTmpPtr;
@@ -1922,8 +1761,7 @@ void parseStatements(void)
         break;  /* Switch case break */
     }
 
-    /************** Start of 27-Sep-2010 ****************/
-    /* 27-Sep-2010 nm If a $a statement consists of a single constant,
+    /* If a $a statement consists of a single constant,
        e.g. "$a wff $.", it means an empty expression (wff) is allowed.
        Before the user had to allow this manually with
        SET EMPTY_SUBSTITUTION ON; now it is done automatically. */
@@ -1935,20 +1773,11 @@ void parseStatements(void)
           printLongLine(cat("SET EMPTY_SUBSTITUTION was",
              " turned ON (allowed) for this database.", NULL),
              "    ", " ");
-          /* More detailed but more distracting message:
-          printLongLine(cat("Statement \"", g_Statement[stmt].labelName,
-             "\"  line ", str(g_Statement[stmt].lineNum),
-             " allows empty expressions, so SET EMPTY_SUBSTITUTION was",
-             " turned ON (allowed) for this database.", NULL),
-             "    ", " ");
-          */
         }
       }
     }
-    /************** End of 27-Sep-2010 ****************/
 
-    /************** Start of 25-Sep-2010 ****************/
-    /* 25-Sep-2010 nm Ensure the current Metamath spec is met:  "There may
+    /* Ensure the current Metamath spec is met:  "There may
        not be be two active $f statements containing the same variable.  Each
        variable in a $e, $a, or $p statement must exist in an active $f
        statement."  (Metamath book, p. 94) */
@@ -2014,7 +1843,7 @@ void parseStatements(void)
                   cause memory violation by going out of bounds */
             if ((g_Statement[n].mathString)[1] == tokenNum) {
               /* We found 2 $f's with the same variable */
-              assignStmtFileAndLineNum(n); /* 9-Jan-2018 nm */
+              assignStmtFileAndLineNum(n);
               sourceError(g_Statement[m].mathSectionPtr/*fbPtr*/,
                   0/*tokenLen*/,
                   m/*stmt*/, cat(
@@ -2022,8 +1851,8 @@ void parseStatements(void)
                 "\" already appears in the earlier active \"$f\" statement \"",
                   g_Statement[n].labelName, "\" on line ",
                   str((double)(g_Statement[n].lineNum)),
-                  " in file \"",           /* 9-Jan-2018 nm */
-                  g_Statement[n].fileName,   /* 9-Jan-2018 nm */
+                  " in file \"",
+                  g_Statement[n].fileName,
                   "\".", NULL));
               break; /* Optional: suppresses add'l error msgs for this stmt */
             }
@@ -2031,7 +1860,6 @@ void parseStatements(void)
         } /* if not $f else is $f */
       } /* next i ($e hyp scan of this statement, or its $a/$p) */
     } /* if stmt is $a or $p */
-    /************** End of 25-Sep-2010 ****************/
 
   } /* Next stmt */
 
@@ -2086,7 +1914,7 @@ void parseStatements(void)
   free(activeFHypStack);
   free(wrkHypPtr1);
   free(wrkHypPtr2);
-  free(wrkHypPtr3);  /* 28-Aug-2013 am - added missing free */
+  free(wrkHypPtr3);
   free(activeDisjHypStack);
   free(wrkDisjHPtr1A);
   free(wrkDisjHPtr1B);
@@ -2098,9 +1926,6 @@ void parseStatements(void)
   free(wrkStrPtr);
   free(symbolLenExists);
   let(&tmpStr, "");
-
-
-
 }
 
 
@@ -2124,7 +1949,6 @@ char parseProof(long statemNum)
   void *voidPtr; /* bsearch returned value */
   vstring tmpStrPtr;
 
-  /* 25-Jan-2016 nm */
   flag explicitTargets = 0; /* Proof is of form <target>=<source> */
   /* Source file pointers and token sizes for targets in a /EXPLICIT proof */
   pntrString *targetPntr = NULL_PNTRSTRING; /* Pointers to target tokens */
@@ -2140,18 +1964,17 @@ char parseProof(long statemNum)
   nmbrString *rearrangedSubProofs = NULL_NMBRSTRING;
   nmbrString *rearrangedOldStepNums = NULL_NMBRSTRING;
   flag subProofMoved; /* Flag to restart scan after moving subproof */
-                 /* 10-Mar-2016 nm */
 
   if (g_Statement[statemNum].type != p_) {
     bug(1723); /* 13-Oct-05 nm - should never get here */
     g_WrkProof.errorSeverity = 4;
-    return (4); /* Do nothing if not $p */
+    return 4; /* Do nothing if not $p */
   }
   fbPtr = g_Statement[statemNum].proofSectionPtr; /* Start of proof section */
   if (fbPtr[0] == 0) { /* The proof was never assigned (could be a $p statement
                           with no $=; this would have been detected earlier) */
     g_WrkProof.errorSeverity = 4;
-    return (4); /* Pretend it's an empty proof */
+    return 4; /* Pretend it's an empty proof */
   }
   fbPtr = fbPtr + whiteSpaceLen(fbPtr);
   if (fbPtr[0] == '(') { /* "(" is flag for compressed proof */
@@ -2212,7 +2035,6 @@ char parseProof(long statemNum)
         !g_WrkProof.localLabelFlag ||
         !g_WrkProof.hypAndLocLabel ||
         !g_WrkProof.localLabelPool ||
-        /* !g_WrkProof.proofString || */ /* Redundant because of poolMalloc */
         !g_WrkProof.mathStringPtrs ||
         !g_WrkProof.RPNStack
         ) outOfMemory("#99 (g_WrkProof)");
@@ -2313,7 +2135,6 @@ char parseProof(long statemNum)
   for (tok = 0; tok < g_WrkProof.numTokens; tok++) {
     fbPtr = g_WrkProof.tokenSrcPtrPntr[tok];
 
-    /* 25-Jan-2016 nm */
     /* If next token is = then this token is a target for /EXPLICIT format,
        so don't increment the proof step number */
     if (tok < g_WrkProof.numTokens - 2) {
@@ -2374,7 +2195,7 @@ char parseProof(long statemNum)
       j = *(long *)voidPtr; /* Statement number */
       if (j <= statemNum) {
         if (!g_WrkProof.errorCount) {
-          assignStmtFileAndLineNum(j); /* 9-Jan-2018 nm */
+          assignStmtFileAndLineNum(j);
           sourceError(fbPtr, tokLength, statemNum,cat(
               "The local label at proof step ",
               str((double)(g_WrkProof.numSteps + 1)),
@@ -2422,7 +2243,6 @@ char parseProof(long statemNum)
 
   } /* Next i */
 
-  /* 25-Jan-2016 nm */
   /* Collect all target labels in /EXPLICIT format */
   /* I decided not to make targetPntr, targetNmbr part of the g_WrkProof
      structure since other proof formats don't assign it, so we can't
@@ -2518,7 +2338,6 @@ char parseProof(long statemNum)
   nmbrZapLen(g_WrkProof.proofString, g_WrkProof.numSteps);
      /* Zap mem pool actual length (because nmbrLen will be used later on this)*/
 
-  /* 25-Jan-2016 nm */
   if (explicitTargets == 1) {
     /* List of original step numbers to keep track of local label movement */
     nmbrLet(&oldStepNums, nmbrSpace(g_WrkProof.numSteps));
@@ -2693,7 +2512,6 @@ char parseProof(long statemNum)
       continue;
     } /* End if stack exhausted */
 
-    /**** Start of 25-Jan-2016 nm ***/
     /* For proofs saved with /EXPLICIT, the user may have changed the order
        of hypotheses.  First, get the subproofs for the hypotheses.  Then
        reassemble them in the right order. */
@@ -2803,46 +2621,8 @@ char parseProof(long statemNum)
       nmbrLet(&rearrangedOldStepNums, NULL_NMBRSTRING);
       nmbrLet(&wrkProofString, NULL_NMBRSTRING);
     } /* if explicitTargets */
-    /**** End of 25-Jan-2016 ***/
 
     numReqHyp = g_Statement[j].numReqHyp;
-
-    /* Error check for $e <- $f assignments (illegal) */
-    /* 18-Jun-2020 nm: Although it would be unusual to to this,
-       it is not illegal per the spec.  See
-       https://groups.google.com/d/msg/metamath/Cx_d84uorf8/0FrNYTM9BAAJ */
-    /**** Deleted 18-Jun-2020 nm ****
-    nmbrTmpPtr = g_Statement[j].reqHypList;
-    for (i = 0; i < numReqHyp; i++) {
-
-      /@ 25-Jan-2016 nm @/
-      /@ Skip this check if /EXPLICIT since hyps may be in random order @/
-      if (explicitTargets == 1) break;
-
-      if (g_Statement[nmbrTmpPtr[i]].type == e_) {
-        m = g_WrkProof.RPNStackPtr - numReqHyp + i;
-        k = g_WrkProof.proofString[g_WrkProof.RPNStack[m]];
-        if (k > 0) {
-          if (g_Statement[k].type == f_) {
-            if (!g_WrkProof.errorCount) {
-              sourceError(fbPtr, tokLength, statemNum, cat(
-                  "Statement \"",g_Statement[j].labelName,"\" (proof step ",
-                  str((double)step + 1),
-                  ") has its \"$e\" hypothesis \"",
-                  g_Statement[nmbrTmpPtr[i]].labelName,
-                  "\" assigned the \"$f\" hypothesis \"",
-                  g_Statement[k].labelName,
-                  "\" at step ", str((double)(g_WrkProof.RPNStack[m] + 1)),
-                  ".  The assignment of \"$e\" with \"$f\" is not allowed.",
-                  NULL));
-            }
-            g_WrkProof.errorCount++;
-            if (returnFlag < 2) returnFlag = 2;
-          }
-        }
-      }
-    }
-    **** End of 18-Jun-2020 deletion ****/
 
     /* Pop the stack */
     g_WrkProof.RPNStackPtr = g_WrkProof.RPNStackPtr - numReqHyp;
@@ -2864,7 +2644,6 @@ char parseProof(long statemNum)
     if (returnFlag < 3) returnFlag = 3;
   }
 
-  /**** Start of 25-Jan-2016 nm ***/
   if (explicitTargets) {
     /* Correct the local label refs in the rearranged proof */
     for (step = 0; step < g_WrkProof.numSteps; step++) {
@@ -2892,38 +2671,6 @@ char parseProof(long statemNum)
       }
     } /* next step */
 
-    /************** Start of section deleted 10-Mar-2016 nm
-    /@ Check if any local labels point to future steps: if so, we should
-       expand the proof so it will verify (since many functions require
-       that a local label be declared before it is used) @/
-    for (step = 0; step < g_WrkProof.numSteps; step++) {
-      k = (g_WrkProof.proofString)[step]; /@ Will be <= -1000 if local label @/
-      if (k <= -1000) { /@ References local label i.e. subproof @/
-        k = -1000 - k; /@ Restore step number subproof ends at @/
-        if (k > step) { /@ Refers to label declared after this step @/
-          /@ Expand the proof @/
-          nmbrLet(&wrkProofString, nmbrUnsquishProof(g_WrkProof.proofString));
-          /@ Recompress the proof @/
-          nmbrLet(&wrkProofString, nmbrSquishProof(wrkProofString));
-          /@ The number of steps shouldn't have changed @/
-          /@ (If this bug is valid behavior, it means we may have to
-             reallocate (grow) the wrkProof structure, which might be
-             unpleasant at this point.) @/
-          if (nmbrLen(wrkProofString) != g_WrkProof.numSteps) {
-            bug(1736);
-          }
-          /@ Reassign g_WrkProof.proofString from new wrkProofString @/
-          for (i = 0; i < g_WrkProof.numSteps; i++) {
-            (g_WrkProof.proofString)[i] = wrkProofString[i];
-          }
-          break;
-        } /@ if k>step @/
-      } /@ if k<= -1000 @/
-    } /@ next step @/
-    ************************* end of 10-Mar-2016 deletion */
-
-
-    /* 10-Mar-2016 nm (Replace above deleted secton) */
     /* Check if any local labels point to future steps: if so, we should
        moved the subproof they point to down (since many functions require
        that a local label be declared before it is used) */
@@ -2990,8 +2737,6 @@ char parseProof(long statemNum)
                  but provide better sanity checking */
               if (j >= 0 && j < step) { /* Before moved subproof */
                 /*j = j;*/ /* Same as orig proof */
-                /* 24-Mar-2016 workaround to clang complaint about j = j */
-                j = j + 0; /* Same as orig proof */
               } else if (j == step) { /* The original local label ref */
                 bug(1738); /* A local label shouldn't ref a local label */
               } else if (j > step && j <= k - m) {
@@ -3003,8 +2748,6 @@ char parseProof(long statemNum)
               } else if (j > k && j <= g_WrkProof.numSteps - 1) {
                                               /* Ref to after moved subproof */
                 /*j = j;*/ /* Same as orig proof */
-                /* 24-Mar-2016 workaround to clang complaint about j = j */
-                j = j + 0; /* Same as orig proof */
               } else {
                 bug(1739);  /* Cases not exhausted or j is out of range */
               }
@@ -3035,7 +2778,6 @@ char parseProof(long statemNum)
     nmbrLet(&oldStepNums, NULL_NMBRSTRING);
     nmbrLet(&wrkProofString, NULL_NMBRSTRING);
   } /* if (explicitTargets) */
-  /**** End of 25-Jan-2016 ***/
 
   g_WrkProof.errorSeverity = returnFlag;
   return (returnFlag);
@@ -3053,7 +2795,6 @@ char parseCompressedProof(long statemNum)
 {
 
   long i, j, k, step, stmt;
-  /* long m; */ /* 18-Jun-2020 nm No longer needed */
   char *fbPtr;
   char *fbStartProof;
   char *labelStart;
@@ -3127,8 +2868,8 @@ char parseCompressedProof(long statemNum)
 
 
   if (g_Statement[statemNum].type != p_) {
-    bug(1724); /* 13-Oct-05 nm - should never get here */
-    return (4); /* Do nothing if not $p */
+    bug(1724); /* should never get here */
+    return 4; /* Do nothing if not $p */
   }
   fbPtr = g_Statement[statemNum].proofSectionPtr; /* Start of proof section */
   if (fbPtr[0] == 0) { /* The proof was never assigned (could be a $p statement
@@ -3191,7 +2932,6 @@ char parseCompressedProof(long statemNum)
         !g_WrkProof.localLabelFlag ||
         !g_WrkProof.hypAndLocLabel ||
         !g_WrkProof.localLabelPool ||
-        /* !g_WrkProof.proofString || */ /* Redundant because of poolMalloc */
         !g_WrkProof.mathStringPtrs ||
         !g_WrkProof.RPNStack
         ) outOfMemory("#99 (g_WrkProof)");
@@ -3301,8 +3041,7 @@ char parseCompressedProof(long statemNum)
               "Required hypotheses may not be explicitly declared.");
         }
         g_WrkProof.errorCount++;
-        /* if (returnFlag < 2) returnFlag = 2; */
-        /* 19-Aug-2006 nm Tolerate this error so we can continue to work
+        /* Tolerate this error so we can continue to work
            on proof in Proof Assistant */
         if (returnFlag < 1) returnFlag = 1;
       }
@@ -3378,7 +3117,7 @@ char parseCompressedProof(long statemNum)
 
   /******* Parse the compressed part of the proof *****/
 
-  /* 15-Oct-05 nm - Check to see if the old buggy compression is used.  If so,
+  /* Check to see if the old buggy compression is used.  If so,
      warn the user to reformat, and switch to the buggy algorithm so that
      parsing can proceed. */
   bggyProofLen = g_Statement[statemNum].proofSectionLen -
@@ -3413,12 +3152,7 @@ char parseCompressedProof(long statemNum)
         g_WrkProof.stepSrcPtrNmbr[g_WrkProof.numSteps] = tokLength;
         g_WrkProof.stepSrcPtrPntr[g_WrkProof.numSteps] = labelStart; /* Token ptr */
 
-        /* 15-Oct-05 nm - Obsolete (skips from YT to UVA, missing UUA) */
-        /* (actually, this part is coincidentally the same:)
-        labelMapIndex = labelMapIndex * lettersLen +
-            chrWeight[(long)(fbPtr[0])];
-        */
-        /* 15-Oct-05 nm - Corrected algorithm provided by Marnix Klooster. */
+        /* Corrected algorithm provided by Marnix Klooster. */
         /* Decoding can be done as follows:
              * n := 0
              * for each character c:
@@ -3463,7 +3197,7 @@ char parseCompressedProof(long statemNum)
           if (g_WrkProof.RPNStackPtr < numReqHyp) { /* Stack exhausted -- error */
             if (!g_WrkProof.errorCount) {
               tmpStrPtr = shortDumpRPNStack();
-              if (strcmp(left(tmpStrPtr,18),"RPN stack is empty")){
+              if (strcmp(left(tmpStrPtr,18),"RPN stack is empty")) {
                 i = instr(1,tmpStrPtr,"contains ");
                 let(&tmpStrPtr,cat(left(tmpStrPtr,i + 7)," only",
                   right(tmpStrPtr,i + 8),
@@ -3493,38 +3227,6 @@ char parseCompressedProof(long statemNum)
           } /* End if stack exhausted */
 
           numReqHyp = g_Statement[stmt].numReqHyp;
-          /* Error check for $e <- $f assignments (illegal) */
-          /* 18-Jun-2020 nm: Although it would be unusual to to this,
-             it is not illegal per the spec.  See
-             https://groups.google.com/d/msg/metamath/Cx_d84uorf8/0FrNYTM9BAAJ */
-          /**** Deleted 18-Jun-2020 nm ****
-          nmbrTmpPtr = g_Statement[stmt].reqHypList;
-          for (i = 0; i < numReqHyp; i++) {
-            if (g_Statement[nmbrTmpPtr[i]].type == e_) {
-              m = g_WrkProof.RPNStackPtr - numReqHyp + i;
-              k = g_WrkProof.proofString[g_WrkProof.RPNStack[m]];
-              if (k > 0) {
-                if (g_Statement[k].type == f_) {
-                  if (!g_WrkProof.errorCount) {
-                    sourceError(fbPtr, tokLength, statemNum, cat(
-                        "Statement \"", g_Statement[stmt].labelName,
-                        "\" (proof step ",
-                        str((double)(g_WrkProof.numSteps + 1)),
-                        ") has its \"$e\" hypothesis \"",
-                        g_Statement[nmbrTmpPtr[i]].labelName,
-                        "\" assigned the \"$f\" hypothesis \"",
-                        g_Statement[k].labelName,
-                        "\" at step ", str((double)(g_WrkProof.RPNStack[m] + 1)),
-                      ".  The assignment of \"$e\" with \"$f\" is not allowed.",
-                        NULL));
-                  }
-                  g_WrkProof.errorCount++;
-                  if (returnFlag < 2) returnFlag = 2;
-                }
-              }
-            }
-          }
-          **** End of 18-Jun-2020 deletion ****/
 
           /* Pop the stack */
           g_WrkProof.RPNStackPtr = g_WrkProof.RPNStackPtr - numReqHyp;
@@ -3538,23 +3240,6 @@ char parseCompressedProof(long statemNum)
         break;
 
       case 1: /* "Digit" (i.e. U...Y) */
-        /* 15-Oct-05 nm - Obsolete (skips from YT to UVA, missing UUA) */
-        /*
-        if (!labelMapIndex) {
-          / * First digit; mod digitsLen+1 * /
-          labelMapIndex = chrWeight[(long)(fbPtr[0])] + 1;
-          labelStart = fbPtr; / * Save label start for error msg * /
-        } else {
-          labelMapIndex = labelMapIndex * digitsLen +
-              chrWeight[(long)(fbPtr[0])];
-        }
-        */
-        /* 15-Oct-05 nm - Corrected algorithm provided by Marnix Klooster. */
-        /* Decoding can be done as follows:
-             * n := 0
-             * for each character c:
-                * if c in ['U'..'Y']: n := n * 5 + (c - 'U' + 1)
-                * if c in ['A'..'T']: n := n * 20 + (c - 'A' + 1) */
         if (!labelMapIndex) {
           labelMapIndex = chrWeight[(long)(fbPtr[0])] + 1;
           labelStart = fbPtr; /* Save label start for error msg */
@@ -3663,10 +3348,9 @@ char parseCompressedProof(long statemNum)
 
         g_WrkProof.proofString[g_WrkProof.numSteps] = -(long)'?';
         /* returnFlag = 1 means that proof has unknown steps */
-        /* 6-Oct-05 nm Ensure that a proof with unknown steps doesn't
+        /* Ensure that a proof with unknown steps doesn't
            reset the severe error flag if returnFlag > 1 */
-        /* returnFlag = 1; */ /*bad - resets severe error flag*/
-        if (returnFlag < 1) returnFlag = 1; /* 6-Oct-05 */
+        if (returnFlag < 1) returnFlag = 1;
 
         /* Update stack */
         g_WrkProof.RPNStack[g_WrkProof.RPNStackPtr] = g_WrkProof.numSteps;
@@ -3700,7 +3384,6 @@ char parseCompressedProof(long statemNum)
     }
     g_WrkProof.errorCount++;
     if (returnFlag < 2) returnFlag = 2;
-    /* labelMapIndex = 0; */ /* 18-Sep-2013 never used */
   }
 
   /* If proof is empty, make it have one unknown step */
@@ -3718,10 +3401,6 @@ char parseCompressedProof(long statemNum)
     g_WrkProof.stepSrcPtrPntr[g_WrkProof.numSteps] = fbPtr; /* Token ptr */
 
     g_WrkProof.proofString[g_WrkProof.numSteps] = -(long)'?';
-    /* 21-Mar-06 nm Deleted 2 lines below; added 3rd - there could be a
-       previous error; see 21-Mar-06 entry above */
-    /* if (returnFlag > 0) bug(1722); */ /* 13-Oct-05 nm */
-    /* returnFlag = 1; */ /* Flag that proof has unknown steps */
     if (returnFlag < 1) returnFlag = 1; /* Flag that proof has unknown steps */
 
     /* Update stack */
@@ -3729,8 +3408,6 @@ char parseCompressedProof(long statemNum)
     g_WrkProof.RPNStackPtr++;
 
     g_WrkProof.numSteps++;
-    /* 13-Oct-05 nm The line below is redundant */
-    /*if (returnFlag < 1) returnFlag = 1;*/ /* Flag for proof with unknown steps */
   }
 
   g_WrkProof.proofString[g_WrkProof.numSteps] = -1; /* End of proof */
@@ -3757,7 +3434,6 @@ char parseCompressedProof(long statemNum)
 } /* parseCompressedProof */
 
 
-/* 11-Sep-2016 nm */
 /* The caller must deallocate the returned nmbrString! */
 /* This function just gets the proof so the caller doesn't have to worry
    about cleaning up the g_WrkProof structure.  The returned proof is normal
@@ -3794,23 +3470,16 @@ nmbrString *getProof(long statemNum, flag printFlag) {
 
 
 
-/* 2-Feb-2018 nm - lineNum and fileName are now computed by
-   getFileAndLineNum() */
-void rawSourceError(char *startFile, char *ptr, long tokLen,
-    /*long lineNum, vstring fileName,*/ vstring errMsg)
-{
+void rawSourceError(char *startFile, char *ptr, long tokLen, vstring errMsg) {
   char *startLine;
   char *endLine;
   vstring errLine = "";
   vstring errorMsg = "";
-
-  /* 2-Feb-2018 nm */
   vstring fileName = "";
   long lineNum;
 
   let(&errorMsg, errMsg); /* Prevent deallocation of errMsg */
 
-  /* 2-Feb-2018 nm */
   fileName = getFileAndLineNum(startFile/*=g_sourcePtr*/, ptr, &lineNum);
 
   /* Get the line with the error on it */
@@ -3818,8 +3487,7 @@ void rawSourceError(char *startFile, char *ptr, long tokLen,
   while (startLine[0] != '\n' && startLine > startFile) {
     startLine--;
   }
-  if (startLine[0] == '\n'
-      && startLine != ptr) /* 8/20/04 nm In case of 0-length line */
+  if (startLine[0] == '\n' && startLine != ptr /* In case of 0-length line */)
     startLine++; /* Go to 1st char on line */
   endLine = ptr;
   while (endLine[0] != '\n' && endLine[0] != 0) {
@@ -3834,7 +3502,7 @@ void rawSourceError(char *startFile, char *ptr, long tokLen,
   print2("\n");
   let(&errLine, "");
   let(&errorMsg, "");
-  let(&fileName, ""); /* 2-Feb-2018 nm */
+  let(&fileName, "");
 } /* rawSourceError */
 
 /* The global g_sourcePtr is assumed to point to the start of the raw input
@@ -3850,15 +3518,11 @@ void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
   vstring fileName = "";
   vstring errorMsg = "";
 
-  /* 3-May-2017 nm */
   /* Used for the case where a source file section has been modified */
   char *locSourcePtr;
-  /*long locSourceLen;*/
 
-  /* 3-May-2017 nm */
   /* Initialize local pointers to raw input source */
   locSourcePtr = g_sourcePtr;
-  /*locSourceLen = g_sourceLen;*/
 
   let(&errorMsg, errMsg); /* errMsg may become deallocated if this function is
                          called with a string function argument (cat, etc.) */
@@ -3870,7 +3534,6 @@ void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
   if (ptr < g_sourcePtr || ptr > g_sourcePtr + g_sourceLen) {
     /* The pointer is outside the raw input buffer, so it must be a
        SAVEd proof or other overwritten section, so there is no line number. */
-    /* 3-May-2017 nm */
     /* Reassign the beginning and end of the source pointer to the
        changed section */
     if (g_Statement[stmtNum].labelSectionChanged == 1
@@ -3878,19 +3541,16 @@ void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
          && ptr <= g_Statement[stmtNum].labelSectionPtr
              + g_Statement[stmtNum].labelSectionLen) {
       locSourcePtr = g_Statement[stmtNum].labelSectionPtr;
-      /*locSourceLen = g_Statement[stmtNum].labelSectionLen;*/
     } else if (g_Statement[stmtNum].mathSectionChanged == 1
          && ptr >= g_Statement[stmtNum].mathSectionPtr
          && ptr <= g_Statement[stmtNum].mathSectionPtr
              + g_Statement[stmtNum].mathSectionLen) {
       locSourcePtr = g_Statement[stmtNum].mathSectionPtr;
-      /*locSourceLen = g_Statement[stmtNum].mathSectionLen;*/
     } else if (g_Statement[stmtNum].proofSectionChanged == 1
          && ptr >= g_Statement[stmtNum].proofSectionPtr
          && ptr <= g_Statement[stmtNum].proofSectionPtr
              + g_Statement[stmtNum].proofSectionLen) {
       locSourcePtr = g_Statement[stmtNum].proofSectionPtr;
-      /*locSourceLen = g_Statement[stmtNum].proofSectionLen;*/
     } else {
       /* ptr points to neither the original source nor a modified section */
       bug(1741);
@@ -3900,7 +3560,6 @@ void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
     goto SKIP_LINE_NUM;
   }
 
-  /* 9-Jan-2018 nm */
   /*let(&fileName, "");*/ /* No need - already assigned to empty string */
   fileName = getFileAndLineNum(locSourcePtr/*=g_sourcePtr here*/, ptr, &lineNum);
 
@@ -3915,25 +3574,8 @@ void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
     startLine = ptr;
   }
 
-
-  /**** 3-May-2017 nm Deleted
-  /@ Scan back to beginning of line with error @/
-  while (startLine[0] != '\n' && (!lineNum || startLine > locSourcePtr)
-      /@ ASCII 1 flags start of SAVEd proof @/
-      && (lineNum || startLine[0] != 1)
-      /@ lineNum is 0 (e.g. no stmt); stop scan at beg. of file
-         or beginning of a changed section @/
-      && startLine != locSourcePtr) {
-  ***/
-
-  /* 3-May-2017 nm */
   /* Scan back to beginning of line with error */
-  while (startLine[0] != '\n' && startLine > locSourcePtr) {
-
-    startLine--;
-  }
-  /* if (startLine[0] == '\n' || startLine[0] == 1) startLine++; */
-  /* 3-May-2017 nm */
+  while (startLine[0] != '\n' && startLine > locSourcePtr) startLine--;
   if (startLine[0] == '\n') startLine++;
 
   /* Scan forward to end of line with error */
@@ -3955,7 +3597,6 @@ void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
     errorMessage(errLine, lineNum,
         ptr - startLine + 1, tokLen, /* column */
         errorMsg,
-        /*g_IncludeCall[i].source_fn,*/
         fileName,
         stmtNum,
         (char)error_ /* severity */);
@@ -4019,10 +3660,9 @@ vstring shortDumpRPNStack(void) {
   let(&tmpStr2,cat("RPN stack contains ",tmpStr2,NULL));
   if (g_WrkProof.RPNStackPtr == 0) let(&tmpStr2,"RPN stack is empty");
   let(&tmpStr, "");
-  return(tmpStr2);
+  return tmpStr2;
 } /* shortDumpRPNStack */
 
-/* 10/10/02 */
 /* ???Todo:  use this elsewhere in mmpars.c to modularize this lookup */
 /* Lookup $a or $p label and return statement number.
    Return -1 if not found. */
@@ -4044,8 +3684,7 @@ long lookupLabel(vstring label)
 
 
 /* Label comparison for qsort */
-int labelSortCmp(const void *key1, const void *key2)
-{
+int labelSortCmp(const void *key1, const void *key2) {
   /* Returns -1 if key1 < key2, 0 if equal, 1 if key1 > key2 */
   return (strcmp(g_Statement[ *((long *)key1) ].labelName,
       g_Statement[ *((long *)key2) ].labelName));
@@ -4053,8 +3692,7 @@ int labelSortCmp(const void *key1, const void *key2)
 
 
 /* Label comparison for bsearch */
-int labelSrchCmp(const void *key, const void *data)
-{
+int labelSrchCmp(const void *key, const void *data) {
   /* Returns -1 if key < data, 0 if equal, 1 if key > data */
   return (strcmp(key,
       g_Statement[ *((long *)data) ].labelName));
@@ -4062,8 +3700,7 @@ int labelSrchCmp(const void *key, const void *data)
 
 
 /* Math symbol comparison for qsort */
-int mathSortCmp(const void *key1, const void *key2)
-{
+int mathSortCmp(const void *key1, const void *key2) {
   /* Returns -1 if key1 < key2, 0 if equal, 1 if key1 > key2 */
   return (strcmp(g_MathToken[ *((long *)key1) ].tokenName,
       g_MathToken[ *((long *)key2) ].tokenName));
@@ -4072,16 +3709,14 @@ int mathSortCmp(const void *key1, const void *key2)
 
 /* Math symbol comparison for bsearch */
 /* Here, key is pointer to a character string. */
-int mathSrchCmp(const void *key, const void *data)
-{
+int mathSrchCmp(const void *key, const void *data) {
   /* Returns -1 if key < data, 0 if equal, 1 if key > data */
   return (strcmp(key, g_MathToken[ *((long *)data) ].tokenName));
 }
 
 
 /* Hypotheses and local label comparison for qsort */
-int hypAndLocSortCmp(const void *key1, const void *key2)
-{
+int hypAndLocSortCmp(const void *key1, const void *key2) {
   /* Returns -1 if key1 < key2, 0 if equal, 1 if key1 > key2 */
   return (strcmp( ((struct sortHypAndLoc *)key1)->labelName,
       ((struct sortHypAndLoc *)key2)->labelName));
@@ -4090,8 +3725,7 @@ int hypAndLocSortCmp(const void *key1, const void *key2)
 
 /* Hypotheses and local label comparison for bsearch */
 /* Here, key is pointer to a character string. */
-int hypAndLocSrchCmp(const void *key, const void *data)
-{
+int hypAndLocSrchCmp(const void *key, const void *data) {
   /* Returns -1 if key < data, 0 if equal, 1 if key > data */
   return (strcmp(key, ((struct sortHypAndLoc *)data)->labelName));
 }
@@ -4101,8 +3735,7 @@ int hypAndLocSrchCmp(const void *key, const void *data)
    Comments are considered white space.  ptr should point to the first character
    of the white space.  If ptr does not point to a white space character, 0
    is returned.  If ptr points to a null character, 0 is returned. */
-long whiteSpaceLen(char *ptr)
-{
+long whiteSpaceLen(char *ptr) {
   long i = 0;
   char tmpchr;
   char *ptr1;
@@ -4125,7 +3758,7 @@ long whiteSpaceLen(char *ptr)
           }
           /* end in-line strchr code */
           if (!ptr1) {
-            return(i + (long)strlen(&ptr[i])); /* Unterminated comment - goto EOF */
+            return i + (long)strlen(&ptr[i]); /* Unterminated comment - goto EOF */
           }
           if (ptr1[1] == ')') break;
           i = ptr1 - ptr;
@@ -4139,13 +3772,13 @@ long whiteSpaceLen(char *ptr)
           i = ptr1 - ptr + 1;
           continue;
         }
-        return(i);
+        return i;
       }
     } /* if (tmpchr == '$') */
-    if (isgraph((unsigned char)tmpchr)) return (i);
+    if (isgraph((unsigned char)tmpchr)) return i;
     i++;
   }
-  return(0); /* Dummy return - never happens */
+  return 0; /* Dummy return - never happens */
 } /* whiteSpaceLen */
 
 
@@ -4154,17 +3787,16 @@ long whiteSpaceLen(char *ptr)
    considered white space.  ptr should point to the first character
    of the white space.  If ptr does not point to a white space character, 0
    is returned.  If ptr points to a null character, 0 is returned. */
-long rawWhiteSpaceLen(char *ptr)
-{
+long rawWhiteSpaceLen(char *ptr) {
   long i = 0;
   char tmpchr;
   while (1) {
     tmpchr = ptr[i];
     if (!tmpchr) return (i); /* End of string */
-    if (isgraph((unsigned char)tmpchr)) return (i);
+    if (isgraph((unsigned char)tmpchr)) return i;
     i++;
   }
-  return(0); /* Dummy return - never happens */
+  return 0; /* Dummy return - never happens */
 } /* rawWhiteSpaceLen */
 
 
@@ -4193,14 +3825,14 @@ long tokenLen(char *ptr)
           i = i + 2;
           continue;
         } else {
-          return(i); /* Keyword or comment */
+          return i; /* Keyword or comment */
         }
       }
     }
-    if (!isgraph((unsigned char)tmpchr)) return (i); /* White space or null */
+    if (!isgraph((unsigned char)tmpchr)) return i; /* White space or null */
     i++;
   }
-  return(0); /* Dummy return (never happens) */
+  return 0; /* Dummy return (never happens) */
 } /* tokenLen */
 
 
@@ -4219,10 +3851,10 @@ long rawTokenLen(char *ptr)
   char tmpchr;
   while (1) {
     tmpchr = ptr[i];
-    if (!isgraph((unsigned char)tmpchr)) return (i); /* White space or null */
+    if (!isgraph((unsigned char)tmpchr)) return i; /* White space or null */
     i++;
   }
-  return(0); /* Dummy return (never happens) */
+  return 0; /* Dummy return (never happens) */
 } /* rawTokenLen */
 
 
@@ -4236,12 +3868,11 @@ long proofTokenLen(char *ptr)
 {
   long i = 0;
   char tmpchr;
-  if (ptr[0] == ':') return (1); /* The token is a colon */
-  if (ptr[0] == '?') return (1); /* The token is a "?" */
-  if (ptr[0] == '(') return (1); /* The token is a "(" (compressed proof) */
-  if (ptr[0] == ')') return (1); /* The token is a ")" (compressed proof) */
-  /* 25-Jan-2016 nm */
-  if (ptr[0] == '=') return (1); /* The token is a "=" (/EXPLICIT proof) */
+  if (ptr[0] == ':') return 1; /* The token is a colon */
+  if (ptr[0] == '?') return 1; /* The token is a "?" */
+  if (ptr[0] == '(') return 1; /* The token is a "(" (compressed proof) */
+  if (ptr[0] == ')') return 1; /* The token is a ")" (compressed proof) */
+  if (ptr[0] == '=') return 1; /* The token is a "=" (/EXPLICIT proof) */
   while (1) {
     tmpchr = ptr[i];
     if (tmpchr == '$') {
@@ -4249,22 +3880,21 @@ long proofTokenLen(char *ptr)
         i = i + 2;
         continue;
       } else {
-        return(i); /* Keyword or comment */
+        return i; /* Keyword or comment */
       }
     }
-    if (!isgraph((unsigned char)tmpchr)) return (i); /* White space or null */
-    if (tmpchr == ':') return(i); /* Colon ends a token */
-    if (tmpchr == '?') return(i); /* "?" ends a token */
-    if (tmpchr == '(') return(i); /* "(" ends a token */
-    if (tmpchr == ')') return(i); /* ")" ends a token */
-    if (tmpchr == '=') return(i); /* "=" ends a token */ /* 25-Jan-2016 nm */
+    if (!isgraph((unsigned char)tmpchr)) return i; /* White space or null */
+    if (tmpchr == ':') return i; /* Colon ends a token */
+    if (tmpchr == '?') return i; /* "?" ends a token */
+    if (tmpchr == '(') return i; /* "(" ends a token */
+    if (tmpchr == ')') return i; /* ")" ends a token */
+    if (tmpchr == '=') return i; /* "=" ends a token */
     i++;
   }
-  return(0); /* Dummy return - never happens */
+  return 0; /* Dummy return - never happens */
 }
 
 
-/* 9-Jan-2018 nm */
 /* Counts the number of \n between start for length chars.
    If length = -1, then use end-of-string 0 to stop.
    If length >= 0, then scan at most length chars, but stop
@@ -4306,9 +3936,7 @@ long countLines(vstring start, long length) {
 /* 31-Dec-2020 nm This must be called in sequence for all statements,
    since the previous statement is needed to populate dollarDpos
    and previousType */
-vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
-    flag reformatFlag)
-{
+vstring outputStatement(long stmt, flag reformatFlag) {
   vstring labelSection = "";
   vstring mathSection = "";
   vstring proofSection = "";
@@ -4316,9 +3944,8 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
   vstring mathSectionSave = "";
   vstring proofSectionSave = "";
   vstring output = "";
-  /* flag newProofFlag; */ /* deleted 3-May-2017 nm */
   /* For reformatting: */
-  long slen; /* To save local string length */ /* 31-Dec-2020 nm */
+  long slen; /* To save local string length */
   long pos;
   long indent;
   static long dollarDpos = 0;
@@ -4330,13 +3957,6 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
   long length;
   flag nowrapHtml;
 
-  /* For getContribs in-line error insertion to assist massive corrections
-  long i;
-  vstring ca = "", cd = "", ra = "", rd = "", sa = "", sd = "", md = "";
-  long saveWidth;
-  */
-
-  /* 31-Dec-2020 nm */
   /* Re-initialize static variables for a second 'write source' */
   if (stmt == 1) {
     previousType = illegal_;  /* '?' in mmdata.h */
@@ -4349,26 +3969,6 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
 
   if (stmt == g_statements + 1) return labelSection; /* Special case - EOF */
 
-  /******* 3-May-2017 nm  "/CLEAN" is no longer supported
-  /@ 1-Jul-2011 nm @/
-  if (cleanFlag) {
-    /@ cleanFlag = 1: User is removing theorems with $( [?] $) dates @/
-    /@ Most of the WRITE SOURCE / CLEAN processing is done in the
-       writeSource() that calls this.  Here, we just remove any
-       $( [?} $) date comment missed by that algorithm. @/
-    if (labelSection[0] == '\n') { /@ True unless user edited source @/
-      pos = instr(1, labelSection, "$( [?] $)");
-      if (pos != 0) {
-        pos = instr(pos + 9, labelSection, "\n");
-        if (pos != 0) {
-          /@ Use pos instead of pos + 1 so that we include the \n @/
-          let(&labelSection, right(labelSection, pos));
-        }
-      }
-    }
-  }
-  ************/
-
   let(&mathSection, space(g_Statement[stmt].mathSectionLen));
   memcpy(mathSection, g_Statement[stmt].mathSectionPtr,
       (size_t)(g_Statement[stmt].mathSectionLen));
@@ -4377,14 +3977,12 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
   memcpy(proofSection, g_Statement[stmt].proofSectionPtr,
       (size_t)(g_Statement[stmt].proofSectionLen));
 
-  /* 31-Dec-2017 nm */
   let(&labelSectionSave, labelSection);
   let(&mathSectionSave, mathSection);
   let(&proofSectionSave, proofSection);
 
 
-  /* 12-Jun-2011 nm Added this section to reformat statements to match the
-     current set.mm convention */
+  /* Reformat statements to match the current set.mm convention */
   if (reformatFlag > 0) {  /* 1 = WRITE SOURCE / FORMAT or 2 = / REWRAP */
     /* Put standard indentation before the ${, etc. */
 #define INDENT_FIRST 2
@@ -4393,7 +3991,6 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
     /* g_Statement[stmt].scope is at start of stmt not end; adjust $} */
     if (g_Statement[stmt].type == rb_) indent = indent - INDENT_INCR;
 
-    /* 9-Jul-2011 nm Added */
     /* Untab the label section */
     if (strchr(labelSection, '\t') != NULL) { /* Only if has tab (speedup) */
       let(&labelSection, edit(labelSection, 2048/*untab*/));
@@ -4434,7 +4031,6 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
         /* These 5 cases are for keywords that don't have labels, so that
            labelSection is simply the text before the keyword. */
 
-        /*** 31-Dec-2020 nm ${, $}, $v, $c, $d cases completely rewritten */
         /* Strip any trailing spaces */
         let(&labelSection, edit(labelSection, 128 /*trailing spaces*/));
         slen = (long)strlen(labelSection); /* Save to avoid recomputing */
@@ -4453,7 +4049,7 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
             /* There's no text (comment) between $} and ${, so make it
                a blank line */
             let(&labelSection, "\n\n");
-            slen = 2; /* 2-Aug-2021 */
+            slen = 2;
           } else {
             /* There's text between $} and ${ */
             if (instr(1, labelSection, "\n\n") == 0) {
@@ -4461,12 +4057,11 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
                  ensures non-empty labelSection will end with \n, so
                  add just 1 more) */
               let(&labelSection, cat(labelSection, "\n", NULL));
-              slen++; /* 2-Aug-2021 */
+              slen++;
             }
           } /* if slen == 0 else */
         } /* if $}...${ */
         if (slen == 0) {
-          /* 2-Aug-2021 */
           /* If the statement continues on this line, put 2 spaces before it */
           let(&labelSection, cat(labelSection, "  ", NULL));
           slen = 2;
@@ -4481,11 +4076,11 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
         if (g_Statement[stmt].type == d_/*$d*/) {
           /* Try to put as many $d's on one line as will fit.
              First we remove redundant spaces in mathSection. */
+          /* Don't discard \n so that user can
+            insert \n to break a huge $d with say >40 variables,
+            which itself can exceed line length. */
           let(&mathSection, edit(mathSection,
               /*4*//*discard \n*/ + 16/*reduce spaces*/));
-              /* 31-Dec-2020: No longer discard \n so that user can
-                 insert \n to break a huge $d with say >40 variables,
-                 which itself can exceed line length. */
           if (strlen(edit(labelSection, 4/*discard \n*/ + 2/*discard spaces*/))
               == 0) /* This and previous $d are separated by spaces
                        and newlines only */
@@ -4514,7 +4109,6 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
             dollarDpos = indent + (long)strlen(mathSection) + 4;
           } /* if labelSection = spaces and newlines only else */
         } /* if g_Statement[stmt].type == d_ */
-        /*** (End of 31-Dec-2020 rewrite) ***/
 
         break; /* End of ${, $}, $v, $c, $d cases */
       case a_:    /* $a */
@@ -4535,92 +4129,10 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
           let(&comment, "$( PLEASE PUT DESCRIPTION HERE. $)");
         }
 
-        /* 4-Nov-2015 The section below is for a one-time attribution in
-           definitions and should be commented out for normal use. */
-        /******* TODO: DELETE THIS SOMEDAY *********/
-        /*********
-        long j;
-        if (g_Statement[stmt].type == a_
-             && instr(1, comment, "(Contributed") == 0
-             && (!strcmp(left(g_Statement[stmt].labelName, 3), "df-")
-               || !strcmp(left(g_Statement[stmt].labelName, 3), "ax-"))) {
-          let(&str1, "");
-          str1 = traceUsage(stmt, 0, 0);
-          for (i = 1; i <= g_statements; i++) {
-            if (str1[i] == 'Y') break;
-          }
-          if (i >= g_statements) {
-             let(&ca, "??");
-             let(&cd, cat("??", "-???", "-????", NULL));
-          } else {
-
-            /@ 3-May-2017 nm (not tested because code is commented out) @/
-            let(&ca, "");
-            ca = getContrib(i, CONTRIBUTOR);
-            let(&cd, "");
-            cd = getContrib(i, CONTRIB_DATE);
-            let (&rd, "");
-            rd = getContrib(i, REVISE_DATE);
-
-            /@@@@@@@@@ deleted 3-May-2017
-            getContrib(i, &ca, &cd, &ra, &rd, &sa, &sd, &md, 0);
-            @@@@@@/
-
-            if (cd[0] == 0) {
-              let(&ca, "??");
-              getProofDate(i, &cd, &rd);
-              if (rd[0]) let(&cd, rd);
-              if (cd[0] == 0) {
-                let(&cd, cat("??", "-???", "-????", NULL));
-              }
-            }
-          }
-          let(&comment, cat(left(comment, (long)strlen(comment) - 2),
-              " (Contributed by ", ca, ", ", cd, ".) $)", NULL));
-          let(&ca, "");
-          let(&cd, "");
-          let(&ra, "");
-          let(&rd, "");
-          let(&sa, "");
-          let(&sd, "");
-          let(&str1, "");
-        }
-
-        if (g_Statement[stmt].type == p_
-           && instr(1, comment, "(Contributed") == 0) {
-          getProofDate(stmt, &cd, &rd);
-          if (rd[0]) let(&cd, rd);
-          if (cd[0] == 0) {
-            let(&cd, cat("??", "-???", "-????", NULL));
-          }
-
-          i = instr(1, comment, "(Revised") - 1;
-          if (i <= 0) i = (long)strlen(comment);
-          j = instr(1, comment, "(Proof shorten") - 1;
-          if (j <= 0) j = (long)strlen(comment);
-
-          if (j < i) i = j;
-          if ((long)strlen(comment) - 2 < i) i = (long)strlen(comment) - 2;
-
-          let(&ca, "??");
-          let(&comment, cat(left(comment, i - 1),
-              " (Contributed by ", ca, ", ", cd, ".) ", right(comment, i),
-              NULL));
-          let(&ca, "");
-          let(&cd, "");
-          let(&ra, "");
-          let(&rd, "");
-          let(&sa, "");
-          let(&sd, "");
-          let(&str1, "");
-        }
-        ************/
-
         let(&labelSection, left(labelSection, commentStart - 1));
         /* Get the last newline before the comment */
         pos = rinstr(labelSection, "\n");
 
-        /* 9-Jul-2011 nm Added */
         /* If previous statement was $e, take out any blank line */
         if (previousType == e_ && pos == 2 && labelSection[0] == '\n') {
           let(&labelSection, right(labelSection, 2));
@@ -4634,7 +4146,6 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
           pos = (long)strlen(labelSection) + 1;
         }
 
-        /* 30-Jun-2020 nm */
         /* If comment has "<HTML>", don't reformat. */
         if (instr(1, comment, "<HTML>") != 0) {
           nowrapHtml = 1;
@@ -4642,10 +4153,7 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
           nowrapHtml = 0;
         }
 
-        /* 30-Jun-2020 nm Added nowrapHtml condition */
         if (nowrapHtml == 0) {
-
-          /* 30-Jun-2020 nm */
           /* This strips off leading spaces before $( (start of comment).  Don't
              do it for <HTML>, since spacing before $( is manual. */
           let(&labelSection, left(labelSection, pos));
@@ -4682,17 +4190,7 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
           if (g_outputToString == 1) bug(1726);
           g_outputToString = 1;
           let(&g_printString, "");
-          /* 7-Nov-2015 nm For getContribs in-line error insertion to assist
-             massive corrections; maybe delete someday */
-          /***********
-          saveWidth = g_screenWidth;
-          g_screenWidth = 9999;
-          /@i=getContrib(stmt, &ca, &cd, &ra, &rd, &sa, &sd, &md, 1);@/
-          let(&ca, "");
-          /@ 3-May-2017 nm @/
-          ca = getContrib(stmt, ERROR_CHECK);
-          g_screenWidth = saveWidth;
-          ************/
+
           printLongLine(cat(space(indent), comment, NULL),
               space(indent + 3), " ");
           let(&comment, g_printString);
@@ -4707,7 +4205,6 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
              if (comment[pos] == ASCII_4) comment[pos] = ' ';
           }
         } /* if nowrapHtml == 0 */ else {
-          /* 30-Jun-2020 nm */
           /* If there was an <HTML> tag, we don't modify the comment. */
           /* However, we need "\n" after "$)" (end of comment), corresponding to
              the one that was put there by printLongLine() in the normal
@@ -4743,8 +4240,7 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
         let(&labelSection, left(labelSection, pos));
         /* If previous statement is $d or $e and there is no comment after it,
            discard entire rest of label to get rid of redundant blank lines */
-        if ((previousType == d_       /* 31-Dec-2020 nm (simplified) */
-              || previousType == e_)
+        if ((previousType == d_ || previousType == e_)
             && instr(1, labelSection, "$(") == 0) {
           let(&labelSection, "\n");
         }
@@ -4774,23 +4270,9 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
               right(mathSection, pos + 2), NULL));
         }
 
-        /* 6-Mar-2016 nm Turn off wrapping of math section.  It should be
-           done manually for best readability. */
-        /*
-        /@ Remove leading and trailing space and trailing new lines @/
-        while(1) {
-          let(&mathSection, edit(mathSection,
-              8 /@ leading sp @/ + 128 /@ trailing sp @/));
-          if (mathSection[strlen(mathSection) - 1] != '\n') break;
-          let(&mathSection, left(mathSection, (long)strlen(mathSection) - 1));
-        }
-        let(&mathSection, cat(" ", mathSection, " ", NULL));
-                   /@ Restore standard leading/trailing space stripped above @/
-        */
-
         /* Reduce multiple in-line spaces to single space */
         pos = 0;
-        while(1) {
+        while (1) {
           pos = instr(pos + 1, mathSection, "  ");
           if (pos == 0) break;
           if (pos > 1) {
@@ -4803,26 +4285,6 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
           }
         }
 
-        /* 6-Mar-2016 nm Turn off wrapping of math section.  It should be
-           done manually for best readability. */
-        /*
-        /@ Wrap long lines @/
-        length = indent + 2 /@ Prefix length - add 2 for keyword ${, etc. @/
-            /@ Add 1 for space after label, if $e, $f, $a, $p @/
-            + (((g_Statement[stmt].labelName)[0]) ?
-                ((long)strlen(g_Statement[stmt].labelName) + 1) : 0);
-        if (g_outputToString == 1) bug(1728);
-        g_outputToString = 1;
-        let(&g_printString, "");
-        printLongLine(cat(space(length), mathSection, "$.", NULL),
-            space(indent + 4), " ");
-        g_outputToString = 0;
-        let(&mathSection, left(g_printString, (long)strlen(g_printString) - 3));
-            /@ Trim off "$." plus "\n" @/
-        let(&mathSection, right(mathSection, length + 1));
-        let(&g_printString, "");
-        */
-
         break;
       default: bug(1729);
     }
@@ -4834,7 +4296,6 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
       dollarDpos = 0; /* Reset it */
     }
     previousType = g_Statement[stmt].type;
-    /* let(&comment, ""); */  /* Deallocate string memory */ /* (done below) */
   } /* if reformatFlag */
 
   let(&output, labelSection);
@@ -4845,34 +4306,17 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
   /* Add math section and proof */
   if (g_Statement[stmt].mathSectionLen != 0) {
     let(&output, cat(output, mathSection, NULL));
-    /* newProofFlag = 0; */  /* deleted 3-May-2017 nm */
 
     if (g_Statement[stmt].type == (char)p_) {
       let(&output, cat(output, "$=", proofSection, NULL));
-
-      /******** deleted 3-May-2017 nm
-      if (g_Statement[stmt].proofSectionPtr[-1] == 1) {
-        /@ ASCII 1 is flag that line is not from original source file @/
-        newProofFlag = 1; /@ Proof is result of SAVE (NEW_)PROOF command @/
-      }
-    }
-    /@ If it's not a source file line, the proof text should supply the
-       statement terminator, so that additional text may be added after
-       the terminator if desired.  (I.e., date in SAVE NEW_PROOF command) @/
-    if (!newProofFlag) let(&output, cat(output, "$.", NULL));
-    ********/
-
-    /* 3-May-2017 nm */
     }
     let(&output, cat(output, "$.", NULL));
 
   }
 
-  /* Added 10/24/03 */
   /* Make sure the line has no carriage-returns */
   if (strchr(output, '\r') != NULL) {
 
-    /* 31-Dec-2017 nm */
     /* We are now using readFileToString, so this should never happen. */
     bug(1758);
 
@@ -4883,7 +4327,6 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
     let(&output, edit(output, 8192)); /* Discard CR's */
   }
 
-  /* 31-Dec-2017 nm */
   /* This function is no longer used to supply the output, but just to
      do any reformatting/wrapping.  Now writeSourceToBuffer() builds the
      output source.  So instead, we update the g_Statement[] content with
@@ -4938,7 +4381,6 @@ vstring outputStatement(long stmt, /*flag cleanFlag, 3-May-2017 removed */
   return output; /* The calling routine must deallocate this vstring */
 } /* outputStatement */
 
-/* 12-Jun-2011 nm */
 /* Unwrap the lines in a comment then re-wrap them according to set.mm
    conventions.  This may be overly aggressive, and user should do a
    diff to see if result is as desired.  Called by WRITE SOURCE / REWRAP.
@@ -4957,15 +4399,6 @@ vstring rewrapComment(vstring comment1)
   flag mathmode = 0;
 
   let(&comment, comment1); /* Grab arg so it can be reassigned */
-
-  /* Ignore pre-formatted comments */
-  /* if (instr(1, comment, "<PRE>") != 0) return comment; */
-  /* 30-Jun-2020 nm This is now done in the calling program */
-  /*
-  if (instr(1, comment, "<HTML>") != 0) {
-    return comment;  /@ 26-Dec-2011 nm @/
-  }
-  */
 
   /* Make sure back quotes are surrounded by space */
   pos = 2;
@@ -5056,19 +4489,6 @@ vstring rewrapComment(vstring comment1)
   mathmode = 0;
   for (pos = 3; pos < length - 2; pos++) {
     if (comment[pos] == '`') { /* Start or end of math string */
-/*
-      if (mathmode == 0) {
-        if (comment[pos - 1] == ' '
-            && strchr(OPENING_PUNCTUATION, comment[pos - 2]) != NULL)
-          /@ Keep opening punctuation on same line @/
-          comment[pos - 1] = ASCII_4;
-      } else {
-        if (comment[pos + 1] == ' '
-            && strchr(CLOSING_PUNCTUATION, comment[pos + 2]) != NULL)
-          /@ Keep closing punctuation on same line @/
-          comment[pos + 1] = ASCII_4;
-      }
-*/
       mathmode = (char)(1 - mathmode);
     }
     if ( mathmode == 1 && comment[pos] == ' ')
@@ -5078,7 +4498,6 @@ vstring rewrapComment(vstring comment1)
       comment[pos] = ASCII_4;
   }
 
-  /* 3-May-2016 nm */
   /* Look for proof discouraged or usage discouraged markup and change their
      spaces to ASCII 4 to prevent line breaks in the middle */
   if (g_proofDiscouragedMarkup[0] == 0) {
@@ -5127,18 +4546,16 @@ vstring rewrapComment(vstring comment1)
       if (comment[pos] != ' ') continue;
       if ((comment[pos + 1] >= 'A' && comment[pos + 1] <= 'Z')
           || strchr(OPENING_PUNCTUATION, comment[pos + 1]) != NULL) {
-        /* 7-Aug-2021 nm A change of space to ASCII_4 is not needed, and in fact
+        /* A change of space to ASCII_4 is not needed, and in fact
            prevents end of sentence e.g. "." from ever appearing at column 79,
            triggering an earlier break that makes line unnecessarily short.
-           Contrary to the deleted comment below, there is no problem with
-           next line having leading space:  it is removed in mminou.c (search
+           There is no problem with next line having leading space:
+           it is removed in mminou.c (search
            for "Remove leading space for neatness" there).  (Note that we use
            ASCII_4 to prevent bad line breaks, then later change them to
            spaces.) */
-        /***** 7-Aug-2021 nm Deleted
-        comment[pos] = ASCII_4; /@ Prevent break so next line won't have
-                                  leading space; instead, break at 2nd space @/
-        *****/
+        /* comment[pos] = ASCII_4; */
+
         /* Add a second space after end of sentence, which is recommended for
            monospaced (typewriter) fonts to more easily see sentence
            separation. */
@@ -5202,7 +4619,7 @@ vstring rewrapComment(vstring comment1)
 
   let(&commentTemplate, "");
 
-  return(comment);
+  return comment;
 } /* rewrapComment */
 
 /* This is a general-purpose function to parse a math token string,
@@ -5482,7 +4899,7 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
 } /* parseMathTokens */
 
 
-/* 31-Dec-2017 nm For .mm file splitting */
+/* For .mm file splitting */
 /* Get the next real $[...$] or virtual $( Begin $[... inclusion */
 /* This uses the convention of mmvstr.c where beginning of a string
    is position 1.  However, startOffset = 0 means no offset i.e.
@@ -5854,7 +5271,6 @@ vstring writeSourceToBuffer(void)
 } /* writeSourceToBuffer */
 
 
-/* 31-Dec-2017 nm */
 /* This function creates split files containing $[ $] inclusions, from
    a nonsplit source with $( Begin $[... etc. inclusions */
 /* This function calls itself recursively, and after the recursive call
@@ -6001,7 +5417,6 @@ vstring writeSourceToBuffer(void)
 } /* writeSplitSource */
 
 
-/* 31-Dec-2017 nm */
 /* When "write source" does not have the "/split" qualifier, by default
    (i.e. without "/no_delete") the included modules are "deleted" (renamed
    to ~1) since their content will be in the main output file. */
@@ -6073,13 +5488,12 @@ vstring writeSourceToBuffer(void)
 } /* deleteSplits */
 
 
-/* 9-Jan-2018 nm */
 /* Get file name and line number given a pointer into the read buffer */
 /* The user must deallocate the returned string (file name) */
 /* The globals g_IncludeCall structure and g_includeCalls are used */
-vstring getFileAndLineNum(vstring buffPtr/*start of read buffer*/,
-    vstring currentPtr/*place at which to get file name and line no*/,
-    long *lineNum/*return argument*/) {
+vstring getFileAndLineNum(vstring buffPtr /* start of read buffer */,
+    vstring currentPtr /* place at which to get file name and line no */,
+    long *lineNum /* return argument */) {
   long i, smallestOffset, smallestNdx;
   vstring fileName = "";
 
@@ -6114,7 +5528,6 @@ vstring getFileAndLineNum(vstring buffPtr/*start of read buffer*/,
 } /* getFileAndLineNo */
 
 
-/* 9-Jan-2018 nm */
 /* g_Statement[stmtNum].fileName and .lineNum are initialized to "" and 0.
    To save CPU time, they aren't normally assigned until needed, but once
    assigned they can be reused without looking them up again.  This function
@@ -6141,13 +5554,10 @@ void assignStmtFileAndLineNum(long stmtNum) {
    and reading should be aborted. */
 /* Globals used:  g_IncludeCall[], g_includeCalls */
 char *readInclude(vstring fileBuf, long fileBufOffset,
-    /*vstring parentFileName,*/ vstring sourceFileName,
-    long *size, long parentLineNum, flag *errorFlag)
+    vstring sourceFileName, long *size, long parentLineNum, flag *errorFlag)
 {
   long i;
-  /*vstring fileBuf = "";*/
   long inclSize;
-  /* flag insideLineComment; */ /* obsolete */
   vstring newFileBuf = "";
   vstring inclPrefix = "";
   vstring tmpSource = "";
@@ -6165,7 +5575,6 @@ char *readInclude(vstring fileBuf, long fileBufOffset,
   long newInclSize = 0; /* Init to avoid compiler warning */
   long befInclLineNum;
   long aftInclLineNum;
-  /*long contLineNum;*/
   vstring includeFn = "";
   vstring fullInputFn = "";
   vstring fullIncludeFn = "";
@@ -6336,7 +5745,6 @@ char *readInclude(vstring fileBuf, long fileBufOffset,
           if (tmpSource == NULL) {
             /* TODO: print better error msg?*/
             print2(
-                /* 23-Jan-2018 nm */
                 "?Error: file \"%s%s\" (included in \"%s\") was not found\n",
                 fullIncludeFn, g_rootDirectory, sourceFileName);
             tmpSource = "";
@@ -6408,7 +5816,6 @@ char *readInclude(vstring fileBuf, long fileBufOffset,
           if (tmpSource == NULL) {
             /* TODO: print better error msg */
             print2(
-                /* 23-Jan-2018 nm */
                 "?Error: file \"%s%s\" (included in \"%s\") was not found\n",
                 fullIncludeFn, g_rootDirectory, sourceFileName);
             *errorFlag = 1;

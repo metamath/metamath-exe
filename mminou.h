@@ -30,23 +30,13 @@ extern flag g_commandFileSilent[MAX_COMMAND_FILE_NESTING + 1];
 extern flag g_commandFileSilentFlag;
                                     /* 23-Oct-2006 nm For SUBMIT ... /SILENT */
 
-extern FILE /* *inputDef_fp,*/ *g_input_fp /*,*g_output_fp*/;  /* File pointers */
-                             /* 31-Dec-2017 nm g_output_fp deleted */
-extern vstring /* inputDef_fn,*/ g_input_fn, g_output_fn;  /* File names */
-
-/* 19-Jun-2020 nm No longer needed since printBuffer is now dynamically
-   allocated. */
-/*****************************
-/@ PRINTBUFFERSIZE should be at least as long as the longest string we
-   expect (an unfortunate, dangerous limitation of C?) - although if >79
-   chars are output on a line bug #1505 warning will occur @/
-#define PRINTBUFFERSIZE 10001
-**********************************/
+extern FILE *g_input_fp;  /* File pointers */
+extern vstring g_input_fn, g_output_fn;  /* File names */
 
 /* Warning:  never call print2 with string longer than PRINTBUFFERSIZE - 1 */
 /* print2 returns 0 if the user has quit the printout. */
 flag print2(char* fmt,...);
-extern long g_screenHeight; /* Height of screen */ /* 18-Nov-05 nm Added */
+extern long g_screenHeight; /* Height of screen */
 extern long g_screenWidth; /* Width of screen */
 #define MAX_LEN 79 /* Default width of screen */
 #define SCREEN_HEIGHT 23 /* Lines on screen, minus 1 to account for prompt */
@@ -84,13 +74,12 @@ vstring fGetTmpName(vstring filePrefix);
 /* 31-Dec-2017 nm Add charCount return argument */
 vstring readFileToString(vstring fileName, char verbose, long *charCount);
 
-/* 16-Aug-2016 nm */
 /* Returns total elapsed time in seconds since starting session (for the
    lcc compiler) or the CPU time used (for the gcc compiler).  The
    argument is assigned the time since the last call to this function. */
 double getRunTime(double *timeSinceLastCall);
 
 /* Call before exiting to free memory allocated by this module */
-void freeInOu(void); /* 4-May-2017 Ari Ferrera */
+void freeInOu(void);
 
 #endif /* METAMATH_MMINOU_H_*/

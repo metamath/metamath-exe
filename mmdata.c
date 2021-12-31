@@ -29,41 +29,31 @@ flag g_listMode = 0; /* 0 = metamath, 1 = list utility */
 flag g_toolsMode = 0; /* In metamath: 0 = metamath, 1 = text tools utility */
 
 
-/* 4-May-2015 nm */
 /* For use by getMarkupFlag() */
 vstring g_proofDiscouragedMarkup = "";
 vstring g_usageDiscouragedMarkup = "";
 flag g_globalDiscouragement = 1; /* SET DISCOURAGEMENT ON */
 
-/* 14-May-2017 nm */
 vstring g_contributorName = "";
 
 /* Global variables related to current statement */
 int g_currentScope = 0;
-/*long beginScopeStatementNum = 0;*/
 
 long g_MAX_STATEMENTS = 1;
 long g_MAX_MATHTOKENS = 1;
 long g_MAX_INCLUDECALLS = 2; /* Must be at least 2 (the single-file case) !!!
                          (A dummy extra top entry is used by parseKeywords().) */
 struct statement_struct *g_Statement = NULL;
-long *g_labelKey = NULL; /* 4-May-2017 Ari Ferrera - added "= NULL" */
+long *g_labelKey = NULL;
 struct mathToken_struct *g_MathToken;
 long *g_mathKey = NULL;
 long g_statements = 0, labels = 0, g_mathTokens = 0;
-/*long maxMathTokenLength = 0;*/ /* 15-Aug-2020 nm Not used */
 
-struct includeCall_struct *g_IncludeCall = NULL; /* 4-May-2017 Ari Ferrera
-                                                            - added "= NULL" */
+struct includeCall_struct *g_IncludeCall = NULL;
 long g_includeCalls = -1;  /* For eraseSouce() in mmcmds.c */
 
-char *g_sourcePtr = NULL; /* 4-May-2017 Ari Ferrera - added "= NULL" */
+char *g_sourcePtr = NULL;
 long g_sourceLen;
-
-/* 18-Jan-05 nm The structs below, and several other places, were changed
-   from hard-coded byte lengths to 'sizeof's by Waldek Hebisch
-   (hebisch at math dot uni dot wroc dot pl) so this will work on the
-   AMD64. */
 
 /* Null numString */
 struct nullNmbrStruct g_NmbrNull = {-1, sizeof(long), sizeof(long), -1};
@@ -104,9 +94,9 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
 
 #define MEM_POOL_GROW 1000 /* Amount that a pool grows when it overflows. */
 /*??? Let user set this from menu. */
-long poolAbsoluteMax = /*2000000*/1000000; /* Pools will be purged when this is reached */
+long poolAbsoluteMax = 1000000; /* Pools will be purged when this is reached */
 long poolTotalFree = 0; /* Total amount of free space allocated in pool */
-/*E*/long i1,j1_,k1; /* 11-Sep-2009 nm Fix "built-in function 'j1'" warning */
+/*E*/long i1,j1_,k1; /* 'j1' is a built-in function */
 void **memUsedPool = NULL;
 long memUsedPoolSize = 0; /* Current # of partially filled arrays in use */
 long memUsedPoolMax = 0; /* Maximum # of entries in 'in use' table (grows
@@ -122,9 +112,8 @@ void *poolFixedMalloc(long size /* bytes */)
 {
   void *ptr;
   void *ptr2;
-/*E*/ /* 11-Jul-2014 nm Don't call print2() if db9 is set, since it will */
-/*E*/ /* recursively call the pool stuff causing a crash.  I changed */
-/*E*/ /* 41 cases of print2() to printf() below to resolve this. */
+/*E*/ /* Don't call print2() if db9 is set, since it will */
+/*E*/ /* recursively call the pool stuff causing a crash. */
 /*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("a0: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
   if (!memFreePoolSize) { /* The pool is empty; we must allocate memory */
     ptr = malloc( 3 * sizeof(long) + (size_t)size);
@@ -269,21 +258,12 @@ void poolFree(void *ptr)
     poolTotalFree = poolTotalFree - ((long *)ptr)[-2] + ((long *)ptr)[-1];
     memUsedPoolSize--;
 
-    /* 11-Jul-2014 WL old code deleted */
-    /*
-    memUsedPool[usedLoc] = memUsedPool[memUsedPoolSize];
-    ptr1 = memUsedPool[usedLoc];
-    ((long @)ptr1)[-3] = usedLoc;
-/@E@/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("d: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
-    */
-    /* 11-Jul-2014 WL new code */
     if (usedLoc < memUsedPoolSize) {
       memUsedPool[usedLoc] = memUsedPool[memUsedPoolSize];
       ptr1 = memUsedPool[usedLoc];
       ((long *)ptr1)[-3] = usedLoc;
 /*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("d: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
     }
-    /* end of 11-Jul-2014 WL new code */
   }
 
   /* Next, add the array to the memFreePool */
@@ -484,7 +464,6 @@ void outOfMemory(vstring msg)
 }
 
 
-/* 17-Nov-2015 nm Added abort, skip, ignore options */
 /* Bug check */
 void bug(int bugNum)
 {
@@ -493,7 +472,6 @@ void bug(int bugNum)
   long wrongAnswerCount = 0;
   static flag mode = 0; /* 1 = run to next bug, 2 = continue and ignore bugs */
 
-  /* 10/10/02 */
   flag saveOutputToString = g_outputToString;
   g_outputToString = 0; /* Make sure we print to screen and not to string */
 
@@ -517,7 +495,6 @@ void bug(int bugNum)
   "recording a session.  See HELP SUBMIT for help on command files.  Search\n");
     print2(
   "for \"bug(%ld)\" in the m*.c source code to find its origin.\n", bugNum);
-    /* 15-Oct-2019 nm Added the next 2 info lines */
     print2(
   "If earlier errors were reported, try fixing them first, because they\n");
     print2(
@@ -535,7 +512,7 @@ void bug(int bugNum)
     if (wrongAnswerCount > 6) {
       print2(
 "Too many wrong answers; program will be aborted to exit scripting loops.\n");
-      break; /* Added 8-Nov-03 */
+      break;
     }
     if (wrongAnswerCount > 0) {
       let(&tmpStr, "");
@@ -546,9 +523,6 @@ void bug(int bugNum)
       let(&tmpStr, "");
       tmpStr = cmdInput1("or A <return> to abort program:  ");
     }
-    /******* 8-Nov-03 This loop caused an infinite loop in a cron job when bug
-      detection was triggered.  Now, when the loop breaks above,
-      the program will abort. *******/
     wrongAnswerCount++;
   }
   oldMode = mode;
@@ -566,7 +540,6 @@ void bug(int bugNum)
     let(&tmpStr, "");
   }
   if (mode > 0) {
-    /* 10/10/02 */
     g_outputToString = saveOutputToString; /* Restore for continuation */
     return;
   }
@@ -587,7 +560,6 @@ void bug(int bugNum)
 
 #define M_MAX_ALLOC_STACK 100
 
-/* 26-Apr-2008 nm Added */
 /* This function returns a 1 if any entry in a comma-separated list
    matches using the matches() function. */
 flag matchesList(vstring testString, vstring pattern, char wildCard,
@@ -610,8 +582,7 @@ flag matchesList(vstring testString, vstring pattern, char wildCard,
     if (matchVal) break;
   }
 
-  let(&entryPattern, ""); /* Deallocate */ /* 3-Jul-2011 nm Added to fix
-                                              memory leak */
+  let(&entryPattern, ""); /* Deallocate */
   g_startTempAllocStack = saveTempAllocStack;
   return (matchVal);
 }
@@ -621,17 +592,11 @@ flag matchesList(vstring testString, vstring pattern, char wildCard,
    the second argument.  The second argument may have wildcard characters.
    wildCard matches 0 or more characters; oneCharWildCard matches any
    single character. */
-/* 30-Jan-06 nm Added single-character-match wildcard argument */
-/* 19-Apr-2015 so, nm - Added "=" to match statement being proved */
-/* 19-Apr-2015 so, nm - Added "%" to match changed proofs */
-/* 8-Mar-2016 nm Added "#1234" to match internal statement number */
-/* 18-Jul-2020 nm Added "@1234" to match web statement number */
 flag matches(vstring testString, vstring pattern, char wildCard,
     char oneCharWildCard) {
   long i, ppos, pctr, tpos, s1, s2, s3;
   vstring tmpStr = "";
 
-  /* 21-Nov-2014 Stefan O'Rear - added label ranges - see HELP SEARCH */
   if (wildCard == '*') {
     /* Checking for wildCard = * meaning this is only for labels, not
        math tokens */
@@ -661,7 +626,7 @@ flag matches(vstring testString, vstring pattern, char wildCard,
           ? 1 : 0);
     }
 
-    /* 8-Mar-2016 nm Added "#12345" to match internal statement number */
+    /* "#12345" matches internal statement number */
     if (pattern[0] == '#') {
       s1 = (long)val(right(pattern, 2));
       if (s1 < 1 || s1 > g_statements)
@@ -673,7 +638,7 @@ flag matches(vstring testString, vstring pattern, char wildCard,
       }
     }
 
-    /* 18-Jul-2020 nm Added "@12345" to match web statement number */
+    /* "@12345" matches web statement number */
     if (pattern[0] == '@') {
       s1 = lookupLabel(testString);
       if (s1 < 1) return 0;
@@ -685,17 +650,15 @@ flag matches(vstring testString, vstring pattern, char wildCard,
       }
     }
 
-    /* 19-Apr-2015 so, nm - Added "=" to match statement being proved */
+    /* "=" matches statement being proved */
     if (!strcmp(pattern,"=")) {
       s1 = lookupLabel(testString);
-      /*return (PFASmode && g_proveStatement == s1);*/
-      /* 18-Jul-2020 nm */
       /* We might as well use g_proveStatement outside of MM-PA, so =
          can be argument to PROVE command */
       return (g_proveStatement == s1);
     }
 
-    /* 19-Apr-2015 so, nm - Added "%" to match changed proofs */
+    /* "%" matches changed proofs */
     if (!strcmp(pattern,"%")) {
       s1 = lookupLabel(testString);  /* Returns -1 if not found or (not
                                         $a and not $p) */
@@ -703,11 +666,6 @@ flag matches(vstring testString, vstring pattern, char wildCard,
         /* (If it's not $p, we don't want to peek at proofSectionPtr[-1]
            to prevent bad pointer. */
         if (g_Statement[s1].type == (char)p_) { /* $p so it has a proof */
-          /*
-          /@ ASCII 1 is flag that proof is not from original source file @/
-          if (g_Statement[s1].proofSectionPtr[-1] == 1) {
-          */
-          /* 3-May-2017 nm */
           /* The proof is not from the original source file */
           if (g_Statement[s1].proofSectionChanged == 1) {
             return 1;
@@ -715,15 +673,11 @@ flag matches(vstring testString, vstring pattern, char wildCard,
         }
       }
       return 0;
-      /*
-      return nmbrElementIn(1, changedStmtNmbr, s1);
-      */
     } /* if (!strcmp(pattern,"%")) */
   } /* if (wildCard == '*') */
 
   /* Get to first wild card character */
   ppos = 0;
-  /*if (wildCard!='*') printf("'%s' vs. '%s'\n", pattern, testString);*/
   while ((pattern[ppos] == testString[ppos] ||
           (pattern[ppos] == oneCharWildCard && testString[ppos] != 0))
       && pattern[ppos] != 0) ppos++;
@@ -789,7 +743,6 @@ nmbrString *nmbrTempAlloc(long size)
   /* When "size" is >0, "size" instances of nmbrString are allocated. */
   /* When "size" is 0, all memory previously allocated with this */
   /* function is deallocated, down to g_nmbrStartTempAllocStack. */
-  /* int i; */  /* 11-Jul-2014 WL old code deleted */
   if (size) {
     if (g_nmbrTempAllocStackTop>=(M_MAX_ALLOC_STACK-1)) {
       /*??? Fix to allocate more */
@@ -797,24 +750,14 @@ nmbrString *nmbrTempAlloc(long size)
     }
     if (!(nmbrTempAllocStack[g_nmbrTempAllocStackTop++]=poolMalloc(size
         *(long)(sizeof(nmbrString)))))
-      /* outOfMemory("#106 (nmbrString stack)"); */ /*???Unnec. w/ poolMalloc*/
 /*E*/db2=db2+size*(long)(sizeof(nmbrString));
     return (nmbrTempAllocStack[g_nmbrTempAllocStackTop-1]);
   } else {
-    /* 11-Jul-2014 WL old code deleted */
-    /*
-    for (i=g_nmbrStartTempAllocStack; i < g_nmbrTempAllocStackTop; i++) {
-/@E@/db2=db2-(nmbrLen(nmbrTempAllocStack[i])+1)*(long)(sizeof(nmbrString));
-      poolFree(nmbrTempAllocStack[i]);
-    }
-    */
-    /* 11-Jul-2014 WL new code */
     while(g_nmbrTempAllocStackTop != g_nmbrStartTempAllocStack) {
 /*E*/db2=db2-(nmbrLen(nmbrTempAllocStack[g_nmbrTempAllocStackTop-1])+1)
 /*E*/                                              *(long)(sizeof(nmbrString));
       poolFree(nmbrTempAllocStack[--g_nmbrTempAllocStackTop]);
     }
-    /* end of 11-Jul-2014 WL new code */
     g_nmbrTempAllocStackTop=g_nmbrStartTempAllocStack;
     return (0);
   }
@@ -843,14 +786,13 @@ void nmbrMakeTempAlloc(nmbrString *s)
 }
 
 
-void nmbrLet(nmbrString **target,nmbrString *source)
 /* nmbrString assignment */
 /* This function must ALWAYS be called to make assignment to */
 /* a nmbrString in order for the memory cleanup routines, etc. */
 /* to work properly.  If a nmbrString has never been assigned before, */
 /* it is the user's responsibility to initialize it to NULL_NMBRSTRING (the */
 /* null string). */
-{
+void nmbrLet(nmbrString **target,nmbrString *source) {
   long targetLength,sourceLength;
   long targetAllocLen;
   long poolDiff;
@@ -859,11 +801,9 @@ void nmbrLet(nmbrString **target,nmbrString *source)
   targetLength=nmbrLen(*target);  /* Save its actual length */
   targetAllocLen=nmbrAllocLen(*target); /* Save target's allocated length */
 /*E*/if (targetLength) {
-/*E*/  /* printf("Deleting %s\n",cvtMToVString(*target,0)); */
 /*E*/  db3 = db3 - (targetLength+1)*(long)(sizeof(nmbrString));
 /*E*/}
 /*E*/if (sourceLength) {
-/*E*/  /* printf("Adding %s\n",cvtMToVString(source,0)); */
 /*E*/  db3 = db3 + (sourceLength+1)*(long)(sizeof(nmbrString));
 /*E*/}
   if (targetAllocLen) {
@@ -908,7 +848,6 @@ void nmbrLet(nmbrString **target,nmbrString *source)
                             We are replacing a smaller string with a larger one;
                             assume it is growing, and allocate twice as much as
                             needed. */
-        /*if (!*target) outOfMemory("#107 (nmbrString)");*/ /*???Unnec. w/ poolMalloc*/
         nmbrCpy(*target,source);
 
         /* Memory pool handling */
@@ -947,11 +886,9 @@ void nmbrLet(nmbrString **target,nmbrString *source)
     if (sourceLength) { /* target is 0 length, source is not */
       *target=poolMalloc((sourceLength + 1) * (long)(sizeof(nmbrString)));
                         /* Allocate new space */
-      /* if (!*target) outOfMemory("#108 (nmbrString)"); */ /*???Unnec. w/ poolMalloc*/
       nmbrCpy(*target,source);
 /*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("k0d: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
     } else {    /* source and target are both 0 length */
-      /* *target= NULL_NMBRSTRING; */ /* Redundant */
 /*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("k0e: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
     }
   }
@@ -1047,7 +984,7 @@ void nmbrZapLen(nmbrString *s, long length) {
 
 /* Copy a string to another (pre-allocated) string */
 /* Dangerous for general purpose use */
-void nmbrCpy(nmbrString *s,nmbrString *t)
+void nmbrCpy(nmbrString *s, nmbrString *t)
 {
   long i;
   i = 0;
@@ -1062,7 +999,7 @@ void nmbrCpy(nmbrString *s,nmbrString *t)
 /* Copy a string to another (pre-allocated) string */
 /* Like strncpy, only the 1st n characters are copied. */
 /* Dangerous for general purpose use */
-void nmbrNCpy(nmbrString *s,nmbrString *t,long n)
+void nmbrNCpy(nmbrString *s, nmbrString *t, long n)
 {
   long i;
   i = 0;
@@ -1080,7 +1017,7 @@ void nmbrNCpy(nmbrString *s,nmbrString *t,long n)
    and 0 otherwise. */
 /* Only the token is compared.  The whiteSpace string is
    ignored. */
-int nmbrEq(nmbrString *s,nmbrString *t)
+int nmbrEq(nmbrString *s, nmbrString *t)
 {
   long i;
   if (nmbrLen(s) != nmbrLen(t)) return 0; /* Speedup */
@@ -1130,7 +1067,7 @@ nmbrString *nmbrLeft(nmbrString *sin,long n)
 }
 
 /* Extract after character n */
-nmbrString *nmbrRight(nmbrString *sin,long n)
+nmbrString *nmbrRight(nmbrString *sin, long n)
 {
   /*??? We could just return &sin[n-1], but this is safer for debugging. */
   nmbrString *sout;
@@ -1140,7 +1077,7 @@ nmbrString *nmbrRight(nmbrString *sin,long n)
   if (n > i) return (NULL_NMBRSTRING);
   sout = nmbrTempAlloc(i - n + 2);
   nmbrCpy(sout, &sin[n - 1]);
-  return (sout);
+  return sout;
 }
 
 
@@ -1157,11 +1094,11 @@ nmbrString *nmbrSpace(long n)
     j++;
   }
   sout[j] = *NULL_NMBRSTRING; /* End of string */
-  return (sout);
+  return sout;
 }
 
 /* Search for string2 in string1 starting at start_position */
-long nmbrInstr(long start_position,nmbrString *string1,
+long nmbrInstr(long start_position, nmbrString *string1,
   nmbrString *string2)
 {
    long ls1, ls2, i, j;
@@ -1184,7 +1121,7 @@ long nmbrInstr(long start_position,nmbrString *string1,
 /* Warning:  This has 'let' inside of it and is not safe for use inside
    of 'let' statements.  (To make it safe, it must be rewritten to expand
    the 'mid' and remove the 'let'.) */
-long nmbrRevInstr(long start_position,nmbrString *string1,
+long nmbrRevInstr(long start_position, nmbrString *string1,
     nmbrString *string2)
 {
    long ls1, ls2;
@@ -1238,14 +1175,12 @@ vstring nmbrCvtMToVString(nmbrString *s)
 
 
 /* Converts proof to a vstring with one space between tokens */
-/* 11-Sep-2016 nm Allow it to tolerate garbage entries for debugging */
 vstring nmbrCvtRToVString(nmbrString *proof,
-    /* 25-Jan-2016 */
     flag explicitTargets, /* 1 = "target=source" for /EXPLICIT proof format */
     long statemNum) /* used only if explicitTargets=1 */
 {
   long i, j, plen, maxLabelLen, maxLocalLen, step, stmt;
-  long maxTargetLabelLen; /* 25-Jan-2016 nm */
+  long maxTargetLabelLen;
   vstring proofStr = "";
   vstring tmpStr = "";
   vstring ptr;
@@ -1266,7 +1201,6 @@ vstring nmbrCvtRToVString(nmbrString *proof,
 
   plen = nmbrLen(proof);
 
-  /* 25-Jan-2016 nm */
   if (explicitTargets == 1) {
     /* Get the list of targets for /EXPLICIT format */
     if (statemNum <= 0) bug(1388);
@@ -1284,7 +1218,7 @@ vstring nmbrCvtRToVString(nmbrString *proof,
   /* Collect local labels */
   /* Also, find longest statement label name */
   maxLabelLen = 0;
-  maxTargetLabelLen = 0; /* 25-Jan-2016 nm */
+  maxTargetLabelLen = 0;
   for (step = 0; step < plen; step++) {
     stmt = proof[step];
     if (stmt <= -1000) {
@@ -1294,7 +1228,6 @@ vstring nmbrCvtRToVString(nmbrString *proof,
       }
     } else {
 
-      /* 11-Sep-2016 nm */
       if (stmt < 1 || stmt > g_statements) {
         maxLabelLen = 100; /* For safety */
         maxTargetLabelLen = 100; /* For safety */
@@ -1308,7 +1241,6 @@ vstring nmbrCvtRToVString(nmbrString *proof,
       }
     }
 
-    /* 25-Jan-2016 nm */
     if (explicitTargets == 1) {
       /* Also consider longest target label name */
       stmt = targetHyps[step];
@@ -1328,7 +1260,7 @@ vstring nmbrCvtRToVString(nmbrString *proof,
   /* Preallocate the string for speed (the "2" accounts for a space and a
      colon). */
   let(&proofStr, space(plen * (2 + maxLabelLen
-      + ((explicitTargets == 1) ? maxTargetLabelLen + 1 : 0)  /* 25-Jan-2016 */
+      + ((explicitTargets == 1) ? maxTargetLabelLen + 1 : 0)
                                           /* The "1" accounts for equal sign */
       + maxLocalLen)));
   ptr = proofStr;
@@ -1339,29 +1271,21 @@ vstring nmbrCvtRToVString(nmbrString *proof,
         stmt = -1000 - stmt;
             /* Change stmt to the step number a local label refers to */
         let(&tmpStr, cat(
-
-            /* 25-Jan-2016 nm */
             ((explicitTargets == 1) ? g_Statement[targetHyps[step]].labelName : ""),
             ((explicitTargets == 1) ? "=" : ""),
-
             str((double)(localLabelNames[stmt])), " ", NULL));
 
-      /* 11-Sep-2016 nm */
       } else if (stmt != -(long)'?') {
         let(&tmpStr, cat("??", str((double)stmt), " ", NULL)); /* For safety */
 
       } else {
         if (stmt != -(long)'?') bug(1391); /* Must be an unknown step */
         let(&tmpStr, cat(
-
-            /* 25-Jan-2016 nm */
             ((explicitTargets == 1) ? g_Statement[targetHyps[step]].labelName : ""),
             ((explicitTargets == 1) ? "=" : ""),
-
             chr(-stmt), " ", NULL));
       }
 
-    /* 11-Sep-2016 nm */
     } else if (stmt < 1 || stmt > g_statements) {
       let(&tmpStr, cat("??", str((double)stmt), " ", NULL)); /* For safety */
 
@@ -1385,11 +1309,8 @@ vstring nmbrCvtRToVString(nmbrString *proof,
         nextLocLabNum++; /* Prepare for next local label */
       }
       let(&tmpStr, cat(tmpStr,
-
-          /* 25-Jan-2016 nm */
           ((explicitTargets == 1) ? g_Statement[targetHyps[step]].labelName : ""),
           ((explicitTargets == 1) ? "=" : ""),
-
           g_Statement[stmt].labelName, " ", NULL));
     }
     j = (long)strlen(tmpStr);
@@ -1414,11 +1335,10 @@ vstring nmbrCvtRToVString(nmbrString *proof,
 }
 
 
-nmbrString *nmbrGetProofStepNumbs(nmbrString *reason)
-{
-  /* This function returns a nmbrString of length of reason with
-     step numbers assigned to tokens which are steps, and 0 otherwise.
-     The returned string is allocated; THE CALLER MUST DEALLOCATE IT. */
+/* This function returns a nmbrString of length of reason with
+   step numbers assigned to tokens which are steps, and 0 otherwise.
+   The returned string is allocated; THE CALLER MUST DEALLOCATE IT. */
+nmbrString *nmbrGetProofStepNumbs(nmbrString *reason) {
   nmbrString *stepNumbs = NULL_NMBRSTRING;
   long rlen, start, end, i, step;
 
@@ -1490,8 +1410,7 @@ nmbrString *nmbrExtractVars(nmbrString *m)
   v[0] = *NULL_NMBRSTRING;
   j = 0; /* Length of output string */
   for (i = 0; i < length; i++) {
-    /*if (m[i] < 0 || m[i] >= g_mathTokens) {*/
-    /* Changed >= to > because tokenNum=g_mathTokens is used by mmveri.c for
+    /* Use > because tokenNum=g_mathTokens is used by mmveri.c for
        dummy token */
     if (m[i] < 0 || m[i] > g_mathTokens) bug(1328);
     if (g_MathToken[m[i]].tokenType == (char)var_) {
@@ -1722,9 +1641,7 @@ nmbrString *nmbrUnsquishProof(nmbrString *proof)
    startingLevel = 0. */
 /* ???Optimization:  remove nmbrString calls and use static variables
    to communicate to recursive calls */
-nmbrString *nmbrGetIndentation(nmbrString *proof,
-  long startingLevel)
-{
+nmbrString *nmbrGetIndentation(nmbrString *proof, long startingLevel) {
   long plen, stmt, pos, splen, hyps, i, j;
   char type;
   nmbrString *indentationLevel = NULL_NMBRSTRING;
@@ -1773,8 +1690,7 @@ nmbrString *nmbrGetIndentation(nmbrString *proof,
    function calls itself recursively. */
 /* ???Optimization:  remove nmbrString calls and use static variables
    to communicate to recursive calls */
-nmbrString *nmbrGetEssential(nmbrString *proof)
-{
+nmbrString *nmbrGetEssential(nmbrString *proof) {
   long plen, stmt, pos, splen, hyps, i, j;
   char type;
   nmbrString *essentialFlags = NULL_NMBRSTRING;
@@ -1833,8 +1749,7 @@ nmbrString *nmbrGetEssential(nmbrString *proof)
    statemNum is the statement being proved. */
 /* ???Optimization:  remove nmbrString calls and use static variables
    to communicate to recursive calls */
-nmbrString *nmbrGetTargetHyp(nmbrString *proof, long statemNum)
-{
+nmbrString *nmbrGetTargetHyp(nmbrString *proof, long statemNum) {
   long plen, stmt, pos, splen, hyps, i, j;
   char type;
   nmbrString *targetHyp = NULL_NMBRSTRING;
@@ -1913,16 +1828,12 @@ vstring compressProof(nmbrString *proof, long statemNum,
   nmbrString *localLabelFlags = NULL_NMBRSTRING;
   long hypLabels, assertionLabels, localLabels;
   long plen, step, stmt, labelLen, lab, numchrs;
-  /* long thresh, newnumchrs, newlab; */ /* 15-Oct-05 nm No longer used */
   long i, j, k;
-  /* flag breakFlag; */ /* 15-Oct-05 nm No longer used */
-  /* char c; */ /* 15-Oct-05 nm No longer used */
   long lettersLen, digitsLen;
   static char *digits = "0123456789";
   static char *letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
   static char labelChar = ':';
 
-  /* 27-Dec-2013 nm Variables for new algorithm */
   nmbrString *explList = NULL_NMBRSTRING;
   long explLabels;
   nmbrString *explRefCount = NULL_NMBRSTRING;
@@ -2014,9 +1925,6 @@ vstring compressProof(nmbrString *proof, long statemNum,
   /* To obtain the old algorithm, we simply skip the new label re-ordering */
   if (oldCompressionAlgorithm) goto OLD_ALGORITHM;
 
-
-  /* 27-Dec-2013 nm */
-  /************ New algorithm to sort labels according to usage ***********/
 
   /* This algorithm, based on an idea proposed by Mario Carneiro, sorts
      the explicit labels so that the most-used labels occur first, optimizing
@@ -2154,7 +2062,7 @@ vstring compressProof(nmbrString *proof, long statemNum,
           explWorth /*array of worths*/,
           explWidth /*maxSize*/,
           explIncluded /*itemIncluded return values*/);
-      /*if (j == 0) bug(1383);*/ /* j=0 is legal when it can't fit any labels
+      /* j=0 is legal when it can't fit any labels
          on the rest of the line (such as if the line only has 1 space left
          i.e. explWidth=1) */
       if (j < 0) bug(1383);
@@ -2203,8 +2111,6 @@ vstring compressProof(nmbrString *proof, long statemNum,
      reordered */
   nmbrLet(&assertionList, newExplList);
 
-  /********************** End of new algorithm ****************************/
-
 
  OLD_ALGORITHM:
   /* Combine all label lists */
@@ -2231,7 +2137,7 @@ vstring compressProof(nmbrString *proof, long statemNum,
         /* CPU-intensive bug check; enable only if required: */
         /* if (outputAllocated != (long)strlen(output)) bug(1348); */
         if (output[outputAllocated - 1] == 0 ||
-            output[outputAllocated] != 0) bug(1348); /* 13-Oct-05 nm */
+            output[outputAllocated] != 0) bug(1348);
       }
       output[outputLen] = '?';
       outputLen++;
@@ -2243,26 +2149,7 @@ vstring compressProof(nmbrString *proof, long statemNum,
     lab--; /* labelList array starts at 0, not 1 */
 
     /* Determine the # of chars in the compressed label */
-    /* 15-Oct-05 nm - Obsolete (skips from YT to UVA, missing UUA) */
-    /*
-    numchrs = 1;
-    if (lab > lettersLen - 1) {
-      / * It requires a numeric prefix * /
-      i = lab / lettersLen;
-      while(i) {
-        numchrs++;
-        if (i > digitsLen) {
-          i = i / digitsLen;
-        } else {
-          i = 0; / * MSB is sort of 'mod digitsLen+1' since
-                                a blank is the MSB in the case of one
-                                fewer characters in the label * /
-        }
-      }
-    }
-    */
-
-    /* 15-Oct-05 nm - A corrected algorithm was provided by Marnix Klooster. */
+    /* A corrected algorithm was provided by Marnix Klooster. */
     /* For encoding we'd get (starting with n, counting from 1):
         * start with the empty string
         * prepend (n-1) mod 20 + 1 as character using 1->'A' .. 20->'T'
@@ -2288,39 +2175,10 @@ vstring compressProof(nmbrString *proof, long statemNum,
       /* CPU-intensive bug check; enable only if required: */
       /* if (outputAllocated != (long)strlen(output)) bug(1350); */
       if (output[outputAllocated - 1] == 0 ||
-          output[outputAllocated] != 0) bug(1350); /* 13-Oct-05 nm */
+          output[outputAllocated] != 0) bug(1350);
     }
     outputLen = outputLen + numchrs;
 
-    /* 15-Oct-05 nm - Obsolete (skips from YT to UVA, missing UUA) */
-    /*
-    j = lab;
-    for (i = 0; i < numchrs; i++) { / * Create from LSB to MSB * /
-      if (!i) {
-        c = letters[j % lettersLen];
-        j = j / lettersLen;
-      } else {
-        if (j > digitsLen) {
-          c = digits[j % digitsLen];
-          j = j / digitsLen;
-        } else {
-          c = digits[j - 1]; / * MSB is sort of 'mod digitsLen+1' since
-                                a blank is the MSB in the case of one
-                                fewer characters in the label * /
-        }
-      }
-      output[outputLen - i - 1] = c;
-    } / * Next i * /
-    */
-
-    /* 15-Oct-05 nm - A corrected algorithm was provided by Marnix Klooster. */
-    /* For encoding we'd get (starting with n, counting from 1):
-        * start with the empty string
-        * prepend (n-1) mod 20 + 1 as character using 1->'A' .. 20->'T'
-        * n := (n-1) div 20
-        * while n > 0:
-           * prepend (n-1) mod 5 + 1 as character using 1->'U' .. 5->'Y'
-           * n := (n-1) div 5 */
     j = lab + 1; /* lab starts at 0, not 1 */
     i = 1;
     output[outputLen - i] = letters[(j - 1) % lettersLen];
@@ -2368,9 +2226,6 @@ vstring compressProof(nmbrString *proof, long statemNum,
   nmbrLet(&assertionList, NULL_NMBRSTRING);
   nmbrLet(&localList, NULL_NMBRSTRING);
   nmbrLet(&localLabelFlags, NULL_NMBRSTRING);
-
-  /* Deallocate arrays for new algorithm */  /* 27-Dec-2013 nm */
-
   nmbrLet(&explList, NULL_NMBRSTRING);
   nmbrLet(&explRefCount, NULL_NMBRSTRING);
   nmbrLet(&labelRefCount, NULL_NMBRSTRING);
@@ -2386,7 +2241,6 @@ vstring compressProof(nmbrString *proof, long statemNum,
 } /* compressProof */
 
 
-/* Added 11-Sep-2016 nm */
 /* Compress the input proof, create the ASCII compressed proof,
    and return its size in bytes. */
 /* TODO: call this in MINIMIZE_WITH in metamath.c */
@@ -2425,31 +2279,20 @@ pntrString *pntrTempAlloc(long size)
   /* When "size" is >0, "size" instances of pntrString are allocated. */
   /* When "size" is 0, all memory previously allocated with this */
   /* function is deallocated, down to g_pntrStartTempAllocStack. */
-  /* int i; */   /* 11-Jul-2014 WL old code deleted */
   if (size) {
     if (g_pntrTempAllocStackTop>=(M_MAX_ALLOC_STACK-1))
       /*??? Fix to allocate more */
       outOfMemory("#109 (pntrString stack array)");
     if (!(pntrTempAllocStack[g_pntrTempAllocStackTop++]=poolMalloc(size
         *(long)(sizeof(pntrString)))))
-      /* outOfMemory("#110 (pntrString stack)"); */ /*???Unnec. w/ poolMalloc*/
 /*E*/db2=db2+(size)*(long)(sizeof(pntrString));
     return (pntrTempAllocStack[g_pntrTempAllocStackTop-1]);
   } else {
-    /* 11-Jul-2014 WL old code deleted */
-    /*
-    for (i=g_pntrStartTempAllocStack; i < g_pntrTempAllocStackTop; i++) {
-/@E@/db2=db2-(pntrLen(pntrTempAllocStack[i])+1)*(long)(sizeof(pntrString));
-      poolFree(pntrTempAllocStack[i]);
-    }
-    */
-    /* 11-Jul-2014 WL new code */
     while(g_pntrTempAllocStackTop != g_pntrStartTempAllocStack) {
 /*E*/db2=db2-(pntrLen(pntrTempAllocStack[g_pntrTempAllocStackTop-1])+1)
 /*E*/                                              *(long)(sizeof(pntrString));
       poolFree(pntrTempAllocStack[--g_pntrTempAllocStackTop]);
     }
-    /* end of 11-Jul-2014 WL new code */
     g_pntrTempAllocStackTop=g_pntrStartTempAllocStack;
     return (0);
   }
@@ -2459,8 +2302,7 @@ pntrString *pntrTempAlloc(long size)
 /* Make string have temporary allocation to be released by next pntrLet() */
 /* Warning:  after pntrMakeTempAlloc() is called, the pntrString may NOT be
    assigned again with pntrLet() */
-void pntrMakeTempAlloc(pntrString *s)
-{
+void pntrMakeTempAlloc(pntrString *s) {
     if (g_pntrTempAllocStackTop>=(M_MAX_ALLOC_STACK-1)) {
       printf(
       "*** FATAL ERROR ***  Temporary pntrString stack overflow in pntrMakeTempAlloc()\n");
@@ -2477,14 +2319,13 @@ void pntrMakeTempAlloc(pntrString *s)
 }
 
 
-void pntrLet(pntrString **target,pntrString *source)
 /* pntrString assignment */
 /* This function must ALWAYS be called to make assignment to */
 /* a pntrString in order for the memory cleanup routines, etc. */
 /* to work properly.  If a pntrString has never been assigned before, */
 /* it is the user's responsibility to initialize it to NULL_PNTRSTRING (the */
 /* null string). */
-{
+void pntrLet(pntrString **target,pntrString *source) {
   long targetLength,sourceLength;
   long targetAllocLen;
   long poolDiff;
@@ -2542,7 +2383,6 @@ void pntrLet(pntrString **target,pntrString *source)
                             We are replacing a smaller string with a larger one;
                             assume it is growing, and allocate twice as much as
                             needed. */
-        /*if (!*target) outOfMemory("#111 (pntrString)");*/ /*???Unnec. w/ poolMalloc*/
         pntrCpy(*target,source);
 
         /* Memory pool handling */
@@ -2581,11 +2421,9 @@ void pntrLet(pntrString **target,pntrString *source)
     if (sourceLength) { /* target is 0 length, source is not */
       *target=poolMalloc((sourceLength + 1) * (long)(sizeof(pntrString)));
                         /* Allocate new space */
-      /* if (!*target) outOfMemory("#112 (pntrString)"); */ /*???Unnec. w/ poolMalloc*/
       pntrCpy(*target,source);
 /*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("k0d: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
     } else {    /* source and target are both 0 length */
-      /* *target= NULL_PNTRSTRING; */ /* Redundant */
 /*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("k0e: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
     }
   }
@@ -2597,8 +2435,8 @@ void pntrLet(pntrString **target,pntrString *source)
 
 
 
-pntrString *pntrCat(pntrString *string1,...) /* String concatenation */
-{
+/* String concatenation */
+pntrString *pntrCat(pntrString *string1,...) {
   va_list ap;   /* Declare list incrementer */
   pntrString *arg[M_MAX_CAT_ARGS];        /* Array to store arguments */
   long argLength[M_MAX_CAT_ARGS];       /* Array to store argument lengths */
@@ -3048,54 +2886,9 @@ vstring getDescription(long statemNum) {
   let(&description, edit(seg(description, p1 + 2, p2 - 1),
       8 + 128 /* discard leading and trailing blanks */));
   return description;
-
-  /* 3-May-2017 nm Old code may have been somewhat faster, but it doesn't
-     work when g_Statement[statemNum].labelSectionChanged */
-  /************* deleted *******
-  char @fbPtr; /@ Source buffer pointer @/
-  vstring description = "";
-  char @startDescription;
-  char @endDescription;
-  char @startLabel;
-
-  fbPtr = g_Statement[statemNum].mathSectionPtr;
-  if (!fbPtr[0]) return (description);
-  startLabel = g_Statement[statemNum].labelSectionPtr;
-  if (!startLabel[0]) return (description);
-  endDescription = NULL;
-  while (1) { /@ Get end of embedded comment @/
-    if (fbPtr <= startLabel) break;
-    if (fbPtr[0] == '$' && fbPtr[1] == ')') {
-      endDescription = fbPtr;
-      break;
-    }
-    fbPtr--;
-  }
-  if (!endDescription) return (description); /@ No embedded comment @/
-  while (1) { /@ Get start of embedded comment @/
-    if (fbPtr < startLabel) bug(216);
-    if (fbPtr[0] == '$' && fbPtr[1] == '(') {
-      startDescription = fbPtr + 2;
-      break;
-    }
-    fbPtr--;
-  }
-  let(&description, space(endDescription - startDescription));
-  memcpy(description, startDescription,
-      (size_t)(endDescription - startDescription));
-  if (description[endDescription - startDescription - 1] == '\n') {
-    /@ Trim trailing new line @/
-    let(&description, left(description, endDescription - startDescription - 1));
-  }
-  /@ Discard leading and trailing blanks @/
-  let(&description, edit(description, 8 + 128));
-  return (description);
-  *********** end of 3-May-2017 deletion *****/
-
 } /* getDescription */
 
 
-/* 24-Aug-2020 nm */
 /* Returns the label section of a statement with all comments except the
    last removed.  Unlike getDescription, this function returns the comment
    surrounded by $( and $) as well as the leading indentation space
@@ -3106,7 +2899,7 @@ vstring getDescription(long statemNum) {
 vstring getDescriptionAndLabel(long stmt) {
   vstring descriptionAndLabel = "";
   long p1, p2;
-  flag dontUseComment = 0; /* 12-Sep-2020 nm */
+  flag dontUseComment = 0;
 
   let(&descriptionAndLabel, space(g_Statement[stmt].labelSectionLen));
   memcpy(descriptionAndLabel, g_Statement[stmt].labelSectionPtr,
@@ -3132,28 +2925,17 @@ vstring getDescriptionAndLabel(long stmt) {
       || instr(1, descriptionAndLabel, cat("\n", SMALL_DECORATION, NULL)) != 0
       || instr(1, descriptionAndLabel, cat("\n", BIG_DECORATION, NULL)) != 0
       || instr(1, descriptionAndLabel, cat("\n", HUGE_DECORATION, NULL)) != 0) {
-    /*let(&descriptionAndLabel, "");*/
-    dontUseComment = 1; /* 12-Sep-2020 nm */
+    dontUseComment = 1;
   }
   /* Remove comments with file inclusion markup */
   if (instr(1, descriptionAndLabel, "$[") != 0) {
-    /*let(&descriptionAndLabel, "");*/
-    dontUseComment = 1; /* 12-Sep-2020 nm */
+    dontUseComment = 1;
   }
 
   /* Remove comments with $j markup */
   if (instr(1, descriptionAndLabel, "$j") != 0) {
-    /*let(&descriptionAndLabel, "");*/
-    dontUseComment = 1; /* 12-Sep-2020 nm */
+    dontUseComment = 1;
   }
-
-  /****** deleted 12-Sep-2020
-  /@ If the cleaned description is empty, e.g. ${ after a header,
-     add in spaces corresponding to the scope @/
-  if (descriptionAndLabel[0] == 0) {
-    let(&descriptionAndLabel, space(2 * (g_Statement[stmt].scope + 1)));
-  }
-  *******/
 
   if (dontUseComment == 1) {
     /* Get everything that follows the comment */
@@ -3164,39 +2946,6 @@ vstring getDescriptionAndLabel(long stmt) {
 
   return descriptionAndLabel;
 } /* getDescriptionAndLabel */
-
-
-/**** Deleted 12-Sep-2020 nm
-/@ 24-Aug-2020 nm @/
-/@ Reconstruct the full header from the strings returned by
-   getSectionHeadings().  The caller should deallocate the returned string. @/
-/@ getSectionHeadings() currently return strings extracted from headers,
-   but not the full header needed for writeExtractedSource().  Maybe we
-   should have it return the full header in the future, but for now this
-   function reconstructs the full header. @/
-vstring buildHeader(vstring header, vstring hdrComment, vstring decoration) {
-  long i;
-  vstring fullDecoration = "";
-  vstring fullHeader = "";
-  /@ The HUGE_DECORATION etc. have only the 1st 4 chars of the full line.
-     Build the full line. @/
-  let(&fullDecoration, "");
-  for (i = 1; i <= 5; i++) {
-    let(&fullDecoration, cat(fullDecoration, decoration, decoration,
-        decoration, decoration, NULL));
-  }
-  let(&fullDecoration, left(fullDecoration, 79));
-  i = (long)strlen(hdrComment);
-  let(&fullHeader, cat("\n\n$(\n", fullDecoration, "\n",
-      space((79 - (long)strlen(header))/2), header, "\n", fullDecoration,
-      "\n", hdrComment,
-      (i == 0) ? "$)\n" :
-          (hdrComment[i - 1] == ' ') ? "$)\n" : "\n$)\n",
-      NULL));
-  let(&fullDecoration, "");
-  return fullHeader;
-} /@ buildHeader @/
-*******/
 
 
 /* Returns 0 or 1 to indicate absence or presence of an indicator in
@@ -3216,12 +2965,6 @@ flag getMarkupFlag(long statemNum, flag mode) {
   static vstring proofFlags = "";  /* Y if proof discouragement, else N */
   static vstring usageFlags = "";  /* Y if usage discouragement, else N */
   vstring str1 = "";
-  /* These are global in mmdata.h
-#define PROOF_DISCOURAGED_MARKUP "(Proof modification is discouraged.)"
-#define USAGE_DISCOURAGED_MARKUP "(New usage is discouraged.)"
-  extern vstring g_proofDiscouragedMarkup;
-  extern vstring g_usageDiscouragedMarkup;
-  */
 
   if (mode == RESET) { /* Deallocate */ /* Should be called by ERASE command */
     let(&commentSearchedFlags, "");
@@ -3252,8 +2995,7 @@ flag getMarkupFlag(long statemNum, flag mode) {
   if (statemNum < 1 || statemNum > g_statements) bug(1392);
 
   if (commentSearchedFlags[statemNum] == 'N') {
-    if (g_Statement[statemNum].type == f_
-        || g_Statement[statemNum].type == e_ /* 24-May-2016 nm */ ) {
+    if (g_Statement[statemNum].type == f_ || g_Statement[statemNum].type == e_) {
       /* Any comment before a $f, $e statement is assumed irrelevant */
       proofFlags[statemNum] = 'N';
       usageFlags[statemNum] = 'N';
@@ -3286,8 +3028,6 @@ flag getMarkupFlag(long statemNum, flag mode) {
 } /* getMarkupFlag */
 
 
-/* 7-Nov-2015 nm */
-
 /* Extract contributor or date from statement description per the
    following mode argument:
 
@@ -3319,21 +3059,8 @@ flag getMarkupFlag(long statemNum, flag mode) {
    It should be called whenever the labelSection is changed e.g. by
    SAVE PROOF.  The empty string is returned.
 */
-/* 3-May-2017 nm Changed to return a single result each call, to allow
-   expandability in the future */
 /* The caller must deallocate the returned string. */
 vstring getContrib(long stmtNum, char mode) {
-
-/******** deleted 3-May-2017
-flag getContrib(long stmtNum,
-    vstring @contributor, vstring @contribDate,
-    vstring @reviser, vstring @reviseDate,
-    vstring @shortener, vstring @shortenDate,
-    vstring @mostRecentDate, /@ The most recent of all 3 dates @/
-    flag printErrorsFlag,
-    flag mode /@ 0 == RESET = reset, 1 = normal @/ /@ 2-May-2017 nm @/) {
-*******/
-  /* 2-May-2017 nm */
   /* For speedup, the algorithm searches a statement's comment for markup
      matches only the first time, then saves the result for subsequent calls
      for that statement. */
@@ -3373,12 +3100,10 @@ flag getContrib(long stmtNum,
 #define SHORTEN_MATCH " (Proof shortened by "
 #define END_MATCH ".) "
 
-  /* 3-May-2017 nm */
   if (mode == GC_ERROR_CHECK_SILENT || mode == GC_ERROR_CHECK_PRINT) {
     errorCheckFlag = 1;
   }
 
-  /* 2-May-2017 nm */
   if (mode == GC_RESET) {
     /* This is normally called by the ERASE command only */
     if (init != 0) {
@@ -3414,7 +3139,6 @@ flag getContrib(long stmtNum,
     return "";
   }
 
-  /* 3-May-2017 nm */
   if (mode == GC_RESET_STMT) {
     /* This should be called whenever the labelSection is changed e.g. by
        SAVE PROOF. */
@@ -3494,10 +3218,6 @@ flag getContrib(long stmtNum,
     } else {
       /* The contributorList etc. are already initialized to the empty
          string, so we don't have to assign them here. */
-      /*
-      let((vstring *)(&(contributorList[stmtNum])), "");
-      let((vstring *)(&(contribDateList[stmtNum])), "");
-      */
     }
 
     rStart = 0;
@@ -3523,11 +3243,6 @@ flag getContrib(long stmtNum,
           seg(description, rStart, rMid - 2));
       let((vstring *)(&(reviseDateList[stmtNum])),
           seg(description, rMid + 1, rEnd - 1));
-    } else {
-      /* redundant; already done by init
-      let((vstring *)(&(reviserList[stmtNum])), "");
-      let((vstring *)(&(reviseDateList[stmtNum])), "");
-      */
     }
 
     sStart = 0;
@@ -3553,15 +3268,10 @@ flag getContrib(long stmtNum,
           seg(description, sStart, sMid - 2));
       let((vstring *)(&(shortenDateList[stmtNum])),
          seg(description, sMid + 1, sEnd - 1));
-    } else {
-      /* redundant; already done by init
-      let((vstring *)(&(shortenerList[stmtNum])), "");
-      let((vstring *)(&(shortenDateList[stmtNum])), "");
-      */
     }
 
 
-    /* 13-Dec-2016 nm Get the most recent date */
+    /* Get the most recent date */
     let((vstring *)(&(mostRecentDateList[stmtNum])),
         (vstring)(contribDateList[stmtNum]));
     /* Note that compareDate() treats empty string as earliest date */
@@ -3576,7 +3286,7 @@ flag getContrib(long stmtNum,
           (vstring)(shortenDateList[stmtNum]));
     }
 
-    /* 2-May-2017 nm Tag the cache entry as updated */
+    /* Tag the cache entry as updated */
     commentSearchedFlags[stmtNum] = 'Y';
   } /* commentSearchedFlags[stmtNum] == 'N' || errorCheckFlag == 1 */
 
@@ -3881,7 +3591,6 @@ flag getContrib(long stmtNum,
 } /* getContrib */
 
 
-/* 4-Nov-2015 nm */
 /* Extract up to 2 dates after a statement's proof.  If no date is present,
    date1 will be blank.  If no 2nd date is present, date2 will be blank.
    THIS WILL BECOME OBSOLETE WHEN WE START TO USE DATES IN THE
@@ -3913,7 +3622,6 @@ void getProofDate(long stmtNum, vstring *date1, vstring *date2) {
 } /* getProofDate */
 
 
-/* 4-Nov-2015 nm */
 /* Get date, month, year fields from a dd-mmm-yyyy date string,
    where dd may be 1 or 2 digits, mmm is 1st 3 letters of month,
    and yyyy is 2 or 4 digits.  A 1 is returned if an error was detected. */
@@ -3939,7 +3647,6 @@ flag parseDate(vstring dateStr, long *dd, long *mmm, long *yyyy) {
 } /* parseDate */
 
 
-/* 4-Nov-2015 nm */
 /* Build date from numeric fields.  mmm should be a number from 1 to 12.
    There is no error-checking. */
 void buildDate(long dd, long mmm, long yyyy, vstring *dateStr) {
@@ -3949,13 +3656,11 @@ void buildDate(long dd, long mmm, long yyyy, vstring *dateStr) {
 } /* buildDate */
 
 
-/* 4-Nov-2015 nm */
 /* Compare two dates in the form dd-mmm-yyyy.  -1 = date1 < date2,
    0 = date1 = date2,  1 = date1 > date2.  There is no error checking. */
 flag compareDates(vstring date1, vstring date2) {
   long d1, m1, y1, d2, m2, y2, dd1, dd2;
 
-  /* 13-Dec-2016 nm */
   /* If a date is the empty string, treat it as being _before_ any other
      date */
   if (date1[0] == 0 || date2[0] == 0) {
@@ -4009,7 +3714,6 @@ int qsortStringCmp(const void *p1, const void *p2)
   }
 }
 
-/* 4-May-2017 Ari Ferrera */
 void freeData() {
   /* 15-Aug-2020 nm TODO: are some of these called twice? (in eraseSource) */
   free(g_IncludeCall);

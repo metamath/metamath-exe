@@ -22,15 +22,13 @@
 #include "mmveri.h"
 #include "mmwtex.h" /* For g_htmlVarColor,... */
 #include "mmpfas.h"
-#include "mmunif.h" /* 26-Sep-2010 nm For g_bracketMatchInit, g_minSubstLen */
-                    /* 1-Oct-2017 nm ...and g_firstConst */
+#include "mmunif.h" /* For g_bracketMatchInit, g_minSubstLen,
+                       ...and g_firstConst */
 
-/* 12-Nov-2018 nm */
 /* Local prototypes */
 vstring bigAdd(vstring bignum1, vstring bignum2);
 vstring bigSub(vstring bignum1, vstring bignum2);
 
-/* vstring mainFileName = ""; */ /* 28-Dec-05 nm Obsolete */
 flag g_printHelp = 0;
 
 /* For HTML output */
@@ -72,11 +70,11 @@ void typeStatement(long showStmt,
   flag q1, q2;
   flag type;
   flag subType;
-  vstring htmlDistinctVars = ""; /* 12/23/01 */
-  char htmlDistinctVarsCommaFlag = 0; /* 12/23/01 */
-  vstring str4 = ""; /* 10/10/02 */
-  vstring str5 = ""; /* 19-Sep-2012 nm */
-  long distVarGrps = 0;  /* 11-Aug-2006 nm */
+  vstring htmlDistinctVars = "";
+  char htmlDistinctVarsCommaFlag = 0;
+  vstring str4 = "";
+  vstring str5 = "";
+  long distVarGrps = 0;
 
   /* For syntax breakdown of definitions in HTML page */
   long zapStatement1stToken;
@@ -101,12 +99,10 @@ void typeStatement(long showStmt,
       printLongLine(cat(str1,
         "\"", g_Statement[showStmt].fileName,
         "\".",
-        /* 8-Feb-2007 nm Added HTML page info to SHOW STATEMENT ... /FULL */
         (g_Statement[showStmt].pinkNumber == 0) ?   /* !=0 means $a or $p */
            "" :
            cat("  Its statement number for HTML pages is ",
                str((double)(g_Statement[showStmt].pinkNumber)), ".", NULL),
-        /* 5-Aug-2020 nm Added mathbox user to SHOW STATEMENT ... /FULL */
         ((getMathboxUser(showStmt))[0] == 0) ?
            "" :
            cat("  It is in the mathbox for ", getMathboxUser(showStmt), ".",
@@ -178,7 +174,7 @@ void typeStatement(long showStmt,
     if (!str1[0] /* No comment */) {
       print2("?Warning: Statement \"%s\" has no comment\n",
           g_Statement[showStmt].labelName);
-      /* 14-Sep-2010 nm We must print a blank comment to have \begin{lemma} */
+      /* We must print a blank comment to have \begin{lemma} */
       if (texFlag && !htmlFlg && !g_oldTexFlag) {
         let(&str1, "TO DO: PUT DESCRIPTION HERE");
       }
@@ -187,21 +183,8 @@ void typeStatement(long showStmt,
       if (!texFlag) {
         printLongLine(cat("\"", str1, "\"", NULL), "", " ");
       } else {
-        /* 10/10/02 This is now done in mmwtex.c printTexComment */
-        /* Although it will affect the 2nd (and only other) call to
-           printTexComment below, that call is obsolete and there should
-           be no side effect. */
-        /*******
-        if (htmlFlg && texFlag) {
-          let(&str1, cat("<CENTER><B>Description: </B>", str1,
-              "</CENTER><BR>", NULL));
-        }
-        *******/
         if (!htmlFlg) {  /* LaTeX */
           if (!g_oldTexFlag) {
-            /* 14-Sep-2010 */
-
-            /* 1-May-2017 nm */
             /* Distinguish axiom, definition, theorem */
             /* Note: changes here must be mirrored in the \end{...} below */
             if (g_Statement[showStmt].type == a_) {
@@ -216,36 +199,24 @@ void typeStatement(long showStmt,
             let(&str1, cat("\\begin{", str3, "}\\label{",
                 left(str3, 3), ":",
                 g_Statement[showStmt].labelName, "} ", str1, NULL));
-            /* old code before 1-May-2017:
-            let(&str1, cat("\\begin{lemma}\\label{lem:",
-                g_Statement[showStmt].labelName, "} ", str1, NULL));
-            */
-
           } else {
-            /* 6-Dec-03 Add separation space between theorems */
+            /* Add separation space between theorems */
             let(&str1, cat("\n\\vspace{1ex} %2\n\n", str1, NULL));
           }
         }
         /* printTexComment(str1, 1); */
-        /* 17-Nov-2015 nm Add 3rd & 4th arguments */
         printTexComment(str1,              /* Sends result to g_texFilePtr */
             1, /* 1 = htmlCenterFlag */
-            PROCESS_EVERYTHING, /* actionBits */ /* 13-Dec-2018 nm */
+            PROCESS_EVERYTHING, /* actionBits */
             0  /* 1 = noFileCheck */);
       }
     }
   }
   if (commentOnlyFlag && !briefFlag) goto returnPoint;
 
-  if ((briefFlag && !texFlag) ||
-       (htmlFlg && texFlag) /* HTML page 12/23/01 */) {
+  if ((briefFlag && !texFlag) || (htmlFlg && texFlag)) {
     /* In BRIEF mode screen output, show $d's */
-    /* This section was added 8/31/99 */
 
-    /* 12/23/01 - added algorithm to HTML pages also; the string to print out
-       is stored in htmlDistinctVars for later printing */
-
-    /* 12/23/01 */
     if (htmlFlg && texFlag) {
       let(&htmlDistinctVars, "");
       htmlDistinctVarsCommaFlag = 0;
@@ -272,17 +243,14 @@ void typeStatement(long showStmt,
         if (!nmbrElementIn(1, nmbrDDList, nmbrTmpPtr1[k]) &&
             !nmbrElementIn(1, nmbrDDList, nmbrTmpPtr2[k])) {
           /* No, so close out the current list */
-          if (!(htmlFlg && texFlag)) { /* 12/23/01 */
+          if (!(htmlFlg && texFlag)) {
             if (k == 0) let(&str1, "$d");
             else let(&str1, cat(str1, " $.  $d", NULL));
           } else {
-
-            /* 12/23/01 */
             let(&htmlDistinctVars, cat(htmlDistinctVars, " &nbsp; ",
                 NULL));
             htmlDistinctVarsCommaFlag = 0;
-            distVarGrps++;  /* 11-Aug-2006 nm */
-
+            distVarGrps++;
           }
           nmbrLet(&nmbrDDList, NULL_NMBRSTRING);
         }
@@ -353,7 +321,6 @@ void typeStatement(long showStmt,
                 NULL));
           } else {
 
-            /* 12/23/01 */
             if (htmlDistinctVarsCommaFlag) {
               let(&htmlDistinctVars, cat(htmlDistinctVars, ",", NULL));
             }
@@ -372,19 +339,14 @@ void typeStatement(long showStmt,
         let(&str1, cat(str1, " $.", NULL));
         printLongLine(str1, "  ", " ");
       } else {
-
-        /* 12/23/01 */
         /* (do nothing) */
-        /*let(&htmlDistinctVars, cat(htmlDistinctVars, "<BR>", NULL));*/
-
       }
     } /* if i(#$d's) > 0 */
   }
 
-  if (briefFlag || texFlag /*(texFlag && htmlFlg)*/) { /* 6-Dec-03 */
+  if (briefFlag || texFlag) {
     /* For BRIEF mode, print $e hypotheses (only) before statement */
     /* Also do it for HTML output */
-    /* 6-Dec-03  For the LaTeX output, now print hypotheses before statement */
     j = nmbrLen(g_Statement[showStmt].reqHypList);
     k = 0;
     for (i = 0; i < j; i++) {
@@ -392,7 +354,6 @@ void typeStatement(long showStmt,
       if (g_Statement[g_Statement[showStmt].reqHypList[i]].type
         == (char)e_) k++;
 
-      /* Added 5/26/03 */
       /* For syntax definitions, also include $f hypotheses so user can more
          easily match them in syntax breakdowns of axioms and definitions */
       if (subType == SYNTAX && (texFlag && htmlFlg)) {
@@ -420,7 +381,6 @@ void typeStatement(long showStmt,
         k = g_Statement[showStmt].reqHypList[i];
         if (g_Statement[k].type != (char)e_
 
-            /* Added 5/26/03 */
             /* For syntax definitions, include $f hypotheses so user can more
                easily match them in syntax breakdowns of axioms & definitions */
             && !(subType == SYNTAX && (texFlag && htmlFlg)
@@ -443,7 +403,7 @@ void typeStatement(long showStmt,
           /* texFlag was (misleadingly) included below to facilitate search
              for "htmlFlg && texFlag". */
           if (!(htmlFlg && texFlag)) {
-            if (!g_oldTexFlag) {  /* 14-Sep-2010 nm */
+            if (!g_oldTexFlag) {
               /* Do nothing */
             } else {
               let(&str3, space((long)strlen(str2)));
@@ -482,7 +442,6 @@ void typeStatement(long showStmt,
   } else {
     if (!(htmlFlg && texFlag)) {  /* really !htmlFlg & texFlag */
       if (!g_oldTexFlag) {
-        /* 14-Sep-2010 nm new LaTeX code: */
         g_outputToString = 1;
         print2("\\begin{align}\n");
         let(&str3, "");
@@ -495,7 +454,6 @@ void typeStatement(long showStmt,
               g_Statement[showStmt].labelName,
               "}",
 
-              /* 1-May-2017 nm */
               /* Add "\tag{..}" to use .mm labels instead of equation numbers */
               /* (Suggested by Ari Ferrera) */
               "\\tag{",
@@ -507,7 +465,6 @@ void typeStatement(long showStmt,
         print2("\\end{align}\n");
 
 
-        /* 1-May-2017 nm */
         /* Distinguish axiom, definition, theorem for LaTeX */
         /* Note: changes here must be mirrored in the \begin{...} above */
         if (g_Statement[showStmt].type == a_) {
@@ -520,9 +477,6 @@ void typeStatement(long showStmt,
           let(&str3, "theorem");
         }
         print2("%s\n", cat("\\end{", str3, "}", NULL));
-        /* old code before 1-May-2017:
-        print2("\\end{lemma}\n");
-        */
 
         fprintf(g_texFilePtr, "%s", g_printString);
         let(&g_printString, "");
@@ -564,47 +518,37 @@ void typeStatement(long showStmt,
       /* 6-Dec-03  This is not really needed but keeps output consistent
          with previous version.  It puts a blank line before the HTML
          "distinct variable" list. */
-      if (texFlag && htmlFlg) { /* 6-Dec-03 */
+      if (texFlag && htmlFlg) {
         g_outputToString = 1;
         print2("\n");
         g_outputToString = 0;
       }
 
-      /*if (!(htmlFlg && texFlag)) {*/
-      if (!texFlag) {  /* 6-Dec-03 fix */
+      if (!texFlag) {
         print2("Its mandatory hypotheses in RPN order are:\n");
       }
-      /*if (texFlag) g_outputToString = 0;*/ /* 6-Dec-03 */
       j = nmbrLen(g_Statement[showStmt].reqHypList);
       for (i = 0; i < j; i++) {
         k = g_Statement[showStmt].reqHypList[i];
         if (g_Statement[k].type != (char)e_ && (!htmlFlg && texFlag))
-          continue; /* 9/2/99 Don't put $f's in LaTeX output */
+          continue;
         let(&str2, cat("  ",g_Statement[k].labelName,
             " $", chr(g_Statement[k].type), " ", NULL));
         if (!texFlag) {
           printLongLine(cat(str2,
               nmbrCvtMToVString(g_Statement[k].mathString), " $.", NULL),
               "      "," ");
-        } else {
-          if (!(htmlFlg && texFlag)) {  /* LaTeX */
-            /*let(&str3, space((long)strlen(str2)));*/ /* 6-Dec-03 */
-            /* This clears out g_printString */
-            /*printTexLongMath(g_Statement[k].mathString,
-                str2, str3, 0, 0);*/ /* 6-Dec-03 */
-          }
         }
       }
       /* 6-Dec-03  This is not really needed but keeps output consistent
          with previous version.  It puts a blank line before the HTML
          "distinct variable" list. */
-      if (texFlag && htmlFlg) { /* 6-Dec-03 */
+      if (texFlag && htmlFlg) {
         g_outputToString = 1;
         print2("\n");
         g_outputToString = 0;
       }
-      /*if (j == 0 && !(htmlFlg && texFlag)) print2("  (None)\n");*/
-      if (j == 0 && !texFlag) print2("  (None)\n"); /* 6-Dec-03 fix */
+      if (j == 0 && !texFlag) print2("  (None)\n");
       let(&str1, "");
       nmbrTmpPtr1 = g_Statement[showStmt].reqDisjVarsA;
       nmbrTmpPtr2 = g_Statement[showStmt].reqDisjVarsB;
@@ -639,7 +583,6 @@ void typeStatement(long showStmt,
            "Its optional hypotheses are:  ",
             nmbrCvtRToVString(
             g_Statement[showStmt].optHypList,
-                /* 25-Jan-2016 nm */
                 0, /*explicitTargets*/
                 0 /*statemNum, used only if explicitTargets*/), NULL),
             "      "," ");
@@ -650,13 +593,6 @@ void typeStatement(long showStmt,
       if (i && type == p_) {
         if (!texFlag) {
           let(&str1, "");
-        } else {
-          if (htmlFlg && texFlag) {
-            /*  12/1/01 don't output dummy variables
-            let(&str1, cat(str1,
-            " &nbsp; (Dummy variables for use in proof:) ", NULL));
-            */
-          }
         }
         for (k = 0; k < i; k++) {
           if (!texFlag) {
@@ -672,19 +608,7 @@ void typeStatement(long showStmt,
         }
       } /* if (i && type == p_) */
 
-      /* Before 12/23/01 **********
-           Future: once stable, take out redundant code producing str1
-      if (texFlag && htmlFlg && str1[0]) {
-        g_outputToString = 1;
-        printLongLine(cat("<CENTER>Substitutions into these variable",
-            " pairs may not have variables in common: ",
-            str1, "</CENTER>", NULL), "", " ");
-        g_outputToString = 0;
-      }
-      ***********/
 
-
-      /* 12/23/01 */
       if (texFlag && htmlFlg) { /* It's a web page */
 
         if (htmlDistinctVars[0] != 0) {
@@ -693,22 +617,19 @@ void typeStatement(long showStmt,
               "<CENTER>",
               "<A HREF=\"",
 
-              /* 26-Aug-2017 nm */
               /* g_htmlHome is set by htmlhome in $t comment */
               (instr(1, g_htmlHome, "mmset.html") > 0) ?
                   "mmset.html" :
                   /* The following link will work in the NF and other
                      "Proof Explorers" */
-                  "../mpeuni/mmset.html",  /* 19-Aug-2017, 26-Sep-2017 nm */
+                  "../mpeuni/mmset.html",
 
               "#distinct\">Distinct variable</A> group",
-              /* 11-Aug-2006 nm Determine whether "group" or "groups". */
-              distVarGrps > 1 ? "s" : "",  /* 11-Aug-2006 */
+              distVarGrps > 1 ? "s" : "",
               ": ",
-              /* 14-Jan-2016 nm Put a span around the variable list to localize
+              /* Put a span around the variable list to localize
                  the use of the special math font for ALT_HTML */
               (g_altHtmlFlag ? cat("<SPAN ", g_htmlFont, ">", NULL) : ""),
-                                                 /* 14-Jan-2016 nm */
               htmlDistinctVars,
               (g_altHtmlFlag ? "</SPAN>" : ""),
               "</CENTER>",
@@ -716,33 +637,10 @@ void typeStatement(long showStmt,
           g_outputToString = 0;
         }
 
-        /* 26-Aug-2017 nm Moved this down into proof section */
-        /*
-        /@ 13-Aug-2017 nm @/
-        let(&str3, "");
-        if (type == p_) {
-          str3 = htmlDummyVars(showStmt);
-          if (str3[0] != 0) {
-            g_outputToString = 1;
-            /@ We don't need <BR> if code is surrounded by <CENTER>...</CENTER>
-            if (htmlDistinctVars[0] != 0) print2("<BR>\n");
-            @/
-            /@ Print the list of dummy variables @/
-            printLongLine(str3, "", "\"");
-            g_outputToString = 0;
-          }
-        }
-        /@ (end of 13-Aug-2017) @/
-        */
-
-        /* 4-Jan-2014 nm */
         let(&str2, "");
         str2 = htmlAllowedSubst(showStmt);
         if (str2[0] != 0) {
           g_outputToString = 1;
-          /* We don't need <BR> if code is surrounded by <CENTER>...</CENTER>
-          if (htmlDistinctVars[0] != 0 || str3[0] != 0) print2("<BR>\n");
-          */
           /* Print the list of allowed free variables */
           printLongLine(str2, "", "\"");
           g_outputToString = 0;
@@ -754,10 +652,6 @@ void typeStatement(long showStmt,
         g_outputToString = 1;
         if (htmlFlg && texFlag) print2("<HR NOSHADE SIZE=1>\n");
         g_outputToString = 0; /* Restore normal output */
-        /* will be done automatically at closing
-        fprintf(g_texFilePtr, "%s", g_printString);
-        let(&g_printString, "");
-        */
         break; /* case a_ or p_ */
       }
       let(&str1, nmbrCvtMToVString(
@@ -789,10 +683,6 @@ void typeStatement(long showStmt,
   } /* End switch(type) */
   if (texFlag) {
     g_outputToString = 0;
-    /* will be done automatically at closing
-    fprintf(g_texFilePtr, "%s", g_printString);
-    let(&g_printString, "");
-    */
   }
 
   /* Start of finding definition for syntax statement */
@@ -847,8 +737,6 @@ void typeStatement(long showStmt,
                     NULL), "", "\"");
               }
 
-              /* 10/10/02 Moved here from mmwtex.c */
-              /*print2("<FONT SIZE=-1 FACE=sans-serif>Colors of variables:\n");*/
               printLongLine(cat(
                   "<CENTER><TABLE CELLSPACING=7><TR><TD ALIGN=LEFT><FONT SIZE=-1>",
                   "<B>Colors of variables:</B> ",
@@ -902,9 +790,8 @@ void typeStatement(long showStmt,
             showStmt /*statemNum*/, 0 /*maxEDepth*/,
             0, /*step:  0 = step 1 */ /*For messages*/
             0,  /*not noDistinct*/
-            /* 3-May-2016 nm */
             2, /* override discouraged-usage statements silently */
-            1 /* Always allow other mathboxes */ /* 5-Aug-2020 nm */
+            1 /* Always allow other mathboxes */
             );
 
         if (nmbrLen(nmbrTmpPtr2)) {
@@ -917,7 +804,6 @@ void typeStatement(long showStmt,
           if (strcmp(g_Statement[showStmt].proofSectionPtr, "")) bug(231);
           if (g_Statement[showStmt].proofSectionLen != 0) bug(232);
           let(&str1, nmbrCvtRToVString(nmbrTmpPtr2,
-                /* 25-Jan-2016 nm */
                 0, /*explicitTargets*/
                 0 /*statemNum, used only if explicitTargets*/));
           /* Temporarily zap proof into the $a statement */
@@ -937,7 +823,7 @@ void typeStatement(long showStmt,
               0 /*reverseFlag*/,
               1 /*noIndentFlag*/,
               0 /*splitColumn*/,
-              0 /*skipRepeatedSteps*/,  /* 28-Jun-2013 nm */
+              0 /*skipRepeatedSteps*/,
               1 /*texFlag*/,  /* Means either latex or html */
               1 /*htmlFlg*/);
 
@@ -950,7 +836,6 @@ void typeStatement(long showStmt,
           nmbrLet(&nmbrTmpPtr2, NULL_NMBRSTRING);
 
         } else { /* if (nmbrLen(nmbrTmpPtr2)) else */
-          /* 5-Aug-2011 nm */
           /* Proof was not found - probable syntax error */
           if (g_outputToString != 0) bug(246);
           printLongLine(cat(
@@ -976,9 +861,9 @@ void typeStatement(long showStmt,
   /* End of finding definition for syntax statement */
 
 
-  /* 10/6/99 - Start of creating used-by list for html page */
+  /* Start of creating used-by list for html page */
   if (htmlFlg && texFlag) {
-    /* 10/25/02 Clear out any previous g_printString accumulation
+    /* Clear out any previous g_printString accumulation
        for g_printStringForReferencedBy case below */
     fprintf(g_texFilePtr, "%s", g_printString);
     let(&g_printString, "");
@@ -989,20 +874,11 @@ void typeStatement(long showStmt,
         definitions, axioms, and theorems, not syntax statements */
       let(&str1, "");
       g_outputToString = 0; /* Switch output to console in case
-            traceUsage reports an error */ /* 8-Dec-2018 nm */
+            traceUsage reports an error */
       str1 = traceUsage(showStmt,
           0, /* recursiveFlag */
           0 /* cutoffStmt */);
-      g_outputToString = 1; /* Restore output to string */ /* 8-Dec-2018 nm */
-      /* if (str1[0]) { */ /* Used by at least one */
-      /* 18-Jul-2015 nm */
-
-      /* 30-Oct-2018 nm Commented out, and block unindented: */
-      /*if (str1[0] == 'Y') {*/ /* Used by at least one */
-
-      /* 30-Oct-2018 nm */
-      /* We now output this all the time, using "(None)" if none, per
-         request of Benoit Jubin */
+      g_outputToString = 1; /* Restore output to string */
 
       /* str1[i] will be 'Y' if used by showStmt */
       /* Convert usage list str1 to html links */
@@ -1012,97 +888,11 @@ void typeStatement(long showStmt,
         case THEOREM: let(&str3, "theorem"); break;
         default: bug(233);
       }
-      /******* pre 10/10/02
-      let(&str2, cat("<FONT SIZE=-1 FACE=sans-serif>This ", str3,
-          " is referenced by: ", NULL));
-      *******/
-      /* 10/10/02 */
       let(&str2, cat("<TR><TD ALIGN=LEFT><FONT SIZE=-1><B>This ", str3,
           " is referenced by:</B>", NULL));
 
       if (str1[0] == 'Y') { /* Used by at least one */
-        /********* 18-Jul-2015 Deleted code *********************/
-        /*
-        /@ Convert str1 to trailing space after each label @/
-        let(&str1, cat(right(str1, 2), " ", NULL));
-        let(&str5, ""); /@ Buffer for very long strings @/ /@ 19-Sep-2012 nm @/
-        i = 0;
-        while (1) {
-          j = i + 1;
-          i = instr(j, str1, " ");
-          if (!i) break;
-          /@ Extract the label @/
-          let(&str3, seg(str1, j, i - 1));
-          /@ Find the statement number @/
-          m = lookupLabel(str3);
-          if (m < 0) {
-            /@ The lookup should never fail @/
-            bug(240);
-            continue;
-          }
-          /@ It should be a $p @/
-          if (g_Statement[m].type != p_) bug(241);
-          /@ Get the pink number @/
-          let(&str4, "");
-          str4 = pinkHTML(m);
-          /@ Assemble the href @/
-          let(&str2, cat(str2, " &nbsp;<A HREF=\"",
-              str3, ".html\">",
-              str3, "</A>", str4, NULL));
-          /@ 8-Aug-2008 nm If line is very long, print it out and reset
-             it to speed up program (SHOW STATEMENT syl/HTML is very slow) @/
-          /@ 8-Aug-2008 nm This doesn't solve problem, because the bottleneck
-             is printing g_printStringForReferencedBy below.  This whole
-             code section needs to be redesigned to solve the speed problem. @/
-          /@
-          if (strlen(str2) > 500) {
-            printLongLine(str2, "", "\"");
-            let(&str2, "");
-          }
-          @/
-          /@ 19-Sep-2012 nm Try again to fix SHOW STATEMENT syl/HTML speed
-             without a major rewrite @/
-          /@
-          Unfortunately, makes little difference.  Using lcc:
-          orig    real    1m6.676s
-          500     real    1m2.285s
-          3000    real    1m2.181s
-          3000    real    1m1.663s
-          3000    real    1m1.785s
-          5000    real    1m0.678s
-          5000    real    1m0.169s
-          5000    real    1m1.951s
-          5000    real    1m2.307s
-          5000    real    1m1.717s
-          7000    real    1m2.048s
-          7000    real    1m2.012s
-          7000    real    1m1.817s
-          10000   real    1m2.779s
-          10000   real    1m1.830s
-          20000   real    1m1.431s
-          50000   real    1m1.325s
-          100000  real    1m3.172s
-          100000  real    1m4.657s
-          (Added 17-Jul-2015: The 1 minute is probably due to the old
-              traceUsage algorithm that built a huge string of labels; should
-              be faster now.)
-          @/
-          /@ Accumulate large cat buffer when small cats exceed certain size @/
-          if (strlen(str2) > 5000) {
-            let(&str5, cat(str5, str2, NULL));
-            let(&str2, "");
-          }
-          /@ End 19-Sep-2012 @/
-        }
-        /@ let(&str2, cat(str2, "</FONT></TD></TR>", NULL)); @/ /@ old @/
-         /@ 19-Sep-2012 nm Include buffer in output string@/
-        let(&str2, cat(str5, str2, "</FONT></TD></TR>", NULL));
-        printLongLine(str2, "", "\"");
-        */
-        /**************** 18-Jul-2015 End of deleted code *********/
-
-
-        let(&str5, ""); /* Buffer for very long strings */ /* 19-Sep-2012 nm */
+        let(&str5, ""); /* Buffer for very long strings */
         /* Scan all future statements in str1 Y/N list */
         for (m = showStmt + 1; m <= g_statements; m++) {
           /* Scan the used-by map */
@@ -1118,7 +908,7 @@ void typeStatement(long showStmt,
           let(&str2, cat(str2, " &nbsp;<A HREF=\"",
               str3, ".html\">",
               /*str3, "</A>", str4, NULL));*/
-              str3, "</A>\n", str4, NULL));  /* 18-Jul-2015 nm */
+              str3, "</A>\n", str4, NULL));
           /* 8-Aug-2008 nm If line is very long, print it out and reset
              it to speed up program (SHOW STATEMENT syl/HTML is very slow) */
           /* 8-Aug-2008 nm This doesn't solve problem, because the bottleneck
@@ -1134,25 +924,21 @@ void typeStatement(long showStmt,
             let(&str5, cat(str5, str2, NULL));
             let(&str2, "");
           }
-          /* End 19-Sep-2012 */
         } /* next m (statement number) */
 
 
-      /* 30-Oct-2018 nm Added "else" clause to print "(None)" if no refs */
       } else {
         /* There is no usage of this statement; print "(None)" */
         let(&str5, "");
         let(&str2, cat(str2, " (None)", NULL));
 
       } /* if (str1[0] == 'Y') */
-      /* let(&str2, cat(str2, "</FONT></TD></TR>", NULL)); */ /* old */
-       /* 19-Sep-2012 nm Include buffer in output string*/
+      /* Include buffer in output string */
       let(&str2, cat(str5, str2, "</FONT></TD></TR>", NULL));
-      /*printLongLine(str2, "", "\"");*/ /* 18-Jul-2015 nm Deleted */
       if (g_printString[0]) {
-        bug(256);  /* 18-Jul-2015 nm */
+        bug(256);
       }
-      let(&g_printString, str2); /* 18-Jul-2015 nm */
+      let(&g_printString, str2);
     } /* if (subType != SYNTAX) */
     if (subType == THEOREM) {
       /* 10/25/02 The "referenced by" does not show up after the proof
@@ -1170,10 +956,10 @@ void typeStatement(long showStmt,
     /* Printing of the trailer in mmwtex.c will close out string later */
     g_outputToString = 0;
   } /* if (htmlFlg && texFlag) */
-  /* 10/6/99 - End of used-by list for html page */
+  /* End of used-by list for html page */
 
 
-  /* 10/25/02  Moved this to after the block above, so referenced statements
+  /* After the block above, so referenced statements
      show up first for convenience */
   if (htmlFlg && texFlag) {
     /*** Output the html proof for $p statements ***/
@@ -1192,7 +978,7 @@ void typeStatement(long showStmt,
           0 /*reverseFlag*/,
           1 /*noIndentFlag*/,
           0 /*splitColumn*/,
-          0 /*skipRepeatedSteps*/,  /* 28-Jun-2013 nm */
+          0 /*skipRepeatedSteps*/,
           1 /*texFlag*/,  /* Means either latex or html */
           1 /*htmlFlg*/);
     } /* if (g_Statement[showStmt].type == (char)p_) */
@@ -1215,7 +1001,6 @@ void typeStatement(long showStmt,
 
 
 
-/* 13-Aug-2017 nm */
 /* Get the HTML string of dummy variables used by a proof for the
    theorem's web page.  It should be called only if we're in
    HTML output mode i.e.  SHOW STATEMENT .../HTML or /ALT_HTML */
@@ -1239,7 +1024,6 @@ vstring htmlDummyVars(long showStmt)
   long dummyVar; /* Current variable in a $d; test if it's a dummy variable */
 
   /* This function should be called only for web page generation */
-  /*if (!(g_htmlFlag && texFlag)) bug(261);*/  /* texFlag is not global */
   if (!g_htmlFlag) bug(261);
 
   if (g_Statement[showStmt].type != p_) bug(262);
@@ -1316,7 +1100,6 @@ vstring htmlDummyVars(long showStmt)
         "<CENTER>",
          "<A HREF=\"",
 
-         /* 26-Aug-2017 nm */
          /* g_htmlHome is set by htmlhome in $t comment */
          (instr(1, g_htmlHome, "mmset.html") > 0) ?
              "mmset.html" :
@@ -1327,19 +1110,13 @@ vstring htmlDummyVars(long showStmt)
         "#dvnote1\">Dummy variable",
         /* Determine whether singular or plural */
         dummyVarCount > 1 ? "s" : "",
-        "</A> ",  /* 14-Aug-2017 nm */
-        /* 14-Jan-2016 nm Put a span around the variable list to localize
+        "</A> ",
+        /* Put a span around the variable list to localize
            the use of the special math font for ALT_HTML */
         (g_altHtmlFlag ? cat("<SPAN ", g_htmlFont, ">", NULL) : ""),
-                                           /* 14-Jan-2016 nm */
         htmlDummyVarList,
         (g_altHtmlFlag ? "</SPAN>" : ""),
-        /*
-        dummyVarCount > 1 ? " are assumed to be mutually distinct and"
-            : " is assumed to be",
-        */
-        dummyVarCount > 1 ? " are mutually distinct and"
-            : " is",
+        dummyVarCount > 1 ? " are mutually distinct and" : " is",
         " distinct from all other variables.",
         "</CENTER>",
         NULL));
@@ -1356,7 +1133,6 @@ vstring htmlDummyVars(long showStmt)
 
 
 
-/* 4-Jan-2014 nm */
 /* Get the HTML string of "allowed substitutions" list for an axiom
    or theorem's web page.  It should be called only if we're in
    HTML output mode i.e.  SHOW STATEMENT .../HTML or /ALT_HTML */
@@ -1389,7 +1165,6 @@ vstring htmlAllowedSubst(long showStmt)
   numReqHyps = nmbrLen(reqHyp);
 
   /* This function should be called only for web page generation */
-  /*if (!(g_htmlFlag && texFlag)) bug(250);*/  /* texFlag is not global */
   if (!g_htmlFlag) bug(250);
 
   if (g_Statement[showStmt].mathStringLen < 1) bug(254);
@@ -1400,7 +1175,6 @@ vstring htmlAllowedSubst(long showStmt)
   }
 
   if (numDVs == 0) {  /* Don't create a hint list if no $d's */
-    /*let(&htmlAllowedList, "(no restrictions)");*/
     goto RETURN_POINT;
   }
 
@@ -1507,20 +1281,18 @@ vstring htmlAllowedSubst(long showStmt)
     let(&htmlAllowedList, cat("<CENTER>",
         "<A HREF=\"",
 
-        /* 26-Aug-2017 nm */
         /* g_htmlHome is set by htmlhome in $t comment */
         (instr(1, g_htmlHome, "mmset.html") > 0) ?
             "mmset.html" :
             /* The following link will work in the NF and other
                "Proof Explorers" */
-            "../mpeuni/mmset.html",  /* 19-Aug-2017, 26-Sep-2017 nm */
+            "../mpeuni/mmset.html",
 
         "#allowedsubst\">Allowed substitution</A> hint",
         ((countInfo != 1) ? "s" : ""), ": ",
         (g_altHtmlFlag ? cat("<SPAN ", g_htmlFont, ">", NULL) : ""),
-                                           /* 14-Jan-2016 nm */
         htmlAllowedList,
-        (g_altHtmlFlag ? "</SPAN>" : ""),    /* 14-Jan-2016 nm */
+        (g_altHtmlFlag ? "</SPAN>" : ""),
         "</CENTER>", NULL));
   }
 
@@ -1553,9 +1325,9 @@ void typeProof(long statemNum,
   flag reverseFlag,
   flag noIndentFlag, /* Means Lemmon-style proof */
   long splitColumn, /* START_COLUMN */
-  flag skipRepeatedSteps, /* NO_REPEATED_STEPS */  /* 28-Jun-2013 nm */
+  flag skipRepeatedSteps, /* NO_REPEATED_STEPS */
   flag texFlag,
-  flag htmlFlg /* htmlFlg added 6/27/99 */
+  flag htmlFlg
   /* flag g_midiFlag - global to avoid changing many calls to typeProof() */
   )
 {
@@ -1618,8 +1390,8 @@ void typeProof(long statemNum,
   vstring userPrefix = "";
   vstring contPrefix = "";
   vstring statementUsedFlags = "";
-  vstring startStringWithNum = ""; /* 22-Apr-2015 nm */
-  vstring startStringWithoutNum = ""; /* 22-Apr-2015 nm */
+  vstring startStringWithNum = "";
+  vstring startStringWithoutNum = "";
   nmbrString *proof = NULL_NMBRSTRING;
   nmbrString *localLabels = NULL_NMBRSTRING;
   nmbrString *localLabelNames = NULL_NMBRSTRING;
@@ -1632,7 +1404,7 @@ void typeProof(long statemNum,
   nmbrString *relativeStepNums = NULL_NMBRSTRING; /* For unknownFlag */
   long maxLabelLen = 0;
   long maxStepNumLen = 1;
-  long maxStepNumOffsetLen = 0; /* 22-Apr-2015 nm */
+  long maxStepNumOffsetLen = 0;
   char type;
   flag stepPrintFlag;
   long fromStep, toStep, byStep;
@@ -1647,8 +1419,6 @@ void typeProof(long statemNum,
   nmbrString *nmbrTmpPtr1; /* Pointer only; not allocated directly */
   nmbrString *nmbrTmpPtr2; /* Pointer only; not allocated directly */
 
-  /* 31-Jan-2010 nm */
-  /* skipRepeatedSteps = 0; */ /* 28-Jun-2010 nm Now set by parameter */
   if (htmlFlg && texFlag) skipRepeatedSteps = 1; /* Keep old behavior */
   /* Comment out the following line if you want to revert to the old
      Lemmon-style behavior with local label references for reused compressed
@@ -1656,7 +1426,6 @@ void typeProof(long statemNum,
      the same steps and step numbers as the indented proof, rather than
      those on the HTML pages. */
   /* if (noIndentFlag) skipRepeatedSteps = 1; */
-           /* 28-Jun-2013 nm Now set by parameter */
 
   if (htmlFlg && texFlag) {
 
@@ -1666,7 +1435,6 @@ void typeProof(long statemNum,
     g_outputToString = 1; /* Flag for print2 to add to g_printString */
     if (essentialFlag) {
 
-      /* 26-Aug-2017 nm */
       /* See if there are dummy variables.  If so, print them below
          "Proof of Theorem", which means we have to make the "Proof of
          Theorem" line separate and not the table caption, so that the
@@ -1685,7 +1453,6 @@ void typeProof(long statemNum,
             MINT_BACKGROUND_COLOR);
         print2("SUMMARY=\"Proof of theorem\">\n");
       } else {
-      /* End of 26-Aug-2017 */
 
         /* For bobby.cast.org approval */
         print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=%s\n",
@@ -1718,17 +1485,11 @@ void typeProof(long statemNum,
         "<TR><TH>Step</TH><TH>Hyp</TH><TH>Ref\n");
     print2("</TH><TH>Expression</TH></TR>\n");
     g_outputToString = 0;
-    /* printTexLongMath in typeProof will do this
-    fprintf(g_texFilePtr, "%s", g_printString);
-    let(&g_printString, "");
-    */
   }
 
   if (!pipFlag) {
     parseProof(g_showStatement);
     if (g_WrkProof.errorSeverity > 1) {
-      /* 2-Nov-2014 nm Prevent population of g_printString outside of web
-         page generation to fix bug 1114 (reported by Sefan O'Rear). */
       if (htmlFlg && texFlag) {
         /* Print warning and close out proof table */
         g_outputToString = 1;
@@ -1736,7 +1497,6 @@ void typeProof(long statemNum,
       "<TD COLSPAN=4><B><FONT COLOR=RED>WARNING: Proof has a severe error.\n");
         print2("</FONT></B></TD></TR>\n");
         g_outputToString = 0;
-        /* 18-Nov-2012 nm Fix bug 243 */
         /* Clear out g_printStringForReferencedBy to prevent bug 243 above */
         let(&g_printStringForReferencedBy, "");
       }
@@ -1747,7 +1507,7 @@ void typeProof(long statemNum,
 
   if (!pipFlag) {
     nmbrLet(&proof, g_WrkProof.proofString); /* The proof */
-    if (g_midiFlag) { /* 8/28/00 */
+    if (g_midiFlag) {
       /* Get the uncompressed version of the proof */
       nmbrLet(&proof, nmbrUnsquishProof(proof));
     }
@@ -1756,17 +1516,14 @@ void typeProof(long statemNum,
   }
   plen = nmbrLen(proof);
 
-  /* 6/27/99 - to reduce the number of steps displayed in an html proof,
+  /* To reduce the number of steps displayed in an html proof,
      we will use a local label to reference the 2nd or later reference to a
      hypothesis, so the hypothesis won't have to be shown multiple times
-     in the proof.
-     31-Jan-2010 - do this for all Lemmon-style proofs */
+     in the proof. */
   if (htmlFlg && texFlag && !noIndentFlag /* Lemmon */) {
     /* Only Lemmon-style proofs are implemented for html */
     bug(218);
   }
-  /*if (htmlFlg && texFlag) {*/   /* pre-31-Jan-2010 */
-  /* 31-Jan-2010 nm Do this for all Lemmon-style proofs */
   if (skipRepeatedSteps) {
     for (step = 0; step < plen; step++) {
       stmt = proof[step];
@@ -1836,8 +1593,6 @@ void typeProof(long statemNum,
     if (renumberFlag && essentialFlag) {
       if (!essentialFlags[step]) stepPrintFlag = 0;
     }
-    /* if (htmlFlg && texFlag && proof[step] < 0) stepPrintFlag = 0; */
-    /* 31-Jan-2010 nm changed to: */
     if (skipRepeatedSteps && proof[step] < 0) stepPrintFlag = 0;
     /* For standard numbering, stepPrintFlag will be always be 1 here */
     if (stepPrintFlag) {
@@ -1847,17 +1602,12 @@ void typeProof(long statemNum,
     }
   }
 
-  /* 22-Apr-2015 nm */
   /* Get the relative offset (0, -1, -2,...) for unknown steps */
   if (unknownFlag) {
-    /* 21-Aug-2017 nm There could be unknown steps outside of MM-PA
+    /* There could be unknown steps outside of MM-PA
        So remove this bugcheck, which seems spurious.  I can't see that
        getRelStepNums() cares whether we are in MM-PA. */
-    /*
-    if (!pipFlag) {
-      bug(255);
-    }
-    */
+    /* if (!pipFlag) bug(255); */
     relativeStepNums = getRelStepNums(g_ProofInProgress.proof);
   }
 
@@ -1884,7 +1634,6 @@ void typeProof(long statemNum,
     i = i/10; /* The number is printed in base 10 */
     maxStepNumLen++;
   }
-  /* 22-Apr-2015 nm */
   /* Add extra space for negative offset numbers e.g. "3:-1" */
   if (unknownFlag) {
     maxStepNumOffsetLen = 3; /* :, -, # */
@@ -1936,9 +1685,7 @@ void typeProof(long statemNum,
   } /* Next step */
 
   /* Print the steps */
-  if (reverseFlag
-      && !g_midiFlag /* 8/28/00 */
-      ) {
+  if (reverseFlag && !g_midiFlag) {
     fromStep = plen - 1;
     toStep = -1;
     byStep = -1;
@@ -1970,14 +1717,12 @@ void typeProof(long statemNum,
       if (proof[step] != -(long)'?') stepPrintFlag = 0;
     }
 
-    /* 6/27/99 Skip steps that are local label references for html */
-    /* if (htmlFlg && texFlag) { */
-    /* 31-Jan-2010 nm changed to: */
+    /* Skip steps that are local label references for html */
     if (skipRepeatedSteps) {
       if (stepRenumber[step] == 0) stepPrintFlag = 0;
     }
 
-    /* 8/28/00 For MIDI files, ignore all qualifiers and process all steps */
+    /* For MIDI files, ignore all qualifiers and process all steps */
     if (g_midiFlag) stepPrintFlag = 1;
 
     if (!stepPrintFlag) continue;
@@ -1992,8 +1737,6 @@ void typeProof(long statemNum,
     if (stmt < 0) {
       if (stmt <= -1000) {
         stmt = -1000 - stmt;
-        /* if (htmlFlg && texFlag) bug(220); */
-        /* 31-Jan-2010 nm Changed to: */
         if (skipRepeatedSteps) bug(220); /* If html, a step referencing a
             local label will never be printed since it will be skipped above */
         /* stmt is now the step number a local label refers to */
@@ -2016,8 +1759,6 @@ void typeProof(long statemNum,
       if (nmbrElementIn(1, localLabels, step)) {
         /* This statement declares a local label */
         if (noIndentFlag) {
-          /* if (!(htmlFlg && texFlag)) { */
-          /* 31-Jan-2010 nm Changed to: */
           if (!(skipRepeatedSteps)) { /* No local label declaration is
               shown for html */
             let(&locLabDecl, cat("@", str((double)(localLabelNames[step])), ":", NULL));
@@ -2038,8 +1779,6 @@ void typeProof(long statemNum,
           if (!essentialFlag || g_Statement[hypPtr[hyp]].type == (char)e_) {
             i = stepRenumber[hypStep];
             if (i == 0) {
-              /* if (!(htmlFlg && texFlag)) bug(221); */
-              /* 31-Jan-2010 nm Changed to: */
               if (!(skipRepeatedSteps)) bug(221);
               if (proof[hypStep] != -(long)'?') {
                 if (proof[hypStep] > -1000) bug(222);
@@ -2121,7 +1860,6 @@ void typeProof(long statemNum,
         let(&contPrefix, space((long)strlen(startPrefix) + 4));
       } else {  /* not noIndentFlag */
 
-        /* 22-Apr-2015 nm */
         /* Compute prefix with and without step number.  For 'show new_proof
            /unknown', unknownFlag is set, and we add the negative offset. */
         let(&tmpStr, "");
@@ -2177,18 +1915,13 @@ void typeProof(long statemNum,
               space(maxLabelLen - (long)strlen(tgtLabel) - (long)strlen("=(User)")),
               NULL));
         }
-        /*
-        let(&contPrefix, space(maxStepNumLen + 1 + indentationLevel[step] *
-            PF_INDENT_INC
-            + maxLabelLen + 4));
-        */
         let(&contPrefix, ""); /* Continuation lines use whole screen width */
       }
 
       if (!pipFlag) {
 
         if (!texFlag) {
-          if (!g_midiFlag) { /* 8/28/00 */
+          if (!g_midiFlag) {
             printLongLine(cat(startPrefix," $", chr(type), " ",
                 nmbrCvtMToVString(g_WrkProof.mathStringPtrs[step]),
                 NULL),
@@ -2204,8 +1937,7 @@ void typeProof(long statemNum,
 
       } else { /* pipFlag */
         if (texFlag) {
-          /* nm 3-Feb-04  Added this bug check - it doesn't make sense to
-             do this and it hasn't been tested anyway */
+          /* It doesn't make sense to do this and it hasn't been tested anyway */
           print2("?Unsupported:  HTML or LaTeX proof for NEW_PROOF.\n");
           bug(244);
         }
@@ -2275,8 +2007,6 @@ void typeProof(long statemNum,
     g_outputToString = 1;
     print2("</TABLE></CENTER>\n");
 
-    /* 10/10/02 Moved here from mmwtex.c */
-    /*print2("<FONT SIZE=-1 FACE=sans-serif>Colors of variables:\n");*/
     printLongLine(cat(
         "<CENTER><TABLE CELLSPACING=5><TR><TD ALIGN=LEFT><FONT SIZE=-1>",
         "<B>Colors of variables:</B> ",
@@ -2341,11 +2071,10 @@ void typeProof(long statemNum,
                 g_Statement[g_Statement[statemNum].reqHypList[i]].mathString);
           }
           if (strcmp("|-", g_MathToken[nmbrTmpPtr1[0]].tokenName)) {
-            /* 1-Oct-05 nm Since non-standard logics may not have this,
+            /* Since non-standard logics may not have this,
                just break out of this section gracefully */
             nmbrTmpPtr2 = NULL_NMBRSTRING; /* To be known after break */
             break;
-            /* bug(235); */  /* 1-Oct-05 nm No longer a bug */
           }
           /* Turn "|-" assertion into a "wff" assertion */
           nmbrTmpPtr1[0] = wffToken;
@@ -2358,15 +2087,14 @@ void typeProof(long statemNum,
               statemNum /*statemNum*/, 0 /*maxEDepth*/,
               0, /* step; 0 = step 1 */ /*For messages*/
               0,  /*not noDistinct*/
-              /* 3-May-2016 nm */
               2, /* override discouraged-usage statements silently */
-              1 /* Always allow other mathboxes */ /* 5-Aug-2020 nm */
+              1 /* Always allow other mathboxes */
               );
           if (!nmbrLen(nmbrTmpPtr2)) {
-            /* 1-Oct-05 nm Since a proof may not be found for non-standard
+            /* Didn't find syntax proof */
+            /* Since a proof may not be found for non-standard
                logics, just break out of this section gracefully */
             break;
-            /* bug(236); */ /* Didn't find syntax proof */
           }
 
           /* Add to list of syntax statements used */
@@ -2398,7 +2126,7 @@ void typeProof(long statemNum,
           nmbrLet(&nmbrTmpPtr2, NULL_NMBRSTRING);
           nmbrLet(&nmbrTmpPtr1, NULL_NMBRSTRING);
         } /* next i */
-        /* 1-Oct-05 nm Deallocate memory in case we broke out above */
+        /* Deallocate memory in case we broke out above */
         nmbrLet(&nmbrTmpPtr2, NULL_NMBRSTRING);
         nmbrLet(&nmbrTmpPtr1, NULL_NMBRSTRING);
       } /* if (wffToken >= 0) */
@@ -2410,8 +2138,6 @@ void typeProof(long statemNum,
         if (statementUsedFlags[stmt] == 'Y') {
           if (!tmpStr[0]) {
             let(&tmpStr,
-               /* 10/10/02 */
-               /*"<FONT SIZE=-1><FONT FACE=sans-serif>Syntax hints:</FONT> ");*/
                "<TR><TD ALIGN=LEFT><FONT SIZE=-1><B>Syntax hints:</B> ");
           }
 
@@ -2431,7 +2157,7 @@ void typeProof(long statemNum,
                       ].tokenName, ")")
                   && strcmp(g_MathToken[(g_Statement[stmt].mathString)[i]
                       ].tokenName, ":")
-                  /* 14-Oct-2019 nm Use |-> rather than e. for cmpt, cmpt2 */
+                  /* Use |-> rather than e. for cmpt, cmpt2 */
                   && !(!strcmp(g_MathToken[(g_Statement[stmt].mathString)[i]
                       ].tokenName, "e.")
                       && (!strcmp(g_Statement[stmt].labelName, "cmpt")
@@ -2440,10 +2166,8 @@ void typeProof(long statemNum,
                 tmpStr1 =
                     tokenToTex(g_MathToken[(g_Statement[stmt].mathString)[i]
                     ].tokenName, stmt);
-                /* 14-Jan-2016 nm */
                 let(&tmpStr1, cat(
                     (g_altHtmlFlag ? cat("<SPAN ", g_htmlFont, ">", NULL) : ""),
-                                           /* 14-Jan-2016 nm */
                     tmpStr1,
                     (g_altHtmlFlag ? "</SPAN>" : ""),
                     NULL));
@@ -2456,7 +2180,7 @@ void typeProof(long statemNum,
             let(&tmpStr1, "<i> class class class </i>");
           if (!strcmp(g_Statement[stmt].labelName, "cv"))
             let(&tmpStr1, "[set variable]");
-          /* 10/10/02 Let's don't do cv - confusing to reader */
+          /* Let's don't do cv - confusing to reader */
           if (!strcmp(g_Statement[stmt].labelName, "cv"))
             continue;
           if (!strcmp(g_Statement[stmt].labelName, "co")) /* operation */
@@ -2466,11 +2190,6 @@ void typeProof(long statemNum,
 
           let(&tmpStr1, "");
           tmpStr1 = pinkHTML(stmt);
-          /******* 10/10/02
-          let(&tmpStr, cat(tmpStr, "<FONT FACE=sans-serif><A HREF=\"",
-              g_Statement[stmt].labelName, ".html\">",
-              g_Statement[stmt].labelName, "</A></FONT> &nbsp; ", NULL));
-          *******/
           let(&tmpStr, cat(tmpStr, "<A HREF=\"",
               g_Statement[stmt].labelName, ".html\">",
               g_Statement[stmt].labelName, "</A>", tmpStr1, NULL));
@@ -2486,27 +2205,13 @@ void typeProof(long statemNum,
       /* End of syntax hints list */
 
 
-      /* 10/25/02 Output "referenced by" list here */
-      /* 30-Oct-2018 nm Moved this block to after axioms/defs lists */
-      /*
-      if (g_printStringForReferencedBy[0]) {
-        /@ printLongLine takes 130 sec for 'sh st syl/a' @/
-        /@printLongLine(g_printStringForReferencedBy, "", "\"");@/
-        /@ 18-Jul-2015 nm Speedup for 'sh st syl/a' @/
-        if (g_outputToString != 1) bug(257);
-        let(&g_printString, cat(g_printString, g_printStringForReferencedBy, NULL));
-        let(&g_printStringForReferencedBy, "");
-      }
-      */
-
-
       /* Get list of axioms and definitions assumed by proof */
       let(&statementUsedFlags, "");
       traceProofWork(statemNum,
           1, /*essentialFlag*/
-          "", /*traceToList*/ /* 18-Jul-2015 nm */
-          &statementUsedFlags, /*&statementUsedFlags*/
-          &unprovedList /* &unprovedList */);
+          "", /*traceToList*/
+          &statementUsedFlags,
+          &unprovedList);
       if ((signed)(strlen(statementUsedFlags)) != g_statements + 1) bug(227);
 
       /* First get axioms */
@@ -2516,11 +2221,8 @@ void typeProof(long statemNum,
           let(&tmpStr1, left(g_Statement[stmt].labelName, 3));
           if (!strcmp(tmpStr1, "ax-")) {
             if (!tmpStr[0]) {
-              let(&tmpStr,
- /******* 10/10/02
- "<FONT SIZE=-1 FACE=sans-serif>The theorem was proved from these axioms: ");
- *******/
- "<TR><TD ALIGN=LEFT><FONT SIZE=-1><B>This theorem was proved from axioms:</B>");
+              let(&tmpStr, "<TR><TD ALIGN=LEFT><FONT SIZE=-1><B>"
+                "This theorem was proved from axioms:</B>");
             }
             let(&tmpStr1, "");
             tmpStr1 = pinkHTML(stmt);
@@ -2535,7 +2237,7 @@ void typeProof(long statemNum,
         printLongLine(tmpStr, "", "\"");
       }
 
-      /* 10/10/02 Then get definitions */
+      /* Then get definitions */
       let(&tmpStr, "");
       for (stmt = 1; stmt <= g_statements; stmt++) {
         if (statementUsedFlags[stmt] == 'Y' && g_Statement[stmt].type == a_) {
@@ -2590,21 +2292,13 @@ void typeProof(long statemNum,
 
       /* End of axiom list */
 
-      /* 30-Oct-2018 nm Moved down from above to put referenced by list last */
+      /* Put referenced by list last */
       if (g_printStringForReferencedBy[0]) {
-        /* printLongLine takes 130 sec for 'sh st syl/a' */
-        /*printLongLine(g_printStringForReferencedBy, "", "\"");*/
-        /* 18-Jul-2015 nm Speedup for 'sh st syl/a' */
         if (g_outputToString != 1) bug(257);
-        /* 30-Oct-2018 nm Deleted line: */
-        /*let(&g_printString, cat(g_printString, g_printStringForReferencedBy, NULL));*/
-        /* 30-Oct-2018 nm Added line: */
         printLongLine(g_printStringForReferencedBy, "", "\"");
         let(&g_printStringForReferencedBy, "");
-
-      /* 30-Oct-2018 nm */
       } else {
-        /* Since we now always print ref-by list even if "(None)",
+        /* Since we always print ref-by list even if "(None)",
            g_printStringForReferencedBy should never be empty */
         bug(263);
       }
@@ -2640,7 +2334,7 @@ void typeProof(long statemNum,
   nmbrLet(&essentialFlags, NULL_NMBRSTRING);
   nmbrLet(&stepRenumber, NULL_NMBRSTRING);
   nmbrLet(&notUnifiedFlags, NULL_NMBRSTRING);
-  nmbrLet(&relativeStepNums, NULL_NMBRSTRING); /* 22-Apr-2015 nm */
+  nmbrLet(&relativeStepNums, NULL_NMBRSTRING);
 } /* typeProof() */
 
 /* Show details of one proof step */
@@ -2990,7 +2684,7 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
     return;
   }
 
-  /* 20-Oct-2013 nm Don't use bad proofs (incomplete proofs are ok) */
+  /* Don't use bad proofs (incomplete proofs are ok) */
   if (parseProof(statemNum) > 1) {
     /* The proof has an error, so use the empty proof */
     nmbrLet(&proof, nmbrAddElement(NULL_NMBRSTRING, -(long)'?'));
@@ -3076,16 +2770,13 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
         if (!texFlag) {
           printLongLine(cat("\"", str1, "\"", NULL), "", " ");
         } else {
-          /* printTexComment(str1, 1); */
-          /* 17-Nov-2015 nm Added 3rd & 4th arguments */
           printTexComment(str1,              /* Sends result to g_texFilePtr */
               1, /* 1 = htmlCenterFlag */
-              PROCESS_EVERYTHING, /* actionBits */ /* 13-Dec-2018 nm */
+              PROCESS_EVERYTHING, /* actionBits */
               0 /* 1 = noFileCheck */);
         }
       }
 
-      /* print2("Its mandatory hypotheses in RPN order are:\n"); */
       j = nmbrLen(g_Statement[stmt].reqHypList);
       for (i = 0; i < j; i++) {
         k = g_Statement[stmt].reqHypList[i];
@@ -3139,13 +2830,12 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
 /* matchList suppresses all output except labels matching matchList */
 /* testOnlyFlag prevents any printout; it is used to determine whether
    there is an unwanted axiom for MINIMIZE_WITH /FORBID. */
-/* void traceProof(long statemNum, */ /* before 20-May-2013 */
-flag traceProof(long statemNum, /* 20-May-2013 nm */
+flag traceProof(long statemNum,
   flag essentialFlag,
   flag axiomFlag,
-  vstring matchList, /* 19-May-2013 nm */
-  vstring traceToList, /* 18-Jul-2015 nm */
-  flag testOnlyFlag /* 20-May-2013 nm */)
+  vstring matchList,
+  vstring traceToList,
+  flag testOnlyFlag)
 {
 
   long stmt, pos;
@@ -3157,7 +2847,7 @@ flag traceProof(long statemNum, /* 20-May-2013 nm */
   /* Make sure we're calling this with $p statements only */
   if (g_Statement[statemNum].type != (char)p_) bug(249);
 
-  if (!testOnlyFlag) {  /* 20-May-2013 nm */
+  if (!testOnlyFlag) {
     if (axiomFlag) {
       print2(
   "Statement \"%s\" assumes the following axioms ($a statements):\n",
@@ -3175,7 +2865,7 @@ flag traceProof(long statemNum, /* 20-May-2013 nm */
 
   traceProofWork(statemNum,
       essentialFlag,
-      traceToList, /* /TO argument of SHOW TRACE_BACK */ /* 18-Jul-2015 nm */
+      traceToList, /* /TO argument of SHOW TRACE_BACK */
       &statementUsedFlags,
       &unprovedList);
   if ((signed)(strlen(statementUsedFlags)) != g_statements + 1) bug(226);
@@ -3185,14 +2875,13 @@ flag traceProof(long statemNum, /* 20-May-2013 nm */
   for (stmt = 1; stmt < statemNum; stmt++) {
     if (statementUsedFlags[stmt] == 'Y') {
 
-      /* 19-May-2013 nm - Added MATCH qualifier */
       if (matchList[0]) {  /* There is a list to match */
         /* Don't include unmatched labels */
         if (!matchesList(g_Statement[stmt].labelName, matchList, '*', '?'))
           continue;
       }
 
-      /* 20-May-2013 nm  Skip rest of scan in testOnlyFlag mode */
+      /* Skip rest of scan in testOnlyFlag mode */
       foundFlag = 1; /* At least one label would be printed */
       if (testOnlyFlag) {
         goto TRACE_RETURN;
@@ -3214,7 +2903,7 @@ flag traceProof(long statemNum, /* 20-May-2013 nm */
     } /* End if (statementUsedFlag[stmt] == 'Y') */
   } /* Next stmt */
 
-  /* 20-May-2013 nm  Skip printing in testOnlyFlag mode */
+  /* Skip printing in testOnlyFlag mode */
   if (testOnlyFlag) {
     goto TRACE_RETURN;
   }
@@ -3252,7 +2941,7 @@ flag traceProof(long statemNum, /* 20-May-2013 nm */
    a nmbrString with a list of statements and unproved statements */
 void traceProofWork(long statemNum,
   flag essentialFlag,
-  vstring traceToList, /* /TO argument of SHOW TRACE_BACK */ /* 18-Jul-2015 nm */
+  vstring traceToList, /* /TO argument of SHOW TRACE_BACK */
   vstring *statementUsedFlagsP, /* 'Y'/'N' flag that statement is used */
   nmbrString **unprovedListP)
 {
@@ -3261,11 +2950,10 @@ void traceProofWork(long statemNum,
   nmbrString *statementList = NULL_NMBRSTRING;
   nmbrString *proof = NULL_NMBRSTRING;
   nmbrString *essentialFlags = NULL_NMBRSTRING;
-  vstring traceToFilter = ""; /* 18-Jul-2015 nm */
-  vstring str1 = ""; /* 18-Jul-2015 nm */
-  long j; /* 18-Jul-2015 nm */
+  vstring traceToFilter = "";
+  vstring str1 = "";
+  long j;
 
-  /* 18-Jul-2015 nm */
   /* Preprocess the "SHOW TRACE_BACK ... / TO" traceToList list if any */
   if (traceToList[0] != 0) {
     let(&traceToFilter, string(g_statements + 1, 'N')); /* Init. to 'no' */
@@ -3297,13 +2985,13 @@ void traceProofWork(long statemNum,
   slen = 1;
   nmbrLet(&(*unprovedListP), NULL_NMBRSTRING); /* List of unproved statements */
   let(&(*statementUsedFlagsP), string(g_statements + 1, 'N')); /* Init. to 'no' */
-  (*statementUsedFlagsP)[statemNum] = 'Y';  /* nm 22-Nov-2014 */
+  (*statementUsedFlagsP)[statemNum] = 'Y';
   for (pos = 0; pos < slen; pos++) {
     if (g_Statement[statementList[pos]].type != p_) {
       continue; /* Not a $p */
     }
 
-    /* 20-Oct-2013 nm Don't use bad proofs (incomplete proofs are ok) */
+    /* Don't use bad proofs (incomplete proofs are ok) */
     if (parseProof(statementList[pos]) > 1) {
       /* The proof has an error, so use the empty proof */
       nmbrLet(&proof, nmbrAddElement(NULL_NMBRSTRING, -(long)'?'));
@@ -3338,9 +3026,6 @@ void traceProofWork(long statemNum,
       }
       /* Add this statement to the statement list if not already in it */
       if ((*statementUsedFlagsP)[stmt] == 'N') {
-        /*(*statementUsedFlagsP)[stmt] = 'Y';*/  /* 18-Jul-2015 deleted */
-
-        /* 18-Jul-2015 nm */
         if (traceToList[0] == 0) {
           statementList[slen] = stmt;
           slen++;
@@ -3554,7 +3239,6 @@ double countSteps(long statemNum, flag essentialFlag)
   nmbrString *proof = NULL_NMBRSTRING;
   double stepCount; /* The total steps if fully expanded */
 
-  /* 12-Nov-2018 nm */
   static vstring *stmtBigCount; /* Unlimited precision stmtCount */
   vstring stepBigCount = ""; /* Unlimited precision stepCount */
   vstring tmpBig1 = "";
@@ -3574,7 +3258,6 @@ double countSteps(long statemNum, flag essentialFlag)
   if (!level) {
     stmtCount = malloc((sizeof(double) * ((size_t)g_statements + 1)));
     stmtBigCount = malloc((sizeof(vstring) * ((size_t)g_statements + 1)));
-                                                           /* 12-Nov-2018 nm */
     stmtNodeCount = malloc(sizeof(double) * ((size_t)g_statements + 1));
     stmtDist = malloc(sizeof(long) * ((size_t)g_statements + 1));
     stmtMaxPath = malloc(sizeof(long) * ((size_t)g_statements + 1));
@@ -3585,7 +3268,7 @@ double countSteps(long statemNum, flag essentialFlag)
         !stmtAveDist || !stmtProofLen || !stmtUsage) {
       print2("?Memory overflow.  Step count will be wrong.\n");
       if (stmtCount) free(stmtCount);
-      if (stmtBigCount) free(stmtBigCount); /* 12-Nov-2018 nm */
+      if (stmtBigCount) free(stmtBigCount);
       if (stmtNodeCount) free(stmtNodeCount);
       if (stmtDist) free(stmtDist);
       if (stmtMaxPath) free(stmtMaxPath);
@@ -3596,15 +3279,15 @@ double countSteps(long statemNum, flag essentialFlag)
     }
     for (stmt = 1; stmt < g_statements + 1; stmt++) {
       stmtCount[stmt] = 0;
-      stmtBigCount[stmt] = ""; /* 12-Nov-2018 nm */
+      stmtBigCount[stmt] = "";
       stmtUsage[stmt] = 0;
-      stmtDist[stmt] = 0; /* 18-Sep-2013 Initialize */
+      stmtDist[stmt] = 0;
     }
     unprovedFlag = 0; /* Flag that some proof wasn't complete */
   }
   level++;
   stepCount = 0;
-  let(&stepBigCount, "0"); /* "" and "0" both mean 0 */ /* 12-Nov-2018 nm */
+  let(&stepBigCount, "0"); /* "" and "0" both mean 0 */
   stepNodeCount = 0;
   stepDistSum = 0;
   stmtDist[statemNum] = -2; /* Forces at least one assignment */
@@ -3612,20 +3295,18 @@ double countSteps(long statemNum, flag essentialFlag)
   if (g_Statement[statemNum].type != (char)p_) {
     /* $a, $e, or $f */
     stepCount = 1;
-    let(&stepBigCount, "1"); /* 12-Nov-2018 nm */
+    let(&stepBigCount, "1");
     stepNodeCount = 0;
     stmtDist[statemNum] = 0;
     goto returnPoint;
   }
 
-  /* 20-Oct-2013 nm Don't use bad proofs (incomplete proofs are ok) */
+  /* Don't use bad proofs (incomplete proofs are ok) */
   if (parseProof(statemNum) > 1) {
     /* The proof has an error, so use the empty proof */
     nmbrLet(&proof, nmbrAddElement(NULL_NMBRSTRING, -(long)'?'));
   } else {
-    /*nmbrLet(&proof, nmbrUnsquishProof(g_WrkProof.proofString));*/ /* The proof */
-    /* 13-Nov-2018 nm - Use proof as it is saved (so user can choose
-       compressed or not) */
+    /* Use proof as it is saved (so user can choose compressed or not) */
     nmbrLet(&proof, g_WrkProof.proofString); /* The proof */
   }
 
@@ -3636,8 +3317,7 @@ double countSteps(long statemNum, flag essentialFlag)
   }
   essentialplen = 0;
   for (step = 0; step < plen; step++) {
-  /* 12-May-04 nm Use the following loop instead to get an alternate maximum
-     path */
+    /* Use the following loop to get an alternate maximum path */
     if (essentialFlag) {
       if (!essentialFlags[step]) continue;     /* Ignore floating hypotheses */
     }
@@ -3645,9 +3325,6 @@ double countSteps(long statemNum, flag essentialFlag)
     stmt = proof[step];
     if (stmt < 0) {
       if (stmt <= -1000) {
-        /* Pre-13-Nov-2010: */
-        /*bug(215);*/ /* The proof was expanded; there should be no local labels */
-        /* 13-Nov-2018 nm */
         /* User can choose to count compressed or normal steps by saving
            the proof that way */
         /* A local label does not add a proof step in the web page proof */
@@ -3657,7 +3334,6 @@ double countSteps(long statemNum, flag essentialFlag)
         unprovedFlag = 1;
         stepCount = stepCount + 1;
 
-        /* 12-Nov-2018 nm */
         let(&tmpBig1, "");
         tmpBig1 = bigAdd(stepBigCount, "1");
         let(&stepBigCount, tmpBig1);
@@ -3674,7 +3350,6 @@ double countSteps(long statemNum, flag essentialFlag)
         stepCount = stepCount + stmtCount[stmt];
       }
 
-      /* 12-Nov-2018 nm */
       /* In either case, stmtBigCount[stmt] will be populated now */
       let(&tmpBig1, "");
       tmpBig1 = bigAdd(stepBigCount, stmtBigCount[stmt]);
@@ -3687,7 +3362,6 @@ double countSteps(long statemNum, flag essentialFlag)
           if (!essentialFlag || g_Statement[k].type == (char)e_) {
             stepCount--;
 
-            /* 12-Nov-2018 nm */
             /* In either case, stmtBigCount[stmt] will be populated now */
             let(&tmpBig1, "");
             tmpBig1 = bigSub(stepBigCount, "1");
@@ -3712,7 +3386,6 @@ double countSteps(long statemNum, flag essentialFlag)
   /* Assign step count to statement list */
   stmtCount[statemNum] = stepCount;
 
-  /* 12-Nov-2018 nm */
   if ((stmtBigCount[statemNum])[0] != 0) bug(264);
   let(&stmtBigCount[statemNum], stepBigCount);
 
@@ -3774,13 +3447,6 @@ double countSteps(long statemNum, flag essentialFlag)
            str((double)actualSteps2), " steps.  ",
        "The proof would have ",
 
-       /* This is the old stepCount; can be enabled to troubleshoot
-          the new unlimited precision algorithm */
-       /* 27-May-05 nm stepCount is inaccurate for over 16 or so digits due
-          to roundoff errors. */
-       /*stepCount > 1000000000 ? ">1000000000" : str((double)stepCount),*/
-
-       /* 12-Nov-2018 nm */
        stepBigCount,
        strlen(stepBigCount) < 6 ? ""
            : cat(" =~ ",
@@ -3793,12 +3459,6 @@ double countSteps(long statemNum, flag essentialFlag)
 
 
        " steps if fully expanded back to axiom references.  ",
-       /*
-       "The proof tree has ", str((double)stmtNodeCount[statemNum])," nodes.  ",
-       "A random backtrack path has an average path length of ",
-       str((double)(stmtAveDist[statemNum])),
-       ".  ",
-       */
        "The maximum path length is ",
        str((double)(stmtDist[statemNum])),
        ".  A longest path is:  ", right(tmpStr, 5), " .", NULL),
@@ -3813,7 +3473,6 @@ double countSteps(long statemNum, flag essentialFlag)
     free(stmtProofLen);
     free(stmtUsage);
 
-    /* 12-Nov-2018 nm */
     /* Deallocate the big number strings */
     for (stmt = 1; stmt < g_statements + 1; stmt++) {
       let(&stmtBigCount[stmt], "");
@@ -3822,7 +3481,7 @@ double countSteps(long statemNum, flag essentialFlag)
 
   }
 
-  /* Deallocate local strings */ /* 12-Nov-2018 nm */
+  /* Deallocate local strings */
   let(&tmpBig1, "");
   let(&stepBigCount, "");
 
@@ -3831,7 +3490,6 @@ double countSteps(long statemNum, flag essentialFlag)
 } /* countSteps */
 
 
-/* 12-Nov-2018 nm */
 /* Add two arbitrary precision nonnegative integers represented
    as strings of digits e.g. bigAdd("1234", "55") returns "1289".
    Zero can be represented by "", "0", "00", etc. */
@@ -3872,7 +3530,6 @@ vstring bigAdd(vstring bignum1, vstring bignum2) {
 }
 
 
-/* 12-Nov-2018 nm */
 /* Subtract a nonnegative number (2nd arg) from a larger nonnegative number
    (1st arg).  If the 1st arg is smaller than the 2nd, results are
    not meaningful; there is no error checking for this.  */
@@ -3987,12 +3644,11 @@ vstring bigMul(vstring bignum1, vstring bignum2) {
 
 /* Traces what statements require the use of a given statement */
 /* The output string must be deallocated by the user. */
-/* 18-Jul-2015 nm changed the meaning of the returned string as follows: */
 /* The return string [0] will be 'Y' or 'N' depending on whether there are any
    statements that use statemNum.  Return string [i] will be 'Y' or 'N'
    depending on whether g_Statement[i] uses statemNum.  All i will be populated
    with 'Y'/'N' even if not $a or $p (always 'N' for non-$a,$p). */
-/* 18-Jul-2015 added optional 'cutoffStmt' parameter:  if nonzero, then
+/* Optional 'cutoffStmt' parameter:  if nonzero, then
    statements above cutoffStmt will not be scanned (for speedup) */
 vstring traceUsage(long statemNum,
   flag recursiveFlag,
@@ -4001,7 +3657,6 @@ vstring traceUsage(long statemNum,
   long lastPos, stmt, slen, pos;
   flag tmpFlag;
   vstring statementUsedFlags = ""; /* 'Y'/'N' flag that statement is used */
-  /* vstring outputString = ""; */ /* 18-Jun-2015 nm Deleted */
   nmbrString *statementList = NULL_NMBRSTRING;
   nmbrString *proof = NULL_NMBRSTRING;
 
@@ -4021,7 +3676,6 @@ vstring traceUsage(long statemNum,
   nmbrLet(&statementList, nmbrAddElement(statementList, statemNum));
   lastPos = 1;
 
-  /* 18-Jul-2015 nm */
   /* For speedup (in traceProofWork), scan only up to cutoffStmt if it
      is specified, otherwise scan all statements. */
   if (cutoffStmt == 0) cutoffStmt = g_statements;
@@ -4064,7 +3718,7 @@ vstring traceUsage(long statemNum,
       }
     } /* (End of speed-up code) */
 
-    /* 20-Oct-2013 nm Don't use bad proofs (incomplete proofs are ok) */
+    /* Don't use bad proofs (incomplete proofs are ok) */
     if (parseProof(stmt) > 1) {
       /* The proof has an error, so use the empty proof */
       nmbrLet(&proof, nmbrAddElement(NULL_NMBRSTRING, -(long)'?'));
@@ -4093,40 +3747,13 @@ vstring traceUsage(long statemNum,
      the output by statement number without calling a sort routine. */
   let(&statementUsedFlags, string(g_statements + 1, 'N')); /* Init. to 'no' */
   if (slen > 1) statementUsedFlags[0] = 'Y';  /* Used by at least one */
-                                              /* 18-Jul-2015 nm */
   for (pos = 1; pos < slen; pos++) { /* Start with 1 (ignore traced statement)*/
     stmt = statementList[pos];
     if (stmt <= statemNum || g_Statement[stmt].type != p_ || stmt > g_statements)
         bug(212);
     statementUsedFlags[stmt] = 'Y';
   }
-  return (statementUsedFlags); /* 18-Jul-2015 nm */
-
-  /********** 18-Jul-2015 nm Deleted code - this is now done by caller ******/
-  /*
-  /@ Next, build the output string @/
-  let(&outputString, "");
-  for (stmt = 1; stmt <= g_statements; stmt++) {
-    if (statementUsedFlags[stmt] == 'Y') {
-      let(&outputString, cat(outputString, " ", g_Statement[stmt].labelName,
-          NULL));
-      /@ For temporary unofficial use by NDM to help build command files: @/
-      /@
-      print2("prove %s$min %s/a$sa n/compr$q\n",
-          g_Statement[stmt].labelName,g_Statement[statemNum].labelName);
-      @/
-    } /@ End if (statementUsedFlag[stmt] == 'Y') @/
-  } /@ Next stmt @/
-
-  /@ Deallocate @/
-  let(&statementUsedFlags, "");
-  nmbrLet(&statementList, NULL_NMBRSTRING);
-  nmbrLet(&proof, NULL_NMBRSTRING);
-
-  return (outputString);
-  */
-  /*************** 18-Jul-2015 End of deleted code **************/
-
+  return (statementUsedFlags);
 } /* traceUsage */
 
 
@@ -4137,11 +3764,8 @@ void readInput(void)
 {
   vstring fullInput_fn = "";
 
-  let(&fullInput_fn, cat(g_rootDirectory, g_input_fn, NULL)); /* 31-Dec-2017 nm */
+  let(&fullInput_fn, cat(g_rootDirectory, g_input_fn, NULL));
 
-  /*g_includeCalls = 0;*/ /* Initialized by readSourceAndIncludes() */
-
-  /* 31-Dec-2017 nm */
   g_sourcePtr = readSourceAndIncludes(g_input_fn, &g_sourceLen);
   if (g_sourcePtr == NULL) {
     print2(
@@ -4149,8 +3773,7 @@ void readInput(void)
     goto RETURN_POINT;
   }
 
-  g_sourcePtr = readRawSource(/*g_input_fn,*/  /* 2-Feb-2018 nm */
-      g_sourcePtr, &g_sourceLen);
+  g_sourcePtr = readRawSource(g_sourcePtr, &g_sourceLen);
   parseKeywords();
   parseLabels();
   parseMathDecl();
@@ -4166,23 +3789,20 @@ void readInput(void)
 /* Note that the labelSection, mathSection, and proofSection do not
    contain keywords ($a, $p,...; $=; $.).  The keywords are added
    by outputStatement. */
-void writeSource(/* flag cleanFlag, 3-May-2017 */ /* 1 = "/ CLEAN" qualifier was chosen */
-                flag reformatFlag /* 1 = "/ FORMAT", 2 = "/REWRAP" */,
-                /* 31-Dec-2017 nm */
-                flag splitFlag,  /* /SPLIT - write out separate $[ $] includes */
-                flag noVersioningFlag, /* /NO_VERSIONING - no ~1 backup */
-                flag keepSplitsFlag, /* /KEEP_INCLUDES - don't delete included
-                                      files when /SPIT is not specified */
-                vstring extractLabelList /* "" means /EXTRACT wasn't specified */
-                )
+void writeSource(
+  flag reformatFlag /* 1 = "/ FORMAT", 2 = "/REWRAP" */,
+  flag splitFlag,  /* /SPLIT - write out separate $[ $] includes */
+  flag noVersioningFlag, /* /NO_VERSIONING - no ~1 backup */
+  flag keepSplitsFlag, /* /KEEP_INCLUDES - don't delete included
+                        files when /SPIT is not specified */
+  vstring extractLabelList /* "" means /EXTRACT wasn't specified */
+  )
 {
 
   /* Temporary variables and strings */
   long i;
-  /* long p; */ /* deleted 3-May-2017 nm */
   vstring buffer = "";
   vstring fullOutput_fn = "";
-  /* long skippedCount = 0; */ /* deleted 3-May-2017 nm */
   FILE *fp;
 
   let(&fullOutput_fn, cat(g_rootDirectory, g_output_fn, NULL));
@@ -4193,7 +3813,6 @@ void writeSource(/* flag cleanFlag, 3-May-2017 */ /* 1 = "/ CLEAN" qualifier was
     print2("Writing \"%s\"...\n", fullOutput_fn);
   }
 
-  /* 24-Aug-2020 nm */
   if (extractLabelList[0] != 0) {
     writeExtractedSource(
        extractLabelList, /* EXTRACT label list argument provided by user */
@@ -4205,80 +3824,18 @@ void writeSource(/* flag cleanFlag, 3-May-2017 */ /* 1 = "/ CLEAN" qualifier was
   }
 
   if (reformatFlag > 0) {
-    /* 31-Dec-2017 nm */
     /* Now the outputSource function just reformats and puts the
        source back into the g_Statement[] array.  So we don't need
        to do it when we're not reformatting/wrapping */
     /* TODO: turn this into a REWRAP command */
     /* Process statements */
     for (i = 1; i <= g_statements + 1; i++) {
-
-      /******** deleted 3-May-2017 nm
-      /@ Added 24-Oct-03 nm @/
-      if (cleanFlag && g_Statement[i].type == (char)p_) {
-        /@ Clean out any proof-in-progress (that user has flagged with a ? in its
-           date comment field) @/
-        /@ Get the comment section after the statement @/
-        let(&str1, space(g_Statement[i + 1].labelSectionLen));
-        memcpy(str1, g_Statement[i + 1].labelSectionPtr,
-            (size_t)(g_Statement[i + 1].labelSectionLen));
-        /@ Make sure it's a date comment @/
-        let(&str1, edit(str1, 2 + 4)); /@ Discard whitespace + control chrs @/
-        p = instr(1, str1, "]$)"); /@ Get end of date comment @/
-        let(&str1, left(str1, p)); /@ Discard stuff after date comment @/
-        if (instr(1, str1, "$([") == 0) {
-          printLongLine(cat(
-              "?Warning: The proof for $p statement \"", g_Statement[i].labelName,
-              "\" does not have a date comment after it and will not be",
-              " removed by the CLEAN qualifier.", NULL), " ", " ");
-        } else {
-          /@ See if the date comment has a "?" in it @/
-          if (instr(1, str1, "?")) {
-            skippedCount++;
-            let(&str2, cat(str2, " ", g_Statement[i].labelName, NULL));
-            /@ Write at least the date from the _previous_ statement's
-               post-comment section so that WRITE RECENT can pick it up. @/
-            let(&str1, space(g_Statement[i].labelSectionLen));
-            memcpy(str1, g_Statement[i].labelSectionPtr,
-                (size_t)(g_Statement[i].labelSectionLen));
-            /@ nm 19-Jan-04 Don't discard w.s. because string will be returned to
-               the source file @/
-            /@let(&str1, edit(str1, 2 + 4));@/ /@ Discard whitespace + ctrl chrs @/
-            p = instr(1, str1, "]$)"); /@ Get end of date comment @/
-            if (p == 0) {
-              /@ In the future, "] $)" may flag date end to conform with
-                 space-around-keyword Metamath spec recommendation @/
-              /@ 7-Sep-04 The future is now @/
-              p = instr(1, str1, "] $)"); /@ Get end of date comment @/
-              if (p != 0) p++; /@ Match what it would be for old standard @/
-            }
-            if (p != 0) {  /@ The previous statement has a date comment @/
-              let(&str1, left(str1, p + 2)); /@ Discard stuff after date cmnt @/
-              if (!instr(1, str1, "?"))
-                /@ Don't bother to print $([?]$) of previous statement because
-                   the previous statement was skipped @/
-                fprintf(g_output_fp, "%s\n", str1);
-                                               /@ Output just the date comment @/
-            }
-
-            /@ Skip the normal output of this statement @/
-            continue;
-          } /@ if (instr(1, str1, "?")) @/
-        } /@ (else clause) if (instr(1, str1, "$([") == 0) @/
-      } /@ if cleanFlag @/
-      ********** end of 3-May-2017 deletion */
-
       let(&buffer,""); /* Deallocate vstring */
 
-      /* 31-Dec-2017 nm This now only affects g_Statement[] array.  It does
-         not write any files. */
-      buffer = outputStatement(i, /* cleanFlag, 3-May-2017 */ reformatFlag);
-
-      /* fprintf(g_output_fp, "%s", str1); */ /* 31-Dec-2017 nm deleted */
+      buffer = outputStatement(i, reformatFlag);
     } /* next i */
   } /* if (reformatFlag > 0) */
 
-  /* 31-Dec-2017 nm */
   /* Get put the g_Statement[] array into one linear buffer */
   let(&buffer, "");
   buffer = writeSourceToBuffer();
@@ -4315,33 +3872,13 @@ void writeSource(/* flag cleanFlag, 3-May-2017 */ /* 1 = "/ CLEAN" qualifier was
   print2("%ld source statement(s) were written.\n", g_statements);
 
 
-  /******** deleted 3-May-2017 nm
-  /@ Added 24-Oct-03 nm @/
-  if (cleanFlag) {
-    if (skippedCount == 0) {
-      print2("No statements were deleted by the CLEAN qualifier.\n");
-    } else {
-      printLongLine(cat("The following ", str((double)skippedCount), " statement",
-          (skippedCount == 1) ? " was" : "s were",
-          " deleted by the CLEAN qualifier:", NULL), "", " ");
-      printLongLine(cat(" ", str2, NULL), "  ", " ");
-      printLongLine(cat(
-          "You should ERASE, READ the new output file, and run VERIFY PROOF",
-          " to ensure that no proof dependencies were broken.", NULL),
-          "", " ");
-    }
-  }
-  ********** end of 3-May-2017 deletion */
-
  RETURN_POINT:
   let(&buffer,""); /* Deallocate vstring */
   let(&fullOutput_fn,""); /* Deallocate vstring */
   return;
-  /* let(&str2,""); */ /* Deallocate vstring */  /* deleted 3-May-2017 nm */
 } /* writeSource */
 
 
-/* 24-Aug-2020 nm */
 /* Get info for WRITE SOURCE ... / EXTRACT */
 void writeExtractedSource(
     vstring extractLabelList, /* EXTRACT argument provided by user */
@@ -4394,15 +3931,9 @@ void writeExtractedSource(
      a statement twice, especially if we did "/ EXTRACT *" */
   print2("Tracing back through proofs for $a and $p statements needed...\n");
   if (!strcmp(extractLabelList, "*")) {
-    /**/
     print2(
        "   This may take up to 10 minutes.  (For audio alert when done,\n");
     print2("   type ahead \"b\" then \"<enter>\".)\n");
-    /**/
-    /*
-    print2(
-       "   This may take up to 10 minutes.  (\n");
-    */
   }
 
   for (stmt = g_statements; stmt >= 1; stmt--) {
@@ -4589,10 +4120,6 @@ void writeExtractedSource(
      be in the output file) or to 'N' otherwise.  Then do the same starting
      from small, then big, then huge header. */
   for (stmt = 1; stmt <= maxStmt; stmt++) {
-    /***** deleted
-    if (g_Statement[stmt].type != a_ && g_Statement[stmt].type != p_)
-      continue;
-    *****/
     /* We do ALL statements, not just $a, $p, so that headers will go to
        the right place in the output file.  We called getSectionHeadings()
        with fineResolution=1 above so that "header area" will be 1 statement
@@ -4732,23 +4259,12 @@ void writeExtractedSource(
           let(&undeclaredV, cat(undeclaredV, " ", g_MathToken[mtkn].tokenName,
             NULL));
         }
-        /* 4-Sep-2020 nm */
         /* Tag the variable as declared for use in later j loops above, so it
            won't be added to the undeclaredV twice */
         mathTokenDeclared[mtkn] = 'Y';
       }
     }
   } /* next mtkn */
-
-/*
-/@D@/for(stmt=1;stmt<=2;stmt++)
-/@D@/printf("s=%ld t=%c cs=%ld bs=%ld es=%ld en=%c %c%c%c%c\n",
-/@D@/  stmt,g_Statement[stmt].type,(long)g_Statement[stmt].scope,
-/@D@/ g_Statement[stmt].beginScopeStatementNum,
-/@D@/ g_Statement[stmt].endScopeStatementNum,extractNeeded[stmt],
-/@D@/ hugeHdrNeeded[stmt],bigHdrNeeded[stmt],
-/@D@/ smallHdrNeeded[stmt],tinyHdrNeeded[stmt]);
-*/
 
   /* Write the output file */
   /* (We don't call the standard output functions because there's too
@@ -4803,47 +4319,23 @@ void writeExtractedSource(
           &hugeHdrComment, &bigHdrComment, &smallHdrComment,
           &tinyHdrComment,
           1, /*fineResolution*/
-          1 /*fullComment*/ /* 12-Sep-2020 nm */
+          1 /*fullComment*/
           );
       let(&buf, "");
       if (hugeHdrNeeded[stmt] == 'Y') {
         fixUndefinedLabels(extractNeeded, &hugeHdrComment);
-        /**** 12-Sep-2020 nm Deleted
-        let(&buf, "");
-        buf = buildHeader(hugeHdr, hugeHdrComment, HUGE_DECORATION);
-        fprintf(fp, "%s", buf);
-        ****/
-        /* 12-Sep-2020 nm */
         fprintf(fp, "%s", cat(hugeHdr, hugeHdrComment, hdrSuffix, NULL));
       }
       if (bigHdrNeeded[stmt] == 'Y') {
         fixUndefinedLabels(extractNeeded, &bigHdrComment);
-        /**** 12-Sep-2020 nm Deleted
-        let(&buf, "");
-        buf = buildHeader(bigHdr, bigHdrComment, HUGE_DECORATION);
-        fprintf(fp, "%s", buf);
-        ****/
-        /* 12-Sep-2020 nm */
         fprintf(fp, "%s", cat(bigHdr, bigHdrComment, hdrSuffix, NULL));
       }
       if (smallHdrNeeded[stmt] == 'Y') {
         fixUndefinedLabels(extractNeeded, &smallHdrComment);
-        /**** 12-Sep-2020 nm Deleted
-        let(&buf, "");
-        buf = buildHeader(smallHdr, smallHdrComment, SMALL_DECORATION);
-        fprintf(fp, "%s", buf);
-        ****/
-        /* 12-Sep-2020 nm */
         fprintf(fp, "%s", cat(smallHdr, smallHdrComment, hdrSuffix, NULL));
       }
       if (tinyHdrNeeded[stmt] == 'Y') {
         fixUndefinedLabels(extractNeeded, &tinyHdrComment);
-        /**** 12-Sep-2020 nm Deleted
-        let(&buf, "");
-        buf = buildHeader(tinyHdr, tinyHdrComment, TINY_DECORATION);
-        fprintf(fp, "%s", buf);
-        ****/
-        /* 12-Sep-2020 nm */
         fprintf(fp, "%s", cat(tinyHdr, tinyHdrComment, hdrSuffix, NULL));
       }
     } /* if header(s) needed */
@@ -4874,7 +4366,6 @@ void writeExtractedSource(
           fprintf(fp, "%s", buf);
           if (g_Statement[stmt].type != p_) {
             fprintf(fp, "$.");
-/*D*//*fprintf(fp, "#%ld#",stmt);*/
           } else {
             /* $p */
             fprintf(fp, "$=");
@@ -4885,7 +4376,6 @@ void writeExtractedSource(
           }
         } /* if not ${ $} */
         if (extractNeeded[stmt + 1] == 'N') {
-/*D*//*printf("added \\n stmt=%ld type=%c,%c\n",stmt+1,g_Statement[stmt].type,g_Statement[stmt+1].type);*/
           /* Put a newline following end of statement since the next
              statement's label section will be suppressed */
           fprintf(fp, "\n");
@@ -4901,14 +4391,14 @@ void writeExtractedSource(
   g_outputToString = 1;
   if (undeclaredC[0] != 0) {
     print2("\n");
-    print2(  /* 4-Sep-2020 nm Can't use literal "$t"; change to $ t. */
-"  $( Unused constants to satisfy the htmldef's in the $ t comment. $)\n");
+    print2("  $( Unused constants to satisfy "
+      "the htmldef's in the $ t comment. $)\n");
     printLongLine(cat("  $c", undeclaredC, " $.", NULL), "    ", " ");
   }
   if (undeclaredV[0] != 0) {
     print2("\n");
-    print2(  /* 4-Sep-2020 nm Can't use literal "$t"; change to $ t. */
-"  $( Unused variables to satisfy the htmldef's in the $ t comment. $)\n");
+    print2("  $( Unused variables to satisfy "
+      "the htmldef's in the $ t comment. $)\n");
     printLongLine(cat("  $v", undeclaredV, " $.", NULL), "    ", " ");
   }
   g_outputToString = 0;
@@ -4919,8 +4409,6 @@ void writeExtractedSource(
 
   /* Write the non-split output file */
   fclose(fp);
-  /*print2("%ld source statement(s) were extracted.\n", extractedStmts);*/
-  /* 5-Sep-2020 nm */
   j = 0; p1 = 0; p2 = 0; p3 = 0; p4 = 0;
   for (stmt = 1; stmt <= g_statements; stmt++) {
     if (extractNeeded[stmt] == 'Y') {
@@ -4965,7 +4453,6 @@ void writeExtractedSource(
 } /* getExtractionInfo */
 
 
-/* 24-Aug-2020 nm */
 /* Some labels in comments may not exist in statements extracted
    with WRITE SOURCE ... / EXTRACT.  This function changes them
    to external links to us.metamath.org. */
@@ -4978,7 +4465,6 @@ void fixUndefinedLabels(vstring extractNeeded/*'Y'/'N' list*/,
   int mathMode; /* char gives Wconversion gcc warning */
 #define ASCII_4 4
 
-  /* 12-Sep-2020 nm */
   /* Change ~ in math symbols to nonprintable ASCII 4 to prevent
      interpretation as label indicator */
   p1 = (long)strlen(*buf);
@@ -5018,10 +4504,6 @@ void fixUndefinedLabels(vstring extractNeeded/*'Y'/'N' list*/,
     if (p3 < p2) p2 = p3;  /* p2 is end of label */
     let(&label, seg(*buf, p1 + 2, p2 - 1));
     let(&restOfComment, right(*buf, p2));
-    /*** 4-Sep-2020 nm This is taken care of by lookupLabel
-    if (instr(1, label, "//" /@ http[s]:// @/) continue; /@ Ignore special case @/
-    if (!strcmp(left(label, 2)), "mm") continue; /@ Ignore special case @/
-    ***/
     p3 = lookupLabel(label);
     if (p3 == -1) continue; /* Not a statement label (e.g. ~ http://...) */
     if (extractNeeded[p3] == 'Y') continue; /* Label link won't be broken */
@@ -5033,7 +4515,6 @@ void fixUndefinedLabels(vstring extractNeeded/*'Y'/'N' list*/,
     /* Adjust pointer to go past the modified label */
     p1 = p1 + (long)strlen(newLabelWithTilde)
           - ((long)strlen(label) + 2/*for "~ "*/);
-    /* 4-Sep-2020 nm */
     /* Put newline if not at end of line - assumes no trailing spaces in .mm! */
     /* We do this to prevent too-long lines.  But if we're already at end
        of line, we don't want to create a paragraph, so we don't add newline. */
@@ -5046,7 +4527,6 @@ void fixUndefinedLabels(vstring extractNeeded/*'Y'/'N' list*/,
   let(&(*buf), left(*buf, (long)strlen(*buf) - 2));
        /* Take off the '\n' we added at beginning of this function */
 
-  /* 12-Sep-2020 nm */
   /* Restore ASCII 4 to ~ */
   p1 = (long)strlen(*buf);
   for (p2 = 0; p2 < p1; p2++) {
@@ -5072,7 +4552,6 @@ void eraseSource(void)    /* ERASE command */
   long i;
   vstring tmpStr = "";
 
-  /* 24-Jun-2014 nm */
   /* Deallocate g_WrkProof structure if g_wrkProofMaxSize != 0 */
   /* Assigned in parseProof() in mmpars.c */
   if (g_wrkProofMaxSize) { /* It has been allocated */
@@ -5122,21 +4601,17 @@ void eraseSource(void)    /* ERASE command */
        should be also fixed, but I could not find simple example for memory
        leak and leave it as it was.  */
     if (g_Statement[i].labelName[0]) free(g_Statement[i].labelName);
-    /*if (g_Statement[i].mathString[0] != -1)*/
-    if (g_Statement[i].mathString != NULL_NMBRSTRING) /* 14-May-2014 nm */
+    if (g_Statement[i].mathString != NULL_NMBRSTRING)
         poolFree(g_Statement[i].mathString);
-    /*if (g_Statement[i].proofString[0] != -1)*/
-    if (g_Statement[i].proofString != NULL_NMBRSTRING) /* 14-May-2014 nm */
+    if (g_Statement[i].proofString != NULL_NMBRSTRING)
         poolFree(g_Statement[i].proofString);
     if (g_Statement[i].reqHypList != NULL_NMBRSTRING)
         poolFree(g_Statement[i].reqHypList);
-    /*if (g_Statement[i].optHypList[0] != -1)*/
-    if (g_Statement[i].optHypList != NULL_NMBRSTRING) /* 14-May-2014 nm */
+    if (g_Statement[i].optHypList != NULL_NMBRSTRING)
         poolFree(g_Statement[i].optHypList);
     if (g_Statement[i].reqVarList != NULL_NMBRSTRING)
         poolFree(g_Statement[i].reqVarList);
-    /*if (g_Statement[i].optVarList[0] != -1)*/
-    if (g_Statement[i].optVarList != NULL_NMBRSTRING) /* 14-May-2014 nm */
+    if (g_Statement[i].optVarList != NULL_NMBRSTRING)
         poolFree(g_Statement[i].optVarList);
     if (g_Statement[i].reqDisjVarsA != NULL_NMBRSTRING)
         poolFree(g_Statement[i].reqDisjVarsA);
@@ -5151,19 +4626,6 @@ void eraseSource(void)    /* ERASE command */
     if (g_Statement[i].optDisjVarsStmt != NULL_NMBRSTRING)
         poolFree(g_Statement[i].optDisjVarsStmt);
 
-    /**** 3-May-17 deleted
-    /@ See if the proof was "saved" @/
-    if (g_Statement[i].proofSectionLen) {
-      if (g_Statement[i].proofSectionPtr[-1] == 1) {
-        /@ Deallocate proof if not original source @/
-        /@ (ASCII 1 is the flag for this) @/
-        tmpStr = g_Statement[i].proofSectionPtr - 1;
-        let(&tmpStr, "");
-      }
-    }
-    ********/
-
-    /* 3-May-2017 nm */
     if (g_Statement[i].labelSectionChanged == 1) {
       /* Deallocate text before label if not original source */
       let(&(g_Statement[i].labelSectionPtr), "");
@@ -5187,7 +4649,6 @@ void eraseSource(void)    /* ERASE command */
   }
 
   memFreePoolPurge(0);
-  /*g_statements = 0;*/ /* Must be done below */
   g_errorCount = 0;
 
   free(g_Statement);
@@ -5196,18 +4657,14 @@ void eraseSource(void)    /* ERASE command */
   g_dummyVars = 0; /* For Proof Assistant */
   free(g_sourcePtr);
   free(g_labelKey);
-  free(g_mathKey); /* 4-May-2017 Ari Ferrera */
+  free(g_mathKey);
   free(g_allLabelKeyBase);
 
-  /* Deallocate the g_WrkProof structure */
-  /*???*/
-
-  /* Deallocate the texdef/htmldef storage */ /* Added 27-Oct-2012 nm */
-  eraseTexDefs(); /* 17-Nov-2015 nm */
+  /* Deallocate the texdef/htmldef storage */
+  eraseTexDefs();
 
   g_extHtmlStmt = 0; /* May be used by a non-zero test; init to be safe */
 
-  /* 5-Aug-2020 nm */
   /* Initialize and deallocate mathbox information */
   g_mathboxStmt = 0; /* Used by a non-zero test in mmwtex.c to see if assigned */
   nmbrLet(&g_mathboxStart, NULL_NMBRSTRING);
@@ -5225,33 +4682,19 @@ void eraseSource(void)    /* ERASE command */
      the 5 variables below */
   g_bracketMatchInit = 0; /* Clear to force mmunif.c to scan $a's again */
   g_minSubstLen = 1; /* Initialize to the default SET EMPTY_SUBSTITUTION OFF */
-  /* 1-Oct-2017 nm Fix 'erase' bug found by Benoit Jubin */
   /* Clear g_firstConst to trigger clearing of g_lastConst and
      g_oneConst in mmunif.c */
   nmbrLet(&g_firstConst, NULL_NMBRSTRING);
-  /* 2-Oct-2017 nm Clear these directly so they will be truly deallocated
-     for valgrind */
+  /* Clear these directly so they will be truly deallocated for valgrind */
   nmbrLet(&g_lastConst, NULL_NMBRSTRING);
   nmbrLet(&g_oneConst, NULL_NMBRSTRING);
 
-  /* 3-May-2016 nm */
   getMarkupFlag(0, RESET); /* Erase the cached markup flag storage */
 
-  /* 2-May-2017 nm */
   /* Erase the contributor markup cache */
-  /* 3-May-2017 nm */
   let(&tmpStr, "");
   tmpStr = getContrib(0 /*stmt is ignored*/, GC_RESET);
-  /****** old 3-May-2017
-  /@ The string arguments are not assigned in RESET mode. @/
-  getContrib(0, &tmpStr, &tmpStr,
-      &tmpStr, &tmpStr, &tmpStr, &tmpStr,
-      &tmpStr,
-      0/@printErrorsFlag@/,
-      RESET/@mode: 0 == RESET = reset, 1 = normal @/);
-  *********/
 
-  /* 2-May-2017 nm */
   /* getContrib uses g_statements (global var), so don't do this earlier */
   g_statements = 0; /* getContrib uses g_statements for loop limit */
 
@@ -5267,7 +4710,7 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
   vstring header = "";
   flag errorFound;
 #ifdef CLOCKS_PER_SEC
-  clock_t clockStart;  /* 28-May-04 nm */
+  clock_t clockStart;
 #endif
 
 #ifdef __WATCOMC__
@@ -5279,35 +4722,13 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
 #endif
 
 #ifdef CLOCKS_PER_SEC
-  clockStart = clock();  /* 28-May-04 nm Retrieve start time */
+  clockStart = clock();  /* Retrieve start time */
 #endif
   if (!strcmp("*", labelMatch) && verifyFlag) {
     /* Use status bar */
     let(&header, "0 10%  20%  30%  40%  50%  60%  70%  80%  90% 100%");
-#ifdef XXX /*__WATCOMC__*/
-    /* The vsprintf function discards text after "%" in 3rd argument string. */
-    /* This is a workaround. */
-    for (i = 1; i <= (long)strlen(header); i++) {
-      let(&tmpStr, mid(header, i, 1));
-      if (tmpStr[0] == '%') let(&tmpStr, "%%");
-      print2("%s", tmpStr);
-    }
-    print2("\n");
-#else
-#ifdef XXX /*VAXC*/
-    /* The vsprintf function discards text after "%" in 3rd argument string. */
-    /* This is a workaround. */
-    for (i = 1; i <= (long)strlen(header); i++) {
-      let(&tmpStr, mid(header, i, 1));
-      if (tmpStr[0] == '%') let(&tmpStr, "%%");
-      print2("%s", tmpStr);
-    }
-    print2("\n");
-#else
     print2("%s\n", header);
     let(&header, "");
-#endif
-#endif
   }
 
   errorFound = 0;
@@ -5320,7 +4741,6 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
     }
 
     if (g_Statement[i].type != p_) continue;
-    /* 30-Jan-06 nm Added single-character-match argument */
     if (!matchesList(g_Statement[i].labelName, labelMatch, '*', '?')) continue;
     if (strcmp("*",labelMatch) && verifyFlag) {
       /* If not *, print individual labels */
@@ -5356,7 +4776,7 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
   }
   if (!emptyProofList[0] && !errorFound && !strcmp("*", labelMatch)) {
     if (verifyFlag) {
-#ifdef CLOCKS_PER_SEC    /* 28-May-04 nm */
+#ifdef CLOCKS_PER_SEC
       print2("All proofs in the database were verified in %1.2f s.\n",
            (double)((1.0 * (double)(clock() - clockStart)) / CLOCKS_PER_SEC));
 #else
@@ -5372,55 +4792,39 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
 } /* verifyProofs */
 
 
-/* 7-Nov-2015 nm Added this function for date consistency */
-/* 17-Nov-2015 nm Added htmldefs, bib, markup checking */
-/* 13-Dec-2016 nm Added checks for undesireable labels (mm*,
-   Microsoft conflicts) */
-/* 24-Mar-2019 nm Added topDateSkip */
-/* 25-Jun-2020 nm Added underscoreSkip */
-/* 17-Jul-2020 nm Added mathboxSkip */
 void verifyMarkup(vstring labelMatch,
     flag dateSkip, /* 1 = don't check date consistency */
     flag topDateSkip, /* 1 = don't check top date but check others */
     flag fileSkip, /* 1 = don't check external files (gifs, mmset.html,...) */
     flag underscoreSkip, /* 1 = don't check labels for "_" characters) */
     flag mathboxSkip, /* 1 = don't check mathbox cross-references) */
-    flag verboseMode) /* 1 = more details */ {   /* 26-Dec-2016 nm */
+    flag verboseMode) /* 1 = more details */ {
   flag f;
   flag saveHtmlFlag, saveAltHtmlFlag;
   flag errFound = 0;
   long stmtNum, p1, p2, p3;
-  long flen, lnum, lstart; /* For line length check */ /* 26-Dec-2016 nm */
-  /***** deleted 3-May-2017 nm
-  vstring contributor = ""; vstring contribDate = "";
-  vstring reviser = ""; vstring reviseDate = "";
-  vstring shortener = ""; vstring shortenDate = "";
-  **********/
+  long flen, lnum, lstart; /* For line length check */
 
-  /* 13-Dec-2016 nm */
   vstring mmVersionDate = ""; /* Version date at top of .mm file */
   vstring mostRecentDate = ""; /* For entire .mm file */
   long mostRecentStmt = 0; /* For error message */
-  /* 18-Dec-2016 nm For getSectionHeadings() call */
-  vstring hugeHdr = ""; /* 21-Jun-2014 nm */
+
+  /* For getSectionHeadings() call */
+  vstring hugeHdr = "";
   vstring bigHdr = "";
   vstring smallHdr = "";
-  vstring tinyHdr = ""; /* 21-Aug-2017 nm */
-  vstring hugeHdrComment = ""; /* 8-May-2015 nm */
-  vstring bigHdrComment = ""; /* 8-May-2015 nm */
-  vstring smallHdrComment = ""; /* 8-May-2015 nm */
-  vstring tinyHdrComment = ""; /* 21-Aug-2017 nm */
+  vstring tinyHdr = "";
+  vstring hugeHdrComment = "";
+  vstring bigHdrComment = "";
+  vstring smallHdrComment = "";
+  vstring tinyHdrComment = "";
 
   vstring descr = "";
   vstring str1 = ""; vstring str2 = "";
-  /* 17-Jul-2020 nm */ /* For mathbox check */
+
+  /* For mathbox check */
   long mbox, pmbox, stmt, pstmt, plen, step;
-  /**** 5-Aug-2020 nm These are now globals
-  long mathboxes;
-  nmbrString *mathboxStart = NULL_NMBRSTRING;
-  nmbrString *mathboxEnd = NULL_NMBRSTRING;
-  pntrString *mathboxUser = NULL_PNTRSTRING;
-  ****/
+
   nmbrString *proof = NULL_NMBRSTRING;
   vstring dupCheck = "";
 
@@ -5429,9 +4833,7 @@ void verifyMarkup(vstring labelMatch,
   print2("Checking statement label conventions...\n");
 
   /* Check that labels can create acceptable file names for web pages */
-
-  /* 13-Dec-2016 nm Moved this check from metamath.c */
-  /* 10/21/02 - detect Microsoft bugs reported by several users, when the
+  /* Detect Microsoft bugs reported by several users, when the
      HTML output files are named "con.html" etc. */
   /* If we want a standard error message underlining token, this could go
      in mmpars.c */
@@ -5452,7 +4854,6 @@ void verifyMarkup(vstring labelMatch,
       continue;
     }
 
-    /* 25-Jun-2020 nm */
     /* Check labels for "_" characters */
     /* See discussion in https://github.com/metamath/set.mm/pull/1691 */
     if (underscoreSkip == 0
@@ -5467,7 +4868,6 @@ void verifyMarkup(vstring labelMatch,
           "qualifier to skip this check.",
           NULL),
           "    ", " ");
-      /* g_errorCount++; */
       errFound = 1;
     }
 
@@ -5478,10 +4878,9 @@ void verifyMarkup(vstring labelMatch,
     let(&str2, cat(",", edit(g_Statement[stmtNum].labelName, 32/*uppercase*/),
         ",", NULL));
     if (instr(1, str1, str2) ||
-        /* 5-Jan-04 mm*.html is reserved for mmtheorems.html, etc. */
+        /* mm*.html is reserved for mmtheorems.html, etc. */
         !strcmp(",MM", left(str2, 3))) {
-      /*print2("\n");*/ /* 25-Jun-2020 nm Deleted */
-      assignStmtFileAndLineNum(stmtNum); /* 9-Jan-2018 nm */
+      assignStmtFileAndLineNum(stmtNum);
       printLongLine(cat("?Warning: In statement \"",
           g_Statement[stmtNum].labelName, "\" at line ",
           str((double)(g_Statement[stmtNum].lineNum)),
@@ -5493,7 +4892,6 @@ void verifyMarkup(vstring labelMatch,
           " LPT7, LPT8, and LPT9.  Also, \"mm*.html\" is reserved for",
           " Metamath file names.  Use another name for this label.", NULL),
           "    ", " ");
-      /* g_errorCount++; */
       errFound = 1;
     }
 
@@ -5503,7 +4901,7 @@ void verifyMarkup(vstring labelMatch,
           (g_Statement[stmtNum].mathString)[0]].tokenName)) {
         let(&str1, left(g_Statement[stmtNum].labelName, 3));
         if (strcmp("ax-", str1) && strcmp("df-", str1)) {
-          assignStmtFileAndLineNum(stmtNum); /* 9-Jan-2018 nm */
+          assignStmtFileAndLineNum(stmtNum);
           printLongLine(cat("?Warning: In the $a statement \"",
               g_Statement[stmtNum].labelName, "\" at line ",
               str((double)(g_Statement[stmtNum].lineNum)),
@@ -5518,13 +4916,9 @@ void verifyMarkup(vstring labelMatch,
 
 
   } /* next stmtNum */
-  /* 10/21/02 end */  /* 13-Dec-2016 nm end */
 
 
-  /* 5-Jul-2020 nm */
-  /* Check for math tokens containing "@" */
-  /* 18-Jul-2020 nm */
-  /* Check for math tokens containing "?" */
+  /* Check for math tokens containing "@" or "?" */
   /* Note:  g_MathToken[] is 0-based, not 1-based */
   for (p1 = 0; p1 < g_mathTokens; p1++) {
     if (strchr(g_MathToken[p1].tokenName, '@') != NULL) {
@@ -5540,7 +4934,6 @@ void verifyMarkup(vstring labelMatch,
           "database source code.",
           NULL),
           "    ", " ");
-      /* g_errorCount++; */
       errFound = 1;
     }
     if (strchr(g_MathToken[p1].tokenName, '?') != NULL) {
@@ -5555,16 +4948,12 @@ void verifyMarkup(vstring labelMatch,
           "\"?\" is sometimes used as a math token search wildcard.",
           NULL),
           "    ", " ");
-      /* g_errorCount++; */
       errFound = 1;
     }
   }
 
 
-  /* 20-Dec-2016 nm */
   /* Check $a ax-* vs. $p ax* */
-  /*print2("Checking ax-XXX axioms vs. axXXX theorems...\n");*/
-      /* (Don't print status - this runs very fast) */
   for (stmtNum = 1; stmtNum <= g_statements; stmtNum++) {
     if (g_Statement[stmtNum].type != a_) {
       continue;
@@ -5586,7 +4975,6 @@ void verifyMarkup(vstring labelMatch,
     p1 = lookupLabel(str2);
     if (p1 == -1) continue;  /* There is no corresponding axXXX */
 
-    /* 26-Dec-2016 nm */
     if (verboseMode == 1) {
       print2("Comparing \"%s\" to \"%s\"...\n", str2, str1);
     }
@@ -5666,17 +5054,13 @@ void verifyMarkup(vstring labelMatch,
   } /* next stmtNum */
 
 
-  /* 26-Dec-2016 nm */
   /* Check line lengths */
-  /*print2("Checking line lengths...\n");*/
-      /* (Don't print status - this runs very fast) */
   let(&str1, ""); /* Prepare to use as pointer */
   let(&str2, ""); /* Prepare to use as pointer */
-  if (g_statements >= /*1*/0
-          /* 6-Aug-2019 nm - no reason to skip empty .mm */
-      /*&& g_includeCalls == 0*/) { /* No $[...$] */ /* TODO - handle $[...$] */
-          /* 6-Aug-2019 nm - g_includeCalls is alway nonzero now - but check
-             anyway; line numbers may be off if there are >1 files. */
+  if (g_statements >= 0) {
+    /* TODO - handle $[...$] */
+    /* g_includeCalls is always nonzero now - but check
+        anyway; line numbers may be off if there are >1 files. */
     str1 = g_Statement[1].labelSectionPtr; /* Start of input file */
     str2 = g_Statement[g_statements + 1].labelSectionPtr
        + g_Statement[g_statements + 1].labelSectionLen; /* End of input file */
@@ -5689,14 +5073,12 @@ void verifyMarkup(vstring labelMatch,
     lstart = 0; /* Line start */
     for (p1 = 0; p1 < flen; p1++) {
       if (str1[p1] == 0) {
-        /* print2("pl=%ld flen=%ld\n", p1, flen); */
         bug(260); /* File shouldn't have nulls */
       }
       if (str1[p1] == '\n') {
         /* End of a line found */
         lnum++;
 
-        /* 25-Jun-2020 nm */
         if (p1 > 0) { /* Not 1st character in file */
           if (str1[p1 - 1] == ' ') {
             printLongLine(cat("?Warning: Line number ",
@@ -5727,7 +5109,6 @@ void verifyMarkup(vstring labelMatch,
         lstart = p1 + 1;
       }
 
-      /* 3-May-2017 nm */
       /* Check for tabs */
       if (str1[p1] == '\t') {
         printLongLine(cat("?Warning: Line number ",
@@ -5753,7 +5134,6 @@ void verifyMarkup(vstring labelMatch,
           fileSkip /* 1 = no GIF file existence check */  );
   if (f != 0) errFound = 1;
   if (f != 2) {   /* We continue if no severe errors (warnings are ok) */
-    /*print2("Checking htmldefs...\n");*/
     /* Check htmldef statements (reread since we've switched modes) */
     g_htmlFlag = 1; /* 1 = HTML, not TeX */
     g_altHtmlFlag = 0; /* 1 = Unicode, not GIFs (when g_htmlFlag = 1) */
@@ -5762,7 +5142,6 @@ void verifyMarkup(vstring labelMatch,
   }
   if (f != 0) errFound = 1;
   if (f != 2) {  /* We continue if no severe errors (warnings are ok) */
-    /*print2("Checking althtmldefs...\n");*/
     /* Check althtmldef statements (reread since we've switched modes) */
     g_htmlFlag = 1; /* 1 = HTML, not TeX */
     g_altHtmlFlag = 1; /* 1 = Unicode, not GIFs (when g_htmlFlag = 1) */
@@ -5774,7 +5153,7 @@ void verifyMarkup(vstring labelMatch,
 
   /* Check date consistency and comment markup in all statements */
   print2("Checking statement comments...\n");
-  let(&mostRecentDate, ""); /* 13-Dec-2016 nm */
+  let(&mostRecentDate, "");
   for (stmtNum = 1; stmtNum <= g_statements; stmtNum++) {
     if (g_Statement[stmtNum].type != a_ && g_Statement[stmtNum].type != p_) {
       continue;
@@ -5783,23 +5162,21 @@ void verifyMarkup(vstring labelMatch,
       continue;
     }
 
-    /* 3-May-2017 nm */
     /* Check the contributor */
     let(&str1, "");
     str1 = getContrib(stmtNum, CONTRIBUTOR);
     if (!strcmp(str1, DEFAULT_CONTRIBUTOR)) {
       printLongLine(cat(
-          "?Warning: Contributor \"", DEFAULT_CONTRIBUTOR,  /* 14-May-2017 nm */
+          "?Warning: Contributor \"", DEFAULT_CONTRIBUTOR,
           "\" should be updated in statement \"",
           g_Statement[stmtNum].labelName, "\".", NULL), "    ", " ");
       errFound = 1;
     }
-    /* 15-May-2017 nm */
     let(&str1, "");
     str1 = getContrib(stmtNum, REVISER);
     if (!strcmp(str1, DEFAULT_CONTRIBUTOR)) {
       printLongLine(cat(
-          "?Warning: Reviser \"", DEFAULT_CONTRIBUTOR,  /* 14-May-2017 nm */
+          "?Warning: Reviser \"", DEFAULT_CONTRIBUTOR,
           "\" should be updated in statement \"",
           g_Statement[stmtNum].labelName, "\".", NULL), "    ", " ");
       errFound = 1;
@@ -5809,21 +5186,11 @@ void verifyMarkup(vstring labelMatch,
 
       /* Check date consistency of the statement */
       /* Use the error-checking feature of getContrib() extractor */
-      /* 3-May-2017 nm */
       let(&str1, "");
       str1 = getContrib(stmtNum, GC_ERROR_CHECK_PRINT); /* Returns P or F */
       if (str1[0] == 'F') errFound = 1;
       let(&str1, "");
       str1 = getContrib(stmtNum, MOST_RECENT_DATE);
-
-      /***** deleted 3-May-2017
-      f = getContrib(stmtNum, &contributor, &contribDate,
-          &reviser, &reviseDate, &shortener, &shortenDate,
-          &str1 /@ most recent of the 3 dates @/, /@ 13-Dec-2016 nm @/
-          1/@printErrorsFlag@/,
-          1/@mode: 0 == RESET = reset, 1 = normal @/ /@ 2-May-2017 nm @/);
-      if (f == 1) errFound = 1;
-      *********/
 
       /* Save most recent date in file - used to check Version date below */
       if (compareDates(mostRecentDate, str1) == -1) {
@@ -5836,18 +5203,16 @@ void verifyMarkup(vstring labelMatch,
     let(&descr, "");
     descr = getDescription(stmtNum);
 
-    /* 17-Nov-2015 */
     /* Check comment markup of the statement */
     g_showStatement /* global */ = stmtNum; /* For printTexComment */
     g_texFilePtr /* global */  = NULL; /* Not used, but set to something */
     /* Use the errors-only (no output) feature of printTexComment() */
     f = printTexComment(descr,
         0, /* 1 = htmlCenterFlag (irrelevant for this call) */
-        PROCESS_EVERYTHING + ERRORS_ONLY, /* actionBits */ /* 13-Dec-2018 nm */
+        PROCESS_EVERYTHING + ERRORS_ONLY, /* actionBits */
         fileSkip /* 1 = noFileCheck */);
     if (f == 1) errFound = 1;
 
-    /* 20-Jun-2020 nm */
     /* Check that $a has no "(Proof modification is discouraged.)" */
     if (g_Statement[stmtNum].type == a_) {
       if (getMarkupFlag(stmtNum, PROOF_DISCOURAGED) == 1) {
@@ -5885,7 +5250,6 @@ void verifyMarkup(vstring labelMatch,
     }
   } /* next stmtNum */
 
-  /* 13-Dec-2016 nm */
   /* Check that the version date of the .mm file is g.e. all statement dates */
   /* This code expects a version date at the top of the file such as:
          $( set.mm - Version of 13-Dec-2016 $)
@@ -5927,7 +5291,6 @@ void verifyMarkup(vstring labelMatch,
   } /* if (dateSkip == 0) */
 
 
-  /* 18-Dec-2016 nm */
   print2("Checking section header comments...\n");
   for (stmtNum = 1; stmtNum <= g_statements; stmtNum++) {
     if (g_Statement[stmtNum].type != a_ && g_Statement[stmtNum].type != p_) {
@@ -5940,19 +5303,18 @@ void verifyMarkup(vstring labelMatch,
     let(&hugeHdr, "");
     let(&bigHdr, "");
     let(&smallHdr, "");
-    let(&tinyHdr, ""); /* 21-Aug-2017 nm */
+    let(&tinyHdr, "");
     let(&hugeHdrComment, "");
     let(&bigHdrComment, "");
     let(&smallHdrComment, "");
-    let(&tinyHdrComment, ""); /* 21-Aug-2017 nm */
+    let(&tinyHdrComment, "");
     f = getSectionHeadings(stmtNum, &hugeHdr, &bigHdr, &smallHdr,
-        &tinyHdr, /* 21-Aug-2017 nm */
-        /* 5-May-2015 nm */
+        &tinyHdr,
         &hugeHdrComment, &bigHdrComment, &smallHdrComment,
         &tinyHdrComment,
         0, /* fineResolution */
         0 /* fullComment */);
-    if (f != 0) errFound = 1;  /* 6-Aug-2019 nm */
+    if (f != 0) errFound = 1;
 
     g_showStatement /* global */ = stmtNum; /* For printTexComment() */
     g_texFilePtr /* global */  = NULL; /* Not used, but set to something */
@@ -5961,26 +5323,23 @@ void verifyMarkup(vstring labelMatch,
     if (hugeHdrComment[0] != 0)
       f = (char)(f + printTexComment(hugeHdrComment,
           0, /* 1 = htmlCenterFlag (irrelevant for this call) */
-          PROCESS_EVERYTHING + ERRORS_ONLY, /* actionBits */ /* 13-Dec-2018 nm */
+          PROCESS_EVERYTHING + ERRORS_ONLY, /* actionBits */
           fileSkip /* 1 = noFileCheck */));
     if (bigHdrComment[0] != 0)
       f = (char)(f + printTexComment(bigHdrComment,
           0, /* 1 = htmlCenterFlag (irrelevant for this call) */
-          PROCESS_EVERYTHING + ERRORS_ONLY, /* actionBits */ /* 13-Dec-2018 nm */
+          PROCESS_EVERYTHING + ERRORS_ONLY, /* actionBits */
           fileSkip /* 1 = noFileCheck */));
     if (smallHdrComment[0] != 0)
       f = (char)(f + printTexComment(smallHdrComment,
           0, /* 1 = htmlCenterFlag (irrelevant for this call) */
-          PROCESS_EVERYTHING + ERRORS_ONLY, /* actionBits */ /* 13-Dec-2018 nm */
+          PROCESS_EVERYTHING + ERRORS_ONLY, /* actionBits */
           fileSkip /* 1 = noFileCheck */));
-
-    /* Added 21-Aug-2017 nm */
     if (tinyHdrComment[0] != 0)
       f = (char)(f + printTexComment(tinyHdrComment,
           0, /* 1 = htmlCenterFlag (irrelevant for this call) */
-          PROCESS_EVERYTHING + ERRORS_ONLY, /* actionBits */ /* 13-Dec-2018 nm */
+          PROCESS_EVERYTHING + ERRORS_ONLY, /* actionBits */
           fileSkip /* 1 = noFileCheck */));
-    /* (End of 21-Aug-2017 addition) */
 
     if (f != 0) printf(
 "    (The warning above refers to a header above the referenced statement.)\n");
@@ -5996,7 +5355,6 @@ void verifyMarkup(vstring labelMatch,
           fileSkip); /* 1 = ignore missing external files (gifs, bib, etc.) */
   if (f != 0) errFound = 1;
 
-  /* 17-Jul-2020 nm */
   /* Check mathboxes for cross-references */
   if (mathboxSkip == 0) {
     print2("Checking mathbox independence...\n");
@@ -6018,18 +5376,7 @@ void verifyMarkup(vstring labelMatch,
           nmbrLet(&proof, g_WrkProof.proofString);
         }
         plen = nmbrLen(proof);
-        /* Get the essential step flags, if required */
-        /*
-        if (essentialFlag) {
-          nmbrLet(&essentialFlags, nmbrGetEssential(proof));
-        }
-        */
         for (step = 0; step < plen; step++) {
-          /*
-          if (essentialFlag) {
-            if (!essentialFlags[step]) continue;  /@ Ignore floating hypotheses @/
-          }
-          */
           stmt = proof[step];
           if (stmt < 0) continue; /* Local step or '?' step */
           if (stmt == 0) bug(266);
@@ -6082,14 +5429,6 @@ void verifyMarkup(vstring labelMatch,
     } /* next pmbox */
     /* Deallocate */
     let(&dupCheck, "");
-    /**** 5-Aug-2020 nm Deleted
-    nmbrLet(&mathboxStart, NULL_NMBRSTRING);
-    nmbrLet(&mathboxEnd, NULL_NMBRSTRING);
-    for (mbox = 1; mbox <= mathboxes; mbox++) {
-      let((vstring *)(&mathboxUser[mbox - 1]), "");
-    }
-    pntrLet(&mathboxUser, NULL_PNTRSTRING);
-    ****/
     nmbrLet(&proof, NULL_NMBRSTRING);
   }
 
@@ -6102,25 +5441,11 @@ void verifyMarkup(vstring labelMatch,
   eraseTexDefs();
 
   /* Deallocate string memory */
-  /**** deleted 3-May-2017 because now we use only mostRecentDate
-  let(&contributor, "");
-  let(&contribDate, "");
-  let(&reviser, "");
-  let(&reviseDate, "");
-  let(&shortener, "");
-  let(&shortenDate, "");
-  ******/
   let(&mostRecentDate, "");
   let(&mmVersionDate, "");
   let(&descr, "");
   let(&str1, "");
   let(&str2, "");
-
-  /* Added 21-Aug-2017 nm */
-  /* (It seems that I forgot to deallocate in earlier versions,
-     although it usually wouldn't have caused leakage since the last
-     statement in the .mm file normally won't have a header.  But
-     we do it here to be safe.) */
   let(&hugeHdr, "");
   let(&bigHdr, "");
   let(&smallHdr, "");
@@ -6129,15 +5454,12 @@ void verifyMarkup(vstring labelMatch,
   let(&bigHdrComment, "");
   let(&smallHdrComment, "");
   let(&tinyHdrComment, "");
-  /* (End of 21-Aug-2017 addition) */
-
   return;
 
 } /* verifyMarkup */
 
 
 
-/* 10-Dec-2018 nm Added */
 /* Function to process markup in an arbitrary non-Metamath HTML file, treating
    the file as a giant comment. */
 void processMarkup(vstring inputFileName, vstring outputFileName,
@@ -6208,12 +5530,11 @@ void processMarkup(vstring inputFileName, vstring outputFileName,
 }
 
 
-/* 3-May-2016 nm */
 /* List "discouraged" statements with "(Proof modification is discouraged."
    and "(New usage is discourged.)" comment markup tags. */
 /* This function is primarily intended for use with the "travis" system
    to identify versioning differences on GitHub. */
-void showDiscouraged(void) {   /* was: showRestricted */
+void showDiscouraged(void) {
   long stmt, s, usageCount;
   long lowStmt = 0, highStmt = 0; /* For a slight speedup */
   flag notQuitPrint = 1; /* Goes to 0 if user typed 'q' at scroll prompt */
@@ -6277,7 +5598,6 @@ void showDiscouraged(void) {   /* was: showRestricted */
   let(&str1, ""); /* Deallocate */
 } /* showDiscouraged */
 
-/* Added 14-Sep-2012 nm */
 /* Take a relative step FIRST, LAST, +nn, -nn (relative to the unknown
    essential steps) or ALL, and return the actual step for use by ASSIGN,
    IMPROVE, REPLACE, LET (or 0 in case of ALL, used by IMPROVE).  In case
@@ -6360,7 +5680,7 @@ long getStepNum(vstring relStep, /* User's argument */
           /* Found it */
           actualStepVal = i;
           break;
-        }             /* 16-Apr-06 */
+        }
       }
     } /* Next i */
   } else {
@@ -6375,7 +5695,7 @@ long getStepNum(vstring relStep, /* User's argument */
           /* Found it */
           actualStepVal = i;
           break;
-        }             /* 16-Apr-06 */
+        }
       }
     } /* Next i */
   }
@@ -6399,7 +5719,6 @@ long getStepNum(vstring relStep, /* User's argument */
 } /* getStepNum */
 
 
-/* Added 22-Apr-2015 nm */
 /* Convert the actual step numbers of an unassigned step to the relative
    -1, -2, etc. offset for SHOW NEW_PROOF ...  /UNKNOWN, to make it easier
    for the user to ASSIGN the relative step number. A 0 is returned
@@ -6432,7 +5751,6 @@ nmbrString *getRelStepNums(nmbrString *pfInProgress) {
 } /* getRelStepNums */
 
 
-/* 19-Sep-2012 nm */
 /* This procedure finds the next statement number whose label matches
    stmtName.  Wildcards are allowed.  If uniqueFlag is 1,
    there must be exactly one match, otherwise an error message is printed
@@ -6453,7 +5771,7 @@ long getStatementNum(vstring stmtName, /* Possibly with wildcards */
   flag hasWildcard;
   long matchesFound, matchStmt, matchStmt2, stmt;
   char typ;
-  flag laterMatchFound = 0; /* For better error message */ /* 16-Jan-2014 nm */
+  flag laterMatchFound = 0; /* For better error message */
 
   hasWildcard = 0;
   /* (Note strpbrk warning in mmpars.c) */
@@ -6473,16 +5791,8 @@ long getStatementNum(vstring stmtName, /* Possibly with wildcards */
   matchStmt = 1; /* Set to a legal value in case of bug */
   matchStmt2 = 1; /* Set to a legal value in case of bug */
 
-  /**** 18-Jul-2020 nm No longer needed; done in matches() (called by
-     matchesList() below) @/
-  if (!strcmp(stmtName, "=") && proveStatement != 0) {
-     let(&stmtName, g_Statement[proveStatement].labelName);
-  }
-  *****/
-
   for (stmt = startStmt; stmt <= g_statements; stmt++) {
 
-    /* 16-Jan-2014 nm */
     if (stmt >= maxStmt) {
       if (matchesFound > 0) break; /* Normal exit when a match was found */
       if (!uniqueFlag) break; /* We only want to scan up to maxStmt anyway */
@@ -6528,7 +5838,6 @@ long getStatementNum(vstring stmtName, /* Possibly with wildcards */
       }
     }
 
-    /* 16-Jan-2014 nm */
     if (stmt >= maxStmt) {
       /* For error messages:
          This signals that a later match (after the statement being
@@ -6572,9 +5881,8 @@ long getStatementNum(vstring stmtName, /* Possibly with wildcards */
         print2("?No $a or $p statement label matches \"%s\".\n",
           stmtName);
       } else {
-        /* 16-Jan-2014 nm */
-        print2(
-   "?You must specify a statement that occurs earlier the one being proved.\n");
+        print2("?You must specify a statement "
+          "that occurs earlier the one being proved.\n");
       }
     } else {
       /* This is normally for ASSIGN */
@@ -6584,9 +5892,8 @@ long getStatementNum(vstring stmtName, /* Possibly with wildcards */
             "\" was not found or is not a hypothesis of the statement ",
             "being proved.", NULL), "", " ");
       } else {
-        /* 16-Jan-2014 nm */
-        print2(
-   "?You must specify a statement that occurs earlier the one being proved.\n");
+        print2("?You must specify a statement "
+          "that occurs earlier the one being proved.\n");
       }
     }
   } else if (matchesFound == 2) {
@@ -6612,7 +5919,6 @@ long getStatementNum(vstring stmtName, /* Possibly with wildcards */
 
 
 /* Called by help() - prints a help line */
-/* THINK C gives compilation error if H() is lower-case h() -- why? */
 void H(vstring helpLine)
 {
   if (g_printHelp) {
@@ -6622,7 +5928,6 @@ void H(vstring helpLine)
 
 
 
-/******** 8/28/00 ***********************************************************/
 /******** The MIDI output algorithm is in this function, outputMidi(). ******/
 /*** Warning:  If you want to experiment with the MIDI output, please
      confine changes to this function.  Changes to other code
