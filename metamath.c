@@ -24,7 +24,6 @@
     mmpars.c - Parses the source file
     mmpfas.c - Proof Assistant
     mmunif.c - Unification algorithm for Proof Assistant
-    mmutil.c - Miscellaneous I/O utilities (reserved for future use)
     mmveri.c - Proof verifier for source file
     mmvstr.c - BASIC-like string functions
     mmwtex.c - LaTeX/HTML source generation
@@ -689,7 +688,6 @@
 #include <ctype.h>
 #include <stdarg.h>
 /* #include <time.h> */ /* 21-Jun-2014 nm For ELAPSED_TIME */
-#include "mmutil.h"
 #include "mmvstr.h"
 #include "mmdata.h"
 #include "mmcmdl.h"
@@ -7999,5 +7997,3 @@ void command(int argc, char *argv[])
 
   }
 } /* command */
-
-
