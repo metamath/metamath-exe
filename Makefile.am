@@ -10,7 +10,6 @@ noinst_HEADERS = \
 	mmpars.h \
 	mmpfas.h \
 	mmunif.h \
-	mmutil.h \
 	mmveri.h \
 	mmvstr.h \
 	mmword.h \
@@ -27,7 +26,6 @@ metamath_SOURCES = \
 	mmpars.c \
 	mmpfas.c \
 	mmunif.c \
-	mmutil.c \
 	mmveri.c \
 	mmvstr.c \
 	mmword.c \
