@@ -28,7 +28,7 @@ void typeProof(long statemNum,
   flag reverseFlag,
   flag noIndentFlag,
   long startColumn,
-  flag skipRepeatedSteps, /* 28-Jun-2013 nm Added */
+  flag skipRepeatedSteps,
   flag texFlag,
   flag htmlFlg);
 /* Show details of step */
@@ -39,12 +39,12 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag);
 flag traceProof(long statemNum,
   flag essentialFlag,
   flag axiomFlag,
-  vstring matchList, /* 19-May-2013 nm */
-  vstring traceToList, /* 18-Jul-2015 nm */
-  flag testOnlyFlag /* 20-May-2013 nm */);
+  vstring matchList,
+  vstring traceToList,
+  flag testOnlyFlag);
 void traceProofWork(long statemNum,
   flag essentialFlag,
-  vstring traceToList, /* 18-Jul-2015 nm */
+  vstring traceToList,
   vstring *statementUsedFlagsP, /* 'y'/'n' flag that statement is used */
   nmbrString **unprovedListP);
 /* Traces back the statements used by a proof, recursively, with tree display.*/
@@ -59,23 +59,20 @@ double countSteps(long statemNum, flag essentialFlag);
 /* Traces what statements require the use of a given statement */
 vstring traceUsage(long statemNum,
   flag recursiveFlag,
-  long cutoffStmt /* if nonzero, stop scan there */ /* 18-Jul-2015 nm */);
-vstring htmlDummyVars(long showStmt);  /* 12-Aug-2017 nm */
-vstring htmlAllowedSubst(long showStmt);  /* 4-Jan-2014 nm */
+  long cutoffStmt /* if nonzero, stop scan there */);
+vstring htmlDummyVars(long showStmt);
+vstring htmlAllowedSubst(long showStmt);
 
 void readInput(void);
 /* WRITE SOURCE command */
-void writeSource(/* flag cleanFlag, 3-May-2017 */ /* 1 = "/ CLEAN" qualifier was chosen */
-                flag reformatFlag /* 1 = "/ FORMAT", 2 = "/REWRAP" */,
-                /* 31-Dec-2017 nm */
-                flag splitFlag,  /* /SPLIT - write out separate $[ $] includes */
-                flag noVersioningFlag, /* /NO_VERSIONING - no ~1 backup */
-                flag keepSplitsFlag, /* /KEEP_SPLITS - don't delete included files
-                                      when /SPIT is not specified */
-                vstring extractLabels /* "" means write everything */
-                );
+void writeSource(
+  flag reformatFlag /* 1 = "/ FORMAT", 2 = "/REWRAP" */,
+  flag splitFlag,  /* /SPLIT - write out separate $[ $] includes */
+  flag noVersioningFlag, /* /NO_VERSIONING - no ~1 backup */
+  flag keepSplitsFlag, /* /KEEP_SPLITS - don't delete included files
+                        when /SPIT is not specified */
+  vstring extractLabels); /* "" means write everything */
 
-/* 24-Aug-2020 nm */
 /* Get info for WRITE SOURCE ... / EXTRACT */
 void writeExtractedSource(vstring extractLabels, /* EXTRACT argument provided by user */
   vstring fullOutput_fn, flag noVersioningFlag);
@@ -87,25 +84,21 @@ void eraseSource(void);
 void verifyProofs(vstring labelMatch, flag verifyFlag);
 
 
-/* 7-Nov-2015 nm Added this function for date consistency */
 /* If checkFiles = 0, do not open external files.
    If checkFiles = 1, check mm*.html, presence of gifs, etc. */
 void verifyMarkup(vstring labelMatch, flag dateSkip, flag topDateSkip,
     flag fileSkip,
-    flag underscoreSkip, /* 25-Jun-2020 nm */
-    flag mathboxSkip, /* 17-Jul-2020 nm */
-    flag verboseMode); /* 26-Dec-2016 nm */
+    flag underscoreSkip,
+    flag mathboxSkip,
+    flag verboseMode);
 
-/* 10-Dec-2018 nm Added */
 void processMarkup(vstring inputFileName, vstring outputFileName,
     flag processCss, long actionBits);
 
-/* 3-May-2016 nm */
 /* List "discouraged" statements with "(Proof modification is discouraged."
    and "(New usage is discourged.)" comment markup tags. */
 void showDiscouraged(void);
 
-/* 14-Sep-2012 nm */
 /* Take a relative step FIRST, LAST, +nn, -nn (relative to the unknown
    essential steps) or ALL, and return the actual step for use by ASSIGN,
    IMPROVE, REPLACE, LET (or 0 in case of ALL, used by IMPROVE).  In case
@@ -115,7 +108,6 @@ long getStepNum(vstring relStep, /* User's argument */
    nmbrString *pfInProgress, /* proofInProgress.proof */
    flag allFlag /* 1 = "ALL" is permissable */);
 
-/* 22-Apr-2015 nm */
 /* Convert the actual step numbers of an unassigned step to the relative
    -1, -2, etc. offset for SHOW NEW_PROOF ...  /UNKNOWN, to make it easier
    for the user to ASSIGN the relative step number. A 0 is returned
@@ -124,7 +116,6 @@ long getStepNum(vstring relStep, /* User's argument */
 /* The caller must deallocate the returned nmbrString. */
 nmbrString *getRelStepNums(nmbrString *pfInProgress);
 
-/* 19-Sep-2012 nm */
 /* This procedure finds the next statement number whose label matches
    stmtName.  Wildcards are allowed.  If uniqueFlag is 1,
    there must be exactly one match, otherwise an error message is printed,
@@ -142,13 +133,11 @@ long getStatementNum(vstring stmtName, /* Possibly with wildcards */
     flag efOnlyForMaxStmt, /* If 1, $e and $f must belong to maxStmt */
     flag uniqueFlag); /* If 1, match must be unique */
 
-/*extern vstring mainFileName;*/  /* 15-Aug-2020 nm Obsolete on 28-Dec-05 */
-
 /* For HELP processing */
 extern flag g_printHelp;
 void H(vstring helpLine);
 
-/* For MIDI files - added 8/28/00 */
+/* For MIDI files */
 extern flag g_midiFlag; /* Set to 1 if typeProof() is to output MIDI file */
 extern vstring g_midiParam; /* Parameter string for MIDI file */
 void outputMidi(long plen, nmbrString *indentationLevels,

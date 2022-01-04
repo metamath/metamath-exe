@@ -113,7 +113,7 @@ Note:  i = 0 through g_hentyFilterSize-1 below.
 #include "mminou.h"
 #include "mmpars.h"
 #include "mmunif.h"
-#include "mmpfas.h" /* 8/28/99 For proveStatement global variable */
+#include "mmpfas.h" /* For proveStatement global variable */
 
 /*long g_minSubstLen = 0;*/ /* User-settable value - 0 or 1 */
 long g_minSubstLen = 1; /* It was decided to disallow empty subst. by default
@@ -147,9 +147,7 @@ void hentyAdd(nmbrString *hentyVars, nmbrString *hentyVarStart,
 int maxNestingLevel = -1;
 int nestingLevel = 0;
 
-/* 8/29/99 For improving rejection of impossible substitutions */
-/* 1-Oct-2017 nm Made g_firstConst global so eraseSource() can clear it */
-/* 2-Oct-2017 nm Made them all global so valgrind won't complain */
+/* For improving rejection of impossible substitutions */
 nmbrString *g_firstConst = NULL_NMBRSTRING;
 nmbrString *g_lastConst = NULL_NMBRSTRING;
 nmbrString *g_oneConst = NULL_NMBRSTRING;
@@ -343,12 +341,12 @@ char unify(
   flag timeoutAbortFlag = 0;
   vstring mToken; /* Pointer only; not allocated */
 
-  /* 8/28/99 For detection of simple impossible unifications */
+  /* For detection of simple impossible unifications */
   flag impossible;
   long stmt;
 
-  /* 26-Sep-2010 nm For bracket matching heuristic for set.mm */
-  static char bracketMatchOn; /* 26-Sep-2010 nm Default is 'on' */
+  /* For bracket matching heuristic for set.mm */
+  static char bracketMatchOn; /* Default is 'on' */
   /* static char g_bracketMatchInit = 0; */ /* Global so ERASE can init it */
   long bracketScanStart, bracketScanStop; /* For one-time $a scan */
   flag bracketMismatchFound;
@@ -393,10 +391,10 @@ char unify(
   nmbrLet(&schA, nmbrAddElement(schemeA, g_mathTokens));
   nmbrLet(&schB, nmbrAddElement(schemeB, g_mathTokens));
 
-  /* 8/29/99 Initialize the usage of constants as the first, last,
+  /* Initialize the usage of constants as the first, last,
      only constant in a $a statement - for rejecting some simple impossible
-     substitutions - Speed-up: this is now done once and never deallocated*/
-  /* 1-Oct-2017 nm g_firstConst is now cleared in eraseSource.c() (mmcmds.c)
+     substitutions - Speed-up: this is now done once and never deallocated */
+  /* g_firstConst is now cleared in eraseSource.c() (mmcmds.c)
      to trigger this initialization after "erase" */
   if (!nmbrLen(g_firstConst)) {
     /* nmbrSpace() sets all entries to 0, not 32 (ASCII space) */
@@ -777,10 +775,9 @@ char unify(
     goto backtrack;
   }
 
-  /************* Start of 26-Sep-2010 *************/
   /* Bracket matching is customized to set.mm to result in fewer ambiguous
      unifications. */
-  /* 26-Sep-2010 nm Automatically disable bracket matching if any $a has
+  /* Automatically disable bracket matching if any $a has
      unmatched brackets */
   /* The static variable g_bracketMatchInit tells us to check all $a's
      if it is 0; if 1, skip the $a checking.  Make sure that the RESET
@@ -848,7 +845,7 @@ char unify(
         break;
       }
 
-      /* Make sure left and right brackets match */  /* Added 12-Nov-05 nm */
+      /* Make sure left and right brackets match */
       pairingMismatches = 0; /* Counter of brackets: + for "[" and - for "]" */
       for (k = 0; k < j; k++) {
         mToken = g_MathToken[nmbrTmpPtr[k]].tokenName;
@@ -883,7 +880,7 @@ char unify(
         break;
       }
 
-      /* Make sure underlined brackets match */  /* Added 12-Nov-05 nm */
+      /* Make sure underlined brackets match */
       pairingMismatches = 0; /* Counter of brackets: + for "[_", - for "]_" */
       for (k = 0; k < j; k++) {
         mToken = g_MathToken[nmbrTmpPtr[k]].tokenName;
@@ -928,16 +925,15 @@ char unify(
   } /* next i */
 
   if (bracketMismatchFound) goto backtrack;
-  /************* End of 26-Sep-2010 *************/
 
   j = nmbrLen(substitution);
 
-  /* 8/29/99 - Quick scan to reject some impossible unifications: If the
+  /* Quick scan to reject some impossible unifications: If the
      first symbol in a substitution is a constant, it must match
      the 2nd constant of some earlier $a statement (e.g. "<" matches
      "class <", "Ord (/)" matches "class Ord A").  Same applies to
      last symbol. */
-  /* 10/12/02 - This prefilter is too aggressive when empty substitutions
+  /* This prefilter is too aggressive when empty substitutions
      are allowed.  Therefore added "g_minSubstLen > 0" to fix miu.mm theorem1
      Proof Assistant failure reported by Josh Purinton. */
   if (j/*subst len*/ > 0 && g_minSubstLen > 0) {

@@ -48,8 +48,8 @@ nmbrString *proveByReplacement(long prfStmt,
     flag dummyVarFlag, /* 0 means no dummy vars are in prfStmt */
     flag searchMethod, /* 1 means to try proveFloating on $e's also */
     long improveDepth,
-    flag overrideFlag, /* 1 means to override usage locks */ /* 3-May-2016 nm */
-    flag mathboxFlag /* 1 means allow mathboxes */ /* 5-Aug-2020 nm */
+    flag overrideFlag, /* 1 means to override usage locks */
+    flag mathboxFlag /* 1 means allow mathboxes */
     );
 
 nmbrString *replaceStatement(long replStatemNum,
@@ -60,11 +60,10 @@ nmbrString *replaceStatement(long replStatemNum,
     flag noDistinct, /* 1 means don't try statements with $d's */
     flag searchMethod, /* 1 means to try proveFloating on $e's also */
     long improveDepth,
-    flag overrideFlag, /* 1 means to override usage locks */ /* 3-May-2016 nm */
-    flag mathboxFlag /* 1 means allow mathboxes */ /* 5-Aug-2020 nm */
+    flag overrideFlag, /* 1 means to override usage locks */
+    flag mathboxFlag /* 1 means allow mathboxes */
     );
 
-/* 22-Aug-2012 nm Added this function */
 /* This function identifies all steps in the proof in progress that (1) are
    independent of step refStep, (2) have no dummy variables, (3) are
    not $f's or $e's, and (4) have subproofs that are complete
@@ -74,7 +73,6 @@ nmbrString *replaceStatement(long replStatemNum,
    Note: The caller must deallocate the returned vstring. */
 vstring getIndepKnownSteps(long proofStmt, long refStep);
 
-/* 22-Aug-2012 nm Added this function */
 /* This function classifies each proof step in g_ProofInProgress.proof
    as known or unknown ('K' or 'U' in the returned string) depending
    on whether the step has a completely known subproof.
@@ -86,15 +84,13 @@ vstring getKnownSubProofs(void);
    .target of the deleted unknown step is retained). */
 void addSubProof(nmbrString *subProof, long step);
 
-/* 11-Sep-2016 nm */
 /* This function eliminates any occurrences of statement sourceStmtNum in the
    targetProof by substituting it with the proof of sourceStmtNum.  An empty
    nmbrString is returned if there was an error. */
 /* Normally, targetProof is the global g_ProofInProgress.proof.  However,
    we make it an argument in case in the future we'd like to do this
    outside of the proof assistant. */
-nmbrString *expandProof(nmbrString *targetProof,
-    long sourceStmtNum /*, long targetStmtNum*/);
+nmbrString *expandProof(nmbrString *targetProof, long sourceStmtNum);
 
 /* Delete a subproof starting (in reverse from) step.  The step is replaced
    with an unknown step, and its .target field is retained. */
@@ -115,14 +111,12 @@ char checkMStringMatch(nmbrString *mString, long step);
    considered.  A value of 0 means none are considered. */
 nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
     long step, flag noDistinct,
-    /* 3-May-2016 nm */
     flag overrideFlag, /* 0 means respect usage locks
                          1 means to override usage locks
                          2 means override silently */
-    flag mathboxFlag /* 1 means allow mathboxes */ /* 5-Aug-2020 nm */
+    flag mathboxFlag /* 1 means allow mathboxes */
 );
 
-/* 22-Aug-2012 nm Added this function */
 /* This function does quick check for some common conditions that prevent
    a trial statement (scheme) from being unified with a given instance.
    Return value 0 means it can't be unified, 1 means it might be unifiable. */
@@ -173,14 +167,12 @@ void replaceDummyVar(long dummyVar, nmbrString *mString);
 /* Get subproof length of a proof, starting at endStep and going backwards */
 long subproofLen(nmbrString *proof, long endStep);
 
-/* 25-Aug-2012 nm Added this function */
 /* If testStep has no dummy variables, return 0;
    if testStep has isolated dummy variables (that don't affect rest of
    proof), return 1;
    if testStep has dummy variables used elsewhere in proof, return 2 */
 char checkDummyVarIsolation(long testStep); /* 0=1st step, 1=2nd, etc. */
 
-/* 25-Aug-2012 nm Added this function */
 /* Given a starting step, find its parent (the step it is a hypothesis of) */
 /* If the starting step is the last proof step, just return it */
 long getParentStep(long startStep); /* 0=1st step, 1=2nd, etc. */
