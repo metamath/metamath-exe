@@ -88,7 +88,7 @@ void printTexHeader(flag texHeaderFlag);
 flag printTexComment(vstring commentPtr,    /* Sends result to g_texFilePtr */
     flag htmlCenterFlag, /* 1 = htmlCenterFlag */
     long actionBits, /* see indicators below */
-    flag fileCheck /* 1 = noFileCheck */);
+    flag fileCheck /* 1 = fileCheck */);
 /* Indicators for actionBits */
 #define ERRORS_ONLY 1
 #define PROCESS_SYMBOLS 2
