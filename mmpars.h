@@ -10,8 +10,7 @@
 #include "mmvstr.h"
 #include "mmdata.h"
 
-char *readRawSource(/*vstring inputFn,*/ /* 2-Feb-2018 nm Unused argument */
-    vstring inputBuf, long *size);
+char *readRawSource(vstring inputBuf, long *size);
 void parseKeywords(void);
 void parseLabels(void);
 void parseMathDecl(void);
@@ -20,9 +19,7 @@ char parseProof(long statemNum);
 char parseCompressedProof(long statemNum);
 nmbrString *getProof(long statemNum, flag printFlag);
 
-void rawSourceError(char *startFile, char *ptr, long tokenLen,
-    /*long lineNum,*/                       /* 2-Feb-2018 nm */
-    /*vstring fileName,*/ vstring errMsg);  /* 2-Feb-2018 nm */
+void rawSourceError(char *startFile, char *ptr, long tokenLen, vstring errMsg);
 void sourceError(char *ptr, long tokenLen, long stmtNum, vstring errMsg);
 void mathTokenError(long tokenNum /* 0 is 1st one */,
     nmbrString *tokenList, long stmtNum, vstring errMsg);
@@ -52,7 +49,7 @@ int hypAndLocSrchCmp(const void *key, const void *data);
    is returned.  If ptr points to a null character, 0 is returned. */
 long whiteSpaceLen(char *ptr);
 
-/* 31-Dec-2017 nm For .mm file splitting */
+/* For .mm file splitting */
 /* Like whiteSpaceLen except comments are not whitespace */
 long rawWhiteSpaceLen(char *ptr);
 
@@ -78,7 +75,6 @@ long rawTokenLen(char *ptr);
    ":" is considered a token. */
 long proofTokenLen(char *ptr);
 
-/* 9-Jan-2018 nm */
 /* Counts the number of \n between start for length chars.
    If length = -1, then use end-of-string 0 to stop.
    If length >= 0, then scan at most length chars, but stop
@@ -143,18 +139,15 @@ extern struct wrkProof_struct g_WrkProof;
    provides the context for the parse (to get correct active symbols) */
 nmbrString *parseMathTokens(vstring userText, long statemNum);
 
-/* 12-Jun-2011 nm Added reformatFlag */
 vstring outputStatement(long stmt, /*flag cleanFlag,*/ flag reformatFlag);
-/* 12-Jun-2011 nm */
 /* Caller must deallocate return string */
 vstring rewrapComment(vstring comment);
 
-/* 10/10/02 */
 /* Lookup $a or $p label and return statement number.
    Return -1 if not found. */
 long lookupLabel(vstring label);
 
-/* 31-Dec-2017 nm For file splitting */
+/* For file splitting */
 
 /* Get the next real $[...$] or virtual $( Begin $[... inclusion */
 void getNextInclusion(char *fileBuf, long startOffset, /* inputs */
@@ -173,7 +166,6 @@ void getNextInclusion(char *fileBuf, long startOffset, /* inputs */
    to a linear buffer in preparation for creating the output file. */
 vstring writeSourceToBuffer(void);
 
-/* 31-Dec-2017 nm */
 /* This function creates split files containing $[ $] inclusions, from
    a nonsplit source with $( Begin $[... etc. inclusions */
 /* Note that *fileBuf is assigned to the empty string upon return, to
@@ -186,7 +178,6 @@ void writeSplitSource(vstring *fileBuf, vstring fileName,
    to ~1) since their content will be in the main output file. */
 void deleteSplits(vstring *fileBuf, flag noVersioningFlag);
 
-/* 9-Jan-2018 nm */
 /* Get file name and line number given a pointer into the read buffer */
 /* The user must deallocate the returned string (file name) */
 /* The globals includeCall structure and includeCalls are used */
@@ -194,7 +185,6 @@ vstring getFileAndLineNum(vstring buffPtr/*start of read buffer*/,
     vstring currentPtr/*place at which to get file name and line no*/,
     long *lineNum/*return argument*/);
 
-/* 9-Jan-2018 nm */
 /* statement[stmtNum].fileName and .lineNum are initialized to "" and 0.
    To save CPU time, they aren't normally assigned until needed, but once
    assigned they can be reused without looking them up again.  This function

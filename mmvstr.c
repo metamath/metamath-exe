@@ -20,8 +20,7 @@ This is an emulation of the string functions available in VMS BASIC.
 #include "mmvstr.h"
 /*E*/ /*Next line is need to declare "db" for debugging*/
 #include "mmdata.h"
-/* 1-Dec-05 nm
-   mmdata.h is also used to declare the bug() function that is called in
+/* mmdata.h is also used to declare the bug() function that is called in
    several places by mmvstr.c.  To make mmvstr.c and mmvstr.h completely
    independent of the other programs, for use with another project, do the
    following:
@@ -103,14 +102,13 @@ void makeTempAlloc(vstring s)
 } /* makeTempAlloc */
 
 
-/* 8-Jul-2013 Wolf Lammen - rewritten to simplify it */
-void let(vstring *target, vstring source)        /* String assignment */
+/* String assignment */
 /* This function must ALWAYS be called to make assignment to */
 /* a vstring in order for the memory cleanup routines, etc. */
 /* to work properly.  If a vstring has never been assigned before, */
 /* it is the user's responsibility to initialize it to "" (the */
 /* null string). */
-{
+void let(vstring *target, vstring source) {
 
   size_t sourceLength = strlen(source);  /* Save its length */
   size_t targetLength = strlen(*target); /* Save its length */
@@ -187,7 +185,6 @@ vstring cat(vstring string1,...)        /* String concatenation */
 } /* cat */
 
 
-/* 20-Oct-2013 Wolf Lammen - allow unlimited input line lengths */
 /* Input a line from the user or from a file */
 /* Returns 1 if a (possibly empty) line was successfully read, 0 if EOF */
 int linput(FILE *stream, const char* ask, vstring *target)
@@ -282,12 +279,12 @@ vstring right(vstring sin, long n)
 
 
 /* Emulate VMS BASIC edit$ command */
-vstring edit(vstring sin,long control)
+vstring edit(vstring sin,long control) {
+
+/* Added _ to fix '"isblank" redefined' compiler warning */
 #define isblank_(c) ((c == ' ') || (c == '\t'))
-    /* 11-Sep-2009 nm Added _ to fix '"isblank" redefined' compiler warning */
 #define isblankorlf_(c) ((c == ' ') || (c == '\t') || (c == '\n'))
-    /* 8-May-2015 nm added isblankorlf_ */
-{
+
   /* EDIT$ (from VMS BASIC manual)
        Syntax:  str-vbl = EDIT$(str-exp, int-exp)
        Values   Effect
@@ -306,11 +303,7 @@ vstring edit(vstring sin,long control)
        1024     Tab the line (convert spaces to equivalent tabs)
        2048     Untab the line (convert tabs to equivalent spaces)
        4096     Convert VT220 screen print frame graphics to -,|,+ characters
-
-       (Added 10/24/03:)
        8192     Discard CR only (to assist DOS-to-Unix conversion)
-
-       (Added 8-May-2015 nm:)
        16384    Discard trailing spaces, tabs, and LFs
   */
   vstring sout;
@@ -451,7 +444,6 @@ vstring edit(vstring sin,long control)
     sout[++k] = 0;
   }
 
-  /* 8-May-2015 nm */
   /* Discard trailing space/tab and LF */
   if (traildiscardLF_flag) {
     --k;
@@ -505,7 +497,7 @@ vstring edit(vstring sin,long control)
     }
     *****/
 
-    /* Untab string containing multiple lines */ /* 9-Jul-2011 nm */
+    /* Untab string containing multiple lines */
     /* (Currently this is needed by outputStatement() in mmpars.c) */
     k = (long)strlen(sout);
     m = 0;  /* Position on line relative to last '\n' */
@@ -549,7 +541,6 @@ vstring edit(vstring sin,long control)
     for (i = 8; i < k; i = i + 8) {
       j = i;
 
-      /* 25-May-2016 nm */
       /* gcc m*.c -o metamath.exe -O2 -Wall was giving:
              mmvstr.c:285:9: warning: assuming signed overflow does not occur
              when assuming that (X - c) <= X is always true [-Wstrict-overflow]
@@ -560,8 +551,7 @@ vstring edit(vstring sin,long control)
       m = i - 2;
 
       while (sout[j - 1] == ' ' && j > i - 8) j--;
-      /*if (j <= i - 2) {*/
-      if (j <= m) {  /* 25-May-2016 nm */
+      if (j <= m) {
         sout[j] = '\t';
         j = i;
         while (sout[j - 1] == ' ' && j > i - 8 + 1) {
@@ -638,7 +628,6 @@ long instr(long start_position, vstring string1, vstring string2)
 } /* instr */
 
 
-/* 12-Jun-2011 nm Added rinstr */
 /* Search for _last_ occurrence of string2 in string1 */
 /* 1 = 1st string character; 0 = not found */
 /* ??? Future - this could be made more efficient by searching directly,
@@ -727,7 +716,7 @@ vstring date()
   time_t time_val;
   char *month[12];
 
-  /* (Aggregrate initialization is not portable) */
+  /* (Aggregate initialization is not portable) */
   /* (It must be done explicitly for portability) */
   month[0] = "Jan";
   month[1] = "Feb";
@@ -744,16 +733,13 @@ vstring date()
 
   time(&time_val); /* Retrieve time */
   time_structure = localtime(&time_val); /* Translate to time structure */
-  sout = tempAlloc(15); /* 8-Mar-2019 nm Changed from 12 to 15 to prevent
-                           gcc 8.3 warning (patch provided by David Starner) */
+  sout = tempAlloc(15); /* Use 15 instead of 12 to prevent gcc 8.3 warning */
   /* "%02d" means leading zeros with min. field width of 2 */
   /* sprintf(sout,"%d-%s-%02d", */
-  sprintf(sout,"%d-%s-%04d", /* 10-Apr-06 nm 4-digit year */
+  sprintf(sout,"%d-%s-%04d",
       time_structure->tm_mday,
       month[time_structure->tm_mon],
-      /* time_structure->tm_year); */ /* old */
-      /* (int)((time_structure->tm_year) % 100)); */ /* Y2K */
-      (int)((time_structure->tm_year) + 1900)); /* 10-Apr-06 nm 4-digit yr */
+      (int)((time_structure->tm_year) + 1900));
   return(sout);
 } /* date */
 
@@ -769,7 +755,7 @@ vstring time_()
   char *format1 = "%d:%d %s";
   char *format2 = "%d:0%d %s";
   char *am_pm[2];
-  /* (Aggregrate initialization is not portable) */
+  /* (Aggregate initialization is not portable) */
   /* (It must be done explicitly for portability) */
   am_pm[0] = "AM";
   am_pm[1] = "PM";
@@ -837,8 +823,6 @@ vstring num(double f)
 } /* num */
 
 
-
-/*** NEW FUNCTIONS ADDED 11/25/98 ***/
 
 /* Emulate PROGRESS "entry" and related string functions */
 /* (PROGRESS is a 4-GL database language) */
@@ -926,7 +910,7 @@ long numEntries(vstring list)
 {
   long i, commaCount;
   if (list[0] == 0) {
-    commaCount = -1; /* 26-Apr-2006 nm Return 0 if list empty */
+    commaCount = -1; /* Return 0 if list empty */
   } else {
     commaCount = 0;
     i = 0;

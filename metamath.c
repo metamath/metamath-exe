@@ -687,7 +687,6 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdarg.h>
-/* #include <time.h> */ /* 21-Jun-2014 nm For ELAPSED_TIME */
 #include "mmvstr.h"
 #include "mmdata.h"
 #include "mmcmdl.h"
@@ -704,8 +703,7 @@
 
 void command(int argc, char *argv[]);
 
-int main(int argc, char *argv[])
-{
+int main(int argc, char *argv[]) {
 
 /* argc is the number of arguments; argv points to an array containing them */
 
@@ -727,12 +725,11 @@ int main(int argc, char *argv[])
     /*print2("Metamath - Version %s\n", MVERSION);*/
     print2("Metamath - Version %s%s", MVERSION, space(27 - (long)strlen(MVERSION)));
   }
-  /* if (argc < 2) */ print2("Type HELP for help, EXIT to exit.\n");
+  print2("Type HELP for help, EXIT to exit.\n");
 
   /* Allocate big arrays */
   initBigArrays();
 
-  /* 14-May-2017 nm */
   /* Set the default contributor */
   let(&g_contributorName, DEFAULT_CONTRIBUTOR);
 
@@ -751,8 +748,7 @@ int main(int argc, char *argv[])
 
 
 
-void command(int argc, char *argv[])
-{
+void command(int argc, char *argv[]) {
   /* Command line user interface -- this is an infinite loop; it fetches and
      processes a command; returns only if the command is 'EXIT' or 'QUIT' and
      never returns otherwise. */
@@ -772,7 +768,7 @@ void command(int argc, char *argv[])
   pntrString *expandedProof = NULL_PNTRSTRING;
   flag tmpFlag;
 
-  /* 1-Nov-2013 nm proofSavedFlag tells us there was at least one
+  /* proofSavedFlag tells us there was at least one
      SAVE NEW_PROOF during the MM-PA session while the UNDO stack wasn't
      empty, meaning that "UNDO stack empty" is no longer a reliable indication
      that the proof wasn't changed.  It is cleared upon entering MM-PA, and
@@ -794,19 +790,19 @@ void command(int argc, char *argv[])
   long detailStep;
   flag noIndentFlag; /* Flag to use non-indented display */
   long splitColumn; /* Column at which formula starts in nonindented display */
-  flag skipRepeatedSteps; /* NO_REPEATED_STEPS qualifier */ /* 28-Jun-2013 nm */
+  flag skipRepeatedSteps; /* NO_REPEATED_STEPS qualifier */
   flag texFlag; /* Flag for TeX */
   flag saveFlag; /* Flag to save in source */
-  flag fastFlag; /* Flag for SAVE PROOF.../FAST */ /* 2-Jan-2017 nm */
+  flag fastFlag; /* Flag for SAVE PROOF.../FAST */
   long indentation; /* Number of spaces to indent proof */
   vstring labelMatch = ""; /* SHOW PROOF <label> argument */
 
   flag axiomFlag; /* For SHOW TRACE_BACK */
-  flag treeFlag; /* For SHOW TRACE_BACK */ /* 19-May-2013 nm */
-  flag countStepsFlag; /* For SHOW TRACE_BACK */ /* 19-May-2013 nm */
-  flag matchFlag; /* For SHOW TRACE_BACK */ /* 19-May-2013 nm */
-  vstring matchList = "";  /* For SHOW TRACE_BACK */ /* 19-May-2013 nm */
-  vstring traceToList = ""; /* For SHOW TRACE_BACK */ /* 18-Jul-2015 nm */
+  flag treeFlag; /* For SHOW TRACE_BACK */
+  flag countStepsFlag; /* For SHOW TRACE_BACK */
+  flag matchFlag; /* For SHOW TRACE_BACK */
+  vstring matchList = "";  /* For SHOW TRACE_BACK */
+  vstring traceToList = ""; /* For SHOW TRACE_BACK */
   flag recursiveFlag; /* For SHOW USAGE */
   long fromLine, toLine; /* For TYPE, SEARCH */
   flag joinFlag; /* For SEARCH */
@@ -816,61 +812,60 @@ void command(int argc, char *argv[])
   nmbrString *essentialFlags = NULL_NMBRSTRING;
                                             /* For ASSIGN/IMPROVE FIRST/LAST */
   long improveDepth; /* For IMPROVE */
-  flag searchAlg; /* For IMPROVE */ /* 22-Aug-2012 nm */
-  flag searchUnkSubproofs;  /* For IMPROVE */ /* 4-Sep-2012 nm */
-  flag dummyVarIsoFlag; /* For IMPROVE */ /* 25-Aug-2012 nm */
-  long improveAllIter; /* For IMPROVE ALL */ /* 25-Aug-2012 nm */
-  flag proofStepUnk; /* For IMPROVE ALL */ /* 25-Aug-2012 nm */
+  flag searchAlg; /* For IMPROVE */
+  flag searchUnkSubproofs;  /* For IMPROVE */
+  flag dummyVarIsoFlag; /* For IMPROVE */
+  long improveAllIter; /* For IMPROVE ALL */
+  flag proofStepUnk; /* For IMPROVE ALL */
 
   flag texHeaderFlag; /* For OPEN TEX, CLOSE TEX */
   flag commentOnlyFlag; /* For SHOW STATEMENT */
   flag briefFlag; /* For SHOW STATEMENT */
   flag linearFlag; /* For SHOW LABELS */
   vstring bgcolor = ""; /* For SHOW STATEMENT definition list */
-                                                            /* 8-Aug-2008 nm */
 
   flag verboseMode, mayGrowFlag /*, noDistinctFlag*/; /* For MINIMIZE_WITH */
   long prntStatus; /* For MINIMIZE_WITH */
   flag hasWildCard; /* For MINIMIZE_WITH */
   long exceptPos; /* For MINIMIZE_WITH */
-  flag mathboxFlag; /* For MINIMIZE_WITH */ /* 28-Jun-2011 nm */
-  long thisMathboxStartStmt; /* For MINIMIZE_WITH */ /* 14-Aug-2012 nm */
-  flag forwFlag; /* For MINIMIZE_WITH */ /* 11-Nov-2011 nm */
-  long forbidMatchPos;  /* For MINIMIZE_WITH */ /* 20-May-2013 nm */
-  vstring forbidMatchList = "";  /* For MINIMIZE_WITH */ /* 20-May-2013 nm */
-  long noNewAxiomsMatchPos;  /* For NO_NEW_AXIOMS_FROM */ /* 22-Nov-2014 nm */
-  vstring noNewAxiomsMatchList = "";  /* For NO_NEW_AXIOMS_FROM */ /* 22-Nov-2014 */
-  long allowNewAxiomsMatchPos;  /* For NO_NEW_AXIOMS_FROM */ /* 4-Aug-2019 nm */
-  vstring allowNewAxiomsMatchList = "";  /* For NO_NEW_AXIOMS_FROM */ /* 4-Aug-2019 */
-  vstring traceProofFlags = ""; /* For NO_NEW_AXIOMS_FROM */ /* 22-Nov-2014 nm */
-  vstring traceTrialFlags = ""; /* For NO_NEW_AXIOMS_FROM */ /* 22-Nov-2014 nm */
-  flag overrideFlag; /* For discouraged statement /OVERRIDE */ /* 3-May-2016 nm */
+  flag mathboxFlag; /* For MINIMIZE_WITH */
+  long thisMathboxStartStmt; /* For MINIMIZE_WITH */
+  flag forwFlag; /* For MINIMIZE_WITH */
+  long forbidMatchPos;  /* For MINIMIZE_WITH */
+  vstring forbidMatchList = "";  /* For MINIMIZE_WITH */
+  long noNewAxiomsMatchPos;  /* For NO_NEW_AXIOMS_FROM */
+  vstring noNewAxiomsMatchList = "";  /* For NO_NEW_AXIOMS_FROM */
+  long allowNewAxiomsMatchPos;  /* For NO_NEW_AXIOMS_FROM */
+  vstring allowNewAxiomsMatchList = "";  /* For NO_NEW_AXIOMS_FROM */
+  vstring traceProofFlags = ""; /* For NO_NEW_AXIOMS_FROM */
+  vstring traceTrialFlags = ""; /* For NO_NEW_AXIOMS_FROM */
+  flag overrideFlag; /* For discouraged statement /OVERRIDE */
 
   struct pip_struct saveProofForReverting = {
        NULL_NMBRSTRING, NULL_PNTRSTRING, NULL_PNTRSTRING, NULL_PNTRSTRING };
-                                   /* For MINIMIZE_WITH */ /* 20-May-2013 nm */
-  long origCompressedLength; /* For MINIMIZE_WITH */ /* 25-Jun-2014 nm */
-  long oldCompressedLength = 0; /* For MINIMIZE_WITH */ /* 25-Jun-2014 nm */
-  long newCompressedLength = 0; /* For MINIMIZE_WITH */ /* 25-Jun-2014 nm */
-  long forwardCompressedLength = 0; /* For MINIMIZE_WITH */ /* 25-Jun-2014 nm */
-  long forwardLength = 0; /* For MINIMIZE_WITH */ /* 25-Jun-2014 nm */
+                                   /* For MINIMIZE_WITH */
+  long origCompressedLength; /* For MINIMIZE_WITH */
+  long oldCompressedLength = 0; /* For MINIMIZE_WITH */
+  long newCompressedLength = 0; /* For MINIMIZE_WITH */
+  long forwardCompressedLength = 0; /* For MINIMIZE_WITH */
+  long forwardLength = 0; /* For MINIMIZE_WITH */
   vstring saveZappedProofSectionPtr; /* Pointer only */ /* For MINIMIZE_WITH */
-  long saveZappedProofSectionLen; /* For MINIMIZE_WITH */ /* 25-Jun-2014 nm */
-  flag saveZappedProofSectionChanged; /* For MINIMIZE_WITH */ /* 16-Jun-2017 nm */
+  long saveZappedProofSectionLen; /* For MINIMIZE_WITH */
+  flag saveZappedProofSectionChanged; /* For MINIMIZE_WITH */
 
   struct pip_struct saveOrigProof = {
        NULL_NMBRSTRING, NULL_PNTRSTRING, NULL_PNTRSTRING, NULL_PNTRSTRING };
-                                   /* For MINIMIZE_WITH */ /* 25-Jun-2014 nm */
+                                   /* For MINIMIZE_WITH */
   struct pip_struct save1stPassProof = {
        NULL_NMBRSTRING, NULL_PNTRSTRING, NULL_PNTRSTRING, NULL_PNTRSTRING };
-                                   /* For MINIMIZE_WITH */ /* 25-Jun-2014 nm */
-  long forwRevPass; /* 1 = forward pass */ /* 25-Jun-2014 nm */
+                                   /* For MINIMIZE_WITH */
+  long forwRevPass; /* 1 = forward pass */
 
-  long sourceStatement; /* For EXPAND */ /* 11-Sep-2016 nm */
+  long sourceStatement; /* For EXPAND */
 
-  flag showLemmas; /* For WRITE THEOREM_LIST */ /* 10-Oct-2012 nm */
-  flag noVersioning; /* For WRITE THEOREM_LIST & others */ /* 17-Jul-2019 nm */
-  long theoremsPerPage; /* For WRITE THEOREM_LIST */ /* 17-Jul-2019 nm */
+  flag showLemmas; /* For WRITE THEOREM_LIST */
+  flag noVersioning; /* For WRITE THEOREM_LIST & others */
+  long theoremsPerPage; /* For WRITE THEOREM_LIST */
 
   /* g_toolsMode-specific variables */
   flag commandProcessedFlag = 0; /* Set when the first command line processed;
@@ -886,23 +881,17 @@ void command(int argc, char *argv[])
   flag cmdMode, changedFlag, outMsgFlag;
   double sum;
   vstring bufferedLine = "";
-  vstring tagStartMatch = "";  /* 2-Jul-2011 nm For TAG command */
-  long tagStartCount = 0;      /* 2-Jul-2011 nm For TAG command */
-  vstring tagEndMatch = "";    /* 2-Jul-2011 nm For TAG command */
-  long tagEndCount = 0;        /* 2-Jul-2011 nm For TAG command */
-  long tagStartCounter = 0;    /* 2-Jul-2011 nm For TAG command */
-  long tagEndCounter = 0;      /* 2-Jul-2011 nm For TAG command */
+  vstring tagStartMatch = "";  /* For TAG command */
+  long tagStartCount = 0;      /* For TAG command */
+  vstring tagEndMatch = "";    /* For TAG command */
+  long tagEndCount = 0;        /* For TAG command */
+  long tagStartCounter = 0;    /* For TAG command */
+  long tagEndCounter = 0;      /* For TAG command */
 
-  /* 21-Jun-2014 */
-  /* 16-Aug-2016 nm Now in getElapasedTime() */
-  /* clock_t timePrevious = 0; */  /* For SHOW ELAPSED_TIME command */
-  /* clock_t timeNow = 0; */       /* For SHOW ELAPSED_TIME command */
-  /* 16-Aug-2016 nm */
   double timeTotal = 0;
   double timeIncr = 0;
   flag printTime;  /* Set by "/ TIME" in SAVE PROOF and others */
 
-  /* 14-Aug-2018 nm */
   flag defaultScrollMode = 1; /* Default to prompted mode */
 
   /* Initialization to avoid compiler warning (should not be theoretically
@@ -912,10 +901,10 @@ void command(int argc, char *argv[])
   s = 0;
   texHeaderFlag = 0;
   firstChangedLine = 0;
-  tagStartCount = 0;           /* 2-Jul-2011 nm For TAG command */
-  tagEndCount = 0;             /* 2-Jul-2011 nm For TAG command */
-  tagStartCounter = 0;         /* 2-Jul-2011 nm For TAG command */
-  tagEndCounter = 0;           /* 2-Jul-2011 nm For TAG command */
+  tagStartCount = 0;           /* For TAG command */
+  tagEndCount = 0;             /* For TAG command */
+  tagStartCounter = 0;         /* For TAG command */
+  tagEndCounter = 0;           /* For TAG command */
 
   while (1) {
 
@@ -966,7 +955,7 @@ void command(int argc, char *argv[])
     let(&labelMatch, "");
     /* (End of space deallocation) */
 
-    g_midiFlag = 0; /* 8/28/00 Initialize here in case SHOW PROOF exits early */
+    g_midiFlag = 0; /* Initialize here in case SHOW PROOF exits early */
 
     if (g_memoryStatus) {
       /*??? Change to user-friendly message */
@@ -993,7 +982,6 @@ void command(int argc, char *argv[])
 
     if (!commandProcessedFlag && argc > 1 && argsProcessed < argc - 1
         && g_commandFileNestingLevel == 0) {
-      /* if (g_toolsMode) { */  /* 10-Oct-2006 nm Fix bug: changed to g_listMode */
       if (g_listMode) {
         /* If program was compiled in TOOLS mode, the command-line argument
            is assumed to be a single TOOLS command; build the equivalent
@@ -1034,39 +1022,6 @@ void command(int argc, char *argv[])
             /* Put quotes so / won't be interpreted as qualifier separator */
             let(&g_commandLine, cat("READ \"", g_commandLine, "\"", NULL));
           }
-
-          /***** 3-Jan-2017 nm  This is now done with SET ROOT_DIRECTORY
-          /@ 31-Dec-2017 nm @/
-          /@ This block of code can be removed without side effects @/
-          /@ "Hidden" hack for NM's convenience. :)  If there is an =, change
-             it to space.  This lets users invoke with "metamath set.mm/h=test"
-             or "metamath mbox/aa.mm/home=test" to specify an implicit read with
-             /ROOT_DIRECTORY without having a space in the argument (a space
-             means don't assume a read command). @/
-          i = instr(1, g_commandLine, "=");
-          if (i != 0) {
-            /@ Change 'READ "set.mm/h=test"' to 'READ "set.mm" / "h" "test"' @/
-            let(&g_commandLine, cat(left(g_commandLine, i - 1), "\" \"",
-                right(g_commandLine, i + 1), NULL));
-            while (i > 0) {
-              if (g_commandLine[i - 1] == '/') {
-                let(&g_commandLine, cat(left(g_commandLine, i - 1),
-                    "\" / \"", right(g_commandLine, i + 1), NULL));
-                break;
-              }
-              i--;
-            }
-            /@ Change ' to " to prevent mismatched quotes @/
-            i = (long)strlen(g_commandLine);
-            while (i > 0) {
-              if (g_commandLine[i - 1] == '\'') {
-                g_commandLine[i - 1] = '"';
-              }
-              i--;
-            }
-          } /@ if i != 0 (end of 31-Dec-2017 NM hack) @/
-          */
-
         }
       }
       print2("%s\n", cat(g_commandPrompt, g_commandLine, NULL));
@@ -1145,7 +1100,6 @@ void command(int argc, char *argv[])
         fprintf(g_listFile_fp, "%s\n", str1);  /* Print to list command file */
       }
       if (g_commandEcho) {
-        /* 15-Jun-2009 nm Added code line below */
         /* Put special character "!" before line for easier extraction to
            build SUBMIT files; see also SET ECHO ON output below */
         let(&str1, cat("!", str1, NULL));
@@ -1176,7 +1130,7 @@ void command(int argc, char *argv[])
       } else {
         help1(str1);
         help2(str1);
-        help3(str1); /* 18-Jul-2015 nm */
+        help3(str1);
       }
       continue;
     }
@@ -1195,13 +1149,9 @@ void command(int argc, char *argv[])
       continue;
     }
 
-    if (cmdMatches("EXIT") || cmdMatches("QUIT")
-        || cmdMatches("_EXIT_PA")) { /* 9-Jun-2016 - for MM-PA> exit
-            in scripts, so it will error out in MM> (if for some reason
-            MM-PA wasn't entered) instead of exiting metamath */
-    /*???        || !strcmp(cmd,"^Z")) { */
-
-      /* 9-Jun-2016 */
+    if (cmdMatches("EXIT") || cmdMatches("QUIT") || cmdMatches("_EXIT_PA")) {
+      /* for MM-PA> exit in scripts, so it will error out in MM> (if for some reason
+        MM-PA wasn't entered) instead of exiting metamath */
       if (cmdMatches("_EXIT_PA")) {
         if (!g_PFASmode || (g_toolsMode && !g_listMode)) bug(1127);
                  /* mmcmdl.c should have caught this */
@@ -1233,8 +1183,7 @@ void command(int argc, char *argv[])
                  || proofSavedFlag)) {
           print2(
               "Warning:  You have not saved changes to the proof of \"%s\".\n",
-              g_Statement[g_proveStatement].labelName); /* 21-Jan-06 nm */
-          /* 17-Aug-04 nm Added / FORCE qualifier */
+              g_Statement[g_proveStatement].labelName);
           if (switchPos("/ FORCE") == 0) {
             str1 = cmdInput1("Do you want to EXIT anyway (Y, N) <N>? ");
             if (str1[0] != 'y' && str1[0] != 'Y') {
@@ -1251,34 +1200,16 @@ void command(int argc, char *argv[])
         processUndoStack(NULL, PUS_INIT, "", 0);
         proofSavedFlag = 0; /* Will become 1 if proof is ever saved */
 
-        print2(
- "Exiting the Proof Assistant.  Type EXIT again to exit Metamath.\n");
+        print2("Exiting the Proof Assistant.  Type EXIT again to exit Metamath.\n");
 
         /* Deallocate proof structure */
-        deallocProofStruct(&g_ProofInProgress); /* 20-May-2013 nm */
-
-        /**** old deallocation before 20-May-2013
-        i = nmbrLen(g_ProofInProgress.proof);
-        nmbrLet(&g_ProofInProgress.proof, NULL_NMBRSTRING);
-        for (j = 0; j < i; j++) {
-          nmbrLet((nmbrString **)(&((g_ProofInProgress.target)[j])),
-              NULL_NMBRSTRING);
-          nmbrLet((nmbrString **)(&((g_ProofInProgress.source)[j])),
-              NULL_NMBRSTRING);
-          nmbrLet((nmbrString **)(&((g_ProofInProgress.user)[j])),
-              NULL_NMBRSTRING);
-        }
-        pntrLet(&g_ProofInProgress.target, NULL_PNTRSTRING);
-        pntrLet(&g_ProofInProgress.source, NULL_PNTRSTRING);
-        pntrLet(&g_ProofInProgress.user, NULL_PNTRSTRING);
-        *** end of old code before 20-May-2013 */
+        deallocProofStruct(&g_ProofInProgress);
 
         g_PFASmode = 0;
         continue;
       } else {
         if (g_sourceChanged) {
           print2("Warning:  You have not saved changes to the source.\n");
-          /* 17-Aug-04 nm Added / FORCE qualifier */
           if (switchPos("/ FORCE") == 0) {
             str1 = cmdInput1("Do you want to EXIT anyway (Y, N) <N>? ");
             if (str1[0] != 'y' && str1[0] != 'Y') {
@@ -1306,7 +1237,6 @@ void command(int argc, char *argv[])
           g_logFileOpenFlag = 0;
         }
 
-        /* 4-May-2017 Ari Ferrera */
         /* Free remaining allocations before exiting */
         freeCommandLine();
         freeInOu();
@@ -1316,7 +1246,7 @@ void command(int argc, char *argv[])
         let(&g_commandPrompt,"");
         let(&g_commandLine,"");
         let(&g_input_fn,"");
-        let(&g_contributorName, ""); /* 14-May-2017 nm */
+        let(&g_contributorName, "");
 
         return; /* Exit from program */
       }
@@ -1335,7 +1265,6 @@ void command(int argc, char *argv[])
       g_commandFileName[g_commandFileNestingLevel] = ""; /* Initialize if nec. */
       let(&g_commandFileName[g_commandFileNestingLevel], g_fullArg[1]);
 
-      /* 23-Oct-2006 nm Added / SILENT */
       g_commandFileSilent[g_commandFileNestingLevel] = 0;
       if (switchPos("/ SILENT")
           || g_commandFileSilentFlag /* Propagate silence from outer level */) {
@@ -1363,7 +1292,7 @@ void command(int argc, char *argv[])
 #define BUILD_MODE 8
 #define MATCH_MODE 9
 #define RIGHT_MODE 10
-#define TAG_MODE 11  /* 2-Jul-2011 nm Added TAG command */
+#define TAG_MODE 11  /* Added TAG command */
       cmdMode = 0;
       if (cmdMatches("ADD")) cmdMode = ADD_MODE;
       else if (cmdMatches("DELETE")) cmdMode = DELETE_MODE;
@@ -1405,7 +1334,7 @@ void command(int argc, char *argv[])
         switch (cmdMode) {
           case ADD_MODE:
             break;
-          case TAG_MODE:  /* 2-Jul-2011 nm Added TAG command */
+          case TAG_MODE:
             let(&tagStartMatch, g_fullArg[4]);
             tagStartCount = (long)val(g_fullArg[5]);
             if (tagStartCount == 0) tagStartCount = 1; /* Default */
@@ -1486,7 +1415,7 @@ void command(int argc, char *argv[])
               let(&str2, cat(g_fullArg[2], str1, g_fullArg[3], NULL));
               if (strcmp(str1, str2)) changedLines++;
               break;
-            case TAG_MODE:   /* 2-Jul-2011 nm Added TAG command */
+            case TAG_MODE:
               if (tagStartCounter < tagStartCount) {
                 if (instr(1, str1, tagStartMatch)) tagStartCounter++;
               }
@@ -1561,7 +1490,7 @@ void command(int argc, char *argv[])
                     lines++;
                     changedLines++;
                   }
-                  /* 14-Sep-2010 nm Continue the search after the replacement
+                  /* Continue the search after the replacement
                      string, so that "SUBST 1.tmp abbb ab a ''" will change
                      "abbbab" to "abba" rather than "aa" */
                   p1 = p1 + (long)strlen(newstr) - 1;
@@ -1604,7 +1533,7 @@ void command(int argc, char *argv[])
                   /* Even though space is always a separator, it can be used
                      to suppress all default tokens.  Go past 2nd space to prevent
                      infinite loop in that case. */
-                  p += 2; /* 3-Jul-2020 nm */
+                  p += 2;
                 }
               }
               let(&str2, edit(str2, 8 + 16 + 128)); /* Reduce & trim spaces */
@@ -1684,7 +1613,7 @@ void command(int argc, char *argv[])
         p = instr(1, str3, "\n");
         if (p) let(&str3, left(str3, p - 1));
         if (!outMsgFlag) {
-          /* 18-Aug-2011 nm Make message depend on line counts */
+          /* Make message depend on line counts */
           if (!changedFlag) {
             if (!lines) {
               print2("The file %s has no lines.\n", g_fullArg[1]);
@@ -1722,8 +1651,8 @@ void command(int argc, char *argv[])
         fclose(list2_fp);
         fSafeRename(list2_ftmpname, list2_fname);
         /* Deallocate string memory */
-        let(&tagStartMatch, "");  /* 2-Jul-2011 nm Added TAG command */
-        let(&tagEndMatch, "");  /* 2-Jul-2011 nm Added TAG command */
+        let(&tagStartMatch, "");
+        let(&tagEndMatch, "");
         continue;
       } /* end if cmdMode for ADD, etc. */
 
@@ -1984,8 +1913,7 @@ void command(int argc, char *argv[])
 "The first longest line (out of %ld) is line %ld and has %ld characters:\n",
             j, i, q);
         printLongLine(str4, "    "/*startNextLine*/, ""/*breakMatch*/);
-            /* breakMatch empty means break line anywhere */  /* 6-Dec-03 */
- /* print2("If each line were a number, their sum would be %s\n", str((double)sum)); */
+            /* breakMatch empty means break line anywhere */
         printLongLine(cat(
             "Stripping all but digits, \".\", and \"-\", the sum of lines is ",
             str((double)sum), NULL), "    ", " ");
@@ -2083,51 +2011,19 @@ void command(int argc, char *argv[])
     }
 
     if (cmdMatches("READ")) {
-      /*if (g_statements) {*/
-      /* 31-Dec-2017 nm */
       /* We can't use 'statements > 0' for the test since the source
          could be just a comment */
       if (g_sourceHasBeenRead == 1) {
         printLongLine(cat(
             "?Sorry, reading of more than one source file is not allowed.  ",
             "The file \"", g_input_fn, "\" has already been READ in.  ",
-                                                             /* 11-Dec-05 nm */
             "You may type ERASE to start over.  Note that additional source ",
-        "files may be included in the source file with \"$[ <filename> $]\".",
-                                                             /* 11-Dec-05 nm */
+            "files may be included in the source file with \"$[ <filename> $]\".",
             NULL),"  "," ");
         continue;
       }
 
       let(&g_input_fn, g_fullArg[1]);
-
-      /***** 3-Jan-2017 nm  This is now done with SET ROOT_DIRECTORY
-      /@ 31-Dec-2017 nm - Added ROOT_DIRECTORY switch @/
-      /@ TODO - remove this and just use SET ROOT_DIRECTORY instead @/
-      i = switchPos("/ ROOT_DIRECTORY"); /@ Statement match to skip @/
-      if (i != 0) {
-        let(&g_rootDirectory, edit(g_fullArg[i + 1], 2/@discard spaces,tabs@/));
-        if (g_rootDirectory[0] != 0) {  /@ Not an empty directory path @/
-          /@ Add trailing "/" to g_rootDirectory if missing @/
-          if (instr(1, g_rootDirectory, "\\") != 0
-              || instr(1, g_input_fn, "\\") != 0 ) {
-            /@ Using Windows-style path (not really supported, but at least
-               make full path consistent) @/
-            if (g_rootDirectory[strlen(g_rootDirectory) - 1] != '\\') {
-              let(&g_rootDirectory, cat(g_rootDirectory, "\\", NULL));
-            }
-          } else {
-            if (g_rootDirectory[strlen(g_rootDirectory) - 1] != '/') {
-              let(&g_rootDirectory, cat(g_rootDirectory, "/", NULL));
-            }
-          }
-        }
-      /@
-      } else {
-        let(&g_rootDirectory, "");
-      @/
-      }
-      */
 
       let(&str1, cat(g_rootDirectory, g_input_fn, NULL));
       g_input_fp = fSafeOpen(str1, "r", 0/*noVersioningFlag*/);
@@ -2136,7 +2032,6 @@ void command(int argc, char *argv[])
       fclose(g_input_fp);
 
       readInput();
-      /*g_sourceHasBeenRead = 1;*/ /* Global variable - set in readInput() */
 
       if (switchPos("/ VERIFY")) {
         verifyProofs("*",1); /* Parse and verify */
@@ -2144,50 +2039,7 @@ void command(int argc, char *argv[])
         /* verifyProofs("*",0); */ /* Parse only (for gross error checking) */
       }
 
-      /* 13-Dec-2016 nm Moved to verifyMarkup in mmcmds.c */
-      /*
-      /@ 10/21/02 - detect Microsoft bugs reported by several users, when the
-         HTML output files are named "con.html" etc. @/
-      /@ If we want a standard error message underlining token, this could go
-         in mmpars.c @/
-      /@ From Microsoft's site:
-         "The following reserved words cannot be used as the name of a file:
-         CON, PRN, AUX, CLOCK$, NUL, COM1, COM2, COM3, COM4, COM5, COM6, COM7,
-         COM8, COM9, LPT1, LPT2, LPT3, LPT4, LPT5, LPT6, LPT7, LPT8, and LPT9.
-         Also, reserved words followed by an extension - for example,
-         NUL.tx7 - are invalid file names." @/
-      /@ Check for labels that will lead to illegal Microsoft file names for
-         Windows users.  Don't bother checking CLOCK$ since $ is already
-         illegal @/
-      let(&str1, cat(
-         ",CON,PRN,AUX,NUL,COM1,COM2,COM3,COM4,COM5,COM6,COM7,",
-         "COM8,COM9,LPT1,LPT2,LPT3,LPT4,LPT5,LPT6,LPT7,LPT8,LPT9,", NULL));
-      for (i = 1; i <= g_statements; i++) {
-        let(&str2, cat(",", edit(g_Statement[i].labelName, 32/@uppercase@/), ",",
-            NULL));
-        if (instr(1, str1, str2) ||
-            /@ 5-Jan-04 mm@.html is reserved for mmtheorems.html, etc. @/
-            !strcmp(",MM", left(str2, 3))) {
-          print2("\n");
-          assignStmtFileAndLineNum(j); /@ 9-Jan-2018 nm @/
-          printLongLine(cat("?Warning in statement \"",
-              g_Statement[i].labelName, "\" at line ",
-              str((double)(g_Statement[i].lineNum)),
-              " in file \"", g_Statement[i].fileName,
-              "\".  To workaround a Microsoft operating system limitation, the",
-              " the following reserved words cannot be used for label names:",
-              " CON, PRN, AUX, CLOCK$, NUL, COM1, COM2, COM3, COM4, COM5,",
-              " COM6, COM7, COM8, COM9, LPT1, LPT2, LPT3, LPT4, LPT5, LPT6,",
-              " LPT7, LPT8, and LPT9.  Also, \"mm@.html\" is reserved for",
-              " Metamath file names.  Use another name for this label.", NULL),
-              "", " ");
-          g_errorCount++;
-        }
-      }
-      /@ 10/21/02 end @/
-      */
-
-      if (g_sourceHasBeenRead == 1) {  /* 9-Jan-2018 nm */
+      if (g_sourceHasBeenRead == 1) {
         if (!g_errorCount) {
           let(&str1, "No errors were found.");
           if (!switchPos("/ VERIFY")) {
@@ -2213,57 +2065,6 @@ void command(int argc, char *argv[])
     if (cmdMatches("WRITE SOURCE")) {
       let(&g_output_fn, g_fullArg[2]);
 
-      /********* Deleted 28-Dec-2013 nm Now opened in writeSource()
-      g_output_fp = fSafeOpen(g_output_fn, "w", 0/@noVersioningFlag@/);
-      if (!g_output_fp) continue; /@ Couldn't open it (error msg was provided)@/
-      ********/
-
-      /******* Deleted 3-May-2017 nm
-      /@ Added 24-Oct-03 nm @/
-      if (switchPos("/ CLEAN") > 0) {
-        c = 1; /@ Clean out any proof-in-progress (that user has flagged
-                        with a ? in its date comment field) @/
-      } else {
-        c = 0; /@ Output all proofs (normal) @/
-      }
-      *******/
-
-      /********* Deleted 3-May-2017 nm
-      writeSource((char)c, (char)r); /@ Added arg 24-Oct-03 nm 12-Jun-2011 nm @/
-      fclose(g_output_fp);
-      if (c == 0) g_sourceChanged = 0; /@ Don't unset flag if CLEAN option
-                                    since some new proofs may not be saved. @/
-      ***********/
-
-
-      /***** 3-Jan-2017 nm  This is now done with SET ROOT_DIRECTORY
-      /@ 31-Dec-2017 nm - Added ROOT_DIRECTORY switch @/
-      /@ TODO - remove this qualifier; too confusing.
-         Use SET ROOT_DIRECTORY instead. @/
-      i = switchPos("/ ROOT_DIRECTORY"); /@ Statement match to skip @/
-      if (i != 0) {
-        let(&g_rootDirectory, edit(g_fullArg[i + 1], 2/@discard spaces,tabs@/));
-        /@ Add trailing "/" to g_rootDirectory if missing @/
-        if (instr(1, g_rootDirectory, "\\") != 0
-            || instr(1, g_input_fn, "\\") != 0 ) {
-          /@ Using Windows-style path (not really supported, but at least
-             make full path consistent) @/
-          if (g_rootDirectory[strlen(g_rootDirectory) - 1] != '\\') {
-            let(&g_rootDirectory, cat(g_rootDirectory, "\\", NULL));
-          }
-        } else {
-          if (g_rootDirectory[strlen(g_rootDirectory) - 1] != '/') {
-            let(&g_rootDirectory, cat(g_rootDirectory, "/", NULL));
-          }
-        }
-      /@
-      } else {
-        let(&g_rootDirectory, "");
-      @/
-      }
-      */
-
-      /* Added 12-Jun-2011 nm */
       if (switchPos("/ REWRAP") > 0) {
         r = 2; /* Re-wrap then format (more aggressive than / FORMAT) */
       } else if (switchPos("/ FORMAT") > 0) {
@@ -2272,7 +2073,6 @@ void command(int argc, char *argv[])
         r = 0; /* Keep formatting as-is */
       }
 
-      /* 24-Aug-2020 nm */
       i = switchPos("/ EXTRACT");
       if (i > 0) {
         let(&str1, g_fullArg[i + 1]); /* List of labels */
@@ -2287,23 +2087,21 @@ void command(int argc, char *argv[])
         let(&str1, ""); /* Empty string means full db */
       }
 
-      /* 3-May-2017 nm */
-      writeSource((char)r, /* Rewrap type */ /* Added arg 12-Jun-2011 nm */
-        ((switchPos("/ SPLIT") > 0) ? 1 : 0),          /* 31-Dec-2017 nm */
-        ((switchPos("/ NO_VERSIONING") > 0) ? 1 : 0),  /* 31-Dec-2017 nm */
-        ((switchPos("/ KEEP_INCLUDES") > 0) ? 1 : 0),   /* 31-Dec-2017 nm */
-        str1 /* Label list to extract */  /* 24-Aug-2020 nm */
+      writeSource((char)r, /* Rewrap type */
+        ((switchPos("/ SPLIT") > 0) ? 1 : 0),
+        ((switchPos("/ NO_VERSIONING") > 0) ? 1 : 0),
+        ((switchPos("/ KEEP_INCLUDES") > 0) ? 1 : 0),
+        str1 /* Label list to extract */
           );
-      /*fclose(g_output_fp);*/
       g_sourceChanged = 0;
 
-      let(&str1, ""); /* Deallocate */ /* 24-Aug-2020 nm */
+      let(&str1, ""); /* Deallocate */
       continue;
     } /* End of WRITE SOURCE */
 
 
     if (cmdMatches("WRITE THEOREM_LIST")) {
-      /* 4-Dec-03 - Write out an HTML summary of the theorems to
+      /* Write out an HTML summary of the theorems to
          mmtheorems.html, mmtheorems1.html,... */
       /* THEOREMS_PER_PAGE is the default number of proof descriptions to output. */
 #define THEOREMS_PER_PAGE 100
@@ -2317,25 +2115,6 @@ void command(int argc, char *argv[])
       }
       showLemmas = (switchPos("/ SHOW_LEMMAS") != 0);
       noVersioning = (switchPos("/ NO_VERSIONING") != 0);
-
-      /**** 17-Nov-2015 nm Deleted, no longer need this restriction
-      if (!g_texDefsRead) {
-        g_htmlFlag = 1;
-        print2("Reading definitions from $t statement of %s...\n", g_input_fn);
-        if (2/@error@/ == readTexDefs(0 /@ 1 = check errors only @/,
-            0 /@ 1 = no GIF file existence check @/ )) {
-          continue; /@ An error occurred @/
-        }
-      } else {
-        /@ Current limitation - can only read def's from .mm file once @/
-        if (!g_htmlFlag) {
-          print2("?You cannot use both LaTeX and HTML in the same session.\n");
-          print2(
-              "You must EXIT and restart Metamath to switch to the other.\n");
-          continue;
-        }
-      }
-      *** end of 17-Nov-2015 deletion */
 
       g_htmlFlag = 1;
       /* If not specified, for backwards compatibility in scripts
@@ -2356,20 +2135,16 @@ void command(int argc, char *argv[])
       }
 
       /* Output the theorem list */
-      writeTheoremList(theoremsPerPage, showLemmas,
-          noVersioning); /* (located in mmwtex.c) */
+      writeTheoremList(theoremsPerPage, showLemmas, noVersioning);
       continue;
     }  /* End of "WRITE THEOREM_LIST" */
 
 
     if (cmdMatches("WRITE BIBLIOGRAPHY")) {
-      /* 10/10/02 */
       /* This command builds the bibliographical cross-references to various
          textbooks and updates the user-specified file normally called
          mmbiblio.html. */
 
-      /* 17-Nov-2015 nm code moved to writeBibliography() in mmwtex.c */
-      /* (Also called by verifyMarkup() in mmcmds.c for error checking) */
       writeBibliography(g_fullArg[2],
           "*", /* labelMatch - all labels */
           0,  /* 1 = no output, just warning msgs if any */
@@ -2379,8 +2154,7 @@ void command(int argc, char *argv[])
 
 
     if (cmdMatches("WRITE RECENT_ADDITIONS")) {
-      /* 18-Sep-03 -
-         This utility creates a list of recent proof descriptions and updates
+      /* This utility creates a list of recent proof descriptions and updates
          the user-specified file normally called mmrecent.html.
        */
 
@@ -2394,25 +2168,6 @@ void command(int argc, char *argv[])
       } else {
         i = RECENT_COUNT; /* Use the default value */
       }
-
-      /**** 17-Nov-2015 nm Deleted because readTeXDefs() now handles everything
-      if (!g_texDefsRead) {
-        g_htmlFlag = 1;
-        print2("Reading definitions from $t statement of %s...\n", g_input_fn);
-        if (2/@error@/ == readTexDefs(0 /@ 1 = check errors only @/,
-            0 /@ 1 = no GIF file existence check @/  )) {
-          continue; /@ An error occurred @/
-        }
-      } else {
-        /@ Current limitation - can only read def's from .mm file once @/
-        if (!g_htmlFlag) {
-          print2("?You cannot use both LaTeX and HTML in the same session.\n");
-          print2(
-              "You must EXIT and restart Metamath to switch to the other.\n");
-          continue;
-        }
-      }
-      **** end of 17-Nov-2015 deletion */
 
       g_htmlFlag = 1;
       /* If not specified, for backwards compatibility in scripts
@@ -2463,12 +2218,10 @@ void command(int argc, char *argv[])
           tmpFlag = 1; /* Error flag to recover input file */
           break;
         }
-        /* 13-May-04 nm Put in "last updated" stamp */
         if (!strcmp(left(str1, 21), "<!-- last updated -->")) {
           let(&str1, cat(left(str1, 21), " <I>Last updated on ", date(),
-          /* ??Future: make "EDT"/"EST" or other automatic */
-          /*  " at ", time_(), " EST.</I>", NULL)); */
-          /* 10-Nov-04 nm Just make it "ET" for "Eastern Time" */
+          /* ??Future: use timezones properly */
+          /* Just make it "ET" for "Eastern Time" */
             " at ", time_(), " ET.</I>", NULL));
         }
         fprintf(list2_fp, "%s\n", str1);
@@ -2477,55 +2230,14 @@ void command(int argc, char *argv[])
       if (tmpFlag) goto wrrecent_error;
 
       /* Get and parse today's date */
-      parseDate(date(), &k /*dd*/, &l /*mmm*/, &m /*yyyy*/); /* 4-Nov-2015 */
-
-      /************ Deleted 4-Nov-2015
-      let(&str1, date());
-      j = instr(1, str1, "-");
-      k = (long)val(left(str1, j - 1)); /@ Day @/
-#define MONTHS "JanFebMarAprMayJunJulAugSepOctNovDec"
-      l = ((instr(1, MONTHS, mid(str1, j + 1, 3)) - 1) / 3) + 1; /@ 1 = Jan @/
-      m = str1[j + 6]; /@ Character after 2-digit year @/  /@ nm 10-Apr-06 @/
-      if (m == ' ' || m == ']') {                          /@ nm 10-Apr-06 @/
-        /@ Handle 2-digit year @/
-        m = (long)val(mid(str1, j + 5, 2));  /@ Year @/
-#define START_YEAR 93 /@ Earliest 19xx year in set.mm database @/
-        if (m < START_YEAR) {
-          m = m + 2000;
-        } else {
-          m = m + 1900;
-        }
-      } else {                                            /@ nm 10-Apr-06 @/
-        /@ Handle 4-digit year @/                         /@ nm 10-Apr-06 @/
-        m = (long)val(mid(str1, j + 5, 4));  /@ Year @/         /@ nm 10-Apr-06 @/
-      }                                                   /@ nm 10-Apr-06 @/
-      *********** end of 4-Nov-2015 deletion */
+      parseDate(date(), &k /*dd*/, &l /*mmm*/, &m /*yyyy*/);
 
 #define START_YEAR 93 /* Earliest 19xx year in set.mm database */
       n = 0; /* Count of how many output so far */
       while (n < i /*RECENT_COUNT*/ && m > START_YEAR + 1900 - 1) {
 
         /* Build date string to match */
-        /* 4-Nov-2015 nm */
-        /*buildDate(k, l, m, &str5);*/
-        buildDate(k, l, m, &str1); /* 2-May-2017 nm */
-
-        /***** Deleted 2-May-2017 nm - we no longer match date below proof
-        let(&str5, cat("$([", str5, "]$)", NULL));
-        /@ 2-digit year is obsolete, but keep for backwards compatibility @/
-        let(&str1, cat(left(str5, (long)strlen(str5) - 7),
-            right(str5, (long)strlen(str5) - 4), NULL));
-        *******/
-
-        /************ Deleted 4-Nov-2015
-#define MONTHS "JanFebMarAprMayJunJulAugSepOctNovDec"
-        /@ Match for 2-digit year OBSOLETE @/
-        let(&str1, cat("$([", str((double)k), "-", mid(MONTHS, 3 @ l - 2, 3), "-",
-            right(str((double)m), 3), "]$)", NULL));
-        /@ Match for 4-digit year @/  /@ nm 10-Apr-06 @/
-        let(&str5, cat("$([", str((double)k), "-", mid(MONTHS, 3 @ l - 2, 3), "-",
-            str((double)m), "]$)", NULL));
-        *********** end of 4-Nov-2015 deletion */
+        buildDate(k, l, m, &str1);
 
         for (stmt = g_statements; stmt >= 1; stmt--) {
 
@@ -2534,31 +2246,11 @@ void command(int argc, char *argv[])
             continue;
           }
 
-          /******** Deleted 2-May-2017 nm
-          /@ Get the comment section after the statement @/
-          let(&str2, space(g_Statement[stmt + 1].labelSectionLen));
-          memcpy(str2, g_Statement[stmt + 1].labelSectionPtr,
-              (size_t)(g_Statement[stmt + 1].labelSectionLen));
-          p = instr(1, str2, "$)");
-          let(&str2, left(str2, p + 1)); /@ Get 1st comment (if any) @/
-          let(&str2, edit(str2, 2)); /@ Discard spaces @/
-          ******** end of 2-May-2017 deletion */
-          /* 2-May-2017 nm */
-          /******* Deleted 3-May-2017 nm
-          /@ In the call below, str3 is a dummy variable for a placeholder
-             (its value will be undefined because of multiple occurrences) @/
-          getContrib(stmt/@stmtNum@/, &str3, &str3, &str3, &str3, &str3, &str3,
-              &str2, /@mostRecentDate@/
-              0, /@printErrorsFlag@/
-              1); /@normal mode@/
-          **********/
-          /* 3-May-2017 nm */
           let(&str2, "");
-          str2 = getContrib(stmt/*stmtNum*/, MOST_RECENT_DATE);
+          str2 = getContrib(stmt, MOST_RECENT_DATE);
 
           /* See if the date comment matches */
-          /*if (instr(1, str2, str1) || instr(1, str2, str5)) {*/ /* 10-Apr-06 */
-          if (!strcmp(str2, str1)) { /* 2-May-2017 nm */
+          if (!strcmp(str2, str1)) {
             /* We have a match, so increment the match count */
             n++;
             let(&str3, "");
@@ -2578,7 +2270,6 @@ void command(int argc, char *argv[])
                      cat("<TR BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL),
                 */
 
-                /* 29-Jul-2008 nm Sandbox stuff */
                 (stmt < g_extHtmlStmt)
                    ? "<TR>"
                    : (stmt < g_mathboxStmt)
@@ -2587,34 +2278,27 @@ void command(int argc, char *argv[])
                        : cat("<TR BGCOLOR=", SANDBOX_COLOR, ">", NULL),
 
                 "<TD NOWRAP>",  /* IE breaks up the date */
-                /* mid(str1, 4, (long)strlen(str1) - 6), */ /* Date */
-                /* Use 4-digit year */   /* 10-Apr-06 */
-                /* mid(str5, 4, (long)strlen(str5) - 6), */ /* Date */ /* 10-Apr-06 */
-                str2, /* Date */ /* 2-May-2017 nm */
+                str2, /* Date */
                 "</TD><TD ALIGN=CENTER><A HREF=\"",
                 g_Statement[stmt].labelName, ".html\">",
                 g_Statement[stmt].labelName, "</A>",
                 str4, "</TD><TD ALIGN=LEFT>", NULL),  /* Description */
-                            /* 28-Dec-05 nm Added ALIGN=LEFT for IE */
               " ",  /* Start continuation line with space */
               "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
 
             g_showStatement = stmt; /* For printTexComment */
             g_outputToString = 0; /* For printTexComment */
             g_texFilePtr = list2_fp;
-            /* 18-Sep-03 ???Future - make this just return a string??? */
-            /* printTexComment(str3, 0); */
-            /* 17-Nov-2015 nm Added 3rd & 4th arguments */
             printTexComment(str3,              /* Sends result to g_texFilePtr */
                 0, /* 1 = htmlCenterFlag */
-                PROCESS_EVERYTHING, /* actionBits */ /* 13-Dec-2018 nm */
+                PROCESS_EVERYTHING, /* actionBits */
                 0  /* 1 = noFileCheck */ );
             g_texFilePtr = NULL;
             g_outputToString = 1; /* Restore after printTexComment */
 
             /* Get HTML hypotheses => assertion */
             let(&str4, "");
-            str4 = getTexOrHtmlHypAndAssertion(stmt); /* In mmwtex.c */
+            str4 = getTexOrHtmlHypAndAssertion(stmt);
             printLongLine(cat("</TD></TR><TR",
 
                   /*
@@ -2623,7 +2307,6 @@ void command(int argc, char *argv[])
                        cat(" BGCOLOR=", PURPLISH_BIBLIO_COLOR, ">", NULL),
                   */
 
-                  /* 29-Jul-2008 nm Sandbox stuff */
                   (stmt < g_extHtmlStmt)
                      ? ">"
                      : (stmt < g_mathboxStmt)
@@ -2631,11 +2314,6 @@ void command(int argc, char *argv[])
                              NULL)
                          : cat(" BGCOLOR=", SANDBOX_COLOR, ">", NULL),
 
-                /*** old
-                "<TD BGCOLOR=white>&nbsp;</TD><TD COLSPAN=2 ALIGN=CENTER>",
-                str4, "</TD></TR>", NULL),
-                ****/
-                /* 27-Oct-03 nm */
                 "<TD COLSPAN=3 ALIGN=CENTER>",
                 str4, "</TD></TR>", NULL),
 
@@ -2648,14 +2326,14 @@ void command(int argc, char *argv[])
 
             if (n >= i /*RECENT_COUNT*/) break; /* We're done */
 
-            /* 27-Oct-03 nm Put separator row if not last theorem */
+            /* Put separator row if not last theorem */
             g_outputToString = 1;
             printLongLine(cat("<TR BGCOLOR=white><TD COLSPAN=3>",
                 "<FONT SIZE=-3>&nbsp;</FONT></TD></TR>", NULL),
                 " ",  /* Start continuation line with space */
                 "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
 
-            /* 29-Jul-04 nm Put the previous, current, and next statement
+            /* Put the previous, current, and next statement
                labels in HTML comments so a script can use them to update
                web site incrementally.  This would be done by searching
                for "For script" and gather label between = and --> then
@@ -2689,7 +2367,6 @@ void command(int argc, char *argv[])
             }
             if (j) print2("<!-- For script: next = %s -->\n",
                 g_Statement[j].labelName);
-            /* End of 29-Jul-04 section */
 
             g_outputToString = 0;
             fprintf(list2_fp, "%s", g_printString);
@@ -2780,12 +2457,10 @@ void command(int argc, char *argv[])
         if (!g_Statement[i].labelName[0]) continue; /* No label */
         if (!m && g_Statement[i].type != (char)p_ &&
             g_Statement[i].type != (char)a_) continue; /* No /ALL switch */
-        /* 30-Jan-06 nm Added single-character-match wildcard argument */
         if (!matchesList(g_Statement[i].labelName, g_fullArg[2], '*', '?')) {
           continue;
         }
 
-        /* 2-Oct-2015 nm */
         let(&str1, cat(str((double)i), " ",
             g_Statement[i].labelName, " $", chr(g_Statement[i].type),
             NULL));
@@ -2814,41 +2489,7 @@ void command(int argc, char *argv[])
           }
           j++;
         }
-
-        /* 2-Oct-2015 nm Deleted
-        let(&str1,cat(str((double)i)," ",
-            g_Statement[i].labelName," $",chr(g_Statement[i].type)," ",NULL));
-#define COL 19 /@ Characters per column @/
-        if (j + (long)strlen(str1) > MAX_LEN
-            || (linearFlag && j != 0)) { /@ j != 0 to suppress 1st CR @/
-          print2("\n");
-          j = 0;
-          k = 0;
-        }
-        if (strlen(str1) > COL || linearFlag) {
-          j = j + (long)strlen(str1);
-          k = k + (long)strlen(str1) - COL;
-          print2(str1);
-        } else {
-          if (k == 0) {
-            j = j + COL;
-            print2("%s%s",str1,space(COL - (long)strlen(str1)));
-          } else {
-            k = k - (COL - (long)strlen(str1));
-            if (k > 0) {
-              print2(str1);
-              j = j + (long)strlen(str1);
-            } else {
-              print2("%s%s",str1,space(COL - (long)strlen(str1)));
-              j = j + COL;
-              k = 0;
-            }
-          }
-        }
-        */
-
       } /* next i */
-      /* print2("\n"); */
       if (str2[0]) {
         print2("%s\n", str2);
         let(&str2, "");
@@ -2857,14 +2498,12 @@ void command(int argc, char *argv[])
       continue;
     }
 
-    if (cmdMatches("SHOW DISCOURAGED")) {  /* was SHOW RESTRICTED */
-      showDiscouraged(); /* In mmcmds.c */
+    if (cmdMatches("SHOW DISCOURAGED")) {
+      showDiscouraged();
       continue;
     }
 
     if (cmdMatches("SHOW SOURCE")) {
-
-      /* 14-Sep-2012 nm */
       /* Currently, SHOW SOURCE only handles one statement at a time,
          so use getStatementNum().  Eventually, SHOW SOURCE may become
          obsolete; I don't think anyone uses it. */
@@ -2882,22 +2521,8 @@ void command(int argc, char *argv[])
       }
       g_showStatement = s; /* Update for future defaults */
 
-      /*********** 14-Sep-2012 replaced by getStatementNum()
-      for (i = 1; i <= g_statements; i++) {
-        if (!strcmp(g_fullArg[2],g_Statement[i].labelName)) break;
-      }
-      if (i > g_statements) {
-        printLongLine(cat("?There is no statement with label \"",
-            g_fullArg[2], "\".  ",
-            "Use SHOW LABELS for a list of valid labels.", NULL), "", " ");
-        g_showStatement = 0;
-        continue;
-      }
-      g_showStatement = i;
-      ************** end 14-Sep-2012 *******/
-
       let(&str1, "");
-      str1 = outputStatement(g_showStatement, /*0, 3-May-2017 */ /* cleanFlag */
+      str1 = outputStatement(g_showStatement, /* cleanFlag */
           0 /* reformatFlag */);
       let(&str1,edit(str1,128)); /* Trim trailing spaces */
       if (str1[strlen(str1)-1] == '\n') let(&str1, left(str1,
@@ -2917,9 +2542,7 @@ void command(int argc, char *argv[])
          statement, a .html file is opened, the statement is output,
          and depending on statement type a proof or other information
          is output. */
-      /* if (g_rawArgs != 5) { */  /* obsolete */
 
-      /* 16-Aug-2016 nm */
       noVersioning = (switchPos("/ NO_VERSIONING") != 0);
       i = 5;  /* # arguments with only / HTML or / ALT_HTML */
       if (noVersioning) i = i + 2;
@@ -2930,34 +2553,12 @@ void command(int argc, char *argv[])
         continue;
       }
 
-      /* 16-Aug-2016 nm */
       printTime = 0;
       if (switchPos("/ TIME") != 0) {
         printTime = 1;
       }
 
-      /*** 17-Nov-2014 nm This restriction has been removed.
-      if (g_texDefsRead) {
-        /@ Current limitation - can only read def's from .mm file once @/
-        if (!g_htmlFlag) {
-          print2("?You cannot use both LaTeX and HTML in the same session.\n");
-          print2(
-              "You must EXIT and restart Metamath to switch to the other.\n");
-          goto htmlDone;
-        } else {
-          if ((switchPos("/ ALT_HTML") || switchPos("/ BRIEF_ALT_HTML"))
-              == (g_altHtmlFlag == 0)) {
-            print2(
-              "?You cannot use both HTML and ALT_HTML in the same session.\n");
-            print2(
-              "You must EXIT and restart Metamath to switch to the other.\n");
-            goto htmlDone;
-          }
-        }
-      }
-      *** End 17-Nov-2014 deletion */
-
-      g_htmlFlag = 1; /* 17-Nov-2015 nm */
+      g_htmlFlag = 1;
 
       if (switchPos("/ BRIEF_HTML") || switchPos("/ BRIEF_ALT_HTML")) {
         if (strcmp(g_fullArg[2], "*")) {
@@ -2988,9 +2589,7 @@ void command(int argc, char *argv[])
          statement label); with
                  SHOW STATEMENT ?* / HTML
          all statements will be output, but without mmascii.html etc. */
-      /* if (instr(1, g_fullArg[2], "*") || g_briefHtmlFlag) { */  /* obsolete */
       if (((char *)(g_fullArg[2]))[0] == '*' || g_briefHtmlFlag) {
-                                                            /* 6-Jul-2008 nm */
         s = -2; /* -2 is for ASCII table; -1 is for theorems;
                     0 is for definitions */
       } else {
@@ -3010,7 +2609,6 @@ void command(int argc, char *argv[])
 
         if (s > 0) {
           if (!g_Statement[s].labelName[0]) continue; /* No label */
-          /* 30-Jan-06 nm Added single-character-match wildcard argument */
           if (!matchesList(g_Statement[s].labelName, g_fullArg[2], '*', '?'))
             continue;
           if (g_Statement[s].type != (char)a_
@@ -3048,25 +2646,13 @@ void command(int argc, char *argv[])
                 NULL));
         }
         print2("Creating HTML file \"%s\"...\n", g_texFileName);
-        g_texFilePtr = fSafeOpen(g_texFileName, "w",    /* 17-Jul-2019 nm */
-            noVersioning /*noVersioningFlag*/);
-        /****** old code before 17-Jul-2019 *******
-        if (switchPos("/ NO_VERSIONING") == 0) {
-          g_texFilePtr = fSafeOpen(g_texFileName, "w", 0/@noVersioningFlag@/);
-        } else {
-          /@ 6-Jul-2008 nm Added / NO_VERSIONING @/
-          /@ Don't create the backup versions ~1, ~2,... @/
-          g_texFilePtr = fopen(g_texFileName, "w");
-          if (!g_texFilePtr) print2("?Could not open the file \"%s\".\n",
-              g_texFileName);
-        }
-        ********* end of old code before 17-Jul-2019 *******/
+        g_texFilePtr = fSafeOpen(g_texFileName, "w", noVersioning);
         if (!g_texFilePtr) goto htmlDone; /* Couldn't open it (err msg was
             provided) */
         g_texFileOpenFlag = 1;
         printTexHeader((s > 0) ? 1 : 0 /*texHeaderFlag*/);
         if (!g_texDefsRead) {
-          /* 9/6/03 If there was an error reading the $t xx.mm statement,
+          /* If there was an error reading the $t xx.mm statement,
              g_texDefsRead won't be set, and we should close out file and skip
              further processing.  Otherwise we will be attempting to process
              uninitialized htmldef arrays and such. */
@@ -3111,8 +2697,7 @@ void command(int argc, char *argv[])
               break;
             case 0:
               printLongLine(cat(
-/*"<CAPTION><B>List of Syntax (not <FONT COLOR=\"#00CC00\">|-&nbsp;</FONT>), ",*/
-                  /* 2/9/02 (in case |- suppressed) */
+                  /* (in case |- suppressed) */
                   "<CAPTION><B>List of Syntax, ",
                   "Axioms (<FONT COLOR=", GREEN_TITLE_COLOR, ">ax-</FONT>) and",
                   " Definitions (<FONT COLOR=", GREEN_TITLE_COLOR,
@@ -3138,24 +2723,8 @@ void command(int argc, char *argv[])
           print2("</B></TD></TR>\n");
           m = 0; /* Statement number map */
           let(&str3, ""); /* For storing ASCII token list in s=-2 mode */
-          let(&bgcolor, MINT_BACKGROUND_COLOR); /* 8-Aug-2008 nm Initialize */
+          let(&bgcolor, MINT_BACKGROUND_COLOR);
           for (i = 1; i <= g_statements; i++) {
-
-            /* 8-Aug-2008 nm Commented out: */
-            /*
-            if (i == g_extHtmlStmt && s != -2) {
-              / * Print a row that identifies the start of the extended
-                 database (e.g. Hilbert Space Explorer) * /
-              printLongLine(cat(
-                  "<TR><TD COLSPAN=2 ALIGN=CENTER><A NAME=\"startext\"></A>",
-                  "The list of syntax, axioms (ax-) and definitions (df-) for",
-                  " the <B><FONT COLOR=", GREEN_TITLE_COLOR, ">",
-                  g_extHtmlTitle,
-                  "</FONT></B> starts here</TD></TR>", NULL), "", "\"");
-            }
-            */
-
-            /* 8-Aug-2008 nm */
             if (s != -2 && (i == g_extHtmlStmt || i == g_mathboxStmt)) {
               /* Print a row that identifies the start of the extended
                  database (e.g. Hilbert Space Explorer) or the user
@@ -3171,8 +2740,6 @@ void command(int argc, char *argv[])
                   " the <B><FONT COLOR=", GREEN_TITLE_COLOR, ">",
                   (i == g_extHtmlStmt) ?
                     g_extHtmlTitle :
-                    /*"User Sandboxes",*/
-                    /* 24-Jul-2009 nm Changed name of sandbox to "mathbox" */
                     "User Mathboxes",
                   "</FONT></B> starts here</TD></TR>", NULL), "", "\"");
             }
@@ -3197,8 +2764,7 @@ void command(int argc, char *argv[])
                     let(&str2, "");
                     str2 = tokenToTex(g_MathToken[(g_Statement[i].mathString)[j]
                         ].tokenName, i/*stmt# for error msgs*/);
-                    /* 2/9/02  Skip any tokens (such as |- in QL Explorer) that
-                       may be suppressed */
+                    /* Skip any tokens (such as |- in QL Explorer) that may be suppressed */
                     if (!str2[0]) continue;
                     /* Convert special characters to HTML entities */
                     for (k = 0; k < (signed)(strlen(str1)); k++) {
@@ -3220,10 +2786,9 @@ void command(int argc, char *argv[])
                     } /* next k */
                     printLongLine(cat("<TR ALIGN=LEFT><TD>",
                         (g_altHtmlFlag ? cat("<SPAN ", g_htmlFont, ">", NULL) : ""),
-                                                           /* 14-Jan-2016 nm */
                         str2,
-                        (g_altHtmlFlag ? "</SPAN>" : ""),    /* 14-Jan-2016 nm */
-                        "&nbsp;", /* 10-Jan-2016 nm This will prevent a
+                        (g_altHtmlFlag ? "</SPAN>" : ""),
+                        "&nbsp;", /* This will prevent a
                                      -4px shifted image from overlapping the
                                      lower border of the table cell */
                         "</TD><TD><TT>",
@@ -3237,29 +2802,14 @@ void command(int argc, char *argv[])
                 break;
               case -1: /* Falls through to next case */
               case 0:
-                /* Count the number of essential hypotheses k */
-                /* Not needed anymore??? since getTexOrHtmlHypAndAssertion() */
-                /*
-                k = 0;
-                j = nmbrLen(g_Statement[i].reqHypList);
-                for (n = 0; n < j; n++) {
-                  if (g_Statement[g_Statement[i].reqHypList[n]].type
-                      == (char)e_) {
-                    k++;
-                  }
-                }
-                */
                 let(&str1, "");
                 if (s == 0 || g_briefHtmlFlag) {
                   let(&str1, "");
-                  /* 18-Sep-03 Get HTML hypotheses => assertion */
+                  /* Get HTML hypotheses => assertion */
                   str1 = getTexOrHtmlHypAndAssertion(i);
-                                                /* In mmwtex.c */
                   let(&str1, cat(str1, "</TD></TR>", NULL));
                 }
 
-                /* 13-Oct-2006 nm Made some changes to BRIEF_HTML/_ALT_HTML
-                   to use its mmtheoremsall.html output for the Palm PDA */
                 if (g_briefHtmlFlag) {
                   /* Get page number in mmtheorems*.html of WRITE THEOREMS */
                   k = ((g_Statement[i].pinkNumber - 1) /
@@ -3278,14 +2828,13 @@ void command(int argc, char *argv[])
                   /* Get little pink (or rainbow-colored) number */
                   let(&str4, "");
                   str4 = pinkHTML(i);
-                  let(&str2, cat("<TR BGCOLOR=", bgcolor, /* 8-Aug-2008 nm */
+                  let(&str2, cat("<TR BGCOLOR=", bgcolor,
                       " ALIGN=LEFT><TD><A HREF=\"",
                       g_Statement[i].labelName,
                       ".html\">", g_Statement[i].labelName,
                       "</A>", str4, NULL));
                   let(&str1, cat(str2, "</TD><TD>", str1, NULL));
                 }
-                /* End of 13-Oct-2006 changed section */
 
                 print2("\n");  /* New line for HTML source readability */
                 printLongLine(str1, "", "\"");
@@ -3313,14 +2862,11 @@ void command(int argc, char *argv[])
                 break;
             } /* end switch */
           } /* next i (statement number) */
-          /* print2("</TABLE></CENTER>\n"); */ /* 8/8/03 Removed - already
-              done somewhere else, causing validator.w3.org to fail */
           g_outputToString = 0;  /* closing will write out the string */
           let(&bgcolor, ""); /* Deallocate (to improve fragmentation) */
 
         } else { /* s > 0 */
 
-          /* 16-Aug-2016 nm */
           if (printTime == 1) {
             getRunTime(&timeIncr);  /* This call just resets the time */
           }
@@ -3332,7 +2878,6 @@ void command(int argc, char *argv[])
               1 /*texFlag*/,   /* means latex or html */
               1 /*g_htmlFlag*/);
 
-          /* 16-Aug-2016 nm */
           if (printTime == 1) {
             getRunTime(&timeIncr);
             print2("SHOW STATEMENT run time = %6.2f sec for \"%s\"\n",
@@ -3366,42 +2911,8 @@ void command(int argc, char *argv[])
     } /* if (cmdMatches("SHOW STATEMENT") && switchPos("/ HTML")...) */
 
 
-    /******* Section for / MNEMONICS added 12-May-2009 by Stefan Allan *****/
     /* Write mnemosyne.txt */
     if (cmdMatches("SHOW STATEMENT") && switchPos("/ MNEMONICS")) {
-
-      /*** 17-Nov-2015 nm Deleted - removed g_htmlFlag, g_altHtmlFlag
-            change prohibition
-      if (!g_texDefsRead) {
-        g_htmlFlag = 1;     /@ Use HTML, not TeX section @/
-        g_altHtmlFlag = 1;  /@ Use Unicode, not GIF @/
-        print2("Reading definitions from $t statement of %s...\n", g_input_fn);
-        if (2/@error@/ == readTexDefs(0 /@ 1 = check errors only @/,
-            0 /@ 1 = no GIF file existence check @/  )) {
-          print2(
-          "?There was an error in the $t comment's LaTeX/HTML definitions.\n");
-          print2("?HTML generation was aborted due to the error above.\n");
-          continue; /@ An error occurred @/
-        }
-      } else {
-        /@ Current limitation - can only read def's from .mm file once @/
-        if (!g_htmlFlag) {
-          print2("?You cannot use both LaTeX and HTML in the same session.\n");
-          print2(
-              "You must EXIT and restart Metamath to switch to the other.\n");
-          continue;
-        } else {
-          if (!g_altHtmlFlag) {
-            print2(
-              "?You cannot use both HTML and ALT_HTML in the same session.\n");
-            print2(
-              "You must EXIT and restart Metamath to switch to the other.\n");
-            continue;
-          }
-        }
-      }
-      *** end of 17-Nov-2015 deletion */
-
       g_htmlFlag = 1;     /* Use HTML, not TeX section */
       g_altHtmlFlag = 1;  /* Use Unicode, not GIF */
       /* readTexDefs() rereads based on changes to g_htmlFlag, g_altHtmlFlag */
@@ -3420,14 +2931,8 @@ void command(int argc, char *argv[])
 
       for (s = 1; s <= g_statements; s++) {
         g_showStatement = s;
-/*
-        if (strcmp("|-", g_MathToken[
-         (g_Statement[g_showStatement].mathString)[0]].tokenName)) {
-           subType = SYNTAX;
-        }
-*/
+
         if (!g_Statement[s].labelName[0]) continue; /* No label */
-        /* 30-Jan-06 nm Added single-character-match wildcard argument */
         if (!matchesList(g_Statement[s].labelName, g_fullArg[2], '*', '?'))
           continue;
         if (g_Statement[s].type != (char)a_
@@ -3493,14 +2998,12 @@ void command(int argc, char *argv[])
 
       continue;
     } /* if (cmdMatches("SHOW STATEMENT") && switchPos("/ MNEMONICS")) */
-    /** End of section for / MNEMONICS added 12-May-2009 by Stefan Allan *****/
 
     /* If we get here, the user did not specify one of the qualifiers /HTML,
        /BRIEF_HTML, /ALT_HTML, or /BRIEF_ALT_HTML */
     if (cmdMatches("SHOW STATEMENT") && !switchPos("/ HTML")) {
 
       texFlag = 0;
-      /* 14-Sep-2010 nm Added OLD_TEX */
       if (switchPos("/ TEX") || switchPos("/ OLD_TEX")
           || switchPos("/ HTML"))
         texFlag = 1;
@@ -3508,7 +3011,6 @@ void command(int argc, char *argv[])
       briefFlag = 1;
       g_oldTexFlag = 0;
       if (switchPos("/ TEX")) briefFlag = 0;
-      /* 14-Sep-2010 nm Added OLD_TEX */
       if (switchPos("/ OLD_TEX")) briefFlag = 0;
       if (switchPos("/ OLD_TEX")) g_oldTexFlag = 1;
       if (switchPos("/ FULL")) briefFlag = 0;
@@ -3544,14 +3046,12 @@ void command(int argc, char *argv[])
       for (s = 1; s <= g_statements; s++) {
         if (!g_Statement[s].labelName[0]) continue; /* No label */
         /* We are not in MM-PA mode, or the statement isn't "=" */
-        /* 30-Jan-06 nm Added single-character-match wildcard argument */
         if (!matchesList(g_Statement[s].labelName, g_fullArg[2], '*', '?'))
           continue;
 
         if (briefFlag || commentOnlyFlag || texFlag) {
           /* For brief or comment qualifier, if label has wildcards,
              show only $p and $a's */
-          /* 30-Jan-06 nm Added single-character-match wildcard argument */
           if (g_Statement[s].type != (char)p_
               && g_Statement[s].type != (char)a_ && (instr(1, g_fullArg[2], "*")
                   || instr(1, g_fullArg[2], "?")))
@@ -3559,7 +3059,6 @@ void command(int argc, char *argv[])
         }
 
         if (q && !texFlag) {
-          /* 17-Jul-2019 nm Changed "79" to "g_screenWidth" */
           if (!print2("%s\n", string(g_screenWidth, '-'))) /* Put line between
                                                    statements */
             break; /* Break for speedup if user quit */
@@ -3589,7 +3088,6 @@ void command(int argc, char *argv[])
 
       if (texFlag && !g_htmlFlag) {
         print2("The LaTeX source was written to \"%s\".\n", g_texFileName);
-        /* 14-Sep-2010 nm Added OLD_TEX */
         g_oldTexFlag = 0;
       }
       continue;
@@ -3643,7 +3141,7 @@ void command(int argc, char *argv[])
         print2(
           "(SET EMPTY_SUBSTITUTION...) EMPTY_SUBSTITUTION is allowed (ON).\n");
       }
-      if (g_hentyFilter) { /* 18-Nov-05 nm Added to the SHOW listing */
+      if (g_hentyFilter) {
         print2(
               "(SET JEREMY_HENTY_FILTER...) The Henty filter is turned ON.\n");
       } else {
@@ -3663,13 +3161,11 @@ void command(int argc, char *argv[])
         print2("The %s file \"%s\" is open.\n", g_htmlFlag ? "HTML" : "LaTeX",
             g_texFileName);
       }
-      /* 17-Nov-2015 nm */
       print2(
   "(SHOW STATEMENT.../[TEX,HTML,ALT_HTML]) Current output mode is %s.\n",
           g_htmlFlag
              ? (g_altHtmlFlag ? "ALT_HTML" : "HTML")
              : "TEX (LaTeX)");
-      /* 21-Jun-2014 */
       print2("The program is compiled for a %ld-bit CPU.\n",
           (long)(8 * sizeof(long)));
       print2(
@@ -3680,7 +3176,6 @@ void command(int argc, char *argv[])
     }
 
     if (cmdMatches("SHOW MEMORY")) {
-      /*print2("%ld bytes of data memory have been used.\n",db+db3);*/
       j = 32000000; /* The largest we'ed ever look for */
       i = getFreeSpace(j);
       if (i > j-3) {
@@ -3691,7 +3186,6 @@ void command(int argc, char *argv[])
       continue;
     }
 
-    /* 21-Jun-2014 */
     if (cmdMatches("SHOW ELAPSED_TIME")) {
       timeTotal = getRunTime(&timeIncr);
       print2(
@@ -3702,21 +3196,6 @@ void command(int argc, char *argv[])
 
 
     if (cmdMatches("SHOW TRACE_BACK")) {
-
-
-      /* Pre-21-May-2008
-        for (i = 1; i <= g_statements; i++) {
-          if (!strcmp(g_fullArg[2],g_Statement[i].labelName)) break;
-        }
-        if (i > g_statements) {
-          printLongLine(cat("?There is no statement with label \"",
-              g_fullArg[2], "\".  ",
-              "Use SHOW LABELS for a list of valid labels.", NULL), "", " ");
-          g_showStatement = 0;
-          continue;
-        }
-       */
-
       essentialFlag = 0;
       axiomFlag = 0;
       endIndent = 0;
@@ -3729,7 +3208,6 @@ void command(int argc, char *argv[])
       i = switchPos("/ DEPTH"); /* Limit depth of printout */
       if (i) endIndent = (long)val(g_fullArg[i + 1]);
 
-       /* 19-May-2013 nm */
       i = switchPos("/ COUNT_STEPS");
       countStepsFlag = (i != 0 ? 1 : 0);
       i = switchPos("/ TREE");
@@ -3773,7 +3251,6 @@ void command(int argc, char *argv[])
         }
       }
 
-      /* 21-May-2008 nm Added wildcard handling */
       g_showStatement = 0;
       for (i = 1; i <= g_statements; i++) {
         if (g_Statement[i].type != (char)p_)
@@ -3783,36 +3260,7 @@ void command(int argc, char *argv[])
           continue;
 
         g_showStatement = i;
-        /*** start of 19-May-2013 deletion
-        j = switchPos("/ TREE");
-        if (j) {
-          if (axiomFlag) {
-            print2(
-                "(Note:  The AXIOMS switch is ignored in TREE mode.)\n");
-          }
-          if (switchPos("/ COUNT_STEPS")) {
-            print2(
-                "(Note:  The COUNT_STEPS switch is ignored in TREE mode.)\n");
-          }
-          traceProofTree(g_showStatement, essentialFlag, endIndent);
-        } else {
-          if (endIndent != 0) {
-           print2(
-"(Note:  The DEPTH is ignored if the TREE switch is not used.)\n");
-          }
 
-          j = switchPos("/ COUNT_STEPS");
-          if (j) {
-            countSteps(g_showStatement, essentialFlag);
-          } else {
-            traceProof(g_showStatement, essentialFlag, axiomFlag);
-          }
-        }
-        *** end of 19-May-2013 deletion */
-
-
-        /* 19-May-2013 nm - move /TREE and /COUNT_STEPS to outside loop,
-           assigning new variables, for cleaner code. */
         if (treeFlag) {
           traceProofTree(g_showStatement, essentialFlag, endIndent);
         } else {
@@ -3822,13 +3270,12 @@ void command(int argc, char *argv[])
             traceProof(g_showStatement,
                 essentialFlag,
                 axiomFlag,
-                matchList, /* 19-May-2013 nm */
-                traceToList, /* 18-Jul-2015 nm */
-                0 /* testOnlyFlag */ /* 20-May-2013 nm */);
+                matchList,
+                traceToList,
+                0 /* testOnlyFlag */);
           }
         }
 
-      /* 21-May-2008 nm Added wildcard handling */
       } /* next i */
       if (g_showStatement == 0) {
         printLongLine(cat("?There are no $p labels matching \"",
@@ -3844,7 +3291,6 @@ void command(int argc, char *argv[])
 
     if (cmdMatches("SHOW USAGE")) {
 
-      /* 7-Jan-2008 nm Added / ALL qualifier */
       if (switchPos("/ ALL")) {
         m = 1;  /* Always include $e, $f statements */
       } else {
@@ -3852,9 +3298,7 @@ void command(int argc, char *argv[])
       }
 
       g_showStatement = 0;
-      for (i = 1; i <= g_statements; i++) { /* 7-Jan-2008 */
-
-        /* 7-Jan-2008 nm Added wildcard handling */
+      for (i = 1; i <= g_statements; i++) {
         if (!g_Statement[i].labelName[0]) continue; /* No label */
         if (!m && g_Statement[i].type != (char)p_ &&
             g_Statement[i].type != (char)a_
@@ -3879,51 +3323,6 @@ void command(int argc, char *argv[])
             recursiveFlag,
             0 /* cutoffStmt */);
 
-
-
-        /************* 18-Jul-2015 nm Start of deleted code ************/
-        /*
-        /@ Count the number of statements = # of spaces @/
-        k = (long)strlen(str1) - (long)strlen(edit(str1, 2));
-
-        if (!k) {
-          printLongLine(cat("Statement \"",
-              g_Statement[g_showStatement].labelName,
-              "\" is not referenced in the proof of any statement.", NULL),
-              "", " ");
-        } else {
-          if (recursiveFlag) {
-            let(&str2, "\" directly or indirectly affects");
-          } else {
-            let(&str2, "\" is directly referenced in");
-          }
-          if (k == 1) {
-            printLongLine(cat("Statement \"",
-                g_Statement[g_showStatement].labelName,
-                str2, " the proof of ",
-                str((double)k), " statement:", NULL), "", " ");
-          } else {
-            printLongLine(cat("Statement \"",
-                g_Statement[g_showStatement].labelName,
-                str2, " the proofs of ",
-                str((double)k), " statements:", NULL), "", " ");
-          }
-        }
-
-        if (k) {
-          let(&str1, cat(" ", str1, NULL));
-        } else {
-          let(&str1, "  (None)");
-        }
-
-        /@ Print the output @/
-        printLongLine(str1, "  ", " ");
-        */
-        /********* 18-Jul-2015 nm End of deleted code ****************/
-
-
-        /************* 18-Jul-2015 nm Start of new code ************/
-        /* 18-Jul-2015 nm */
         /* str1[0] will be 'Y' or 'N' depending on whether there are any
            statements.  str1[i] will be 'Y' or 'N' depending on whether
            g_Statement[i] uses g_showStatement. */
@@ -3986,9 +3385,6 @@ void command(int argc, char *argv[])
         } else {
           print2("  (None)\n");
         } /* if (k != 0) */
-        /********* 18-Jul-2015 nm End of new code ****************/
-
-
       } /* next i (statement matching wildcard list) */
 
       if (g_showStatement == 0) {
@@ -4010,7 +3406,6 @@ void command(int argc, char *argv[])
         continue;
       }
 
-      /* 3-May-2016 nm */
       if (cmdMatches("SAVE NEW_PROOF")
           && getMarkupFlag(g_proveStatement, PROOF_DISCOURAGED)) {
         if (switchPos("/ OVERRIDE") == 0 && g_globalDiscouragement == 1) {
@@ -4040,13 +3435,11 @@ void command(int argc, char *argv[])
         saveFlag = 1; /* The command is SAVE PROOF */
       }
 
-      /* 16-Aug-2016 nm */
       printTime = 0;
       if (switchPos("/ TIME") != 0) {  /* / TIME legal in SAVE mode only */
         printTime = 1;
       }
 
-      /* 27-Dec-2013 nm */
       i = switchPos("/ OLD_COMPRESSION");
       if (i) {
         if (!switchPos("/ COMPRESSED")) {
@@ -4055,7 +3448,6 @@ void command(int argc, char *argv[])
         }
       }
 
-      /* 2-Mar-2016 nm */
       i = switchPos("/ FAST");
       if (i) {
         if (!switchPos("/ COMPRESSED") && !switchPos("/ PACKED")) {
@@ -4067,7 +3459,6 @@ void command(int argc, char *argv[])
         fastFlag = 0;
       }
 
-      /* 2-Mar-2016 nm */
       if (switchPos("/ EXPLICIT")) {
         if (switchPos("/ COMPRESSED")) {
           print2("?/ COMPRESSED and / EXPLICIT may not be used together.\n");
@@ -4088,10 +3479,8 @@ void command(int argc, char *argv[])
       /* Establish defaults for omitted qualifiers */
       startStep = 0;
       endStep = 0;
-      /* startIndent = 0; */ /* Not used */
       endIndent = 0;
-      /*essentialFlag = 0;*/
-      essentialFlag = 1; /* 10/9/99 - friendlier default */
+      essentialFlag = 1;
       renumberFlag = 0;
       unknownFlag = 0;
       notUnifiedFlag = 0;
@@ -4099,7 +3488,7 @@ void command(int argc, char *argv[])
       detailStep = 0;
       noIndentFlag = 0;
       splitColumn = DEFAULT_COLUMN;
-      skipRepeatedSteps = 0; /* 28-Jun-2013 nm */
+      skipRepeatedSteps = 0;
       texFlag = 0;
 
       i = switchPos("/ FROM_STEP");
@@ -4108,7 +3497,7 @@ void command(int argc, char *argv[])
       if (i) endStep = (long)val(g_fullArg[i + 1]);
       i = switchPos("/ DEPTH");
       if (i) endIndent = (long)val(g_fullArg[i + 1]);
-      /* 10/9/99 - ESSENTIAL is retained for downwards compatibility, but is
+      /* ESSENTIAL is retained for downwards compatibility, but is
          now the default, so we ignore it. */
       /*
       i = switchPos("/ ESSENTIAL");
@@ -4132,10 +3521,9 @@ void command(int argc, char *argv[])
       if (i) noIndentFlag = 1;
       i = switchPos("/ START_COLUMN");
       if (i) splitColumn = (long)val(g_fullArg[i + 1]);
-      i = switchPos("/ NO_REPEATED_STEPS"); /* 28-Jun-2013 nm */
-      if (i) skipRepeatedSteps = 1;         /* 28-Jun-2013 nm */
+      i = switchPos("/ NO_REPEATED_STEPS");
+      if (i) skipRepeatedSteps = 1;
 
-      /* 8-Dec-2018 nm */
       /* If NO_REPEATED_STEPS is specified, indentation (tree) mode will be
          misleading because a hypothesis assignment will be suppressed if the
          same assignment occurred earlier, i.e. it is no longer a "tree". */
@@ -4145,15 +3533,13 @@ void command(int argc, char *argv[])
       }
 
       i = switchPos("/ TEX") || switchPos("/ HTML")
-          /* 14-Sep-2010 nm Added OLDE_TEX */
           || switchPos("/ OLD_TEX");
       if (i) texFlag = 1;
 
-      /* 14-Sep-2010 nm Added OLD_TEX */
       g_oldTexFlag = 0;
       if (switchPos("/ OLD_TEX")) g_oldTexFlag = 1;
 
-      if (cmdMatches("MIDI")) { /* 8/28/00 */
+      if (cmdMatches("MIDI")) {
         g_midiFlag = 1;
         pipFlag = 0;
         saveFlag = 0;
@@ -4178,10 +3564,6 @@ void command(int argc, char *argv[])
               g_htmlFlag ? "HTML" : "TEX");
           continue;
         }
-        /**** this is now done after outputting
-        print2("The %s source was written to \"%s\".\n",
-            g_htmlFlag ? "HTML" : "LaTeX", g_texFileName);
-        */
       }
 
       i = switchPos("/ DETAILED_STEP"); /* non-pip mode only */
@@ -4193,7 +3575,6 @@ void command(int argc, char *argv[])
 
 /*??? Need better warnings for switch combinations that don't make sense */
 
-      /* 2-Jan-2017 nm */
       /* Print a single message for "/compressed/fast" */
       if (switchPos("/ COMPRESSED") && fastFlag
           && !strcmp("*", labelMatch)) {
@@ -4210,7 +3591,6 @@ void command(int argc, char *argv[])
         /* If !pipFlag, get the next statement: */
         if (!pipFlag) {
           if (g_Statement[stmt].type != (char)p_) continue; /* Not $p */
-          /* 30-Jan-06 nm Added single-character-match wildcard argument */
           if (!matchesList(g_Statement[stmt].labelName, labelMatch, '*', '?'))
             continue;
           g_showStatement = stmt;
@@ -4230,7 +3610,6 @@ void command(int argc, char *argv[])
           continue;
         }
 
-        /* 21-Jun-2014 */
         if (switchPos("/ SIZE")) { /* non-pip mode only */
           /* Just print the size of the stored proof and continue */
           let(&str1, space(g_Statement[g_showStatement].proofSectionLen));
@@ -4254,7 +3633,6 @@ void command(int argc, char *argv[])
             switchPos("/ COMPRESSED") || switchPos("/ EXPLICIT") || saveFlag) {
           /*??? Add error msg if other switches were specified. (Ignore them.)*/
 
-          /* 16-Aug-2016 nm */
           if (saveFlag) {
             if (printTime == 1) {
               getRunTime(&timeIncr);  /* This call just resets the time */
@@ -4274,16 +3652,14 @@ void command(int argc, char *argv[])
 
           if (!pipFlag) {
             parseProof(g_showStatement);  /* Prints message if severe error */
-            if (g_WrkProof.errorSeverity > 1) {  /* 21-Aug-04 nm */
-                              /* Prevent bugtrap in nmbrSquishProof -> */
-                              /* nmbrGetSubProofLen if proof corrupted */
+            if (g_WrkProof.errorSeverity > 1) {
+              /* Prevent bugtrap in nmbrSquishProof -> nmbrGetSubProofLen
+                 if proof corrupted */
               print2(
           "?The proof has a severe error and cannot be displayed or saved.\n");
               continue;
             }
-            /* verifyProof(g_showStatement); */ /* Not necessary */
-            if (fastFlag) { /* 2-Mar-2016 nm */
-              /* 2-Mar-2016 nm */
+            if (fastFlag) {
               /* Use the proof as is */
               nmbrLet(&nmbrSaveProof, g_WrkProof.proofString);
             } else {
@@ -4294,7 +3670,7 @@ void command(int argc, char *argv[])
             nmbrLet(&nmbrSaveProof, g_ProofInProgress.proof);
           }
           if (switchPos("/ PACKED")  || switchPos("/ COMPRESSED")) {
-            if (!fastFlag) { /* 2-Mar-2016 nm */
+            if (!fastFlag) {
               nmbrLet(&nmbrSaveProof, nmbrSquishProof(nmbrSaveProof));
             }
           }
@@ -4302,12 +3678,10 @@ void command(int argc, char *argv[])
           if (switchPos("/ COMPRESSED")) {
             let(&str1, compressProof(nmbrSaveProof,
                 outStatement, /* g_showStatement or g_proveStatement based on pipFlag */
-                (switchPos("/ OLD_COMPRESSION")) ? 1 : 0  /* 27-Dec-2013 nm */
-                ));
+                (switchPos("/ OLD_COMPRESSION")) ? 1 : 0));
           } else {
             let(&str1, nmbrCvtRToVString(nmbrSaveProof,
-                /* 25-Jan-2016 nm */
-                explicitTargets, /*explicitTargets*/
+                explicitTargets,
                 outStatement /*statemNum, used only if explicitTargets*/));
           }
 
@@ -4326,9 +3700,6 @@ void command(int argc, char *argv[])
               break; /* Break for speedup if user quit */
             print2(
 "---------Clip out the proof below this line to put it in the source file:\n");
-            /* 19-Apr-2015 so */
-            /* 24-Apr-2015 nm Reverted */
-            /*print2("\n");*/ /* Add a blank line to make clipping easier */
           }
           if (switchPos("/ COMPRESSED")) {
             printLongLine(cat(space(indentation), str1, " $.", NULL),
@@ -4339,26 +3710,17 @@ void command(int argc, char *argv[])
               space(indentation), " ");
           }
 
-          /* 24-Apr-2015 nm */
           l = (long)(strlen(str1)); /* Save length for printout below */
 
-          /* 3-May-2017 nm Rewrote the if block below */
-          /* 12-Jun-2011 nm Removed pipFlag condition so that a date
-             stamp will always be created if it doesn't exist */
-          if /*(pipFlag)*/ (1  /* Add the date proof was created */
-              /* 19-Apr-2015 so */
-              /* SOREAR Only generate date if the proof looks complete.
-                 This is not intended as a grading mechanism, just trying
-                 to avoid premature output */
-              && !nmbrElementIn(1, nmbrSaveProof, -(long)'?')) {
-
-            /* 3-May-2017 nm */
+          /* SOREAR Only generate date if the proof looks complete.
+            This is not intended as a grading mechanism, just trying
+            to avoid premature output */
+          if (!nmbrElementIn(1, nmbrSaveProof, -(long)'?')) {
             /* Add a "(Contributed by...)" date if it isn't there */
             let(&str2, "");
             str2 = getContrib(outStatement, CONTRIBUTOR);
             if (str2[0] == 0) { /* The is no contributor, so add one */
 
-              /* 14-May-2017 nm */
               /* See if there is a date below the proof (for converting old
                  .mm files).  Someday this will be obsolete, with str3 and
                  str4 always returned as "". */
@@ -4374,9 +3736,8 @@ void command(int argc, char *argv[])
               /* If there is no date below proof, use today's date */
               if (str3[0] == 0) let(&str3, date());
               let(&str4, cat("\n", space(indentation + 1),
-                  /*"(Contributed by ?who?, ", date(), ".) ", NULL));*/
                   "(Contributed by ", g_contributorName,
-                      ", ", str3, ".) ", NULL)); /* 14-May-2017 nm */
+                      ", ", str3, ".) ", NULL));
               /* If there is a 2nd date below proof, add a "(Revised by..."
                  tag */
               if (str5[0] != 0) {
@@ -4387,7 +3748,7 @@ void command(int argc, char *argv[])
                    a reviser. */
                 let(&str4, cat(str4, "\n", space(indentation + 1),
                     "(Revised by ", DEFAULT_CONTRIBUTOR,
-                        ", ", str5, ".) ", NULL)); /* 15-May-2017 nm */
+                        ", ", str5, ".) ", NULL));
               }
 
               let(&str3, space(g_Statement[outStatement].labelSectionLen));
@@ -4421,77 +3782,7 @@ void command(int argc, char *argv[])
                 str3 = getContrib(outStatement, GC_RESET_STMT);
               } /* if i != 0 */
             } /* if str2[0] == 0 */
-
-            /* At this point, str4 contains the "$( [date] $)" comment
-               if it would have been added to the saved proof, for use
-               by "show proof" */
-
-
-            /********* deleted 3-May-2017 - date below proof is obsolete
-            /@ 12-Jun-2011 nm Removed pipFlag condition so that a date
-               stamp will always be created if it doesn't exist @/
-            if ( /@ pipFlag && @/ !instr(1, str2, "$([")
-                /@ 7-Sep-04 Allow both "$([<date>])$" and "$( [<date>] )$" @/
-                /@ 19-Apr-2015 so @/
-                /@ SOREAR Only generate date if the proof looks complete.
-                   This is not intended as a grading mechanism, just trying
-                   to avoid premature output @/
-                && !nmbrElementIn(1, nmbrSaveProof, -(long)'?')
-                && !instr(1, str2, "$( [")) {
-            /@ 6/13/98 end @/
-              /@ No date stamp existed before.  Create one for today's
-                 date.  Note that the characters after "$." at the end of
-                 the proof normally go in the labelSection of the next
-                 statement, but a special mode in outputStatement() (in
-                 mmpars.c) will output the date stamp characters for a saved
-                 proof. @/
-              /@ print2("%s$([%s]$)\n", space(indentation), date()); @/
-              /@ 4/23/04 nm Initialize with a "?" date followed by today's
-                 date.  The "?" date can be edited by the user when the
-                 proof is becomes "official." @/
-              /@print2("%s$([?]$) $([%s]$)\n", space(indentation), date());@/
-              /@ 7-Sep-04 Put space around "[<date>]" @/
-              /@print2("%s$( [?] $) $( [%s] $)\n", space(indentation), date());@/
-              /@ 30-Nov-2013 remove the unknown date placeholder @/
-              print2("%s$( [%s] $)\n", space(indentation), date());
-            } else {
-              if (saveFlag && (instr(1, str2, "$([")
-                  /@ 7-Sep-04 Allow both "$([<date>])$" and "$( [<date>] )$" @/
-                  || instr(1, str2, "$( ["))) {
-                /@ An old date stamp existed, and we're saving the proof to
-                   the output file.  Make sure the indentation of the old
-                   date stamp (which exists in the labelSection of the
-                   next statement) matches the indentation of the saved
-                   proof.  To do this, we "delete" the indentation spaces
-                   on the old date in the labelSection of the next statement,
-                   and we put the actual required indentation spaces at
-                   the end of the saved proof.  This is done because the
-                   labelSectionPtr of the next statement does not point to
-                   an isolated string that can be allocated/deallocated but
-                   rather to a place in the input source buffer. @/
-                /@ Correct the indentation on old date @/
-                while ((g_Statement[outStatement + 1].labelSectionPtr)[0] !=
-                    '$') {
-                  /@ "Delete" spaces before old date (by moving source
-                     buffer pointer forward), and also "delete"
-                     the \n that comes before those spaces @/
-                  /@ If the proof is saved a 2nd time, this loop will
-                     not be entered because the pointer will already be
-                     at the "$". @/
-                  (g_Statement[outStatement + 1].labelSectionPtr)++;
-                  (g_Statement[outStatement + 1].labelSectionLen)--;
-                }
-                if (!g_outputToString) bug(1115);
-                /@ The final \n will not appear in final output (done in
-                   outputStatement() in mmpars.c) because the proofSectionLen
-                   below is adjusted to omit it.  This will allow the
-                   space(indentation) to appear before the old date without an
-                   intervening \n. @/
-                print2("%s\n", space(indentation));
-              }
-            }
-            ******** end of deletion 3-May-2017 ******/
-          } /* if / *(pipFlag)* / (1) */
+          } /* if (!nmbrElementIn(1, nmbrSaveProof, -(long)'?')) */
 
           if (saveFlag) {
             g_sourceChanged = 1;
@@ -4502,27 +3793,6 @@ void command(int argc, char *argv[])
                              indicates that proof hasn't changed */
             }
 
-            /******** deleted 3-May-2017 nm (before proofSectionChanged added)
-            /@ ASCII 1 is a flag that string was allocated and not part of
-               original source file text buffer @/
-            let(&g_printString, cat(chr(1), "\n", g_printString, NULL));
-            if (g_Statement[outStatement].proofSectionPtr[-1] == 1) {
-              /@ Deallocate old proof if not original source @/
-              let(&str1, ""); /@ Deallocate any previous str1 content @/
-              str1 = g_Statement[outStatement].proofSectionPtr - 1;
-              let(&str1, ""); /@ Deallocate the proof section @/
-            }
-            g_Statement[outStatement].proofSectionPtr = g_printString + 1;
-            /@ Subtr 1 char for ASCII 1 at beg, 1 char for "\n" at the end
-               (which is the first char of next statement's labelSection) @/
-            g_Statement[outStatement].proofSectionLen
-                = (long)strlen(g_printString) - 2;
-            /@ Reset g_printString without deallocating @/
-            g_printString = "";
-            g_outputToString = 0;
-            **********/
-
-            /* 3-May-2017 nm */
             /* Add an initial \n which will go after the "$=" and the
                beginning of the proof */
             let(&g_printString, cat("\n", g_printString, NULL));
@@ -4570,7 +3840,6 @@ void command(int argc, char *argv[])
                   NULL), "", " ");
             }
 
-            /* 16-Aug-2016 nm */
             if (printTime == 1) {
               getRunTime(&timeIncr);
               print2("SAVE PROOF run time = %6.2f sec for \"%s\"\n", timeIncr,
@@ -4578,13 +3847,10 @@ void command(int argc, char *argv[])
             }
 
           } else {
-            /* 19-Apr-2015 so */
-            /* 24-Apr-2015 nm Reverted */
             /*print2("\n");*/ /* Add a blank line to make clipping easier */
             print2(cat(
                 "---------The proof of \"", g_Statement[outStatement].labelName,
                 /* "\" to clip out ends above this line.\n",NULL)); */
-                /* 24-Apr-2015 nm */
                 "\" (", str((double)l), " bytes) ends above this line.\n", NULL));
           } /* End if saveFlag */
           nmbrLet(&nmbrSaveProof, NULL_NMBRSTRING);
@@ -4604,7 +3870,6 @@ void command(int argc, char *argv[])
           g_outputToString = 1; /* Flag for print2 to add to g_printString */
           if (!g_htmlFlag) {
             if (!g_oldTexFlag) {
-              /* 14-Sep-2010 nm */
               print2("\\begin{proof}\n");
               print2("\\begin{align}\n");
             } else {
@@ -4619,26 +3884,9 @@ void command(int argc, char *argv[])
             }
           } else { /* g_htmlFlag */
             bug(1118);
-            /*???? The code below is obsolete - now down in show statement*/
-            /*
-            print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=%s>\n",
-                MINT_BACKGROUND_COLOR);
-            print2("<CAPTION><B>Proof of Theorem <FONT\n");
-            printLongLine(cat("   COLOR=", GREEN_TITLE_COLOR, ">",
-                asciiToTt(g_Statement[outStatement].labelName),
-                "</FONT></B></CAPTION>", NULL), "", "\"");
-            print2(
-                "<TR><TD><B>Step</B></TD><TD><B>Hyp</B></TD><TD><B>Ref</B>\n");
-            print2("</TD><TD><B>Expression</B></TD></TR>\n");
-            */
           }
           g_outputToString = 0;
-          /* 8/26/99: Obsolete: */
-          /* printTexLongMath in typeProof will do this
-          fprintf(g_texFilePtr, "%s", g_printString);
-          let(&g_printString, "");
-          */
-          /* 8/26/99: printTeXLongMath now clears g_printString in LaTeX
+          /* printTeXLongMath clears g_printString in LaTeX
              mode before starting its output, so we must put out the
              g_printString ourselves here */
           fprintf(g_texFilePtr, "%s", g_printString);
@@ -4646,7 +3894,6 @@ void command(int argc, char *argv[])
         } else { /* !texFlag */
           /* Terminal output - display the statement if wildcard is used */
           if (!pipFlag) {
-            /* 30-Jan-06 nm Added single-character-match wildcard argument */
             if (instr(1, labelMatch, "*") || instr(1, labelMatch, "?")) {
               if (!print2("Proof of \"%s\":\n", g_Statement[outStatement].labelName))
                 break; /* Break for speedup if user quit */
@@ -4665,7 +3912,6 @@ void command(int argc, char *argv[])
             endIndent,
             essentialFlag,
 
-            /* 1-May-2017 nm */
             /* In SHOW PROOF xxx /TEX, we use renumber steps mode so that
                the first step is step 1.  The step number is checked for
                step 1 in mmwtex.c to prevent a spurious \\ (newline) at the
@@ -4673,27 +3919,23 @@ void command(int argc, char *argv[])
                SHOW PROOF is not available in HTML mode, so texFlag will
                always mean LaTeX mode here. */
             (texFlag ? 1 : renumberFlag),
-            /*was: renumberFlag,*/
 
             unknownFlag,
             notUnifiedFlag,
             reverseFlag,
 
-            /* 1-May-2017 nm */
             /* In SHOW PROOF xxx /TEX, we use Lemmon mode so that the
                hypothesis reference list will be available.  Note that
                SHOW PROOF is not available in HTML mode, so texFlag will
                always mean LaTeX mode here. */
             (texFlag ? 1 : noIndentFlag),
-            /*was: noIndentFlag,*/
 
             splitColumn,
-            skipRepeatedSteps, /* 28-Jun-2013 nm */
+            skipRepeatedSteps,
             texFlag,
             g_htmlFlag);
         if (texFlag) {
           if (!g_htmlFlag) {
-            /* 14-Sep-2010 nm */
             if (!g_oldTexFlag) {
               g_outputToString = 1;
               print2("\\end{align}\n");
@@ -4713,26 +3955,20 @@ void command(int argc, char *argv[])
           }
         }
 
-        /*???CLEAN UP */
-        /*nmbrLet(&g_WrkProof.proofString, nmbrSaveProof);*/
-
         /*E*/ if (0) { /* for debugging: */
           printLongLine(nmbrCvtRToVString(g_WrkProof.proofString,
-                /* 25-Jan-2016 nm */
                 0, /*explicitTargets*/
                 0 /*statemNum, used only if explicitTargets*/)," "," ");
           print2("\n");
 
           nmbrLet(&nmbrSaveProof, nmbrSquishProof(g_WrkProof.proofString));
           printLongLine(nmbrCvtRToVString(nmbrSaveProof,
-                /* 25-Jan-2016 nm */
                 0, /*explicitTargets*/
                 0 /*statemNum, used only if explicitTargets*/)," "," ");
           print2("\n");
 
           nmbrLet(&nmbrTmp, nmbrUnsquishProof(nmbrSaveProof));
           printLongLine(nmbrCvtRToVString(nmbrTmp,
-                /* 25-Jan-2016 nm */
                 0, /*explicitTargets*/
                 0 /*statemNum, used only if explicitTargets*/)," "," ");
 
@@ -4759,7 +3995,6 @@ void command(int argc, char *argv[])
         }
         if (texFlag) {
           print2("The LaTeX source was written to \"%s\".\n", g_texFileName);
-         /* 14-Sep-2010 nm Added OLD_TEX */
          g_oldTexFlag = 0;
         }
       }
@@ -4781,7 +4016,6 @@ void command(int argc, char *argv[])
       }
 
       print2("Result:  %s\n", nmbrCvtRToVString(nmbrTmpPtr,
-                /* 25-Jan-2016 nm */
                 0, /*explicitTargets*/
                 0 /*statemNum, used only if explicitTargets*/));
       nmbrLet(&nmbrTmpPtr, NULL_NMBRSTRING);
@@ -4792,7 +4026,6 @@ void command(int argc, char *argv[])
 
     if (cmdMatches("PROVE")) {
 
-      /* 14-Sep-2012 nm */
       /* Get the unique statement matching the g_fullArg[1] pattern */
       i = getStatementNum(g_fullArg[1],
           1/*startStmt*/,
@@ -4809,54 +4042,22 @@ void command(int argc, char *argv[])
       g_proveStatement = i;
 
 
-      /* 10-May-2016 nm */
       /* 1 means to override usage locks */
       overrideFlag = ( (switchPos("/ OVERRIDE")) ? 1 : 0)
          || g_globalDiscouragement == 0;
       if (getMarkupFlag(g_proveStatement, PROOF_DISCOURAGED)) {
         if (overrideFlag == 0) {
           /* print2("\n"); */ /* Enable for more emphasis */
-          print2(
- ">>> ?Error: Modification of this statement's proof is discouraged.\n"
-              );
-          print2(
- ">>> You must use PROVE ... / OVERRIDE to work on it.\n");
+          print2(">>> ?Error: "
+            "Modification of this statement's proof is discouraged.\n");
+          print2(">>> You must use PROVE ... / OVERRIDE to work on it.\n");
           /* print2("\n"); */ /* Enable for more emphasis */
           continue;
         }
       }
 
-
-      /*********** 14-Sep-2012 replaced by getStatementNum()
-      /@??? Make sure only $p statements are allowed. @/
-      for (i = 1; i <= g_statements; i++) {
-        if (!strcmp(g_fullArg[1],g_Statement[i].labelName)) break;
-      }
-      if (i > g_statements) {
-        printLongLine(cat("?There is no statement with label \"",
-            g_fullArg[1], "\".  ",
-            "Use SHOW LABELS for a list of valid labels.", NULL), "", " ");
-        g_proveStatement = 0;
-        continue;
-      }
-      g_proveStatement = i;
-      if (g_Statement[g_proveStatement].type != (char)p_) {
-        printLongLine(cat("?Statement \"", g_fullArg[1],
-            "\" is not a $p statement.", NULL), "", " ");
-        g_proveStatement = 0;
-        continue;
-      }
-      ************** end of 14-Sep-2012 deletion ************/
-
-      print2(
-"Entering the Proof Assistant.  HELP PROOF_ASSISTANT for help, EXIT to exit.\n");
-
-      /* Obsolete:
-      print2("You will be working on the proof of statement %s:\n",
-          g_Statement[g_proveStatement].labelName);
-      printLongLine(cat("  $p ", nmbrCvtMToVString(
-          g_Statement[g_proveStatement].mathString), NULL), "    ", " ");
-      */
+      print2("Entering the Proof Assistant.  "
+        "HELP PROOF_ASSISTANT for help, EXIT to exit.\n");
 
       g_PFASmode = 1; /* Set mode for commands here and in mmcmdl.c */
       /* Note:  Proof Assistant mode can equivalently be determined by:
@@ -4874,45 +4075,9 @@ void command(int argc, char *argv[])
       }
       cleanWrkProof(); /* Deallocate verifyProof storage */
 
-      /* 11-Sep-2016 nm */
       /* Initialize the structure needed for the Proof Assistant */
       initProofStruct(&g_ProofInProgress, nmbrSaveProof, g_proveStatement);
 
-      /****** 11-Sep-2016 nm Replaced by initProofStruct()
-      /@ Right now, only non-packed proofs are handled. @/
-      nmbrLet(&nmbrSaveProof, nmbrUnsquishProof(nmbrSaveProof));
-
-      /@ Assign initial proof structure @/
-      if (nmbrLen(g_ProofInProgress.proof)) bug(1113); /@ Should've been deall.@/
-      nmbrLet(&g_ProofInProgress.proof, nmbrSaveProof);
-      i = nmbrLen(g_ProofInProgress.proof);
-      pntrLet(&g_ProofInProgress.target, pntrNSpace(i));
-      pntrLet(&g_ProofInProgress.source, pntrNSpace(i));
-      pntrLet(&g_ProofInProgress.user, pntrNSpace(i));
-      nmbrLet((nmbrString @@)(&((g_ProofInProgress.target)[i - 1])),
-          g_Statement[g_proveStatement].mathString);
-      g_pipDummyVars = 0;
-
-      /@ Assign known subproofs @/
-      assignKnownSubProofs();
-
-      /@ Initialize remaining steps @/
-      for (j = 0; j < i/@proof length@/; j++) {
-        if (!nmbrLen((g_ProofInProgress.source)[j])) {
-          initStep(j);
-        }
-      }
-
-      /@ Unify whatever can be unified @/
-      autoUnify(0); /@ 0 means no "congrats" message @/
-      **** end of 11-Sep-2016 deletion ************/
-
-/*
-      print2(
-"Periodically save your work with SAVE NEW_PROOF and WRITE SOURCE.\n");
-      print2(
-"There is no UNDO command yet.  You can OPEN LOG to track what you've done.\n");
-*/
       /* Show the user the statement to be proved */
       print2("You will be working on statement (from \"SHOW STATEMENT %s\"):\n",
           g_Statement[g_proveStatement].labelName);
@@ -4929,8 +4094,8 @@ void command(int argc, char *argv[])
 
         print2(
      "Unknown step summary (from \"SHOW NEW_PROOF / UNKNOWN\"):\n");
-        /* 6/14/98 - Automatically display new unknown steps
-         ???Future - add switch to enable/defeat this */
+        /* Automatically display new unknown steps
+           ???Future - add switch to enable/defeat this */
         typeProof(g_proveStatement,
             1 /*pipFlag*/,
             0 /*startStep*/,
@@ -4943,22 +4108,16 @@ void command(int argc, char *argv[])
             0 /*reverseFlag*/,
             0 /*noIndentFlag*/,
             0 /*splitColumn*/,
-            0 /*skipRepeatedSteps*/, /* 28-Jun-2013 nm */
+            0 /*skipRepeatedSteps*/,
             0 /*texFlag*/,
             0 /*g_htmlFlag*/);
-        /* 6/14/98 end */
       }
 
-      /* 3-May-2016 nm */
       if (getMarkupFlag(g_proveStatement, PROOF_DISCOURAGED)) {
         /* print2("\n"); */ /* Enable for more emphasis */
         print2(
 ">>> ?Warning: Modification of this statement's proof is discouraged.\n"
             );
-        /*
-        print2(
-">>> You must use SAVE NEW_PROOF ... / OVERRIDE to save it.\n");
-        */
         /* print2("\n"); */ /* Enable for more emphasis */
       }
 
@@ -4970,11 +4129,10 @@ void command(int argc, char *argv[])
     }
 
 
-    /* 1-Nov-2013 nm Added UNDO */
     if (cmdMatches("UNDO")) {
       processUndoStack(&g_ProofInProgress, PUS_UNDO, "", 0);
       g_proofChanged = 1; /* Maybe make this more intelligent some day */
-      /* 6/14/98 - Automatically display new unknown steps
+      /* Automatically display new unknown steps
          ???Future - add switch to enable/defeat this */
       typeProof(g_proveStatement,
           1 /*pipFlag*/,
@@ -4988,18 +4146,16 @@ void command(int argc, char *argv[])
           0 /*reverseFlag*/,
           0 /*noIndentFlag*/,
           0 /*splitColumn*/,
-          0 /*skipRepeatedSteps*/, /* 28-Jun-2013 nm */
+          0 /*skipRepeatedSteps*/,
           0 /*texFlag*/,
           0 /*g_htmlFlag*/);
-      /* 6/14/98 end */
       continue;
     }
 
-    /* 1-Nov-2013 nm Added REDO */
     if (cmdMatches("REDO")) {
       processUndoStack(&g_ProofInProgress, PUS_REDO, "", 0);
       g_proofChanged = 1; /* Maybe make this more intelligent some day */
-      /* 6/14/98 - Automatically display new unknown steps
+      /* Automatically display new unknown steps
          ???Future - add switch to enable/defeat this */
       typeProof(g_proveStatement,
           1 /*pipFlag*/,
@@ -5013,10 +4169,9 @@ void command(int argc, char *argv[])
           0 /*reverseFlag*/,
           0 /*noIndentFlag*/,
           0 /*splitColumn*/,
-          0 /*skipRepeatedSteps*/, /* 28-Jun-2013 nm */
+          0 /*skipRepeatedSteps*/,
           0 /*texFlag*/,
           0 /*g_htmlFlag*/);
-      /* 6/14/98 end */
       continue;
     }
 
@@ -5087,7 +4242,7 @@ void command(int argc, char *argv[])
           }
         } /* End while (1) */
       }
-      /* 6/14/98 - Automatically display new unknown steps
+      /* Automatically display new unknown steps
          ???Future - add switch to enable/defeat this */
       typeProof(g_proveStatement,
           1 /*pipFlag*/,
@@ -5101,10 +4256,9 @@ void command(int argc, char *argv[])
           0 /*reverseFlag*/,
           0 /*noIndentFlag*/,
           0 /*splitColumn*/,
-          0 /*skipRepeatedSteps*/, /* 28-Jun-2013 nm */
+          0 /*skipRepeatedSteps*/,
           0 /*texFlag*/,
           0 /*g_htmlFlag*/);
-      /* 6/14/98 end */
       continue;
     }
 
@@ -5227,65 +4381,9 @@ void command(int argc, char *argv[])
 
       if (cmdMatches("LET STEP")) {
 
-        /* 14-Sep-2012 nm */
         s = getStepNum(g_fullArg[2], g_ProofInProgress.proof,
             0 /* ALL not allowed */);
         if (s == -1) continue;  /* Error; message was provided already */
-
-        /************** 14-Sep-2012 replaced by getStepNum()
-        s = (long)val(g_fullArg[2]); /@ Step number @/
-
-        /@ 16-Apr-06 nm Added LET STEP n where n <= 0: 0 = last,
-           -1 = penultimate, etc. _unknown_ step @/
-        /@ Unlike ASSIGN LAST/FIRST and IMPROVE LAST/FIRST, it probably
-           doesn't make sense to add LAST/FIRST to LET STEP since known
-           steps can also be LET.  The main purpose of LET STEP n, n<=0, is
-           to use with scripting for mmj2 imports. @/
-        offset = 0;
-        if (s <= 0) {
-          offset = - s + 1;
-          s = 1; /@ Temp. until we figure out which step @/
-        }
-        /@ End of 16-Apr-06 @/
-
-        m = nmbrLen(g_ProofInProgress.proof); /@ Original proof length @/
-        if (s > m || s < 1) {
-          print2("?The step must be in the range from 1 to %ld.\n", m);
-          continue;
-        }
-
-        /@ 16-Apr-06 nm Added LET STEP n where n <= 0: 0 = last,
-           1 = penultimate, etc. _unknown_ step @/
-        if (offset > 0) {  /@ step <= 0 @/
-          /@ Get the essential step flags @/
-          s = 0; /@ Use as flag that step was found @/
-          nmbrLet(&essentialFlags, nmbrGetEssential(g_ProofInProgress.proof));
-          /@ Scan proof backwards until last essential unknown step found @/
-          /@ 16-Apr-06 - count back 'offset' unknown steps @/
-          j = offset;
-          for (i = m; i >= 1; i--) {
-            if (essentialFlags[i - 1]
-                && (g_ProofInProgress.proof)[i - 1] == -(long)'?') {
-              j--;
-              if (j == 0) {
-                /@ Found it @/
-                s = i;
-                break;
-              }
-            }
-          } /@ Next i @/
-          if (s == 0) {
-            if (offset == 1) {
-              print2("?There are no unknown essential steps.\n");
-            } else {
-              print2("?There are not at least %ld unknown essential steps.\n",
-                offset);
-            }
-            continue;
-          }
-        } /@ if offset > 0 @/
-        /@ End of 16-Apr-06 @/
-        ******************** end 14-Sep-2012 deletion ********/
 
         /* Check to see if the statement selected is allowed */
         if (!checkMStringMatch(nmbrTmp, s - 1)) {
@@ -5302,7 +4400,7 @@ void command(int argc, char *argv[])
         g_proofChanged = 1; /* Cumulative flag */
         processUndoStack(&g_ProofInProgress, PUS_PUSH, g_fullArgString, 0);
       }
-      /* 6/14/98 - Automatically display new unknown steps
+      /* Automatically display new unknown steps
          ???Future - add switch to enable/defeat this */
       typeProof(g_proveStatement,
           1 /*pipFlag*/,
@@ -5316,56 +4414,22 @@ void command(int argc, char *argv[])
           0 /*reverseFlag*/,
           0 /*noIndentFlag*/,
           0 /*splitColumn*/,
-          0 /*skipRepeatedSteps*/, /* 28-Jun-2013 nm */
+          0 /*skipRepeatedSteps*/,
           0 /*texFlag*/,
           0 /*g_htmlFlag*/);
-      /* 6/14/98 end */
       continue;
     }
 
 
     if (cmdMatches("ASSIGN")) {
-
-      /* 10/4/99 - Added LAST - this means the last unknown step shown
-         with SHOW NEW_PROOF/ESSENTIAL/UNKNOWN */
-      /* 11-Dec-05 nm - Added FIRST - this means the first unknown step shown
-         with SHOW NEW_PROOF/ESSENTIAL/UNKNOWN */
-      /* 16-Apr-06 nm - Handle nonpositive step number: 0 = last,
-         -1 = penultimate, etc.*/
-      /* 14-Sep-2012 nm All the above now done by getStepNum() */
       s = getStepNum(g_fullArg[1], g_ProofInProgress.proof,
           0 /* ALL not allowed */);
       if (s == -1) continue;  /* Error; message was provided already */
 
-      /* 3-May-2016 nm */
       /* 1 means to override usage locks */
       overrideFlag = ( (switchPos("/ OVERRIDE")) ? 1 : 0)
          || g_globalDiscouragement == 0;
 
-      /****** replaced by getStepNum()  nm 14-Sep-2012
-      offset = 0; /@ 16-Apr-06 @/
-      let(&str1, g_fullArg[1]); /@ To avoid void pointer problems with g_fullArg @/
-      if (toupper((unsigned char)(str1[0])) == 'L'
-          || toupper((unsigned char)(str1[0])) == 'F') {
-                                          /@ "ASSIGN LAST" or "ASSIGN FIRST" @/
-                                          /@ 11-Dec-05 nm @/
-        s = 1; /@ Temporary until we figure out which step @/
-        offset = 1;          /@ 16-Apr-06 @/
-      } else {
-        s = (long)val(g_fullArg[1]); /@ Step number @/
-        if (strcmp(g_fullArg[1], str((double)s))) {
-          print2("?Expected either a number or FIRST or LAST after ASSIGN.\n");
-                                                             /@ 11-Dec-05 nm @/
-          continue;
-        }
-        if (s <= 0) {         /@ 16-Apr-06 @/
-          offset = - s + 1;   /@ 16-Apr-06 @/
-          s = 1; /@ Temporary until we figure out which step @/ /@ 16-Apr-06 @/
-        }                     /@ 16-Apr-06 @/
-      }
-      ******************** end 14-Sep-2012 deletion ********/
-
-      /* 14-Sep-2012 nm */
       /* Get the unique statement matching the g_fullArg[2] pattern */
       k = getStatementNum(g_fullArg[2],
           1/*startStmt*/,
@@ -5380,37 +4444,6 @@ void command(int argc, char *argv[])
         continue; /* Error msg was provided if not unique */
       }
 
-      /*********** 14-Sep-2012 replaced by getStatementNum()
-      for (i = 1; i <= g_statements; i++) {
-        if (!strcmp(g_fullArg[2], g_Statement[i].labelName)) {
-          /@ If a $e or $f, it must be a hypothesis of the statement
-             being proved @/
-          if (g_Statement[i].type == (char)e_ || g_Statement[i].type == (char)f_){
-            if (!nmbrElementIn(1, g_Statement[g_proveStatement].reqHypList, i) &&
-                !nmbrElementIn(1, g_Statement[g_proveStatement].optHypList, i))
-                continue;
-          }
-          break;
-        }
-      }
-      if (i > g_statements) {
-        printLongLine(cat("?The statement with label \"",
-            g_fullArg[2],
-            "\" was not found or is not a hypothesis of the statement ",
-            "being proved.  ",
-            "Use SHOW LABELS for a list of valid labels.", NULL), "", " ");
-        continue;
-      }
-      k = i;
-
-      if (k >= g_proveStatement) {
-        print2(
-   "?You must specify a statement that occurs earlier the one being proved.\n");
-        continue;
-      }
-      ***************** end of 14-Sep-2012 deletion ************/
-
-      /* 3-May-2016 nm */
       if (getMarkupFlag(k, USAGE_DISCOURAGED)) {
         if (overrideFlag == 0) {
           /* print2("\n"); */ /* Enable for more emphasis */
@@ -5429,61 +4462,6 @@ void command(int argc, char *argv[])
       }
 
       m = nmbrLen(g_ProofInProgress.proof); /* Original proof length */
-
-
-      /****** replaced by getStepNum()  nm 14-Sep-2012
-      if (s > m || s < 1) {
-        print2("?The step must be in the range from 1 to %ld.\n", m);
-        continue;
-      }
-
-      /@ 10/4/99 - For ASSIGN FIRST/LAST command, figure out the last unknown
-         essential step @/                      /@ 11-Dec-05 nm - Added LAST @/
-      /@if (toupper(str1[0]) == 'L' || toupper(str1[0]) == 'F') {@/
-                                /@ "ASSIGN LAST or FIRST" @/ /@ 11-Dec-05 nm @/
-      if (offset > 0) {  /@ LAST, FIRST, or step <= 0 @/ /@ 16-Apr-06 @/
-        /@ Get the essential step flags @/
-        s = 0; /@ Use as flag that step was found @/
-        nmbrLet(&essentialFlags, nmbrGetEssential(g_ProofInProgress.proof));
-        /@ if (toupper((unsigned char)(str1[0])) == 'L') { @/
-        if (toupper((unsigned char)(str1[0])) != 'F') {   /@ 16-Apr-06 @/
-          /@ Scan proof backwards until last essential unknown step is found @/
-          /@ 16-Apr-06 - count back 'offset' unknown steps @/
-          j = offset;      /@ 16-Apr-06 @/
-          for (i = m; i >= 1; i--) {
-            if (essentialFlags[i - 1]
-                && (g_ProofInProgress.proof)[i - 1] == -(long)'?') {
-              j--;          /@ 16-Apr-06 @/
-              if (j == 0) {  /@ 16-Apr-06 @/
-                /@ Found it @/
-                s = i;
-                break;
-              }             /@ 16-Apr-06 @/
-            }
-          } /@ Next i @/
-        } else {
-          /@ 11-Dec-05 nm Added ASSIGN FIRST @/
-          /@ Scan proof forwards until first essential unknown step is found @/
-          for (i = 1; i <= m; i++) {
-            if (essentialFlags[i - 1]
-                && (g_ProofInProgress.proof)[i - 1] == -(long)'?') {
-              /@ Found it @/
-              s = i;
-              break;
-            }
-          } /@ Next i @/
-        }
-        if (s == 0) {
-          if (offset == 1) {                                /@ 16-Apr-06 @/
-            print2("?There are no unknown essential steps.\n");
-          } else {                                          /@ 16-Apr-06 @/
-            print2("?There are not at least %ld unknown essential steps.\n",
-              offset);                                      /@ 16-Apr-06 @/
-          }                                                 /@ 16-Apr-06 @/
-          continue;
-        }
-      }
-      ******************** end 14-Sep-2012 deletion ********/
 
       /* Check to see that the step is an unknown step */
       if ((g_ProofInProgress.proof)[s - 1] != -(long)'?') {
@@ -5508,43 +4486,13 @@ void command(int argc, char *argv[])
       /* Automatically interact with user if step not unified */
       /* ???We might want to add a setting to defeat this if user doesn't
          like it */
-      /* 8-Apr-05 nm Since ASSIGN LAST is often run from a commmand file, don't
+      /* Since ASSIGN LAST is often run from a commmand file, don't
          interact if / NO_UNIFY is specified, so response is predictable */
       if (switchPos("/ NO_UNIFY") == 0) {
         interactiveUnifyStep(s - m + n - 1, 2); /* 2nd arg. means print msg if
                                                  already unified */
       } /* if NO_UNIFY flag not set */
 
-      /******* 8-Apr-05 nm Commented out:
-      if (m == n) {
-        print2("Step %ld was assigned statement %s.\n",
-          s, g_Statement[k].labelName);
-      } else {
-        if (s != m) {
-          printLongLine(cat("Step ", str((double)s),
-              " was assigned statement ", g_Statement[k].labelName,
-              ".  Steps ", str((double)s), ":",
-              str((double)m), " are now ", str((double)(s - m + n)), ":", str((double)n), ".",
-              NULL),
-              "", " ");
-        } else {
-          printLongLine(cat("Step ", str((double)s),
-              " was assigned statement ", g_Statement[k].labelName,
-              ".  Step ", str((double)m), " is now step ", str((double)n), ".",
-              NULL),
-              "", " ");
-        }
-      }
-      *********/
-      /* 8-Apr-05 nm Added: */
-      /* 1-Nov-2013 nm No longer needed because of UNDO
-      printLongLine(cat("To undo the assignment, DELETE STEP ",
-              str((double)(s - m + n)), " and if needed INITIALIZE, UNIFY.",
-              NULL),
-              "", " ");
-      */
-
-      /* 5-Aug-2020 nm */
       /* See if it's in another mathbox; if so, let user know */
       assignMathboxInfo();
       if (k > g_mathboxStmt && g_proveStatement > g_mathboxStmt) {
@@ -5557,7 +4505,7 @@ void command(int argc, char *argv[])
         }
       }
 
-      /* 6/14/98 - Automatically display new unknown steps
+      /* Automatically display new unknown steps
          ???Future - add switch to enable/defeat this */
       typeProof(g_proveStatement,
           1 /*pipFlag*/,
@@ -5571,11 +4519,9 @@ void command(int argc, char *argv[])
           0 /*reverseFlag*/,
           0 /*noIndentFlag*/,
           0 /*splitColumn*/,
-          0 /*skipRepeatedSteps*/, /* 28-Jun-2013 nm */
+          0 /*skipRepeatedSteps*/,
           0 /*texFlag*/,
           0 /*g_htmlFlag*/);
-      /* 6/14/98 end */
-
 
       g_proofChangedFlag = 1; /* Flag to push 'undo' stack (future) */
       g_proofChanged = 1; /* Cumulative flag */
@@ -5586,29 +4532,14 @@ void command(int argc, char *argv[])
 
 
     if (cmdMatches("REPLACE")) {
-
-      /* s = (long)val(g_fullArg[1]);  obsolete */ /* Step number */
-
-      /* 3-May-2016 nm */
       /* 1 means to override usage locks */
       overrideFlag = ( (switchPos("/ OVERRIDE")) ? 1 : 0)
          || g_globalDiscouragement == 0;
 
-      /* 14-Sep-2012 nm */
       step = getStepNum(g_fullArg[1], g_ProofInProgress.proof,
           0 /* ALL not allowed */);
       if (step == -1) continue;  /* Error; message was provided already */
 
-      /* This limitation is due to the assignKnownSteps call below which
-         does not tolerate unknown steps. */
-      /******* 10/20/02  Limitation removed
-      if (nmbrElementIn(1, g_ProofInProgress.proof, -(long)'?')) {
-        print2("?The proof must be complete before you can use REPLACE.\n");
-        continue;
-      }
-      *******/
-
-      /* 14-Sep-2012 nm */
       /* Get the unique statement matching the g_fullArg[2] pattern */
       stmt = getStatementNum(g_fullArg[2],
           1/*startStmt*/,
@@ -5623,37 +4554,6 @@ void command(int argc, char *argv[])
         continue; /* Error msg was provided if not unique */
       }
 
-      /*********** 14-Sep-2012 replaced by getStatementNum()
-      for (i = 1; i <= g_statements; i++) {
-        if (!strcmp(g_fullArg[2], g_Statement[i].labelName)) {
-          /@ If a $e or $f, it must be a hypothesis of the statement
-             being proved @/
-          if (g_Statement[i].type == (char)e_ || g_Statement[i].type == (char)f_){
-            if (!nmbrElementIn(1, g_Statement[g_proveStatement].reqHypList, i) &&
-                !nmbrElementIn(1, g_Statement[g_proveStatement].optHypList, i))
-                continue;
-          }
-          break;
-        }
-      }
-      if (i > g_statements) {
-        printLongLine(cat("?The statement with label \"",
-            g_fullArg[2],
-            "\" was not found or is not a hypothesis of the statement ",
-            "being proved.  ",
-            "Use SHOW LABELS for a list of valid labels.", NULL), "", " ");
-        continue;
-      }
-      k = i;
-
-      if (k >= g_proveStatement) {
-        print2(
-   "?You must specify a statement that occurs earlier the one being proved.\n");
-        continue;
-      }
-      ****************************** end of 14-Sep-2012 deletion *********/
-
-      /* 3-May-2016 nm */
       if (getMarkupFlag(stmt, USAGE_DISCOURAGED)) {
         if (overrideFlag == 0) {
           /* print2("\n"); */ /* Enable for more emphasis */
@@ -5673,26 +4573,7 @@ void command(int argc, char *argv[])
 
       m = nmbrLen(g_ProofInProgress.proof); /* Original proof length */
 
-      /************** 14-Sep-2012 replaced by getStepNum()
-      if (s > m || s < 1) {
-        print2("?The step must be in the range from 1 to %ld.\n", m);
-        continue;
-      }
-      ************* end of 14-Sep-2012 deletion **************/
-
-      /* Check to see that the step is a known step */
-      /* 22-Aug-2012 nm This check was deleted because it is unnecessary  */
-      /*
-      if ((g_ProofInProgress.proof)[s - 1] == -(long)'?') {
-        print2(
-        "?Step %ld is unknown.  You can only replace known steps.\n"
-            , s);
-        continue;
-      }
-      */
-
-      /* 10/20/02  Set a flag that proof has unknown steps (for autoUnify()
-         call below) */
+      /* Set a flag that proof has unknown steps (for autoUnify() call below) */
       if (nmbrElementIn(1, g_ProofInProgress.proof, -(long)'?')) {
         p = 1;
       } else {
@@ -5706,7 +4587,6 @@ void command(int argc, char *argv[])
         continue;
       }
 
-      /* 16-Sep-2012 nm */
       /* Check dummy variable status of step */
       /* For use in message later */
       dummyVarIsoFlag = checkDummyVarIsolation(step - 1);
@@ -5720,11 +4600,10 @@ void command(int argc, char *argv[])
           0/*noDistinct*/,
           1/* try to prove $e's */,
           1/*improveDepth*/,
-          overrideFlag,   /* 3-May-2016 nm */
+          overrideFlag,
           /* Currently REPLACE (not often used) allows other mathboxes
              silently; TODO: we may want to notify user like for ASSIGN */
-          1/*mathboxFlag*/ /* 5-Aug-2020 nm */
-          );
+          1/*mathboxFlag*/);
       if (!nmbrLen(nmbrTmpPtr)) {
         print2(
            "?Hypotheses of statement \"%s\" do not match known proof steps.\n",
@@ -5737,9 +4616,6 @@ void command(int argc, char *argv[])
       deleteSubProof(step - 1);
       addSubProof(nmbrTmpPtr, step - q);
 
-      /* 10/20/02 Replaced "assignKnownSteps" with code from entry of PROVE
-         command so REPLACE can be done in partial proofs */
-      /*assignKnownSteps(s - q, nmbrLen(nmbrTmpPtr));*/  /* old code */
       /* Assign known subproofs */
       assignKnownSubProofs();
       /* Initialize remaining steps */
@@ -5753,7 +4629,6 @@ void command(int argc, char *argv[])
       /* If proof wasn't complete before (p = 1), but is now, print congrats
          for user */
       autoUnify((char)p); /* 0 means no "congrats" message */
-      /* end 10/20/02 */
 
       nmbrLet(&nmbrTmpPtr, NULL_NMBRSTRING); /* Deallocate memory */
 
@@ -5781,36 +4656,11 @@ void command(int argc, char *argv[])
           }
         }
       }
-      /*autoUnify(1);*/
-
-      /************ delete 19-Sep-2012 nm - not needed for REPLACE *******
-      /@ Automatically interact with user if step not unified @/
-      /@ ???We might want to add a setting to defeat this if user doesn't
-         like it @/
-      if (1 /@ ???Future setting flag @/) {
-        interactiveUnifyStep(step - m + n - 1, 2); /@ 2nd arg. means print
-                                         msg if already unified @/
-      }
-      *************** end 19-Sep-2012 deletion ********************/
 
       g_proofChangedFlag = 1; /* Flag to push 'undo' stack */
       g_proofChanged = 1; /* Cumulative flag */
       processUndoStack(&g_ProofInProgress, PUS_PUSH, g_fullArgString, 0);
 
-      /* 16-Sep-2012 nm */
-      /*
-      if (dummyVarIsoFlag == 2 && g_proofChangedFlag) {
-        printLongLine(cat(
-     "Assignments to shared working variables ($nn) are guesses.  If "
-     "incorrect, to undo DELETE STEP ",
-              str((double)(step - m + n)),
-      ", INITIALIZE, UNIFY, then assign them manually with LET ",
-      "and try REPLACE again.",
-              NULL),
-              "", " ");
-      }
-      */
-      /* 25-Feb-2014 nm */
       if (dummyVarIsoFlag == 2 && g_proofChangedFlag) {
         printLongLine(cat(
      "Assignments to shared working variables ($nn) are guesses.  If "
@@ -5821,7 +4671,7 @@ void command(int argc, char *argv[])
       }
 
 
-      /* 14-Sep-2012 nm - Automatically display new unknown steps
+      /* Automatically display new unknown steps
          ???Future - add switch to enable/defeat this */
       if (g_proofChangedFlag)
         typeProof(g_proveStatement,
@@ -5836,11 +4686,9 @@ void command(int argc, char *argv[])
             0 /*reverseFlag*/,
             0 /*noIndentFlag*/,
             0 /*splitColumn*/,
-            0 /*skipRepeatedSteps*/, /* 28-Jun-2013 nm */
+            0 /*skipRepeatedSteps*/,
             0 /*texFlag*/,
             0 /*g_htmlFlag*/);
-      /* 14-Sep-2012 end */
-
 
       continue;
 
@@ -5854,17 +4702,14 @@ void command(int argc, char *argv[])
       if (i) improveDepth = (long)val(g_fullArg[i + 1]);
       if (switchPos("/ NO_DISTINCT")) p = 1; else p = 0;
                         /* p = 1 means don't try to use statements with $d's */
-      /* 22-Aug-2012 nm Added */
       searchAlg = 1; /* Default */
       if (switchPos("/ 1")) searchAlg = 1;
       if (switchPos("/ 2")) searchAlg = 2;
       if (switchPos("/ 3")) searchAlg = 3;
-      /* 4-Sep-2012 nm Added */
       searchUnkSubproofs = 0;
       if (switchPos("/ SUBPROOFS")) searchUnkSubproofs = 1;
 
-      mathboxFlag = (switchPos("/ INCLUDE_MATHBOXES") != 0); /* 5-Aug-2020 */
-      /* 5-Aug-2020 nm */
+      mathboxFlag = (switchPos("/ INCLUDE_MATHBOXES") != 0);
       assignMathboxInfo(); /* In case it hasn't been assigned yet */
       if (g_proveStatement > g_mathboxStmt) {
         /* We're in a mathbox */
@@ -5875,132 +4720,16 @@ void command(int argc, char *argv[])
         thisMathboxStartStmt = g_mathboxStmt;
       }
 
-      /* 3-May-2016 nm */
       /* 1 means to override usage locks */
       overrideFlag = ( (switchPos("/ OVERRIDE")) ? 1 : 0)
          || g_globalDiscouragement == 0;
 
-      /* 14-Sep-2012 nm */
       s = getStepNum(g_fullArg[1], g_ProofInProgress.proof,
           1 /* 1 = "ALL" is permissible; returns 0 */);
       if (s == -1) continue;  /* Error; message was provided already */
 
       if (s != 0) {  /* s=0 means ALL */
-
-      /**************** 14-Sep-2012 nm replaced with getStepNum()
-      /@ 26-Aug-2006 nm Changed 'IMPROVE STEP <step>' to 'IMPROVE <step>' @/
-      let(&str1, g_fullArg[1]); /@ To avoid void pointer problems with g_fullArg @/
-      if (toupper((unsigned char)(str1[0])) != 'A') {
-        /@ 16-Apr-06 nm - Handle nonpositive step number: 0 = last,
-           -1 = penultimate, etc.@/
-        offset = 0; /@ 16-Apr-06 @/
-        /@ 10/4/99 - Added LAST - this means the last unknown step shown
-           with SHOW NEW_PROOF/ESSENTIAL/UNKNOWN @/
-        if (toupper((unsigned char)(str1[0])) == 'L'
-            || toupper((unsigned char)(str1[0])) == 'F') {
-                                        /@ 'IMPROVE LAST' or 'IMPROVE FIRST' @/
-          s = 1; /@ Temporary until we figure out which step @/
-          offset = 1;          /@ 16-Apr-06 @/
-        } else {
-          if (toupper((unsigned char)(str1[0])) == 'S') {
-            print2(
-           "?\"IMPROVE STEP <step>\" is obsolete.  Use \"IMPROVE <step>\".\n");
-            continue;
-          }
-          s = (long)val(g_fullArg[1]); /@ Step number @/
-          if (strcmp(g_fullArg[1], str((double)s))) {
-            print2(
-                "?Expected a number or FIRST or LAST or ALL after IMPROVE.\n");
-            continue;
-          }
-          if (s <= 0) {         /@ 16-Apr-06 @/
-            offset = - s + 1;   /@ 16-Apr-06 @/
-            s = 1; /@ Temporary until we figure out step @/ /@ 16-Apr-06 @/
-          }                     /@ 16-Apr-06 @/
-        }
-        /@ End of 26-Aug-2006 change @/
-
-      /@ ------- Old code before 26-Aug-2006 -------
-      if (cmdMatches("IMPROVE STEP") || cmdMatches("IMPROVE LAST") ||
-          cmdMatches("IMPROVE FIRST")) {                     /# 11-Dec-05 nm #/
-
-        /# 16-Apr-06 nm - Handle nonpositive step number: 0 = last,
-           -1 = penultimate, etc.#/
-        offset = 0; /# 16-Apr-06 #/
-        /# 10/4/99 - Added LAST - this means the last unknown step shown
-           with SHOW NEW_PROOF/ESSENTIAL/UNKNOWN #/
-        if (cmdMatches("IMPROVE LAST") || cmdMatches("IMPROVE FIRST")) {
-                               /# "IMPROVE LAST or FIRST" #/ /# 11-Dec-05 nm #/
-          s = 1; /# Temporary until we figure out which step #/
-          offset = 1;          /# 16-Apr-06 #/
-        } else {
-          s = val(g_fullArg[2]); /# Step number #/
-          if (s <= 0) {         /# 16-Apr-06 #/
-            offset = - s + 1;   /# 16-Apr-06 #/
-            s = 1; /# Temp. until we figure out which step #/ /# 16-Apr-06 #/
-          }                     /# 16-Apr-06 #/
-        }
-        ------- End of old code ------- @/
-        **************** end of 14-Sep-2012 nm ************/
-
         m = nmbrLen(g_ProofInProgress.proof); /* Original proof length */
-
-
-        /**************** 14-Sep-2012 nm replaced with getStepNum()
-        if (s > m || s < 1) {
-          print2("?The step must be in the range from 1 to %ld.\n", m);
-          continue;
-        }
-
-
-        /@ 10/4/99 - For IMPROVE FIRST/LAST command, figure out the last
-           unknown essential step @/           /@ 11-Dec-05 nm - Added FIRST @/
-        /@if (cmdMatches("IMPROVE LAST") || cmdMatches("IMPROVE FIRST")) {@/
-                               /@ IMPROVE LAST or FIRST @/ /@ 11-Dec-05 nm @/
-        if (offset > 0) {  /@ LAST, FIRST, or step <= 0 @/ /@ 16-Apr-06 @/
-          /@ Get the essential step flags @/
-          s = 0; /@ Use as flag that step was found @/
-          nmbrLet(&essentialFlags, nmbrGetEssential(g_ProofInProgress.proof));
-          /@if (cmdMatches("IMPROVE LAST")) {@/
-          /@if (!cmdMatches("IMPROVE FIRST")) {@/   /@ 16-Apr-06 @/
-          if (toupper((unsigned char)(str1[0])) != 'F') { /@ 26-Aug-2006 @/
-            /@ Scan proof backwards until last essential unknown step found @/
-            /@ 16-Apr-06 - count back 'offset' unknown steps @/
-            j = offset;      /@ 16-Apr-06 @/
-            for (i = m; i >= 1; i--) {
-              if (essentialFlags[i - 1]
-                  && (g_ProofInProgress.proof)[i - 1] == -(long)'?') {
-                j--;           /@ 16-Apr-06 @/
-                if (j == 0) {  /@ 16-Apr-06 @/
-                  /@ Found it @/
-                  s = i;
-                  break;
-                }              /@ 16-Apr-06 @/
-              }
-            } /@ Next i @/
-          } else {
-            /@ 11-Dec-05 nm Added IMPROVE FIRST @/
-            /@ Scan proof forwards until first essential unknown step found @/
-            for (i = 1; i <= m; i++) {
-              if (essentialFlags[i - 1]
-                  && (g_ProofInProgress.proof)[i - 1] == -(long)'?') {
-                /@ Found it @/
-                s = i;
-                break;
-              }
-            } /@ Next i @/
-          }
-          if (s == 0) {
-            if (offset == 1) {                                /@ 16-Apr-06 @/
-              print2("?There are no unknown essential steps.\n");
-            } else {                                          /@ 16-Apr-06 @/
-              print2("?There are not at least %ld unknown essential steps.\n",
-                offset);                                      /@ 16-Apr-06 @/
-            }                                                 /@ 16-Apr-06 @/
-            continue;
-          }
-        } /@ if offset > 0 @/
-        **************** end of 14-Sep-2012 nm ************/
 
         /* Get the subproof at step s */
         q = subproofLen(g_ProofInProgress.proof, s - 1);
@@ -6015,7 +4744,6 @@ void command(int argc, char *argv[])
           continue;
         }
 
-        /* 25-Aug-2012 nm */
         /* Check dummy variable status of step */
         dummyVarIsoFlag = checkDummyVarIsolation(s - 1);
               /* 0=no dummy vars, 1=isolated dummy vars, 2=not isolated*/
@@ -6026,47 +4754,28 @@ void command(int argc, char *argv[])
                                  dummy variables that aren't isolated */
         }
 
-        /********* Deleted old code 25-Aug-2012 nm
-        /@ Check to see that the step has no dummy variables. @/
-        j = 0; /@ Break flag @/
-        for (i = 0; i < nmbrLen((g_ProofInProgress.target)[s - 1]); i++) {
-          if (((nmbrString @)((g_ProofInProgress.target)[s - 1]))[i] > mathTokens) {
-            j = 1;
-            break;
-          }
-        }
-        if (j) {
-          print2(
-   "?Step %ld target has dummy variables and cannot be improved.\n", s);
-          continue;
-        }
-        ********/
-
-
-        if (dummyVarIsoFlag == 0) { /* No dummy vars */ /* 25-Aug-2012 nm */
+        if (dummyVarIsoFlag == 0) { /* No dummy vars */
           /* Only use proveFloating if no dummy vars */
           nmbrTmpPtr = proveFloating((g_ProofInProgress.target)[s - 1],
               g_proveStatement, improveDepth, s - 1, (char)p/*NO_DISTINCT*/,
-              overrideFlag,  /* 3-May-2016 nm */
-              mathboxFlag /* 5-Aug-2020 nm */
-              );
+              overrideFlag,
+              mathboxFlag);
         } else {
-          nmbrTmpPtr = NULL_NMBRSTRING; /* Initialize */ /* 25-Aug-2012 nm */
+          nmbrTmpPtr = NULL_NMBRSTRING; /* Initialize */
         }
         if (!nmbrLen(nmbrTmpPtr)) {
           /* A proof for the step was not found with proveFloating(). */
 
-          /* 22-Aug-2012 nm Next, try REPLACE algorithm */
+          /* Next, try REPLACE algorithm */
           if (searchAlg == 2 || searchAlg == 3) {
             nmbrTmpPtr = proveByReplacement(g_proveStatement,
               s - 1/*prfStep*/, /* 0 means step 1 */
               (char)p/*NO_DISTINCT*/, /* 1 means don't try stmts with $d's */
               dummyVarIsoFlag,
               (char)(searchAlg - 2), /*0=proveFloat for $fs, 1=$e's also */
-              improveDepth, /* 4-Sep-2012 */
-              overrideFlag,  /* 3-May-2016 nm */
-              mathboxFlag /* 5-Aug-2020 nm */
-              );
+              improveDepth,
+              overrideFlag,
+              mathboxFlag);
           }
           if (!nmbrLen(nmbrTmpPtr)) {
             print2("A proof for step %ld was not found.\n", s);
@@ -6108,11 +4817,9 @@ void command(int argc, char *argv[])
         g_proofChanged = 1; /* Cumulative flag */
         processUndoStack(&g_ProofInProgress, PUS_PUSH, g_fullArgString, 0);
 
-        /* End if s != 0 i.e. not IMPROVE ALL */   /* 14-Sep-2012 nm */
+        /* End if s != 0 i.e. not IMPROVE ALL */
       } else {
-        /* Here, getStepNum() returned 0, meaning ALL */  /* 14-Sep-2012 nm */
-
-        /*if (cmdMatches("IMPROVE ALL")) {*/  /* obsolete */
+        /* Here, getStepNum() returned 0, meaning ALL */
 
         if (!nmbrElementIn(1, g_ProofInProgress.proof, -(long)'?')) {
           print2("The proof is already complete.\n");
@@ -6124,7 +4831,6 @@ void command(int argc, char *argv[])
         g_proofChangedFlag = 0;
 
         for (improveAllIter = 1; improveAllIter <= 4; improveAllIter++) {
-                                                           /* 25-Aug-2012 nm */
           if (improveAllIter == 1 && (searchAlg == 2 || searchAlg == 3))
             print2("Pass 1:  Trying to match cut-free statements...\n");
           if (improveAllIter == 2) {
@@ -6158,11 +4864,11 @@ void command(int argc, char *argv[])
           for (s = m; s > 0; s--) {
 
             proofStepUnk = ((g_ProofInProgress.proof)[s - 1] == -(long)'?')
-                ? 1 : 0;   /* 25-Aug-2012 nm Added for clearer code */
+                ? 1 : 0;
 
-            /* 22-Aug-2012 nm I think this is really too conservative, even
+            /* I think this is really too conservative, even
                with the old algorithm, but keep it to imitate the old one */
-            if (improveAllIter == 1 || searchAlg == 1) { /* 22-Aug-2012 nm */
+            if (improveAllIter == 1 || searchAlg == 1) {
               /* If the step is known and unified, don't do it, since nothing
                  would be accomplished. */
               if (!proofStepUnk) {
@@ -6173,9 +4879,7 @@ void command(int argc, char *argv[])
 
             /* Get the subproof at step s */
             q = subproofLen(g_ProofInProgress.proof, s - 1);
-            if (proofStepUnk && q != 1) {
-              bug(1120); /* 25-Aug-2012 nm Consistency check */
-            }
+            if (proofStepUnk && q != 1) bug(1120); /* Consistency check */
             nmbrLet(&nmbrTmp, nmbrSeg(g_ProofInProgress.proof, s - q + 1, s));
 
             /* Improve only subproofs with unknown steps */
@@ -6183,48 +4887,29 @@ void command(int argc, char *argv[])
 
             nmbrLet(&nmbrTmp, NULL_NMBRSTRING); /* No longer needed - dealloc */
 
-            /* 25-Aug-2012 nm */
             /* Check dummy variable status of step */
             dummyVarIsoFlag = checkDummyVarIsolation(s - 1);
                   /* 0=no dummy vars, 1=isolated dummy vars, 2=not isolated*/
             if (dummyVarIsoFlag == 2) continue; /* Don't try to improve
                                      dummy variables that aren't isolated */
 
-            /********* Deleted old code now done by checkDummyVarIsolation()
-                       25-Aug-2012 nm
-            /@ Check to see that the step has no dummy variables. @/
-            j = 0; /@ Break flag @/
-            for (i = 0; i < nmbrLen((g_ProofInProgress.target)[s - 1]); i++) {
-              if (((nmbrString @)((g_ProofInProgress.target)[s - 1]))[i] >
-                  mathTokens) {
-                j = 1;
-                break;
-              }
-            }
-            if (j) {
-              /@ Step has dummy variables and cannot be improved. @/
-              continue;
-            }
-            ********/
-
             if (dummyVarIsoFlag == 0
                 && (improveAllIter == 1
                   || improveAllIter == 4)) {
-                /* No dummy vars */ /* 25-Aug-2012 nm */
+                /* No dummy vars */
               /* Only use proveFloating if no dummy vars */
               nmbrTmpPtr = proveFloating((g_ProofInProgress.target)[s - 1],
                   g_proveStatement, improveDepth, s - 1,
                   (char)p/*NO_DISTINCT*/,
-                  overrideFlag,  /* 3-May-2016 nm */
-                  mathboxFlag /* 5-Aug-2020 nm */
-                  );
+                  overrideFlag,
+                  mathboxFlag);
             } else {
-              nmbrTmpPtr = NULL_NMBRSTRING; /* Init */ /* 25-Aug-2012 nm */
+              nmbrTmpPtr = NULL_NMBRSTRING; /* Init */
             }
             if (!nmbrLen(nmbrTmpPtr)) {
               /* A proof for the step was not found with proveFloating(). */
 
-              /* 22-Aug-2012 nm Next, try REPLACE algorithm */
+              /* Next, try REPLACE algorithm */
               if ((searchAlg == 2 || searchAlg == 3)
                   && ((improveAllIter == 2 && proofStepUnk)
                     || (improveAllIter == 3 && !proofStepUnk)
@@ -6234,10 +4919,9 @@ void command(int argc, char *argv[])
                   (char)p/*NO_DISTINCT*/, /* 1 means don't try stmts w/ $d's */
                   dummyVarIsoFlag,
                   (char)(searchAlg - 2),/*searchMethod: 0 or 1*/
-                  improveDepth,                        /* 4-Sep-2012 */
-                  overrideFlag,   /* 3-May-2016 nm */
-                  mathboxFlag /* 5-Aug-2020 nm */
-                  );
+                  improveDepth,
+                  overrideFlag,
+                  mathboxFlag);
 
               }
               if (!nmbrLen(nmbrTmpPtr)) {
@@ -6300,7 +4984,7 @@ void command(int argc, char *argv[])
 
       } /* End if IMPROVE ALL */
 
-      /* 6/14/98 - Automatically display new unknown steps
+      /* Automatically display new unknown steps
          ???Future - add switch to enable/defeat this */
       if (g_proofChangedFlag)
         typeProof(g_proveStatement,
@@ -6315,10 +4999,9 @@ void command(int argc, char *argv[])
             0 /*reverseFlag*/,
             0 /*noIndentFlag*/,
             0 /*splitColumn*/,
-            0 /*skipRepeatedSteps*/, /* 28-Jun-2013 nm */
+            0 /*skipRepeatedSteps*/,
             0 /*texFlag*/,
             0 /*g_htmlFlag*/);
-      /* 6/14/98 end */
 
       continue;
 
@@ -6327,7 +5010,6 @@ void command(int argc, char *argv[])
 
     if (cmdMatches("MINIMIZE_WITH")) {
 
-      /* 16-Aug-2016 nm */
       printTime = 0;
       if (switchPos("/ TIME") != 0) {
         printTime = 1;
@@ -6336,30 +5018,22 @@ void command(int argc, char *argv[])
         getRunTime(&timeIncr);  /* This call just resets the time */
       }
 
-      /* q = 0; */ /* Line length */  /* 25-Jun-2014 deleted */
       prntStatus = 0; /* Status flag to help determine messages
                          0 = no statement was matched during scan (mainly for
                              error message if user typo in label field)
                          1 = a statement was matched but no shorter proof
                          2 = shorter proof found */
-      /* verboseMode = (switchPos("/ BRIEF") == 0); */ /* Non-verbose mode */
-      /* 4-Feb-2013 nm VERBOSE is now default */
       verboseMode = (switchPos("/ VERBOSE") != 0); /* Verbose mode */
-      /* 30-Jan-06 nm Added single-character-match wildcard argument */
+
+      /* If no wildcard was used, switch to non-verbose mode
+        since there is no point to it and an annoying extra blank line
+        results */
       if (!(instr(1, g_fullArg[1], "*") || instr(1, g_fullArg[1], "?"))) i = 1;
-          /* 16-Feb-05 If no wildcard was used, switch to non-verbose mode
-             since there is no point to it and an annoying extra blank line
-             results */
+
       mayGrowFlag = (switchPos("/ MAY_GROW") != 0);
                   /* Mode to replace even if it doesn't reduce proof length */
-      /* 25-Jun-2014 nm /NO_DISTINCT is obsolete
-      noDistinctFlag = (switchPos("/ NO_DISTINCT") != 0);
-      */
-                                          /* Skip trying statements with $d */
       exceptPos = switchPos("/ EXCEPT"); /* Statement match to skip */
-                                                               /* 7-Jan-06 */
 
-      /* 4-Aug-2019 nm */
       allowNewAxiomsMatchPos = switchPos("/ ALLOW_NEW_AXIOMS");
       if (allowNewAxiomsMatchPos != 0) {
         let(&allowNewAxiomsMatchList, g_fullArg[allowNewAxiomsMatchPos + 1]);
@@ -6367,7 +5041,6 @@ void command(int argc, char *argv[])
         let(&allowNewAxiomsMatchList, "");
       }
 
-      /* 20-May-2013 nm */
       noNewAxiomsMatchPos = switchPos("/ NO_NEW_AXIOMS_FROM");
       if (noNewAxiomsMatchPos != 0) {
         let(&noNewAxiomsMatchList, g_fullArg[noNewAxiomsMatchPos + 1]);
@@ -6375,7 +5048,6 @@ void command(int argc, char *argv[])
         let(&noNewAxiomsMatchList, "");
       }
 
-      /* 20-May-2013 nm */
       forbidMatchPos = switchPos("/ FORBID");
       if (forbidMatchPos != 0) {
         let(&forbidMatchList, g_fullArg[forbidMatchPos + 1]);
@@ -6383,30 +5055,15 @@ void command(int argc, char *argv[])
         let(&forbidMatchList, "");
       }
 
-      mathboxFlag = (switchPos("/ INCLUDE_MATHBOXES") != 0); /* 28-Jun-2011 */
-      /* 25-Jun-2014 nm /REVERSE is obsolete
-      forwFlag = (switchPos("/ REVERSE") != 0); /@ 10-Nov-2011 nm @/
-      */
-      /****** 5-Aug-2020 nm Replaced w/ assignMathboxInfo() below
-      if (g_mathboxStmt == 0) { /@ Look up "mathbox" label if it hasn't been @/
-        g_mathboxStmt = lookupLabel("mathbox");
-        if (g_mathboxStmt == -1)
-          g_mathboxStmt = g_statements + 1;  /@ Default beyond db end if none @/
-      }
-      *******/
+      mathboxFlag = (switchPos("/ INCLUDE_MATHBOXES") != 0);
 
-      /* 3-May-2016 nm */
       /* Flag to override any "usage locks" placed in the comment markup */
       overrideFlag = (switchPos("/ OVERRIDE") != 0)
            || g_globalDiscouragement == 0;
 
-      /* 25-Jun-2014 nm */
       /* If a single statement is specified, don't bother to do certain
          actions or print some of the messages */
-      /* 18-Jul-2020 nm New code*/
       hasWildCard = 0;
-      /* (Note strpbrk warning in mmpars.c) */
-      /*if (strpbrk(g_fullArg[1], "*?=~%#@,") != NULL) {*/
       /* Set hasWildCard only when there are potentially > 1 matches */
       if (strpbrk(g_fullArg[1], "*?~%,") != NULL) {
         /* (See matches() function for processing of these)
@@ -6420,21 +5077,12 @@ void command(int argc, char *argv[])
            "," Comma-separated fields */
         hasWildCard = 1;
       }
-      /****** 18-Jul-2020 nm Deleted old code:
-      hasWildCard = (instr(1, g_fullArg[1], "*")
-          || instr(1, g_fullArg[1], "?")
-          || instr(1, g_fullArg[1], ",")
-          || instr(1, g_fullArg[1], "~") /@ 3-May-2014 nm label~label range @/
-          );
-      ********/
 
       g_proofChangedFlag = 0;
 
-      /* Added 14-Aug-2012 nm */
       /* Always scan statements in current mathbox, even if
          "/ INCLUDE_MATHBOXES" is omitted */
 
-      /* 5-Aug-2020 nm */
       assignMathboxInfo(); /* In case it hasn't been assigned yet */
       if (g_proveStatement > g_mathboxStmt) {
         /* We're in a mathbox */
@@ -6444,29 +5092,11 @@ void command(int argc, char *argv[])
       } else {
         thisMathboxStartStmt = g_mathboxStmt;
       }
-      /****** 5-Aug-2020 deleted old code
-      thisMathboxStartStmt = g_mathboxStmt;
-                /@ Will become start of current (g_proveStatement's) mathbox @/
-      if (g_proveStatement > g_mathboxStmt) {
-        /@ We're in a mathbox @/
-        for (k = g_proveStatement; k >= g_mathboxStmt; k--) {
-          let(&str1, left(g_Statement[k].labelSectionPtr,
-              g_Statement[k].labelSectionLen));
-          /@ Heuristic to match beginning of mathbox @/
-          if (instr(1, str1, "Mathbox for") != 0) {
-             /@ Found beginning of current mathbox @/
-             thisMathboxStartStmt = k;
-             break;
-          }
-        }
-      }
-      **************/
 
-      /* 25-Jun-2014 nm */
       copyProofStruct(&saveOrigProof, g_ProofInProgress);
 
       /* 12-Sep-2016 nm TODO replace this w/ compressedProofSize */
-      /* 25-Jun-2014 nm Get the current (original) compressed proof length
+      /* Get the current (original) compressed proof length
          to compare it when a shorter non-compressed proof is found, to see
          if the compressed proof also decreased in size */
       nmbrLet(&nmbrSaveProof, g_ProofInProgress.proof);   /* Redundant? */
@@ -6477,14 +5107,12 @@ void command(int argc, char *argv[])
           0 /* Normal (not "fast") compression */
           ));
       origCompressedLength = (long)strlen(str1);
-      print2(
-"Bytes refer to compressed proof size, steps to uncompressed length.\n");
+      print2("Bytes refer to compressed proof size, "
+        "steps to uncompressed length.\n");
 
-      /* 25-Jun-2014 nm forwRevPass outer loop added */
       /* Scan forward, then reverse, then pick best result */
       for (forwRevPass = 1; forwRevPass <= 2; forwRevPass++) {
 
-        /* 25-Jun-2014 nm */
         if (forwRevPass == 1) {
           if (hasWildCard) print2("Scanning forward through statements...\n");
           forwFlag = 1;
@@ -6505,63 +5133,31 @@ void command(int argc, char *argv[])
           copyProofStruct(&g_ProofInProgress, saveOrigProof);
         }
 
-        /* 20-May-2013 nm */
-        /*
-        if (forbidMatchList[0]) { /@ User provided a /FORBID list @/
-          /@ Save the proof structure in case we have to revert a
-             forbidden match. @/
-          copyProofStruct(&saveProofForReverting, g_ProofInProgress);
-        }
-        */
-        /* 25-Jun-2014 nm */
         copyProofStruct(&saveProofForReverting, g_ProofInProgress);
 
         oldCompressedLength = origCompressedLength;
 
-        /* for (k = 1; k < g_proveStatement; k++) { */
-        /* 10-Nov-2011 nm */
         /* If forwFlag is 0, scan from g_proveStatement-1 to 1
            If forwFlag is 1, scan from 1 to g_proveStatement-1 */
         for (k = forwFlag ? 1 : (g_proveStatement - 1);
              k * (forwFlag ? 1 : -1) < (forwFlag ? g_proveStatement : 0);
              k = k + (forwFlag ? 1 : -1)) {
-          /* 28-Jun-2011 */
-          /* Scan mathbox statements only if INCLUDE_MATHBOXES specified */
-          /*if (!mathboxFlag && k >= g_mathboxStmt) continue;*/
-          /* 14-Aug-2012 nm */
           if (!mathboxFlag && k >= g_mathboxStmt && k < thisMathboxStartStmt) {
             continue;
           }
 
           if (g_Statement[k].type != (char)p_ && g_Statement[k].type != (char)a_)
             continue;
-          /* 30-Jan-06 nm Added single-character-match wildcard argument */
           if (!matchesList(g_Statement[k].labelName, g_fullArg[1], '*', '?'))
             continue;
-          /* 25-Jun-2014 nm /NO_DISTINCT is obsolete
-          if (noDistinctFlag) {
-            /@ Skip the statement if it has a $d requirement.  This option
-               prevents illegal minimizations that would violate $d requirements
-               since MINIMIZE_WITH does not check for $d violations. @/
-            if (nmbrLen(g_Statement[k].reqDisjVarsA)) {
-              /@ 30-Jan-06 nm Added single-character-match wildcard argument @/
-              if (!(instr(1, g_fullArg[1], "@") || instr(1, g_fullArg[1], "?")))
-                print2("?\"%s\" has a $d requirement\n", g_fullArg[1]);
-              continue;
-            }
-          }
-          */
 
-          /* 7-Jan-06 nm - Added EXCEPT switch */
           if (exceptPos != 0) {
             /* Skip any match to the EXCEPT argument */
-            /* 30-Jan-06 nm Added single-character-match wildcard argument */
             if (matchesList(g_Statement[k].labelName, g_fullArg[exceptPos + 1],
                 '*', '?'))
               continue;
           }
 
-          /* 20-May-2013 nm */
           if (forbidMatchList[0]) { /* User provided a /FORBID list */
             /* First, we check to make sure we're not trying a statement
                in the forbidMatchList directly (traceProof() won't find
@@ -6570,7 +5166,6 @@ void command(int argc, char *argv[])
               continue;
           }
 
-          /* 3-May-2016 nm */
           /* Check to see if statement comment specified a usage
              restriction */
           if (!overrideFlag) {
@@ -6581,16 +5176,6 @@ void command(int argc, char *argv[])
 
           /* Print individual labels */
           if (prntStatus == 0) prntStatus = 1; /* Matched at least one */
-          /* 25-Jun-2014 nm Don't list matched statements anymore
-          if (verboseMode) {
-            q = q + (long)strlen(g_Statement[k].labelName) + 1;
-            if (q > 72) {
-              q = (long)strlen(g_Statement[k].labelName) + 1;
-              print2("\n");
-            }
-            print2("%s ",g_Statement[k].labelName);
-          }
-          */
 
           m = nmbrLen(g_ProofInProgress.proof); /* Original proof length */
           nmbrLet(&nmbrTmp, g_ProofInProgress.proof);
@@ -6602,7 +5187,7 @@ void command(int argc, char *argv[])
           if (!nmbrEq(nmbrTmp, g_ProofInProgress.proof)) {
             /* The proof got shorter (or it changed if MAY_GROW) */
 
-            /* 20-May-2013 nm Because of the slow speed of traceBack(),
+            /* Because of the slow speed of traceBack(),
                we only want to check the /FORBID list in the relatively
                rare case where a minimization occurred.  If the FORBID
                list is matched, we then need to revert back to the
@@ -6616,7 +5201,7 @@ void command(int argc, char *argv[])
                     0, /*essentialFlag*/
                     0, /*axiomFlag*/
                     forbidMatchList,
-                    "", /*traceToList*/ /* 18-Jul-2015 nm */
+                    "", /*traceToList*/
                     1 /* testOnlyFlag */)) {
                   /* Yes, a forbidden statement occurred in traceProof() */
                   /* Revert the proof to before minimization */
@@ -6628,27 +5213,22 @@ void command(int argc, char *argv[])
             }
 
 
-            /* 22-Nov-2014 nm Because of the slow speed of traceBack(),
+            /* Because of the slow speed of traceBack(),
                we only want to check the /NO_NEW_AXIOMS_FROM list in the
                relatively rare case where a minimization occurred.  If the
                NO_NEW_AXIOMS_FROM condition applies, we then need to revert
                back to the original proof. */
-            /* 4-Aug-2019 nm */
             if (n == n + 0) {  /* By default, no new axioms are permitted */
             /*if (noNewAxiomsMatchList[0]) {*/ /* User provided /NO_NEW_AXIOMS_FROM */
               /* If we haven't called trace yet for the theorem being proved,
                  do it now. */
               if (traceProofFlags[0] == 0) {
 
-                /******** start of 29-Nov-2019 nm ************/
                 /* traceProofWork() was written to use the SAVEd proof and
                    not the proof in progress.  In order to use the proof in
                    progress, we temporarily put the proof in progress into the
                    (SAVEd) statement structure to trick traceProofWork() into using
                    the proof in progress instead of the SAVEd proof */
-                /* Bad code line between 4-Aug-2019 and 12-Feb-2020: */
-                /*nmbrLet(&nmbrSaveProof, nmbrSquishProof(g_ProofInProgress.proof));*/ /* Bad! */
-                /* 12-Feb-2020 nm */
                 /* Use the version of the proof in progress that existed *before* the
                    MINIMIZE_WITH command was invoked */
                 nmbrLet(&nmbrSaveProof, nmbrSquishProof(saveProofForReverting.proof));
@@ -6675,30 +5255,26 @@ void command(int argc, char *argv[])
                 /* We don't deallocate previous proofSectionPtr content because
                    we will recover it after the verifyProof() */
                 g_Statement[g_proveStatement].proofSectionPtr = str1;
-                /******** end of 29-Nov-2019 nm ************/
 
                 traceProofWork(g_proveStatement,
                     1 /*essentialFlag*/,
-                    "", /*traceToList*/ /* 18-Jul-2015 nm */
+                    "", /*traceToList*/
                     &traceProofFlags, /* y/n list of flags */
                     &nmbrTmp /* unproved list - ignored */);
                 nmbrLet(&nmbrTmp, NULL_NMBRSTRING); /* Discard */
 
-                /******** start of 29-Nov-2019 nm ************/
                 /* Restore the SAVEd proof */
                 g_Statement[g_proveStatement].proofSectionPtr
                     = saveZappedProofSectionPtr;
                 g_Statement[g_proveStatement].proofSectionLen
                     = saveZappedProofSectionLen;
                 g_Statement[g_proveStatement].proofSectionChanged
-                    = saveZappedProofSectionChanged; /* 16-Jun-2017 nm */
-                /******** end of 29-Nov-2019 nm ************/
-
+                    = saveZappedProofSectionChanged;
               }
               let(&traceTrialFlags, "");
               traceProofWork(k, /* The trial statement */
                   1 /*essentialFlag*/,
-                  "", /*traceToList*/ /* 18-Jul-2015 nm */
+                  "", /*traceToList*/
                   &traceTrialFlags, /* Y/N list of flags */
                   &nmbrTmp /* unproved list - ignored */);
               nmbrLet(&nmbrTmp, NULL_NMBRSTRING); /* Discard */
@@ -6712,20 +5288,12 @@ void command(int argc, char *argv[])
                     '*', '?') == 1
                       &&
                     matchesList(g_Statement[i].labelName, noNewAxiomsMatchList,
-                    '*', '?') != 1) { /* 4-Aug-2019 nm */
+                    '*', '?') != 1) {
                   /* If the axiom is in the list to allow and not in the list
                      to disallow, we don't care if the trial statement depends
                      on it */
                   continue;
                 }
-                /*
-                if (matchesList(g_Statement[i].labelName, noNewAxiomsMatchList,
-                    '@', '?') != 1) {
-                  /@ If the axiom isn't in the list to avoid, we don't
-                     care if the trial statement depends on it @/
-                  continue;
-                }
-                */
                 if (traceTrialFlags[i] == 'Y') {
                   /* The trial statement uses an axiom that the current
                      proof should avoid, so we abort it */
@@ -6743,7 +5311,7 @@ void command(int argc, char *argv[])
             } /* end if (true) */
 
 
-            /* 25-Jun-2014 nm Make sure the compressed proof length
+            /* Make sure the compressed proof length
                decreased, otherwise revert.  Also, we will use the
                compressed proof for the $d check next */
             if (nmbrLen(g_Statement[k].reqDisjVarsA) || !mayGrowFlag) {
@@ -6774,7 +5342,6 @@ void command(int argc, char *argv[])
               }
             } /* if (nmbrLen(g_Statement[k].reqDisjVarsA) || !mayGrowFlag) */
 
-            /* 25-Jun-2014 nm */
             /* Make sure there are no $d violations, otherwise revert */
             /* This requires the str1 from above */
             if (nmbrLen(g_Statement[k].reqDisjVarsA)) {
@@ -6789,16 +5356,6 @@ void command(int argc, char *argv[])
               saveZappedProofSectionLen
                   = g_Statement[g_proveStatement].proofSectionLen;
 
-              /****** Obsolete due to 3-May-2017 update
-              /@ (search for "chr(1)" above for explanation) @/
-              let(&str1, cat(chr(1), "\n", str1, " $.\n", NULL));
-              g_Statement[g_proveStatement].proofSectionPtr = str1 + 1; /@ Compressed
-                                                     proof generated above @/
-              g_Statement[g_proveStatement].proofSectionLen =
-                  newCompressedLength + 4;
-              *******/
-
-              /******** start of 16-Jun-2017 nm ************/
               saveZappedProofSectionChanged
                   = g_Statement[g_proveStatement].proofSectionChanged;
               /* Set flag that this is not the original source */
@@ -6813,14 +5370,9 @@ void command(int argc, char *argv[])
               /* We don't deallocate previous proofSectionPtr content because
                  we will recover it after the verifyProof() */
               g_Statement[g_proveStatement].proofSectionPtr = str1;
-              /******** end of 16-Jun-2017 nm ************/
 
               g_outputToString = 1; /* Suppress error messages */
-              /* i = parseProof(g_proveStatement); */
-              /* if (i != 0) bug(1121); */
-              /* i = verifyProof(g_proveStatement); */
-              /* if (i != 0) bug(1122); */
-              /* 15-Apr-2015 nm parseProof, verifyProof, cleanWkrProof must be
+              /* parseProof, verifyProof, cleanWkrProof must be
                  called in sequence to assign the g_WrkProof structure, verify
                  the proof, and deallocate the g_WrkProof structure.  Either none
                  of them or all of them must be called. */
@@ -6828,7 +5380,7 @@ void command(int argc, char *argv[])
               verifyProof(g_proveStatement); /* Must be called even if error
                                   occurred in parseProof, to init RPN stack
                                   for cleanWrkProof() */
-              /* 15-Apr-2015 nm - don't change proof if there is an error
+              /* don't change proof if there is an error
                  (which could be pre-existing). */
               i = (g_WrkProof.errorSeverity > 1);
               /**** Here we look at the screen output sent to a string.
@@ -6844,7 +5396,7 @@ void command(int argc, char *argv[])
               g_Statement[g_proveStatement].proofSectionLen
                   = saveZappedProofSectionLen;
               g_Statement[g_proveStatement].proofSectionChanged
-                  = saveZappedProofSectionChanged; /* 16-Jun-2017 nm */
+                  = saveZappedProofSectionChanged;
               if (i != 0 || j != 0) {
                 /* There was a verify proof error (j!=0) or $d violation (i!=0)
                    so don't used minimized proof */
@@ -6855,16 +5407,6 @@ void command(int argc, char *argv[])
               }
             } /* if (nmbrLen(g_Statement[k].reqDisjVarsA)) */
 
-            /* 25-Jun-2014 nm - not needed since trials now suppressed */
-            /*
-            if (verboseMode) {
-              print2("\n");
-            }
-            */
-
-            /*if (nmbrLen(g_Statement[k].reqDisjVarsA) || !mayGrowFlag) {*/
-
-            /* 3-May-2016 nm */
             /* Warn user if a discouraged statement is overridden */
             if (getMarkupFlag(k, USAGE_DISCOURAGED)) {
               if (!overrideFlag) bug(1126);
@@ -6916,18 +5458,7 @@ void command(int argc, char *argv[])
                 "Proof of \"%s\" remained at %ld steps using \"%s\".\n",
                 g_Statement[g_proveStatement].labelName,
                 m, g_Statement[k].labelName);
-            /* Distinct variable warning (obsolete) */
-            /*
-            if (nmbrLen(g_Statement[k].reqDisjVarsA)) {
-              printLongLine(cat("Note: \"", g_Statement[k].labelName,
-                  "\" has $d constraints.",
-                  "  SAVE NEW_PROOF then VERIFY PROOF to check them.",
-                  NULL), "", " ");
-            }
-            */
-            /* q = 0; */ /* Line length for label list */ /* 25-Jun-2014 del */
 
-            /* 8-Aug-2020 nm */
             /* See if it's in another mathbox; if so, let user know */
             assignMathboxInfo();
             if (k > g_mathboxStmt && g_proveStatement > g_mathboxStmt) {
@@ -6943,15 +5474,6 @@ void command(int argc, char *argv[])
             prntStatus = 2; /* Found one */
             g_proofChangedFlag = 1;
 
-            /* deleted 25-Jun-2014:
-            /@ 20-May-2012 nm @/
-            if (forbidMatchList[0]) { /@ User provided a /FORBID list @/
-              /@ Save the changed proof in case we have to restore
-                 it later @/
-              copyProofStruct(&saveProofForReverting, g_ProofInProgress);
-            }
-            */
-            /* 25-Jun-2014 nm */
             /* Save the changed proof in case we have to restore
                it later */
             copyProofStruct(&saveProofForReverting, g_ProofInProgress);
@@ -6959,15 +5481,8 @@ void command(int argc, char *argv[])
           }
 
         } /* Next k (statement) */
-        /* 25-Jun-2014 nm - not needed since trials now suppressed */
-        /*
-        if (verboseMode) {
-          if (prntStatus) print2("\n");
-        }
-        */
 
         if (g_proofChangedFlag && forwRevPass == 2) {
-          /* 25-Jun-2014 nm */
           /* Check whether the reverse pass found a better proof than the
              forward pass */
           if (verboseMode) {
@@ -6997,57 +5512,40 @@ void command(int argc, char *argv[])
         print2("The proof was not changed.\n");
       if (!prntStatus /* && !noDistinctFlag */)
         print2("?No earlier %s$p or $a label matches \"%s\".\n",
-            (overrideFlag ? "" : "(allowed) "),  /* 3-May-2016 nm */
+            (overrideFlag ? "" : "(allowed) "),
             g_fullArg[1]);
-      /* 25-Jun-2014 nm /NO_DISTINCT is obsolete
-      if (!prntStatus && noDistinctFlag) {
-        /@ 30-Jan-06 nm Added single-character-match wildcard argument @/
-        if (instr(1, g_fullArg[1], "@") || instr(1, g_fullArg[1], "?"))
-          print2("?No earlier $p or $a label (without $d) matches \"%s\".\n",
-              g_fullArg[1]);
-      }
-      */
-      /* 28-Jun-2011 nm */
       if (!mathboxFlag && g_proveStatement >= g_mathboxStmt) {
         print2(
   "(Other mathboxes were not checked.  Use / INCLUDE_MATHBOXES to include them.)\n");
       }
 
-      /* 16-Aug-2016 nm */
       if (printTime == 1) {
         getRunTime(&timeIncr);
         print2("MINIMIZE_WITH run time = %7.2f sec for \"%s\"\n", timeIncr,
             g_Statement[g_proveStatement].labelName);
       }
 
-      /* 23-Nov-2019 nm */
       let(&str1, ""); /* Deallocate memory */
       nmbrLet(&nmbrSaveProof, NULL_NMBRSTRING); /* Deallocate memory */
 
-      /* 23-Nov-2019 nm */
       /* Clear these Y/N trace strings unconditionally since new axioms are no
         longer  allowed by default, so they may become set regardless of
         qualifiers */
       let(&traceProofFlags, ""); /* Deallocate memory */
       let(&traceTrialFlags, ""); /* Deallocate memory */
 
-      /* 4-Aug-2019 nm */
       if (allowNewAxiomsMatchList[0]) { /* User provided /NO_NEW_AXIOMS_FROM list */
         let(&allowNewAxiomsMatchList, ""); /* Deallocate memory */
       }
 
-      /* 22-Nov-2014 nm */
       if (noNewAxiomsMatchList[0]) { /* User provided /ALLOW_NEW_AXIOMS list */
         let(&noNewAxiomsMatchList, ""); /* Deallocate memory */
       }
 
-      /* 20-May-2013 nm */
       if (forbidMatchList[0]) { /* User provided a /FORBID list */
-        /*deallocProofStruct(&saveProofForReverting);*/ /* Deallocate memory */
         let(&forbidMatchList, ""); /* Deallocate memory */
       }
 
-      /* 25-Jun-2014 nm */
       deallocProofStruct(&saveProofForReverting); /* Deallocate memory */
       deallocProofStruct(&saveOrigProof); /* Deallocate memory */
       deallocProofStruct(&save1stPassProof); /* Deallocate memory */
@@ -7061,7 +5559,6 @@ void command(int argc, char *argv[])
     } /* End if MINIMIZE_WITH */
 
 
-    /* 11-Sep-2016 nm Added EXPAND command */
     if (cmdMatches("EXPAND")) {
 
       g_proofChangedFlag = 0;
@@ -7070,14 +5567,12 @@ void command(int argc, char *argv[])
 
       for (i = g_proveStatement - 1; i >= 1; i--) {
         if (g_Statement[i].type != (char)p_) continue; /* Not a $p */
-        /* 30-Jan-06 nm Added single-character-match wildcard argument */
         if (!matchesList(g_Statement[i].labelName, g_fullArg[1], '*', '?')) {
           continue;
         }
         sourceStatement = i;
 
-        nmbrTmp = expandProof(nmbrSaveProof,
-            sourceStatement /*, g_proveStatement*/);
+        nmbrTmp = expandProof(nmbrSaveProof, sourceStatement);
 
         if (!nmbrEq(nmbrTmp, nmbrSaveProof)) {
           g_proofChangedFlag = 1;
@@ -7146,7 +5641,7 @@ void command(int argc, char *argv[])
         }
       }
 
-      /* 6/14/98 - Automatically display new unknown steps
+      /* Automatically display new unknown steps
          ???Future - add switch to enable/defeat this */
       typeProof(g_proveStatement,
           1 /*pipFlag*/,
@@ -7160,10 +5655,9 @@ void command(int argc, char *argv[])
           0 /*reverseFlag*/,
           0 /*noIndentFlag*/,
           0 /*splitColumn*/,
-          0 /*skipRepeatedSteps*/, /* 28-Jun-2013 nm */
+          0 /*skipRepeatedSteps*/,
           0 /*texFlag*/,
           0 /*g_htmlFlag*/);
-      /* 6/14/98 end */
 
       g_proofChanged = 1; /* Cumulative flag */
       processUndoStack(&g_ProofInProgress, PUS_PUSH, g_fullArgString, 0);
@@ -7205,7 +5699,7 @@ void command(int argc, char *argv[])
           print2("Steps %ld and above have been renumbered.\n", n);
         }
 
-        /* 6/14/98 - Automatically display new unknown steps
+        /* Automatically display new unknown steps
            ???Future - add switch to enable/defeat this */
         typeProof(g_proveStatement,
             1 /*pipFlag*/,
@@ -7219,10 +5713,9 @@ void command(int argc, char *argv[])
             0 /*reverseFlag*/,
             0 /*noIndentFlag*/,
             0 /*splitColumn*/,
-            0 /*skipRepeatedSteps*/, /* 28-Jun-2013 nm */
+            0 /*skipRepeatedSteps*/,
             0 /*texFlag*/,
             0 /*g_htmlFlag*/);
-        /* 6/14/98 end */
 
         g_proofChanged = 1; /* Cumulative flag */
         processUndoStack(&g_ProofInProgress, PUS_PUSH, g_fullArgString, 0);
@@ -7256,7 +5749,6 @@ void command(int argc, char *argv[])
         continue;
       }
 
-        /* Added 16-Apr-06 nm */
       if (cmdMatches("INITIALIZE USER")) {
         i = nmbrLen(g_ProofInProgress.proof);
         /* Delete all LET STEP assignments */
@@ -7270,9 +5762,7 @@ void command(int argc, char *argv[])
         processUndoStack(&g_ProofInProgress, PUS_PUSH, g_fullArgString, 0);
         continue;
       }
-      /* End 16-Apr-06 */
 
-      /* cmdMatches("INITIALIZE STEP") */
       s = (long)val(g_fullArg[2]); /* Step number */
       if (s > nmbrLen(g_ProofInProgress.proof) || s < 1) {
         print2("?The step must be in the range from 1 to %ld.\n",
@@ -7282,13 +5772,11 @@ void command(int argc, char *argv[])
 
       initStep(s - 1);
 
-      /* Also delete LET STEPs, per HELP INITIALIZE */          /* 16-Apr-06 */
-      nmbrLet((nmbrString **)(&((g_ProofInProgress.user)[s - 1])),  /* 16-Apr-06 */
-              NULL_NMBRSTRING);                                 /* 16-Apr-06 */
+      /* Also delete LET STEPs, per HELP INITIALIZE */
+      nmbrLet((nmbrString **)(&((g_ProofInProgress.user)[s - 1])),
+              NULL_NMBRSTRING);
 
-      print2(
-          "Step %ld and its hypotheses have been initialized.\n",
-          s);
+      print2("Step %ld and its hypotheses have been initialized.\n", s);
 
       g_proofChanged = 1; /* Cumulative flag */
       processUndoStack(&g_ProofInProgress, PUS_PUSH, g_fullArgString, 0);
@@ -7304,7 +5792,6 @@ void command(int argc, char *argv[])
         m = 0;  /* Show $a, $p only */
       }
 
-      /* 14-Apr-2008 nm added */
       if (switchPos("/ JOIN")) {
         joinFlag = 1;  /* Join $e's to $a,$p for matching */
       } else {
@@ -7340,7 +5827,7 @@ void command(int argc, char *argv[])
         }
         let(&str1, left(str3, q + s));
 
-        /* 30-Jan-06 nm Added single-character-match wildcard argument "$?"
+        /* Find single-character-match wildcard argument "$?"
            (or "?" for convenience).  Use ASCII 3 for the exactly-1-char
            wildcard character.  This is a single-character
            match, not a single-token match:  we need "??" to match "ph". */
@@ -7355,10 +5842,9 @@ void command(int argc, char *argv[])
           if (!p) break;
           let(&str1, cat(left(str1, p - 1), chr(3), right(str1, p + 1), NULL));
         }
-        /* End of 30-Jan-06 addition */
 
         /* Change wildcard to ASCII 2 (to be different from printable chars) */
-        /* 1/3/02 (Why are we matching with and without space? I'm not sure.)*/
+        /* 1-Mar-02 nm - (Why are we matching with and without space? I'm not sure.) */
         /* 30-Jan-06 nm Answer:  We need the double-spacing, and the removal
            of space in the "with spaces" case, so that "ph $ ph" will match
            "ph  ph" (0-token case) - "ph  $  ph" won't match this in the
@@ -7377,12 +5863,10 @@ void command(int argc, char *argv[])
           /* This simply replaces $* with chr(2) */
           let(&str1, cat(left(str1, p - 1), chr(2), right(str1, p + 2), NULL));
         }
-        /* 1/3/02  Also allow a plain $ as a wildcard, for convenience. */
+        /* Also allow a plain $ as a wildcard, for convenience. */
         while (1) {
           p = instr(1, str1, " $ ");
           if (!p) break;
-          /* 30-Jan-06 nm Bug fix - changed "2" to "3" below in order to
-             properly match 0 tokens */
           let(&str1, cat(left(str1, p - 1), chr(2), right(str1, p + 3), NULL));
         }
         while (1) {
@@ -7403,7 +5887,6 @@ void command(int argc, char *argv[])
             g_Statement[i].type != (char)a_) {
           continue; /* No /ALL switch */
         }
-        /* 30-Jan-06 nm Added single-character-match wildcard argument */
         if (!matchesList(g_Statement[i].labelName, g_fullArg[1], '*', '?'))
           continue;
         if (n) { /* COMMENTS switch */
@@ -7418,7 +5901,8 @@ void command(int argc, char *argv[])
           /* Strip linefeeds and reduce spaces */
           let(&str2, edit(str2, 4 + 8 + 16 + 128));
           j = j + ((long)strlen(str1) / 2); /* Center of match location */
-          p = g_screenWidth - 7 - (long)strlen(str((double)i)) - (long)strlen(g_Statement[i].labelName);
+          p = g_screenWidth - 7 - (long)strlen(str((double)i)) -
+            (long)strlen(g_Statement[i].labelName);
                         /* Longest comment portion that will fit in one line */
           q = (long)strlen(str2); /* Length of comment */
           if (q <= p) { /* Use entire comment */
@@ -7441,7 +5925,6 @@ void command(int argc, char *argv[])
         } else { /* No COMMENTS switch */
           let(&str2,nmbrCvtMToVString(g_Statement[i].mathString));
 
-          /* 14-Apr-2008 nm JOIN flag */
           tmpFlag = 0; /* Flag that $p or $a is already in string */
           if (joinFlag && (g_Statement[i].type == (char)p_ ||
               g_Statement[i].type == (char)a_)) {
@@ -7473,7 +5956,6 @@ void command(int argc, char *argv[])
           let(&str2, left(str3, q + s));
 
           let(&str2, cat(" ", str2, " ", NULL));
-          /* 30-Jan-06 nm Added single-character-match wildcard argument */
           /* We should use matches() and not matchesList() here, because
              commas can be legal token characters in math symbols */
           if (!matches(str2, str1, 2/* ascii 2 0-or-more-token match char*/,
@@ -7495,7 +5977,6 @@ void command(int argc, char *argv[])
     if (cmdMatches("SET ECHO")) {
       if (cmdMatches("SET ECHO ON")) {
         g_commandEcho = 1;
-        /* 15-Jun-2009 nm Added "!" (see 15-Jun-2009 note above) */
         print2("!SET ECHO ON\n");
         print2("Command line echoing is now turned on.\n");
       } else {
@@ -7558,31 +6039,20 @@ void command(int argc, char *argv[])
       continue;
     }
 
-    if (cmdMatches("SET WIDTH")) { /* 18-Nov-85 nm Was SCREEN_WIDTH */
+    if (cmdMatches("SET WIDTH")) {
       s = (long)val(g_fullArg[2]); /* Screen width value */
 
-      /************ 19-Jun-2020 nm printBuffer is now dynamically allocated
-      if (s >= PRINTBUFFERSIZE - 1) {
-        print2(
-"?Maximum screen width is %ld.  Recompile with larger PRINTBUFFERSIZE in\n",
-            (long)(PRINTBUFFERSIZE - 2));
-        print2("mminou.h if you need more.\n");
-        continue;
-      }
-      *************/
-
-      /* 26-Sep-2017 nm */
       /* TODO: figure out why s=2 crashes program! */
       if (s < 3) s = 3; /* Less than 3 may cause a segmentation fault */
       i = g_screenWidth;
-      g_screenWidth = s; /* 26-Sep-2017 nm - print with new screen width */
+      g_screenWidth = s;
       print2("Screen width has been changed from %ld to %ld.\n",
           i, s);
       continue;
     }
 
 
-    if (cmdMatches("SET HEIGHT")) {  /* 18-Nov-05 nm Added */
+    if (cmdMatches("SET HEIGHT")) {
       s = (long)val(g_fullArg[2]); /* Screen height value */
       if (s < 2) s = 2;  /* Less than 2 makes no sense */
       i = g_screenHeight;
@@ -7595,7 +6065,6 @@ void command(int argc, char *argv[])
     }
 
 
-    /* 10-Jul-2016 nm */
     if (cmdMatches("SET DISCOURAGEMENT")) {
       if (!strcmp(g_fullArg[2], "ON")) {
         g_globalDiscouragement = 1;
@@ -7617,7 +6086,6 @@ void command(int argc, char *argv[])
     }
 
 
-    /* 14-May-2017 nm */
     if (cmdMatches("SET CONTRIBUTOR")) {
       print2("\"Contributed by...\" name was changed from \"%s\" to \"%s\"\n",
           g_contributorName, g_fullArg[2]);
@@ -7626,7 +6094,6 @@ void command(int argc, char *argv[])
     }
 
 
-    /* 31-Dec-2017 nm */
     if (cmdMatches("SET ROOT_DIRECTORY")) {
       let(&str1, g_rootDirectory); /* Save previous one */
       let(&g_rootDirectory, edit(g_fullArg[2], 2/*discard spaces,tabs*/));
@@ -7646,7 +6113,7 @@ void command(int argc, char *argv[])
           }
         }
       }
-      if (strcmp(str1, g_rootDirectory)){
+      if (strcmp(str1, g_rootDirectory)) {
         print2("Root directory was changed from \"%s\" to \"%s\"\n",
             str1, g_rootDirectory);
       }
@@ -7655,7 +6122,6 @@ void command(int argc, char *argv[])
     }
 
 
-    /* 1-Nov-2013 nm Added UNDO */
     if (cmdMatches("SET UNDO")) {
       s = (long)val(g_fullArg[2]); /* Maximum UNDOs */
       if (s < 0) s = 0;  /* Less than 0 UNDOs makes no sense */
@@ -7712,21 +6178,7 @@ void command(int argc, char *argv[])
     }
 
     if (cmdMatches("OPEN TEX")) {
-    /* 2-Oct-2017 nm OPEN HTML is very obsolete, no need to warn anymore
-    if (cmdMatches("OPEN TEX") || cmdMatches("OPEN HTML") ) {
-      if (cmdMatches("OPEN HTML")) {
-        print2("?OPEN HTML is obsolete - use SHOW STATEMENT * / HTML\n");
-        continue;
-      }
-    */
-
-      /* 17-Nov-2015 TODO: clean up mixed LaTeX/HTML attempts (check
-         g_texFileOpenFlag when switching to HTML & close LaTeX file) */
-
       if (g_texDefsRead) {
-        /* Current limitation - can only read .def once */
-        /* 2-Oct-2017 nm OPEN HTML is obsolete */
-        /*if (cmdMatches("OPEN HTML") != g_htmlFlag) {*/
         if (g_htmlFlag) {
           /* Actually it isn't clear to me this is still the case, but
              to be safe I left it in */
@@ -7736,8 +6188,6 @@ void command(int argc, char *argv[])
           continue;
         }
       }
-      /* 2-Oct-2017 nm OPEN HTML is obsolete */
-      /*g_htmlFlag = cmdMatches("OPEN HTML");*/
 
       /* Open a TeX file */
       let(&g_texFileName,g_fullArg[2]);
@@ -7746,7 +6196,7 @@ void command(int argc, char *argv[])
       } else {
         texHeaderFlag = 1;
       }
-      /* 14-Sep-2010 nm Added OLD_TEX */
+
       if (switchPos("/ OLD_TEX")) {
         g_oldTexFlag = 1;
       } else {
@@ -7755,7 +6205,6 @@ void command(int argc, char *argv[])
       g_texFilePtr = fSafeOpen(g_texFileName, "w", 0/*noVersioningFlag*/);
       if (!g_texFilePtr) continue; /* Couldn't open it (err msg was provided) */
       g_texFileOpenFlag = 1;
-      /* 2-Oct-2017 nm OPEN HTML is obsolete */
       print2("Created %s output file \"%s\".\n",
           g_htmlFlag ? "HTML" : "LaTeX", g_texFileName);
       printTexHeader(texHeaderFlag);
@@ -7763,28 +6212,6 @@ void command(int argc, char *argv[])
       continue;
     }
 
-    /* 2-Oct-2017 nm CLOSE HTML is obsolete */
-    /******
-    if (cmdMatches("CLOSE TEX") || cmdMatches("CLOSE HTML")) {
-      if (cmdMatches("CLOSE HTML")) {
-        print2("?CLOSE HTML is obsolete - use SHOW STATEMENT @ / HTML\n");
-        continue;
-      }
-      /@ Close the TeX file @/
-      if (!g_texFileOpenFlag) {
-        print2("?Sorry, there is no %s file currently open.\n",
-            g_htmlFlag ? "HTML" : "LaTeX");
-      } else {
-        print2("The %s output file \"%s\" has been closed.\n",
-            g_htmlFlag ? "HTML" : "LaTeX", g_texFileName);
-        printTexTrailer(texHeaderFlag);
-        fclose(g_texFilePtr);
-        g_texFileOpenFlag = 0;
-      }
-      let(&g_texFileName,"");
-      continue;
-    }
-    *****/
     if (cmdMatches("CLOSE TEX")) {
       /* Close the TeX file */
       if (!g_texFileOpenFlag) {
@@ -7930,7 +6357,7 @@ void command(int argc, char *argv[])
         g_sourceChanged = 0;
       }
       eraseSource();
-      g_sourceHasBeenRead = 0; /* Global variable */ /* 31-Dec-2017 nm */
+      g_sourceHasBeenRead = 0; /* Global variable */
       g_showStatement = 0;
       g_proveStatement = 0;
       print2("Metamath has been reset to the starting state.\n");
@@ -7946,9 +6373,6 @@ void command(int argc, char *argv[])
       continue;
     }
 
-    /* 7-Nov-2015 nm New */  /* 17-Nov-2015 nm Updated */
-    /* 25-Jun-2020 nm Added UNDERSCORE_SKIP */
-    /* 17-Jul-2020 nm Added MATHBOX_SKIP */
     if (cmdMatches("VERIFY MARKUP")) {
       i = (switchPos("/ DATE_SKIP") != 0) ? 1 : 0;
       j = (switchPos("/ TOP_DATE_SKIP") != 0) ? 1 : 0;
@@ -7967,11 +6391,10 @@ void command(int argc, char *argv[])
           (flag)k, /* 1 = skip checking external files GIF, mmset.html,... */
           (flag)l, /* 1 = skip checking labels for underscores */
           (flag)m, /* 1 = skip checking mathbox cross-references */
-          (flag)n); /* 1 = verbose mode */  /* 26-Dec-2016 nm */
+          (flag)n); /* 1 = verbose mode */
       continue;
     }
 
-    /* 10-Dec-2018 nm Added */
     if (cmdMatches("MARKUP")) {
       g_htmlFlag = 1;
       g_altHtmlFlag = (switchPos("/ ALT_HTML") != 0);
@@ -7997,3 +6420,5 @@ void command(int argc, char *argv[])
 
   }
 } /* command */
+
+

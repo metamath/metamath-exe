@@ -461,7 +461,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
 /*E*/if(db7)print2("GOT TO DUMMY TOKEN\n");
               v--;
               contFlag = 1;
-              continue; /* 24-Sep-2010 nm Added missing trap to fix bug(2106) */
+              continue; /* Added missing trap to fix bug(2106) */
             }
             if (q >= bigSubstInstLen) {
               /* It overflowed the end of bigSubstInstAss; pop back a variable */
@@ -754,7 +754,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
                 /* Put missing $d requirement in new line so grep can find
                    them easily in log file */
                 printLongLine(cat("Variables \"",
-                    /* 30-Apr-04 nm Put in alphabetic order for easier use if
+                    /* Put in alphabetic order for easier use if
                        user sorts the list of errors */
                     /* strcmp returns <0 if 1st<2nd */
                     (strcmp(g_MathToken[aToken].tokenName,
