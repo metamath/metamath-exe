@@ -49,8 +49,6 @@ H("For current program settings, type SHOW SETTINGS.");
 H("For a simple but general-purpose ASCII file manipulator, type TOOLS.");
 H("To exit Metamath, type EXIT (or its synonym QUIT).");
 H("");
-H(cat("If you need technical support, contact Norman Megill at nm",
-    "@", "alum.mit.edu.", NULL));
 H("Copyright (C) 2020 Norman Megill  License terms:  GPL 2.0 or later");
 H("");
 
