@@ -207,7 +207,7 @@ void typeStatement(long showStmt,
         printTexComment(str1,              /* Sends result to g_texFilePtr */
             1, /* 1 = htmlCenterFlag */
             PROCESS_EVERYTHING, /* actionBits */
-            0  /* 1 = noFileCheck */);
+            1  /* 1 = fileCheck */);
       }
     }
   }
@@ -2764,7 +2764,7 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
           printTexComment(str1,              /* Sends result to g_texFilePtr */
               1, /* 1 = htmlCenterFlag */
               PROCESS_EVERYTHING, /* actionBits */
-              0 /* 1 = noFileCheck */);
+              1 /* 1 = fileCheck */);
         }
       }
 
@@ -4772,11 +4772,11 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
 
 
 void verifyMarkup(vstring labelMatch,
-    flag dateSkip, /* 1 = don't check date consistency */
-    flag topDateSkip, /* 1 = don't check top date but check others */
-    flag fileSkip, /* 1 = don't check external files (gifs, mmset.html,...) */
-    flag underscoreSkip, /* 1 = don't check labels for "_" characters) */
-    flag mathboxSkip, /* 1 = don't check mathbox cross-references) */
+    flag dateCheck, /* 1 = check date consistency */
+    flag topDateCheck, /* 1 = check top date but check others */
+    flag fileCheck, /* 1 = check external files (gifs, mmset.html,...) */
+    flag underscoreCheck, /* 1 = check labels for "_" characters) */
+    flag mathboxCheck, /* 1 = check mathbox cross-references) */
     flag verboseMode) /* 1 = more details */ {
   flag f;
   flag saveHtmlFlag, saveAltHtmlFlag;
@@ -4835,7 +4835,7 @@ void verifyMarkup(vstring labelMatch,
 
     /* Check labels for "_" characters */
     /* See discussion in https://github.com/metamath/set.mm/pull/1691 */
-    if (underscoreSkip == 0
+    if (underscoreCheck
         && instr(1, g_Statement[stmtNum].labelName, "_") != 0) {
       assignStmtFileAndLineNum(stmtNum);
       printLongLine(cat("?Warning: In statement \"",
@@ -5110,14 +5110,14 @@ void verifyMarkup(vstring labelMatch,
   g_htmlFlag = 0; /* 1 = HTML, not TeX */
   g_altHtmlFlag = 0; /* 1 = Unicode, not GIFs (when g_htmlFlag = 1) */
   f = readTexDefs(1/*errorsOnly*/,
-          fileSkip /* 1 = no GIF file existence check */  );
+          fileCheck /* 1 = GIF file existence check */  );
   if (f != 0) errFound = 1;
   if (f != 2) {   /* We continue if no severe errors (warnings are ok) */
     /* Check htmldef statements (reread since we've switched modes) */
     g_htmlFlag = 1; /* 1 = HTML, not TeX */
     g_altHtmlFlag = 0; /* 1 = Unicode, not GIFs (when g_htmlFlag = 1) */
     f = readTexDefs(1/*errorsOnly*/,
-            fileSkip /* 1 = no GIF file existence check */  );
+            fileCheck /* 1 = GIF file existence check */  );
   }
   if (f != 0) errFound = 1;
   if (f != 2) {  /* We continue if no severe errors (warnings are ok) */
@@ -5125,7 +5125,7 @@ void verifyMarkup(vstring labelMatch,
     g_htmlFlag = 1; /* 1 = HTML, not TeX */
     g_altHtmlFlag = 1; /* 1 = Unicode, not GIFs (when g_htmlFlag = 1) */
     f = readTexDefs(1/*errorsOnly*/,
-            fileSkip /* 1 = no GIF file existence check */  );
+            fileCheck /* 1 = GIF file existence check */  );
   }
   if (f != 0) errFound = 1;
 
@@ -5161,7 +5161,7 @@ void verifyMarkup(vstring labelMatch,
       errFound = 1;
     }
 
-    if (dateSkip == 0) {
+    if (dateCheck) {
 
       /* Check date consistency of the statement */
       /* Use the error-checking feature of getContrib() extractor */
@@ -5189,7 +5189,7 @@ void verifyMarkup(vstring labelMatch,
     f = printTexComment(descr,
         0, /* 1 = htmlCenterFlag (irrelevant for this call) */
         PROCESS_EVERYTHING + ERRORS_ONLY, /* actionBits */
-        fileSkip /* 1 = noFileCheck */);
+        fileCheck);
     if (f == 1) errFound = 1;
 
     /* Check that $a has no "(Proof modification is discouraged.)" */
@@ -5233,7 +5233,7 @@ void verifyMarkup(vstring labelMatch,
   /* This code expects a version date at the top of the file such as:
          $( set.mm - Version of 13-Dec-2016 $)
      If we later want a different format, this code should be modified. */
-  if (dateSkip == 0  && topDateSkip == 0) {
+  if (topDateCheck) {
     /* Get the top of the .mm file */
     let(&str1, space(g_Statement[1].labelSectionLen));
     memcpy(str1, g_Statement[1].labelSectionPtr,
@@ -5254,20 +5254,18 @@ void verifyMarkup(vstring labelMatch,
             "?Warning: The Version date \"", str2, "\" at the top of file \"",
             g_input_fn, "\" is not a valid date.", NULL), "    ", " ");
         errFound = 1;
-      } else {
-        if (compareDates(mostRecentDate, str2) == 1) {
-          printLongLine(cat(
-              "?Warning: The \"Version of\" date ", str2,
-              " at the top of file \"",
-              g_input_fn,
-              "\" is less recent than the date ", mostRecentDate,
-              " in the description of statement \"",
-              g_Statement[mostRecentStmt].labelName, "\".", NULL), "    ", " ");
-          errFound = 1;
-        }
+      } else if (dateCheck && compareDates(mostRecentDate, str2) == 1) {
+        printLongLine(cat(
+            "?Warning: The \"Version of\" date ", str2,
+            " at the top of file \"",
+            g_input_fn,
+            "\" is less recent than the date ", mostRecentDate,
+            " in the description of statement \"",
+            g_Statement[mostRecentStmt].labelName, "\".", NULL), "    ", " ");
+        errFound = 1;
       }
     }
-  } /* if (dateSkip == 0) */
+  } /* if (topDateCheck) */
 
 
   print2("Checking section header comments...\n");
@@ -5303,22 +5301,22 @@ void verifyMarkup(vstring labelMatch,
       f = (char)(f + printTexComment(hugeHdrComment,
           0, /* 1 = htmlCenterFlag (irrelevant for this call) */
           PROCESS_EVERYTHING + ERRORS_ONLY, /* actionBits */
-          fileSkip /* 1 = noFileCheck */));
+          fileCheck));
     if (bigHdrComment[0] != 0)
       f = (char)(f + printTexComment(bigHdrComment,
           0, /* 1 = htmlCenterFlag (irrelevant for this call) */
           PROCESS_EVERYTHING + ERRORS_ONLY, /* actionBits */
-          fileSkip /* 1 = noFileCheck */));
+          fileCheck));
     if (smallHdrComment[0] != 0)
       f = (char)(f + printTexComment(smallHdrComment,
           0, /* 1 = htmlCenterFlag (irrelevant for this call) */
           PROCESS_EVERYTHING + ERRORS_ONLY, /* actionBits */
-          fileSkip /* 1 = noFileCheck */));
+          fileCheck));
     if (tinyHdrComment[0] != 0)
       f = (char)(f + printTexComment(tinyHdrComment,
           0, /* 1 = htmlCenterFlag (irrelevant for this call) */
           PROCESS_EVERYTHING + ERRORS_ONLY, /* actionBits */
-          fileSkip /* 1 = noFileCheck */));
+          fileCheck));
 
     if (f != 0) printf(
 "    (The warning above refers to a header above the referenced statement.)\n");
@@ -5331,11 +5329,11 @@ void verifyMarkup(vstring labelMatch,
   f = writeBibliography("mmbiblio.html",
           labelMatch,
           1,  /* 1 = no output, just warning msgs if any */
-          fileSkip); /* 1 = ignore missing external files (gifs, bib, etc.) */
+          fileCheck); /* 1 = check missing external files (gifs, bib, etc.) */
   if (f != 0) errFound = 1;
 
   /* Check mathboxes for cross-references */
-  if (mathboxSkip == 0) {
+  if (mathboxCheck) {
     print2("Checking mathbox independence...\n");
     assignMathboxInfo();  /* Populate global mathbox variables */
     /* Scan proofs in mathboxes to see if earlier mathbox is referenced */
@@ -5453,7 +5451,7 @@ void processMarkup(vstring inputFileName, vstring outputFileName,
 
   /* readTexDefs() rereads based on changed in g_htmlFlag, g_altHtmlFlag */
   if (2/*error*/ == readTexDefs(0 /* 1 = check errors only */,
-      1 /* 1 = no GIF file existence check */  )) {
+      0 /* 1 = GIF file existence check */  )) {
     goto PROCESS_MARKUP_RETURN; /* An error occurred */
   }
 
@@ -5495,7 +5493,7 @@ void processMarkup(vstring inputFileName, vstring outputFileName,
       inputFileContent,
       0, /* 1 = htmlCenterFlag */
       actionBits, /* bit-mapped list of actions */
-      0 /* 1 = noFileCheck */);
+      1 /* 1 = fileCheck */);
   fclose(g_texFilePtr);
   g_texFilePtr = NULL;
 
