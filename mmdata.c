@@ -507,8 +507,9 @@ void bug(int bugNum)
   if (mode == 0) { /* Print detailed info for first bug */
     print2("\n");
     print2(
-  "To get technical support, please send Norm Megill (%salum.mit.edu) the\n",
-        "nm@");
+  "To get technical support, please open an issue \n");
+    print2(
+  "(https://github.com/metamath/metamath-exe/issues) with the\n");
     print2(
   "detailed command sequence or a command file that reproduces this bug,\n");
     print2(
