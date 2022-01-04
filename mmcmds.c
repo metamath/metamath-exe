@@ -5254,17 +5254,15 @@ void verifyMarkup(vstring labelMatch,
             "?Warning: The Version date \"", str2, "\" at the top of file \"",
             g_input_fn, "\" is not a valid date.", NULL), "    ", " ");
         errFound = 1;
-      } else {
-        if (compareDates(mostRecentDate, str2) == 1) {
-          printLongLine(cat(
-              "?Warning: The \"Version of\" date ", str2,
-              " at the top of file \"",
-              g_input_fn,
-              "\" is less recent than the date ", mostRecentDate,
-              " in the description of statement \"",
-              g_Statement[mostRecentStmt].labelName, "\".", NULL), "    ", " ");
-          errFound = 1;
-        }
+      } else if (dateCheck && compareDates(mostRecentDate, str2) == 1) {
+        printLongLine(cat(
+            "?Warning: The \"Version of\" date ", str2,
+            " at the top of file \"",
+            g_input_fn,
+            "\" is less recent than the date ", mostRecentDate,
+            " in the description of statement \"",
+            g_Statement[mostRecentStmt].labelName, "\".", NULL), "    ", " ");
+        errFound = 1;
       }
     }
   } /* if (topDateCheck) */
