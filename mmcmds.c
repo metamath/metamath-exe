@@ -204,7 +204,6 @@ void typeStatement(long showStmt,
             let(&str1, cat("\n\\vspace{1ex} %2\n\n", str1, NULL));
           }
         }
-        /* printTexComment(str1, 1); */
         printTexComment(str1,              /* Sends result to g_texFilePtr */
             1, /* 1 = htmlCenterFlag */
             PROCESS_EVERYTHING, /* actionBits */
@@ -525,7 +524,7 @@ void typeStatement(long showStmt,
       for (i = 0; i < j; i++) {
         k = g_Statement[showStmt].reqHypList[i];
         if (g_Statement[k].type != (char)e_ && (!htmlFlg && texFlag))
-          continue;
+          continue; /* Don't put $f's in LaTeX output */
         let(&str2, cat("  ",g_Statement[k].labelName,
             " $", chr(g_Statement[k].type), " ", NULL));
         if (!texFlag) {
