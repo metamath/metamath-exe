@@ -805,6 +805,24 @@ H("\"exthtmlhome\" is used instead of that assigned to \"htmltitle\" and");
 H("\"htmlhome\" respectively.");
 H("");
 
+/* 13-Jan-2018 tar Added STS */
+g_printHelp = !strcmp(saveHelpCmd, "HELP STS");
+H("To create an HTML output file for a $a or $p statement, use");
+H("    SHOW STATEMENT <label> / STS <format>");
+H("The output and usage of that command is similar to the / HTML qualifier.");
+H("However the way the formula is generated differs.  Symbols are not mapped");
+H("one-to-one with their HTML representation, instead, the statements are");
+H("matched against patterns.  Those patterns are provided in a file named");
+H("    <source>-<format>.MMTS");
+H("Where <source> is the name of the main Metamath file loaded using READ.");
+H("The generic format for the rules in the MMTS definition file is");
+H("    $s <pattern> $: <translation> $.");
+H("Where <pattern> is the pattern to be matched, and <translation> the");
+H("rendered string.  If any variable present in <pattern> appears in");
+H("<translation> between hash symbols (#), the corresponding sub-string");
+H("will be recursively matched.");
+H("");
+
 g_printHelp = !strcmp(saveHelpCmd, "HELP LATEX");
 H("See HELP TEX.");
 H("");

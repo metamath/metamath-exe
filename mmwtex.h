@@ -29,6 +29,10 @@ extern flag g_htmlFlag;  /* HTML flag: 0 = TeX, 1 = HTML */
 extern flag g_altHtmlFlag;  /* Use "althtmldef" instead of "htmldef".  This is
     intended to allow the generation of pages with the old Symbol font
     instead of the individual GIF files. */
+/* 19-Jul-2017 tar Added for STS/MathML output */
+extern flag stsFlag; /* STS output (for "structural typesetting") */
+extern vstring stsOutput; /* output mode chosen for STS (follows STS flag) */
+extern vstring postProcess; /* command to pipe the output into (used for MathJax prerendering) */
 extern flag g_briefHtmlFlag;  /* Output statement only, for statement display
                 in other HTML pages, such as the Proof Explorer home page */
 extern long g_extHtmlStmt; /* At this statement and above, use the exthtmlxxx
@@ -78,6 +82,7 @@ vstring tokenToTex(vstring mtoken, long statemNum);
 /* Converts a comment section in math mode to TeX.  Each math token
    MUST be separated by white space.   TeX "$" does not surround the output. */
 vstring asciiMathToTex(vstring mathComment, long statemNum);
+vstring asciiMathToTexNoSts(vstring mathComment, long statemNum);
 /* Gets the next section of a comment that is in the current mode (text,
    label, or math).  If 1st char. is not "$", text mode is assumed.
    mode = 0 means end of comment reached.  srcptr is left at 1st char.

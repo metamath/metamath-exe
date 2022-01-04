@@ -24,6 +24,7 @@
 #include "mmpfas.h"
 #include "mmunif.h" /* 26-Sep-2010 nm For g_bracketMatchInit, g_minSubstLen */
                     /* 1-Oct-2017 nm ...and g_firstConst */
+#include "mmwsts.h" /* 27 Jul 2017 tar For MathML/STS */
 
 /* 12-Nov-2018 nm */
 /* Local prototypes */
@@ -340,10 +341,11 @@ void typeStatement(long showStmt,
             }
             htmlDistinctVarsCommaFlag = 1;
             let(&str2, "");
-            str2 = tokenToTex(g_MathToken[nmbrTmpPtr1[k]].tokenName, showStmt);
+            /* 27 Jul 2017 tar For MathML/STS */
+            if(stsFlag) str2 = stsToken(nmbrTmpPtr1[k], showStmt);
+            else str2 = tokenToTex(g_MathToken[nmbrTmpPtr1[k]].tokenName, showStmt);
                  /* tokenToTex allocates str2; we must deallocate it */
             let(&htmlDistinctVars, cat(htmlDistinctVars, str2, NULL));
-
           }
           nmbrLet(&nmbrDDList, nmbrAddElement(nmbrDDList, nmbrTmpPtr1[k]));
         }
@@ -359,7 +361,9 @@ void typeStatement(long showStmt,
             }
             htmlDistinctVarsCommaFlag = 1;
             let(&str2, "");
-            str2 = tokenToTex(g_MathToken[nmbrTmpPtr2[k]].tokenName, showStmt);
+            /* 27 Jul 2017 tar For MathML/STS */
+            if(stsFlag) str2 = stsToken(nmbrTmpPtr2[k], showStmt);
+            else str2 = tokenToTex(g_MathToken[nmbrTmpPtr2[k]].tokenName, showStmt);
                  /* tokenToTex allocates str2; we must deallocate it */
             let(&htmlDistinctVars, cat(htmlDistinctVars, str2, NULL));
 
@@ -618,11 +622,15 @@ void typeStatement(long showStmt,
           } else {
             if (htmlFlg && texFlag) {
               let(&str2, "");
-              str2 = tokenToTex(g_MathToken[nmbrTmpPtr1[k]].tokenName, showStmt);
+              /* 27 Jul 2017 tar For MathML/STS */
+      	      if(stsFlag) str2 = stsToken(nmbrTmpPtr1[k], showStmt);
+	            else str2 = tokenToTex(g_MathToken[nmbrTmpPtr1[k]].tokenName, showStmt);
                    /* tokenToTex allocates str2; we must deallocate it */
               let(&str1, cat(str1, " &nbsp; ", str2, NULL));
               let(&str2, "");
-              str2 = tokenToTex(g_MathToken[nmbrTmpPtr2[k]].tokenName, showStmt);
+              /* 27 Jul 2017 tar For MathML/STS */
+              if(stsFlag) str2 = stsToken(nmbrTmpPtr2[k], showStmt);
+              else str2 = tokenToTex(g_MathToken[nmbrTmpPtr2[k]].tokenName, showStmt);
               let(&str1, cat(str1, ",", str2, NULL));
             }
           }
@@ -1300,7 +1308,9 @@ vstring htmlDummyVars(long showStmt)
               /* tokenToTex allocates str1; must deallocate it first */
               let(&str1, "");
               /* Convert token to htmldef/althtmldef string */
-              str1 = tokenToTex(g_MathToken[dummyVar].tokenName,
+              /* 27 Jul 2017 tar For MathML/STS */
+              if(stsFlag) str1 = stsToken(dummyVar, showStmt);
+              else  str1 = tokenToTex(g_MathToken[dummyVar].tokenName,
                   showStmt);
               let(&htmlDummyVarList, cat(htmlDummyVarList, " ", str1, NULL));
               break; /* Found a match, so stop further checking */
@@ -1481,7 +1491,9 @@ vstring htmlAllowedSubst(long showStmt)
     if (found == 0) continue; /* All set vars have $d with this wff or class */
 
     let(&str1, "");
-    str1 = tokenToTex(g_MathToken[wffOrClassVar].tokenName, showStmt);
+    /* 27 Jul 2017 tar For MathML/STS */
+    if(stsFlag) str1 = stsToken(wffOrClassVar, showStmt);
+    else str1 = tokenToTex(g_MathToken[wffOrClassVar].tokenName, showStmt);
          /* tokenToTex allocates str1; we must deallocate it eventually */
     countInfo++;
     let(&htmlAllowedList, cat(htmlAllowedList, " &nbsp; ",
@@ -1490,7 +1502,9 @@ vstring htmlAllowedSubst(long showStmt)
     for (j = 0; j < setVars; j++) {
       if (setVarDVFlag[j] == 'N') {
         let(&str1, "");
-        str1 = tokenToTex(g_MathToken[setVar[j]].tokenName, showStmt);
+        /* 27 Jul 2017 tar For MathML/STS */
+        if(stsFlag) str1 = stsToken(setVar[j], showStmt);
+        else str1 = tokenToTex(g_MathToken[setVar[j]].tokenName, showStmt);
         let(&htmlAllowedList, cat(htmlAllowedList,
             (first == 0) ? "," : "", str1, NULL));
         if (first == 0) countInfo++;
@@ -2437,9 +2451,12 @@ void typeProof(long statemNum,
                       && (!strcmp(g_Statement[stmt].labelName, "cmpt")
                           || !strcmp(g_Statement[stmt].labelName, "cmpt2")))
                   ) {
-                tmpStr1 =
-                    tokenToTex(g_MathToken[(g_Statement[stmt].mathString)[i]
-                    ].tokenName, stmt);
+                /* 27 Jul 2017 tar For MathML/STS */
+                if(stsFlag) tmpStr1 =
+                  stsToken((g_Statement[stmt].mathString)[i], stmt);
+                else tmpStr1 =
+                  tokenToTex(g_MathToken[(g_Statement[stmt].mathString)[i]
+                  ].tokenName, stmt);
                 /* 14-Jan-2016 nm */
                 let(&tmpStr1, cat(
                     (g_altHtmlFlag ? cat("<SPAN ", g_htmlFont, ">", NULL) : ""),
