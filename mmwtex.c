@@ -130,7 +130,7 @@ void eraseTexDefs(void) {
    no errors, 0 if no errors or warnings */
 flag readTexDefs(
   flag errorsOnly,  /* 1 = suppress non-error messages */
-  flag noGifCheck   /* 1 = don't check for missing GIFs */)
+  flag gifCheck   /* 1 = check for missing GIFs */)
 {
 
   char *fileBuf;
@@ -691,7 +691,7 @@ flag readTexDefs(
                                      trailing quote" warning */
            /* (We test k after the let() so that the temporary string stack
               entry created by mid() is emptied and won't overflow */
-        if (noGifCheck == 0) {
+        if (gifCheck) {
           tmpFp = fopen(token, "r"); /* See if it exists */
           if (!tmpFp) {
             printLongLine(cat("?Warning: The file \"", token,
@@ -1243,7 +1243,7 @@ void printTexHeader(flag texHeaderFlag)
   vstring smallHdrComment = "";
   vstring tinyHdrComment = "";
 
-  if (2/*error*/ == readTexDefs(0/*errorsOnly=0*/, 0 /*noGifCheck=0*/)) {
+  if (2/*error*/ == readTexDefs(0/*errorsOnly=0*/, 1 /*gifCheck=1*/)) {
     print2(
        "?There was an error in the $t comment's LaTeX/HTML definitions.\n");
     return;
@@ -1668,7 +1668,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
            (These new values were added instead of adding a new argument,
            so as not to have to modify ~60 other calls to this function) */
 
-    flag noFileCheck)  /* 1 = ignore missing external files (gifs, bib, etc.) */
+    flag fileCheck)  /* 1 = check for missing external files (gifs, bib, etc.) */
 {
   vstring cmtptr; /* Not allocated */
   vstring srcptr; /* Not allocated */
@@ -2116,7 +2116,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
            read in yet, let's do so here for error-checking. */
 
         /* Start of error-checking */
-        if (noFileCheck == 0) {
+        if (fileCheck) {
           if (!bibTags[0]) {
             /* The bibliography file has not be read in yet. */
             let(&bibFileContents, "");
@@ -3929,7 +3929,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
               (vstring)(pntrHugeHdrComment[s]),
               0, /* 1 = htmlCenterFlag */
               PROCESS_EVERYTHING, /* actionBits */
-              0 /* 1 = noFileCheck */);
+              1 /* 1 = fileCheck */);
           g_texFilePtr = NULL;
           g_outputToString = 1; /* Restore after printTexComment */
         }
@@ -3983,7 +3983,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
               (vstring)(pntrBigHdrComment[s]),
               0, /* 1 = htmlCenterFlag */
               PROCESS_EVERYTHING, /* actionBits */
-              0  /* 1 = noFileCheck */);
+              1  /* 1 = fileCheck */);
           g_texFilePtr = NULL;
           g_outputToString = 1; /* Restore after printTexComment */
         }
@@ -4037,7 +4037,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
               (vstring)(pntrSmallHdrComment[s]),
               0, /* 1 = htmlCenterFlag */
               PROCESS_EVERYTHING, /* actionBits */
-              0  /* 1 = noFileCheck */);
+              1  /* 1 = fileCheck */);
           g_texFilePtr = NULL;
           g_outputToString = 1; /* Restore after printTexComment */
         }
@@ -4092,7 +4092,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
               (vstring)(pntrTinyHdrComment[s]),
               0, /* 1 = htmlCenterFlag */
               PROCESS_EVERYTHING, /* actionBits */
-              0  /* 1 = noFileCheck */);
+              1  /* 1 = fileCheck */);
           g_texFilePtr = NULL;
           g_outputToString = 1; /* Restore after printTexComment */
         }
@@ -4140,7 +4140,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
           str3,
           0, /* 1 = htmlCenterFlag */
           PROCESS_EVERYTHING, /* actionBits */
-          0  /* 1 = noFileCheck */);
+          1  /* 1 = fileCheck */);
       g_texFilePtr = NULL;
       g_outputToString = 1; /* Restore after printTexComment */
 
@@ -5093,7 +5093,7 @@ vstring getTexOrHtmlHypAndAssertion(long statemNum) {
 flag writeBibliography(vstring bibFile,
     vstring labelMatch, /* Normally "*" except when called by verifyMarkup() */
     flag errorsOnly,  /* 1 = no output, just warning msgs if any */
-    flag noFileCheck) /* 1 = ignore missing external files (mmbiblio.html) */
+    flag fileCheck) /* 1 = check missing external files (mmbiblio.html) */
 {
   flag errFlag;
   FILE *list1_fp = NULL;
@@ -5105,7 +5105,7 @@ flag writeBibliography(vstring bibFile,
 
   n = 0; /* Old gcc 4.6.3 wrongly says may be uninit ln 5506 */
   pass1refs = 0; /* gcc 4.5.3 wrongly says may be uninit */
-  if (noFileCheck == 1 && errorsOnly == 0) {
+  if (!fileCheck && errorsOnly == 0) {
     bug(2336); /* If we aren't opening files, a non-error run can't work */
   }
 
@@ -5114,7 +5114,7 @@ flag writeBibliography(vstring bibFile,
      mmbiblio.html. */
   warnFlag = 0; /* 1 means warning was found, 2 that error was found */
   errFlag = 0; /* Error flag to recover input file and to set return value 2 */
-  if (noFileCheck == 0) {
+  if (fileCheck) {
     list1_fp = fSafeOpen(bibFile, "r", 0/*noVersioningFlag*/);
     if (list1_fp == NULL) {
       /* Couldn't open it (error msg was provided)*/
@@ -5138,14 +5138,14 @@ flag writeBibliography(vstring bibFile,
   }
   if (!g_texDefsRead) {
     g_htmlFlag = 1;
-    if (2/*error*/ == readTexDefs(errorsOnly, noFileCheck)) {
+    if (2/*error*/ == readTexDefs(errorsOnly, fileCheck)) {
       errFlag = 2; /* Error flag to recover input file */
       goto BIB_ERROR; /* An error occurred */
     }
   }
 
   /* Transfer the input file up to the special "<!-- #START# -->" comment */
-  if (noFileCheck == 0) {
+  if (fileCheck) {
     while (1) {
       if (!linput(list1_fp, NULL, &str1)) {
         print2("?Error: Could not find \"<!-- #START# -->\" line in input file \"%s\".\n",
@@ -5458,7 +5458,7 @@ flag writeBibliography(vstring bibFile,
   }
 
   /* Write output */
-  if (noFileCheck == 0 && errorsOnly == 0) {
+  if (fileCheck && errorsOnly == 0) {
     n = 0; /* Table rows written */
     for (i = 0; i < lines; i++) {
       j = instr(1, (vstring)(pntrTmp[i]), "&&&");
@@ -5482,7 +5482,7 @@ flag writeBibliography(vstring bibFile,
 
 
   /* Discard the input file up to the special "<!-- #END# -->" comment */
-  if (noFileCheck == 0) {
+  if (fileCheck) {
     while (1) {
       if (!linput(list1_fp, NULL, &str1)) {
         print2(
@@ -5501,7 +5501,7 @@ flag writeBibliography(vstring bibFile,
     if (errFlag) goto BIB_ERROR;
   }
 
-  if (noFileCheck == 0 && errorsOnly == 0) {
+  if (fileCheck && errorsOnly == 0) {
     /* Transfer the rest of the input file */
     while (1) {
       if (!linput(list1_fp, NULL, &str1)) {
@@ -5525,7 +5525,7 @@ flag writeBibliography(vstring bibFile,
 
 
  BIB_ERROR:
-  if (noFileCheck == 0) {
+  if (fileCheck) {
     fclose(list1_fp);
     if (errorsOnly == 0) {
       fclose(list2_fp);

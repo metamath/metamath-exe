@@ -48,7 +48,7 @@ void eraseTexDefs(void); /* Undo readTexDefs() */
    no errors, 0 if no errors or warnings */
 flag readTexDefs(
   flag errorsOnly,  /* 1 = supprees non-error messages */
-  flag noGifCheck   /* 1 = don't check for missing GIFs */);
+  flag gifCheck   /* 1 = check for missing GIFs */);
 
 extern flag g_texDefsRead;
 struct texDef_struct {  /* for "erase" */
@@ -88,7 +88,7 @@ void printTexHeader(flag texHeaderFlag);
 flag printTexComment(vstring commentPtr,    /* Sends result to g_texFilePtr */
     flag htmlCenterFlag, /* 1 = htmlCenterFlag */
     long actionBits, /* see indicators below */
-    flag noFileCheck /* 1 = noFileCheck */);
+    flag fileCheck /* 1 = noFileCheck */);
 /* Indicators for actionBits */
 #define ERRORS_ONLY 1
 #define PROCESS_SYMBOLS 2
@@ -167,7 +167,7 @@ vstring getTexOrHtmlHypAndAssertion(long statemNum);
 flag writeBibliography(vstring bibFile,
     vstring labelMatch, /* Normally "*" except by verifyMarkup() */
     flag errorsOnly,  /* 1 = no output, just warning msgs if any */
-    flag noFileCheck); /* 1 = ignore missing external files (gifs, bib, etc.) */
+    flag fileCheck); /* 1 = check missing external files (gifs, bib, etc.) */
 
 /* Globals to hold mathbox information.  They should be re-initialized
    by the ERASE command (eraseSource()).  g_mathboxStmt = 0 indicates
