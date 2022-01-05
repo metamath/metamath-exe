@@ -1,0 +1,114 @@
+Metamath Memory Management or Suballocation
+===========================================
+
+////
+You can view/edit this text in a convenient way by copy-pasting it to
+https://asciidoclive.com
+////
+
+== Rationale
+
+Basic support of dynamic memory management is found in the C library *stdlib*.
+The metamath executable employs this most often to allocate only greater chunks
+of memory from the system.  The application breaks this further down into
+smaller pieces when suballocating.  Routing memory de-/allocation through your
+own code allows for a semi-automatic construction/destruction phase, where not
+only memory is handled, but extra work like clean-up can be done.
+
+Since Metamath is a single-threaded application, memory allocation requires
+often just temporary memory to execute an operation.  And that is freed again
+on completion of the task.  This favours stack like memory handling.  So memory
+is often organized in stacks, each reserved for a dedicated type of
+information.  Keeping all entries of the same type in a single location further
+simplifies running construction/destruction code, in particular when they are
+chained.  Lots of these stacks independently growing or shrinking are
+kept in Metamath.
+
+Memory chunks requested from the system still containing free memory are
+maintained in memory pools, of which two exist:
+
+- *free pool* completely unused chunks ready for immediate usage;
+- *used pool* chunks containing a stack with headroom available for growth.
+
+Handling all of this outside of stdlib's system memory management may have the
+extra advantage of being faster, since
+
+- a synchronization with other threads is avoided;
+- fragmentation of memory is no issue.
+
+The basic idea here is to avoid reallocations (which entail an often costly
+copy process) and system memory fragmentation due to frequent parallel
+allocate/free occurrences as much as possible.
+
+If memory demand is high, and memory requests both from the system and the
+*free pool* are not served any more, a secondary allocation strategy scans the
+*used pool* to find one with sufficient headroom.  That chunk is then split up
+into one piece containing the stack with reduced headroom, and one with free
+memory servicing the request.  This splitting process is a suballocation method
+in parallel to stack like consumption, where headroom is used for growth.
+
+== Variables
+
+[source,C]
+-------
+long db9;
+-------
+
+Semantics: If not 0, a very verbose logging of all suballocation actions is
+enabled.
+
+Default on start-up: 0
+
+This variable with the semantics of the boolean _flag_ type reflects whether
+logging of suballocation is fully enabled.
+
+== Debugging
+
+Even though the Metamath memory allocation is a semi-automated process, it
+still needs some attention on the coder's side.  As always, this is subject to
+errors.  In order to supervise/debug suballocation, logging all primitive
+operations is a built-in feature in Metamath.
+
+You can enable/disable suballocation logging on the Metamath console with
+
+[source,bash]
+-------
+SET DEBUG FLAG 9
+# run commands here
+SET DEBUG OFF
+# all debugging (not restricted to suballocation) is turned off again
+-------
+
+Based on the operations run in debug mode, be prepared to see a lot of tracking
+information here.  This is really meant to find subtle bugs rather than give a
+general overview over memory usage.
+
+--------
+MM> set debug flag 9
+Notice:  The DEBUG mode is intended for development use only.
+The printout will not be meaningful to the user.
+k0: pool 456 stat 456
+k0e: pool 456 stat 456
+k1: pool 456 stat 456
+k0: pool 456 stat 456
+k0e: pool 456 stat 456
+k1: pool 456 stat 456
+k0: pool 456 stat 456
+k0e: pool 456 stat 456
+k1: pool 456 stat 456
+k0: pool 456 stat 456
+k0e: pool 456 stat 456
+k1: pool 456 stat 456
+k0: pool 456 stat 456
+c0: pool 456 stat 456
+d: pool 448 stat 448
+... and more
+
+--------
+
+== Links
+
+- General concepts of
+https://www.memorymanagement.org/mmref/begin.html[Memory Management^]
+- https://en.cppreference.com/w/c/memory[Reference^] of Dynamic Memory
+Management support in the C library

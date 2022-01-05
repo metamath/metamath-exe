@@ -1,0 +1,58 @@
+Metamath Documentation
+======================
+
+////
+You can view/edit this text in a convenient way by copy-pasting it to
+https://asciidoclive.com
+////
+
+A couple of https://github.com/metamath/metamath-exe/issues/17/[TODOs] in
+Metamath software development require a better documentation.  This is about
+how to achieve this goal.
+
+The present documentation is based on a few README written in ASCII encoded
+Text.  We can improve on that.  This document is one such suggestion.
+
+It is based on https://asciidoc-py.github.io/index.html/[AsciiDoc^] that allows
+you to transform a properly formatted ASCII based text document into HTML or
+PDF along with a reader friendly design.  To this end the original text uses
+embedded markup to indicate format information for proper display in the
+destination.  The markup is silent enough to usually let the text be still
+readable in raw format.  But you are not limited to that: A quick copy and
+paste to https://asciidoclive.com/[AsciiDocLIVE^] (this text included) will
+expose the text fully formatted.
+
+All supported format options are listed
+https://powerman.name/doc/asciidoc/[here^], along with markup encoding
+examples.  It is almost the same as used in documentation pages on GitHub, so
+chances are you are already familiar with the markup language.
+
+=== Draft
+
+The examples given in the docs folder are in draft state.  Based on these
+drafts the community can decide whether to follow this suggestion, or employ
+something different.
+
+=== What you need
+
+First of all: no money.  You can develop and deploy the whole documentation
+just based on Open Source software.  And it is cross-platform, i.e. running on
+Unix, Windows, Mac.
+
+For writing documentation in raw format you need a basic text editor.  Some
+(like https://kate-editor.org/en/[kate]) already support the AsciiDoc markup
+natively.  But displaying or editing documentation in formatted style can be
+done https://asciidoclive.com/[online^], and for this you should have a browser
+available.
+
+For translation into various output formats like HTML or PDF you need the
+https://asciidoc-py.github.io/index.html/[AsciiDoc^] software.  This seems to
+be a python script, so it is executable wherever you can run
+https://www.python.org/[Python].
+
+=== Example
+
+In the docs folder you will find a documentation example
+MemorySuballocation.adoc that mimicks a somewhat realistic documentation of a
+specific topic in Metamath software.  Feel free to experiment with it to verify
+your specific needs.
