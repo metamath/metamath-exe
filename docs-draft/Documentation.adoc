@@ -3,7 +3,7 @@ Metamath Documentation
 
 ////
 You can view/edit this text in a convenient way by copy-pasting it to
-https://asciidoclive.com
+https://asciidoclive.com.  Or directly on GitHub.
 ////
 
 A couple of https://github.com/metamath/metamath-exe/issues/17/[TODOs] in
@@ -15,12 +15,13 @@ Text.  We can improve on that.  This document is one such suggestion.
 
 It is based on https://asciidoc-py.github.io/index.html/[AsciiDoc^] that allows
 you to transform a properly formatted ASCII based text document into HTML or
-PDF along with a reader friendly design.  To this end the original text uses
+PDF in a reader friendly design.  To this end the original text uses
 embedded markup to indicate format information for proper display in the
 destination.  The markup is silent enough to usually let the text be still
 readable in raw format.  But you are not limited to that: A quick copy and
 paste to https://asciidoclive.com/[AsciiDocLIVE^] (this text included) will
-expose the text fully formatted.
+expose the text fully formatted.  GitHub also supports display of AsciiDoc
+formatted documentation.
 
 All supported format options are listed
 https://powerman.name/doc/asciidoc/[here^], along with markup encoding
@@ -56,3 +57,4 @@ In the docs folder you will find a documentation example
 MemorySuballocation.adoc that mimicks a somewhat realistic documentation of a
 specific topic in Metamath software.  Feel free to experiment with it to verify
 your specific needs.
+362427
