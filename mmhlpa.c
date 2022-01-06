@@ -157,7 +157,8 @@ H("Note: The SUBSTITUTE command may be abbreviated by S.");
 
 g_printHelp = !strcmp(saveHelpCmd, "HELP SWAP");
 H("This command swaps the parts of each line before and after a");
-H("specified string.");
+H("specified string <middle>.");
+H("Syntax:  SWAP <iofile> <middle>");
 
 
 g_printHelp = !strcmp(saveHelpCmd, "HELP INSERT");
