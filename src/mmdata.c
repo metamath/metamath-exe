@@ -56,15 +56,15 @@ struct nullNmbrStruct g_NmbrNull = {-1, sizeof(long), sizeof(long), -1};
 /* Null ptrString */
 struct nullPntrStruct g_PntrNull = {-1, sizeof(long), sizeof(long), NULL};
 
-nmbrString *nmbrTempAlloc(long size);
+temp_nmbrString *nmbrTempAlloc(long size);
         /* nmbrString memory allocation/deallocation */
-void nmbrCpy(nmbrString *sout, nmbrString *sin);
-void nmbrNCpy(nmbrString *s, nmbrString *t, long n);
+void nmbrCpy(nmbrString *sout, const nmbrString *sin);
+void nmbrNCpy(nmbrString *s, const nmbrString *t, long n);
 
-pntrString *pntrTempAlloc(long size);
+temp_pntrString *pntrTempAlloc(long size);
         /* pntrString memory allocation/deallocation */
-void pntrCpy(pntrString *sout, pntrString *sin);
-void pntrNCpy(pntrString *s, pntrString *t, long n);
+void pntrCpy(pntrString *sout, const pntrString *sin);
+void pntrNCpy(pntrString *s, const pntrString *t, long n);
 
 vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate */
 
@@ -433,8 +433,7 @@ long getFreeSpace(long max)
 }
 
 /* Fatal memory allocation error */
-void outOfMemory(vstring msg)
-{
+void outOfMemory(const char *msg) {
   vstring tmpStr = "";
   print2("*** FATAL ERROR:  Out of memory.\n");
   print2("Internal identifier (for technical support):  %s\n",msg);
@@ -558,7 +557,7 @@ void bug(int bugNum)
 
 /* This function returns a 1 if any entry in a comma-separated list
    matches using the matches() function. */
-flag matchesList(vstring testString, vstring pattern, char wildCard,
+flag matchesList(const char *testString, const char *pattern, char wildCard,
     char oneCharWildCard) {
   long entries, i;
   flag matchVal = 0;
@@ -588,7 +587,7 @@ flag matchesList(vstring testString, vstring pattern, char wildCard,
    the second argument.  The second argument may have wildcard characters.
    wildCard matches 0 or more characters; oneCharWildCard matches any
    single character. */
-flag matches(vstring testString, vstring pattern, char wildCard,
+flag matches(const char *testString, const char *pattern, char wildCard,
     char oneCharWildCard) {
   long i, ppos, pctr, tpos, s1, s2, s3;
   vstring tmpStr = "";
@@ -730,10 +729,10 @@ long g_nmbrTempAllocStackTop = 0;     /* Top of stack for nmbrTempAlloc functon 
 long g_nmbrStartTempAllocStack = 0;   /* Where to start freeing temporary allocation
                                     when nmbrLet() is called (normally 0, except in
                                     special nested vstring functions) */
-nmbrString *nmbrTempAllocStack[M_MAX_ALLOC_STACK];
+temp_nmbrString *nmbrTempAllocStack[M_MAX_ALLOC_STACK];
 
 
-nmbrString *nmbrTempAlloc(long size)
+temp_nmbrString *nmbrTempAlloc(long size)
                                 /* nmbrString memory allocation/deallocation */
 {
   /* When "size" is >0, "size" instances of nmbrString are allocated. */
@@ -788,7 +787,7 @@ void nmbrMakeTempAlloc(nmbrString *s)
 /* to work properly.  If a nmbrString has never been assigned before, */
 /* it is the user's responsibility to initialize it to NULL_NMBRSTRING (the */
 /* null string). */
-void nmbrLet(nmbrString **target,nmbrString *source) {
+void nmbrLet(nmbrString **target, const nmbrString *source) {
   long targetLength,sourceLength;
   long targetAllocLen;
   long poolDiff;
@@ -896,17 +895,14 @@ void nmbrLet(nmbrString **target,nmbrString *source) {
 
 
 
-nmbrString *nmbrCat(nmbrString *string1,...) /* String concatenation */
+temp_nmbrString *nmbrCat(const nmbrString *string1,...) /* String concatenation */
 #define M_MAX_CAT_ARGS 30
 {
   va_list ap;   /* Declare list incrementer */
-  nmbrString *arg[M_MAX_CAT_ARGS];        /* Array to store arguments */
+  const nmbrString *arg[M_MAX_CAT_ARGS];        /* Array to store arguments */
   long argLength[M_MAX_CAT_ARGS];       /* Array to store argument lengths */
-  int numArgs=1;        /* Define "last argument" */
-  int i;
-  long j;
-  nmbrString *ptr;
-  arg[0]=string1;       /* First argument */
+  int numArgs = 1;        /* Define "last argument" */
+  arg[0] = string1;       /* First argument */
 
   va_start(ap,string1); /* Begin the session */
   while ((arg[numArgs++]=va_arg(ap,nmbrString *)))
@@ -923,39 +919,39 @@ nmbrString *nmbrCat(nmbrString *string1,...) /* String concatenation */
   numArgs--;    /* The last argument (0) is not a string */
 
   /* Find out the total string length needed */
-  j = 0;
-  for (i = 0; i < numArgs; i++) {
+  long j = 0;
+  for (int i = 0; i < numArgs; i++) {
     argLength[i]=nmbrLen(arg[i]);
-    j=j+argLength[i];
+    j += argLength[i];
   }
   /* Allocate the memory for it */
-  ptr=nmbrTempAlloc(j+1);
+  temp_nmbrString *ptr = nmbrTempAlloc(j+1);
   /* Move the strings into the newly allocated area */
   j = 0;
-  for (i = 0; i < numArgs; i++) {
-    nmbrCpy(ptr+j,arg[i]);
-    j=j+argLength[i];
+  for (int i = 0; i < numArgs; i++) {
+    nmbrCpy(ptr + j, arg[i]);
+    j += argLength[i];
   }
-  return (ptr);
+  return ptr;
 
 }
 
 
 
 /* Find out the length of a nmbrString */
-long nmbrLen(nmbrString *s)
+long nmbrLen(const nmbrString *s)
 {
   /* Assume it's been allocated with poolMalloc. */
-  return (((long)(((long *)s)[-1] - (long)(sizeof(nmbrString))))
+  return (((long)(((const long *)s)[-1] - (long)(sizeof(nmbrString))))
               / (long)(sizeof(nmbrString)));
 }
 
 
 /* Find out the allocated length of a nmbrString */
-long nmbrAllocLen(nmbrString *s)
+long nmbrAllocLen(const nmbrString *s)
 {
   /* Assume it's been allocated with poolMalloc. */
-  return (((long)(((long *)s)[-2] - (long)(sizeof(nmbrString))))
+  return (((long)(((const long *)s)[-2] - (long)(sizeof(nmbrString))))
               / (long)(sizeof(nmbrString)));
 }
 
@@ -980,8 +976,7 @@ void nmbrZapLen(nmbrString *s, long length) {
 
 /* Copy a string to another (pre-allocated) string */
 /* Dangerous for general purpose use */
-void nmbrCpy(nmbrString *s, nmbrString *t)
-{
+void nmbrCpy(nmbrString *s, const nmbrString *t) {
   long i;
   i = 0;
   while (t[i] != -1) { /* End of string -- nmbrRight depends on it!! */
@@ -995,8 +990,7 @@ void nmbrCpy(nmbrString *s, nmbrString *t)
 /* Copy a string to another (pre-allocated) string */
 /* Like strncpy, only the 1st n characters are copied. */
 /* Dangerous for general purpose use */
-void nmbrNCpy(nmbrString *s, nmbrString *t, long n)
-{
+void nmbrNCpy(nmbrString *s, const nmbrString *t, long n) {
   long i;
   i = 0;
   while (t[i] != -1) { /* End of string -- nmbrSeg, nmbrMid depend on it!! */
@@ -1013,8 +1007,7 @@ void nmbrNCpy(nmbrString *s, nmbrString *t, long n)
    and 0 otherwise. */
 /* Only the token is compared.  The whiteSpace string is
    ignored. */
-int nmbrEq(nmbrString *s, nmbrString *t)
-{
+flag nmbrEq(const nmbrString *s, const nmbrString *t) {
   long i;
   if (nmbrLen(s) != nmbrLen(t)) return 0; /* Speedup */
   for (i = 0; s[i] == t[i]; i++)
@@ -1025,65 +1018,54 @@ int nmbrEq(nmbrString *s, nmbrString *t)
 
 
 /* Extract sin from character position start to stop into sout */
-nmbrString *nmbrSeg(nmbrString *sin, long start, long stop)
-{
-  nmbrString *sout;
+temp_nmbrString *nmbrSeg(const nmbrString *sin, long start, long stop) {
   long length;
   if (start < 1) start = 1;
   if (stop < 1) stop = 0;
   length=stop - start + 1;
   if (length < 0) length = 0;
-  sout = nmbrTempAlloc(length + 1);
+  temp_nmbrString *sout = nmbrTempAlloc(length + 1);
   nmbrNCpy(sout, sin + start - 1, length);
   sout[length] = *NULL_NMBRSTRING;
-  return (sout);
+  return sout;
 }
 
 /* Extract sin from character position start for length len */
-nmbrString *nmbrMid(nmbrString *sin, long start, long length)
-{
-  nmbrString *sout;
+temp_nmbrString *nmbrMid(const nmbrString *sin, long start, long length) {
   if (start < 1) start = 1;
   if (length < 0) length = 0;
-  sout = nmbrTempAlloc(length + 1);
+  temp_nmbrString *sout = nmbrTempAlloc(length + 1);
   nmbrNCpy(sout, sin + start - 1, length);
   sout[length] = *NULL_NMBRSTRING;
-  return (sout);
+  return sout;
 }
 
 /* Extract leftmost n characters */
-nmbrString *nmbrLeft(nmbrString *sin,long n)
-{
-  nmbrString *sout;
+temp_nmbrString *nmbrLeft(const nmbrString *sin, long n) {
   if (n < 0) n = 0;
-  sout=nmbrTempAlloc(n + 1);
+  temp_nmbrString *sout = nmbrTempAlloc(n + 1);
   nmbrNCpy(sout, sin, n);
   sout[n] = *NULL_NMBRSTRING;
-  return (sout);
+  return sout;
 }
 
 /* Extract after character n */
-nmbrString *nmbrRight(nmbrString *sin, long n)
-{
+temp_nmbrString *nmbrRight(const nmbrString *sin, long n) {
   /*??? We could just return &sin[n-1], but this is safer for debugging. */
-  nmbrString *sout;
-  long i;
   if (n < 1) n = 1;
-  i = nmbrLen(sin);
+  long i = nmbrLen(sin);
   if (n > i) return (NULL_NMBRSTRING);
-  sout = nmbrTempAlloc(i - n + 2);
+  temp_nmbrString *sout = nmbrTempAlloc(i - n + 2);
   nmbrCpy(sout, &sin[n - 1]);
   return sout;
 }
 
 
 /* Allocate and return an "empty" string n "characters" long */
-nmbrString *nmbrSpace(long n)
-{
-  nmbrString *sout;
+temp_nmbrString *nmbrSpace(long n) {
   long j = 0;
   if (n < 0) bug(1327);
-  sout = nmbrTempAlloc(n + 1);
+  temp_nmbrString *sout = nmbrTempAlloc(n + 1);
   while (j < n) {
     /* Initialize all fields */
     sout[j] = 0;
@@ -1094,8 +1076,8 @@ nmbrString *nmbrSpace(long n)
 }
 
 /* Search for string2 in string1 starting at start_position */
-long nmbrInstr(long start_position, nmbrString *string1,
-  nmbrString *string2)
+long nmbrInstr(long start_position, const nmbrString *string1,
+  const nmbrString *string2)
 {
    long ls1, ls2, i, j;
    if (start_position < 1) start_position = 1;
@@ -1108,8 +1090,7 @@ long nmbrInstr(long start_position, nmbrString *string1,
      }
      if (j == ls2) return (i+1);
    }
-   return (0);
-
+   return 0;
 }
 
 /* Search for string2 in string 1 in reverse starting at start_position */
@@ -1117,8 +1098,8 @@ long nmbrInstr(long start_position, nmbrString *string1,
 /* Warning:  This has 'let' inside of it and is not safe for use inside
    of 'let' statements.  (To make it safe, it must be rewritten to expand
    the 'mid' and remove the 'let'.) */
-long nmbrRevInstr(long start_position, nmbrString *string1,
-    nmbrString *string2)
+long nmbrRevInstr(long start_position, const nmbrString *string1,
+    const nmbrString *string2)
 {
    long ls1, ls2;
    nmbrString *tmp = NULL_NMBRSTRING;
@@ -1137,8 +1118,7 @@ long nmbrRevInstr(long start_position, nmbrString *string1,
 
 
 /* Converts nmbrString to a vstring with one space between tokens */
-vstring nmbrCvtMToVString(nmbrString *s)
-{
+temp_vstring nmbrCvtMToVString(const nmbrString *s) {
   long i, j, outputLen, mstrLen;
   vstring tmpStr = "";
   vstring ptr;
@@ -1171,7 +1151,7 @@ vstring nmbrCvtMToVString(nmbrString *s)
 
 
 /* Converts proof to a vstring with one space between tokens */
-vstring nmbrCvtRToVString(nmbrString *proof,
+temp_vstring nmbrCvtRToVString(const nmbrString *proof,
     flag explicitTargets, /* 1 = "target=source" for /EXPLICIT proof format */
     long statemNum) /* used only if explicitTargets=1 */
 {
@@ -1333,7 +1313,7 @@ vstring nmbrCvtRToVString(nmbrString *proof,
 /* This function returns a nmbrString of length of reason with
    step numbers assigned to tokens which are steps, and 0 otherwise.
    The returned string is allocated; THE CALLER MUST DEALLOCATE IT. */
-nmbrString *nmbrGetProofStepNumbs(nmbrString *reason) {
+nmbrString *nmbrGetProofStepNumbs(const nmbrString *reason) {
   nmbrString *stepNumbs = NULL_NMBRSTRING;
   long rlen, start, end, i, step;
 
@@ -1376,8 +1356,7 @@ nmbrString *nmbrGetProofStepNumbs(nmbrString *reason) {
 
 /* Converts any nmbrString to an ASCII string of numbers
    -- used for debugging only. */
-vstring nmbrCvtAnyToVString(nmbrString *s)
-{
+temp_vstring nmbrCvtAnyToVString(const nmbrString *s) {
   long i;
   vstring tmpStr = "";
 
@@ -1396,12 +1375,10 @@ vstring nmbrCvtAnyToVString(nmbrString *s)
 
 
 /* Extract variables from a math token string */
-nmbrString *nmbrExtractVars(nmbrString *m)
-{
+temp_nmbrString *nmbrExtractVars(const nmbrString *m) {
   long i, j, length;
-  nmbrString *v;
   length = nmbrLen(m);
-  v=nmbrTempAlloc(length + 1); /* Pre-allocate maximum possible space */
+  temp_nmbrString *v = nmbrTempAlloc(length + 1); /* Pre-allocate maximum possible space */
   v[0] = *NULL_NMBRSTRING;
   j = 0; /* Length of output string */
   for (i = 0; i < length; i++) {
@@ -1426,41 +1403,36 @@ nmbrString *nmbrExtractVars(nmbrString *m)
    if it is.  Like nmbrInstr(), but faster.  Warning:  start must NOT
    be greater than length, otherwise results are unpredictable!!  This
    is not checked in order to speed up search. */
-long nmbrElementIn(long start, nmbrString *g, long element)
-{
+long nmbrElementIn(long start, const nmbrString *g, long element) {
   long i = start - 1;
   while (g[i] != -1) { /* End of string */
-    if (g[i] == element) return(i + 1);
+    if (g[i] == element) return i + 1;
     i++;
   }
-  return(0);
+  return 0;
 }
 
 
 /* Add a single number to end of a nmbrString - faster than nmbrCat */
-nmbrString *nmbrAddElement(nmbrString *g, long element)
-{
+temp_nmbrString *nmbrAddElement(const nmbrString *g, long element) {
   long length;
-  nmbrString *v;
   length = nmbrLen(g);
-  v = nmbrTempAlloc(length + 2); /* Allow for end of string */
+  temp_nmbrString *v = nmbrTempAlloc(length + 2); /* Allow for end of string */
   nmbrCpy(v, g);
   v[length] = element;
   v[length + 1] = *NULL_NMBRSTRING; /* End of string */
 /*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("bbg2: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
-  return(v);
+  return v;
 }
 
 
 /* Get the set union of two math token strings (presumably
    variable lists) */
-nmbrString *nmbrUnion(nmbrString *m1, nmbrString *m2)
-{
+temp_nmbrString *nmbrUnion(const nmbrString *m1, const nmbrString *m2) {
   long i,j,len1,len2;
-  nmbrString *v;
   len1 = nmbrLen(m1);
   len2 = nmbrLen(m2);
-  v=nmbrTempAlloc(len1+len2+1); /* Pre-allocate maximum possible space */
+  temp_nmbrString *v = nmbrTempAlloc(len1+len2+1); /* Pre-allocate maximum possible space */
   nmbrCpy(v,m1);
   nmbrZapLen(v, len1);
   j = 0;
@@ -1475,18 +1447,17 @@ nmbrString *nmbrUnion(nmbrString *m1, nmbrString *m2)
   v[len1 + j] = *NULL_NMBRSTRING;
   nmbrZapLen(v, len1 + j);
 /*E*/db2=db2-(len1+len2-nmbrLen(v))*(long)(sizeof(nmbrString));
-  return(v);
+  return v;
 }
 
 
 /* Get the set intersection of two math token strings (presumably
    variable lists) */
-nmbrString *nmbrIntersection(nmbrString *m1,nmbrString *m2)
+temp_nmbrString *nmbrIntersection(const nmbrString *m1, const nmbrString *m2)
 {
   long i,j,len2;
-  nmbrString *v;
   len2 = nmbrLen(m2);
-  v=nmbrTempAlloc(len2+1); /* Pre-allocate maximum possible space */
+  temp_nmbrString *v = nmbrTempAlloc(len2+1); /* Pre-allocate maximum possible space */
   j = 0;
   for (i = 0; i < len2; i++) {
     if (nmbrElementIn(1,m1,m2[i])) {
@@ -1504,12 +1475,11 @@ nmbrString *nmbrIntersection(nmbrString *m1,nmbrString *m2)
 
 /* Get the set difference m1-m2 of two math token strings (presumably
    variable lists) */
-nmbrString *nmbrSetMinus(nmbrString *m1,nmbrString *m2)
+temp_nmbrString *nmbrSetMinus(const nmbrString *m1, const nmbrString *m2)
 {
   long i,j,len1;
-  nmbrString *v;
   len1 = nmbrLen(m1);
-  v=nmbrTempAlloc(len1+1); /* Pre-allocate maximum possible space */
+  temp_nmbrString *v = nmbrTempAlloc(len1+1); /* Pre-allocate maximum possible space */
   j = 0;
   for (i = 0; i < len1; i++) {
     if (!nmbrElementIn(1,m2,m1[i])) {
@@ -1529,7 +1499,7 @@ nmbrString *nmbrSetMinus(nmbrString *m1,nmbrString *m2)
    ends at step */
 /* 22-Aug-2012 nm - this doesn't seem to be used outside of mmdata.c -
    should we replace it with subproofLen() in mmpfas.c? */
-long nmbrGetSubproofLen(nmbrString *proof, long step)
+long nmbrGetSubproofLen(const nmbrString *proof, long step)
 {
   long stmt, hyps, pos, i;
   char type;
@@ -1552,8 +1522,7 @@ long nmbrGetSubproofLen(nmbrString *proof, long step)
 
 /* This function returns a packed or "squished" proof, putting in local label
    references to previous subproofs. */
-nmbrString *nmbrSquishProof(nmbrString *proof)
-{
+temp_nmbrString *nmbrSquishProof(const nmbrString *proof) {
   nmbrString *newProof = NULL_NMBRSTRING;
   nmbrString *dummyProof = NULL_NMBRSTRING;
   nmbrString *subProof = NULL_NMBRSTRING;
@@ -1605,8 +1574,7 @@ nmbrString *nmbrSquishProof(nmbrString *proof)
 
 /* This function unpacks a "squished" proof, replacing local label references
    to previous subproofs by the subproofs themselves. */
-nmbrString *nmbrUnsquishProof(nmbrString *proof)
-{
+temp_nmbrString *nmbrUnsquishProof(const nmbrString *proof) {
   nmbrString *newProof = NULL_NMBRSTRING;
   nmbrString *subProof = NULL_NMBRSTRING;
   long step, plen, subPrfLen, stmt;
@@ -1636,7 +1604,7 @@ nmbrString *nmbrUnsquishProof(nmbrString *proof)
    startingLevel = 0. */
 /* ???Optimization:  remove nmbrString calls and use static variables
    to communicate to recursive calls */
-nmbrString *nmbrGetIndentation(nmbrString *proof, long startingLevel) {
+temp_nmbrString *nmbrGetIndentation(const nmbrString *proof, long startingLevel) {
   long plen, stmt, pos, splen, hyps, i, j;
   char type;
   nmbrString *indentationLevel = NULL_NMBRSTRING;
@@ -1685,7 +1653,7 @@ nmbrString *nmbrGetIndentation(nmbrString *proof, long startingLevel) {
    function calls itself recursively. */
 /* ???Optimization:  remove nmbrString calls and use static variables
    to communicate to recursive calls */
-nmbrString *nmbrGetEssential(nmbrString *proof) {
+nmbrString *nmbrGetEssential(const nmbrString *proof) {
   long plen, stmt, pos, splen, hyps, i, j;
   char type;
   nmbrString *essentialFlags = NULL_NMBRSTRING;
@@ -1744,7 +1712,7 @@ nmbrString *nmbrGetEssential(nmbrString *proof) {
    statemNum is the statement being proved. */
 /* ???Optimization:  remove nmbrString calls and use static variables
    to communicate to recursive calls */
-nmbrString *nmbrGetTargetHyp(nmbrString *proof, long statemNum) {
+temp_nmbrString *nmbrGetTargetHyp(const nmbrString *proof, long statemNum) {
   long plen, stmt, pos, splen, hyps, i, j;
   char type;
   nmbrString *targetHyp = NULL_NMBRSTRING;
@@ -1809,9 +1777,8 @@ nmbrString *nmbrGetTargetHyp(nmbrString *proof, long statemNum) {
    implicit in the compressed proof. */
 /* The returned ASCII string isn't surrounded by spaces e.g. it
    could be "( a1i a1d ) ACBCADEF". */
-vstring compressProof(nmbrString *proof, long statemNum,
-    flag oldCompressionAlgorithm)
-{
+temp_vstring compressProof(const nmbrString *proof, long statemNum,
+    flag oldCompressionAlgorithm) {
   vstring output = "";
   long outputLen;
   long outputAllocated;
@@ -2238,7 +2205,7 @@ vstring compressProof(nmbrString *proof, long statemNum,
 /* Compress the input proof, create the ASCII compressed proof,
    and return its size in bytes. */
 /* TODO: call this in MINIMIZE_WITH in metamath.c */
-long compressedProofSize(nmbrString *proof, long statemNum) {
+long compressedProofSize(const nmbrString *proof, long statemNum) {
   vstring tmpStr = "";
   nmbrString *tmpNmbr = NULL_NMBRSTRING;
   long bytes;
@@ -2267,9 +2234,8 @@ long g_pntrStartTempAllocStack = 0;   /* Where to start freeing temporary alloca
 pntrString *pntrTempAllocStack[M_MAX_ALLOC_STACK];
 
 
-pntrString *pntrTempAlloc(long size)
+temp_pntrString *pntrTempAlloc(long size) {
                                 /* pntrString memory allocation/deallocation */
-{
   /* When "size" is >0, "size" instances of pntrString are allocated. */
   /* When "size" is 0, all memory previously allocated with this */
   /* function is deallocated, down to g_pntrStartTempAllocStack. */
@@ -2319,7 +2285,7 @@ void pntrMakeTempAlloc(pntrString *s) {
 /* to work properly.  If a pntrString has never been assigned before, */
 /* it is the user's responsibility to initialize it to NULL_PNTRSTRING (the */
 /* null string). */
-void pntrLet(pntrString **target,pntrString *source) {
+void pntrLet(pntrString **target, const pntrString *source) {
   long targetLength,sourceLength;
   long targetAllocLen;
   long poolDiff;
@@ -2430,15 +2396,14 @@ void pntrLet(pntrString **target,pntrString *source) {
 
 
 /* String concatenation */
-pntrString *pntrCat(pntrString *string1,...) {
+temp_pntrString *pntrCat(const pntrString *string1,...) {
   va_list ap;   /* Declare list incrementer */
-  pntrString *arg[M_MAX_CAT_ARGS];        /* Array to store arguments */
+  const pntrString *arg[M_MAX_CAT_ARGS];        /* Array to store arguments */
   long argLength[M_MAX_CAT_ARGS];       /* Array to store argument lengths */
   int numArgs=1;        /* Define "last argument" */
   int i;
   long j;
-  pntrString *ptr;
-  arg[0]=string1;       /* First argument */
+  arg[0] = string1;       /* First argument */
 
   va_start(ap,string1); /* Begin the session */
   while ((arg[numArgs++]=va_arg(ap,pntrString *)))
@@ -2461,31 +2426,29 @@ pntrString *pntrCat(pntrString *string1,...) {
     j=j+argLength[i];
   }
   /* Allocate the memory for it */
-  ptr=pntrTempAlloc(j+1);
+  temp_pntrString *ptr = pntrTempAlloc(j+1);
   /* Move the strings into the newly allocated area */
   j = 0;
   for (i = 0; i < numArgs; i++) {
-    pntrCpy(ptr+j,arg[i]);
+    pntrCpy(ptr + j, arg[i]);
     j=j+argLength[i];
   }
-  return (ptr);
+  return ptr;
 
 }
 
 
 
 /* Find out the length of a pntrString */
-long pntrLen(pntrString *s)
-{
+long pntrLen(const pntrString *s) {
   /* Assume it's been allocated with poolMalloc. */
-  return ((((long *)s)[-1] - (long)(sizeof(pntrString)))
+  return ((((const long *)s)[-1] - (long)(sizeof(pntrString)))
       / (long)(sizeof(pntrString)));
 }
 
 
 /* Find out the allocated length of a pntrString */
-long pntrAllocLen(pntrString *s)
-{
+long pntrAllocLen(const pntrString *s) {
   return ((((long *)s)[-2] - (long)(sizeof(pntrString)))
     / (long)(sizeof(pntrString)));
 }
@@ -2511,8 +2474,7 @@ void pntrZapLen(pntrString *s, long length) {
 
 /* Copy a string to another (pre-allocated) string */
 /* Dangerous for general purpose use */
-void pntrCpy(pntrString *s, pntrString *t)
-{
+void pntrCpy(pntrString *s, const pntrString *t) {
   long i;
   i = 0;
   while (t[i] != NULL) { /* End of string -- pntrRight depends on it!! */
@@ -2526,8 +2488,7 @@ void pntrCpy(pntrString *s, pntrString *t)
 /* Copy a string to another (pre-allocated) string */
 /* Like strncpy, only the 1st n characters are copied. */
 /* Dangerous for general purpose use */
-void pntrNCpy(pntrString *s,pntrString *t,long n)
-{
+void pntrNCpy(pntrString *s, const pntrString *t, long n) {
   long i;
   i = 0;
   while (t[i] != NULL) { /* End of string -- pntrSeg, pntrMid depend on it!! */
@@ -2544,8 +2505,7 @@ void pntrNCpy(pntrString *s,pntrString *t,long n)
    and 0 otherwise. */
 /* Only the pointers are compared.  If pointers are different,
    0 will be returned, even if the things pointed to have same contents. */
-int pntrEq(pntrString *s,pntrString *t)
-{
+flag pntrEq(const pntrString *s, const pntrString *t) {
   long i;
   for (i = 0; s[i] == t[i]; i++)
     if (s[i] == NULL) /* End of string */
@@ -2555,112 +2515,98 @@ int pntrEq(pntrString *s,pntrString *t)
 
 
 /* Extract sin from character position start to stop into sout */
-pntrString *pntrSeg(pntrString *sin, long start, long stop)
-{
-  pntrString *sout;
+temp_pntrString *pntrSeg(const pntrString *sin, long start, long stop) {
   long length;
-  if (start < 1 ) start = 1;
-  if (stop < 1 ) stop = 0;
+  if (start < 1) start = 1;
+  if (stop < 1) stop = 0;
   length = stop - start + 1;
   if (length < 0) length = 0;
-  sout = pntrTempAlloc(length + 1);
+  temp_pntrString *sout = pntrTempAlloc(length + 1);
   pntrNCpy(sout, sin + start - 1, length);
   sout[length] = *NULL_PNTRSTRING;
-  return (sout);
+  return sout;
 }
 
 /* Extract sin from character position start for length len */
-pntrString *pntrMid(pntrString *sin, long start, long length)
-{
-  pntrString *sout;
+temp_pntrString *pntrMid(const pntrString *sin, long start, long length) {
   if (start < 1) start = 1;
   if (length < 0) length = 0;
-  sout = pntrTempAlloc(length + 1);
+  temp_pntrString *sout = pntrTempAlloc(length + 1);
   pntrNCpy(sout, sin + start-1, length);
   sout[length] = *NULL_PNTRSTRING;
-  return (sout);
+  return sout;
 }
 
 /* Extract leftmost n characters */
-pntrString *pntrLeft(pntrString *sin,long n)
-{
-  pntrString *sout;
+temp_pntrString *pntrLeft(const pntrString *sin, long n) {
   if (n < 0) n = 0;
-  sout=pntrTempAlloc(n+1);
+  temp_pntrString *sout = pntrTempAlloc(n+1);
   pntrNCpy(sout,sin,n);
   sout[n] = *NULL_PNTRSTRING;
-  return (sout);
+  return sout;
 }
 
 /* Extract after character n */
-pntrString *pntrRight(pntrString *sin,long n)
-{
+temp_pntrString *pntrRight(const pntrString *sin, long n) {
   /*??? We could just return &sin[n-1], but this is safer for debugging. */
-  pntrString *sout;
   long i;
   if (n < 1) n = 1;
   i = pntrLen(sin);
   if (n > i) return (NULL_PNTRSTRING);
-  sout = pntrTempAlloc(i - n + 2);
+  temp_pntrString *sout = pntrTempAlloc(i - n + 2);
   pntrCpy(sout, &sin[n-1]);
-  return (sout);
+  return sout;
 }
 
 
 /* Allocate and return an "empty" string n "characters" long */
 /* Each entry in the allocated array points to an empty vString. */
-pntrString *pntrSpace(long n)
-{
-  pntrString *sout;
+temp_pntrString *pntrSpace(long n) {
   long j = 0;
   if (n<0) bug(1360);
-  sout=pntrTempAlloc(n+1);
+  temp_pntrString *sout = pntrTempAlloc(n+1);
   while (j<n) {
     /* Initialize all fields */
     sout[j] = "";
     j++;
   }
   sout[j] = *NULL_PNTRSTRING; /* Flags end of string */
-  return (sout);
+  return sout;
 }
 
 /* Allocate and return an "empty" string n "characters" long
    initialized to nmbrStrings instead of vStrings */
-pntrString *pntrNSpace(long n)
-{
-  pntrString *sout;
+temp_pntrString *pntrNSpace(long n) {
   long j = 0;
   if (n<0) bug(1361);
-  sout=pntrTempAlloc(n+1);
+  temp_pntrString *sout = pntrTempAlloc(n+1);
   while (j<n) {
     /* Initialize all fields */
     sout[j] = NULL_NMBRSTRING;
     j++;
   }
   sout[j] = *NULL_PNTRSTRING; /* Flags end of string */
-  return (sout);
+  return sout;
 }
 
 /* Allocate and return an "empty" string n "characters" long
    initialized to pntrStrings instead of vStrings */
-pntrString *pntrPSpace(long n)
-{
-  pntrString *sout;
+temp_pntrString *pntrPSpace(long n) {
   long j = 0;
   if (n<0) bug(1372);
-  sout=pntrTempAlloc(n+1);
+  temp_pntrString *sout = pntrTempAlloc(n+1);
   while (j<n) {
     /* Initialize all fields */
     sout[j] = NULL_PNTRSTRING;
     j++;
   }
   sout[j] = *NULL_PNTRSTRING; /* Flags end of string */
-  return (sout);
+  return sout;
 }
 
 /* Search for string2 in string1 starting at start_position */
-long pntrInstr(long start_position,pntrString *string1,
-  pntrString *string2)
+long pntrInstr(long start_position, const pntrString *string1,
+  const pntrString *string2)
 {
    long ls1,ls2,i,j;
    if (start_position<1) start_position=1;
@@ -2679,8 +2625,8 @@ long pntrInstr(long start_position,pntrString *string1,
 
 /* Search for string2 in string 1 in reverse starting at start_position */
 /* (Reverse pntrInstr) */
-long pntrRevInstr(long start_position,pntrString *string1,
-    pntrString *string2)
+long pntrRevInstr(long start_position, const pntrString *string1,
+    const pntrString *string2)
 {
    long ls1,ls2;
    pntrString *tmp = NULL_PNTRSTRING;
@@ -2699,31 +2645,27 @@ long pntrRevInstr(long start_position,pntrString *string1,
 
 
 /* Add a single null string element to a pntrString - faster than pntrCat */
-pntrString *pntrAddElement(pntrString *g)
+temp_pntrString *pntrAddElement(const pntrString *g)
 {
-  long length;
-  pntrString *v;
-  length = pntrLen(g);
-  v = pntrTempAlloc(length + 2);
+  long length = pntrLen(g);
+  temp_pntrString *v = pntrTempAlloc(length + 2);
   pntrCpy(v, g);
   v[length] = "";
   v[length + 1] = *NULL_PNTRSTRING;
 /*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("bbg3: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
-  return(v);
+  return v;
 }
 
 
 /* Add a single null pntrString element to a pntrString -faster than pntrCat */
-pntrString *pntrAddGElement(pntrString *g)
+temp_pntrString *pntrAddGElement(const pntrString *g)
 {
-  long length;
-  pntrString *v;
-  length = pntrLen(g);
-  v = pntrTempAlloc(length + 2);
+  long length = pntrLen(g);
+  temp_pntrString *v = pntrTempAlloc(length + 2);
   pntrCpy(v, g);
   v[length] = NULL_PNTRSTRING;
   v[length + 1] = *NULL_PNTRSTRING;
-  return(v);
+  return v;
 }
 
 

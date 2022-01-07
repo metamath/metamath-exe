@@ -34,7 +34,7 @@ extern vstring g_input_fn, g_output_fn;  /* File names */
 
 /* Warning:  never call print2 with string longer than PRINTBUFFERSIZE - 1 */
 /* print2 returns 0 if the user has quit the printout. */
-flag print2(char* fmt,...);
+flag print2(const char* fmt,...);
 extern long g_screenHeight; /* Height of screen */
 extern long g_screenWidth; /* Width of screen */
 #define MAX_LEN 79 /* Default width of screen */
@@ -43,9 +43,10 @@ extern flag g_scrollMode; /* Flag for continuous or prompted scroll */
 extern flag g_quitPrint; /* Flag that user typed 'q' to last scrolling prompt */
 
 /* printLongLine automatically puts a newline \n in the output line. */
-void printLongLine(vstring line, vstring startNextLine, vstring breakMatch);
-vstring cmdInput(FILE *stream,vstring ask);
-vstring cmdInput1(vstring ask);
+void printLongLine(const char *line, const char *startNextLine, const char *breakMatch);
+vstring cmdInput(FILE *stream, const char *ask);
+vstring cmdInput1(const char *ask);
+flag cmdInputIsY(const char *ask);
 
 enum severity {notice_,warning_,error_,fatal_};
 void errorMessage(vstring line, long lineNum, long column, long tokenLength,
@@ -53,16 +54,16 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
 
 /* Opens files with error message; opens output files with
    backup of previous version.   Mode must be "r" or "w". */
-FILE *fSafeOpen(vstring fileName, vstring mode, flag noVersioningFlag);
+FILE *fSafeOpen(const char *fileName, const char *mode, flag noVersioningFlag);
 
 /* Renames a file with backup of previous version.  If non-zero
    is returned, there was an error. */
-int fSafeRename(vstring oldFileName, vstring newFileName);
+int fSafeRename(const char *oldFileName, const char *newFileName);
 
 /* Finds the name of the first file of the form filePrefix +
    nnn + ".tmp" that does not exist.  THE CALLER MUST DEALLOCATE
    THE RETURNED STRING. */
-vstring fGetTmpName(vstring filePrefix);
+vstring fGetTmpName(const char *filePrefix);
 
 /* This function returns a character string containing the entire contents of
    an ASCII file, or Unicode file with only ASCII characters.   On some
@@ -70,7 +71,7 @@ vstring fGetTmpName(vstring filePrefix);
    MUST DEALLOCATE THE RETURNED STRING.  If a NULL is returned, the file
    could not be opened or had a non-ASCII Unicode character or some other
    problem.   If verbose is 0, error and warning messages are suppressed. */
-vstring readFileToString(vstring fileName, char verbose, long *charCount);
+vstring readFileToString(const char *fileName, char verbose, long *charCount);
 
 /* Returns total elapsed time in seconds since starting session (for the
    lcc compiler) or the CPU time used (for the gcc compiler).  The

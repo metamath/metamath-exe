@@ -25,12 +25,12 @@ extern nmbrString *g_oneConst;
 
 
 nmbrString *makeSubstUnif(flag *newVarFlag,
-    nmbrString *trialScheme, pntrString *stateVector);
+    const nmbrString *trialScheme, pntrString *stateVector);
 
 
 char unify(
-    nmbrString *schemeA,
-    nmbrString *schemeB,
+    const nmbrString *schemeA,
+    const nmbrString *schemeB,
     /* nmbrString **unifiedScheme, */ /* stateVector[8] holds this */
     pntrString **stateVector,
     long reEntryFlag);
@@ -63,8 +63,8 @@ char unify(
    variables in schemeA have changed.  This is used to speed up the
    program. */
 flag oneDirUnif(
-    nmbrString *schemeA,
-    nmbrString *schemeB,
+    const nmbrString *schemeA,
+    const nmbrString *schemeB,
     pntrString **stateVector,
     long reEntryFlag);
 
@@ -76,8 +76,8 @@ flag oneDirUnif(
      2: unification timed out.
      3: more than one unification was possible. */
 char uniqueUnif(
-    nmbrString *schemeA,
-    nmbrString *schemeB,
+    const nmbrString *schemeA,
+    const nmbrString *schemeB,
     pntrString **stateVector);
 
 /* unifyH() is like unify(), except that when reEntryFlag is 1,
@@ -87,8 +87,8 @@ char uniqueUnif(
    those returned by unify().  (The elimination of equivalent
    unifications was suggested by Jeremy Henty.) */
 char unifyH(
-    nmbrString *schemeA,
-    nmbrString *schemeB,
+    const nmbrString *schemeA,
+    const nmbrString *schemeB,
     pntrString **stateVector,
     long reEntryFlag);
 

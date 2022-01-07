@@ -1133,7 +1133,7 @@ vstring getKnownSubProofs(void)
 /* Add a subproof in place of an unknown step to g_ProofInProgress.  The
    .target, .source, and .user fields are initialized to empty (except
    .target and .user of the deleted unknown step are retained). */
-void addSubProof(nmbrString *subProof, long step) {
+void addSubProof(const nmbrString *subProof, long step) {
   long sbPfLen;
 
   if ((g_ProofInProgress.proof)[step] != -(long)'?') bug(1803);
@@ -1162,8 +1162,9 @@ void addSubProof(nmbrString *subProof, long step) {
    we make it an argument in case in the future we'd like to do this
    outside of the Proof Assistant. */
 /* The rawTargetProof may be uncompressed or compressed. */
+/* Note: The caller must deallocate the returned nmbrString. */
 nmbrString *expandProof(
-    nmbrString *rawTargetProof, /* May be compressed or uncompressed */
+    const nmbrString *rawTargetProof, /* May be compressed or uncompressed */
     long sourceStmtNum   /* The statement whose proof will be expanded */
     /* , long targetStmtNum */) { /* The statement begin proved */
   nmbrString *origTargetProof = NULL_NMBRSTRING;
@@ -1520,8 +1521,7 @@ char checkStmtMatch(long statemNum, long step)
 /* Check to see if a (user-specified) math string will match the
    g_ProofInProgress.target (or .user) of an step.  Returns 1 if match, 0 if
    not, 2 if unification timed out. */
-char checkMStringMatch(nmbrString *mString, long step)
-{
+char checkMStringMatch(const nmbrString *mString, long step) {
   pntrString *stateVector = NULL_PNTRSTRING;
   char targetFlag;
   char sourceFlag = 1; /* Default if no .source */
@@ -1548,7 +1548,7 @@ char checkMStringMatch(nmbrString *mString, long step)
 /* maxEDepth is the maximum depth at which statements with $e hypotheses are
    considered.  A value of 0 means none are considered. */
 /* The caller must deallocate the returned nmbrString. */
-nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
+nmbrString *proveFloating(const nmbrString *mString, long statemNum, long maxEDepth,
     long step, /* 0 means step 1; used for messages */
     flag noDistinct, /* 1 means don't try statements with $d's */
     flag overrideFlag, /* 1 means to override usage locks, 2 means to
@@ -1958,7 +1958,7 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
 /* This function does quick check for some common conditions that prevent
    a trial statement (scheme) from being unified with a given instance.
    Return value 0 means it can't be unified, 1 means it might be unifiable. */
-INLINE flag quickMatchFilter(long trialStmt, nmbrString *mString,
+INLINE flag quickMatchFilter(long trialStmt, const nmbrString *mString,
     long dummyVarFlag /* 0 if no dummy vars in mString */) {
   /* This function used to be part of proveFloating().
      It was separated out for reuse in other places */
@@ -2534,7 +2534,7 @@ void interactiveUnifyStep(long step, char messageFlag)
              1 = unification was selected; held in stateVector
              2 = unification timed out
              3 = no unification was selected */
-char interactiveUnify(nmbrString *schemeA, nmbrString *schemeB,
+char interactiveUnify(const nmbrString *schemeA, const nmbrString *schemeB,
     pntrString **stateVector)
 {
 
@@ -2881,7 +2881,7 @@ void makeSubstAll(pntrString *stateVector) {
 } /* makeSubstAll */
 
 /* Replace a dummy variable with a user-specified math string */
-void replaceDummyVar(long dummyVar, nmbrString *mString)
+void replaceDummyVar(long dummyVar, const nmbrString *mString)
 {
   long numSubs = 0;
   long numSteps = 0;
@@ -2948,8 +2948,7 @@ void replaceDummyVar(long dummyVar, nmbrString *mString)
 
 /* Get subproof length of a proof, starting at endStep and going backwards.
    Note that the first step is 0, the second is 1, etc. */
-long subproofLen(nmbrString *proof, long endStep)
-{
+long subproofLen(const nmbrString *proof, long endStep) {
   long stmt, p, lvl;
   lvl = 1;
   p = endStep + 1;
@@ -3196,7 +3195,7 @@ void copyProofStruct(struct pip_struct *outProofStruct,
    a starting proof.  Normally, proofStruct is the global g_ProofInProgress,
    although we've made it an argument to help modularize the function.  There
    are still globals such as g_pipDummyVars, updated by various functions. */
-void initProofStruct(struct pip_struct *proofStruct, nmbrString *proof,
+void initProofStruct(struct pip_struct *proofStruct, const nmbrString *proof,
     long proveStmt)
 {
   nmbrString *tmpProof = NULL_NMBRSTRING;

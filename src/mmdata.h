@@ -22,7 +22,13 @@ extern flag g_toolsMode; /* In metamath mode:  0 = metamath, 1 = tools */
 typedef long nmbrString; /* String of numbers */
 typedef void* pntrString; /* String of pointers */
 
+/* A nmbrString allocated in temporary storage. These strings will be deallocated
+after the next call to `nmbrLet`. */
+typedef nmbrString temp_nmbrString;
 
+/* A pntrString allocated in temporary storage. These strings will be deallocated
+after the next call to `pntrLet`. */
+typedef pntrString temp_pntrString;
 
 enum mTokenType { var_, con_ };
 #define lb_ '{' /* ${ */
@@ -186,7 +192,7 @@ void initBigArrays(void);
 long getFreeSpace(long max);
 
 /* Fatal memory allocation error */
-void outOfMemory(vstring msg);
+void outOfMemory(const char *msg);
 
 /* Bug check error */
 void bug(int bugNum);
@@ -213,13 +219,13 @@ extern struct nullPntrStruct g_PntrNull;
 
 /* This function returns a 1 if any entry in a comma-separated list
    matches using the matches() function. */
-flag matchesList(vstring testString, vstring pattern, char wildCard,
+flag matchesList(const char *testString, const char *pattern, char wildCard,
     char oneCharWildCard);
 
 /* This function returns a 1 if the first argument matches the pattern of
    the second argument.  The second argument may have 0-or-more and
    exactly-1 character match wildcards, typically '*' and '?'.*/
-flag matches(vstring testString, vstring pattern, char wildCard,
+flag matches(const char *testString, const char *pattern, char wildCard,
     char oneCharWildCard);
 
 
@@ -247,117 +253,114 @@ void nmbrMakeTempAlloc(nmbrString *s);
 
 
 /* String assignment - MUST be used to assign vstrings */
-void nmbrLet(nmbrString **target,nmbrString *source);
+void nmbrLet(nmbrString **target, const nmbrString *source);
 
 /* String concatenation - last argument MUST be NULL */
-nmbrString *nmbrCat(nmbrString *string1,...);
+temp_nmbrString *nmbrCat(const nmbrString *string1,...);
 
 /* Emulation of nmbrString functions similar to BASIC string functions */
-nmbrString *nmbrSeg(nmbrString *sin, long p1, long p2);
-nmbrString *nmbrMid(nmbrString *sin, long p, long l);
-nmbrString *nmbrLeft(nmbrString *sin, long n);
-nmbrString *nmbrRight(nmbrString *sin, long n);
+temp_nmbrString *nmbrSeg(const nmbrString *sin, long p1, long p2);
+temp_nmbrString *nmbrMid(const nmbrString *sin, long p, long l);
+temp_nmbrString *nmbrLeft(const nmbrString *sin, long n);
+temp_nmbrString *nmbrRight(const nmbrString *sin, long n);
 
 /* Allocate and return an "empty" string n "characters" long */
-nmbrString *nmbrSpace(long n);
+temp_nmbrString *nmbrSpace(long n);
 
-long nmbrLen(nmbrString *s);
-long nmbrAllocLen(nmbrString *s);
+long nmbrLen(const nmbrString *s);
+long nmbrAllocLen(const nmbrString *s);
 void nmbrZapLen(nmbrString *s, long length);
 
 /* Search for string2 in string 1 starting at start_position */
-long nmbrInstr(long start, nmbrString *sin, nmbrString *s);
+long nmbrInstr(long start, const nmbrString *sin, const nmbrString *s);
 
 /* Search for string2 in string 1 in reverse starting at start_position */
 /* (Reverse nmbrInstr) */
-long nmbrRevInstr(long start_position,nmbrString *string1,
-    nmbrString *string2);
+long nmbrRevInstr(long start_position, const nmbrString *string1,
+   const nmbrString *string2);
 
 /* 1 if strings are equal, 0 otherwise */
-int nmbrEq(nmbrString *sout,nmbrString *sin);
+flag nmbrEq(const nmbrString *s, const nmbrString *t);
 
 /* Converts mString to a vstring with one space between tokens */
-vstring nmbrCvtMToVString(nmbrString *s);
+temp_vstring nmbrCvtMToVString(const nmbrString *s);
 
 /* Converts rString to a vstring with one space between tokens */
-vstring nmbrCvtRToVString(nmbrString *s,
+temp_vstring nmbrCvtRToVString(const nmbrString *s,
     flag explicitTargets,
     long statemNum);
 
 /* Get step numbers in an rString - needed by cvtRToVString & elsewhere */
-nmbrString *nmbrGetProofStepNumbs(nmbrString *reason);
+nmbrString *nmbrGetProofStepNumbs(const nmbrString *reason);
 
 /* Converts any nmbrString to an ASCII string of numbers corresponding
    to the .tokenNum field -- used for debugging only. */
-vstring nmbrCvtAnyToVString(nmbrString *s);
+temp_vstring nmbrCvtAnyToVString(const nmbrString *s);
 
 /* Extract variables from a math token string */
-nmbrString *nmbrExtractVars(nmbrString *m);
+temp_nmbrString *nmbrExtractVars(const nmbrString *m);
 
 /* Determine if an element is in a nmbrString; return position if it is */
-long nmbrElementIn(long start, nmbrString *g, long element);
+long nmbrElementIn(long start, const nmbrString *g, long element);
 
 /* Add a single number to end of a nmbrString - faster than nmbrCat */
-nmbrString *nmbrAddElement(nmbrString *g, long element);
+temp_nmbrString *nmbrAddElement(const nmbrString *g, long element);
 
 /* Get the set union of two math token strings (presumably
    variable lists) */
-nmbrString *nmbrUnion(nmbrString *m1,nmbrString *m2);
+temp_nmbrString *nmbrUnion(const nmbrString *m1, const nmbrString *m2);
 
 /* Get the set intersection of two math token strings (presumably
    variable lists) */
-nmbrString *nmbrIntersection(nmbrString *m1,nmbrString *m2);
+temp_nmbrString *nmbrIntersection(const nmbrString *m1, const nmbrString *m2);
 
 /* Get the set difference m1-m2 of two math token strings (presumably
    variable lists) */
-nmbrString *nmbrSetMinus(nmbrString *m1,nmbrString *m2);
+temp_nmbrString *nmbrSetMinus(const nmbrString *m1,const nmbrString *m2);
 
 
 
 /* This is a utility function that returns the length of a subproof that
    ends at step */
-long nmbrGetSubproofLen(nmbrString *proof, long step);
+long nmbrGetSubproofLen(const nmbrString *proof, long step);
 
 /* This function returns a "squished" proof, putting in {} references
    to previous subproofs. */
-nmbrString *nmbrSquishProof(nmbrString *proof);
+temp_nmbrString *nmbrSquishProof(const nmbrString *proof);
 
 /* This function unsquishes a "squished" proof, replacing {} references
-   to previous subproofs by the subproofs themselvs.  The returned nmbrString
-   must be deallocated by the caller. */
-nmbrString *nmbrUnsquishProof(nmbrString *proof);
+   to previous subproofs by the subproofs themselves. */
+temp_nmbrString *nmbrUnsquishProof(const nmbrString *proof);
 
 /* This function returns the indentation level vs. step number of a proof
    string.  This information is used for formatting proof displays.  The
    function calls itself recursively, but the first call should be with
-   startingLevel = 0.  The caller is responsible for deallocating the
-   result. */
-nmbrString *nmbrGetIndentation(nmbrString *proof,
+   startingLevel = 0. */
+temp_nmbrString *nmbrGetIndentation(const nmbrString *proof,
   long startingLevel);
 
 /* This function returns essential (1) or floating (0) vs. step number of a
    proof string.  This information is used for formatting proof displays.  The
    function calls itself recursively, but the first call should be with
-   startingLevel = 0.  The caller is responsible for deallocating the
-   result. */
-nmbrString *nmbrGetEssential(nmbrString *proof);
+   startingLevel = 0. */
+temp_nmbrString *nmbrGetEssential(const nmbrString *proof);
 
 /* This function returns the target hypothesis vs. step number of a proof
    string.  This information is used for formatting proof displays.  The
-   function calls itself recursively.  The caller is responsible for
-   deallocating the result.  statemNum is the statement being proved. */
-nmbrString *nmbrGetTargetHyp(nmbrString *proof, long statemNum);
+   function calls itself recursively.
+   statemNum is the statement being proved. */
+temp_nmbrString *nmbrGetTargetHyp(const nmbrString *proof, long statemNum);
 
 /* Converts a proof string to a compressed-proof-format ASCII string.
    Normally, the proof string would be compacted with squishProof first,
    although it's not a requirement. */
 /* The statement number is needed because required hypotheses are
    implicit in the compressed proof. */
-vstring compressProof(nmbrString *proof, long statemNum,
+temp_vstring compressProof(const nmbrString *proof, long statemNum,
     flag oldCompressionAlgorithm);
 
 /* Gets length of the ASCII form of a compressed proof */
-long compressedProofSize(nmbrString *proof, long statemNum);
+long compressedProofSize(const nmbrString *proof, long statemNum);
 
 
 /*******************************************************************/
@@ -383,48 +386,48 @@ void pntrMakeTempAlloc(pntrString *s);
 
 
 /* String assignment - MUST be used to assign vstrings */
-void pntrLet(pntrString **target,pntrString *source);
+void pntrLet(pntrString **target, const pntrString *source);
 
 /* String concatenation - last argument MUST be NULL */
-pntrString *pntrCat(pntrString *string1,...);
+temp_pntrString *pntrCat(const pntrString *string1,...);
 
 /* Emulation of pntrString functions similar to BASIC string functions */
-pntrString *pntrSeg(pntrString *sin, long p1, long p2);
-pntrString *pntrMid(pntrString *sin, long p, long length);
-pntrString *pntrLeft(pntrString *sin, long n);
-pntrString *pntrRight(pntrString *sin, long n);
+temp_pntrString *pntrSeg(const pntrString *sin, long p1, long p2);
+temp_pntrString *pntrMid(const pntrString *sin, long p, long length);
+temp_pntrString *pntrLeft(const pntrString *sin, long n);
+temp_pntrString *pntrRight(const pntrString *sin, long n);
 
 /* Allocate and return an "empty" string n "characters" long */
-pntrString *pntrSpace(long n);
+temp_pntrString *pntrSpace(long n);
 
 /* Allocate and return an "empty" string n "characters" long
    initialized to nmbrStrings instead of vStrings */
-pntrString *pntrNSpace(long n);
+temp_pntrString *pntrNSpace(long n);
 
 /* Allocate and return an "empty" string n "characters" long
    initialized to pntrStrings instead of vStrings */
-pntrString *pntrPSpace(long n);
+temp_pntrString *pntrPSpace(long n);
 
-long pntrLen(pntrString *s);
-long pntrAllocLen(pntrString *s);
+long pntrLen(const pntrString *s);
+long pntrAllocLen(const pntrString *s);
 void pntrZapLen(pntrString *s, long length);
 
 /* Search for string2 in string 1 starting at start_position */
-long pntrInstr(long start, pntrString *sin, pntrString *s);
+long pntrInstr(long start, const pntrString *sin, const pntrString *s);
 
 /* Search for string2 in string 1 in reverse starting at start_position */
 /* (Reverse pntrInstr) */
-long pntrRevInstr(long start_position,pntrString *string1,
-    pntrString *string2);
+long pntrRevInstr(long start_position, const pntrString *string1,
+    const pntrString *string2);
 
 /* 1 if strings are equal, 0 otherwise */
-int pntrEq(pntrString *sout,pntrString *sin);
+flag pntrEq(const pntrString *sout, const pntrString *sin);
 
 /* Add a single null string element to a pntrString - faster than pntrCat */
-pntrString *pntrAddElement(pntrString *g);
+temp_pntrString *pntrAddElement(const pntrString *g);
 
 /* Add a single null pntrString element to a pntrString - faster than pntrCat */
-pntrString *pntrAddGElement(pntrString *g);
+temp_pntrString *pntrAddGElement(const pntrString *g);
 
 /* Utility functions */
 

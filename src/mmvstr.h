@@ -126,18 +126,26 @@ with 'let(&' and thus has the same effect as 'let(&'.
 
 #include <stdio.h>
 
+/* A vstring is like a C string, but it contains a control block allowing
+for memory allocation. New vstrings should always be constructed from the
+`vstringdef` macro. */
 typedef char* vstring;
+
+/* A vstring allocated in temporary storage. These strings will be deallocated
+after the next call to `let`. */
+typedef vstring temp_vstring;
+
 #define vstringdef(x) vstring x = ""
 
 /* Emulation of BASIC string assignment */
 /* 'let' MUST be used to assign vstrings, e.g. 'let(&abc, "Hello"); */
 /* Empty string deallocates memory, e.g. 'let(&abc, ""); */
-void let(vstring *target, vstring source);
+void let(vstring *target, const char *source);
 
 /* Emulation of BASIC string concatenation - last argument MUST be NULL */
 /* vstring cat(vstring string1, ..., stringN, NULL); */
 /* e.g. 'let(&abc, cat("Hello", " ", left("worldx", 5), "!", NULL);' */
-vstring cat(vstring string1,...);
+temp_vstring cat(const char * string1, ...);
 
 /* Emulation of BASIC linput (line input) statement; returns NULL if EOF */
 /* Note that linput assigns target string with let(&target,...) */
@@ -150,35 +158,35 @@ vstring cat(vstring string1,...);
 
   */
 /* returns whether a (possibly empty) line was successfully read */
-int linput(FILE *stream,const char* ask,vstring *target);
+int linput(FILE *stream, const char *ask, vstring *target);
 
 /* Emulation of BASIC string functions */
 /* Indices are 1-based */
-vstring seg(vstring sin, long p1, long p2);
-vstring mid(vstring sin, long p, long l);
-vstring left(vstring sin, long n);
-vstring right(vstring sin, long n);
-vstring edit(vstring sin, long control);
-vstring space(long n);
-vstring string(long n, char c);
-vstring chr(long n);
-vstring xlate(vstring sin, vstring control);
-vstring date(void);
-vstring time_(void);
-vstring num(double x);
-vstring num1(double x);
-vstring str(double x);
+temp_vstring seg(const char *sin, long p1, long p2);
+temp_vstring mid(const char *sin, long p, long l);
+temp_vstring left(const char *sin, long n);
+temp_vstring right(const char *sin, long n);
+temp_vstring edit(const char *sin, long control);
+temp_vstring space(long n);
+temp_vstring string(long n, char c);
+temp_vstring chr(long n);
+temp_vstring xlate(const char *sin, const char *table);
+temp_vstring date(void);
+temp_vstring time_(void);
+temp_vstring num(double x);
+temp_vstring num1(double x);
+temp_vstring str(double x);
 long len(vstring s);
-long instr(long start, vstring sin, vstring s);
-long rinstr(vstring string1, vstring string2);
-long ascii_(vstring c);
-double val(vstring s);
+long instr(long start, const char *string1, const char *string2);
+long rinstr(const char *string1, const char *string2);
+long ascii_(const char *c);
+double val(const char *s);
 
 /* Emulation of Progress 4GL string functions */
-vstring entry(long element, vstring list);
-long lookup(vstring expression, vstring list);
-long numEntries(vstring list);
-long entryPosition(long element, vstring list);
+temp_vstring entry(long element, const char *list);
+long lookup(const char *expression, const char *list);
+long numEntries(const char *list);
+long entryPosition(long element, const char *list);
 
 /* Routines may/may not be written (lowest priority):
 vstring place$(vstring sout);
