@@ -16,7 +16,7 @@ according to the following subcommands:
   T - (Tab) Convert spaces to equivalent tabs (unsupported)
   U - (Untab) Convert tabs to equivalent spaces (unsupported)
 Some other subcommands are also available:
-  P - Trim parity (8th) bit from each character
+  P - Clear parity (8th) bit from each character
   G - Discard garbage characters CR,FF,ESC,BS
   C - Convert to upper case
   L - Convert to lower case
@@ -38,7 +38,7 @@ for var in "$@"; do
     Q | q) quote=1;;
     T | t) echo "T (tab) flag unsupported"; exit 2;;
     U | u) echo "U (untab) flag unsupported"; exit 2;;
-    P | p) trim=1;;
+    P | p) clearParity=1;;
     G | g) discardCtrl=1;;
     C | c) caseFlag=1;;
     L | l) lowercase=1;;
@@ -47,7 +47,7 @@ for var in "$@"; do
 done
 
 awk \
-  -v trim=$trim \
+  -v clearParity=$clearParity \
   -v allDiscard=$allDiscard \
   -v discardCtrl=$discardCtrl \
   -v leadDiscard=$leadDiscard \
@@ -61,7 +61,7 @@ awk \
   -v screen=$screen \
 'BEGIN {
   FS="";
-  if (trim || caseFlag || lowercase) {
+  if (clearParity || caseFlag || lowercase) {
     for (n=0; n<256; n++) {
       ch = sprintf("%c", n);
       chr[n] = ch;
@@ -94,7 +94,7 @@ awk \
       continue;
     }
     if (allDiscard && ($i == " " || $i == "\t")) continue;
-    if (trim) $i = chr[and(ord[$i], 0x7f)];
+    if (clearParity) $i = chr[and(ord[$i], 0x7f)];
     if (discardCtrl && discardArr[$i]) continue;
     if (caseFlag && ord[$i] < 128) $i = toupper($i);
     if (lowercase && ord[$i] < 128) $i = tolower($i);

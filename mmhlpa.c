@@ -134,7 +134,7 @@ H("  Q - Do not alter characters in quotes (ignored by T and U)");
 H("  T - (Tab) Convert spaces to equivalent tabs");
 H("  U - (Untab) Convert tabs to equivalent spaces");
 H("Some other subcommands are also available:");
-H("  P - Trim parity (8th) bit from each character");
+H("  P - Clear parity (8th) bit from each character");
 H("  G - Discard garbage characters CR,FF,ESC,BS");
 H("  C - Convert to upper case");
 H("  L - Convert to lower case");
