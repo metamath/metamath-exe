@@ -40,7 +40,7 @@ for var in "$@"; do
     U | u) echo "U (untab) flag unsupported"; exit 2;;
     P | p) clearParity=1;;
     G | g) discardCtrl=1;;
-    C | c) caseFlag=1;;
+    C | c) uppercase=1;;
     L | l) lowercase=1;;
     V | v) screen=1;;
   esac
@@ -52,7 +52,7 @@ awk \
   -v discardCtrl=$discardCtrl \
   -v leadDiscard=$leadDiscard \
   -v reduce=$reduce \
-  -v caseFlag=$caseFlag \
+  -v uppercase=$uppercase \
   -v trailDiscard=$trailDiscard \
   -v quote=$quote \
   -v lowercase=$lowercase \
@@ -61,7 +61,7 @@ awk \
   -v screen=$screen \
 'BEGIN {
   FS="";
-  if (clearParity || caseFlag || lowercase) {
+  if (clearParity || uppercase || lowercase) {
     for (n=0; n<256; n++) {
       ch = sprintf("%c", n);
       chr[n] = ch;
@@ -96,7 +96,7 @@ awk \
     if (allDiscard && ($i == " " || $i == "\t")) continue;
     if (clearParity) $i = chr[and(ord[$i], 0x7f)];
     if (discardCtrl && discardArr[$i]) continue;
-    if (caseFlag && ord[$i] < 128) $i = toupper($i);
+    if (uppercase && ord[$i] < 128) $i = toupper($i);
     if (lowercase && ord[$i] < 128) $i = tolower($i);
     if (screen && gfxArr[$i]) $i = gfxArr[$i];
     out=out $i;
