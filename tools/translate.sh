@@ -133,5 +133,6 @@ awk -v tools="$tools" -v echo="$echo" -v recursive="$recursive" \
       print "echo \" => " echoLine "\"";
     }
     print;
+    fflush();
   }
 }'
