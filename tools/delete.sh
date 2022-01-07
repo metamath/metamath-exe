@@ -22,11 +22,14 @@ if [ $# -ne 2 ]; then usage; exit 1; fi
 awk -v startStr="$1" -v endStr="$2" '{
   start = index($0, startStr);
   if (start) {
-    off = start + length(startStr);
-    start2 = index(substr($0, off), endStr);
-    if (start2) {
-      end = off - 1 + start2 + length(endStr);
-      $0 = substr($0, 1, start - 1) substr($0, end);
+    if (endStr == "") {
+      $0 = substr($0, 1, start - 1);
+    } else {
+      start2 = index(substr($0, start), endStr);
+      if (start2) {
+        end = start - 1 + start2 + length(endStr);
+        $0 = substr($0, 1, start - 1) substr($0, end);
+      }
     }
   }
   print;
