@@ -1,0 +1,14 @@
+*.o
+*.Po
+autom4te.cache/
+stamp-h1
+missing
+metamath
+Makefile
+Makefile.in
+compile
+configure
+config.*
+depcomp
+install-sh
+aclocal.m4
