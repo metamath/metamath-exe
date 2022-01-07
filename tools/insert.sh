@@ -16,8 +16,8 @@ HELP
 }
 
 if [ $# -eq 1 ] && [ "$1" = "-h" ]; then usage; exit; fi
-isNum() { case "$1" in '' | '0' | *[!0-9]*) return 1;; esac; }
-if [ $# -ne 2 ] || ! isNum "$2"; then usage; exit 1; fi
+isNum() { case "$1" in '' | *[!0-9]*) return 1;; esac }
+if [ $# -ne 2 ] || ! isNum "$2" || [ $2 -eq 0 ]; then usage; exit 1; fi
 
 awk -v insertStr="$1" -v len=$2 '
 BEGIN {
