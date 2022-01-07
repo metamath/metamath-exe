@@ -19,4 +19,4 @@ if [ $# -lt 2 ]; then usage; exit 1; fi
 
 file=$1; shift
 buf=$(cat $file)
-echo "$buf" | $@ > $file
+echo "$buf" | "$@" > $file

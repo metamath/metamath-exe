@@ -30,8 +30,8 @@ esac
 awk -v oldStr="$1" -v newStr="$2" -v matchStr="$4" \
   -v all="$all" -v occs=$occs \
 'BEGIN {
-  gsub(/[][\\.^$(){}|*+?]/, "\\&", oldStr);
-  gsub(/[&\\]/, "\\&", newStr);
+  gsub(/[][\\.^$(){}|*+?]/, "\\\\&", oldStr);
+  gsub(/[&\\]/, "\\\\&", newStr);
 } {
   if (index($0, matchStr)) {
     if (all) gsub(oldStr, newStr);

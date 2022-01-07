@@ -9,7 +9,7 @@ TYPE (10 lines) - Display 10 lines of a file; similar to Unix \"head\"
 This command displays (i.e. types out) the first N lines of a file on the
 terminal screen.  If N is not specified, it will default to 10.  If N is
 the string "ALL", then the whole file will be typed.
-Syntax:  type.sh N < INFILE > OUTFILE
+Syntax:  type.sh [N] < INFILE > OUTFILE
 HELP
 }
 
