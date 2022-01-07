@@ -7,7 +7,8 @@ usage() {
 ADD - Add a specified string to each line in a file
 
 This command adds a character string prefix and/or suffix to each
-line in a file.
+line in a file. To add only a prefix, set ENDSTR to the empty string,
+and set BEGSTR to the empty string to add only a suffix.
 Syntax:  add.sh BEGSTR ENDSTR < INFILE > OUTFILE
 HELP
 }

@@ -89,7 +89,8 @@ H("");
 
 g_printHelp = !strcmp(saveHelpCmd, "HELP ADD");
 H("This command adds a character string prefix and/or suffix to each");
-H("line in a file.");
+H("line in a file.  To add only a prefix, set <endstr> to the empty string,");
+H("and set <begstr> to the empty string to add only a suffix.");
 H("Syntax:  ADD <iofile> <begstr> <endstr>");
 
 g_printHelp = !strcmp(saveHelpCmd, "HELP TAG");
