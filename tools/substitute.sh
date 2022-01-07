@@ -14,7 +14,7 @@ The MATCHSTR specifies a string that must also exist on a line
 before the substitution takes place; null means match any line.
 The OCCURRENCE is an integer (1 = first occurrence on each line, etc.)
 or A for all occurrences on each line.
-Syntax:  subst.sh OLDSTR NEWSTR OCCURRENCE MATCHSTR < INFILE > OUTFILE
+Syntax:  substitute.sh OLDSTR NEWSTR OCCURRENCE MATCHSTR < INFILE > OUTFILE
 HELP
 }
 
