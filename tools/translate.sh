@@ -41,6 +41,22 @@ awk -v tools="$tools" -v echo="$echo" -v recursive="$recursive" \
     gsub(/[\\$"`]/, "\\\\&", extraArg);
     extraArg = " \"" extraArg "\"";
   }
+  simpleCommands["ADD"] = 1;
+  simpleCommands["DELETE"] = 1;
+  simpleCommands["SUBSTITUTE"] = 1;
+  simpleCommands["SWAP"] = 1;
+  simpleCommands["INSERT"] = 1;
+  simpleCommands["BREAK"] = 1;
+  simpleCommands["BUILD"] = 1;
+  simpleCommands["MATCH"] = 1;
+  simpleCommands["SORT"] = 1;
+  simpleCommands["UNDUPLICATE"] = 1;
+  simpleCommands["DUPLICATE"] = 1;
+  simpleCommands["UNIQUE"] = 1;
+  simpleCommands["REVERSE"] = 1;
+  simpleCommands["RIGHT"] = 1;
+  simpleCommands["PARALLEL"] = 1;
+  simpleCommands["TAG"] = 1;
 } {
   if ($0 == "") print;
   else if (substr($0, 1, 1) == "!")
@@ -49,81 +65,49 @@ awk -v tools="$tools" -v echo="$echo" -v recursive="$recursive" \
     ;
   else {
     $1 = toupper($1);
-    switch ($1) {
-      case "C": $1 = "COPY"; break;
-      case "B": $1 = "BEEP"; break;
-      case "S": $1 = "SUBSTITUTE"; break;
-      case "T": $1 = "TAG"; break;
-      case "EXIT":
-      case "QUIT":
-        exit;
-      default: break;
-    }
+    if ($1 == "C") $1 = "COPY"; else
+    if ($1 == "B") $1 = "BEEP"; else
+    if ($1 == "S") $1 = "SUBSTITUTE"; else
+    if ($1 == "T") $1 = "TAG"; else
+    if ($1 == "EXIT" || $1 == "QUIT") exit;
     if (echo) {
       echoLine = $0;
       gsub(/[\\$"]/, "\\\\&", echoLine);
       print "echo \"" echoLine "\"";
     }
     file = tools "/" tolower($1) ".sh";
-    switch ($1) {
-      case "HELP":
-      case "COUNT":
-      case "UPDATE":
-        $0 = "# " $1 " command not supported";
-        break;
-      case "BEEP":
-        $1 = file;
-        break;
-      case "TYPE":
-        for (i = 3; i < NR; i++) file = file " " $i;
-        $0 = file " < " $2;
-        break;
-      case "SUBMIT":
-        args = "";
-        for (i = 3; i < NR; i++) args = args " " $i;
-        gsub(" ", "", args);
-        if (tolower(args) == "/silent") file = file " -q";
-        $0 = file extraArg " < " $2;
-        break;
-      case "NUMBER":
-        $0 = file $3 $4 $5 " > " $2;
-        break;
-      case "COPY":
-        out = $(NR-1);
-        for (i = 2; i < NR-1; i++)
-          out = out " " $i;
-        $0 = file " " out;
-        break;
-      case "CLEAN":
-        gsub(",", " ", $3);
-        infile = $2;
-        $2 = file;
-        $1 = tools "/inplace.sh " infile;
-        break;
-      case "ADD":
-      case "DELETE":
-      case "SUBSTITUTE":
-      case "SWAP":
-      case "INSERT":
-      case "BREAK":
-      case "BUILD":
-      case "MATCH":
-      case "SORT":
-      case "UNDUPLICATE":
-      case "DUPLICATE":
-      case "UNIQUE":
-      case "REVERSE":
-      case "RIGHT":
-      case "PARALLEL":
-      case "TAG":
-        infile = $2;
-        $2 = file;
-        $1 = tools "/inplace.sh " infile;
-        break;
-      default:
-        gsub(/"/, "\\\\&");
-        $0 = "# unknown command: \"" $0 "\"";
-        break;
+    if (simpleCommands[$1]) {
+      infile = $2;
+      $2 = file;
+      $1 = tools "/inplace.sh " infile;
+    } else if ($1 == "BEEP") {
+      $1 = file;
+    } else if ($1 == "TYPE") {
+      for (i = 3; i < NR; i++) file = file " " $i;
+      $0 = file " < " $2;
+    } else if ($1 == "SUBMIT") {
+      args = "";
+      for (i = 3; i < NR; i++) args = args " " $i;
+      gsub(" ", "", args);
+      if (tolower(args) == "/silent") file = file " -q";
+      $0 = file extraArg " < " $2;
+    } else if ($1 == "NUMBER") {
+      $0 = file $3 $4 $5 " > " $2;
+    } else if ($1 == "COPY") {
+      out = $(NR-1);
+      for (i = 2; i < NR-1; i++)
+        out = out " " $i;
+      $0 = file " " out;
+    } else if ($1 == "CLEAN") {
+      gsub(",", " ", $3);
+      infile = $2;
+      $2 = file;
+      $1 = tools "/inplace.sh " infile;
+    } else if ($1 == "HELP" || $1 == "COUNT" || $1 == "UPDATE") {
+      $0 = "# " $1 " command not supported";
+    } else {
+      gsub(/"/, "\\\\&");
+      $0 = "# unknown command: \"" $0 "\"";
     }
     if (echo) {
       echoLine = $0;
