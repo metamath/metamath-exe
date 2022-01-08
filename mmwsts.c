@@ -21,12 +21,12 @@
 #include "mmwtex.h" /* For g_texDefsRead */
 #include "mmhtbl.h" /* For caching results */
 
-#define STS_MAX_TYPES 10		/* basic types. For set.mm, there are 4 (|-,wff,class,set) */
-#define STS_MAX_RECURSION 50	/* max depth of a formula (heuristic to avoid loops) */
-#define STS_MAX_SCHEME_VAR 20	/* max variables per schemes */
+#define STS_MAX_TYPES 10         /* basic types. For set.mm, there are 4 (|-,wff,class,set) */
+#define STS_MAX_RECURSION 50     /* max depth of a formula (heuristic to avoid loops) */
+#define STS_MAX_SCHEME_VAR 20    /* max variables per schemes */
 #define STS_MAX_TOKEN_REUSE 20
 #define STS_MAX_LEN_FOR_CACHE 20 /* put only formulas of up to 20 tokens into cache */
-#define STS_CACHE_BUCKETS 50000	 /* size of a cache hash bucket */
+#define STS_CACHE_BUCKETS 50000  /* size of a cache hash bucket */
 
 /* The structure containing the structured typesetting replacement schemes */
 struct stsScheme_struct {
@@ -169,7 +169,7 @@ nmbrString *parseMathStrict(vstring text)
     fbPtr[tokenLen_] = 0; /* End token - There's no come back */
     //printf("Searching for %s\n", fbPtr);
     g_mathKeyPtr = (long *)bsearch(fbPtr, g_mathKey,
-	(size_t)g_mathTokens, sizeof(long), mathSrchGlbCmp);
+      (size_t)g_mathTokens, sizeof(long), mathSrchGlbCmp);
     if (!g_mathKeyPtr) {
       /* Unknown token, escape. */
       print2("?Unknown token %s\n", fbPtr);
@@ -247,7 +247,7 @@ int parseSTSRules(vstring format) {
   /* Create a cache for exported statements to speed up */
   if(stsUseCache) {
     stsCache = htcreate(format, STS_CACHE_BUCKETS, "", stsCacheHash, stsCacheEq,
-			stsStoreCache, stsFreeCache, stsDumpCache);
+                        stsStoreCache, stsFreeCache, stsDumpCache);
   }
 
   /* Build the name of the MMTS file to load */
@@ -274,7 +274,7 @@ int parseSTSRules(vstring format) {
   if (fseek(sts_fp, 0, SEEK_SET)) bug(5702);
   /* Put the entire input file into the buffer as a giant character string */
   long charCount = (long)fread(fileBuf, sizeof(char), (size_t)fileBufSize - 2,
-			       sts_fp);
+                               sts_fp);
   if (!feof(sts_fp)) {
     print2("Note:  This bug will occur if there is a disk file read error.\n");
     /* If this bug occurs (due to obscure future format such as compressed
@@ -315,11 +315,11 @@ int parseSTSRules(vstring format) {
     if (!tmpch) { /* End of file */
       if (insideComment) {
         rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum - 1, inputFn,*/
-         "The last comment in the file is incomplete.  \"$)\" was expected.");
-	if (insideChunk) {
+          "The last comment in the file is incomplete.  \"$)\" was expected.");
+        if (insideChunk) {
           rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum, inputFn,*/
               cat("The last ", stsChunkName(chunkType),
-		  " in the file is incomplete.", NULL));
+                  " in the file is incomplete.", NULL));
         }
         if (insideTypeSet) {
           rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum, inputFn,*/
@@ -393,24 +393,24 @@ int parseSTSRules(vstring format) {
       case 'i': /* Start of identifier */
       case 's': /* Start of scheme */
       case 'u': /* Start of terminal type */
-	if (insideComment) continue;
-	if (insideChunk) {
+        if (insideComment) continue;
+        if (insideChunk) {
           rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum, inputFn,*/
               cat("A scheme start was found within a ",
-		  stsChunkName(chunkType), ".", NULL));
+                  stsChunkName(chunkType), ".", NULL));
         }
         if (insideTypeSet) {
           rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum, inputFn,*/
               cat("A ",stsChunkName(fbPtr[0]),
-		  " start was found within a typeset.", NULL));
+                  " start was found within a typeset.", NULL));
         }
         chunkType = fbPtr[0];
         startPtr = fbPtr + 1;
         insideChunk = 1;
-	continue;
+        continue;
 
       case ':': /* Start of typesetting */
-	if (insideComment) continue;
+        if (insideComment) continue;
         if (!insideChunk || (chunkType != 's' && chunkType != 'i')) {
           rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum, inputFn,*/
               "A scheme end was found outside of a scheme.");
@@ -423,24 +423,24 @@ int parseSTSRules(vstring format) {
         //print2("end scheme line %ld! %s\n", lineNum, text);
         stsScheme[stsSchemes].type = chunkType;
         stsScheme[stsSchemes].scheme = NULL_NMBRSTRING;
-	// parseMathTokens is too permissive. Wrote own token parser.
+        // parseMathTokens is too permissive. Wrote own token parser.
         //nmbrLet(&(stsScheme[stsSchemes].scheme), parseMathTokens(text, g_statements));
         nmbrLet(&(stsScheme[stsSchemes].scheme), parseMathStrict(text));
 
         int l = nmbrLen(stsScheme[stsSchemes].scheme);
         if(l < 2) {
           if(l == 0)
-	    rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum, inputFn,*/
-		"Empty scheme or unknown token.");
+            rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum, inputFn,*/
+                "Empty scheme or unknown token.");
           else
-	    rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum, inputFn,*/
-		"A scheme shall contain at least 2 tokens.");
+            rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum, inputFn,*/
+                "A scheme shall contain at least 2 tokens.");
           chunkType = '$'; // invalid chunk type, so that the scheme is skipped.
           startPtr = fbPtr + 1;
           insideChunk = 0;
-	  insideTypeSet = 1;
-	  stsSchemes--;
-	  continue;
+          insideTypeSet = 1;
+          stsSchemes--;
+          continue;
           }
 
         /* Store the number of variables in the scheme (each shall be different)  */
@@ -465,89 +465,89 @@ int parseSTSRules(vstring format) {
           if(g_MathToken[index].tokenType != var_)
             rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum, inputFn,*/
                 "An identifier definition shall end with a variable.");
-	    //print2("Token %s has type %s\n", g_MathToken[index].tokenName, g_MathToken[stsVar[index].stsType].tokenName);
+            //print2("Token %s has type %s\n", g_MathToken[index].tokenName, g_MathToken[stsVar[index].stsType].tokenName);
         }
 
         startPtr = fbPtr + 1;
         insideChunk = 0;
-	insideTypeSet = 1;
-	continue;
+        insideTypeSet = 1;
+        continue;
 
       case '.': /* End of chunk/typesetting */
-	if (insideComment) continue;
-	if (!insideChunk && !insideTypeSet) {
+        if (insideComment) continue;
+        if (!insideChunk && !insideTypeSet) {
           rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum, inputFn,*/
               "A chunk/typeset end was found outside a chunk or typeset.");
-	}
-	insideChunk = 0;
-	switch(chunkType) {
-	  case 'i':
-	  case 's':
-	    /* End of typesetting, record the new scheme. */
-	    if(!insideTypeSet) {
-	      rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum, inputFn,*/
-		  cat("A typeset end was found within a ",
-		      stsChunkName(chunkType), ".", NULL));
-	    }
-	    stsScheme[stsSchemes].typesetting = "";
-	    let(&(stsScheme[stsSchemes].typesetting), mid(startPtr, 2, fbPtr - startPtr - 3));
-	    /* Record the schemeId */
-	    if(nmbrLen(stsScheme[stsSchemes].scheme) == 2
-	       && stsVar[stsScheme[stsSchemes].scheme[1]].stsSchemeId == 0)
-		stsVar[stsScheme[stsSchemes].scheme[1]].stsSchemeId = stsSchemes + 1;
-//	    for(int i=1;i<=nmbrLen(stsScheme[stsSchemes].scheme);i++)
-//	      if(stsVar[stsScheme[stsSchemes].scheme[i]].stsSchemeId == 0)
-//		stsVar[stsScheme[stsSchemes].scheme[i]].stsSchemeId = stsSchemes + 1;
-	    stsSchemes++;
-	    insideTypeSet = 0;
-	    continue;
+        }
+        insideChunk = 0;
+        switch(chunkType) {
+          case 'i':
+          case 's':
+            /* End of typesetting, record the new scheme. */
+            if(!insideTypeSet) {
+              rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum, inputFn,*/
+                  cat("A typeset end was found within a ",
+                      stsChunkName(chunkType), ".", NULL));
+            }
+            stsScheme[stsSchemes].typesetting = "";
+            let(&(stsScheme[stsSchemes].typesetting), mid(startPtr, 2, fbPtr - startPtr - 3));
+            /* Record the schemeId */
+            if(nmbrLen(stsScheme[stsSchemes].scheme) == 2
+               && stsVar[stsScheme[stsSchemes].scheme[1]].stsSchemeId == 0)
+                stsVar[stsScheme[stsSchemes].scheme[1]].stsSchemeId = stsSchemes + 1;
+//            for(int i=1;i<=nmbrLen(stsScheme[stsSchemes].scheme);i++)
+//              if(stsVar[stsScheme[stsSchemes].scheme[i]].stsSchemeId == 0)
+//                stsVar[stsScheme[stsSchemes].scheme[i]].stsSchemeId = stsSchemes + 1;
+            stsSchemes++;
+            insideTypeSet = 0;
+            continue;
 
-	  case 'd':
-	  case 't':
-	    /* End of the display/text chunk */
-	    let(&chunk, mid(startPtr, 2, fbPtr - startPtr - 3));
-	    long pos = instr(1, chunk, "###");
-	    if(pos == 0) {
-	      rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum, inputFn,*/
-		  "Display/text chunk shall contain ###, which will be replaced"
-		  " by the generated formula in the generated HTML file.");
-	      let(&chunk, "");
-	      continue;
-	    }
-	    long end = pos + 3;
-	    vstring *target;
-	    if (chunkType == 'd') target = stsDisplayed;
-	    else if (chunkType == 't') target = stsInText;
+          case 'd':
+          case 't':
+            /* End of the display/text chunk */
+            let(&chunk, mid(startPtr, 2, fbPtr - startPtr - 3));
+            long pos = instr(1, chunk, "###");
+            if(pos == 0) {
+              rawSourceError(fileBuf, fbPtr - 1, 2, /*lineNum, inputFn,*/
+                  "Display/text chunk shall contain ###, which will be replaced"
+                  " by the generated formula in the generated HTML file.");
+              let(&chunk, "");
+              continue;
+            }
+            long end = pos + 3;
+            vstring *target;
+            if (chunkType == 'd') target = stsDisplayed;
+            else if (chunkType == 't') target = stsInText;
       else { bug(2410); continue; }
-	    let(&(target[0]), left(chunk, pos-1));
-	    let(&(target[1]), mid(chunk, end, len(chunk)-end+1));
-	    let(&chunk, "");
-	    continue;
+            let(&(target[0]), left(chunk, pos-1));
+            let(&(target[1]), mid(chunk, end, len(chunk)-end+1));
+            let(&chunk, "");
+            continue;
 
-	  case 'h':
-	    /* End of the header chunk */
-	    let(&stsHeader, mid(startPtr, 2, fbPtr - startPtr - 3));
-	    continue;
+          case 'h':
+            /* End of the header chunk */
+            let(&stsHeader, mid(startPtr, 2, fbPtr - startPtr - 3));
+            continue;
 
-	  case 'c':
-	    /* End of the command line chunk */
-	    let(&postProcess, mid(startPtr, 2, fbPtr - startPtr - 3));
-	    continue;
+          case 'c':
+            /* End of the command line chunk */
+            let(&postProcess, mid(startPtr, 2, fbPtr - startPtr - 3));
+            continue;
 
-	  case 'u':
-	    /* End of terminal types list chunk */
-	    {
-	      vstring text = mid(startPtr, 2, fbPtr - startPtr - 3);
-	      nmbrLet(&stsTerminalTypes, parseMathStrict(text));
-	      for(int i=0;i<nmbrLen(stsTerminalTypes);i++) stsVar[stsTerminalTypes[i]].isTerminal = 1;
-	      continue;
-	    }
+          case 'u':
+            /* End of terminal types list chunk */
+            {
+              vstring text = mid(startPtr, 2, fbPtr - startPtr - 3);
+              nmbrLet(&stsTerminalTypes, parseMathStrict(text));
+              for(int i=0;i<nmbrLen(stsTerminalTypes);i++) stsVar[stsTerminalTypes[i]].isTerminal = 1;
+              continue;
+            }
 
-	  case '$':
-	    /* Error handling for incorrect schemes */
-	    insideTypeSet = 0;
-	    continue;
-	}
+          case '$':
+            /* Error handling for incorrect schemes */
+            insideTypeSet = 0;
+            continue;
+        }
     }
   }
 
@@ -600,10 +600,10 @@ flag nmbrBalanced(nmbrString *str, long start, long len) {
     }
     if(pairingMismatches != 0) {
       if(dbs7) print2("Bracket mismatch for %s%s in %s (mismatch=%ld)\n",
-		      g_MathToken[open].tokenName,
-		      g_MathToken[close].tokenName,
-		      nmbrCvtMToVString(nmbrMid(str, start, len)),
-		      pairingMismatches);
+                      g_MathToken[open].tokenName,
+                      g_MathToken[close].tokenName,
+                      nmbrCvtMToVString(nmbrMid(str, start, len)),
+                      pairingMismatches);
       return 0;
     }
   }
@@ -657,41 +657,41 @@ flag unifySts(nmbrString *mathString, nmbrString *scheme, nmbrString *varPos, nm
     /* Handle separately the trivial cases where there are no or one variable. */
     switch(varCount) {
       case 0:
-	/* No variable : match the two strings */
-	return nmbrEq(scheme, mathString);
+        /* No variable : match the two strings */
+        return nmbrEq(scheme, mathString);
 
 //      case 1:
-//	/* One variable: match the start and end, assign the rest */
-//	varStart[0] = varPos[0];
-//	varLen[0] = lenString - lenScheme + 1;
-//	if(!nmbrSubEq(scheme, 1, mathString, 1, varStart[0]-1)) return 0;
-//	if(!nmbrSubEq(scheme, varPos[0]+1, mathString, varPos[0] + varLen[0], lenScheme - varPos[0])) return 0;
-//	if(dbs7) print2("Found unification for %s : %s (start=%ld, len=%ld)\n",g_MathToken[scheme[varPos[0]-1]].tokenName, nmbrCvtMToVString(nmbrMid(mathString, varStart[0], varLen[0])), varStart[0], varLen[0]);
-//	return 1;
+//        /* One variable: match the start and end, assign the rest */
+//        varStart[0] = varPos[0];
+//        varLen[0] = lenString - lenScheme + 1;
+//        if(!nmbrSubEq(scheme, 1, mathString, 1, varStart[0]-1)) return 0;
+//        if(!nmbrSubEq(scheme, varPos[0]+1, mathString, varPos[0] + varLen[0], lenScheme - varPos[0])) return 0;
+//        if(dbs7) print2("Found unification for %s : %s (start=%ld, len=%ld)\n",g_MathToken[scheme[varPos[0]-1]].tokenName, nmbrCvtMToVString(nmbrMid(mathString, varStart[0], varLen[0])), varStart[0], varLen[0]);
+//        return 1;
 
       default:
-	/* Two variables or more: first match the prefix and the suffix */
-	varStart[0] = varPos[0];
-	if(!nmbrSubEq(scheme, 1, mathString, 1, varStart[0]-1)) return 0;
-	if(!nmbrSubEq(scheme, varPos[varCount-1]+1, mathString, lenString - (lenScheme - varPos[varCount-1] - 1), lenScheme - varPos[varCount-1])) return 0;
+        /* Two variables or more: first match the prefix and the suffix */
+        varStart[0] = varPos[0];
+        if(!nmbrSubEq(scheme, 1, mathString, 1, varStart[0]-1)) return 0;
+        if(!nmbrSubEq(scheme, varPos[varCount-1]+1, mathString, lenString - (lenScheme - varPos[varCount-1] - 1), lenScheme - varPos[varCount-1])) return 0;
 
-	/* Then, for each additional variable, */
-	for(int i=0;i<varCount-1;i++) {
-	  if(state[i] < 1) state[i] = 1;
-	  long conLength = varPos[i+1]-varPos[i]-1;
-	  if(dbs9) print2("Searching %ld's occurrence of %s in %s starting from %ld\n", state[i], nmbrCvtMToVString(nmbrMid(scheme, varPos[i]+1, conLength)), nmbrCvtMToVString(mathString), varStart[i]+1);
-	  long position = nmbrInstrN(varStart[i]+1, state[i], mathString, scheme, varPos[i]+1, conLength);
-	  if(dbs9) print2("Found pos %ld\n", position);
-	  if(position == 0) return 0;
-	  // note if there is a next occurrence
-	  if(nmbrInstrN(varStart[i]+1, state[i]+1, mathString, scheme, varPos[i]+1, conLength) > 0)
-	    lastVarNextOcc = i;
-	  varLen[i] = position - varStart[i];
-	  varStart[i+1] = position + conLength;
-	}
-	varLen[varCount-1] = lenString - (lenScheme - varPos[varCount-1]) - varStart[varCount-1] + 1;
-	if(dbs7) for(int i=0;i<varCount;i++) print2("Found unification for %s : %s (start=%ld, len=%ld)\n",g_MathToken[scheme[varPos[i]-1]].tokenName, nmbrCvtMToVString(nmbrMid(mathString, varStart[i], varLen[i])), varStart[i], varLen[i]);
-	break;
+        /* Then, for each additional variable, */
+        for(int i=0;i<varCount-1;i++) {
+          if(state[i] < 1) state[i] = 1;
+          long conLength = varPos[i+1]-varPos[i]-1;
+          if(dbs9) print2("Searching %ld's occurrence of %s in %s starting from %ld\n", state[i], nmbrCvtMToVString(nmbrMid(scheme, varPos[i]+1, conLength)), nmbrCvtMToVString(mathString), varStart[i]+1);
+          long position = nmbrInstrN(varStart[i]+1, state[i], mathString, scheme, varPos[i]+1, conLength);
+          if(dbs9) print2("Found pos %ld\n", position);
+          if(position == 0) return 0;
+          // note if there is a next occurrence
+          if(nmbrInstrN(varStart[i]+1, state[i]+1, mathString, scheme, varPos[i]+1, conLength) > 0)
+            lastVarNextOcc = i;
+          varLen[i] = position - varStart[i];
+          varStart[i+1] = position + conLength;
+        }
+        varLen[varCount-1] = lenString - (lenScheme - varPos[varCount-1]) - varStart[varCount-1] + 1;
+        if(dbs7) for(int i=0;i<varCount;i++) print2("Found unification for %s : %s (start=%ld, len=%ld)\n",g_MathToken[scheme[varPos[i]-1]].tokenName, nmbrCvtMToVString(nmbrMid(mathString, varStart[i], varLen[i])), varStart[i], varLen[i]);
+        break;
     }
 
     /* Check that brackets are balanced in all substitutions */
@@ -741,8 +741,8 @@ flag getSTSLongMathRec(vstring *mmlLine, nmbrString *mathString, long statemNum,
       return 0;
     }
     if(nmbrEq(stsScheme[stsIndex - 1].scheme, mathString)) {
-	let(mmlLine, stsScheme[stsIndex - 1].typesetting);
-	return 1;
+      let(mmlLine, stsScheme[stsIndex - 1].typesetting);
+      return 1;
     }
   }
 
@@ -766,14 +766,14 @@ flag getSTSLongMathRec(vstring *mmlLine, nmbrString *mathString, long statemNum,
     /* Identifier schemes must be fully matched, and there is no substitution */
     if(stsScheme[stsIndex].type == 'i') {
       if(nmbrEq(stsScheme[stsIndex].scheme, mathString)) {
-	let(mmlLine, stsScheme[stsIndex].typesetting);
-	return 1;
+        let(mmlLine, stsScheme[stsIndex].typesetting);
+        return 1;
       } else continue;
     }
 
     /* This case was handled above - skip it here */
     if(nmbrLen(stsScheme[stsIndex].scheme) == 2
-	&& g_MathToken[stsScheme[stsIndex].scheme[1]].tokenType == con_) {
+        && g_MathToken[stsScheme[stsIndex].scheme[1]].tokenType == con_) {
       continue;
     }
 
@@ -802,52 +802,52 @@ flag getSTSLongMathRec(vstring *mmlLine, nmbrString *mathString, long statemNum,
     while((3 == result) && !success) {
       /* Launch unification (Neither unify() nor assignVar() actually match our need. Wrote our own unification) */
       if(dbs5) print2("%sTrying unification of \"%s\" and \"%s\" (state:<%s>)\n",
-		     space(recursionLevel),
-		     nmbrCvtMToVString(mathString),
-		     nmbrCvtMToVString(stsScheme[stsIndex].scheme),
-		     nmbrCvtAnyToVString(stateVector));
+                     space(recursionLevel),
+                     nmbrCvtMToVString(mathString),
+                     nmbrCvtMToVString(stsScheme[stsIndex].scheme),
+                     nmbrCvtAnyToVString(stateVector));
       result = unifySts(mathString, stsScheme[stsIndex].scheme, varPos, varStart, varLen, stateVector);
       if(dbs5) print2("%sResult is %d\n", space(recursionLevel), result);
       if(result == 3 && dbs3) print2("Unification for %s is not unique!\n", nmbrCvtMToVString(mathString));
       if(result != 0) {
-	let(mmlLine, stsScheme[stsIndex].typesetting);
+        let(mmlLine, stsScheme[stsIndex].typesetting);
 
-	if(dbs5) print2("%sFound match with %s\n", space(recursionLevel), nmbrCvtMToVString(stsScheme[stsIndex].scheme));
-	success = 1; /* Be optimistic an assume next level substitutions will succeed */
-	for(int i=0;i<varCount && success;i++) {
-	  long varToken = stsScheme[stsIndex].scheme[varPos[i]-1];
-	  if(dbs5) print2("%sVariable %d : %s , from %ld len %ld (%s)\n", space(recursionLevel), i, g_MathToken[varToken].tokenName, varStart[i], varLen[i], g_MathToken[stsVar[varToken].stsType].tokenName);
+        if(dbs5) print2("%sFound match with %s\n", space(recursionLevel), nmbrCvtMToVString(stsScheme[stsIndex].scheme));
+        success = 1; /* Be optimistic an assume next level substitutions will succeed */
+        for(int i=0;i<varCount && success;i++) {
+          long varToken = stsScheme[stsIndex].scheme[varPos[i]-1];
+          if(dbs5) print2("%sVariable %d : %s , from %ld len %ld (%s)\n", space(recursionLevel), i, g_MathToken[varToken].tokenName, varStart[i], varLen[i], g_MathToken[stsVar[varToken].stsType].tokenName);
 
-	  /* Build the new math string */
-	  nmbrString *newMathString = NULL_NMBRSTRING;
-	  nmbrLet(&newMathString, nmbrUnshiftElement(
-	      nmbrMid(mathString, varStart[i], varLen[i]),
-	      stsVar[varToken].stsType));
-	  if(dbs5) print2("%sSubstitution : %s\n", space(recursionLevel), nmbrCvtMToVString(newMathString));
+          /* Build the new math string */
+          nmbrString *newMathString = NULL_NMBRSTRING;
+          nmbrLet(&newMathString, nmbrUnshiftElement(
+              nmbrMid(mathString, varStart[i], varLen[i]),
+              stsVar[varToken].stsType));
+          if(dbs5) print2("%sSubstitution : %s\n", space(recursionLevel), nmbrCvtMToVString(newMathString));
 
-	  /* Try unification - recursively */
-	  vstring substitution = "";
-	  success &= getSTSLongMathRec(&substitution, newMathString, statemNum, recursionLevel+1);
+          /* Try unification - recursively */
+          vstring substitution = "";
+          success &= getSTSLongMathRec(&substitution, newMathString, statemNum, recursionLevel+1);
 
-	  /* deallocate new math string */
-	  nmbrLet(&newMathString, NULL_NMBRSTRING);
+          /* deallocate new math string */
+          nmbrLet(&newMathString, NULL_NMBRSTRING);
 
-	  if(success) {
-	    vstring anchor = getAnchor(varToken);
-	    long pos = instr(1, *mmlLine, anchor);
-	    while(pos != 0) {
-	      long end = pos + len(anchor);
-	      let(mmlLine, cat(left(*mmlLine, pos-1), substitution, mid(*mmlLine, end, len(*mmlLine)-end+1), NULL));
-	      pos = instr(pos + len(substitution), *mmlLine, anchor);
-	    }
-	  } /* end of if block on next substitution success */
-	  /* Deallocate local strings */
-	  let(&substitution, "");
-	  if(!success && recursionError) {
-	    //print2("When unifying %s with scheme %s (token type %s)\n", nmbrCvtMToVString(mathString), nmbrCvtMToVString(stsScheme[stsIndex].scheme), g_MathToken[stsVar[varToken].stsType].tokenName);
-	    return 0;
-	  }
-	} /* end of for loop on variable substitutions */
+          if(success) {
+            vstring anchor = getAnchor(varToken);
+            long pos = instr(1, *mmlLine, anchor);
+            while(pos != 0) {
+              long end = pos + len(anchor);
+              let(mmlLine, cat(left(*mmlLine, pos-1), substitution, mid(*mmlLine, end, len(*mmlLine)-end+1), NULL));
+              pos = instr(pos + len(substitution), *mmlLine, anchor);
+            }
+          } /* end of if block on next substitution success */
+          /* Deallocate local strings */
+          let(&substitution, "");
+          if(!success && recursionError) {
+            //print2("When unifying %s with scheme %s (token type %s)\n", nmbrCvtMToVString(mathString), nmbrCvtMToVString(stsScheme[stsIndex].scheme), g_MathToken[stsVar[varToken].stsType].tokenName);
+            return 0;
+          }
+        } /* end of for loop on variable substitutions */
       } /* end of if block on unification success */
       /* Stop if all next level substitutions succeeded */
       if(success) break;
@@ -893,10 +893,10 @@ flag getSTSLongMath(vstring *mmlLine, nmbrString *mathString, flag displayed, lo
     /* Return a generic error message */
     if(textwarn)
       let(mmlLine, cat("No typesetting for: ",
-			nmbrCvtMToVString(mathString),NULL));
+                        nmbrCvtMToVString(mathString),NULL));
     else
       let(mmlLine, cat("No typesetting for: <code>",
-			nmbrCvtMToVString(mathString),"</code>",NULL));
+                        nmbrCvtMToVString(mathString),"</code>",NULL));
   }
   else {
     /* Add the HTML container */
@@ -1065,8 +1065,8 @@ vstring asciiToMathSts(vstring text, long statemNum) {
 ////      print2("  extensions: [\"mml2jax.js\"],\n");
 ////      print2("  \"fast-preview\": { disabled: true },\n");
 //  print2("  SVG: { linebreaks: { width: \"container\", automatic: true }"
-////	  ", styles:{\".MathJax_Display\": { \"float\": \"left\" } }"
-//	  "}\n");
+////          ", styles:{\".MathJax_Display\": { \"float\": \"left\" } }"
+//          "}\n");
 //  print2("});</script>\n");
 //  print2("<script type=\"text/javascript\" src=\n");
 //  print2("\"https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/\n");

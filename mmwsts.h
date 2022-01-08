@@ -17,7 +17,7 @@ int parseSTSRules(vstring format);
    conclusion) that is passed in. */
 /* Warning: The caller must deallocate the returned vstring. */
 flag getSTSLongMath(vstring *mmlLine, nmbrString *mathString, flag displayed,
-		    long statemNum, flag textwarn);
+                    long statemNum, flag textwarn);
 
 /* Returns the code to be included in the HTML head element
  * for the given format */

@@ -1150,8 +1150,8 @@ long nmbrInstrN(long start_position, long occ, nmbrString *string1,
         }
       }
       if (found) {
-	start_position = i+1;
-	break;
+        start_position = i+1;
+        break;
       }
     }
     if (i == ls1 - length2 + 1) return 0;

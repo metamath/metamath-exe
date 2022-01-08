@@ -45,8 +45,8 @@ struct hashtable_struct {
 typedef struct hashtable_struct hashtable;
 
 hashtable htcreate(vstring name, int bucket_count, void *no_obj,
-		   hashFunc *hashF, eqFunc *eqF, letFunc *letF,
-		   freeFunc *freeF, dumpFunc *dumpF);
+                   hashFunc *hashF, eqFunc *eqF, letFunc *letF,
+                   freeFunc *freeF, dumpFunc *dumpF);
 void htdelete(hashtable *hashtable);
 flag htput(hashtable *hashtable, void *key, void *object);
 void *htget(hashtable *hashtable, void *key);

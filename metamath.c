@@ -2690,7 +2690,7 @@ void command(int argc, char *argv[]) {
           let(&pipeCommand, cat(postProcess, " > ", g_texFileName, NULL));
           g_texFilePtr = popen(pipeCommand, "w");
           if (!g_texFilePtr) print2("?Could not execute the command \"%s\".\n",
-	          pipeCommand);
+            pipeCommand);
           let(&pipeCommand, "");
         } else {
           print2("Creating HTML file \"%s\"...\n", g_texFileName);

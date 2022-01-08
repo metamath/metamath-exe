@@ -5055,8 +5055,7 @@ vstring getTexOrHtmlHypAndAssertion(long statemNum) {
                  "\\quad\\&\\quad "
               ,NULL));
         } else {
-          if (g_altHtmlFlag
-        	  || stsFlag) { /* 22-Mar-2018 Added for STS */
+          if (g_altHtmlFlag || stsFlag) {
             /* Hard-coded for set.mm! */
             let(&texOrHtmlCode, cat(texOrHtmlCode,
                 "<SPAN ", g_htmlFont, ">",
@@ -5086,8 +5085,7 @@ vstring getTexOrHtmlHypAndAssertion(long statemNum) {
                  "\\quad\\Rightarrow\\quad "
           ,NULL));
     } else {
-      if (g_altHtmlFlag
-      	  || stsFlag) { /* 22-Mar-2018 Added for STS */
+      if (g_altHtmlFlag || stsFlag) {
         /* Hard-coded for set.mm! */
         let(&texOrHtmlCode, cat(texOrHtmlCode,
             /* sans-serif to work around FF3 bug that produces

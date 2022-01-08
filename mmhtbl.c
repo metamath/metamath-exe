@@ -31,8 +31,8 @@ void htinit() {
 /* Creates a new hashtable.
    Returns the hashtable created. */
 hashtable htcreate(vstring name, int bucket_count, void *no_obj,
-		  hashFunc *hashF, eqFunc *eqF, letFunc *letF,
-		  freeFunc *freeF, dumpFunc *dumpF) {
+                   hashFunc *hashF, eqFunc *eqF, letFunc *letF,
+                   freeFunc *freeF, dumpFunc *dumpF) {
   htinit();
 
   /* Allocate space for the bucket pointers */
@@ -90,7 +90,7 @@ flag htput(hashtable *hashtable, void *key, void *object) {
 
   /* Store object and key */
   hashtable->letFunc(&linkedItems[linkedItem].key,
-		     &linkedItems[linkedItem].object, key, object);
+                     &linkedItems[linkedItem].object, key, object);
   hashtable->entries++;
 
   /* Compute the bucket */
@@ -165,8 +165,8 @@ void htstats(hashtable *hashtable) {
   int empty_buckets = 0;
   for(int bucket=0;bucket<hashtable->bucket_count;bucket++) empty_buckets+=hashtable->buckets[bucket] == NO_LINKEDITEM;
   printf("Hashtable %s: %d entries, load factor=%d%%, %d used buckets, %d%% misses, biggest bucket=%d\n", hashtable->name, hashtable->entries,
-	 htlf(hashtable), (hashtable->bucket_count - empty_buckets), (100-(100*hashtable->founds/hashtable->gets)),
-	 hashtable->biggest_bucket_size);
+         htlf(hashtable), (hashtable->bucket_count - empty_buckets), (100-(100*hashtable->founds/hashtable->gets)),
+         hashtable->biggest_bucket_size);
 }
 
 /* Dumpts the whole table */
