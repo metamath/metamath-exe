@@ -1029,6 +1029,39 @@ int nmbrEq(nmbrString *s, nmbrString *t)
 }
 
 
+/* Compute a hash of a string */
+/* This simply computes a XOR of the first numbers */
+int nmbrHash(nmbrString *s)
+{
+  static long salt[] = { 4938, 48977, 6897, 7293, 2663, 7925, 2999, 12238,
+      40033, 14038, 10699, 29746, 56108, 34526, 63576, 52053, 61949, 41177, 43740, 22822
+ };
+  long i;
+  long hash = 0;
+  i = -1;
+  while (i < 13 && s[i] != -1) {
+    hash ^= ( s[i] + salt[i] ) << i;
+    i++;
+  }
+  return hash;
+}
+
+
+/* Compare two sub-strings */
+/* Unlike strcmp, this returns a 1 if the strings are equal
+   and 0 otherwise. */
+/* Only the token is compared.  The whiteSpace string is
+   ignored. */
+int nmbrSubEq(nmbrString *s,long sstart, nmbrString *t, long tstart, long len)
+{
+  long i;
+  if (sstart - 1 + len > nmbrLen(s)
+   || tstart - 1 + len > nmbrLen(t)) return 0;
+  for (i = 0; s[sstart-1+i] == t[tstart-1+i] && i<len; i++);
+  return i == len;
+}
+
+
 /* Extract sin from character position start to stop into sout */
 nmbrString *nmbrSeg(nmbrString *sin, long start, long stop)
 {
@@ -1096,6 +1129,34 @@ nmbrString *nmbrSpace(long n)
   }
   sout[j] = *NULL_NMBRSTRING; /* End of string */
   return sout;
+}
+
+/* Search for the nth occurrence of string2 in string1 */
+long nmbrInstrN(long start_position, long occ, nmbrString *string1,
+  nmbrString *string2, long start2, long length2)
+{
+  if (start_position < 1) start_position = 1;
+  start_position--;
+  for(; occ > 0;occ--) {
+    long ls1, i, j;
+    ls1 = nmbrLen(string1);
+    if(start_position++ >= ls1) return 0;
+    for (i = start_position - 1; i <= ls1 - length2; i++) {
+      flag found = 1;
+      for (j = 0; j < length2; j++) {
+        if (string1[i+j] != string2[start2-1+j]) {
+          found = 0;
+          break;
+        }
+      }
+      if (found) {
+        start_position = i+1;
+        break;
+      }
+    }
+    if (i == ls1 - length2 + 1) return 0;
+  }
+  return start_position;
 }
 
 /* Search for string2 in string1 starting at start_position */
@@ -1451,6 +1512,21 @@ nmbrString *nmbrAddElement(nmbrString *g, long element)
   v = nmbrTempAlloc(length + 2); /* Allow for end of string */
   nmbrCpy(v, g);
   v[length] = element;
+  v[length + 1] = *NULL_NMBRSTRING; /* End of string */
+/*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("bbg2: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
+  return(v);
+}
+
+
+/* Add a single number to start of a nmbrString - faster than nmbrCat */
+nmbrString *nmbrUnshiftElement(nmbrString *g, long element)
+{
+  long length;
+  nmbrString *v;
+  length = nmbrLen(g);
+  v = nmbrTempAlloc(length + 2); /* Allow for end of string */
+  nmbrCpy(v+1, g);
+  v[0] = element;
   v[length + 1] = *NULL_NMBRSTRING; /* End of string */
 /*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("bbg2: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
   return(v);

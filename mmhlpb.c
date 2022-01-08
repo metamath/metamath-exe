@@ -41,6 +41,7 @@ H("For a summary of comment markup, type HELP VERIFY MARKUP.");
 H("For help getting started, type HELP DEMO.");
 H("For help exploring the data base, type HELP EXPLORE.");
 H("For help creating a LaTeX file, type HELP TEX.");
+H("For help with structured typesetting, type HELP STS.");
 H("For help creating Web pages, type HELP HTML.");
 H("For help proving new theorems, type HELP PROOF_ASSISTANT.");
 H("For a list of help topics, type HELP ? (to force an error message).");
@@ -157,7 +158,8 @@ H("");
 g_printHelp = !strcmp(saveHelpCmd, "HELP SHOW STATEMENT");
 H("Syntax:  SHOW STATEMENT <label-match> [/ COMMENT] [/ FULL] [/ TEX]");
 H("             [/ OLD_TEX] [/ HTML] [/ ALT_HTML] [/ BRIEF_HTML]");
-H("             [/ BRIEF_ALT_HTML] [/ NO_VERSIONING] [/ MNEMONICS]");
+H("             [/ BRIEF_ALT_HTML] [/ STS <format>] [/ NO_VERSIONING]");
+H("             [/ MNEMONICS]");
 H("");
 H("This command provides information about a statement.  Only statements");
 H("that have labels ($f, $e, $a, and $p) may be specified. <label-match>");
@@ -186,6 +188,12 @@ H("        creates a Web page for the statement.  It may not be used with");
 H("        any other qualifier.  See HELP HTML for more information.");
 H("    / ALT_HTML, / BRIEF_HTML, / BRIEF_ALT_HTML - See HELP HTML for more");
 H("        information on these.");
+/* 13-Jan-2018 tar Added STS */
+H("    / STS This qualifier invokes the HTML mode of SHOW STATEMENT, for");
+H("        creating a Web page for the statement.  However it does not so by");
+H("        mapping symbols one-to-one with their HTML representation, but");
+H("        uses an approach based on the structure of the statement.");
+H("        See HELP STS for more information.");
 H("    / NO_VERSIONING - When used with / HTML or the 3 HTML qualifiers");
 H("        above, a backup file suffixed with ~1 is not created (i.e. the");
 H("        previous version is overwritten).");
@@ -689,6 +697,16 @@ H("kinds of markup.  See HELP WRITE THEOREM_LIST for format of section headers."
 H("");
 H("For help with modularization tags such as \"$( Begin $[ set-header.mm $] $)\",");
 H("see the 21-Dec-2017 entry in http://us.metamath.org/mpeuni/mmnotes.txt .");
+H("");
+
+
+g_printHelp = !strcmp(saveHelpCmd, "HELP VERIFY STS");
+H("Syntax:  VERIFY STS <format>");
+H("");
+H("This command error-checks that the STS rules definition covers all syntax");
+H("defined in the Metamath source file loaded.  It runs through all non-");
+H("definitional axioms and prints a warning on those which do not have ");
+H("corresponding STS rules. ");
 H("");
 
 

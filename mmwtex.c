@@ -18,6 +18,7 @@
 #include "mmpars.h" /* For rawSourceError and mathSrchCmp and lookupLabel */
 #include "mmwtex.h"
 #include "mmcmdl.h" /* For g_texFileName */
+#include "mmwsts.h" /* For MathML/STS */
 
 /* All LaTeX and HTML definitions are taken from the source
    file (read in the by READ... command).  In the source file, there should
@@ -31,6 +32,10 @@ flag g_htmlFlag = 0;  /* HTML flag: 0 = TeX, 1 = HTML */
 flag g_altHtmlFlag = 0;  /* Use "althtmldef" instead of "htmldef".  This is
     intended to allow the generation of pages with the Unicode font
     instead of the individual GIF files. */
+/* 19-Jul-2017 tar Added for STS/MathML output */
+flag stsFlag = 0; /* STS output (for "structural typesetting") */
+vstring stsOutput = ""; /* output mode chosen for STS (follows STS flag) */
+vstring postProcess = ""; /* command to pipe the output into (used for MathJax prerendering) */
 flag g_briefHtmlFlag = 0;  /* Output statement lists only, for statement display
                 in other HTML pages, such as the Proof Explorer home page */
 long g_extHtmlStmt = 0; /* At this statement and above, use the exthtmlxxx
@@ -673,7 +678,8 @@ flag readTexDefs(
   }
 
   /* Check to make sure all GIFs are present */
-  if (g_htmlFlag) {
+  if (g_htmlFlag
+      && !stsFlag) { /* 22-Mar-2018 Added for STS */
     for (i = 0; i < numSymbs; i++) {
       tmpPtr = g_TexDefs[i].texEquiv;
       k = 0;
@@ -1084,6 +1090,18 @@ vstring tokenToTex(vstring mtoken, long statemNum /*for error msgs*/)
    MUST be separated by white space.   TeX "$" does not surround the output. */
 vstring asciiMathToTex(vstring mathComment, long statemNum)
 {
+  /* 29-Sep-2017 Thierry Arnoux added for STS */
+  if(stsFlag) {
+    return asciiToMathSts(mathComment, statemNum);
+  } else {
+    return asciiMathToTexNoSts(mathComment, statemNum);
+  }
+}
+
+/* Converts a comment section in math mode to TeX.  Each math token
+   MUST be separated by white space.   TeX "$" does not surround the output. */
+vstring asciiMathToTexNoSts(vstring mathComment, long statemNum)
+{
 
   vstring tex;
   vstring texLine = "";
@@ -1105,7 +1123,9 @@ vstring asciiMathToTex(vstring mathComment, long statemNum)
     let(&token, space(i));
     memcpy(token, srcptr, (size_t)i);
     srcptr = srcptr + i;
-    tex = tokenToTex(token, statemNum); /* Convert token to TeX */
+    /* 27 Jul 2017 tar For MathML/STS */
+    if(stsFlag) tex = stsToken(tokenId(token), statemNum);
+    else tex = tokenToTex(token, statemNum); /* Convert token to TeX */
               /* tokenToTex allocates tex; we must deallocate it */
 
     if (!g_htmlFlag) {
@@ -1349,6 +1369,8 @@ void printTexHeader(flag texHeaderFlag)
     print2("-->\n");
     print2("</STYLE>\n");
     printLongLine(g_htmlCSS, "", " ");
+
+    if (stsFlag) printLongLine(getSTSHeader(), "", "\n");
 
     /* Put theorem name before "Metamath Proof Explorer" etc. */
     if (g_showStatement < g_extHtmlStmt) {
@@ -4833,6 +4855,12 @@ vstring getTexLongMath(nmbrString *mathString, long statemNum)
   vstring lastTex = "";
   flag alphnew, alphold, unknownnew, unknownold;
 
+  /* 7-Jul-2017 added for STS (Structured Typesetting) */
+  if(stsFlag) {
+    getSTSLongMath(&texLine, mathString, 1, statemNum, 0);
+    return texLine;
+  }
+
   if (!g_texDefsRead) bug(2322); /* TeX defs were not read */
   let(&texLine, "");
 
@@ -5027,7 +5055,7 @@ vstring getTexOrHtmlHypAndAssertion(long statemNum) {
                  "\\quad\\&\\quad "
               ,NULL));
         } else {
-          if (g_altHtmlFlag) {
+          if (g_altHtmlFlag || stsFlag) {
             /* Hard-coded for set.mm! */
             let(&texOrHtmlCode, cat(texOrHtmlCode,
                 "<SPAN ", g_htmlFont, ">",
@@ -5057,7 +5085,7 @@ vstring getTexOrHtmlHypAndAssertion(long statemNum) {
                  "\\quad\\Rightarrow\\quad "
           ,NULL));
     } else {
-      if (g_altHtmlFlag) {
+      if (g_altHtmlFlag || stsFlag) {
         /* Hard-coded for set.mm! */
         let(&texOrHtmlCode, cat(texOrHtmlCode,
             /* sans-serif to work around FF3 bug that produces

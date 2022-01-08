@@ -13,7 +13,9 @@ noinst_HEADERS = \
 	mmveri.h \
 	mmvstr.h \
 	mmword.h \
-	mmwtex.h
+	mmwtex.h \
+	mmhtbl.h \
+	mmwsts.h
 
 metamath_SOURCES = \
 	metamath.c \
@@ -30,6 +32,8 @@ metamath_SOURCES = \
 	mmvstr.c \
 	mmword.c \
 	mmwtex.c \
+	mmhtbl.c \
+	mmwsts.c \
 	$(noinst_HEADERS)
 
 

@@ -20,6 +20,7 @@
                memory management; converts between proof formats
     mmhlpa.c - The help file, part 1.
     mmhlpb.c - The help file, part 2.
+    mmhtbl.c - Hashtable implementation
     mminou.c - Basic input and output interface
     mmpars.c - Parses the source file
     mmpfas.c - Proof Assistant
@@ -27,6 +28,7 @@
     mmveri.c - Proof verifier for source file
     mmvstr.c - BASIC-like string functions
     mmwtex.c - LaTeX/HTML source generation
+    mmwsts.c - STS source generation
     mmword.c - File revision utility (for TOOLS> UPDATE) (not generally useful)
 */
 
@@ -57,11 +59,20 @@
 
 #define MVERSION "0.199.pre 7-Aug-2021"
 /* 0.199.pre
-   30-Dec-2021 mc metamath.c mmdata.c mminou.c mmmaci.c -
-     Remove mmmaci and everything related to THINK_C compiler
    4-Jan-2022 mc - change VERIFY MARKUP /TOP_DATE_SKIP and /FILE_SKIP to
      /TOP_DATE_CHECK and /FILE_CHECK (with opposite meaning), and make the
-     skip behavior the default. */
+     skip behavior the default.
+   30-Dec-2021 mc metamath.c mmdata.c mminou.c mmmaci.c -
+     Remove mmmaci and everything related to THINK_C compiler
+   24-Dec-2021 tar mmwsts.c and others - Merge STS source generation code
+     originally developped in July 2017.  STS stands for Structured TypeSetting and
+     can be used to generate MathML, which can in turn be postprocessed by MathJAX
+     to output mathematical typesetting (this includes indices, exponents, summands
+     and integrals with sets specifed below the sign, square roots with overhangs,
+     fraction bars, sized parentheses, etc.)  The code introduces a new / STS flag
+     as a third alternative to / HTML and / ALT_HTML for HTML page generation, and
+     a / VERIFY STS option to only check the integrity of the external STS command
+     file.  */
 /* 0.198 nm 7-Aug-2021 mmpars.c - Fix cosmetic bug in WRITE SOURCE ... /REWRAP
    that prevented end of sentence (e.g. period) from appearing in column 79,
    thus causing some lines to be shorter than necessary. */
@@ -702,6 +713,7 @@
 #include "mmpfas.h"
 #include "mmunif.h"
 #include "mmword.h"
+#include "mmwsts.h"
 #include "mmwtex.h"
 
 void command(int argc, char *argv[]);
@@ -2126,13 +2138,23 @@ void command(int argc, char *argv[]) {
       /* If not specified, for backwards compatibility in scripts
          leave g_altHtmlFlag at current value */
       if (switchPos("/ HTML") != 0) {
-        if (switchPos("/ ALT_HTML") != 0) {
-          print2("?Please specify only one of / HTML and / ALT_HTML.\n");
+        if (switchPos("/ ALT_HTML") != 0 || switchPos("/ STS") != 0 ) {
+          print2("?Please specify only one of / HTML , / ALT_HTML and / STS.\n");
           continue;
         }
         g_altHtmlFlag = 0;
-      } else {
-        if (switchPos("/ ALT_HTML") != 0) g_altHtmlFlag = 1;
+      } else if (switchPos("/ ALT_HTML") != 0) {
+        if (switchPos ("/ STS") != 0) {
+          print2 ("?Please specify only one of / HTML , / ALT_HTML and / STS.\n");
+          continue;
+        }
+        g_altHtmlFlag = 1;
+      } else if (switchPos ("/ STS") != 0) {
+        stsFlag = 1;
+        let(&stsOutput, g_fullArg[5]);
+
+        /* Parse the STS rules corresponding to the expected output . */
+        parseSTSRules(stsOutput);
       }
 
       if (2/*error*/ == readTexDefs(0 /* 1 = check errors only */,
@@ -2543,6 +2565,7 @@ void command(int argc, char *argv[]) {
         switchPos("/ HTML")
         || switchPos("/ BRIEF_HTML")
         || switchPos("/ ALT_HTML")
+        || switchPos("/ STS")
         || switchPos("/ BRIEF_ALT_HTML"))) {
       /* Special processing for the / HTML qualifiers - for each matching
          statement, a .html file is opened, the statement is output,
@@ -2553,6 +2576,7 @@ void command(int argc, char *argv[]) {
       i = 5;  /* # arguments with only / HTML or / ALT_HTML */
       if (noVersioning) i = i + 2;
       if (switchPos("/ TIME")) i = i + 2;
+      if (switchPos("/ STS")) i = i + 1;
       if (g_rawArgs != i) {
         printLongLine(cat("?The HTML qualifiers may not be combined with",
             " others except / NO_VERSIONING and / TIME.\n", NULL), "  ", " ");
@@ -2581,6 +2605,14 @@ void command(int argc, char *argv[]) {
         g_altHtmlFlag = 1;
       } else {
         g_altHtmlFlag = 0;
+      }
+
+      if (switchPos("/ STS")) {
+        stsFlag = 1;
+        let(&stsOutput, g_fullArg[5]);
+
+        /* Parse the STS rules corresponding to the expected output. */
+        parseSTSRules(stsOutput);
       }
 
       q = 0;
@@ -2651,8 +2683,19 @@ void command(int argc, char *argv[]) {
             let(&g_texFileName, cat(g_Statement[g_showStatement].labelName, ".html",
                 NULL));
         }
-        print2("Creating HTML file \"%s\"...\n", g_texFileName);
-        g_texFilePtr = fSafeOpen(g_texFileName, "w", noVersioning);
+        /* Post processing (for pre-rendering) */
+        if (stsFlag && strlen(postProcess) != 0) {
+          vstring pipeCommand = "";
+          print2("Creating and processing HTML file \"%s\"...\n", g_texFileName);
+          let(&pipeCommand, cat(postProcess, " > ", g_texFileName, NULL));
+          g_texFilePtr = popen(pipeCommand, "w");
+          if (!g_texFilePtr) print2("?Could not execute the command \"%s\".\n",
+            pipeCommand);
+          let(&pipeCommand, "");
+        } else {
+          print2("Creating HTML file \"%s\"...\n", g_texFileName);
+          g_texFilePtr = fSafeOpen(g_texFileName, "w", noVersioning);
+        }
         if (!g_texFilePtr) goto htmlDone; /* Couldn't open it (err msg was
             provided) */
         g_texFileOpenFlag = 1;
@@ -2768,7 +2811,9 @@ void command(int argc, char *argv[]) {
                   if (!instr(1, str3, cat(" ", str1, " ", NULL))) {
                     let(&str3, cat(str3, " ", str1, " ", NULL));
                     let(&str2, "");
-                    str2 = tokenToTex(g_MathToken[(g_Statement[i].mathString)[j]
+                    str2 = stsFlag ?
+                      stsToken((g_Statement[i].mathString)[j], i) :
+                      tokenToTex(g_MathToken[(g_Statement[i].mathString)[j]
                         ].tokenName, i/*stmt# for error msgs*/);
                     /* Skip any tokens (such as |- in QL Explorer) that may be suppressed */
                     if (!str2[0]) continue;
@@ -2896,7 +2941,8 @@ void command(int argc, char *argv[]) {
        ABORT_S:
         /*** Close the html file ***/
         printTexTrailer(1 /*texHeaderFlag*/);
-        fclose(g_texFilePtr);
+        if (stsFlag && strlen(postProcess) != 0) pclose(g_texFilePtr);
+        else fclose(g_texFilePtr);
         g_texFileOpenFlag = 0;
         let(&g_texFileName,"");
 
@@ -6418,6 +6464,13 @@ void command(int argc, char *argv[]) {
           g_fullArg[2],  /* Output file */
           (switchPos("/ CSS") != 0),
           i); /* Action bits */
+      continue;
+    }
+
+    if (cmdMatches("VERIFY STS")) {
+      /* Go through all non-definition axioms,
+       * and check whether there is a corresponding STS scheme */
+      verifySts(g_fullArg[2]);
       continue;
     }
 

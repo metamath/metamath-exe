@@ -24,6 +24,7 @@
 #include "mmpfas.h"
 #include "mmunif.h" /* For g_bracketMatchInit, g_minSubstLen,
                        ...and g_firstConst */
+#include "mmwsts.h" /* For MathML/STS */
 
 /* Local prototypes */
 vstring bigAdd(vstring bignum1, vstring bignum2);
@@ -304,7 +305,9 @@ void typeStatement(long showStmt,
             }
             htmlDistinctVarsCommaFlag = 1;
             let(&str2, "");
-            str2 = tokenToTex(g_MathToken[nmbrTmpPtr1[k]].tokenName, showStmt);
+            str2 = stsFlag ?
+              stsToken(nmbrTmpPtr1[k], showStmt) :
+              tokenToTex(g_MathToken[nmbrTmpPtr1[k]].tokenName, showStmt);
                  /* tokenToTex allocates str2; we must deallocate it */
             let(&htmlDistinctVars, cat(htmlDistinctVars, str2, NULL));
 
@@ -322,7 +325,9 @@ void typeStatement(long showStmt,
             }
             htmlDistinctVarsCommaFlag = 1;
             let(&str2, "");
-            str2 = tokenToTex(g_MathToken[nmbrTmpPtr2[k]].tokenName, showStmt);
+            str2 = stsFlag ?
+              stsToken(nmbrTmpPtr2[k], showStmt) :
+              tokenToTex(g_MathToken[nmbrTmpPtr2[k]].tokenName, showStmt);
                  /* tokenToTex allocates str2; we must deallocate it */
             let(&htmlDistinctVars, cat(htmlDistinctVars, str2, NULL));
 

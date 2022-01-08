@@ -265,6 +265,10 @@ long nmbrLen(nmbrString *s);
 long nmbrAllocLen(nmbrString *s);
 void nmbrZapLen(nmbrString *s, long length);
 
+/* Search for the nth occurrence of string2 in string1 */
+long nmbrInstrN(long start, long occ,nmbrString *string1,
+  nmbrString *string2, long start2, long length2);
+
 /* Search for string2 in string 1 starting at start_position */
 long nmbrInstr(long start, nmbrString *sin, nmbrString *s);
 
@@ -275,6 +279,12 @@ long nmbrRevInstr(long start_position,nmbrString *string1,
 
 /* 1 if strings are equal, 0 otherwise */
 int nmbrEq(nmbrString *sout,nmbrString *sin);
+
+/* Compute a hash of a string */
+int nmbrHash(nmbrString *s);
+
+/* 1 if substrings are equal, 0 otherwise */
+int nmbrSubEq(nmbrString *s,long sstart, nmbrString *t, long tstart, long len);
 
 /* Converts mString to a vstring with one space between tokens */
 vstring nmbrCvtMToVString(nmbrString *s);
@@ -299,6 +309,9 @@ long nmbrElementIn(long start, nmbrString *g, long element);
 
 /* Add a single number to end of a nmbrString - faster than nmbrCat */
 nmbrString *nmbrAddElement(nmbrString *g, long element);
+
+/* Add a single number to start of a nmbrString - faster than nmbrCat */
+nmbrString *nmbrUnshiftElement(nmbrString *g, long element);
 
 /* Get the set union of two math token strings (presumably
    variable lists) */
