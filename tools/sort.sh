@@ -16,6 +16,12 @@ HELP
 if [ $# -eq 1 ] && [ "$1" = "-h" -o "$1" = "--help" ]; then usage; exit; fi
 if [ $# -ne 1 ]; then usage; exit 1; fi
 
-if [ "$1" != "" ]; then echo "SORT with key unsupported"; exit 2; fi
-
-sort
+if [ "$1" == "" ]; then
+  sort
+else
+  awk -v matchKey="$1" '{
+    n = index($0, matchKey);
+    key = n ? substr($0, n) : $0;
+    print key "\1" $0;
+  }' | sort -k1,1 -t $'\x01' | sed 's/.*\x01//'
+fi
