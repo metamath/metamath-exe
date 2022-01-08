@@ -20,20 +20,10 @@ if [ "$1" = "" ]; then specChars="()[],=:;{}"; else specChars=$1; fi
 
 awk -v specChars="$specChars" \
 'BEGIN {
-  len = length(specChars);
-  split(specChars, specCharsArr, "");
+  gsub(/[\\\]\-\^]/, "\\\\&", specChars);
+  pattern = "[" specChars "]";
 } {
-  for (i = 1; i <= len; i++) {
-    if (!index($0, specCharsArr[i])) continue;
-    out = "";
-    while (1) {
-      p = index($0, specCharsArr[i]);
-      if (!p) break;
-      out = out substr($0, 1, p - 1) " " substr($0, p, 1) " ";
-      $0 = substr($0, p + 1);
-    }
-    $0 = out $0;
-  }
+  gsub(pattern, " & ");
   gsub(/^[ \t]+/, "");
   gsub(/[ \t]+$/, "");
   gsub(/[ \t]+/, "\n");
