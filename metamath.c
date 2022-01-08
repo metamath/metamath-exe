@@ -713,6 +713,7 @@
 #include "mmpfas.h"
 #include "mmunif.h"
 #include "mmword.h"
+#include "mmwsts.h"
 #include "mmwtex.h"
 
 void command(int argc, char *argv[]);

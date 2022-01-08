@@ -8,14 +8,14 @@
 #define MMHTBL_H_
 
 #include <stdio.h>
-#include "mmutil.h"
 #include "mmvstr.h"
 #include "mmdata.h"
 
 typedef int (hashFunc)(void *);
 typedef int (eqFunc)(void *, void *);
 typedef void (letFunc)(void **, void **, void *, void*);
-typedef void (freeFunc)(void *, void *);
+typedef void (freeFunc)(void **, void **);
+typedef void (dumpFunc)(void *, void *);
 
 struct linked_struct {
   void *object;
@@ -39,14 +39,14 @@ struct hashtable_struct {
   eqFunc *eqFunc;
   letFunc *letFunc;
   freeFunc *freeFunc;
-  eqFunc *dumpFunc;
+  dumpFunc *dumpFunc;
 };
 
 typedef struct hashtable_struct hashtable;
 
 hashtable htcreate(vstring name, int bucket_count, void *no_obj,
 		   hashFunc *hashF, eqFunc *eqF, letFunc *letF,
-		   freeFunc *freeF, eqFunc *dumpF);
+		   freeFunc *freeF, dumpFunc *dumpF);
 void htdelete(hashtable *hashtable);
 flag htput(hashtable *hashtable, void *key, void *object);
 void *htget(hashtable *hashtable, void *key);

@@ -32,7 +32,7 @@ void htinit() {
    Returns the hashtable created. */
 hashtable htcreate(vstring name, int bucket_count, void *no_obj,
 		  hashFunc *hashF, eqFunc *eqF, letFunc *letF,
-		  freeFunc *freeF, eqFunc *dumpF) {
+		  freeFunc *freeF, dumpFunc *dumpF) {
   htinit();
 
   /* Allocate space for the bucket pointers */

@@ -12,7 +12,6 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdarg.h>
-#include "mmutil.h"
 #include "mmvstr.h"
 #include "mmdata.h"
 #include "mminou.h"
@@ -192,8 +191,20 @@ nmbrString *parseMathStrict(vstring text)
   return mathString;
 }
 
+int stsCacheHash(void *s) {
+  return nmbrHash((nmbrString*)s);
+}
+
+int stsCacheEq(void *s, void *t) {
+  return nmbrEq((nmbrString*)s, (nmbrString*)t);
+}
+
 /* Store a couple key/object into the cache */
-void stsStoreCache(nmbrString **tKey, vstring *tObject, nmbrString *sKey, vstring sObject) {
+void stsStoreCache(void **tKey_, void **tObject_, void *sKey_, void *sObject_) {
+  nmbrString **tKey = (nmbrString **)tKey_;
+  vstring *tObject = (vstring *)tObject_;
+  nmbrString *sKey = (nmbrString *)sKey_;
+  vstring sObject = (vstring)sObject_;
   *tKey = NULL_NMBRSTRING;
   nmbrLet(tKey, sKey);
 
@@ -202,14 +213,19 @@ void stsStoreCache(nmbrString **tKey, vstring *tObject, nmbrString *sKey, vstrin
 }
 
 /* Free a couple key/object from the cache */
-void stsFreeCache(nmbrString **key, vstring *object) {
+void stsFreeCache(void **key_, void **object_) {
+  nmbrString **key = (nmbrString**)key_;
+  vstring *object = (vstring*)object_;
   nmbrLet(key, NULL_NMBRSTRING);
   let(object, NULL);
 }
 
 /* Dump a couple key/object from the cache */
-void stsDumpCache(nmbrString *key, vstring object) {
-//  printf("- %s -> %s\n", nmbrCvtMToVString(key), object);
+void stsDumpCache(void *key_, void *object_) {
+  nmbrString *key = (nmbrString*)key_;
+  (void)object_;
+  // vstring object = (vstring)object_;
+  // printf("- %s -> %s\n", nmbrCvtMToVString(key), object);
   printf("- (%d) %s [%s]\n", nmbrHash(key), nmbrCvtMToVString(key), nmbrCvtAnyToVString(key));
 }
 
@@ -230,9 +246,8 @@ int parseSTSRules(vstring format) {
 
   /* Create a cache for exported statements to speed up */
   if(stsUseCache) {
-    stsCache = htcreate(format, STS_CACHE_BUCKETS, "", (hashFunc*)&nmbrHash, (eqFunc*)&nmbrEq,
-			(letFunc*)&stsStoreCache, (freeFunc*)&stsFreeCache,
-			(eqFunc*)&stsDumpCache);
+    stsCache = htcreate(format, STS_CACHE_BUCKETS, "", stsCacheHash, stsCacheEq,
+			stsStoreCache, stsFreeCache, stsDumpCache);
   }
 
   /* Build the name of the MMTS file to load */
@@ -501,8 +516,9 @@ int parseSTSRules(vstring format) {
 	    }
 	    long end = pos + 3;
 	    vstring *target;
-	    if(chunkType == 'd') target = stsDisplayed;
-	    if(chunkType == 't') target = stsInText;
+	    if (chunkType == 'd') target = stsDisplayed;
+	    else if (chunkType == 't') target = stsInText;
+      else { bug(2410); continue; }
 	    let(&(target[0]), left(chunk, pos-1));
 	    let(&(target[1]), mid(chunk, end, len(chunk)-end+1));
 	    let(&chunk, "");
@@ -686,9 +702,9 @@ flag unifySts(nmbrString *mathString, nmbrString *scheme, nmbrString *varPos, nm
     /* Compute next state */
     if(lastVarNextOcc >= 0) {
       state[lastVarNextOcc]++;
-      for(int i=lastVarNextOcc+1;i<varCount-1;i++)
+      for (int i=lastVarNextOcc+1;i<varCount-1;i++)
         state[i] = 1;
-        if(dbs7) print2("Next state is %s\n",nmbrCvtAnyToVString(state));
+      if(dbs7) print2("Next state is %s\n",nmbrCvtAnyToVString(state));
     }
   }
   while(lastVarNextOcc >= 0 && !balanced);
@@ -968,6 +984,7 @@ long tokenId(vstring token) {
  * token in ASCII */
 /* *** Note: The caller must deallocate the returned string */
 vstring stsToken(long tokenId, long stateNum) {
+  (void)stateNum;
   vstring str2 = "";
   if(stsVar == NULL) {
     print2("Error: STS has not been initialized.");
