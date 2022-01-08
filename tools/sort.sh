@@ -22,6 +22,6 @@ else
   awk -v matchKey="$1" '{
     n = index($0, matchKey);
     key = n ? substr($0, n) : $0;
-    print key "\1" $0;
-  }' | sort -k1,1 -t $'\x01' | sed 's/.*\x01//'
+    print key "\x1F" $0;
+  }' | sort -k1,1 -t $'\x1F' | sed 's/.*\x1F//'
 fi
