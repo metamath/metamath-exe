@@ -59,6 +59,9 @@
 
 #define MVERSION "0.199.pre 7-Aug-2021"
 /* 0.199.pre
+   4-Jan-2022 mc - change VERIFY MARKUP /TOP_DATE_SKIP and /FILE_SKIP to
+     /TOP_DATE_CHECK and /FILE_CHECK (with opposite meaning), and make the
+     skip behavior the default.
    30-Dec-2021 mc metamath.c mmdata.c mminou.c mmmaci.c -
      Remove mmmaci and everything related to THINK_C compiler
    24-Dec-2021 tar mmwsts.c and others - Merge STS source generation code
@@ -1069,7 +1072,10 @@ void command(int argc, char *argv[]) {
           }
         }
         /* Do the operating system command */
-        (void)system(str1);
+        /* The use of (void)!f() is to ignore the value on both
+          clang (which takes (void) as an ignore indicator)
+          and gcc (which doesn't but is fooled by the ! operator). */
+        (void)!system(str1);
 #ifdef VAXC
         printf("\n"); /* Last line from VAX doesn't have new line */
 #endif
@@ -2151,7 +2157,7 @@ void command(int argc, char *argv[]) {
       }
 
       if (2/*error*/ == readTexDefs(0 /* 1 = check errors only */,
-          0 /* 1 = no GIF file existence check */ )) {
+          1 /* 1 = GIF file existence check */ )) {
         continue; /* An error occurred */
       }
 
@@ -2169,7 +2175,7 @@ void command(int argc, char *argv[]) {
       writeBibliography(g_fullArg[2],
           "*", /* labelMatch - all labels */
           0,  /* 1 = no output, just warning msgs if any */
-          0); /* 1 = ignore missing external files (gifs, bib, etc.) */
+          1); /* 1 = check missing external files (gifs, bib, etc.) */
       continue;
     }  /* End of "WRITE BIBLIOGRAPHY" */
 
@@ -2205,7 +2211,7 @@ void command(int argc, char *argv[]) {
 
       /* readTexDefs() rereads based on changed in g_htmlFlag, g_altHtmlFlag */
       if (2/*error*/ == readTexDefs(0 /* 1 = check errors only */,
-          0 /* 1 = no GIF file existence check */  )) {
+          1 /* 1 = GIF file existence check */  )) {
         continue; /* An error occurred */
       }
 
@@ -2313,7 +2319,7 @@ void command(int argc, char *argv[]) {
             printTexComment(str3,              /* Sends result to g_texFilePtr */
                 0, /* 1 = htmlCenterFlag */
                 PROCESS_EVERYTHING, /* actionBits */
-                0  /* 1 = noFileCheck */ );
+                1  /* 1 = fileCheck */ );
             g_texFilePtr = NULL;
             g_outputToString = 1; /* Restore after printTexComment */
 
@@ -2962,7 +2968,7 @@ void command(int argc, char *argv[]) {
       g_altHtmlFlag = 1;  /* Use Unicode, not GIF */
       /* readTexDefs() rereads based on changes to g_htmlFlag, g_altHtmlFlag */
       if (2/*error*/ == readTexDefs(0 /* 1 = check errors only */,
-          0 /* 1 = no GIF file existence check */  )) {
+          1 /* 1 = GIF file existence check */  )) {
         continue; /* An error occurred */
       }
 

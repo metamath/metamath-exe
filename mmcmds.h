@@ -86,10 +86,10 @@ void verifyProofs(vstring labelMatch, flag verifyFlag);
 
 /* If checkFiles = 0, do not open external files.
    If checkFiles = 1, check mm*.html, presence of gifs, etc. */
-void verifyMarkup(vstring labelMatch, flag dateSkip, flag topDateSkip,
-    flag fileSkip,
-    flag underscoreSkip,
-    flag mathboxSkip,
+void verifyMarkup(vstring labelMatch, flag dateCheck, flag topDateCheck,
+    flag fileCheck,
+    flag underscoreCheck,
+    flag mathboxCheck,
     flag verboseMode);
 
 void processMarkup(vstring inputFileName, vstring outputFileName,

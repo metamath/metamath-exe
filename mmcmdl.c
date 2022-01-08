@@ -1255,6 +1255,7 @@ flag processCommandLine(void)
             i++;
             if (!getFullArg(i, cat(
                 "DATE_SKIP|FILE_SKIP|TOP_DATE_SKIP|VERBOSE",
+                "|FILE_CHECK|TOP_DATE_CHECK",
                 "|UNDERSCORE_SKIP|MATHBOX_SKIP|<DATE_SKIP>", NULL)))
               goto pclbad;
           } else {
