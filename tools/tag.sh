@@ -33,6 +33,9 @@ if [ $# -eq 1 ] && [ "$1" = "-h" -o "$1" = "--help" ]; then usage; exit; fi
 isNum() { case "$1" in '' | *[!0-9]*) return 1;; esac; }
 if [ $# -ne 6 ] || ! isNum "$4" || ! isNum "$6"; then usage; exit 1; fi
 
+if [ $4 -eq 0 ]; then echo "error: S# must be positive\n"; usage; exit 1; fi
+if [ $6 -eq 0 ]; then echo "error: E# must be positive\n"; usage; exit 1; fi
+
 awk -v before="$1" -v after="$2" -v start="$3" -v end="$5" \
   -v startNum=$4 -v endNum=$6 '{
   if (startNum > 0) {
