@@ -12,7 +12,7 @@ Syntax:  match.sh MATCHSTR Y/N < INFILE > OUTFILE
 HELP
 }
 
-if [ $# -eq 1 ] && [ "$1" = "-h" ]; then usage; exit; fi
+if [ $# -eq 1 ] && [ "$1" = "-h" -o "$1" = "--help" ]; then usage; exit; fi
 if [ $# -ne 2 ]; then usage; exit 1; fi
 
 case "$2" in

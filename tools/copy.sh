@@ -17,7 +17,7 @@ Syntax:  copy.sh OUTFILE INFILE INFILE ...
 HELP
 }
 
-if [ $# -eq 1 ] && [ "$1" = "-h" ]; then usage; exit; fi
+if [ $# -eq 1 ] && [ "$1" = "-h" -o "$1" = "--help" ]; then usage; exit; fi
 
 outfile=$1; shift
 buf=$(cat $@)

@@ -29,7 +29,7 @@ can remove the "@@@" tags with SUBSTITUTE when done.
 HELP
 }
 
-if [ $# -eq 1 ] && [ "$1" = "-h" ]; then usage; exit; fi
+if [ $# -eq 1 ] && [ "$1" = "-h" -o "$1" = "--help" ]; then usage; exit; fi
 isNum() { case "$1" in '' | *[!0-9]*) return 1;; esac; }
 if [ $# -ne 6 ] || ! isNum "$4" || ! isNum "$6"; then usage; exit 1; fi
 

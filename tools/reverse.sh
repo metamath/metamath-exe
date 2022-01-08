@@ -11,7 +11,7 @@ Syntax:  reverse.sh < INFILE > OUTFILE
 HELP
 }
 
-if [ $# -eq 1 ] && [ "$1" = "-h" ]; then usage; exit; fi
+if [ $# -eq 1 ] && [ "$1" = "-h" -o "$1" = "--help" ]; then usage; exit; fi
 if [ $# -ne 0 ]; then usage; exit 1; fi
 
 tac

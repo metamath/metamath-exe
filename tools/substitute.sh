@@ -18,7 +18,7 @@ Syntax:  substitute.sh OLDSTR NEWSTR OCCURRENCE MATCHSTR < INFILE > OUTFILE
 HELP
 }
 
-if [ $# -eq 1 ] && [ "$1" = "-h" ]; then usage; exit; fi
+if [ $# -eq 1 ] && [ "$1" = "-h" -o "$1" = "--help" ]; then usage; exit; fi
 if [ $# -ne 4 ]; then usage; exit 1; fi
 case "$3" in
   A | a)  all=1;;

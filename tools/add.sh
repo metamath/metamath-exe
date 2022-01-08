@@ -13,7 +13,7 @@ Syntax:  add.sh BEGSTR ENDSTR < INFILE > OUTFILE
 HELP
 }
 
-if [ $# -eq 1 ] && [ "$1" = "-h" ]; then usage; exit; fi
+if [ $# -eq 1 ] && [ "$1" = "-h" -o "$1" = "--help" ]; then usage; exit; fi
 if [ $# -ne 2 ]; then usage; exit 1; fi
 
 while read line; do echo $1${line}$2; done

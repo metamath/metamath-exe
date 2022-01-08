@@ -15,7 +15,7 @@ Syntax:  insert.sh STRING COLUMN < INFILE > OUTFILE
 HELP
 }
 
-if [ $# -eq 1 ] && [ "$1" = "-h" ]; then usage; exit; fi
+if [ $# -eq 1 ] && [ "$1" = "-h" -o "$1" = "--help" ]; then usage; exit; fi
 isNum() { case "$1" in '' | *[!0-9]*) return 1;; esac }
 if [ $# -ne 2 ] || ! isNum "$2" || [ $2 -eq 0 ]; then usage; exit 1; fi
 

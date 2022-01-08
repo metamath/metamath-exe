@@ -12,7 +12,7 @@ Syntax:  number.sh FIRST LAST INCR > OUTFILE
 HELP
 }
 
-if [ $# -eq 1 ] && [ "$1" = "-h" ]; then usage; exit; fi
+if [ $# -eq 1 ] && [ "$1" = "-h" -o "$1" = "--help" ]; then usage; exit; fi
 isNum() { [[ "$1" == ?(-)+([0-9]) ]]; }
 if [ $# -ne 3 ] || ! isNum "$1" || ! isNum "$2" || ! isNum "$3"; then
   usage; exit 1

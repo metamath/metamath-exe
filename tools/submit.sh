@@ -23,7 +23,7 @@ inside of a command file.
 HELP
 }
 
-if [ $# -eq 1 ] && [ "$1" = "-h" ]; then usage; exit; fi
+if [ $# -eq 1 ] && [ "$1" = "-h" -o "$1" = "--help" ]; then usage; exit; fi
 
 if [ "$1" = "-q" ]; then args=""; shift; else args="-e"; fi
 if [ $# -eq 0 ]; then tools="mm-tools"

@@ -24,7 +24,7 @@ Syntax:  translate.sh [-r] [-e] [TOOLS] < INFILE > OUTFILE
 HELP
 }
 
-if [ $# -eq 1 ] && [ "$1" = "-h" ]; then usage; exit; fi
+if [ $# -eq 1 ] && [ "$1" = "-h" -o "$1" = "--help" ]; then usage; exit; fi
 
 if [ "$1" = "-r" ]; then recursive=1; shift; fi
 if [ "$1" = "-e" ]; then echo=1; shift; fi
