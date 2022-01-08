@@ -4773,7 +4773,7 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
 
 void verifyMarkup(vstring labelMatch,
     flag dateCheck, /* 1 = check date consistency */
-    flag topDateCheck, /* 1 = check top date but check others */
+    flag topDateCheck, /* 1 = check top date */
     flag fileCheck, /* 1 = check external files (gifs, mmset.html,...) */
     flag underscoreCheck, /* 1 = check labels for "_" characters) */
     flag mathboxCheck, /* 1 = check mathbox cross-references) */

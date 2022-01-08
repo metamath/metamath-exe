@@ -6388,7 +6388,7 @@ void command(int argc, char *argv[]) {
       n = switchPos("/ VERBOSE") != 0;
       verifyMarkup(g_fullArg[2],
           (flag)i, /* 1 = check date consistency */
-          (flag)j, /* 1 = check top date only */
+          (flag)j, /* 1 = check top date */
           (flag)k, /* 1 = check external files GIF, mmset.html,... */
           (flag)l, /* 1 = check labels for underscores */
           (flag)m, /* 1 = check mathbox cross-references */
