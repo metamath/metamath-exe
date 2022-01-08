@@ -38,7 +38,7 @@ awk -v tools="$tools" -v echo="$echo" -v recursive="$recursive" \
 'BEGIN {
   if (recursive) {
     extraArg = tools;
-    gsub(/[\\$"]/, "\\\\&", extraArg);
+    gsub(/[\\$"`]/, "\\\\&", extraArg);
     extraArg = " \"" extraArg "\"";
   }
 } {
