@@ -9,7 +9,7 @@ BREAK - Break up (parse) a file into a list of tokens (one per line)
 This command breaks up a file into tokens, one per line, breaking at
 whitespace and any special characters you specify as delimiters.
 Use an explicit (quoted) space as SPECCHARS to avoid the default
-special characters and break only on whitespace.
+special characters - ()[],=:;{} - and break only on whitespace.
 Syntax:  break.sh SPECCHARS < INFILE > OUTFILE
 HELP
 }
