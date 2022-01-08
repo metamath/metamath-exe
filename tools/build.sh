@@ -8,6 +8,7 @@ BUILD - Build a file with multiple tokens per line from a list
 
 This command combines a list of tokens into multiple tokens per line,
 as many as will fit per line, separating them with spaces.
+The line length is hard-coded to 73 characters long.
 Syntax:  build.sh < INFILE > OUTFILE
 HELP
 }
