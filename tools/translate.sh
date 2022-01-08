@@ -36,8 +36,6 @@ else usage; exit 1; fi
 echo "#!/bin/bash"
 awk -v tools="$tools" -v echo="$echo" -v recursive="$recursive" \
 'BEGIN {
-  len = length(specChars);
-  split(specChars, specCharsArr, "");
   if (recursive) {
     extraArg = tools;
     gsub(/[\\$"]/, "\\\\&", extraArg);
