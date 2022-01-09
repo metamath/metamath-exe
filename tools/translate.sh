@@ -65,14 +65,14 @@ awk -v tools="$tools" -v echo="$echo" -v recursive="$recursive" \
     ;
   else {
     $1 = toupper($1);
+    if ($1 == "EXIT" || $1 == "QUIT") exit;
     if ($1 == "C") $1 = "COPY"; else
     if ($1 == "B") $1 = "BEEP"; else
     if ($1 == "S") $1 = "SUBSTITUTE"; else
-    if ($1 == "T") $1 = "TAG"; else
-    if ($1 == "EXIT" || $1 == "QUIT") exit;
+    if ($1 == "T") $1 = "TAG";
     if (echo) {
       echoLine = $0;
-      gsub(/[\\$"]/, "\\\\&", echoLine);
+      gsub(/[\\$"`]/, "\\\\&", echoLine);
       print "echo \"" echoLine "\"";
     }
     file = tools "/" tolower($1) ".sh";
@@ -111,7 +111,7 @@ awk -v tools="$tools" -v echo="$echo" -v recursive="$recursive" \
     }
     if (echo) {
       echoLine = $0;
-      gsub(/[\\$"]/, "\\\\&", echoLine);
+      gsub(/[\\$"`]/, "\\\\&", echoLine);
       print "echo \" => " echoLine "\"";
     }
     print;
