@@ -19,9 +19,14 @@ if [ $# -ne 1 ]; then usage; exit 1; fi
 if [ "$1" == "" ]; then
   sort
 else
+  set -o pipefail
   awk -v matchKey="$1" '{
     n = index($0, matchKey);
     key = n ? substr($0, n) : $0;
+    if (index(key, "\x1F")) {
+      print "unsupported binary file" > "/dev/stderr";
+      exit 2;
+    }
     print key "\x1F" $0;
   }' | sort -k1,1 -t $'\x1F' | sed 's/.*\x1F//'
 fi
