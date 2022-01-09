@@ -31,7 +31,7 @@ if [ "$all" = "" ] && [ $occs -eq 0 ]; then usage; exit 1; fi
 awk -v oldStr="$1" -v newStr="$2" -v matchStr="$4" \
   -v all="$all" -v occs=$occs \
 'BEGIN {
-  gsub(/[][\\.^$(){}|*+?]/, "\\\\&", oldStr);
+  gsub(/[][\\.\^$(){}|*+?]/, "\\\\&", oldStr);
   gsub(/[&\\]/, "\\\\&", newStr);
 } {
   if (index($0, matchStr)) {
