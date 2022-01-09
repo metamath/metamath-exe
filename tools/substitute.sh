@@ -41,8 +41,7 @@ awk -v oldStr="$1" -v newStr="$2" -v matchStr="$4" \
       # $0 = gensub(oldStr, newStr, occs + 1);
 
       lhs = "";
-      for (i = occs; i > 1; i--) {
-        if (!match($0, oldStr)) break;
+      for (i = occs; i > 1 && match($0, oldStr); i--) {
         p = RSTART + RLENGTH;
         lhs = lhs substr($0, 1, p - 1);
         $0 = substr($0, p);
