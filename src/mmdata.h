@@ -208,6 +208,8 @@ struct nullNmbrStruct {
     nmbrString nullElement; };
 extern struct nullNmbrStruct g_NmbrNull;
 #define NULL_NMBRSTRING &(g_NmbrNull.nullElement)
+#define nmbrString_def(x) nmbrString *x = NULL_NMBRSTRING
+#define free_nmbrString(x) nmbrLet(&x, NULL_NMBRSTRING)
 
 /* Null pntrString -- NULL flags the end of a pntrString */
 struct nullPntrStruct {
@@ -217,6 +219,8 @@ struct nullPntrStruct {
     pntrString nullElement; };
 extern struct nullPntrStruct g_PntrNull;
 #define NULL_PNTRSTRING &(g_PntrNull.nullElement)
+#define pntrString_def(x) pntrString *x = NULL_PNTRSTRING
+#define free_pntrString(x) pntrLet(&x, NULL_PNTRSTRING)
 
 
 /* This function returns a 1 if any entry in a comma-separated list

@@ -27,11 +27,11 @@ vstring bigSub(vstring bignum1, vstring bignum2);
 flag g_printHelp = 0;
 
 /* For HTML output */
-vstring g_printStringForReferencedBy = "";
+vstring_def(g_printStringForReferencedBy);
 
 /* For MIDI */
 flag g_midiFlag = 0;
-vstring g_midiParam = "";
+vstring_def(g_midiParam);
 
 /* Type (i.e. print) a statement */
 void typeStatement(long showStmt,
@@ -58,17 +58,19 @@ void typeStatement(long showStmt,
         only.
   */
   long i, j, k, m, n;
-  vstring str1 = "", str2 = "", str3 = "";
+  vstring_def(str1);
+  vstring_def(str2);
+  vstring_def(str3);
   nmbrString *nmbrTmpPtr1; /* Pointer only; not allocated directly */
   nmbrString *nmbrTmpPtr2; /* Pointer only; not allocated directly */
-  nmbrString *nmbrDDList = NULL_NMBRSTRING;
+  nmbrString_def(nmbrDDList);
   flag q1, q2;
   flag type;
   flag subType;
-  vstring htmlDistinctVars = "";
+  vstring_def(htmlDistinctVars);
   char htmlDistinctVarsCommaFlag = 0;
-  vstring str4 = "";
-  vstring str5 = "";
+  vstring_def(str4);
+  vstring_def(str5);
   long distVarGrps = 0;
 
   /* For syntax breakdown of definitions in HTML page */
@@ -152,7 +154,7 @@ void typeStatement(long showStmt,
         }
 
         /* Print a small pink statement number after the statement */
-        let(&str2, "");
+        free_vstring(str2);
         str2 = pinkHTML(showStmt);
         printLongLine(cat("<CENTER><B><FONT SIZE=\"+1\">", str1,
             " <FONT COLOR=", GREEN_TITLE_COLOR,
@@ -164,7 +166,7 @@ void typeStatement(long showStmt,
   }
 
   if (!briefFlag || commentOnlyFlag) {
-    let(&str1, "");
+    free_vstring(str1);
     str1 = getDescription(showStmt);
     if (!str1[0] /* No comment */) {
       print2("?Warning: Statement \"%s\" has no comment\n",
@@ -282,7 +284,7 @@ void typeStatement(long showStmt,
                 distVarGrps++;
               }
 
-              nmbrLet(&nmbrDDList, NULL_NMBRSTRING);
+              free_nmbrString(nmbrDDList);
               break; /* Out of n loop */
             }
           } /* If $d var in current list is not same as one we're adding */
@@ -298,7 +300,7 @@ void typeStatement(long showStmt,
               let(&htmlDistinctVars, cat(htmlDistinctVars, ",", NULL));
             }
             htmlDistinctVarsCommaFlag = 1;
-            let(&str2, "");
+            free_vstring(str2);
             str2 = tokenToTex(g_MathToken[nmbrTmpPtr1[k]].tokenName, showStmt);
                  /* tokenToTex allocates str2; we must deallocate it */
             let(&htmlDistinctVars, cat(htmlDistinctVars, str2, NULL));
@@ -316,7 +318,7 @@ void typeStatement(long showStmt,
               let(&htmlDistinctVars, cat(htmlDistinctVars, ",", NULL));
             }
             htmlDistinctVarsCommaFlag = 1;
-            let(&str2, "");
+            free_vstring(str2);
             str2 = tokenToTex(g_MathToken[nmbrTmpPtr2[k]].tokenName, showStmt);
                  /* tokenToTex allocates str2; we must deallocate it */
             let(&htmlDistinctVars, cat(htmlDistinctVars, str2, NULL));
@@ -435,7 +437,7 @@ void typeStatement(long showStmt,
       if (!g_oldTexFlag) {
         g_outputToString = 1;
         print2("\\begin{align}\n");
-        let(&str3, "");
+        free_vstring(str3);
         /* Get HTML hypotheses => assertion */
         str3 = getTexOrHtmlHypAndAssertion(showStmt); /* In mmwtex.c */
         printLongLine(cat(str3,
@@ -549,11 +551,11 @@ void typeStatement(long showStmt,
                 g_MathToken[nmbrTmpPtr2[k]].tokenName, ">", NULL));
           } else {
             if (htmlFlg && texFlag) {
-              let(&str2, "");
+              free_vstring(str2);
               str2 = tokenToTex(g_MathToken[nmbrTmpPtr1[k]].tokenName, showStmt);
                    /* tokenToTex allocates str2; we must deallocate it */
               let(&str1, cat(str1, " &nbsp; ", str2, NULL));
-              let(&str2, "");
+              free_vstring(str2);
               str2 = tokenToTex(g_MathToken[nmbrTmpPtr2[k]].tokenName, showStmt);
               let(&str1, cat(str1, ",", str2, NULL));
             }
@@ -592,7 +594,7 @@ void typeStatement(long showStmt,
         if (!texFlag) {
           printLongLine(cat(
               "Its optional disjoint variable pairs are:  ",
-              right(str1,3),NULL),"  "," ");
+              right(str1, 3), NULL), "  ", " ");
         }
       } /* if (i && type == p_) */
 
@@ -625,7 +627,7 @@ void typeStatement(long showStmt,
           g_outputToString = 0;
         }
 
-        let(&str2, "");
+        free_vstring(str2);
         str2 = htmlAllowedSubst(showStmt);
         if (str2[0] != 0) {
           g_outputToString = 1;
@@ -820,8 +822,8 @@ void typeStatement(long showStmt,
           g_Statement[showStmt].proofSectionLen = 0;
 
           /* Deallocate storage */
-          let(&str1, "");
-          nmbrLet(&nmbrTmpPtr2, NULL_NMBRSTRING);
+          free_vstring(str1);
+          free_nmbrString(nmbrTmpPtr2);
 
         } else { /* if (nmbrLen(nmbrTmpPtr2)) else */
           /* Proof was not found - probable syntax error */
@@ -838,7 +840,7 @@ void typeStatement(long showStmt,
         (g_Statement[showStmt].mathString)[0] = zapStatement1stToken;
 
         /* Deallocate storage */
-        nmbrLet(&nmbrTmpPtr1, NULL_NMBRSTRING);
+        free_nmbrString(nmbrTmpPtr1);
 
       } /* if (wffToken >= 0) */
 
@@ -860,7 +862,7 @@ void typeStatement(long showStmt,
     g_outputToString = 1;
     if (subType != SYNTAX) { /* Only do this for
         definitions, axioms, and theorems, not syntax statements */
-      let(&str1, "");
+      free_vstring(str1);
       g_outputToString = 0; /* Switch output to console in case
             traceUsage reports an error */
       str1 = traceUsage(showStmt,
@@ -890,7 +892,7 @@ void typeStatement(long showStmt,
           /* It should be a $p */
           if (g_Statement[m].type != p_) bug(241);
           /* Get the pink number */
-          let(&str4, "");
+          free_vstring(str4);
           str4 = pinkHTML(m);
           /* Assemble the href */
           let(&str2, cat(str2, " &nbsp;<A HREF=\"",
@@ -978,13 +980,13 @@ void typeStatement(long showStmt,
 
  returnPoint:
   /* Deallocate strings */
-  nmbrLet(&nmbrDDList, NULL_NMBRSTRING);
-  let(&str1, "");
-  let(&str2, "");
-  let(&str3, "");
-  let(&str4, "");
-  let(&str5, "");
-  let(&htmlDistinctVars, "");
+  free_nmbrString(nmbrDDList);
+  free_vstring(str1);
+  free_vstring(str2);
+  free_vstring(str3);
+  free_vstring(str4);
+  free_vstring(str5);
+  free_vstring(htmlDistinctVars);
 } /* typeStatement */
 
 
@@ -1002,13 +1004,13 @@ vstring htmlDummyVars(long showStmt)
   long numDVs;
   nmbrString *optHyp; /* Pointer only; not allocated directly */
   long numOptHyps;
-  vstring str1 = "";
+  vstring_def(str1);
   long k, l, n, hypStmt;
 
   /* Variables used while collecting a statement's dummy variables in $d's */
   long dummyVarCount; /* # of (different) dummy vars found in $d statements */
-  vstring dummyVarUsed = ""; /* 'Y'/'N' indicators that we found that var */
-  vstring htmlDummyVarList = ""; /* Output HTML string */
+  vstring_def(dummyVarUsed); /* 'Y'/'N' indicators that we found that var */
+  vstring_def(htmlDummyVarList); /* Output HTML string */
   long dummyVar; /* Current variable in a $d; test if it's a dummy variable */
 
   /* This function should be called only for web page generation */
@@ -1070,7 +1072,7 @@ vstring htmlDummyVars(long showStmt)
               dummyVarUsed[dummyVar] = 'Y';
               dummyVarCount++;
               /* tokenToTex allocates str1; must deallocate it first */
-              let(&str1, "");
+              free_vstring(str1);
               /* Convert token to htmldef/althtmldef string */
               str1 = tokenToTex(g_MathToken[dummyVar].tokenName,
                   showStmt);
@@ -1113,8 +1115,8 @@ vstring htmlDummyVars(long showStmt)
 
  RETURN_POINT:
   /* Deallocate strings */
-  let(&dummyVarUsed, "");
-  let(&str1, "");
+  free_vstring(dummyVarUsed);
+  free_vstring(str1);
 
   return htmlDummyVarList;
 } /* htmlDummyVars */
@@ -1134,15 +1136,15 @@ vstring htmlAllowedSubst(long showStmt)
   nmbrString *reqDVA; /* Pointer only; not allocated directly */
   nmbrString *reqDVB; /* Pointer only; not allocated directly */
   long numDVs;
-  nmbrString *setVar = NULL_NMBRSTRING; /* set (individual) variables */
+  nmbrString_def(setVar); /* set (individual) variables */
   char *strptr;
-  vstring str1 = "";
+  vstring_def(str1);
   long setVars;
   long wffOrClassVar;
-  vstring setVarDVFlag = "";
+  vstring_def(setVarDVFlag);
   flag found, first;
   long i, j, k;
-  vstring htmlAllowedList = "";
+  vstring_def(htmlAllowedList);
   long countInfo = 0;
 
   reqDVA = g_Statement[showStmt].reqDisjVarsA;
@@ -1242,7 +1244,7 @@ vstring htmlAllowedSubst(long showStmt)
     }
     if (found == 0) continue; /* All set vars have $d with this wff or class */
 
-    let(&str1, "");
+    free_vstring(str1);
     str1 = tokenToTex(g_MathToken[wffOrClassVar].tokenName, showStmt);
          /* tokenToTex allocates str1; we must deallocate it eventually */
     countInfo++;
@@ -1251,7 +1253,7 @@ vstring htmlAllowedSubst(long showStmt)
     first = 1;
     for (j = 0; j < setVars; j++) {
       if (setVarDVFlag[j] == 'N') {
-        let(&str1, "");
+        free_vstring(str1);
         str1 = tokenToTex(g_MathToken[setVar[j]].tokenName, showStmt);
         let(&htmlAllowedList, cat(htmlAllowedList,
             (first == 0) ? "," : "", str1, NULL));
@@ -1285,9 +1287,9 @@ vstring htmlAllowedSubst(long showStmt)
   }
 
   /* Deallocate strings */
-  nmbrLet(&setVar, NULL_NMBRSTRING);
-  let(&str1, "");
-  let(&setVarDVFlag, "");
+  free_nmbrString(setVar);
+  free_vstring(str1);
+  free_vstring(setVarDVFlag);
 
   return htmlAllowedList;
 } /* htmlAllowedSubst */
@@ -1367,36 +1369,36 @@ void typeProof(long statemNum,
         typeProof()
   */
   long i, j, plen, step, stmt, lens, lent, maxStepNum;
-  vstring tmpStr = "";
-  vstring tmpStr1 = "";
-  vstring locLabDecl = "";
-  vstring tgtLabel = "";
-  vstring srcLabel = "";
-  vstring startPrefix = "";
-  vstring tgtPrefix = "";
-  vstring srcPrefix = "";
-  vstring userPrefix = "";
-  vstring contPrefix = "";
-  vstring statementUsedFlags = "";
-  vstring startStringWithNum = "";
-  vstring startStringWithoutNum = "";
-  nmbrString *proof = NULL_NMBRSTRING;
-  nmbrString *localLabels = NULL_NMBRSTRING;
-  nmbrString *localLabelNames = NULL_NMBRSTRING;
-  nmbrString *indentationLevel = NULL_NMBRSTRING;
-  nmbrString *targetHyps = NULL_NMBRSTRING;
-  nmbrString *essentialFlags = NULL_NMBRSTRING;
-  nmbrString *stepRenumber = NULL_NMBRSTRING;
-  nmbrString *notUnifiedFlags = NULL_NMBRSTRING;
-  nmbrString *unprovedList = NULL_NMBRSTRING; /* For traceProofWork() */
-  nmbrString *relativeStepNums = NULL_NMBRSTRING; /* For unknownFlag */
+  vstring_def(tmpStr);
+  vstring_def(tmpStr1);
+  vstring_def(locLabDecl);
+  vstring_def(tgtLabel);
+  vstring_def(srcLabel);
+  vstring_def(startPrefix);
+  vstring_def(tgtPrefix);
+  vstring_def(srcPrefix);
+  vstring_def(userPrefix);
+  vstring_def(contPrefix);
+  vstring_def(statementUsedFlags);
+  vstring_def(startStringWithNum);
+  vstring_def(startStringWithoutNum);
+  nmbrString_def(proof);
+  nmbrString_def(localLabels);
+  nmbrString_def(localLabelNames);
+  nmbrString_def(indentationLevel);
+  nmbrString_def(targetHyps);
+  nmbrString_def(essentialFlags);
+  nmbrString_def(stepRenumber);
+  nmbrString_def(notUnifiedFlags);
+  nmbrString_def(unprovedList); /* For traceProofWork() */
+  nmbrString_def(relativeStepNums); /* For unknownFlag */
   long maxLabelLen = 0;
   long maxStepNumLen = 1;
   long maxStepNumOffsetLen = 0;
   char type;
   flag stepPrintFlag;
   long fromStep, toStep, byStep;
-  vstring hypStr = "";
+  vstring_def(hypStr);
   nmbrString *hypPtr;
   long hyp, hypStep;
 
@@ -1427,7 +1429,7 @@ void typeProof(long statemNum,
          "Proof of Theorem", which means we have to make the "Proof of
          Theorem" line separate and not the table caption, so that the
          "Distinct variables..." line does not become part of the table. */
-      let(&tmpStr, "");
+      free_vstring(tmpStr);
       tmpStr = htmlDummyVars(statemNum);
       if (tmpStr[0] != 0) {
         print2("<CENTER><B>Proof of Theorem <FONT\n");
@@ -1436,7 +1438,7 @@ void typeProof(long statemNum,
             "</FONT></B></CENTER>", NULL), "", "\"");
         /* Print the list of dummy variables */
         printLongLine(tmpStr, "", "\"");
-        let(&tmpStr, "");
+        free_vstring(tmpStr);
         print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=%s\n",
             MINT_BACKGROUND_COLOR);
         print2("SUMMARY=\"Proof of theorem\">\n");
@@ -1647,7 +1649,7 @@ void typeProof(long statemNum,
         stmt = -1000 - stmt;
         /* stmt is now the step number a local label refers to */
         lens = (long)strlen(str((double)(localLabelNames[stmt])));
-        let(&tmpStr1, ""); /* Clear temp alloc stack for str function */
+        freeTempAlloc(); /* Clear temp alloc stack for str function */
       } else {
         if (stmt != -(long)'?') bug (219); /* the only other possibility */
         lens = 1; /* '?' (unknown step) */
@@ -2110,12 +2112,12 @@ void typeProof(long statemNum,
           }
 
           /* Deallocate memory */
-          nmbrLet(&nmbrTmpPtr2, NULL_NMBRSTRING);
-          nmbrLet(&nmbrTmpPtr1, NULL_NMBRSTRING);
+          free_nmbrString(nmbrTmpPtr2);
+          free_nmbrString(nmbrTmpPtr1);
         } /* next i */
         /* Deallocate memory in case we broke out above */
-        nmbrLet(&nmbrTmpPtr2, NULL_NMBRSTRING);
-        nmbrLet(&nmbrTmpPtr1, NULL_NMBRSTRING);
+        free_nmbrString(nmbrTmpPtr2);
+        free_nmbrString(nmbrTmpPtr1);
       } /* if (wffToken >= 0) */
       /* End of syntax hints section */
       /******************************************************************/
@@ -2131,7 +2133,7 @@ void typeProof(long statemNum,
           /* Get the main symbol in the syntax */
           /* This section can be deleted if not wanted - it is custom
              for set.mm and might not work with other .mm's */
-          let(&tmpStr1, "");
+          free_vstring(tmpStr1);
           for (i = 1 /* Skip |- */; i < g_Statement[stmt].mathStringLen; i++) {
             if (g_MathToken[(g_Statement[stmt].mathString)[i]].tokenType ==
                 (char)con_) {
@@ -2175,7 +2177,7 @@ void typeProof(long statemNum,
           let(&tmpStr, cat(tmpStr, " &nbsp;", tmpStr1, NULL));
           /* End section - Get the main symbol in the syntax */
 
-          let(&tmpStr1, "");
+          free_vstring(tmpStr1);
           tmpStr1 = pinkHTML(stmt);
           let(&tmpStr, cat(tmpStr, "<A HREF=\"",
               g_Statement[stmt].labelName, ".html\">",
@@ -2193,7 +2195,7 @@ void typeProof(long statemNum,
 
 
       /* Get list of axioms and definitions assumed by proof */
-      let(&statementUsedFlags, "");
+      free_vstring(statementUsedFlags);
       traceProofWork(statemNum,
           1, /*essentialFlag*/
           "", /*traceToList*/
@@ -2211,7 +2213,7 @@ void typeProof(long statemNum,
               let(&tmpStr, "<TR><TD ALIGN=LEFT><FONT SIZE=-1><B>"
                 "This theorem was proved from axioms:</B>");
             }
-            let(&tmpStr1, "");
+            free_vstring(tmpStr1);
             tmpStr1 = pinkHTML(stmt);
             let(&tmpStr, cat(tmpStr, " &nbsp;<A HREF=\"",
                 g_Statement[stmt].labelName, ".html\">",
@@ -2234,7 +2236,7 @@ void typeProof(long statemNum,
               let(&tmpStr,
  "<TR><TD ALIGN=LEFT><FONT SIZE=-1><B>This theorem depends on definitions:</B>");
             }
-            let(&tmpStr1, "");
+            free_vstring(tmpStr1);
             tmpStr1 = pinkHTML(stmt);
             let(&tmpStr, cat(tmpStr, " &nbsp;<A HREF=\"",
                 g_Statement[stmt].labelName, ".html\">",
@@ -2283,7 +2285,7 @@ void typeProof(long statemNum,
       if (g_printStringForReferencedBy[0]) {
         if (g_outputToString != 1) bug(257);
         printLongLine(g_printStringForReferencedBy, "", "\"");
-        let(&g_printStringForReferencedBy, "");
+        free_vstring(g_printStringForReferencedBy);
       } else {
         /* Since we always print ref-by list even if "(None)",
            g_printStringForReferencedBy should never be empty */
@@ -2298,30 +2300,30 @@ void typeProof(long statemNum,
   }
 
  typeProof_return:
-  let(&tmpStr, "");
-  let(&tmpStr1, "");
-  let(&statementUsedFlags, "");
-  let(&locLabDecl, "");
-  let(&tgtLabel, "");
-  let(&srcLabel, "");
-  let(&startPrefix, "");
-  let(&tgtPrefix, "");
-  let(&srcPrefix, "");
-  let(&userPrefix, "");
-  let(&contPrefix, "");
-  let(&hypStr, "");
-  let(&startStringWithNum, "");
-  let(&startStringWithoutNum, "");
-  nmbrLet(&unprovedList, NULL_NMBRSTRING);
-  nmbrLet(&localLabels, NULL_NMBRSTRING);
-  nmbrLet(&localLabelNames, NULL_NMBRSTRING);
-  nmbrLet(&proof, NULL_NMBRSTRING);
-  nmbrLet(&targetHyps, NULL_NMBRSTRING);
-  nmbrLet(&indentationLevel, NULL_NMBRSTRING);
-  nmbrLet(&essentialFlags, NULL_NMBRSTRING);
-  nmbrLet(&stepRenumber, NULL_NMBRSTRING);
-  nmbrLet(&notUnifiedFlags, NULL_NMBRSTRING);
-  nmbrLet(&relativeStepNums, NULL_NMBRSTRING);
+  free_vstring(tmpStr);
+  free_vstring(tmpStr1);
+  free_vstring(statementUsedFlags);
+  free_vstring(locLabDecl);
+  free_vstring(tgtLabel);
+  free_vstring(srcLabel);
+  free_vstring(startPrefix);
+  free_vstring(tgtPrefix);
+  free_vstring(srcPrefix);
+  free_vstring(userPrefix);
+  free_vstring(contPrefix);
+  free_vstring(hypStr);
+  free_vstring(startStringWithNum);
+  free_vstring(startStringWithoutNum);
+  free_nmbrString(unprovedList);
+  free_nmbrString(localLabels);
+  free_nmbrString(localLabelNames);
+  free_nmbrString(proof);
+  free_nmbrString(targetHyps);
+  free_nmbrString(indentationLevel);
+  free_nmbrString(essentialFlags);
+  free_nmbrString(stepRenumber);
+  free_nmbrString(notUnifiedFlags);
+  free_nmbrString(relativeStepNums);
 } /* typeProof() */
 
 /* Show details of one proof step */
@@ -2330,12 +2332,12 @@ void typeProof(long statemNum,
 void showDetailStep(long statemNum, long detailStep) {
 
   long i, j, plen, step, stmt, sourceStmt, targetStmt;
-  vstring tmpStr = "";
-  vstring tmpStr1 = "";
-  nmbrString *proof = NULL_NMBRSTRING;
-  nmbrString *localLabels = NULL_NMBRSTRING;
-  nmbrString *localLabelNames = NULL_NMBRSTRING;
-  nmbrString *targetHyps = NULL_NMBRSTRING;
+  vstring_def(tmpStr);
+  vstring_def(tmpStr1);
+  nmbrString_def(proof);
+  nmbrString_def(localLabels);
+  nmbrString_def(localLabelNames);
+  nmbrString_def(targetHyps);
   long nextLocLabNum = 1; /* Next number to be used for a local label */
   void *voidPtr; /* bsearch result */
   char type;
@@ -2609,19 +2611,19 @@ void showDetailStep(long statemNum, long detailStep) {
     nmbrLet((nmbrString **)(&getStep.targetSubstsPntr[i]),
         NULL_NMBRSTRING);
   }
-  nmbrLet(&getStep.sourceHyps, NULL_NMBRSTRING);
-  pntrLet(&getStep.sourceSubstsPntr, NULL_PNTRSTRING);
-  nmbrLet(&getStep.sourceSubstsNmbr, NULL_NMBRSTRING);
-  pntrLet(&getStep.targetSubstsPntr, NULL_PNTRSTRING);
-  nmbrLet(&getStep.targetSubstsNmbr, NULL_NMBRSTRING);
+  free_nmbrString(getStep.sourceHyps);
+  free_pntrString(getStep.sourceSubstsPntr);
+  free_nmbrString(getStep.sourceSubstsNmbr);
+  free_pntrString(getStep.targetSubstsPntr);
+  free_nmbrString(getStep.targetSubstsNmbr);
 
   /* Deallocate other strings */
-  let(&tmpStr, "");
-  let(&tmpStr1, "");
-  nmbrLet(&localLabels, NULL_NMBRSTRING);
-  nmbrLet(&localLabelNames, NULL_NMBRSTRING);
-  nmbrLet(&proof, NULL_NMBRSTRING);
-  nmbrLet(&targetHyps, NULL_NMBRSTRING);
+  free_vstring(tmpStr);
+  free_vstring(tmpStr1);
+  free_nmbrString(localLabels);
+  free_nmbrString(localLabelNames);
+  free_nmbrString(proof);
+  free_nmbrString(targetHyps);
 
 } /* showDetailStep */
 
@@ -2630,13 +2632,13 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
 
   long i, j, k, pos, stmt, plen, slen, step;
   char type;
-  vstring statementUsedFlags = ""; /* 'Y'/'N' flag that statement is used */
-  vstring str1 = "";
-  vstring str2 = "";
-  vstring str3 = "";
-  nmbrString *statementList = NULL_NMBRSTRING;
-  nmbrString *proof = NULL_NMBRSTRING;
-  nmbrString *essentialFlags = NULL_NMBRSTRING;
+  vstring_def(statementUsedFlags); /* 'Y'/'N' flag that statement is used */
+  vstring_def(str1);
+  vstring_def(str2);
+  vstring_def(str3);
+  nmbrString_def(statementList);
+  nmbrString_def(proof);
+  nmbrString_def(essentialFlags);
 
   /* This section is never called in HTML mode anymore.  The code is
      left in though just in case we somehow get here and the user continues
@@ -2663,7 +2665,7 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
     }
     g_outputToString = 0;
     fprintf(g_texFilePtr, "%s", g_printString);
-    let(&g_printString, "");
+    free_vstring(g_printString);
   }
 
   if (g_Statement[statemNum].type != p_) {
@@ -2747,10 +2749,10 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
         }
         g_outputToString = 0;
         fprintf(g_texFilePtr, "%s", g_printString);
-        let(&g_printString, "");
+        free_vstring(g_printString);
       }
 
-      let(&str1, "");
+      free_vstring(str1);
       str1 = getDescription(stmt);
       if (str1[0]) {
         if (!texFlag) {
@@ -2799,13 +2801,13 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
     } /* End if (statementUsedFlag[stmt] == 'Y') */
   } /* Next stmt */
 
-  let(&statementUsedFlags, ""); /* 'Y'/'N' flag that statement is used */
-  let(&str1, "");
-  let(&str2, "");
-  let(&str3, "");
-  nmbrLet(&statementList, NULL_NMBRSTRING);
-  nmbrLet(&proof, NULL_NMBRSTRING);
-  nmbrLet(&essentialFlags, NULL_NMBRSTRING);
+  free_vstring(statementUsedFlags); /* 'Y'/'N' flag that statement is used */
+  free_vstring(str1);
+  free_vstring(str2);
+  free_vstring(str3);
+  free_nmbrString(statementList);
+  free_nmbrString(proof);
+  free_nmbrString(essentialFlags);
 
 } /* proofStmtSumm */
 
@@ -2825,9 +2827,9 @@ flag traceProof(long statemNum,
 {
 
   long stmt, pos;
-  vstring statementUsedFlags = ""; /* y/n flags that statement is used */
-  vstring outputString = "";
-  nmbrString *unprovedList = NULL_NMBRSTRING;
+  vstring_def(statementUsedFlags); /* y/n flags that statement is used */
+  vstring_def(outputString);
+  nmbrString_def(unprovedList);
   flag foundFlag = 0;
 
   /* Make sure we're calling this with $p statements only */
@@ -2917,9 +2919,9 @@ flag traceProof(long statemNum,
 
  TRACE_RETURN:
   /* Deallocate */
-  let(&outputString, "");
-  let(&statementUsedFlags, "");
-  nmbrLet(&unprovedList, NULL_NMBRSTRING);
+  free_vstring(outputString);
+  free_vstring(statementUsedFlags);
+  free_nmbrString(unprovedList);
   return foundFlag;
 } /* traceProof */
 
@@ -2933,11 +2935,11 @@ void traceProofWork(long statemNum,
 {
 
   long pos, stmt, plen, slen, step;
-  nmbrString *statementList = NULL_NMBRSTRING;
-  nmbrString *proof = NULL_NMBRSTRING;
-  nmbrString *essentialFlags = NULL_NMBRSTRING;
-  vstring traceToFilter = "";
-  vstring str1 = "";
+  nmbrString_def(statementList);
+  nmbrString_def(proof);
+  nmbrString_def(essentialFlags);
+  vstring_def(traceToFilter);
+  vstring_def(str1);
   long j;
 
   /* Preprocess the "SHOW TRACE_BACK ... / TO" traceToList list if any */
@@ -2951,7 +2953,7 @@ void traceProofWork(long statemNum,
       /* Wildcard matching */
       if (!matchesList(g_Statement[stmt].labelName, traceToList, '*', '?'))
         continue;
-      let(&str1, "");
+      free_vstring(str1);
       str1 = traceUsage(stmt /*g_showStatement*/,
           1, /*recursiveFlag*/
           statemNum /* cutoffStmt */);
@@ -2969,7 +2971,7 @@ void traceProofWork(long statemNum,
   nmbrLet(&statementList, nmbrSpace(g_statements));
   statementList[0] = statemNum;
   slen = 1;
-  nmbrLet(&(*unprovedListP), NULL_NMBRSTRING); /* List of unproved statements */
+  free_nmbrString(*unprovedListP); /* List of unproved statements */
   let(&(*statementUsedFlagsP), string(g_statements + 1, 'N')); /* Init. to 'no' */
   (*statementUsedFlagsP)[statemNum] = 'Y';
   for (pos = 0; pos < slen; pos++) {
@@ -3028,16 +3030,15 @@ void traceProofWork(long statemNum,
   } /* Next pos */
 
   /* Deallocate */
-  nmbrLet(&essentialFlags, NULL_NMBRSTRING);
-  nmbrLet(&proof, NULL_NMBRSTRING);
-  nmbrLet(&statementList, NULL_NMBRSTRING);
-  let(&str1, "");
-  let(&str1, "");
+  free_nmbrString(essentialFlags);
+  free_nmbrString(proof);
+  free_nmbrString(statementList);
+  free_vstring(str1);
   return;
 
 } /* traceProofWork */
 
-nmbrString *stmtFoundList = NULL_NMBRSTRING;
+nmbrString_def(stmtFoundList);
 long indentShift = 0;
 
 /* Traces back the statements used by a proof, recursively, with tree display.*/
@@ -3058,10 +3059,10 @@ void traceProofTree(long statemNum,
       "", " ");
   print2("\n");
 
-  nmbrLet(&stmtFoundList, NULL_NMBRSTRING);
+  free_nmbrString(stmtFoundList);
   indentShift = 0;
   traceProofTreeRec(statemNum, essentialFlag, endIndent, 0);
-  nmbrLet(&stmtFoundList, NULL_NMBRSTRING);
+  free_nmbrString(stmtFoundList);
 } /* traceProofTree */
 
 
@@ -3069,15 +3070,15 @@ void traceProofTreeRec(long statemNum,
   flag essentialFlag, long endIndent, long recursDepth)
 {
   long i, pos, stmt, plen, slen, step;
-  vstring outputStr = "";
-  nmbrString *localFoundList = NULL_NMBRSTRING;
-  nmbrString *localPrintedList = NULL_NMBRSTRING;
+  vstring_def(outputStr);
+  nmbrString_def(localFoundList);
+  nmbrString_def(localPrintedList);
   flag unprovedFlag = 0;
-  nmbrString *proof = NULL_NMBRSTRING;
-  nmbrString *essentialFlags = NULL_NMBRSTRING;
+  nmbrString_def(proof);
+  nmbrString_def(essentialFlags);
 
 
-  let(&outputStr, "");
+  free_vstring(outputStr);
   outputStr = getDescription(statemNum); /* Get statement comment */
   let(&outputStr, edit(outputStr, 8 + 16 + 128)); /* Trim and reduce spaces */
   slen = len(outputStr);
@@ -3118,14 +3119,14 @@ void traceProofTreeRec(long statemNum,
   }
 
   if (g_Statement[statemNum].type != p_) {
-    let(&outputStr, "");
+    free_vstring(outputStr);
     return;
   }
 
   if (endIndent) {
     /* An indentation level limit is set */
     if (endIndent < recursDepth + 2) {
-      let(&outputStr, "");
+      free_vstring(outputStr);
       return;
     }
   }
@@ -3195,11 +3196,11 @@ void traceProofTreeRec(long statemNum,
       space(INDENT_INCR * (recursDepth + 2)), " ");
   }
 
-  let(&outputStr, "");
-  nmbrLet(&localFoundList, NULL_NMBRSTRING);
-  nmbrLet(&localPrintedList, NULL_NMBRSTRING);
-  nmbrLet(&proof, NULL_NMBRSTRING);
-  nmbrLet(&essentialFlags, NULL_NMBRSTRING);
+  free_vstring(outputStr);
+  free_nmbrString(localFoundList);
+  free_nmbrString(localPrintedList);
+  free_nmbrString(proof);
+  free_nmbrString(essentialFlags);
 
 } /* traceProofTreeRec */
 
@@ -3222,17 +3223,17 @@ double countSteps(long statemNum, flag essentialFlag)
 
   long stmt, plen, step, i, j, k;
   long essentialplen;
-  nmbrString *proof = NULL_NMBRSTRING;
+  nmbrString_def(proof);
   double stepCount; /* The total steps if fully expanded */
 
   static vstring *stmtBigCount; /* Unlimited precision stmtCount */
-  vstring stepBigCount = ""; /* Unlimited precision stepCount */
-  vstring tmpBig1 = "";
+  vstring_def(stepBigCount); /* Unlimited precision stepCount */
+  vstring_def(tmpBig1);
 
   double stepNodeCount;
   double stepDistSum;
-  nmbrString *essentialFlags = NULL_NMBRSTRING;
-  vstring tmpStr = "";
+  nmbrString_def(essentialFlags);
+  vstring_def(tmpStr);
   long actualSteps, actualSubTheorems;
   long actualSteps2, actualSubTheorems2;
 
@@ -3320,7 +3321,7 @@ double countSteps(long statemNum, flag essentialFlag)
         unprovedFlag = 1;
         stepCount = stepCount + 1;
 
-        let(&tmpBig1, "");
+        free_vstring(tmpBig1);
         tmpBig1 = bigAdd(stepBigCount, "1");
         let(&stepBigCount, tmpBig1);
 
@@ -3337,7 +3338,7 @@ double countSteps(long statemNum, flag essentialFlag)
       }
 
       /* In either case, stmtBigCount[stmt] will be populated now */
-      let(&tmpBig1, "");
+      free_vstring(tmpBig1);
       tmpBig1 = bigAdd(stepBigCount, stmtBigCount[stmt]);
       let(&stepBigCount, tmpBig1);
 
@@ -3349,7 +3350,7 @@ double countSteps(long statemNum, flag essentialFlag)
             stepCount--;
 
             /* In either case, stmtBigCount[stmt] will be populated now */
-            let(&tmpBig1, "");
+            free_vstring(tmpBig1);
             tmpBig1 = bigSub(stepBigCount, "1");
             let(&stepBigCount, tmpBig1);
 
@@ -3379,8 +3380,8 @@ double countSteps(long statemNum, flag essentialFlag)
   stmtAveDist[statemNum] = (double)stepDistSum / (double)essentialplen;
   stmtProofLen[statemNum] = essentialplen;
 
-  nmbrLet(&proof, NULL_NMBRSTRING);
-  nmbrLet(&essentialFlags, NULL_NMBRSTRING);
+  free_nmbrString(proof);
+  free_nmbrString(essentialFlags);
 
   level--;
   /* If this is the top level of recursion, deallocate */
@@ -3449,7 +3450,7 @@ double countSteps(long statemNum, flag essentialFlag)
        str((double)(stmtDist[statemNum])),
        ".  A longest path is:  ", right(tmpStr, 5), " .", NULL),
        "", " ");
-    let(&tmpStr, "");
+    free_vstring(tmpStr);
 
     free(stmtCount);
     free(stmtNodeCount);
@@ -3461,18 +3462,17 @@ double countSteps(long statemNum, flag essentialFlag)
 
     /* Deallocate the big number strings */
     for (stmt = 1; stmt < g_statements + 1; stmt++) {
-      let(&stmtBigCount[stmt], "");
+      free_vstring(stmtBigCount[stmt]);
     }
     free(stmtBigCount);
 
   }
 
   /* Deallocate local strings */
-  let(&tmpBig1, "");
-  let(&stepBigCount, "");
+  free_vstring(tmpBig1);
+  free_vstring(stepBigCount);
 
-  return(stepCount);
-
+  return stepCount;
 } /* countSteps */
 
 
@@ -3486,7 +3486,7 @@ double countSteps(long statemNum, flag essentialFlag)
 vstring bigAdd(vstring bignum1, vstring bignum2) {
   long len1, len2, maxlen, p, p1, p2, p3;
   char d1, d2, carry, dsum;
-  vstring bignum3 = "";
+  vstring_def(bignum3);
   len1 = (long)strlen(bignum1);
   len2 = (long)strlen(bignum2);
   maxlen = (len1 < len2 ? len2 : len1);
@@ -3525,8 +3525,8 @@ vstring bigAdd(vstring bignum1, vstring bignum2) {
 /* The arguments must be strings that will not be freed by unrelated 'let()' */
 vstring bigSub(vstring bignum1, vstring bignum2) {
   long len1, len3, p;
-  vstring bignum3 = "";
-  vstring bignum1cmpl = "";
+  vstring_def(bignum3);
+  vstring_def(bignum1cmpl);
   len1 = (long)strlen(bignum1);
   let(&bignum1cmpl, space(len1));
   for (p = 0; p <= len1 - 1; p++) {
@@ -3548,7 +3548,7 @@ vstring bigSub(vstring bignum1, vstring bignum2) {
     /* Supress leading 0s */
     let(&bignum3, right(bignum3, 2));
   }
-  let(&bignum1cmpl, ""); /* Deallocate */
+  free_vstring(bignum1cmpl); /* Deallocate */
   return bignum3;
 }
 
@@ -3567,7 +3567,7 @@ vstring bigSub(vstring bignum1, vstring bignum2) {
 vstring bigMulDigit(vstring bignum1, long digit) {
   long len1, p, p1, p3;
   char d1, carry, dprod;
-  vstring bignum3 = "";
+  vstring_def(bignum3);
   len1 = (long)strlen(bignum1);
   let(&bignum3, space(len1 + 1)); /@ +1 to allow for final carry @/
   carry = 0;
@@ -3602,27 +3602,27 @@ vstring bigMulDigit(vstring bignum1, long digit) {
 vstring bigMul(vstring bignum1, vstring bignum2) {
   long len2, p, p2;
   char d2;
-  vstring bignum3 = "";
-  vstring bigdprod = "";
-  vstring bigpprod = "";
+  vstring_def(bignum3);
+  vstring_def(bigdprod);
+  vstring_def(bigpprod);
   len2 = (long)strlen(bignum2);
   for (p = 1; p <= len2; p++) {
     p2 = len2 - p;
     d2 = (char)(bignum2[p2] - '0');
     if (d2 > 0) {
-      let(&bigdprod, "");
+      free_vstring(bigdprod);
       bigdprod = bigMulDigit(bignum1, d2);
       if (p > 1) {
         /@ Shift the digit product by adding trailing 0s @/
         let(&bigdprod, cat(bigdprod, string(p - 1, '0'), NULL));
       }
-      let(&bigpprod, "");
+      free_vstring(bigpprod);
       bigpprod = bigAdd(bignum3, bigdprod); /@ Accumulate partial product @/
       let(&bignum3, bigpprod);
     }
   } /@ next p @/
-  let(&bigdprod, "");
-  let(&bigpprod, "");
+  free_vstring(bigdprod);
+  free_vstring(bigpprod);
   return bignum3;
 }
 **** end commented out section added 12-Nov-2018 ***/
@@ -3642,9 +3642,9 @@ vstring traceUsage(long statemNum,
 
   long lastPos, stmt, slen, pos;
   flag tmpFlag;
-  vstring statementUsedFlags = ""; /* 'Y'/'N' flag that statement is used */
-  nmbrString *statementList = NULL_NMBRSTRING;
-  nmbrString *proof = NULL_NMBRSTRING;
+  vstring_def(statementUsedFlags); /* 'Y'/'N' flag that statement is used */
+  nmbrString_def(statementList);
+  nmbrString_def(proof);
 
   /* For speed-up code */
   char *fbPtr;
@@ -3748,7 +3748,7 @@ vstring traceUsage(long statemNum,
    processed separately in metamath.c). */
 void readInput(void)
 {
-  vstring fullInput_fn = "";
+  vstring_def(fullInput_fn);
 
   let(&fullInput_fn, cat(g_rootDirectory, g_input_fn, NULL));
 
@@ -3767,7 +3767,7 @@ void readInput(void)
   g_sourceHasBeenRead = 1;
 
  RETURN_POINT:
-  let(&fullInput_fn, "");
+  free_vstring(fullInput_fn);
 
 } /* readInput */
 
@@ -3787,8 +3787,8 @@ void writeSource(
 
   /* Temporary variables and strings */
   long i;
-  vstring buffer = "";
-  vstring fullOutput_fn = "";
+  vstring_def(buffer);
+  vstring_def(fullOutput_fn);
   FILE *fp;
 
   let(&fullOutput_fn, cat(g_rootDirectory, g_output_fn, NULL));
@@ -3816,14 +3816,14 @@ void writeSource(
     /* TODO: turn this into a REWRAP command */
     /* Process statements */
     for (i = 1; i <= g_statements + 1; i++) {
-      let(&buffer,""); /* Deallocate vstring */
+      free_vstring(buffer); /* Deallocate vstring */
 
       buffer = outputStatement(i, reformatFlag);
     } /* next i */
   } /* if (reformatFlag > 0) */
 
   /* Get put the g_Statement[] array into one linear buffer */
-  let(&buffer, "");
+  free_vstring(buffer);
   buffer = writeSourceToBuffer();
   if (splitFlag == 1) { /* Write includes as separate files */
 
@@ -3859,8 +3859,8 @@ void writeSource(
 
 
  RETURN_POINT:
-  let(&buffer,""); /* Deallocate vstring */
-  let(&fullOutput_fn,""); /* Deallocate vstring */
+  free_vstring(buffer); /* Deallocate vstring */
+  free_vstring(fullOutput_fn); /* Deallocate vstring */
   return;
 } /* writeSource */
 
@@ -3871,40 +3871,40 @@ void writeExtractedSource(
     vstring fullOutput_fn,
     flag noVersioningFlag)
 {
-  vstring statementUsedFlags = ""; /* Y/N flags that statement is used */
+  vstring_def(statementUsedFlags); /* Y/N flags that statement is used */
   long stmt, stmtj, scpStmt, strtScpStmt, endScpStmt, j, p1, p2, p3, p4;
-  vstring extractNeeded = "";
-  nmbrString *unprovedList = NULL_NMBRSTRING; /* Needed for traceProofWork()
+  vstring_def(extractNeeded);
+  nmbrString_def(unprovedList); /* Needed for traceProofWork()
                                                  but not used */
-  nmbrString *mstring = NULL_NMBRSTRING; /* Temporary holder for math string */
+  nmbrString_def(mstring); /* Temporary holder for math string */
   long maxStmt; /* The largest statement number (excluding $t) */
   long hyp, hyps, mtkn, mtkns, dv, dvs;
   long dollarTStmt; /* $t statement */
-  vstring dollarTCmt = ""; /* $t comment */
+  vstring_def(dollarTCmt); /* $t comment */
   char zapChar; /* For finding $t statement */
   char *tmpPtr; /* For finding $t statement */
-  vstring hugeHdrNeeded = ""; /* N/M/Y that output needs the huge header */
-  vstring bigHdrNeeded = "";                              /* big */
-  vstring smallHdrNeeded = "";                            /* small */
-  vstring tinyHdrNeeded = "";                             /* tiny */
+  vstring_def(hugeHdrNeeded); /* N/M/Y that output needs the huge header */
+  vstring_def(bigHdrNeeded);                              /* big */
+  vstring_def(smallHdrNeeded);                            /* small */
+  vstring_def(tinyHdrNeeded);                             /* tiny */
   char hdrNeeded;
   /* The following 8 are needed for getSectionHeadings() */
-  vstring hugeHdr = "";
-  vstring bigHdr = "";
-  vstring smallHdr = "";
-  vstring tinyHdr = "";
-  vstring hugeHdrComment = "";
-  vstring bigHdrComment = "";
-  vstring smallHdrComment = "";
-  vstring tinyHdrComment = "";
+  vstring_def(hugeHdr);
+  vstring_def(bigHdr);
+  vstring_def(smallHdr);
+  vstring_def(tinyHdr);
+  vstring_def(hugeHdrComment);
+  vstring_def(bigHdrComment);
+  vstring_def(smallHdrComment);
+  vstring_def(tinyHdrComment);
 
-  vstring mathTokenDeclared = "";
-  vstring undeclaredC = "";
-  vstring undeclaredV = "";
+  vstring_def(mathTokenDeclared);
+  vstring_def(undeclaredC);
+  vstring_def(undeclaredV);
   long extractedStmts;
-  vstring hdrSuffix = "";
+  vstring_def(hdrSuffix);
   FILE *fp;
-  vstring buf = "";
+  vstring_def(buf);
 
 
   /* Note that extractNeeded is 1-based to match 1-based
@@ -4307,7 +4307,7 @@ void writeExtractedSource(
           1, /*fineResolution*/
           1 /*fullComment*/
           );
-      let(&buf, "");
+      freeTempAlloc();
       if (hugeHdrNeeded[stmt] == 'Y') {
         fixUndefinedLabels(extractNeeded, &hugeHdrComment);
         fprintf(fp, "%s", cat(hugeHdr, hugeHdrComment, hdrSuffix, NULL));
@@ -4333,7 +4333,7 @@ void writeExtractedSource(
 
     /* Output statement if needed */
     if (extractNeeded[stmt] == 'Y') {
-      let(&buf, "");
+      free_vstring(buf);
       buf = getDescriptionAndLabel(stmt);
 
       fixUndefinedLabels(extractNeeded, &buf);
@@ -4392,7 +4392,7 @@ void writeExtractedSource(
   g_outputToString = 0;
   if (g_printString[0] != 0) {
     fprintf(fp, "%s", g_printString);
-    let(&g_printString, "");
+    free_vstring(g_printString);
   }
 
   /* Write the non-split output file */
@@ -4405,7 +4405,7 @@ void writeExtractedSource(
         p1++;
         if (!strcmp("ax-", left(g_Statement[stmt].labelName, 3))) p3++;
         if (!strcmp("df-", left(g_Statement[stmt].labelName, 3))) p4++;
-        let(&buf, ""); /* Deallocate stack created by left() */
+        freeTempAlloc(); /* Deallocate stack created by left() */
       }
       if (g_Statement[stmt].type == p_) p2++;
     }
@@ -4416,27 +4416,27 @@ void writeExtractedSource(
 
  EXTRACT_RETURN:
   /* Deallocate */
-  let(&extractNeeded, "");
-  let(&statementUsedFlags, "");
-  nmbrLet(&unprovedList, NULL_NMBRSTRING);
-  nmbrLet(&mstring, NULL_NMBRSTRING);
-  let(&dollarTCmt, "");
-  let(&hugeHdrNeeded, "");
-  let(&bigHdrNeeded, "");
-  let(&smallHdrNeeded, "");
-  let(&tinyHdrNeeded, "");
-  let(&hugeHdr, "");   /* Deallocate memory */
-  let(&bigHdr, "");   /* Deallocate memory */
-  let(&smallHdr, ""); /* Deallocate memory */
-  let(&tinyHdr, ""); /* Deallocate memory */
-  let(&hugeHdrComment, "");   /* Deallocate memory */
-  let(&bigHdrComment, "");   /* Deallocate memory */
-  let(&smallHdrComment, ""); /* Deallocate memory */
-  let(&tinyHdrComment, ""); /* Deallocate memory */
-  let(&mathTokenDeclared, "");
-  let(&undeclaredC, "");
-  let(&undeclaredV, "");
-  let(&buf, "");
+  free_vstring(extractNeeded);
+  free_vstring(statementUsedFlags);
+  free_nmbrString(unprovedList);
+  free_nmbrString(mstring);
+  free_vstring(dollarTCmt);
+  free_vstring(hugeHdrNeeded);
+  free_vstring(bigHdrNeeded);
+  free_vstring(smallHdrNeeded);
+  free_vstring(tinyHdrNeeded);
+  free_vstring(hugeHdr);   /* Deallocate memory */
+  free_vstring(bigHdr);   /* Deallocate memory */
+  free_vstring(smallHdr); /* Deallocate memory */
+  free_vstring(tinyHdr); /* Deallocate memory */
+  free_vstring(hugeHdrComment);   /* Deallocate memory */
+  free_vstring(bigHdrComment);   /* Deallocate memory */
+  free_vstring(smallHdrComment); /* Deallocate memory */
+  free_vstring(tinyHdrComment); /* Deallocate memory */
+  free_vstring(mathTokenDeclared);
+  free_vstring(undeclaredC);
+  free_vstring(undeclaredV);
+  free_vstring(buf);
   return;
 } /* getExtractionInfo */
 
@@ -4447,9 +4447,9 @@ void writeExtractedSource(
 void fixUndefinedLabels(vstring extractNeeded/*'Y'/'N' list*/,
     vstring *buf/*header comment*/) {
   long p1, p2, p3;
-  vstring label = "";
-  vstring newLabelWithTilde = "";
-  vstring restOfComment = "";
+  vstring_def(label);
+  vstring_def(newLabelWithTilde);
+  vstring_def(restOfComment);
   int mathMode; /* char gives Wconversion gcc warning */
 #define ASCII_4 4
 
@@ -4521,9 +4521,9 @@ void fixUndefinedLabels(vstring extractNeeded/*'Y'/'N' list*/,
     if ((*buf)[p2] == ASCII_4) (*buf)[p2] = '~';
   }
 
-  let(&label, ""); /* Deallocate */
-  let(&newLabelWithTilde, ""); /* Deallocate */
-  let(&restOfComment, ""); /* Deallocate */
+  free_vstring(label); /* Deallocate */
+  free_vstring(newLabelWithTilde); /* Deallocate */
+  free_vstring(restOfComment); /* Deallocate */
   return;
 } /* fixUndefinedLabels */
 
@@ -4538,7 +4538,7 @@ void writeDict(void)
 void eraseSource(void)    /* ERASE command */
 {
   long i;
-  vstring tmpStr = "";
+  vstring_def(tmpStr);
 
   /* Deallocate g_WrkProof structure if g_wrkProofMaxSize != 0 */
   /* Assigned in parseProof() in mmpars.c */
@@ -4564,9 +4564,9 @@ void eraseSource(void)    /* ERASE command */
   }
 
   for (i = 0; i <= g_includeCalls; i++) {
-    let(&g_IncludeCall[i].source_fn, "");
-    let(&g_IncludeCall[i].included_fn, "");
-    let(&g_IncludeCall[i].current_includeSource, "");
+    free_vstring(g_IncludeCall[i].source_fn);
+    free_vstring(g_IncludeCall[i].included_fn);
+    free_vstring(g_IncludeCall[i].current_includeSource);
   }
   g_includeCalls = -1;
 
@@ -4602,15 +4602,15 @@ void eraseSource(void)    /* ERASE command */
 
     if (g_Statement[i].labelSectionChanged == 1) {
       /* Deallocate text before label if not original source */
-      let(&(g_Statement[i].labelSectionPtr), "");
+      free_vstring(g_Statement[i].labelSectionPtr);
     }
     if (g_Statement[i].mathSectionChanged == 1) {
       /* Deallocate math symbol text if not original source */
-      let(&(g_Statement[i].mathSectionPtr), "");
+      free_vstring(g_Statement[i].mathSectionPtr);
     }
     if (g_Statement[i].proofSectionChanged == 1) {
       /* Deallocate proof if not original source */
-      let(&(g_Statement[i].proofSectionPtr), "");
+      free_vstring(g_Statement[i].proofSectionPtr);
     }
 
   } /* Next i (statement) */
@@ -4619,7 +4619,7 @@ void eraseSource(void)    /* ERASE command */
      parseMathDecl() by let().  eraseSource() should free every g_MathToken and
      there are (g_mathTokens + g_dummyVars) tokens. */
   for (i = 0; i <= g_mathTokens + g_dummyVars; i++) {
-    let(&(g_MathToken[i].tokenName), "");
+    free_vstring(g_MathToken[i].tokenName);
   }
 
   memFreePoolPurge(0);
@@ -4641,12 +4641,12 @@ void eraseSource(void)    /* ERASE command */
 
   /* Initialize and deallocate mathbox information */
   g_mathboxStmt = 0; /* Used by a non-zero test in mmwtex.c to see if assigned */
-  nmbrLet(&g_mathboxStart, NULL_NMBRSTRING);
-  nmbrLet(&g_mathboxEnd, NULL_NMBRSTRING);
+  free_nmbrString(g_mathboxStart);
+  free_nmbrString(g_mathboxEnd);
   for (i = 1; i <= g_mathboxes; i++) {
-    let((vstring *)(&g_mathboxUser[i - 1]), "");
+    free_vstring(*(vstring *)(&g_mathboxUser[i - 1]));
   }
-  pntrLet(&g_mathboxUser, NULL_PNTRSTRING);
+  free_pntrString(g_mathboxUser);
   g_mathboxes = 0;
 
   /* Allocate big arrays */
@@ -4658,15 +4658,15 @@ void eraseSource(void)    /* ERASE command */
   g_minSubstLen = 1; /* Initialize to the default SET EMPTY_SUBSTITUTION OFF */
   /* Clear g_firstConst to trigger clearing of g_lastConst and
      g_oneConst in mmunif.c */
-  nmbrLet(&g_firstConst, NULL_NMBRSTRING);
+  free_nmbrString(g_firstConst);
   /* Clear these directly so they will be truly deallocated for valgrind */
-  nmbrLet(&g_lastConst, NULL_NMBRSTRING);
-  nmbrLet(&g_oneConst, NULL_NMBRSTRING);
+  free_nmbrString(g_lastConst);
+  free_nmbrString(g_oneConst);
 
   getMarkupFlag(0, RESET); /* Erase the cached markup flag storage */
 
   /* Erase the contributor markup cache */
-  let(&tmpStr, "");
+  free_vstring(tmpStr);
   tmpStr = getContrib(0 /*stmt is ignored*/, GC_RESET);
 
   /* getContrib uses g_statements (global var), so don't do this earlier */
@@ -4678,21 +4678,21 @@ void eraseSource(void)    /* ERASE command */
 /* If verify = 0, parse the proofs only for gross error checking.
    If verify = 1, do the full verification. */
 void verifyProofs(vstring labelMatch, flag verifyFlag) {
-  vstring emptyProofList = "";
+  vstring_def(emptyProofList);
   long i, k;
   long lineLen = 0;
-  vstring header = "";
+  vstring_def(header);
   flag errorFound;
 #ifdef CLOCKS_PER_SEC
   clock_t clockStart;
 #endif
 
 #ifdef __WATCOMC__
-  vstring tmpStr="";
+  vstring_def(tmpStr);
 #endif
 
 #ifdef VAXC
-  vstring tmpStr="";
+  vstring_def(tmpStr);
 #endif
 
 #ifdef CLOCKS_PER_SEC
@@ -4702,7 +4702,7 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
     /* Use status bar */
     let(&header, "0 10%  20%  30%  40%  50%  60%  70%  80%  90% 100%");
     print2("%s\n", header);
-    let(&header, "");
+    free_vstring(header);
   }
 
   errorFound = 0;
@@ -4761,7 +4761,7 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
       print2("All proofs in the database passed the syntax-only check.\n");
     }
   }
-  let(&emptyProofList, ""); /* Deallocate */
+  free_vstring(emptyProofList); /* Deallocate */
 
 } /* verifyProofs */
 
@@ -4779,28 +4779,29 @@ void verifyMarkup(vstring labelMatch,
   long stmtNum, p1, p2, p3;
   long flen, lnum, lstart; /* For line length check */
 
-  vstring mmVersionDate = ""; /* Version date at top of .mm file */
-  vstring mostRecentDate = ""; /* For entire .mm file */
+  vstring_def(mmVersionDate); /* Version date at top of .mm file */
+  vstring_def(mostRecentDate); /* For entire .mm file */
   long mostRecentStmt = 0; /* For error message */
 
   /* For getSectionHeadings() call */
-  vstring hugeHdr = "";
-  vstring bigHdr = "";
-  vstring smallHdr = "";
-  vstring tinyHdr = "";
-  vstring hugeHdrComment = "";
-  vstring bigHdrComment = "";
-  vstring smallHdrComment = "";
-  vstring tinyHdrComment = "";
+  vstring_def(hugeHdr);
+  vstring_def(bigHdr);
+  vstring_def(smallHdr);
+  vstring_def(tinyHdr);
+  vstring_def(hugeHdrComment);
+  vstring_def(bigHdrComment);
+  vstring_def(smallHdrComment);
+  vstring_def(tinyHdrComment);
 
-  vstring descr = "";
-  vstring str1 = ""; vstring str2 = "";
+  vstring_def(descr);
+  vstring_def(str1);
+  vstring_def(str2);
 
   /* For mathbox check */
   long mbox, pmbox, stmt, pstmt, plen, step;
 
-  nmbrString *proof = NULL_NMBRSTRING;
-  vstring dupCheck = "";
+  nmbrString_def(proof);
+  vstring_def(dupCheck);
 
   saveHtmlFlag = g_htmlFlag;  saveAltHtmlFlag = g_altHtmlFlag;
 
@@ -4936,9 +4937,9 @@ void verifyMarkup(vstring labelMatch,
       continue;
     }
 
-    let(&str1, ""); /* Prevent string stack buildup/overflow in left() below */
     /* Look for "ax-*" axioms */
     if (strcmp("ax-", left(g_Statement[stmtNum].labelName, 3))) {
+      freeTempAlloc(); /* Prevent string stack buildup/overflow in left() */
       continue;
     }
 
@@ -5029,8 +5030,8 @@ void verifyMarkup(vstring labelMatch,
 
 
   /* Check line lengths */
-  let(&str1, ""); /* Prepare to use as pointer */
-  let(&str2, ""); /* Prepare to use as pointer */
+  free_vstring(str1); /* Prepare to use as pointer */
+  free_vstring(str2); /* Prepare to use as pointer */
   if (g_statements >= 0) {
     /* TODO - handle $[...$] */
     /* g_includeCalls is always nonzero now - but check
@@ -5078,7 +5079,7 @@ void verifyMarkup(vstring labelMatch,
               NULL), "    ", " ");
           print2("    %s...\n", left(str2, g_screenWidth - 7));
           errFound = 1;
-          let(&str2, ""); /* Deallocate string memory */
+          free_vstring(str2); /* Deallocate string memory */
         }
         lstart = p1 + 1;
       }
@@ -5137,7 +5138,7 @@ void verifyMarkup(vstring labelMatch,
     }
 
     /* Check the contributor */
-    let(&str1, "");
+    free_vstring(str1);
     str1 = getContrib(stmtNum, CONTRIBUTOR);
     if (!strcmp(str1, DEFAULT_CONTRIBUTOR)) {
       printLongLine(cat(
@@ -5146,7 +5147,7 @@ void verifyMarkup(vstring labelMatch,
           g_Statement[stmtNum].labelName, "\".", NULL), "    ", " ");
       errFound = 1;
     }
-    let(&str1, "");
+    free_vstring(str1);
     str1 = getContrib(stmtNum, REVISER);
     if (!strcmp(str1, DEFAULT_CONTRIBUTOR)) {
       printLongLine(cat(
@@ -5160,10 +5161,10 @@ void verifyMarkup(vstring labelMatch,
 
       /* Check date consistency of the statement */
       /* Use the error-checking feature of getContrib() extractor */
-      let(&str1, "");
+      free_vstring(str1);
       str1 = getContrib(stmtNum, GC_ERROR_CHECK_PRINT); /* Returns P or F */
       if (str1[0] == 'F') errFound = 1;
-      let(&str1, "");
+      free_vstring(str1);
       str1 = getContrib(stmtNum, MOST_RECENT_DATE);
 
       /* Save most recent date in file - used to check Version date below */
@@ -5174,7 +5175,7 @@ void verifyMarkup(vstring labelMatch,
 
     }
 
-    let(&descr, "");
+    free_vstring(descr);
     descr = getDescription(stmtNum);
 
     /* Check comment markup of the statement */
@@ -5272,14 +5273,14 @@ void verifyMarkup(vstring labelMatch,
       continue;
     }
 
-    let(&hugeHdr, "");
-    let(&bigHdr, "");
-    let(&smallHdr, "");
-    let(&tinyHdr, "");
-    let(&hugeHdrComment, "");
-    let(&bigHdrComment, "");
-    let(&smallHdrComment, "");
-    let(&tinyHdrComment, "");
+    free_vstring(hugeHdr);
+    free_vstring(bigHdr);
+    free_vstring(smallHdr);
+    free_vstring(tinyHdr);
+    free_vstring(hugeHdrComment);
+    free_vstring(bigHdrComment);
+    free_vstring(smallHdrComment);
+    free_vstring(tinyHdrComment);
     f = getSectionHeadings(stmtNum, &hugeHdr, &bigHdr, &smallHdr,
         &tinyHdr,
         &hugeHdrComment, &bigHdrComment, &smallHdrComment,
@@ -5398,8 +5399,8 @@ void verifyMarkup(vstring labelMatch,
       } /* next pstmt */
     } /* next pmbox */
     /* Deallocate */
-    let(&dupCheck, "");
-    nmbrLet(&proof, NULL_NMBRSTRING);
+    free_vstring(dupCheck);
+    free_nmbrString(proof);
   }
 
   if (errFound == 0) {
@@ -5411,19 +5412,19 @@ void verifyMarkup(vstring labelMatch,
   eraseTexDefs();
 
   /* Deallocate string memory */
-  let(&mostRecentDate, "");
-  let(&mmVersionDate, "");
-  let(&descr, "");
-  let(&str1, "");
-  let(&str2, "");
-  let(&hugeHdr, "");
-  let(&bigHdr, "");
-  let(&smallHdr, "");
-  let(&tinyHdr, "");
-  let(&hugeHdrComment, "");
-  let(&bigHdrComment, "");
-  let(&smallHdrComment, "");
-  let(&tinyHdrComment, "");
+  free_vstring(mostRecentDate);
+  free_vstring(mmVersionDate);
+  free_vstring(descr);
+  free_vstring(str1);
+  free_vstring(str2);
+  free_vstring(hugeHdr);
+  free_vstring(bigHdr);
+  free_vstring(smallHdr);
+  free_vstring(tinyHdr);
+  free_vstring(hugeHdrComment);
+  free_vstring(bigHdrComment);
+  free_vstring(smallHdrComment);
+  free_vstring(tinyHdrComment);
   return;
 
 } /* verifyMarkup */
@@ -5435,7 +5436,7 @@ void verifyMarkup(vstring labelMatch,
 void processMarkup(vstring inputFileName, vstring outputFileName,
     flag processCss, long actionBits) {
   FILE *outputFilePtr;
-  vstring inputFileContent = "";
+  vstring_def(inputFileContent);
   long size;
   long p;
 
@@ -5452,7 +5453,7 @@ void processMarkup(vstring inputFileName, vstring outputFileName,
 
   print2("Reading \"%s\"...\n", inputFileName);
 
-  let(&inputFileContent, "");
+  free_vstring(inputFileContent);
   inputFileContent = readFileToString(inputFileName, 1/*verbose*/, &size);
   if (inputFileContent == NULL) {
     /* Couldn't open the file; error msg provided by readFileToString */
@@ -5481,7 +5482,7 @@ void processMarkup(vstring inputFileName, vstring outputFileName,
   }
 
   g_outputToString = 0;
-  let(&g_printString, "");
+  free_vstring(g_printString);
   g_showStatement = 0; /* For printTexComment */
   g_texFilePtr = outputFilePtr; /* For printTexComment */
   printTexComment(  /* Sends result to g_texFilePtr */
@@ -5494,8 +5495,8 @@ void processMarkup(vstring inputFileName, vstring outputFileName,
 
  PROCESS_MARKUP_RETURN:
   /* Deallocate */
-  let(&inputFileContent, "");
-  let(&g_printString, "");
+  free_vstring(inputFileContent);
+  free_vstring(g_printString);
   return;
 }
 
@@ -5508,7 +5509,7 @@ void showDiscouraged(void) {
   long stmt, s, usageCount;
   long lowStmt = 0, highStmt = 0; /* For a slight speedup */
   flag notQuitPrint = 1; /* Goes to 0 if user typed 'q' at scroll prompt */
-  vstring str1 = "";
+  vstring_def(str1);
   for (stmt = 1; stmt <= g_statements; stmt++) {
 
     /* Since this command is slow, quit immediately if user typed 'q'
@@ -5530,7 +5531,7 @@ void showDiscouraged(void) {
     if (getMarkupFlag(stmt, USAGE_DISCOURAGED) == 1) {
       /* Discouraged usage */
       usageCount = 0;
-      let(&str1, "");
+      free_vstring(str1);
       str1 = traceUsage(stmt,
           0, /* recursiveFlag */
           0 /* cutoffStmt */);
@@ -5565,7 +5566,7 @@ void showDiscouraged(void) {
       } /* if (str1[0] == 'Y') */
     } /* if discouraged usage */
   } /* next stmt */
-  let(&str1, ""); /* Deallocate */
+  free_vstring(str1); /* Deallocate */
 } /* showDiscouraged */
 
 /* Take a relative step FIRST, LAST, +nn, -nn (relative to the unknown
@@ -5579,8 +5580,8 @@ long getStepNum(vstring relStep, /* User's argument */
 {
   long pfLen, i, j, relStepVal, actualStepVal;
   flag negFlag = 0;
-  nmbrString *essentialFlags = NULL_NMBRSTRING;
-  vstring relStepCaps = "";
+  nmbrString_def(essentialFlags);
+  vstring_def(relStepCaps);
 
   let(&relStepCaps, edit(relStep, 32/*upper case*/));
   pfLen = nmbrLen(pfInProgress); /* Proof length */
@@ -5682,8 +5683,8 @@ long getStepNum(vstring relStep, /* User's argument */
 
  RETURN_POINT:
   /* Deallocate memory */
-  let(&relStepCaps, "");
-  nmbrLet(&essentialFlags, NULL_NMBRSTRING);
+  free_vstring(relStepCaps);
+  free_nmbrString(*&essentialFlags);
 
   return actualStepVal;
 } /* getStepNum */
@@ -5696,8 +5697,8 @@ long getStepNum(vstring relStep, /* User's argument */
    unchanged.  */
 /* The caller must deallocate the returned nmbrString. */
 nmbrString *getRelStepNums(nmbrString *pfInProgress) {
-  nmbrString *essentialFlags = NULL_NMBRSTRING;
-  nmbrString *relSteps = NULL_NMBRSTRING;
+  nmbrString_def(essentialFlags);
+  nmbrString_def(relSteps);
   long i, j, pfLen;
 
   pfLen = nmbrLen(pfInProgress); /* Get proof length */
@@ -5715,7 +5716,7 @@ nmbrString *getRelStepNums(nmbrString *pfInProgress) {
   }
 
   /* Deallocate memory */
-  nmbrLet(&essentialFlags, NULL_NMBRSTRING);
+  free_nmbrString(*&essentialFlags);
 
   return relSteps;
 } /* getRelStepNums */
@@ -5952,7 +5953,7 @@ void outputMidi(long plen, nmbrString *indentationLevels,
   long midiTime; /* Midi time stamp */
   long midiPreviousFormulaStep; /* Note saved from previous step */
   long midiPreviousLogicalStep; /* Note saved from previous step */
-  vstring midiFileName = ""; /* All vstrings MUST be initialized to ""! */
+  vstring_def(midiFileName); /* All vstrings MUST be initialized to ""! */
   FILE *midiFilePtr; /* Output file pointer */
   long midiBaseline; /* Baseline note */
   long midiMaxIndent; /* Maximum indentation (to find dyn range of notes) */
@@ -5962,8 +5963,8 @@ void outputMidi(long plen, nmbrString *indentationLevels,
   flag midiSyncopate; /* 1 = syncopate the output */
   flag midiHesitate; /* 1 = silence all repeated notes */
   long midiTempo; /* larger = faster */
-  vstring midiLocalParam = ""; /* To manipulate user's parameter string */
-  vstring tmpStr = ""; /* Temporary string */
+  vstring_def(midiLocalParam); /* To manipulate user's parameter string */
+  vstring_def(tmpStr); /* Temporary string */
 #define ALLKEYSFLAG 1
 #define WHITEKEYSFLAG 2
 #define BLACKKEYSFLAG 3
@@ -6263,8 +6264,7 @@ void outputMidi(long plen, nmbrString *indentationLevels,
  midi_return:
   /* Important: all local vstrings must be deallocated to prevent
      memory leakage */
-  let(&midiFileName, "");
-  let(&tmpStr, "");
-  let(&midiLocalParam, "");
-
+  free_vstring(midiFileName);
+  free_vstring(tmpStr);
+  free_vstring(midiLocalParam);
 } /* outputMidi */

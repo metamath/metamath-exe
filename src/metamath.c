@@ -758,13 +758,17 @@ void command(int argc, char *argv[]) {
   long stmt, step;
   int subType = 0;
 #define SYNTAX 4
-  vstring str1 = "", str2 = "", str3 = "", str4 = "", str5= "";
+  vstring_def(str1);
+  vstring_def(str2);
+  vstring_def(str3);
+  vstring_def(str4);
+  vstring_def(str5);
   nmbrString *nmbrTmpPtr; /* Pointer only; not allocated directly */
-  nmbrString *nmbrTmp = NULL_NMBRSTRING;
-  nmbrString *nmbrSaveProof = NULL_NMBRSTRING;
+  nmbrString_def(nmbrTmp);
+  nmbrString_def(nmbrSaveProof);
   /*pntrString *pntrTmpPtr;*/ /* Pointer only; not allocated directly */
-  pntrString *pntrTmp = NULL_PNTRSTRING;
-  pntrString *expandedProof = NULL_PNTRSTRING;
+  pntrString_def(pntrTmp);
+  pntrString_def(expandedProof);
   flag tmpFlag;
 
   /* proofSavedFlag tells us there was at least one
@@ -794,21 +798,21 @@ void command(int argc, char *argv[]) {
   flag saveFlag; /* Flag to save in source */
   flag fastFlag; /* Flag for SAVE PROOF.../FAST */
   long indentation; /* Number of spaces to indent proof */
-  vstring labelMatch = ""; /* SHOW PROOF <label> argument */
+  vstring_def(labelMatch); /* SHOW PROOF <label> argument */
 
   flag axiomFlag; /* For SHOW TRACE_BACK */
   flag treeFlag; /* For SHOW TRACE_BACK */
   flag countStepsFlag; /* For SHOW TRACE_BACK */
   flag matchFlag; /* For SHOW TRACE_BACK */
-  vstring matchList = "";  /* For SHOW TRACE_BACK */
-  vstring traceToList = ""; /* For SHOW TRACE_BACK */
+  vstring_def(matchList);  /* For SHOW TRACE_BACK */
+  vstring_def(traceToList); /* For SHOW TRACE_BACK */
   flag recursiveFlag; /* For SHOW USAGE */
   long fromLine, toLine; /* For TYPE, SEARCH */
   flag joinFlag; /* For SEARCH */
   long searchWindow; /* For SEARCH */
   FILE *type_fp; /* For TYPE, SEARCH */
   long maxEssential; /* For MATCH */
-  nmbrString *essentialFlags = NULL_NMBRSTRING;
+  nmbrString_def(essentialFlags);
                                             /* For ASSIGN/IMPROVE FIRST/LAST */
   long improveDepth; /* For IMPROVE */
   flag searchAlg; /* For IMPROVE */
@@ -821,7 +825,7 @@ void command(int argc, char *argv[]) {
   flag commentOnlyFlag; /* For SHOW STATEMENT */
   flag briefFlag; /* For SHOW STATEMENT */
   flag linearFlag; /* For SHOW LABELS */
-  vstring bgcolor = ""; /* For SHOW STATEMENT definition list */
+  vstring_def(bgcolor); /* For SHOW STATEMENT definition list */
 
   flag verboseMode, mayGrowFlag /*, noDistinctFlag*/; /* For MINIMIZE_WITH */
   long prntStatus; /* For MINIMIZE_WITH */
@@ -831,13 +835,13 @@ void command(int argc, char *argv[]) {
   long thisMathboxStartStmt; /* For MINIMIZE_WITH */
   flag forwFlag; /* For MINIMIZE_WITH */
   long forbidMatchPos;  /* For MINIMIZE_WITH */
-  vstring forbidMatchList = "";  /* For MINIMIZE_WITH */
+  vstring_def(forbidMatchList);  /* For MINIMIZE_WITH */
   long noNewAxiomsMatchPos;  /* For NO_NEW_AXIOMS_FROM */
-  vstring noNewAxiomsMatchList = "";  /* For NO_NEW_AXIOMS_FROM */
+  vstring_def(noNewAxiomsMatchList);  /* For NO_NEW_AXIOMS_FROM */
   long allowNewAxiomsMatchPos;  /* For NO_NEW_AXIOMS_FROM */
-  vstring allowNewAxiomsMatchList = "";  /* For NO_NEW_AXIOMS_FROM */
-  vstring traceProofFlags = ""; /* For NO_NEW_AXIOMS_FROM */
-  vstring traceTrialFlags = ""; /* For NO_NEW_AXIOMS_FROM */
+  vstring_def(allowNewAxiomsMatchList);  /* For NO_NEW_AXIOMS_FROM */
+  vstring_def(traceProofFlags); /* For NO_NEW_AXIOMS_FROM */
+  vstring_def(traceTrialFlags); /* For NO_NEW_AXIOMS_FROM */
   flag overrideFlag; /* For discouraged statement /OVERRIDE */
 
   struct pip_struct saveProofForReverting = {
@@ -872,17 +876,19 @@ void command(int argc, char *argv[]) {
   FILE *list1_fp;
   FILE *list2_fp;
   FILE *list3_fp;
-  vstring list2_fname = "", list2_ftmpname = "";
-  vstring list3_ftmpname = "";
-  vstring oldstr = "", newstr = "";
+  vstring_def(list2_fname);
+  vstring_def(list2_ftmpname);
+  vstring_def(list3_ftmpname);
+  vstring_def(oldstr);
+  vstring_def(newstr);
   long lines, changedLines, oldChangedLines, twoMatches, p1, p2;
   long firstChangedLine;
   flag cmdMode, changedFlag, outMsgFlag;
   double sum;
-  vstring bufferedLine = "";
-  vstring tagStartMatch = "";  /* For TAG command */
+  vstring_def(bufferedLine);
+  vstring_def(tagStartMatch);  /* For TAG command */
   long tagStartCount = 0;      /* For TAG command */
-  vstring tagEndMatch = "";    /* For TAG command */
+  vstring_def(tagEndMatch);    /* For TAG command */
   long tagEndCount = 0;        /* For TAG command */
   long tagStartCounter = 0;    /* For TAG command */
   long tagEndCounter = 0;      /* For TAG command */
@@ -918,40 +924,40 @@ void command(int argc, char *argv[]) {
     g_errorCount = 0; /* Reset error count before each read or proof parse. */
 
     /* Deallocate stuff that may have been used in previous pass */
-    let(&str1,"");
-    let(&str2,"");
-    let(&str3,"");
-    let(&str4,"");
-    let(&str5,"");
-    nmbrLet(&nmbrTmp, NULL_NMBRSTRING);
-    pntrLet(&pntrTmp, NULL_PNTRSTRING);
-    nmbrLet(&nmbrSaveProof, NULL_NMBRSTRING);
-    nmbrLet(&essentialFlags, NULL_NMBRSTRING);
+    free_vstring(str1);
+    free_vstring(str2);
+    free_vstring(str3);
+    free_vstring(str4);
+    free_vstring(str5);
+    free_nmbrString(nmbrTmp);
+    free_pntrString(pntrTmp);
+    free_nmbrString(nmbrSaveProof);
+    free_nmbrString(essentialFlags);
     j = nmbrLen(g_rawArgNmbr);
     if (j != g_rawArgs) bug(1110);
     j = pntrLen(g_rawArgPntr);
     if (j != g_rawArgs) bug(1111);
     g_rawArgs = 0;
     for (i = 0; i < j; i++) let((vstring *)(&g_rawArgPntr[i]), "");
-    pntrLet(&g_rawArgPntr, NULL_PNTRSTRING);
-    nmbrLet(&g_rawArgNmbr, NULL_NMBRSTRING);
+    free_pntrString(g_rawArgPntr);
+    free_nmbrString(g_rawArgNmbr);
     j = pntrLen(g_fullArg);
     for (i = 0; i < j; i++) let((vstring *)(&g_fullArg[i]),"");
-    pntrLet(&g_fullArg,NULL_PNTRSTRING);
+    free_pntrString(g_fullArg);
     j = pntrLen(expandedProof);
     if (j) {
       for (i = 0; i < j; i++) {
         let((vstring *)(&expandedProof[i]),"");
       }
-     pntrLet(&expandedProof,NULL_PNTRSTRING);
+     free_pntrString(expandedProof);
     }
 
-    let(&list2_fname, "");
-    let(&list2_ftmpname, "");
-    let(&list3_ftmpname, "");
-    let(&oldstr, "");
-    let(&newstr, "");
-    let(&labelMatch, "");
+    free_vstring(list2_fname);
+    free_vstring(list2_ftmpname);
+    free_vstring(list3_ftmpname);
+    free_vstring(oldstr);
+    free_vstring(newstr);
+    free_vstring(labelMatch);
     /* (End of space deallocation) */
 
     g_midiFlag = 0; /* Initialize here in case SHOW PROOF exits early */
@@ -977,7 +983,7 @@ void command(int argc, char *argv[]) {
       }
     }
 
-    let(&g_commandLine,""); /* Deallocate previous contents */
+    free_vstring(g_commandLine); /* Deallocate previous contents */
 
     if (!commandProcessedFlag && argc > 1 && argsProcessed < argc - 1
         && g_commandFileNestingLevel == 0) {
@@ -1245,10 +1251,10 @@ void command(int argc, char *argv[]) {
         memFreePoolPurge(0);
         eraseSource();
         freeData(); /* Call AFTER eraseSource()(->initBigArrays->malloc) */
-        let(&g_commandPrompt,"");
-        let(&g_commandLine,"");
-        let(&g_input_fn,"");
-        let(&g_contributorName, "");
+        free_vstring(g_commandPrompt);
+        free_vstring(g_commandLine);
+        free_vstring(g_input_fn);
+        free_vstring(g_contributorName);
 
         return; /* Exit from program */
       }
@@ -1324,7 +1330,7 @@ void command(int argc, char *argv[]) {
           let(&list2_fname, left(list2_fname, (long)(strlen(list2_fname)) - 2));
           print2("The output file will be called %s.\n", list2_fname);
         }
-        let(&list2_ftmpname, "");
+        free_vstring(list2_ftmpname);
         list2_ftmpname = fGetTmpName("zz~tools");
         list2_fp = fSafeOpen(list2_ftmpname, "w", 0/*noVersioningFlag*/);
         if (!list2_fp) continue; /* Couldn't open it (error msg was provided) */
@@ -1391,13 +1397,13 @@ void command(int argc, char *argv[]) {
             outMsgFlag = 1;
             break;
           case BUILD_MODE:
-            let(&str4, "");
+            free_vstring(str4);
             outMsgFlag = 1;
             break;
           case MATCH_MODE:
             outMsgFlag = 1;
         } /* End switch */
-        let(&bufferedLine, "");
+        free_vstring(bufferedLine);
         /*
         while (linput(list1_fp, NULL, &str1)) {
         */
@@ -1405,7 +1411,7 @@ void command(int argc, char *argv[]) {
           if (bufferedLine[0]) {
             /* Get input from buffered line (from rejected \n replacement) */
             let(&str1, bufferedLine);
-            let(&bufferedLine, "");
+            free_vstring(bufferedLine);
           } else {
             if (!linput(list1_fp, NULL, &str1)) break;
           }
@@ -1470,7 +1476,7 @@ void command(int argc, char *argv[]) {
                   if (instr(1, cat(str1, "\\n", bufferedLine, NULL),
                       g_fullArg[2])) {
                     let(&str2, cat(str1, "\\n", bufferedLine, NULL));
-                    let(&bufferedLine, "");
+                    free_vstring(bufferedLine);
                   } else {
                     k = 0; /* No match - leave bufferedLine for next pass */
                   }
@@ -1653,8 +1659,8 @@ void command(int argc, char *argv[]) {
         fclose(list2_fp);
         fSafeRename(list2_ftmpname, list2_fname);
         /* Deallocate string memory */
-        let(&tagStartMatch, "");
-        let(&tagEndMatch, "");
+        free_vstring(tagStartMatch);
+        free_vstring(tagEndMatch);
         continue;
       } /* end if cmdMode for ADD, etc. */
 
@@ -1677,7 +1683,7 @@ void command(int argc, char *argv[]) {
           let(&list2_fname, left(list2_fname, (long)strlen(list2_fname) - 2));
           print2("The output file will be called %s.\n", list2_fname);
         }
-        let(&list2_ftmpname, "");
+        free_vstring(list2_ftmpname);
         list2_ftmpname = fGetTmpName("zz~tools");
         list2_fp = fSafeOpen(list2_ftmpname, "w", 0/*noVersioningFlag*/);
         if (!list2_fp) continue; /* Couldn't open it (error msg was provided) */
@@ -1784,7 +1790,7 @@ void command(int argc, char *argv[]) {
 
         /* Deallocate memory */
         for (i = 0; i < lines; i++) let((vstring *)(&pntrTmp[i]), "");
-        pntrLet(&pntrTmp,NULL_PNTRSTRING);
+        free_pntrString(pntrTmp);
 
         fclose(list1_fp);
         fclose(list2_fp);
@@ -1797,7 +1803,7 @@ void command(int argc, char *argv[]) {
         list2_fp = fSafeOpen(g_fullArg[2], "r", 0/*noVersioningFlag*/);
         if (!list1_fp) continue; /* Couldn't open it (error msg was provided) */
         if (!list2_fp) continue; /* Couldn't open it (error msg was provided) */
-        let(&list3_ftmpname, "");
+        free_vstring(list3_ftmpname);
         list3_ftmpname = fGetTmpName("zz~tools");
         list3_fp = fSafeOpen(list3_ftmpname, "w", 0/*noVersioningFlag*/);
         if (!list3_fp) continue; /* Couldn't open it (error msg was provided) */
@@ -1807,13 +1813,13 @@ void command(int argc, char *argv[]) {
         j = 0; /* 1st line flag */
         let(&str3, "");
         while (1) {
-          let(&str1, "");
+          free_vstring(str1);
           if (p1) {
             p1 = linput(list1_fp, NULL, &str1);
             if (p1) p++;
             else let(&str1, "");
           }
-          let(&str2, "");
+          free_vstring(str2);
           if (p2) {
             p2 = linput(list2_fp, NULL, &str2);
             if (p2) q++;
@@ -1954,7 +1960,7 @@ void command(int argc, char *argv[]) {
 "?The revision tag must be of the form /*nn*/ or /*#nn*/.  Please try again.\n");
           continue;
         }
-        let(&list3_ftmpname, "");
+        free_vstring(list3_ftmpname);
         list3_ftmpname = fGetTmpName("zz~tools");
         list3_fp = fSafeOpen(list3_ftmpname, "w", 0/*noVersioningFlag*/);
         if (!list3_fp) continue; /* Couldn't open it (error msg was provided) */
@@ -1967,7 +1973,7 @@ void command(int argc, char *argv[]) {
       }
 
       if (cmdMatches("COPY") || cmdMatches("C")) {
-        let(&list2_ftmpname, "");
+        free_vstring(list2_ftmpname);
         list2_ftmpname = fGetTmpName("zz~tools");
         list2_fp = fSafeOpen(list2_ftmpname, "w", 0/*noVersioningFlag*/);
         if (!list2_fp) continue; /* Couldn't open it (error msg was provided) */
@@ -2097,7 +2103,7 @@ void command(int argc, char *argv[]) {
           );
       g_sourceChanged = 0;
 
-      let(&str1, ""); /* Deallocate */
+      free_vstring(str1); /* Deallocate */
       continue;
     } /* End of WRITE SOURCE */
 
@@ -2248,20 +2254,20 @@ void command(int argc, char *argv[]) {
             continue;
           }
 
-          let(&str2, "");
+          free_vstring(str2);
           str2 = getContrib(stmt, MOST_RECENT_DATE);
 
           /* See if the date comment matches */
           if (!strcmp(str2, str1)) {
             /* We have a match, so increment the match count */
             n++;
-            let(&str3, "");
+            free_vstring(str3);
             str3 = getDescription(stmt);
-            let(&str4, "");
+            free_vstring(str4);
             str4 = pinkHTML(stmt); /* Get little pink number */
             /* Output the description comment */
             /* Break up long lines for text editors with printLongLine */
-            let(&g_printString, "");
+            free_vstring(g_printString);
             g_outputToString = 1;
             print2("\n"); /* Blank line for HTML human readability */
             printLongLine(cat(
@@ -2299,7 +2305,7 @@ void command(int argc, char *argv[]) {
             g_outputToString = 1; /* Restore after printTexComment */
 
             /* Get HTML hypotheses => assertion */
-            let(&str4, "");
+            free_vstring(str4);
             str4 = getTexOrHtmlHypAndAssertion(stmt);
             printLongLine(cat("</TD></TR><TR",
 
@@ -2324,7 +2330,7 @@ void command(int argc, char *argv[]) {
 
             g_outputToString = 0;
             fprintf(list2_fp, "%s", g_printString);
-            let(&g_printString, "");
+            free_vstring(g_printString);
 
             if (n >= i /*RECENT_COUNT*/) break; /* We're done */
 
@@ -2372,7 +2378,7 @@ void command(int argc, char *argv[]) {
 
             g_outputToString = 0;
             fprintf(list2_fp, "%s", g_printString);
-            let(&g_printString, "");
+            free_vstring(g_printString);
 
           }
         } /* Next stmt - statement number */
@@ -2494,9 +2500,9 @@ void command(int argc, char *argv[]) {
       } /* next i */
       if (str2[0]) {
         print2("%s\n", str2);
-        let(&str2, "");
+        free_vstring(str2);
       }
-      let(&str1, "");
+      free_vstring(str1);
       continue;
     }
 
@@ -2523,14 +2529,14 @@ void command(int argc, char *argv[]) {
       }
       g_showStatement = s; /* Update for future defaults */
 
-      let(&str1, "");
+      free_vstring(str1);
       str1 = outputStatement(g_showStatement, /* cleanFlag */
           0 /* reformatFlag */);
       let(&str1,edit(str1,128)); /* Trim trailing spaces */
       if (str1[strlen(str1)-1] == '\n') let(&str1, left(str1,
           (long)strlen(str1) - 1));
       printLongLine(str1, "", "");
-      let(&str1,""); /* Deallocate vstring */
+      free_vstring(str1); /* Deallocate vstring */
       continue;
     } /* if (cmdMatches("SHOW SOURCE")) */
 
@@ -2763,7 +2769,7 @@ void command(int argc, char *argv[]) {
                   /* Output each token only once in case of multiple decl. */
                   if (!instr(1, str3, cat(" ", str1, " ", NULL))) {
                     let(&str3, cat(str3, " ", str1, " ", NULL));
-                    let(&str2, "");
+                    free_vstring(str2);
                     str2 = tokenToTex(g_MathToken[(g_Statement[i].mathString)[j]
                         ].tokenName, i/*stmt# for error msgs*/);
                     /* Skip any tokens (such as |- in QL Explorer) that may be suppressed */
@@ -2800,13 +2806,13 @@ void command(int argc, char *argv[]) {
                 } /* next j */
                 /* Close out the string now to prevent memory overflow */
                 fprintf(g_texFilePtr, "%s", g_printString);
-                let(&g_printString, "");
+                free_vstring(g_printString);
                 break;
               case -1: /* Falls through to next case */
               case 0:
-                let(&str1, "");
+                free_vstring(str1);
                 if (s == 0 || g_briefHtmlFlag) {
-                  let(&str1, "");
+                  free_vstring(str1);
                   /* Get HTML hypotheses => assertion */
                   str1 = getTexOrHtmlHypAndAssertion(i);
                   let(&str1, cat(str1, "</TD></TR>", NULL));
@@ -2828,7 +2834,7 @@ void command(int argc, char *argv[]) {
                   let(&str1, cat(str2, " ", str1, NULL));
                 } else {
                   /* Get little pink (or rainbow-colored) number */
-                  let(&str4, "");
+                  free_vstring(str4);
                   str4 = pinkHTML(i);
                   let(&str2, cat("<TR BGCOLOR=", bgcolor,
                       " ALIGN=LEFT><TD><A HREF=\"",
@@ -2851,7 +2857,7 @@ void command(int argc, char *argv[]) {
                 } else {
                   /* Theorems are listed w/ description; otherwise file is too
                      big for convenience */
-                  let(&str1, "");
+                  free_vstring(str1);
                   str1 = getDescription(i);
                   if (strlen(str1) > 29)
                     let(&str1, cat(left(str1, 26), "...", NULL));
@@ -2860,12 +2866,12 @@ void command(int argc, char *argv[]) {
                 }
                 /* Close out the string now to prevent overflow */
                 fprintf(g_texFilePtr, "%s", g_printString);
-                let(&g_printString, "");
+                free_vstring(g_printString);
                 break;
             } /* end switch */
           } /* next i (statement number) */
           g_outputToString = 0;  /* closing will write out the string */
-          let(&bgcolor, ""); /* Deallocate (to improve fragmentation) */
+          free_vstring(bgcolor); /* Deallocate (to improve fragmentation) */
 
         } else { /* s > 0 */
 
@@ -2894,7 +2900,7 @@ void command(int argc, char *argv[]) {
         printTexTrailer(1 /*texHeaderFlag*/);
         fclose(g_texFilePtr);
         g_texFileOpenFlag = 0;
-        let(&g_texFileName,"");
+        free_vstring(g_texFileName);
 
       } /* next s */
 
@@ -2964,7 +2970,7 @@ void command(int argc, char *argv[]) {
           fprintf(g_texFilePtr, "%s", str1);
 
           /* Print hypothesis */
-          let(&str1, ""); /* Free any previous allocation to str1 */
+          free_vstring(str1); /* Free any previous allocation to str1 */
           /* getTexLongMath does not return a temporary allocation; must
              assign str1 directly, not with let().  It will be deallocated
              with the next let(&str1,...). */
@@ -2983,7 +2989,7 @@ void command(int argc, char *argv[]) {
         let(&str1, "<FONT SIZE=\"+3\">");
         fprintf(g_texFilePtr, "%s", str1);
 
-        let(&str1, ""); /* Free any previous allocation to str1 */
+        free_vstring(str1); /* Free any previous allocation to str1 */
         /* getTexLongMath does not return a temporary allocation */
         str1 = getTexLongMath(g_Statement[s].mathString, s);
         fprintf(g_texFilePtr, "%s", str1);
@@ -2994,9 +3000,9 @@ void command(int argc, char *argv[]) {
 
       fclose(g_texFilePtr);
       g_texFileOpenFlag = 0;
-      let(&g_texFileName,"");
-      let(&str1,"");
-      let(&str2,"");
+      free_vstring(g_texFileName);
+      free_vstring(str1);
+      free_vstring(str2);
 
       continue;
     } /* if (cmdMatches("SHOW STATEMENT") && switchPos("/ MNEMONICS")) */
@@ -3285,8 +3291,8 @@ void command(int argc, char *argv[]) {
             "See HELP SHOW TRACE_BACK for matching rules.", NULL), "", " ");
       }
 
-      let(&matchList, ""); /* Deallocate memory */
-      let(&traceToList, ""); /* Deallocate memory */
+      free_vstring(matchList); /* Deallocate memory */
+      free_vstring(traceToList); /* Deallocate memory */
       continue;
     } /* if (cmdMatches("SHOW TRACE_BACK")) */
 
@@ -3320,7 +3326,7 @@ void command(int argc, char *argv[]) {
         j = switchPos("/ DIRECT");
         if (j) recursiveFlag = 0; /* Direct references only */
 
-        let(&str1, "");
+        free_vstring(str1);
         str1 = traceUsage(g_showStatement,
             recursiveFlag,
             0 /* cutoffStmt */);
@@ -3383,7 +3389,7 @@ void command(int argc, char *argv[]) {
             }
           }
           if (strlen(str3) > 1) print2("%s\n", str3);
-          let(&str3, "");
+          free_vstring(str3);
         } else {
           print2("  (None)\n");
         } /* if (k != 0) */
@@ -3719,7 +3725,7 @@ void command(int argc, char *argv[]) {
             to avoid premature output */
           if (!nmbrElementIn(1, nmbrSaveProof, -(long)'?')) {
             /* Add a "(Contributed by...)" date if it isn't there */
-            let(&str2, "");
+            free_vstring(str2);
             str2 = getContrib(outStatement, CONTRIBUTOR);
             if (str2[0] == 0) { /* The is no contributor, so add one */
 
@@ -3766,9 +3772,9 @@ void command(int argc, char *argv[]) {
                 let(&str3, cat(left(str3, i - 1), str4, right(str3, i), NULL));
                 if (g_Statement[outStatement].labelSectionChanged == 1) {
                   /* Deallocate old comment if not original source */
-                  let(&str4, ""); /* Deallocate any previous str4 content */
+                  free_vstring(str4); /* Deallocate any previous str4 content */
                   str4 = g_Statement[outStatement].labelSectionPtr;
-                  let(&str4, ""); /* Deallocate the old content */
+                  free_vstring(str4); /* Deallocate the old content */
                 }
                 /* Set flag that this is not the original source */
                 g_Statement[outStatement].labelSectionChanged = 1;
@@ -3800,9 +3806,9 @@ void command(int argc, char *argv[]) {
             let(&g_printString, cat("\n", g_printString, NULL));
             if (g_Statement[outStatement].proofSectionChanged == 1) {
               /* Deallocate old proof if not original source */
-              let(&str1, ""); /* Deallocate any previous str1 content */
+              free_vstring(str1); /* Deallocate any previous str1 content */
               str1 = g_Statement[outStatement].proofSectionPtr;
-              let(&str1, ""); /* Deallocate the proof section */
+              free_vstring(str1); /* Deallocate the proof section */
             }
             /* Set flag that this is not the original source */
             g_Statement[outStatement].proofSectionChanged = 1;
@@ -3855,7 +3861,7 @@ void command(int argc, char *argv[]) {
                 /* "\" to clip out ends above this line.\n",NULL)); */
                 "\" (", str((double)l), " bytes) ends above this line.\n", NULL));
           } /* End if saveFlag */
-          nmbrLet(&nmbrSaveProof, NULL_NMBRSTRING);
+          free_nmbrString(nmbrSaveProof);
           if (pipFlag) break; /* Only one iteration for NEW_PROOF stuff */
           continue;  /* to next s iteration */
         } /* end if (switchPos("/ PACKED") || switchPos("/ NORMAL") ||
@@ -3892,7 +3898,7 @@ void command(int argc, char *argv[]) {
              mode before starting its output, so we must put out the
              g_printString ourselves here */
           fprintf(g_texFilePtr, "%s", g_printString);
-          let(&g_printString, ""); /* We'll clr it anyway */
+          free_vstring(g_printString); /* We'll clr it anyway */
         } else { /* !texFlag */
           /* Terminal output - display the statement if wildcard is used */
           if (!pipFlag) {
@@ -3945,7 +3951,7 @@ void command(int argc, char *argv[]) {
               print2("\n");
               g_outputToString = 0;
               fprintf(g_texFilePtr, "%s", g_printString);
-              let(&g_printString, "");
+              free_vstring(g_printString);
             } else {
             }
           } else { /* g_htmlFlag */
@@ -4020,7 +4026,7 @@ void command(int argc, char *argv[]) {
       print2("Result:  %s\n", nmbrCvtRToVString(nmbrTmpPtr,
                 0, /*explicitTargets*/
                 0 /*statemNum, used only if explicitTargets*/));
-      nmbrLet(&nmbrTmpPtr, NULL_NMBRSTRING);
+      free_nmbrString(nmbrTmpPtr);
 
       continue;
     }
@@ -4632,7 +4638,7 @@ void command(int argc, char *argv[]) {
          for user */
       autoUnify((char)p); /* 0 means no "congrats" message */
 
-      nmbrLet(&nmbrTmpPtr, NULL_NMBRSTRING); /* Deallocate memory */
+      free_nmbrString(nmbrTmpPtr); /* Deallocate memory */
 
       n = nmbrLen(g_ProofInProgress.proof); /* New proof length */
       if (nmbrElementIn(1, g_ProofInProgress.proof, -(long)'?')) {
@@ -4792,7 +4798,7 @@ void command(int argc, char *argv[]) {
         if (q > 1) deleteSubProof(s - 1);
         addSubProof(nmbrTmpPtr, s - q);
         assignKnownSteps(s - q, nmbrLen(nmbrTmpPtr));
-        nmbrLet(&nmbrTmpPtr, NULL_NMBRSTRING);
+        free_nmbrString(nmbrTmpPtr);
 
         n = nmbrLen(g_ProofInProgress.proof); /* New proof length */
         if (m == n) {
@@ -4887,7 +4893,7 @@ void command(int argc, char *argv[]) {
             /* Improve only subproofs with unknown steps */
             if (!nmbrElementIn(1, nmbrTmp, -(long)'?')) continue;
 
-            nmbrLet(&nmbrTmp, NULL_NMBRSTRING); /* No longer needed - dealloc */
+            free_nmbrString(nmbrTmp); /* No longer needed - dealloc */
 
             /* Check dummy variable status of step */
             dummyVarIsoFlag = checkDummyVarIsolation(s - 1);
@@ -4941,7 +4947,7 @@ void command(int argc, char *argv[]) {
                 nmbrLen(nmbrTmpPtr), s);
             if (nmbrLen(nmbrTmpPtr) || q != 1) n = s - q + 1;
                                                /* Save earliest step changed */
-            nmbrLet(&nmbrTmpPtr, NULL_NMBRSTRING);
+            free_nmbrString(nmbrTmpPtr);
             g_proofChangedFlag = 1;
             s = s - q + 1; /* Adjust step position to account for deleted subpr */
           } /* Next step s */
@@ -5263,7 +5269,7 @@ void command(int argc, char *argv[]) {
                     "", /*traceToList*/
                     &traceProofFlags, /* y/n list of flags */
                     &nmbrTmp /* unproved list - ignored */);
-                nmbrLet(&nmbrTmp, NULL_NMBRSTRING); /* Discard */
+                free_nmbrString(nmbrTmp); /* Discard */
 
                 /* Restore the SAVEd proof */
                 g_Statement[g_proveStatement].proofSectionPtr
@@ -5273,13 +5279,13 @@ void command(int argc, char *argv[]) {
                 g_Statement[g_proveStatement].proofSectionChanged
                     = saveZappedProofSectionChanged;
               }
-              let(&traceTrialFlags, "");
+              free_vstring(traceTrialFlags);
               traceProofWork(k, /* The trial statement */
                   1 /*essentialFlag*/,
                   "", /*traceToList*/
                   &traceTrialFlags, /* Y/N list of flags */
                   &nmbrTmp /* unproved list - ignored */);
-              nmbrLet(&nmbrTmp, NULL_NMBRSTRING); /* Discard */
+              free_nmbrString(nmbrTmp); /* Discard */
               j = 1; /* 1 = ok to use trial statement */
               for (i = 1; i < g_proveStatement; i++) {
                 if (g_Statement[i].type != (char)a_) continue; /* Not $a */
@@ -5391,7 +5397,7 @@ void command(int argc, char *argv[]) {
               j = instr(1, g_printString,
                   "There is a disjoint variable ($d) violation");
               g_outputToString = 0; /* Restore to normal output */
-              let(&g_printString, ""); /* Clear out the stored error messages */
+              free_vstring(g_printString); /* Clear out the stored error messages */
               cleanWrkProof(); /* Deallocate verifyProof storage */
               g_Statement[g_proveStatement].proofSectionPtr
                   = saveZappedProofSectionPtr;
@@ -5527,25 +5533,25 @@ void command(int argc, char *argv[]) {
             g_Statement[g_proveStatement].labelName);
       }
 
-      let(&str1, ""); /* Deallocate memory */
-      nmbrLet(&nmbrSaveProof, NULL_NMBRSTRING); /* Deallocate memory */
+      free_vstring(str1); /* Deallocate memory */
+      free_nmbrString(nmbrSaveProof); /* Deallocate memory */
 
       /* Clear these Y/N trace strings unconditionally since new axioms are no
         longer  allowed by default, so they may become set regardless of
         qualifiers */
-      let(&traceProofFlags, ""); /* Deallocate memory */
-      let(&traceTrialFlags, ""); /* Deallocate memory */
+      free_vstring(traceProofFlags); /* Deallocate memory */
+      free_vstring(traceTrialFlags); /* Deallocate memory */
 
       if (allowNewAxiomsMatchList[0]) { /* User provided /NO_NEW_AXIOMS_FROM list */
-        let(&allowNewAxiomsMatchList, ""); /* Deallocate memory */
+        free_vstring(allowNewAxiomsMatchList); /* Deallocate memory */
       }
 
       if (noNewAxiomsMatchList[0]) { /* User provided /ALLOW_NEW_AXIOMS list */
-        let(&noNewAxiomsMatchList, ""); /* Deallocate memory */
+        free_vstring(noNewAxiomsMatchList); /* Deallocate memory */
       }
 
       if (forbidMatchList[0]) { /* User provided a /FORBID list */
-        let(&forbidMatchList, ""); /* Deallocate memory */
+        free_vstring(forbidMatchList); /* Deallocate memory */
       }
 
       deallocProofStruct(&saveProofForReverting); /* Deallocate memory */
@@ -5602,8 +5608,8 @@ void command(int argc, char *argv[]) {
       } else {
         print2("No expansion occurred.  The proof was not changed.\n");
       }
-      nmbrLet(&nmbrSaveProof, NULL_NMBRSTRING);
-      nmbrLet(&nmbrTmp, NULL_NMBRSTRING);
+      free_nmbrString(nmbrSaveProof);
+      free_nmbrString(nmbrTmp);
       continue;
     } /* EXPAND */
 
@@ -5892,12 +5898,12 @@ void command(int argc, char *argv[]) {
         if (!matchesList(g_Statement[i].labelName, g_fullArg[1], '*', '?'))
           continue;
         if (n) { /* COMMENTS switch */
-          let(&str2, "");
+          free_vstring(str2);
           str2 = getDescription(i); /* str2 must be deallocated here */
           /* Strip linefeeds and reduce spaces; cvt to uppercase */
           j = instr(1, edit(str2, 4 + 8 + 16 + 128 + 32), str1);
           if (!j) { /* No match */
-            let(&str2, "");
+            free_vstring(str2);
             continue;
           }
           /* Strip linefeeds and reduce spaces */
@@ -5923,7 +5929,7 @@ void command(int argc, char *argv[]) {
           }
           print2("%s\n", cat(str((double)i), " ", g_Statement[i].labelName, " $",
               chr(g_Statement[i].type), " \"", str3, "\"", NULL));
-          let(&str2, "");
+          free_vstring(str2);
         } else { /* No COMMENTS switch */
           let(&str2,nmbrCvtMToVString(g_Statement[i].mathString));
 
@@ -6119,7 +6125,7 @@ void command(int argc, char *argv[]) {
         print2("Root directory was changed from \"%s\" to \"%s\"\n",
             str1, g_rootDirectory);
       }
-      let(&str1, "");
+      free_vstring(str1);
       continue;
     }
 
@@ -6175,7 +6181,7 @@ void command(int argc, char *argv[]) {
           fclose(g_logFilePtr);
           g_logFileOpenFlag = 0;
         }
-        let(&g_logFileName,"");
+        free_vstring(g_logFileName);
         continue;
     }
 
@@ -6225,7 +6231,7 @@ void command(int argc, char *argv[]) {
         fclose(g_texFilePtr);
         g_texFileOpenFlag = 0;
       }
-      let(&g_texFileName,"");
+      free_vstring(g_texFileName);
       continue;
     }
 
@@ -6310,7 +6316,7 @@ void command(int argc, char *argv[]) {
       for (i = 0; i < searchWindow; i++) {
         let((vstring *)(&pntrTmp[i]), "");
       }
-      pntrLet(&pntrTmp, NULL_PNTRSTRING);
+      free_pntrString(pntrTmp);
 
 
       continue;
