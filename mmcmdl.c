@@ -7,11 +7,6 @@
 /* Command line syntax specification for Metamath */
 
 #include <string.h>
-#include <stdio.h>
-#include <limits.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <stdarg.h>
 #include "mmvstr.h"
 #include "mmdata.h"
 #include "mmcmdl.h"

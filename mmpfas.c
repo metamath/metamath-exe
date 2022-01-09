@@ -7,13 +7,7 @@
 /* mmpfas.c - Proof assistant module */
 
 #include <string.h>
-#include <stdio.h>
-#include <limits.h>
 #include <stdlib.h>
-#include <ctype.h>
-#include <stdarg.h>
-#include <setjmp.h>
-#include <time.h>
 #include "mmvstr.h"
 #include "mmdata.h"
 #include "mminou.h"

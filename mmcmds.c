@@ -7,12 +7,7 @@
 /* mmcmds.c - assorted user commands */
 
 #include <string.h>
-#include <stdio.h>
-#include <limits.h>
 #include <stdlib.h>
-#include <ctype.h>
-#include <stdarg.h>
-#include <time.h>  /* For clock() */
 #include "mmvstr.h"
 #include "mmdata.h"
 #include "mmcmdl.h" /* For g_texFileName */

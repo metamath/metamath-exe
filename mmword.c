@@ -22,12 +22,7 @@
    existing at that time. */
 
 #include <string.h>
-#include <stdio.h>
-#include <limits.h>
 #include <stdlib.h>
-#include <ctype.h>
-#include <stdarg.h>
-#include <setjmp.h>
 #include "mmvstr.h"
 #include "mmdata.h"
 #include "mminou.h"

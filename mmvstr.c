@@ -14,9 +14,7 @@ This is an emulation of the string functions available in VMS BASIC.
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 #include <time.h>
-#include <ctype.h>
 #include "mmvstr.h"
 /*E*/ /*Next line is need to declare "db" for debugging*/
 #include "mmdata.h"
