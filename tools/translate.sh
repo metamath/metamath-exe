@@ -41,22 +41,22 @@ awk -v tools="$tools" -v echo="$echo" -v recursive="$recursive" \
     gsub(/[\\$"`]/, "\\\\&", extraArg);
     extraArg = " \"" extraArg "\"";
   }
-  simpleCommands["ADD"] = 1;
-  simpleCommands["DELETE"] = 1;
-  simpleCommands["SUBSTITUTE"] = 1;
-  simpleCommands["SWAP"] = 1;
-  simpleCommands["INSERT"] = 1;
-  simpleCommands["BREAK"] = 1;
-  simpleCommands["BUILD"] = 1;
-  simpleCommands["MATCH"] = 1;
-  simpleCommands["SORT"] = 1;
-  simpleCommands["UNDUPLICATE"] = 1;
-  simpleCommands["DUPLICATE"] = 1;
-  simpleCommands["UNIQUE"] = 1;
-  simpleCommands["REVERSE"] = 1;
-  simpleCommands["RIGHT"] = 1;
-  simpleCommands["PARALLEL"] = 1;
-  simpleCommands["TAG"] = 1;
+  inplaceCommands["ADD"] = 1;
+  inplaceCommands["DELETE"] = 1;
+  inplaceCommands["SUBSTITUTE"] = 1;
+  inplaceCommands["SWAP"] = 1;
+  inplaceCommands["INSERT"] = 1;
+  inplaceCommands["BREAK"] = 1;
+  inplaceCommands["BUILD"] = 1;
+  inplaceCommands["MATCH"] = 1;
+  inplaceCommands["SORT"] = 1;
+  inplaceCommands["UNDUPLICATE"] = 1;
+  inplaceCommands["DUPLICATE"] = 1;
+  inplaceCommands["UNIQUE"] = 1;
+  inplaceCommands["REVERSE"] = 1;
+  inplaceCommands["RIGHT"] = 1;
+  inplaceCommands["PARALLEL"] = 1;
+  inplaceCommands["TAG"] = 1;
 } {
   if ($0 == "") print;
   else if (substr($0, 1, 1) == "!")
@@ -76,7 +76,7 @@ awk -v tools="$tools" -v echo="$echo" -v recursive="$recursive" \
       print "echo \"" echoLine "\"";
     }
     file = tools "/" tolower($1) ".sh";
-    if (simpleCommands[$1]) {
+    if (inplaceCommands[$1]) {
       infile = $2;
       $2 = file;
       $1 = tools "/inplace.sh " infile;
