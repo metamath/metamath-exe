@@ -7,11 +7,8 @@
 /* This module processes LaTeX and HTML output. */
 
 #include <string.h>
-#include <stdio.h>
-#include <limits.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <stdarg.h>
 #include "mmvstr.h"
 #include "mmdata.h"
 #include "mminou.h"

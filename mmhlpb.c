@@ -10,7 +10,6 @@
    as well as adding it here. */
 
 #include <string.h>
-#include <stdio.h>
 #include "mmvstr.h"
 #include "mmdata.h"
 #include "mmcmds.h"

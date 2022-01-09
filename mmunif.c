@@ -100,14 +100,6 @@ Note:  i = 0 through g_hentyFilterSize-1 below.
 
 */
 
-#include <string.h>
-#include <stdio.h>
-#include <limits.h>
-#include <stdlib.h>
-#include <ctype.h>
-#include <stdarg.h>
-#include <setjmp.h>
-#include <time.h>
 #include "mmvstr.h"
 #include "mmdata.h"
 #include "mminou.h"

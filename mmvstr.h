@@ -124,6 +124,8 @@ with 'let(&' and thus has the same effect as 'let(&'.
 #ifndef METAMATH_MMVSTR_H_
 #define METAMATH_MMVSTR_H_
 
+#include <stdio.h>
+
 typedef char* vstring;
 #define vstringdef(x) vstring x = ""
 
