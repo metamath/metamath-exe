@@ -4774,7 +4774,7 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
 void verifyMarkup(vstring labelMatch,
     flag dateCheck, /* 1 = check date consistency */
     flag topDateCheck, /* 1 = check top date */
-    flag fileCheck, /* 1 = check external files (gifs, mmset.html,...) */
+    flag fileCheck, /* 1 = check external files (gifs and bib) */
     flag underscoreCheck, /* 1 = check labels for "_" characters) */
     flag mathboxCheck, /* 1 = check mathbox cross-references) */
     flag verboseMode) /* 1 = more details */ {
@@ -5329,7 +5329,7 @@ void verifyMarkup(vstring labelMatch,
   f = writeBibliography("mmbiblio.html",
           labelMatch,
           1,  /* 1 = no output, just warning msgs if any */
-          fileCheck); /* 1 = check missing external files (gifs, bib, etc.) */
+          fileCheck); /* 1 = check external files (gifs and bib) */
   if (f != 0) errFound = 1;
 
   /* Check mathboxes for cross-references */

@@ -85,7 +85,7 @@ void verifyProofs(vstring labelMatch, flag verifyFlag);
 
 
 /* If checkFiles = 0, do not open external files.
-   If checkFiles = 1, check mm*.html, presence of gifs, etc. */
+   If checkFiles = 1, check for presence of gifs and biblio file */
 void verifyMarkup(vstring labelMatch, flag dateCheck, flag topDateCheck,
     flag fileCheck,
     flag underscoreCheck,

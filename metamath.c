@@ -2154,7 +2154,7 @@ void command(int argc, char *argv[]) {
       writeBibliography(g_fullArg[2],
           "*", /* labelMatch - all labels */
           0,  /* 1 = no output, just warning msgs if any */
-          1); /* 1 = check missing external files (gifs, bib, etc.) */
+          1); /* 1 = check external files (gifs and bib) */
       continue;
     }  /* End of "WRITE BIBLIOGRAPHY" */
 
@@ -6389,7 +6389,7 @@ void command(int argc, char *argv[]) {
       verifyMarkup(g_fullArg[2],
           (flag)i, /* 1 = check date consistency */
           (flag)j, /* 1 = check top date */
-          (flag)k, /* 1 = check external files GIF, mmset.html,... */
+          (flag)k, /* 1 = check external files (gifs and bib) */
           (flag)l, /* 1 = check labels for underscores */
           (flag)m, /* 1 = check mathbox cross-references */
           (flag)n); /* 1 = verbose mode */
