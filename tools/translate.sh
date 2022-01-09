@@ -41,6 +41,8 @@ awk -v tools="$tools" -v echo="$echo" -v recursive="$recursive" \
     gsub(/[\\$"`]/, "\\\\&", extraArg);
     extraArg = " \"" extraArg "\"";
   }
+  # These are commands of the form CMD <file> <args...>
+  # which have to be replaced with inplace.sh <file> cmd.sh <args...>
   inplaceCommands["ADD"] = 1;
   inplaceCommands["DELETE"] = 1;
   inplaceCommands["SUBSTITUTE"] = 1;
