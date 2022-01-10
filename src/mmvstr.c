@@ -88,9 +88,7 @@ static void* tempAlloc(long size)  /* String memory allocation/deallocation */
 } /* tempAlloc */
 
 
-/* Make string have temporary allocation to be released by next let() */
-/* Warning:  after makeTempAlloc() is called, the vstring may NOT be
-   assigned again with let() */
+/* Put string in temporary allocation arena */
 void makeTempAlloc(vstring s) {
   pushTempAlloc(s);
 /*E*/INCDB1((long)strlen(s) + 1);
@@ -100,11 +98,6 @@ void makeTempAlloc(vstring s) {
 
 
 /* String assignment */
-/* This function must ALWAYS be called to make assignment to */
-/* a vstring in order for the memory cleanup routines, etc. */
-/* to work properly.  If a vstring has never been assigned before, */
-/* it is the user's responsibility to initialize it to "" (the */
-/* null string). */
 void let(vstring *target, const char *source) {
 
   size_t sourceLength = strlen(source);  /* Save its length */
@@ -144,7 +137,8 @@ void let(vstring *target, const char *source) {
 
 } /* let */
 
-temp_vstring cat(const char *string1, ...) {       /* String concatenation */
+/* String concatenation */
+temp_vstring cat(const char *string1, ...) {
 #define MAX_CAT_ARGS 50
   va_list ap;   /* Declare list incrementer */
   const char *arg[MAX_CAT_ARGS];    /* Array to store arguments */

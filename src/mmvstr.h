@@ -132,19 +132,62 @@ for memory allocation. New vstrings should always be constructed from the
 typedef char* vstring;
 
 /* A vstring allocated in temporary storage. These strings will be deallocated
-after the next call to `let`. */
+  after the next call to `let`.
+
+  A `temp_vstring` should never be used as the first argument of a `let`.
+  This code is INCORRECT:
+
+    temp_vstring foo = left("foobar", 3);
+    let(&foo, "bar"); // this will cause a double free
+
+  It is okay (and quite common) to use a temp_vstring as the second argument,
+  however. It is best not to hold on to the value, though, because the `let`
+  will free it. This code is INCORRECT:
+
+    vstringdef(x);
+    temp_vstring foobar = cat("foo", "bar");
+    let(&x, foobar); // frees foobar
+    let(&x, foobar); // dangling reference
+
+  There is a converse problem when `temp_vstring`s are used without `let`:
+
+    for (int i = 0; i < 100000; i++) {
+      vstringdef(x);
+      if (strlen(space(i)) == 99999) break;
+    }
+
+  We don't need to deallocate the string returned by `space()` directly,
+  because it returns a `temp_vstring`, but because there is no `let` in
+  this function, we end up allocating a bunch of temporaries and
+  effectively get a memory leak. (There is space for about 100
+  temporaries so this loop will cause a crash.) To solve this problem,
+  we can either use a dummy `let()` statement in the loop, or call
+  `freeTempAlloc` directly:
+
+    for (int i = 0; i < 100000; i++) {
+      vstringdef(x);
+      if (strlen(space(i)) == 99999) break;
+      freeTempAlloc();
+    }
+
+*/
 typedef vstring temp_vstring;
 
 #define vstringdef(x) vstring x = ""
 
 /* Emulation of BASIC string assignment */
-/* 'let' MUST be used to assign vstrings, e.g. 'let(&abc, "Hello"); */
-/* Empty string deallocates memory, e.g. 'let(&abc, ""); */
+/* This function must ALWAYS be called to make assignment to
+   a vstring in order for the memory cleanup routines, etc.
+   to work properly.  A new vstring should be initialized to "" (the empty string),
+   and the 'vstringdef' macro handles creation of such variables. */
+/* `source` must not point into `target` (but this is unlikely to arise if
+   `source` is calculated using `temp_vstring` operations from `target`). */
 void let(vstring *target, const char *source);
 
 /* Emulation of BASIC string concatenation - last argument MUST be NULL */
 /* vstring cat(vstring string1, ..., stringN, NULL); */
 /* e.g. 'let(&abc, cat("Hello", " ", left("worldx", 5), "!", NULL);' */
+/* Also the first string must not be `NULL`, i.e. `cat(NULL)` alone is invalid. */
 temp_vstring cat(const char * string1, ...);
 
 /* Emulation of BASIC linput (line input) statement; returns NULL if EOF */
@@ -201,9 +244,13 @@ extern long g_tempAllocStackTop;   /* Top of stack for tempAlloc functon */
 extern long g_startTempAllocStack; /* Where to start freeing temporary allocation
     when let() is called (normally 0, except for nested vstring functions) */
 
-/* Make string have temporary allocation to be released by next let() */
-/* Warning:  after makeTempAlloc() is called, the vstring may NOT be
-   assigned again with let() */
+/* Make string have temporary allocation to be released by next let().
+  This function effectively changes the type of `s`
+  from `vstring` (an owned pointer) to `temp_vstring` (a temporary to be
+  freed by the next `let()`). See `temp_vstring` for information on what
+  you can do with temporary strings.
+  In particular, after makeTempAlloc() is called, the vstring may NOT be
+  assigned again with let(). */
 void makeTempAlloc(vstring s);    /* Make string have temporary allocation to be
                                     released by next let() */
 #endif /* METAMATH_MMVSTR_H_ */

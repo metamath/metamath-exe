@@ -23,11 +23,13 @@ typedef long nmbrString; /* String of numbers */
 typedef void* pntrString; /* String of pointers */
 
 /* A nmbrString allocated in temporary storage. These strings will be deallocated
-after the next call to `nmbrLet`. */
+   after the next call to `nmbrLet`.
+   See also `temp_vstring` for information on how temporaries are handled. */
 typedef nmbrString temp_nmbrString;
 
 /* A pntrString allocated in temporary storage. These strings will be deallocated
-after the next call to `pntrLet`. */
+   after the next call to `pntrLet`.
+   See also `temp_vstring` for information on how temporaries are handled. */
 typedef pntrString temp_pntrString;
 
 enum mTokenType { var_, con_ };
