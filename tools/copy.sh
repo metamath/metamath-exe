@@ -8,8 +8,9 @@ COPY - Similar to Unix "cat" but safe (same input & output name allowed)
 
 This command copies (concatenates) all input files in a space separated
 list to an output file.  The output file may have
-the same name as an input file.  Any previous version of the output
-file is renamed with a ~1 extension.
+the same name as an input file.
+Unlike the metamath version, this script does not save a previous
+version of the output file with a ~1 extension. (TODO: implement?)
 Example: "copy.sh 1.tmp 1.tmp 1.tmp 2.tmp" followed by "unique.sh 1.tmp"
 will result in 1.tmp containing those lines of 2.tmp that didn't
 previously exist in 1.tmp.
