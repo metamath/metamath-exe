@@ -88,7 +88,8 @@ H("");
 
 g_printHelp = !strcmp(saveHelpCmd, "HELP ADD");
 H("This command adds a character string prefix and/or suffix to each");
-H("line in a file.");
+H("line in a file.  To add only a prefix, set <endstr> to the empty string,");
+H("and set <begstr> to the empty string to add only a suffix.");
 H("Syntax:  ADD <iofile> <begstr> <endstr>");
 
 g_printHelp = !strcmp(saveHelpCmd, "HELP TAG");
@@ -132,7 +133,7 @@ H("  Q - Do not alter characters in quotes (ignored by T and U)");
 H("  T - (Tab) Convert spaces to equivalent tabs");
 H("  U - (Untab) Convert tabs to equivalent spaces");
 H("Some other subcommands are also available:");
-H("  P - Trim parity (8th) bit from each character");
+H("  P - Clear parity (8th) bit from each character");
 H("  G - Discard garbage characters CR,FF,ESC,BS");
 H("  C - Convert to upper case");
 H("  L - Convert to lower case");
@@ -156,7 +157,8 @@ H("Note: The SUBSTITUTE command may be abbreviated by S.");
 
 g_printHelp = !strcmp(saveHelpCmd, "HELP SWAP");
 H("This command swaps the parts of each line before and after a");
-H("specified string.");
+H("specified string <middle>.");
+H("Syntax:  SWAP <iofile> <middle>");
 
 
 g_printHelp = !strcmp(saveHelpCmd, "HELP INSERT");

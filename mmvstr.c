@@ -286,7 +286,7 @@ vstring edit(vstring sin,long control) {
   /* EDIT$ (from VMS BASIC manual)
        Syntax:  str-vbl = EDIT$(str-exp, int-exp)
        Values   Effect
-       1        Trim parity bits
+       1        Clear parity bits
        2        Discard all spaces and tabs
        4        Discard characters: CR, LF, FF, ESC, RUBOUT, and NULL
        8        Discard leading spaces and tabs
@@ -307,7 +307,7 @@ vstring edit(vstring sin,long control) {
   vstring sout;
   long i, j, k, m;
   int last_char_is_blank;
-  int trim_flag, discardctrl_flag, bracket_flag, quote_flag, case_flag;
+  int clear_parity_flag, discardctrl_flag, bracket_flag, quote_flag, uppercase_flag;
   int alldiscard_flag, leaddiscard_flag, traildiscard_flag,
       traildiscardLF_flag, reduce_flag;
   int processing_inside_quote=0;
@@ -315,12 +315,12 @@ vstring edit(vstring sin,long control) {
   unsigned char graphicsChar;
 
   /* Set up the flags */
-  trim_flag = control & 1;
+  clear_parity_flag = control & 1;
   alldiscard_flag = control & 2;
   discardctrl_flag = control & 4;
   leaddiscard_flag = control & 8;
   reduce_flag = control & 16;
-  case_flag = control & 32;
+  uppercase_flag = control & 32;
   bracket_flag = control & 64;
   traildiscard_flag = control & 128;
   traildiscardLF_flag = control & 16384;
@@ -361,8 +361,8 @@ vstring edit(vstring sin,long control) {
     if ((alldiscard_flag) && isblank_(sout[i]))
         sout[i] = 0;
 
-    /* Trim parity (eighth?) bit */
-    if (trim_flag)
+    /* Clear parity (eighth?) bit */
+    if (clear_parity_flag)
        sout[i] = sout[i] & 0x7F;
 
     /* Discard CR,LF,FF,ESC,BS */
@@ -382,13 +382,13 @@ vstring edit(vstring sin,long control) {
 
     /* Convert lowercase to uppercase */
     /*
-    if ((case_flag) && (islower(sout[i])))
+    if ((uppercase_flag) && (islower(sout[i])))
        sout[i] = toupper(sout[i]);
     */
     /* 13-Jun-2009 nm The upper/lower case C functions have odd behavior
        with characters > 127, at least in lcc.  So this was rewritten to
        not use them. */
-    if ((case_flag) && (sout[i] >= 'a' && sout[i] <= 'z'))
+    if ((uppercase_flag) && (sout[i] >= 'a' && sout[i] <= 'z'))
        sout[i] = (char)(sout[i] - ('a' - 'A'));
 
     /* Convert [] to () */
