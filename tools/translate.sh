@@ -108,7 +108,7 @@ awk -v tools="$tools" -v echo="$echo" -v recursive="$recursive" \
     } else if ($1 == "HELP" || $1 == "COUNT" || $1 == "UPDATE") {
       $0 = "# " $1 " command not supported";
     } else {
-      gsub(/"/, "\\\\&");
+      gsub(/[\\$"`]/, "\\\\&");
       $0 = "# unknown command: \"" $0 "\"";
     }
     if (echo) {
