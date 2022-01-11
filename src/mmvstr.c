@@ -225,7 +225,7 @@ int linput(FILE *stream, const char* ask, vstring *target) {
 
 
 /* Find out the length of a string */
-long len(vstring s) {
+long len(const char *s) {
   return (long)strlen(s);
 } /* len */
 

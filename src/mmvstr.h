@@ -219,7 +219,7 @@ temp_vstring time_(void);
 temp_vstring num(double x);
 temp_vstring num1(double x);
 temp_vstring str(double x);
-long len(vstring s);
+long len(const char *s);
 long instr(long start, const char *string1, const char *string2);
 long rinstr(const char *string1, const char *string2);
 long ascii_(const char *c);
