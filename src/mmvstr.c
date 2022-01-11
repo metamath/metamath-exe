@@ -646,7 +646,7 @@ temp_vstring xlate(const char *sin, const char *table)
 
 /* Returns the ascii value of a character */
 long ascii_(const char *c) {
-  return ((long)c[0]);
+  return (unsigned char)c[0];
 } /* ascii_ */
 
 
