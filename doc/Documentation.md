@@ -1,4 +1,4 @@
-Documentation Rules in Metamath
+# Documentation Rules in Metamath
 
 This is a **draft**.  Here are some links on how to improve on documentation in general:
 https://www.oreilly.com/content/the-eight-rules-of-good-documentation/
