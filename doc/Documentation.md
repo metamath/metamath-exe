@@ -1,7 +1,9 @@
 # Documentation Rules in Metamath
 
 This is a **draft**.  Here are some links on how to improve on documentation in general:
+
 https://www.oreilly.com/content/the-eight-rules-of-good-documentation/
+
 https://guides.lib.berkeley.edu/how-to-write-good-documentation
 
 1. Documentation is mostly collected in the ``doc`` subfolder of metamath.  As an entry point to
