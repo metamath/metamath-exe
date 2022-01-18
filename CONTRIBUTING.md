@@ -8,7 +8,7 @@ Create an issue to discuss your ideas
 [here](https://github.com/metamath/metamath-exe/issues).  Or if you think your
 proposal is already good enough for a final review create a pull request based
 on this document [here](https://github.com/metamath/metamath-exe/pulls).  It is
-okay to submit only portions, so this document grows into its final state over
+fine to submit only portions, so this document grows into its final state over
 time.
 
 Examples found in other projects are:
