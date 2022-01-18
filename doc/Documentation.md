@@ -4,7 +4,7 @@ This is a **draft**.   It was suggested to move parts or all of this to a
 different location, in particular to metamath/set.mm/CONTRIBUTING.md,
 where it can serve as a template for a wider audience.
 
-Here are some links on how to improve on documentation in general:
+Here are some links on how to improve documentation in general:
 
 https://www.oreilly.com/content/the-eight-rules-of-good-documentation/
 
@@ -41,6 +41,6 @@ inevitable.
 4. Source code documentation within sources should follow the
     [Doxygen](https://www.doxygen.nl/index.html) style, so documentation of
     variables and functions can be generated automatically.  Doxygen extracts
-    marked comment blocks from C sources and create HTML pages based upon them.
+    marked comment blocks from C sources and creates HTML pages based upon them.
     In addition it supports Markdown to format descriptions appropriately.  See
     https://www.doxygen.nl/manual/docblocks.html.
