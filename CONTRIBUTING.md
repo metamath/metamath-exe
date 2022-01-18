@@ -33,11 +33,9 @@ https://guides.lib.berkeley.edu/how-to-write-good-documentation
 
 1. Documentation is mostly collected in the ``doc`` subfolder of metamath.  As
     an entry point to documentation the following files are kept in the main
-    folder of Metamath:
-    - README.TXT
-    - LICENSE.TXT.
-    Both files are pure [ASCII](https://en.wikipedia.org/wiki/ASCII) encoded
-    [plain text](https://en.wikipedia.org/wiki/Plain_text) files.
+    folder of Metamath as README.TXT.
+    This file is pure [ASCII](https://en.wikipedia.org/wiki/ASCII) encoded
+    [plain text](https://en.wikipedia.org/wiki/Plain_text).
     
 The following rules are strong recommendations.  We encourage to follow them as
 much as possible.  But in the end we think that some sort of documentation is
