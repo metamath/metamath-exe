@@ -21,9 +21,7 @@ https://gist.github.com/PurpleBooth/b24679402957c63ec426
 
 ## Documentation Rules
 
-This is a **draft**.   It was suggested to move parts or all of this to a
-different location, in particular to metamath/set.mm/CONTRIBUTING.md,
-where it can serve as a template for a wider audience.
+This is a **draft**.
 
 Here are some links on how to improve documentation in general:
 
