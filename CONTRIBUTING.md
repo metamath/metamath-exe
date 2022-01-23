@@ -15,7 +15,7 @@ age in a lot of ways including that C is probably not the language that
 anyone would choose for this kind of code today.
 
 Here's what Norm Megill, who wrote metamath-exe and did almost all of
-its maintenance until 2021, said:
+its maintenance until his passing in 2021, said:
 
 > Another issue with the metamath program that people have requested is
 > putting it on GitHub. However, strange as it may seem I actually don't
