@@ -10,7 +10,7 @@ ongoing changes to our processes or metamath proof databases (especially
 those in the https://github.com/metamath/set.mm repository), we do not
 encourage developing significant new functionality in metamath-exe.
 
-Why? metamath.exe is the oldest of the metamath tools and is showing its
+Why not? metamath.exe is the oldest of the metamath tools and is showing its
 age in a lot of ways including that C is probably not the language that
 anyone would choose for this kind of code today.
 
@@ -56,7 +56,7 @@ We would like to have our code usable by the
 described on that page it supports almost full C11, so this isn't
 a big constraint). We think other compilers people are using probably
 support C11 but if you want to use a feature not found in C99
-this might be work asking about in your pull request description.
+this might be worth asking about in your pull request description.
 
 Some existing parts of metamath-exe have commented out code as a way of
 showing alternative possibilities or old versions of the code. Now that
