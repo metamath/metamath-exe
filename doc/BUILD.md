@@ -57,3 +57,5 @@ installed on your computer.  A description of these programs are found
 In other projects this file can have the alternative name _configure.in_.  It
 is written in a particular script language called __M4__.  We provide an
 annotated version _configure.ac.annotated_ in the documentation.
+
+... to be continued

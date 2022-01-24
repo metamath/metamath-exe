@@ -2,8 +2,9 @@
 # Process this file with autoconf to produce a configure script.
 
 # the version of autoconf needed to translate this file into a portable
-# configure script
+# configure script.  As of this writing version 2.71 is published.
 AC_PREREQ([2.65])
+# program name, version, email to report bugs
 AC_INIT([metamath], [0.114], [nm.NOSPAM@alum.mit.edu])
 AC_CONFIG_SRCDIR([metamath.c])
 AC_CONFIG_HEADERS([config.h])
