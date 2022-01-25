@@ -45,4 +45,3 @@ cd $BUILDDIR
 autoreconf -i
 ./configure
 make
-cp -f metamath $SRCDIR
