@@ -100,7 +100,7 @@ dispensable any more.
 
 ## autotools
 
-Writng any of the above files, _configure_ and _Makefile_, is all but easy, in
+Writing any of the above files, _configure_ and _Makefile_, is all but easy, in
 particular in a portable way.  A set of tools was written to support developers
 with this task.  This set is called
 [Autotools](https://en.wikipedia.org/wiki/GNU_Autotools).  The idea is to allow
@@ -116,15 +116,22 @@ installed on your computer.
 ### autoscan
 
 The first step is to identify all constructs subject to portability issues.
-_autoscan_ provides you with a suggestion and generates a __configure.scan__.
+_autoscan_ provides you with a suggestion in a __configure.scan__ file.
 This file is meant to be renamed to __autoconf.ac__, possibly extended with
+extra commands.  In Metamath commands for strengthening compiler flags
+are added.
 
+### autoconf.ac
 
-This selection is encoded in an OS independent manner in a file called
-__configure.ac__.  A Unix program called __autoconf__, or its sibling
-__autoreconf__, is capable of generating a _configure_ shell script from this
-selection.  The resulting _configure_ script is portable.  So once generated
-and available, the use of _auto(re)conf_ is dispensable for Metamath users.
+This file contains mostly instructions for creating a _configure_ script along
+with its input file _config.h.in_.  Some instructions aim at replacing system
+dependent variables in _Makefile.am_.  The language used for this is called
+__M4__ along with a couple of built-in commands of __autoconf__.  This language
+is designed to provide cross-platform descriptions of features of the OS.
 
+### autoconf
+
+This Unix program called __autoconf__, or its sibling __autoreconf__, is
+capable of generating a _configure_ shell script from the input _autoconf.ac_.
 
 ... to be continued
