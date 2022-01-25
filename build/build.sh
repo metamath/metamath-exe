@@ -8,7 +8,6 @@ SRCDIR=$TOPDIR/src
 
 # clear the build directory, but keep the build.sh
 find $BUILDDIR/* -not -name 'build.sh' -delete
-rm -f $BUILDDIR/configure.raw
 
 #=========   symlink files to the build directory   ==============
 
