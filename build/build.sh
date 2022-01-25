@@ -1,6 +1,9 @@
 #!/bin/bash
 # create a metamath executable from scratch
 
+# You MUST change to the build folder before running this script.
+
+# Draft version, proof of concept.
 
 BUILDDIR=$(pwd)
 TOPDIR=$BUILDDIR/..
