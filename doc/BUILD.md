@@ -123,11 +123,12 @@ are added.
 
 ### autoconf.ac
 
-This file contains mostly instructions for creating a _configure_ script along
-with its input file _config.h.in_.  Some instructions aim at replacing system
-dependent variables in _Makefile.am_.  The language used for this is called
-__M4__ along with a couple of built-in commands of __autoconf__.  This language
-is designed to provide cross-platform descriptions of features of the OS.
+This file encodes the features the OS needs to be tested for.  When processed by
+_autoconf_ a _configure_ script along with its input file _config.h.in_ is created.  
+Some instructions aim at replacing system dependent variables in _Makefile.am_,
+later used to support _make_.  The language used for encoding this is __M4__ 
+along with a couple of built-in commands of __autoconf__.  This language is 
+designed to provide cross-platform descriptions of features of the OS.
 
 ### autoconf
 
