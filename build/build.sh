@@ -15,7 +15,7 @@ find $BUILDDIR/* -not -name 'build.sh' -delete
 #=========   symlink files to the build directory   ==============
 
 cp --symbolic-link $SRCDIR/* $BUILDDIR
-mv $BUILDDIR/configure.ac configure.ac.orig
+mv $BUILDDIR/configure.ac $BUILDIR/configure.ac.orig
 
 #=========   patch the version in configure.ac   ===================
 
@@ -26,10 +26,12 @@ VERSION=`grep '[[:space:]]*#[[:space:]]*define[[:space:]]*MVERSION[[:space:]]"[^
 VERSION=`echo $VERSION | sed 's/[^"]*"\([^"]*\)"/\1/'`
 
 # find the line with the AC_INIT command, prepend the line number at the beginning
-AC_INIT_LINE=`grep -n  '[[:space:]]*AC_INIT[[:space:]]*(.*' $BUILDDIR/configure.ac.orig`
+# line-nr:AC_INIT([FULL-PACKAGE-NAME], [VERSION], [REPORT-ADDRESS])
+AC_INIT_LINE=`grep -n '[[:space:]]*AC_INIT[[:space:]]*(.*' $BUILDDIR/configure.ac.orig`
 AC_INIT_LINE_NR=`echo $AC_INIT_LINE | sed 's/\([0-9]*\).*/\1/'`
-# remove the line number
+# AC_INIT([FULL-PACKAGE-NAME], [VERSION], [REPORT-ADDRESS])
 AC_INIT_LINE=`echo $AC_INIT_LINE | sed 's/[0-9]:\(.*\)/\1/'`
+# replace the second parameter to AC_INIT
 PATCHED_INIT_LINE=`echo $AC_INIT_LINE | sed "s/\\([[:space:]]*AC_INIT(.*\\),.*,\\(.*\\)/\\1, \[$VERSION\],\\2/"`
 
 # replace the AC_INIT line with new content
