@@ -89,11 +89,14 @@ static void* tempAlloc(long size)  /* String memory allocation/deallocation */
 
 
 /* Put string in temporary allocation arena */
-void makeTempAlloc(vstring s) {
-  pushTempAlloc(s);
+temp_vstring makeTempAlloc(vstring s) {
+  if (s[0]) { /* Don't do it if vstring is empty */
+    pushTempAlloc(s);
 /*E*/INCDB1((long)strlen(s) + 1);
 /*E*/db-=(long)strlen(s) + 1;
 /*E* /printf("%ld temping[%s]\n", db1, s);*/
+  }
+  return s;
 } /* makeTempAlloc */
 
 

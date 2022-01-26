@@ -4876,7 +4876,6 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
 
   g_startTempAllocStack = saveTempAllocStack;
   g_nmbrStartTempAllocStack = nmbrSaveTempAllocStack;
-  if (mathStringLen) nmbrMakeTempAlloc(mathString); /* Flag for dealloc*/
 
   /* Deallocate temporary space */
   free(mathTokenSameAs);
@@ -4887,8 +4886,7 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
   let(&tmpStr, "");
   let(&nlUserText, "");
 
-  return (mathString);
-
+  return nmbrMakeTempAlloc(mathString); /* Flag for dealloc */
 } /* parseMathTokens */
 
 

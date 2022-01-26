@@ -247,7 +247,7 @@ extern long g_nmbrStartTempAllocStack; /* Where to start freeing temporary
 /* Make string have temporary allocation to be released by next nmbrLet() */
 /* Warning:  after nmbrMakeTempAlloc() is called, the nmbrString may NOT be
    assigned again with nmbrLet() */
-void nmbrMakeTempAlloc(nmbrString *s);
+temp_nmbrString *nmbrMakeTempAlloc(nmbrString *s);
                                     /* Make string have temporary allocation to be
                                     released by next nmbrLet() */
 
@@ -380,7 +380,7 @@ extern long g_pntrStartTempAllocStack; /* Where to start freeing temporary
 /* Make string have temporary allocation to be released by next pntrLet() */
 /* Warning:  after pntrMakeTempAlloc() is called, the pntrString may NOT be
    assigned again with pntrLet() */
-void pntrMakeTempAlloc(pntrString *s);
+temp_pntrString *pntrMakeTempAlloc(pntrString *s);
                                     /* Make string have temporary allocation to be
                                     released by next pntrLet() */
 
