@@ -159,6 +159,14 @@ script what OS tests to carry out, and how to encode their result.  If you
 deploy _configure_ as part of your distribution then this file should be
 included.
 
+### invoking configure
+
+In the chain of build events _configure_ is now invoked.  It reads the
+_config.h.in_ file, executes tests described there and compiled in.  As a
+result, a new file _config.h_ is created, based on _config.h.in_.
+
+### config.h
+
 ### Makefile.am
 
 
