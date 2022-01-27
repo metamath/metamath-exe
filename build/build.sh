@@ -28,9 +28,10 @@ VERSION=`echo $VERSION | sed 's/[^"]*"\([^"]*\)"/\1/'`
 # find the line with the AC_INIT command, prepend the line number
 # line-nr:AC_INIT([FULL-PACKAGE-NAME], [VERSION], [REPORT-ADDRESS])
 AC_INIT_LINE=`grep -n '[[:space:]]*AC_INIT[[:space:]]*(.*' $BUILDDIR/configure.ac.orig`
-AC_INIT_LINE_NR=`echo $AC_INIT_LINE | sed 's/\([0-9]*\).*/\1/'`
-# AC_INIT([FULL-PACKAGE-NAME], [VERSION], [REPORT-ADDRESS])
-AC_INIT_LINE=`echo $AC_INIT_LINE | sed 's/[0-9]:\(.*\)/\1/'`
+# strip everything from the first colon on
+AC_INIT_LINE_NR=${AC_INIT_LINE%%:*}
+# strip everything up to the first colon
+AC_INIT_LINE=${AC_INIT_LINE#*:}
 # replace the second parameter to AC_INIT
 PATCHED_INIT_LINE=`echo $AC_INIT_LINE | sed "s/\\([[:space:]]*AC_INIT(.*\\),.*,\\(.*\\)/\\1, \[$VERSION\],\\2/"`
 
