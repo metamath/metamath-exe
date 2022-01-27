@@ -22,11 +22,11 @@ the sake of simplicity we call it throughout this file __metamath-exe__.
 
 Although we restrict the build process on Unix/Linux, there exist numerous
 variants of this operating system (__OS__) as well as lots of flavours of
-installed [C](https://en.wikipedia.org/wiki/C_(programming_language) compilers.
-It was once a tedious task to provide a build process general enough to cope
-with this variety.  Determining the particular properties of your OS on your
-computer (such as the installed libraries) was an essential first step in any
-build process.
+installed [C](https://en.wikipedia.org/wiki/C_(programming_language))
+compilers.  It was once a tedious task to provide a build process general
+enough to cope with this variety.  Determining the particular properties of
+your OS on your computer (such as the installed libraries) was an essential
+first step in any build process.
 
 The situation has changed quite a bit since around 1995 when the metamath
 executable was designed.  C meanwhile matured and was subject to a couple of
@@ -45,8 +45,8 @@ A particular [shell script](https://en.wikipedia.org/wiki/Unix_shell) called
 [configure](https://en.wikipedia.org/wiki/Configure_script) tests your OS for
 its features.  Simply determining _all_ possible properties would be extremely
 excessive.  For example the Metamath build need not know anything about your
-network connections.  In fact, only a tiny selection of properties need to be
-known.  In Metamath this selection is encoded in a file __configure.h.in__.
+network connections.  In fact, only a tiny selection of properties are
+essential.  In Metamath this selection is encoded in a file __configure.h.in__.
 _configure_ then performs all necessary checks based on its contents and at the
 end issues a C header file __config.h__.  This header file defines lots of
 C macros each reflecting a particular test result.
@@ -121,19 +121,66 @@ This file is meant to be renamed to __autoconf.ac__, possibly extended with
 extra commands.  In Metamath commands for strengthening compiler flags
 are added.
 
-### autoconf.ac
+### configure.ac
 
-This file encodes the features the OS needs to be tested for.  When processed by
-_autoconf_ a _configure_ script along with its input file _config.h.in_ is created.  
-Some instructions aim at replacing system dependent variables in _Makefile.am_,
-later used to support _make_.  The language used for encoding this is __M4__ 
-along with a couple of built-in commands of __autoconf__.  This language is 
-designed to provide cross-platform descriptions of features of the OS.
+This script file encodes the features the OS needs to be tested for in a
+portable way.  When processed by _autoconf_ a _configure_ script along with its
+input file _config.h.in_ is created.  A few instructions set project data like
+name or version number.  A couple of other instructions aim at patching system
+dependent variables in _Makefile.am_, later used to support _make_.
+
+The script language used for encoding this is __M4__ using a couple of built-in
+commands of __autoconf__.  This language is designed to provide cross-platform
+descriptions of features of the OS.
 
 ### autoconf
 
 This Unix program called __autoconf__, or its sibling __autoreconf__, is
-capable of generating a _configure_ shell script from the input _autoconf.ac_.
+capable of generating a _configure_ shell script from the input _configure.ac_.
+
+_autoreconf_ can be used as an alternative to _autoconf_.  It then manages the
+whole build process up to creating the executable.
+
+### autoheader
+
+This program from _Autotools_ creates a _config.h.in_ from a _configure.ac_
+input file.
+
+If you use _autoreconf_ this is called automatically.
+
+### config.h.in
+
+This file is created by _autoheader_ and mostly contains a list of features the
+_configure_ tests the OS for.  The encoding is macro instructions in
+[C](https://en.wikipedia.org/wiki/C_(programming_language)).  Its contents
+looks mostly like:
+```
+/* Define to 1 if stdbool.h conforms to C99. */
+#undef HAVE_STDBOOL_H
+```
+It appears as a translation of the programmer supplied _configure.ac_ with all
+_autoconf_ specific instructions stripped, and is used as a template for the
+final _config.h_.
+
+Although _config.h.in_ is valid C code, you must not use it in your software
+directly.  Its sole purpose is to be read by _configure_.  It instructs this
+script what OS tests to carry out, and how to encode their result.  If you
+deploy _configure_ as part of your distribution then this file should be
+included.
+
+### invoking configure
+
+In the chain of build events _configure_ is now invoked.  It reads the
+_config.h.in_ file, executes tests described there and compiled in.  As a
+result, a new executable __config.status__ is created and invoked.
+
+### config.status
+
+Executable that creates the file _config.h_ based on _config.h.in_.  The
+individual settings evaluated by _configure_ are compiled in.  So this script
+can recreate _config.h_ multiple times without carrying out the OS checks.
+
+### config.h
 
 ### Makefile.am
 
