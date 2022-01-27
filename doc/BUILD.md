@@ -45,7 +45,7 @@ A particular [shell script](https://en.wikipedia.org/wiki/Unix_shell) called
 [configure](https://en.wikipedia.org/wiki/Configure_script) tests your OS for
 its features.  Simply determining _all_ possible properties would be extremely
 excessive.  For example the Metamath build need not know anything about your
-network connections.  In fact, only a tiny selection of properties are
+network connections.  In fact, only a tiny selection of properties is
 essential.  In Metamath this selection is encoded in a file __configure.h.in__.
 _configure_ then performs all necessary checks based on its contents and at the
 end issues a C header file __config.h__.  This header file defines lots of
