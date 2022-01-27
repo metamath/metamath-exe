@@ -143,7 +143,7 @@ that in a nutshell contains a list of properties to test the OS for.
 ### config.h.in
 
 This file is created by _autoconf_ and mostly contains a list of features the
-_configure_ tests theOS for.  The encoding is macro instructions in [C]
+_configure_ tests the OS for.  The encoding is macro instructions in [C]
 (https://en.wikipedia.org/wiki/C_(programming_language).  Its contents looks
 mostly like:
 ```
