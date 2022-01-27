@@ -45,8 +45,8 @@ A particular [shell script](https://en.wikipedia.org/wiki/Unix_shell) called
 [configure](https://en.wikipedia.org/wiki/Configure_script) tests your OS for
 its features.  Simply determining _all_ possible properties would be extremely
 excessive.  For example the Metamath build need not know anything about your
-network connections.  In fact, only a tiny selection of properties need to be
-known.  In Metamath this selection is encoded in a file __configure.h.in__.
+network connections.  In fact, only a tiny selection of properties are
+essential.  In Metamath this selection is encoded in a file __configure.h.in__.
 _configure_ then performs all necessary checks based on its contents and at the
 end issues a C header file __config.h__.  This header file defines lots of
 C macros each reflecting a particular test result.
@@ -121,19 +121,44 @@ This file is meant to be renamed to __autoconf.ac__, possibly extended with
 extra commands.  In Metamath commands for strengthening compiler flags
 are added.
 
-### autoconf.ac
+### configure.ac
 
-This file encodes the features the OS needs to be tested for.  When processed by
-_autoconf_ a _configure_ script along with its input file _config.h.in_ is created.  
-Some instructions aim at replacing system dependent variables in _Makefile.am_,
-later used to support _make_.  The language used for encoding this is __M4__ 
-along with a couple of built-in commands of __autoconf__.  This language is 
-designed to provide cross-platform descriptions of features of the OS.
+This script file encodes the features the OS needs to be tested for in a
+portable way.  When processed by _autoconf_ a _configure_ script along with its
+input file _config.h.in_ is created.  A few instructions set project data like
+name or version number.  A couple of other instructions aim at patching system
+dependent variables in _Makefile.am_, later used to support _make_.
+
+The script language used for encoding this is __M4__ using a couple of built-in
+commands of __autoconf__.  This language is designed to provide cross-platform
+descriptions of features of the OS.
 
 ### autoconf
 
 This Unix program called __autoconf__, or its sibling __autoreconf__, is
-capable of generating a _configure_ shell script from the input _autoconf.ac_.
+capable of generating a _configure_ shell script from the input _autoconf.ac_,
+along with its input file _config.h.in_. It needs a _configure.ac_ input file,
+that in a nutshell contains a list of properties to test the OS for.
+
+### config.h.in
+
+This file is created by _autoconf_ and mostly contains a list of features the
+_configure_ tests theOS for.  The encoding is macro instructions in [C]
+(https://en.wikipedia.org/wiki/C_(programming_language).  Its contents looks
+mostly like:
+```
+/* Define to 1 if stdbool.h conforms to C99. */
+#undef HAVE_STDBOOL_H
+```
+It appears as a translation of the programmer supplied _configure.ac_ with all
+_autoconf_ specific instructions stripped, and is used as a template for the
+final _config.h_.
+
+Although _config.h.in_ is valid C code, you must not use it in your software
+directly.  Its sole purpose is to be read by _configure_.  It instructs this
+script what OS tests to carry out, and how to encode their result.  If you
+deploy _configure_ as part of your distribution then this file should be
+included.
 
 ### Makefile.am
 
