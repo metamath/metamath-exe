@@ -66,7 +66,7 @@ flag backFromCmdInput = 0; /* User typed "B" at main prompt */
 /* Returns 0 if user typed "q" during scroll prompt; this lets a procedure
    interrupt it's output for speedup (rest of output will be suppressed anyway
    until next command line prompt) */
-flag print2(char* fmt, ...) {
+flag print2(const char* fmt, ...) {
   /* This performs the same operations as printf, except that if a log file is
     open, the characters will also be printed to the log file. */
   /* Also, scrolling is paused at each page if in scroll-prompted mode. */
@@ -356,8 +356,7 @@ flag print2(char* fmt, ...) {
 /* Special:  if breakMatch is " (quote), treat as if space but don't break
              quotes, and also let lines grow long - use this call for all HTML
              code */
-void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
-{
+void printLongLine(const char *line, const char *startNextLine, const char *breakMatch) {
   vstring longLine = "";
   vstring multiLine = "";
   vstring prefix = "";
@@ -606,7 +605,7 @@ void printLongLine(vstring line, vstring startNextLine, vstring breakMatch)
 } /* printLongLine */
 
 
-vstring cmdInput(FILE *stream, vstring ask) {
+vstring cmdInput(FILE *stream, const char *ask) {
   /* This function prints a prompt (if 'ask' is not NULL) and gets a line from
     the input stream.  NULL is returned when end-of-file is encountered.
     New memory is allocated each time linput is called.  This space must
@@ -733,8 +732,7 @@ vstring cmdInput(FILE *stream, vstring ask) {
   return g;
 } /* cmdInput */
 
-vstring cmdInput1(vstring ask)
-{
+vstring cmdInput1(const char *ask) {
   /* This function gets a line from either the terminal or the command file
     stream depending on g_commandFileNestingLevel > 0.  It calls cmdInput(). */
   /* Warning: the calling program must deallocate the returned string. */
@@ -956,7 +954,7 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
 
 /* Opens files with error message; opens output files with
    backup of previous version.   Mode must be "r" or "w" or "d" (delete). */
-FILE *fSafeOpen(vstring fileName, vstring mode, flag noVersioningFlag) {
+FILE *fSafeOpen(const char *fileName, const char *mode, flag noVersioningFlag) {
   FILE *fp;
   vstring prefix = "";
   vstring postfix = "";
@@ -1103,8 +1101,7 @@ FILE *fSafeOpen(vstring fileName, vstring mode, flag noVersioningFlag) {
 
 /* Renames a file with backup of previous version.  If non-zero
    is returned, there was an error. */
-int fSafeRename(vstring oldFileName, vstring newFileName)
-{
+int fSafeRename(const char *oldFileName, const char *newFileName) {
   int error = 0;
   int i;
   FILE *fp;
@@ -1154,8 +1151,7 @@ int fSafeRename(vstring oldFileName, vstring newFileName)
         str1 = fTmpName("zz~list");  ]
    The file whose name is the returned string is not left open;
    the caller must separately open the file. */
-vstring fGetTmpName(vstring filePrefix)
-{
+vstring fGetTmpName(const char *filePrefix) {
   FILE *fp;
   vstring fname = "";
   static long counter = 0;
@@ -1182,7 +1178,7 @@ vstring fGetTmpName(vstring filePrefix)
    must deallocate the returned string.  If a NULL is returned, the file
    could not be opened or had a non-ASCII Unicode character or some other
    problem.   If verbose is 0, error and warning messages are suppressed. */
-vstring readFileToString(vstring fileName, char verbose, long *charCount) {
+vstring readFileToString(const char *fileName, char verbose, long *charCount) {
   FILE *inputFp;
   long fileBufSize;
   char *fileBuf;

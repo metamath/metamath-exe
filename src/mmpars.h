@@ -79,7 +79,7 @@ long proofTokenLen(char *ptr);
    If length = -1, then use end-of-string 0 to stop.
    If length >= 0, then scan at most length chars, but stop
        if end-of-string 0 is found. */
-long countLines(vstring start, long length);
+long countLines(const char *start, long length);
 
 /* Array with sort keys for all possible labels, including the ones for
    hypotheses (which may not always be active) */
@@ -141,11 +141,11 @@ nmbrString *parseMathTokens(vstring userText, long statemNum);
 
 vstring outputStatement(long stmt, /*flag cleanFlag,*/ flag reformatFlag);
 /* Caller must deallocate return string */
-vstring rewrapComment(vstring comment);
+vstring rewrapComment(const char *comment);
 
 /* Lookup $a or $p label and return statement number.
    Return -1 if not found. */
-long lookupLabel(vstring label);
+long lookupLabel(const char *label);
 
 /* For file splitting */
 
@@ -170,7 +170,7 @@ vstring writeSourceToBuffer(void);
    a nonsplit source with $( Begin $[... etc. inclusions */
 /* Note that *fileBuf is assigned to the empty string upon return, to
    conserve memory */
-void writeSplitSource(vstring *fileBuf, vstring fileName,
+void writeSplitSource(vstring *fileBuf, const char *fileName,
     flag noVersioningFlag, flag noDeleteFlag);
 
 /* When "write source" does not have the "/split" qualifier, by default
@@ -181,8 +181,8 @@ void deleteSplits(vstring *fileBuf, flag noVersioningFlag);
 /* Get file name and line number given a pointer into the read buffer */
 /* The user must deallocate the returned string (file name) */
 /* The globals includeCall structure and includeCalls are used */
-vstring getFileAndLineNum(vstring buffPtr/*start of read buffer*/,
-    vstring currentPtr/*place at which to get file name and line no*/,
+vstring getFileAndLineNum(const char *buffPtr/*start of read buffer*/,
+    const char *currentPtr/*place at which to get file name and line no*/,
     long *lineNum/*return argument*/);
 
 /* statement[stmtNum].fileName and .lineNum are initialized to "" and 0.
@@ -194,11 +194,11 @@ vstring getFileAndLineNum(vstring buffPtr/*start of read buffer*/,
 void assignStmtFileAndLineNum(long stmtNum);
 
 /* Initial read of source file */
-vstring readSourceAndIncludes(vstring inputFn, long *size);
+vstring readSourceAndIncludes(const char *inputFn, long *size);
 
 /* Recursively expand the source of an included file */
-char *readInclude(vstring fileBuf, long fileBufOffset,
-    /*vstring inclFileName,*/ vstring sourceFileName,
+vstring readInclude(const char *fileBuf, long fileBufOffset,
+    /*vstring inclFileName,*/ const char *sourceFileName,
     long *size, long parentLineNum, flag *errorFlag);
 
 #endif /* METAMATH_MMPARS_H_ */

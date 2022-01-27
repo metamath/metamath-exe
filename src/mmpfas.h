@@ -82,7 +82,7 @@ vstring getKnownSubProofs(void);
 /* Add a subproof in place of an unknown step to g_ProofInProgress.  The
    .target, .source, and .user fields are initialized to empty (except
    .target of the deleted unknown step is retained). */
-void addSubProof(nmbrString *subProof, long step);
+void addSubProof(const nmbrString *subProof, long step);
 
 /* This function eliminates any occurrences of statement sourceStmtNum in the
    targetProof by substituting it with the proof of sourceStmtNum.  An empty
@@ -90,7 +90,8 @@ void addSubProof(nmbrString *subProof, long step);
 /* Normally, targetProof is the global g_ProofInProgress.proof.  However,
    we make it an argument in case in the future we'd like to do this
    outside of the proof assistant. */
-nmbrString *expandProof(nmbrString *targetProof, long sourceStmtNum);
+/* Note: The caller must deallocate the returned nmbrString. */
+nmbrString *expandProof(const nmbrString *targetProof, long sourceStmtNum);
 
 /* Delete a subproof starting (in reverse from) step.  The step is replaced
    with an unknown step, and its .target field is retained. */
@@ -104,12 +105,12 @@ char checkStmtMatch(long statemNum, long step);
 /* Check to see if a (user-specified) math string will match the
    g_ProofInProgress.target (or .user) of an step.  Returns 1 if match, 0 if
    not, 2 if unification timed out. */
-char checkMStringMatch(nmbrString *mString, long step);
+char checkMStringMatch(const nmbrString *mString, long step);
 
 /* Find proof of formula or simple theorem (no new vars in $e's) */
 /* maxEDepth is the maximum depth at which statements with $e hypotheses are
    considered.  A value of 0 means none are considered. */
-nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
+nmbrString *proveFloating(const nmbrString *mString, long statemNum, long maxEDepth,
     long step, flag noDistinct,
     flag overrideFlag, /* 0 means respect usage locks
                          1 means to override usage locks
@@ -120,12 +121,11 @@ nmbrString *proveFloating(nmbrString *mString, long statemNum, long maxEDepth,
 /* This function does quick check for some common conditions that prevent
    a trial statement (scheme) from being unified with a given instance.
    Return value 0 means it can't be unified, 1 means it might be unifiable. */
-char quickMatchFilter(long trialStmt, nmbrString *mString,
+char quickMatchFilter(long trialStmt, const nmbrString *mString,
     long dummyVarFlag /* 0 if no dummy vars in mString */);
 
 /* Shorten proof by using specified statement. */
-void minimizeProof(long repStatemNum, long prvStatemNum, flag
-    allowGrowthFlag);
+void minimizeProof(long repStatemNum, long prvStatemNum, flag allowGrowthFlag);
 
 /* Initialize g_ProofInProgress.source of the step, and .target of all
    hypotheses, to schemes using new dummy variables. */
@@ -151,7 +151,7 @@ void interactiveUnifyStep(long step, char messageFlag);
              1 = unification was selected; held in stateVector
              2 = unification timed out
              3 = no unification was selected */
-char interactiveUnify(nmbrString *schemeA, nmbrString *schemeB,
+char interactiveUnify(const nmbrString *schemeA, const nmbrString *schemeB,
     pntrString **stateVector);
 
 /* Automatically unify steps with unique unification */
@@ -162,10 +162,10 @@ void autoUnify(flag congrats);
 void makeSubstAll(pntrString *stateVector);
 
 /* Replace a dummy variable with a user-specified math string */
-void replaceDummyVar(long dummyVar, nmbrString *mString);
+void replaceDummyVar(long dummyVar, const nmbrString *mString);
 
 /* Get subproof length of a proof, starting at endStep and going backwards */
-long subproofLen(nmbrString *proof, long endStep);
+long subproofLen(const nmbrString *proof, long endStep);
 
 /* If testStep has no dummy variables, return 0;
    if testStep has isolated dummy variables (that don't affect rest of
@@ -186,7 +186,7 @@ void copyProofStruct(struct pip_struct *outProofStruct,
     struct pip_struct inProofStruct);
 
 /* Initiailizes the Proof Assistant proof state */
-void initProofStruct(struct pip_struct *proofStruct, nmbrString *proof,
+void initProofStruct(struct pip_struct *proofStruct, const nmbrString *proof,
     long proveStatement);
 
 /* Clears the Proof Assistant proof state */

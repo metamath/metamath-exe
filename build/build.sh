@@ -22,8 +22,13 @@ mv $BUILDDIR/configure.ac $BUILDDIR/configure.ac.orig
 # look in metamath.c for a line matching the pattern '  #define MVERSION "<version>"
 # and save the line in VERSION
 VERSION=`grep '[[:space:]]*#[[:space:]]*define[[:space:]]*MVERSION[[:space:]]"[^"]*"' $SRCDIR/metamath.c`
+
 # extract the version (without quotes) from the saved line
-VERSION=`echo $VERSION | sed 's/[^"]*"\([^"]*\)"/\1/'`
+
+# strip everything up to and including the first quote character
+VERSION=${VERSION#*\"}
+# strip everything from the first remaining quote character on
+VERSION=${VERSION%%\"*}
 
 # find the line with the AC_INIT command, prepend the line number
 # line-nr:AC_INIT([FULL-PACKAGE-NAME], [VERSION], [REPORT-ADDRESS])
