@@ -136,12 +136,20 @@ descriptions of features of the OS.
 ### autoconf
 
 This Unix program called __autoconf__, or its sibling __autoreconf__, is
-capable of generating a _configure_ shell script from the input _configure.ac_,
-along with its input file _config.h.in_.
+capable of generating a _configure_ shell script from the input _configure.ac_.
+
+If you use _autoreconf_ this need not be called.
+
+### autoheader
+
+This program from _Autotools_ creates a _config.h.in_ from a _configure.ac_
+input file.
+
+If you use _autoreconf_ this is called automatically.
 
 ### config.h.in
 
-This file is created by _autoconf_ and mostly contains a list of features the
+This file is created by _autoheader_ and mostly contains a list of features the
 _configure_ tests the OS for.  The encoding is macro instructions in
 [C](https://en.wikipedia.org/wiki/C_(programming_language).  Its contents looks
 mostly like:
