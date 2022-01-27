@@ -158,7 +158,7 @@ nmbrString *g_oneConst = NULL_NMBRSTRING;
    The caller must deallocate the returned nmbrString.
 */
 nmbrString *makeSubstUnif(flag *newVarFlag,
-    nmbrString *trialScheme, pntrString *stateVector)
+    const nmbrString *trialScheme, pntrString *stateVector)
 {
   long p,q,i,j,k,m,tokenNum;
   long schemeLen;
@@ -271,8 +271,8 @@ nmbrString *makeSubstUnif(flag *newVarFlag,
 
 
 char unify(
-    nmbrString *schemeA,
-    nmbrString *schemeB,
+    const nmbrString *schemeA,
+    const nmbrString *schemeB,
     /* nmbrString **unifiedScheme, */ /* stateVector[8] holds this */
     pntrString **stateVector,
     long reEntryFlag)
@@ -1203,8 +1203,8 @@ char unify(
    all unknown vars (including those without substitutions), not just
    the ones on the stack. */
 flag oneDirUnif(
-    nmbrString *schemeA,
-    nmbrString *schemeB,
+    const nmbrString *schemeA,
+    const nmbrString *schemeB,
     pntrString **stateVector,
     long reEntryFlag)
 {
@@ -1266,8 +1266,8 @@ nmbrString *oldStackUnkVarLen; /* Pointer only - not allocated */
      2: unification timed out
      3: more than one unification was possible */
 char uniqueUnif(
-    nmbrString *schemeA,
-    nmbrString *schemeB,
+    const nmbrString *schemeA,
+    const nmbrString *schemeB,
     pntrString **stateVector)
 {
   pntrString *saveStateVector = NULL_PNTRSTRING;
@@ -1438,8 +1438,7 @@ void purgeStateVector(pntrString **stateVector) {
 
 
 /* Prints the substitutions determined by unify for debugging purposes */
-void printSubst(pntrString *stateVector)
-{
+void printSubst(pntrString *stateVector) {
   long d;
   nmbrString *stackUnkVar; /* Pointer only - not allocated */
   nmbrString *unifiedScheme; /* Pointer only - not allocated */
@@ -1475,8 +1474,8 @@ void printSubst(pntrString *stateVector)
    returned by unify().  (The redundancy of equivalent unifications was
    a deficiency pointed out by Jeremy Henty.) */
 char unifyH(
-    nmbrString *schemeA,
-    nmbrString *schemeB,
+    const nmbrString *schemeA,
+    const nmbrString *schemeB,
     pntrString **stateVector,
     long reEntryFlag)
 {

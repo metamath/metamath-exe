@@ -3660,7 +3660,7 @@ vstring shortDumpRPNStack(void) {
 /* ???Todo:  use this elsewhere in mmpars.c to modularize this lookup */
 /* Lookup $a or $p label and return statement number.
    Return -1 if not found. */
-long lookupLabel(vstring label)
+long lookupLabel(const char *label)
 {
   void *voidPtr; /* bsearch returned value */
   long statemNum;
@@ -3893,7 +3893,7 @@ long proofTokenLen(char *ptr)
    If length = -1, then use end-of-string 0 to stop.
    If length >= 0, then scan at most length chars, but stop
        if end-of-string 0 is found. */
-long countLines(vstring start, long length) {
+long countLines(const char *start, long length) {
   long lines, i;
   lines = 0;
   if (length == -1) {
@@ -4379,8 +4379,7 @@ vstring outputStatement(long stmt, flag reformatFlag) {
    conventions.  This may be overly aggressive, and user should do a
    diff to see if result is as desired.  Called by WRITE SOURCE / REWRAP.
    Caller must deallocate returned vstring. */
-vstring rewrapComment(vstring comment1)
-{
+vstring rewrapComment(const char *comment1) {
   /* Punctuation from mmwtex.c */
 #define OPENING_PUNCTUATION "(['\""
 /* #define CLOSING_PUNCTUATION ".,;)?!:]'\"_-" */
@@ -5274,7 +5273,7 @@ vstring writeSourceToBuffer(void)
    caller decide whether to say re-use fileBuf to create an unsplit version
    of the .mm file in case the split version generation encounters an error. */
 /*                                     TODO ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ */
-/*flag(TODO)*/ void writeSplitSource(vstring *fileBuf, vstring fileName,
+/*flag(TODO)*/ void writeSplitSource(vstring *fileBuf, const char *fileName,
     flag noVersioningFlag, flag noDeleteFlag) {
   FILE *fp;
   vstring tmpStr1 = "";
@@ -5485,8 +5484,8 @@ vstring writeSourceToBuffer(void)
 /* Get file name and line number given a pointer into the read buffer */
 /* The user must deallocate the returned string (file name) */
 /* The globals g_IncludeCall structure and g_includeCalls are used */
-vstring getFileAndLineNum(vstring buffPtr /* start of read buffer */,
-    vstring currentPtr /* place at which to get file name and line no */,
+vstring getFileAndLineNum(const char *buffPtr /* start of read buffer */,
+    const char *currentPtr /* place at which to get file name and line no */,
     long *lineNum /* return argument */) {
   long i, smallestOffset, smallestNdx;
   vstring fileName = "";
@@ -5547,8 +5546,8 @@ void assignStmtFileAndLineNum(long stmtNum) {
 /* If NULL is returned, it means a serious error occured (like missing file)
    and reading should be aborted. */
 /* Globals used:  g_IncludeCall[], g_includeCalls */
-char *readInclude(vstring fileBuf, long fileBufOffset,
-    vstring sourceFileName, long *size, long parentLineNum, flag *errorFlag)
+vstring readInclude(const char *fileBuf, long fileBufOffset,
+    const char *sourceFileName, long *size, long parentLineNum, flag *errorFlag)
 {
   long i;
   long inclSize;
@@ -6035,8 +6034,7 @@ char *readInclude(vstring fileBuf, long fileBufOffset,
 /* TODO - ability to flag error to skip raw source function */
 /* If NULL is returned, it means a serious error occured (like missing file)
    and reading should be aborted. */
-char *readSourceAndIncludes(vstring inputFn /*input*/, long *size /*output*/)
-{
+vstring readSourceAndIncludes(const char *inputFn /*input*/, long *size /*output*/) {
   long i;
 /*D*//*long j;*/
 /*D*//*vstring s=""; */
