@@ -43,8 +43,7 @@ long g_startTempAllocStack = 0;    /* Where to start freeing temporary allocatio
                                     special nested vstring functions) */
 void *tempAllocStack[MAX_ALLOC_STACK];
 
-static void freeTempAlloc(void)
-{
+void freeTempAlloc(void) {
   /* All memory previously allocated with tempAlloc is deallocated. */
   /* EXCEPT:  When g_startTempAllocStack != 0, the freeing will start at
      g_startTempAllocStack. */
@@ -926,8 +925,8 @@ long entryPosition(long element, const char *list) {
 
 int main(void)
 {
-  vstringdef(s);
-  vstringdef(t);
+  vstring_def(s);
+  vstring_def(t);
 
   printf("Hello\n");
   let(&t,edit(" x y z ",2));

@@ -720,7 +720,7 @@ void parseStatements(void) {
   long reqHyps, optHyps, reqVars, optVars;
   flag reqFlag;
   int undeclErrorCount = 0;
-  vstring tmpStr = "";
+  vstring_def(tmpStr);
 
   nmbrString *nmbrTmpPtr;
 
@@ -1920,7 +1920,7 @@ void parseStatements(void) {
   free(wrkNmbrPtr);
   free(wrkStrPtr);
   free(symbolLenExists);
-  let(&tmpStr, "");
+  free_vstring(tmpStr);
 }
 
 
@@ -1946,18 +1946,18 @@ char parseProof(long statemNum)
 
   flag explicitTargets = 0; /* Proof is of form <target>=<source> */
   /* Source file pointers and token sizes for targets in a /EXPLICIT proof */
-  pntrString *targetPntr = NULL_PNTRSTRING; /* Pointers to target tokens */
-  nmbrString *targetNmbr = NULL_NMBRSTRING; /* Size of target tokens */
+  pntrString_def(targetPntr); /* Pointers to target tokens */
+  nmbrString_def(targetNmbr); /* Size of target tokens */
   /* Variables for rearranging /EXPLICIT proof */
-  nmbrString *wrkProofString = NULL_NMBRSTRING; /* Holds g_WrkProof.proofString */
+  nmbrString_def(wrkProofString); /* Holds g_WrkProof.proofString */
   long hypStepNum, hypSubProofLen, conclSubProofLen;
   long matchingHyp;
-  nmbrString *oldStepNums = NULL_NMBRSTRING; /* Just numbers 0 to numSteps-1 */
-  pntrString *reqHypSubProof = NULL_PNTRSTRING; /* Subproofs of hypotheses */
-  pntrString *reqHypOldStepNums = NULL_PNTRSTRING; /* Local label flag for
+  nmbrString_def(oldStepNums); /* Just numbers 0 to numSteps-1 */
+  pntrString_def(reqHypSubProof); /* Subproofs of hypotheses */
+  pntrString_def(reqHypOldStepNums); /* Local label flag for
                                                      subproofs of hypotheses */
-  nmbrString *rearrangedSubProofs = NULL_NMBRSTRING;
-  nmbrString *rearrangedOldStepNums = NULL_NMBRSTRING;
+  nmbrString_def(rearrangedSubProofs);
+  nmbrString_def(rearrangedOldStepNums);
   flag subProofMoved; /* Flag to restart scan after moving subproof */
 
   if (g_Statement[statemNum].type != p_) {
@@ -2495,7 +2495,7 @@ char parseProof(long statemNum)
             str((double)step + 1),", statement \"",
             g_Statement[j].labelName,"\" requires ",
             tmpStrPtr,".",NULL));
-        let(&tmpStrPtr, "");
+        free_vstring(tmpStrPtr);
       }
       /* Treat it like an unknown step so stack won't get exhausted */
       g_WrkProof.errorCount++;
@@ -2540,7 +2540,7 @@ char parseProof(long statemNum)
                         /* Uncomment above if bad proof triggers this bug */
         bug(1731);
       }
-      nmbrLet(&rearrangedSubProofs, NULL_NMBRSTRING);
+      free_nmbrString(rearrangedSubProofs);
       matchingHyp = -1; /* In case there are no hypotheses */
       for (i = 0; i < numReqHyp; i++) {
         matchingHyp = -1;
@@ -2607,14 +2607,14 @@ char parseProof(long statemNum)
 
       /* Deallocate */
       for (i = 0; i < numReqHyp; i++) {
-        nmbrLet((nmbrString **)(&(reqHypSubProof[i])), NULL_NMBRSTRING);
-        nmbrLet((nmbrString **)(&(reqHypOldStepNums[i])), NULL_NMBRSTRING);
+        free_nmbrString(*(nmbrString **)(&(reqHypSubProof[i])));
+        free_nmbrString(*(nmbrString **)(&(reqHypOldStepNums[i])));
       }
-      pntrLet(&reqHypSubProof, NULL_PNTRSTRING);
-      pntrLet(&reqHypOldStepNums, NULL_PNTRSTRING);
-      nmbrLet(&rearrangedSubProofs, NULL_NMBRSTRING);
-      nmbrLet(&rearrangedOldStepNums, NULL_NMBRSTRING);
-      nmbrLet(&wrkProofString, NULL_NMBRSTRING);
+      free_pntrString(reqHypSubProof);
+      free_pntrString(reqHypOldStepNums);
+      free_nmbrString(rearrangedSubProofs);
+      free_nmbrString(rearrangedOldStepNums);
+      free_nmbrString(wrkProofString);
     } /* if explicitTargets */
 
     numReqHyp = g_Statement[j].numReqHyp;
@@ -2768,10 +2768,10 @@ char parseProof(long statemNum)
     } while (subProofMoved);
 
     /* Deallocate */
-    pntrLet(&targetPntr, NULL_PNTRSTRING);
-    nmbrLet(&targetNmbr, NULL_NMBRSTRING);
-    nmbrLet(&oldStepNums, NULL_NMBRSTRING);
-    nmbrLet(&wrkProofString, NULL_NMBRSTRING);
+    free_pntrString(targetPntr);
+    free_nmbrString(targetNmbr);
+    free_nmbrString(oldStepNums);
+    free_nmbrString(wrkProofString);
   } /* if (explicitTargets) */
 
   g_WrkProof.errorSeverity = returnFlag;
@@ -3209,7 +3209,7 @@ char parseCompressedProof(long statemNum)
                   str((double)(g_WrkProof.numSteps + 1)),", statement \"",
                   g_Statement[stmt].labelName,"\" requires ",
                   tmpStrPtr,".",NULL));
-              let(&tmpStrPtr, "");
+              free_vstring(tmpStrPtr);
             }
             /* Treat it like an unknown step so stack won't get exhausted */
             g_WrkProof.errorCount++;
@@ -3441,7 +3441,7 @@ char parseCompressedProof(long statemNum)
 /* TODO: use this function to simplify some code that calls parseProof
    directly. */
 nmbrString *getProof(long statemNum, flag printFlag) {
-  nmbrString *proof = NULL_NMBRSTRING;
+  nmbrString_def(proof);
   parseProof(statemNum);
   /* We do not need verifyProof() since we don't care about the math
      strings for the proof steps in this function. */
@@ -3467,9 +3467,9 @@ nmbrString *getProof(long statemNum, flag printFlag) {
 void rawSourceError(char *startFile, char *ptr, long tokLen, vstring errMsg) {
   char *startLine;
   char *endLine;
-  vstring errLine = "";
-  vstring errorMsg = "";
-  vstring fileName = "";
+  vstring_def(errLine);
+  vstring_def(errorMsg);
+  vstring_def(fileName);
   long lineNum;
 
   let(&errorMsg, errMsg); /* Prevent deallocation of errMsg */
@@ -3494,9 +3494,9 @@ void rawSourceError(char *startFile, char *ptr, long tokLen, vstring errMsg) {
   errorMessage(errLine, lineNum, ptr - startLine + 1, tokLen, errorMsg,
       fileName, 0, (char)error_);
   print2("\n");
-  let(&errLine, "");
-  let(&errorMsg, "");
-  let(&fileName, "");
+  free_vstring(errLine);
+  free_vstring(errorMsg);
+  free_vstring(fileName);
 } /* rawSourceError */
 
 /* The global g_sourcePtr is assumed to point to the start of the raw input
@@ -3507,10 +3507,10 @@ void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
 {
   char *startLine;
   char *endLine;
-  vstring errLine = "";
+  vstring_def(errLine);
   long lineNum;
-  vstring fileName = "";
-  vstring errorMsg = "";
+  vstring_def(fileName);
+  vstring_def(errorMsg);
 
   /* Used for the case where a source file section has been modified */
   char *locSourcePtr;
@@ -3554,7 +3554,7 @@ void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
     goto SKIP_LINE_NUM;
   }
 
-  /*let(&fileName, "");*/ /* No need - already assigned to empty string */
+  /*free_vstring(fileName);*/ /* No need - already assigned to empty string */
   fileName = getFileAndLineNum(locSourcePtr/*=g_sourcePtr here*/, ptr, &lineNum);
 
  SKIP_LINE_NUM:
@@ -3595,9 +3595,9 @@ void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
         stmtNum,
         (char)error_ /* severity */);
   }
-  let(&errLine, "");
-  let(&errorMsg, "");
-  let(&fileName, "");
+  free_vstring(errLine);
+  free_vstring(errorMsg);
+  free_vstring(fileName);
 } /* sourceError */
 
 
@@ -3621,8 +3621,8 @@ void mathTokenError(long tokenNum /* 0 is 1st one */,
 
 vstring shortDumpRPNStack(void) {
   /* The caller must deallocate the returned string. */
-  vstring tmpStr = "";
-  vstring tmpStr2 = "";
+  vstring_def(tmpStr);
+  vstring_def(tmpStr2);
   long i, k, m;
 
   for (i = 0; i < g_WrkProof.RPNStackPtr; i++) {
@@ -3653,7 +3653,7 @@ vstring shortDumpRPNStack(void) {
   }
   let(&tmpStr2,cat("RPN stack contains ",tmpStr2,NULL));
   if (g_WrkProof.RPNStackPtr == 0) let(&tmpStr2,"RPN stack is empty");
-  let(&tmpStr, "");
+  free_vstring(tmpStr);
   return tmpStr2;
 } /* shortDumpRPNStack */
 
@@ -3668,36 +3668,35 @@ long lookupLabel(const char *label)
   voidPtr = (void *)bsearch(label, g_labelKeyBase, (size_t)g_numLabelKeys,
       sizeof(long), labelSrchCmp);
   if (!voidPtr) {
-    return (-1);
+    return -1;
   }
   statemNum = (*(long *)voidPtr); /* Statement number */
   if (g_Statement[statemNum].type != a_ && g_Statement[statemNum].type != p_)
-      bug(1718);
-  return (statemNum);
+    bug(1718);
+  return statemNum;
 } /* lookupLabel */
 
 
 /* Label comparison for qsort */
 int labelSortCmp(const void *key1, const void *key2) {
   /* Returns -1 if key1 < key2, 0 if equal, 1 if key1 > key2 */
-  return (strcmp(g_Statement[ *((long *)key1) ].labelName,
-      g_Statement[ *((long *)key2) ].labelName));
+  return strcmp(g_Statement[ *((long *)key1) ].labelName,
+      g_Statement[ *((long *)key2) ].labelName);
 } /* labelSortCmp */
 
 
 /* Label comparison for bsearch */
 int labelSrchCmp(const void *key, const void *data) {
   /* Returns -1 if key < data, 0 if equal, 1 if key > data */
-  return (strcmp(key,
-      g_Statement[ *((long *)data) ].labelName));
+  return strcmp(key, g_Statement[ *((long *)data) ].labelName);
 } /* labelSrchCmp */
 
 
 /* Math symbol comparison for qsort */
 int mathSortCmp(const void *key1, const void *key2) {
   /* Returns -1 if key1 < key2, 0 if equal, 1 if key1 > key2 */
-  return (strcmp(g_MathToken[ *((long *)key1) ].tokenName,
-      g_MathToken[ *((long *)key2) ].tokenName));
+  return strcmp(g_MathToken[ *((long *)key1) ].tokenName,
+      g_MathToken[ *((long *)key2) ].tokenName);
 }
 
 
@@ -3705,15 +3704,16 @@ int mathSortCmp(const void *key1, const void *key2) {
 /* Here, key is pointer to a character string. */
 int mathSrchCmp(const void *key, const void *data) {
   /* Returns -1 if key < data, 0 if equal, 1 if key > data */
-  return (strcmp(key, g_MathToken[ *((long *)data) ].tokenName));
+  return strcmp(key, g_MathToken[ *((long *)data) ].tokenName);
 }
 
 
 /* Hypotheses and local label comparison for qsort */
 int hypAndLocSortCmp(const void *key1, const void *key2) {
   /* Returns -1 if key1 < key2, 0 if equal, 1 if key1 > key2 */
-  return (strcmp( ((struct sortHypAndLoc *)key1)->labelName,
-      ((struct sortHypAndLoc *)key2)->labelName));
+  return strcmp(
+    ((struct sortHypAndLoc *)key1)->labelName,
+    ((struct sortHypAndLoc *)key2)->labelName);
 }
 
 
@@ -3721,7 +3721,7 @@ int hypAndLocSortCmp(const void *key1, const void *key2) {
 /* Here, key is pointer to a character string. */
 int hypAndLocSrchCmp(const void *key, const void *data) {
   /* Returns -1 if key < data, 0 if equal, 1 if key > data */
-  return (strcmp(key, ((struct sortHypAndLoc *)data)->labelName));
+  return strcmp(key, ((struct sortHypAndLoc *)data)->labelName);
 }
 
 
@@ -3931,13 +3931,13 @@ long countLines(const char *start, long length) {
    since the previous statement is needed to populate dollarDpos
    and previousType */
 vstring outputStatement(long stmt, flag reformatFlag) {
-  vstring labelSection = "";
-  vstring mathSection = "";
-  vstring proofSection = "";
-  vstring labelSectionSave = "";
-  vstring mathSectionSave = "";
-  vstring proofSectionSave = "";
-  vstring output = "";
+  vstring_def(labelSection);
+  vstring_def(mathSection);
+  vstring_def(proofSection);
+  vstring_def(labelSectionSave);
+  vstring_def(mathSectionSave);
+  vstring_def(proofSectionSave);
+  vstring_def(output);
   /* For reformatting: */
   long slen; /* To save local string length */
   long pos;
@@ -3946,8 +3946,8 @@ vstring outputStatement(long stmt, flag reformatFlag) {
   static char previousType = illegal_;  /* '?' in mmdata.h */
   long commentStart;
   long commentEnd;
-  vstring comment = "";
-  vstring str1 = "";
+  vstring_def(comment);
+  vstring_def(str1);
   long length;
   flag nowrapHtml;
 
@@ -4154,7 +4154,7 @@ vstring outputStatement(long stmt, flag reformatFlag) {
 
           if (reformatFlag == 2) {
             /* If / REWRAP was specified, unwrap and rewrap the line */
-            let(&str1, "");
+            free_vstring(str1);
             str1 = rewrapComment(comment);
             let(&comment, str1);
           }
@@ -4183,12 +4183,12 @@ vstring outputStatement(long stmt, flag reformatFlag) {
           /* Reformat the comment to wrap if necessary */
           if (g_outputToString == 1) bug(1726);
           g_outputToString = 1;
-          let(&g_printString, "");
+          free_vstring(g_printString);
 
           printLongLine(cat(space(indent), comment, NULL),
               space(indent + 3), " ");
           let(&comment, g_printString);
-          let(&g_printString, "");
+          free_vstring(g_printString);
           g_outputToString = 0;
 #define ASCII_4 4
           /* Restore ASCII_4 characters put in by rewrapComment() to space */
@@ -4364,14 +4364,14 @@ vstring outputStatement(long stmt, flag reformatFlag) {
     }
   }
 
-  let(&labelSection, "");
-  let(&mathSection, "");
-  let(&proofSection, "");
-  let(&labelSectionSave, "");
-  let(&mathSectionSave, "");
-  let(&proofSectionSave, "");
-  let(&comment, "");
-  let(&str1, "");
+  free_vstring(labelSection);
+  free_vstring(mathSection);
+  free_vstring(proofSection);
+  free_vstring(labelSectionSave);
+  free_vstring(mathSectionSave);
+  free_vstring(proofSectionSave);
+  free_vstring(comment);
+  free_vstring(str1);
   return output; /* The calling routine must deallocate this vstring */
 } /* outputStatement */
 
@@ -4385,8 +4385,8 @@ vstring rewrapComment(const char *comment1) {
 /* #define CLOSING_PUNCTUATION ".,;)?!:]'\"_-" */
 #define CLOSING_PUNCTUATION ".,;)?!:]'\""
 #define SENTENCE_END_PUNCTUATION ")'\""
-  vstring comment = "";
-  vstring commentTemplate = ""; /* Non-breaking space template */
+  vstring_def(comment);
+  vstring_def(commentTemplate); /* Non-breaking space template */
   long length, pos, i, j;
   vstring ch; /* Pointer only; do not allocate */
   flag mathmode = 0;
@@ -4610,8 +4610,7 @@ vstring rewrapComment(const char *comment1) {
     if (commentTemplate[pos] == ASCII_4) comment[pos] = ASCII_4;
   }
 
-  let(&commentTemplate, "");
-
+  free_vstring(commentTemplate);
   return comment;
 } /* rewrapComment */
 
@@ -4641,8 +4640,8 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
   int maxScope;
   flag errorFlag = 0; /* Prevents bad token from being added to output */
   int errCount = 0; /* Cumulative error count */
-  vstring tmpStr = "";
-  vstring nlUserText = "";
+  vstring_def(tmpStr);
+  vstring_def(nlUserText);
 
 
   long *mathTokenSameAs; /* Flag that symbol is unique (for speed up) */
@@ -4655,7 +4654,7 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
   char *wrkStrPtr;
 
   /* The answer */
-  nmbrString *mathString = NULL_NMBRSTRING;
+  nmbrString_def(mathString);
 
   long maxSymbolLen; /* Longest math symbol (for speedup) */
   flag *symbolLenExists; /* A symbol with this length exists (for speedup) */
@@ -4883,8 +4882,8 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
   free(wrkNmbrPtr);
   free(wrkStrPtr);
   free(symbolLenExists);
-  let(&tmpStr, "");
-  let(&nlUserText, "");
+  free_vstring(tmpStr);
+  free_vstring(nlUserText);
 
   return nmbrMakeTempAlloc(mathString); /* Flag for dealloc */
 } /* parseMathTokens */
@@ -5142,7 +5141,7 @@ cmdType = 'S':
   } else {
     *cmdType = 'N'; /* no include was found */
     *cmdPos1 = 0; *cmdPos2 = 0; *endPos1 = 0; *endPos2 = 0;
-    let(&(*fileName), "");
+    free_vstring(*fileName);
   }
   return;
 
@@ -5154,10 +5153,9 @@ cmdType = 'S':
    to a linear buffer in preparation for creating the output file.
    Any changes such as modified proofs will be updated in the buffer. */
 /* The caller is responsible for deallocating the returned string. */
-vstring writeSourceToBuffer(void)
-{
+vstring writeSourceToBuffer(void) {
   long stmt, size;
-  vstring buf = "";
+  vstring_def(buf);
   char *ptr;
 
   /* Compute the size of the buffer */
@@ -5274,11 +5272,11 @@ vstring writeSourceToBuffer(void)
 /*flag(TODO)*/ void writeSplitSource(vstring *fileBuf, const char *fileName,
     flag noVersioningFlag, flag noDeleteFlag) {
   FILE *fp;
-  vstring tmpStr1 = "";
-  vstring tmpFileName = "";
-  vstring includeBuf = "";
-  vstring includeFn = "";
-  vstring fileNameWithPath = "";
+  vstring_def(tmpStr1);
+  vstring_def(tmpFileName);
+  vstring_def(includeBuf);
+  vstring_def(includeFn);
+  vstring_def(fileNameWithPath);
   long size;
   flag writeFlag;
   long startOffset;
@@ -5309,7 +5307,7 @@ vstring writeSourceToBuffer(void)
       } else {
         /* We're writing an included file */
         /* See if the file already exists */
-        let(&tmpStr1, "");
+        free_vstring(tmpStr1);
         tmpStr1 = readFileToString(fileNameWithPath, 0/*quiet*/, &size);
         if (tmpStr1 == NULL) {
           tmpStr1 = ""; /* Prevent seg fault */
@@ -5399,12 +5397,12 @@ vstring writeSourceToBuffer(void)
     }
   } /* while (1) */
   /* Deallocate memory */
-  /*let(&(*fileBuf), "");*/ /* Let caller decide whether to do this */
-  let(&tmpStr1, "");
-  let(&tmpFileName, "");
-  let(&includeFn, "");
-  let(&includeBuf, "");
-  let(&fileNameWithPath, "");
+  /* free_vstring(*fileBuf); */ /* Let caller decide whether to do this */
+  free_vstring(tmpStr1);
+  free_vstring(tmpFileName);
+  free_vstring(includeFn);
+  free_vstring(includeBuf);
+  free_vstring(fileNameWithPath);
 } /* writeSplitSource */
 
 
@@ -5413,8 +5411,8 @@ vstring writeSourceToBuffer(void)
    to ~1) since their content will be in the main output file. */
 /*flag(TODO)*/ void deleteSplits(vstring *fileBuf, flag noVersioningFlag) {
   FILE *fp;
-  vstring includeFn = "";
-  vstring fileNameWithPath = "";
+  vstring_def(includeFn);
+  vstring_def(fileNameWithPath);
   long startOffset;
   long cmdPos1;
   long cmdPos2;
@@ -5472,9 +5470,9 @@ vstring writeSourceToBuffer(void)
     continue;
   } /* while (1) */
   /* Deallocate memory */
-  /*let(&(*fileBuf), "");*/ /* Let caller decide whether to do this */
-  let(&includeFn, "");
-  let(&fileNameWithPath, "");
+  /* free_vstring(*fileBuf); */ /* Let caller decide whether to do this */
+  free_vstring(includeFn);
+  free_vstring(fileNameWithPath);
   return;
 } /* deleteSplits */
 
@@ -5486,7 +5484,7 @@ vstring getFileAndLineNum(const char *buffPtr /* start of read buffer */,
     const char *currentPtr /* place at which to get file name and line no */,
     long *lineNum /* return argument */) {
   long i, smallestOffset, smallestNdx;
-  vstring fileName = "";
+  vstring_def(fileName);
 
   /* Make sure it's not outside the read buffer */
   if (currentPtr < buffPtr
@@ -5549,12 +5547,12 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
 {
   long i;
   long inclSize;
-  vstring newFileBuf = "";
-  vstring inclPrefix = "";
-  vstring tmpSource = "";
-  vstring inclSource = "";
-  vstring oldSource = "";
-  vstring inclSuffix = "";
+  vstring_def(newFileBuf);
+  vstring_def(inclPrefix);
+  vstring_def(tmpSource);
+  vstring_def(inclSource);
+  vstring_def(oldSource);
+  vstring_def(inclSuffix);
 
   long startOffset;
   long cmdPos1;
@@ -5566,9 +5564,9 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
   long newInclSize = 0; /* Init to avoid compiler warning */
   long befInclLineNum;
   long aftInclLineNum;
-  vstring includeFn = "";
-  vstring fullInputFn = "";
-  vstring fullIncludeFn = "";
+  vstring_def(includeFn);
+  vstring_def(fullInputFn);
+  vstring_def(fullIncludeFn);
   long alreadyInclBy;
   long saveInclCalls;
 
@@ -5712,7 +5710,7 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
 
           /* Call recursively to expand any includes in the included source */
           /* Use parentLineNum since the inclusion source is in the parent file */
-          let(&inclSource, "");
+          free_vstring(inclSource);
           inclSource = readInclude(tmpSource,
               fileBufOffset + cmdPos1 - 1 + (long)strlen(inclPrefix), /*new offset*/
               /*includeFn,*/ sourceFileName,
@@ -5731,7 +5729,7 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
         case 'I':
           /* Read the included file */
           let(&fullIncludeFn, cat(g_rootDirectory, includeFn, NULL));
-          let(&tmpSource, "");
+          free_vstring(tmpSource);
           tmpSource = readFileToString(fullIncludeFn, 0/*verbose*/, &inclSize);
           if (tmpSource == NULL) {
             /* TODO: print better error msg?*/
@@ -5769,7 +5767,7 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
 
           /* Call recursively to expand includes in the included source */
           /* Start at line 1 since source is in external file */
-          let(&inclSource, "");
+          free_vstring(inclSource);
           inclSource = readInclude(tmpSource,
               fileBufOffset + cmdPos1 - 1 + (long)strlen(inclPrefix), /*new offset*/
               /*includeFn,*/ includeFn,
@@ -5802,7 +5800,7 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
         case 'S':
           /* Read the included file */
           let(&fullIncludeFn, cat(g_rootDirectory, includeFn, NULL));
-          let(&tmpSource, "");
+          free_vstring(tmpSource);
           tmpSource = readFileToString(fullIncludeFn, 1/*verbose*/, &inclSize);
           if (tmpSource == NULL) {
             /* TODO: print better error msg */
@@ -5832,7 +5830,7 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
 
           /* Call recursively to expand includes in the included source */
           /* Start at line 1 since source is in external file */
-          let(&inclSource, "");
+          free_vstring(inclSource);
           inclSource = readInclude(tmpSource,
               fileBufOffset + cmdPos1 - 1 + (long)strlen(inclPrefix), /*new offset*/
               /*includeFn,*/ includeFn,
@@ -5865,7 +5863,7 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
           let(&inclSource,
               seg(newFileBuf, cmdPos2, endPos1 - 1));
           /* Make sure it's content matches */
-          let(&oldSource, "");
+          free_vstring(oldSource);
           oldSource = g_IncludeCall[  /* Connect to source for brevity */
                   alreadyInclBy
                   ].current_includeSource;
@@ -6014,14 +6012,14 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
   } /* while (1) */
 
   /* Deallocate strings */
-  let(&inclSource, "");
-  let(&tmpSource, "");
-  let(&oldSource, "");
-  let(&inclPrefix, "");
-  let(&inclSuffix, "");
-  let(&includeFn, "");
-  let(&fullInputFn, "");
-  let(&fullIncludeFn, "");
+  free_vstring(inclSource);
+  free_vstring(tmpSource);
+  free_vstring(oldSource);
+  free_vstring(inclPrefix);
+  free_vstring(inclSuffix);
+  free_vstring(includeFn);
+  free_vstring(fullInputFn);
+  free_vstring(fullIncludeFn);
 
   return newFileBuf;
 } /* readInclude */
@@ -6035,19 +6033,18 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
 vstring readSourceAndIncludes(const char *inputFn /*input*/, long *size /*output*/) {
   long i;
 /*D*//*long j;*/
-/*D*//*vstring s=""; */
-  vstring fileBuf = "";
-  vstring newFileBuf = "";
+/*D*//*vstring_def(s); */
+  vstring_def(fileBuf);
+  vstring_def(newFileBuf);
 
-  vstring fullInputFn = "";
+  vstring_def(fullInputFn);
   flag errorFlag = 0;
 
   /* Read starting file */
   let(&fullInputFn, cat(g_rootDirectory, inputFn, NULL));
   fileBuf = readFileToString(fullInputFn, 1/*verbose*/, &(*size));
   if (fileBuf == NULL) {
-    print2(
-        "?Error: file \"%s\" was not found\n", fullInputFn);
+    print2("?Error: file \"%s\" was not found\n", fullInputFn);
     fileBuf = "";
     *size = 0;
     errorFlag = 1;
@@ -6109,19 +6106,19 @@ vstring readSourceAndIncludes(const char *inputFn /*input*/, long *size /*output
       Here, it points to the nonexistent character just beyond end of main file
       (after all includes are expanded).
       Note that readInclude() may change g_includeCalls, so use 1 explicitly. */
-  let(&fileBuf, ""); /* Deallocate */
+  free_vstring(fileBuf); /* Deallocate */
 /*D*//*printf("*size=%ld\n",*size);                                       */
 /*D*//*for(i=0;i<*size;i++){                                              */
-/*D*//*let(&s,"");                                                        */
+/*D*//*free_vstring(s);                                                        */
 /*D*//*s=getFileAndLineNum(newFileBuf,newFileBuf+i,&j);                   */
 /*D*//*printf("i=%ld ln=%ld fn=%s ch=%c\n",i,j,s,(newFileBuf+i)[0]);  }   */
   if (errorFlag == 1) {
     /* The read should be aborted by the caller. */
     /* Deallocate the strings in the g_IncludeCall[] structure. */
     for (i = 0; i <= g_includeCalls; i++) {
-      let(&g_IncludeCall[i].source_fn, "");
-      let(&g_IncludeCall[i].included_fn, "");
-      let(&g_IncludeCall[i].current_includeSource, "");
+      free_vstring(g_IncludeCall[i].source_fn);
+      free_vstring(g_IncludeCall[i].included_fn);
+      free_vstring(g_IncludeCall[i].current_includeSource);
       g_includeCalls = -1; /* For the eraseSource() function in mmcmds.c */
     }
     return NULL;

@@ -44,14 +44,14 @@ FILE *f1_fp_;
 FILE *f2_fp_;
 FILE *f3_fp_;
 char eof1, eof2;
-vstring ctlz_ = "";
-vstring l1_ = "";
-vstring l2_ = "";
-vstring tmp_ = "";
-vstring tmpLine = "";
-vstring addTag_ = "";
-vstring delStartTag_ = "";
-vstring delEndTag_ = "";
+vstring_def(ctlz_);
+vstring_def(l1_);
+vstring_def(l2_);
+vstring_def(tmp_);
+vstring_def(tmpLine);
+vstring_def(addTag_);
+vstring_def(delStartTag_);
+vstring_def(delEndTag_);
 flag printedAtLeastOne;
      /*  Declare input and save buffers */
 #define MAX_LINES 10000
@@ -71,7 +71,7 @@ flag printedAtLeastOne;
 void revise(FILE *f1_fp, FILE *f2_fp, FILE *f3_fp, vstring addTag, long m)
 {
   /******** Figure out the differences (DO LIST subroutine) ******/
-  vstring blanksPrefix = "";
+  vstring_def(blanksPrefix);
   long tmpi;
   long i, j;
 
@@ -126,22 +126,22 @@ l7100:  /*
 
                       /* Deallocate string memory */
                       for (i = 0; i < MAX_LINES; i++) {
-                        let(&(line1_[i]), "");
-                        let(&(line2_[i]), "");
+                        free_vstring(line1_[i]);
+                        free_vstring(line2_[i]);
                       }
                       for (i = 0; i < MAX_BUF; i++) {
-                        let(&(reserve1_[i]), "");
-                        let(&(reserve2_[i]), "");
+                        free_vstring(reserve1_[i]);
+                        free_vstring(reserve2_[i]);
                       }
-                      let(&ctlz_, "");
-                      let(&l1_, "");
-                      let(&l2_, "");
-                      let(&tmp_, "");
-                      let(&tmpLine, "");
-                      let(&addTag_, "");
-                      let(&delStartTag_, "");
-                      let(&delEndTag_, "");
-                      let(&blanksPrefix, "");
+                      free_vstring(ctlz_);
+                      free_vstring(l1_);
+                      free_vstring(l2_);
+                      free_vstring(tmp_);
+                      free_vstring(tmpLine);
+                      free_vstring(addTag_);
+                      free_vstring(delStartTag_);
+                      free_vstring(delEndTag_);
+                      free_vstring(blanksPrefix);
 
                         return;
                 }
@@ -281,18 +281,18 @@ l7240: /* */
              tmpi = 0;
              while (((vstring)(line1_[i]))[tmpi] == ' ') tmpi++;
              let(&blanksPrefix, space(tmpi));
-             let(&tmpLine, "");
+             free_vstring(tmpLine);
              tmpLine = stripAndTag(cat(blanksPrefix, delStartTag_, NULL),
                  addTag_, 0);
              fprintf(f3_fp_, "%s\n", tmpLine);
            }
            fprintf(f3_fp_, "%s\n", line1_[i]);
                                      /* Output original deleted lines */
-           /*let(&tmp_, "");*/ /* Clear vstring stack */
+           /*freeTempAlloc();*/ /* Clear vstring stack */
          }
        }
        if (printedAtLeastOne) {
-         let(&tmpLine, "");
+         free_vstring(tmpLine);
          tmpLine = stripAndTag(cat(blanksPrefix, delEndTag_, NULL), addTag_
              ,0);
          fprintf(f3_fp_, "%s\n", tmpLine);
@@ -300,7 +300,7 @@ l7240: /* */
        for (i=0; i<=i1_-m; i++) {
          if (i<=i2_-m) {
            if (strcmpe(line2_[i],ctlz_)) {
-             let(&tmpLine, "");
+             free_vstring(tmpLine);
              if (i == 0) {
                tmpLine = stripAndTag(line2_[i], addTag_, 0);
              } else {
@@ -309,13 +309,13 @@ l7240: /* */
              }
              fprintf(f3_fp_, "%s\n", tmpLine);
                                      /* Output tagged edited lines */
-             /*let(&tmp_, "");*/ /* Clear vstring stack */
+             /*freeTempAlloc();*/ /* Clear vstring stack */
            }
          }
        }
        for (i=i1_-m+1; i<=i2_-m; i++) {
          if (strcmpe(line2_[i],ctlz_)) {
-           let(&tmpLine, "");
+           free_vstring(tmpLine);
            if (i == 0) {
              tmpLine = stripAndTag(line2_[i], addTag_, 0);
            } else {
@@ -324,7 +324,7 @@ l7240: /* */
            }
            fprintf(f3_fp_, "%s\n", tmpLine);
                                      /* Print remaining edited lines */
-           /*let(&tmp_, "");*/ /* Clear vstring stack */
+           /*freeTempAlloc();*/ /* Clear vstring stack */
          }
        }
        for (i=0; i<=m-1; i++) {
@@ -342,10 +342,9 @@ l7240: /* */
 
 
 
-void gosub_7320()
-{
+void gosub_7320() {
         /* Subroutine:  get next L1_ from original file */
-  vstring tmpLin = "";
+  vstring_def(tmpLin);
   if (r1) {     /*  Get next line from save array */
     let(&l1_,reserve1_[0]);
     r1=r1-1;
@@ -362,7 +361,7 @@ void gosub_7320()
         /* Note that we will discard any blank lines before EOF; this
            should be OK though */
         let(&l1_,ctlz_);
-        let(&tmpLin, ""); /* Deallocate */
+        free_vstring(tmpLin); /* Deallocate */
         return;
       }
       let(&l1_, edit(l1_, 4 + 128 + 2048)); /* Trim garb, trail space; untab */
@@ -373,13 +372,13 @@ void gosub_7320()
     }
   }
   let(&l1_, cat(tmpLin, l1_, NULL)); /* Add any blank lines */
-  let(&tmpLin, ""); /* Deallocate */
+  free_vstring(tmpLin); /* Deallocate */
   return;
 }
 
 void gosub_7330() {
         /*  Subroutine:  get next L2_ from edited file */
-  vstring tmpLin = "";
+  vstring_def(tmpLin);
   vstring tmpStrPtr; /* pointer only */
   flag stripDeletedSectionMode;
   if (r2) {     /*  Get next line from save array */
@@ -399,7 +398,7 @@ void gosub_7330() {
         /* Note that we will discard any blank lines before EOF; this
            should be OK though */
         let(&l2_, ctlz_);
-        let(&tmpLin, ""); /* Deallocate */
+        free_vstring(tmpLin); /* Deallocate */
         return;
       }
       let(&l2_, edit(l2_, 4 + 128 + 2048)); /* Trim garb, trail space; untab */
@@ -426,7 +425,7 @@ void gosub_7330() {
       if (getRevision(l2_) == getRevision(addTag_)) {
         tmpStrPtr = l2_;
         l2_ = stripAndTag(l2_, "", 0);
-        let(&tmpStrPtr, ""); /* deallocate old l2_ */
+        free_vstring(tmpStrPtr); /* deallocate old l2_ */
       }
 
       if (!l2_[0]) { /* Ignore blank lines for comparison */
@@ -436,7 +435,7 @@ void gosub_7330() {
     }
   }
   let(&l2_, cat(tmpLin, l2_, NULL)); /* Add any blank lines */
-  let(&tmpLin, ""); /* Deallocate */
+  free_vstring(tmpLin); /* Deallocate */
   return;
 
 }
@@ -451,8 +450,8 @@ char strcmpe(vstring s1, vstring s2)
   flag ignoreSpaces = 1;
   flag ignoreSameLineComments = 1;
 
-  vstring tmps1 = "";
-  vstring tmps2 = "";
+  vstring_def(tmps1);
+  vstring_def(tmps2);
   long i;
   long i2;
   long i3;
@@ -488,8 +487,8 @@ char strcmpe(vstring s1, vstring s2)
   }
 
   cmpflag = !!strcmp(tmps1, tmps2);
-  let(&tmps1, ""); /* Deallocate string */
-  let(&tmps2, ""); /* Deallocate string */
+  free_vstring(tmps1); /* Deallocate string */
+  free_vstring(tmps2); /* Deallocate string */
   return (cmpflag);
 }
 
@@ -499,7 +498,8 @@ char strcmpe(vstring s1, vstring s2)
 vstring stripAndTag(vstring line, vstring tag, flag tagBlankLines)
 {
   long i, j, k, n;
-  vstring line1 = "", comment = "";
+  vstring_def(line1);
+  vstring_def(comment);
   long lineLength = LINE_LENGTH;
   flag validTag;
   i = 0;
@@ -521,7 +521,7 @@ vstring stripAndTag(vstring line, vstring tag, flag tagBlankLines)
       break;
     }
     if (validTag) let(&line1, edit(left(line1, i - 1), 128));
-    let(&comment, ""); /* deallocate */
+    free_vstring(comment); /* deallocate */
   }
 
   /* Count blank lines concatenated to the beginning of this line */
@@ -561,7 +561,7 @@ vstring stripAndTag(vstring line, vstring tag, flag tagBlankLines)
 /* Used to determine default argument for tag question */
 long highestRevision(vstring fileName)
 {
-  vstring str1 = "";
+  vstring_def(str1);
   long revision;
   long largest = 0;
   FILE *fp;
@@ -572,7 +572,7 @@ long highestRevision(vstring fileName)
     revision = getRevision(str1);
     if (revision > largest) largest = revision;
   }
-  let(&str1, "");
+  free_vstring(str1);
   fclose(fp);
   return largest;
 }
@@ -581,14 +581,14 @@ long highestRevision(vstring fileName)
 /* Tags are assumed to be of format nn or #nn in comment at end of line */
 long getRevision(vstring line)
 {
-  vstring str1 = "";
-  vstring str2 = "";
-  vstring tag = "";
+  vstring_def(str1);
+  vstring_def(str2);
+  vstring_def(tag);
   long revision;
 
   if (instr(1, line, "/*") == 0) return 0; /* Speedup - no comment in line */
   let(&str1, edit(line, 2)); /* This line has the tag not stripped */
-  let(&str2, "");
+  free_vstring(str2);
   str2 = stripAndTag(str1, "", 0); /* Strip old tag & add dummy new one */
   let(&str2, edit(str2, 2)); /* This line has the tag stripped */
   if (!strcmp(str1, str2)) {
@@ -599,9 +599,9 @@ long getRevision(vstring line)
     if (tag[0] == '#') let(&tag, right(tag, 2)); /* Remove any # */
     revision = (long)(val(tag));
   }
-  let(&tag, "");
-  let(&str1, "");
-  let(&str2, "");
+  free_vstring(tag);
+  free_vstring(str1);
+  free_vstring(str2);
   return revision;
 }
 
