@@ -762,22 +762,23 @@ temp_nmbrString *nmbrTempAlloc(long size)
 /* Make string have temporary allocation to be released by next nmbrLet() */
 /* Warning:  after nmbrMakeTempAlloc() is called, the nmbrString may NOT be
    assigned again with nmbrLet() */
-void nmbrMakeTempAlloc(nmbrString *s)
+temp_nmbrString *nmbrMakeTempAlloc(nmbrString *s)
 {
-    if (g_nmbrTempAllocStackTop>=(M_MAX_ALLOC_STACK-1)) {
-      printf(
-      "*** FATAL ERROR ***  Temporary nmbrString stack overflow in nmbrMakeTempAlloc()\n");
+  if (g_nmbrTempAllocStackTop>=(M_MAX_ALLOC_STACK-1)) {
+    printf(
+    "*** FATAL ERROR ***  Temporary nmbrString stack overflow in nmbrMakeTempAlloc()\n");
 #if __STDC__
-      fflush(stdout);
+    fflush(stdout);
 #endif
-      bug(1368);
-    }
-    if (s[0] != -1) { /* End of string */
-      /* Do it only if nmbrString is not empty */
-      nmbrTempAllocStack[g_nmbrTempAllocStackTop++] = s;
-    }
+    bug(1368);
+  }
+  if (s[0] != -1) { /* End of string */
+    /* Do it only if nmbrString is not empty */
+    nmbrTempAllocStack[g_nmbrTempAllocStackTop++] = s;
+  }
 /*E*/db2=db2+(nmbrLen(s)+1)*(long)(sizeof(nmbrString));
 /*E*/db3=db3-(nmbrLen(s)+1)*(long)(sizeof(nmbrString));
+  return s;
 }
 
 
@@ -1145,8 +1146,7 @@ temp_vstring nmbrCvtMToVString(const nmbrString *s) {
   }
 
   g_startTempAllocStack = saveTempAllocStack;
-  if (tmpStr[0]) makeTempAlloc(tmpStr); /* Flag it for deallocation */
-  return (tmpStr);
+  return makeTempAlloc(tmpStr); /* Flag it for deallocation */
 }
 
 
@@ -1305,8 +1305,7 @@ temp_vstring nmbrCvtRToVString(const nmbrString *proof,
 
   g_startTempAllocStack = saveTempAllocStack;
   g_nmbrStartTempAllocStack = nmbrSaveTempAllocStack;
-  if (proofStr[0]) makeTempAlloc(proofStr); /* Flag it for deallocation */
-  return (proofStr);
+  return makeTempAlloc(proofStr); /* Flag it for deallocation */
 }
 
 
@@ -1369,8 +1368,7 @@ temp_vstring nmbrCvtAnyToVString(const nmbrString *s) {
   }
 
   g_startTempAllocStack = saveTempAllocStack;
-  if (tmpStr[0]) makeTempAlloc(tmpStr); /* Flag it for deallocation */
-  return (tmpStr);
+  return makeTempAlloc(tmpStr); /* Flag it for deallocation */
 }
 
 
@@ -1567,8 +1565,7 @@ temp_nmbrString *nmbrSquishProof(const nmbrString *proof) {
   } /* Next step */
   nmbrLet(&subProof, NULL_NMBRSTRING);
   nmbrLet(&dummyProof, NULL_NMBRSTRING);
-  nmbrMakeTempAlloc(newProof); /* Flag it for deallocation */
-  return (newProof);
+  return nmbrMakeTempAlloc(newProof); /* Flag it for deallocation */
 }
 
 
@@ -1593,8 +1590,7 @@ temp_nmbrString *nmbrUnsquishProof(const nmbrString *proof) {
     step = step + subPrfLen - 1;
   }
   nmbrLet(&subProof, NULL_NMBRSTRING);
-  nmbrMakeTempAlloc(newProof); /* Flag it for deallocation */
-  return (newProof);
+  return nmbrMakeTempAlloc(newProof); /* Flag it for deallocation */
 }
 
 
@@ -1617,14 +1613,12 @@ temp_nmbrString *nmbrGetIndentation(const nmbrString *proof, long startingLevel)
   indentationLevel[plen - 1] = startingLevel;
   if (stmt < 0) { /* A local label reference or unknown */
     if (plen != 1) bug(1330);
-    nmbrMakeTempAlloc(indentationLevel); /* Flag it for deallocation */
-    return (indentationLevel);
+    return nmbrMakeTempAlloc(indentationLevel); /* Flag it for deallocation */
   }
   type = g_Statement[stmt].type;
   if (type == f_ || type == e_) { /* A hypothesis */
     if (plen != 1) bug(1331);
-    nmbrMakeTempAlloc(indentationLevel); /* Flag it for deallocation */
-    return (indentationLevel);
+    return nmbrMakeTempAlloc(indentationLevel); /* Flag it for deallocation */
   }
   /* An assertion */
   if (type != a_ && type != p_) bug(1332);
@@ -1643,8 +1637,7 @@ temp_nmbrString *nmbrGetIndentation(const nmbrString *proof, long startingLevel)
 
   nmbrLet(&subProof,NULL_NMBRSTRING); /* Deallocate */
   nmbrLet(&nmbrTmp, NULL_NMBRSTRING); /* Deallocate */
-  nmbrMakeTempAlloc(indentationLevel); /* Flag it for deallocation */
-  return (indentationLevel);
+  return nmbrMakeTempAlloc(indentationLevel); /* Flag it for deallocation */
 } /* nmbrGetIndentation */
 
 
@@ -1670,16 +1663,14 @@ nmbrString *nmbrGetEssential(const nmbrString *proof) {
     /* The only time it should get here is if the original proof has only one
        step, which would be an unknown step */
     if (stmt != -(long)'?' && stmt > -1000) bug(1335);
-    nmbrMakeTempAlloc(essentialFlags); /* Flag it for deallocation */
-    return (essentialFlags);
+    return nmbrMakeTempAlloc(essentialFlags); /* Flag it for deallocation */
   }
   type = g_Statement[stmt].type;
   if (type == f_ || type == e_) { /* A hypothesis */
     /* The only time it should get here is if the original proof has only one
        step */
     if (plen != 1) bug(1336);
-    nmbrMakeTempAlloc(essentialFlags); /* Flag it for deallocation */
-    return (essentialFlags);
+    return nmbrMakeTempAlloc(essentialFlags); /* Flag it for deallocation */
   }
   /* An assertion */
   if (type != a_ && type != p_) bug(1337);
@@ -1701,8 +1692,7 @@ nmbrString *nmbrGetEssential(const nmbrString *proof) {
 
   nmbrLet(&subProof,NULL_NMBRSTRING); /* Deallocate */
   nmbrLet(&nmbrTmp, NULL_NMBRSTRING); /* Deallocate */
-  nmbrMakeTempAlloc(essentialFlags); /* Flag it for deallocation */
-  return (essentialFlags);
+  return nmbrMakeTempAlloc(essentialFlags); /* Flag it for deallocation */
 } /* nmbrGetEssential */
 
 
@@ -1730,16 +1720,14 @@ temp_nmbrString *nmbrGetTargetHyp(const nmbrString *proof, long statemNum) {
     /* The only time it should get here is if the original proof has only one
        step, which would be an unknown step */
     if (stmt != -(long)'?') bug(1340);
-    nmbrMakeTempAlloc(targetHyp); /* Flag it for deallocation */
-    return (targetHyp);
+    return nmbrMakeTempAlloc(targetHyp); /* Flag it for deallocation */
   }
   type = g_Statement[stmt].type;
   if (type == f_ || type == e_) { /* A hypothesis */
     /* The only time it should get here is if the original proof has only one
        step */
     if (plen != 1) bug(1341);
-    nmbrMakeTempAlloc(targetHyp); /* Flag it for deallocation */
-    return (targetHyp);
+    return nmbrMakeTempAlloc(targetHyp); /* Flag it for deallocation */
   }
   /* An assertion */
   if (type != a_ && type != p_) bug(1342);
@@ -1764,8 +1752,7 @@ temp_nmbrString *nmbrGetTargetHyp(const nmbrString *proof, long statemNum) {
 
   nmbrLet(&subProof,NULL_NMBRSTRING); /* Deallocate */
   nmbrLet(&nmbrTmp, NULL_NMBRSTRING); /* Deallocate */
-  nmbrMakeTempAlloc(targetHyp); /* Flag it for deallocation */
-  return (targetHyp);
+  return nmbrMakeTempAlloc(targetHyp); /* Flag it for deallocation */
 } /* nmbrGetTargetHyp */
 
 
@@ -2197,8 +2184,7 @@ temp_vstring compressProof(const nmbrString *proof, long statemNum,
   nmbrLet(&explWorth, NULL_NMBRSTRING);
   let(&explIncluded, "");
 
-  makeTempAlloc(output); /* Flag it for deallocation */
-  return(output);
+  return makeTempAlloc(output); /* Flag it for deallocation */
 } /* compressProof */
 
 
@@ -2262,20 +2248,21 @@ temp_pntrString *pntrTempAlloc(long size) {
 /* Make string have temporary allocation to be released by next pntrLet() */
 /* Warning:  after pntrMakeTempAlloc() is called, the pntrString may NOT be
    assigned again with pntrLet() */
-void pntrMakeTempAlloc(pntrString *s) {
-    if (g_pntrTempAllocStackTop>=(M_MAX_ALLOC_STACK-1)) {
-      printf(
-      "*** FATAL ERROR ***  Temporary pntrString stack overflow in pntrMakeTempAlloc()\n");
+temp_pntrString *pntrMakeTempAlloc(pntrString *s) {
+  if (g_pntrTempAllocStackTop>=(M_MAX_ALLOC_STACK-1)) {
+    printf(
+    "*** FATAL ERROR ***  Temporary pntrString stack overflow in pntrMakeTempAlloc()\n");
 #if __STDC__
-      fflush(stdout);
+    fflush(stdout);
 #endif
-      bug(1370);
-    }
-    if (s[0] != NULL) { /* Don't do it if pntrString is empty */
-      pntrTempAllocStack[g_pntrTempAllocStackTop++] = s;
-    }
+    bug(1370);
+  }
+  if (s[0] != NULL) { /* Don't do it if pntrString is empty */
+    pntrTempAllocStack[g_pntrTempAllocStackTop++] = s;
+  }
 /*E*/db2=db2+(pntrLen(s)+1)*(long)(sizeof(pntrString));
 /*E*/db3=db3-(pntrLen(s)+1)*(long)(sizeof(pntrString));
+  return s;
 }
 
 

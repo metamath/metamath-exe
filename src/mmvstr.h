@@ -251,6 +251,6 @@ extern long g_startTempAllocStack; /* Where to start freeing temporary allocatio
   you can do with temporary strings.
   In particular, after makeTempAlloc() is called, the vstring may NOT be
   assigned again with let(). */
-void makeTempAlloc(vstring s);    /* Make string have temporary allocation to be
+temp_vstring makeTempAlloc(vstring s);    /* Make string have temporary allocation to be
                                     released by next let() */
 #endif /* METAMATH_MMVSTR_H_ */
