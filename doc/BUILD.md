@@ -139,6 +139,8 @@ A program that looks at _configure.ac_ and provides a file __aclocal.m4__ with
 _M4_ macros adapted to your system.  This file extends the functionality of
 _autoconf_ in a way that it can parse and execute the _configure.ac_ file.
 
+_autoreconf_ automatically calls this program during the build process. 
+
 ### aclocal.m4
 
 An _M4_ library used by _autoconf_.  Its contents is of technical nature and
