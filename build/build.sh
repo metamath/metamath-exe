@@ -15,7 +15,7 @@ find $BUILDDIR/* -not -name 'build.sh' -delete
 #=========   symlink files to the build directory   ==============
 
 cp --symbolic-link $SRCDIR/* $BUILDDIR
-mv $BUILDDIR/configure.ac $BUILDIR/configure.ac.orig
+mv $BUILDDIR/configure.ac $BUILDDIR/configure.ac.orig
 
 #=========   patch the version in configure.ac   ===================
 
