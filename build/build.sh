@@ -25,7 +25,7 @@ VERSION=`grep '[[:space:]]*#[[:space:]]*define[[:space:]]*MVERSION[[:space:]]"[^
 # extract the version (without quotes) from the saved line
 VERSION=`echo $VERSION | sed 's/[^"]*"\([^"]*\)"/\1/'`
 
-# find the line with the AC_INIT command, prepend the line number at the beginning
+# find the line with the AC_INIT command, prepend the line number
 # line-nr:AC_INIT([FULL-PACKAGE-NAME], [VERSION], [REPORT-ADDRESS])
 AC_INIT_LINE=`grep -n '[[:space:]]*AC_INIT[[:space:]]*(.*' $BUILDDIR/configure.ac.orig`
 AC_INIT_LINE_NR=`echo $AC_INIT_LINE | sed 's/\([0-9]*\).*/\1/'`
