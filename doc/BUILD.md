@@ -137,8 +137,8 @@ descriptions of features of the OS.
 
 This Unix program called __autoconf__, or its sibling __autoreconf__, is
 capable of generating a _configure_ shell script from the input _configure.ac_,
-along with its input file _config.h.in_. It needs a _configure.ac_ input file,
-that in a nutshell contains a list of properties to test the OS for.
+along with its input file _config.h.in_.  The _configure.ac_ input file is, in
+a nutshell, a list of properties to test the OS for.
 
 ### config.h.in
 
