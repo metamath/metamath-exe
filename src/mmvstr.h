@@ -131,7 +131,7 @@ for memory allocation. New vstrings should always be constructed from the
 `vstringdef` macro. */
 typedef char* vstring;
 
-/* A vstring allocated in temporary storage. These strings will be deallocated
+/* A vstring is allocated in temporary storage. These strings will be deallocated
   after the next call to `let`.
 
   A `temp_vstring` should never be used as the first argument of a `let`.
