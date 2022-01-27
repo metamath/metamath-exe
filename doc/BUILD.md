@@ -133,10 +133,24 @@ The script language used for encoding this is __M4__ using a couple of built-in
 commands of __autoconf__.  This language is designed to provide cross-platform
 descriptions of features of the OS.
 
+### aclocal
+
+A program that looks at _configure.ac_ and provides a file __aclocal.m4__ with
+_M4_ macros adapted to your system.  This file extends the functionality of
+_autoconf_ in a way that it can parse and execute the _configure.ac_ file.
+
+### aclocal.m4
+
+An _M4_ library used by _autoconf_.  Its contents is of technical nature and
+contains functions adapted to your system and your _configure.ac_.  To experts
+editing this file may fix or fine tune particular operations.  Ordinary users
+do not fiddle with it.
+
 ### autoconf
 
 This Unix program called __autoconf__, or its sibling __autoreconf__, is
 capable of generating a _configure_ shell script from the input _configure.ac_.
+It uses functions defined in _aclocal.m4_ to perform its task. 
 
 _autoreconf_ can be used as an alternative to _autoconf_.  It then manages the
 whole build process up to creating the executable.
