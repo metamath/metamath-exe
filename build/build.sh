@@ -74,5 +74,5 @@ make
 if [[ $HAVE_DOXYGEN -gt 0 ]]
 then
   rm -rf $TOPDIR/doxy
-  doxygen Doxyfile.diff
+  doxygen $BUILDDIR/Doxyfiles.diff
 fi
