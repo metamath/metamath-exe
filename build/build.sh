@@ -9,19 +9,33 @@ BUILDDIR=$(pwd)
 TOPDIR=$BUILDDIR/..
 SRCDIR=$TOPDIR/src
 
-# clear the build directory, but keep the build.sh
-find $BUILDDIR/* -not -name 'build.sh' -delete
+if [ ! -f $SRCDIR/metamath.c ] || [ !  -f $BUILDDIR/build.sh ]
+then
+  echo 'This script must be started from the metamath/build directory'
+  exit
+fi
+
+HAVE_DOXYGEN=0
+if command doxygen -v
+then
+  HAVE_DOXYGEN=1
+fi
+
+# clear the build directory, but keep build.sh and Metamath.png
+find $BUILDDIR/* -not -name 'build.sh' -not -name 'Metamath.png' -delete
 
 #=========   symlink files to the build directory   ==============
 
 cp --symbolic-link $SRCDIR/* $BUILDDIR
 mv $BUILDDIR/configure.ac $BUILDDIR/configure.ac.orig
+mv $BUILDDIR/Doxyfile.diff $BUILDDIR/Doxyfile.diff.orig
+cp $BUILDDIR/Doxyfile.diff.orig $BUILDDIR/Doxyfile.diff
 
 #=========   patch the version in configure.ac   ===================
 
-# look in metamath.c for a line matching the pattern '  #define MVERSION "<version>"
+# look in metamath.c for a line matching the pattern '  #define MVERSION "<version>" '
 # and save the line in VERSION
-VERSION=`grep '[[:space:]]*#[[:space:]]*define[[:space:]]*MVERSION[[:space:]]"[^"]*"' $SRCDIR/metamath.c`
+VERSION=`grep '[[:space:]]*#[[:space:]]*define [[:space:]]*MVERSION [[:space:]]*"[^"]*"' $SRCDIR/metamath.c`
 
 # extract the version (without quotes) from the saved line
 
@@ -45,7 +59,10 @@ head -n $(($AC_INIT_LINE_NR - 1)) $BUILDDIR/configure.ac.orig > $BUILDDIR/config
 echo $PATCHED_INIT_LINE >> $BUILDDIR/configure.ac
 tail -n +$(($AC_INIT_LINE_NR + 1)) $BUILDDIR/configure.ac.orig >> $BUILDDIR/configure.ac
 
-rm $BUILDDIR/configure.ac.orig
+# patch the version in the Doxyfile.diff
+sed --in-place "s/\\(PROJECT_NUMBER[[:space:]]*=[[:space:]]*\\)\"Metamath-version\".*/\\1\"$VERSION\"/" $BUILDDIR/Doxyfile.diff
+
+rm $BUILDDIR/configure.ac.orig $BUILDDIR/Doxyfile.diff.orig
 
 #===========   run autoconf   =====================
 
@@ -53,3 +70,9 @@ cd $BUILDDIR
 autoreconf -i
 ./configure
 make
+
+if [[ $HAVE_DOXYGEN -gt 0 ]]
+then
+  rm -rf $TOPDIR/doxy
+  doxygen Doxyfile.diff
+fi
