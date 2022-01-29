@@ -8,26 +8,26 @@
 
 #============   evaluate command line parameters   ==========
 
-while getopts d:evh flag
+while getopts d:ehv flag
 do
   case "${flag}" in
-    e) bin_only=1;;
-    v) version_only=1;;
     d) destdir=${OPTARG};;
+    e) bin_only=1;;
     h) print_help=1;;
+    v) version_only=1;;
   esac
 done
 
 if [ ${print_help:-0} -gt 0 ]
 then
-  echo 'Run this script from a subfolder of metamath-exe and build all artefacts'
-  echo 'in the metamath-exe/build subfolder (if not directed otherwise).'
+  echo 'Running this script from a subfolder of metamath-exe will build all'
+  echo 'artefacts in the metamath-exe/build subfolder (if not directed otherwise).'
   echo
   echo 'Possible options are:'
   echo
+  echo '-d followed by a directory: clear directory and build all artefacts there.'
   echo '-e only build executable, skip documentation.'
   echo '-h print this help and exit.'
-  echo '-d followed by a directory: clear directory and build all artefacts there.'
   echo '-v extract the version from metamath sources, print it and exit'
   exit
 fi
