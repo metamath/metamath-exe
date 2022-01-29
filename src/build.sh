@@ -14,8 +14,7 @@ do
     d) destdir=${OPTARG};;
     e) bin_only=1;;
     h) print_help=1;;
-    m) cd "${OPTARG}"
-         metamathdir=$(pwd);;
+    m) cd "${OPTARG}" && metamathdir=$(pwd);;
     v) version_only=1;;
   esac
 done
