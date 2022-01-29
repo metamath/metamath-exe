@@ -25,4 +25,3 @@ configure.ac2
 *~9
 # Doxygen related: configuration file and destination folder
 Doxyfile
-doxy/

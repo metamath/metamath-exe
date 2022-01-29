@@ -3,9 +3,9 @@
 # The Doxyfile reflects your personal documentation style.  It is therefore not
 # automatically overwritten by git.  Instead a Doxyfile.diff suggests values we
 # think are quite usable.  You can use this file directly by renaming it to
-# Doxyfile.  You can append its contents to your personal Doxyfile, so that the
-# suggested values overwrite your settings, but leave the rest intact.  Or, of
-# course, patch your file with a subset suiting your needs. 
+# Doxyfile.  You can prepend its contents to your personal Doxyfile, so that the
+# suggested values do not overwrite your settings.  Or, of course, patch your
+# file with a subset suiting your needs. 
 
 # This file describes the settings to be used by the documentation system
 # doxygen (www.doxygen.org) for a project.
