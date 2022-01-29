@@ -65,7 +65,7 @@
  * versions are further followed by a free style suffix that should allow
  * ordering.
  * The version string is extracted and then processed by shell and perl
- * scripts.  To avoid problems during replacements, obey
+ * scripts.  To avoid problems during replacements:
  * - use only printable characters from the ASCII range;
  * - avoid characters from the following set, eligible for escaping in text, regular
  *     expressions and so on like -begin of list ][`*+^'?"{/}\ end of list-;
