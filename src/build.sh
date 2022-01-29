@@ -5,23 +5,42 @@
 
 # Draft version, proof of concept.
 
+#============   evaluate command line parameters   ==========
+
+while getopts t:dvh flag
+do
+  case "${flag}" in
+    d) want_doxy=0;;
+    v) version_only=1;;
+    t) destdir=${OPTARG};;
+    h) print_help=1;;
+  esac
+done
+
+if [ ${print_help:-0} -gt 0 ]
+then
+  echo 'Run this script from a subfolder of metamath-exe.'
+  echo
+  echo 'Possible options are:'
+  echo
+  echo '-d skips documentation generation'
+  echo '-h prints this help and exit.'
+  echo '-t followed by a directory:  clear directory and build all artefacts there.'
+  echo '-v extract the version from metamath sources, print it and exit'
+  exit
+fi
+
 #===========   setup environment   =====================
 
 TOPDIR=$(pwd)/..
 SRCDIR=$TOPDIR/src
-BUILDDIR=$TOPDIR/build
+BUILDDIR=${destdir:-$TOPDIR/build}
 
 # verify we can navigate to the sources
 if [ ! -f $SRCDIR/metamath.c ] || [ ! -f $SRCDIR/build.sh ]
 then
   echo 'This script must be run from a subfolder of the metamath directory'
   exit
-fi
-
-HAVE_DOXYGEN=0
-if command doxygen -v
-then
-  HAVE_DOXYGEN=1
 fi
 
 # clear the build directory
@@ -47,6 +66,12 @@ VERSION=`grep '[[:space:]]*#[[:space:]]*define[[:space:]][[:space:]]*MVERSION[[:
 VERSION=${VERSION#*\"}
 # strip everything from the first remaining quote character on
 VERSION=${VERSION%%\"*}
+
+if [ ${version_only:-0} -gt 0 ]
+then
+  echo "$VERSION"
+  exit
+fi
 
 # allow external programs easy access to the metamath version extracted from
 # the sources
@@ -79,8 +104,13 @@ autoreconf -i
 ./configure
 make
 
-if [[ $HAVE_DOXYGEN -gt 0 ]]
+if [ ${want_doxy:-1} -gt 0 ]
 then
+  if ! command doxygen -v
+  then
+    echo 'doxygen not found'
+  fi
+
   # create a Doxyfile.local and use it for creation of documentation locally
   
   # start with the settings given by the distribution
