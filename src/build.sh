@@ -28,9 +28,11 @@ then
   echo 'Possible options are:'
   echo
   echo '-d followed by a directory: clear directory and build all artefacts there.'
+  echo "    Relative paths are relative to the destination's top metamath-exe directory."
   echo '-e only build executable, skip documentation.'
   echo '-h print this help and exit.'
   echo '-m followed by a directory: top folder of metamath-exe.'
+  echo '    Relative paths are relative to the current directory.'
   echo '-v extract the version from metamath sources, print it and exit'
   exit
 fi
@@ -50,6 +52,7 @@ then
 fi
 
 # clear the build directory
+cd "$TOPDIR"
 rm -rf $BUILDDIR
 mkdir -p $BUILDDIR
 cd $BUILDDIR
