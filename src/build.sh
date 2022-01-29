@@ -42,6 +42,7 @@ fi
 
 #===========   setup environment   =====================
 
+# we return back to this directory
 CURDIR="$(pwd)"
 TOPDIR=${metamathdir:-"$CURDIR/.."}
 SRCDIR="$TOPDIR/src"
