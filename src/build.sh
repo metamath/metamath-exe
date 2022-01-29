@@ -7,12 +7,12 @@
 
 #============   evaluate command line parameters   ==========
 
-while getopts t:dvh flag
+while getopts d:evh flag
 do
   case "${flag}" in
-    d) want_doxy=0;;
+    e) bin_only=1;;
     v) version_only=1;;
-    t) destdir=${OPTARG};;
+    d) destdir=${OPTARG};;
     h) print_help=1;;
   esac
 done
@@ -24,9 +24,9 @@ then
   echo
   echo 'Possible options are:'
   echo
-  echo '-d skips documentation generation.'
+  echo '-e only build executable, skip documentation.'
   echo '-h prints this help and exit.'
-  echo '-t followed by a directory: clear directory and build all artefacts there.'
+  echo '-d followed by a directory: clear directory and build all artefacts there.'
   echo '-v extract the version from metamath sources, print it and exit'
   exit
 fi
@@ -106,11 +106,11 @@ autoreconf -i
 ./configure
 make
 
-if [ ${want_doxy:-1} -gt 0 ]
+if [ ${bin_only:-0} -eq 0 ]
 then
   if ! command doxygen -v
   then
-    echo 'doxygen not found'
+    echo 'doxygen not found. Cannot build documentation.'
   fi
 
   # create a Doxyfile.local and use it for creation of documentation locally
