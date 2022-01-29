@@ -9,7 +9,7 @@ BUILDDIR=$(pwd)
 TOPDIR=$BUILDDIR/..
 SRCDIR=$TOPDIR/src
 
-if [ ! -f $SRCDIR/metamath.c ] || [ !  -f $BUILDDIR/build.sh ]
+if [ ! -f $SRCDIR/metamath.c ] || [ ! -f $BUILDDIR/build.sh ]
 then
   echo 'This script must be run from the metamath/build directory'
   exit
