@@ -51,7 +51,7 @@ fi
 
 # clear the build directory
 rm -rf $BUILDDIR
-mkdir $BUILDDIR
+mkdir -p $BUILDDIR
 cd $BUILDDIR
 
 #=========   symlink files to the build directory   ==============
