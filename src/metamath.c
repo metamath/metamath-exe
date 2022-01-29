@@ -69,8 +69,8 @@
  * - use only printable characters from the ASCII range;
  * - avoid characters from the following set, eligible for escaping in text, regular
  *     expressions and so on like -begin of list ][`*+^$'?"{/}\ end of list-;
- * - using any space character other than simple space (U+0020);
- * - using space characters at the beginning or at the end.
+ * - use no space character other than simple space (U+0020);
+ * - never use space characters at the beginning or at the end.
  */
 #define MVERSION "0.199.pre 29-Jan-2022"
 /* 0.199.pre
