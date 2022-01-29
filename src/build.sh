@@ -1,7 +1,8 @@
 #!/bin/bash
 # create a metamath executable from scratch
 
-# You MUST change to the src folder before running this script.
+# You MUST change to a subfolder of metamath-exe (e.g. the src folder) before
+# running this script.
 
 # Draft version, proof of concept.
 
