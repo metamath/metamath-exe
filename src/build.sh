@@ -23,7 +23,7 @@ then
   echo
   echo 'Possible options are:'
   echo
-  echo '-d skips documentation generation'
+  echo '-d skips documentation generation.'
   echo '-h prints this help and exit.'
   echo '-t followed by a directory:  clear directory and build all artefacts there.'
   echo '-v extract the version from metamath sources, print it and exit'
