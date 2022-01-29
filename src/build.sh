@@ -78,7 +78,7 @@ make
 
 if [[ $HAVE_DOXYGEN -gt 0 ]]
 then
-  # create a Doxyfile.tmp and use it for creation of documentation locally
+  # create a Doxyfile.local and use it for creation of documentation locally
   
   # start with the settings given by the distribution
   cp $BUILDDIR/Doxyfile.diff $BUILDDIR/Doxyfile.local
