@@ -7,7 +7,9 @@
 
 #===========   setup environment   =====================
 
-SRCDIR=$(pwd)
+TOPDIR=$(pwd)/..
+SRCDIR=$TOPDIR/src
+BUILDDIR=$TOPDIR/build
 
 # verify we can navigate to the sources
 if [ ! -f $SRCDIR/metamath.c ] || [ ! -f $SRCDIR/build.sh ]
@@ -15,9 +17,6 @@ then
   echo 'This script must be run from a subfolder of the metamath directory'
   exit
 fi
-
-TOPDIR=$SRCDIR/..
-BUILDDIR=$TOPDIR/build
 
 HAVE_DOXYGEN=0
 if command doxygen -v
