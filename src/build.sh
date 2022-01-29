@@ -25,7 +25,7 @@ then
   echo 'Possible options are:'
   echo
   echo '-e only build executable, skip documentation.'
-  echo '-h prints this help and exit.'
+  echo '-h print this help and exit.'
   echo '-d followed by a directory: clear directory and build all artefacts there.'
   echo '-v extract the version from metamath sources, print it and exit'
   exit
