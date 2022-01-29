@@ -5,11 +5,11 @@
 
 # Draft version, proof of concept.
 
-TOPDIR=$(pwd)/..
-SRCDIR=$TOPDIR/src
+SRCDIR=$(pwd)
+TOPDIR=$SRCDIR/..
 BUILDDIR=$TOPDIR/build
 
-if [ ! -f $SRCDIR/metamath.c ] || [ ! -f $BUILDDIR/build.sh ]
+if [ ! -f $SRCDIR/metamath.c ] || [ ! -f build.sh ]
 then
   echo 'This script must be run from a subfolder of the metamath directory'
   exit
@@ -31,13 +31,12 @@ cd $BUILDDIR
 cp --symbolic-link $SRCDIR/* $BUILDDIR
 mv $BUILDDIR/configure.ac $BUILDDIR/configure.ac.orig
 mv $BUILDDIR/Doxyfile.diff $BUILDDIR/Doxyfile.diff.orig
-cp $BUILDDIR/Doxyfile.diff.orig $BUILDDIR/Doxyfile.diff
 
-#=========   patch the version in configure.ac   ===================
+#=========   patch the version in configure.ac and Doxyfile.diff  =============
 
 # look in metamath.c for a line matching the pattern '  #define MVERSION "<version>" '
 # and save the line in VERSION
-VERSION=`grep '[[:space:]]*#[[:space:]]*define[[:space:]]+MVERSION[[:space:]]+"[^"]*"' $SRCDIR/metamath.c`
+VERSION=`grep '[[:space:]]*#[[:space:]]*define[[:space:]][[:space:]]*MVERSION[[:space:]][[:space:]]*"[^"]*"' $SRCDIR/metamath.c`
 
 # extract the version (without quotes) from the saved line
 
@@ -61,7 +60,8 @@ head -n $(($AC_INIT_LINE_NR - 1)) $BUILDDIR/configure.ac.orig > $BUILDDIR/config
 echo $PATCHED_INIT_LINE >> $BUILDDIR/configure.ac
 tail -n +$(($AC_INIT_LINE_NR + 1)) $BUILDDIR/configure.ac.orig >> $BUILDDIR/configure.ac
 
-# patch the version in the Doxyfile.diff
+# patch the Doxyfile.diff
+cp $BUILDDIR/Doxyfile.diff.orig $BUILDDIR/Doxyfile.diff
 sed --in-place "s/\\(PROJECT_NUMBER[[:space:]]*=[[:space:]]*\\)\"Metamath-version\".*/\\1\"$VERSION\"/" $BUILDDIR/Doxyfile.diff
 
 rm $BUILDDIR/configure.ac.orig $BUILDDIR/Doxyfile.diff.orig
@@ -74,6 +74,19 @@ make
 
 if [[ $HAVE_DOXYGEN -gt 0 ]]
 then
-  rm -rf $TOPDIR/doxy
-  doxygen $BUILDDIR/Doxyfile.diff
+  # create a Doxyfile.tmp and use it for creation f documentation locally
+  
+  # start with the settings given by the distributiion
+  cp $BUILDDIR/Doxyfile.diff $BUILDDIR/Doxyfile.tmp
+  
+  # let the users preferences always override...
+  if [ -f $SRCDIR/Doxyfile ]
+  then
+    cat $SRCDIR/Doxyfile >> $BUILDDIR/Doxyfile.tmp
+  fi
+  
+  # ... except for the destination directory.  Force this to the build folder.
+  echo "OUTPUT_DIRECTORY = $BUILDDIR" >> $BUILDDIR/Doxyfile.tmp
+
+  doxygen $BUILDDIR/Doxyfile.tmp
 fi
