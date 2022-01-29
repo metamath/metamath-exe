@@ -6,6 +6,22 @@
 
 # Draft version, proof of concept.
 
+HELPTEXT=\
+'Builds all artefacts in the metamath-exe/build subfolder (if not directed
+otherwise).  Change to a metamath-exe subfolder first before running
+this script, or issue the -m option.
+
+Possible options are:
+
+-d followed by a directory: clear directory and build all artefacts there.
+    Relative paths are relative to the destination'"'"'s top metamath-exe directory.
+-e only build executable, skip documentation.
+-h print this help and exit.
+-m followed by a directory: top folder of metamath-exe.
+    Relative paths are relative to the current directory.
+-v extract the version from metamath sources, print it and exit
+'
+
 #============   evaluate command line parameters   ==========
 
 while getopts d:ehm:v flag
@@ -21,19 +37,7 @@ done
 
 if [ ${print_help:-0} -gt 0 ]
 then
-  echo 'Builds all artefacts in the metamath-exe/build subfolder (if not directed'
-  echo 'otherwise).  Change to a metamath-exe subfolder first before running'
-  echo 'this script, or issue the -m option.'
-  echo
-  echo 'Possible options are:'
-  echo
-  echo '-d followed by a directory: clear directory and build all artefacts there.'
-  echo "    Relative paths are relative to the destination's top metamath-exe directory."
-  echo '-e only build executable, skip documentation.'
-  echo '-h print this help and exit.'
-  echo '-m followed by a directory: top folder of metamath-exe.'
-  echo '    Relative paths are relative to the current directory.'
-  echo '-v extract the version from metamath sources, print it and exit'
+  echo "$HELPTEXT"
   exit
 fi
 
