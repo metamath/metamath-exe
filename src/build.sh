@@ -42,35 +42,37 @@ fi
 
 #===========   setup environment   =====================
 
-TOPDIR=${metamathdir:-"$(pwd)/.."}
-SRCDIR=$TOPDIR/src
+CURDIR="$(pwd)"
+TOPDIR=${metamathdir:-"$CURDIR/.."}
+SRCDIR="$TOPDIR/src"
 BUILDDIR=${destdir:-$TOPDIR/build}
 
 # verify we can navigate to the sources
-if [ ! -f $SRCDIR/metamath.c ]
+if [ ! -f "$SRCDIR/metamath.c" ]
 then
   echo 'This script must be run from a subfolder of the metamath-exe directory.'
   echo 'Run ./build.sh -h for more information'
+  cd "$CURDIR"
   exit
 fi
 
 # clear the build directory
 cd "$TOPDIR"
-rm -rf $BUILDDIR
-mkdir -p $BUILDDIR
-cd $BUILDDIR
+rm -rf "$BUILDDIR"
+mkdir -p "$BUILDDIR"
+cd "$BUILDDIR"
 
 #=========   symlink files to the build directory   ==============
 
-cp --symbolic-link $SRCDIR/* $BUILDDIR
-mv $BUILDDIR/configure.ac $BUILDDIR/configure.ac.orig
-mv $BUILDDIR/Doxyfile.diff $BUILDDIR/Doxyfile.diff.orig
+cp --symbolic-link "$SRCDIR"/* .
+mv configure.ac configure.ac.orig
+mv Doxyfile.diff Doxyfile.diff.orig
 
 #=========   patch the version in configure.ac and Doxyfile.diff  =============
 
 # look in metamath.c for a line matching the pattern '  #define MVERSION "<version>" '
 # and save the line in VERSION
-VERSION=`grep '[[:space:]]*#[[:space:]]*define[[:space:]][[:space:]]*MVERSION[[:space:]][[:space:]]*"[^"]*"' $SRCDIR/metamath.c`
+VERSION=`grep '[[:space:]]*#[[:space:]]*define[[:space:]][[:space:]]*MVERSION[[:space:]][[:space:]]*"[^"]*"' "$SRCDIR"/metamath.c`
 
 # extract the version (without quotes) from the saved line
 
@@ -82,6 +84,7 @@ VERSION=${VERSION%%\"*}
 if [ ${version_only:-0} -gt 0 ]
 then
   echo "$VERSION"
+  cd "$CURDIR"
   exit
 fi
 
@@ -91,24 +94,24 @@ echo "$VERSION" > metamath_version
 
 # find the line with the AC_INIT command, prepend the line number
 # line-nr:AC_INIT([FULL-PACKAGE-NAME], [VERSION], [REPORT-ADDRESS])
-AC_INIT_LINE=`grep -n '[[:space:]]*AC_INIT[[:space:]]*(.*' $BUILDDIR/configure.ac.orig`
+AC_INIT_LINE=`grep -n '[[:space:]]*AC_INIT[[:space:]]*(.*' configure.ac.orig`
 # strip everything from the first colon on
 AC_INIT_LINE_NR=${AC_INIT_LINE%%:*}
 # strip everything up to the first colon
 AC_INIT_LINE=${AC_INIT_LINE#*:}
 # replace the second parameter to AC_INIT
-PATCHED_INIT_LINE=`echo $AC_INIT_LINE | sed "s/\\([[:space:]]*AC_INIT(.*\\),.*,\\(.*\\)/\\1, \[$VERSION\],\\2/"`
+PATCHED_INIT_LINE=`echo "$AC_INIT_LINE" | sed "s/\\([[:space:]]*AC_INIT(.*\\),.*,\\(.*\\)/\\1, \[$VERSION\],\\2/"`
 
 # replace the AC_INIT line with new content
-head -n $(($AC_INIT_LINE_NR - 1)) $BUILDDIR/configure.ac.orig > $BUILDDIR/configure.ac
-echo $PATCHED_INIT_LINE >> $BUILDDIR/configure.ac
-tail -n +$(($AC_INIT_LINE_NR + 1)) $BUILDDIR/configure.ac.orig >> $BUILDDIR/configure.ac
+head -n $(($AC_INIT_LINE_NR - 1)) configure.ac.orig > configure.ac
+echo $PATCHED_INIT_LINE >> configure.ac
+tail -n +$(($AC_INIT_LINE_NR + 1)) configure.ac.orig >> configure.ac
 
 # patch the Doxyfile.diff
-cp $BUILDDIR/Doxyfile.diff.orig $BUILDDIR/Doxyfile.diff
-sed --in-place "s/\\(PROJECT_NUMBER[[:space:]]*=[[:space:]]*\\)\"Metamath-version\".*/\\1\"$VERSION\"/" $BUILDDIR/Doxyfile.diff
+cp Doxyfile.diff.orig Doxyfile.diff
+sed --in-place "s/\\(PROJECT_NUMBER[[:space:]]*=[[:space:]]*\\)\"Metamath-version\".*/\\1\"$VERSION\"/" Doxyfile.diff
 
-rm $BUILDDIR/configure.ac.orig $BUILDDIR/Doxyfile.diff.orig
+rm configure.ac.orig Doxyfile.diff.orig
 
 #===========   do the build   =====================
 
@@ -126,16 +129,18 @@ then
   # create a Doxyfile.local and use it for creation of documentation locally
   
   # start with the settings given by the distribution
-  cp $BUILDDIR/Doxyfile.diff $BUILDDIR/Doxyfile.local
+  cp Doxyfile.diff Doxyfile.local
   
   # let the users preferences always override...
-  if [ -f $SRCDIR/Doxyfile ]
+  if [ -f "$SRCDIR"/Doxyfile]
   then
-    cat $SRCDIR/Doxyfile >> $BUILDDIR/Doxyfile.local
+    cat "$SRCDIR"/Doxyfile >> Doxyfile.local
   fi
   
   # ... except for the destination directory.  Force this to the build folder.
-  echo "OUTPUT_DIRECTORY = $BUILDDIR" >> $BUILDDIR/Doxyfile.local
+  echo "OUTPUT_DIRECTORY = \"$BUILDDIR\"" >> Doxyfile.local
 
-  doxygen $BUILDDIR/Doxyfile.local
+  doxygen Doxyfile.local
 fi
+
+cd "$CURDIR"
