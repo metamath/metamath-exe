@@ -5,9 +5,11 @@
 
 # Draft version, proof of concept.
 
+#===========   setup environment   =====================
+
 SRCDIR=$(pwd)
 
-# verify we are run from within the right directory 
+# verify we can navigate to the sources
 if [ ! -f $SRCDIR/metamath.c ] || [ ! -f $SRCDIR/build.sh ]
 then
   echo 'This script must be run from a subfolder of the metamath directory'
@@ -68,7 +70,7 @@ sed --in-place "s/\\(PROJECT_NUMBER[[:space:]]*=[[:space:]]*\\)\"Metamath-versio
 
 rm $BUILDDIR/configure.ac.orig $BUILDDIR/Doxyfile.diff.orig
 
-#===========   run autoconf   =====================
+#===========   do the build   =====================
 
 autoreconf -i
 ./configure
