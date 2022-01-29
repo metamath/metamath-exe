@@ -68,7 +68,7 @@
  * scripts.  To avoid problems during replacements:
  * - use only printable characters from the ASCII range;
  * - avoid characters from the following set, eligible for escaping in text, regular
- *     expressions and so on like -begin of list ][`*+^'?"{/}\ end of list-;
+ *     expressions and so on like -begin of list ][`*+^$'?"{/}\ end of list-;
  * - using any space character other than simple space (U+0020);
  * - using space characters at the beginning or at the end.
  */
