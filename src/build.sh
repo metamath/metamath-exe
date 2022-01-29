@@ -5,13 +5,13 @@
 
 # Draft version, proof of concept.
 
-BUILDDIR=$(pwd)
-TOPDIR=$BUILDDIR/..
+TOPDIR=$(pwd)/..
 SRCDIR=$TOPDIR/src
+BUILDDir=$TOPDIR/build
 
 if [ ! -f $SRCDIR/metamath.c ] || [ ! -f $BUILDDIR/build.sh ]
 then
-  echo 'This script must be run from the metamath/build directory'
+  echo 'This script must be run from a subfolder of the metamath directory'
   exit
 fi
 
@@ -21,8 +21,10 @@ then
   HAVE_DOXYGEN=1
 fi
 
-# clear the build directory, but keep build.sh and Metamath.png
-find $BUILDDIR/* -not -name 'build.sh' -not -name 'Metamath.png' -delete
+# clear the build directory
+rm -rf $BUILDDIR
+mkdir $BUILDDIR
+cd $BUILDDIR
 
 #=========   symlink files to the build directory   ==============
 
@@ -66,7 +68,6 @@ rm $BUILDDIR/configure.ac.orig $BUILDDIR/Doxyfile.diff.orig
 
 #===========   run autoconf   =====================
 
-cd $BUILDDIR
 autoreconf -i
 ./configure
 make
