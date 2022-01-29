@@ -35,7 +35,7 @@ cp $BUILDDIR/Doxyfile.diff.orig $BUILDDIR/Doxyfile.diff
 
 # look in metamath.c for a line matching the pattern '  #define MVERSION "<version>" '
 # and save the line in VERSION
-VERSION=`grep '[[:space:]]*#[[:space:]]*define [[:space:]]*MVERSION [[:space:]]*"[^"]*"' $SRCDIR/metamath.c`
+VERSION=`grep '[[:space:]]*#[[:space:]]*define[[:space:]]+MVERSION[[:space:]]+"[^"]*"' $SRCDIR/metamath.c`
 
 # extract the version (without quotes) from the saved line
 
