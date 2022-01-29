@@ -78,19 +78,19 @@ make
 
 if [[ $HAVE_DOXYGEN -gt 0 ]]
 then
-  # create a Doxyfile.tmp and use it for creation f documentation locally
+  # create a Doxyfile.tmp and use it for creation of documentation locally
   
   # start with the settings given by the distributiion
-  cp $BUILDDIR/Doxyfile.diff $BUILDDIR/Doxyfile.tmp
+  cp $BUILDDIR/Doxyfile.diff $BUILDDIR/Doxyfile.local
   
   # let the users preferences always override...
   if [ -f $SRCDIR/Doxyfile ]
   then
-    cat $SRCDIR/Doxyfile >> $BUILDDIR/Doxyfile.tmp
+    cat $SRCDIR/Doxyfile >> $BUILDDIR/Doxyfile.local
   fi
   
   # ... except for the destination directory.  Force this to the build folder.
-  echo "OUTPUT_DIRECTORY = $BUILDDIR" >> $BUILDDIR/Doxyfile.tmp
+  echo "OUTPUT_DIRECTORY = $BUILDDIR" >> $BUILDDIR/Doxyfile.local
 
-  doxygen $BUILDDIR/Doxyfile.tmp
+  doxygen $BUILDDIR/Doxyfile.local
 fi
