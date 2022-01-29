@@ -48,6 +48,10 @@ VERSION=${VERSION#*\"}
 # strip everything from the first remaining quote character on
 VERSION=${VERSION%%\"*}
 
+# allow external programs easy access to the metamath version extracted from
+# the sources
+echo "$VERSION" > metamath_version
+
 # find the line with the AC_INIT command, prepend the line number
 # line-nr:AC_INIT([FULL-PACKAGE-NAME], [VERSION], [REPORT-ADDRESS])
 AC_INIT_LINE=`grep -n '[[:space:]]*AC_INIT[[:space:]]*(.*' $BUILDDIR/configure.ac.orig`
