@@ -1,40 +1,44 @@
 #!/bin/bash
 # create a metamath executable from scratch
 
-# You MUST change to a subfolder of metamath-exe (e.g. the src folder) before
-# running this script.
+# Change to a subfolder of metamath-exe (e.g. the src folder) before
+# running this script, unless you provide the -m option.
 
 # Draft version, proof of concept.
 
 #============   evaluate command line parameters   ==========
 
-while getopts d:ehv flag
+while getopts d:ehm:v flag
 do
   case "${flag}" in
     d) destdir=${OPTARG};;
     e) bin_only=1;;
     h) print_help=1;;
+    m) cd "${OPTARG}"
+         metamathdir=$(pwd);;
     v) version_only=1;;
   esac
 done
 
 if [ ${print_help:-0} -gt 0 ]
 then
-  echo 'Running this script from a subfolder of metamath-exe will build all'
-  echo 'artefacts in the metamath-exe/build subfolder (if not directed otherwise).'
+  echo 'Builds all artefacts in the metamath-exe/build subfolder (if not directed'
+  echo 'otherwise).  Change to a metamath-exe subfolder first before running'
+  echo 'this script, or issue the -m option.'
   echo
   echo 'Possible options are:'
   echo
   echo '-d followed by a directory: clear directory and build all artefacts there.'
   echo '-e only build executable, skip documentation.'
   echo '-h print this help and exit.'
+  echo '-m followed by a directory: top folder of metamath-exe.'
   echo '-v extract the version from metamath sources, print it and exit'
   exit
 fi
 
 #===========   setup environment   =====================
 
-TOPDIR=$(pwd)/..
+TOPDIR=${metamathdir:-"$(pwd)/.."}
 SRCDIR=$TOPDIR/src
 BUILDDIR=${destdir:-$TOPDIR/build}
 
