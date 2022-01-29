@@ -19,7 +19,8 @@ done
 
 if [ ${print_help:-0} -gt 0 ]
 then
-  echo 'Run this script from a subfolder of metamath-exe.'
+  echo 'Run this script from a subfolder of metamath-exe and build all artefacts'
+  echo 'in the metamath-exe/build subfolder (if not directed otherwise).'
   echo
   echo 'Possible options are:'
   echo
