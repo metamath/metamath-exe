@@ -19,8 +19,7 @@ Possible options are:
 -h print this help and exit.
 -m followed by a directory: top folder of metamath-exe.
     Relative paths are relative to the current directory.
--v extract the version from metamath sources, print it and exit
-'
+-v extract the version from metamath sources, print it and exit'
 
 #============   evaluate command line parameters   ==========
 
