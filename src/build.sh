@@ -143,4 +143,5 @@ then
   doxygen Doxyfile.local
 fi
 
+# change back to starting directory
 cd "$CURDIR"
