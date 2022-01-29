@@ -41,7 +41,7 @@ metamath_SOURCES = \
 	$(noinst_HEADERS)
 
 
-# the following files are not during build, but are distributed to users
+# the following files are not used during build, but are distributed to users
 EXTRA_DIST = \
 	LICENSE.TXT \
 	README.TXT \
