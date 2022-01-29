@@ -1,13 +1,13 @@
 #!/bin/bash
 # create a metamath executable from scratch
 
-# You MUST change to the build folder before running this script.
+# You MUST change to the src folder before running this script.
 
 # Draft version, proof of concept.
 
 TOPDIR=$(pwd)/..
 SRCDIR=$TOPDIR/src
-BUILDDir=$TOPDIR/build
+BUILDDIR=$TOPDIR/build
 
 if [ ! -f $SRCDIR/metamath.c ] || [ ! -f $BUILDDIR/build.sh ]
 then
