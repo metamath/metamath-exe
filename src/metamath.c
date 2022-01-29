@@ -10,6 +10,10 @@
    from other people which may be GPL licensed.  For more details see:
    https://github.com/metamath/metamath-exe/issues/7#issuecomment-675555069 */
 
+/*! \file
+ * Contains main(), the starting point of metamath; executes or calls commands
+ */
+
 /* The overall functionality of the modules is as follows:
     metamath.c - Contains main(); executes or calls commands
     mmcmdl.c - Command line interpreter
@@ -54,8 +58,21 @@
 */
 
 
-
-#define MVERSION "0.199.pre 7-Aug-2021"
+/*! \def MVERSION
+ * The current version of metamath.  It is incremented each time the software
+ * is modified.  When main versions are released, the version consists of a
+ * main version, followed by a dot and a three-digit subversion.  Intermediate
+ * versions are further followed by a free style suffix that should allow
+ * ordering.
+ * The version string is extracted and then processed by shell and perl
+ * scripts.  To avoid problems during replacements, avoid
+ * - use only printable characters from the ASCII range;
+ * - avoid characters from the following set, eligible for escaping in text, regular
+ *     expressions and so on like -begin of list ][`*+^'?"{/}\ end of list-;
+ * - using any space character other than simple space (U+0020);
+ * - using space characters at the beginning or at the end.
+ */
+#define MVERSION "0.199.pre 29-Jan-2022"
 /* 0.199.pre
    30-Dec-2021 mc metamath.c mmdata.c mminou.c mmmaci.c -
      Remove mmmaci and everything related to THINK_C compiler
