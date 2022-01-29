@@ -1,3 +1,7 @@
+# This file is input to automake, that expands this high-level make description
+# to a Makefile containing the usual goals, and being capable of handling
+# portability issues.
+
 # the executable created by make
 bin_PROGRAMS = metamath
 
