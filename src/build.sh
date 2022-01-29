@@ -21,6 +21,9 @@ Possible options are:
     Relative paths are relative to the current directory.
 -v extract the version from metamath sources, print it and exit'
 
+# we return back to this directory
+CURDIR="$(pwd)"
+
 #============   evaluate command line parameters   ==========
 
 while getopts d:ehm:v flag
@@ -42,8 +45,6 @@ fi
 
 #===========   setup environment   =====================
 
-# we return back to this directory
-CURDIR="$(pwd)"
 TOPDIR=${metamathdir:-"$CURDIR/.."}
 SRCDIR="$TOPDIR/src"
 BUILDDIR=${destdir:-$TOPDIR/build}
