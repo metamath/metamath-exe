@@ -22,7 +22,7 @@ deallocated as needed.  To use the vstring functions within a program,
 all vstrings must be initially set to the null string when declared or
 before first used, for example:
 
-        vstring string1 = "";
+        vstring_def(string1);
         vstring stringArray[] = {"", "", ""};
 
         vstring bigArray[100][10]; /- Must be initialized before using -/
@@ -44,12 +44,12 @@ _not_ be used to initialize a vstring the first time.
 
      Any local vstrings in a function must be deallocated before returning
 from the function, otherwise there will be memory leakage and eventual
-memory overflow.  To deallocate, assign the vstring to "" with 'let(&':
+memory overflow.  To deallocate, assign the vstring to "" with 'free_vstring':
 
         void abc(void) {
-          vstring xyz = "";
+          vstring_def(xyz);
           ...
-          let(&xyz, "");
+          free_vstring(xyz);
         }
 
      The 'cat' function emulates the '+' concatenation operator in BASIC.
@@ -106,14 +106,13 @@ outside of 'let(&' assignments; for example
           print2("%s\n",left(string1,70));
 
 will allocate another 70 bytes or so of memory each pass through the loop.
-If necessary, dummy 'let(&' assignments can be made periodically to clear
+If necessary, 'freeTempAlloc' can be used periodically to clear
 this temporary memory:
 
-        for (i=0; i<10000; i++)
-          {
+        for (i=0; i<10000; i++) {
           print2("%s\n",left(string1,70));
-          let(&dummy,"");
-          }
+          freeTempAlloc();
+        }
 
 It should be noted that the 'linput' function assigns its target string
 with 'let(&' and thus has the same effect as 'let(&'.
@@ -173,7 +172,13 @@ typedef char* vstring;
 */
 typedef vstring temp_vstring;
 
-#define vstringdef(x) vstring x = ""
+#define vstring_def(x) vstring x = ""
+#define free_vstring(x) let(&x, "")
+
+/* Free space allocated for temporaries. This is normally called automatically
+  by let(), but it can also be called directly to avoid buildup of temporary
+  strings. */
+void freeTempAlloc(void);
 
 /* Emulation of BASIC string assignment */
 /* This function must ALWAYS be called to make assignment to

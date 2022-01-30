@@ -47,15 +47,15 @@ void interactiveMatch(long step, long maxEssential)
   long matchCount = 0;
   long timeoutCount = 0;
   long essHypCount, hyp;
-  vstring matchFlags = "";
-  vstring timeoutFlags = "";
+  vstring_def(matchFlags);
+  vstring_def(timeoutFlags);
   char unifFlag;
-  vstring tmpStr1 = "";
-  vstring tmpStr4 = "";
-  vstring tmpStr2 = "";
-  vstring tmpStr3 = "";
-  nmbrString *matchList = NULL_NMBRSTRING;
-  nmbrString *timeoutList = NULL_NMBRSTRING;
+  vstring_def(tmpStr1);
+  vstring_def(tmpStr4);
+  vstring_def(tmpStr2);
+  vstring_def(tmpStr3);
+  nmbrString_def(matchList);
+  nmbrString_def(timeoutList);
   long stmt, matchListPos, timeoutListPos;
 
   printLongLine(cat("Step ", str((double)step + 1), ":  ", nmbrCvtMToVString(
@@ -103,8 +103,8 @@ void interactiveMatch(long step, long maxEssential)
   if (matchCount == 0 && timeoutCount == 0) {
     print2("No statements match step %ld.  The proof has an error.\n",
         (long)(step + 1));
-    let(&matchFlags, "");
-    let(&timeoutFlags, "");
+    free_vstring(matchFlags);
+    free_vstring(timeoutFlags);
     return;
   }
 
@@ -113,12 +113,12 @@ void interactiveMatch(long step, long maxEssential)
     let(&tmpStr1, cat("There are ", str((double)matchCount), " matches for step ",
       str((double)step + 1), ".  View them (Y, N) <N>? ", NULL));
     tmpStr2 = cmdInput1(tmpStr1);
-    let(&tmpStr1, "");
+    free_vstring(tmpStr1);
 
     if (tmpStr2[0] != 'Y' && tmpStr2[0] != 'y') {
-      let(&tmpStr2, "");
-      let(&matchFlags, "");
-      let(&timeoutFlags, "");
+      free_vstring(tmpStr2);
+      free_vstring(matchFlags);
+      free_vstring(timeoutFlags);
       return;
     }
 
@@ -170,16 +170,16 @@ void interactiveMatch(long step, long maxEssential)
       let(&tmpStr3, cat("What statement to select for step ", str((double)step + 1),
           " (<return> to bypass)? ", NULL));
       tmpStr2 = cmdInput1(tmpStr3);
-      let(&tmpStr3, "");
+      free_vstring(tmpStr3);
 
       if (tmpStr2[0] == 0) {
-        let(&tmpStr1, "");
-        let(&tmpStr4, "");
-        let(&tmpStr2, "");
-        let(&matchFlags, "");
-        let(&timeoutFlags, "");
-        nmbrLet(&matchList, NULL_NMBRSTRING);
-        nmbrLet(&timeoutList, NULL_NMBRSTRING);
+        free_vstring(tmpStr1);
+        free_vstring(tmpStr4);
+        free_vstring(tmpStr2);
+        free_vstring(matchFlags);
+        free_vstring(timeoutFlags);
+        free_nmbrString(matchList);
+        free_nmbrString(timeoutList);
         return;
       }
       if (!instr(1, cat(" ", tmpStr1, " ", tmpStr4, " ", NULL),
@@ -214,13 +214,13 @@ void interactiveMatch(long step, long maxEssential)
   assignStatement(matchList[matchListPos], step);
   g_proofChangedFlag = 1; /* Flag for 'undo' stack */
 
-  let(&tmpStr1, "");
-  let(&tmpStr4, "");
-  let(&tmpStr2, "");
-  let(&matchFlags, "");
-  let(&timeoutFlags, "");
-  nmbrLet(&matchList, NULL_NMBRSTRING);
-  nmbrLet(&timeoutList, NULL_NMBRSTRING);
+  free_vstring(tmpStr1);
+  free_vstring(tmpStr4);
+  free_vstring(tmpStr2);
+  free_vstring(matchFlags);
+  free_vstring(timeoutFlags);
+  free_nmbrString(matchList);
+  free_nmbrString(timeoutList);
   return;
 
 } /* interactiveMatch */
@@ -231,7 +231,7 @@ void interactiveMatch(long step, long maxEssential)
 void assignStatement(long statemNum, long step)
 {
   long hyp;
-  nmbrString *hypList = NULL_NMBRSTRING;
+  nmbrString_def(hypList);
 
   if ((g_ProofInProgress.proof)[step] != -(long)'?') bug(1802);
 
@@ -244,7 +244,7 @@ void assignStatement(long statemNum, long step)
   hypList[g_Statement[statemNum].numReqHyp] = statemNum; /* The added statement */
   addSubProof(hypList, step);
   initStep(step + g_Statement[statemNum].numReqHyp);
-  nmbrLet(&hypList, NULL_NMBRSTRING);
+  free_nmbrString(hypList);
   return;
 } /* assignStatement */
 
@@ -269,7 +269,7 @@ nmbrString *proveByReplacement(long prfStmt,
 
   long trialStmt;
   nmbrString *prfMath;
-  nmbrString *trialPrf = NULL_NMBRSTRING;
+  nmbrString_def(trialPrf);
   long prfMbox;
 
   prfMath = (g_ProofInProgress.target)[prfStep];
@@ -325,7 +325,7 @@ nmbrString *proveByReplacement(long prfStmt,
       return trialPrf;
     }
     /* Don't need to do this because it is already null */
-    /* nmbrLet(&trialPrf, NULL_NMBRSTRING); */
+    /* free_nmbrString(trialPrf); */
   }
   return trialPrf;  /* Proof not found - return empty proof */
 }
@@ -344,20 +344,20 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
   nmbrString *prfMath; /* Pointer only */
   long reqHyps;
   long hyp, sym, var, i, j, k, trialStep;
-  nmbrString *proof = NULL_NMBRSTRING;
-  nmbrString *scheme = NULL_NMBRSTRING;
-  pntrString *hypList = NULL_PNTRSTRING;
-  nmbrString *hypSortMap = NULL_NMBRSTRING; /* Order remapping for speedup */
-  pntrString *hypProofList = NULL_PNTRSTRING;
-  pntrString *stateVector = NULL_PNTRSTRING;
+  nmbrString_def(proof);
+  nmbrString_def(scheme);
+  pntrString_def(hypList);
+  nmbrString_def(hypSortMap); /* Order remapping for speedup */
+  pntrString_def(hypProofList);
+  pntrString_def(stateVector);
   nmbrString *replStmtSchemePtr;
   nmbrString *hypSchemePtr;
   nmbrString *hypProofPtr;
   nmbrString *makeSubstPtr;
-  pntrString *hypMakeSubstList = NULL_PNTRSTRING;
-  pntrString *hypStateVectorList = NULL_PNTRSTRING;
-  vstring hypReEntryFlagList = "";
-  nmbrString *hypStepList = NULL_NMBRSTRING;
+  pntrString_def(hypMakeSubstList);
+  pntrString_def(hypStateVectorList);
+  vstring_def(hypReEntryFlagList);
+  nmbrString_def(hypStepList);
   flag reEntryFlag;
   flag tmpFlag;
   flag noHypMatch;
@@ -370,13 +370,13 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
                         dummy variables */
   nmbrString *hypTestPtr; /* Points to what we are testing hyp. against */
   flag hypOrSubproofFlag; /* 0 means testing against hyp., 1 against proof*/
-  vstring indepKnownSteps = ""; /* 'Y' = ok to try step; 'N' = not ok */
+  vstring_def(indepKnownSteps); /* 'Y' = ok to try step; 'N' = not ok */
   long pfLen;
   long scanLen;
   long scanUpperBound;
   long scanLowerBound;
-  vstring hasFloatingProof = "";  /* 'N' or 'Y' for $e hyps */
-  vstring tryFloatingProofLater = "";  /* 'N' or 'Y' */
+  vstring_def(hasFloatingProof);  /* 'N' or 'Y' for $e hyps */
+  vstring_def(tryFloatingProofLater);  /* 'N' or 'Y' */
   flag hasDummyVar;
 
   /* If we are overriding discouraged usage, a warning has already been
@@ -493,7 +493,7 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
        matches. */
     /* Get a list of the possible steps to look at that are not dependent
        on the prfStep.  A value of 'Y'  means we can try the step. */
-    let(&indepKnownSteps, "");
+    free_vstring(indepKnownSteps);
     indepKnownSteps = getIndepKnownSteps(provStmtNum, prfStep);
   }
 
@@ -531,7 +531,7 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
 
     /* Make substitutions into each hypothesis, and try to prove that
        hypothesis */
-    nmbrLet(&proof, NULL_NMBRSTRING);
+    free_nmbrString(proof);
     noHypMatch = 0;
     for (hyp = 0; hyp < schReqHyps; hyp++) {
 
@@ -684,8 +684,7 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
         if (!tmpFlag || tmpFlag == 2) {
           /* (Next) unification not possible or timeout */
           if (tmpFlag == 2) {
-            print2(
-"Unification timed out.  SET UNIFICATION_TIMEOUT larger for better results.\n");
+            print2("Unification timed out.  SET UNIFICATION_TIMEOUT larger for better results.\n");
             g_unifTrialCount = 1; /* Reset unification timeout */
             /* Deallocate unification state vector */
             purgeStateVector(
@@ -749,8 +748,7 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
               /* This subproof step was already considered earlier, so
                  we can skip considering it again. */
               /* Deallocate unification state vector */
-              purgeStateVector(
-                  (pntrString **)(&(hypStateVectorList[hypSortMap[hyp]])));
+              purgeStateVector((pntrString **)(&(hypStateVectorList[hypSortMap[hyp]])));
               continue;
             }
           } /* end if not reentry */
@@ -938,39 +936,39 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
 
   } /* End while (next unifyH() call for main replacement statement) */
 
-  nmbrLet(&proof, NULL_NMBRSTRING);  /* Proof not possible */
+  free_nmbrString(proof);  /* Proof not possible */
 
  returnPoint:
 
   /* Deallocate hypothesis schemes and proofs */
   for (hyp = 0; hyp < schReqHyps; hyp++) {
-    nmbrLet((nmbrString **)(&(hypList[hyp])), NULL_NMBRSTRING);
-    nmbrLet((nmbrString **)(&(hypProofList[hyp])), NULL_NMBRSTRING);
-    nmbrLet((nmbrString **)(&(hypMakeSubstList[hyp])), NULL_NMBRSTRING);
-    purgeStateVector((pntrString **)(&(hypStateVectorList[hyp])));
+    free_nmbrString(*(nmbrString **)(&hypList[hyp]));
+    free_nmbrString(*(nmbrString **)(&hypProofList[hyp]));
+    free_nmbrString(*(nmbrString **)(&hypMakeSubstList[hyp]));
+    purgeStateVector((pntrString **)(&hypStateVectorList[hyp]));
   }
 
   /* Deallocate unification state vector */
   purgeStateVector(&stateVector);
 
-  nmbrLet(&scheme, NULL_NMBRSTRING);
-  pntrLet(&hypList, NULL_PNTRSTRING);
-  nmbrLet(&hypSortMap, NULL_NMBRSTRING);
-  pntrLet(&hypProofList, NULL_PNTRSTRING);
-  pntrLet(&hypMakeSubstList, NULL_PNTRSTRING);
-  pntrLet(&hypStateVectorList, NULL_PNTRSTRING);
-  let(&hypReEntryFlagList, "");
-  nmbrLet(&hypStepList, NULL_NMBRSTRING);
-  let(&indepKnownSteps, "");
-  let(&hasFloatingProof, "");
-  let(&tryFloatingProofLater, "");
+  free_nmbrString(scheme);
+  free_pntrString(hypList);
+  free_nmbrString(hypSortMap);
+  free_pntrString(hypProofList);
+  free_pntrString(hypMakeSubstList);
+  free_pntrString(hypStateVectorList);
+  free_vstring(hypReEntryFlagList);
+  free_nmbrString(hypStepList);
+  free_vstring(indepKnownSteps);
+  free_vstring(hasFloatingProof);
+  free_vstring(tryFloatingProofLater);
 
 
 /*E*/if(db8)print2("%s\n", cat("Returned: ",
 /*E*/   nmbrCvtRToVString(proof,
 /*E*/                0, /*explicitTargets*/
 /*E*/                0 /*statemNum, used only if explicitTargets*/), NULL));
-  return (proof); /* Caller must deallocate */
+  return proof; /* Caller must deallocate */
 } /* replaceStatement */
 
 
@@ -987,8 +985,8 @@ vstring getIndepKnownSteps(long proofStmt, long refStep)
   long proofLen, prfStep, step2;
   long wrkSubPfLen, mathLen;
   nmbrString *proofStepContent;
-  vstring indepSteps = "";
-  vstring unkSubPrfSteps = ""; /* 'K' if subproof is known, 'U' if unknown */
+  vstring_def(indepSteps);
+  vstring_def(unkSubPrfSteps); /* 'K' if subproof is known, 'U' if unknown */
 
   /* g_ProofInProgress is global */
   proofLen = nmbrLen(g_ProofInProgress.proof);
@@ -1065,7 +1063,7 @@ vstring getIndepKnownSteps(long proofStmt, long refStep)
     if (unkSubPrfSteps[prfStep] == 'U') indepSteps[prfStep] = 'N';
   }
 
-  let(&unkSubPrfSteps, ""); /* Deallocate */
+  free_vstring(unkSubPrfSteps); /* Deallocate */
 
   return indepSteps; /* Caller must deallocate */
 
@@ -1080,8 +1078,8 @@ vstring getIndepKnownSteps(long proofStmt, long refStep)
 vstring getKnownSubProofs(void)
 {
   long proofLen, hyp;
-  vstring unkSubPrfSteps = ""; /* 'K' if subproof is known, 'U' if unknown */
-  vstring unkSubPrfStack = ""; /* 'K' if subproof is known, 'U' if unknown */
+  vstring_def(unkSubPrfSteps); /* 'K' if subproof is known, 'U' if unknown */
+  vstring_def(unkSubPrfStack); /* 'K' if subproof is known, 'U' if unknown */
   long stackPtr, prfStep, stmt;
 
   /* g_ProofInProgress is global */
@@ -1123,7 +1121,7 @@ vstring getKnownSubProofs(void)
     unkSubPrfStack[stackPtr] = unkSubPrfSteps[prfStep];
   } /* next prfStep */
   if (stackPtr != 0) bug(1841);
-  let(&unkSubPrfStack, ""); /* Deallocate */
+  free_vstring(unkSubPrfStack); /* Deallocate */
   return unkSubPrfSteps; /* Caller must deallocate */
 
 } /* getKnownSubProofs */
@@ -1146,7 +1144,7 @@ void addSubProof(const nmbrString *subProof, long step) {
       step + 1), NULL));
   /* Deallocate .source in case not empty (if not, though, it's a bug) */
   if (nmbrLen((g_ProofInProgress.source)[step])) bug(1804);
- /*nmbrLet((nmbrString **)(&((g_ProofInProgress.source)[step])), NULL_NMBRSTRING);*/
+  /*free_nmbrString(*(nmbrString **)(&g_ProofInProgress.source[step]));*/
   pntrLet(&g_ProofInProgress.source, pntrCat(pntrLeft(g_ProofInProgress.source,
       step), pntrNSpace(sbPfLen - 1), pntrRight(g_ProofInProgress.source,
       step + 1), NULL));
@@ -1167,12 +1165,12 @@ nmbrString *expandProof(
     const nmbrString *rawTargetProof, /* May be compressed or uncompressed */
     long sourceStmtNum   /* The statement whose proof will be expanded */
     /* , long targetStmtNum */) { /* The statement begin proved */
-  nmbrString *origTargetProof = NULL_NMBRSTRING;
-  nmbrString *targetProof = NULL_NMBRSTRING;
-  nmbrString *sourceProof = NULL_NMBRSTRING;
-  nmbrString *expandedTargetProof = NULL_NMBRSTRING;
-  pntrString *hypSubproofs = NULL_PNTRSTRING;
-  nmbrString *expandedSubproof = NULL_NMBRSTRING;
+  nmbrString_def(origTargetProof);
+  nmbrString_def(targetProof);
+  nmbrString_def(sourceProof);
+  nmbrString_def(expandedTargetProof);
+  pntrString_def(hypSubproofs);
+  nmbrString_def(expandedSubproof);
   long targetStep, srcHyp, hypStep, totalSubpLen, subpLen, srcStep;
   long sourcePLen, sourceHyps, targetPLen, targetSubpLen;
   flag hasDummyVar = 0;
@@ -1232,7 +1230,7 @@ nmbrString *expandProof(
       }
 
       /* Build the expanded subproof */
-      nmbrLet(&expandedSubproof, NULL_NMBRSTRING);
+      free_nmbrString(expandedSubproof);
       /* Scan the proof of the statement to be expanded */
       for (srcStep = 0; srcStep < sourcePLen; srcStep++) {
         if (sourceProof[srcStep] < 0) {
@@ -1332,16 +1330,16 @@ nmbrString *expandProof(
     }
   }
   /* Deallocate memory */
-  nmbrLet(&sourceProof, NULL_NMBRSTRING);
-  nmbrLet(&origTargetProof, NULL_NMBRSTRING);
-  nmbrLet(&targetProof, NULL_NMBRSTRING);
-  nmbrLet(&expandedSubproof, NULL_NMBRSTRING);
+  free_nmbrString(sourceProof);
+  free_nmbrString(origTargetProof);
+  free_nmbrString(targetProof);
+  free_nmbrString(expandedSubproof);
   /* Deallocate array entries */
   for (srcHyp = 0; srcHyp < sourceHyps; srcHyp++) {
-    nmbrLet((nmbrString **)(&(hypSubproofs[srcHyp])), NULL_NMBRSTRING);
+    free_nmbrString(*(nmbrString **)(&hypSubproofs[srcHyp]));
   }
   /* Deallocate array */
-  pntrLet(&hypSubproofs, NULL_PNTRSTRING);
+  free_pntrString(hypSubproofs);
   return expandedTargetProof;
 } /* expandProof */
 
@@ -1362,11 +1360,11 @@ void deleteSubProof(long step) {
   for (pos = step - sbPfLen + 1; pos <= step; pos++) {
     if (pos < step) {
       /* Deallocate .target and .user */
-      nmbrLet((nmbrString **)(&((g_ProofInProgress.target)[pos])), NULL_NMBRSTRING);
-      nmbrLet((nmbrString **)(&((g_ProofInProgress.user)[pos])), NULL_NMBRSTRING);
+      free_nmbrString(*(nmbrString **)(&g_ProofInProgress.target[pos]));
+      free_nmbrString(*(nmbrString **)(&g_ProofInProgress.user[pos]));
     }
     /* Deallocate .source */
-    nmbrLet((nmbrString **)(&((g_ProofInProgress.source)[pos])), NULL_NMBRSTRING);
+    free_nmbrString(*(nmbrString **)(&g_ProofInProgress.source[pos]));
   }
   pntrLet(&g_ProofInProgress.target, pntrCat(pntrLeft(g_ProofInProgress.target,
       step - sbPfLen + 1), pntrRight(g_ProofInProgress.target,
@@ -1387,9 +1385,9 @@ char checkStmtMatch(long statemNum, long step)
 {
   char targetFlag;
   char userFlag = 1; /* Default if no user field */
-  pntrString *stateVector = NULL_PNTRSTRING;
+  pntrString_def(stateVector);
   nmbrString *mString; /* Pointer only; not allocated */
-  nmbrString *scheme = NULL_NMBRSTRING;
+  nmbrString_def(scheme);
   long targetLen, mStringLen, reqVars, stsym, tasym, sym, var, hyp, numHyps;
   flag breakFlag;
   flag firstSymbsAreConstsFlag;
@@ -1509,7 +1507,7 @@ char checkStmtMatch(long statemNum, long step)
   }
 
  returnPoint:
-  nmbrLet(&scheme, NULL_NMBRSTRING);
+  free_nmbrString(scheme);
   purgeStateVector(&stateVector);
 
   if (!targetFlag || !userFlag) return (0);
@@ -1522,7 +1520,7 @@ char checkStmtMatch(long statemNum, long step)
    g_ProofInProgress.target (or .user) of an step.  Returns 1 if match, 0 if
    not, 2 if unification timed out. */
 char checkMStringMatch(const nmbrString *mString, long step) {
-  pntrString *stateVector = NULL_PNTRSTRING;
+  pntrString_def(stateVector);
   char targetFlag;
   char sourceFlag = 1; /* Default if no .source */
 
@@ -1557,12 +1555,12 @@ nmbrString *proveFloating(const nmbrString *mString, long statemNum, long maxEDe
 
   long reqHyps, optHyps;
   long hyp, stmt, sym, var, i, j;
-  nmbrString *proof = NULL_NMBRSTRING;
-  nmbrString *scheme = NULL_NMBRSTRING;
-  pntrString *hypList = NULL_PNTRSTRING;
-  nmbrString *hypOrdMap = NULL_NMBRSTRING; /* Order remapping for speedup */
-  pntrString *hypProofList = NULL_PNTRSTRING;
-  pntrString *stateVector = NULL_PNTRSTRING;
+  nmbrString_def(proof);
+  nmbrString_def(scheme);
+  pntrString_def(hypList);
+  nmbrString_def(hypOrdMap); /* Order remapping for speedup */
+  pntrString_def(hypProofList);
+  pntrString_def(stateVector);
   nmbrString *stmtMathPtr;
   nmbrString *hypSchemePtr;
   nmbrString *hypProofPtr;
@@ -1594,7 +1592,7 @@ nmbrString *proveFloating(const nmbrString *mString, long statemNum, long maxEDe
   }
   depth++; /* Update backtracking depth */
   if (trials > g_userMaxProveFloat) {
-    nmbrLet(&proof, NULL_NMBRSTRING);
+    free_nmbrString(proof);
     print2(
 "Exceeded trial limit at step %ld.  You may increase with SET SEARCH_LIMIT.\n",
         (long)(step + 1));
@@ -1603,13 +1601,13 @@ nmbrString *proveFloating(const nmbrString *mString, long statemNum, long maxEDe
 
   if (maxDepthExceeded) {
     /* Pop out of the recursive calls to avoid an infinite loop */
-    nmbrLet(&proof, NULL_NMBRSTRING);
+    free_nmbrString(proof);
     goto returnPoint;
   }
 
 #define MAX_DEPTH 40  /* > this, infinite loop assumed */ /*???User setting?*/
   if (depth > MAX_DEPTH) {
-    nmbrLet(&proof, NULL_NMBRSTRING);
+    free_nmbrString(proof);
 /*??? Document in Metamath manual. */
     printLongLine(cat(
        "?Warning: A possible infinite loop was found in $f hypothesis ",
@@ -1668,7 +1666,7 @@ nmbrString *proveFloating(const nmbrString *mString, long statemNum, long maxEDe
       /* Check to see that the subproof has no unknown steps. */
       if (nmbrElementIn(1, proof, -(long)'?')) {
         /* Clear out the trial proof */
-        nmbrLet(&proof, NULL_NMBRSTRING);
+        free_nmbrString(proof);
         /* And give up this trial */
         continue; /* next selfScanStep */
       }
@@ -1818,7 +1816,7 @@ nmbrString *proveFloating(const nmbrString *mString, long statemNum, long maxEDe
 
       /* Make substitutions into each hypothesis, and try to prove that
          hypothesis */
-      nmbrLet(&proof, NULL_NMBRSTRING);
+      free_nmbrString(proof);
       breakFlag = 0;
       for (hyp = 0; hyp < schReqHyps; hyp++) {
 /*E*/if (db8)print2("%s\n", cat(space(depth+2), "Proving hyp. ",
@@ -1834,7 +1832,7 @@ nmbrString *proveFloating(const nmbrString *mString, long statemNum, long maxEDe
             noDistinct, overrideFlag, mathboxFlag);
         g_unifTrialCount = saveUnifTrialCount; /* Restore unification timeout */
 
-        nmbrLet(&makeSubstPtr, NULL_NMBRSTRING); /* Deallocate */
+        free_nmbrString(makeSubstPtr); /* Deallocate */
         if (!nmbrLen(hypProofPtr)) {
           /* Not possible */
           breakFlag = 1;
@@ -1855,11 +1853,11 @@ nmbrString *proveFloating(const nmbrString *mString, long statemNum, long maxEDe
        if (trials > g_userMaxProveFloat) {
          /* Deallocate hypothesis schemes and proofs */
          for (hyp = 0; hyp < schReqHyps; hyp++) {
-           nmbrLet((nmbrString **)(&hypList[hyp]), NULL_NMBRSTRING);
-           nmbrLet((nmbrString **)(&hypProofList[hyp]), NULL_NMBRSTRING);
+           free_nmbrString(*(nmbrString **)(&hypList[hyp]));
+           free_nmbrString(*(nmbrString **)(&hypProofList[hyp]));
          }
          /* The error message has already been printed. */
-         nmbrLet(&proof, NULL_NMBRSTRING);
+         free_nmbrString(proof);
          goto returnPoint;
        }
 
@@ -1919,8 +1917,8 @@ nmbrString *proveFloating(const nmbrString *mString, long statemNum, long maxEDe
 
       /* Deallocate hypothesis schemes and proofs */
       for (hyp = 0; hyp < schReqHyps; hyp++) {
-        nmbrLet((nmbrString **)(&hypList[hyp]), NULL_NMBRSTRING);
-        nmbrLet((nmbrString **)(&hypProofList[hyp]), NULL_NMBRSTRING);
+        free_nmbrString(*(nmbrString **)(&hypList[hyp]));
+        free_nmbrString(*(nmbrString **)(&hypProofList[hyp]));
       }
       goto returnPoint;
 
@@ -1928,22 +1926,22 @@ nmbrString *proveFloating(const nmbrString *mString, long statemNum, long maxEDe
 
     /* Deallocate hypothesis schemes and proofs */
     for (hyp = 0; hyp < schReqHyps; hyp++) {
-      nmbrLet((nmbrString **)(&hypList[hyp]), NULL_NMBRSTRING);
-      nmbrLet((nmbrString **)(&hypProofList[hyp]), NULL_NMBRSTRING);
+      free_nmbrString(*(nmbrString **)(&hypList[hyp]));
+      free_nmbrString(*(nmbrString **)(&hypProofList[hyp]));
     }
 
   } /* Next stmt */
 
-  nmbrLet(&proof, NULL_NMBRSTRING);  /* Proof not possible */
+  free_nmbrString(proof);  /* Proof not possible */
 
  returnPoint:
   /* Deallocate unification state vector */
   purgeStateVector(&stateVector);
 
-  nmbrLet(&scheme, NULL_NMBRSTRING);
-  pntrLet(&hypList, NULL_PNTRSTRING);
-  nmbrLet(&hypOrdMap, NULL_NMBRSTRING);
-  pntrLet(&hypProofList, NULL_PNTRSTRING);
+  free_nmbrString(scheme);
+  free_pntrString(hypList);
+  free_nmbrString(hypOrdMap);
+  free_pntrString(hypProofList);
   depth--; /* Restore backtracking depth */
 /*E*/if(db8)print2("%s\n", cat(space(depth+2), "Returned: ",
 /*E*/   nmbrCvtRToVString(proof,
@@ -2067,7 +2065,7 @@ void minimizeProof(long repStatemNum, long prvStatemNum,
   long startingPlen = 0;
   flag foundFlag, breakFlag;
   nmbrString *mString; /* Pointer only; not allocated */
-  nmbrString *newSubProofPtr = NULL_NMBRSTRING; /* Pointer only; not allocated;
+  nmbrString_def(newSubProofPtr); /* Pointer only; not allocated;
                 however initialize for nmbrLen function before it's assigned */
   if (allowGrowthFlag) startingPlen = nmbrLen(g_ProofInProgress.proof);
 
@@ -2123,7 +2121,7 @@ void minimizeProof(long repStatemNum, long prvStatemNum,
            steps - this causes assignKnownSteps to abort, and it's not
            clear if we should do that anyway since it doesn't necessarily
            minimize the proof */
-        nmbrLet(&newSubProofPtr, NULL_NMBRSTRING); /* Deallocate */
+        free_nmbrString(newSubProofPtr); /* Deallocate */
         continue;
       }
 
@@ -2142,11 +2140,11 @@ void minimizeProof(long repStatemNum, long prvStatemNum,
         addSubProof(newSubProofPtr, step - sublen + 1);
         assignKnownSteps(step - sublen + 1, nmbrLen(newSubProofPtr));
         foundFlag = 1;
-        nmbrLet(&newSubProofPtr, NULL_NMBRSTRING);
+        free_nmbrString(newSubProofPtr);
         break;
       }
 
-      nmbrLet(&newSubProofPtr, NULL_NMBRSTRING);
+      free_nmbrString(newSubProofPtr);
     } /* next step */
 
     if (!foundFlag) break; /* Done */
@@ -2170,7 +2168,7 @@ void minimizeProof(long repStatemNum, long prvStatemNum,
 void initStep(long step)
 {
   long stmt, reqHyps, pos, hyp, sym, reqVars, var, mlen;
-  nmbrString *reqHypPos = NULL_NMBRSTRING;
+  nmbrString_def(reqHypPos);
   nmbrString *nmbrTmpPtr; /* Pointer only; not allocated */
 
   stmt = (g_ProofInProgress.proof)[step];
@@ -2249,7 +2247,7 @@ void initStep(long step)
   /* Update the number of dummy vars used so far */
   g_pipDummyVars = g_pipDummyVars + reqVars;
 
-  nmbrLet(&reqHypPos, NULL_NMBRSTRING); /* Deallocate */
+  free_nmbrString(reqHypPos); /* Deallocate */
 
   return;
 } /* initStep */
@@ -2298,14 +2296,14 @@ void assignKnownSteps(long startStep, long sbProofLen)
 {
 
   long stackPtr, st;
-  nmbrString *stack = NULL_NMBRSTRING;
-  nmbrString *instance = NULL_NMBRSTRING;
-  nmbrString *scheme = NULL_NMBRSTRING;
-  nmbrString *assertion = NULL_NMBRSTRING;
+  nmbrString_def(stack);
+  nmbrString_def(instance);
+  nmbrString_def(scheme);
+  nmbrString_def(assertion);
   long pos, stmt, reqHyps, instLen, instPos, schemeLen, schemePos, hypLen,
       hypPos, hyp, reqVars, var, assLen, assPos;
   flag tmpFlag;
-  pntrString *stateVector = NULL_PNTRSTRING;
+  pntrString_def(stateVector);
 
   nmbrLet(&stack, nmbrSpace(sbProofLen));
   stackPtr = 0;
@@ -2426,9 +2424,8 @@ void assignKnownSteps(long startStep, long sbProofLen)
         goto returnPoint;
       }
       /* Substitute and assign assertion to proof in progress */
-      nmbrLet((nmbrString **)(&((g_ProofInProgress.source)[pos])), NULL_NMBRSTRING);
-      (g_ProofInProgress.source)[pos] = makeSubstUnif(&tmpFlag, assertion,
-          stateVector);
+      free_nmbrString(*(nmbrString **)(&g_ProofInProgress.source[pos]));
+      g_ProofInProgress.source[pos] = makeSubstUnif(&tmpFlag, assertion, stateVector);
       if (tmpFlag) bug(1814); /* All vars s.b. assigned */
 
       /* Verify unification is unique; also deallocates stateVector */
@@ -2452,10 +2449,10 @@ void assignKnownSteps(long startStep, long sbProofLen)
   }
 
   /* Deallocate (stateVector was deallocated by 2nd unif. call) */
-  nmbrLet(&stack, NULL_NMBRSTRING);
-  nmbrLet(&instance, NULL_NMBRSTRING);
-  nmbrLet(&scheme, NULL_NMBRSTRING);
-  nmbrLet(&assertion, NULL_NMBRSTRING);
+  free_nmbrString(stack);
+  free_nmbrString(instance);
+  free_nmbrString(scheme);
+  free_nmbrString(assertion);
   return;
 } /* assignKnownSteps */
 
@@ -2470,7 +2467,7 @@ void assignKnownSteps(long startStep, long sbProofLen)
    if step is already unified. */
 void interactiveUnifyStep(long step, char messageFlag)
 {
-  pntrString *stateVector = NULL_PNTRSTRING;
+  pntrString_def(stateVector);
   char unifFlag;
 
   /* Target should never be empty */
@@ -2547,21 +2544,21 @@ char interactiveUnify(const nmbrString *schemeA, const nmbrString *schemeB,
   nmbrString *stackUnkVarLen; /* Pointer only - not allocated */
   nmbrString *stackUnkVarStart; /* Pointer only - not allocated */
   long stackTop;
-  vstring tmpStr = "";
-  nmbrString *nmbrTmp = NULL_NMBRSTRING;
+  vstring_def(tmpStr);
+  nmbrString_def(nmbrTmp);
   char returnValue;
 
   /* Present unifications in increasing order of the number
      of symbols in the unified result.  It seems that usually the unification
      with the fewest symbols in the correct one. */
-  nmbrString *unifWeight = NULL_NMBRSTRING; /* Symbol count in unification */
+  nmbrString_def(unifWeight); /* Symbol count in unification */
   long unifTrialWeight;
   long maxUnifWeight;
   long minUnifWeight;
   long unifTrials;
   long thisUnifWeight;
   long onesCount;
-  nmbrString *substResult = NULL_NMBRSTRING;
+  nmbrString_def(substResult);
   long unkCount;
 
   if (nmbrEq(schemeA, schemeB)) bug(1818); /* No reason to call this */
@@ -2694,8 +2691,8 @@ char interactiveUnify(const nmbrString *schemeA, const nmbrString *schemeB,
                 nmbrMid(unifiedScheme,stackUnkVarStart[var] + 1,
                 stackUnkVarLen[var])), "\"", NULL),"    "," ");
         /* Clear temporary string allocation during print */
-        let(&tmpStr,"");
-        nmbrLet(&nmbrTmp,NULL_NMBRSTRING);
+        free_vstring(tmpStr);
+        free_nmbrString(nmbrTmp);
       } /* Next var */
 
       while(1) {
@@ -2707,7 +2704,7 @@ char interactiveUnify(const nmbrString *schemeA, const nmbrString *schemeB,
         }
         if (tmpStr[0] == 'R' || tmpStr[0] == 'r') {
           if (!tmpStr[1]) {
-            let(&tmpStr, "");
+            free_vstring(tmpStr);
             break;
           }
         }
@@ -2725,7 +2722,7 @@ char interactiveUnify(const nmbrString *schemeA, const nmbrString *schemeB,
             goto returnPoint;
           }
         }
-        let(&tmpStr, "");
+        free_vstring(tmpStr);
       }
 
     } /* Next unifNum */
@@ -2740,9 +2737,9 @@ char interactiveUnify(const nmbrString *schemeA, const nmbrString *schemeB,
   goto returnPoint;
 
  returnPoint:
-  let(&tmpStr, ""); /* Deallocate */
-  nmbrLet(&unifWeight, NULL_NMBRSTRING); /* Deallocate */
-  nmbrLet(&substResult, NULL_NMBRSTRING); /* Deallocate */
+  free_vstring(tmpStr); /* Deallocate */
+  free_nmbrString(unifWeight); /* Deallocate */
+  free_nmbrString(substResult); /* Deallocate */
   return returnValue;
 
 } /* interactiveUnify */
@@ -2759,7 +2756,7 @@ void autoUnify(flag congrats)
   int pass;
   nmbrString *schemeAPtr; /* Pointer only; not allocated */
   nmbrString *schemeBPtr; /* Pointer only; not allocated */
-  pntrString *stateVector = NULL_PNTRSTRING;
+  pntrString_def(stateVector);
   flag somethingNotUnified = 0;
 
   /* Initialization to avoid compiler warning (should not be theoretically
@@ -2860,20 +2857,20 @@ void makeSubstAll(pntrString *stateVector) {
     nmbrTmpPtr = (g_ProofInProgress.target)[step];
     (g_ProofInProgress.target)[step] = makeSubstUnif(&tmpFlag, nmbrTmpPtr,
       stateVector);
-    nmbrLet(&nmbrTmpPtr, NULL_NMBRSTRING);
+    free_nmbrString(nmbrTmpPtr);
 
     nmbrTmpPtr = (g_ProofInProgress.source)[step];
     if (nmbrLen(nmbrTmpPtr)) {
       (g_ProofInProgress.source)[step] = makeSubstUnif(&tmpFlag, nmbrTmpPtr,
         stateVector);
-      nmbrLet(&nmbrTmpPtr, NULL_NMBRSTRING);
+      free_nmbrString(nmbrTmpPtr);
     }
 
     nmbrTmpPtr = (g_ProofInProgress.user)[step];
     if (nmbrLen(nmbrTmpPtr)) {
       (g_ProofInProgress.user)[step] = makeSubstUnif(&tmpFlag, nmbrTmpPtr,
         stateVector);
-      nmbrLet(&nmbrTmpPtr, NULL_NMBRSTRING);
+      free_nmbrString(nmbrTmpPtr);
     }
 
   } /* Next step */
@@ -2974,12 +2971,11 @@ long subproofLen(const nmbrString *proof, long endStep) {
    if testStep has isolated dummy variables (that don't affect rest of
    proof), return 1;
    if testStep has dummy variables used elsewhere in proof, return 2 */
-char checkDummyVarIsolation(long testStep) /* 0=1st step, 1=2nd, etc. */
-{
+char checkDummyVarIsolation(long testStep) { /* 0=1st step, 1=2nd, etc. */
   long proofLen, hyp, parentStep, tokpos, token;
   char dummyVarIndicator;
   long prfStep, parentStmt;
-  nmbrString *dummyVarList = NULL_NMBRSTRING;
+  nmbrString_def(dummyVarList);
   flag bugCheckFlag;
   char hypType;
 
@@ -3065,7 +3061,7 @@ char checkDummyVarIsolation(long testStep) /* 0=1st step, 1=2nd, etc. */
   dummyVarIndicator = 1;
 
  RETURN_POINT:
-  nmbrLet(&dummyVarList, NULL_NMBRSTRING); /* Deallocate */
+  free_nmbrString(dummyVarList); /* Deallocate */
   return dummyVarIndicator;
 } /* checkDummyVarIsolation */
 
@@ -3160,7 +3156,7 @@ void copyProofStruct(struct pip_struct *outProofStruct,
   long proofLen, j;
   /* First, make sure the output structure is empty to prevent memory
      leaks. */
-  deallocProofStruct(&(*outProofStruct));
+  deallocProofStruct(outProofStruct);
 
   /* Get the proof length of the input structure */
   proofLen = nmbrLen(inProofStruct.proof);
@@ -3198,7 +3194,7 @@ void copyProofStruct(struct pip_struct *outProofStruct,
 void initProofStruct(struct pip_struct *proofStruct, const nmbrString *proof,
     long proveStmt)
 {
-  nmbrString *tmpProof = NULL_NMBRSTRING;
+  nmbrString_def(tmpProof);
   long plen, step;
   /* Right now, only non-packed proofs are handled. */
   nmbrLet(&tmpProof, nmbrUnsquishProof(proof));
@@ -3226,7 +3222,7 @@ void initProofStruct(struct pip_struct *proofStruct, const nmbrString *proof,
   autoUnify(0); /* 0 means no "congrats" message */
 
   /* Deallocate memory */
-  nmbrLet(&tmpProof, NULL_NMBRSTRING);
+  free_nmbrString(tmpProof);
   return;
 } /* initProofStruct */
 
@@ -3241,17 +3237,17 @@ void deallocProofStruct(struct pip_struct *proofStruct)
 {
   long proofLen, j;
   /* Deallocate proof structure */
-  proofLen = nmbrLen((*proofStruct).proof);
+  proofLen = nmbrLen(proofStruct->proof);
   if (proofLen == 0) return;  /* Already deallocated */
-  nmbrLet(&((*proofStruct).proof), NULL_NMBRSTRING);
+  free_nmbrString(proofStruct->proof);
   for (j = 0; j < proofLen; j++) {
-    nmbrLet((nmbrString **)(&(((*proofStruct).target)[j])), NULL_NMBRSTRING);
-    nmbrLet((nmbrString **)(&(((*proofStruct).source)[j])), NULL_NMBRSTRING);
-    nmbrLet((nmbrString **)(&(((*proofStruct).user)[j])), NULL_NMBRSTRING);
+    free_nmbrString(*(nmbrString **)(&proofStruct->target[j]));
+    free_nmbrString(*(nmbrString **)(&proofStruct->source[j]));
+    free_nmbrString(*(nmbrString **)(&proofStruct->user[j]));
   }
-  pntrLet(&((*proofStruct).target), NULL_PNTRSTRING);
-  pntrLet(&((*proofStruct).source), NULL_PNTRSTRING);
-  pntrLet(&((*proofStruct).user), NULL_PNTRSTRING);
+  free_pntrString(proofStruct->target);
+  free_pntrString(proofStruct->source);
+  free_pntrString(proofStruct->user);
   return;
 } /* deallocProofStruct */
 
@@ -3300,7 +3296,7 @@ long processUndoStack(struct pip_struct *proofStruct,
 {
 
   static struct pip_struct *proofStack = NULL;
-  static pntrString *infoStack = NULL_PNTRSTRING; /* UNDO/REDO command info */
+  static pntrString_def(infoStack); /* UNDO/REDO command info */
   static long stackSize = DEFAULT_UNDO_STACK_SIZE; /* Change w/ SET UNDO */
   static long stackEnd = -1;
   static long stackPtr = -1;
@@ -3338,8 +3334,8 @@ long processUndoStack(struct pip_struct *proofStruct,
     case PUS_NEW_SIZE:
       /* Deallocate old contents */
       for (i = 0; i <= stackEnd; i++) {
-        deallocProofStruct(&(proofStack[i]));
-        let((vstring *)(&(infoStack[i])), "");
+        deallocProofStruct(&proofStack[i]);
+        free_vstring(*(vstring *)(&infoStack[i]));
       }
 
       /* If UNDOs weren't exhausted and thus are abandoned due to size change,
@@ -3390,7 +3386,7 @@ long processUndoStack(struct pip_struct *proofStruct,
       if (stackPtr < stackEnd) {
         for (i = stackPtr + 1; i <= stackEnd; i++) {
           deallocProofStruct(&(proofStack[i]));
-          let((vstring *)(&(infoStack[i])), "");
+          free_vstring(*(vstring *)(&infoStack[i]));
         }
         stackEnd = stackPtr;
       }
@@ -3400,7 +3396,7 @@ long processUndoStack(struct pip_struct *proofStruct,
       if (stackPtr == stackSize - 1) {
         stackOverflowed = 1; /* To  modify user message if UNDO exhausted */
         deallocProofStruct(&(proofStack[0])); /* Deallocate the bottom entry */
-        let((vstring *)(&(infoStack[0])), "");
+        free_vstring(*(vstring *)(&(infoStack[0])));
         for (i = 0; i < stackSize - 1; i++) {
           /* Instead of
                "copyProofStruct(&(proofStack[i]), proofStack[i + 1]);

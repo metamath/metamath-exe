@@ -25,11 +25,11 @@ flag g_toolsMode = 0; /* In metamath: 0 = metamath, 1 = text tools utility */
 
 
 /* For use by getMarkupFlag() */
-vstring g_proofDiscouragedMarkup = "";
-vstring g_usageDiscouragedMarkup = "";
+vstring_def(g_proofDiscouragedMarkup);
+vstring_def(g_usageDiscouragedMarkup);
 flag g_globalDiscouragement = 1; /* SET DISCOURAGEMENT ON */
 
-vstring g_contributorName = "";
+vstring_def(g_contributorName);
 
 /* Global variables related to current statement */
 int g_currentScope = 0;
@@ -434,20 +434,16 @@ long getFreeSpace(long max)
 
 /* Fatal memory allocation error */
 void outOfMemory(const char *msg) {
-  vstring tmpStr = "";
+  vstring_def(tmpStr);
   print2("*** FATAL ERROR:  Out of memory.\n");
-  print2("Internal identifier (for technical support):  %s\n",msg);
-  print2(
-"To solve this problem, remove some unnecessary statements or file\n");
-  print2(
-"inclusions to reduce the size of your input source.\n");
-  print2(
-"Monitor memory periodically with SHOW MEMORY.\n");
+  print2("Internal identifier (for technical support):  %s\n", msg);
+  print2("To solve this problem, remove some unnecessary statements or file\n");
+  print2("inclusions to reduce the size of your input source.\n");
+  print2("Monitor memory periodically with SHOW MEMORY.\n");
   print2("\n");
   print2("Press <return> to exit Metamath.\n");
   tmpStr = cmdInput1("");
-  /* let(&tmpStr, ""); */
-  let(&tmpStr, left(tmpStr, 0)); /* Prevent "not used" compiler warning */
+  free_vstring(tmpStr);
   /* Close the log to make sure error log is saved */
   if (g_logFileOpenFlag) {
     fclose(g_logFilePtr);
@@ -461,7 +457,7 @@ void outOfMemory(const char *msg) {
 /* Bug check */
 void bug(int bugNum)
 {
-  vstring tmpStr = "";
+  vstring_def(tmpStr);
   flag oldMode;
   long wrongAnswerCount = 0;
   static flag mode = 0; /* 1 = run to next bug, 2 = continue and ignore bugs */
@@ -478,22 +474,14 @@ void bug(int bugNum)
   print2("?BUG CHECK:  *** DETECTED BUG %ld\n", (long)bugNum);
   if (mode == 0) { /* Print detailed info for first bug */
     print2("\n");
-    print2(
-  "To get technical support, please open an issue \n");
-    print2(
-  "(https://github.com/metamath/metamath-exe/issues) with the\n");
-    print2(
-  "detailed command sequence or a command file that reproduces this bug,\n");
-    print2(
-  "along with the source file that was used.  See HELP LOG for help on\n");
-    print2(
-  "recording a session.  See HELP SUBMIT for help on command files.  Search\n");
-    print2(
-  "for \"bug(%ld)\" in the m*.c source code to find its origin.\n", bugNum);
-    print2(
-  "If earlier errors were reported, try fixing them first, because they\n");
-    print2(
-  "may occasionally lead to false bug detection\n");
+    print2("To get technical support, please open an issue \n");
+    print2("(https://github.com/metamath/metamath-exe/issues) with the\n");
+    print2("detailed command sequence or a command file that reproduces this bug,\n");
+    print2("along with the source file that was used.  See HELP LOG for help on\n");
+    print2("recording a session.  See HELP SUBMIT for help on command files.  Search\n");
+    print2("for \"bug(%ld)\" in the m*.c source code to find its origin.\n", bugNum);
+    print2("If earlier errors were reported, try fixing them first, because they\n");
+    print2("may occasionally lead to false bug detection\n");
     print2("\n");
   }
 
@@ -505,17 +493,15 @@ void bug(int bugNum)
          it in case we want to re-ask after wrong answers in the future */
       ) {
     if (wrongAnswerCount > 6) {
-      print2(
-"Too many wrong answers; program will be aborted to exit scripting loops.\n");
+      print2("Too many wrong answers; program will be aborted to exit scripting loops.\n");
       break;
     }
     if (wrongAnswerCount > 0) {
-      let(&tmpStr, "");
+      free_vstring(tmpStr);
       tmpStr = cmdInput1("Please answer I, S, or A:  ");
     } else {
-      print2(
- "Press S <return> to step to next bug, I <return> to ignore further bugs,\n");
-      let(&tmpStr, "");
+      print2("Press S <return> to step to next bug, I <return> to ignore further bugs,\n");
+      free_vstring(tmpStr);
       tmpStr = cmdInput1("or A <return> to abort program:  ");
     }
     wrongAnswerCount++;
@@ -527,18 +513,16 @@ void bug(int bugNum)
   if (oldMode == 0 && mode > 0) {
     /* Print dire warning after the first bug only */
     print2("\n");
-    print2(
-    "Warning!!!  A bug was detected, but you are continuing anyway.\n");
-    print2(
-    "The program may be corrupted, so you are proceeding at your own risk.\n");
+    print2("Warning!!!  A bug was detected, but you are continuing anyway.\n");
+    print2("The program may be corrupted, so you are proceeding at your own risk.\n");
     print2("\n");
-    let(&tmpStr, "");
+    free_vstring(tmpStr);
   }
   if (mode > 0) {
     g_outputToString = saveOutputToString; /* Restore for continuation */
     return;
   }
-  let(&tmpStr, "");
+  free_vstring(tmpStr);
 
   print2("\n");
   /* Close the log to make sure error log is saved */
@@ -561,7 +545,7 @@ flag matchesList(const char *testString, const char *pattern, char wildCard,
     char oneCharWildCard) {
   long entries, i;
   flag matchVal = 0;
-  vstring entryPattern = "";
+  vstring_def(entryPattern);
 
   /* Done so we can use string functions like left() in call arguments */
   long saveTempAllocStack;
@@ -577,9 +561,9 @@ flag matchesList(const char *testString, const char *pattern, char wildCard,
     if (matchVal) break;
   }
 
-  let(&entryPattern, ""); /* Deallocate */
+  free_vstring(entryPattern); /* Deallocate */
   g_startTempAllocStack = saveTempAllocStack;
-  return (matchVal);
+  return matchVal;
 }
 
 
@@ -590,7 +574,7 @@ flag matchesList(const char *testString, const char *pattern, char wildCard,
 flag matches(const char *testString, const char *pattern, char wildCard,
     char oneCharWildCard) {
   long i, ppos, pctr, tpos, s1, s2, s3;
-  vstring tmpStr = "";
+  vstring_def(tmpStr);
 
   if (wildCard == '*') {
     /* Checking for wildCard = * meaning this is only for labels, not
@@ -616,7 +600,7 @@ flag matches(const char *testString, const char *pattern, char wildCard,
       } else {
         s3 = lookupLabel(right(pattern, i + 1));
       }
-      let(&tmpStr, ""); /* Clean up temporary allocations of left and right */
+      free_vstring(tmpStr); /* Clean up temporary allocations of left and right */
       return ((s1 >= 1 && s2 >= 1 && s3 >= 1 && s1 <= s2 && s2 <= s3)
           ? 1 : 0);
     }
@@ -765,8 +749,7 @@ temp_nmbrString *nmbrTempAlloc(long size)
 temp_nmbrString *nmbrMakeTempAlloc(nmbrString *s)
 {
   if (g_nmbrTempAllocStackTop>=(M_MAX_ALLOC_STACK-1)) {
-    printf(
-    "*** FATAL ERROR ***  Temporary nmbrString stack overflow in nmbrMakeTempAlloc()\n");
+    printf("*** FATAL ERROR ***  Temporary nmbrString stack overflow in nmbrMakeTempAlloc()\n");
 #if __STDC__
     fflush(stdout);
 #endif
@@ -1103,25 +1086,23 @@ long nmbrRevInstr(long start_position, const nmbrString *string1,
     const nmbrString *string2)
 {
    long ls1, ls2;
-   nmbrString *tmp = NULL_NMBRSTRING;
    ls1 = nmbrLen(string1);
    ls2 = nmbrLen(string2);
    if (start_position > ls1 - ls2 + 1) start_position = ls1 - ls2 + 2;
    if (start_position<1) return 0;
    while (!nmbrEq(string2, nmbrMid(string1, start_position, ls2))) {
      start_position--;
-     nmbrLet(&tmp, NULL_NMBRSTRING);
-              /* Clear nmbrString buffer to prevent overflow caused by "mid" */
+     nmbrTempAlloc(0); /* Clear temporaries to prevent overflow caused by "mid" */
      if (start_position < 1) return 0;
    }
-   return (start_position);
+   return start_position;
 }
 
 
 /* Converts nmbrString to a vstring with one space between tokens */
 temp_vstring nmbrCvtMToVString(const nmbrString *s) {
   long i, j, outputLen, mstrLen;
-  vstring tmpStr = "";
+  vstring_def(tmpStr);
   vstring ptr;
   vstring ptr2;
 
@@ -1157,14 +1138,14 @@ temp_vstring nmbrCvtRToVString(const nmbrString *proof,
 {
   long i, j, plen, maxLabelLen, maxLocalLen, step, stmt;
   long maxTargetLabelLen;
-  vstring proofStr = "";
-  vstring tmpStr = "";
+  vstring_def(proofStr);
+  vstring_def(tmpStr);
   vstring ptr;
-  nmbrString *localLabels = NULL_NMBRSTRING;
-  nmbrString *localLabelNames = NULL_NMBRSTRING;
+  nmbrString_def(localLabels);
+  nmbrString_def(localLabelNames);
   long nextLocLabNum = 1; /* Next number to be used for a local label */
   void *voidPtr; /* bsearch result */
-  nmbrString *targetHyps = NULL_NMBRSTRING; /* Targets for /EXPLICIT format */
+  nmbrString_def(targetHyps); /* Targets for /EXPLICIT format */
 
   long saveTempAllocStack;
   long nmbrSaveTempAllocStack;
@@ -1265,7 +1246,7 @@ temp_vstring nmbrCvtRToVString(const nmbrString *proof,
       let(&tmpStr, cat("??", str((double)stmt), " ", NULL)); /* For safety */
 
     } else {
-      let(&tmpStr,"");
+      free_vstring(tmpStr);
       if (nmbrElementIn(1, localLabels, step)) {
         /* This statement declares a local label */
         /* First, get a name for the local label, using the next integer that
@@ -1299,9 +1280,9 @@ temp_vstring nmbrCvtRToVString(const nmbrString *proof,
   } else {
     let(&proofStr, "");
   }
-  let(&tmpStr, "");
-  nmbrLet(&localLabels, NULL_NMBRSTRING);
-  nmbrLet(&localLabelNames, NULL_NMBRSTRING);
+  free_vstring(tmpStr);
+  free_nmbrString(localLabels);
+  free_nmbrString(localLabelNames);
 
   g_startTempAllocStack = saveTempAllocStack;
   g_nmbrStartTempAllocStack = nmbrSaveTempAllocStack;
@@ -1313,11 +1294,11 @@ temp_vstring nmbrCvtRToVString(const nmbrString *proof,
    step numbers assigned to tokens which are steps, and 0 otherwise.
    The returned string is allocated; THE CALLER MUST DEALLOCATE IT. */
 nmbrString *nmbrGetProofStepNumbs(const nmbrString *reason) {
-  nmbrString *stepNumbs = NULL_NMBRSTRING;
+  nmbrString_def(stepNumbs);
   long rlen, start, end, i, step;
 
   rlen = nmbrLen(reason);
-  nmbrLet(&stepNumbs,nmbrSpace(rlen)); /* All stepNumbs[] are initialized
+  nmbrLet(&stepNumbs, nmbrSpace(rlen)); /* All stepNumbs[] are initialized
                                         to 0 by nmbrSpace() */
   if (!rlen) return (stepNumbs);
   if (reason[1] == -(long)'=') {
@@ -1349,7 +1330,7 @@ nmbrString *nmbrGetProofStepNumbs(const nmbrString *reason) {
       stepNumbs[i] = step;
     }
   }
-  return (stepNumbs);
+  return stepNumbs;
 }
 
 
@@ -1357,7 +1338,7 @@ nmbrString *nmbrGetProofStepNumbs(const nmbrString *reason) {
    -- used for debugging only. */
 temp_vstring nmbrCvtAnyToVString(const nmbrString *s) {
   long i;
-  vstring tmpStr = "";
+  vstring_def(tmpStr);
 
   long saveTempAllocStack;
   saveTempAllocStack = g_startTempAllocStack; /* For let() stack cleanup */
@@ -1521,9 +1502,9 @@ long nmbrGetSubproofLen(const nmbrString *proof, long step)
 /* This function returns a packed or "squished" proof, putting in local label
    references to previous subproofs. */
 temp_nmbrString *nmbrSquishProof(const nmbrString *proof) {
-  nmbrString *newProof = NULL_NMBRSTRING;
-  nmbrString *dummyProof = NULL_NMBRSTRING;
-  nmbrString *subProof = NULL_NMBRSTRING;
+  nmbrString_def(newProof);
+  nmbrString_def(dummyProof);
+  nmbrString_def(subProof);
   long step, dummyStep, subPrfLen, matchStep, plen;
   flag foundFlag;
 
@@ -1563,8 +1544,8 @@ temp_nmbrString *nmbrSquishProof(const nmbrString *proof) {
     }
     dummyStep++;
   } /* Next step */
-  nmbrLet(&subProof, NULL_NMBRSTRING);
-  nmbrLet(&dummyProof, NULL_NMBRSTRING);
+  free_nmbrString(subProof);
+  free_nmbrString(dummyProof);
   return nmbrMakeTempAlloc(newProof); /* Flag it for deallocation */
 }
 
@@ -1572,8 +1553,8 @@ temp_nmbrString *nmbrSquishProof(const nmbrString *proof) {
 /* This function unpacks a "squished" proof, replacing local label references
    to previous subproofs by the subproofs themselves. */
 temp_nmbrString *nmbrUnsquishProof(const nmbrString *proof) {
-  nmbrString *newProof = NULL_NMBRSTRING;
-  nmbrString *subProof = NULL_NMBRSTRING;
+  nmbrString_def(newProof);
+  nmbrString_def(subProof);
   long step, plen, subPrfLen, stmt;
 
   nmbrLet(&newProof, proof);
@@ -1589,7 +1570,7 @@ temp_nmbrString *nmbrUnsquishProof(const nmbrString *proof) {
         nmbrRight(newProof, step + 2), NULL));
     step = step + subPrfLen - 1;
   }
-  nmbrLet(&subProof, NULL_NMBRSTRING);
+  free_nmbrString(subProof);
   return nmbrMakeTempAlloc(newProof); /* Flag it for deallocation */
 }
 
@@ -1603,9 +1584,9 @@ temp_nmbrString *nmbrUnsquishProof(const nmbrString *proof) {
 temp_nmbrString *nmbrGetIndentation(const nmbrString *proof, long startingLevel) {
   long plen, stmt, pos, splen, hyps, i, j;
   char type;
-  nmbrString *indentationLevel = NULL_NMBRSTRING;
-  nmbrString *subProof = NULL_NMBRSTRING;
-  nmbrString *nmbrTmp = NULL_NMBRSTRING;
+  nmbrString_def(indentationLevel);
+  nmbrString_def(subProof);
+  nmbrString_def(nmbrTmp);
 
   plen = nmbrLen(proof);
   stmt = proof[plen - 1];
@@ -1633,10 +1614,10 @@ temp_nmbrString *nmbrGetIndentation(const nmbrString *proof, long startingLevel)
     }
     pos = pos - splen;
   }
-  if (pos != -1) bug (333);
+  if (pos != -1) bug(333);
 
-  nmbrLet(&subProof,NULL_NMBRSTRING); /* Deallocate */
-  nmbrLet(&nmbrTmp, NULL_NMBRSTRING); /* Deallocate */
+  free_nmbrString(subProof); /* Deallocate */
+  free_nmbrString(nmbrTmp); /* Deallocate */
   return nmbrMakeTempAlloc(indentationLevel); /* Flag it for deallocation */
 } /* nmbrGetIndentation */
 
@@ -1649,9 +1630,9 @@ temp_nmbrString *nmbrGetIndentation(const nmbrString *proof, long startingLevel)
 nmbrString *nmbrGetEssential(const nmbrString *proof) {
   long plen, stmt, pos, splen, hyps, i, j;
   char type;
-  nmbrString *essentialFlags = NULL_NMBRSTRING;
-  nmbrString *subProof = NULL_NMBRSTRING;
-  nmbrString *nmbrTmp = NULL_NMBRSTRING;
+  nmbrString_def(essentialFlags);
+  nmbrString_def(subProof);
+  nmbrString_def(nmbrTmp);
   nmbrString *nmbrTmpPtr2;
 
   plen = nmbrLen(proof);
@@ -1690,8 +1671,8 @@ nmbrString *nmbrGetEssential(const nmbrString *proof) {
   }
   if (pos != -1) bug (1338);
 
-  nmbrLet(&subProof,NULL_NMBRSTRING); /* Deallocate */
-  nmbrLet(&nmbrTmp, NULL_NMBRSTRING); /* Deallocate */
+  free_nmbrString(subProof); /* Deallocate */
+  free_nmbrString(nmbrTmp); /* Deallocate */
   return nmbrMakeTempAlloc(essentialFlags); /* Flag it for deallocation */
 } /* nmbrGetEssential */
 
@@ -1705,9 +1686,9 @@ nmbrString *nmbrGetEssential(const nmbrString *proof) {
 temp_nmbrString *nmbrGetTargetHyp(const nmbrString *proof, long statemNum) {
   long plen, stmt, pos, splen, hyps, i, j;
   char type;
-  nmbrString *targetHyp = NULL_NMBRSTRING;
-  nmbrString *subProof = NULL_NMBRSTRING;
-  nmbrString *nmbrTmp = NULL_NMBRSTRING;
+  nmbrString_def(targetHyp);
+  nmbrString_def(subProof);
+  nmbrString_def(nmbrTmp);
 
   plen = nmbrLen(proof);
   stmt = proof[plen - 1];
@@ -1750,8 +1731,8 @@ temp_nmbrString *nmbrGetTargetHyp(const nmbrString *proof, long statemNum) {
   }
   if (pos != -1) bug (343);
 
-  nmbrLet(&subProof,NULL_NMBRSTRING); /* Deallocate */
-  nmbrLet(&nmbrTmp, NULL_NMBRSTRING); /* Deallocate */
+  free_nmbrString(subProof); /* Deallocate */
+  free_nmbrString(nmbrTmp); /* Deallocate */
   return nmbrMakeTempAlloc(targetHyp); /* Flag it for deallocation */
 } /* nmbrGetTargetHyp */
 
@@ -1766,15 +1747,15 @@ temp_nmbrString *nmbrGetTargetHyp(const nmbrString *proof, long statemNum) {
    could be "( a1i a1d ) ACBCADEF". */
 temp_vstring compressProof(const nmbrString *proof, long statemNum,
     flag oldCompressionAlgorithm) {
-  vstring output = "";
+  vstring_def(output);
   long outputLen;
   long outputAllocated;
-  nmbrString *saveProof = NULL_NMBRSTRING;
-  nmbrString *labelList = NULL_NMBRSTRING;
-  nmbrString *hypList = NULL_NMBRSTRING;
-  nmbrString *assertionList = NULL_NMBRSTRING;
-  nmbrString *localList = NULL_NMBRSTRING;
-  nmbrString *localLabelFlags = NULL_NMBRSTRING;
+  nmbrString_def(saveProof);
+  nmbrString_def(labelList);
+  nmbrString_def(hypList);
+  nmbrString_def(assertionList);
+  nmbrString_def(localList);
+  nmbrString_def(localLabelFlags);
   long hypLabels, assertionLabels, localLabels;
   long plen, step, stmt, labelLen, lab, numchrs;
   long i, j, k;
@@ -1783,24 +1764,24 @@ temp_vstring compressProof(const nmbrString *proof, long statemNum,
   static char *letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
   static char labelChar = ':';
 
-  nmbrString *explList = NULL_NMBRSTRING;
+  nmbrString_def(explList);
   long explLabels;
-  nmbrString *explRefCount = NULL_NMBRSTRING;
-  nmbrString *labelRefCount = NULL_NMBRSTRING;
+  nmbrString_def(explRefCount);
+  nmbrString_def(labelRefCount);
   long maxExplRefCount;
-  nmbrString *explComprLen = NULL_NMBRSTRING;
+  nmbrString_def(explComprLen);
   long explSortPosition;
   long maxExplComprLen;
-  vstring explUsedFlag = "";
-  nmbrString *explLabelLen = NULL_NMBRSTRING;
-  nmbrString *newExplList = NULL_NMBRSTRING;
+  vstring_def(explUsedFlag);
+  nmbrString_def(explLabelLen);
+  nmbrString_def(newExplList);
   long newExplPosition;
   long indentation;
   long explOffset;
   long explUnassignedCount;
-  nmbrString *explWorth = NULL_NMBRSTRING;
+  nmbrString_def(explWorth);
   long explWidth;
-  vstring explIncluded = "";
+  vstring_def(explIncluded);
 
 
   /* Compression standard with all cap letters */
@@ -1917,7 +1898,7 @@ temp_vstring compressProof(const nmbrString *proof, long statemNum,
     }
   }
   /* We're done with giant labelRefCount array; deallocate */
-  nmbrLet(&labelRefCount, NULL_NMBRSTRING);
+  free_nmbrString(labelRefCount);
 
   /* Assign compressed label lengths starting from most used to least
      used label */
@@ -2168,21 +2149,21 @@ temp_vstring compressProof(const nmbrString *proof, long statemNum,
                 0 /*statemNum used only if explicitTargets*/),
       " ) ", left(output, outputLen), NULL));
 
-  nmbrLet(&saveProof, NULL_NMBRSTRING);
-  nmbrLet(&labelList, NULL_NMBRSTRING);
-  nmbrLet(&hypList, NULL_NMBRSTRING);
-  nmbrLet(&assertionList, NULL_NMBRSTRING);
-  nmbrLet(&localList, NULL_NMBRSTRING);
-  nmbrLet(&localLabelFlags, NULL_NMBRSTRING);
-  nmbrLet(&explList, NULL_NMBRSTRING);
-  nmbrLet(&explRefCount, NULL_NMBRSTRING);
-  nmbrLet(&labelRefCount, NULL_NMBRSTRING);
-  nmbrLet(&explComprLen, NULL_NMBRSTRING);
-  let(&explUsedFlag, "");
-  nmbrLet(&explLabelLen, NULL_NMBRSTRING);
-  nmbrLet(&newExplList, NULL_NMBRSTRING);
-  nmbrLet(&explWorth, NULL_NMBRSTRING);
-  let(&explIncluded, "");
+  free_nmbrString(saveProof);
+  free_nmbrString(labelList);
+  free_nmbrString(hypList);
+  free_nmbrString(assertionList);
+  free_nmbrString(localList);
+  free_nmbrString(localLabelFlags);
+  free_nmbrString(explList);
+  free_nmbrString(explRefCount);
+  free_nmbrString(labelRefCount);
+  free_nmbrString(explComprLen);
+  free_vstring(explUsedFlag);
+  free_nmbrString(explLabelLen);
+  free_nmbrString(newExplList);
+  free_nmbrString(explWorth);
+  free_vstring(explIncluded);
 
   return makeTempAlloc(output); /* Flag it for deallocation */
 } /* compressProof */
@@ -2192,8 +2173,8 @@ temp_vstring compressProof(const nmbrString *proof, long statemNum,
    and return its size in bytes. */
 /* TODO: call this in MINIMIZE_WITH in metamath.c */
 long compressedProofSize(const nmbrString *proof, long statemNum) {
-  vstring tmpStr = "";
-  nmbrString *tmpNmbr = NULL_NMBRSTRING;
+  nmbrString_def(tmpNmbr);
+  vstring_def(tmpStr);
   long bytes;
   nmbrLet(&tmpNmbr, nmbrSquishProof(proof));
   let(&tmpStr, compressProof(tmpNmbr,
@@ -2202,8 +2183,8 @@ long compressedProofSize(const nmbrString *proof, long statemNum) {
           ));
   bytes = (long)strlen(tmpStr);
   /* Deallocate memory */
-  let(&tmpStr, "");
-  nmbrLet(&tmpNmbr, NULL_NMBRSTRING);
+  free_vstring(tmpStr);
+  free_nmbrString(tmpNmbr);
   return bytes;
 } /* compressedProofSize */
 
@@ -2616,15 +2597,14 @@ long pntrRevInstr(long start_position, const pntrString *string1,
     const pntrString *string2)
 {
    long ls1,ls2;
-   pntrString *tmp = NULL_PNTRSTRING;
    ls1=pntrLen(string1);
    ls2=pntrLen(string2);
    if (start_position>ls1-ls2+1) start_position=ls1-ls2+2;
    if (start_position<1) return 0;
    while (!pntrEq(string2,pntrMid(string1,start_position,ls2))) {
      start_position--;
-     pntrLet(&tmp,NULL_PNTRSTRING);
-                /* Clear pntrString buffer to prevent overflow caused by "mid" */
+     pntrTempAlloc(0);
+        /* Clear temporaries to prevent overflow caused by "mid" */
      if (start_position < 1) return 0;
    }
    return (start_position);
@@ -2794,7 +2774,7 @@ long getSourceIndentation(long statemNum) {
    a statement.  This is used to provide the user with information in the SHOW
    STATEMENT command.  The caller must deallocate the result. */
 vstring getDescription(long statemNum) {
-  vstring description = "";
+  vstring_def(description);
   long p1, p2;
 
   let(&description, space(g_Statement[statemNum].labelSectionLen));
@@ -2820,7 +2800,7 @@ vstring getDescription(long statemNum) {
    EXPAND command, we also suppress section headers if they are the last
    comment.  The caller must deallocate the result. */
 vstring getDescriptionAndLabel(long stmt) {
-  vstring descriptionAndLabel = "";
+  vstring_def(descriptionAndLabel);
   long p1, p2;
   flag dontUseComment = 0;
 
@@ -2884,15 +2864,15 @@ flag getMarkupFlag(long statemNum, flag mode) {
      matches only the first time, then saves the result for subsequent calls
      for that statement. */
   static char init = 0;
-  static vstring commentSearchedFlags = ""; /* Y if comment was searched */
-  static vstring proofFlags = "";  /* Y if proof discouragement, else N */
-  static vstring usageFlags = "";  /* Y if usage discouragement, else N */
-  vstring str1 = "";
+  static vstring_def(commentSearchedFlags); /* Y if comment was searched */
+  static vstring_def(proofFlags);  /* Y if proof discouragement, else N */
+  static vstring_def(usageFlags);  /* Y if usage discouragement, else N */
+  vstring_def(str1);
 
   if (mode == RESET) { /* Deallocate */ /* Should be called by ERASE command */
-    let(&commentSearchedFlags, "");
-    let(&proofFlags, "");
-    let(&usageFlags, "");
+    free_vstring(commentSearchedFlags);
+    free_vstring(proofFlags);
+    free_vstring(usageFlags);
     init = 0;
     return 0;
   }
@@ -2939,7 +2919,7 @@ flag getMarkupFlag(long statemNum, flag mode) {
       } else {
         usageFlags[statemNum] = 'N';
       }
-      let(&str1, ""); /* Deallocate */
+      free_vstring(str1); /* Deallocate */
     }
     commentSearchedFlags[statemNum] = 'Y';
   }
@@ -2989,35 +2969,35 @@ vstring getContrib(long stmtNum, char mode) {
      for that statement. */
   static char init = 0;
 
-  vstring contributor = "";
-  vstring contribDate = "";
-  vstring reviser = "";
-  vstring reviseDate = "";
-  vstring shortener = "";
-  vstring shortenDate = "";
-  vstring mostRecentDate = "";   /* The most recent of all 3 dates */
+  vstring_def(contributor);
+  vstring_def(contribDate);
+  vstring_def(reviser);
+  vstring_def(reviseDate);
+  vstring_def(shortener);
+  vstring_def(shortenDate);
+  vstring_def(mostRecentDate);   /* The most recent of all 3 dates */
 
-  static vstring commentSearchedFlags = ""; /* Y if comment was searched */
-  static pntrString *contributorList = NULL_PNTRSTRING;
-  static pntrString *contribDateList = NULL_PNTRSTRING;
-  static pntrString *reviserList = NULL_PNTRSTRING;
-  static pntrString *reviseDateList = NULL_PNTRSTRING;
-  static pntrString *shortenerList = NULL_PNTRSTRING;
-  static pntrString *shortenDateList = NULL_PNTRSTRING;
-  static pntrString *mostRecentDateList = NULL_PNTRSTRING;
+  static vstring_def(commentSearchedFlags); /* Y if comment was searched */
+  static pntrString_def(contributorList);
+  static pntrString_def(contribDateList);
+  static pntrString_def(reviserList);
+  static pntrString_def(reviseDateList);
+  static pntrString_def(shortenerList);
+  static pntrString_def(shortenDateList);
+  static pntrString_def(mostRecentDateList);
 
   long cStart = 0, cMid = 0, cEnd = 0;
   long rStart = 0, rMid = 0, rEnd = 0;
   long sStart = 0, sMid = 0, sEnd = 0;
   long firstR = 0, firstS = 0;
-  vstring description = "";
-  vstring tmpDate0 = "";
-  vstring tmpDate1 = "";
-  vstring tmpDate2 = "";
+  vstring_def(description);
+  vstring_def(tmpDate0);
+  vstring_def(tmpDate1);
+  vstring_def(tmpDate2);
   long stmt, p, dd, mmm, yyyy;
   flag errorCheckFlag = 0;
   flag err = 0;
-  vstring returnStr = ""; /* Return value */
+  vstring_def(returnStr); /* Return value */
 #define CONTRIB_MATCH " (Contributed by "
 #define REVISE_MATCH " (Revised by "
 #define SHORTEN_MATCH " (Proof shortened by "
@@ -3039,24 +3019,24 @@ vstring getContrib(long stmtNum, char mode) {
       for (stmt = 1; stmt <= g_statements; stmt++) {
         if (commentSearchedFlags[stmt] == 'Y') {
           /* Deallocate cached strings */
-          let((vstring *)(&(contributorList[stmt])), "");
-          let((vstring *)(&(contribDateList[stmt])), "");
-          let((vstring *)(&(reviserList[stmt])), "");
-          let((vstring *)(&(reviseDateList[stmt])), "");
-          let((vstring *)(&(shortenerList[stmt])), "");
-          let((vstring *)(&(shortenDateList[stmt])), "");
-          let((vstring *)(&(mostRecentDateList[stmt])), "");
+          free_vstring(*(vstring *)(&contributorList[stmt]));
+          free_vstring(*(vstring *)(&contribDateList[stmt]));
+          free_vstring(*(vstring *)(&reviserList[stmt]));
+          free_vstring(*(vstring *)(&reviseDateList[stmt]));
+          free_vstring(*(vstring *)(&shortenerList[stmt]));
+          free_vstring(*(vstring *)(&shortenDateList[stmt]));
+          free_vstring(*(vstring *)(&mostRecentDateList[stmt]));
         }
       }
       /* Deallocate the lists of pointers to cached strings */
-      pntrLet(&contributorList, NULL_PNTRSTRING);
-      pntrLet(&contribDateList, NULL_PNTRSTRING);
-      pntrLet(&reviserList, NULL_PNTRSTRING);
-      pntrLet(&reviseDateList, NULL_PNTRSTRING);
-      pntrLet(&shortenerList, NULL_PNTRSTRING);
-      pntrLet(&shortenDateList, NULL_PNTRSTRING);
-      pntrLet(&mostRecentDateList, NULL_PNTRSTRING);
-      let(&commentSearchedFlags, "");
+      free_pntrString(contributorList);
+      free_pntrString(contribDateList);
+      free_pntrString(reviserList);
+      free_pntrString(reviseDateList);
+      free_pntrString(shortenerList);
+      free_pntrString(shortenDateList);
+      free_pntrString(mostRecentDateList);
+      free_vstring(commentSearchedFlags);
       init = 0;
     } /* if (init != 0) */
     return "";
@@ -3074,13 +3054,13 @@ vstring getContrib(long stmtNum, char mode) {
       }
       if (commentSearchedFlags[stmtNum] == 'Y') {
         /* Deallocate cached strings */
-        let((vstring *)(&(contributorList[stmtNum])), "");
-        let((vstring *)(&(contribDateList[stmtNum])), "");
-        let((vstring *)(&(reviserList[stmtNum])), "");
-        let((vstring *)(&(reviseDateList[stmtNum])), "");
-        let((vstring *)(&(shortenerList[stmtNum])), "");
-        let((vstring *)(&(shortenDateList[stmtNum])), "");
-        let((vstring *)(&(mostRecentDateList[stmtNum])), "");
+        free_vstring(*(vstring *)(&contributorList[stmtNum]));
+        free_vstring(*(vstring *)(&contribDateList[stmtNum]));
+        free_vstring(*(vstring *)(&reviserList[stmtNum]));
+        free_vstring(*(vstring *)(&reviseDateList[stmtNum]));
+        free_vstring(*(vstring *)(&shortenerList[stmtNum]));
+        free_vstring(*(vstring *)(&shortenDateList[stmtNum]));
+        free_vstring(*(vstring *)(&mostRecentDateList[stmtNum]));
         commentSearchedFlags[stmtNum] = 'N';
       }
     } /* if (init != 0) */
@@ -3112,7 +3092,7 @@ vstring getContrib(long stmtNum, char mode) {
       || errorCheckFlag == 1 /* Needed to get sStart, rStart, cStart */) {
     /* It wasn't cached, so we extract from the statement's comment */
 
-    let(&description, "");
+    free_vstring(description);
     description = getDescription(stmtNum);
     let(&description, edit(description,
         4/*ctrl*/ + 8/*leading*/ + 16/*reduce*/ + 128/*trailing*/));
@@ -3494,19 +3474,19 @@ vstring getContrib(long stmtNum, char mode) {
 
  RETURN_POINT:
 
-  let(&description, "");
+  free_vstring(description);
 
   if (errorCheckFlag == 1) { /* Slight speedup */
-    let(&contributor, "");
-    let(&contribDate, "");
-    let(&reviser, "");
-    let(&reviseDate, "");
-    let(&shortener, "");
-    let(&shortenDate, "");
-    let(&mostRecentDate, "");
-    let(&tmpDate0, "");
-    let(&tmpDate1, "");
-    let(&tmpDate2, "");
+    free_vstring(contributor);
+    free_vstring(contribDate);
+    free_vstring(reviser);
+    free_vstring(reviseDate);
+    free_vstring(shortener);
+    free_vstring(shortenDate);
+    free_vstring(mostRecentDate);
+    free_vstring(tmpDate0);
+    free_vstring(tmpDate1);
+    free_vstring(tmpDate2);
   }
 
   return returnStr;
@@ -3518,7 +3498,7 @@ vstring getContrib(long stmtNum, char mode) {
    THIS WILL BECOME OBSOLETE WHEN WE START TO USE DATES IN THE
    DESCRIPTION. */
 void getProofDate(long stmtNum, vstring *date1, vstring *date2) {
-  vstring textAfterProof = "";
+  vstring_def(textAfterProof);
   long p1, p2;
   let(&textAfterProof, space(g_Statement[stmtNum + 1].labelSectionLen));
   memcpy(textAfterProof, g_Statement[stmtNum + 1].labelSectionPtr,
@@ -3539,7 +3519,7 @@ void getProofDate(long stmtNum, vstring *date1, vstring *date2) {
     let(&(*date1), ""); /* No 1st or 2nd date stamp */
     let(&(*date2), "");
   }
-  let(&textAfterProof, ""); /* Deallocate */
+  free_vstring(textAfterProof); /* Deallocate */
   return;
 } /* getProofDate */
 
@@ -3617,7 +3597,7 @@ flag compareDates(vstring date1, vstring date2) {
    start at the beginning of each line. */
 int qsortStringCmp(const void *p1, const void *p2)
 {
-  vstring tmp = "";
+  vstring_def(tmp);
   long n1, n2;
   int r;
   /* Returns -1 if p1 < p2, 0 if equal, 1 if p1 > p2 */
@@ -3630,7 +3610,7 @@ int qsortStringCmp(const void *p1, const void *p2)
     r = strcmp(
         right(*(char * const *)p1, n1),
         right(*(char * const *)p2, n2));
-    let(&tmp, ""); /* Deallocate temp string stack */
+    free_vstring(tmp); /* Deallocate temp string stack */
     return r;
   }
 }

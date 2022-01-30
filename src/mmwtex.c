@@ -45,9 +45,9 @@ long g_mathboxStmt = 0; /* At this statement and above, use SANDBOX_COLOR
 long g_mathboxes = 0; /* # of mathboxes */
 /* The following 3 strings are 0-based e.g. g_mathboxStart[0] is for
    mathbox #1 */
-nmbrString *g_mathboxStart = NULL_NMBRSTRING; /* Start stmt vs. mathbox # */
-nmbrString *g_mathboxEnd = NULL_NMBRSTRING; /* End stmt vs. mathbox # */
-pntrString *g_mathboxUser = NULL_PNTRSTRING; /* User name vs. mathbox # */
+nmbrString_def(g_mathboxStart); /* Start stmt vs. mathbox # */
+nmbrString_def(g_mathboxEnd); /* End stmt vs. mathbox # */
+pntrString_def(g_mathboxUser); /* User name vs. mathbox # */
 
 /* This is the list of characters causing the space before the opening "`"
    in a math string in a comment to be removed for HTML output. */
@@ -72,39 +72,39 @@ long numSymbs;
 
 /* Variables set by the language in the set.mm etc. $t statement */
 /* Some of these are global; see mmwtex.h */
-vstring g_htmlCSS = ""; /* Set by g_htmlCSS commands */
-vstring g_htmlFont = ""; /* Set by htmlfont commands */
-vstring g_htmlVarColor = ""; /* Set by htmlvarcolor commands */
-vstring htmlExtUrl = ""; /* Set by htmlexturl command */
-vstring htmlTitle = ""; /* Set by htmltitle command */
-  vstring htmlTitleAbbr = ""; /* Extracted from htmlTitle */
-vstring g_htmlHome = ""; /* Set by htmlhome command */
+vstring_def(g_htmlCSS); /* Set by g_htmlCSS commands */
+vstring_def(g_htmlFont); /* Set by htmlfont commands */
+vstring_def(g_htmlVarColor); /* Set by htmlvarcolor commands */
+vstring_def(htmlExtUrl); /* Set by htmlexturl command */
+vstring_def(htmlTitle); /* Set by htmltitle command */
+  vstring_def(htmlTitleAbbr); /* Extracted from htmlTitle */
+vstring_def(g_htmlHome); /* Set by htmlhome command */
   /* Future - assign these in the $t set.mm comment instead of g_htmlHome */
-  vstring g_htmlHomeHREF = ""; /* Extracted from g_htmlHome */
-  vstring g_htmlHomeIMG = ""; /* Extracted from g_htmlHome */
-vstring g_htmlBibliography = ""; /* Optional; set by htmlbibliography command */
-vstring extHtmlLabel = ""; /* Set by exthtmllabel command - where extHtml starts */
-vstring g_extHtmlTitle = ""; /* Set by exthtmltitle command (global!) */
-  vstring g_extHtmlTitleAbbr = ""; /* Extracted from htmlTitle */
-vstring extHtmlHome = ""; /* Set by exthtmlhome command */
+  vstring_def(g_htmlHomeHREF); /* Extracted from g_htmlHome */
+  vstring_def(g_htmlHomeIMG); /* Extracted from g_htmlHome */
+vstring_def(g_htmlBibliography); /* Optional; set by htmlbibliography command */
+vstring_def(extHtmlLabel); /* Set by exthtmllabel command - where extHtml starts */
+vstring_def(g_extHtmlTitle); /* Set by exthtmltitle command (global!) */
+  vstring_def(g_extHtmlTitleAbbr); /* Extracted from htmlTitle */
+vstring_def(extHtmlHome); /* Set by exthtmlhome command */
   /* Future - assign these in the $t set.mm comment instead of g_htmlHome */
-  vstring extHtmlHomeHREF = ""; /* Extracted from extHtmlHome */
-  vstring extHtmlHomeIMG = ""; /* Extracted from extHtmlHome */
-vstring extHtmlBibliography = ""; /* Optional; set by exthtmlbibliography command */
-vstring htmlDir = ""; /* Directory for GIF version, set by htmldir command */
-vstring altHtmlDir = ""; /* Directory for Unicode Font version, set by
+  vstring_def(extHtmlHomeHREF); /* Extracted from extHtmlHome */
+  vstring_def(extHtmlHomeIMG); /* Extracted from extHtmlHome */
+vstring_def(extHtmlBibliography); /* Optional; set by exthtmlbibliography command */
+vstring_def(htmlDir); /* Directory for GIF version, set by htmldir command */
+vstring_def(altHtmlDir); /* Directory for Unicode Font version, set by
                             althtmldir command */
 
 /* Sandbox stuff */
-vstring sandboxHome = "";
-  vstring sandboxHomeHREF = ""; /* Extracted from extHtmlHome */
-  vstring sandboxHomeIMG = ""; /* Extracted from extHtmlHome */
-vstring sandboxTitle = "";
-  vstring sandboxTitleAbbr = "";
+vstring_def(sandboxHome);
+  vstring_def(sandboxHomeHREF); /* Extracted from extHtmlHome */
+  vstring_def(sandboxHomeIMG); /* Extracted from extHtmlHome */
+vstring_def(sandboxTitle);
+  vstring_def(sandboxTitleAbbr);
 
 /* Variables holding all HTML <a name..> tags from bibiography pages  */
-vstring g_htmlBibliographyTags = "";
-vstring extHtmlBibliographyTags = "";
+vstring_def(g_htmlBibliographyTags);
+vstring_def(extHtmlBibliographyTags);
 
 
 void eraseTexDefs(void) {
@@ -114,8 +114,8 @@ void eraseTexDefs(void) {
     g_texDefsRead = 0;
 
     for (i = 0; i < numSymbs; i++) {  /* Deallocate structure member i */
-      let(&(g_TexDefs[i].tokenName), "");
-      let(&(g_TexDefs[i].texEquiv), "");
+      free_vstring(g_TexDefs[i].tokenName);
+      free_vstring(g_TexDefs[i].texEquiv);
     }
     free(g_TexDefs); /* Deallocate the structure */
   }
@@ -130,7 +130,6 @@ flag readTexDefs(
   flag gifCheck   /* 1 = check for missing GIFs */)
 {
 
-  char *fileBuf;
   char *startPtr;
   long lineNumOffset = 0;
   char *fbPtr;
@@ -143,8 +142,8 @@ flag readTexDefs(
   char zapChar;
   long cmd;
   long parsePass;
-  vstring token = "";
-  vstring partialToken = "";
+  vstring_def(token);
+  vstring_def(partialToken);
   FILE *tmpFp;
   static flag saveHtmlFlag = -1; /* -1 to force 1st read */
   static flag saveAltHtmlFlag = 1; /* -1 to force 1st read */
@@ -185,10 +184,10 @@ flag readTexDefs(
   }
 
   /* Find the comment with the $t */
-  fileBuf = ""; /* This used to point to the input file buffer of an external
+  vstring_def(fileBuf); /* This used to point to the input file buffer of an external
                    latex.def file; now it's from the xxx.mm $t comment, so we
                    make it a normal string */
-  let(&fileBuf, "");
+
   /* Note that g_Statement[g_statements + 1] is a special (empty) statement whose
      labelSection holds any comment after the last statement. */
   for (i = 1; i <= g_statements + 1; i++) {
@@ -207,10 +206,9 @@ flag readTexDefs(
       /* (A second one in the labelSection of one statement will trigger
          an error below.) */
       if (fileBuf[0]) {
-        print2(
-  "?Error: There are two comments containing a $t keyword in \"%s\".\n",
+        print2("?Error: There are two comments containing a $t keyword in \"%s\".\n",
             g_input_fn);
-        let(&fileBuf, "");
+        free_vstring(fileBuf);
         return 2;
       }
       let(&fileBuf, tmpPtr);
@@ -264,7 +262,7 @@ flag readTexDefs(
     print2(
 "The file should have exactly one comment of the form $(...$t...$) with\n");
     print2("the LaTeX and HTML definitions between $t and $).\n");
-    let(&fileBuf, "");
+    free_vstring(fileBuf);
     return 2;
   }
   startPtr++; /* Move to 1st char after $t */
@@ -284,7 +282,7 @@ flag readTexDefs(
     print2(
   "?Error: There is no $) comment closure after the $t keyword in \"%s\".\n",
         g_input_fn);
-    let(&fileBuf, "");
+    free_vstring(fileBuf);
     return 2;
   }
 
@@ -296,7 +294,7 @@ flag readTexDefs(
         print2(
   "?Error: There are two comments containing a $t keyword in \"%s\".\n",
             g_input_fn);
-        let(&fileBuf, "");
+        free_vstring(fileBuf);
         return 2;
       }
     }
@@ -348,7 +346,7 @@ flag readTexDefs(
             " \"htmlcss\", \"htmlfont\",",
             " or \"htmlexturl\" here.",
             NULL));
-        let(&fileBuf, "");
+        free_vstring(fileBuf);
         return 2;
       }
       fbPtr = fbPtr + tokenLength;
@@ -376,7 +374,7 @@ flag readTexDefs(
             /*fbPtr*/dollarTStmtPtr + (fbPtr - fileBuf),
               tokenLength,
               "Expected a quoted string here.");
-          let(&fileBuf, "");
+          free_vstring(fileBuf);
           return 2;
         }
         if (parsePass == 2) {
@@ -434,7 +432,7 @@ flag readTexDefs(
             /*fbPtr*/dollarTStmtPtr + (fbPtr - fileBuf),
               tokenLength,
               "Expected the keyword \"as\" here.");
-          let(&fileBuf, "");
+          free_vstring(fileBuf);
           return 2;
         }
         fbPtr[tokenLength] = zapChar;
@@ -465,7 +463,7 @@ flag readTexDefs(
             /*fbPtr*/dollarTStmtPtr + (fbPtr - fileBuf),
               tokenLength,
               "Expected a quoted string here.");
-          let(&fileBuf, "");
+          free_vstring(fileBuf);
           return 2;
         }
         if (parsePass == 2) {
@@ -529,7 +527,7 @@ flag readTexDefs(
             /*fbPtr*/dollarTStmtPtr + (fbPtr - fileBuf),
               tokenLength, /*lineNum, g_input_fn,*/
               "Expected \"+\" or \";\" here.");
-          let(&fileBuf, "");
+          free_vstring(fileBuf);
          return 2;
         }
         fbPtr = fbPtr + tokenLength;
@@ -798,9 +796,9 @@ flag readTexDefs(
   }
 
 
-  let(&token, ""); /* Deallocate */
-  let(&partialToken, ""); /* Deallocate */
-  let(&fileBuf, "");
+  free_vstring(token); /* Deallocate */
+  free_vstring(partialToken); /* Deallocate */
+  free_vstring(fileBuf);
   g_texDefsRead = 1;  /* Set global flag that it's been read in */
   return warningFound; /* Return indicator that parsing passed (0) or
                            had warning(s) (1) */
@@ -913,8 +911,8 @@ int texSrchCmp(const void *key, const void *data)
 vstring asciiToTt(vstring s)
 {
 
-  vstring ttstr = "";
-  vstring tmp = "";
+  vstring_def(ttstr);
+  vstring_def(tmp);
   long i, j, k;
 
   let(&ttstr, s); /* In case the input s is temporarily allocated */
@@ -992,7 +990,7 @@ vstring asciiToTt(vstring s)
     }
   } /* Next i */
 
-  let(&tmp, "");  /* Deallocate */
+  free_vstring(tmp);  /* Deallocate */
   return ttstr;
 } /* asciiToTt */
 
@@ -1002,7 +1000,7 @@ vstring asciiToTt(vstring s)
 /* *** Note: The caller must deallocate the returned string */
 vstring tokenToTex(vstring mtoken, long statemNum /*for error msgs*/)
 {
-  vstring tex = "";
+  vstring_def(tex);
   vstring tmpStr;
   long i, j, k;
   void *texDefsPtr; /* For binary search */
@@ -1063,7 +1061,7 @@ vstring tokenToTex(vstring mtoken, long statemNum /*for error msgs*/)
             cat(left(tex, i), tmpStr, right(tex, i + 2), NULL));
         i = i + k - 1; /* Adjust iteration */
         j = j + k - 1; /* Adjust length */
-        let(&tmpStr, ""); /* Deallocate */
+        free_vstring(tmpStr); /* Deallocate */
       }
     } /* Next i */
 
@@ -1083,17 +1081,17 @@ vstring asciiMathToTex(vstring mathComment, long statemNum)
 {
 
   vstring tex;
-  vstring texLine = "";
-  vstring lastTex = "";
-  vstring token = "";
+  vstring_def(texLine);
+  vstring_def(lastTex);
+  vstring_def(token);
   flag alphnew, alphold, unknownnew, unknownold;
   long i;
   vstring srcptr;
 
   srcptr = mathComment;
 
-  let(&texLine, "");
-  let(&lastTex, "");
+  free_vstring(texLine);
+  free_vstring(lastTex);
   while(1) {
     i = whiteSpaceLen(srcptr);
     srcptr = srcptr + i;
@@ -1132,12 +1130,12 @@ vstring asciiMathToTex(vstring mathComment, long statemNum)
     } else {
       let(&texLine, cat(texLine, tex, NULL));
     }
-    let(&lastTex, ""); /* Deallocate */
+    free_vstring(lastTex); /* Deallocate */
     lastTex = tex; /* Pass deallocation responsibility for tex to lastTex */
   } /* End while (1) */
 
-  let(&lastTex, ""); /* Deallocate */
-  let(&token, ""); /* Deallocate */
+  free_vstring(lastTex); /* Deallocate */
+  free_vstring(token); /* Deallocate */
 
   return texLine;
 } /* asciiMathToTex */
@@ -1149,7 +1147,7 @@ vstring asciiMathToTex(vstring mathComment, long statemNum)
    char. of start of next comment section. */
 vstring getCommentModeSection(vstring *srcptr, char *mode)
 {
-  vstring modeSection = "";
+  vstring_def(modeSection);
   vstring ptr; /* Not allocated */
   flag addMode = 0;
   if (!g_outputToString) bug(2319);
@@ -1227,18 +1225,18 @@ void printTexHeader(flag texHeaderFlag)
 {
 
   long i, j, k;
-  vstring tmpStr = "";
+  vstring_def(tmpStr);
 
   /* "Mathbox for <username>" mod */
-  vstring localSandboxTitle = "";
-  vstring hugeHdr = "";
-  vstring bigHdr = "";
-  vstring smallHdr = "";
-  vstring tinyHdr = "";
-  vstring hugeHdrComment = "";
-  vstring bigHdrComment = "";
-  vstring smallHdrComment = "";
-  vstring tinyHdrComment = "";
+  vstring_def(localSandboxTitle);
+  vstring_def(hugeHdr);
+  vstring_def(bigHdr);
+  vstring_def(smallHdr);
+  vstring_def(tinyHdr);
+  vstring_def(hugeHdrComment);
+  vstring_def(bigHdrComment);
+  vstring_def(smallHdrComment);
+  vstring_def(tinyHdrComment);
 
   if (2/*error*/ == readTexDefs(0/*errorsOnly=0*/, 1 /*gifCheck=1*/)) {
     print2(
@@ -1385,14 +1383,14 @@ void printTexHeader(flag texHeaderFlag)
            formatted right, but use default just in case) */
         let(&localSandboxTitle, sandboxTitle);
       }
-      let(&hugeHdr, "");   /* Deallocate memory */
-      let(&bigHdr, "");   /* Deallocate memory */
-      let(&smallHdr, ""); /* Deallocate memory */
-      let(&tinyHdr, ""); /* Deallocate memory */
-      let(&hugeHdrComment, "");   /* Deallocate memory */
-      let(&bigHdrComment, "");   /* Deallocate memory */
-      let(&smallHdrComment, ""); /* Deallocate memory */
-      let(&tinyHdrComment, ""); /* Deallocate memory */
+      free_vstring(hugeHdr);   /* Deallocate memory */
+      free_vstring(bigHdr);   /* Deallocate memory */
+      free_vstring(smallHdr); /* Deallocate memory */
+      free_vstring(tinyHdr); /* Deallocate memory */
+      free_vstring(hugeHdrComment);   /* Deallocate memory */
+      free_vstring(bigHdrComment);   /* Deallocate memory */
+      free_vstring(smallHdrComment); /* Deallocate memory */
+      free_vstring(tinyHdrComment); /* Deallocate memory */
 
       printLongLine(cat("<TITLE>",
           /* Strip off ".html" */
@@ -1625,10 +1623,10 @@ void printTexHeader(flag texHeaderFlag)
   } /* g_htmlFlag */
   fprintf(g_texFilePtr, "%s", g_printString);
   g_outputToString = 0;
-  let(&g_printString, "");
+  free_vstring(g_printString);
 
   /* Deallocate strings */
-  let(&tmpStr, "");
+  free_vstring(tmpStr);
 
 } /* printTexHeader */
 
@@ -1670,31 +1668,31 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
   vstring cmtptr; /* Not allocated */
   vstring srcptr; /* Not allocated */
   vstring lineStart; /* Not allocated */
-  vstring tmpStr = "";
+  vstring_def(tmpStr);
   vstring modeSection; /* Not allocated */
-  vstring sourceLine = "";
-  vstring outputLine = "";
-  vstring tmp = "";
+  vstring_def(sourceLine);
+  vstring_def(outputLine);
+  vstring_def(tmp);
   flag textMode, mode, lastLineFlag, displayMode;
-  vstring tmpComment = "";
+  vstring_def(tmpComment);
   flag preformattedMode = 0; /* HTML <HTML> preformatted mode */
 
   /* For bibliography hyperlinks */
-  vstring bibTag = "";
-  vstring bibFileName = "";
-  vstring bibFileContents = "";
-  vstring bibFileContentsUpper = ""; /* Uppercase version */
-  vstring bibTags = "";
+  vstring_def(bibTag);
+  vstring_def(bibFileName);
+  vstring_def(bibFileContents);
+  vstring_def(bibFileContentsUpper); /* Uppercase version */
+  vstring_def(bibTags);
   long pos1, pos2, htmlpos1, htmlpos2, saveScreenWidth;
   flag tmpMathMode;
 
   /* Variables for converting ` ` and ~ to old $m,$n and $l,$n formats in
      order to re-use the old code */
   /* Note that DOLLAR_SUBST will replace the old $. */
-  vstring cmt = "";
-  vstring cmtMasked = ""; /* cmt with math syms blanked */ /* also mask ~ label */
-  vstring tmpMasked = ""; /* tmp with math syms blanked */
-  vstring tmpStrMasked = ""; /* tmpStr w/ math syms blanked */
+  vstring_def(cmt);
+  vstring_def(cmtMasked); /* cmt with math syms blanked */ /* also mask ~ label */
+  vstring_def(tmpMasked); /* tmp with math syms blanked */
+  vstring_def(tmpStrMasked); /* tmpStr w/ math syms blanked */
   long i, clen;
   flag returnVal = 0; /* 1 means error/warning */
 
@@ -1775,7 +1773,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
       }
       if (!pos1) pos1 = (long)strlen(cmt) + 1;
       if (mode == 1 && preformattedMode == 0) {
-        let(&tmpStr, "");
+        free_vstring(tmpStr);
         /* asciiToTt() is where "<" is converted to "&lt;" etc. */
         tmpStr = asciiToTt(left(cmt, pos1));
         let(&tmpStrMasked, tmpStr);
@@ -1799,8 +1797,8 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
     }
     let(&cmt, tmp);
     let(&cmtMasked, tmpMasked);
-    let(&tmpStr, ""); /* Deallocate */
-    let(&tmpStrMasked, "");
+    free_vstring(tmpStr); /* Deallocate */
+    free_vstring(tmpStrMasked);
   }
 
 
@@ -1916,7 +1914,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
         case '_': cmt[pos1 - 1] = '-'; break;
       }
       if (strchr("%#{}&^|<>_", cmt[pos1 - 1]) != NULL) {
-        let(&tmpStr, "");
+        free_vstring(tmpStr);
         tmpStr = asciiToTt(chr(cmt[pos1 - 1]));
         let(&cmt, cat(left(cmt, pos1 - 1), tmpStr,
             right(cmt, pos1 + 1), NULL));
@@ -2116,7 +2114,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
         if (fileCheck) {
           if (!bibTags[0]) {
             /* The bibliography file has not be read in yet. */
-            let(&bibFileContents, "");
+            free_vstring(bibFileContents);
             if (errorsOnly == 0) {
               print2("Reading HTML bibliographic tags from file \"%s\"...\n",
                   bibFileName);
@@ -2272,7 +2270,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
             let(&cmt, cat(left(cmt, i - 2), right(cmt, i), NULL));
             clen = clen - 1;
           }
-          let(&tmp, "");
+          free_vstring(tmp);
         }
         /* If symbol is followed by a space and closing punctuation, take out
            the space so it looks better. */
@@ -2293,7 +2291,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
             let(&cmt, cat(left(cmt, i + 1), right(cmt, i + 3), NULL));
             clen = clen - 1;
           }
-          let(&tmp, "");
+          free_vstring(tmp);
         }
 
       }
@@ -2348,7 +2346,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
           let(&cmt, cat(left(cmt, i - 2), right(cmt, i), NULL));
           clen = clen - 1;
         }
-        let(&tmp, "");
+        free_vstring(tmp);
 
       }
     }
@@ -2376,7 +2374,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
         let(&cmt, cat(left(cmt, i), right(cmt, i + 2), NULL));
         clen = clen - 1;
       }
-      let(&tmp, "");
+      free_vstring(tmp);
 
     }
     /* clen should always remain comment length - do a sanity check here */
@@ -2471,12 +2469,12 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
         NULL))) let(&tmpStr, left(tmpStr, (long)strlen(tmpStr) - 2)); /* Strip $n */
     srcptr = tmpStr;
     modeSection = getCommentModeSection(&srcptr, &mode);
-    let(&modeSection, ""); /* Deallocate */
+    free_vstring(modeSection); /* Deallocate */
     if (mode == 'm') {
       modeSection = getCommentModeSection(&srcptr, &mode);
-      let(&modeSection, ""); /* Deallocate */
+      free_vstring(modeSection); /* Deallocate */
     }
-    let(&tmpStr, ""); /* Deallocate */
+    free_vstring(tmpStr); /* Deallocate */
 
 
     /* Convert all sections of the line to text, math, or labels */
@@ -2499,7 +2497,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
 
           let(&modeSection, edit(modeSection, 8 + 128 + 16));  /* Discard
                       leading and trailing blanks; reduce spaces to one space */
-          let(&tmpStr, "");
+          free_vstring(tmpStr);
           tmpStr = asciiToTt(modeSection);
           if (!tmpStr[0]) {
             /* This can happen if ~ is followed by ` (start of math string) */
@@ -2558,7 +2556,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
               let(&outputLine, cat(outputLine, "{\\tt ", tmpStr,
                  "}", NULL));
             } else {
-              let(&tmp, "");
+              free_vstring(tmp);
               if (addColoredLabelNumber != 0) {
                 /* When the error above occurs, i < 0 will cause pinkHTML()
                    to issue "(future)" for pleasant readability */
@@ -2575,7 +2573,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
               }
             }
           } /* if (!strcmp("http://", left(tmpStr, 7))) ... else */
-          let(&tmpStr, ""); /* Deallocate */
+          free_vstring(tmpStr); /* Deallocate */
           break;
         case 'm': /* Math mode */
 
@@ -2584,7 +2582,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
             bug(2346);
           }
 
-          let(&tmpStr, "");
+          free_vstring(tmpStr);
           tmpStr = asciiMathToTex(modeSection, g_showStatement);
           if (!g_htmlFlag) {
             if (displayMode) {
@@ -2608,10 +2606,10 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
                 NULL));
             let(&outputLine, cat(outputLine, tmpStr, NULL)); /* html */
           }
-          let(&tmpStr, ""); /* Deallocate */
+          free_vstring(tmpStr); /* Deallocate */
           break;
       } /* End switch(mode) */
-      let(&modeSection, ""); /* Deallocate */
+      free_vstring(modeSection); /* Deallocate */
     }
     let(&outputLine, edit(outputLine, 128)); /* remove trailing spaces */
 
@@ -2702,7 +2700,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
     }
     g_screenWidth = saveScreenWidth;
 
-    let(&tmp, ""); /* Clear temporary allocation stack */
+    freeTempAlloc(); /* Clear temporary allocation stack */
 
     if (lastLineFlag) break; /* Done */
   } /* end while(1) */
@@ -2742,21 +2740,21 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
     fprintf(g_texFilePtr, "%s", g_printString);
   }
 
-  let(&g_printString, ""); /* Deallocate strings */
-  let(&sourceLine, "");
-  let(&outputLine, "");
-  let(&cmt, "");
-  let(&cmtMasked, "");
-  let(&tmpComment, "");
-  let(&tmp, "");
-  let(&tmpMasked, "");
-  let(&tmpStr, "");
-  let(&tmpStrMasked, "");
-  let(&bibTag, "");
-  let(&bibFileName, "");
-  let(&bibFileContents, "");
-  let(&bibFileContentsUpper, "");
-  let(&bibTags, "");
+  free_vstring(g_printString); /* Deallocate strings */
+  free_vstring(sourceLine);
+  free_vstring(outputLine);
+  free_vstring(cmt);
+  free_vstring(cmtMasked);
+  free_vstring(tmpComment);
+  free_vstring(tmp);
+  free_vstring(tmpMasked);
+  free_vstring(tmpStr);
+  free_vstring(tmpStrMasked);
+  free_vstring(bibTag);
+  free_vstring(bibFileName);
+  free_vstring(bibFileContents);
+  free_vstring(bibFileContentsUpper);
+  free_vstring(bibTags);
 
   return returnVal; /* 1 if error/warning found */
 
@@ -2779,16 +2777,16 @@ void printTexLongMath(nmbrString *mathString,
 #define INDENTATION_OFFSET 1
   long i;
   long pos;
-  vstring tex = "";
-  vstring texLine = "";
-  vstring sPrefix = "";
-  vstring htmStep = "";
-  vstring htmStepTag = "";
-  vstring htmHyp = "";
-  vstring htmRef = "";
-  vstring htmLocLab = "";
-  vstring tmp = "";
-  vstring descr = "";
+  vstring_def(tex);
+  vstring_def(texLine);
+  vstring_def(sPrefix);
+  vstring_def(htmStep);
+  vstring_def(htmStepTag);
+  vstring_def(htmHyp);
+  vstring_def(htmRef);
+  vstring_def(htmLocLab);
+  vstring_def(tmp);
+  vstring_def(descr);
   char refType = '?'; /* 'e' means $e, etc. */
 
   let(&sPrefix, startPrefix); /* Save it; it may be temp alloc */
@@ -2798,7 +2796,7 @@ void printTexLongMath(nmbrString *mathString,
 
   /* Note that the "tex" assignment below will be used only when !g_htmlFlag
      and g_oldTexFlag, or when g_htmlFlag and len(sPrefix)>0 */
-  let(&tex, "");
+  free_vstring(tex);
   tex = asciiToTt(sPrefix); /* asciiToTt allocates; we must deallocate */
       /* Example: sPrefix = " 4 2,3 ax-mp  $a " */
       /*          tex = "\ 4\ 2,3\ ax-mp\ \ \$a\ " in !g_htmlFlag mode */
@@ -2898,7 +2896,7 @@ void printTexLongMath(nmbrString *mathString,
 
       printLongLine(cat(
           "\\setbox\\startprefix=\\hbox{\\tt ", tex, "}", NULL), "", "\\");
-      let(&tex, ""); /* Deallocate */
+      free_vstring(tex); /* Deallocate */
       tex = asciiToTt(contPrefix);
       printLongLine(cat(
           "\\setbox\\contprefix=\\hbox{\\tt ", tex, "}", NULL), "", "\\");
@@ -2961,11 +2959,11 @@ void printTexLongMath(nmbrString *mathString,
              help the user to recognized "important" (vs. early trivial
              logic) steps.  This prints a small pink statement number
              after the hypothesis statement label. */
-          let(&tmp, "");
+          free_vstring(tmp);
           tmp = pinkHTML(hypStmt);
 
           /* Get description for mod below */
-          let(&descr, ""); /* Deallocate previous description */
+          free_vstring(descr); /* Deallocate previous description */
           descr = getDescription(hypStmt);
           let(&descr, edit(descr, 4 + 16)); /* Discard lf/cr; reduce spaces */
 #define MAX_DESCR_LEN 87
@@ -3005,13 +3003,12 @@ void printTexLongMath(nmbrString *mathString,
           str((double)(indentationLevel + INDENTATION_OFFSET)), "</SPAN>",
           NULL));
       printLongLine(tmp, "", "\"");
-      let(&tmp, "");
+      free_vstring(tmp);
     } /* strlen(sPrefix) */
   } /* g_htmlFlag */
-  let(&tex, ""); /* Deallocate */
-  let(&sPrefix, ""); /* Deallocate */
+  free_vstring(sPrefix); /* Deallocate */
 
-  let(&tex, "");
+  free_vstring(tex);
   tex = getTexLongMath(mathString, hypStmt);
   let(&texLine, cat(texLine, tex, NULL));
 
@@ -3079,17 +3076,17 @@ void printTexLongMath(nmbrString *mathString,
 
   g_outputToString = 0; /* Restore normal output */
   fprintf(g_texFilePtr, "%s", g_printString);
-  let(&g_printString, "");
+  free_vstring(g_printString);
 
-  let(&descr, ""); /*Deallocate */
-  let(&htmStep, ""); /* Deallocate */
-  let(&htmStepTag, ""); /* Deallocate */
-  let(&htmHyp, ""); /* Deallocate */
-  let(&htmRef, ""); /* Deallocate */
-  let(&htmLocLab, ""); /* Deallocate */
-  let(&tmp, ""); /* Deallocate */
-  let(&texLine, ""); /* Deallocate */
-  let(&tex, ""); /* Deallocate */
+  free_vstring(descr); /*Deallocate */
+  free_vstring(htmStep); /* Deallocate */
+  free_vstring(htmStepTag); /* Deallocate */
+  free_vstring(htmHyp); /* Deallocate */
+  free_vstring(htmRef); /* Deallocate */
+  free_vstring(htmLocLab); /* Deallocate */
+  free_vstring(tmp); /* Deallocate */
+  free_vstring(texLine); /* Deallocate */
+  free_vstring(tex); /* Deallocate */
 } /* printTexLongMath */
 
 void printTexTrailer(flag texTrailerFlag) {
@@ -3117,7 +3114,7 @@ void printTexTrailer(flag texTrailerFlag) {
     }
     g_outputToString = 0; /* Restore normal output */
     fprintf(g_texFilePtr, "%s", g_printString);
-    let(&g_printString, "");
+    free_vstring(g_printString);
   }
 
 } /* printTexTrailer */
@@ -3127,41 +3124,41 @@ void printTexTrailer(flag texTrailerFlag) {
    into mmtheorems.html, mmtheorems1.html,... */
 void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
 {
-  nmbrString *nmbrStmtNmbr = NULL_NMBRSTRING;
+  nmbrString_def(nmbrStmtNmbr);
   long pages, page, assertion, assertions, lastAssertion;
   long s, p, i1, i2;
-  vstring str1 = "";
-  vstring str3 = "";
-  vstring str4 = "";
-  vstring prevNextLinks = "";
+  vstring_def(str1);
+  vstring_def(str3);
+  vstring_def(str4);
+  vstring_def(prevNextLinks);
   long partCntr;        /* Counter for hugeHdr */
   long sectionCntr;     /* Counter for bigHdr */
   long subsectionCntr;  /* Counter for smallHdr */
   long subsubsectionCntr;  /* Counter for tinyHdr */
-  vstring outputFileName = "";
+  vstring_def(outputFileName);
   FILE *outputFilePtr;
   long passNumber; /* for summary/detailed table of contents */
 
   /* for table of contents */
-  vstring hugeHdr = "";
-  vstring bigHdr = "";
-  vstring smallHdr = "";
-  vstring tinyHdr = "";
-  vstring hugeHdrComment = "";
-  vstring bigHdrComment = "";
-  vstring smallHdrComment = "";
-  vstring tinyHdrComment = "";
+  vstring_def(hugeHdr);
+  vstring_def(bigHdr);
+  vstring_def(smallHdr);
+  vstring_def(tinyHdr);
+  vstring_def(hugeHdrComment);
+  vstring_def(bigHdrComment);
+  vstring_def(smallHdrComment);
+  vstring_def(tinyHdrComment);
   long stmt, i;
-  pntrString *pntrHugeHdr = NULL_PNTRSTRING;
-  pntrString *pntrBigHdr = NULL_PNTRSTRING;
-  pntrString *pntrSmallHdr = NULL_PNTRSTRING;
-  pntrString *pntrTinyHdr = NULL_PNTRSTRING;
-  pntrString *pntrHugeHdrComment = NULL_PNTRSTRING;
-  pntrString *pntrBigHdrComment = NULL_PNTRSTRING;
-  pntrString *pntrSmallHdrComment = NULL_PNTRSTRING;
-  pntrString *pntrTinyHdrComment = NULL_PNTRSTRING;
-  vstring hdrCommentMarker = "";
-  vstring hdrCommentAnchor = "";
+  pntrString_def(pntrHugeHdr);
+  pntrString_def(pntrBigHdr);
+  pntrString_def(pntrSmallHdr);
+  pntrString_def(pntrTinyHdr);
+  pntrString_def(pntrHugeHdrComment);
+  pntrString_def(pntrBigHdrComment);
+  pntrString_def(pntrSmallHdrComment);
+  pntrString_def(pntrTinyHdrComment);
+  vstring_def(hdrCommentMarker);
+  vstring_def(hdrCommentAnchor);
   flag hdrCommentAnchorDone = 0;
 
   /* Populate the statement map */
@@ -3388,7 +3385,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
     /* Write out HTML page so far */
     fprintf(outputFilePtr, "%s", g_printString);
     g_outputToString = 0;
-    let(&g_printString, "");
+    free_vstring(g_printString);
 
     /* Add table of contents to first WRITE THEOREM page */
     if (page == 0) {  /* We're on ToC page */
@@ -3406,16 +3403,16 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
         fprintf(outputFilePtr, "%s", g_printString);
 
         g_outputToString = 0;
-        let(&g_printString, "");
+        free_vstring(g_printString);
 
-        let(&hugeHdr, "");
-        let(&bigHdr, "");
-        let(&smallHdr, "");
-        let(&tinyHdr, "");
-        let(&hugeHdrComment, "");
-        let(&bigHdrComment, "");
-        let(&smallHdrComment, "");
-        let(&tinyHdrComment, "");
+        free_vstring(hugeHdr);
+        free_vstring(bigHdr);
+        free_vstring(smallHdr);
+        free_vstring(tinyHdr);
+        free_vstring(hugeHdrComment);
+        free_vstring(bigHdrComment);
+        free_vstring(smallHdrComment);
+        free_vstring(tinyHdrComment);
         partCntr = 0;    /* Initialize counters */
         sectionCntr = 0;
         subsectionCntr = 0;
@@ -3441,7 +3438,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
                   /* g_Statement[stmt].labelName, NULL)); */
                   "mm", str((double)(g_Statement[stmt].pinkNumber)), NULL));
                      /* Link to page/location - no theorem can be named "mm*" */
-              let(&str4, "");
+              free_vstring(str4);
               str4 = pinkHTML(stmt);
               if (hugeHdr[0]) {
 
@@ -3518,8 +3515,8 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
                   let((vstring *)(&pntrHugeHdr[stmt]), hugeHdr);
                   let((vstring *)(&pntrHugeHdrComment[stmt]), hugeHdrComment);
                 }
-                let(&hugeHdr, "");
-                let(&hugeHdrComment, "");
+                free_vstring(hugeHdr);
+                free_vstring(hugeHdrComment);
               }
               if (bigHdr[0]) {
 
@@ -3600,8 +3597,8 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
                   let((vstring *)(&pntrBigHdr[stmt]), bigHdr);
                   let((vstring *)(&pntrBigHdrComment[stmt]), bigHdrComment);
                 }
-                let(&bigHdr, "");
-                let(&bigHdrComment, "");
+                free_vstring(bigHdr);
+                free_vstring(bigHdrComment);
               }
               if (smallHdr[0]
                   && passNumber == 2) {  /* Skip in pass 1 (summary) */
@@ -3650,9 +3647,9 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
                     "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
                 /* Assign to array for use during theorem output */
                 let((vstring *)(&pntrSmallHdr[stmt]), smallHdr);
-                let(&smallHdr, "");
+                free_vstring(smallHdr);
                 let((vstring *)(&pntrSmallHdrComment[stmt]), smallHdrComment);
-                let(&smallHdrComment, "");
+                free_vstring(smallHdrComment);
               }
 
               if (tinyHdr[0] && passNumber == 2) {  /* Skip in pass 1 (summary) */
@@ -3702,14 +3699,14 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
                     "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
                 /* Assign to array for use during theorem output */
                 let((vstring *)(&pntrTinyHdr[stmt]), tinyHdr);
-                let(&tinyHdr, "");
+                free_vstring(tinyHdr);
                 let((vstring *)(&pntrTinyHdrComment[stmt]), tinyHdrComment);
-                let(&tinyHdrComment, "");
+                free_vstring(tinyHdrComment);
               }
 
               fprintf(outputFilePtr, "%s", g_printString);
               g_outputToString = 0;
-              let(&g_printString, "");
+              free_vstring(g_printString);
             } /* if huge or big or small or tiny header */
           } /* if $a or $p */
         } /* next stmt */
@@ -3740,7 +3737,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
       print2("ALT=\"Metamath Proof Explorer\" HEIGHT=32 WIDTH=32\n");
       print2("ALIGN=MIDDLE> &nbsp;Metamath Proof Explorer</A>\n");
 
-      let(&str3, "");
+      free_vstring(str3);
       if (g_Statement[g_extHtmlStmt].pinkNumber <= 0) bug(2332);
       str3 = pinkRangeHTML(nmbrStmtNmbr[1],
           nmbrStmtNmbr[g_Statement[g_extHtmlStmt].pinkNumber - 1]);
@@ -3760,7 +3757,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
  "BORDER=0 ALT=\"Hilbert Space Explorer\" HEIGHT=32 WIDTH=32 ALIGN=MIDDLE>\n");
       print2("&nbsp;Hilbert Space Explorer</A>\n");
 
-      let(&str3, "");
+      free_vstring(str3);
       if (g_Statement[g_mathboxStmt].pinkNumber <= 0) bug(2333);
       str3 = pinkRangeHTML(g_extHtmlStmt,
          nmbrStmtNmbr[g_Statement[g_mathboxStmt].pinkNumber - 1]);
@@ -3780,7 +3777,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
       print2("BORDER=0 ALT=\"Users' Mathboxes\" HEIGHT=32 WIDTH=32 ALIGN=MIDDLE>\n");
       print2("&nbsp;Users' Mathboxes</A>\n");
 
-      let(&str3, "");
+      free_vstring(str3);
       str3 = pinkRangeHTML(g_mathboxStmt, nmbrStmtNmbr[assertions]);
       printLongLine(cat("<BR>(", str3, ")", NULL),
         " ",  /* Start continuation line with space */
@@ -3808,11 +3805,11 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
     print2("<TABLE BORDER CELLSPACING=0 CELLPADDING=3 BGCOLOR=%s\n",
         MINT_BACKGROUND_COLOR);
     print2("SUMMARY=\"Theorem List for %s\">\n", htmlTitle);
-    let(&str3, "");
+    free_vstring(str3);
     if (page < 1) bug(2335); /* Page 0 ToC should have been skipped */
     str3 = pinkHTML(nmbrStmtNmbr[(page - 1) * theoremsPerPage + 1]);
     let(&str3, right(str3, (long)strlen(PINK_NBSP) + 1)); /* Discard "&nbsp;" */
-    let(&str4, "");
+    free_vstring(str4);
     str4 = pinkHTML((page < pages) ?
         nmbrStmtNmbr[page * theoremsPerPage] :
         nmbrStmtNmbr[assertions]);
@@ -3831,7 +3828,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
     print2("\n");
     fprintf(outputFilePtr, "%s", g_printString);
     g_outputToString = 0;
-    let(&g_printString, "");
+    free_vstring(g_printString);
 
     /* Find the last assertion that will be printed on the page, so
        we will know when a separator between theorems is not needed */
@@ -3877,13 +3874,13 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
       }
      skip_date:
 
-      let(&str3, "");
+      free_vstring(str3);
       str3 = getDescription(s);
-      let(&str4, "");
+      free_vstring(str4);
       str4 = pinkHTML(s); /* Get little pink number */
       /* Output the description comment */
       /* Break up long lines for text editors with printLongLine */
-      let(&g_printString, "");
+      free_vstring(g_printString);
       g_outputToString = 1;
       print2("\n"); /* Blank line for HTML source human readability */
 
@@ -3973,7 +3970,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
           /* Clear out the g_printString output in prep for printTexComment */
           g_outputToString = 0;
           fprintf(outputFilePtr, "%s", g_printString);
-          let(&g_printString, "");
+          free_vstring(g_printString);
           g_showStatement = s; /* For printTexComment */
           g_texFilePtr = outputFilePtr; /* For printTexComment */
           printTexComment(  /* Sends result to g_texFilePtr */
@@ -4027,7 +4024,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
           /* Clear out the g_printString output in prep for printTexComment */
           g_outputToString = 0;
           fprintf(outputFilePtr, "%s", g_printString);
-          let(&g_printString, "");
+          free_vstring(g_printString);
           g_showStatement = s; /* For printTexComment */
           g_texFilePtr = outputFilePtr; /* For printTexComment */
           printTexComment(  /* Sends result to g_texFilePtr */
@@ -4082,7 +4079,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
           /* Clear out the g_printString output in prep for printTexComment */
           g_outputToString = 0;
           fprintf(outputFilePtr, "%s", g_printString);
-          let(&g_printString, "");
+          free_vstring(g_printString);
           g_showStatement = s; /* For printTexComment */
           g_texFilePtr = outputFilePtr; /* For printTexComment */
           printTexComment(  /* Sends result to g_texFilePtr */
@@ -4142,7 +4139,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
       g_outputToString = 1; /* Restore after printTexComment */
 
       /* Get HTML hypotheses => assertion */
-      let(&str4, "");
+      free_vstring(str4);
       str4 = getTexOrHtmlHypAndAssertion(s); /* In mmwtex.c */
 
       /* Suppress the math content of lemmas, which can
@@ -4166,7 +4163,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
 
       g_outputToString = 0;
       fprintf(outputFilePtr, "%s", g_printString);
-      let(&g_printString, "");
+      free_vstring(g_printString);
 
       if (assertion != lastAssertion) {
         /* Put separator row if not last theorem */
@@ -4177,7 +4174,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
             "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
         g_outputToString = 0;
         fprintf(outputFilePtr, "%s", g_printString);
-        let(&g_printString, "");
+        free_vstring(g_printString);
       }
     } /* next assertion */
 
@@ -4212,7 +4209,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
 
     g_outputToString = 0;
     fprintf(outputFilePtr, "%s", g_printString);
-    let(&g_printString, "");
+    free_vstring(g_printString);
 
 
     fprintf(outputFilePtr, "<A NAME=\"mmpglst\"></A>\n");
@@ -4226,7 +4223,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
     for (p = 0; p <= pages; p++) {
 
       /* Construct the pink number range */
-      let(&str3, "");
+      free_vstring(str3);
       if (p > 0) {
         str3 = pinkRangeHTML(
             nmbrStmtNmbr[(p - 1) * theoremsPerPage + 1],
@@ -4280,7 +4277,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
     print2("</BODY></HTML>\n");
     g_outputToString = 0;
     fprintf(outputFilePtr, "%s", g_printString);
-    let(&g_printString, "");
+    free_vstring(g_printString);
 
     /* Close file */
     fclose(outputFilePtr);
@@ -4288,24 +4285,24 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
 
  TL_ABORT:
   /* Deallocate memory */
-  let(&str1, "");
-  let(&str3, "");
-  let(&str4, "");
-  let(&prevNextLinks, "");
-  let(&outputFileName, "");
-  let(&hugeHdr, "");
-  let(&bigHdr, "");
-  let(&smallHdr, "");
-  let(&tinyHdr, "");
-  let(&hdrCommentMarker, "");
-  for (i = 0; i <= g_statements; i++) let((vstring *)(&pntrHugeHdr[i]), "");
-  pntrLet(&pntrHugeHdr, NULL_PNTRSTRING);
-  for (i = 0; i <= g_statements; i++) let((vstring *)(&pntrBigHdr[i]), "");
-  pntrLet(&pntrBigHdr, NULL_PNTRSTRING);
-  for (i = 0; i <= g_statements; i++) let((vstring *)(&pntrSmallHdr[i]), "");
-  pntrLet(&pntrSmallHdr, NULL_PNTRSTRING);
-  for (i = 0; i <= g_statements; i++) let((vstring *)(&pntrTinyHdr[i]), "");
-  pntrLet(&pntrTinyHdr, NULL_PNTRSTRING);
+  free_vstring(str1);
+  free_vstring(str3);
+  free_vstring(str4);
+  free_vstring(prevNextLinks);
+  free_vstring(outputFileName);
+  free_vstring(hugeHdr);
+  free_vstring(bigHdr);
+  free_vstring(smallHdr);
+  free_vstring(tinyHdr);
+  free_vstring(hdrCommentMarker);
+  for (i = 0; i <= g_statements; i++) free_vstring(*(vstring *)(&pntrHugeHdr[i]));
+  free_pntrString(pntrHugeHdr);
+  for (i = 0; i <= g_statements; i++) free_vstring(*(vstring *)(&pntrBigHdr[i]));
+  free_pntrString(pntrBigHdr);
+  for (i = 0; i <= g_statements; i++) free_vstring(*(vstring *)(&pntrSmallHdr[i]));
+  free_pntrString(pntrSmallHdr);
+  for (i = 0; i <= g_statements; i++) free_vstring(*(vstring *)(&pntrTinyHdr[i]));
+  free_pntrString(pntrTinyHdr);
 
 } /* writeTheoremList */
 
@@ -4360,7 +4357,7 @@ flag getSectionHeadings(long stmt,
     flag fullComment) {
 
   /* for table of contents */
-  vstring labelStr = "";
+  vstring_def(labelStr);
   long pos, pos1, pos2, pos3, pos4;
   flag errorFound = 0;
   flag saveOutputToString;
@@ -4371,14 +4368,14 @@ flag getSectionHeadings(long stmt,
 
   /* (This initialization seems to be done redundantly by caller elsewhere,
      but for  WRITE SOURCE ... / EXTRACT we need to do it explicitly.) */
-  let(&(*hugeHdrTitle), "");
-  let(&(*bigHdrTitle), "");
-  let(&(*smallHdrTitle), "");
-  let(&(*tinyHdrTitle), "");
-  let(&(*hugeHdrComment), "");
-  let(&(*bigHdrComment), "");
-  let(&(*smallHdrComment), "");
-  let(&(*tinyHdrComment), "");
+  free_vstring(*hugeHdrTitle);
+  free_vstring(*bigHdrTitle);
+  free_vstring(*smallHdrTitle);
+  free_vstring(*tinyHdrTitle);
+  free_vstring(*hugeHdrComment);
+  free_vstring(*bigHdrComment);
+  free_vstring(*smallHdrComment);
+  free_vstring(*tinyHdrComment);
 
   /* We now process only $a or $p statements */
   if (fineResolution == 0) {
@@ -4630,7 +4627,7 @@ flag getSectionHeadings(long stmt,
   /* Restore output stream */
   g_outputToString = saveOutputToString;
 
-  let(&labelStr, "");  /* Deallocate string memory */
+  free_vstring(labelStr);  /* Deallocate string memory */
   return errorFound;
 } /* getSectionHeadings */
 
@@ -4643,8 +4640,8 @@ flag getSectionHeadings(long stmt,
 vstring pinkHTML(long statemNum)
 {
   long statemMap;
-  vstring htmlCode = "";
-  vstring hexValue = "";
+  vstring_def(htmlCode);
+  vstring_def(hexValue);
 
   if (statemNum > 0) {
     statemMap = g_Statement[statemNum].pinkNumber;
@@ -4657,12 +4654,12 @@ vstring pinkHTML(long statemNum)
      was also generated previously) */
 
   /* With style sheet and explicit color */
-  let(&hexValue, "");
+  free_vstring(hexValue);
   hexValue = spectrumToRGB(statemMap, g_Statement[g_statements].pinkNumber);
   let(&htmlCode, cat(PINK_NBSP,
       "<SPAN CLASS=r STYLE=\"color:#", hexValue, "\">",
       (statemMap != -1) ? str((double)statemMap) : "(future)", "</SPAN>", NULL));
-  let(&hexValue, "");
+  free_vstring(hexValue);
 
   return htmlCode;
 } /* pinkHTML */
@@ -4673,20 +4670,20 @@ vstring pinkHTML(long statemNum)
    function cannot be used in let statements but must be assigned to
    a local vstring for local deallocation) */
 vstring pinkRangeHTML(long statemNum1, long statemNum2) {
-  vstring htmlCode = "";
-  vstring str3 = "";
-  vstring str4 = "";
+  vstring_def(htmlCode);
+  vstring_def(str3);
+  vstring_def(str4);
 
   /* Construct the HTML for a pink number range */
-  let(&str3, "");
+  free_vstring(str3);
   str3 = pinkHTML(statemNum1);
   let(&str3, right(str3, (long)strlen(PINK_NBSP) + 1)); /* Discard "&nbsp;" */
-  let(&str4, "");
+  free_vstring(str4);
   str4 = pinkHTML(statemNum2);
   let(&str4, right(str4, (long)strlen(PINK_NBSP) + 1)); /* Discard "&nbsp;" */
   let(&htmlCode, cat(str3, "-", str4, NULL));
-  let(&str3, ""); /* Deallocate */
-  let(&str4, ""); /* Deallocate */
+  free_vstring(str3); /* Deallocate */
+  free_vstring(str4); /* Deallocate */
   return htmlCode;
 } /* pinkRangeHTML */
 
@@ -4696,7 +4693,7 @@ vstring pinkRangeHTML(long statemNum1, long statemNum2) {
    returned vstring to prevent memory leaks.  color = 1 (red) to maxColor
    (violet).  A special case is the color -1, which just returns black. */
 vstring spectrumToRGB(long color, long maxColor) {
-  vstring str1 = "";
+  vstring_def(str1);
   double fraction, fractionInPartition;
   long j, red, green, blue, partition;
 /* Change PARTITIONS whenever the table below has entries added or removed! */
@@ -4825,9 +4822,9 @@ vstring spectrumToRGB(long color, long maxColor) {
 vstring getTexLongMath(nmbrString *mathString, long statemNum)
 {
   long pos;
-  vstring tex = "";
-  vstring texLine = "";
-  vstring lastTex = "";
+  vstring_def(tex);
+  vstring_def(texLine);
+  vstring_def(lastTex);
   flag alphnew, alphold, unknownnew, unknownold;
 
   if (!g_texDefsRead) bug(2322); /* TeX defs were not read */
@@ -4835,7 +4832,7 @@ vstring getTexLongMath(nmbrString *mathString, long statemNum)
 
   let(&lastTex, "");
   for (pos = 0; pos < nmbrLen(mathString); pos++) {
-    let(&tex, "");
+    free_vstring(tex);
     tex = tokenToTex(g_MathToken[mathString[pos]].tokenName, statemNum);
               /* tokenToTex allocates tex; we must deallocate it */
     if (!g_htmlFlag) {  /* LaTeX */
@@ -4992,8 +4989,8 @@ vstring getTexLongMath(nmbrString *mathString, long statemNum)
       texLine,
       (g_altHtmlFlag ? "</SPAN>" : ""), NULL));
 
-  let(&tex, "");
-  let(&lastTex, "");
+  free_vstring(tex);
+  free_vstring(lastTex);
   return texLine;
 } /* getTexLongMath */
 
@@ -5007,8 +5004,8 @@ vstring getTexLongMath(nmbrString *mathString, long statemNum)
 vstring getTexOrHtmlHypAndAssertion(long statemNum) {
   long reqHyps, essHyps, n;
   nmbrString *nmbrTmpPtr; /* Pointer only; not allocated directly */
-  vstring texOrHtmlCode = "";
-  vstring str2 = "";
+  vstring_def(texOrHtmlCode);
+  vstring_def(str2);
   /* Count the number of essential hypotheses essHyps */
   essHyps = 0;
   reqHyps = nmbrLen(g_Statement[statemNum].reqHypList);
@@ -5072,12 +5069,12 @@ vstring getTexOrHtmlHypAndAssertion(long statemNum) {
   }
   /* Construct TeX or HTML assertion */
   nmbrTmpPtr = g_Statement[statemNum].mathString;
-  let(&str2, "");
+  free_vstring(str2);
   str2 = getTexLongMath(nmbrTmpPtr, statemNum);
   let(&texOrHtmlCode, cat(texOrHtmlCode, str2, NULL));
 
   /* Deallocate memory */
-  let(&str2, "");
+  free_vstring(str2);
   return texOrHtmlCode;
 }  /* getTexOrHtmlHypAndAssertion */
 
@@ -5096,8 +5093,13 @@ flag writeBibliography(vstring bibFile,
   FILE *list1_fp = NULL;
   FILE *list2_fp = NULL;
   long lines, p2, i, j, jend, k, l, m, n, p, q, s, pass1refs;
-  vstring str1 = "", str2 = "", str3 = "", str4 = "", newstr = "", oldstr = "";
-  pntrString *pntrTmp = NULL_PNTRSTRING;
+  vstring_def(str1);
+  vstring_def(str2);
+  vstring_def(str3);
+  vstring_def(str4);
+  vstring_def(newstr);
+  vstring_def(oldstr);
+  pntrString_def(pntrTmp);
   flag warnFlag;
 
   n = 0; /* Old gcc 4.6.3 wrongly says may be uninit ln 5506 */
@@ -5319,7 +5321,7 @@ flag writeBibliography(vstring bibFile,
             m = k;
             break;
           }
-          let(&str3, ""); /* Clear tmp alloc stack created by "mid" */
+          freeTempAlloc(); /* Clear tmp alloc stack created by "mid" */
         }
         if (!m) {
           if (p2 == 1) {
@@ -5374,7 +5376,7 @@ flag writeBibliography(vstring bibFile,
           let(&str2, str2);
         }
 
-        let(&newstr, "");
+        free_vstring(newstr);
         newstr = pinkHTML(i); /* Get little pink number */
         let(&oldstr, cat(
             /* Construct the sorting key */
@@ -5472,7 +5474,7 @@ flag writeBibliography(vstring bibFile,
             "\""); /* Don't break inside quotes e.g. "Arial Narrow" */
         g_outputToString = 0;
         fprintf(list2_fp, "%s", g_printString);
-        let(&g_printString, "");
+        free_vstring(g_printString);
       }
     }
   }
@@ -5516,8 +5518,8 @@ flag writeBibliography(vstring bibFile,
 
     print2("%ld table rows were written.\n", n);
     /* Deallocate string array */
-    for (i = 0; i < lines; i++) let((vstring *)(&pntrTmp[i]), "");
-    pntrLet(&pntrTmp,NULL_PNTRSTRING);
+    for (i = 0; i < lines; i++) free_vstring(*(vstring *)(&pntrTmp[i]));
+    free_pntrString(pntrTmp);
   }
 
 
@@ -5608,8 +5610,8 @@ long getMathboxLoc(nmbrString **mathboxStart, nmbrString **mathboxEnd,
     pntrString **mathboxUser) {
   long m, p, q, tagLen, stmt;
   long mathboxes = 0;
-  vstring comment = "";
-  vstring user = "";
+  vstring_def(comment);
+  vstring_def(user);
   assignMathboxInfo(); /* Assign g_mathboxStmt */
   tagLen = (long)strlen(MB_TAG);
   /* Ensure lists are initialized */
@@ -5648,7 +5650,7 @@ long getMathboxLoc(nmbrString **mathboxStart, nmbrString **mathboxEnd,
   }
   (*mathboxEnd)[mathboxes - 1] = g_statements; /* Assumed end of last mathbox */
  RETURN_POINT:
-  let(&comment, "");
-  let(&user, "");
+  free_vstring(comment);
+  free_vstring(user);
   return mathboxes;
 } /* getMathboxLoc */

@@ -140,9 +140,9 @@ int maxNestingLevel = -1;
 int nestingLevel = 0;
 
 /* For improving rejection of impossible substitutions */
-nmbrString *g_firstConst = NULL_NMBRSTRING;
-nmbrString *g_lastConst = NULL_NMBRSTRING;
-nmbrString *g_oneConst = NULL_NMBRSTRING;
+nmbrString_def(g_firstConst);
+nmbrString_def(g_lastConst);
+nmbrString_def(g_oneConst);
 
 
 
@@ -162,14 +162,14 @@ nmbrString *makeSubstUnif(flag *newVarFlag,
 {
   long p,q,i,j,k,m,tokenNum;
   long schemeLen;
-  nmbrString *result = NULL_NMBRSTRING;
-  nmbrString *stackUnkVar = NULL_NMBRSTRING;
+  nmbrString_def(result);
+  nmbrString_def(stackUnkVar);
   nmbrString *unifiedScheme; /* Pointer only - not allocated */
   nmbrString *stackUnkVarLen; /* Pointer only - not allocated */
   nmbrString *stackUnkVarStart; /* Pointer only - not allocated */
   long stackTop;
 /*E*/long d;
-/*E*/vstring tmpStr = "";
+/*E*/vstring_def(tmpStr);
 /*E*/let(&tmpStr,tmpStr);
 
   stackTop = ((nmbrString *)(stateVector[11]))[1];
@@ -262,7 +262,7 @@ nmbrString *makeSubstUnif(flag *newVarFlag,
 /*E*/if(db7)print2("after newVarFlag %d\n",(int)*newVarFlag);
 /*E*/if(db7)print2("final len is %ld\n",q);
 /*E*/if(db7)printLongLine(cat("result ",nmbrCvtMToVString(result),NULL),""," ");
-  nmbrLet(&stackUnkVar, NULL_NMBRSTRING); /* Deallocate */
+  free_nmbrString(stackUnkVar); /* Deallocate */
   return (result);
 } /* makeSubstUnif */
 
@@ -321,12 +321,12 @@ char unify(
   nmbrString *unifiedScheme; /* Final result */
   long p; /* Current position in schemeA or schemeB */
   long substToken; /* Token from schemeA or schemeB that will be substituted */
-  nmbrString *substitution = NULL_NMBRSTRING;
+  nmbrString_def(substitution);
                                        /* String to be subst. for substToken */
   nmbrString *nmbrTmpPtr; /* temp pointer only */
   pntrString *pntrTmpPtr; /* temp pointer only */
-  nmbrString *schA = NULL_NMBRSTRING; /* schemeA with dummy token at end */
-  nmbrString *schB = NULL_NMBRSTRING; /* schemeB with dummy token at end */
+  nmbrString_def(schA); /* schemeA with dummy token at end */
+  nmbrString_def(schB); /* schemeB with dummy token at end */
   long i,j,k,m, pairingMismatches;
   flag breakFlag;
   flag schemeAFlag;
@@ -345,7 +345,7 @@ char unify(
 
 
 /*E*/long d;
-/*E*/vstring tmpStr = "";
+/*E*/vstring_def(tmpStr);
 /*E*/let(&tmpStr,tmpStr);
 /*E*/if(db5)print2("Entering unify() with reEntryFlag = %ld.\n",
 /*E*/  (long)reEntryFlag);
@@ -1135,18 +1135,18 @@ char unify(
 
 /*E*/if(db5)printSubst(*stateVector);
   /* Deallocate nmbrStrings */
-  nmbrLet(&schA, NULL_NMBRSTRING);
-  nmbrLet(&schB, NULL_NMBRSTRING);
-  nmbrLet(&substitution, NULL_NMBRSTRING);
+  free_nmbrString(schA);
+  free_nmbrString(schB);
+  free_nmbrString(substitution);
   return (1);
 
  abort:
 /*E*/if(db5)print2("Backtrack count was %ld\n",g_unifTrialCount);
   /* Deallocate stateVector contents */
-  nmbrLet(&unkVars,NULL_NMBRSTRING);
-  nmbrLet(&stackUnkVar,NULL_NMBRSTRING);
-  nmbrLet(&stackUnkVarStart,NULL_NMBRSTRING);
-  nmbrLet(&stackUnkVarLen,NULL_NMBRSTRING);
+  free_nmbrString(unkVars);
+  free_nmbrString(stackUnkVar);
+  free_nmbrString(stackUnkVarStart);
+  free_nmbrString(stackUnkVarLen);
   for (i = 0; i < unkVarsLen; i++) {
     /* Deallocate the stack space for these */
     nmbrLet((nmbrString **)(&stackSaveUnkVarStart[i]),
@@ -1158,35 +1158,33 @@ char unify(
     nmbrLet((nmbrString **)(&stackSaveSchemeB[i]),
         NULL_NMBRSTRING);
   }
-  pntrLet(&stackSaveUnkVarStart,NULL_PNTRSTRING);
-  pntrLet(&stackSaveUnkVarLen,NULL_PNTRSTRING);
-  pntrLet(&stackSaveSchemeA,NULL_PNTRSTRING);
-  pntrLet(&stackSaveSchemeB,NULL_PNTRSTRING);
-  nmbrLet(&unifiedScheme,NULL_NMBRSTRING);
+  free_pntrString(stackSaveUnkVarStart);
+  free_pntrString(stackSaveUnkVarLen);
+  free_pntrString(stackSaveSchemeA);
+  free_pntrString(stackSaveSchemeB);
+  free_nmbrString(unifiedScheme);
   /* Deallocate entries used by oneDirUnif() */
-  nmbrLet((nmbrString **)(&(*stateVector)[9]),NULL_NMBRSTRING);
-  nmbrLet((nmbrString **)(&(*stateVector)[10]),NULL_NMBRSTRING);
+  free_nmbrString(*(nmbrString **)(&(*stateVector)[9]));
+  free_nmbrString(*(nmbrString **)(&(*stateVector)[10]));
   /* Deallocate entries used by unifyH() */
   k = pntrLen((pntrString *)((*stateVector)[12]));
   for (i = 12; i < 16; i++) {
     pntrTmpPtr = (pntrString *)((*stateVector)[i]);
     for (j = 0; j < k; j++) {
-      nmbrLet((nmbrString **)(&pntrTmpPtr[j]),
-          NULL_NMBRSTRING);
+      free_nmbrString(*(nmbrString **)(&pntrTmpPtr[j]));
     }
-    pntrLet((pntrString **)(&(*stateVector)[i]),
-        NULL_PNTRSTRING);
+    free_pntrString(*(pntrString **)(&(*stateVector)[i]));
   }
   /* Deallocate the stateVector itself */
   ((nmbrString *)((*stateVector)[11]))[1] = 0;
       /* stackTop: Make sure it's not -1 before calling nmbrLet() */
-  nmbrLet((nmbrString **)(&(*stateVector)[11]),NULL_NMBRSTRING);
-  pntrLet(&(*stateVector),NULL_PNTRSTRING);
+  free_nmbrString(*(nmbrString **)(&(*stateVector)[11]));
+  free_pntrString(*stateVector);
 
   /* Deallocate nmbrStrings */
-  nmbrLet(&schA,NULL_NMBRSTRING);
-  nmbrLet(&schB,NULL_NMBRSTRING);
-  nmbrLet(&substitution,NULL_NMBRSTRING);
+  free_nmbrString(schA);
+  free_nmbrString(schB);
+  free_nmbrString(substitution);
 
   if (timeoutAbortFlag) {
     return (2);
@@ -1270,7 +1268,7 @@ char uniqueUnif(
     const nmbrString *schemeB,
     pntrString **stateVector)
 {
-  pntrString *saveStateVector = NULL_PNTRSTRING;
+  pntrString_def(saveStateVector);
   pntrString *pntrTmpPtr1; /* Pointer only; not allocated */
   pntrString *pntrTmpPtr2; /* Pointer only; not allocated */
   long i, j, k;
@@ -1352,32 +1350,27 @@ char uniqueUnif(
     pntrTmpPtr1 = (pntrString *)(saveStateVector[i]);
     for (j = 0; j < ((nmbrString *)(saveStateVector[11]))[0]; j++) {
                       /* ((nmbrString *)(saveStateVector[11]))[0] is unkVarsLen */
-      nmbrLet((nmbrString **)(&pntrTmpPtr1[j]), NULL_NMBRSTRING);
+      free_nmbrString(*(nmbrString **)(&pntrTmpPtr1[j]));
     }
   }
   for (i = 0; i <= 3; i++) {
-    nmbrLet((nmbrString **)(&saveStateVector[i]),
-        NULL_NMBRSTRING);
+    free_nmbrString(*(nmbrString **)(&saveStateVector[i]));
   }
   for (i = 4; i <= 7; i++) {
-    pntrLet((pntrString **)(&saveStateVector[i]),
-        NULL_PNTRSTRING);
+    free_pntrString(*(pntrString **)(&saveStateVector[i]));
   }
   for (i = 8; i <= 11; i++) {
-    nmbrLet((nmbrString **)(&saveStateVector[i]),
-        NULL_NMBRSTRING);
+    free_nmbrString(*(nmbrString **)(&saveStateVector[i]));
   }
   k = pntrLen((pntrString *)(saveStateVector[12]));
   for (i = 12; i < 16; i++) {
     pntrTmpPtr1 = (pntrString *)(saveStateVector[i]);
     for (j = 0; j < k; j++) {
-      nmbrLet((nmbrString **)(&pntrTmpPtr1[j]),
-          NULL_NMBRSTRING);
+      free_nmbrString(*(nmbrString **)(&pntrTmpPtr1[j]));
     }
-    pntrLet((pntrString **)(&saveStateVector[i]),
-        NULL_PNTRSTRING);
+    free_pntrString(*(pntrString **)(&saveStateVector[i]));
   }
-  pntrLet(&saveStateVector, NULL_PNTRSTRING);
+  free_pntrString(saveStateVector);
 
   if (tmpFlag == 2) {
     return (2); /* Unification timed out */
@@ -1405,32 +1398,27 @@ void purgeStateVector(pntrString **stateVector) {
     pntrTmpPtr1 = (pntrString *)((*stateVector)[i]);
     for (j = 0; j < ((nmbrString *)((*stateVector)[11]))[0]; j++) {
                       /* ((nmbrString *)((*stateVector)[11]))[0] is unkVarsLen */
-      nmbrLet((nmbrString **)(&pntrTmpPtr1[j]), NULL_NMBRSTRING);
+      free_nmbrString(*(nmbrString **)(&pntrTmpPtr1[j]));
     }
   }
   for (i = 0; i <= 3; i++) {
-    nmbrLet((nmbrString **)(&(*stateVector)[i]),
-        NULL_NMBRSTRING);
+    free_nmbrString(*(nmbrString **)(&(*stateVector)[i]));
   }
   for (i = 4; i <= 7; i++) {
-    pntrLet((pntrString **)(&(*stateVector)[i]),
-        NULL_PNTRSTRING);
+    free_pntrString(*(pntrString **)(&(*stateVector)[i]));
   }
   for (i = 8; i <= 11; i++) {
-    nmbrLet((nmbrString **)(&(*stateVector)[i]),
-        NULL_NMBRSTRING);
+    free_nmbrString(*(nmbrString **)(&(*stateVector)[i]));
   }
   k = pntrLen((pntrString *)((*stateVector)[12]));
   for (i = 12; i < 16; i++) {
     pntrTmpPtr1 = (pntrString *)((*stateVector)[i]);
     for (j = 0; j < k; j++) {
-      nmbrLet((nmbrString **)(&pntrTmpPtr1[j]),
-          NULL_NMBRSTRING);
+      free_nmbrString(*(nmbrString **)(&pntrTmpPtr1[j]));
     }
-    pntrLet((pntrString **)(&(*stateVector)[i]),
-        NULL_PNTRSTRING);
+    free_pntrString(*(pntrString **)(&(*stateVector)[i]));
   }
-  pntrLet(&(*stateVector), NULL_PNTRSTRING);
+  free_pntrString(*stateVector);
 
   return;
 
@@ -1445,8 +1433,8 @@ void printSubst(pntrString *stateVector) {
   nmbrString *stackUnkVarLen; /* Pointer only - not allocated */
   nmbrString *stackUnkVarStart; /* Pointer only - not allocated */
   long stackTop;
-  vstring tmpStr = "";
-  nmbrString *nmbrTmp = NULL_NMBRSTRING;
+  vstring_def(tmpStr);
+  nmbrString_def(nmbrTmp);
 
   stackTop = ((nmbrString *)(stateVector[11]))[1];
   stackUnkVar = (nmbrString *)(stateVector[1]);
@@ -1461,8 +1449,8 @@ void printSubst(pntrString *stateVector) {
             nmbrMid(unifiedScheme,stackUnkVarStart[d] + 1,
             stackUnkVarLen[d])),"'.",NULL),"    "," ");
     /* Clear temporary string allocation */
-    let(&tmpStr,"");
-    nmbrLet(&nmbrTmp,NULL_NMBRSTRING);
+    free_vstring(tmpStr);
+    free_nmbrString(nmbrTmp);
   }
 } /* printSubst */
 
@@ -1480,10 +1468,10 @@ char unifyH(
     long reEntryFlag)
 {
   char tmpFlag;
-  nmbrString *hentyVars = NULL_NMBRSTRING;
-  nmbrString *hentyVarStart = NULL_NMBRSTRING;
-  nmbrString *hentyVarLen = NULL_NMBRSTRING;
-  nmbrString *hentySubstList = NULL_NMBRSTRING;
+  nmbrString_def(hentyVars);
+  nmbrString_def(hentyVarStart);
+  nmbrString_def(hentyVarLen);
+  nmbrString_def(hentySubstList);
 
   /* Bypass this filter if SET HENTY_FILTER OFF is selected. */
   if (!g_hentyFilter) return unify(schemeA, schemeB, stateVector, reEntryFlag);
@@ -1538,10 +1526,10 @@ char unifyH(
     /* Deallocate memory (when reEntryFlag is 1 and (not possible or timeout)).
        (In the other cases, hentyVars and hentySubsts pointers are assigned
        directly to stateVector so they should not be deallocated) */
-    nmbrLet(&hentyVars, NULL_NMBRSTRING);
-    nmbrLet(&hentyVarStart, NULL_NMBRSTRING);
-    nmbrLet(&hentyVarLen, NULL_NMBRSTRING);
-    nmbrLet(&hentySubstList, NULL_NMBRSTRING);
+    free_nmbrString(hentyVars);
+    free_nmbrString(hentyVarStart);
+    free_nmbrString(hentyVarLen);
+    free_nmbrString(hentySubstList);
     return (tmpFlag);
 
   }
@@ -1555,7 +1543,7 @@ void hentyNormalize(nmbrString **hentyVars, nmbrString **hentyVarStart,
   long vars, var1, var2, schLen;
   long n, el, rra, rrb, rrc, ir, i, j; /* Variables for heap sort */
   long totalSubstLen, pos;
-  nmbrString *substList = NULL_NMBRSTRING;
+  nmbrString_def(substList);
 
   /* Extract the substitutions. */
   vars = ((nmbrString *)((*stateVector)[11]))[1] + 1; /* stackTop + 1 */
@@ -1665,7 +1653,7 @@ void hentyNormalize(nmbrString **hentyVars, nmbrString **hentyVarStart,
   nmbrLet((nmbrString **)(&(*hentySubstList)), substList);
 
   /* Deallocate memory */
-  nmbrLet(&substList, NULL_NMBRSTRING);
+  free_nmbrString(substList);
 
   return;
 

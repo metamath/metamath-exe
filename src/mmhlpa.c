@@ -20,7 +20,7 @@
 /* help0 is mostly for TOOLS help */
 void help0(vstring helpCmd) {
 
-vstring saveHelpCmd = "";
+vstring_def(saveHelpCmd);
 /* help0() may be called with a temporarily allocated argument (left(),
    cat(), etc.), and the let()s in the eventual print2() calls will
    deallocate and possibly corrupt helpCmd.  So, we grab a non-temporarily
@@ -346,7 +346,7 @@ H("For your convenience, the trailing quote is optional, for example:");
 H("    Tools> 'ls | more");
 H("");
 
-let(&saveHelpCmd, ""); /* Deallocate memory */
+free_vstring(saveHelpCmd); /* Deallocate memory */
 
 return;
 } /* help0 */
@@ -355,7 +355,7 @@ return;
 /* Note: help1 should contain Metamath help */
 void help1(vstring helpCmd) {
 
-vstring saveHelpCmd = "";
+vstring_def(saveHelpCmd);
 /* help1() may be called with a temporarily allocated argument (left(),
    cat(), etc.), and the let()s in the eventual print2() calls will
    deallocate and possibly corrupt helpCmd.  So, we grab a non-temporarily
@@ -1142,7 +1142,7 @@ H("GIF format unless ALT_HTML was previously set as shown in SHOW SETTINGS.");
 H("");
 
 
-let(&saveHelpCmd, ""); /* Deallocate memory */
+free_vstring(saveHelpCmd); /* Deallocate memory */
 return;
 
 } /* help1 */

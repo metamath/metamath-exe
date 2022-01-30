@@ -18,7 +18,7 @@
 void help2(vstring helpCmd)
 {
 
-vstring saveHelpCmd = "";
+vstring_def(saveHelpCmd);
 /* help2() may be called with a temporarily allocated argument (left(),
    cat(), etc.), and the let()s in the eventual print2() calls will
    deallocate and possibly corrupt helpCmd.  So, we grab a non-temporarily
@@ -348,7 +348,7 @@ H("        statements are excluded when <label-match> contains wildcard");
 H("        characters.");
 H("");
 
-let(&saveHelpCmd, ""); /* Deallocate memory */
+free_vstring(saveHelpCmd); /* Deallocate memory */
 
 return;
 } /* help2 */
@@ -357,7 +357,7 @@ return;
 /* Split up help2 into help2 and help3 so lcc optimizer wouldn't overflow */
 void help3(vstring helpCmd) {
 
-vstring saveHelpCmd = "";
+vstring_def(saveHelpCmd);
 /* help3() may be called with a temporarily allocated argument (left(),
    cat(), etc.), and the let()s in the eventual print2() calls will
    deallocate and possibly corrupt helpCmd.  So, we grab a non-temporarily
@@ -1398,6 +1398,6 @@ H("will show all statements with subset then union in them.");
 H("");
 
 if (strcmp(helpCmd, saveHelpCmd)) bug(1401); /* helpCmd got corrupted */
-let(&saveHelpCmd, ""); /* Deallocate memory */
+free_vstring(saveHelpCmd); /* Deallocate memory */
 
 }

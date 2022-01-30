@@ -34,10 +34,10 @@ char verifyProof(long statemNum)
   char returnFlag = 0;
   nmbrString *nmbrTmpPtr;
   nmbrString *nmbrHypPtr;
-  nmbrString *bigSubstSchemeHyp = NULL_NMBRSTRING;
-  nmbrString *bigSubstInstHyp = NULL_NMBRSTRING;
+  nmbrString_def(bigSubstSchemeHyp);
+  nmbrString_def(bigSubstInstHyp);
   flag unkHypFlag;
-  nmbrString *nmbrTmp = NULL_NMBRSTRING; /* Used to force tmp stack dealloc */
+  nmbrString_def(nmbrTmp); /* Used to force tmp stack dealloc */
 
   if (g_Statement[statemNum].type != p_) return (4); /* Do nothing if not $p */
 
@@ -173,7 +173,7 @@ char verifyProof(long statemNum)
 /*E*/    nmbrCvtMToVString(nmbrTmpPtr), NULL), "", " ");
 
     /* Deallocate stack built up if there are many $d violations */
-    nmbrLet(&nmbrTmp, NULL_NMBRSTRING);
+    free_nmbrString(nmbrTmp);
 
     /* Assign the substituted assertion (must be deallocated by
          cleanWrkProof()!) */
@@ -218,8 +218,8 @@ char verifyProof(long statemNum)
     }
   }
 
-  nmbrLet(&bigSubstSchemeHyp, NULL_NMBRSTRING);
-  nmbrLet(&bigSubstInstHyp, NULL_NMBRSTRING);
+  free_nmbrString(bigSubstSchemeHyp);
+  free_nmbrString(bigSubstInstHyp);
 
   return (returnFlag);
 
@@ -235,19 +235,19 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
   /* For error messages: */
   long statementNum, long step, flag unkHypFlag)
 {
-  nmbrString *bigSubstSchemeVars = NULL_NMBRSTRING;
-  nmbrString *substSchemeFrstVarOcc = NULL_NMBRSTRING;
-  nmbrString *varAssLen = NULL_NMBRSTRING;
-  nmbrString *substInstFrstVarOcc = NULL_NMBRSTRING;
-  nmbrString *result = NULL_NMBRSTRING; /* value returned */
+  nmbrString_def(bigSubstSchemeVars);
+  nmbrString_def(substSchemeFrstVarOcc);
+  nmbrString_def(varAssLen);
+  nmbrString_def(substInstFrstVarOcc);
+  nmbrString_def(result); /* value returned */
   long bigSubstSchemeLen,bigSubstInstLen,bigSubstSchemeVarLen,substSchemeLen,
       resultLen;
   long i,v,v1,p,q,tokenNum;
   flag breakFlag, contFlag;
-  vstring tmpStr = "";
-  vstring tmpStr2 = "";
+  vstring_def(tmpStr);
+  vstring_def(tmpStr2);
   flag ambiguityCheckFlag = 0;
-  nmbrString *saveResult = NULL_NMBRSTRING;
+  nmbrString_def(saveResult);
 
   /* Variables for disjoint variable ($d) check */
   nmbrString *nmbrTmpPtrAS;
@@ -266,7 +266,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
   long numReqHyp;
   nmbrString *nmbrHypPtr;
 
-  nmbrString *nmbrTmp = NULL_NMBRSTRING; /* Used to force tmp stack dealloc */
+  nmbrString_def(nmbrTmp); /* Used to force tmp stack dealloc */
 
   long nmbrSaveTempAllocStack;
 
@@ -363,7 +363,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
 /*E*/    nmbrMid(bigSubstInstAss,substInstFrstVarOcc[v]+1,
 /*E*/    varAssLen[v])), NULL), "", " ");
 /*E*/if(db7)nmbrLet(&bigSubstInstAss,bigSubstInstAss);
-/*E*/if(db7){print2("Enter scan: v=%ld,p=%ld,q=%ld\n",v,p,q); let(&tmpStr,"");}
+/*E*/if(db7){print2("Enter scan: v=%ld,p=%ld,q=%ld\n",v,p,q); free_vstring(tmpStr);}
     tokenNum = bigSubstSchemeAss[p];
     if (g_MathToken[tokenNum].tokenType == (char)con_) {
       /* Constants must match in both substScheme and definiendum assumptions */
@@ -524,8 +524,8 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
           " hypotheses.  The ",tmpStr,
           ".  Type \"SHOW PROOF ",g_Statement[statementNum].labelName,
           "\" to see the proof attempt.",NULL)); */ /* Old version */
-      let(&tmpStr, "");
-      let(&tmpStr2, "");
+      free_vstring(tmpStr);
+      free_vstring(tmpStr2);
     }
     g_WrkProof.errorCount++;
     goto returnPoint;
@@ -539,11 +539,11 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
     if (unkHypFlag) {
       /* If a hypothesis was unknown, the fact that the unification is ambiguous
          doesn't matter, so just return with an empty (unknown) answer. */
-      nmbrLet(&result,NULL_NMBRSTRING);
+      free_nmbrString(result);
       goto returnPoint;
     }
     nmbrLet(&saveResult, result);
-    nmbrLet(&result, NULL_NMBRSTRING);
+    free_nmbrString(result);
   }
 
 
@@ -679,8 +679,8 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
                   g_MathToken[aToken].tokenName,
                   "\" in common.",
                   NULL));
-              let(&tmpStr, ""); /* Force tmp string stack dealloc */
-              nmbrLet(&nmbrTmp,NULL_NMBRSTRING); /* Force tmp stack dealloc */
+              freeTempAlloc(); /* Force tmp string stack dealloc */
+              free_nmbrString(nmbrTmp); /* Force tmp stack dealloc */
             } /* (End if (!g_WrkProof.errorCount) ) */
           } else { /* aToken != bToken */
             /* The variables are different.  We're still not done though:  We
@@ -764,8 +764,8 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
                     "assertion being proved, \"",
                     g_Statement[statementNum].labelName,
                     "\".", NULL), "", " ");
-                let(&tmpStr, ""); /* Force tmp string stack dealloc */
-                nmbrLet(&nmbrTmp,NULL_NMBRSTRING); /* Force tmp stack dealloc */
+                freeTempAlloc(); /* Force tmp string stack dealloc */
+                free_nmbrString(nmbrTmp); /* Force tmp stack dealloc */
               } /* (End if (!g_WrkProof.errorCount) ) */
             } /* (End if (!foundFlag)) */
           } /* (End if (aToken == bToken)) */
@@ -852,14 +852,14 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
     varAssLen[i] = 0;
     substInstFrstVarOcc[i] = 0;
   }
-  nmbrLet(&bigSubstSchemeVars,NULL_NMBRSTRING);
-  nmbrLet(&substSchemeFrstVarOcc,NULL_NMBRSTRING);
-  nmbrLet(&varAssLen,NULL_NMBRSTRING);
-  nmbrLet(&substInstFrstVarOcc,NULL_NMBRSTRING);
-  nmbrLet(&saveResult,NULL_NMBRSTRING);
+  free_nmbrString(bigSubstSchemeVars);
+  free_nmbrString(substSchemeFrstVarOcc);
+  free_nmbrString(varAssLen);
+  free_nmbrString(substInstFrstVarOcc);
+  free_nmbrString(saveResult);
 
   g_nmbrStartTempAllocStack = nmbrSaveTempAllocStack;
-  return(result);
+  return result;
 
 }
 
@@ -880,8 +880,7 @@ void cleanWrkProof(void) {
       if (type == a_ || type == p_) {
         /* Allocation was only done if: (1) it's not a local label reference
            and (2) it's not a hypothesis.  In this case, deallocate. */
-        nmbrLet((nmbrString **)(&g_WrkProof.mathStringPtrs[step]),
-            NULL_NMBRSTRING);
+        free_nmbrString(*(nmbrString **)(&g_WrkProof.mathStringPtrs[step]));
       }
     }
   }
