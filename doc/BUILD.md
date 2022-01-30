@@ -196,7 +196,9 @@ members.  Do not interfere with its contents.
 
 This Unix program called __autoconf__, or its sibling __autoreconf__, is
 capable of generating a _configure_ shell script from the input _configure.ac_.
-It uses functions defined in _aclocal.m4_ to perform its task. 
+It uses functions defined in _aclocal.m4_ to perform its task.
+
+[Dokumentation](https://www.gnu.org/software/autoconf/)
 
 ### Makefile.am
 
