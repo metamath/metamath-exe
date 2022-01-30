@@ -66,7 +66,6 @@ cd "$BUILDDIR"
 
 cp --symbolic-link "$SRCDIR"/* .
 mv configure.ac configure.ac.orig
-mv Doxyfile.diff Doxyfile.diff.orig
 
 #=========   patch the version in configure.ac and Doxyfile.diff  =============
 
