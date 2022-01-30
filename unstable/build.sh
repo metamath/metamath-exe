@@ -107,7 +107,11 @@ head -n $(($AC_INIT_LINE_NR - 1)) configure.ac.orig > configure.ac
 echo $PATCHED_INIT_LINE >> configure.ac
 tail -n +$(($AC_INIT_LINE_NR + 1)) configure.ac.orig >> configure.ac
 
-rm configure.ac.orig
+# patch the Doxyfile.diff
+cp Doxyfile.diff.orig Doxyfile.diff
+sed --in-place "s/\\(PROJECT_NUMBER[[:space:]]*=[[:space:]]*\\)\"Metamath-version\".*/\\1\"$VERSION\"/" Doxyfile.diff
+
+rm configure.ac.orig Doxyfile.diff.orig
 
 #===========   do the build   =====================
 
