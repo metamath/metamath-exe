@@ -15,6 +15,7 @@ Possible options are:
 
 -d followed by a directory: clear directory and build all artefacts there.
     Relative paths are relative to the destination'"'"'s top metamath-exe directory.
+-e only build executable, skip documentation.
 -h print this help and exit.
 -m followed by a directory: top folder of metamath-exe.
     Relative paths are relative to the current directory.
@@ -29,6 +30,7 @@ while getopts d:hm:v flag
 do
   case "${flag}" in
     d) destdir=${OPTARG};;
+    e) bin_only=1;;
     h) print_help=1;;
     m) cd "${OPTARG}" && metamathdir=$(pwd);;
     v) version_only=1;;
@@ -103,7 +105,8 @@ AC_INIT_LINE=${AC_INIT_LINE#*:}
 PATCHED_INIT_LINE=`echo "$AC_INIT_LINE" | sed "s/\\([[:space:]]*AC_INIT(.*\\),.*,\\(.*\\)/\\1, \[$VERSION\],\\2/"`
 
 # replace the AC_INIT line with new content
-head -n $(($AC_INIT_LINE_NR - 1)) configure.ac.orig > configure.ac
+head -n $(($AC_INIT_LINE_NR - 1)) configure.ac.orig > configure.acrm configure.ac.orig
+
 echo $PATCHED_INIT_LINE >> configure.ac
 tail -n +$(($AC_INIT_LINE_NR + 1)) configure.ac.orig >> configure.ac
 
@@ -118,5 +121,29 @@ rm configure.ac.orig Doxyfile.diff.orig
 autoreconf -i
 ./configure
 make
+
+if [ ${bin_only:-0} -eq 0 ]
+then
+  if ! command doxygen -v
+  then
+    echo 'doxygen not found. Cannot build documentation.'
+  fi
+
+  # create a Doxyfile.local and use it for creation of documentation locally
+  
+  # start with the settings given by the distribution
+  cp Doxyfile.diff Doxyfile.local
+  
+  # let the users preferences always override...
+  if [ -f "$SRCDIR"/Doxyfile]
+  then
+    cat "$SRCDIR"/Doxyfile >> Doxyfile.local
+  fi
+  
+  # ... except for the destination directory.  Force this to the build folder.
+  echo "OUTPUT_DIRECTORY = \"$BUILDDIR\"" >> Doxyfile.local
+
+  doxygen Doxyfile.local
+fi
 
 cd "$CURDIR"
