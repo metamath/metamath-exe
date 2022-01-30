@@ -129,9 +129,10 @@ input file _config.h.in_ is created.  A few instructions set project data like
 name or version number.  A couple of other instructions aim at patching system
 dependent variables in _Makefile.am_, later used to support _make_.
 
-The script language used for encoding this is __M4__ using a couple of built-in
-commands of __autoconf__.  This language is designed to provide cross-platform
-descriptions of features of the OS.
+The script language used for encoding this is [M4]
+(https://www.gnu.org/software/m4/manual) using a couple of built-in commands of
+__autoconf__.  This language is designed to provide cross-platform descriptions
+of features of the OS.
 
 ## autoreconf
 
@@ -203,6 +204,8 @@ It uses functions defined in _aclocal.m4_ to perform its task.
 ### Makefile.am
 
 ### automake
+
+[Dokumentation](https://www.gnu.org/software/automake/manual)
 
 ### invoking configure
 
