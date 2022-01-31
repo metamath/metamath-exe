@@ -42,8 +42,9 @@ fi
 
 # color codes
 red='\033[0;31m'
-cyan='\033[0;36m'
 green='\033[0;32m'
+cyan='\033[0;36m'
+white='\033[0;37m'
 off='\033[0m'
 
 # set to 1 if any test fails
@@ -73,7 +74,7 @@ for test in "$@"; do
   run_cmd() { if [ -f "$test.mm" ]; then "$cmd" "$test.mm"; else "$cmd"; fi }
 
   # Actually run the program
-  echo -n "running test $test.in: "
+  echo -n "running test ${white}$test${off}.in: "
   result=$(run_cmd < "$test.in")
   # exit code stored in $?
 
@@ -99,12 +100,20 @@ for test in "$@"; do
       # if we are in bless mode then copy the $test.produced and report success
       echo "${cyan}blessed${off}"
       cp "$test.produced" "$test.expected"
+      echo "$test.expected:"
+      echo -n "---------------------------------------\n${green}"
+      cat "$test.expected"
+      echo "${off}---------------------------------------\n"
     else
       # otherwise this is a fail, and blessing will help
       echo "${red}failed${off}"; exit_code=1; needs_bless=1
+      echo "$test.expected missing, $test.produced:"
+      echo -n "---------------------------------------\n${green}"
+      cat "$test.produced"
+      echo "${off}---------------------------------------\n"
     fi
   # call diff and put the diff output in $diff_result
-  elif diff_result=$(diff "$outfile" "$test.expected" --color=always); then
+  elif diff_result=$(diff "$test.expected" "$outfile" --color=always); then
     # If it succeeded (the files are the same), then the test passed
     echo "${green}ok${off}"
   elif [ "$bless" = "1" ]; then
@@ -112,13 +121,20 @@ for test in "$@"; do
     # but report that we've modified the $test.expected file
     echo "${cyan}blessed${off}"
     cp "$test.produced" "$test.expected"
+    echo "$test.expected changes:"
+    echo "---------------------------------------"
+    echo "$diff_result"
+    echo "---------------------------------------\n"
   else
     # If the files are different and we aren't in bless mode
     # then this is a fail, but blessing will help
     echo "${red}failed${off}"; exit_code=1; needs_bless=1
 
     # Give a verbose error report, including the file names being diffed
-    echo "$test.produced and $test.expected differ\n$diff_result\n"
+    echo "$test.expected and $test.produced differ"
+    echo "---------------------------------------"
+    echo "$diff_result"
+    echo "---------------------------------------\n"
   fi
 done
 
