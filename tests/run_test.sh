@@ -49,8 +49,9 @@ for test in "$@"; do
   ! grep -q "! expect_fail" "$test.in"; expect=$?
   run_cmd() { if [ -f "$test.mm" ]; then "$cmd" "$test.mm"; else "$cmd"; fi }
   echo -n "running test $test.in: "
-  run_cmd < "$test.in" > "$outfile"
+  result=$(run_cmd < "$test.in")
   if [ $? -ne $expect ]; then echo "${red}failed${off}"; exit_code=1; continue; fi
+  echo "$result" | head -n -1 | tail -n +2 > "$outfile"
   if [ "$outfile" = "/dev/null" ]; then
     echo "${green}ok${off}"
   elif [ ! -f "$test.expected" ]; then
