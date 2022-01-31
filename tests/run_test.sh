@@ -2,7 +2,7 @@
 
 usage() {
   cat >&2 << HELP
-Usage: run_test [--bless] TESTS...
+Usage: run_test [-c CMD] [--bless] TESTS...
 Run tests from the test suite.
 
 Each TEST should be the name of a TEST.in file in the current directory.
@@ -12,7 +12,7 @@ TEST.produced with TEST.expected, printing a test failure report.
 If TEST.mm does not exist, then it just calls metamath without arguments.
 
 The 'metamath' command can be modified by setting the METAMATH environment
-variable.
+variable, or via the '-c CMD' option (which takes priority).
 
 The --bless option can be used to update the TEST.expected file to match
 TEST.produced. Always review the changes after a call to run_test --bless.
@@ -28,10 +28,14 @@ HELP
 }
 
 if [ "$1" = "--help" ]; then usage; exit; fi
-if [ "$1" = "--bless" ]; then bless=1; shift; fi
 
 # Allow overriding the 'metamath' command using the METAMATH env variable
 cmd="${METAMATH:-metamath}"
+
+# Alternatively, use the '-c metamath' argument which overrides the env variable
+if [ "$1" = "-c" ]; then shift; cmd=$1; shift; fi
+
+if [ "$1" = "--bless" ]; then bless=1; shift; fi
 
 # Check that the 'metamath' command actually exists
 if ! [ -x "$(command -v "$cmd")" ]; then
