@@ -129,33 +129,37 @@ input file _config.h.in_ is created.  A few instructions set project data like
 name or version number.  A couple of other instructions aim at patching system
 dependent variables in _Makefile.am_, later used to support _make_.
 
-The script language used for encoding this is __M4__ using a couple of built-in
-commands of __autoconf__.  This language is designed to provide cross-platform
-descriptions of features of the OS.
+The script language used for encoding this is [M4]
+(https://www.gnu.org/software/m4/manual) using a couple of built-in commands of
+__autoconf__.  This language is designed to provide cross-platform descriptions
+of features of the OS.
 
-### aclocal
+## autoreconf
+
+__autoreconf__ manages the complete build process and finally produces a
+_configure_ and _Makefile_ ready for use.  It is an alternative to the
+following chain of script calls doing the same, but allowing for manual
+intervention that can resolve difficult cases.  So far Metamath does not need
+this intervention, so _autoreconf_ is usually a correct shortcut.
+
+Internally _autoreconf_ calls the following autotools in the right order and
+with the right input files.
+
+#### aclocal
 
 A program that looks at _configure.ac_ and provides a file __aclocal.m4__ with
-_M4_ macros adapted to your system.  This file extends the functionality of
-_autoconf_ in a way that it can parse and execute the _configure.ac_ file.
+_M4_ macros adapted to _automake_ directed commands.  This extends the
+functionality of _autoconf_ in a way that it can parse and process the
+_configure.ac_ file.
 
 _autoreconf_ automatically calls this program during the build process. 
 
-### aclocal.m4
+#### aclocal.m4
 
 An _M4_ library used by _autoconf_.  Its contents is of technical nature and
 contains functions adapted to your system and your _configure.ac_.  To experts
 editing this file may fix or fine tune particular operations.  Ordinary users
 do not fiddle with it.
-
-### autoconf
-
-This Unix program called __autoconf__, or its sibling __autoreconf__, is
-capable of generating a _configure_ shell script from the input _configure.ac_.
-It uses functions defined in _aclocal.m4_ to perform its task. 
-
-_autoreconf_ can be used as an alternative to _autoconf_.  It then manages the
-whole build process up to creating the executable.
 
 ### autoheader
 
@@ -184,6 +188,25 @@ script what OS tests to carry out, and how to encode their result.  If you
 deploy _configure_ as part of your distribution then this file should be
 included.
 
+#### autom4te.cache
+
+Read 'automate'.  Allows to share results between the individual _autotools_
+members.  Do not interfere with its contents.
+
+### autoconf
+
+This Unix program called __autoconf__, or its sibling __autoreconf__, is
+capable of generating a _configure_ shell script from the input _configure.ac_.
+It uses functions defined in _aclocal.m4_ to perform its task.
+
+[Dokumentation](https://www.gnu.org/software/autoconf/)
+
+### Makefile.am
+
+### automake
+
+[Dokumentation](https://www.gnu.org/software/automake/manual)
+
 ### invoking configure
 
 In the chain of build events _configure_ is now invoked.  It reads the
@@ -197,8 +220,6 @@ individual settings evaluated by _configure_ are compiled in.  So this script
 can recreate _config.h_ multiple times without carrying out the OS checks.
 
 ### config.h
-
-### Makefile.am
 
 
 ... to be continued

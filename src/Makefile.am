@@ -1,5 +1,12 @@
+# This file is input to automake, that expands this high-level make description
+# to a Makefile containing the usual goals, and being capable of handling
+# portability issues.
+
+# the executable created by make
 bin_PROGRAMS = metamath
 
+# the following header files are used during build, but need not be installed.
+# There is nothing exported to external software.
 noinst_HEADERS = \
 	mmcmdl.h \
 	mmcmds.h \
@@ -15,6 +22,7 @@ noinst_HEADERS = \
 	mmword.h \
 	mmwtex.h
 
+# files used to build the executable.
 metamath_SOURCES = \
 	metamath.c \
 	mmcmdl.c \
@@ -33,9 +41,11 @@ metamath_SOURCES = \
 	$(noinst_HEADERS)
 
 
+# the following files are not used during build, but are distributed to users
 EXTRA_DIST = \
 	LICENSE.TXT \
 	README.TXT \
 	__README.TXT
 
+# man pages for the executable´
 man_MANS = metamath.1
