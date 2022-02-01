@@ -40,6 +40,9 @@ if [ "$1" = "--bless" ]; then bless=1; shift; fi
 # Check that the 'metamath' command actually exists
 if ! [ -x "$(command -v "$cmd")" ]; then
   echo >&2 "'$cmd' not found on the PATH."
+  if [ "$METAMATH" != "" ]; then
+    echo >&2 "note: The METAMATH enviroment variable is set to '$METAMATH'."
+  fi
   echo >&2 "Try 'METAMATH=path/to/metamath ./run_test.sh ...', or check your installation"
   exit 2
 fi
