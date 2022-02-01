@@ -108,37 +108,33 @@ for test in "$@"; do
       echo "${cyan}blessed${off}"
       cp "$test.produced" "$test.expected"
       echo "$test.expected:"
-      echo -n "---------------------------------------\n${green}"
-      cat "$test.expected"
-      echo "${off}---------------------------------------\n"
     else
       # otherwise this is a fail, and blessing will help
       echo "${red}failed${off}"; exit_code=1; needs_bless=1
       echo "$test.expected missing, $test.produced:"
-      echo -n "---------------------------------------\n${green}"
-      cat "$test.produced"
-      echo "${off}---------------------------------------\n"
     fi
+    echo -n "---------------------------------------\n${green}"
+    cat "$test.produced"
+    echo "${off}---------------------------------------\n"
   # call diff and put the diff output in $diff_result
   elif diff_result=$(diff "$test.expected" "$outfile" --color=always); then
     # If it succeeded (the files are the same), then the test passed
     echo "${green}ok${off}"
-  elif [ "$bless" = "1" ]; then
-    # If the files are different but we are in bless mode then it's still okay,
-    # but report that we've modified the $test.expected file
-    echo "${cyan}blessed${off}"
-    cp "$test.produced" "$test.expected"
-    echo "$test.expected changes:"
-    echo "---------------------------------------"
-    echo "$diff_result"
-    echo "---------------------------------------\n"
   else
-    # If the files are different and we aren't in bless mode
-    # then this is a fail, but blessing will help
-    echo "${red}failed${off}"; exit_code=1; needs_bless=1
+    if [ "$bless" = "1" ]; then
+      # If the files are different but we are in bless mode then it's still okay,
+      # but report that we've modified the $test.expected file
+      echo "${cyan}blessed${off}"
+      cp "$test.produced" "$test.expected"
+      echo "$test.expected changes:"
+    else
+      # If the files are different and we aren't in bless mode
+      # then this is a fail, but blessing will help
+      echo "${red}failed${off}"; exit_code=1; needs_bless=1
 
-    # Give a verbose error report, including the file names being diffed
-    echo "$test.expected and $test.produced differ"
+      # Give a verbose error report, including the file names being diffed
+      echo "$test.expected and $test.produced differ"
+    fi
     echo "---------------------------------------"
     echo "$diff_result"
     echo "---------------------------------------\n"
