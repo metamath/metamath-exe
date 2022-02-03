@@ -1,7 +1,7 @@
 #!/bin/sh
 
 usage() {
-  cat >&2 << HELP
+  cat >&2 << "HELP"
 Usage: run_test [-c CMD] [--bless] TESTS...
 Run tests from the test suite.
 
