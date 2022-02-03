@@ -77,12 +77,14 @@ for test in "$@"; do
   # For tests with `! expect_fail` we expect exit code 1 instead of 0
   ! grep -q "! expect_fail" "$test.in"; expect=$?
 
-  # A wrapper to call metamath and pass the `$test.mm` argument if the file exists
-  run_cmd() { if [ -f "$test.mm" ]; then "$cmd" "$test.mm"; else "$cmd"; fi }
-
   # Actually run the program
-  echo -n "running test ${white}$test${off}.in: "
-  result=$(run_cmd < "$test.in")
+  if [ -f "$test.mm" ]; then
+    echo -n "test ${white}$test${off}.in + $test.mm: "
+    result=$("$cmd" "$test.mm" < "$test.in")
+  else
+    echo -n "test ${white}$test${off}.in: "
+    result=$("$cmd" < "$test.in")
+  fi
   # exit code stored in $?
 
   if [ $? -ne $expect ]; then
