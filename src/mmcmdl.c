@@ -1645,8 +1645,6 @@ static flag getFullArg(long arg, const char *cmdList1) {
   flag ret = 1;
   vstring_def(defaultCmd);
   vstring_def(infoStr);
-  vstring_def(tmpStr);
-  vstring_def(tmpArg);
   vstring_def(errorLine);
   vstring_def(keyword);
   vstring_def(cmdList);
@@ -1670,7 +1668,7 @@ static flag getFullArg(long arg, const char *cmdList1) {
       if (g_rawArgs <= arg) bug(1103);
 
       g_queryMode = 1;
-      tmpArg = cmdInput1(right(cmdList,3));
+      vstring tmpArg = cmdInput1(right(cmdList,3));
       let(&errorLine,right(cmdList,3));
       if (tmpArg[0] == 0) { /* Use default argument */
         let(&tmpArg, seg(defaultCmd,2,len(defaultCmd) - 1));
@@ -1682,11 +1680,13 @@ static flag getFullArg(long arg, const char *cmdList1) {
     } /* End of asking user for additional argument */
 
     /* Make sure that the argument is a non-negative integer */
+    vstring_def(tmpArg);
     let(&tmpArg,g_rawArgPntr[arg]);
     if (tmpArg[0] == 0) { /* Use default argument */
       /* (This code is needed in case of null string passed directly) */
       let(&tmpArg, seg(defaultCmd,2,len(defaultCmd) - 1));
     }
+    vstring_def(tmpStr);
     let(&tmpStr, str(val(tmpArg)));
     let(&tmpStr, cat(string(len(tmpArg)-len(tmpStr),'0'), tmpStr, NULL));
     if (strcmp(tmpStr, tmpArg)) {
@@ -1723,7 +1723,7 @@ static flag getFullArg(long arg, const char *cmdList1) {
       nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, 0));
       if (g_rawArgs <= arg) bug(1104);
       g_queryMode = 1;
-      tmpArg = cmdInput1(right(cmdList,3));
+      vstring tmpArg = cmdInput1(right(cmdList,3));
 
       /* Strip off any quotes around it
          and tolerate lack of trailing quote */
@@ -1770,6 +1770,7 @@ static flag getFullArg(long arg, const char *cmdList1) {
     }
     if (cmdList[0] == '&') {
       /* See if file exists */
+      vstring_def(tmpStr);
       let(&tmpStr, cat(g_rootDirectory, keyword, NULL));
       tmpFp = fopen(tmpStr, "r");
       if (!tmpFp) {
@@ -1833,12 +1834,14 @@ static flag getFullArg(long arg, const char *cmdList1) {
   if (g_rawArgs <= arg && (strcmp(possCmd[possCmds - 1], "nothing")
       || g_queryMode == 1)) {
 
+    vstring_def(tmpStr);
     let(&tmpStr, infoStr);
     if (defaultCmd[0] != 0) {
       let(&tmpStr, cat(tmpStr, " ",defaultCmd, NULL));
     }
     let(&tmpStr, cat(tmpStr, "? ", NULL));
     g_queryMode = 1;
+    vstring_def(tmpArg);
     if (possCmds != 1) {
       tmpArg = cmdInput1(tmpStr);
     } else {
@@ -1878,11 +1881,12 @@ static flag getFullArg(long arg, const char *cmdList1) {
   }
 
 
+  vstring_def(tmpArg);
   let(&tmpArg,edit(g_rawArgPntr[arg], 32)); /* Convert to upper case */
   j = 0;
   k = 0;
   m = len(tmpArg);
-  let(&tmpStr, "");
+  vstring_def(tmpStr);
   /* Scan the possible arguments for a match */
   for (i = 0; i < possCmds; i++) {
     if (!strcmp(possCmd[i], tmpArg)) {
