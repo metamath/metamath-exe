@@ -1692,13 +1692,11 @@ static flag getFullArg(long arg, const char *cmdList1) {
     if (strcmp(tmpStr, tmpArg)) {
       printCommandError(errorLine, arg,
           "?A number was expected here.");
-      free_vstring(tmpArg);
-      free_vstring(tmpStr);
       ret = 0;
-      goto getFullArg_ret;
+    } else {
+      let(&keyword, str(val(tmpArg)));
     }
 
-    let(&keyword, str(val(tmpArg)));
     free_vstring(tmpArg);
     free_vstring(tmpStr);
     goto getFullArg_ret;
@@ -1779,9 +1777,9 @@ static flag getFullArg(long arg, const char *cmdList1) {
         printCommandError(errorLine, arg, tmpStr);
         free_vstring(tmpStr);
         ret = 0;
-        goto getFullArg_ret;
+      } else {
+        fclose(tmpFp);
       }
-      fclose(tmpFp);
     }
     goto getFullArg_ret;
   }
@@ -1791,13 +1789,14 @@ static flag getFullArg(long arg, const char *cmdList1) {
   /* Parse the choices available */
   possCmds = 0;
   p = 0;
+  q = 0;
   while (1) {
-    q = p;
     p = instr(p + 1, cat(cmdList, "|", NULL), "|");
     if (!p) break;
     pntrLet(&possCmd,pntrAddElement(possCmd));
     let((vstring *)(&possCmd[possCmds]),seg(cmdList,q+1,p-1));
     possCmds++;
+    q = p;
   }
   if (!strcmp(left(possCmd[possCmds - 1],1), "<")) {
     /* Get default argument, if any */
