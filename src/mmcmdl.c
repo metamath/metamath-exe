@@ -1628,19 +1628,18 @@ flag processCommandLine(void) {
 
 
 
+/* This function converts the user's abbreviated keyword in
+   g_rawArgPntr[arg] to a full, upper-case keyword,
+   in g_fullArg[arg], matching
+   the available choices in cmdList. */
+/* Special cases:  cmdList = "# xxx <yyy>?" - get an integer */
+/*                 cmdList = "* xxx <yyy>?" - get any string;
+                     don't convert to upper case
+                   cmdList = "& xxx <yyy>?" - same as * except
+                     verify it is a file that exists */
+/* "$" means a null argument is acceptable; put it in as
+   special character chr(3) so it can be recognized */
 static flag getFullArg(long arg, const char *cmdList1) {
-  /* This function converts the user's abbreviated keyword in
-     g_rawArgPntr[arg] to a full, upper-case keyword,
-     in g_fullArg[arg], matching
-     the available choices in cmdList. */
-  /* Special cases:  cmdList = "# xxx <yyy>?" - get an integer */
-  /*                 cmdList = "* xxx <yyy>?" - get any string;
-                       don't convert to upper case
-                     cmdList = "& xxx <yyy>?" - same as * except
-                       verify it is a file that exists */
-  /* "$" means a null argument is acceptable; put it in as
-     special character chr(3) so it can be recognized */
-
   pntrString_def(possCmd);
   long possCmds, i, j, k, m, p, q;
   vstring_def(defaultCmd);
