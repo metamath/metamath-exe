@@ -1666,13 +1666,13 @@ static flag getFullArg(long arg, const char *cmdList1) {
       if (g_rawArgs <= arg) bug(1103);
 
       g_queryMode = 1;
-      vstring tmpArg = cmdInput1(right(cmdList,3));
+      vstring argLine = cmdInput1(right(cmdList,3));
       let(&errorLine,right(cmdList,3));
-      if (tmpArg[0] == 0) { /* Use default argument */
-        let(&tmpArg, seg(defaultCmd,2,len(defaultCmd) - 1));
+      if (argLine[0] == 0) { /* Use default argument */
+        let(&argLine, seg(defaultCmd,2,len(defaultCmd) - 1));
       }
-      let((vstring *)(&g_rawArgPntr[arg]), tmpArg);
-      free_vstring(tmpArg);
+      let((vstring *)(&g_rawArgPntr[arg]), argLine);
+      free_vstring(argLine);
       g_rawArgNmbr[arg] = len(cmdList) - 1;/* Line position for error msgs */
 
     } /* End of asking user for additional argument */
@@ -1946,8 +1946,8 @@ getFullArg_ret:
   }
 
   /* Deallocate memory */
-  long j2 = pntrLen(possCmd);
-  for (long i = 0; i < j2; i++) free_vstring(*(vstring *)(&possCmd[i]));
+  long len = pntrLen(possCmd);
+  for (long i = 0; i < len; i++) free_vstring(*(vstring *)(&possCmd[i]));
   free_pntrString(possCmd);
   free_vstring(defaultCmd);
   free_vstring(infoStr);
