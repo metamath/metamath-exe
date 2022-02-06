@@ -1813,7 +1813,11 @@ static flag getFullArg(long arg, const char *cmdList1) {
   }
 
   /* Create a string used for queries and error messages */
-  if (possCmds < 1) bug(1105);
+  if (possCmds < 1) {
+    bug(1105);
+    ret = 0;
+    goto getFullArg_ret;
+  }
   if (possCmds == 1) {
     let(&infoStr,possCmd[0]);
   }
@@ -1943,7 +1947,7 @@ getFullArg_ret:
     /* Add new field to g_fullArg */
     pntrLet(&g_fullArg,pntrAddElement(g_fullArg));
     if (pntrLen(g_fullArg) != arg + 1) bug(1107);
-    let((vstring *)(&g_fullArg[arg]),keyword);
+    else let((vstring *)(&g_fullArg[arg]),keyword);
   }
 
   /* Deallocate memory */
