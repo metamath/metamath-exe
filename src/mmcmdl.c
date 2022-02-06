@@ -1641,7 +1641,6 @@ flag processCommandLine(void) {
    special character chr(3) so it can be recognized */
 static flag getFullArg(long arg, const char *cmdList1) {
   pntrString_def(possCmd);
-  long possCmds, i, j, k, m, p, q;
   flag ret = 1;
   vstring_def(defaultCmd);
   vstring_def(infoStr);
@@ -1788,9 +1787,9 @@ static flag getFullArg(long arg, const char *cmdList1) {
 
 
   /* Parse the choices available */
-  possCmds = 0;
-  p = 0;
-  q = 0;
+  long possCmds = 0;
+  long p = 0;
+  long q = 0;
   while (1) {
     p = instr(p + 1, cat(cmdList, "|", NULL), "|");
     if (!p) break;
@@ -1824,7 +1823,7 @@ static flag getFullArg(long arg, const char *cmdList1) {
   }
   if (possCmds > 2) {
     let(&infoStr, "");
-    for (i = 0; i < possCmds - 1; i++) {
+    for (long i = 0; i < possCmds - 1; i++) {
       let(&infoStr, cat(infoStr, possCmd[i], ", ", NULL));
     }
     let(&infoStr, cat(infoStr, "or ", possCmd[possCmds - 1], NULL));
@@ -1850,7 +1849,7 @@ static flag getFullArg(long arg, const char *cmdList1) {
       if (!strcmp(cmdList, "$|<$>")) {
         let(&tmpArg, possCmd[0]);
         print2("The command so far is:  ");
-        for (i = 0; i < arg; i++) {
+        for (long i = 0; i < arg; i++) {
           print2("%s ", g_fullArg[i]);
         }
         print2("%s\n", tmpArg);
@@ -1883,12 +1882,12 @@ static flag getFullArg(long arg, const char *cmdList1) {
 
   vstring_def(tmpArg);
   let(&tmpArg,edit(g_rawArgPntr[arg], 32)); /* Convert to upper case */
-  j = 0;
-  k = 0;
-  m = len(tmpArg);
+  long j = 0;
+  long k = 0;
+  long m = len(tmpArg);
   vstring_def(tmpStr);
   /* Scan the possible arguments for a match */
-  for (i = 0; i < possCmds; i++) {
+  for (long i = 0; i < possCmds; i++) {
     if (!strcmp(possCmd[i], tmpArg)) {
       /* An exact match was found, so ignore any other matches
          and use this one */
@@ -1948,8 +1947,8 @@ getFullArg_ret:
   }
 
   /* Deallocate memory */
-  j = pntrLen(possCmd);
-  for (i = 0; i < j; i++) free_vstring(*(vstring *)(&possCmd[i]));
+  long j2 = pntrLen(possCmd);
+  for (long i = 0; i < j2; i++) free_vstring(*(vstring *)(&possCmd[i]));
   free_pntrString(possCmd);
   free_vstring(defaultCmd);
   free_vstring(infoStr);
