@@ -38,6 +38,7 @@ flag g_sourceHasBeenRead = 0; /* 1 if a source file has been read in */
 vstring_def(g_rootDirectory); /* Directory prefix to use for included files */
 
 
+static flag getFullArg(long arg, const char *cmdList);
 
 flag processCommandLine(void) {
   vstring_def(defaultArg);
@@ -1627,7 +1628,7 @@ flag processCommandLine(void) {
 
 
 
-flag getFullArg(long arg, vstring cmdList1) {
+static flag getFullArg(long arg, const char *cmdList1) {
   /* This function converts the user's abbreviated keyword in
      g_rawArgPntr[arg] to a full, upper-case keyword,
      in g_fullArg[arg], matching
