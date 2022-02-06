@@ -1647,7 +1647,6 @@ static flag getFullArg(long arg, const char *cmdList1) {
   vstring_def(errorLine);
   vstring_def(keyword);
   vstring_def(cmdList);
-  FILE *tmpFp;
 
   let(&cmdList,cmdList1); /* In case cmdList1 gets deallocated when it comes
                              directly from a vstring function such as cat() */
@@ -1771,7 +1770,7 @@ static flag getFullArg(long arg, const char *cmdList1) {
       /* See if file exists */
       vstring_def(tmpStr);
       let(&tmpStr, cat(g_rootDirectory, keyword, NULL));
-      tmpFp = fopen(tmpStr, "r");
+      FILE *tmpFp = fopen(tmpStr, "r");
       if (!tmpFp) {
         let(&tmpStr,  cat("?Sorry, couldn't open the file \"", tmpStr, "\".", NULL));
         printCommandError(errorLine, arg, tmpStr);
