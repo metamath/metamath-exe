@@ -1675,6 +1675,7 @@ static flag getFullArg(long arg, const char *cmdList1) {
         let(&tmpArg, seg(defaultCmd,2,len(defaultCmd) - 1));
       }
       let((vstring *)(&g_rawArgPntr[arg]), tmpArg);
+      free_vstring(tmpArg);
       g_rawArgNmbr[arg] = len(cmdList) - 1;/* Line position for error msgs */
 
     } /* End of asking user for additional argument */
@@ -1690,10 +1691,14 @@ static flag getFullArg(long arg, const char *cmdList1) {
     if (strcmp(tmpStr, tmpArg)) {
       printCommandError(errorLine, arg,
           "?A number was expected here.");
+      free_vstring(tmpArg);
+      free_vstring(tmpStr);
       goto return0;
     }
 
     let(&keyword, str(val(tmpArg)));
+    free_vstring(tmpArg);
+    free_vstring(tmpStr);
     goto return1;
   }
 
@@ -1770,6 +1775,7 @@ static flag getFullArg(long arg, const char *cmdList1) {
       if (!tmpFp) {
         let(&tmpStr,  cat("?Sorry, couldn't open the file \"", tmpStr, "\".", NULL));
         printCommandError(errorLine, arg, tmpStr);
+        free_vstring(tmpStr);
         goto return0;
       }
       fclose(tmpFp);
@@ -1859,6 +1865,8 @@ static flag getFullArg(long arg, const char *cmdList1) {
       g_rawArgNmbr[arg] = len(tmpStr) + 1; /* Line position for error msgs */
     }
 
+    free_vstring(tmpStr);
+    free_vstring(tmpArg);
   } /* End of asking user for additional argument */
 
   if (g_rawArgs <= arg) {
@@ -1892,6 +1900,7 @@ static flag getFullArg(long arg, const char *cmdList1) {
       k++; /* Number of matches */
     }
   }
+  free_vstring(tmpArg);
   if (k < 1 || k > 1) {
     if (k < 1) {
       let(&tmpStr, cat("?Expected ", infoStr, ".", NULL));
@@ -1907,8 +1916,10 @@ static flag getFullArg(long arg, const char *cmdList1) {
       let(&tmpStr, cat("?Ambiguous keyword - please specify ",tmpStr, ".", NULL));
     }
     printCommandError(errorLine, arg, tmpStr);
+    free_vstring(tmpStr);
     goto return0;
   }
+  free_vstring(tmpStr);
 
   let(&keyword,possCmd[j]);
   goto return1;
@@ -1933,8 +1944,6 @@ static flag getFullArg(long arg, const char *cmdList1) {
   free_pntrString(possCmd);
   free_vstring(defaultCmd);
   free_vstring(infoStr);
-  free_vstring(tmpStr);
-  free_vstring(tmpArg);
   free_vstring(errorLine);
   free_vstring(keyword);
   free_vstring(cmdList);
@@ -1947,8 +1956,6 @@ static flag getFullArg(long arg, const char *cmdList1) {
   free_pntrString(possCmd);
   free_vstring(defaultCmd);
   free_vstring(infoStr);
-  free_vstring(tmpStr);
-  free_vstring(tmpArg);
   free_vstring(errorLine);
   free_vstring(keyword);
   free_vstring(cmdList);
