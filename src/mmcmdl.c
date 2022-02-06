@@ -1820,12 +1820,10 @@ static flag getFullArg(long arg, const char *cmdList1) {
   }
   if (possCmds == 1) {
     let(&infoStr,possCmd[0]);
-  }
-  if (possCmds == 2) {
+  } else if (possCmds == 2) {
     let(&infoStr, cat(possCmd[0], " or ",
         possCmd[1], NULL));
-  }
-  if (possCmds > 2) {
+  } else /* possCmds > 2 */ {
     let(&infoStr, "");
     for (long i = 0; i < possCmds - 1; i++) {
       let(&infoStr, cat(infoStr, possCmd[i], ", ", NULL));
