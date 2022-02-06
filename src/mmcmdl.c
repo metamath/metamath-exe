@@ -1642,6 +1642,7 @@ flag processCommandLine(void) {
 static flag getFullArg(long arg, const char *cmdList1) {
   pntrString_def(possCmd);
   long possCmds, i, j, k, m, p, q;
+  flag ret = 1;
   vstring_def(defaultCmd);
   vstring_def(infoStr);
   vstring_def(tmpStr);
@@ -1693,13 +1694,14 @@ static flag getFullArg(long arg, const char *cmdList1) {
           "?A number was expected here.");
       free_vstring(tmpArg);
       free_vstring(tmpStr);
-      goto return0;
+      ret = 0;
+      goto getFullArg_ret;
     }
 
     let(&keyword, str(val(tmpArg)));
     free_vstring(tmpArg);
     free_vstring(tmpStr);
-    goto return1;
+    goto getFullArg_ret;
   }
 
 
@@ -1716,7 +1718,7 @@ static flag getFullArg(long arg, const char *cmdList1) {
       if (!strcmp(defaultCmd, "<$>")) { /* End of command acceptable */
         /* Note:  in this case, user will never be prompted for anything. */
         let(&keyword,chr(3));
-        goto return1;
+        goto getFullArg_ret;
       }
       g_rawArgs++;
       pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
@@ -1776,11 +1778,12 @@ static flag getFullArg(long arg, const char *cmdList1) {
         let(&tmpStr,  cat("?Sorry, couldn't open the file \"", tmpStr, "\".", NULL));
         printCommandError(errorLine, arg, tmpStr);
         free_vstring(tmpStr);
-        goto return0;
+        ret = 0;
+        goto getFullArg_ret;
       }
       fclose(tmpFp);
     }
-    goto return1;
+    goto getFullArg_ret;
   }
 
 
@@ -1872,7 +1875,7 @@ static flag getFullArg(long arg, const char *cmdList1) {
   if (g_rawArgs <= arg) {
     /* No argument was specified, and "nothing" is a valid argument */
     let(&keyword,chr(3));
-    goto return1;
+    goto getFullArg_ret;
   }
 
 
@@ -1917,26 +1920,29 @@ static flag getFullArg(long arg, const char *cmdList1) {
     }
     printCommandError(errorLine, arg, tmpStr);
     free_vstring(tmpStr);
-    goto return0;
+    ret = 0;
+    goto getFullArg_ret;
   }
   free_vstring(tmpStr);
 
   let(&keyword,possCmd[j]);
-  goto return1;
 
- return1:
-  if (keyword[0] == 0) {
-    if (g_rawArgs > arg && strcmp(defaultCmd, "<>")) {
-      /* otherwise, "nothing" was specified */
-      printCommandError("", arg,
-          "?No default answer is available - please be explicit.");
-      goto return0;
+getFullArg_ret:
+  if (ret) {
+    if (keyword[0] == 0) {
+      if (g_rawArgs > arg && strcmp(defaultCmd, "<>")) {
+        /* otherwise, "nothing" was specified */
+        printCommandError("", arg,
+            "?No default answer is available - please be explicit.");
+        ret = 0;
+        goto getFullArg_ret;
+      }
     }
+    /* Add new field to g_fullArg */
+    pntrLet(&g_fullArg,pntrAddElement(g_fullArg));
+    if (pntrLen(g_fullArg) != arg + 1) bug(1107);
+    let((vstring *)(&g_fullArg[arg]),keyword);
   }
-  /* Add new field to g_fullArg */
-  pntrLet(&g_fullArg,pntrAddElement(g_fullArg));
-  if (pntrLen(g_fullArg) != arg + 1) bug(1107);
-  let((vstring *)(&g_fullArg[arg]),keyword);
 
   /* Deallocate memory */
   j = pntrLen(possCmd);
@@ -1947,20 +1953,7 @@ static flag getFullArg(long arg, const char *cmdList1) {
   free_vstring(errorLine);
   free_vstring(keyword);
   free_vstring(cmdList);
-  return(1);
-
- return0:
-  /* Deallocate memory */
-  j = pntrLen(possCmd);
-  for (i = 0; i < j; i++) free_vstring(*(vstring *)(&possCmd[i]));
-  free_pntrString(possCmd);
-  free_vstring(defaultCmd);
-  free_vstring(infoStr);
-  free_vstring(errorLine);
-  free_vstring(keyword);
-  free_vstring(cmdList);
-  return(0);
-
+  return ret;
 } /* getFullArg */
 
 
