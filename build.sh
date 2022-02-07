@@ -30,7 +30,7 @@ bin_only=0
 print_help=0
 version_only=0
 unset dest_dir
-metamath_dir="$cur_dir"
+top_dir="$cur_dir"
 
 while getopts d:ehm:v flag
 do
@@ -38,7 +38,7 @@ do
     d) dest_dir=${OPTARG};;
     e) bin_only=1;;
     h) print_help=1;;
-    m) cd "${OPTARG}" && metamath_dir=$(pwd);;
+    m) cd "${OPTARG}" && top_dir=$(pwd);;
     v) version_only=1;;
   esac
 done
@@ -51,9 +51,8 @@ fi
 
 #===========   setup environment   =====================
 
-top_dir=${metamath_dir:-"$cur_dir"}
 src_dir="$top_dir/src"
-build_dir=${dest_dir:-$top_dir/build}
+build_dir=${dest_dir:-"$top_dir/build"}
 
 # verify we can navigate to the sources
 if [ ! -f "$src_dir/metamath.c" ]
