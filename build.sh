@@ -144,31 +144,31 @@ make
 
 if [ $do_doc -eq 1 ]
 then
-  if command doxygen -v
-  then
-    # patch the Doxyfile.diff
-    cp Doxyfile.diff Doxyfile.diff.orig
-    sed --in-place "s/\\(PROJECT_NUMBER[[:space:]]*=[[:space:]]*\\)\"Metamath-version\".*/\\1\"$version\"/" Doxyfile.diff
-    rm Doxyfile.diff.orig
-
-    # create a Doxyfile.local and use it for creation of documentation locally
-
-    # start with the settings given by the distribution
-    cp Doxyfile.diff Doxyfile.local
-
-    # let the users preferences always override...
-    if [ -f "$src_dir"/Doxyfile ]
-    then
-      cat "$src_dir"/Doxyfile >> Doxyfile.local
-    fi
-
-    # ... except for the destination directory.  Force this to the build folder.
-    echo "OUTPUT_DIRECTORY = \"$build_dir\"" >> Doxyfile.local
-
-    doxygen Doxyfile.local
-  else
-    echo 'doxygen not found. Cannot build documentation.'
+  if ! command doxygen -v
+    echo >&2 'doxygen not found. Cannot build documentation.'
+    exit 1
   fi
+
+  # patch the Doxyfile.diff
+  cp Doxyfile.diff Doxyfile.diff.orig
+  sed --in-place "s/\\(PROJECT_NUMBER[[:space:]]*=[[:space:]]*\\)\"Metamath-version\".*/\\1\"$version\"/" Doxyfile.diff
+  rm Doxyfile.diff.orig
+
+  # create a Doxyfile.local and use it for creation of documentation locally
+
+  # start with the settings given by the distribution
+  cp Doxyfile.diff Doxyfile.local
+
+  # let the users preferences always override...
+  if [ -f "$src_dir"/Doxyfile ]
+  then
+    cat "$src_dir"/Doxyfile >> Doxyfile.local
+  fi
+
+  # ... except for the destination directory.  Force this to the build folder.
+  echo "OUTPUT_DIRECTORY = \"$build_dir\"" >> Doxyfile.local
+
+  doxygen Doxyfile.local
 fi
 
 cd "$cur_dir"
