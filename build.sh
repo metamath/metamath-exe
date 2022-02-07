@@ -13,9 +13,9 @@ this script, or issue the -m option.
 
 Possible options are:
 
--d followed by a directory: clear directory and build all artefacts there.
+-o followed by a directory: clear directory and build all artefacts there.
     Relative paths are relative to the destination'"'"'s top metamath-exe directory.
--e only build executable, skip documentation.
+-d build documentation using Doxygen, in addition to building the executable.
 -h print this help and exit.
 -m followed by a directory: top folder of metamath-exe.
     Relative paths are relative to the current directory.
@@ -26,7 +26,7 @@ cur_dir="$(pwd)"
 
 #============   evaluate command line parameters   ==========
 
-bin_only=0
+do_doc=0
 print_help=0
 version_only=0
 unset dest_dir
@@ -35,8 +35,8 @@ top_dir="$cur_dir"
 while getopts d:ehm:v flag
 do
   case "${flag}" in
-    d) dest_dir=${OPTARG};;
-    e) bin_only=1;;
+    o) dest_dir=${OPTARG};;
+    d) do_doc=1;;
     h) print_help=1;;
     m) cd "${OPTARG}" && top_dir=$(pwd);;
     v) version_only=1;;
@@ -87,7 +87,7 @@ version=${version#*\"}
 # strip everything from the first remaining quote character on
 version=${version%%\"*}
 
-if [ ${version_only:-0} -gt 0 ]
+if [ $version_only -gt 0 ]
 then
   echo "$version"
   cd "$cur_dir"
@@ -126,31 +126,27 @@ autoreconf -i
 ./configure
 make
 
-if [ ${bin_only:-0} -eq 0 ]
+if [ $do_doc -eq 1 ]
 then
-  if ! command doxygen -v
+  if command doxygen -v
   then
-    echo 'doxygen not found. Cannot build documentation.'
-    bin_only=1
-  fi
+    # create a Doxyfile.local and use it for creation of documentation locally
 
-  # create a Doxyfile.local and use it for creation of documentation locally
+    # start with the settings given by the distribution
+    cp Doxyfile.diff Doxyfile.local
 
-  # start with the settings given by the distribution
-  cp Doxyfile.diff Doxyfile.local
+    # let the users preferences always override...
+    if [ -f "$src_dir"/Doxyfile ]
+    then
+      cat "$src_dir"/Doxyfile >> Doxyfile.local
+    fi
 
-  # let the users preferences always override...
-  if [ -f "$src_dir"/Doxyfile ]
-  then
-    cat "$src_dir"/Doxyfile >> Doxyfile.local
-  fi
+    # ... except for the destination directory.  Force this to the build folder.
+    echo "OUTPUT_DIRECTORY = \"$build_dir\"" >> Doxyfile.local
 
-  # ... except for the destination directory.  Force this to the build folder.
-  echo "OUTPUT_DIRECTORY = \"$build_dir\"" >> Doxyfile.local
-
-  if [ bin_only -eq 0 ]
-  then
     doxygen Doxyfile.local
+  else
+    echo 'doxygen not found. Cannot build documentation.'
   fi
 fi
 
