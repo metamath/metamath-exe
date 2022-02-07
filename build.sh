@@ -152,4 +152,5 @@ then
   cp --force --symbolic-link "$top_dir/doc/Metamath.png" .
 
   doxygen Doxyfile.local
+  echo "Documentation has been generated at $build_dir/html/index.html"
 fi
