@@ -45,7 +45,7 @@ fi
 
 #===========   setup environment   =====================
 
-TOPDIR=${metamathdir:-"$CURDIR/.."}
+TOPDIR=${metamathdir:-"$CURDIR"}
 SRCDIR="$TOPDIR/src"
 BUILDDIR=${destdir:-$TOPDIR/build}
 
@@ -130,16 +130,16 @@ then
   fi
 
   # create a Doxyfile.local and use it for creation of documentation locally
-  
+
   # start with the settings given by the distribution
   cp Doxyfile.diff Doxyfile.local
-  
+
   # let the users preferences always override...
   if [ -f "$SRCDIR"/Doxyfile ]
   then
     cat "$SRCDIR"/Doxyfile >> Doxyfile.local
   fi
-  
+
   # ... except for the destination directory.  Force this to the build folder.
   echo "OUTPUT_DIRECTORY = \"$BUILDDIR\"" >> Doxyfile.local
 
