@@ -143,7 +143,7 @@ then
   # ... except for the destination directory.  Force this to the build folder.
   echo "OUTPUT_DIRECTORY = \"$BUILDDIR\"" >> Doxyfile.local
 
-  if [ ${bin_only} -eq 0 ]
+  if [ ${bin_only:-0} -eq 0 ]
   then
     doxygen Doxyfile.local
   fi
