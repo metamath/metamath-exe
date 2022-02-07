@@ -49,7 +49,7 @@ do
   esac
 done
 
-if [ ${print_help:-0} -gt 0 ]
+if [ $print_help -gt 0 ]
 then
   echo "$help_text"
   exit
@@ -85,9 +85,8 @@ cd "$build_dir"
 #=========   symlink files to the build directory   ==============
 
 cp --symbolic-link "$src_dir"/* .
-mv configure.ac configure.ac.orig
 
-#=========   patch the version in configure.ac and Doxyfile.diff  =============
+#=========   extract the version from metamath.c  =============
 
 # look in metamath.c for a line matching the pattern '  #define MVERSION "<version>" '
 # and save the line in VERSION
@@ -107,14 +106,16 @@ then
   exit
 fi
 
-#===========   patch and run the configure.ac   =====================
-
 # allow external programs easy access to the metamath version extracted from
 # the sources
 echo "$version" > metamath_version
 
+#===========   patch and run the configure.ac   =====================
+
 if [ $do_autoconf -eq 1 ]
 then
+
+  cp "$top_dir/configure.ac" configure.ac.orig
 
   # find the line with the AC_INIT command, prepend the line number
   # line-nr:AC_INIT([FULL-PACKAGE-NAME], [VERSION], [REPORT-ADDRESS])
@@ -150,9 +151,8 @@ then
   fi
 
   # patch the Doxyfile.diff
-  cp Doxyfile.diff Doxyfile.diff.orig
+  cp "$top_dir/Doxyfile.diff" Doxyfile.diff
   sed --in-place "s/\\(PROJECT_NUMBER[[:space:]]*=[[:space:]]*\\)\"Metamath-version\".*/\\1\"$version\"/" Doxyfile.diff
-  rm Doxyfile.diff.orig
 
   # create a Doxyfile.local and use it for creation of documentation locally
 
@@ -160,13 +160,16 @@ then
   cp Doxyfile.diff Doxyfile.local
 
   # let the users preferences always override...
-  if [ -f "$src_dir"/Doxyfile ]
+  if [ -f "$top_dir/Doxyfile" ]
   then
-    cat "$src_dir"/Doxyfile >> Doxyfile.local
+    cat "$top_dir/Doxyfile" >> Doxyfile.local
   fi
 
   # ... except for the destination directory.  Force this to the build folder.
   echo "OUTPUT_DIRECTORY = \"$build_dir\"" >> Doxyfile.local
+
+  # make sure the logo is in the build directory
+  cp  --symbolic-link "$top_dir/doc/Metamath.png" .
 
   doxygen Doxyfile.local
 fi
