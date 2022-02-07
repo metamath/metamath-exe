@@ -110,7 +110,7 @@ echo $PATCHED_INIT_LINE >> configure.ac
 tail -n +$(($AC_INIT_LINE_NR + 1)) configure.ac.orig >> configure.ac
 
 # patch the Doxyfile.diff
-cp Doxyfile.diff.orig Doxyfile.diff
+cp Doxyfile.diff Doxyfile.diff.orig
 sed --in-place "s/\\(PROJECT_NUMBER[[:space:]]*=[[:space:]]*\\)\"Metamath-version\".*/\\1\"$VERSION\"/" Doxyfile.diff
 
 rm configure.ac.orig Doxyfile.diff.orig
@@ -126,6 +126,7 @@ then
   if ! command doxygen -v
   then
     echo 'doxygen not found. Cannot build documentation.'
+    bin_only=1
   fi
 
   # create a Doxyfile.local and use it for creation of documentation locally
@@ -134,7 +135,7 @@ then
   cp Doxyfile.diff Doxyfile.local
   
   # let the users preferences always override...
-  if [ -f "$SRCDIR"/Doxyfile]
+  if [ -f "$SRCDIR"/Doxyfile ]
   then
     cat "$SRCDIR"/Doxyfile >> Doxyfile.local
   fi
@@ -142,7 +143,10 @@ then
   # ... except for the destination directory.  Force this to the build folder.
   echo "OUTPUT_DIRECTORY = \"$BUILDDIR\"" >> Doxyfile.local
 
-  doxygen Doxyfile.local
+  if [ bin_only -eq 0 ]
+  then
+    doxygen Doxyfile.local
+  fi
 fi
 
 cd "$CURDIR"
