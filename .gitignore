@@ -26,6 +26,6 @@ configure.ac2
 build/
 # Doxygen related: configuration file and destination folder
 Doxyfile
-doc/doxy
+doxy/
 build/
 *.produced

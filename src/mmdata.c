@@ -8,6 +8,11 @@
 mmdata.c
 */
 
+/*!
+ * \file
+ * Defines global data structures and manipulates arrays with functions similar
+ * to BASIC string functions; memory management; converts between proof formats
+*/
 #include <stdarg.h>
 #include <stdlib.h>
 #include <string.h>

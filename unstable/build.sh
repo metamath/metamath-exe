@@ -26,7 +26,7 @@ CURDIR="$(pwd)"
 
 #============   evaluate command line parameters   ==========
 
-while getopts d:hm:v flag
+while getopts d:ehm:v flag
 do
   case "${flag}" in
     d) destdir=${OPTARG};;

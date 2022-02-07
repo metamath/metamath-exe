@@ -70,7 +70,8 @@
  * - avoid characters from the following set, eligible for escaping in text, regular
  *     expressions and so on like -begin of list ][`*+^$'?"{/}\ end of list-;
  * - use no space character other than simple space (U+0020);
- * - never use space characters at the beginning or at the end.
+ * - never use space characters at the beginning or at the end;
+ * - the length is limited to 26 characters.
  */
 #define MVERSION "0.199.pre 29-Jan-2022"
 /* 0.199.pre
@@ -719,6 +720,20 @@
 
 void command(int argc, char *argv[]);
 
+/*! \fn int main(int argc, char *argv[])
+ * \brief entry point of the metamath program
+ * \param argc int number of commandline parameters
+ * \param argv (char*)[] array of \a argc commandline parameters, followed by NULL
+ * \return success 0 else failure
+ * 
+ * Running metamath
+ *   ./metamath 'read set.mm' 'verify proof *'
+ * will start main with \a argc set to 2, argv[0] to "read set.mm", argv[1]
+ * to "verify proof *" (both without quotes) and argv[2] to NULL.
+ * Returning 0 indicates successful completion, anything else some kind of
+ failure.
+ * For details see \ref https://en.cppreference.com/w/cpp/language/main_function.
+ */
 int main(int argc, char *argv[]) {
 
 /* argc is the number of arguments; argv points to an array containing them */
