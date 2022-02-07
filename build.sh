@@ -23,9 +23,6 @@ Possible options are:
     Relative paths are relative to the current directory.
 -v extract the version from metamath sources, print it and exit'
 
-# we return back to this directory
-cur_dir="$(pwd)"
-
 #============   evaluate command line parameters   ==========
 
 do_autoconf=1
@@ -34,7 +31,7 @@ do_doc=0
 print_help=0
 version_only=0
 unset dest_dir
-top_dir="$cur_dir"
+top_dir="$(pwd)"
 
 while getopts d:ehm:v flag
 do
@@ -65,7 +62,6 @@ if [ ! -f "$src_dir/metamath.c" ]
 then
   echo 'This script must be run from a subfolder of the metamath-exe directory.'
   echo 'Run ./build.sh -h for more information'
-  cd "$cur_dir"
   exit
 fi
 
@@ -173,5 +169,3 @@ then
 
   doxygen Doxyfile.local
 fi
-
-cd "$cur_dir"
