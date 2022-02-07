@@ -6,7 +6,7 @@
 
 # Draft version, proof of concept.
 
-HELPTEXT=\
+help_text=\
 'Builds all artefacts in the metamath-exe/build subfolder (if not directed
 otherwise).  Change to a metamath-exe subfolder first before running
 this script, or issue the -m option.
@@ -22,102 +22,102 @@ Possible options are:
 -v extract the version from metamath sources, print it and exit'
 
 # we return back to this directory
-CURDIR="$(pwd)"
+cur_dir="$(pwd)"
 
 #============   evaluate command line parameters   ==========
 
 bin_only=0
 print_help=0
 version_only=0
-unset destdir
-metamathdir="$CURDIR"
+unset dest_dir
+metamath_dir="$cur_dir"
 
 while getopts d:ehm:v flag
 do
   case "${flag}" in
-    d) destdir=${OPTARG};;
+    d) dest_dir=${OPTARG};;
     e) bin_only=1;;
     h) print_help=1;;
-    m) cd "${OPTARG}" && metamathdir=$(pwd);;
+    m) cd "${OPTARG}" && metamath_dir=$(pwd);;
     v) version_only=1;;
   esac
 done
 
 if [ ${print_help:-0} -gt 0 ]
 then
-  echo "$HELPTEXT"
+  echo "$help_text"
   exit
 fi
 
 #===========   setup environment   =====================
 
-TOPDIR=${metamathdir:-"$CURDIR"}
-SRCDIR="$TOPDIR/src"
-BUILDDIR=${destdir:-$TOPDIR/build}
+top_dir=${metamath_dir:-"$cur_dir"}
+src_dir="$top_dir/src"
+build_dir=${dest_dir:-$top_dir/build}
 
 # verify we can navigate to the sources
-if [ ! -f "$SRCDIR/metamath.c" ]
+if [ ! -f "$src_dir/metamath.c" ]
 then
   echo 'This script must be run from a subfolder of the metamath-exe directory.'
   echo 'Run ./build.sh -h for more information'
-  cd "$CURDIR"
+  cd "$cur_dir"
   exit
 fi
 
 # clear the build directory
-cd "$TOPDIR"
-rm -rf "$BUILDDIR"
-mkdir -p "$BUILDDIR"
-cd "$BUILDDIR"
+cd "$top_dir"
+rm -rf "$build_dir"
+mkdir -p "$build_dir"
+cd "$build_dir"
 
 #=========   symlink files to the build directory   ==============
 
-cp --symbolic-link "$SRCDIR"/* .
+cp --symbolic-link "$src_dir"/* .
 mv configure.ac configure.ac.orig
 
 #=========   patch the version in configure.ac and Doxyfile.diff  =============
 
 # look in metamath.c for a line matching the pattern '  #define MVERSION "<version>" '
 # and save the line in VERSION
-VERSION=`grep '[[:space:]]*#[[:space:]]*define[[:space:]][[:space:]]*MVERSION[[:space:]][[:space:]]*"[^"]*"' "$SRCDIR"/metamath.c`
+version=`grep '[[:space:]]*#[[:space:]]*define[[:space:]][[:space:]]*MVERSION[[:space:]][[:space:]]*"[^"]*"' "$src_dir"/metamath.c`
 
 # extract the version (without quotes) from the saved line
 
 # strip everything up to and including the first quote character
-VERSION=${VERSION#*\"}
+version=${version#*\"}
 # strip everything from the first remaining quote character on
-VERSION=${VERSION%%\"*}
+version=${version%%\"*}
 
 if [ ${version_only:-0} -gt 0 ]
 then
-  echo "$VERSION"
-  cd "$CURDIR"
+  echo "$version"
+  cd "$cur_dir"
   exit
 fi
 
 # allow external programs easy access to the metamath version extracted from
 # the sources
-echo "$VERSION" > metamath_version
+echo "$version" > metamath_version
 
 # find the line with the AC_INIT command, prepend the line number
 # line-nr:AC_INIT([FULL-PACKAGE-NAME], [VERSION], [REPORT-ADDRESS])
-AC_INIT_LINE=`grep -n '[[:space:]]*AC_INIT[[:space:]]*(.*' configure.ac.orig`
+ac_init_line=`grep -n '[[:space:]]*AC_INIT[[:space:]]*(.*' configure.ac.orig`
 # strip everything from the first colon on
-AC_INIT_LINE_NR=${AC_INIT_LINE%%:*}
+ac_init_line_nr=${ac_init_line%%:*}
 # strip everything up to the first colon
-AC_INIT_LINE=${AC_INIT_LINE#*:}
+ac_init_line=${ac_init_line#*:}
 # replace the second parameter to AC_INIT
-PATCHED_INIT_LINE=`echo "$AC_INIT_LINE" | sed "s/\\([[:space:]]*AC_INIT(.*\\),.*,\\(.*\\)/\\1, \[$VERSION\],\\2/"`
+patched_init_line=`echo "$ac_init_line" | sed "s/\\([[:space:]]*AC_INIT(.*\\),.*,\\(.*\\)/\\1, \[$version\],\\2/"`
 
 # replace the AC_INIT line with new content
-head -n $(($AC_INIT_LINE_NR - 1)) configure.ac.orig > configure.acrm configure.ac.orig
+head -n $(($ac_init_line_nr - 1)) configure.ac.orig > configure.acrm configure.ac.orig
 
-echo $PATCHED_INIT_LINE >> configure.ac
-tail -n +$(($AC_INIT_LINE_NR + 1)) configure.ac.orig >> configure.ac
+echo $patched_init_line >> configure.ac
+tail -n +$(($ac_init_line_nr + 1)) configure.ac.orig >> configure.ac
 
 # patch the Doxyfile.diff
 cp Doxyfile.diff Doxyfile.diff.orig
-sed --in-place "s/\\(PROJECT_NUMBER[[:space:]]*=[[:space:]]*\\)\"Metamath-version\".*/\\1\"$VERSION\"/" Doxyfile.diff
+sed --in-place "s/\\(PROJECT_NUMBER[[:space:]]*=[[:space:]]*\\)\"Metamath-version\".*/\\1\"$version\"/" Doxyfile.diff
 
 rm configure.ac.orig Doxyfile.diff.orig
 
@@ -141,13 +141,13 @@ then
   cp Doxyfile.diff Doxyfile.local
 
   # let the users preferences always override...
-  if [ -f "$SRCDIR"/Doxyfile ]
+  if [ -f "$src_dir"/Doxyfile ]
   then
-    cat "$SRCDIR"/Doxyfile >> Doxyfile.local
+    cat "$src_dir"/Doxyfile >> Doxyfile.local
   fi
 
   # ... except for the destination directory.  Force this to the build folder.
-  echo "OUTPUT_DIRECTORY = \"$BUILDDIR\"" >> Doxyfile.local
+  echo "OUTPUT_DIRECTORY = \"$build_dir\"" >> Doxyfile.local
 
   if [ bin_only -eq 0 ]
   then
@@ -155,4 +155,4 @@ then
   fi
 fi
 
-cd "$CURDIR"
+cd "$cur_dir"
