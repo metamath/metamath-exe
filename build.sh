@@ -124,7 +124,7 @@ make
 
 if [ $do_doc -eq 1 ]
 then
-  if ! command doxygen -v; then
+  if ! command doxygen -v &> /dev/null; then
     echo >&2 'doxygen not found. Cannot build documentation.'
     exit 1
   fi
