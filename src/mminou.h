@@ -2,7 +2,7 @@
 /*        Copyright (C) 2020  NORMAN MEGILL  nm at alum.mit.edu              */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
-/*34, encoded as a long;567890123456 (79-character line to adjust editor window) 2345678901234567*/
+/*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
 /*!
  * \file
