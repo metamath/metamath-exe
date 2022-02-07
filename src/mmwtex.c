@@ -1663,7 +1663,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
            (These new values were added instead of adding a new argument,
            so as not to have to modify ~60 other calls to this function) */
 
-    flag fileCheck)  /* 1 = check for missing external files (gifs, bib, etc.) */
+    flag fileCheck)  /* 1 = check external files (gifs and bib) */
 {
   vstring cmtptr; /* Not allocated */
   vstring srcptr; /* Not allocated */
@@ -5087,7 +5087,7 @@ vstring getTexOrHtmlHypAndAssertion(long statemNum) {
 flag writeBibliography(vstring bibFile,
     vstring labelMatch, /* Normally "*" except when called by verifyMarkup() */
     flag errorsOnly,  /* 1 = no output, just warning msgs if any */
-    flag fileCheck) /* 1 = check missing external files (mmbiblio.html) */
+    flag fileCheck) /* 1 = check external files (gifs and bib) */
 {
   flag errFlag;
   FILE *list1_fp = NULL;

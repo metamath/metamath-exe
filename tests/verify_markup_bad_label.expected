@@ -1,0 +1,24 @@
+MM> READ "verify_markup_bad_label.mm"
+Reading source file "verify_markup_bad_label.mm"... 206 bytes
+206 bytes were read into the source buffer.
+The source has 5 statements; 2 are $a and 0 are $p.
+No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
+if you want to check them.
+MM> Checking statement label conventions...
+?Warning: In statement "com1" at line 3 in file "verify_markup_bad_label.mm". 
+    To workaround a Microsoft operating system limitation, the the following
+    reserved words cannot be used for label names: CON, PRN, AUX, CLOCK$, NUL,
+    COM1, COM2, COM3, COM4, COM5, COM6, COM7, COM8, COM9, LPT1, LPT2, LPT3,
+    LPT4, LPT5, LPT6, LPT7, LPT8, and LPT9.  Also, "mm*.html" is reserved for
+    Metamath file names.  Use another name for this label.
+?Warning: In statement "mm" at line 4 in file "verify_markup_bad_label.mm".  To
+    workaround a Microsoft operating system limitation, the the following
+    reserved words cannot be used for label names: CON, PRN, AUX, CLOCK$, NUL,
+    COM1, COM2, COM3, COM4, COM5, COM6, COM7, COM8, COM9, LPT1, LPT2, LPT3,
+    LPT4, LPT5, LPT6, LPT7, LPT8, and LPT9.  Also, "mm*.html" is reserved for
+    Metamath file names.  Use another name for this label.
+Checking latexdef, htmldef, althtmldef...
+Checking statement comments...
+Checking section header comments...
+Checking bibliographic references...
+Checking mathbox independence...

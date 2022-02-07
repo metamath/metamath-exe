@@ -46,6 +46,8 @@ void eraseTexDefs(void); /* Undo readTexDefs() */
 /* TeX/HTML/ALT_HTML word-processor-specific routines */
 /* Returns 2 if there were severe parsing errors, 1 if there were warnings but
    no errors, 0 if no errors or warnings */
+/* The GIF check ensures that for every 'htmldef' definition containing
+   `IMG SRC="bla.gif"`, `bla.gif` must exist. */
 flag readTexDefs(
   flag errorsOnly,  /* 1 = supprees non-error messages */
   flag gifCheck   /* 1 = check for missing GIFs */);
@@ -164,10 +166,14 @@ vstring getTexOrHtmlHypAndAssertion(long statemNum);
 
 /* For WRITE BIBLIOGRAPHY command and error checking by VERIFY MARKUP */
 /* Returns 0 if OK, 1 if error or warning found */
+/* In addition to checking for GIFs (see readTexDefs()),
+   the `fileCheck` flag controls whether to attempt to open and parse the
+   `htmlbibliograhy` or `exthtmlbibliograhy` file to search for anchors,
+   which can be used to verify the correctness of bibliography tags. */
 flag writeBibliography(vstring bibFile,
     vstring labelMatch, /* Normally "*" except by verifyMarkup() */
     flag errorsOnly,  /* 1 = no output, just warning msgs if any */
-    flag fileCheck); /* 1 = check missing external files (gifs, bib, etc.) */
+    flag fileCheck); /* 1 = check external files (gifs and bib) */
 
 /* Globals to hold mathbox information.  They should be re-initialized
    by the ERASE command (eraseSource()).  g_mathboxStmt = 0 indicates
