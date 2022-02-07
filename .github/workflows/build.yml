@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: build
-        run: ./build.sh -m .
+        run: ./unstable/build.sh -m .
 
       - name: test
         working-directory: tests
