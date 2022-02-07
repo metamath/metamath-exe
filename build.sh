@@ -52,7 +52,7 @@ BUILDDIR=${destdir:-$TOPDIR/build}
 # verify we can navigate to the sources
 if [ ! -f "$SRCDIR/metamath.c" ]
 then
-  echo 'This script must be run from a subfolder of the metamath-exe directory.'
+  echo 'This script must be run from the top folder of the metamath-exe directory.'
   echo 'Run ./build.sh -h for more information'
   cd "$CURDIR"
   exit
