@@ -26,6 +26,12 @@ CURDIR="$(pwd)"
 
 #============   evaluate command line parameters   ==========
 
+bin_only=0
+print_help=0
+version_only=0
+unset destdir
+metamathdir="$CURDIR"
+
 while getopts d:ehm:v flag
 do
   case "${flag}" in
