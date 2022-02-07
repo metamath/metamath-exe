@@ -33,7 +33,7 @@ version_only=0
 unset dest_dir
 top_dir="$(pwd)"
 
-while getopts d:ehm:v flag
+while getopts bcdhm:o:v flag
 do
   case "${flag}" in
     b) do_autoconf=0;;
@@ -80,7 +80,7 @@ cd "$build_dir"
 
 #=========   symlink files to the build directory   ==============
 
-cp --symbolic-link "$src_dir"/* .
+cp --force --symbolic-link "$src_dir"/* .
 
 #=========   extract the version from metamath.c  =============
 
@@ -110,38 +110,21 @@ echo "$version" > metamath_version
 
 if [ $do_autoconf -eq 1 ]
 then
-
-  cp "$top_dir/configure.ac" configure.ac.orig
-
-  # find the line with the AC_INIT command, prepend the line number
-  # line-nr:AC_INIT([FULL-PACKAGE-NAME], [VERSION], [REPORT-ADDRESS])
-  ac_init_line=`grep -n '[[:space:]]*AC_INIT[[:space:]]*(.*' configure.ac.orig`
-  # strip everything from the first colon on
-  ac_init_line_nr=${ac_init_line%%:*}
-  # strip everything up to the first colon
-  ac_init_line=${ac_init_line#*:}
-  # replace the second parameter to AC_INIT
-  patched_init_line=`echo "$ac_init_line" | sed "s/\\([[:space:]]*AC_INIT(.*\\),.*,\\(.*\\)/\\1, \[$version\],\\2/"`
-
-  # replace the AC_INIT line with new content
-  head -n $(($ac_init_line_nr - 1)) configure.ac.orig > configure.acrm configure.ac.orig
-
-  echo $patched_init_line >> configure.ac
-  tail -n +$(($ac_init_line_nr + 1)) configure.ac.orig >> configure.ac
-
-  rm configure.ac.orig
+  sed "s/REPLACED_BY_BUILD_SH/$version/g" < "$top_dir/configure.ac" > configure.ac
+  cp --force --symbolic-link "$top_dir/Makefile.am" .
 
   autoreconf -i
-  ./configure
+  ./configure -q
 fi
 
 #===========   do the build   =====================
 
+cp --force --symbolic-link "$top_dir/man/metamath.1" .
 make
 
 if [ $do_doc -eq 1 ]
 then
-  if ! command doxygen -v
+  if ! command doxygen -v; then
     echo >&2 'doxygen not found. Cannot build documentation.'
     exit 1
   fi
@@ -165,7 +148,7 @@ then
   echo "OUTPUT_DIRECTORY = \"$build_dir\"" >> Doxyfile.local
 
   # make sure the logo is in the build directory
-  cp  --symbolic-link "$top_dir/doc/Metamath.png" .
+  cp --force --symbolic-link "$top_dir/doc/Metamath.png" .
 
   doxygen Doxyfile.local
 fi
