@@ -8,7 +8,7 @@
 
 HELPTEXT=\
 'Builds all artefacts in the metamath-exe/build subfolder (if not directed
-otherwise).  Change to a metamath-exe subfolder first before running
+otherwise).  Change to a metamath-exe top folder first before running
 this script, or issue the -m option.
 
 Possible options are:
