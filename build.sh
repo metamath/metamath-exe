@@ -8,7 +8,7 @@
 
 help_text=\
 'Builds all artefacts in the metamath-exe/build subfolder (if not directed
-otherwise).  Change to a metamath-exe subfolder first before running
+otherwise).  Change to the metamath-exe subfolder first before running
 this script, or issue the -m option.
 
 Possible options are:
@@ -60,7 +60,7 @@ build_dir=${dest_dir:-"$top_dir/build"}
 # verify we can navigate to the sources
 if [ ! -f "$src_dir/metamath.c" ]
 then
-  echo 'This script must be run from a subfolder of the metamath-exe directory.'
+  echo 'This script must be run from the top folder of the metamath-exe directory.'
   echo 'Run ./build.sh -h for more information'
   exit
 fi
