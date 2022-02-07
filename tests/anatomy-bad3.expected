@@ -1,0 +1,15 @@
+MM> READ "anatomy-bad3.mm"
+Reading source file "anatomy-bad3.mm"... 696 bytes
+696 bytes were read into the source buffer.
+The source has 8 statements; 1 are $a and 1 are $p.
+No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
+if you want to check them.
+MM> 0 10%  20%  30%  40%  50%  60%  70%  80%  90% 100%
+..................................................
+?Error on line 29 of file "anatomy-bad3.mm" at statement 8, label "wnew", type
+"$p":
+wnew $p wff ( s -> ( r -> p ) ) $= wr wp w2 w2 $.
+                                            ^^
+At proof step 4, statement "w2" requires 2 hypotheses but the RPN stack
+contains only one entry, "w2" (step 3).
+
