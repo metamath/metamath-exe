@@ -122,6 +122,8 @@ fi
 cp --force --symbolic-link "$top_dir/man/metamath.1" .
 make
 
+#===========   run Doxygen documentation generator   =====================
+
 if [ $do_doc -eq 1 ]
 then
   if ! command doxygen -v &> /dev/null; then
@@ -129,14 +131,13 @@ then
     exit 1
   fi
 
-  # patch the Doxyfile.diff
-  cp "$top_dir/Doxyfile.diff" Doxyfile.diff
-  sed --in-place "s/\\(PROJECT_NUMBER[[:space:]]*=[[:space:]]*\\)\"Metamath-version\".*/\\1\"$version\"/" Doxyfile.diff
-
   # create a Doxyfile.local and use it for creation of documentation locally
 
   # start with the settings given by the distribution
-  cp Doxyfile.diff Doxyfile.local
+  cp "$top_dir/Doxyfile.diff" Doxyfile.local
+
+  # add the project version number
+  echo "PROJECT_NUMBER = \"$version\"" >> Doxyfile.local
 
   # let the users preferences always override...
   if [ -f "$top_dir/Doxyfile" ]

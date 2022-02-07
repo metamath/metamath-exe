@@ -5,7 +5,7 @@
 # think are quite usable.  You can use this file directly by renaming it to
 # Doxyfile.  You can prepend its contents to your personal Doxyfile, so that the
 # suggested values do not overwrite your settings.  Or, of course, patch your
-# file with a subset suiting your needs. 
+# file with a subset suiting your needs.
 
 # This file describes the settings to be used by the documentation system
 # doxygen (www.doxygen.org) for a project.
@@ -26,15 +26,12 @@
 
 PROJECT_NAME           = "metamath executable"
 
-# TODO: Set to Metamath version
+# patched in by build.sh
+# PROJECT_NUMBER = "..."
 
-PROJECT_NUMBER         = "Metamath-version"
-
-PROJECT_BRIEF          = "executable used to maintain *.mm files" 
+PROJECT_BRIEF          = "executable used to maintain *.mm files"
 
 PROJECT_LOGO           = "Metamath.png"
-
-OUTPUT_DIRECTORY       = "../doxy"
 
 # disable Graphviz .dot output
 

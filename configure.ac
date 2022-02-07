@@ -8,7 +8,7 @@
 AC_PREREQ([2.65])
 
     # program name, version, email to report bugs
-AC_INIT([metamath], [0.114], [nm.NOSPAM@alum.mit.edu])
+AC_INIT([metamath], [REPLACED_BY_BUILD_SH], [nm.NOSPAM@alum.mit.edu])
 
     # unique file name likely not existing outside the source tree.
     # catches incorrect --srcdir parameter in autoconf call.
@@ -32,7 +32,7 @@ AC_CONFIG_FILES([Makefile])
 # Checks for programs.
 
     # add this to support the tools folder
-# AC_PROG_AWK 
+# AC_PROG_AWK
 
     # test existence of a C compiler
 AC_PROG_CC
@@ -49,7 +49,7 @@ AC_PROG_INSTALL
     # if a standard complient header is found.
 AC_CHECK_HEADERS([limits.h stdlib.h string.h])
 
-   # config.h: set HAVE_STDBOOL_H 
+   # config.h: set HAVE_STDBOOL_H
 AC_HEADER_STDBOOL
 
 # Checks for typedefs, structures, and compiler characteristics.
