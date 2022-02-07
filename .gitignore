@@ -27,5 +27,5 @@ build/
 # Doxygen related: configuration file and destination folder
 Doxyfile
 doxy/
-build/
+build/*
 *.produced
