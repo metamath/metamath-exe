@@ -15,6 +15,8 @@ Possible options are:
 
 -o followed by a directory: clear directory and build all artefacts there.
     Relative paths are relative to the destination'"'"'s top metamath-exe directory.
+-b build binary only, no reconfigure. Faster, but should not be used on first run.
+-c Clean the build directory.
 -d build documentation using Doxygen, in addition to building the executable.
 -h print this help and exit.
 -m followed by a directory: top folder of metamath-exe.
@@ -26,6 +28,8 @@ cur_dir="$(pwd)"
 
 #============   evaluate command line parameters   ==========
 
+do_autoconf=1
+do_clean=0
 do_doc=0
 print_help=0
 version_only=0
@@ -35,10 +39,12 @@ top_dir="$cur_dir"
 while getopts d:ehm:v flag
 do
   case "${flag}" in
-    o) dest_dir=${OPTARG};;
+    b) do_autoconf=0;;
+    c) do_clean=1;;
     d) do_doc=1;;
     h) print_help=1;;
     m) cd "${OPTARG}" && top_dir=$(pwd);;
+    o) dest_dir=${OPTARG};;
     v) version_only=1;;
   esac
 done
@@ -63,9 +69,16 @@ then
   exit
 fi
 
-# clear the build directory
 cd "$top_dir"
-rm -rf "$build_dir"
+
+# clear the build directory
+if [ $do_clean -eq 1 ]
+then
+  rm -rf "$build_dir"
+  if [ $do_autoconf -eq 0 ]; then exit; fi
+fi
+
+# Enter the build directory
 mkdir -p "$build_dir"
 cd "$build_dir"
 
@@ -87,49 +100,57 @@ version=${version#*\"}
 # strip everything from the first remaining quote character on
 version=${version%%\"*}
 
-if [ $version_only -gt 0 ]
+if [ $version_only -eq 1 ]
 then
   echo "$version"
   cd "$cur_dir"
   exit
 fi
 
+#===========   patch and run the configure.ac   =====================
+
 # allow external programs easy access to the metamath version extracted from
 # the sources
 echo "$version" > metamath_version
 
-# find the line with the AC_INIT command, prepend the line number
-# line-nr:AC_INIT([FULL-PACKAGE-NAME], [VERSION], [REPORT-ADDRESS])
-ac_init_line=`grep -n '[[:space:]]*AC_INIT[[:space:]]*(.*' configure.ac.orig`
-# strip everything from the first colon on
-ac_init_line_nr=${ac_init_line%%:*}
-# strip everything up to the first colon
-ac_init_line=${ac_init_line#*:}
-# replace the second parameter to AC_INIT
-patched_init_line=`echo "$ac_init_line" | sed "s/\\([[:space:]]*AC_INIT(.*\\),.*,\\(.*\\)/\\1, \[$version\],\\2/"`
+if [ $do_autoconf -eq 1 ]
+then
 
-# replace the AC_INIT line with new content
-head -n $(($ac_init_line_nr - 1)) configure.ac.orig > configure.acrm configure.ac.orig
+  # find the line with the AC_INIT command, prepend the line number
+  # line-nr:AC_INIT([FULL-PACKAGE-NAME], [VERSION], [REPORT-ADDRESS])
+  ac_init_line=`grep -n '[[:space:]]*AC_INIT[[:space:]]*(.*' configure.ac.orig`
+  # strip everything from the first colon on
+  ac_init_line_nr=${ac_init_line%%:*}
+  # strip everything up to the first colon
+  ac_init_line=${ac_init_line#*:}
+  # replace the second parameter to AC_INIT
+  patched_init_line=`echo "$ac_init_line" | sed "s/\\([[:space:]]*AC_INIT(.*\\),.*,\\(.*\\)/\\1, \[$version\],\\2/"`
 
-echo $patched_init_line >> configure.ac
-tail -n +$(($ac_init_line_nr + 1)) configure.ac.orig >> configure.ac
+  # replace the AC_INIT line with new content
+  head -n $(($ac_init_line_nr - 1)) configure.ac.orig > configure.acrm configure.ac.orig
 
-# patch the Doxyfile.diff
-cp Doxyfile.diff Doxyfile.diff.orig
-sed --in-place "s/\\(PROJECT_NUMBER[[:space:]]*=[[:space:]]*\\)\"Metamath-version\".*/\\1\"$version\"/" Doxyfile.diff
+  echo $patched_init_line >> configure.ac
+  tail -n +$(($ac_init_line_nr + 1)) configure.ac.orig >> configure.ac
 
-rm configure.ac.orig Doxyfile.diff.orig
+  rm configure.ac.orig
+
+  autoreconf -i
+  ./configure
+fi
 
 #===========   do the build   =====================
 
-autoreconf -i
-./configure
 make
 
 if [ $do_doc -eq 1 ]
 then
   if command doxygen -v
   then
+    # patch the Doxyfile.diff
+    cp Doxyfile.diff Doxyfile.diff.orig
+    sed --in-place "s/\\(PROJECT_NUMBER[[:space:]]*=[[:space:]]*\\)\"Metamath-version\".*/\\1\"$version\"/" Doxyfile.diff
+    rm Doxyfile.diff.orig
+
     # create a Doxyfile.local and use it for creation of documentation locally
 
     # start with the settings given by the distribution
