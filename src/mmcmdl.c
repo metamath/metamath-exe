@@ -1979,14 +1979,11 @@ void parseCommandLine(vstring line) {
   const char *tokenComment = "!";
 
 
-  flag mode;
-  long tokenStart, i, p, lineLen;
-
   vstring_def(specialOneCharTokens);
 
   /* Initialization to avoid compiler warning (should not be theoretically
      necessary) */
-  tokenStart = 0;
+  long tokenStart = 0;
 
   if (!g_toolsMode) {
     let(&specialOneCharTokens, "/="); /* List of special one-char tokens */
@@ -1994,14 +1991,15 @@ void parseCommandLine(vstring line) {
     let(&specialOneCharTokens, "");
   }
 
-  lineLen = len(line);
+  long lineLen = len(line);
   /* mode: 0 means look for start of token, 1 means look for end of
      token, 2 means look for trailing single quote, 3 means look for
      trailing double quote */
   /* only "!" at beginning of line acts as comment.
      This is done because sometimes ! might be legal as part of a command */
-  mode = 0;
-  for (p = 0; p < lineLen; p++) {
+  flag mode = 0;
+  long p = 0;
+  for (; p < lineLen; p++) {
     freeTempAlloc(); /* Clean up temp alloc stack to prevent overflow */
     if (mode == 0) {
       /* If character is white space, ignore it */
@@ -2125,7 +2123,7 @@ void parseCommandLine(vstring line) {
 
   /* Add length of command line prompt to each argument, to
      align the error message pointer */
-  for (i = 0; i < g_rawArgs; i++) {
+  for (long i = 0; i < g_rawArgs; i++) {
     g_rawArgNmbr[i] = g_rawArgNmbr[i] + len(g_commandPrompt);
   }
 
