@@ -1,14 +1,14 @@
 #!/bin/bash
 # create a metamath executable from scratch
 
-# Change to a subfolder of metamath-exe (e.g. the src folder) before
+# Change to the top folder of metamath-exe before
 # running this script, unless you provide the -m option.
 
 # Draft version, proof of concept.
 
 help_text=\
 'Builds all artefacts in the metamath-exe/build subfolder (if not directed
-otherwise).  Change to the metamath-exe subfolder first before running
+otherwise).  Change to the metamath-exe top folder first before running
 this script, or issue the -m option.
 
 Possible options are:
@@ -20,7 +20,7 @@ Possible options are:
 -h print this help and exit.
 -m followed by a directory: top folder of metamath-exe.
     Relative paths are relative to the current directory.
--o followed by a directory: clear directory and build all artefacts there.
+-o followed by a directory: optionally clean directory and build all artefacts there.
     Relative paths are relative to the destination'"'"'s top metamath-exe directory.
 -v extract the version from metamath sources, print it and exit'
 
@@ -133,8 +133,7 @@ then
     exit 1
   fi
 
-  # enter build/src
-  cd src
+  cd "$build_dir/src"
 
   # create a Doxyfile.local and use it for creation of documentation locally
 
