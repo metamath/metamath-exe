@@ -703,6 +703,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include "mmvstr.h"
 #include "mmdata.h"
 #include "mmcmdl.h"
@@ -914,7 +915,8 @@ void command(int argc, char *argv[]) {
   double timeIncr = 0;
   flag printTime;  /* Set by "/ TIME" in SAVE PROOF and others */
 
-  flag defaultScrollMode = 1; /* Default to prompted mode */
+  /* Default to prompted mode if run interactively, else continuous mode */
+  flag defaultScrollMode = isatty(STDIN_FILENO);
 
   /* Initialization to avoid compiler warning (should not be theoretically
      necessary) */
