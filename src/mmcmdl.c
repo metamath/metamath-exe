@@ -1741,7 +1741,7 @@ static flag getFullArg(long arg, const char *cmdList1) {
       }
       let((vstring *)(&g_rawArgPntr[arg]), tmpArg);
       g_rawArgNmbr[arg] = len(cmdList) - 1; /* Line position for error msgs */
-
+      free_vstring(tmpArg);
     } /* End of asking user for additional argument */
 
     let(&keyword,g_rawArgPntr[arg]);
