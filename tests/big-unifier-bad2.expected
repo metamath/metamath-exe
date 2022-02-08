@@ -1,0 +1,18 @@
+MM> READ "big-unifier-bad2.mm"
+Reading source file "big-unifier-bad2.mm"... 3366 bytes
+3366 bytes were read into the source buffer.
+The source has 28 statements; 4 are $a and 1 are $p.
+No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
+if you want to check them.
+MM> 0 10%  20%  30%  40%  50%  60%  70%  80%  90% 100%
+..................................................
+?Error on line 68 of file "big-unifier-bad2.mm" at statement 28, label
+"theorem1", type "$p":
+   FFZMPAFFZFPFQPFZFLRFFLNKMJAJNQPLAPGPMKBADCEOAR $.
+                                                ^
+After proof step 80 (the last step), the RPN stack contains 14 entries: "F"
+(step 55), "L" (step 56), "G" (step 69), "P" (step 70), "M" (step 71), "K"
+(step 72), "B" (step 73), "A" (step 74), "D" (step 75), "C" (step 76), "E"
+(step 77), "O" (step 78), "A" (step 79), and  "R" (step 80).  It should contain
+exactly one entry.
+

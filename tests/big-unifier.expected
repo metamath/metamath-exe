@@ -1,0 +1,9 @@
+MM> READ "big-unifier.mm"
+Reading source file "big-unifier.mm"... 21981 bytes
+21981 bytes were read into the source buffer.
+The source has 29 statements; 4 are $a and 2 are $p.
+No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
+if you want to check them.
+MM> 0 10%  20%  30%  40%  50%  60%  70%  80%  90% 100%
+..................................................
+All proofs in the database were verified.
