@@ -2004,7 +2004,7 @@ void parseCommandLine(vstring line) {
       }
       /* If character is comment, we're done */
       if (p == 0 && instr(1,tokenComment,chr(line[p]))) {
-        break;
+        goto parseCommandLine_ret;
       }
       /* If character is a special token, get it but don't change mode */
       if (instr(1, specialOneCharTokens, chr(line[p]))) {
@@ -2117,6 +2117,7 @@ void parseCommandLine(vstring line) {
     g_rawArgs++;
   }
 
+parseCommandLine_ret:
   /* Add length of command line prompt to each argument, to
      align the error message pointer */
   for (long i = 0; i < g_rawArgs; i++) {
