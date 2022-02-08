@@ -122,6 +122,7 @@ fi
 #===========   do the build   =====================
 
 make
+mv src/metamath "$top_dir"
 
 #===========   run Doxygen documentation generator   =====================
 

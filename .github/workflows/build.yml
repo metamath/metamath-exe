@@ -16,4 +16,4 @@ jobs:
 
       - name: test
         working-directory: tests
-        run: env METAMATH=../build/metamath ./run_test.sh *.in
+        run: env METAMATH=../metamath ./run_test.sh *.in
