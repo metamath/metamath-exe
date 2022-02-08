@@ -2029,9 +2029,7 @@ void parseCommandLine(vstring line) {
       /* Character must be start of a token */
       mode = MODE_END;
       tokenStart = p + 1;
-      continue;
-    }
-    if (mode == MODE_END) {
+    } else if (mode == MODE_END) {
       /* If character is white space, end token and change mode */
       if (instr(1, tokenWhiteSpace, chr(line[p]))) {
         pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
@@ -2081,9 +2079,7 @@ void parseCommandLine(vstring line) {
         continue;
       }
       /* Character must be continuation of the token */
-      continue;
-    }
-    if (mode == MODE_SQUOTE || mode == MODE_DQUOTE) {
+    } else if (mode == MODE_SQUOTE || mode == MODE_DQUOTE) {
       /* If character is a quote, end quote and change mode */
       if (line[p] == '\'' && mode == MODE_SQUOTE) {
         mode = MODE_START;
@@ -2104,7 +2100,6 @@ void parseCommandLine(vstring line) {
         continue;
       }
       /* Character must be continuation of quoted token */
-      continue;
     }
   }
 
