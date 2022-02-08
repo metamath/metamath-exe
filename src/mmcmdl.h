@@ -11,7 +11,6 @@
 #include "mmdata.h"
 
 flag processCommandLine(void);
-flag getFullArg(long arg, vstring cmdList);
 void parseCommandLine(vstring line);
 flag lastArgMatches(vstring argString);
 flag cmdMatches(vstring cmdString);

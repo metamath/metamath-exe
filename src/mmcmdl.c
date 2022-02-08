@@ -38,6 +38,7 @@ flag g_sourceHasBeenRead = 0; /* 1 if a source file has been read in */
 vstring_def(g_rootDirectory); /* Directory prefix to use for included files */
 
 
+static flag getFullArg(long arg, const char *cmdList);
 
 flag processCommandLine(void) {
   vstring_def(defaultArg);
@@ -1627,29 +1628,25 @@ flag processCommandLine(void) {
 
 
 
-flag getFullArg(long arg, vstring cmdList1) {
-  /* This function converts the user's abbreviated keyword in
-     g_rawArgPntr[arg] to a full, upper-case keyword,
-     in g_fullArg[arg], matching
-     the available choices in cmdList. */
-  /* Special cases:  cmdList = "# xxx <yyy>?" - get an integer */
-  /*                 cmdList = "* xxx <yyy>?" - get any string;
-                       don't convert to upper case
-                     cmdList = "& xxx <yyy>?" - same as * except
-                       verify it is a file that exists */
-  /* "$" means a null argument is acceptable; put it in as
-     special character chr(3) so it can be recognized */
-
+/* This function converts the user's abbreviated keyword in
+   g_rawArgPntr[arg] to a full, upper-case keyword,
+   in g_fullArg[arg], matching
+   the available choices in cmdList. */
+/* Special cases:  cmdList = "# xxx <yyy>?" - get an integer */
+/*                 cmdList = "* xxx <yyy>?" - get any string;
+                     don't convert to upper case
+                   cmdList = "& xxx <yyy>?" - same as * except
+                     verify it is a file that exists */
+/* "$" means a null argument is acceptable; put it in as
+   special character chr(3) so it can be recognized */
+static flag getFullArg(long arg, const char *cmdList1) {
   pntrString_def(possCmd);
-  long possCmds, i, j, k, m, p, q;
+  flag ret = 1;
   vstring_def(defaultCmd);
   vstring_def(infoStr);
-  vstring_def(tmpStr);
-  vstring_def(tmpArg);
   vstring_def(errorLine);
   vstring_def(keyword);
   vstring_def(cmdList);
-  FILE *tmpFp;
 
   let(&cmdList,cmdList1); /* In case cmdList1 gets deallocated when it comes
                              directly from a vstring function such as cat() */
@@ -1669,32 +1666,38 @@ flag getFullArg(long arg, vstring cmdList1) {
       if (g_rawArgs <= arg) bug(1103);
 
       g_queryMode = 1;
-      tmpArg = cmdInput1(right(cmdList,3));
+      vstring argLine = cmdInput1(right(cmdList,3));
       let(&errorLine,right(cmdList,3));
-      if (tmpArg[0] == 0) { /* Use default argument */
-        let(&tmpArg, seg(defaultCmd,2,len(defaultCmd) - 1));
+      if (argLine[0] == 0) { /* Use default argument */
+        let(&argLine, seg(defaultCmd,2,len(defaultCmd) - 1));
       }
-      let((vstring *)(&g_rawArgPntr[arg]), tmpArg);
+      let((vstring *)(&g_rawArgPntr[arg]), argLine);
+      free_vstring(argLine);
       g_rawArgNmbr[arg] = len(cmdList) - 1;/* Line position for error msgs */
 
     } /* End of asking user for additional argument */
 
     /* Make sure that the argument is a non-negative integer */
+    vstring_def(tmpArg);
     let(&tmpArg,g_rawArgPntr[arg]);
     if (tmpArg[0] == 0) { /* Use default argument */
       /* (This code is needed in case of null string passed directly) */
       let(&tmpArg, seg(defaultCmd,2,len(defaultCmd) - 1));
     }
+    vstring_def(tmpStr);
     let(&tmpStr, str(val(tmpArg)));
     let(&tmpStr, cat(string(len(tmpArg)-len(tmpStr),'0'), tmpStr, NULL));
     if (strcmp(tmpStr, tmpArg)) {
       printCommandError(errorLine, arg,
           "?A number was expected here.");
-      goto return0;
+      ret = 0;
+    } else {
+      let(&keyword, str(val(tmpArg)));
     }
 
-    let(&keyword, str(val(tmpArg)));
-    goto return1;
+    free_vstring(tmpArg);
+    free_vstring(tmpStr);
+    goto getFullArg_ret;
   }
 
 
@@ -1711,14 +1714,14 @@ flag getFullArg(long arg, vstring cmdList1) {
       if (!strcmp(defaultCmd, "<$>")) { /* End of command acceptable */
         /* Note:  in this case, user will never be prompted for anything. */
         let(&keyword,chr(3));
-        goto return1;
+        goto getFullArg_ret;
       }
       g_rawArgs++;
       pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
       nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, 0));
       if (g_rawArgs <= arg) bug(1104);
       g_queryMode = 1;
-      tmpArg = cmdInput1(right(cmdList,3));
+      vstring tmpArg = cmdInput1(right(cmdList,3));
 
       /* Strip off any quotes around it
          and tolerate lack of trailing quote */
@@ -1738,7 +1741,7 @@ flag getFullArg(long arg, vstring cmdList1) {
       }
       let((vstring *)(&g_rawArgPntr[arg]), tmpArg);
       g_rawArgNmbr[arg] = len(cmdList) - 1; /* Line position for error msgs */
-
+      free_vstring(tmpArg);
     } /* End of asking user for additional argument */
 
     let(&keyword,g_rawArgPntr[arg]);
@@ -1765,32 +1768,37 @@ flag getFullArg(long arg, vstring cmdList1) {
     }
     if (cmdList[0] == '&') {
       /* See if file exists */
+      vstring_def(tmpStr);
       let(&tmpStr, cat(g_rootDirectory, keyword, NULL));
-      tmpFp = fopen(tmpStr, "r");
+      FILE *tmpFp = fopen(tmpStr, "r");
       if (!tmpFp) {
         let(&tmpStr,  cat("?Sorry, couldn't open the file \"", tmpStr, "\".", NULL));
         printCommandError(errorLine, arg, tmpStr);
-        goto return0;
+        free_vstring(tmpStr);
+        ret = 0;
+      } else {
+        fclose(tmpFp);
       }
-      fclose(tmpFp);
     }
-    goto return1;
+    goto getFullArg_ret;
   }
 
 
 
   /* Parse the choices available */
-  possCmds = 0;
-  p = 0;
+  long possCmds = 0;
+  long p = 0;
+  long q = 0;
   while (1) {
-    q = p;
     p = instr(p + 1, cat(cmdList, "|", NULL), "|");
     if (!p) break;
     pntrLet(&possCmd,pntrAddElement(possCmd));
     let((vstring *)(&possCmd[possCmds]),seg(cmdList,q+1,p-1));
     possCmds++;
+    q = p;
   }
   if (!strcmp(left(possCmd[possCmds - 1],1), "<")) {
+    // free_vstring(defaultCmd); // Not needed because defaultCmd is already empty
     /* Get default argument, if any */
     defaultCmd = possCmd[possCmds - 1]; /* re-use old allocation */
     if (!strcmp(defaultCmd, "<$>")) {
@@ -1805,17 +1813,19 @@ flag getFullArg(long arg, vstring cmdList1) {
   }
 
   /* Create a string used for queries and error messages */
-  if (possCmds < 1) bug(1105);
+  if (possCmds < 1) {
+    bug(1105);
+    ret = 0;
+    goto getFullArg_ret;
+  }
   if (possCmds == 1) {
     let(&infoStr,possCmd[0]);
-  }
-  if (possCmds == 2) {
+  } else if (possCmds == 2) {
     let(&infoStr, cat(possCmd[0], " or ",
         possCmd[1], NULL));
-  }
-  if (possCmds > 2) {
+  } else /* possCmds > 2 */ {
     let(&infoStr, "");
-    for (i = 0; i < possCmds - 1; i++) {
+    for (long i = 0; i < possCmds - 1; i++) {
       let(&infoStr, cat(infoStr, possCmd[i], ", ", NULL));
     }
     let(&infoStr, cat(infoStr, "or ", possCmd[possCmds - 1], NULL));
@@ -1825,12 +1835,14 @@ flag getFullArg(long arg, vstring cmdList1) {
   if (g_rawArgs <= arg && (strcmp(possCmd[possCmds - 1], "nothing")
       || g_queryMode == 1)) {
 
+    vstring_def(tmpStr);
     let(&tmpStr, infoStr);
     if (defaultCmd[0] != 0) {
       let(&tmpStr, cat(tmpStr, " ",defaultCmd, NULL));
     }
     let(&tmpStr, cat(tmpStr, "? ", NULL));
     g_queryMode = 1;
+    vstring_def(tmpArg);
     if (possCmds != 1) {
       tmpArg = cmdInput1(tmpStr);
     } else {
@@ -1839,7 +1851,7 @@ flag getFullArg(long arg, vstring cmdList1) {
       if (!strcmp(cmdList, "$|<$>")) {
         let(&tmpArg, possCmd[0]);
         print2("The command so far is:  ");
-        for (i = 0; i < arg; i++) {
+        for (long i = 0; i < arg; i++) {
           print2("%s ", g_fullArg[i]);
         }
         print2("%s\n", tmpArg);
@@ -1859,22 +1871,25 @@ flag getFullArg(long arg, vstring cmdList1) {
       g_rawArgNmbr[arg] = len(tmpStr) + 1; /* Line position for error msgs */
     }
 
+    free_vstring(tmpStr);
+    free_vstring(tmpArg);
   } /* End of asking user for additional argument */
 
   if (g_rawArgs <= arg) {
     /* No argument was specified, and "nothing" is a valid argument */
     let(&keyword,chr(3));
-    goto return1;
+    goto getFullArg_ret;
   }
 
 
+  vstring_def(tmpArg);
   let(&tmpArg,edit(g_rawArgPntr[arg], 32)); /* Convert to upper case */
-  j = 0;
-  k = 0;
-  m = len(tmpArg);
-  let(&tmpStr, "");
+  long j = 0;
+  long k = 0;
+  long m = len(tmpArg);
+  vstring_def(tmpStr);
   /* Scan the possible arguments for a match */
-  for (i = 0; i < possCmds; i++) {
+  for (long i = 0; i < possCmds; i++) {
     if (!strcmp(possCmd[i], tmpArg)) {
       /* An exact match was found, so ignore any other matches
          and use this one */
@@ -1892,6 +1907,7 @@ flag getFullArg(long arg, vstring cmdList1) {
       k++; /* Number of matches */
     }
   }
+  free_vstring(tmpArg);
   if (k < 1 || k > 1) {
     if (k < 1) {
       let(&tmpStr, cat("?Expected ", infoStr, ".", NULL));
@@ -1907,53 +1923,41 @@ flag getFullArg(long arg, vstring cmdList1) {
       let(&tmpStr, cat("?Ambiguous keyword - please specify ",tmpStr, ".", NULL));
     }
     printCommandError(errorLine, arg, tmpStr);
-    goto return0;
+    free_vstring(tmpStr);
+    ret = 0;
+    goto getFullArg_ret;
   }
+  free_vstring(tmpStr);
 
   let(&keyword,possCmd[j]);
-  goto return1;
 
- return1:
-  if (keyword[0] == 0) {
-    if (g_rawArgs > arg && strcmp(defaultCmd, "<>")) {
-      /* otherwise, "nothing" was specified */
-      printCommandError("", arg,
-          "?No default answer is available - please be explicit.");
-      goto return0;
+getFullArg_ret:
+  if (ret) {
+    if (keyword[0] == 0) {
+      if (g_rawArgs > arg && strcmp(defaultCmd, "<>")) {
+        /* otherwise, "nothing" was specified */
+        printCommandError("", arg,
+            "?No default answer is available - please be explicit.");
+        ret = 0;
+        goto getFullArg_ret;
+      }
     }
+    /* Add new field to g_fullArg */
+    pntrLet(&g_fullArg,pntrAddElement(g_fullArg));
+    if (pntrLen(g_fullArg) != arg + 1) bug(1107);
+    else let((vstring *)(&g_fullArg[arg]),keyword);
   }
-  /* Add new field to g_fullArg */
-  pntrLet(&g_fullArg,pntrAddElement(g_fullArg));
-  if (pntrLen(g_fullArg) != arg + 1) bug(1107);
-  let((vstring *)(&g_fullArg[arg]),keyword);
 
   /* Deallocate memory */
-  j = pntrLen(possCmd);
-  for (i = 0; i < j; i++) free_vstring(*(vstring *)(&possCmd[i]));
+  long len = pntrLen(possCmd);
+  for (long i = 0; i < len; i++) free_vstring(*(vstring *)(&possCmd[i]));
   free_pntrString(possCmd);
   free_vstring(defaultCmd);
   free_vstring(infoStr);
-  free_vstring(tmpStr);
-  free_vstring(tmpArg);
   free_vstring(errorLine);
   free_vstring(keyword);
   free_vstring(cmdList);
-  return(1);
-
- return0:
-  /* Deallocate memory */
-  j = pntrLen(possCmd);
-  for (i = 0; i < j; i++) free_vstring(*(vstring *)(&possCmd[i]));
-  free_pntrString(possCmd);
-  free_vstring(defaultCmd);
-  free_vstring(infoStr);
-  free_vstring(tmpStr);
-  free_vstring(tmpArg);
-  free_vstring(errorLine);
-  free_vstring(keyword);
-  free_vstring(cmdList);
-  return(0);
-
+  return ret;
 } /* getFullArg */
 
 
