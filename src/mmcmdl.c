@@ -1978,18 +1978,12 @@ void parseCommandLine(vstring line) {
   const char *tokenWhiteSpace = " \t\n";
   const char *tokenComment = "!";
 
-
-  vstring_def(specialOneCharTokens);
-
   /* Initialization to avoid compiler warning (should not be theoretically
      necessary) */
   long tokenStart = 0;
 
-  if (!g_toolsMode) {
-    let(&specialOneCharTokens, "/="); /* List of special one-char tokens */
-  } else {
-    let(&specialOneCharTokens, "");
-  }
+  /* List of special one-char tokens */
+  const char* specialOneCharTokens = g_toolsMode ? "" : "/=";
 
   long lineLen = len(line);
   /* mode: 0 means look for start of token, 1 means look for end of
@@ -2126,9 +2120,6 @@ void parseCommandLine(vstring line) {
   for (long i = 0; i < g_rawArgs; i++) {
     g_rawArgNmbr[i] = g_rawArgNmbr[i] + len(g_commandPrompt);
   }
-
-  /* Deallocate */
-  free_vstring(specialOneCharTokens);
 } /* parseCommandLine */
 
 
