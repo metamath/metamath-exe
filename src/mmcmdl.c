@@ -1974,10 +1974,9 @@ getFullArg_ret:
    removed.
 */
 void parseCommandLine(vstring line) {
-  /* Warning:  Don't deallocate these vstring constants */
-  /*vstring specialOneCharTokens = "()/,=:";*/
-  vstring tokenWhiteSpace = " \t\n";
-  vstring tokenComment = "!";
+  /*const char *specialOneCharTokens = "()/,=:";*/
+  const char *tokenWhiteSpace = " \t\n";
+  const char *tokenComment = "!";
 
 
   flag mode;
