@@ -1997,109 +1997,116 @@ void parseCommandLine(vstring line) {
   long p = 0;
   for (; p < lineLen; p++) {
     freeTempAlloc(); /* Clean up temp alloc stack to prevent overflow */
-    if (mode == MODE_START) {
-      /* If character is white space, ignore it */
-      if (instr(1,tokenWhiteSpace,chr(line[p]))) {
-        continue;
-      }
-      /* If character is comment, we're done */
-      if (p == 0 && instr(1,tokenComment,chr(line[p]))) {
-        goto parseCommandLine_ret;
-      }
-      /* If character is a special token, get it but don't change mode */
-      if (instr(1, specialOneCharTokens, chr(line[p]))) {
-        pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
-        nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, p+1));
-                                                          /* Save token start */
-        let((vstring *)(&g_rawArgPntr[g_rawArgs]), chr(line[p]));
-        g_rawArgs++;
-        continue;
-      }
-      /* If character is a quote, set start and change mode */
-      if (line[p] == '\'') {
-        mode = MODE_SQUOTE;
-        tokenStart = p + 2;
-        continue;
-      }
-      if (line[p] == '\"') {
-        mode = MODE_DQUOTE;
-        tokenStart = p + 2;
-        continue;
-      }
-      /* Character must be start of a token */
-      mode = MODE_END;
-      tokenStart = p + 1;
-    } else if (mode == MODE_END) {
-      /* If character is white space, end token and change mode */
-      if (instr(1, tokenWhiteSpace, chr(line[p]))) {
-        pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
-        nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, tokenStart));
-                                                          /* Save token start */
-        let((vstring *)(&g_rawArgPntr[g_rawArgs]), seg(line, tokenStart, p));
-        g_rawArgs++;
-        mode = MODE_START;
-        continue;
-      }
+    switch (mode) {
+      case MODE_START: {
+        /* If character is white space, ignore it */
+        if (instr(1,tokenWhiteSpace,chr(line[p]))) {
+          continue;
+        }
+        /* If character is comment, we're done */
+        if (p == 0 && instr(1,tokenComment,chr(line[p]))) {
+          goto parseCommandLine_ret;
+        }
+        /* If character is a special token, get it but don't change mode */
+        if (instr(1, specialOneCharTokens, chr(line[p]))) {
+          pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
+          nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, p+1));
+                                                            /* Save token start */
+          let((vstring *)(&g_rawArgPntr[g_rawArgs]), chr(line[p]));
+          g_rawArgs++;
+          continue;
+        }
+        /* If character is a quote, set start and change mode */
+        if (line[p] == '\'') {
+          mode = MODE_SQUOTE;
+          tokenStart = p + 2;
+          continue;
+        }
+        if (line[p] == '\"') {
+          mode = MODE_DQUOTE;
+          tokenStart = p + 2;
+          continue;
+        }
+        /* Character must be start of a token */
+        mode = MODE_END;
+        tokenStart = p + 1;
+      } break;
 
-      /* If character is a special token, get it and change mode */
-      if (instr(1, specialOneCharTokens, chr(line[p]))) {
-        pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
-        nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, tokenStart));
-                                                          /* Save token start */
-        let((vstring *)(&g_rawArgPntr[g_rawArgs]),seg(line, tokenStart, p));
-        g_rawArgs++;
-        pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
-        nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, p + 1));
-                                                          /* Save token start */
-        let((vstring *)(&g_rawArgPntr[g_rawArgs]), chr(line[p]));
-        g_rawArgs++;
-        mode = MODE_START;
-        continue;
-      }
+      case MODE_END: {
+        /* If character is white space, end token and change mode */
+        if (instr(1, tokenWhiteSpace, chr(line[p]))) {
+          pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
+          nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, tokenStart));
+                                                            /* Save token start */
+          let((vstring *)(&g_rawArgPntr[g_rawArgs]), seg(line, tokenStart, p));
+          g_rawArgs++;
+          mode = MODE_START;
+          continue;
+        }
 
-      /* If character is a quote, set start and change mode */
-      if (line[p] == '\'') {
-        pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
-        nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, tokenStart));
-                                                          /* Save token start */
-        let((vstring *)(&g_rawArgPntr[g_rawArgs]),seg(line, tokenStart,p));
-        g_rawArgs++;
-        mode = MODE_SQUOTE;
-        tokenStart = p + 2;
-        continue;
-      }
-      if (line[p] == '\"') {
-        pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
-        nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, tokenStart));
-                                                          /* Save token start */
-        let((vstring *)(&g_rawArgPntr[g_rawArgs]),seg(line, tokenStart,p));
-        g_rawArgs++;
-        mode = MODE_DQUOTE;
-        tokenStart = p + 2;
-        continue;
-      }
-      /* Character must be continuation of the token */
-    } else if (mode == MODE_SQUOTE || mode == MODE_DQUOTE) {
-      /* If character is a quote, end quote and change mode */
-      if (line[p] == '\'' && mode == MODE_SQUOTE) {
-        mode = MODE_START;
-        pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
-        nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, tokenStart));
-                                                          /* Save token start */
-        let((vstring *)(&g_rawArgPntr[g_rawArgs]), seg(line,tokenStart,p));
-        g_rawArgs++;
-        continue;
-      }
-      if (line[p] == '\"' && mode == MODE_DQUOTE) {
-        mode = MODE_START;
-        pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
-        nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, tokenStart));
-                                                          /* Save token start */
-        let((vstring *)(&g_rawArgPntr[g_rawArgs]),seg(line, tokenStart,p));
-        g_rawArgs++;
-        continue;
-      }
-      /* Character must be continuation of quoted token */
+        /* If character is a special token, get it and change mode */
+        if (instr(1, specialOneCharTokens, chr(line[p]))) {
+          pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
+          nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, tokenStart));
+                                                            /* Save token start */
+          let((vstring *)(&g_rawArgPntr[g_rawArgs]),seg(line, tokenStart, p));
+          g_rawArgs++;
+          pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
+          nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, p + 1));
+                                                            /* Save token start */
+          let((vstring *)(&g_rawArgPntr[g_rawArgs]), chr(line[p]));
+          g_rawArgs++;
+          mode = MODE_START;
+          continue;
+        }
+
+        /* If character is a quote, set start and change mode */
+        if (line[p] == '\'') {
+          pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
+          nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, tokenStart));
+                                                            /* Save token start */
+          let((vstring *)(&g_rawArgPntr[g_rawArgs]),seg(line, tokenStart,p));
+          g_rawArgs++;
+          mode = MODE_SQUOTE;
+          tokenStart = p + 2;
+          continue;
+        }
+        if (line[p] == '\"') {
+          pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
+          nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, tokenStart));
+                                                            /* Save token start */
+          let((vstring *)(&g_rawArgPntr[g_rawArgs]),seg(line, tokenStart,p));
+          g_rawArgs++;
+          mode = MODE_DQUOTE;
+          tokenStart = p + 2;
+          continue;
+        }
+        /* Character must be continuation of the token */
+      } break;
+
+      case MODE_SQUOTE:
+      case MODE_DQUOTE: {
+        /* If character is a quote, end quote and change mode */
+        if (line[p] == '\'' && mode == MODE_SQUOTE) {
+          mode = MODE_START;
+          pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
+          nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, tokenStart));
+                                                            /* Save token start */
+          let((vstring *)(&g_rawArgPntr[g_rawArgs]), seg(line,tokenStart,p));
+          g_rawArgs++;
+          continue;
+        }
+        if (line[p] == '\"' && mode == MODE_DQUOTE) {
+          mode = MODE_START;
+          pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
+          nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, tokenStart));
+                                                            /* Save token start */
+          let((vstring *)(&g_rawArgPntr[g_rawArgs]),seg(line, tokenStart,p));
+          g_rawArgs++;
+          continue;
+        }
+        /* Character must be continuation of quoted token */
+      } break;
     }
   }
 
