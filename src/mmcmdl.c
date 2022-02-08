@@ -2087,21 +2087,12 @@ void parseCommandLine(vstring line) {
       case MODE_SQUOTE:
       case MODE_DQUOTE: {
         /* If character is a quote, end quote and change mode */
-        if (line[p] == '\'' && mode == MODE_SQUOTE) {
+        if (line[p] == (mode == MODE_SQUOTE ? '\'' : '\"')) {
           mode = MODE_START;
           pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
           nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, tokenStart));
                                                             /* Save token start */
-          let((vstring *)(&g_rawArgPntr[g_rawArgs]), seg(line,tokenStart,p));
-          g_rawArgs++;
-          continue;
-        }
-        if (line[p] == '\"' && mode == MODE_DQUOTE) {
-          mode = MODE_START;
-          pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
-          nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, tokenStart));
-                                                            /* Save token start */
-          let((vstring *)(&g_rawArgPntr[g_rawArgs]),seg(line, tokenStart,p));
+          let((vstring *)(&g_rawArgPntr[g_rawArgs]),seg(line, tokenStart, p));
           g_rawArgs++;
           continue;
         }
