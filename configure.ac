@@ -10,6 +10,13 @@ AC_PREREQ([2.65])
     # program name, version, email to report bugs
 AC_INIT([metamath], [m4_esyscmd_s([./build.sh -va])], [nm.NOSPAM@alum.mit.edu])
 
+    # Put auxiliary autoconf scripts in config/
+AC_CONFIG_AUX_DIR([config])
+
+    # Do not expect full GNU conformance (files like NEWS might be missing).
+    # Minimal checks only.
+AM_INIT_AUTOMAKE([foreign])
+
     # unique file name likely not existing outside the source tree.
     # catches incorrect --srcdir parameter in autoconf call.
 AC_CONFIG_SRCDIR([src/metamath.c])
@@ -20,10 +27,6 @@ AC_CONFIG_SRCDIR([src/metamath.c])
     # Metamath sources do not include this config.h so far, although it is
     # common practise to do so.
 AC_CONFIG_HEADERS([config.h])
-
-    # Do not expect full GNU conformance (files like NEWS might be missing).
-    # Minimal checks only.
-AM_INIT_AUTOMAKE([foreign])
 
     # requires a Makefile.am, that is modified according to following commands.
     # AC_OUTPUT creates a Makefile.in based on this modifications..
