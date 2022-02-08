@@ -1989,13 +1989,18 @@ void parseCommandLine(vstring line) {
   /* mode: 0 means look for start of token, 1 means look for end of
      token, 2 means look for trailing single quote, 3 means look for
      trailing double quote */
+#define MODE_START 0 // look for start of token
+#define MODE_END 1 // look for end of token
+#define MODE_SQUOTE 2 // look for trailing single quote
+#define MODE_DQUOTE 3 // look for trailing double quote
+
   /* only "!" at beginning of line acts as comment.
      This is done because sometimes ! might be legal as part of a command */
-  flag mode = 0;
+  flag mode = MODE_START;
   long p = 0;
   for (; p < lineLen; p++) {
     freeTempAlloc(); /* Clean up temp alloc stack to prevent overflow */
-    if (mode == 0) {
+    if (mode == MODE_START) {
       /* If character is white space, ignore it */
       if (instr(1,tokenWhiteSpace,chr(line[p]))) {
         continue;
@@ -2015,21 +2020,21 @@ void parseCommandLine(vstring line) {
       }
       /* If character is a quote, set start and change mode */
       if (line[p] == '\'') {
-        mode = 2;
+        mode = MODE_SQUOTE;
         tokenStart = p + 2;
         continue;
       }
       if (line[p] == '\"') {
-        mode = 3;
+        mode = MODE_DQUOTE;
         tokenStart = p + 2;
         continue;
       }
       /* Character must be start of a token */
-      mode = 1;
+      mode = MODE_END;
       tokenStart = p + 1;
       continue;
     }
-    if (mode == 1) {
+    if (mode == MODE_END) {
       /* If character is white space, end token and change mode */
       if (instr(1, tokenWhiteSpace, chr(line[p]))) {
         pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
@@ -2037,7 +2042,7 @@ void parseCommandLine(vstring line) {
                                                           /* Save token start */
         let((vstring *)(&g_rawArgPntr[g_rawArgs]), seg(line, tokenStart, p));
         g_rawArgs++;
-        mode = 0;
+        mode = MODE_START;
         continue;
       }
 
@@ -2053,7 +2058,7 @@ void parseCommandLine(vstring line) {
                                                           /* Save token start */
         let((vstring *)(&g_rawArgPntr[g_rawArgs]), chr(line[p]));
         g_rawArgs++;
-        mode = 0;
+        mode = MODE_START;
         continue;
       }
 
@@ -2064,7 +2069,7 @@ void parseCommandLine(vstring line) {
                                                           /* Save token start */
         let((vstring *)(&g_rawArgPntr[g_rawArgs]),seg(line, tokenStart,p));
         g_rawArgs++;
-        mode = 2;
+        mode = MODE_SQUOTE;
         tokenStart = p + 2;
         continue;
       }
@@ -2074,17 +2079,17 @@ void parseCommandLine(vstring line) {
                                                           /* Save token start */
         let((vstring *)(&g_rawArgPntr[g_rawArgs]),seg(line, tokenStart,p));
         g_rawArgs++;
-        mode = 3;
+        mode = MODE_DQUOTE;
         tokenStart = p + 2;
         continue;
       }
       /* Character must be continuation of the token */
       continue;
     }
-    if (mode == 2 || mode == 3) {
+    if (mode == MODE_SQUOTE || mode == MODE_DQUOTE) {
       /* If character is a quote, end quote and change mode */
-      if (line[p] == '\'' && mode == 2) {
-        mode = 0;
+      if (line[p] == '\'' && mode == MODE_SQUOTE) {
+        mode = MODE_START;
         pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
         nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, tokenStart));
                                                           /* Save token start */
@@ -2092,8 +2097,8 @@ void parseCommandLine(vstring line) {
         g_rawArgs++;
         continue;
       }
-      if (line[p] == '\"' && mode == 3) {
-        mode = 0;
+      if (line[p] == '\"' && mode == MODE_DQUOTE) {
+        mode = MODE_START;
         pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
         nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, tokenStart));
                                                           /* Save token start */
@@ -2107,7 +2112,7 @@ void parseCommandLine(vstring line) {
   }
 
   /* Finished scanning the line.  Finish processing last token. */
-  if (mode != 0) {
+  if (mode != MODE_START) {
     pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
     nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, tokenStart));
                                                           /* Save token start */
