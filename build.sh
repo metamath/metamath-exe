@@ -133,6 +133,9 @@ then
     exit 1
   fi
 
+  # enter build/src
+  cd src
+
   # create a Doxyfile.local and use it for creation of documentation locally
 
   # start with the settings given by the distribution
