@@ -1986,17 +1986,14 @@ void parseCommandLine(vstring line) {
   const char* specialOneCharTokens = g_toolsMode ? "" : "/=";
 
   long lineLen = len(line);
-  /* mode: 0 means look for start of token, 1 means look for end of
-     token, 2 means look for trailing single quote, 3 means look for
-     trailing double quote */
-#define MODE_START 0 // look for start of token
-#define MODE_END 1 // look for end of token
-#define MODE_SQUOTE 2 // look for trailing single quote
-#define MODE_DQUOTE 3 // look for trailing double quote
-
   /* only "!" at beginning of line acts as comment.
      This is done because sometimes ! might be legal as part of a command */
-  flag mode = MODE_START;
+  enum mode_t {
+    MODE_START, // look for start of token
+    MODE_END, // look for end of token
+    MODE_SQUOTE, // look for trailing single quote
+    MODE_DQUOTE, // look for trailing double quote
+  } mode = MODE_START;
   long p = 0;
   for (; p < lineLen; p++) {
     freeTempAlloc(); /* Clean up temp alloc stack to prevent overflow */
