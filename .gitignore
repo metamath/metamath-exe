@@ -23,8 +23,9 @@ configure.ac2
 *~7
 *~8
 *~9
-# Doxygen related: configuration file and destination folder
-Doxyfile
-doc/doxy
 build/
+# Doxygen related: configuration file and destination folderbuild/
+
+Doxyfile
+doxy/
 *.produced

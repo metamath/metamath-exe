@@ -12,9 +12,8 @@ jobs:
       - uses: actions/checkout@v2
 
       - name: build
-        working-directory: build
         run: ./build.sh
 
       - name: test
         working-directory: tests
-        run: env METAMATH=../build/metamath ./run_test.sh *.in
+        run: env METAMATH=../metamath ./run_test.sh *.in

@@ -4,8 +4,9 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-/* mmdata.h - includes for some principal data structures and data-string
-   handling */
+/*!
+ * \file mmdata.h - includes for some principal data structures and data-string
+ * handling */
 
 #ifndef METAMATH_MMDATA_H_
 #define METAMATH_MMDATA_H_
@@ -13,13 +14,57 @@
 #include "mmvstr.h"
 
 /*E*/extern long db,db0,db1,db2,db3,db4,db5,db6,db7,db8,db9;/* debugging flags & variables */
-typedef char flag; /* A "flag" is simply a character intended for use as a
-                      yes/no logical Boolean; 0 = no and 1 = yes */
+/*!
+ * \typedef flag
+ * a char whoose range is restricted to 0 (equivalent to false/no) and 1
+ * (equivalent to true/yes), the typical semantics of a bool (Boolean value).
+ */
+typedef char flag;
 
+/*! 
+ * \var flag g_listMode.
+ * Obsolete.  Now fixed to 0.  Historically the metamath sources were also used
+ * for other purposes than maintaining Metamath files.  One such application, a
+ * standalone text processor, was LIST.EXE.  The sources still query this
+ * \a flag occasionally, but its value is in fact fixed to 0 in metamath,
+ * meaning the LIST.EXE functionality is an integral part of metamath now.
+ */
 extern flag g_listMode; /* 0 = metamath, 1 = list utility */
+/*!
+ * \var flag g_toolsMode.
+ * Metamath has two modes of operation: In its primary mode it handles
+ * mathematical contents like proofs.  In this mode \a g_toolsMode  is set to
+ * 0.  This is the value assigned on startup.  A second mode is enabled after
+ * executing the 'tools' command.  In this mode text files are processed using
+ * high level commands.  It is indicated by a 1 in \a g_toolsMode.
+ */
 extern flag g_toolsMode; /* In metamath mode:  0 = metamath, 1 = tools */
 
 typedef long nmbrString; /* String of numbers */
+/*!
+ * \typedef pntrString
+ * an array of untyped pointers (void*).
+ * Often this array is organized like a stack: the number of elements in the
+ * pntrString grows and shrinks during program flow, values are pushed and
+ * popped at the end.  To maintain such a stack, a hidden structure prepends
+ * the first element then.  This structure occupies three pointer elements,
+ * addressed with offsets -1 to -3 relative to the first element of the stack.
+ * This allows for easy embedding of a stack within an even larger memory
+ * pool.  The fields of this hidden structure, although formally pointers,
+ * are loaded with long int values describing properties of the stack:
+ *
+ * offset -1: is the current size of the stack (in bytes, not elements!). When
+ *   interpreted as an offset into the stack, it references the first element
+ *   past the top of the stack.
+ *
+ * offset -2: the allocated size of the array, in bytes.  When used with a
+ *   stack, it marks the limit where the stack overflows.  Current size
+ *   <= allocated size is an invariant of this structure.
+ *
+ * offset -3.  If this array is a subarray (or sub-stack) of a larger pool of
+ *  pointers, then it marks the offset in bytes of the heading structure in the
+ *  larger pool.
+ */
 typedef void* pntrString; /* String of pointers */
 
 /* A nmbrString allocated in temporary storage. These strings will be deallocated
@@ -211,10 +256,24 @@ extern struct nullNmbrStruct g_NmbrNull;
 #define nmbrString_def(x) nmbrString *x = NULL_NMBRSTRING
 #define free_nmbrString(x) nmbrLet(&x, NULL_NMBRSTRING)
 
+/*!
+ * \struct nullPntrStruct
+ * describing a block of memory of pntrString containing only the
+ * null pointer.  *  
+ */
 /* Null pntrString -- NULL flags the end of a pntrString */
 struct nullPntrStruct {
+    /*!
+     *  
+     */
     long poolLoc;
+    /*! allocated size of the memory block containing the \a pntrString.
+     * Note: this is the number of bytes, not elements!
+     */
     long allocSize;
+    /*! currently used size of the memory block containing the \a pntrString.
+     * Note: this is the number of bytes, not elements!
+     */
     long actualSize;
     pntrString nullElement; };
 extern struct nullPntrStruct g_PntrNull;
@@ -414,6 +473,11 @@ temp_pntrString *pntrNSpace(long n);
    initialized to pntrStrings instead of vStrings */
 temp_pntrString *pntrPSpace(long n);
 
+/*!
+ * \fn long pntrLen(const pntrString* s) Determine the length of a pntrString
+ * \param s \a pntrString array of pointers from its hidden structure.
+ * \pre s has a hidden structure, see \a pntrString 
+ */
 long pntrLen(const pntrString *s);
 long pntrAllocLen(const pntrString *s);
 void pntrZapLen(pntrString *s, long length);

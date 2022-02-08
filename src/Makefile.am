@@ -40,12 +40,5 @@ metamath_SOURCES = \
 	mmwtex.c \
 	$(noinst_HEADERS)
 
-
-# the following files are not used during build, but are distributed to users
-EXTRA_DIST = \
-	LICENSE.TXT \
-	README.TXT \
-	__README.TXT
-
 # man pages for the executable´
-man_MANS = metamath.1
+dist_man_MANS = metamath.1
