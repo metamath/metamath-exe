@@ -13,14 +13,15 @@ this script, or issue the -m option.
 
 Possible options are:
 
--o followed by a directory: clear directory and build all artefacts there.
-    Relative paths are relative to the destination'"'"'s top metamath-exe directory.
+-a Used by autotools. Put hyphens in the version string when used with -v
 -b build binary only, no reconfigure. Faster, but should not be used on first run.
 -c Clean the build directory.
 -d build documentation using Doxygen, in addition to building the executable.
 -h print this help and exit.
 -m followed by a directory: top folder of metamath-exe.
     Relative paths are relative to the current directory.
+-o followed by a directory: clear directory and build all artefacts there.
+    Relative paths are relative to the destination'"'"'s top metamath-exe directory.
 -v extract the version from metamath sources, print it and exit'
 
 #============   evaluate command line parameters   ==========
@@ -30,12 +31,14 @@ do_clean=0
 do_doc=0
 print_help=0
 version_only=0
+version_for_autoconf=0
 unset dest_dir
 top_dir="$(pwd)"
 
-while getopts bcdhm:o:v flag
+while getopts abcdhm:o:v flag
 do
   case "${flag}" in
+    a) version_for_autoconf=1;;
     b) do_autoconf=0;;
     c) do_clean=1;;
     d) do_doc=1;;
@@ -67,6 +70,29 @@ fi
 
 cd "$top_dir"
 
+#=========   extract the version from metamath.c  =============
+
+# look in metamath.c for a line matching the pattern '  #define MVERSION "<version>" '
+# and save the line in VERSION
+version=`grep '[[:space:]]*#[[:space:]]*define[[:space:]][[:space:]]*MVERSION[[:space:]][[:space:]]*"[^"]*"' "$src_dir/metamath.c"`
+
+# extract the version (without quotes) from the saved line
+
+# strip everything up to and including the first quote character
+version=${version#*\"}
+# strip everything from the first remaining quote character on
+version=${version%%\"*}
+
+if [ $version_only -eq 1 ]
+then
+  if [ $version_for_autoconf -eq 1 ]; then
+    echo "$version" | tr ' ' -
+  else
+    echo "$version"
+  fi
+  exit
+fi
+
 # clear the build directory
 if [ $do_clean -eq 1 ]
 then
@@ -78,48 +104,23 @@ fi
 mkdir -p "$build_dir"
 cd "$build_dir"
 
-#=========   symlink files to the build directory   ==============
-
-cp --force --symbolic-link "$src_dir"/* .
-
-#=========   extract the version from metamath.c  =============
-
-# look in metamath.c for a line matching the pattern '  #define MVERSION "<version>" '
-# and save the line in VERSION
-version=`grep '[[:space:]]*#[[:space:]]*define[[:space:]][[:space:]]*MVERSION[[:space:]][[:space:]]*"[^"]*"' "$src_dir"/metamath.c`
-
-# extract the version (without quotes) from the saved line
-
-# strip everything up to and including the first quote character
-version=${version#*\"}
-# strip everything from the first remaining quote character on
-version=${version%%\"*}
-
-if [ $version_only -eq 1 ]
-then
-  echo "$version"
-  cd "$cur_dir"
-  exit
-fi
-
 # allow external programs easy access to the metamath version extracted from
 # the sources
 echo "$version" > metamath_version
 
-#===========   patch and run the configure.ac   =====================
+#===========   run the configure.ac   =====================
 
 if [ $do_autoconf -eq 1 ]
 then
-  sed "s/REPLACED_BY_BUILD_SH/$version/g" < "$top_dir/configure.ac" > configure.ac
-  cp --force --symbolic-link "$top_dir/Makefile.am" .
-
+  cd "$top_dir"
   autoreconf -i
-  ./configure -q
+
+  cd "$build_dir"
+  "$top_dir/configure" -q
 fi
 
 #===========   do the build   =====================
 
-cp --force --symbolic-link "$top_dir/man/metamath.1" .
 make
 
 #===========   run Doxygen documentation generator   =====================

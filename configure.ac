@@ -8,11 +8,11 @@
 AC_PREREQ([2.65])
 
     # program name, version, email to report bugs
-AC_INIT([metamath], [REPLACED_BY_BUILD_SH], [nm.NOSPAM@alum.mit.edu])
+AC_INIT([metamath], [m4_esyscmd_s([./build.sh -va])], [nm.NOSPAM@alum.mit.edu])
 
     # unique file name likely not existing outside the source tree.
     # catches incorrect --srcdir parameter in autoconf call.
-AC_CONFIG_SRCDIR([metamath.c])
+AC_CONFIG_SRCDIR([src/metamath.c])
 
     # requires a config.h.in file, that is used as a template for a config.h,
     # modified according to following commands.  A script created by autoconf
@@ -27,7 +27,7 @@ AM_INIT_AUTOMAKE([foreign])
 
     # requires a Makefile.am, that is modified according to following commands.
     # AC_OUTPUT creates a Makefile.in based on this modifications..
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile src/Makefile])
 
 # Checks for programs.
 
