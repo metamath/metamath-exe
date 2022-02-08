@@ -1962,20 +1962,18 @@ getFullArg_ret:
 
 
 
-void parseCommandLine(vstring line)
-{
-  /* This function breaks up line into individual tokens
-     and puts them into g_rawArgPntr[].  g_rawArgs is the number of tokens.
-     g_rawArgPntr[] is the starting position of each token on the line;
-     the first character on the line has position 1, not 0.
+/* This function breaks up line into individual tokens
+   and puts them into g_rawArgPntr[].  g_rawArgs is the number of tokens.
+   g_rawArgPntr[] is the starting position of each token on the line;
+   the first character on the line has position 1, not 0.
 
-     Spaces, tabs, and newlines are considered white space.  Special
-     one-character
-     tokens don't have to be surrounded by white space.  Characters
-     inside quotes are considered to be one token, and the quotes are
-     removed.
-
-  */
+   Spaces, tabs, and newlines are considered white space.  Special
+   one-character
+   tokens don't have to be surrounded by white space.  Characters
+   inside quotes are considered to be one token, and the quotes are
+   removed.
+*/
+void parseCommandLine(vstring line) {
   /* Warning:  Don't deallocate these vstring constants */
   /*vstring specialOneCharTokens = "()/,=:";*/
   vstring tokenWhiteSpace = " \t\n";
