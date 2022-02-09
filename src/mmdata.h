@@ -23,7 +23,7 @@ typedef char flag;
 
 /*! 
  * \var flag g_listMode.
- * Obsolete.  Now fixed to 0.  Historically the metamath sources were also used
+ * \deprecated Obsolete.  Now fixed to 0.  Historically the metamath sources were also used
  * for other purposes than maintaining Metamath files.  One such application, a
  * standalone text processor, was LIST.EXE.  The sources still query this
  * \a flag occasionally, but its value is in fact fixed to 0 in metamath,
@@ -259,22 +259,22 @@ extern struct nullNmbrStruct g_NmbrNull;
 /*!
  * \struct nullPntrStruct
  * describing a block of memory of pntrString containing only the
- * null pointer.  *  
+ * null pointer.  It formally has a header as described in \a pntrString.
+ * This header should equal in size three void*.
+ * \bug The C standard does not enforce void* and long have the same
+ * size.  Values stored in this struct may thus be misaligned to pointers,
+ * so casts can fails.
+ * \attention this struct should be marked as const.
  */
 /* Null pntrString -- NULL flags the end of a pntrString */
 struct nullPntrStruct {
-    /*!
-     *  
-     */
+    /*! Fixed to -1, indicating this block is not embedded in a larger block. */
     long poolLoc;
-    /*! allocated size of the memory block containing the \a pntrString.
-     * Note: this is the number of bytes, not elements!
-     */
+    /*! Fixed to the size of the null pointer.  Nothing can be popped off. */
     long allocSize;
-    /*! currently used size of the memory block containing the \a pntrString.
-     * Note: this is the number of bytes, not elements!
-     */
+    /*! Fixed to the size of a single null pointer.  Nothing can be pushed. */
     long actualSize;
+    /*! A null pointer, indicating an empty stack. */
     pntrString nullElement; };
 extern struct nullPntrStruct g_PntrNull;
 #define NULL_PNTRSTRING &(g_PntrNull.nullElement)
