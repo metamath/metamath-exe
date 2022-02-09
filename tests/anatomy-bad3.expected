@@ -4,6 +4,7 @@ Reading source file "anatomy-bad3.mm"... 696 bytes
 The source has 8 statements; 1 are $a and 1 are $p.
 No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
 if you want to check them.
+MM> Continuous scrolling is now in effect.
 MM> 0 10%  20%  30%  40%  50%  60%  70%  80%  90% 100%
 ..................................................
 ?Error on line 29 of file "anatomy-bad3.mm" at statement 8, label "wnew", type
