@@ -133,8 +133,6 @@ then
     exit 1
   fi
 
-  cd "$build_dir/src"
-
   # create a Doxyfile.local and use it for creation of documentation locally
 
   # start with the settings given by the distribution
@@ -149,8 +147,10 @@ then
     cat "$top_dir/Doxyfile" >> Doxyfile.local
   fi
 
-  # ... except for the destination directory.  Force this to the build folder.
+  # ... except for the source/destination directory.  Force this to folders
+  # based on this build.
   echo "OUTPUT_DIRECTORY = \"$build_dir\"" >> Doxyfile.local
+  echo "INPUT = \"$src_dir\"" >> Doxyfile.local
 
   # make sure the logo is in the build directory
   cp --force --symbolic-link "$top_dir/doc/Metamath.png" .
