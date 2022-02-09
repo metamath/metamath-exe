@@ -923,7 +923,7 @@ void command(int argc, char *argv[]) {
   flag printTime;  /* Set by "/ TIME" in SAVE PROOF and others */
 
   /* Default to prompted mode if run interactively, else continuous mode */
-  flag defaultScrollMode = isatty(STDIN_FILENO);
+  flag defaultScrollMode = isatty(STDIN_FILENO) != 0;
 
   /* Initialization to avoid compiler warning (should not be theoretically
      necessary) */
