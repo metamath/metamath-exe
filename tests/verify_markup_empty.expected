@@ -4,6 +4,7 @@ Reading source file "verify_markup_empty.mm"... 1 bytes
 The source has 0 statements; 0 are $a and 0 are $p.
 No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
 if you want to check them.
+MM> Continuous scrolling is now in effect.
 MM> Checking statement label conventions...
 Checking latexdef, htmldef, althtmldef...
 ?Error: There is no $t command in the file "verify_markup_empty.mm".

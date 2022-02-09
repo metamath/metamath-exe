@@ -81,10 +81,14 @@ for test in "$@"; do
   # Actually run the program
   if [ -f "$test.mm" ]; then
     echo -n "test ${white}$test${off}.in + $test.mm: "
-    result=$("$cmd" "$test.mm" < "$test.in")
+    result=$(echo 'set scroll continuous' |
+      cat - "$test.in" |
+      "$cmd" "$test.mm")
   else
     echo -n "test ${white}$test${off}.in: "
-    result=$("$cmd" < "$test.in")
+    result=$(echo 'set scroll continuous' |
+      cat - "$test.in" |
+      "$cmd")
   fi
   # exit code stored in $?
 
