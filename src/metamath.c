@@ -725,7 +725,7 @@ void command(int argc, char *argv[]);
  * \param argc int number of commandline parameters
  * \param argv (char*)[] array of \a argc commandline parameters, followed by NULL
  * \return success 0 else failure
- * 
+ *
  * Running metamath
  *   ./metamath 'read set.mm' 'verify proof *'
  * will start main with \a argc set to 2, argv[0] to "read set.mm", argv[1]
@@ -751,6 +751,8 @@ int main(int argc, char *argv[]) {
 
 
   g_toolsMode = g_listMode;
+
+  printf("Testing basic printing functionality\n");
 
   if (!g_listMode) {
     /*print2("Metamath - Version %s\n", MVERSION);*/
