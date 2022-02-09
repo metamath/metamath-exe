@@ -2410,20 +2410,21 @@ temp_pntrString *pntrCat(const pntrString *string1,...) {
 
 }
 
+#define pntrPoolLoc(s) (size_t)((s)[-3])
+#define pntrAllocSize(s) (size_t)((s)[-2])
+#define pntrActualSize(s) (size_t)((s)[-1])
 
 
 /* Find out the length of a pntrString */
 long pntrLen(const pntrString *s) {
   /* Assume it's been allocated with poolMalloc. */
-  return ((((const long *)s)[-1] - (long)(sizeof(pntrString)))
-      / (long)(sizeof(pntrString)));
+  return (pntrActualSize(s) - sizeof(pntrString)) / sizeof(pntrString);
 }
 
 
 /* Find out the allocated length of a pntrString */
 long pntrAllocLen(const pntrString *s) {
-  return ((((long *)s)[-2] - (long)(sizeof(pntrString)))
-    / (long)(sizeof(pntrString)));
+  return (pntrAllocSize(s) - sizeof(pntrString)) / sizeof(pntrString);
 }
 
 /* Set the actual size field in a pntrString allocated with poolFixedMalloc() */
@@ -2435,12 +2436,12 @@ long pntrAllocLen(const pntrString *s) {
 /* ???Note that pntrZapLen's not moving string to used pool wastes potential
    space when called by the routines in this module.  Effect should be minor. */
 void pntrZapLen(pntrString *s, long length) {
-  if (((long *)s)[-3] != -1) {
+  if (pntrPoolLoc(s) != (size_t)-1) {
     /* It's already in the used pool, so adjust free space tally */
-    poolTotalFree = poolTotalFree + ((long *)s)[-1]
+    poolTotalFree = poolTotalFree + (long)pntrActualSize(s)
         - (length + 1) * (long)(sizeof(pntrString));
   }
-  ((long *)s)[-1] = (length + 1) * (long)(sizeof(pntrString));
+  ((size_t *)s)[-1] = (size_t)(length + 1) * sizeof(pntrString);
 /*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("l: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
 }
 

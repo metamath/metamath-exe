@@ -21,7 +21,7 @@
  */
 typedef char flag;
 
-/*! 
+/*!
  * \var flag g_listMode.
  * Obsolete.  Now fixed to 0.  Historically the metamath sources were also used
  * for other purposes than maintaining Metamath files.  One such application, a
@@ -259,22 +259,22 @@ extern struct nullNmbrStruct g_NmbrNull;
 /*!
  * \struct nullPntrStruct
  * describing a block of memory of pntrString containing only the
- * null pointer.  *  
+ * null pointer.  *
  */
 /* Null pntrString -- NULL flags the end of a pntrString */
 struct nullPntrStruct {
     /*!
-     *  
+     *
      */
-    long poolLoc;
+    size_t poolLoc;
     /*! allocated size of the memory block containing the \a pntrString.
      * Note: this is the number of bytes, not elements!
      */
-    long allocSize;
+    size_t allocSize;
     /*! currently used size of the memory block containing the \a pntrString.
      * Note: this is the number of bytes, not elements!
      */
-    long actualSize;
+    size_t actualSize;
     pntrString nullElement; };
 extern struct nullPntrStruct g_PntrNull;
 #define NULL_PNTRSTRING &(g_PntrNull.nullElement)
@@ -476,7 +476,7 @@ temp_pntrString *pntrPSpace(long n);
 /*!
  * \fn long pntrLen(const pntrString* s) Determine the length of a pntrString
  * \param s \a pntrString array of pointers from its hidden structure.
- * \pre s has a hidden structure, see \a pntrString 
+ * \pre s has a hidden structure, see \a pntrString
  */
 long pntrLen(const pntrString *s);
 long pntrAllocLen(const pntrString *s);
