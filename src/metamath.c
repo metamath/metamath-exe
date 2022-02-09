@@ -752,7 +752,8 @@ int main(int argc, char *argv[]) {
 
   g_toolsMode = g_listMode;
 
-  printf("Testing basic printing functionality\n");
+  printf("sizeof(long) = %ld\n", sizeof(long));
+  printf("len(null) = %ld\n", pntrLen(NULL_PNTRSTRING));
 
   if (!g_listMode) {
     /*print2("Metamath - Version %s\n", MVERSION);*/
