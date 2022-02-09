@@ -48,11 +48,12 @@ if ! [ -x "$(command -v "$cmd")" ]; then
 fi
 
 # color codes
-red='\033[0;31m'
-green='\033[0;32m'
-cyan='\033[0;36m'
-white='\033[0;37m'
-off='\033[0m'
+escape=$(printf '\033')
+red="$escape[0;31m"
+green="$escape[0;32m"
+cyan="$escape[0;36m"
+white="$escape[0;97m"
+off="$escape[0m"
 
 # set to 1 if any test fails
 exit_code=0
