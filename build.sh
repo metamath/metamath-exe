@@ -133,8 +133,6 @@ then
     exit 1
   fi
 
-  cd "$build_dir"
-
   # create a Doxyfile.local and use it for creation of documentation locally
 
   # start with the settings given by the distribution
