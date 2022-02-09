@@ -703,7 +703,6 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include "mmvstr.h"
 #include "mmdata.h"
 #include "mmcmdl.h"
@@ -717,6 +716,14 @@
 #include "mmunif.h"
 #include "mmword.h"
 #include "mmwtex.h"
+
+// Windows doesn't have the <unistd> header, but it has an isatty equivalent
+#ifdef _WIN32
+#include <io.h>
+#define _isatty isatty
+#else
+#include <unistd.h>
+#endif
 
 void command(int argc, char *argv[]);
 
