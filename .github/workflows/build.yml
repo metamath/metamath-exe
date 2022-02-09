@@ -6,7 +6,7 @@ name: ci
 
 jobs:
   build:
-    name: Build
+    name: Build Linux
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -17,3 +17,42 @@ jobs:
       - name: test
         working-directory: tests
         run: env METAMATH=../metamath ./run_test.sh *.in
+
+  build-win-msvc:
+    name: Build Windows (MSVC)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ilammy/msvc-dev-cmd@v1
+
+      - name: build
+        working-directory: src
+        run: cl.exe *.c
+
+      - name: run
+        working-directory: src
+        run: ./metamath.exe
+
+      - name: test
+        working-directory: tests
+        shell: bash
+        run: env METAMATH=../src/metamath.exe ./run_test.sh *.in
+
+  build-win-gcc:
+    name: Build Windows (GCC)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: build
+        working-directory: src
+        run: gcc *.c -o metamath.exe
+
+      - name: run
+        working-directory: src
+        run: ./metamath.exe
+
+      - name: test
+        working-directory: tests
+        shell: bash
+        run: env METAMATH=../src/metamath.exe ./run_test.sh *.in
