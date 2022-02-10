@@ -21,7 +21,8 @@
  */
 typedef char flag;
 
-/*! 
+/*!
+ * \deprecated
  * \var flag g_listMode.
  * Obsolete.  Now fixed to 0.  Historically the metamath sources were also used
  * for other purposes than maintaining Metamath files.  One such application, a
@@ -276,29 +277,36 @@ struct nullPntrStruct {
      */
     long poolLoc;
     /*! 
-     * allocated size of the memory block containing the \a pntrString.
+     * allocated size of the memory block containing the \a pntrString,
+     * excluding any hidden administrative data.
      * Note: this is the number of bytes, not elements!  Fixed to the size of a
      * single void* instance. 
      */
     long allocSize;
     /*! 
-     * currently used size of the memory block containing the \a pntrString.
+     * currently used size of the memory block containing the \a pntrString,
+     * excluding any hidden administrative data.
      * Note: this is the number of bytes, not elements!  Fixed to the size of a
      * single pointer element.
      */
     long actualSize;
     /*! 
      * memory for a single void* instance, set and fixed to the null pointer.
+     * A null usually marks the end of the array.
      */
     pntrString nullElement; };
 /*!
- * \var g_PntrNull. Global instance of a memory block structured like a
- * \a pntrString, but fixed in size and containing always exactly one null
+ * \var g_PntrNull. Global singleton instance of a memory block structured like
+ * a \a pntrString, but fixed in size and containing always exactly one null
  * pointer element.
  * 
- * \attention mark as const
+ * This structure must not be modified.
  */
 extern struct nullPntrStruct g_PntrNull;
+/*!
+ * \def NULL_PNTRSTRING
+ * yields the address of a global null pointer element.
+ */
 #define NULL_PNTRSTRING &(g_PntrNull.nullElement)
 #define pntrString_def(x) pntrString *x = NULL_PNTRSTRING
 #define free_pntrString(x) pntrLet(&x, NULL_PNTRSTRING)
