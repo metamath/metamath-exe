@@ -292,7 +292,7 @@ struct nullPntrStruct {
     long actualSize;
     /*! 
      * memory for a single void* instance, set and fixed to the null pointer.
-     * A null usually marks the end of the array.
+     * A null marks the end of the array.
      */
     pntrString nullElement; };
 /*!
