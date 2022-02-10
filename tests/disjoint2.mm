@@ -35,3 +35,9 @@ ${
   good $p |- ( ( x y ) ( z w ) ) $=
     xf yf combo zf wf combo ax-1 $.
 $}
+
+${
+  $d x z $. $d x w $. $d y z $. $d y w $.
+  stillgood $p |- ( ( x y ) ( z w ) ) $=
+    xf yf combo zf wf combo ax-1 $.
+$}
