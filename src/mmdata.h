@@ -296,8 +296,8 @@ struct nullPntrStruct {
      */
     pntrString nullElement; };
 /*!
- * \var g_PntrNull. Global singleton instance of a memory block structured like
- * a \a pntrString, but fixed in size and containing always exactly one null
+ * \var g_PntrNull. Global instance of a memory block structured like a
+ * \a pntrString, but fixed in size and containing always exactly one null
  * pointer element.
  * 
  * This structure must not be modified.
