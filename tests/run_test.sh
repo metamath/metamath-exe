@@ -90,11 +90,17 @@ for test in "$@"; do
       cat - "$test.in" |
       "$cmd")
   fi
-  # exit code stored in $?
+  result_code=$?
 
-  if [ $? -ne $expect ]; then
+  if [ $result_code -ne $expect ]; then
     # If the exit code is wrong, the test is a failure and --bless won't help
-    echo "${red}failed${off}"; exit_code=1; continue
+    echo "${red}failed${off} (exit code = $result_code)"; exit_code=1
+    if [ "$outfile" != "/dev/null" ]; then
+      echo "---------------------------------------"
+      cat "$test.produced"
+      echo "---------------------------------------\n"
+    fi
+    continue
   fi
 
   # Strip the first and last line of the output.
