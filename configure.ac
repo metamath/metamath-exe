@@ -65,7 +65,7 @@ AC_CHECK_FUNCS([strchr strcspn strstr])
 
     # copied to Makefile.am
 # Enable gcc warning flags, but only if they seem to work
-new_CFLAGS="-Wall -Wextra"
+new_CFLAGS="-Wall -Wextra -Wconversion"
 saved_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS $new_CFLAGS"
 

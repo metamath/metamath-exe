@@ -725,7 +725,7 @@ void command(int argc, char *argv[]);
  * \param argc int number of commandline parameters
  * \param argv (char*)[] array of \a argc commandline parameters, followed by NULL
  * \return success 0 else failure
- * 
+ *
  * Running metamath
  *   ./metamath 'read set.mm' 'verify proof *'
  * will start main with \a argc set to 2, argv[0] to "read set.mm", argv[1]
@@ -1892,7 +1892,7 @@ void command(int argc, char *argv[]) {
         j = (long)strlen(str(val(g_fullArg[2])));
         k = (long)strlen(str(val(g_fullArg[3])));
         if (k > j) j = k;
-        for (i = (long)val(g_fullArg[2]); i <= val(g_fullArg[3]);
+        for (i = (long)val(g_fullArg[2]); i <= (long)val(g_fullArg[3]);
             i = i + (long)val(g_fullArg[4])) {
           let(&str1, str((double)i));
           fprintf(list1_fp, "%s\n", str1);

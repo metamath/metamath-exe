@@ -1285,8 +1285,8 @@ void parseStatements(void) {
         nmbrTmpPtr[mathStringLen] = -1;
         g_Statement[stmt].mathString = nmbrTmpPtr;
         g_Statement[stmt].mathStringLen = mathStringLen;
-/*E*/if(db5){if(stmt<5)print2("Statement %ld mathString: %s.\n",stmt,
-/*E*/  nmbrCvtMToVString(nmbrTmpPtr)); if(stmt==5)print2("(etc.)\n");}
+/*E*/if(db5){if(stmt<5){print2("Statement %ld mathString: %s.\n",stmt,
+/*E*/  nmbrCvtMToVString(nmbrTmpPtr));} if(stmt==5){print2("(etc.)\n");}}
 
         break;  /* Switch case break */
       default:
