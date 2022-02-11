@@ -1,0 +1,20 @@
+MM> READ "disjoint3.mm"
+Reading source file "disjoint3.mm"... 140 bytes
+140 bytes were read into the source buffer.
+The source has 9 statements; 1 are $a and 1 are $p.
+No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
+if you want to check them.
+MM> Continuous scrolling is now in effect.
+MM> 0 10%  20%  30%  40%  50%  60%  70%  80%  90% 100%
+..................................................
+?Error on line 10 of file "disjoint3.mm" at statement 9, label "bad", type
+"$p":
+  xf yf ax-1 $.
+        ^^^^
+There is a disjoint variable ($d) violation at proof step 3.  Assertion "ax-1"
+requires that variables "x" and "y" be disjoint.  But "x" was substituted with
+"x" and "y" was substituted with "y".
+Variables "x" and "y" do not have a disjoint variable requirement in the
+assertion being proved, "bad".
+
+All proofs in the database were verified.

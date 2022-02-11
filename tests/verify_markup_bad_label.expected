@@ -4,6 +4,7 @@ Reading source file "verify_markup_bad_label.mm"... 206 bytes
 The source has 5 statements; 2 are $a and 0 are $p.
 No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
 if you want to check them.
+MM> Continuous scrolling is now in effect.
 MM> Checking statement label conventions...
 ?Warning: In statement "com1" at line 3 in file "verify_markup_bad_label.mm". 
     To workaround a Microsoft operating system limitation, the the following

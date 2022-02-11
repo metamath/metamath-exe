@@ -259,23 +259,45 @@ extern struct nullNmbrStruct g_NmbrNull;
 /*!
  * \struct nullPntrStruct
  * describing a block of memory of pntrString containing only the
- * null pointer.  *
+ * null pointer.  Besides the pointer it is accompanied with a header matching
+ * the hidden administrative values of a usual pntrString managed as a stack.
+ *
+ * The values in this administrative header are such that it is never subject to
+ * memory allocation or deallocation.
+ *
+ * \bug The C standard does not require a long having the same size as a
+ * void*.  In fact there might be **no** integer type matching a pointer in size.
  */
 /* Null pntrString -- NULL flags the end of a pntrString */
 struct nullPntrStruct {
     /*!
-     *
+     * An instance of a nullPntrStruct is always standalone and never part of a
+     * larger pool.  Indicated by the fixed value -1.
      */
     size_t poolLoc;
-    /*! allocated size of the memory block containing the \a pntrString.
-     * Note: this is the number of bytes, not elements!
+    /*!
+     * allocated size of the memory block containing the \a pntrString.
+     * Note: this is the number of bytes, not elements!  Fixed to the size of a
+     * single void* instance.
      */
     size_t allocSize;
-    /*! currently used size of the memory block containing the \a pntrString.
-     * Note: this is the number of bytes, not elements!
+    /*!
+     * currently used size of the memory block containing the \a pntrString.
+     * Note: this is the number of bytes, not elements!  Fixed to the size of a
+     * single pointer element.
      */
     size_t actualSize;
+    /*!
+     * memory for a single void* instance, set and fixed to the null pointer.
+     */
     pntrString nullElement; };
+/*!
+ * \var g_PntrNull. Global instance of a memory block structured like a
+ * \a pntrString, but fixed in size and containing always exactly one null
+ * pointer element.
+ *
+ * \attention mark as const
+ */
 extern struct nullPntrStruct g_PntrNull;
 #define NULL_PNTRSTRING &(g_PntrNull.nullElement)
 #define pntrString_def(x) pntrString *x = NULL_PNTRSTRING
