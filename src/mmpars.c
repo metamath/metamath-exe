@@ -162,8 +162,8 @@ char *readRawSource(vstring fileBuf, long *size) {
 
   if (fbPtr != fileBuf + charCount) {
     /* To help debugging: */
-    printf("fbPtr=%ld fileBuf=%ld charCount=%ld diff=%ld\n",
-        (long)fbPtr, (long)fileBuf, charCount, fbPtr - fileBuf - charCount);
+    printf("fbPtr=%p fileBuf=%p charCount=%ld diff=%ld\n",
+        (void*)fbPtr, (void*)fileBuf, charCount, (long)(fbPtr - fileBuf) - charCount);
     bug(1704);
   }
 

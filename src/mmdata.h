@@ -21,7 +21,7 @@
  */
 typedef char flag;
 
-/*! 
+/*!
  * \var flag g_listMode.
  * Obsolete.  Now fixed to 0.  Historically the metamath sources were also used
  * for other purposes than maintaining Metamath files.  One such application, a
@@ -261,10 +261,10 @@ extern struct nullNmbrStruct g_NmbrNull;
  * describing a block of memory of pntrString containing only the
  * null pointer.  Besides the pointer it is accompanied with a header matching
  * the hidden administrative values of a usual pntrString managed as a stack.
- * 
+ *
  * The values in this administrative header are such that it is never subject to
  * memory allocation or deallocation.
- * 
+ *
  * \bug The C standard does not require a long having the same size as a
  * void*.  In fact there might be **no** integer type matching a pointer in size.
  */
@@ -274,20 +274,20 @@ struct nullPntrStruct {
      * An instance of a nullPntrStruct is always standalone and never part of a
      * larger pool.  Indicated by the fixed value -1.
      */
-    long poolLoc;
-    /*! 
+    size_t poolLoc;
+    /*!
      * allocated size of the memory block containing the \a pntrString.
      * Note: this is the number of bytes, not elements!  Fixed to the size of a
-     * single void* instance. 
+     * single void* instance.
      */
-    long allocSize;
-    /*! 
+    size_t allocSize;
+    /*!
      * currently used size of the memory block containing the \a pntrString.
      * Note: this is the number of bytes, not elements!  Fixed to the size of a
      * single pointer element.
      */
-    long actualSize;
-    /*! 
+    size_t actualSize;
+    /*!
      * memory for a single void* instance, set and fixed to the null pointer.
      */
     pntrString nullElement; };
@@ -295,7 +295,7 @@ struct nullPntrStruct {
  * \var g_PntrNull. Global instance of a memory block structured like a
  * \a pntrString, but fixed in size and containing always exactly one null
  * pointer element.
- * 
+ *
  * \attention mark as const
  */
 extern struct nullPntrStruct g_PntrNull;
@@ -498,7 +498,7 @@ temp_pntrString *pntrPSpace(long n);
 /*!
  * \fn long pntrLen(const pntrString* s) Determine the length of a pntrString
  * \param s \a pntrString array of pointers from its hidden structure.
- * \pre s has a hidden structure, see \a pntrString 
+ * \pre s has a hidden structure, see \a pntrString
  */
 long pntrLen(const pntrString *s);
 long pntrAllocLen(const pntrString *s);
