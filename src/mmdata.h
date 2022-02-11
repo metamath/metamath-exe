@@ -300,7 +300,8 @@ struct nullPntrStruct {
  * \a pntrString, but fixed in size and containing always exactly one null
  * pointer element.
  * 
- * This structure must not be modified.
+ * \attention This structure must not be modified.  Consider enforcing this
+ * condition by for example adding a const attribute.
  */
 extern struct nullPntrStruct g_PntrNull;
 /*!
