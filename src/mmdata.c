@@ -103,9 +103,9 @@ long poolTotalFree = 0; /* Total amount of free space allocated in pool */
  * Memory fragmentation is kept simple in Metamath.  If a block contains both
  * consumed and free space, all of the free space is at the end.  Fragmented
  * blocks with free space are kept in the used block array, that memUsedPool
- * points to.  For the notion of a block, suballocator see \a memFreePool.
- * This scheme supports in particular stack like memory, where data is pushed
- * at and popped off the end.
+ * points to.  For the notion of block, suballocator see \a memFreePool.  This
+ * scheme supports in particular stack like memory, where data is pushed at and
+ * popped off the end.
  *
  * The used blocks array does initially not exist.  This is indicated by a
  * null value.  Once this array is needed, space for it it is allocated from
