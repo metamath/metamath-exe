@@ -21,7 +21,8 @@
  */
 typedef char flag;
 
-/*! 
+/*!
+ * \deprecated
  * \var flag g_listMode.
  * Obsolete.  Now fixed to 0.  Historically the metamath sources were also used
  * for other purposes than maintaining Metamath files.  One such application, a
@@ -51,19 +52,9 @@ typedef long nmbrString; /* String of numbers */
  * addressed with offsets -1 to -3 relative to the first element of the stack.
  * This allows for easy embedding of a stack within an even larger memory
  * pool.  The fields of this hidden structure, although formally pointers,
- * are loaded with long int values describing properties of the stack:
- *
- * offset -1: is the current size of the stack (in bytes, not elements!). When
- *   interpreted as an offset into the stack, it references the first element
- *   past the top of the stack.
- *
- * offset -2: the allocated size of the array, in bytes.  When used with a
- *   stack, it marks the limit where the stack overflows.  Current size
- *   <= allocated size is an invariant of this structure.
- *
- * offset -3.  If this array is a subarray (or sub-stack) of a larger pool of
- *  pointers, then it marks the offset in bytes of the heading structure in the
- *  larger pool.
+ * are loaded with long int values describing properties of the stack.
+ * 
+ * For details see \a memFreePool.
  */
 typedef void* pntrString; /* String of pointers */
 
@@ -276,19 +267,22 @@ struct nullPntrStruct {
      */
     long poolLoc;
     /*! 
-     * allocated size of the memory block containing the \a pntrString.
+     * allocated size of the memory block containing the \a pntrString,
+     * excluding any hidden administrative data.
      * Note: this is the number of bytes, not elements!  Fixed to the size of a
      * single void* instance. 
      */
     long allocSize;
     /*! 
-     * currently used size of the memory block containing the \a pntrString.
+     * currently used size of the memory block containing the \a pntrString,
+     * excluding any hidden administrative data.
      * Note: this is the number of bytes, not elements!  Fixed to the size of a
      * single pointer element.
      */
     long actualSize;
     /*! 
      * memory for a single void* instance, set and fixed to the null pointer.
+     * A null marks the end of the array.
      */
     pntrString nullElement; };
 /*!
@@ -299,6 +293,10 @@ struct nullPntrStruct {
  * \attention mark as const
  */
 extern struct nullPntrStruct g_PntrNull;
+/*!
+ * \def NULL_PNTRSTRING
+ * yields the address of a global null pointer element.
+ */
 #define NULL_PNTRSTRING &(g_PntrNull.nullElement)
 #define pntrString_def(x) pntrString *x = NULL_PNTRSTRING
 #define free_pntrString(x) pntrLet(&x, NULL_PNTRSTRING)

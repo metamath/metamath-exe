@@ -61,9 +61,9 @@
 /*! \def MVERSION
  * The current version of metamath.  It is incremented each time the software
  * is modified.  When main versions are released, the version consists of a
- * main version, followed by a dot and a three-digit subversion.  Intermediate
- * versions are further followed by a free style suffix that should allow
- * ordering.
+ * major version, followed by a dot and a three-digit minor version.
+ * Pre-release versions are further followed by a free style suffix that
+ * should allow ordering.
  * The version string is extracted and then processed by shell and perl
  * scripts.  To avoid problems during replacements:
  * - use only printable characters from the ASCII range;
