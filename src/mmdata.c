@@ -153,7 +153,7 @@ long memUsedPoolMax = 0; /* Maximum # of entries in 'in use' table (grows
                                as nec.) */
 /*!
  * \var void** memFreePool
- * \brief pool of completely unused memory blocks
+ * \brief pointer to the pool of completely free memory blocks
  *
  * **suballocator**
  *
