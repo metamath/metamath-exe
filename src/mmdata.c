@@ -128,9 +128,9 @@ void **memUsedPool = NULL;
  * \attention this is the number of individual blocks, not the accumulated
  * (unused) bytes contained.
  *
- * The Metamath suballocator holds used blocks in a used block array.  The
- * number of occupied entries is kept in this variable.  Elements at the end of
- * the used block array may be unused.  The fill size is given by this
+ * The Metamath suballocator holds fragmented blocks in a used block array.
+ * The number of occupied entries is kept in this variable.  Elements at the
+ * end of the used block array may be unused.  The fill size is given by this
  * variable.  For further information see \a memUsedPool.
  *
  * \invariant memUsedPoolSize <= \a memUsedPoolMax.
@@ -141,7 +141,7 @@ long memUsedPoolSize = 0; /* Current # of partially filled arrays in use */
  * \attention this is the number of individual free blocks, not the accumulated
  * bytes contained.
  *
- * The Metamath suballocator holds freepartially used blocks in a used block
+ * The Metamath suballocator holds fragmented blocks in the used block
  * array.  This array may only partially be occupied.  Its total capacity is
  * kept in this variable.  For further information see \a memUsedPool.
  *
