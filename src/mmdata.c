@@ -200,10 +200,9 @@ long memUsedPoolMax = 0; /* Maximum # of entries in 'in use' table (grows
  *   overflows.
  *
  * offset -3:\n
- *   If this array is a subarray (or sub-stack) of a larger pool of pointers,
- *   then it marks the index in the array of used blocks, see \a memUsedPool.
- *   A value of -1 indicates it has no free space left, hence is not held in
- *   this pool.
+ *   If this block has free space at the end (is fragmented), then it contains
+ *   its index in the used blocks array, see \a memUsedPool.  A value of -1
+ *   indicates it has no free space left, hence is not held in this pool.
  */
 void **memFreePool = NULL;
 /*!
