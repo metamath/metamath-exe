@@ -52,19 +52,9 @@ typedef long nmbrString; /* String of numbers */
  * addressed with offsets -1 to -3 relative to the first element of the stack.
  * This allows for easy embedding of a stack within an even larger memory
  * pool.  The fields of this hidden structure, although formally pointers,
- * are loaded with long int values describing properties of the stack:
- *
- * offset -1: is the current size of the stack (in bytes, not elements!). When
- *   interpreted as an offset into the stack, it references the first element
- *   past the top of the stack.
- *
- * offset -2: the allocated size of the array, in bytes.  When used with a
- *   stack, it marks the limit where the stack overflows.  Current size
- *   <= allocated size is an invariant of this structure.
- *
- * offset -3.  If this array is a subarray (or sub-stack) of a larger pool of
- *  pointers, then it marks the offset in bytes of the heading structure in the
- *  larger pool.
+ * are loaded with long int values describing properties of the stack.
+ * 
+ * For details see \a memFreePool.
  */
 typedef void* pntrString; /* String of pointers */
 
@@ -300,7 +290,7 @@ struct nullPntrStruct {
  * \a pntrString, but fixed in size and containing always exactly one null
  * pointer element.
  * 
- * \attention mark as const.
+ * \attention mark as const
  */
 extern struct nullPntrStruct g_PntrNull;
 /*!

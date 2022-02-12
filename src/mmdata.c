@@ -97,12 +97,141 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
 long poolAbsoluteMax = 1000000; /* Pools will be purged when this is reached */
 long poolTotalFree = 0; /* Total amount of free space allocated in pool */
 /*E*/long i1,j1_,k1; /* 'j1' is a built-in function */
+/*!
+ * \var void** memUsedPool
+ * \brief pool of fragmented memory blocks
+ * Memory fragmentation is kept simple in Metamath.  If a block contains both
+ * consumed and free space, all of the free space is at the end.  Fragmented
+ * blocks with free space are kept in the used block array, that memUsedPool
+ * points to.  On demand it can temporarily provide this memory to short lived
+ * functions that in turn guarantee to leave its previous contents intact.  For
+ * the notion of a block, suballocator see \a memFreePool.  This scheme
+ * supports in particular stack like memory, where data is pushed at and
+ * popped off the end.
+ *
+ * The used blocks array does initially not exist.  This is indicated by a
+ * null value.  Once this array is needed, space for it it is allocated from
+ * the system.
+ *
+ * The used block array may only be partially occupied, in which case elements
+ * at the end of the array are unused.  Its current usage is given by
+ * \a memUsedPoolSize.  Its current size including unused elements, is given by
+ * \a memUsedPoolMax.
+ */
 void **memUsedPool = NULL;
+/*!
+ * \var long memUsedPoolSize
+ * \attention this is the number of individual blocks, not the accumulated
+ * (unused) bytes contained.
+ *
+ * The Metamath suballocator holds used blocks in a used block array.  The
+ * number of occupied entries is kept in this variable.  Elements at the end of
+ * the used block array may be unused.  The fill size is given by this
+ * variable.  For further information see \a memUsedPool.
+ *
+ * \invariant memUsedPoolSize <= \a memUswedPoolMax.
+ */
 long memUsedPoolSize = 0; /* Current # of partially filled arrays in use */
+/*!
+ * \var long memUsedPoolMax
+ * \attention this is the number of individual free blocks, not the accumulated
+ * bytes contained.
+ *
+ * The Metamath suballocator holds freepartially used blocks in a used block
+ * array.  This array may only partially be occupied.  Its total capacity is
+ * kept in this variable.  For further information see \a memUsedPool.
+ *
+ * This variable may grow during a reallocation process.
+ *
+ * \invariant (memUsedPoolMax > 0) == (\a memUsedPool != 0) 
+ */
 long memUsedPoolMax = 0; /* Maximum # of entries in 'in use' table (grows
                                as nec.) */
+/*!
+ * \var void** memFreePool
+ * \brief pool of completely unused memory blocks
+ *
+ * **suballocator**
+ *
+ * Metamath does not free memory by returning it to the operating system again.
+ * Instead it has a suballocator that marks them as unused.  During execution
+ * chunks of memory become unused, either completely, or through fragmentation.
+ * The suballocator keeps track of these by entering them either into a free
+ * block array, or into a used block array.  The idea behind this suballocation
+ * scheme is to reduce the number of system malloc and alloc calls.
+ *
+ * Although the suballocator tries to avoid returning memory to the system, it
+ * can do so under extreme memory constraints.
+ *
+ * The suballocator is initially neither equipped with a free block array,
+ * pointed to by memFreePool, or a used block array, see \a memUsedPool.  Both
+ * are null then, but once memory is returned to the suballocator again, it
+ * allocates some space for the needed array.
+ *
+ * The free block array contains totally unused blocks.  The array may only
+ * partially be occupied, in which case The elements at the end are the unused
+ * ones.  Its current fill size is given by \a memFreePoolSize.  Its capacity
+ * is given by \a memFreePoolMax.
+ *
+ * Fragmented blocks are kept in a separate \a memUsedPool.  The suballocator
+ * never tracks fully used blocks.
+ *
+ * **block of memory**
+ *
+ * Each block used by the suballocater is formally treated as an array of
+ * pointer (void*).  It is divided into an administrative header, followed by
+ * elements reserved for application data.  The header is assigned elements -3
+ * to -1 in the formal array, so that application data starts with element 0.
+ * A pointer to the block always refers to element 0, so the header appears
+ * somewhat hidden.
+ *
+ * The header elements are reinterpreted as long integer.  The values support
+ * a stack, where data is pushed at and popped off the end during the course of
+ * execution.  The semantics of the header elements are:
+ *
+ * offset -1:\n
+ *   is the current size of the stack (in bytes, not elements!),
+ *   without header data. When interpreted as an offset into the stack, it
+ *   references the first element past the top of the stack.
+ *
+ * offset -2:\n
+ *   the allocated size of the array, in bytes, not counting the
+ *   header.  When used as a stack, it marks the limit where the stack
+ *   overflows.
+ *
+ * offset -3:\n
+ *   If this array is a subarray (or sub-stack) of a larger pool of pointers,
+ *   then it marks the index in the array of used blocks, see \a memUsedPool.
+ *   A value of -1 indicates it has no free space left, hence is not held in
+ *   this pool.
+ */
 void **memFreePool = NULL;
+/*!
+ * \var long memFreePoolSize
+ * \attention this is the number of individual free blocks, not the accumulated
+ * bytes contained.
+ *
+ * The Metamath suballocator holds free blocks in a free block array.  The
+ * number of occupied entries is kept in this variable.  Elements at the end of
+ * the free block array may not be used.  The fill size is given by this
+ * variable.  For further information see \a memFreePool.
+ *
+ * \invariant memFreePoolSize <= \a memFreePoolMax.
+ */
 long memFreePoolSize = 0; /* Current # of available, allocated arrays */
+/*!
+ * \var long memFreePoolMax
+ * \attention this is the number of individual free blocks, not the accumulated
+ * bytes contained.
+ *
+ * The Metamath suballocator holds free blocks in a free block array.  It may
+ * only partially be occupied.  Its total capacity is kept in this variable.  For
+ * further information see \a memFreePool.
+ *
+ * This variable may grow during a reallocation process.
+ *
+ * \invariant (memFreePoolMax > 0) == (\a memFreePool != 0) 
+ */
 long memFreePoolMax = 0; /* Maximum # of entries in 'free' table (grows
                                as nec.) */
 
