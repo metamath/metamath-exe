@@ -129,7 +129,7 @@ void **memUsedPool = NULL;
  * the used block array may be unused.  The fill size is given by this
  * variable.  For further information see \a memUsedPool.
  *
- * \invariant memUsedPoolSize <= \a memUswedPoolMax.
+ * \invariant memUsedPoolSize <= \a memUsedPoolMax.
  */
 long memUsedPoolSize = 0; /* Current # of partially filled arrays in use */
 /*!
