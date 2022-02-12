@@ -99,15 +99,13 @@ long poolTotalFree = 0; /* Total amount of free space allocated in pool */
 /*E*/long i1,j1_,k1; /* 'j1' is a built-in function */
 /*!
  * \var void** memUsedPool
- * \brief pool of fragmented memory blocks
+ * \brief pointer to the pool of fragmented memory blocks
  * Memory fragmentation is kept simple in Metamath.  If a block contains both
  * consumed and free space, all of the free space is at the end.  Fragmented
  * blocks with free space are kept in the used block array, that memUsedPool
- * points to.  On demand it can temporarily provide this memory to short lived
- * functions that in turn guarantee to leave its previous contents intact.  For
- * the notion of a block, suballocator see \a memFreePool.  This scheme
- * supports in particular stack like memory, where data is pushed at and
- * popped off the end.
+ * points to.  For the notion of a block, suballocator see \a memFreePool.
+ * This scheme supports in particular stack like memory, where data is pushed
+ * at and popped off the end.
  *
  * The used blocks array does initially not exist.  This is indicated by a
  * null value.  Once this array is needed, space for it it is allocated from
@@ -117,6 +115,12 @@ long poolTotalFree = 0; /* Total amount of free space allocated in pool */
  * at the end of the array are unused.  Its current usage is given by
  * \a memUsedPoolSize.  Its current size including unused elements, is given by
  * \a memUsedPoolMax.
+ *
+ * \invariant Each block in the used blocks array has its index noted in its
+ * hidden header, for backward reference.
+ * 
+ * \attention Desite the name of this variable fully occupied blocks are never
+ * kept in the used block array.
  */
 void **memUsedPool = NULL;
 /*!
