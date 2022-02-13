@@ -108,8 +108,8 @@ long poolTotalFree = 0; /* Total amount of free space allocated in pool */
  * popped off the end.
  *
  * The used blocks array does initially not exist.  This is indicated by a
- * null value.  Once this array is needed, space for it it is allocated from
- * the system.
+ * null value.  Once this array is needed, space for it is allocated from the
+ * system.
  *
  * The used block array may only be partially occupied, in which case elements
  * at the end of the array are unused.  Its current usage is given by
@@ -173,7 +173,7 @@ long memUsedPoolMax = 0; /* Maximum # of entries in 'in use' table (grows
  * allocates some space for the needed array.
  *
  * The free block array contains totally unused blocks.  The array may only
- * partially be occupied, in which case The elements at the end are the unused
+ * partially be occupied, in which case the elements at the end are the unused
  * ones.  Its current fill size is given by \a memFreePoolSize.  Its capacity
  * is given by \a memFreePoolMax.
  *
