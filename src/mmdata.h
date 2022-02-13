@@ -63,17 +63,14 @@ extern flag g_toolsMode; /* In metamath mode:  0 = metamath, 1 = tools */
 typedef long nmbrString; /* String of numbers */
 /*!
  * \typedef pntrString
- * an array of untyped pointers (void*).
+ * \brief an array of untyped pointers (void*)
+ *
  * Often this array is organized like a stack: the number of elements in the
  * pntrString grows and shrinks during program flow, values are pushed and
- * popped at the end.  To maintain such a stack, a hidden structure prepends
- * the first element then.  This structure occupies three pointer elements,
- * addressed with offsets -1 to -3 relative to the first element of the stack.
- * This allows for easy embedding of a stack within an even larger memory
- * pool.  The fields of this hidden structure, although formally pointers,
- * are loaded with long int values describing properties of the stack.
- * 
- * For details see \a memFreePool.
+ * popped at the end.  Such a stack is often embedded in a \ref block "block"
+ * that tracks administrative information about the stack.  This administrative
+ * information is accessible with negative indices, but need reinterpretation
+ * then.  Application data is found beginning with element 0.
  */
 typedef void* pntrString; /* String of pointers */
 
@@ -251,12 +248,12 @@ void memFreePoolPurge(flag untilOK);
  * \attention This is NOT full memory usage, because completely used
  * \ref block "blocks" are not tracked!
  *
- * \param freeAlloc (out, not-null) address of a long variable receiving the
+ * \param[out] freeAlloc (not-null) address of a long variable receiving the
  * accumulated number of bytes in the free list.  Sizes do not include the
  * hidden header present in each block.
- * \param usedAlloc (out, not-null) address of a long variable receiving the
+ * \param[out] usedAlloc (not-null) address of a long variable receiving the
  * accumulated number of free bytes in partially used blocks.
- * \param usedActual (out, not-null) address of a long variable receiving the
+ * \param[out] usedActual (not-null) address of a long variable receiving the
  * accumulated bytes consumed by usage so far.  This value includes the hidden
  * header of the block.
  * \pre Do not call within bug().\n
@@ -537,9 +534,14 @@ temp_pntrString *pntrNSpace(long n);
 temp_pntrString *pntrPSpace(long n);
 
 /*!
- * \fn long pntrLen(const pntrString* s) Determine the length of a pntrString
- * \param s \a pntrString array of pointers from its hidden structure.
- * \pre s has a hidden structure, see \a pntrString 
+ * \brief Determine the length of a pntrString embedded in a dedicated block
+ *
+ * returns the number of **used** pointers in the array pointed to by \p s,
+ * derived from administrave data in the surrounding block.
+ *
+ * \attention This is not the capacity of the array.
+ * \param[in] s points to a element 0 of a \a pntrString  embedded in a block
+ * \pre the array pointed to by s is the sole user of a \ref block "block".
  */
 long pntrLen(const pntrString *s);
 long pntrAllocLen(const pntrString *s);
