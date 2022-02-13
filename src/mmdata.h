@@ -13,7 +13,25 @@
 
 #include "mmvstr.h"
 
-/*E*/extern long db,db0,db1,db2,db3,db4,db5,db6,db7,db8,db9;/* debugging flags & variables */
+/* debugging flags & variables */
+/*E*/extern long db,db0,db1,db2,db3,db4,db5,db6,db7,db8;
+/*!
+ * \var long db9
+ * \brief log memory usage for debugging purpose
+ * If set to a non-zero value, the state of the memory pool is
+ * logged during execution of metamath.  This debugging feature tracks
+ * de/allocation of memory in the memory pool.
+ * This particular debug mode is controlled by the Metamath commands
+ * - SET MEMORY_STATUS ON\n
+ *   enables memory logging
+ * - SET MEMORY_STATUS\n
+ *   disables memory debugging (adding OFF is possible, but not required)
+ * - SET DEBUG FLAG 9\n
+ *   (deprecated) enables memory logging
+ * - SET DEBUG OFF\n
+ *   disables memory logging in conjunction with other debugging aid.
+ */
+extern long db9;
 /*!
  * \typedef flag
  * a char whoose range is restricted to 0 (equivalent to false/no) and 1
@@ -221,6 +239,29 @@ void addToUsedPool(void *ptr);
 /* Purges reset memory pool usage */
 void memFreePoolPurge(flag untilOK);
 /* Statistics */
+/*!
+ * \brief Provide information about memory in pools at the point of call.
+ * Return the overall statistics about the pools \a memFreePool "free block
+ * array" and the \a memUsedPool "used block array".  In MEMORY STATUS
+ * mode ON, a diagnostic message compares the the contents of \a poolTotalFree
+ * to the values found in this statistics.  They should not differ!
+ *
+ * \attention This is NOT full memory usage, because completely used
+ * \ref block "blocks" are not tracked!
+ *
+ * \param freeAlloc (out, not-null) address of a long variable receiving the
+ * accumulated number of bytes in the free list.  Sizes do not include the
+ * hidden header present in each block.
+ * \param usedAlloc (out, not-null) address of a long variable receiving the
+ * accumulated number of free bytes in partially used blocks.
+ * \param usedActual (out, not-null) address of a long variable receiving the
+ * accumulated bytes consumed by usage so far.  This value includes the hidden
+ * header of the block.
+ * \pre Do not call within bug().\n
+ *   Submit only non-null pointers, even if not all information is requested.\n
+ *   Pointers to irrelevant information may be the same.
+ * \post Statistic data is copied to the locations the parameters point to.
+ */
 void getPoolStats(long *freeAlloc, long *usedAlloc, long *usedActual);
 
 /* Initial memory allocation */
