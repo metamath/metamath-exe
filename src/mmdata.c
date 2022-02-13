@@ -2628,6 +2628,35 @@ void pntrZapLen(pntrString *s, long length) {
 
 /* Copy a string to another (pre-allocated) string */
 /* Dangerous for general purpose use */
+/*!
+ * \brief copies a null pointer terminated \a pntrString to a destination
+ * \a pntrString.
+ *
+ * This function determines the length of the source \p t by scanning for a
+ * terminating null pointer element.  The destination \p s must have enough
+ * space for receiving this amount of pointers, including the terminal null
+ * pointer.  Then the source pointers are copied beginning with that at the
+ * lowest address to the destination area \p t, including the terminal null
+ * pointer.
+ *
+ * \attention make sure the destination area pointed to by \p s has enough
+ * space for the copied pointers.
+ *
+ * \param [out] s (not null) pointer to the target array receiving the copied
+ *   pointers.  This need not necessarily be the first element of the array.
+ * \param [in] t (not null) pointer to the start of the source array terminated
+ *   by a null pointer.
+ *
+ * \pre
+ *   - \p t is terminated by the first null pointer element.
+ *   - the target array \p s must have enough free space to hold the source array
+ *     \p t including the terminal null pointer.
+ *   - \p s and \p t can overlap if \p t points to a later element than \a s
+ *     (move left semantics)
+ * \invariant
+ *   If \p s is contained in a \ref block "block", its administrative header is
+ *   NOT updated.
+ */
 void pntrCpy(pntrString *s, const pntrString *t) {
   long i;
   i = 0;
