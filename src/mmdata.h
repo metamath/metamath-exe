@@ -544,6 +544,18 @@ temp_pntrString *pntrPSpace(long n);
  * \pre the array pointed to by s is the sole user of a \ref block "block".
  */
 long pntrLen(const pntrString *s);
+/*!
+ * \brief Determine the capacity of a pntrString embedded in a dedicated block
+ *
+ * returns the capacity of pointers in the array pointed to by \p s,
+ * derived from administrave data in the surrounding block.  The result
+ * excludes the terminal element reserved for a null pointer.
+ *
+ * \param[in] s points to a element 0 of a \a pntrString  embedded in a block
+ * \return the maximal number of pointers that can be used in the array pointed
+ * to by \p s.
+ * \pre the array pointed to by s is the sole user of a \ref block "block".
+ */
 long pntrAllocLen(const pntrString *s);
 void pntrZapLen(pntrString *s, long length);
 
