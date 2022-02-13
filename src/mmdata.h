@@ -29,7 +29,7 @@
  * - SET DEBUG FLAG 9\n
  *   (deprecated) enables memory logging
  * - SET DEBUG OFF\n
- *   disables memory logging in conjunction with other debugging aid.
+ *   disables memory logging in conjunction with other debugging aid.^
  */
 extern long db9;
 /*!
@@ -240,7 +240,7 @@ void addToUsedPool(void *ptr);
 void memFreePoolPurge(flag untilOK);
 /* Statistics */
 /*!
- * \brief Provide information about memory in pools at the point of call.
+ * \brief Provide information about memory in pools at the instant of call.
  * Return the overall statistics about the pools \a memFreePool "free block
  * array" and the \a memUsedPool "used block array".  In MEMORY STATUS
  * mode ON, a diagnostic message compares the the contents of \a poolTotalFree
