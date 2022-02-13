@@ -16,8 +16,7 @@
 /* debugging flags & variables */
 /*E*/extern long db,db0,db1,db2,db3,db4,db5,db6,db7,db8;
 /*!
- * \var long db9
- * \brief log memory usage for debugging purpose
+ * \brief log memory usage for debugging purpose.
  *
  * If set to a non-zero value, the state of the memory pool is
  * logged during execution of metamath.  This debugging feature tracks
@@ -26,11 +25,11 @@
  * - SET MEMORY_STATUS ON\n
  *   enables memory logging
  * - SET MEMORY_STATUS\n
- *   disables memory debugging (adding OFF is possible, but not required)
+ *   disables memory debugging (adding OFF is optional)
  * - SET DEBUG FLAG 9\n
  *   (deprecated) enables memory logging
  * - SET DEBUG OFF\n
- *   disables memory logging in conjunction with other debugging aid.^
+ *   disables memory logging in conjunction with other debugging aid.
  */
 extern long db9;
 /*!
