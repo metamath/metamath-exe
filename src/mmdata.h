@@ -23,6 +23,9 @@
  * also temporary stacks, but they are not considered here.  Useful to see
  * whether a process looses memory due to imbalanced calls to allocation/free
  * functions.
+ * 
+ * If the user has turned MEMORY_STATUS on, metamath will print out this value
+ * after each command in a message like "Memory: ... xxxString < db3 >".
  */
 /*E*/extern long db3;
 /*E*/extern long db4,db5,db6,db7,db8;
