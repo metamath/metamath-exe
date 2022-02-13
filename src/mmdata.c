@@ -230,7 +230,6 @@ long memUsedPoolMax = 0; /* Maximum # of entries in 'in use' table (grows
  * \var void** memFreePool
  * \brief pointer to the pool of completely free memory blocks
  *
- *
  * The \ref suballocation "suballocator" is initially not equipped with a
  * **free block array**, pointed to by memFreePool, indicated by a null value.
  * 

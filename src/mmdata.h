@@ -540,6 +540,7 @@ temp_pntrString *pntrPSpace(long n);
  *
  * \attention This is not the capacity of the array.
  * \param[in] s points to a element 0 of a \a pntrString  embedded in a block
+ * \return the number of pointers currently in use in the array pointed to by \p s.
  * \pre the array pointed to by s is the sole user of a \ref block "block".
  */
 long pntrLen(const pntrString *s);
