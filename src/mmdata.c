@@ -117,8 +117,9 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
  * as an array of pointer (void*).  It is divided into an administrative
  * header, followed by elements reserved for application data.  The header is
  * assigned elements -3 to -1 in the formal array, so that application data
- * starts with element 0.  A pointer to the block always refers to element 0,
- * so the header appears somewhat hidden.
+ * starts with element 0.  A **pointer to the block** always refers to element
+ * 0, so the header appears somewhat hidden.  Its **size** is given by the
+ * bytes reserved for application data, not including the administrative header.
  *
  * The header elements are formally void*, but reinterpreted as long integer.
  * The values support a stack, where data is pushed at and popped off the end
@@ -142,6 +143,18 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
  *   totally free.  In any of these cases it is not kept in the used blocks
  *   array.
  */
+
+/*! \page Pool
+ * A pool is an array of pointers pointing to \ref block "blocks".  It may only
+ * be partially filled, so it is usually accompanied by two variables giving
+ * its current fill state and its capacity.
+ * 
+ * In Metamath a pool has no gaps in between.
+ * 
+ * The \ref suballocation "suballocator" uses two pools:
+ * - the **free block array** pointed to by \a memFreePool;
+ * - the **used block array** pointed to by \a memUsedPool.
+ */ 
 
 /* Memory pools are used to reduce the number of malloc and alloc calls that
    allocate arrays (strings or nmbr/pntrStrings typically).   The "free" pool
