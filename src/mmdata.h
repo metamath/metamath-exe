@@ -243,10 +243,10 @@ void memFreePoolPurge(flag untilOK);
 /*!
  * \brief Provide information about memory in pools at the instant of call.
  *
- * Return the overall statistics about the pools \a memFreePool "free block
- * array" and the \a memUsedPool "used block array".  In MEMORY STATUS
- * mode ON, a diagnostic message compares the the contents of \a poolTotalFree
- * to the values found in this statistics.  They should not differ!
+ * Return the overall statistics about the pools \ref memFreePool
+ * "free block array" and the \ref memUsedPool "used block array".  In MEMORY
+ * STATUS mode ON, a diagnostic message compares the the contents of
+ * \a poolTotalFree to the values found in this statistics.  They should not differ!
  *
  * \attention This is NOT full memory usage, because completely used
  * \ref block "blocks" are not tracked!
