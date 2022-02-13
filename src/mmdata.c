@@ -175,6 +175,7 @@ long poolTotalFree = 0; /* Total amount of free space allocated in pool */
 /*!
  * \var void** memUsedPool
  * \brief pointer to the pool of fragmented memory blocks
+ *
  * If a \ref block "block" contains both consumed and free space, it is
  * \ref fragmentation "fragmented".  All fragmented blocks are kept in the
  * **used block array**, that memUsedPool points to.  See \ref suballocation
@@ -228,6 +229,7 @@ long memUsedPoolMax = 0; /* Maximum # of entries in 'in use' table (grows
 /*!
  * \var void** memFreePool
  * \brief pointer to the pool of completely free memory blocks
+ *
  *
  * The \ref suballocation "suballocator" is initially not equipped with a
  * **free block array**, pointed to by memFreePool, indicated by a null value.

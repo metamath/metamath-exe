@@ -18,6 +18,7 @@
 /*!
  * \var long db9
  * \brief log memory usage for debugging purpose
+ *
  * If set to a non-zero value, the state of the memory pool is
  * logged during execution of metamath.  This debugging feature tracks
  * de/allocation of memory in the memory pool.
@@ -241,6 +242,7 @@ void memFreePoolPurge(flag untilOK);
 /* Statistics */
 /*!
  * \brief Provide information about memory in pools at the instant of call.
+ *
  * Return the overall statistics about the pools \a memFreePool "free block
  * array" and the \a memUsedPool "used block array".  In MEMORY STATUS
  * mode ON, a diagnostic message compares the the contents of \a poolTotalFree
