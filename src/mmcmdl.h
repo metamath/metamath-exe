@@ -7,6 +7,10 @@
 #ifndef METAMATH_MMCMDL_H_
 #define METAMATH_MMCMDL_H_
 
+/*!
+ * \file - includes for accessing the command line interpreter
+ */
+
 #include "mmvstr.h"
 #include "mmdata.h"
 
@@ -33,6 +37,13 @@ extern flag g_PFASmode; /* Proof assistant mode, invoked by PROVE command */
 extern flag g_sourceChanged; /* Flag that user made some change to the source file*/
 extern flag g_proofChanged; /* Flag that user made some change to proof in progress*/
 extern flag g_commandEcho; /* Echo full command */
+/*!
+ * \brief indicates whether the user has turned MEMORY STATUS on.
+ *
+ * If the user issues SET MEMORY_STATUS ON this \a flag is set to 1.  It is
+ * reset to 0 again on a SET MEMORY_STATUS OFF command.  When 1, certain
+ * memory de/allocations are monitored - see \a db3.
+ */
 extern flag g_memoryStatus; /* Always show memory */
 
 extern flag g_sourceHasBeenRead; /* 1 if a source file has been read in */

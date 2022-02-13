@@ -14,9 +14,20 @@
 #include "mmvstr.h"
 
 /* debugging flags & variables */
-/*E*/extern long db,db0,db1,db2,db3,db4,db5,db6,db7,db8;
+/*E*/extern long db,db0,db1,db2;
 /*!
- * \brief log memory usage for debugging purpose.
+ * \brief sum up de/allocations of nmbrString and pntrString outside of
+ * temporary arrays.
+ *
+ * The number of bytes held in blocks dedicated to global data.  There exists
+ * also temporary stacks, but they are not considered here.  Useful to see
+ * whether a process looses memory due to imbalanced calls to allocation/free
+ * functions.
+ */
+/*E*/extern long db3;
+/*E*/extern long db4,db5,db6,db7,db8;
+/*!
+ * \brief log memory pool usage for debugging purpose.
  *
  * If set to a non-zero value, the state of the memory pool is
  * logged during execution of metamath.  This debugging feature tracks
@@ -24,14 +35,14 @@
  * This particular debug mode is controlled by the Metamath commands
  * - SET MEMORY_STATUS ON\n
  *   enables memory logging
- * - SET MEMORY_STATUS\n
- *   disables memory debugging (adding OFF is optional)
+ * - SET MEMORY_STATUS OFF\n
+ *   disables memory debugging
  * - SET DEBUG FLAG 9\n
  *   (deprecated) enables memory logging
  * - SET DEBUG OFF\n
  *   disables memory logging in conjunction with other debugging aid.
  */
-extern long db9;
+/*E*/extern long db9;
 /*!
  * \typedef flag
  * a char whoose range is restricted to 0 (equivalent to false/no) and 1
