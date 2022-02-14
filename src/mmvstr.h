@@ -4,9 +4,10 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-/*
-mmvstr.h - VMS-BASIC variable length string library routines header
+/*!
+\file mmvstr.h - VMS-BASIC variable length string library routines header
 This is an emulation of the string functions available in VMS BASIC.
+[VAX Basic](http://bitsavers.org/pdf/dec/vax/lang/basic/AA-HY16B-TE_VAX_BASIC_Reference_Manual_Feb90.pdf)
 */
 
 /******************************************************************************
