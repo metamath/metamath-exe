@@ -129,6 +129,25 @@ with 'let(&' and thus has the same effect as 'let(&'.
 /* A vstring is like a C string, but it contains a control block allowing
 for memory allocation. New vstrings should always be constructed from the
 `vstringdef` macro. */
+/*!
+ * \typedef vstring
+ * \brief contains NUL terminated,  character oriented data
+ *
+ * - A vstring is never NULL;
+ * - If the text is empty, i.e. the pointer points to the terminating 0x00
+ *   character, then it corresponds to a const char *;
+ * - If not empty, i.e. the pointer points to a character different from
+ *   0x00, then the pointer is in fact part of a larger structure, that
+ *   contains additional administrative information.
+ *
+ * You can use a vstring to read the associated text, but you must never write
+ * to memory pointed to by a vstring directly, nor may you change the pointer's
+ * value.  Declaration, definition and write access to a vstring, or the text it
+ * points to, is done exclusively through dedicated functions.  Although the
+ * encoding of the text (or whatever data it is) requires only the existence of
+ * exactly one 0x00 at the end, using ASCII, or at least UTF-8, is recommended
+ * to use various print instructions.
+ */
 typedef char* vstring;
 
 /* A vstring is allocated in temporary storage. These strings will be deallocated
@@ -173,6 +192,20 @@ typedef char* vstring;
 */
 typedef vstring temp_vstring;
 
+/*!
+ * \def vstring_def
+ * \brief creates a new \a vstring variable¸.
+ *
+ * declares a \a vstring variable and initiates it with empty text ("").
+ * If this value is not modified, freeing of \p x is possible, but not
+ * required.
+ * 
+ * \pre 
+ *   the variable has not been declared before in the current scope.
+ * \post
+ *   initialzes it with empty text.  No administrative data is created, in
+ *   confomance with the semantics of a \a vstring.
+ */
 #define vstring_def(x) vstring x = ""
 #define free_vstring(x) let(&x, "")
 
