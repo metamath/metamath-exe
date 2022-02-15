@@ -16,7 +16,7 @@
 /* debugging flags & variables */
 /*E*/extern long db,db0,db1,db2;
 /*!
- * \brief sum up de/allocations of nmbrString and pntrString outside of
+ * \brief monitors the de/allocations of nmbrString and pntrString outside of
  * temporary arrays.
  *
  * The number of bytes held in blocks dedicated to global data.  There exists
@@ -78,12 +78,16 @@ typedef long nmbrString; /* String of numbers */
  * \typedef pntrString
  * \brief an array of untyped pointers (void*)
  *
- * Often this array is organized like a stack: the number of elements in the
- * pntrString grows and shrinks during program flow, values are pushed and
- * popped at the end.  Such a stack is often embedded in a \ref block "block"
- * that tracks administrative information about the stack.  This administrative
- * information is accessible with negative indices, but need reinterpretation
- * then.  Application data is found beginning with element 0.
+ * In general this array is organized like a stack: the number of elements in
+ * the pntrString grows and shrinks during program flow, values are pushed and
+ * popped at the end.  Such a stack is embedded in a \a block that contains
+ * administrative information about the stack.  This administrative information
+ * is accessible through negative indices, but need reinterpretation then.
+ * Application data is found beginning with element 0.
+ *
+ * Many functions require such an array to be terminated by a null pointer.
+ * It then cannot contain the null pointer, and the terminating element is not
+ * considered part of the array.
  */
 typedef void* pntrString; /* String of pointers */
 
@@ -302,8 +306,8 @@ extern struct nullNmbrStruct g_NmbrNull;
 
 /*!
  * \struct nullPntrStruct
- * describing a block of memory of pntrString containing only the
- * null pointer.  Besides the pointer it is accompanied with a header matching
+ * describing a block of memory of \a pntrString containing only the null
+ * pointer.  Besides this pointer it is accompanied with a header matching
  * the hidden administrative values of a usual pntrString managed as a stack.
  * 
  * The values in this administrative header are such that it is never subject to
@@ -340,17 +344,28 @@ struct nullPntrStruct {
     pntrString nullElement; };
 /*!
  * \var g_PntrNull. Global instance of a memory block structured like a
- * \a pntrString, but fixed in size and containing always exactly one null
- * pointer element.
+ * \a pntrString, fixed in size and containing always exactly one null pointer
+ * element, the terminating NULL.  This setup is recognized as an empty
+ * \a pntrString.
  * 
  * \attention mark as const
  */
 extern struct nullPntrStruct g_PntrNull;
 /*!
  * \def NULL_PNTRSTRING
- * yields the address of a global null pointer element.
+ * The address of a \a block containing an empty \a pntrString.  Used to 
+ * initialize \a pntrString variables .
  */
 #define NULL_PNTRSTRING &(g_PntrNull.nullElement)
+/*!
+ * \def pntrString_def
+ * 
+ * declare a new \a pntrString variable and initialize it to point to a block
+ * with an empty, not resizeable \a pntrString.
+ *
+ * \param[in] x variable name
+ * \pre The variable does not exist in the current scope.
+ */
 #define pntrString_def(x) pntrString *x = NULL_PNTRSTRING
 #define free_pntrString(x) pntrLet(&x, NULL_PNTRSTRING)
 
@@ -547,7 +562,7 @@ temp_pntrString *pntrNSpace(long n);
 temp_pntrString *pntrPSpace(long n);
 
 /*!
- * \brief Determine the length of a pntrString embedded in a dedicated block
+ * \brief Determine the length of a pntrString held in a \a block dedicated to it.
  *
  * returns the number of **used** pointers in the array pointed to by \p s,
  * derived from administrave data in the surrounding block.
