@@ -80,8 +80,8 @@ typedef long nmbrString; /* String of numbers */
  *
  * In general this array is organized like a stack: the number of elements in
  * the pntrString grows and shrinks during program flow, values are pushed and
- * popped at the end.  Such a stack is embedded in a \ref block of memory that
- * contains administrative information about the stack.  The stack begins with
+ * popped at the end.  Such a stack is embedded in a \ref block that contains
+ * administrative information about the stack.  The stack begins with
  * element 0, and the administrative information is accessed through negative
  * indices, but need reinterpretation then.  To allow iterating through the
  * tail of the array from a certain element on, the array terminates with a
@@ -311,7 +311,7 @@ extern struct nullNmbrStruct g_NmbrNull;
 
 /*!
  * \struct nullPntrStruct
- * describing a block of memory of \a pntrString containing only the null
+ * describing a \ref block of \a pntrString containing only the null
  * pointer.  Besides this pointer it is accompanied with a header matching
  * the hidden administrative values of a usual pntrString managed as a stack.
  * 
@@ -358,7 +358,8 @@ struct nullPntrStruct {
 extern struct nullPntrStruct g_PntrNull;
 /*!
  * \def NULL_PNTRSTRING
- * The address of a \a block containing an empty, not resizeable \a pntrString
+ * The address of a \a block "block" containing an empty, not resizeable
+ * \a pntrString
  * stack.  Used to initialize \a pntrString variables .
  */
 #define NULL_PNTRSTRING &(g_PntrNull.nullElement)
@@ -568,7 +569,8 @@ temp_pntrString *pntrNSpace(long n);
 temp_pntrString *pntrPSpace(long n);
 
 /*!
- * \brief Determine the length of a pntrString held in a \a block dedicated to it.
+ * \brief Determine the length of a pntrString held in a \a block "block"
+ * dedicated to it.
  *
  * returns the number of **used** pointers in the array pointed to by \p s,
  * derived from administrave data in the surrounding block.
