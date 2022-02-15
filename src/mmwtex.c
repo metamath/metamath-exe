@@ -102,7 +102,7 @@ vstring_def(sandboxHome);
 vstring_def(sandboxTitle);
   vstring_def(sandboxTitleAbbr);
 
-/* Variables holding all HTML <a name..> tags from bibiography pages  */
+/* Variables holding all HTML <a name..> tags from bibliography pages  */
 vstring_def(g_htmlBibliographyTags);
 vstring_def(extHtmlBibliographyTags);
 
@@ -306,7 +306,7 @@ flag readTexDefs(
   tmpPtr[0] = '\n';
   tmpPtr[1] = 0;
 
-  charCount = tmpPtr + 1 - fileBuf; /* For bugcheck */
+  charCount = tmpPtr + 1 - fileBuf; /* For bug check */
 
   for (parsePass = 1; parsePass <= 2; parsePass++) {
     /* Pass 1 - Count the number of symbols defined and alloc g_TexDefs array */
@@ -879,7 +879,7 @@ long texDefTokenLen(char *ptr)
   if (ispunct((unsigned char)tmpchr)) return 1; /* Single-char token */
   while (1) {
     tmpchr = ptr[i];
-    if (!isalnum((unsigned char)tmpchr)) return i; /* End of alphnum. token */
+    if (!isalnum((unsigned char)tmpchr)) return i; /* End of alphanumeric token */
     i++;
   }
   bug(2308);
@@ -1656,7 +1656,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
              + ADD_COLORED_LABEL_NUMBER + PROCESS_BIBREFS \
              + PROCESS_UNDERSCORES + CONVERT_HTML + METAMATH_COMMENT \
         */
-        /* 10-Dec-2018 nm - expanded meaning of errorsOnly for MARKUP commmand:
+        /* 10-Dec-2018 nm - expanded meaning of errorsOnly for MARKUP command:
              2 = process as if in <HTML>...</HTML> preformatted mode but
                  don't strip <HTML>...</HTML> tags
              3 = same as 2, but convert ONLY math symbols
@@ -1902,7 +1902,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
         }
       }
       /* $%#{}&^\\|<>"~_ are converted by asciiToTt() */
-      /* Omit \ and $ since they be part of an earlier converston */
+      /* Omit \ and $ since they be part of an earlier conversion */
       /* Omit ~ since it is part of label ref */
       /* Omit " since it legal */
       /* Because converting to \char` causes later math mode problems due to `,
@@ -1966,7 +1966,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
             && strchr(CLOSING_PUNCTUATION, cmt[pos1]) == NULL) {
 
             /* Found <nonwhitespace>_<nonwhitespace> - assume subscript */
-            /* Locate the whitepace (or end of string) that closes subscript */
+            /* Locate the whitespace (or end of string) that closes subscript */
             /* Note:  This algorithm is not perfect in that the subscript
                is assumed to end at closing punctuation, which theoretically
                could be part of the subscript itself, such as a subscript
@@ -2149,7 +2149,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
                    good enough if HTML file is legal since <ANAME is not an HTML
                    tag (let's not get into a regex discussion though...) */
                 if (!htmlpos1) break;
-                htmlpos1 = htmlpos1 + 7;  /* Point ot beginning of tag name */
+                htmlpos1 = htmlpos1 + 7;  /* Point to beginning of tag name */
                 /* Extract tag, ignoring any surrounding quotes */
                 if (bibFileContents[htmlpos1 - 1] == '\''
                     || bibFileContents[htmlpos1 - 1] == '"') htmlpos1++;
@@ -2176,7 +2176,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
                 /* No tags found; put dummy partial tag meaning "file read" */
                 let(&bibTags, "[");
               }
-            } /* end if (!bibFIleContents) */
+            } /* end if (!bibFileContents) */
           } /* end if (noFileCheck == 0) */
           /* Assign to permanent tag list for next time */
           if (g_showStatement < g_extHtmlStmt) {
@@ -2629,7 +2629,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
       pos1 = instr(1, outputLine, "<HTML>");
       if (pos1 != 0 && convertToHtml == 1) {
         /* The line below is probably redundant since we
-           set preformattedMode ealier.  Maybe add a bug check to make sure
+           set preformattedMode earlier.  Maybe add a bug check to make sure
            it is 1 here. */
         preformattedMode = 1; /* So we don't put <P> for blank lines */
         /* Strip out the "<HTML>" string */
@@ -2692,7 +2692,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
     saveScreenWidth = g_screenWidth;
     /* in <PRE> mode, we don't want to wrap the HTML
        output with spurious newlines. Any large value will
-       do; we just need to accomodate the worst case line length that will
+       do; we just need to accommodate the worst case line length that will
        result from converting ~ label, [author], ` math ` to HTML */
     if (preformattedMode) g_screenWidth = 50000;
     if (errorsOnly == 0) {
@@ -2800,7 +2800,7 @@ void printTexLongMath(nmbrString *mathString,
   tex = asciiToTt(sPrefix); /* asciiToTt allocates; we must deallocate */
       /* Example: sPrefix = " 4 2,3 ax-mp  $a " */
       /*          tex = "\ 4\ 2,3\ ax-mp\ \ \$a\ " in !g_htmlFlag mode */
-      /*          tex = " 4 2,3 ax-qmp  $a " in g_htmlFlag mode */
+      /*          tex = " 4 2,3 ax-mp  $a " in g_htmlFlag mode */
   let(&texLine, "");
 
   /* Get statement type of proof step reference */
@@ -4783,7 +4783,7 @@ vstring spectrumToRGB(long color, long maxColor) {
   fraction = (1.0 * ((double)color - 1)) / (double)maxColor;
                                    /* Fractional position in "spectrum" */
   partition = (long)(PARTITIONS * fraction);  /* Partition number (integer) */
-  if (partition >= PARTITIONS) bug(2325); /* Roundoff error? */
+  if (partition >= PARTITIONS) bug(2325); /* Round-off error? */
   fractionInPartition = 1.0 * (fraction - (1.0 * (double)partition) / PARTITIONS)
       * PARTITIONS; /* The fraction of this partition it covers */
   red = (long)(1.0 * (redRef[partition] +
@@ -5081,7 +5081,7 @@ vstring getTexOrHtmlHypAndAssertion(long statemNum) {
 
 
 
-/* Called by the WRITE BIBLIOGRPAHY command and also by VERIFY MARKUP
+/* Called by the WRITE BIBLIOGRAPHY command and also by VERIFY MARKUP
    for error checking */
 /* Returns 0 if OK, 1 if warning(s), 2 if any error */
 flag writeBibliography(vstring bibFile,

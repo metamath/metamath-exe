@@ -23,7 +23,7 @@
  * also temporary stacks, but they are not considered here.  Useful to see
  * whether a process looses memory due to imbalanced calls to allocation/free
  * functions.
- * 
+ *
  * If the user has turned MEMORY_STATUS on, metamath will print out this value
  * after each command in a message like "Memory: ... xxxString < db3 >".
  */
@@ -48,7 +48,7 @@
 /*E*/extern long db9;
 /*!
  * \typedef flag
- * a char whoose range is restricted to 0 (equivalent to false/no) and 1
+ * a char whose range is restricted to 0 (equivalent to false/no) and 1
  * (equivalent to true/yes), the typical semantics of a bool (Boolean value).
  */
 typedef char flag;
@@ -314,10 +314,10 @@ extern struct nullNmbrStruct g_NmbrNull;
  * describing a \ref block of \a pntrString containing only the null
  * pointer.  Besides this pointer it is accompanied with a header matching
  * the hidden administrative values of a usual pntrString managed as a stack.
- * 
+ *
  * The values in this administrative header are such that it is never subject to
  * memory allocation or deallocation.
- * 
+ *
  * \bug The C standard does not require a long having the same size as a
  * void*.  In fact there might be **no** integer type matching a pointer in size.
  */
@@ -328,21 +328,21 @@ struct nullPntrStruct {
      * larger pool.  Indicated by the fixed value -1.
      */
     long poolLoc;
-    /*! 
+    /*!
      * allocated size of the memory block containing the \a pntrString,
      * excluding any hidden administrative data.
      * Note: this is the number of bytes, not elements!  Fixed to the size of a
-     * single void* instance. 
+     * single void* instance.
      */
     long allocSize;
-    /*! 
+    /*!
      * currently used size of the memory block containing the \a pntrString,
      * excluding any hidden administrative data.
      * Note: this is the number of bytes, not elements!  Fixed to the size of a
      * single pointer element.
      */
     long actualSize;
-    /*! 
+    /*!
      * memory for a single void* instance, set and fixed to the null pointer.
      * A null marks the end of the array.
      */
@@ -352,22 +352,22 @@ struct nullPntrStruct {
  * \a pntrString, fixed in size and containing always exactly one null pointer
  * element, the terminating NULL.  This setup is recognized as an empty
  * \a pntrString.
- * 
+ *
  * \attention mark as const
  */
 extern struct nullPntrStruct g_PntrNull;
 /*!
  * \def NULL_PNTRSTRING
- * The address of a \ref block "block" containing an empty, not resizeable
+ * The address of a \ref block "block" containing an empty, not resizable
  * \a pntrString
  * stack.  Used to initialize \a pntrString variables .
  */
 #define NULL_PNTRSTRING &(g_PntrNull.nullElement)
 /*!
  * \def pntrString_def
- * 
+ *
  * declare a new \a pntrString variable and initialize it to point to a block
- * with an empty, not resizeable \a pntrString.
+ * with an empty, not resizable \a pntrString.
  *
  * \param[in] x variable name
  * \pre The variable does not exist in the current scope.
@@ -394,10 +394,10 @@ flag matches(const char *testString, const char *pattern, char wildCard,
 /*********** Number string functions *******************************/
 /*******************************************************************/
 
-/******* Special pupose routines for better
+/******* Special purpose routines for better
       memory allocation (use with caution) *******/
 
-extern long g_nmbrTempAllocStackTop;   /* Top of stack for nmbrTempAlloc funct */
+extern long g_nmbrTempAllocStackTop;   /* Top of stack for nmbrTempAlloc function */
 extern long g_nmbrStartTempAllocStack; /* Where to start freeing temporary
     allocation when nmbrLet() is called (normally 0, except for nested
     nmbrString functions) */
@@ -488,7 +488,7 @@ long nmbrGetSubproofLen(const nmbrString *proof, long step);
    to previous subproofs. */
 temp_nmbrString *nmbrSquishProof(const nmbrString *proof);
 
-/* This function unsquishes a "squished" proof, replacing {} references
+/* This function un-squishes a "squished" proof, replacing {} references
    to previous subproofs by the subproofs themselves. */
 temp_nmbrString *nmbrUnsquishProof(const nmbrString *proof);
 
@@ -527,10 +527,10 @@ long compressedProofSize(const nmbrString *proof, long statemNum);
 /*********** Pointer string functions ******************************/
 /*******************************************************************/
 
-/******* Special pupose routines for better
+/******* Special purpose routines for better
       memory allocation (use with caution) *******/
 
-extern long g_pntrTempAllocStackTop;   /* Top of stack for pntrTempAlloc funct */
+extern long g_pntrTempAllocStackTop;   /* Top of stack for pntrTempAlloc function */
 extern long g_pntrStartTempAllocStack; /* Where to start freeing temporary
     allocation when pntrLet() is called (normally 0, except for nested
     pntrString functions) */
@@ -573,7 +573,7 @@ temp_pntrString *pntrPSpace(long n);
  * dedicated to it.
  *
  * returns the number of **used** pointers in the array pointed to by \p s,
- * derived from administrave data in the surrounding block.
+ * derived from administrative data in the surrounding block.
  *
  * \attention This is not the capacity of the array.
  * \param[in] s points to a element 0 of a \a pntrString  embedded in a block
@@ -585,7 +585,7 @@ long pntrLen(const pntrString *s);
  * \brief Determine the capacity of a pntrString embedded in a dedicated block
  *
  * returns the capacity of pointers in the array pointed to by \p s,
- * derived from administrave data in the surrounding block.  The result
+ * derived from administrative data in the surrounding block.  The result
  * excludes the terminal element reserved for a null pointer.
  *
  * \param[in] s points to a element 0 of a \a pntrString  embedded in a block

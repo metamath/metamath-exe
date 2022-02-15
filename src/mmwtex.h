@@ -49,7 +49,7 @@ void eraseTexDefs(void); /* Undo readTexDefs() */
 /* The GIF check ensures that for every 'htmldef' definition containing
    `IMG SRC="bla.gif"`, `bla.gif` must exist. */
 flag readTexDefs(
-  flag errorsOnly,  /* 1 = supprees non-error messages */
+  flag errorsOnly,  /* 1 = suppress non-error messages */
   flag gifCheck   /* 1 = check for missing GIFs */);
 
 extern flag g_texDefsRead;

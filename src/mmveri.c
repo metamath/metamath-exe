@@ -403,10 +403,10 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
           }
         } /* end while */
         if (breakFlag) {
-/*E*/if(db7)print2(" Exit, c bktrk bad: v=%ld,p=%ld,q=%ld\n",v,p,q);
+/*E*/if(db7)print2(" Exit, c backtrack bad: v=%ld,p=%ld,q=%ld\n",v,p,q);
           break;
         }
-/*E*/if(db7)print2(" Exit, c bktrk ok: v=%ld,p=%ld,q=%ld\n",v,p,q);
+/*E*/if(db7)print2(" Exit, c backtrack ok: v=%ld,p=%ld,q=%ld\n",v,p,q);
       }
     } else {
       /* It's a variable.  If its the first occurrence, init length to 0 */
@@ -465,15 +465,15 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
             }
           }
           if (breakFlag) {
-/*E*/if(db7){print2(" Exit, vold bck bad: v=%ld,p=%ld,q=%ld\n",v,p,q);}
+/*E*/if(db7){print2(" Exit, v_old back bad: v=%ld,p=%ld,q=%ld\n",v,p,q);}
             break;
           }
-/*E*/if(db7)print2(" Exit, vold bck ok: v=%ld,p=%ld,q=%ld\n",v,p,q);
+/*E*/if(db7)print2(" Exit, v_old back ok: v=%ld,p=%ld,q=%ld\n",v,p,q);
           continue;
         } else {
           p++;
           q = q + varAssLen[v1];
-/*E*/if(db7)print2(" Exit, vold ok: v=%ld,p=%ld,q=%ld\n",v,p,q);
+/*E*/if(db7)print2(" Exit, v_old ok: v=%ld,p=%ld,q=%ld\n",v,p,q);
           continue;
         }
       } /* end if first occurrence */

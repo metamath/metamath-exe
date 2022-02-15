@@ -50,15 +50,15 @@ long *g_mathKey = NULL;
 long g_statements = 0, labels = 0, g_mathTokens = 0;
 
 struct includeCall_struct *g_IncludeCall = NULL;
-long g_includeCalls = -1;  /* For eraseSouce() in mmcmds.c */
+long g_includeCalls = -1;  /* For eraseSource() in mmcmds.c */
 
 char *g_sourcePtr = NULL;
 long g_sourceLen;
 
-/* Null numString */
+/* Null nmbrString */
 struct nullNmbrStruct g_NmbrNull = {-1, sizeof(long), sizeof(long), -1};
 
-/* Null ptrString */
+/* Null pntrString */
 struct nullPntrStruct g_PntrNull = {-1, sizeof(long), sizeof(long), NULL};
 
 temp_nmbrString *nmbrTempAlloc(long size);
@@ -81,7 +81,7 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
  * suballocator.  Each chunk of memory allocated from the system (we call them
  * \ref block "block" in this documentation) is equipped with a hidden header
  * containing administrative information private to the suballocator.
- * 
+ *
  * During execution chunks of memory, either complete \ref block "blocks" or
  * \ref fragmentation "fragments" thereof, become free again.  The suballocator
  * adds them then to internal **pools** for reuse, one dedicated to totally
@@ -92,7 +92,7 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
  * Although the suballocator tries to avoid returning memory to the system, it
  * can do so under extreme memory constraints, or when built-in limits are
  * surpassed.
- * 
+ *
  * The suballocator was designed with stack-like memory usage in mind, where
  * data of the same type is pushed at, or popped off the end all the time.
  * Each \ref block block supports this kind of usage out of the box (see
@@ -148,13 +148,13 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
  * A pool is an array of pointers pointing to \ref block "blocks".  It may only
  * be partially filled, so it is usually accompanied by two variables giving
  * its current fill state and its capacity.
- * 
+ *
  * In Metamath a pool has no gaps in between.
- * 
+ *
  * The \ref suballocation "suballocator" uses two pools:
  * - the **free block array** pointed to by \a memFreePool;
  * - the **used block array** pointed to by \a memUsedPool.
- */ 
+ */
 
 /* Memory pools are used to reduce the number of malloc and alloc calls that
    allocate arrays (strings or nmbr/pntrStrings typically).   The "free" pool
@@ -170,7 +170,7 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
        long elements.
      Element -2:  allocated size.  If all elements are used, allocated = actual.
      Element -3:  location of array in memUsedPool.  If -1, it means that
-       actual = allocated and storage in memUsedPool is therefore not nec.
+       actual = allocated and storage in memUsedPool is therefore not necessary.
    The pointer to an array always points to element 0 (recast to right size).
 */
 
@@ -206,8 +206,8 @@ long poolTotalFree = 0; /* Total amount of free space allocated in pool */
  *
  * \invariant Each block in the used blocks array has its index noted in its
  * hidden header, for backward reference.
- * 
- * \attention Desite the name of this variable fully occupied blocks are never
+ *
+ * \attention Despite the name of this variable, fully occupied blocks are never
  * kept in the used block array.
  */
 void **memUsedPool = NULL;
@@ -235,17 +235,17 @@ long memUsedPoolSize = 0; /* Current # of partially filled arrays in use */
  *
  * This variable may grow during a reallocation process.
  *
- * \invariant (memUsedPoolMax > 0) == (\a memUsedPool != 0) 
+ * \invariant (memUsedPoolMax > 0) == (\a memUsedPool != 0)
  */
 long memUsedPoolMax = 0; /* Maximum # of entries in 'in use' table (grows
-                               as nec.) */
+                               as necessary) */
 /*!
  * \var void** memFreePool
  * \brief pointer to the pool of completely free memory blocks
  *
  * The \ref suballocation "suballocator" is initially not equipped with a
  * **free block array**, pointed to by memFreePool, indicated by a null value.
- * 
+ *
  * Once a \ref \block "memory block" is returned to the \ref suballocation
  * again, it allocates some space for the now needed array.
  *
@@ -282,10 +282,10 @@ long memFreePoolSize = 0; /* Current # of available, allocated arrays */
  *
  * This variable may grow during a reallocation process.
  *
- * \invariant (memFreePoolMax > 0) == (\a memFreePool != 0) 
+ * \invariant (memFreePoolMax > 0) == (\a memFreePool != 0)
  */
 long memFreePoolMax = 0; /* Maximum # of entries in 'free' table (grows
-                               as nec.) */
+                               as necessary) */
 
 /* poolFixedMalloc should be called when the allocated array will rarely be
    changed; a malloc or realloc with no unused array bytes will be done. */
@@ -895,7 +895,7 @@ flag matches(const char *testString, const char *pattern, char wildCard,
 /*********** Number string functions *******************************/
 /*******************************************************************/
 
-long g_nmbrTempAllocStackTop = 0;     /* Top of stack for nmbrTempAlloc functon */
+long g_nmbrTempAllocStackTop = 0;     /* Top of stack for nmbrTempAlloc function */
 long g_nmbrStartTempAllocStack = 0;   /* Where to start freeing temporary allocation
                                     when nmbrLet() is called (normally 0, except in
                                     special nested vstring functions) */
@@ -1084,7 +1084,7 @@ temp_nmbrString *nmbrCat(const nmbrString *string1,...) /* String concatenation 
 #endif
       bug(1369);
     }
-  va_end(ap);           /* End var args session */
+  va_end(ap);           /* End varargs session */
 
   numArgs--;    /* The last argument (0) is not a string */
 
@@ -2075,7 +2075,7 @@ temp_vstring compressProof(const nmbrString *proof, long statemNum,
     }
   }
   maxExplRefCount = 0;  /* Largest number of reference counts found */
-  /* Populate the explict label list with the counts */
+  /* Populate the explicit label list with the counts */
   for (i = 0; i < explLabels; i++) {
     explRefCount[i] = labelRefCount[explList[i]]; /* Save the ref count */
     if (explRefCount[i] <= 0) bug(1381);
@@ -2101,7 +2101,7 @@ temp_vstring compressProof(const nmbrString *proof, long statemNum,
     for (j = 0; j < explLabels; j++) {
       if (explRefCount[j] == i) {
         /* Find length, numchrs, of compressed label */
-        /* If there are no req hyps, 0 = 1st label in explict list */
+        /* If there are no req hyps, 0 = 1st label in explicit list */
         lab = g_Statement[statemNum].numReqHyp + explSortPosition;
 
         /* The following 7 lines are from the compressed label length
@@ -2380,7 +2380,7 @@ long compressedProofSize(const nmbrString *proof, long statemNum) {
 /*********** Pointer string functions ******************************/
 /*******************************************************************/
 
-long g_pntrTempAllocStackTop = 0;     /* Top of stack for pntrTempAlloc functon */
+long g_pntrTempAllocStackTop = 0;     /* Top of stack for pntrTempAlloc function */
 long g_pntrStartTempAllocStack = 0;   /* Where to start freeing temporary allocation
                                     when pntrLet() is called (normally 0, except in
                                     special nested vstring functions) */
@@ -2569,7 +2569,7 @@ temp_pntrString *pntrCat(const pntrString *string1,...) {
 #endif
       bug(1371);
     }
-  va_end(ap);           /* End var args session */
+  va_end(ap);           /* End varargs session */
 
   numArgs--;    /* The last argument (0) is not a string */
 
@@ -3071,7 +3071,7 @@ vstring getDescriptionAndLabel(long stmt) {
 /* mode = 1 = PROOF_DISCOURAGED means get any proof modification discouraged
                 indicator
    mode = 2 = USAGE_DISCOURAGED means get any new usage discouraged indicator
-   mode = 0 = RESET  means to reset everything (statemeNum is ignored) */
+   mode = 0 = RESET  means to reset everything (statemNum is ignored) */
 /* TODO: add a mode to reset a single statement if in the future we add
    the ability to change the markup within the program. */
 flag getMarkupFlag(long statemNum, flag mode) {

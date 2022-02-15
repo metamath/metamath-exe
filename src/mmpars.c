@@ -845,7 +845,7 @@ void parseStatements(void) {
   /* Initialize variable and hypothesis stacks */
 
   /* Allocate g_MAX_MATHTOKENS and not just g_mathTokens of them so that
-     they can accomodate any extra non-declared tokens (which get
+     they can accommodate any extra non-declared tokens (which get
      declared as part of error handling, where the g_MAX_MATHTOKENS
      limit is checked) */
   activeConstStack = malloc((size_t)g_MAX_MATHTOKENS
@@ -1116,7 +1116,7 @@ void parseStatements(void) {
 
           memcpy(wrkStrPtr, fbPtr, (size_t)symbolLen);
 
-          /* ???Speed-up is possible by rewriting this now unnec. code */
+          /* ???Speed-up is possible by rewriting this now unnecessary code */
           for (; symbolLen > 0; symbolLen = 0) {
 
             /* symbolLenExists means a symbol of this length was declared */
@@ -1159,7 +1159,7 @@ void parseStatements(void) {
                 /*??? (This is done in 3 places. Make it a fn call & clean up?*/
                 /* Prevent stray pointers later */
                 g_MathToken[tokenNum].tmp = 0; /* Loc in active variable stack */
-                if (!activeVarStackPtr) { /* Make a ficticious entry */
+                if (!activeVarStackPtr) { /* Make a fictitious entry */
                   activeVarStack[activeVarStackPtr].tokenNum = tokenNum;
                   activeVarStack[activeVarStackPtr].scope = g_currentScope;
                   activeVarStack[activeVarStackPtr].tmpFlag = 0;
@@ -1174,7 +1174,7 @@ void parseStatements(void) {
        "This math symbol is not active (i.e. was not declared in this scope).");
                 /* Prevent stray pointers later */
                 g_MathToken[tokenNum].tmp = 0; /* Loc in active variable stack */
-                if (!activeVarStackPtr) { /* Make a ficticious entry */
+                if (!activeVarStackPtr) { /* Make a fictitious entry */
                   activeVarStack[activeVarStackPtr].tokenNum = tokenNum;
                   activeVarStack[activeVarStackPtr].scope = g_currentScope;
                   activeVarStack[activeVarStackPtr].tmpFlag = 0;
@@ -1208,7 +1208,7 @@ void parseStatements(void) {
             g_MathToken[tokenNum].tokenType = (char)var_;
             /* Prevent stray pointers later */
             g_MathToken[tokenNum].tmp = 0; /* Location in active variable stack */
-            if (!activeVarStackPtr) { /* Make a ficticious entry */
+            if (!activeVarStackPtr) { /* Make a fictitious entry */
               activeVarStack[activeVarStackPtr].tokenNum = tokenNum;
               activeVarStack[activeVarStackPtr].scope = g_currentScope;
               activeVarStack[activeVarStackPtr].tmpFlag = 0;
@@ -1509,7 +1509,7 @@ void parseStatements(void) {
         nmbrTmpPtr = poolFixedMalloc((reqVars + 1)
             * (long)(sizeof(nmbrString)));
         /* if (!nmbrTmpPtr) outOfMemory("#30 (reqVars)"); */
-                                                    /* Not nec. w/ poolMalloc */
+                                              /* Not necessary w/ poolMalloc */
         memcpy(nmbrTmpPtr, wrkVarPtr1, (size_t)reqVars * sizeof(nmbrString));
         nmbrTmpPtr[reqVars] = -1;
         g_Statement[stmt].reqVarList = nmbrTmpPtr;
@@ -1633,7 +1633,7 @@ void parseStatements(void) {
         nmbrTmpPtr = poolFixedMalloc((reqHyps + 1)
             * (long)(sizeof(nmbrString)));
         /* if (!nmbrTmpPtr) outOfMemory("#33 (reqHyps)"); */
-                                       /* Not nec. w/ poolMalloc */
+                                       /* Not necessary w/ poolMalloc */
         memcpy(nmbrTmpPtr, wrkHypPtr3, (size_t)reqHyps * sizeof(nmbrString));
         nmbrTmpPtr[reqHyps] = -1;
         g_Statement[stmt].reqHypList = nmbrTmpPtr;
@@ -3455,7 +3455,7 @@ nmbrString *getProof(long statemNum, flag printFlag) {
     nmbrLet(&proof, g_WrkProof.proofString);
   }
   /* Note: the g_WrkProof structure is never deallocated but grows to
-     accomodate the largest proof found so far.  The ERASE command will
+     accommodate the largest proof found so far.  The ERASE command will
      deallocate it, though.   cleanWrkProof() just deallocates math strings
      assigned by verifyProof() that aren't needed by this function. */
   /* cleanWrkProof(); */ /* Deallocate verifyProof() storage */
@@ -3922,8 +3922,8 @@ long countLines(const char *start, long length) {
 /* ???This does not yet implement restoration of the various input files;
       all included files are merged into one. */
 /* Caller must deallocated returned string. */
-/* reformatFlag= 0: WRITE SOURCE, 1: WRITE SOURCE / REFORMAT,
-   2: WRITE SOURCE / WRAP */
+/* reformatFlag= 0: WRITE SOURCE, 1: WRITE SOURCE / FORMAT,
+   2: WRITE SOURCE / REWRAP */
 /* Note that the labelSection, mathSection, and proofSection do not
    contain keywords ($a, $p,...; $=; $.).  The keywords are added
    by this function when the statement is written. */
@@ -4074,7 +4074,7 @@ vstring outputStatement(long stmt, flag reformatFlag) {
             insert \n to break a huge $d with say >40 variables,
             which itself can exceed line length. */
           let(&mathSection, edit(mathSection,
-              /*4*//*discard \n*/ + 16/*reduce spaces*/));
+              /*4*/ /* discard \n */ + 16 /* reduce spaces */));
           if (strlen(edit(labelSection, 4/*discard \n*/ + 2/*discard spaces*/))
               == 0) /* This and previous $d are separated by spaces
                        and newlines only */
@@ -4161,7 +4161,7 @@ vstring outputStatement(long stmt, flag reformatFlag) {
 
           /* Make sure that start of new lines inside the comment have no
              trailing space (because printLongLine doesn't do this after
-             explict break) */
+             explicit break) */
           pos = 0;
           while (1) {
             pos = instr(pos + 1, comment, "\n");
@@ -4469,9 +4469,9 @@ vstring rewrapComment(const char *comment1) {
   /* Put period at end of comment ending with lowercase letter */
   /* Note:  This will not detect a '~ label' at end of comment.
      However, user should have ended it with a period, and if not the
-     label + period is unlikly to be valid and thus will
+     label + period is unlikely to be valid and thus will
      usually be detected by 'verify markup'.
-     (We could enhace the code here to do that if it becomes a problem.) */
+     (We could enhance the code here to do that if it becomes a problem.) */
   length = (long)strlen(comment);
   if (islower((unsigned char)(comment[length - 4]))) {
     let(&comment, cat(left(comment, length - 3), ". $)", NULL));
@@ -5085,7 +5085,7 @@ cmdType = 'S':
     /* Don't use instr because it computes string length each call */
     /*i = instr(1, fbPtr, "$)");*/ /* Normally this will be fast because we only
         have to find the end of the comment that we're in */
-    /* Emulater the instr() */
+    /* Emulate the instr() */
     tmpPtr = fbPtr;
     i = 0;
     while (1) {
@@ -5261,7 +5261,7 @@ vstring writeSourceToBuffer(void) {
 
 
 /* This function creates split files containing $[ $] inclusions, from
-   a nonsplit source with $( Begin $[... etc. inclusions */
+   an unsplit source with $( Begin $[... etc. inclusions */
 /* This function calls itself recursively, and after the recursive call
    the fileBuf (=includeBuf) argument is deallocated. */
 /* For the top level call, fileName MUST NOT HAVE A DIRECTORY PATH */
@@ -5380,7 +5380,7 @@ vstring writeSourceToBuffer(void) {
       writeSplitSource(&includeBuf, includeFn, noVersioningFlag, noDeleteFlag);
       continue;
     } else if (cmdType == 'I') {
-      bug(1752); /* Any real $[ $] should have been converted to commment */
+      bug(1752); /* Any real $[ $] should have been converted to comment */
       /* However in theory, user could have faked an assignable description
          if modifiable comments are added in the future...*/
       startOffset = cmdPos2 - 1;
@@ -5479,7 +5479,7 @@ vstring writeSourceToBuffer(void) {
 
 /* Get file name and line number given a pointer into the read buffer */
 /* The user must deallocate the returned string (file name) */
-/* The globals g_IncludeCall structure and g_includeCalls are used */
+/* The global g_IncludeCall structure and g_includeCalls are used */
 vstring getFileAndLineNum(const char *buffPtr /* start of read buffer */,
     const char *currentPtr /* place at which to get file name and line no */,
     long *lineNum /* return argument */) {
@@ -5539,7 +5539,7 @@ void assignStmtFileAndLineNum(long stmtNum) {
    input file and its 'include' calls.  'Size' returns the buffer's size.  */
 /* TODO - ability to flag error to skip raw source function */
 /* Recursive function that processes a found include */
-/* If NULL is returned, it means a serious error occured (like missing file)
+/* If NULL is returned, it means a serious error occurred (like missing file)
    and reading should be aborted. */
 /* Globals used:  g_IncludeCall[], g_includeCalls */
 vstring readInclude(const char *fileBuf, long fileBufOffset,
@@ -6028,12 +6028,12 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
 /* This function returns a pointer to a buffer containing the contents of an
    input file and its 'include' calls.  'Size' returns the buffer's size.  */
 /* TODO - ability to flag error to skip raw source function */
-/* If NULL is returned, it means a serious error occured (like missing file)
+/* If NULL is returned, it means a serious error occurred (like missing file)
    and reading should be aborted. */
 vstring readSourceAndIncludes(const char *inputFn /*input*/, long *size /*output*/) {
   long i;
-/*D*//*long j;*/
-/*D*//*vstring_def(s); */
+/*D*//* long j; */
+/*D*//* vstring_def(s); */
   vstring_def(fileBuf);
   vstring_def(newFileBuf);
 
@@ -6055,7 +6055,7 @@ vstring readSourceAndIncludes(const char *inputFn /*input*/, long *size /*output
   }
   print2("Reading source file \"%s\"... %ld bytes\n", fullInputFn, *size);
 
-  /* Create a ficticious initial include for the main file (at least 2
+  /* Create a fictitious initial include for the main file (at least 2
      g_IncludeCall structure array entries have been already been allocated
      in initBigArrays() in mmdata.c) */
   g_includeCalls = 0;
@@ -6077,7 +6077,7 @@ vstring readSourceAndIncludes(const char *inputFn /*input*/, long *size /*output
   g_IncludeCall[g_includeCalls].current_includeLength = *size; /* Length of the file
       to be included (0 if the file was previously included) */
 
-  /* Create a ficticious entry for the "continuation" after the
+  /* Create a fictitious entry for the "continuation" after the
      main file, to make error message line searching easier */
   g_includeCalls++;
   g_IncludeCall[g_includeCalls].pushOrPop = 1; /* 0 means start of included file,
@@ -6095,7 +6095,7 @@ vstring readSourceAndIncludes(const char *inputFn /*input*/, long *size /*output
   g_IncludeCall[g_includeCalls].current_includeSource = ""; /* (Currently) assigned
       only if we may need it for a later Begin comparison */
   g_IncludeCall[g_includeCalls].current_includeLength = 0; /* The "continuation"
-      of the main file is ficticious, so just set it to 0 length */
+      of the main file is fictitious, so just set it to 0 length */
 
   /* Recursively expand the source of an included file */
   newFileBuf = "";
@@ -6109,7 +6109,7 @@ vstring readSourceAndIncludes(const char *inputFn /*input*/, long *size /*output
   free_vstring(fileBuf); /* Deallocate */
 /*D*//*printf("*size=%ld\n",*size);                                       */
 /*D*//*for(i=0;i<*size;i++){                                              */
-/*D*//*free_vstring(s);                                                        */
+/*D*//*  free_vstring(s);                                                     */
 /*D*//*s=getFileAndLineNum(newFileBuf,newFileBuf+i,&j);                   */
 /*D*//*printf("i=%ld ln=%ld fn=%s ch=%c\n",i,j,s,(newFileBuf+i)[0]);  }   */
   if (errorFlag == 1) {

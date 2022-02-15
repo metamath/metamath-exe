@@ -38,19 +38,19 @@ void typeStatement(long showStmt,
   flag briefFlag,
   flag commentOnlyFlag,
   flag texFlag,
-  flag htmlFlg)
+  flag htmlFlag)
 {
   /* From HELP SHOW STATEMENT: Optional qualifiers:
     / TEX - This qualifier will write the statement information to the
         LaTeX file previously opened with OPEN TEX.
-            [Note:  texFlag=1 and htmlFlg=0 with this qualifier.]
+            [Note:  texFlag=1 and htmlFlag=0 with this qualifier.]
 
     / HTML - This qualifier will write the statement information to the
         HTML file previously opened with OPEN HTML.
-            [Note:  texFlag=1 and htmlFlg=1 with this qualifier.]
+            [Note:  texFlag=1 and htmlFlag=1 with this qualifier.]
 
     / COMMENT_ONLY - This qualifier will show only the comment that
-        immediatley precedes the statement.  This is useful when you are
+        immediately precedes the statement.  This is useful when you are
         using Metamath to preprocess LaTeX source you have created (see
         HELP TEX)
 
@@ -78,7 +78,7 @@ void typeStatement(long showStmt,
   static long wffToken = -1; /* array index of the hard-coded token "wff" -
       static so we only have to look it up once - set to -2 if not found */
 
-  subType = 0; /* Assign to prevent compiler warnings - not theor. necessary */
+  subType = 0; /* Assign to prevent compiler warnings - not theoretically necessary */
 
   if (!showStmt) bug(225); /* Must be 1 or greater */
 
@@ -106,10 +106,10 @@ void typeStatement(long showStmt,
                NULL),
         NULL), "", " ");
     } else {
-      if (!htmlFlg) let(&g_printString, "");
+      if (!htmlFlag) let(&g_printString, "");
       g_outputToString = 1; /* Flag for print2 to add to g_printString */
                      /* Note that printTexLongMathString resets it */
-      if (!(htmlFlg && texFlag)) {
+      if (!(htmlFlag && texFlag)) {
         /*
         printLongLine(cat(str1, "{\\tt ",
             asciiToTt(g_Statement[showStmt].fileName),
@@ -160,7 +160,7 @@ void typeStatement(long showStmt,
             " <FONT COLOR=", GREEN_TITLE_COLOR,
             ">", g_Statement[showStmt].labelName,
             "</FONT></FONT></B>", str2, "</CENTER>", NULL), "", "\"");
-      } /* (htmlFlg && texFlag) */
+      } /* (htmlFlag && texFlag) */
       g_outputToString = 0;
     } /* texFlag */
   }
@@ -172,7 +172,7 @@ void typeStatement(long showStmt,
       print2("?Warning: Statement \"%s\" has no comment\n",
           g_Statement[showStmt].labelName);
       /* We must print a blank comment to have \begin{lemma} */
-      if (texFlag && !htmlFlg && !g_oldTexFlag) {
+      if (texFlag && !htmlFlag && !g_oldTexFlag) {
         let(&str1, "TO DO: PUT DESCRIPTION HERE");
       }
     }
@@ -180,7 +180,7 @@ void typeStatement(long showStmt,
       if (!texFlag) {
         printLongLine(cat("\"", str1, "\"", NULL), "", " ");
       } else {
-        if (!htmlFlg) {  /* LaTeX */
+        if (!htmlFlag) {  /* LaTeX */
           if (!g_oldTexFlag) {
             /* Distinguish axiom, definition, theorem */
             /* Note: changes here must be mirrored in the \end{...} below */
@@ -210,10 +210,10 @@ void typeStatement(long showStmt,
   }
   if (commentOnlyFlag && !briefFlag) goto returnPoint;
 
-  if ((briefFlag && !texFlag) || (htmlFlg && texFlag)) {
+  if ((briefFlag && !texFlag) || (htmlFlag && texFlag)) {
     /* In BRIEF mode screen output, show $d's */
 
-    if (htmlFlg && texFlag) {
+    if (htmlFlag && texFlag) {
       let(&htmlDistinctVars, "");
       htmlDistinctVarsCommaFlag = 0;
     }
@@ -227,7 +227,7 @@ void typeStatement(long showStmt,
          $d ps x y $.  $d y A $.  $d x y $.
        However, in set.mm the equivalent (and better anyway):
          $d x y ps $.  $d y A $.
-       produces the same thing when remerged in SHOW STATEMENT. */
+       produces the same thing when re-merged in SHOW STATEMENT. */
     let(&str1, "");
     nmbrTmpPtr1 = g_Statement[showStmt].reqDisjVarsA;
     nmbrTmpPtr2 = g_Statement[showStmt].reqDisjVarsB;
@@ -239,7 +239,7 @@ void typeStatement(long showStmt,
         if (!nmbrElementIn(1, nmbrDDList, nmbrTmpPtr1[k]) &&
             !nmbrElementIn(1, nmbrDDList, nmbrTmpPtr2[k])) {
           /* No, so close out the current list */
-          if (!(htmlFlg && texFlag)) {
+          if (!(htmlFlag && texFlag)) {
             if (k == 0) let(&str1, "$d");
             else let(&str1, cat(str1, " $.  $d", NULL));
           } else {
@@ -274,7 +274,7 @@ void typeStatement(long showStmt,
             if (!q1 || !q2) {
               /* One of the variables is not required to be distinct from
                 all others in the current list, so close out current list */
-              if (!(htmlFlg && texFlag)) {
+              if (!(htmlFlag && texFlag)) {
                 if (k == 0) let(&str1, "$d");
                 else let(&str1, cat(str1, " $.  $d", NULL));
               } else {
@@ -291,7 +291,7 @@ void typeStatement(long showStmt,
         } /* Next n */
         /* If the variable is not already in current list, add it */
         if (!nmbrElementIn(1, nmbrDDList, nmbrTmpPtr1[k])) {
-          if (!(htmlFlg && texFlag)) {
+          if (!(htmlFlag && texFlag)) {
             let(&str1, cat(str1, " ", g_MathToken[nmbrTmpPtr1[k]].tokenName,
                 NULL));
           } else {
@@ -309,7 +309,7 @@ void typeStatement(long showStmt,
           nmbrLet(&nmbrDDList, nmbrAddElement(nmbrDDList, nmbrTmpPtr1[k]));
         }
         if (!nmbrElementIn(1, nmbrDDList, nmbrTmpPtr2[k])) {
-          if (!(htmlFlg && texFlag)) {
+          if (!(htmlFlag && texFlag)) {
             let(&str1, cat(str1, " ", g_MathToken[nmbrTmpPtr2[k]].tokenName,
                 NULL));
           } else {
@@ -328,7 +328,7 @@ void typeStatement(long showStmt,
         }
       } /* Next k */
       /* Close out entire list */
-      if (!(htmlFlg && texFlag)) {
+      if (!(htmlFlag && texFlag)) {
         let(&str1, cat(str1, " $.", NULL));
         printLongLine(str1, "  ", " ");
       } else {
@@ -349,7 +349,7 @@ void typeStatement(long showStmt,
 
       /* For syntax definitions, also include $f hypotheses so user can more
          easily match them in syntax breakdowns of axioms and definitions */
-      if (subType == SYNTAX && (texFlag && htmlFlg)) {
+      if (subType == SYNTAX && (texFlag && htmlFlag)) {
         if (g_Statement[g_Statement[showStmt].reqHypList[i]].type
           == (char)f_) k++;
       }
@@ -360,7 +360,7 @@ void typeStatement(long showStmt,
         /* Note that printTexLongMath resets it to 0 */
         g_outputToString = 1;
       }
-      if (texFlag && htmlFlg) {
+      if (texFlag && htmlFlag) {
         print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=%s\n",
             MINT_BACKGROUND_COLOR);
         /* For bobby.cast.org approval */
@@ -376,7 +376,7 @@ void typeStatement(long showStmt,
 
             /* For syntax definitions, include $f hypotheses so user can more
                easily match them in syntax breakdowns of axioms & definitions */
-            && !(subType == SYNTAX && (texFlag && htmlFlg)
+            && !(subType == SYNTAX && (texFlag && htmlFlag)
                 && g_Statement[k].type == (char)f_)
 
             ) continue;
@@ -394,8 +394,8 @@ void typeStatement(long showStmt,
               "      "," ");
         } else { /* if texFlag */
           /* texFlag was (misleadingly) included below to facilitate search
-             for "htmlFlg && texFlag". */
-          if (!(htmlFlg && texFlag)) {
+             for "htmlFlag && texFlag". */
+          if (!(htmlFlag && texFlag)) {
             if (!g_oldTexFlag) {
               /* Do nothing */
             } else {
@@ -412,7 +412,7 @@ void typeStatement(long showStmt,
           }
         }
       } /* next i */
-      if (texFlag && htmlFlg) {
+      if (texFlag && htmlFlag) {
         g_outputToString = 1;
         print2("</TABLE></CENTER>\n");
       }
@@ -433,7 +433,7 @@ void typeStatement(long showStmt,
         nmbrCvtMToVString(g_Statement[showStmt].mathString),
         str1, " $.", NULL), "      ", " ");
   } else {
-    if (!(htmlFlg && texFlag)) {  /* really !htmlFlg & texFlag */
+    if (!(htmlFlag && texFlag)) {  /* really !htmlFlag & texFlag */
       if (!g_oldTexFlag) {
         g_outputToString = 1;
         print2("\\begin{align}\n");
@@ -481,7 +481,7 @@ void typeStatement(long showStmt,
         printTexLongMath(g_Statement[showStmt].mathString,
             str2, str3, 0, 0);
       }
-    } else { /* (htmlFlg && texFlag) */
+    } else { /* (htmlFlag && texFlag) */
       g_outputToString = 1;
       print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=%s\n",
           MINT_BACKGROUND_COLOR);
@@ -508,7 +508,7 @@ void typeStatement(long showStmt,
       /* This is not really needed but keeps output consistent
          with previous version.  It puts a blank line before the HTML
          "distinct variable" list. */
-      if (texFlag && htmlFlg) {
+      if (texFlag && htmlFlag) {
         g_outputToString = 1;
         print2("\n");
         g_outputToString = 0;
@@ -520,7 +520,7 @@ void typeStatement(long showStmt,
       j = nmbrLen(g_Statement[showStmt].reqHypList);
       for (i = 0; i < j; i++) {
         k = g_Statement[showStmt].reqHypList[i];
-        if (g_Statement[k].type != (char)e_ && (!htmlFlg && texFlag))
+        if (g_Statement[k].type != (char)e_ && (!htmlFlag && texFlag))
           continue; /* Don't put $f's in LaTeX output */
         let(&str2, cat("  ",g_Statement[k].labelName,
             " $", chr(g_Statement[k].type), " ", NULL));
@@ -533,7 +533,7 @@ void typeStatement(long showStmt,
       /* This is not really needed but keeps output consistent
          with previous version.  It puts a blank line before the HTML
          "distinct variable" list. */
-      if (texFlag && htmlFlg) {
+      if (texFlag && htmlFlag) {
         g_outputToString = 1;
         print2("\n");
         g_outputToString = 0;
@@ -550,7 +550,7 @@ void typeStatement(long showStmt,
                 g_MathToken[nmbrTmpPtr1[k]].tokenName, ",",
                 g_MathToken[nmbrTmpPtr2[k]].tokenName, ">", NULL));
           } else {
-            if (htmlFlg && texFlag) {
+            if (htmlFlag && texFlag) {
               free_vstring(str2);
               str2 = tokenToTex(g_MathToken[nmbrTmpPtr1[k]].tokenName, showStmt);
                    /* tokenToTex allocates str2; we must deallocate it */
@@ -599,7 +599,7 @@ void typeStatement(long showStmt,
       } /* if (i && type == p_) */
 
 
-      if (texFlag && htmlFlg) { /* It's a web page */
+      if (texFlag && htmlFlag) { /* It's a web page */
 
         if (htmlDistinctVars[0] != 0) {
           g_outputToString = 1;
@@ -636,11 +636,11 @@ void typeStatement(long showStmt,
           g_outputToString = 0;
         }
 
-      } /* if (texFlag && htmlFlg) */
+      } /* if (texFlag && htmlFlag) */
 
       if (texFlag) {
         g_outputToString = 1;
-        if (htmlFlg && texFlag) print2("<HR NOSHADE SIZE=1>\n");
+        if (htmlFlag && texFlag) print2("<HR NOSHADE SIZE=1>\n");
         g_outputToString = 0; /* Restore normal output */
         break; /* case a_ or p_ */
       }
@@ -676,7 +676,7 @@ void typeStatement(long showStmt,
   }
 
   /* Start of finding definition for syntax statement */
-  if (htmlFlg && texFlag) {
+  if (htmlFlag && texFlag) {
 
     /* For syntax declarations, find the first definition that follows
        it.  It is up to the user to arrange the database so that a
@@ -815,7 +815,7 @@ void typeStatement(long showStmt,
               0 /*splitColumn*/,
               0 /*skipRepeatedSteps*/,
               1 /*texFlag*/,  /* Means either latex or html */
-              1 /*htmlFlg*/);
+              1 /*htmlFlag*/);
 
           /* Restore the zapped statement structure */
           g_Statement[showStmt].proofSectionPtr = "";
@@ -847,12 +847,12 @@ void typeStatement(long showStmt,
     } /* if (subType == DEFINITION) */
 
 
-  } /* if (htmlFlg && texFlag) */
+  } /* if (htmlFlag && texFlag) */
   /* End of finding definition for syntax statement */
 
 
   /* Start of creating used-by list for html page */
-  if (htmlFlg && texFlag) {
+  if (htmlFlag && texFlag) {
     /* Clear out any previous g_printString accumulation
        for g_printStringForReferencedBy case below */
     fprintf(g_texFilePtr, "%s", g_printString);
@@ -945,13 +945,13 @@ void typeStatement(long showStmt,
 
     /* Printing of the trailer in mmwtex.c will close out string later */
     g_outputToString = 0;
-  } /* if (htmlFlg && texFlag) */
+  } /* if (htmlFlag && texFlag) */
   /* End of used-by list for html page */
 
 
   /* After the block above, so referenced statements
      show up first for convenience */
-  if (htmlFlg && texFlag) {
+  if (htmlFlag && texFlag) {
     /*** Output the html proof for $p statements ***/
     /* Note that we also output the axiom and definition usage
        lists inside this function */
@@ -970,9 +970,9 @@ void typeStatement(long showStmt,
           0 /*splitColumn*/,
           0 /*skipRepeatedSteps*/,
           1 /*texFlag*/,  /* Means either latex or html */
-          1 /*htmlFlg*/);
+          1 /*htmlFlag*/);
     } /* if (g_Statement[showStmt].type == (char)p_) */
-  } /* if (htmlFlg && texFlag) */
+  } /* if (htmlFlag && texFlag) */
   /* End of html proof for $p statements */
 
   /* typeProof should have cleared this out */
@@ -1317,7 +1317,7 @@ void typeProof(long statemNum,
   long splitColumn, /* START_COLUMN */
   flag skipRepeatedSteps, /* NO_REPEATED_STEPS */
   flag texFlag,
-  flag htmlFlg
+  flag htmlFlag
   /* flag g_midiFlag - global to avoid changing many calls to typeProof() */
   )
 {
@@ -1343,7 +1343,7 @@ void typeProof(long statemNum,
         If this qualifier is omitted, steps are indented in a tree format.
     / START_COLUMN <number> - Overrides the default column at which
         the formula display starts in a Lemmon style display.  May be
-        used only in conjuction with / LEMMON.
+        used only in conjunction with / LEMMON.
     / NO_REPEATED_STEPS - When a proof step is identical to an earlier
         step, it will not be repeated.  Instead, a reference to it will be
         changed to a reference to the earlier step.  In particular,
@@ -1409,7 +1409,7 @@ void typeProof(long statemNum,
   nmbrString *nmbrTmpPtr1; /* Pointer only; not allocated directly */
   nmbrString *nmbrTmpPtr2; /* Pointer only; not allocated directly */
 
-  if (htmlFlg && texFlag) skipRepeatedSteps = 1; /* Keep old behavior */
+  if (htmlFlag && texFlag) skipRepeatedSteps = 1; /* Keep old behavior */
   /* Comment out the following line if you want to revert to the old
      Lemmon-style behavior with local label references for reused compressed
      proof steps is desired.  The only reason for doing this is to obtain
@@ -1417,7 +1417,7 @@ void typeProof(long statemNum,
      those on the HTML pages. */
   /* if (noIndentFlag) skipRepeatedSteps = 1; */
 
-  if (htmlFlg && texFlag) {
+  if (htmlFlag && texFlag) {
 
 
 
@@ -1480,7 +1480,7 @@ void typeProof(long statemNum,
   if (!pipFlag) {
     parseProof(g_showStatement);
     if (g_WrkProof.errorSeverity > 1) {
-      if (htmlFlg && texFlag) {
+      if (htmlFlag && texFlag) {
         /* Print warning and close out proof table */
         g_outputToString = 1;
         print2(
@@ -1510,7 +1510,7 @@ void typeProof(long statemNum,
      we will use a local label to reference the 2nd or later reference to a
      hypothesis, so the hypothesis won't have to be shown multiple times
      in the proof. */
-  if (htmlFlg && texFlag && !noIndentFlag /* Lemmon */) {
+  if (htmlFlag && texFlag && !noIndentFlag /* Lemmon */) {
     /* Only Lemmon-style proofs are implemented for html */
     bug(218);
   }
@@ -1524,7 +1524,7 @@ void typeProof(long statemNum,
         for (i = 0; i < step; i++) {
           if (stmt == proof[i]) {
             /* The hypothesis at 'step' matches an earlier hypothesis at i,
-               so we will backreference 'step' to i with a local label */
+               so we will back-reference 'step' to i with a local label */
             proof[step] = -1000 - i;
             break;
           }
@@ -1594,7 +1594,7 @@ void typeProof(long statemNum,
   /* Get the relative offset (0, -1, -2,...) for unknown steps */
   if (unknownFlag) {
     /* There could be unknown steps outside of MM-PA
-       So remove this bugcheck, which seems spurious.  I can't see that
+       So remove this bug check, which seems spurious.  I can't see that
        getRelStepNums() cares whether we are in MM-PA. */
     /* if (!pipFlag) bug(255); */
     relativeStepNums = getRelStepNums(g_ProofInProgress.proof);
@@ -1992,7 +1992,7 @@ void typeProof(long statemNum,
     cleanWrkProof(); /* Deallocate verifyProof storage */
   }
 
-  if (htmlFlg && texFlag) {
+  if (htmlFlag && texFlag) {
     g_outputToString = 1;
     print2("</TABLE></CENTER>\n");
 
@@ -3509,7 +3509,7 @@ vstring bigAdd(vstring bignum1, vstring bignum2) {
   }
   bignum3[0] = (char)(carry + '0');
   while (bignum3[0] == '0') {
-    /* Supress leading 0s */
+    /* Suppress leading 0s */
     let(&bignum3, right(bignum3, 2));
   }
   return bignum3;
@@ -3545,7 +3545,7 @@ vstring bigSub(vstring bignum1, vstring bignum2) {
     bignum3[p] = (char)(9 - (bignum3[p] - '0') + '0');
   }
   while (bignum3[0] == '0') {
-    /* Supress leading 0s */
+    /* Suppress leading 0s */
     let(&bignum3, right(bignum3, 2));
   }
   free_vstring(bignum1cmpl); /* Deallocate */
@@ -3586,7 +3586,7 @@ vstring bigMulDigit(vstring bignum1, long digit) {
   }
   bignum3[0] = (char)(carry + '0');
   while (bignum3[0] == '0') {
-    /@ Supress leading 0s @/
+    /@ Suppress leading 0s @/
     let(&bignum3, right(bignum3, 2));
   }
   return bignum3;
@@ -3839,7 +3839,7 @@ void writeSource(
       }
     }
 
-    /* Note that writeSplitSource requires a file name witout path since
+    /* Note that writeSplitSource requires a file name without path since
        it is called recursively for file inclusions where path is added */
     writeSplitSource(&buffer, g_output_fn, noVersioningFlag, keepSplitsFlag);
   } else {  /* Write a non-split version */
@@ -4453,7 +4453,7 @@ void fixUndefinedLabels(vstring extractNeeded/*'Y'/'N' list*/,
   int mathMode; /* char gives Wconversion gcc warning */
 #define ASCII_4 4
 
-  /* Change ~ in math symbols to nonprintable ASCII 4 to prevent
+  /* Change ~ in math symbols to non-printable ASCII 4 to prevent
      interpretation as label indicator */
   p1 = (long)strlen(*buf);
   mathMode = 0;
@@ -4626,7 +4626,7 @@ void eraseSource(void)    /* ERASE command */
   g_errorCount = 0;
 
   free(g_Statement);
-  free(g_IncludeCall);  /* Will be init'ed in initBigArrays */
+  free(g_IncludeCall);  /* Will be initialized in initBigArrays */
   free(g_MathToken);
   g_dummyVars = 0; /* For Proof Assistant */
   free(g_sourcePtr);
@@ -4652,7 +4652,7 @@ void eraseSource(void)    /* ERASE command */
   /* Allocate big arrays */
   initBigArrays();
 
-  /* 2-Oct-2017 nm Future possibilty: add 'reset' parameter to unify() to clear
+  /* 2-Oct-2017 nm Future possibility: add 'reset' parameter to unify() to clear
      the 5 variables below */
   g_bracketMatchInit = 0; /* Clear to force mmunif.c to scan $a's again */
   g_minSubstLen = 1; /* Initialize to the default SET EMPTY_SUBSTITUTION OFF */
@@ -5502,7 +5502,7 @@ void processMarkup(vstring inputFileName, vstring outputFileName,
 
 
 /* List "discouraged" statements with "(Proof modification is discouraged."
-   and "(New usage is discourged.)" comment markup tags. */
+   and "(New usage is discouraged.)" comment markup tags. */
 /* This function is primarily intended for use with the "travis" system
    to identify versioning differences on GitHub. */
 void showDiscouraged(void) {
@@ -5971,7 +5971,7 @@ void outputMidi(long plen, nmbrString *indentationLevels,
   flag keyboardType; /* ALLKEYSFLAG, WHITEKEYSFLAG, or BLACKKEYSFLAG */
   long absMinKey; /* The smallest note we ever want */
   long absMaxKey; /* The largest note we ever want */
-  long key2MidiMap[128]; /* Maps keyboard (possiblty with black or
+  long key2MidiMap[128]; /* Maps keyboard (possibility with black or
                     white notes missing) to midi notes */
   long keyboardOctave; /* The number of keys spanning an octave */
   long i;

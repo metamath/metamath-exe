@@ -104,7 +104,7 @@ struct wrkProof_struct {
   char *localLabelPoolPtr; /* Next free location in local label pool */
   long RPNStackPtr; /* Offset of end of RPNStack */
   long errorCount; /* Errors in proof - used to suppress too many error msgs */
-  flag errorSeverity; /* 0 = OK, 1 = unk step, 2 = error, 3 = severe error,
+  flag errorSeverity; /* 0 = OK, 1 = unknown step, 2 = error, 3 = severe error,
                           4 = not a $p statement */
 
   /* The following pointers will always be allocated with g_wrkProofMaxSize
@@ -167,7 +167,7 @@ void getNextInclusion(char *fileBuf, long startOffset, /* inputs */
 vstring writeSourceToBuffer(void);
 
 /* This function creates split files containing $[ $] inclusions, from
-   a nonsplit source with $( Begin $[... etc. inclusions */
+   an unsplit source with $( Begin $[... etc. inclusions */
 /* Note that *fileBuf is assigned to the empty string upon return, to
    conserve memory */
 void writeSplitSource(vstring *fileBuf, const char *fileName,

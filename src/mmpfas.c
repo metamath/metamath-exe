@@ -25,7 +25,7 @@ long g_proveStatement = 0; /* The statement to be proved - global */
 flag g_proofChangedFlag; /* Flag to push 'undo' stack - global */
 
 /* 4-Aug-2011 nm Changed from 25000 to 50000 */
-/* 11-Dec-2010 nm Changed from 10000 to 25000 to accomodate df-plig in set.mm
+/* 11-Dec-2010 nm Changed from 10000 to 25000 to accommodate df-plig in set.mm
    (which needs >= 23884 to generate with 'show statement / html'). */
 /* g_userMaxProveFloat can be overridden by user with SET SEARCH_LIMIT */
 long g_userMaxProveFloat = 50000; /* Upper limit for proveFloating */
@@ -292,7 +292,7 @@ nmbrString *proveByReplacement(long prfStmt,
       }
     }
 
-    /* noDistinct is set by NO_DISTICT qualifier in IMPROVE */
+    /* noDistinct is set by NO_DISTINCT qualifier in IMPROVE */
     if (noDistinct) {
       /* Skip the statement if it has a $d requirement.  This option
          prevents illegal proofs that would violate $d requirements
@@ -911,7 +911,7 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
           noHypMatch = 1;
           break;
         }
-        hyp = hyp - 2; /* Go back one interation (subtract 2 to offset
+        hyp = hyp - 2; /* Go back one iteration (subtract 2 to offset
                           end of loop increment) */
       } /* if (!foundTrialStepMatch) */
 
@@ -1020,7 +1020,7 @@ vstring getIndepKnownSteps(long proofStmt, long refStep)
     proofStmt = (g_ProofInProgress.proof)[prfStep];
     if (proofStmt < 0) {
       if (proofStmt == -(long)'?') {
-        /* indepSteps[prfStep] = 'N' */ /* We can still use its mathstring */
+        /* indepSteps[prfStep] = 'N' */ /* We can still use its math string */
       } else {
         bug(1833); /* Packed ("squished") proof not handled (yet?) */
       }
@@ -1702,7 +1702,7 @@ nmbrString *proveFloating(const nmbrString *mString, long statemNum, long maxEDe
       }
     }
 
-    /* noDistinct is set by NO_DISTICT qualifier in IMPROVE */
+    /* noDistinct is set by NO_DISTINCT qualifier in IMPROVE */
     if (noDistinct) {
       /* Skip the statement if it has a $d requirement.  This option
          prevents illegal minimizations that would violate $d requirements
@@ -1884,7 +1884,7 @@ nmbrString *proveFloating(const nmbrString *mString, long statemNum, long maxEDe
       if (getMarkupFlag(stmt, USAGE_DISCOURAGED)) {
         switch (overrideFlag) {
           case 0: bug(1869); break; /* Should never get here if no override */
-          case 2: break; /* Accept overrided silently (in mmcmds.c syntax
+          case 2: break; /* Accept override silently (in mmcmds.c syntax
                             breakdown calls for $a web pages) */
           case 1:  /* Normal override */
             /* print2("\n"); */ /* Enable for more emphasis */
@@ -2265,7 +2265,7 @@ void assignKnownSubProofs(void)
   plen = nmbrLen(g_ProofInProgress.proof);
   /* Scan proof for known subproofs (backwards, to get biggest ones first) */
   for (pos = plen - 1; pos >= 0; pos--) {
-    subplen = subproofLen(g_ProofInProgress.proof, pos); /* Find length of subpr*/
+    subplen = subproofLen(g_ProofInProgress.proof, pos); /* Find length of subproof */
     breakFlag = 0;
     for (q = pos - subplen + 1; q <= pos; q++) {
       if ((g_ProofInProgress.proof)[q] == -(long)'?') {
@@ -2393,7 +2393,7 @@ void assignKnownSteps(long startStep, long sbProofLen)
         scheme[schemePos] = g_MathToken[scheme[schemePos]].tmp;
       }
 
-      /* Change variables in assertion to dummy variables for substitition */
+      /* Change variables in assertion to dummy variables for substitution */
       nmbrLet(&assertion, g_Statement[stmt].mathString);
       assLen = nmbrLen(assertion);
       for (assPos = 0; assPos < assLen; assPos++) {
@@ -3200,7 +3200,7 @@ void initProofStruct(struct pip_struct *proofStruct, const nmbrString *proof,
   nmbrLet(&tmpProof, nmbrUnsquishProof(proof));
 
   /* Assign initial proof structure */
-  if (nmbrLen((*proofStruct).proof)) bug(1876); /* Should've been deall.*/
+  if (nmbrLen((*proofStruct).proof)) bug(1876); /* Should've been deallocated */
   nmbrLet(&((*proofStruct).proof), tmpProof);
   plen = nmbrLen((*proofStruct).proof);
   pntrLet(&((*proofStruct).target), pntrNSpace(plen));
@@ -3379,7 +3379,7 @@ long processUndoStack(struct pip_struct *proofStruct,
 
     case PUS_PUSH:
       /* Warning: PUS_PUSH must be called upon entering Proof Assistant to put
-         the original proof into stack locaton 0.  It also must be
+         the original proof into stack location 0.  It also must be
          called after PUS_NEW_SIZE if inside of MM-PA. */
 
       /* Any new command after UNDO should erase the REDO part */
