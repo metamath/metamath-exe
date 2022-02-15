@@ -1251,7 +1251,6 @@ void printTexHeader(flag texHeaderFlag)
        "%", date(), time_());
 
     if (texHeaderFlag && !g_oldTexFlag) {
-
       print2("\\documentclass{article}\n");
       print2("\\usepackage{graphicx} %% For rotated iota\n");
       print2("\\usepackage{amssymb}\n");
