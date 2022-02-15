@@ -182,7 +182,7 @@
    character in a comment */
 /* 0.172 25-Jan-2019 nm mmwtex.c - comment out bug 2343 trap (not a bug) */
 /* 0.171 13-Dec-2018 nm metamath.c, mmcmdl.c, mmhlpa.c, mmcmds.c,h, mmwtex.c,h
-   - add fine-grained qualfiers to MARKUP command */
+   - add fine-grained qualifiers to MARKUP command */
 /* 0.170 12-Dec-2018 nm mmwtex.c - restore line accidentally deleted in 0.169 */
 /* 0.169 10-Dec-2018 nm metamath.c, mmcmds.c,h, mmcmdl.c, mmpars.c, mmhlpa.c,
    mmwtex.c - Add MARKUP command.
@@ -357,7 +357,7 @@
    7-Mar-2016 nm mmwtex.c - added space between } and { in HTML output
    6-Mar-2016 nm mmpars.c - disabled wrapping of formula lines in
        WRITE SOURCE.../REWRAP
-   2-Mar-2016 nm metamat.c, mmcmdl.c, mmhlpb.c - added /FAST to
+   2-Mar-2016 nm metamath.c, mmcmdl.c, mmhlpb.c - added /FAST to
        SAVE PROOF, SHOW PROOF */
 /* 0.123 25-Jan-2016 nm mmpars.c, mmdata.h, mmdata.c, mmpfas.c, mmcmds.,
    metamath.c, mmcmdl.c, mmwtex.c - unlocked SHOW PROOF.../PACKED,
@@ -413,13 +413,13 @@
    3. Added blank lines before, after "---------Clip out the proof" proof
    4. Generate date only if the proof is complete */
 /* 0.112 15-Apr-2015 nm metamath.c - fix bug 1121 (reported by S. O'Rear);
-   mwtex.c - add "img { margin-bottom: -4px }" to CSS to align symbol GIFs;
-   mwtex.c - remove some hard coding for set.mm, for use with new nf.mm;
+   mmwtex.c - add "img { margin-bottom: -4px }" to CSS to align symbol GIFs;
+   mmwtex.c - remove some hard coding for set.mm, for use with new nf.mm;
    metamath.c - fix comment parsing in WRITE BIBLIOGRAPHY to ignore
    math symbols  */
 /* 0.111 22-Nov-2014 nm metamath.c, mmcmds.c, mmcmdl.c, mmhlpb.c - added
    /NO_NEW_AXIOMS_FROM qualifier to MINIMIZE_WITH; see HELP MINIMIZE_WITH.
-   21-Nov-2014 Stepan O'Rear mmdata.c, mmhlpb.c - added ~ label range specifier
+   21-Nov-2014 Stefan O'Rear mmdata.c, mmhlpb.c - added ~ label range specifier
    to wildcards; see HELP SEARCH */
 /* 0.110 2-Nov-2014 nm mmcmds.c - fixed bug 1114 (reported by Stefan O'Rear);
    metamath.c, mmhlpb.c - added "SHOW STATEMENT =" to show the statement
@@ -431,7 +431,7 @@
 /* 0.108 25-Jun-2014 nm
    (1) metamath.c, mmcmdl.c, mmhlpb.c - MINIMIZE_WITH now checks the size
    of the compressed proof, prevents $d violations, and tries forward and
-   reverse statment scanning order; /NO_DISTINCT, /BRIEF, /REVERSE
+   reverse statement scanning order; /NO_DISTINCT, /BRIEF, /REVERSE
    qualifiers were removed.
    (2) mminou.c - prevent hard breaks (in the middle of a word) in too-long
    lines (e.g. long URLs) in WRITE SOURCE .../REWRAP; just overflow the
@@ -463,7 +463,7 @@
    some cleanup */
 /* 0.07.99 1-Nov-2013 nm metamath.c, mmpfas.h,c, mmcmdl.h,c, mmhlpa.c,
    mmhlpb.c - added UNDO, REDO, SET UNDO commands (see HELP UNDO) */
-/* 0.07.98 30-Oct-2013 Wolf Lammen mmvstr.c,h, mmiou.c, mmpars.c,
+/* 0.07.98 30-Oct-2013 Wolf Lammen mmvstr.c,h, mminou.c, mmpars.c,
    mmdata.c  - improve code style and program structure */
 /* 0.07.97 20-Oct-2013 Wolf Lammen mmvstr.c,h, metamath.c - improved linput();
    nm mmcmds.c, mmdata.c - tolerate bad proofs in SHOW TRACE_BACK etc. */
@@ -542,7 +542,7 @@
 /* 0.07.60 7-Jun-2011 nm mmpfas.c - fixed bug 1805 which occurred when doing
    MINIMIZE_WITH weq/ALLOW_GROWTH after DELETE DELETE FLOATING_HYPOTHESES */
 /* 0.07.59 11-Dec-2010 nm mmpfas.c - increased default SET SEARCH_LIMIT from
-   10000 to 25000 to accomodate df-plig web page in set.mm */
+   10000 to 25000 to accommodate df-plig web page in set.mm */
 /* 0.07.58 9-Dec-2010 nm mmpars.c - detect if same symbol is used with both
    $c and $v, in order to conform with Metamath spec */
 /* 0.07.57 19-Oct-2010 nm mmpars.c - fix bug causing incorrect line count
@@ -722,10 +722,10 @@ void command(int argc, char *argv[]);
 
 /*! \fn int main(int argc, char *argv[])
  * \brief entry point of the metamath program
- * \param argc int number of commandline parameters
- * \param argv (char*)[] array of \a argc commandline parameters, followed by NULL
+ * \param argc int number of command line parameters
+ * \param argv (char*)[] array of \a argc command line parameters, followed by NULL
  * \return success 0 else failure
- * 
+ *
  * Running metamath
  *   ./metamath 'read set.mm' 'verify proof *'
  * will start main with \a argc set to 2, argv[0] to "read set.mm", argv[1]
@@ -824,7 +824,7 @@ void command(int argc, char *argv[]) {
   flag reverseFlag;
   long detailStep;
   flag noIndentFlag; /* Flag to use non-indented display */
-  long splitColumn; /* Column at which formula starts in nonindented display */
+  long splitColumn; /* Column at which formula starts in non-indented display */
   flag skipRepeatedSteps; /* NO_REPEATED_STEPS qualifier */
   flag texFlag; /* Flag for TeX */
   flag saveFlag; /* Flag to save in source */
@@ -1134,7 +1134,7 @@ void command(int argc, char *argv[]) {
           let(&str1, cat(str1, g_fullArg[i], " ", NULL));
         }
       }
-      let(&str1, left(str1, (long)(strlen(str1)) - 1)); /* Trim trailing spc */
+      let(&str1, left(str1, (long)(strlen(str1)) - 1)); /* Trim trailing space */
       if (g_toolsMode && g_listFile_fp != NULL) {
         /* Put line in list.tmp as command */
         fprintf(g_listFile_fp, "%s\n", str1);  /* Print to list command file */
@@ -1302,7 +1302,7 @@ void command(int argc, char *argv[]) {
       if (!g_commandFilePtr[g_commandFileNestingLevel + 1]) continue;
                                       /* Couldn't open (err msg was provided) */
       g_commandFileNestingLevel++;
-      g_commandFileName[g_commandFileNestingLevel] = ""; /* Initialize if nec. */
+      g_commandFileName[g_commandFileNestingLevel] = ""; /* Initialize if necessary */
       let(&g_commandFileName[g_commandFileNestingLevel], g_fullArg[1]);
 
       g_commandFileSilent[g_commandFileNestingLevel] = 0;
@@ -1565,7 +1565,7 @@ void command(int argc, char *argv[]) {
                 while (1) {
                   p = instr(p + 1, str2, chr(((vstring)(g_fullArg[2]))[i]));
                   if (!p) break;
-                  /* Put spaces arount special one-char tokens */
+                  /* Put spaces around special one-char tokens */
                   let(&str2, cat(left(str2, p - 1), " ",
                       mid(str2, p, 1),
                       " ", right(str2, p + 1), NULL));
@@ -3216,7 +3216,7 @@ void command(int argc, char *argv[]) {
     }
 
     if (cmdMatches("SHOW MEMORY")) {
-      j = 32000000; /* The largest we'ed ever look for */
+      j = 32000000; /* The largest we'd ever look for */
       i = getFreeSpace(j);
       if (i > j-3) {
         print2("At least %ld bytes of memory are free.\n",j);
@@ -3693,7 +3693,7 @@ void command(int argc, char *argv[]) {
           if (!pipFlag) {
             parseProof(g_showStatement);  /* Prints message if severe error */
             if (g_WrkProof.errorSeverity > 1) {
-              /* Prevent bugtrap in nmbrSquishProof -> nmbrGetSubProofLen
+              /* Prevent bug trap in nmbrSquishProof -> nmbrGetSubProofLen
                  if proof corrupted */
               print2(
           "?The proof has a severe error and cannot be displayed or saved.\n");
@@ -3930,7 +3930,7 @@ void command(int argc, char *argv[]) {
              mode before starting its output, so we must put out the
              g_printString ourselves here */
           fprintf(g_texFilePtr, "%s", g_printString);
-          free_vstring(g_printString); /* We'll clr it anyway */
+          free_vstring(g_printString); /* We'll clear it anyway */
         } else { /* !texFlag */
           /* Terminal output - display the statement if wildcard is used */
           if (!pipFlag) {
@@ -4526,7 +4526,7 @@ void command(int argc, char *argv[]) {
       /* Automatically interact with user if step not unified */
       /* ???We might want to add a setting to defeat this if user doesn't
          like it */
-      /* Since ASSIGN LAST is often run from a commmand file, don't
+      /* Since ASSIGN LAST is often run from a command file, don't
          interact if / NO_UNIFY is specified, so response is predictable */
       if (switchPos("/ NO_UNIFY") == 0) {
         interactiveUnifyStep(s - m + n - 1, 2); /* 2nd arg. means print msg if
@@ -5412,7 +5412,7 @@ void command(int argc, char *argv[]) {
               g_Statement[g_proveStatement].proofSectionPtr = str1;
 
               g_outputToString = 1; /* Suppress error messages */
-              /* parseProof, verifyProof, cleanWkrProof must be
+              /* parseProof, verifyProof, cleanWrkProof must be
                  called in sequence to assign the g_WrkProof structure, verify
                  the proof, and deallocate the g_WrkProof structure.  Either none
                  of them or all of them must be called. */

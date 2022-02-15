@@ -121,7 +121,7 @@ long g_unifTrialCount = 0;
                     /* 0 means don't time out; 1 means start counting trials */
 long g_unifTimeouts = 0; /* Number of timeouts so far for this command */
 flag g_hentyFilter = 1; /* Default to ON (turn OFF for debugging). */
-flag g_bracketMatchInit = 0; /* Global so eraseSource() (mmcmds.c) can clr it */
+flag g_bracketMatchInit = 0; /* Global so eraseSource() (mmcmds.c) can clear it */
 
 /* Additional local prototypes */
 void hentyNormalize(nmbrString **hentyVars, nmbrString **hentyVarStart,
@@ -242,7 +242,7 @@ nmbrString *makeSubstUnif(flag *newVarFlag,
         if (k != -1) {
           /* It will be substituted */
           m = stackUnkVarStart[k]; /* Start of substitution */
-          j = stackUnkVarLen[k]; /* Length of substitition */
+          j = stackUnkVarLen[k]; /* Length of substitution */
           for (i = 0; i < j; i++) {
             result[q + i] = unifiedScheme[m + i];
           }
@@ -573,8 +573,8 @@ char unify(
 
  scan:
 /*E*/if(db6)print2("Entered scan: p=%ld\n",p);
-/*E*/if(db6)print2("Enter scn sbA %s\n",nmbrCvtMToVString(schA));
-/*E*/if(db6)print2("Enter scn sbB %s\n",nmbrCvtMToVString(schB));
+/*E*/if(db6)print2("Enter scan sbA %s\n",nmbrCvtMToVString(schA));
+/*E*/if(db6)print2("Enter scan sbB %s\n",nmbrCvtMToVString(schB));
 /*E*/if(db6)let(&tmpStr,tmpStr);
   while (schA[p] == schB[p] &&
       schA[p + 1] != -1) {
@@ -713,7 +713,7 @@ char unify(
 /*E*/print2("PROGRAM BUG #1904\n");
 /*E*/print2("\nsubstToken is %s\n",g_MathToken[substToken].tokenName);
 /*E*/print2("stack top %ld\n",stackTop);
-/*E*/print2("p %ld stUnV[stakTop] %s\n",p,
+/*E*/print2("p %ld stackUnkVar[stackTop] %s\n",p,
 /*E*/g_MathToken[stackUnkVar[stackTop]].tokenName);
 /*E*/print2("schA %s\nschB %s\n",nmbrCvtMToVString(schA),nmbrCvtMToVString(schB));
       bug(1904);
@@ -750,7 +750,7 @@ char unify(
   }
 
   /* Next, we must make sure that the end of string doesn't occur in the
-     substutition. */
+     substitution. */
   /* (This takes care of the case where the unknown variable aligns with
      end of string character; in this case, only a null substitution is
      permissible.  If the substitution length is 1 or greater, this "if"

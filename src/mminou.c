@@ -57,7 +57,7 @@ long g_screenWidth = MAX_LEN; /* Width default = 79 */
 /* g_screenHeight is one less than the physical screen to account for the
    prompt line after pausing. */
 long g_screenHeight = SCREEN_HEIGHT; /* Default = 23 */
-int printedLines = 0; /* Lines printed since last user input (mod scrn hght) */
+int printedLines = 0; /* Lines printed since last user input (mod screen height) */
 flag g_scrollMode = 1; /* Flag for continuous (0) or prompted (1) scroll */
 flag g_quitPrint = 0; /* Flag that user quit the output */
 flag localScrollMode = 1; /* 0 = Scroll continuously only till next prompt */
@@ -212,7 +212,7 @@ flag print2(const char* fmt, ...) {
   va_start(ap, fmt);
   int bufsiz = vsnprintf(NULL, 0, fmt, ap); /* Get the buffer size we need */
   va_end(ap);
-  /* Warning: some older complilers, including lcc-win32 version 3.8 (2004),
+  /* Warning: some older compilers, including lcc-win32 version 3.8 (2004),
      return -1 instead of the buffer size */
   if (bufsiz == -1) bug(1527);
   printBuffer = malloc((size_t)bufsiz + 1);
@@ -266,7 +266,7 @@ flag print2(const char* fmt, ...) {
       /*
       The following change to mminou.c was necessary on my Unix (Linux)
       system to get the `verify proof *' progress bar to display
-      progressively (rather than all at once). I've conditionalized it on
+      progressively (rather than all at once). I've conditioned it on
       __STDC__, since it should be harmless on any ANSI C system.
         -- Stephen McCamant  smccam @ uclink4.berkeley.edu 12-Sep-00
       */

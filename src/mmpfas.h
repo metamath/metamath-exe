@@ -185,7 +185,7 @@ void declareDummyVars(long numNewVars);
 void copyProofStruct(struct pip_struct *outProofStruct,
     struct pip_struct inProofStruct);
 
-/* Initiailizes the Proof Assistant proof state */
+/* Initializes the Proof Assistant proof state */
 void initProofStruct(struct pip_struct *proofStruct, const nmbrString *proof,
     long proveStatement);
 

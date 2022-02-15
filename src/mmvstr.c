@@ -37,7 +37,7 @@ This is an emulation of the string functions available in VMS BASIC.
 #endif
 
 #define MAX_ALLOC_STACK 100
-long g_tempAllocStackTop = 0;      /* Top of stack for tempAlloc functon */
+long g_tempAllocStackTop = 0;      /* Top of stack for tempAlloc function */
 long g_startTempAllocStack = 0;    /* Where to start freeing temporary allocation
                                     when let() is called (normally 0, except in
                                     special nested vstring functions) */
@@ -165,7 +165,7 @@ temp_vstring cat(const char *string1, ...) {
     argPos[numArgs] = pos;
     pos += strlen(curArg);
   } while (++numArgs, (curArg = va_arg(ap,char *)) != 0);
-  va_end(ap);           /* End var args session */
+  va_end(ap);           /* End varargs session */
 
   /* Allocate the memory for it */
   temp_vstring result = tempAlloc((long)pos+1);

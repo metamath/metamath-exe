@@ -20,6 +20,7 @@
 /* help0 is mostly for TOOLS help */
 void help0(vstring helpCmd) {
 
+
 vstring_def(saveHelpCmd);
 /* help0() may be called with a temporarily allocated argument (left(),
    cat(), etc.), and the let()s in the eventual print2() calls will
@@ -694,7 +695,7 @@ H("will output the complete HTML proof database in the current directory,");
 H("one file per $a and $p statement, along with mmdefinitions.html,");
 H("mmtheoremsall.html, and mmascii.html.  The statement:");
 H("    SHOW STATEMENT *! / HTML");
-H("will produce only mmdefinitions.html, mmmmtheoremsall.html, and");
+H("will produce only mmdefinitions.html, mmtheoremsall.html, and");
 H("mmascii.html, but no other HTML files (because no labels can match \"*!\"");
 H("since \"!\" is illegal in a statement label).  The statement:");
 H("    SHOW STATEMENT ?* / HTML");
@@ -721,7 +722,7 @@ H("    htmlhome \"<HTML code for home link>\" ;");
 H("    htmlvarcolor \"<HTML code for variable color list>\" ;");
 H("    htmlbibliography \"<HTML file>\" ;");
 H("        (This <HTML file> is assumed to have a <A NAME=...> tag for each");
-H("        bibiographic reference in the database comments.  For example");
+H("        bibliographic reference in the database comments.  For example");
 H("        if \"[Monk]\" occurs in a comment, then \"<A NAME='Monk'>\" must");
 H("        be present in the <HTML file>; if not, a warning message is");
 H("        given.)");

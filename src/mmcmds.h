@@ -15,7 +15,7 @@ void typeStatement(long statemNum,
   flag briefFlag,
   flag commentOnlyFlag,
   flag texFlag,
-  flag htmlFlg);
+  flag htmlFlag);
 /* Type (i.e. print) a proof */
 void typeProof(long statemNum,
   flag pipFlag, /* Type proofInProgress instead of source file proof */
@@ -30,7 +30,7 @@ void typeProof(long statemNum,
   long startColumn,
   flag skipRepeatedSteps,
   flag texFlag,
-  flag htmlFlg);
+  flag htmlFlag);
 /* Show details of step */
 void showDetailStep(long statemNum, long detailStep);
 /* Summary of statements in proof */
@@ -96,7 +96,7 @@ void processMarkup(vstring inputFileName, vstring outputFileName,
     flag processCss, long actionBits);
 
 /* List "discouraged" statements with "(Proof modification is discouraged."
-   and "(New usage is discourged.)" comment markup tags. */
+   and "(New usage is discouraged.)" comment markup tags. */
 void showDiscouraged(void);
 
 /* Take a relative step FIRST, LAST, +nn, -nn (relative to the unknown
@@ -106,7 +106,7 @@ void showDiscouraged(void);
    step and is returned as is.  If format is illegal, -1 is returned.  */
 long getStepNum(vstring relStep, /* User's argument */
    nmbrString *pfInProgress, /* proofInProgress.proof */
-   flag allFlag /* 1 = "ALL" is permissable */);
+   flag allFlag /* 1 = "ALL" is permissible */);
 
 /* Convert the actual step numbers of an unassigned step to the relative
    -1, -2, etc. offset for SHOW NEW_PROOF ...  /UNKNOWN, to make it easier

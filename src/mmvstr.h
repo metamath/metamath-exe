@@ -71,7 +71,7 @@ is emulated in c as
 
         let(&string1,cat(left("def",len(right("xxx",2))),"ghi",string2,NULL));
 
-Note that ANSII c does not allow "$" as part of an identifier
+Note that ANSI c does not allow "$" as part of an identifier
 name, so the names in c have had the "$" suffix removed.
 
      The string arguments of the vstring functions may be either standard c
@@ -79,7 +79,7 @@ strings or vstrings (except that the first argument of the 'let(&' function
 must be a vstring).  The standard c string functions may use vstrings or
 vstring functions as their string arguments, as long as the vstring variable
 itself (which is a char * pointer) is not modified and no attempt is made to
-increase the length of a vstring.  Caution must be excercised when
+increase the length of a vstring.  Caution must be exercised when
 assigning standard c string pointers to vstrings or the results of
 vstring functions, as the memory space may be deallocated when the
 'let(&' function is next executed.  For example,
@@ -128,7 +128,7 @@ with 'let(&' and thus has the same effect as 'let(&'.
 
 /* A vstring is like a C string, but it contains a control block allowing
 for memory allocation. New vstrings should always be constructed from the
-`vstringdef` macro. */
+`vstring_def` macro. */
 /*!
  * \typedef vstring
  * \brief contains NUL terminated,  character oriented data
@@ -163,7 +163,7 @@ typedef char* vstring;
   however. It is best not to hold on to the value, though, because the `let`
   will free it. This code is INCORRECT:
 
-    vstringdef(x);
+    vstring_def(x);
     temp_vstring foobar = cat("foo", "bar");
     let(&x, foobar); // frees foobar
     let(&x, foobar); // dangling reference
@@ -171,7 +171,7 @@ typedef char* vstring;
   There is a converse problem when `temp_vstring`s are used without `let`:
 
     for (int i = 0; i < 100000; i++) {
-      vstringdef(x);
+      vstring_def(x);
       if (strlen(space(i)) == 99999) break;
     }
 
@@ -184,7 +184,7 @@ typedef char* vstring;
   `freeTempAlloc` directly:
 
     for (int i = 0; i < 100000; i++) {
-      vstringdef(x);
+      vstring_def(x);
       if (strlen(space(i)) == 99999) break;
       freeTempAlloc();
     }
@@ -194,17 +194,17 @@ typedef vstring temp_vstring;
 
 /*!
  * \def vstring_def
- * \brief creates a new \a vstring variable¸.
+ * \brief creates a new \a vstring variable.
  *
  * declares a \a vstring variable and initiates it with empty text ("").
  * If this value is not modified, freeing of \p x is possible, but not
  * required.
- * 
- * \pre 
+ *
+ * \pre
  *   the variable has not been declared before in the current scope.
  * \post
- *   initialzes it with empty text.  No administrative data is created, in
- *   confomance with the semantics of a \a vstring.
+ *   initializes it with empty text.  No administrative data is created, in
+ *   conformance with the semantics of a \a vstring.
  */
 #define vstring_def(x) vstring x = ""
 #define free_vstring(x) let(&x, "")
@@ -218,7 +218,7 @@ void freeTempAlloc(void);
 /* This function must ALWAYS be called to make assignment to
    a vstring in order for the memory cleanup routines, etc.
    to work properly.  A new vstring should be initialized to "" (the empty string),
-   and the 'vstringdef' macro handles creation of such variables. */
+   and the 'vstring_def' macro handles creation of such variables. */
 /* `source` must not point into `target` (but this is unlikely to arise if
    `source` is calculated using `temp_vstring` operations from `target`). */
 void let(vstring *target, const char *source);
@@ -279,7 +279,7 @@ vstring quo$(vstring sout);
 /******* Special purpose routines for better
       memory allocation (use with caution) *******/
 
-extern long g_tempAllocStackTop;   /* Top of stack for tempAlloc functon */
+extern long g_tempAllocStackTop;   /* Top of stack for tempAlloc function */
 extern long g_startTempAllocStack; /* Where to start freeing temporary allocation
     when let() is called (normally 0, except for nested vstring functions) */
 

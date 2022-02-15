@@ -163,7 +163,7 @@ H("that have labels ($f, $e, $a, and $p) may be specified. <label-match>");
 H("may contain * and ? wildcard characters; see HELP SEARCH for wildcard");
 H("matching rules.");
 H("");
-H("In Proof Assistant mode (MM-PA prompt), the symbol \"=\" is a synomym");
+H("In Proof Assistant mode (MM-PA prompt), the symbol \"=\" is a synonym");
 H("for the label of the statement being proved.  Thus SHOW STATEMENT = will");
 H("display the statement being proved.");
 H("");
@@ -1039,7 +1039,7 @@ H("the step is a positive integer (with no \"+\" sign), LET STEP may be");
 H("used to assign known as well as unknown steps.");
 H("");
 H("Note that SAVE PROOF does not save any LET VARIABLE or LET STEP");
-H("assignents.  However, IMPROVE ALL prior to SAVE PROOF will usually");
+H("assignments.  However, IMPROVE ALL prior to SAVE PROOF will usually");
 H("preserve the information for steps with no unknown variables.");
 H("");
 H("Quotes and special characters in command-line arguments");
@@ -1266,7 +1266,7 @@ H("    / ALLOW_NEW_AXIOMS <label-match> - By default, MINIMIZE_WITH skips");
 H("        statements that depend on $a statements not already used by the");
 H("        proof.  This qualifier allows new $a consequences to be used.");
 H("        To better fine-tune which axioms are used, you may use / FORBID");
-H("        and / NO_NEW_AXIOMS, which take priority over / ALLOW_NEW_AXOMS.");
+H("        and / NO_NEW_AXIOMS, which take priority over / ALLOW_NEW_AXIOMS.");
 H("        Example:  / ALLOW_NEW_AXIOMS df-* will allow new definitions to be");
 H("        used. / ALLOW_NEW_AXIOMS * / NO_NEW_AXIOMS_FROM ax-ac*,ax-reg");
 H("        will allow any new axioms except those matching ax-ac*,ax-reg.");
@@ -1316,7 +1316,7 @@ H("");
 
 
 g_printHelp = !strcmp(saveHelpCmd, "HELP SAVE PROOF");
-H("Syntax:  SAVE PROOF <label-match> [/ <qualifier>] [/ <qualfier>]...");
+H("Syntax:  SAVE PROOF <label-match> [/ <qualifier>] [/ <qualifier>]...");
 H("");
 H("The SAVE PROOF command will reformat a proof in one of two formats and");
 H("replace the existing proof in the database buffer.  It is useful for");
@@ -1356,7 +1356,7 @@ H("");
 
 
 g_printHelp = !strcmp(saveHelpCmd, "HELP SAVE NEW_PROOF");
-H("Syntax:  SAVE NEW_PROOF <label-match> [/ <qualifier>] [/ <qualfier>]...");
+H("Syntax:  SAVE NEW_PROOF <label-match> [/ <qualifier>] [/ <qualifier>]...");
 H("");
 H("The SAVE NEW_PROOF command is available in the Proof Assistant only. It");
 H("saves the proof in progress in the database buffer.  SAVE NEW_PROOF may be");

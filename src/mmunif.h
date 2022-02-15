@@ -17,7 +17,7 @@ extern long g_unifTrialCount;
 extern long g_unifTimeouts; /* Number of timeouts so far for this command */
 extern flag g_hentyFilter; /* Turns Henty filter on or off */
 
-/* Global so eraseSource() (mmcmds.c) can clr them */
+/* Global so eraseSource() (mmcmds.c) can clear them */
 extern flag g_bracketMatchInit;
 extern nmbrString *g_firstConst;
 extern nmbrString *g_lastConst;
