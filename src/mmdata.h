@@ -358,7 +358,7 @@ struct nullPntrStruct {
 extern struct nullPntrStruct g_PntrNull;
 /*!
  * \def NULL_PNTRSTRING
- * The address of a \a block "block" containing an empty, not resizeable
+ * The address of a \ref block "block" containing an empty, not resizeable
  * \a pntrString
  * stack.  Used to initialize \a pntrString variables .
  */
@@ -569,7 +569,7 @@ temp_pntrString *pntrNSpace(long n);
 temp_pntrString *pntrPSpace(long n);
 
 /*!
- * \brief Determine the length of a pntrString held in a \a block "block"
+ * \brief Determine the length of a pntrString held in a \ref block "block"
  * dedicated to it.
  *
  * returns the number of **used** pointers in the array pointed to by \p s,
