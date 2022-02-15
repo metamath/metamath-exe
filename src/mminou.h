@@ -24,6 +24,12 @@ extern flag g_logFileOpenFlag;
 extern FILE *g_logFilePtr;
 extern FILE *g_listFile_fp;
 /* Global variables used by print2() */
+/*!
+ * \var g_outputToString
+ * 
+ * Global variable redirecting the output of the function print2 from the
+ * console ( = 0) to a string ( = 1).
+ */
 extern flag g_outputToString;
 extern vstring g_printString;
 /* Global variables used by cmdInput() */

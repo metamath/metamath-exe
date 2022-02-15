@@ -13,7 +13,39 @@
 
 #include "mmvstr.h"
 
-/*E*/extern long db,db0,db1,db2,db3,db4,db5,db6,db7,db8,db9;/* debugging flags & variables */
+/* debugging flags & variables */
+/*E*/extern long db,db0,db1,db2;
+/*!
+ * \brief monitors the de/allocations of nmbrString and pntrString outside of
+ * temporary arrays.
+ *
+ * The number of bytes held in blocks dedicated to global data.  There exists
+ * also temporary stacks, but they are not considered here.  Useful to see
+ * whether a process looses memory due to imbalanced calls to allocation/free
+ * functions.
+ * 
+ * If the user has turned MEMORY_STATUS on, metamath will print out this value
+ * after each command in a message like "Memory: ... xxxString < db3 >".
+ */
+/*E*/extern long db3;
+/*E*/extern long db4,db5,db6,db7,db8;
+/*!
+ * \brief log memory pool usage for debugging purpose.
+ *
+ * If set to a non-zero value, the state of the memory pool is
+ * logged during execution of metamath.  This debugging feature tracks
+ * de/allocation of memory in the memory pool.
+ * This particular debug mode is controlled by the Metamath commands
+ * - SET MEMORY_STATUS ON\n
+ *   enables memory logging
+ * - SET MEMORY_STATUS OFF\n
+ *   disables memory debugging
+ * - SET DEBUG FLAG 9\n
+ *   (deprecated) enables memory logging
+ * - SET DEBUG OFF\n
+ *   disables memory logging in conjunction with other debugging aid.
+ */
+/*E*/extern long db9;
 /*!
  * \typedef flag
  * a char whoose range is restricted to 0 (equivalent to false/no) and 1
@@ -44,17 +76,23 @@ extern flag g_toolsMode; /* In metamath mode:  0 = metamath, 1 = tools */
 typedef long nmbrString; /* String of numbers */
 /*!
  * \typedef pntrString
- * an array of untyped pointers (void*).
- * Often this array is organized like a stack: the number of elements in the
- * pntrString grows and shrinks during program flow, values are pushed and
- * popped at the end.  To maintain such a stack, a hidden structure prepends
- * the first element then.  This structure occupies three pointer elements,
- * addressed with offsets -1 to -3 relative to the first element of the stack.
- * This allows for easy embedding of a stack within an even larger memory
- * pool.  The fields of this hidden structure, although formally pointers,
- * are loaded with long int values describing properties of the stack.
- * 
- * For details see \a memFreePool.
+ * \brief an array of untyped pointers (void*)
+ *
+ * In general this array is organized like a stack: the number of elements in
+ * the pntrString grows and shrinks during program flow, values are pushed and
+ * popped at the end.  Such a stack is embedded in a \ref block that contains
+ * administrative information about the stack.  The stack begins with
+ * element 0, and the administrative information is accessed through negative
+ * indices, but need reinterpretation then.  To allow iterating through the
+ * tail of the array from a certain element on, the array terminates with a
+ * null pointer.  This type of usage forbids null pointer as ordinary elements,
+ * and the terminal null pointer is not part of the data in the array.
+ *
+ * To summarize the usages of this type:
+ * - If you want to resize the array/stack you need a pointer to element 0.
+ * - Given an arbitrary pointer from the array allows you to iterate to the
+ *   end.
+ *
  */
 typedef void* pntrString; /* String of pointers */
 
@@ -221,6 +259,30 @@ void addToUsedPool(void *ptr);
 /* Purges reset memory pool usage */
 void memFreePoolPurge(flag untilOK);
 /* Statistics */
+/*!
+ * \brief Provide information about memory in pools at the instant of call.
+ *
+ * Return the overall statistics about the pools \ref memFreePool
+ * "free block array" and the \ref memUsedPool "used block array".  In MEMORY
+ * STATUS mode ON, a diagnostic message compares the the contents of
+ * \a poolTotalFree to the values found in this statistics.  They should not differ!
+ *
+ * \attention This is NOT full memory usage, because completely used
+ * \ref block "blocks" are not tracked!
+ *
+ * \param[out] freeAlloc (not-null) address of a long variable receiving the
+ * accumulated number of bytes in the free list.  Sizes do not include the
+ * hidden header present in each block.
+ * \param[out] usedAlloc (not-null) address of a long variable receiving the
+ * accumulated number of free bytes in partially used blocks.
+ * \param[out] usedActual (not-null) address of a long variable receiving the
+ * accumulated bytes consumed by usage so far.  This value includes the hidden
+ * header of the block.
+ * \pre Do not call within bug().\n
+ *   Submit only non-null pointers, even if not all information is requested.\n
+ *   Pointers to irrelevant information may be the same.
+ * \post Statistic data is copied to the locations the parameters point to.
+ */
 void getPoolStats(long *freeAlloc, long *usedAlloc, long *usedActual);
 
 /* Initial memory allocation */
@@ -249,8 +311,8 @@ extern struct nullNmbrStruct g_NmbrNull;
 
 /*!
  * \struct nullPntrStruct
- * describing a block of memory of pntrString containing only the
- * null pointer.  Besides the pointer it is accompanied with a header matching
+ * describing a \ref block of \a pntrString containing only the null
+ * pointer.  Besides this pointer it is accompanied with a header matching
  * the hidden administrative values of a usual pntrString managed as a stack.
  * 
  * The values in this administrative header are such that it is never subject to
@@ -287,17 +349,30 @@ struct nullPntrStruct {
     pntrString nullElement; };
 /*!
  * \var g_PntrNull. Global instance of a memory block structured like a
- * \a pntrString, but fixed in size and containing always exactly one null
- * pointer element.
+ * \a pntrString, fixed in size and containing always exactly one null pointer
+ * element, the terminating NULL.  This setup is recognized as an empty
+ * \a pntrString.
  * 
  * \attention mark as const
  */
 extern struct nullPntrStruct g_PntrNull;
 /*!
  * \def NULL_PNTRSTRING
- * yields the address of a global null pointer element.
+ * The address of a \ref block "block" containing an empty, not resizeable
+ * \a pntrString
+ * stack.  Used to initialize \a pntrString variables .
  */
 #define NULL_PNTRSTRING &(g_PntrNull.nullElement)
+/*!
+ * \def pntrString_def
+ * 
+ * declare a new \a pntrString variable and initialize it to point to a block
+ * with an empty, not resizeable \a pntrString.
+ *
+ * \param[in] x variable name
+ * \pre The variable does not exist in the current scope.
+ * \post The variable is initialized.
+ */
 #define pntrString_def(x) pntrString *x = NULL_PNTRSTRING
 #define free_pntrString(x) pntrLet(&x, NULL_PNTRSTRING)
 
@@ -494,11 +569,30 @@ temp_pntrString *pntrNSpace(long n);
 temp_pntrString *pntrPSpace(long n);
 
 /*!
- * \fn long pntrLen(const pntrString* s) Determine the length of a pntrString
- * \param s \a pntrString array of pointers from its hidden structure.
- * \pre s has a hidden structure, see \a pntrString 
+ * \brief Determine the length of a pntrString held in a \ref block "block"
+ * dedicated to it.
+ *
+ * returns the number of **used** pointers in the array pointed to by \p s,
+ * derived from administrave data in the surrounding block.
+ *
+ * \attention This is not the capacity of the array.
+ * \param[in] s points to a element 0 of a \a pntrString  embedded in a block
+ * \return the number of pointers currently in use in the array pointed to by \p s.
+ * \pre the array pointed to by s is the sole user of a \ref block "block".
  */
 long pntrLen(const pntrString *s);
+/*!
+ * \brief Determine the capacity of a pntrString embedded in a dedicated block
+ *
+ * returns the capacity of pointers in the array pointed to by \p s,
+ * derived from administrave data in the surrounding block.  The result
+ * excludes the terminal element reserved for a null pointer.
+ *
+ * \param[in] s points to a element 0 of a \a pntrString  embedded in a block
+ * \return the maximal number of pointers that can be used in the array pointed
+ * to by \p s.
+ * \pre the array pointed to by s is the sole user of a \ref block "block".
+ */
 long pntrAllocLen(const pntrString *s);
 void pntrZapLen(pntrString *s, long length);
 

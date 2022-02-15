@@ -73,6 +73,88 @@ void pntrNCpy(pntrString *s, const pntrString *t, long n);
 
 vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate */
 
+/*!
+ * \page suballocation Suballocator
+ *
+ * Metamath does not free memory by returning it to the operating system again.
+ * To reduce frequent system de/allocation calls, it instead implements a
+ * suballocator.  Each chunk of memory allocated from the system (we call them
+ * \ref block "block" in this documentation) is equipped with a hidden header
+ * containing administrative information private to the suballocator.
+ * 
+ * During execution chunks of memory, either complete \ref block "blocks" or
+ * \ref fragmentation "fragments" thereof, become free again.  The suballocator
+ * adds them then to internal **pools** for reuse, one dedicated to totally
+ * free blocks (\a memFreePool), the other to fragmented ones (\a memUsedPool).
+ * We call these pools **free block array** and **used block array** in this
+ * documentation.  Fully occupied blocks are not tracked by the suballocator.
+ *
+ * Although the suballocator tries to avoid returning memory to the system, it
+ * can do so under extreme memory constraints, or when built-in limits are
+ * surpassed.
+ * 
+ * The suballocator was designed with stack-like memory usage in mind, where
+ * data of the same type is pushed at, or popped off the end all the time.
+ * Each \ref block block supports this kind of usage out of the box (see
+ * \ref fragmentation).
+ */
+/*!
+ * \page fragmentation Fragmented blocks
+ *
+ * Memory fragmentation is kept simple in Metamath.  If a \ref block "block"
+ * contains both consumed and free space, all the free space is at the end.
+ * This scheme supports the idea of stack-like memory usage, where free space
+ * grows and shrinks behind a stack in a fixed size memory area, depending on
+ * its usage.
+ *
+ * Other types of fragmentation is not directly supported by the
+ * \ref suballocation "suballocator".
+ */
+
+ /*! \page block Block of memory
+ *
+ * Each block used by the \ref suballocation "suballocator" is formally treated
+ * as an array of pointer (void*).  It is divided into an administrative
+ * header, followed by elements reserved for application data.  The header is
+ * assigned elements -3 to -1 in the formal array, so that application data
+ * starts with element 0.  A **pointer to the block** always refers to element
+ * 0, so the header appears somewhat hidden.  Its **size** is given by the
+ * bytes reserved for application data, not including the administrative header.
+ *
+ * The header elements are formally void*, but reinterpreted as long integer.
+ * The values support a stack, where data is pushed at and popped off the end
+ * during the course of execution.  The semantics of the header elements are:
+ *
+ * offset -1:\n
+ *   is the current size of the stack (in bytes, not elements!),
+ *   without header data. When interpreted as an offset into the stack, it
+ *   references the first element past the top of the stack.  (See
+ *   \ref fragmentation "fragmentation")
+ *
+ * offset -2:\n
+ *   the allocated size of the array, in bytes, not counting the
+ *   header.  When used as a stack, it marks the limit where the stack
+ *   overflows.
+ *
+ * offset -3:\n
+ *   If this block has free space at the end (is \ref fragmentation
+ *   "fragmented"), then it contains its index in the used blocks array, see
+ *   \a memUsedPool.  A value of -1 indicates it is either fully occupied or
+ *   totally free.  In any of these cases it is not kept in the used blocks
+ *   array.
+ */
+
+/*! \page Pool
+ * A pool is an array of pointers pointing to \ref block "blocks".  It may only
+ * be partially filled, so it is usually accompanied by two variables giving
+ * its current fill state and its capacity.
+ * 
+ * In Metamath a pool has no gaps in between.
+ * 
+ * The \ref suballocation "suballocator" uses two pools:
+ * - the **free block array** pointed to by \a memFreePool;
+ * - the **used block array** pointed to by \a memUsedPool.
+ */ 
 
 /* Memory pools are used to reduce the number of malloc and alloc calls that
    allocate arrays (strings or nmbr/pntrStrings typically).   The "free" pool
@@ -95,26 +177,32 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
 #define MEM_POOL_GROW 1000 /* Amount that a pool grows when it overflows. */
 /*??? Let user set this from menu. */
 long poolAbsoluteMax = 1000000; /* Pools will be purged when this is reached */
+/*!
+ * \var long poolTotalFree
+ * contains the number of free space available in bytes, in both pools
+ * \a memFreePool and \a memUsedPool, never counting the hidden headers at the
+ * beginning of each block, see \ref block.
+ */
 long poolTotalFree = 0; /* Total amount of free space allocated in pool */
 /*E*/long i1,j1_,k1; /* 'j1' is a built-in function */
 /*!
  * \var void** memUsedPool
  * \brief pointer to the pool of fragmented memory blocks
- * Memory fragmentation is kept simple in Metamath.  If a block contains both
- * consumed and free space, all of the free space is at the end.  Fragmented
- * blocks with free space are kept in the used block array, that memUsedPool
- * points to.  For the notion of block, suballocator see \a memFreePool.  This
- * scheme supports in particular stack like memory, where data is pushed at and
- * popped off the end.
+ *
+ * If a \ref block "block" contains both consumed and free space, it is
+ * \ref fragmentation "fragmented".  All fragmented blocks are kept in the
+ * **used block array**, that memUsedPool points to.  See \ref suballocation
+ * "suballocator".  Since free space appears at the end of a \ref block
+ * "block", this scheme supports in particular stack like memory, where data is
+ * pushed at and popped off the end.
  *
  * The used blocks array does initially not exist.  This is indicated by a
- * null value.  Once this array is needed, space for it it is allocated from
- * the system.
+ * null value.  Once this array is needed, space for it is allocated from the
+ * system.
  *
  * The used block array may only be partially occupied, in which case elements
  * at the end of the array are unused.  Its current usage is given by
- * \a memUsedPoolSize.  Its current size including unused elements, is given by
- * \a memUsedPoolMax.
+ * \a memUsedPoolSize.  Its capacity is given by \a memUsedPoolMax.
  *
  * \invariant Each block in the used blocks array has its index noted in its
  * hidden header, for backward reference.
@@ -155,58 +243,19 @@ long memUsedPoolMax = 0; /* Maximum # of entries in 'in use' table (grows
  * \var void** memFreePool
  * \brief pointer to the pool of completely free memory blocks
  *
- * **suballocator**
+ * The \ref suballocation "suballocator" is initially not equipped with a
+ * **free block array**, pointed to by memFreePool, indicated by a null value.
+ * 
+ * Once a \ref \block "memory block" is returned to the \ref suballocation
+ * again, it allocates some space for the now needed array.
  *
- * Metamath does not free memory by returning it to the operating system again.
- * Instead it has a suballocator that marks them as unused.  During execution
- * chunks of memory become unused, either completely, or through fragmentation.
- * The suballocator keeps track of these by entering them either into a free
- * block array, or into a used block array.  The idea behind this suballocation
- * scheme is to reduce the number of system malloc and alloc calls.
- *
- * Although the suballocator tries to avoid returning memory to the system, it
- * can do so under extreme memory constraints.
- *
- * The suballocator is initially neither equipped with a free block array,
- * pointed to by memFreePool, or a used block array, see \a memUsedPool.  Both
- * are null then, but once memory is returned to the suballocator again, it
- * allocates some space for the needed array.
- *
- * The free block array contains totally unused blocks.  The array may only
- * partially be occupied, in which case The elements at the end are the unused
- * ones.  Its current fill size is given by \a memFreePoolSize.  Its capacity
- * is given by \a memFreePoolMax.
+ * The **free block array** contains only totally free \ref block "blocks".
+ * This array may only be partially occupied, in which case the elements at the
+ * end are the unused ones.  Its current fill size is given by
+ * \a memFreePoolSize.  Its capacity is given by \a memFreePoolMax.
  *
  * Fragmented blocks are kept in a separate \a memUsedPool.  The suballocator
  * never tracks fully used blocks.
- *
- * **block of memory**
- *
- * Each block used by the suballocater is formally treated as an array of
- * pointer (void*).  It is divided into an administrative header, followed by
- * elements reserved for application data.  The header is assigned elements -3
- * to -1 in the formal array, so that application data starts with element 0.
- * A pointer to the block always refers to element 0, so the header appears
- * somewhat hidden.
- *
- * The header elements are reinterpreted as long integer.  The values support
- * a stack, where data is pushed at and popped off the end during the course of
- * execution.  The semantics of the header elements are:
- *
- * offset -1:\n
- *   is the current size of the stack (in bytes, not elements!),
- *   without header data. When interpreted as an offset into the stack, it
- *   references the first element past the top of the stack.
- *
- * offset -2:\n
- *   the allocated size of the array, in bytes, not counting the
- *   header.  When used as a stack, it marks the limit where the stack
- *   overflows.
- *
- * offset -3:\n
- *   If this block has free space at the end (is fragmented), then it contains
- *   its index in the used blocks array, see \a memUsedPool.  A value of -1
- *   indicates it has no free space left, hence is not held in this pool.
  */
 void **memFreePool = NULL;
 /*!
@@ -227,8 +276,8 @@ long memFreePoolSize = 0; /* Current # of available, allocated arrays */
  * \attention this is the number of individual free blocks, not the accumulated
  * bytes contained.
  *
- * The Metamath suballocator holds free blocks in a free block array.  It may
- * only partially be occupied.  Its total capacity is kept in this variable.  For
+ * The Metamath suballocator holds free blocks in a **free block array**.  It
+ * may only be partially occupied.  Its total capacity is kept in this variable.  For
  * further information see \a memFreePool.
  *
  * This variable may grow during a reallocation process.
@@ -2579,6 +2628,35 @@ void pntrZapLen(pntrString *s, long length) {
 
 /* Copy a string to another (pre-allocated) string */
 /* Dangerous for general purpose use */
+/*!
+ * \brief copies a null pointer terminated \a pntrString to a destination
+ * \a pntrString.
+ *
+ * This function determines the length of the source \p t by scanning for a
+ * terminating null pointer element.  The destination \p s must have enough
+ * space for receiving this amount of pointers, including the terminal null
+ * pointer.  Then the source pointers are copied beginning with that at the
+ * lowest address to the destination area \p t, including the terminal null
+ * pointer.
+ *
+ * \attention make sure the destination area pointed to by \p s has enough
+ * space for the copied pointers.
+ *
+ * \param [out] s (not null) pointer to the target array receiving the copied
+ *   pointers.  This need not necessarily be the first element of the array.
+ * \param [in] t (not null) pointer to the start of the source array terminated
+ *   by a null pointer.
+ *
+ * \pre
+ *   - \p t is terminated by the first null pointer element.
+ *   - the target array \p s must have enough free space to hold the source array
+ *     \p t including the terminal null pointer.
+ *   - \p s and \p t can overlap if \p t points to a later element than \a s
+ *     (move left semantics)
+ * \invariant
+ *   If \p s is contained in a \ref block "block", its administrative header is
+ *   NOT updated.
+ */
 void pntrCpy(pntrString *s, const pntrString *t) {
   long i;
   i = 0;

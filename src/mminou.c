@@ -4,6 +4,11 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
+/*!
+ * \file
+ * Implementation of basic input and output.
+ */
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -59,6 +64,9 @@ flag localScrollMode = 1; /* 0 = Scroll continuously only till next prompt */
 
 /* Buffer for B (back) command at end-of-page prompt - for future use */
 pntrString_def(backBuffer);
+/*!
+ * \var backBufferPos
+ */
 long backBufferPos = 0;
 flag backFromCmdInput = 0; /* User typed "B" at main prompt */
 
