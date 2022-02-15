@@ -80,14 +80,19 @@ typedef long nmbrString; /* String of numbers */
  *
  * In general this array is organized like a stack: the number of elements in
  * the pntrString grows and shrinks during program flow, values are pushed and
- * popped at the end.  Such a stack is embedded in a \a block that contains
- * administrative information about the stack.  This administrative information
- * is accessible through negative indices, but need reinterpretation then.
- * Application data is found beginning with element 0.
+ * popped at the end.  Such a stack is embedded in a \a block of memory that
+ * contains administrative information about the stack.  The stack begins with
+ * element 0, and the administrative information is accessed through negative
+ * indices, but need reinterpretation then.  To allow iterating through the
+ * tail of the array from a certain element on, the array terminates with a
+ * null pointer.  This type of usage forbids null pointer as ordinary elements,
+ * and the terminal null pointer is not part of the data in the array.
  *
- * Many functions require such an array to be terminated by a null pointer.
- * It then cannot contain the null pointer, and the terminating element is not
- * considered part of the array.
+ * To summarize the usages of this type:
+ * - If you want to resize the array/stack you need a pointer to element 0.
+ * - Given an arbitrary pointer from the array allows you to iterate to the
+ *   end.
+ *
  */
 typedef void* pntrString; /* String of pointers */
 
@@ -353,8 +358,8 @@ struct nullPntrStruct {
 extern struct nullPntrStruct g_PntrNull;
 /*!
  * \def NULL_PNTRSTRING
- * The address of a \a block containing an empty \a pntrString.  Used to 
- * initialize \a pntrString variables .
+ * The address of a \a block containing an empty, not resizeable \a pntrString
+ * stack.  Used to initialize \a pntrString variables .
  */
 #define NULL_PNTRSTRING &(g_PntrNull.nullElement)
 /*!
@@ -365,7 +370,8 @@ extern struct nullPntrStruct g_PntrNull;
  *
  * \param[in] x variable name
  * \pre The variable does not exist in the current scope.
- */
+ * \post The variable is initialized.
+ */´
 #define pntrString_def(x) pntrString *x = NULL_PNTRSTRING
 #define free_pntrString(x) pntrLet(&x, NULL_PNTRSTRING)
 
