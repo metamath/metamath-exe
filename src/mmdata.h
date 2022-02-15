@@ -80,7 +80,7 @@ typedef long nmbrString; /* String of numbers */
  *
  * In general this array is organized like a stack: the number of elements in
  * the pntrString grows and shrinks during program flow, values are pushed and
- * popped at the end.  Such a stack is embedded in a \a block of memory that
+ * popped at the end.  Such a stack is embedded in a \ref block of memory that
  * contains administrative information about the stack.  The stack begins with
  * element 0, and the administrative information is accessed through negative
  * indices, but need reinterpretation then.  To allow iterating through the
@@ -371,7 +371,7 @@ extern struct nullPntrStruct g_PntrNull;
  * \param[in] x variable name
  * \pre The variable does not exist in the current scope.
  * \post The variable is initialized.
- */´
+ */
 #define pntrString_def(x) pntrString *x = NULL_PNTRSTRING
 #define free_pntrString(x) pntrLet(&x, NULL_PNTRSTRING)
 
