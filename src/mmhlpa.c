@@ -20,7 +20,6 @@
 /* help0 is mostly for TOOLS help */
 void help0(vstring helpCmd) {
 
-
 vstring_def(saveHelpCmd);
 /* help0() may be called with a temporarily allocated argument (left(),
    cat(), etc.), and the let()s in the eventual print2() calls will
