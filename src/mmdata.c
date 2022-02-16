@@ -156,6 +156,27 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
  * - the **used block array** pointed to by \a memUsedPool.
  */
 
+/*! \page stack Temporary Allocated Memory
+ * Very often a routine needs some memory, that must live only as long as the
+ * routine is active.  Such memory is called **temporary**, or short **local**.
+ * Once a routine finishes, on return to its caller, it deallocates all its
+ * __local__ memory again.  Since routines frequently call subroutines, the
+ * same may hold for nested code, and so on.  In fact, this concept is so
+ * ubiquitous and frequent, that the processor, and all relevant program
+ * languages provide simple mechanisms for de/allocation of such __local__
+ * data.  Metamath is no exception to this.
+ * While the C compiler silently cares about __local__ variables, it must not
+ * interfere with data managed by a \ref suballocation "Suballocator".  Instead
+ * of tracking all __locally__ created memory individually for later
+ * deallocation, a stack like \ref Pool "pool" allows a command like
+ * `free all memory` that has been created after a certain point.  This greatly
+ * automatizes handling of these data.
+ *
+ * Metamath comes with specific functions, that free all temporary memory
+ * of a certain type allocated in a \ref block "block" after a specific
+ * variable was created.
+ */
+
 /* Memory pools are used to reduce the number of malloc and alloc calls that
    allocate arrays (strings or nmbr/pntrStrings typically).   The "free" pool
    contains previously allocated arrays that are no longer used but that we
@@ -722,7 +743,13 @@ void bug(int bugNum)
   exit(1); /* Use 1 instead of 0 to flag abnormal termination to scripts */
 }
 
-
+/*!
+ * \def M_MAX_ALLOC_STACK
+ *
+ * The count of pointers in a \ref stack "stack" for temporary data.  Since a
+ * stack has a terminal null element, the usable count is one less than the
+ * number given here.
+ */
 #define M_MAX_ALLOC_STACK 100
 
 /* This function returns a 1 if any entry in a comma-separated list
@@ -2384,6 +2411,14 @@ long g_pntrTempAllocStackTop = 0;     /* Top of stack for pntrTempAlloc function
 long g_pntrStartTempAllocStack = 0;   /* Where to start freeing temporary allocation
                                     when pntrLet() is called (normally 0, except in
                                     special nested vstring functions) */
+/*!
+ * \var pntrTempAllocStack
+ * \brief a \ref stack "stack" of \a temp_pntrString.
+ *
+ * Holds pointers to temporarily allocated data of type \a pntrString.  Such a
+ * \ref stack "stack" contains strictly __local__ data of a function, not
+ * accessed from outer levels.
+ */
 pntrString *pntrTempAllocStack[M_MAX_ALLOC_STACK];
 
 

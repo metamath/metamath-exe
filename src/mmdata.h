@@ -76,7 +76,7 @@ extern flag g_toolsMode; /* In metamath mode:  0 = metamath, 1 = tools */
 typedef long nmbrString; /* String of numbers */
 /*!
  * \typedef pntrString
- * \brief an array of untyped pointers (void*)
+ * \brief an array (maybe of size 1) of untyped pointers (void*)
  *
  * In general this array is organized like a stack: the number of elements in
  * the pntrString grows and shrinks during program flow, values are pushed and
@@ -90,9 +90,8 @@ typedef long nmbrString; /* String of numbers */
  *
  * To summarize the usages of this type:
  * - If you want to resize the array/stack you need a pointer to element 0.
- * - Given an arbitrary pointer from the array allows you to iterate to the
- *   end.
- *
+ * - You can iterate from an arbitrary pointer to the end.
+ * - Sometimes it denotes an isolated element, not embedded in a greater array.
  */
 typedef void* pntrString; /* String of pointers */
 
@@ -104,6 +103,15 @@ typedef nmbrString temp_nmbrString;
 /* A pntrString allocated in temporary storage. These strings will be deallocated
    after the next call to `pntrLet`.
    See also `temp_vstring` for information on how temporaries are handled. */
+
+/*!
+ * \typedef temp_pntrString
+ * \brief a single \a pntrString element for use in a \ref stack "stack".
+ *
+ * These elements are pushed onto and popped off a \ref stack 
+ * "stack of temporary data".  Special commands can free all pointers on and
+ * after a particular one in such a stack.
+ */
 typedef pntrString temp_pntrString;
 
 enum mTokenType { var_, con_ };
@@ -530,6 +538,12 @@ long compressedProofSize(const nmbrString *proof, long statemNum);
 /******* Special purpose routines for better
       memory allocation (use with caution) *******/
 
+/*!
+ * \var g_pntrTempAllocStackTop
+ * \brief index of the current top af the \ref stack "stack" \a pntrTempAlloc
+ *
+ * never references valid data, but indices below this value do.
+ */
 extern long g_pntrTempAllocStackTop;   /* Top of stack for pntrTempAlloc function */
 extern long g_pntrStartTempAllocStack; /* Where to start freeing temporary
     allocation when pntrLet() is called (normally 0, except for nested
