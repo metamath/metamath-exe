@@ -300,6 +300,17 @@ void initBigArrays(void);
 long getFreeSpace(long max);
 
 /* Fatal memory allocation error */
+/*!
+ * \brief fatal memory allocation error.
+ *
+ * called when memory cannot be allocated, either because memory/address space
+ * is physically exhausted, or because administrative structures would overflow.
+ *
+ * \param msg error message displayed to the user.
+ * \bug calls functions like print2, that in turn may call outOfMemory again
+ * under restricted memory conditions, so finally memory error messages are
+ * stacked up endlessly.
+ */
 void outOfMemory(const char *msg);
 
 /* Bug check error */
@@ -540,9 +551,11 @@ long compressedProofSize(const nmbrString *proof, long statemNum);
 
 /*!
  * \var g_pntrTempAllocStackTop
- * \brief index of the current top af the \ref stack "stack" \a pntrTempAlloc
  *
- * never references valid data, but indices below this value do.
+ * Index of the current top af the \ref stack "stack" \a pntrTempAlloc.
+ * New data is pushed from this location on if space available.
+ *
+ * \invariant always refers the null pointer element behind the valid data.
  */
 extern long g_pntrTempAllocStackTop;   /* Top of stack for pntrTempAlloc function */
 extern long g_pntrStartTempAllocStack; /* Where to start freeing temporary

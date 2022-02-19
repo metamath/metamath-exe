@@ -172,9 +172,10 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
  * `free all memory` that has been created after a certain point.  This greatly
  * automatizes handling of these data.
  *
- * Metamath comes with specific functions, that free all temporary memory
- * of a certain type allocated in a \ref block "block" after a specific
- * variable was created.
+ * A stack is not the same as a \ref block "block", though similar.  Like a
+ * block it is defined as an array of elements, but it comes with no hidden
+ * header.  Instead openly accessible stack pointer (actually indices) directly
+ * support stack semantics.
  */
 
 /* Memory pools are used to reduce the number of malloc and alloc calls that
