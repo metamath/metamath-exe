@@ -747,9 +747,9 @@ void bug(int bugNum)
 /*!
  * \def M_MAX_ALLOC_STACK
  *
- * The count of pointers in a \ref stack "stack" for temporary data.  Since a
- * stack has a terminal null element, the usable count is one less than the
- * number given here.
+ * The number of pointers in a \ref stack "stack" available for data reference.
+ * Since a stack has a terminal null element, the usable count is one less than
+ * the number given here.
  */
 #define M_MAX_ALLOC_STACK 100
 

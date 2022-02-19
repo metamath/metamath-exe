@@ -203,7 +203,7 @@ typedef vstring temp_vstring;
  * \pre
  *   the variable has not been declared before in the current scope.
  * \post
- *   initializes it with empty text.  No administrative data is created, in
+ *   initialized with empty text.  No administrative data is created, in
  *   conformance with the semantics of a \a vstring.
  */
 #define vstring_def(x) vstring x = ""
