@@ -38,7 +38,7 @@
  * INSIDE the \a tempAllocStack.  Note: This is NOT their capacity, but the
  * portion actually used!
  *
- * Not updated if NDEBUG (usually activates asserts in C code) is not set.
+ * Not updated if NDEBUG (usually deactivates asserts in C code) is defined.
  *
  * \bug Seems never be displayed.
  */
