@@ -231,7 +231,7 @@ typedef vstring temp_vstring;
  *   are freed.  The top of stack \a g_tempAllocStackTop is back to
  *   \a g_startTempAllocStack again, so the current scope of temporaries is
  *   empty;
- * - db1 is updated, if required by the setting of NDEBUG.
+ * - db1 is updated, if NDEBUG is not set.
  */
 void freeTempAlloc(void);
 
