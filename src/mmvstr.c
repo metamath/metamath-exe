@@ -4,8 +4,8 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-/*
-mmvstr.c - VMS-BASIC variable length string library routines header
+/*!
+\file mmvstr.c - VMS-BASIC variable length string library routines header
 This is an emulation of the string functions available in VMS BASIC.
 */
 
