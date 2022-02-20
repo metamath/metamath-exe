@@ -14,12 +14,24 @@
 #include "mmvstr.h"
 
 /* debugging flags & variables */
-/*E*/extern long db,db0,db1,db2;
+/*!
+ * \brief number of bytes allocated in vstring instances
+ *
+ * monitors the number of bytes currently allocated in all \a vstring pointer
+ * variables.  Some other memory allocations are also included:
+ * - command line buffers used to hold user input from a console;
+ * - buffers used to read file contents in.
+ *
+ * If the user has turned MEMORY_STATUS on, metamath will print out this value
+ * after each command in a message like "Memory: string < db >".
+ */
+/*E*/extern long db;
+/*E*/extern long db0,db1,db2;
 /*!
  * \brief monitors the de/allocations of nmbrString and pntrString outside of
  * temporary arrays.
  *
- * The number of bytes held in blocks dedicated to global data.  There exists
+ * The number of bytes held in blocks dedicated to global data.  There exist
  * also temporary stacks, but they are not considered here.  Useful to see
  * whether a process looses memory due to imbalanced calls to allocation/free
  * functions.

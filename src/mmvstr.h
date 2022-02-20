@@ -143,7 +143,7 @@ for memory allocation. New vstrings should always be constructed from the
  * You can use a vstring to read the associated text, but you must never write
  * to memory pointed to by a vstring directly, nor may you change the pointer's
  * value.  Declaration, definition and write access to a vstring, or the text it
- * points to, is done exclusively through dedicated functions.  Although the
+ * points to, is exclusively done through dedicated functions.  Although the
  * encoding of the text (or whatever data it is) requires only the existence of
  * exactly one 0x00 at the end, using ASCII, or at least UTF-8, is recommended
  * to use various print instructions.

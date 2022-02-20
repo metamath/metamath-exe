@@ -56,6 +56,13 @@ extern flag g_quitPrint; /* Flag that user typed 'q' to last scrolling prompt */
 /* printLongLine automatically puts a newline \n in the output line. */
 void printLongLine(const char *line, const char *startNextLine, const char *breakMatch);
 vstring cmdInput(FILE *stream, const char *ask);
+/*!
+ * gets a line from either the terminal or the command file stream depending on
+ * g_commandFileNestingLevel > 0.  It calls cmdInput().
+ * \param ask text displayed before input prompt
+ * \returns the entered input.
+ * \warning the calling program must deallocate the returned string.
+ */
 vstring cmdInput1(const char *ask);
 flag cmdInputIsY(const char *ask);
 
