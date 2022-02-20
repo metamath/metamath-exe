@@ -223,6 +223,9 @@ typedef vstring temp_vstring;
  * It is usually called automatically by let(), but can also be invoked
  * directly to avoid buildup of temporary strings.
  *
+ * \pre
+ *   \a g_startTempAllocStack is the index in \a tempAllocStack from which
+ *   on enties are freed.
  * \post
  * - Entries in \a tempAllocStack from index \a g_startTempAllocStack on
  *   are freed.  The top of stack \a g_tempAllocStackTop is back to
@@ -355,6 +358,9 @@ extern long g_tempAllocStackTop;   /* Top of stack for tempAlloc function */
  * be restored again, so it sees "its" temporaries untempered with.  To this
  * end the called nested function saves administrative stack data.  Upon finish
  * it restores those values.
+ *
+ * \invariant
+ *   \a g_startTempAllocStack <= \a g_tempAllocStackTop.
  */
 extern long g_startTempAllocStack; /* Where to start freeing temporary allocation
     when let() is called (normally 0, except for nested vstring functions) */
