@@ -18,10 +18,10 @@
  * \var db
  * \brief bytes held by vstring instances outside of the stack of temporaries
  *
- * monitors the number of bytes currently used in all \a vstring pointer
- * variables OUTSIDE of the \a tempAllocStack.  Note: This is NOT the number of
- * bytes allocated, but the portion actually used!  A few memory allocations
- * are also included:
+ * monitors the number of bytes (including the terminal NUL) currently used in
+ * all \a vstring pointer variables OUTSIDE of the \a tempAllocStack.  Note:
+ * This is NOT the number of bytes allocated, but the portion actually used!  A
+ * few memory allocations are also included:
  * - command line buffers used to hold user input from a console;
  * - buffers used to read file contents in.
  *
@@ -37,6 +37,8 @@
  * monitors the number of bytes currently pointed to by \a vstring pointers
  * INSIDE the \a tempAllocStack.  Note: This is NOT their capacity, but the
  * portion actually used!
+ *
+ * Not updated if NDEBUG (usually activates asserts in C code) is not set.
  *
  * \bug Seems never be displayed.
  */

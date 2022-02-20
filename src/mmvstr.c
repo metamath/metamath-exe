@@ -30,6 +30,13 @@ This is an emulation of the string functions available in VMS BASIC.
 */
 
 /*E*/long db1=0;
+/*!
+ * \def INCDB1
+ * updates \a db1 if NDEBUG is not defined, is a no operation else.
+ *
+ * NDEBUG switches C assert instructions off or on.  So the handling of db1 is
+ * aligned with assert().
+ */
 #ifdef NDEBUG
 # define INCDB1(x)
 #else

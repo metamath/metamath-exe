@@ -242,8 +242,8 @@ void freeTempAlloc(void);
  * management.  Not only is the space of the destination of the assignment
  * reallocated if its previous size was too small.  But in addition the
  * \ref stack "stack" \a tempAllocStack is freed of intermediate values again.
- * Every entry beyond \a g_startTempAllocStack is considered to be consumed
- * and subject to deallocation.
+ * Every entry on and beyond \a g_startTempAllocStack is considered to be
+ * consumed and subject to deallocation.
  *
  * This deallocation procedure is embedded in this operation, since frequently
  * the final string was composed of some fragments, that now can be disposed
@@ -251,6 +251,8 @@ void freeTempAlloc(void);
  * order for the memory cleanup routines, etc. to work properly.  A new vstring
  * should be initialized to "" (the empty string), and the 'vstring_def' macro
  * handles creation of such variables.
+ *
+ * Possible failures: Out of memory condition.
  *
  * \pre
  * - \a g_startTempAllocStack contains the starting index of entries in
