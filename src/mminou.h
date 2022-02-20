@@ -47,7 +47,20 @@ extern vstring g_input_fn, g_output_fn;  /* File names */
 /* print2 returns 0 if the user has quit the printout. */
 flag print2(const char* fmt,...);
 extern long g_screenHeight; /* Height of screen */
+/*!
+ * \var g_screenWidth
+ * The minimum width of the display, measured in fixed width characters.
+ */
 extern long g_screenWidth; /* Width of screen */
+/*!
+ * \def MAX_LEN
+ * \brief Default width of screen
+ *
+ * Number of characters that can always be displayed in a single line.  This
+ * notion is reminiscent of CRT tubes with a fixed width character set.
+ * Graphical Displays on a notebook for example can display much more, but on
+ * some mobile devices this may be reduced to 30-40 characters.
+ */
 #define MAX_LEN 79 /* Default width of screen */
 #define SCREEN_HEIGHT 23 /* Lines on screen, minus 1 to account for prompt */
 extern flag g_scrollMode; /* Flag for continuous or prompted scroll */
@@ -59,7 +72,8 @@ vstring cmdInput(FILE *stream, const char *ask);
 /*!
  * gets a line from either the terminal or the command file stream depending on
  * g_commandFileNestingLevel > 0.  It calls cmdInput().
- * \param ask text displayed before input prompt
+ * \param ask text displayed before input prompt.  This can be located in
+ *   \a tempAllocStack.
  * \returns the entered input.
  * \warning the calling program must deallocate the returned string.
  */
