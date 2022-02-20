@@ -254,12 +254,19 @@ void freeTempAlloc(void);
  *
  * Possible failures: Out of memory condition.
  *
+ * \param target (not null) address of a \a vstring receiving a copy of the
+ *   source string.  Its current value, if not empty, must not overlap with
+ *   source, or any of the temporary strings in \a tempAllocStack, from index
+ *   \a g_startTempAllocStack on.
+ * \param source (not null) NUL terminated string to be copied from.
+ *
  * \pre
  * - \a g_startTempAllocStack contains the starting index of entries in
  *   \a tempAllocStack, that is going to be deallocated.
  * - both parameters are not null and point to NUL terminated strings.
- * - The destination of this function must not overlap with its source, or any of
- *   the temporary strings about to be deallocated;
+ * - The destination of this function must not overlap with its source,
+ *   or any of the temporary strings about to be deallocated, unless both are
+ *   empty;
  * - The destination need not provide enough space for the source.  If
  *   necessary, it is reallocated to point to a larger chunk of memory;
  * \post
@@ -298,6 +305,19 @@ int linput(FILE *stream, const char *ask, vstring *target);
 /* Indices are 1-based */
 temp_vstring seg(const char *sin, long p1, long p2);
 temp_vstring mid(const char *sin, long p, long l);
+/*!
+ * \fn left
+ * \brief Extract leftmost n characters.
+ *
+ * Copies the leftmost n bytes of a NUL terminated string to a temporary.
+ * If the source contains UTF-8 encoded text, care has to be taken that a
+ * multi-byte character is not split in this process.
+ *
+ * \param sin (not null) pointer to a NUL terminated string to be copied from.
+ * \param n count of bytes to be copied from the source.  The natural bounds of
+ *   this value is 0 and the length of sin in bytes.  Any value outside of
+ *   these bounds is corrected to the closer one of these bounds.
+ */
 temp_vstring left(const char *sin, long n);
 temp_vstring right(const char *sin, long n);
 temp_vstring edit(const char *sin, long control);
