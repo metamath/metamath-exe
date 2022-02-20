@@ -29,6 +29,7 @@
  * after each command in a message like "Memory: string < db >".
  */
 /*E*/extern long db;
+/*E*/extern long db0;
 /*!
  * \var db1
  * \brief bytes held by vstring instances inside of the stack of temporaries
@@ -39,7 +40,6 @@
  *
  * \bug Seems never be displayed.
  */
-/*E*/extern long db0;
 /*E*/extern long db1;
 /*E*/extern long db2;
 /*!
