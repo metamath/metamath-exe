@@ -15,11 +15,13 @@
 
 /* debugging flags & variables */
 /*!
- * \brief number of bytes used in vstring instances
+ * \var db
+ * \brief bytes held by vstring instances outside of the stack of temporaries
  *
  * monitors the number of bytes currently used in all \a vstring pointer
- * variables.  Note: This is NOT the number of bytes allocated, but the portion
- * actually used!  A few memory allocations are also included:
+ * variables OUTSIDE of the \a tempAllocStack.  Note: This is NOT the number of
+ * bytes allocated, but the portion actually used!  A few memory allocations
+ * are also included:
  * - command line buffers used to hold user input from a console;
  * - buffers used to read file contents in.
  *
@@ -27,8 +29,21 @@
  * after each command in a message like "Memory: string < db >".
  */
 /*E*/extern long db;
-/*E*/extern long db0,db1,db2;
 /*!
+ * \var db1
+ * \brief bytes held by vstring instances inside of the stack of temporaries
+ *
+ * monitors the number of bytes currently pointed to by \a vstring pointers
+ * INSIDE the \a tempAllocStack.  Note: This is NOT their capacity, but the
+ * portion actually used!
+ *
+ * \bug Seems never be displayed.
+ */
+/*E*/extern long db0;
+/*E*/extern long db1;
+/*E*/extern long db2;
+/*!
+ * \var db3
  * \brief monitors the de/allocations of nmbrString and pntrString outside of
  * temporary arrays.
  *
@@ -43,6 +58,7 @@
 /*E*/extern long db3;
 /*E*/extern long db4,db5,db6,db7,db8;
 /*!
+ * \var db9
  * \brief log memory pool usage for debugging purpose.
  *
  * If set to a non-zero value, the state of the memory pool is
@@ -67,8 +83,8 @@
 typedef char flag;
 
 /*!
+ * \var g_listMode
  * \deprecated
- * \var flag g_listMode.
  * Obsolete.  Now fixed to 0.  Historically the metamath sources were also used
  * for other purposes than maintaining Metamath files.  One such application, a
  * standalone text processor, was LIST.EXE.  The sources still query this
@@ -77,7 +93,7 @@ typedef char flag;
  */
 extern flag g_listMode; /* 0 = metamath, 1 = list utility */
 /*!
- * \var flag g_toolsMode.
+ * \var g_toolsMode
  * Metamath has two modes of operation: In its primary mode it handles
  * mathematical contents like proofs.  In this mode \a g_toolsMode  is set to
  * 0.  This is the value assigned on startup.  A second mode is enabled after
@@ -281,6 +297,7 @@ void addToUsedPool(void *ptr);
 void memFreePoolPurge(flag untilOK);
 /* Statistics */
 /*!
+ * \fn getPoolStats
  * \brief Provide information about memory in pools at the instant of call.
  *
  * Return the overall statistics about the pools \ref memFreePool
@@ -314,6 +331,7 @@ long getFreeSpace(long max);
 
 /* Fatal memory allocation error */
 /*!
+ * \fn outOfMemory
  * \brief fatal memory allocation error.
  *
  * called when memory cannot be allocated, either because memory/address space
@@ -347,8 +365,8 @@ extern struct nullNmbrStruct g_NmbrNull;
 /*!
  * \struct nullPntrStruct
  * describing a \ref block of \a pntrString containing only the null
- * pointer.  Besides this pointer it is accompanied with a header matching
- * the hidden administrative values of a usual pntrString managed as a stack.
+ * pointer.  Besides this pointer it is accompanied with a header containing
+ * the hidden administrative values of such \ref block "block".
  *
  * The values in this administrative header are such that it is never subject to
  * memory allocation or deallocation.
@@ -383,7 +401,8 @@ struct nullPntrStruct {
      */
     pntrString nullElement; };
 /*!
- * \var g_PntrNull. Global instance of a memory block structured like a
+ * \var g_PntrNull
+ * Global instance of a memory block structured like a
  * \a pntrString, fixed in size and containing always exactly one null pointer
  * element, the terminating NULL.  This setup is recognized as an empty
  * \a pntrString.
@@ -612,6 +631,7 @@ temp_pntrString *pntrNSpace(long n);
 temp_pntrString *pntrPSpace(long n);
 
 /*!
+ * \fn pntrLen
  * \brief Determine the length of a pntrString held in a \ref block "block"
  * dedicated to it.
  *
@@ -625,6 +645,7 @@ temp_pntrString *pntrPSpace(long n);
  */
 long pntrLen(const pntrString *s);
 /*!
+ * \fn pntrAllocLen
  * \brief Determine the capacity of a pntrString embedded in a dedicated block
  *
  * returns the capacity of pointers in the array pointed to by \p s,

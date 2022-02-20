@@ -213,6 +213,7 @@ typedef vstring temp_vstring;
   by let(), but it can also be called directly to avoid buildup of temporary
   strings. */
 /*!
+ * \fn freeTempAlloc
  * \brief Free space allocated for temporary vstring instances.
  *
  * Temporary \a vstring in \a tempAllocStack are used for example to construct
@@ -222,18 +223,49 @@ typedef vstring temp_vstring;
  * It is usually called automatically by let(), but can also be invoked
  * directly to avoid buildup of temporary strings.
  *
- * \post Entries in \a tempAllocStack from index \a g_startTempAllocStack on
- * are freed.  The top of stack \a g_tempAllocStackTop is back to
- * \a g_startTempAllocStack again, so the current scope of temporaries is
- * empty.
+ * \post
+ * - Entries in \a tempAllocStack from index \a g_startTempAllocStack on
+ *   are freed.  The top of stack \a g_tempAllocStackTop is back to
+ *   \a g_startTempAllocStack again, so the current scope of temporaries is
+ *   empty;
+ * - db1 is updated, if required by the setting of NDEBUG.
  */
 void freeTempAlloc(void);
 
-/* Emulation of BASIC string assignment */
-/* This function must ALWAYS be called to make assignment to
-   a vstring in order for the memory cleanup routines, etc.
-   to work properly.  A new vstring should be initialized to "" (the empty string),
-   and the 'vstring_def' macro handles creation of such variables. */
+/*! \fn let
+ * \brief emulation of BASIC string assignment
+ *
+ * assigns to text to a \a vstring pointer.  This includes a bit of memory
+ * management.  Not only is the space of the destination of the assignment
+ * reallocated if its previous size was too small.  But in addition the
+ * \ref stack "stack" \a tempAllocStack is freed of intermediate values again.
+ * Every entry beyond \a g_startTempAllocStack is considered to be consumed
+ * and subject to deallocation.
+ *
+ * This deallocation procedure is embedded in this operation, since frequently
+ * the final string was composed of some fragments, that now can be disposed
+ * of.  In fact, this function must ALWAYS be called to assign to a vstring in
+ * order for the memory cleanup routines, etc. to work properly.  A new vstring
+ * should be initialized to "" (the empty string), and the 'vstring_def' macro
+ * handles creation of such variables.
+ *
+ * \pre
+ * - \a g_startTempAllocStack contains the starting index of entries in
+ *   \a tempAllocStack, that is going to be deallocated.
+ * - both parameters are not null and point to NUL terminated strings.
+ * - The destination of this function must not overlap with its source, or any of
+ *   the temporary strings about to be deallocated;
+ * - The destination need not provide enough space for the source.  If
+ *   necessary, it is reallocated to point to a larger chunk of memory;
+ * \post
+ * - Entries in \a tempAllocStack from \a g_startTempAllocStack (on entry to the
+ *   function) are deallocated;
+ * - The stack pointer in \a g_tempAllocStackTop is set to
+ *   \a g_startTempAllocStack (on entry to the function);
+ * - If the assigned value is the empty string, but the destination not, it is
+ *   freed and assigned to a constant "";
+ * - \a db is updated.
+ */
 /* `source` must not point into `target` (but this is unlikely to arise if
    `source` is calculated using `temp_vstring` operations from `target`). */
 void let(vstring *target, const char *source);
@@ -295,6 +327,7 @@ vstring quo$(vstring sout);
       memory allocation (use with caution) *******/
 
 /*!
+ * \var g_tempAllocStackTop
  * \brief Top of stack for temporary text.
  *
  * Refers to the \ref stack "stack" in \a tempAllocStack for temporary text.
@@ -309,6 +342,7 @@ vstring quo$(vstring sout);
  */
 extern long g_tempAllocStackTop;   /* Top of stack for tempAlloc function */
 /*!
+ * \var g_startTempAllocStack
  * \brief references the first entry of the current scope of temporaries.
  *
  * Refers to the \ref stack "stack" in \a tempAllocStack for temporary text.
