@@ -36,11 +36,36 @@ This is an emulation of the string functions available in VMS BASIC.
 # define INCDB1(x) db1 += (x)
 #endif
 
+/*!
+ * \def MAX_ALLOC_STACK
+ *
+ * The number of \a vstring pointers set aside for temporary string evaluation.
+ * This number covers the needs of ordinary nested functions but it puts a
+ * limit to recurrent calls.
+ *
+ * The number given here is one greater than actually available.  One entry is
+ * reserved for the terminal null pointer marking the top of stack.
+ */
 #define MAX_ALLOC_STACK 100
 long g_tempAllocStackTop = 0;      /* Top of stack for tempAlloc function */
 long g_startTempAllocStack = 0;    /* Where to start freeing temporary allocation
                                     when let() is called (normally 0, except in
                                     special nested vstring functions) */
+/*!
+ * \brief stack for temporary text.
+ *
+ * This \ref stack "stack" contains \a vstring pointers holding temporary text
+ * like fragments, boilerplate and so on.  The current top of the stack is
+ * \a g_tempAllocStackTop.  Nested functions share this stack, each setting
+ * aside its own scope.  The scope of the most nested function begins at index
+ * \a g_startTempAllocStack.
+ *
+ * When a nested function starts execution, it saves \a g_startTempAllocStack
+ * and copies the \a g_tempAllocStackTop into it, marking the begin of its own
+ * scope of temporaries.  Before returning, both values are restored again.
+ *
+ * The scope of top level functions begins at index 0.
+ */
 void *tempAllocStack[MAX_ALLOC_STACK];
 
 void freeTempAlloc(void) {

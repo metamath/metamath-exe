@@ -203,7 +203,7 @@ typedef vstring temp_vstring;
  * \pre
  *   the variable has not been declared before in the current scope.
  * \post
- *   initialized with empty text.  No administrative data is created, in
+ *   initialized with empty text.  No administrative data is added, in
  *   conformance with the semantics of a \a vstring.
  */
 #define vstring_def(x) vstring x = ""
@@ -212,6 +212,21 @@ typedef vstring temp_vstring;
 /* Free space allocated for temporaries. This is normally called automatically
   by let(), but it can also be called directly to avoid buildup of temporary
   strings. */
+/*!
+ * \brief Free space allocated for temporary vstring instances.
+ *
+ * Temporary \a vstring in \a tempAllocStack are used for example to construct
+ * final text from patterns, boilerplate etc. along with data to be filled in.
+ *
+ * This function frees all entries beginning with \a g_startTempAllocStack.
+ * It is usually called automatically by let(), but can also be invoked
+ * directly to avoid buildup of temporary strings.
+ *
+ * \post Entries in \a tempAllocStack from index \a g_startTempAllocStack on
+ * are freed.  The top of stack \a g_tempAllocStackTop is back to
+ * \a g_startTempAllocStack again, so the current scope of temporaries is
+ * empty.
+ */
 void freeTempAlloc(void);
 
 /* Emulation of BASIC string assignment */
@@ -279,7 +294,34 @@ vstring quo$(vstring sout);
 /******* Special purpose routines for better
       memory allocation (use with caution) *******/
 
+/*!
+ * \brief Top of stack for temporary text.
+ *
+ * Refers to the \ref stack "stack" in \a tempAllocStack for temporary text.
+ * The current top index referencing the next free entry is kept in this variable.
+ *
+ * This value is made public for setting up scopes of temporary memory for
+ * nested functions.  Each such function allocates/frees scratch memory
+ * independently.  Once a nested function is done, the caller's context must
+ * be restored again, so it sees "its" temporaries untempered with.  To this
+ * end the called nested function saves administrative stack data.  Upon finish
+ * it restores those values.
+ */
 extern long g_tempAllocStackTop;   /* Top of stack for tempAlloc function */
+/*!
+ * \brief references the first entry of the current scope of temporaries.
+ *
+ * Refers to the \ref stack "stack" in \a tempAllocStack for temporary text.
+ * Nested functions maintain their own scope of temporary data.  The index
+ * referencing the first index of the current scope is kept in this variable.
+ *
+ * This value is made public for setting up scopes of temporary memory for
+ * nested functions.  Each such function allocates/frees scratch memory
+ * independently.  Once a nested function is done, the caller's context must
+ * be restored again, so it sees "its" temporaries untempered with.  To this
+ * end the called nested function saves administrative stack data.  Upon finish
+ * it restores those values.
+ */
 extern long g_startTempAllocStack; /* Where to start freeing temporary allocation
     when let() is called (normally 0, except for nested vstring functions) */
 

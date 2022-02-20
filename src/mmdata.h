@@ -15,10 +15,11 @@
 
 /* debugging flags & variables */
 /*!
- * \brief number of bytes allocated in vstring instances
+ * \brief number of bytes used in vstring instances
  *
- * monitors the number of bytes currently allocated in all \a vstring pointer
- * variables.  Some other memory allocations are also included:
+ * monitors the number of bytes currently used in all \a vstring pointer
+ * variables.  Note: This is NOT the number of bytes allocated, but the portion
+ * actually used!  A few memory allocations are also included:
  * - command line buffers used to hold user input from a console;
  * - buffers used to read file contents in.
  *
