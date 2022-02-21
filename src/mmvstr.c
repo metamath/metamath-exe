@@ -88,7 +88,19 @@ void freeTempAlloc(void) {
   g_tempAllocStackTop = g_startTempAllocStack;
 } /* freeTempAlloc */
 
-
+/*!
+ * \fn pushTempAlloc
+ * \brief pushes a \a temp_vstring onto the \a tempAllocStack.
+ *
+ * In case of a stack overflow \a bug is called.
+ *
+ * \param mem (not null) points to either a non-mutable empty string, or
+ *   uniquely to allocated memory.  Its contents need not be valid yet,
+ *   although it is highly recommended to point to a non-NUL character in the
+ *   latter case.  If valid, it should point to a NUL terminated string.
+ * \bug In case of stack overflow, the caller is not notified of this
+ *   condition, and a memory leak is likely.
+ */
 static void pushTempAlloc(void *mem)
 {
   if (g_tempAllocStackTop >= (MAX_ALLOC_STACK-1)) {
@@ -101,7 +113,9 @@ static void pushTempAlloc(void *mem)
   tempAllocStack[g_tempAllocStackTop++] = mem;
 } /* pushTempAlloc */
 
-
+/*!
+ * \fn tempAlloc
+ */
 static void* tempAlloc(long size)  /* String memory allocation/deallocation */
 {
   void* memptr = malloc((size_t)size);

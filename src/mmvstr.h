@@ -135,10 +135,11 @@ for memory allocation. New vstrings should always be constructed from the
  *
  * - A vstring is never NULL;
  * - If the text is empty, i.e. the pointer points to the terminating 0x00
- *   character, then it corresponds to a const char *;
+ *   character, then its contents is not mutable;
  * - If not empty, i.e. the pointer points to a character different from
- *   0x00, then the pointer is in fact part of a larger structure, that
- *   contains additional administrative information.
+ *   0x00, then this is never a true left portion of another \a vstring.
+ * - Although not required under all circumstances, it is highly recommended to
+ *   uniquely point to some allocated memory only.
  *
  * You can use a vstring to read the associated text, but you must never write
  * to memory pointed to by a vstring directly, nor may you change the pointer's
@@ -146,7 +147,7 @@ for memory allocation. New vstrings should always be constructed from the
  * points to, is exclusively done through dedicated functions.  Although the
  * encoding of the text (or whatever data it is) requires only the existence of
  * exactly one 0x00 at the end, using ASCII, or at least UTF-8, is recommended
- * to use various print instructions.
+ * to allow various print instructions.
  */
 typedef char* vstring;
 
@@ -190,6 +191,15 @@ typedef char* vstring;
     }
 
 */
+/*!
+ * \typedef temp_vstring
+ *
+ * This alias for \a vstring is used to mark an entry in the \a tempAllocStack.
+ * Entries in this stack are subject to automatic deallocation by \a let or
+ * an issue of \a freeTempAlloc.
+ *
+ * If returned by a function, it is already pushed on the \a tempAllocStack.
+ */
 typedef vstring temp_vstring;
 
 /*!
@@ -255,16 +265,20 @@ void freeTempAlloc(void);
  * Possible failures: Out of memory condition.
  *
  * \param target (not null) address of a \a vstring receiving a copy of the
- *   source string.  Its current value, if not empty, must not overlap with
- *   source, or any of the temporary strings in \a tempAllocStack, from index
- *   \a g_startTempAllocStack on.
+ *   source string.  Its current value, if not empty, must never point to a
+ *   true portion of another \a vstring.  It must not coincide with any of the
+ *   temporary strings in \a tempAllocStack, from index
+ *   \a g_startTempAllocStack on.  You can assign to an entry with index below
+ *   this value, though.
  * \param source (not null) NUL terminated string to be copied from.
  *
  * \pre
  * - \a g_startTempAllocStack contains the starting index of entries in
  *   \a tempAllocStack, that is going to be deallocated.
  * - both parameters are not null and point to NUL terminated strings.
- * - The destination of this function must not overlap with its source,
+ * - The destination of this function must either be empty, uniquely point to
+ *   a \a vstring 
+ *   
  *   or any of the temporary strings about to be deallocated, unless both are
  *   empty;
  * - The destination need not provide enough space for the source.  If
@@ -304,6 +318,9 @@ int linput(FILE *stream, const char *ask, vstring *target);
 /* Emulation of BASIC string functions */
 /* Indices are 1-based */
 temp_vstring seg(const char *sin, long p1, long p2);
+/*!
+ * \fn mid
+ */
 temp_vstring mid(const char *sin, long p, long l);
 /*!
  * \fn left

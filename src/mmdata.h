@@ -350,6 +350,9 @@ long getFreeSpace(long max);
 void outOfMemory(const char *msg);
 
 /* Bug check error */
+/*!
+ * \fn bug
+ */
 void bug(int bugNum);
 
 
