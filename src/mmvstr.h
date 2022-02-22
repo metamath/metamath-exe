@@ -196,7 +196,7 @@ typedef char* vstring;
  *
  * This alias for \a vstring is used to mark an entry in the \a tempAllocStack.
  * Entries in this stack are subject to automatic deallocation by \a let or
- * an issue of \a freeTempAlloc.
+ * calling \a freeTempAlloc.
  *
  * If returned by a function, it is already pushed on the \a tempAllocStack.
  */
@@ -245,7 +245,10 @@ typedef vstring temp_vstring;
  */
 void freeTempAlloc(void);
 
-/*! \fn let
+/* `source` must not point into `target` (but this is unlikely to arise if
+   `source` is calculated using `temp_vstring` operations from `target`). */
+/*!
+ * \fn let(vstring *target, const char *source)
  * \brief emulation of BASIC string assignment
  *
  * assigns to text to a \a vstring pointer.  This includes a bit of memory
@@ -276,8 +279,8 @@ void freeTempAlloc(void);
  * - \a g_startTempAllocStack contains the starting index of entries in
  *   \a tempAllocStack, that is going to be deallocated.
  * - both parameters are not null and point to NUL terminated strings.
- * - The destination of this function must either be empty, uniquely point to
- *   a \a vstring 
+ * - The destination of this function must either be empty, or uniquely point
+ *   to a \a vstring.
  *   
  *   or any of the temporary strings about to be deallocated, unless both are
  *   empty;
@@ -292,8 +295,6 @@ void freeTempAlloc(void);
  *   freed and assigned to a constant "";
  * - \a db is updated.
  */
-/* `source` must not point into `target` (but this is unlikely to arise if
-   `source` is calculated using `temp_vstring` operations from `target`). */
 void let(vstring *target, const char *source);
 
 /* Emulation of BASIC string concatenation - last argument MUST be NULL */
@@ -319,11 +320,28 @@ int linput(FILE *stream, const char *ask, vstring *target);
 /* Indices are 1-based */
 temp_vstring seg(const char *sin, long p1, long p2);
 /*!
- * \fn mid
+ * \fn mid(const char *sin, long p, long l)
+ * Extracts a substring from a source and pushes it on \a tempAllocStack
+ *
+ * \param sin (not null) pointer to the NUL-terminated source text.
+ * \param p offset of the substring in bytes from the first byte of \a sin,
+ *   1-based.  A value less than 1 is internally corrected to 1, but it must
+ *   not point to or beyond the terminating NUL of \a sin.
+ * \param l length of substring in bytes.  Negative values are corrected to 0.
+ *   If \a p + \a l exceeds the length of sin, then only the portion up to the
+ *   terminating NUL is taken.
+ * \pre
+ *   Parameter p points to a character of \a sin, including the terminating
+ *   NUL character.
+ * \post
+ *   The substring is pushed on \a tempAllocStack.
+ * \bug
+ *   If parameter l is effectively 0, an empty string is pushed onto the stack,
+ *   and finally gets lost as a leak.
  */
 temp_vstring mid(const char *sin, long p, long l);
 /*!
- * \fn left
+ * \fn left(const char *sin, long n)
  * \brief Extract leftmost n characters.
  *
  * Copies the leftmost n bytes of a NUL terminated string to a temporary.
