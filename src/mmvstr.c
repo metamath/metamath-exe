@@ -74,8 +74,6 @@ long g_startTempAllocStack = 0;    /* Where to start freeing temporary allocatio
  * The scope of top level functions begins at index 0
  *.
  * \invariant
- * - pointer to empty strings stored in this stack never point to allocated
- *   memory on the heap;
  * - The entry at \a g_tempAllocStackTop is NULL.
  */
 void *tempAllocStack[MAX_ALLOC_STACK];
@@ -108,11 +106,9 @@ void freeTempAlloc(void) {
  * \post
  *   If not full, \a mem is added on top of \a tempAllocStack, and
  *   \a g_tempAllocStackTop is increased.  This function
- *   does not ensure a NULL pointer follows the pushed pointer.
- * \warning This function is insecure as it can leave \a tempAllocStack in an
- *   intermediate state that some functions cannot operate on.  Neither
- *   invariant of \a tempAllocStack is guaranteed to hold on return.  The
- *   statistic value \a db1 is stale on return.\n
+ *   does not ensure a NULL pointer follows the pushed pointer.  Statistics in
+ *   \a db1 is not updated.
+ * \warning
  *   In case of stack overflow, the caller is not notified and a memory leak
  *   is likely.
  */
@@ -145,9 +141,7 @@ static void pushTempAlloc(void *mem)
  * \post
  *   The top of \a tempAllocStack addresses memory at least the size of the
  *   submitted parameter.
- * \warning This function is insecure as it can leave \a tempAllocStack in an
- *   intermediate state that some functions cannot operate on.  Neither
- *   invariant of \a tempAllocStack is guaranteed to hold on return.\n
+ * \warning
  *   In case of stack overflow, the caller is not notified and a memory leak
  *   is likely.
  */
