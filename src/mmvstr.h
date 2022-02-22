@@ -135,7 +135,8 @@ for memory allocation. New vstrings should always be constructed from the
  *
  * - A vstring is never NULL;
  * - If the text is empty, i.e. the pointer points to the terminating 0x00
- *   character, then its contents is not mutable;
+ *   character, then its contents is not allocated memory and not mutable
+ *   instead;
  * - If not empty, i.e. the pointer points to a character different from
  *   0x00, then this is never a true left portion of another \a vstring.
  * - Although not required under all circumstances, it is highly recommended to
@@ -197,6 +198,10 @@ typedef char* vstring;
  * This alias for \a vstring is used to mark an entry in the \a tempAllocStack.
  * Entries in this stack are subject to automatic deallocation by \a let or
  * calling \a freeTempAlloc.
+ *
+ * Unlike \a vstring this type knows no exceptional handling of empty strings.
+ * If an empty string is generated as a temporary in the course of a creation
+ * of a final \a vstring, it is allocated on the heap as usual.
  *
  * If returned by a function, it is already pushed on the \a tempAllocStack.
  */
@@ -335,9 +340,6 @@ temp_vstring seg(const char *sin, long p1, long p2);
  *   NUL character.
  * \post
  *   The substring is pushed on \a tempAllocStack.
- * \bug
- *   If parameter l is effectively 0, an empty string is pushed onto the stack,
- *   and finally gets lost as a leak.
  */
 temp_vstring mid(const char *sin, long p, long l);
 /*!

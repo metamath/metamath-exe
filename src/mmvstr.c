@@ -74,8 +74,8 @@ long g_startTempAllocStack = 0;    /* Where to start freeing temporary allocatio
  * The scope of top level functions begins at index 0
  *.
  * \invariant
- * - pointer to empty strings stored in this stack do never point to
- *   allocated memory on the heap;
+ * - pointer to empty strings stored in this stack never point to allocated
+ *   memory on the heap;
  * - The entry at \a g_tempAllocStackTop is NULL.
  */
 void *tempAllocStack[MAX_ALLOC_STACK];
