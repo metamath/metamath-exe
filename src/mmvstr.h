@@ -331,7 +331,7 @@ temp_vstring seg(const char *sin, long p1, long p2);
  *   If \a p + \a l exceeds the length of sin, then only the portion up to the
  *   terminating NUL is taken.
  * \pre
- *   Parameter p points to a character of \a sin, including the terminating
+ *   Parameter p points to a character of \a sin, excluding the terminating
  *   NUL character.
  * \post
  *   The substring is pushed on \a tempAllocStack.
