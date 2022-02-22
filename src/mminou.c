@@ -63,9 +63,16 @@ flag g_quitPrint = 0; /* Flag that user quit the output */
 flag localScrollMode = 1; /* 0 = Scroll continuously only till next prompt */
 
 /* Buffer for B (back) command at end-of-page prompt - for future use */
+/*! \var backBuffer
+ * Buffer for B (back) command at end-of-page prompt.
+ */
 pntrString_def(backBuffer);
 /*!
  * \var backBufferPos
+ *
+ * A position within the \a backBuffer.
+ *
+ * \invariant The value 0 requires an empty \a backBuffer.
  */
 long backBufferPos = 0;
 flag backFromCmdInput = 0; /* User typed "B" at main prompt */

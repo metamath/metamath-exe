@@ -135,18 +135,19 @@ for memory allocation. New vstrings should always be constructed from the
  *
  * - A vstring is never NULL;
  * - If the text is empty, i.e. the pointer points to the terminating 0x00
- *   character, then it corresponds to a const char *;
+ *   character, then its contents is not mutable;
  * - If not empty, i.e. the pointer points to a character different from
- *   0x00, then the pointer is in fact part of a larger structure, that
- *   contains additional administrative information.
+ *   0x00, then this is never a true left portion of another \a vstring.
+ * - Although not required under all circumstances, it is highly recommended to
+ *   uniquely point to some allocated memory only.
  *
  * You can use a vstring to read the associated text, but you must never write
  * to memory pointed to by a vstring directly, nor may you change the pointer's
  * value.  Declaration, definition and write access to a vstring, or the text it
- * points to, is done exclusively through dedicated functions.  Although the
+ * points to, is exclusively done through dedicated functions.  Although the
  * encoding of the text (or whatever data it is) requires only the existence of
  * exactly one 0x00 at the end, using ASCII, or at least UTF-8, is recommended
- * to use various print instructions.
+ * to allow various print instructions.
  */
 typedef char* vstring;
 
@@ -190,6 +191,15 @@ typedef char* vstring;
     }
 
 */
+/*!
+ * \typedef temp_vstring
+ *
+ * This alias for \a vstring is used to mark an entry in the \a tempAllocStack.
+ * Entries in this stack are subject to automatic deallocation by \a let or
+ * an issue of \a freeTempAlloc.
+ *
+ * If returned by a function, it is already pushed on the \a tempAllocStack.
+ */
 typedef vstring temp_vstring;
 
 /*!
@@ -203,7 +213,7 @@ typedef vstring temp_vstring;
  * \pre
  *   the variable has not been declared before in the current scope.
  * \post
- *   initializes it with empty text.  No administrative data is created, in
+ *   initialized with empty text.  No administrative data is added, in
  *   conformance with the semantics of a \a vstring.
  */
 #define vstring_def(x) vstring x = ""
@@ -212,13 +222,76 @@ typedef vstring temp_vstring;
 /* Free space allocated for temporaries. This is normally called automatically
   by let(), but it can also be called directly to avoid buildup of temporary
   strings. */
+/*!
+ * \fn freeTempAlloc
+ * \brief Free space allocated for temporary vstring instances.
+ *
+ * Temporary \a vstring in \a tempAllocStack are used for example to construct
+ * final text from patterns, boilerplate etc. along with data to be filled in.
+ *
+ * This function frees all entries beginning with \a g_startTempAllocStack.
+ * It is usually called automatically by let(), but can also be invoked
+ * directly to avoid buildup of temporary strings.
+ *
+ * \pre
+ *   \a g_startTempAllocStack is the index in \a tempAllocStack from which
+ *   on enties are freed.
+ * \post
+ * - Entries in \a tempAllocStack from index \a g_startTempAllocStack on
+ *   are freed.  The top of stack \a g_tempAllocStackTop is back to
+ *   \a g_startTempAllocStack again, so the current scope of temporaries is
+ *   empty;
+ * - db1 is updated, if NDEBUG is not defined.
+ */
 void freeTempAlloc(void);
 
-/* Emulation of BASIC string assignment */
-/* This function must ALWAYS be called to make assignment to
-   a vstring in order for the memory cleanup routines, etc.
-   to work properly.  A new vstring should be initialized to "" (the empty string),
-   and the 'vstring_def' macro handles creation of such variables. */
+/*! \fn let
+ * \brief emulation of BASIC string assignment
+ *
+ * assigns to text to a \a vstring pointer.  This includes a bit of memory
+ * management.  Not only is the space of the destination of the assignment
+ * reallocated if its previous size was too small.  But in addition the
+ * \ref stack "stack" \a tempAllocStack is freed of intermediate values again.
+ * Every entry on and beyond \a g_startTempAllocStack is considered to be
+ * consumed and subject to deallocation.
+ *
+ * This deallocation procedure is embedded in this operation, since frequently
+ * the final string was composed of some fragments, that now can be disposed
+ * of.  In fact, this function must ALWAYS be called to assign to a vstring in
+ * order for the memory cleanup routines, etc. to work properly.  A new vstring
+ * should be initialized to "" (the empty string), and the 'vstring_def' macro
+ * handles creation of such variables.
+ *
+ * Possible failures: Out of memory condition.
+ *
+ * \param target (not null) address of a \a vstring receiving a copy of the
+ *   source string.  Its current value, if not empty, must never point to a
+ *   true portion of another \a vstring.  It must not coincide with any of the
+ *   temporary strings in \a tempAllocStack, from index
+ *   \a g_startTempAllocStack on.  You can assign to an entry with index below
+ *   this value, though.
+ * \param source (not null) NUL terminated string to be copied from.
+ *
+ * \pre
+ * - \a g_startTempAllocStack contains the starting index of entries in
+ *   \a tempAllocStack, that is going to be deallocated.
+ * - both parameters are not null and point to NUL terminated strings.
+ * - The destination of this function must either be empty, uniquely point to
+ *   a \a vstring 
+ *   
+ *   or any of the temporary strings about to be deallocated, unless both are
+ *   empty;
+ * - The destination need not provide enough space for the source.  If
+ *   necessary, it is reallocated to point to a larger chunk of memory;
+ * \post
+ * - Entries in \a tempAllocStack from \a g_startTempAllocStack (on entry to the
+ *   function) are deallocated;
+ * - The stack pointer in \a g_tempAllocStackTop is set to
+ *   \a g_startTempAllocStack (on entry to the function);
+ * - If the assigned value is the empty string, but the destination not, it is
+ *   freed and assigned to a constant "";
+ * - \a db is updated.
+ */
 /* `source` must not point into `target` (but this is unlikely to arise if
    `source` is calculated using `temp_vstring` operations from `target`). */
 void let(vstring *target, const char *source);
@@ -245,7 +318,23 @@ int linput(FILE *stream, const char *ask, vstring *target);
 /* Emulation of BASIC string functions */
 /* Indices are 1-based */
 temp_vstring seg(const char *sin, long p1, long p2);
+/*!
+ * \fn mid
+ */
 temp_vstring mid(const char *sin, long p, long l);
+/*!
+ * \fn left
+ * \brief Extract leftmost n characters.
+ *
+ * Copies the leftmost n bytes of a NUL terminated string to a temporary.
+ * If the source contains UTF-8 encoded text, care has to be taken that a
+ * multi-byte character is not split in this process.
+ *
+ * \param sin (not null) pointer to a NUL terminated string to be copied from.
+ * \param n count of bytes to be copied from the source.  The natural bounds of
+ *   this value is 0 and the length of sin in bytes.  Any value outside of
+ *   these bounds is corrected to the closer one of these bounds.
+ */
 temp_vstring left(const char *sin, long n);
 temp_vstring right(const char *sin, long n);
 temp_vstring edit(const char *sin, long control);
@@ -279,7 +368,39 @@ vstring quo$(vstring sout);
 /******* Special purpose routines for better
       memory allocation (use with caution) *******/
 
+/*!
+ * \var g_tempAllocStackTop
+ * \brief Top of stack for temporary text.
+ *
+ * Refers to the \ref stack "stack" in \a tempAllocStack for temporary text.
+ * The current top index referencing the next free entry is kept in this variable.
+ *
+ * This value is made public for setting up scopes of temporary memory for
+ * nested functions.  Each such function allocates/frees scratch memory
+ * independently.  Once a nested function is done, the caller's context must
+ * be restored again, so it sees "its" temporaries untempered with.  To this
+ * end the called nested function saves administrative stack data.  Upon finish
+ * it restores those values.
+ */
 extern long g_tempAllocStackTop;   /* Top of stack for tempAlloc function */
+/*!
+ * \var g_startTempAllocStack
+ * \brief references the first entry of the current scope of temporaries.
+ *
+ * Refers to the \ref stack "stack" in \a tempAllocStack for temporary text.
+ * Nested functions maintain their own scope of temporary data.  The index
+ * referencing the first index of the current scope is kept in this variable.
+ *
+ * This value is made public for setting up scopes of temporary memory for
+ * nested functions.  Each such function allocates/frees scratch memory
+ * independently.  Once a nested function is done, the caller's context must
+ * be restored again, so it sees "its" temporaries untempered with.  To this
+ * end the called nested function saves administrative stack data.  Upon finish
+ * it restores those values.
+ *
+ * \invariant
+ *   \a g_startTempAllocStack <= \a g_tempAllocStackTop.
+ */
 extern long g_startTempAllocStack; /* Where to start freeing temporary allocation
     when let() is called (normally 0, except for nested vstring functions) */
 

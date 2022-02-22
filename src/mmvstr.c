@@ -4,8 +4,8 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-/*
-mmvstr.c - VMS-BASIC variable length string library routines header
+/*!
+\file mmvstr.c - VMS-BASIC variable length string library routines header
 This is an emulation of the string functions available in VMS BASIC.
 */
 
@@ -30,17 +30,49 @@ This is an emulation of the string functions available in VMS BASIC.
 */
 
 /*E*/long db1=0;
+/*!
+ * \def INCDB1
+ * updates \a db1 if NDEBUG is not defined, is a no operation else.
+ *
+ * NDEBUG switches C assert instructions off or on.  So the handling of db1 is
+ * aligned with assert().
+ */
 #ifdef NDEBUG
 # define INCDB1(x)
 #else
 # define INCDB1(x) db1 += (x)
 #endif
 
+/*!
+ * \def MAX_ALLOC_STACK
+ *
+ * The number of \a vstring pointers set aside for temporary string evaluation.
+ * This number covers the needs of ordinary nested functions but it puts a
+ * limit to recurrent calls.
+ *
+ * The number given here is one greater than actually available.  One entry is
+ * reserved for the terminal null pointer marking the top of stack.
+ */
 #define MAX_ALLOC_STACK 100
 long g_tempAllocStackTop = 0;      /* Top of stack for tempAlloc function */
 long g_startTempAllocStack = 0;    /* Where to start freeing temporary allocation
                                     when let() is called (normally 0, except in
                                     special nested vstring functions) */
+/*!
+ * \brief stack for temporary text.
+ *
+ * This \ref stack "stack" contains \a vstring pointers holding temporary text
+ * like fragments, boilerplate and so on.  The current top of the stack is
+ * \a g_tempAllocStackTop.  Nested functions share this stack, each setting
+ * aside its own scope.  The scope of the most nested function begins at index
+ * \a g_startTempAllocStack.
+ *
+ * When a nested function starts execution, it saves \a g_startTempAllocStack
+ * and copies the \a g_tempAllocStackTop into it, marking the begin of its own
+ * scope of temporaries.  Before returning, both values are restored again.
+ *
+ * The scope of top level functions begins at index 0.
+ */
 void *tempAllocStack[MAX_ALLOC_STACK];
 
 void freeTempAlloc(void) {
@@ -56,7 +88,19 @@ void freeTempAlloc(void) {
   g_tempAllocStackTop = g_startTempAllocStack;
 } /* freeTempAlloc */
 
-
+/*!
+ * \fn pushTempAlloc
+ * \brief pushes a \a temp_vstring onto the \a tempAllocStack.
+ *
+ * In case of a stack overflow \a bug is called.
+ *
+ * \param mem (not null) points to either a non-mutable empty string, or
+ *   uniquely to allocated memory.  Its contents need not be valid yet,
+ *   although it is highly recommended to point to a non-NUL character in the
+ *   latter case.  If valid, it should point to a NUL terminated string.
+ * \bug In case of stack overflow, the caller is not notified of this
+ *   condition, and a memory leak is likely.
+ */
 static void pushTempAlloc(void *mem)
 {
   if (g_tempAllocStackTop >= (MAX_ALLOC_STACK-1)) {
@@ -69,7 +113,9 @@ static void pushTempAlloc(void *mem)
   tempAllocStack[g_tempAllocStackTop++] = mem;
 } /* pushTempAlloc */
 
-
+/*!
+ * \fn tempAlloc
+ */
 static void* tempAlloc(long size)  /* String memory allocation/deallocation */
 {
   void* memptr = malloc((size_t)size);
