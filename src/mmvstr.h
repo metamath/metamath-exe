@@ -200,8 +200,8 @@ typedef char* vstring;
  * calling \a freeTempAlloc.
  *
  * Unlike \a vstring this type knows no exceptional handling of empty strings.
- * If an empty string is generated as a temporary in the course of a creation
- * of a final \a vstring, it is allocated on the heap as usual.
+ * If an empty string is generated as a temporary in the course of a
+ * construction of a final \a vstring, it is allocated on the heap as usual.
  *
  * If returned by a function, it is already pushed on the \a tempAllocStack.
  */
@@ -212,7 +212,7 @@ typedef vstring temp_vstring;
  * \brief creates a new \a vstring variable.
  *
  * declares a \a vstring variable and initiates it with empty text ("").
- * If this value is not modified, freeing of \p x is possible, but not
+ * If this value is not modified, freeing of __x__ is possible, but not
  * required.
  *
  * \pre
@@ -325,25 +325,28 @@ int linput(FILE *stream, const char *ask, vstring *target);
 /* Indices are 1-based */
 temp_vstring seg(const char *sin, long p1, long p2);
 /*!
- * \fn mid(const char *sin, long p, long l)
+ * \fn temp_vstring mid(const char *sin, long p, long l)
  * Extracts a substring from a source and pushes it on \a tempAllocStack
  *
  * \param sin (not null) pointer to the NUL-terminated source text.
- * \param p offset of the substring in bytes from the first byte of \a sin,
+ * \param p offset of the substring in bytes from the first byte of __sin__,
  *   1-based.  A value less than 1 is internally corrected to 1, but it must
- *   not point to or beyond the terminating NUL of \a sin.
+ *   not point to or beyond the terminating NUL of __sin__.
  * \param l length of substring in bytes.  Negative values are corrected to 0.
- *   If \a p + \a l exceeds the length of sin, then only the portion up to the
- *   terminating NUL is taken.
+ *   If __p__ + __l__ exceeds the length of __sin__, then only the portion up
+ *   to the terminating NUL is taken.
+ * \returns a pointer to new allocated \a temp_vstring referencing the
+ *   requested substring, that is also pushed onto the top of \a tempAllocStack
  * \pre
- *   Parameter p points to a character of \a sin, excluding the terminating
- *   NUL character.
+ *   __p__ points to a character of __sin__ before the terminating NUL
+ *   character.
  * \post
- *   The substring is pushed on \a tempAllocStack.
+ *   A pointer to the substring is pushed on \a tempAllocStack, even if it
+ *   empty.
  */
 temp_vstring mid(const char *sin, long p, long l);
 /*!
- * \fn left(const char *sin, long n)
+ * \fn temp_vstring left(const char *sin, long n)
  * \brief Extract leftmost n characters.
  *
  * Copies the leftmost n bytes of a NUL terminated string to a temporary.
@@ -354,6 +357,11 @@ temp_vstring mid(const char *sin, long p, long l);
  * \param n count of bytes to be copied from the source.  The natural bounds of
  *   this value is 0 and the length of sin in bytes.  Any value outside of
  *   these bounds is corrected to the closer one of these bounds.
+ * \returns a pointer to new allocated \a temp_vstring referencing the
+ *   requested portion, that is also pushed onto the top of \a tempAllocStack
+ * \post
+ *   A pointer to the substring is pushed on \a tempAllocStack, even if it
+ *   empty.
  */
 temp_vstring left(const char *sin, long n);
 temp_vstring right(const char *sin, long n);

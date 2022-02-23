@@ -33,6 +33,8 @@ PROJECT_BRIEF          = "executable used to maintain *.mm files"
 
 PROJECT_LOGO           = "Metamath.png"
 
+EXTRACT_STATIC            = YES
+
 # disable Graphviz .dot output
 
 HAVE_DOT               = NO
