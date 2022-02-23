@@ -285,10 +285,7 @@ void freeTempAlloc(void);
  *   \a tempAllocStack, that is going to be deallocated.
  * - both parameters are not null and point to NUL terminated strings.
  * - The destination of this function must either be empty, or uniquely point
- *   to a \a vstring.
- *   
- *   or any of the temporary strings about to be deallocated, unless both are
- *   empty;
+ *   to a \a vstring, but not any of the temp_vstring;
  * - The destination need not provide enough space for the source.  If
  *   necessary, it is reallocated to point to a larger chunk of memory;
  * \post
