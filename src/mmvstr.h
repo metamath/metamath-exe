@@ -340,6 +340,7 @@ temp_vstring seg(const char *sin, long p1, long p2);
  * \post
  *   A pointer to the substring is pushed on \a tempAllocStack, even if it
  *   empty.
+ * \bug a stack overflow of \a tempAllocStack is not handled correctly.
  */
 temp_vstring mid(const char *sin, long p, long l);
 /*!
@@ -352,15 +353,36 @@ temp_vstring mid(const char *sin, long p, long l);
  *
  * \param sin (not null) pointer to a NUL terminated string to be copied from.
  * \param n count of bytes to be copied from the source.  The natural bounds of
- *   this value is 0 and the length of sin in bytes.  Any value outside of
- *   these bounds is corrected to the closer one of these bounds.
+ *   this value is 1 and the length of __sin__+ 1 in bytes.  Any value outside
+ *   of these bounds is corrected to the closer one of these bounds.
  * \returns a pointer to new allocated \a temp_vstring referencing the
  *   requested portion, that is also pushed onto the top of \a tempAllocStack
  * \post
  *   A pointer to the substring is pushed on \a tempAllocStack, even if it
  *   empty.
+ * \bug a stack overflow of \a tempAllocStack is not handled correctly.
  */
 temp_vstring left(const char *sin, long n);
+/*!
+ * \fn temp_vstring right(const char *sin, long n)
+ * \brief Extract the substring starting with position n.
+ *
+ * Copies a NUL terminated string starting with the character at position __n__
+ * to a temporary.  If the source contains UTF-8 encoded text, care has to be
+ * taken that a multi-byte character is not split in this process.
+ *
+ * \param sin (not null) pointer to a NUL terminated string to be copied from.
+ * \param n 1-based position of the first character not skipped at the
+ *   beginning of the source.  The natural bounds of this value is 1 and the
+ *   length of __sin__ + 1 in bytes.  Any value outside of these bounds is
+ *   corrected to the closer one of these bounds.
+ * \returns a pointer to new allocated \a temp_vstring referencing the
+ *   requested portion, that is also pushed onto the top of \a tempAllocStack
+ * \post
+ *   A pointer to the substring is pushed on \a tempAllocStack, even if it
+ *   empty.
+ * \bug a stack overflow of \a tempAllocStack is not handled correctly.
+ */
 temp_vstring right(const char *sin, long n);
 temp_vstring edit(const char *sin, long control);
 temp_vstring space(long n);
