@@ -385,7 +385,27 @@ temp_vstring left(const char *sin, long n);
  */
 temp_vstring right(const char *sin, long n);
 temp_vstring edit(const char *sin, long control);
+/*!
+ * \fn temp_vstring space(long n)
+ * pushes a NUL terminated string of __n__ space characters 0x20 onto
+ * \a tempAllocStack.
+ * \param n one less than the memory to allocate in bytes.
+ * \returns a pointer to new allocated \a temp_vstring referencing the
+ *   requested contents, also pushed onto the top of \a tempAllocStack
+ * \bug a stack overflow of \a tempAllocStack is not handled correctly.
+ */
 temp_vstring space(long n);
+/*!
+ * \fn temp_vstring string(long n, char c)
+ * pushes a NUL terminated string of __n__ characters __c__ onto
+ * \a tempAllocStack.
+ * \param n one less than the memory to allocate in bytes.
+ * \param c character to fill the allocated memory with.  The last character is
+ *   always set to NUL.
+ * \returns a pointer to new allocated \a temp_vstring referencing the
+ *   requested contents, also pushed onto the top of \a tempAllocStack
+ * \bug a stack overflow of \a tempAllocStack is not handled correctly.
+ */
 temp_vstring string(long n, char c);
 temp_vstring chr(long n);
 temp_vstring xlate(const char *sin, const char *table);

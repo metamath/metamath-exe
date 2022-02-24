@@ -38,6 +38,10 @@ extern long g_commandFileNestingLevel;
 extern FILE *g_commandFilePtr[MAX_COMMAND_FILE_NESTING + 1];
 extern vstring g_commandFileName[MAX_COMMAND_FILE_NESTING + 1];
 extern flag g_commandFileSilent[MAX_COMMAND_FILE_NESTING + 1];
+/*!
+ * \var g_commandFileSilentFlag
+ * If set to 1, suppresses prompts on input.
+ */
 extern flag g_commandFileSilentFlag; /* For SUBMIT ... /SILENT */
 
 extern FILE *g_input_fp;  /* File pointers */
@@ -48,7 +52,7 @@ extern vstring g_input_fn, g_output_fn;  /* File names */
 flag print2(const char* fmt,...);
 extern long g_screenHeight; /* Height of screen */
 /*!
- * \var g_screenWidth
+ * \var long g_screenWidth
  * The minimum width of the display, measured in fixed width characters.
  */
 extern long g_screenWidth; /* Width of screen */
@@ -73,7 +77,10 @@ vstring cmdInput(FILE *stream, const char *ask);
  * gets a line from either the terminal or the command file stream depending on
  * g_commandFileNestingLevel > 0.  It calls cmdInput().
  * \param ask text displayed before input prompt.  This can be located in
- *   \a tempAllocStack.
+ *   \a tempAllocStack.  If this text contains more than \a g_screenWidth
+ *   characters, it is wrapped preferably at space characters and split across
+ *   multiple lines.  The final line leaves space for enough for a ten
+ *   character user input
  * \returns the entered input.
  * \warning the calling program must deallocate the returned string.
  */
