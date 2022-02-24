@@ -57,6 +57,10 @@ long g_screenWidth = MAX_LEN; /* Width default = 79 */
 /* g_screenHeight is one less than the physical screen to account for the
    prompt line after pausing. */
 long g_screenHeight = SCREEN_HEIGHT; /* Default = 23 */
+/*!
+ * \var int printedLines
+ * Lines printed since last user input (mod screen height)
+ */
 int printedLines = 0; /* Lines printed since last user input (mod screen height) */
 flag g_scrollMode = 1; /* Flag for continuous (0) or prompted (1) scroll */
 flag g_quitPrint = 0; /* Flag that user quit the output */

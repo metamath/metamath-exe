@@ -303,6 +303,22 @@ void let(vstring *target, const char *source);
 /* vstring cat(vstring string1, ..., stringN, NULL); */
 /* e.g. 'let(&abc, cat("Hello", " ", left("worldx", 5), "!", NULL);' */
 /* Also the first string must not be `NULL`, i.e. `cat(NULL)` alone is invalid. */
+/*!
+ * \fn temp_vstring cat(const char * string1, ...)
+ * \brief concatenates several NUL terminated strings to a single string.
+ *
+ * Up to MAX_CAT_ARGS - 1 (49) NUL terminated strings submitted as parameters
+ * are concatenated to form a single NUL terminated string.  The parameters
+ * terminate with a NULL pointer, a single NULL pointer is not allowed, though.
+ * The resulting string is pushed on \a tempAllocStack.
+ * \param string1 (not null) a pointer to a NUL terminated string.
+ *   The following parameters are pointers to NUL terminated strings as well,
+ *   except for the last parameter that must be NULL.  It is allowed to
+ *   duplicate parameters.
+ * \returns the concatenated string terminated by a NUL character.
+ * \post the resulting string is pushed onto the \a tempAllocStack.
+ * \bug a stack overflow of \a tempAllocStack is not handled correctly.
+ */
 temp_vstring cat(const char * string1, ...);
 
 /* Emulation of BASIC linput (line input) statement; returns NULL if EOF */
@@ -387,9 +403,11 @@ temp_vstring right(const char *sin, long n);
 temp_vstring edit(const char *sin, long control);
 /*!
  * \fn temp_vstring space(long n)
- * pushes a NUL terminated string of __n__ space characters 0x20 onto
+ * pushes a NUL terminated string of __n__ characters onto
  * \a tempAllocStack.
  * \param n one less than the memory to allocate in bytes.
+ * \param c character to fill the allocated memory with.  The last character is
+ *   always set to NUL.
  * \returns a pointer to new allocated \a temp_vstring referencing the
  *   requested contents, also pushed onto the top of \a tempAllocStack
  * \bug a stack overflow of \a tempAllocStack is not handled correctly.
