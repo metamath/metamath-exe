@@ -212,9 +212,9 @@ typedef vstring temp_vstring;
  * \brief creates a new \a vstring variable.
  *
  * declares a \a vstring variable and initiates it with empty text ("").
- * If this value is not modified, freeing of __x__ is possible, but not
- * required.
+ * If it remains unmodified, freeing of __x__ is possible, but not required.
  *
+ * \param[in] x plain C variable name without quote characters.
  * \pre
  *   the variable has not been declared before in the current scope.
  * \post
@@ -222,6 +222,25 @@ typedef vstring temp_vstring;
  *   conformance with the semantics of a \a vstring.
  */
 #define vstring_def(x) vstring x = ""
+/*!
+ * \def free_vstring
+ * \brief deallocates a \a vstring variable and sets it to the empty string.
+ *
+ * Multiple invocations on the same variable is possible.  Can be reused again
+ * without a call to \a vstring_def.
+ *
+ * Side effect: Frees and pops off entries on and beyond index
+ * \a g_startTempAllocStack from the \a tempAllocStack.
+ *
+ * \param[in,out] x (not null) an initialized \a vstring variable.  According to the
+ * semantics of a \a vstring, __x__ is not deallocated, if it points to an
+ * empty string. 
+ * \pre
+ *   the variable has not been declared before in the current scope.
+ * \post
+ *   __x__ initialized with empty text.  Entries on and beyond index
+ * \a g_startTempAllocStack are freed and popped off the \a tempAllocStack.
+ */
 #define free_vstring(x) let(&x, "")
 
 /* Free space allocated for temporaries. This is normally called automatically
