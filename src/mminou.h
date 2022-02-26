@@ -33,7 +33,19 @@ extern FILE *g_listFile_fp;
 extern flag g_outputToString;
 extern vstring g_printString;
 /* Global variables used by cmdInput() */
+/*!
+ * \def MAX_COMMAND_FILE_NESTING
+ * limits number of nested SUBMIT calls to 10.  A SUBMIT redirects the input
+ * to file, which in turn may temporarily redirect input to another file, and
+ * so on.
+ */
 #define MAX_COMMAND_FILE_NESTING 10
+/*!
+ * \var long g_commandFileNestingLevel
+ * current level of nested SUBMIT commands.  0 is top level and refers to stdin
+ * (usually a user visible command line).  Any invocation of SUBMIT increases
+ * this value by 1.  A return from a SUBMIT decrases it by 1.
+ */
 extern long g_commandFileNestingLevel;
 extern FILE *g_commandFilePtr[MAX_COMMAND_FILE_NESTING + 1];
 extern vstring g_commandFileName[MAX_COMMAND_FILE_NESTING + 1];
@@ -72,6 +84,33 @@ extern flag g_quitPrint; /* Flag that user typed 'q' to last scrolling prompt */
 
 /* printLongLine automatically puts a newline \n in the output line. */
 void printLongLine(const char *line, const char *startNextLine, const char *breakMatch);
+/*!
+ * \brief requests a line of text from the __stream__.
+ *
+ * If not suppressed, displays a prompt text on the screen.  Reads a single
+ * line from the __stream__ then.  Returns this line as a \a vstring.
+ *
+ * A line in the __stream__ is terminated by a LF character (0x0D) character
+ * alone.  It is read, but removed from the result.  Its maximum length is
+ * given by CMD_BUFFER_SIZE - 1 (1999).  Reaching the EOF (end of file) is
+ * equivalent to reading LF, if at least 1 byte was read before.
+ *
+ * Reading from an empty __stream__ (or one that is at EOF position) returns
+ * NULL, not the empty string, and is formally signalled as an error.
+ * Overflowing the buffer is also an error.  No truncated value is returned.
+ *
+ * Under certain conditions the input is interpreted.  A line consisting of a
+ * single character b or B is replaced with a value from a history buffer then.
+ * \param[in] stream (not null) source to read the line from.
+ * \param[in] ask prompt text displayed on the screen before __stream__ is
+ *   read.  This prompt can be suppressed by either a NULL value, or the
+ *   setting of \a g_commandFileSilentFlag.
+ * \return a \a vstring containing the read (or interpreted) line.  The result
+ *   needs to be deallocated by the caller, if not empty or  NULL.
+ * \warning the calling program must deallocate the returned string (if not
+ *   null or empty).  Note that the result can be NULL.  This is outside of the
+ *   usual behavior of a \a vstring type.
+ */
 vstring cmdInput(FILE *stream, const char *ask);
 /*!
  * gets a line from either the terminal or the command file stream depending on
@@ -81,7 +120,7 @@ vstring cmdInput(FILE *stream, const char *ask);
  *   characters, it is wrapped preferably at space characters and split across
  *   multiple lines.  The final line leaves space for enough for a ten
  *   character user input
- * \returns the entered input.
+ * \return the entered input.
  * \warning the calling program must deallocate the returned string.
  */
 vstring cmdInput1(const char *ask);
