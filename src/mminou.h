@@ -87,13 +87,15 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
 /*!
  * \brief requests a line of text from the __stream__.
  *
- * If not suppressed, displays a prompt text on the screen.  Reads a single
- * line from the __stream__ then.  Returns this line as a \a vstring.
+ * If not suppressed, displays a prompt text on the screen.  Then reads a
+ * single line from the __stream__.  Returns this line as a \a vstring.
  *
  * A line in the __stream__ is terminated by a LF character (0x0D) character
  * alone.  It is read, but removed from the result.  Its maximum length is
  * given by CMD_BUFFER_SIZE - 1 (1999).  Reaching the EOF (end of file) is
- * equivalent to reading LF, if at least 1 byte was read before.
+ * equivalent to reading LF, if at least 1 byte was read before.  Note that the
+ * NUL character can be part of the line.  This will not lead to an error, but
+ * truncate the line at that position if interpreted in the usual manner.
  *
  * Reading from an empty __stream__ (or one that is at EOF position) returns
  * NULL, not the empty string, and is formally signalled as an error.
