@@ -236,7 +236,7 @@ typedef vstring temp_vstring;
  * semantics of a \a vstring, __x__ is not deallocated, if it points to an
  * empty string. 
  * \pre
- *   the variable has not been declared before in the current scope.
+ *   __x__ was declared and initialized before.
  * \post
  *   __x__ initialized with empty text.  Entries on and beyond index
  * \a g_startTempAllocStack are freed and popped off the \a tempAllocStack.
