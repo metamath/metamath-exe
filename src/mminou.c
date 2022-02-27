@@ -64,10 +64,16 @@ long g_screenHeight = SCREEN_HEIGHT; /* Default = 23 */
 int printedLines = 0; /* Lines printed since last user input (mod screen height) */
 flag g_scrollMode = 1; /* Flag for continuous (0) or prompted (1) scroll */
 flag g_quitPrint = 0; /* Flag that user quit the output */
+/*!
+ * \var flag localScrollMode
+ *
+ * temporarily disables prompted scroll (see \a g_scrollMode) until next user
+ * prompt
+ */
 flag localScrollMode = 1; /* 0 = Scroll continuously only till next prompt */
 
 /* Buffer for B (back) command at end-of-page prompt - for future use */
-/*! \var backBuffer
+/*! \var pntrString backBuffer
  * Buffer for B (back) command at end-of-page prompt.
  */
 pntrString_def(backBuffer);

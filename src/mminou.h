@@ -43,8 +43,8 @@ extern vstring g_printString;
 /*!
  * \var long g_commandFileNestingLevel
  * current level of nested SUBMIT commands.  0 is top level and refers to stdin
- * (usually a user visible command line).  Any invocation of SUBMIT increases
- * this value by 1.  A return from a SUBMIT decrases it by 1.
+ * (usually the user controlled command line).  Any invocation of SUBMIT
+ * increases this value by 1.  A return from a SUBMIT decrases it by 1 again.
  */
 extern long g_commandFileNestingLevel;
 extern FILE *g_commandFilePtr[MAX_COMMAND_FILE_NESTING + 1];
@@ -79,6 +79,12 @@ extern long g_screenWidth; /* Width of screen */
  */
 #define MAX_LEN 79 /* Default width of screen */
 #define SCREEN_HEIGHT 23 /* Lines on screen, minus 1 to account for prompt */
+/*!
+ * \var flag g_scrollMode
+ * \brief controls whether output stops after a full page is printed.
+ *
+ * A value of 1 indicates the user wants prompted page wise output.  
+ */
 extern flag g_scrollMode; /* Flag for continuous or prompted scroll */
 extern flag g_quitPrint; /* Flag that user typed 'q' to last scrolling prompt */
 
@@ -102,7 +108,8 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  * Overflowing the buffer is also an error.  No truncated value is returned.
  *
  * Under certain conditions the input is interpreted.  A line consisting of a
- * single character b or B is replaced with a value from a history buffer then.
+ * single character b or B indicates the user wants to scroll back through
+ * saved pages of output.
  *
  * No timeout is applied when waiting for user input from the console.
  * \param[in] stream (not null) source to read the line from.  _stdin_ is
@@ -113,6 +120,7 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  * \return a \a vstring containing the read (or interpreted) line.  The result
  *   needs to be deallocated by the caller, if not empty or  NULL.
  * \pre
+ *   The following variables have to be prepared in advance:
  *   \a commandFileSilentFlag value 1 suppresses prompts;
  * \post
  *   \a db is updated and includes the length of the interpreted input.
