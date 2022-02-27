@@ -411,7 +411,7 @@ temp_vstring left(const char *sin, long n);
  *   beginning of the source.  The natural bounds of this value is 1 and the
  *   length of __sin__ + 1 in bytes.  Any value outside of these bounds is
  *   corrected to the closer one of these bounds.
- * \returns a pointer to new allocated \a temp_vstring referencing the
+ * \return a pointer to new allocated \a temp_vstring referencing the
  *   requested portion, that is also pushed onto the top of \a tempAllocStack
  * \post
  *   A pointer to the substring is pushed on \a tempAllocStack, even if it
@@ -427,7 +427,7 @@ temp_vstring edit(const char *sin, long control);
  * \param n one less than the memory to allocate in bytes.
  * \param c character to fill the allocated memory with.  The last character is
  *   always set to NUL.
- * \returns a pointer to new allocated \a temp_vstring referencing the
+ * \return a pointer to new allocated \a temp_vstring referencing the
  *   requested contents, also pushed onto the top of \a tempAllocStack
  * \bug a stack overflow of \a tempAllocStack is not handled correctly.
  */
@@ -439,11 +439,31 @@ temp_vstring space(long n);
  * \param n one less than the memory to allocate in bytes.
  * \param c character to fill the allocated memory with.  The last character is
  *   always set to NUL.
- * \returns a pointer to new allocated \a temp_vstring referencing the
+ * \return a pointer to new allocated \a temp_vstring referencing the
  *   requested contents, also pushed onto the top of \a tempAllocStack
  * \bug a stack overflow of \a tempAllocStack is not handled correctly.
  */
 temp_vstring string(long n, char c);
+/*!
+ * \fn temp_vstring chr(long n)
+ * \brief create a temporary string containing a single byte.
+ *
+ * create a NUL terminated string containing only the least significant byte of
+ * __n__.  If this byte is 0x00, an empty string is the result.  If the most
+ * significant bit of this byte is set, the returned string is not an ASCII
+ * or UTF-8 string.
+ * \param[in] n The eight least significant bits are converted into a
+ *   character used to build a string from.
+ * \pre CHAR_BITS should be 8.
+ * \post A string containing a single character different from NUL, or
+ *   the empty string else, is pushed onto the \a tempAllocStack.
+ * \return a pointer to new allocated \a temp_vstring referencing the
+ *   requested contents, also pushed onto the top of \a tempAllocStack
+ * \warning
+ *   the resulting string need not contain exactly 1 character, and if it does,
+ *   this character need not be ASCII or UTF-8.
+ * \bug a stack overflow of \a tempAllocStack is not handled correctly.
+ */
 temp_vstring chr(long n);
 temp_vstring xlate(const char *sin, const char *table);
 temp_vstring date(void);

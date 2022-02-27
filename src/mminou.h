@@ -92,7 +92,7 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  *
  * A line in the __stream__ is terminated by a LF character (0x0D) character
  * alone.  It is read, but removed from the result.  Its maximum length is
- * given by CMD_BUFFER_SIZE - 1 (1999).  Reaching the EOF (end of file) is
+ * given by CMD_BUFFER_SIZE - 1 (1999).  Reaching EOF (end of file) is
  * equivalent to reading LF, if at least 1 byte was read before.  Note that the
  * NUL character can be part of the line.  This will not lead to an error, but
  * truncate the line at that position if interpreted in the usual manner.
@@ -103,12 +103,19 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  *
  * Under certain conditions the input is interpreted.  A line consisting of a
  * single character b or B is replaced with a value from a history buffer then.
- * \param[in] stream (not null) source to read the line from.
+ *
+ * No timeout is applied when waiting for user input from the console.
+ * \param[in] stream (not null) source to read the line from.  _stdin_ is
+ *   common for user input from the console. 
  * \param[in] ask prompt text displayed on the screen before __stream__ is
- *   read.  This prompt can be suppressed by either a NULL value, or the
- *   setting of \a g_commandFileSilentFlag.
+ *   read.  This prompt can be suppressed by either a NULL value, or a
+ *   setting of \a g_commandFileSilentFlag to 1.
  * \return a \a vstring containing the read (or interpreted) line.  The result
  *   needs to be deallocated by the caller, if not empty or  NULL.
+ * \pre
+ *   \a commandFileSilentFlag value 1 suppresses prompts;
+ * \post
+ *   \a db is updated and includes the length of the interpreted input.
  * \warning the calling program must deallocate the returned string (if not
  *   null or empty).  Note that the result can be NULL.  This is outside of the
  *   usual behavior of a \a vstring type.
