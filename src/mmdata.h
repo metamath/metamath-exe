@@ -590,7 +590,7 @@ long compressedProofSize(const nmbrString *proof, long statemNum);
       memory allocation (use with caution) *******/
 
 /*!
- * \var g_pntrTempAllocStackTop
+ * \var long g_pntrTempAllocStackTop
  *
  * Index of the current top af the \ref stack "stack" \a pntrTempAlloc.
  * New data is pushed from this location on if space available.
@@ -636,7 +636,7 @@ temp_pntrString *pntrNSpace(long n);
 temp_pntrString *pntrPSpace(long n);
 
 /*!
- * \fn pntrLen
+ * \fn long pntrLen(const pntrString *s)
  * \brief Determine the length of a pntrString held in a \ref block "block"
  * dedicated to it.
  *
@@ -650,7 +650,7 @@ temp_pntrString *pntrPSpace(long n);
  */
 long pntrLen(const pntrString *s);
 /*!
- * \fn pntrAllocLen
+ * \fn long pntrAllocLen(const pntrString *s)
  * \brief Determine the capacity of a pntrString embedded in a dedicated block
  *
  * returns the capacity of pointers in the array pointed to by \p s,

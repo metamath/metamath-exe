@@ -336,6 +336,7 @@ void let(vstring *target, const char *source);
  *   duplicate parameters.
  * \returns the concatenated string terminated by a NUL character.
  * \post the resulting string is pushed onto the \a tempAllocStack.
+ *   \a db is updated.
  * \bug a stack overflow of \a tempAllocStack is not handled correctly.
  */
 temp_vstring cat(const char * string1, ...);
@@ -454,14 +455,14 @@ temp_vstring string(long n, char c);
  * or UTF-8 string.
  * \param[in] n The eight least significant bits are converted into a
  *   character used to build a string from.
- * \pre CHAR_BITS should be 8.
  * \post A string containing a single character different from NUL, or
  *   the empty string else, is pushed onto the \a tempAllocStack.
  * \return a pointer to new allocated \a temp_vstring referencing the
  *   requested contents, also pushed onto the top of \a tempAllocStack
  * \warning
  *   the resulting string need not contain exactly 1 character, and if it does,
- *   this character need not be ASCII or UTF-8.
+ *   this character need not be ASCII or UTF-8.  If CHAR_BITS is not 8
+ *   (extremely rare nowadays) there might be a portability issue.
  * \bug a stack overflow of \a tempAllocStack is not handled correctly.
  */
 temp_vstring chr(long n);
