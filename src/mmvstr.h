@@ -334,7 +334,7 @@ void let(vstring *target, const char *source);
  *   The following parameters are pointers to NUL terminated strings as well,
  *   except for the last parameter that must be NULL.  It is allowed to
  *   duplicate parameters.
- * \returns the concatenated string terminated by a NUL character.
+ * \return the concatenated string terminated by a NUL character.
  * \post the resulting string is pushed onto the \a tempAllocStack.
  *   \a db is updated.
  * \bug a stack overflow of \a tempAllocStack is not handled correctly.
@@ -368,14 +368,15 @@ temp_vstring seg(const char *sin, long p1, long p2);
  * \param l length of substring in bytes.  Negative values are corrected to 0.
  *   If __p__ + __l__ exceeds the length of __sin__, then only the portion up
  *   to the terminating NUL is taken.
- * \returns a pointer to new allocated \a temp_vstring referencing the
+ * \attention the index __p__ is 1-based!
+ * \return a pointer to new allocated \a temp_vstring referencing the
  *   requested substring, that is also pushed onto the top of \a tempAllocStack
  * \pre
  *   __p__ points to a character of __sin__ before the terminating NUL
  *   character.
  * \post
  *   A pointer to the substring is pushed on \a tempAllocStack, even if it
- *   empty.
+ *   empty;
  * \bug a stack overflow of \a tempAllocStack is not handled correctly.
  */
 temp_vstring mid(const char *sin, long p, long l);
@@ -390,8 +391,9 @@ temp_vstring mid(const char *sin, long p, long l);
  * \param sin (not null) pointer to a NUL terminated string to be copied from.
  * \param n count of bytes to be copied from the source.  The natural bounds of
  *   this value is 1 and the length of __sin__+ 1 in bytes.  Any value outside
- *   of these bounds is corrected to the closer one of these bounds.
- * \returns a pointer to new allocated \a temp_vstring referencing the
+ *   of this range is corrected to the closer one of these bounds.
+ * \attention the index __n__ is 1-based!
+ * \return a pointer to new allocated \a temp_vstring referencing the
  *   requested portion, that is also pushed onto the top of \a tempAllocStack
  * \post
  *   A pointer to the substring is pushed on \a tempAllocStack, even if it
@@ -414,6 +416,7 @@ temp_vstring left(const char *sin, long n);
  *   corrected to the closer one of these bounds.
  * \return a pointer to new allocated \a temp_vstring referencing the
  *   requested portion, that is also pushed onto the top of \a tempAllocStack
+ * \attention the index __n__ is 1-based!
  * \post
  *   A pointer to the substring is pushed on \a tempAllocStack, even if it
  *   empty.

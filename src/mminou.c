@@ -75,6 +75,11 @@ flag localScrollMode = 1; /* 0 = Scroll continuously only till next prompt */
 /* Buffer for B (back) command at end-of-page prompt - for future use */
 /*! \var pntrString backBuffer
  * Buffer for B (back) command at end-of-page prompt.
+ *
+ * Some longer text like help texts for example provide a page wise display
+ * with a scroll option, so the user can move freely back and forth in the
+ * text.  This is the storage where already displayed text is held for possible
+ * redisplay.
  */
 pntrString_def(backBuffer);
 /*!
