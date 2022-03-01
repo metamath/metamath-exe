@@ -397,7 +397,9 @@ temp_vstring seg(const char *sin, long p1, long p2);
  * \return a pointer to new allocated \a temp_vstring referencing the
  *   requested substring, that is also pushed onto the top of \a tempAllocStack
  * \pre
- *   __p__ <= length(__sin__).
+ *   __p__ <= length(__sin__).  This must hold even if the requested length is
+ *   0, because its implementation in C requires the validity of the pointer,
+ *   even if it is not dereferenced.
  * \post
  *   A pointer to the substring is pushed on \a tempAllocStack, even if it
  *   empty;
