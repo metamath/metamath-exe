@@ -291,13 +291,13 @@ void freeTempAlloc(void);
  *
  * Possible failures: Out of memory condition.
  *
- * \param target (not null) address of a \a vstring receiving a copy of the
- *   source string.  Its current value, if not empty, must never point to a
+ * \param[out] target (not null) address of a \a vstring receiving a copy of
+ *   the source string.  Its current value, if not empty, must never point to a
  *   true portion of another \a vstring.  It must not coincide with any of the
  *   temporary strings in \a tempAllocStack, from index
  *   \a g_startTempAllocStack on.  You can assign to an entry with index below
  *   this value, though.
- * \param source (not null) NUL terminated string to be copied from.
+ * \param[in] source (not null) NUL terminated string to be copied from.
  *
  * \pre
  * - \a g_startTempAllocStack contains the starting index of entries in
@@ -330,7 +330,7 @@ void let(vstring *target, const char *source);
  * are concatenated to form a single NUL terminated string.  The parameters
  * terminate with a NULL pointer, a single NULL pointer is not allowed, though.
  * The resulting string is pushed on \a tempAllocStack.
- * \param string1 (not null) a pointer to a NUL terminated string.
+ * \param[in] string1 (not null) a pointer to a NUL terminated string.
  *   The following parameters are pointers to NUL terminated strings as well,
  *   except for the last parameter that must be NULL.  It is allowed to
  *   duplicate parameters.
@@ -356,19 +356,44 @@ int linput(FILE *stream, const char *ask, vstring *target);
 
 /* Emulation of BASIC string functions */
 /* Indices are 1-based */
+/*!
+ * \fn temp_vstring seg(const char *sin, long p1, long p2)
+ * Extracts a substring from a source and pushes it on \a tempAllocStack
+ *
+ * \param[in] sin (not null) pointer to the NUL-terminated source text.
+ * \param[in] p1 offset of the first byte of the substring, counted in bytes from
+ *   the first one of __sin__, a 1-based index.  A value less than 1 is
+ *   internally corrected to 1, but it must never point to or beyond the
+ *   terminating NUL of __sin__.
+ * \param[in] p2 offset of the last byte of the substring, counted in bytes from
+ *   the first one of __sin__, a 1-based index.  The natural bounds of this
+ *   value are __p1__ - 1 and the length of __sin__.  Values outside of this
+ *   range are corrected to the closer of these limits.  If __p2__ < __p1__ the
+ *   empty string is returned.
+ * \attention the indices are 1-based: seg("hello", 2, 3) == "el"!
+ * \return a pointer to new allocated \a temp_vstring referencing the
+ *   requested substring, that is also pushed onto the top of \a tempAllocStack
+ * \pre
+ *   __p__ points to a character of __sin__ before the terminating NUL
+ *   character.
+ * \post
+ *   A pointer to the substring is pushed on \a tempAllocStack, even if it
+ *   empty;
+ * \bug a stack overflow of \a tempAllocStack is not handled correctly.
+ */
 temp_vstring seg(const char *sin, long p1, long p2);
 /*!
  * \fn temp_vstring mid(const char *sin, long p, long l)
  * Extracts a substring from a source and pushes it on \a tempAllocStack
  *
- * \param sin (not null) pointer to the NUL-terminated source text.
- * \param p offset of the substring in bytes from the first byte of __sin__,
+ * \param[in] sin (not null) pointer to the NUL-terminated source text.
+ * \param[in] p offset of the substring in bytes from the first byte of __sin__,
  *   1-based.  A value less than 1 is internally corrected to 1, but it must
  *   not point to or beyond the terminating NUL of __sin__.
  * \param l length of substring in bytes.  Negative values are corrected to 0.
  *   If __p__ + __l__ exceeds the length of __sin__, then only the portion up
  *   to the terminating NUL is taken.
- * \attention the index __p__ is 1-based!
+ * \attention the index __p__ is 1-based: mid("hello", 2, 1) == "e"!
  * \return a pointer to new allocated \a temp_vstring referencing the
  *   requested substring, that is also pushed onto the top of \a tempAllocStack
  * \pre
@@ -388,11 +413,10 @@ temp_vstring mid(const char *sin, long p, long l);
  * If the source contains UTF-8 encoded text, care has to be taken that a
  * multi-byte character is not split in this process.
  *
- * \param sin (not null) pointer to a NUL terminated string to be copied from.
- * \param n count of bytes to be copied from the source.  The natural bounds of
- *   this value is 1 and the length of __sin__+ 1 in bytes.  Any value outside
- *   of this range is corrected to the closer one of these bounds.
- * \attention the index __n__ is 1-based!
+ * \param[in] sin (not null) pointer to a NUL terminated string to be copied from.
+ * \param[in] n count of bytes to be copied from the source.  The natural bounds of
+ *   this value is 0 and the length of __sin__ in bytes.  Any value outside of
+ *   this range is corrected to the closer one of these limits.
  * \return a pointer to new allocated \a temp_vstring referencing the
  *   requested portion, that is also pushed onto the top of \a tempAllocStack
  * \post
@@ -409,14 +433,15 @@ temp_vstring left(const char *sin, long n);
  * to a temporary.  If the source contains UTF-8 encoded text, care has to be
  * taken that a multi-byte character is not split in this process.
  *
- * \param sin (not null) pointer to a NUL terminated string to be copied from.
- * \param n 1-based position of the first character not skipped at the
+ * \param[in] sin (not null) pointer to a NUL terminated string to be copied
+ *   from.
+ * \param[in] n 1-based position of the first character not skipped at the
  *   beginning of the source.  The natural bounds of this value is 1 and the
  *   length of __sin__ + 1 in bytes.  Any value outside of these bounds is
  *   corrected to the closer one of these bounds.
  * \return a pointer to new allocated \a temp_vstring referencing the
  *   requested portion, that is also pushed onto the top of \a tempAllocStack
- * \attention the index __n__ is 1-based!
+ * \attention the index __n__ is 1-based: right("hello", 2) == "ello"!
  * \post
  *   A pointer to the substring is pushed on \a tempAllocStack, even if it
  *   empty.
@@ -428,11 +453,11 @@ temp_vstring edit(const char *sin, long control);
  * \fn temp_vstring space(long n)
  * pushes a NUL terminated string of __n__ characters onto
  * \a tempAllocStack.
- * \param n one less than the memory to allocate in bytes.
- * \param c character to fill the allocated memory with.  The last character is
- *   always set to NUL.
+ * \param[in] n the count of spaces, one less than the memory to allocate in
+ *   bytes.
  * \return a pointer to new allocated \a temp_vstring referencing the
  *   requested contents, also pushed onto the top of \a tempAllocStack
+ * \post The returned string is NUL terminated
  * \bug a stack overflow of \a tempAllocStack is not handled correctly.
  */
 temp_vstring space(long n);
@@ -440,9 +465,12 @@ temp_vstring space(long n);
  * \fn temp_vstring string(long n, char c)
  * pushes a NUL terminated string of __n__ characters __c__ onto
  * \a tempAllocStack.
- * \param n one less than the memory to allocate in bytes.
- * \param c character to fill the allocated memory with.  The last character is
- *   always set to NUL.
+ * \param[in] n one less than the memory to allocate in bytes.
+ * \param[in] c character to fill the allocated memory with.  It is padded to
+ *   the right with a NUL character.
+ * \attention The choice of NUL for __c__ returns the empty string in a block
+ *   of __n__ + 1 allocated bytes.
+ * \post The returned string is NUL terminated
  * \return a pointer to new allocated \a temp_vstring referencing the
  *   requested contents, also pushed onto the top of \a tempAllocStack
  * \bug a stack overflow of \a tempAllocStack is not handled correctly.
