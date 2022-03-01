@@ -85,7 +85,7 @@ flag localScrollMode = 1; /* 0 = Scroll continuously only till next prompt */
  *
  * Some longer text (like help texts for example) provide a page wise display
  * with a scroll option, so the user can move freely back and forth in the
- * text.  This is the storage where already displayed text is held for possible
+ * text.  This is the storage of already displayed text kept for possible
  * redisplay.
  */
 pntrString_def(backBuffer);
