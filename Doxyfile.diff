@@ -40,3 +40,5 @@ EXTRACT_STATIC            = YES
 HAVE_DOT               = NO
 
 GENERATE_LATEX         = NO
+
+PREDEFINED = _DOXYGEN_

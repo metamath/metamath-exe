@@ -86,6 +86,10 @@ extern long g_screenWidth; /* Width of screen */
  * A value of 1 indicates the user wants prompted page wise output.  
  */
 extern flag g_scrollMode; /* Flag for continuous or prompted scroll */
+/*!
+ * \var flag g_quitPrint
+ * The value 1 indicates the user entered a 'q' at the last scrolling prompt.
+ */
 extern flag g_quitPrint; /* Flag that user typed 'q' to last scrolling prompt */
 
 /* printLongLine automatically puts a newline \n in the output line. */

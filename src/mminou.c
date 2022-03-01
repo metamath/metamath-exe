@@ -17,6 +17,13 @@
 #include "mminou.h"
 #include "mmcmdl.h" /* for g_commandPrompt global */
 
+#ifdef _DOXYGEN_
+/* workaround for doxygen: Some function-like macros providing variable
+ * declararations are not properly recognized.  We give explicit declarations
+ * for doxygen here */
+      pntrString* backBuffer;
+#endif // _DOXYGEN_
+
 #ifdef __WATCOMC__
   /* Bugs in WATCOMC:
      1. #include <conio.h> has compile errors
@@ -73,10 +80,10 @@ flag g_quitPrint = 0; /* Flag that user quit the output */
 flag localScrollMode = 1; /* 0 = Scroll continuously only till next prompt */
 
 /* Buffer for B (back) command at end-of-page prompt - for future use */
-/*! \var pntrString backBuffer
+/*! \var pntrString* backBuffer
  * Buffer for B (back) command at end-of-page prompt.
  *
- * Some longer text like help texts for example provide a page wise display
+ * Some longer text (like help texts for example) provide a page wise display
  * with a scroll option, so the user can move freely back and forth in the
  * text.  This is the storage where already displayed text is held for possible
  * redisplay.
