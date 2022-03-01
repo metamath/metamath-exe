@@ -375,8 +375,7 @@ int linput(FILE *stream, const char *ask, vstring *target);
  * \return a pointer to new allocated \a temp_vstring referencing the
  *   requested substring, that is also pushed onto the top of \a tempAllocStack
  * \pre
- *   EITHER: __p1__ points to a character within __sin__, including the
- *   terminating NUL, OR: __p2__ < __p1__.
+ *   __p1__ <= length(__sin__).
  * \post
  *   A pointer to the substring is pushed on \a tempAllocStack, even if it
  *   empty;
@@ -391,23 +390,18 @@ temp_vstring seg(const char *sin, long p1, long p2);
  * \param[in] p offset of the substring in bytes from the first byte of __sin__,
  *   1-based.  A value less than 1 is internally corrected to 1, but it must
  *   never point beyond the terminating NUL of __sin__.
- * \param l length of substring in bytes.  Negative values are corrected to 0.
+ * \param[in] l length of substring in bytes.  Negative values are corrected to 0.
  *   If __p__ + __l__ exceeds the length of __sin__, then only the portion up
  *   to the terminating NUL is taken.
  * \attention the index __p__ is 1-based: mid("hello", 2, 1) == "e"!
  * \return a pointer to new allocated \a temp_vstring referencing the
  *   requested substring, that is also pushed onto the top of \a tempAllocStack
  * \pre
- *   __p__ points to a character of __sin__ before the terminating NUL
- *   character.
+ *   __p__ <= length(__sin__).
  * \post
  *   A pointer to the substring is pushed on \a tempAllocStack, even if it
  *   empty;
- * \bug
- *   - a stack overflow of \a tempAllocStack is not handled correctly;
- *   - If __p__ addresses a character beyond the terminating NUL of __sin__,
- *     the resulting string is undefined, and a memory access violation is
- *     possible.
+ * \bug a stack overflow of \a tempAllocStack is not handled correctly;
  */
 temp_vstring mid(const char *sin, long p, long l);
 /*!
@@ -441,12 +435,12 @@ temp_vstring left(const char *sin, long n);
  * \param[in] sin (not null) pointer to a NUL terminated string to be copied
  *   from.
  * \param[in] n 1-based index of the first not skipped character at the
- *   beginning of the source.  The natural bounds of this value is 1 and the
- *   length of __sin__ + 1 in bytes.  Any value outside of these bounds is
- *   corrected to the closer one of these bounds.
+ *   beginning of the source.  A value less than 1 is internally corrected to 1.
  * \return a pointer to new allocated \a temp_vstring referencing the
  *   requested portion, that is also pushed onto the top of \a tempAllocStack
  * \attention the index __n__ is 1-based: right("hello", 2) == "ello"!
+ * \pre
+ *   __n__ <= length(__sin__)
  * \post
  *   A pointer to the substring is pushed on \a tempAllocStack, even if it
  *   empty.
