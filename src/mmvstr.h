@@ -358,7 +358,8 @@ int linput(FILE *stream, const char *ask, vstring *target);
 /* Indices are 1-based */
 /*!
  * \fn temp_vstring seg(const char *sin, long p1, long p2)
- * Extracts a substring from a source and pushes it on \a tempAllocStack
+ * Extracts a substring from a source and pushes it on \a tempAllocStack.
+ * Note: The bounding indices are 1-based and inclusive.
  *
  * \param[in] sin (not null) pointer to the NUL-terminated source text.
  * \param[in] p1 offset of the first byte of the substring, counted in bytes from
