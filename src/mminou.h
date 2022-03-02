@@ -103,8 +103,8 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  * single line from the __stream__.  Returns this line as a \a vstring.
  *
  * A line in the __stream__ is terminated by a LF character (0x0D) character
- * alone.  It is read, but removed from the result.  Its maximum length is
- * given by CMD_BUFFER_SIZE - 1 (1999).  Reaching EOF (end of file) is
+ * alone.  It is read, but removed from the result.  The maximum line length
+ * without the LF is \a CMD_BUFFER_SIZE - 1.  Reaching EOF (end of file) is
  * equivalent to reading LF, if at least 1 byte was read before.  Note that the
  * NUL character can be part of the line.  Reading a NUL is not sufficiently
  * handled in the current implementation and may or may not cause an error
@@ -147,9 +147,9 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  * \warning the calling program must deallocate the returned string (if not
  *   null or empty).  Note that the result can be NULL.  This is outside of the
  *   usual behavior of a \a vstring type.
- * \bug It is possible that the first character read from __stream__ is NUL,
- *   for example when a file is read.  Reading only stops at a LF or EOF or
- *   buffer end.  NUL will cause a print of an error message, but execution
+ * \warning the returned string need not be valid ASCII or UTF-8.
+ * \bug If the first character read from __stream__ is NUL (e.g. a file is
+ *   read), this will cause a print of an error message, but execution
  *   continues and in the wake may cause all kind of undefined behavior, like
  *   memory accesses beyond allocated buffers.
  */

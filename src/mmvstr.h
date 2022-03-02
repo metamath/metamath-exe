@@ -379,6 +379,7 @@ int linput(FILE *stream, const char *ask, vstring *target);
  * \post
  *   A pointer to the substring is pushed on \a tempAllocStack, even if it
  *   empty;
+ * \warning not UTF-8 safe.
  * \bug a stack overflow of \a tempAllocStack is not handled correctly;
  */
 temp_vstring seg(const char *sin, long p1, long p2);
@@ -403,6 +404,7 @@ temp_vstring seg(const char *sin, long p1, long p2);
  * \post
  *   A pointer to the substring is pushed on \a tempAllocStack, even if it
  *   empty;
+ * \warning not UTF-8 safe.
  * \bug a stack overflow of \a tempAllocStack is not handled correctly;
  */
 temp_vstring mid(const char *sin, long p, long l);
@@ -423,6 +425,7 @@ temp_vstring mid(const char *sin, long p, long l);
  * \post
  *   A pointer to the substring is pushed on \a tempAllocStack, even if it
  *   empty.
+ * \warning not UTF-8 safe.
  * \bug a stack overflow of \a tempAllocStack is not handled correctly.
  */
 temp_vstring left(const char *sin, long n);
@@ -446,6 +449,7 @@ temp_vstring left(const char *sin, long n);
  * \post
  *   A pointer to the substring is pushed on \a tempAllocStack, even if it
  *   empty.
+ * \warning not UTF-8 safe.
  * \bug a stack overflow of \a tempAllocStack is not handled correctly.
  */
 temp_vstring right(const char *sin, long n);
