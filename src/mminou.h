@@ -135,7 +135,8 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  *   - 1519: padding of LF failed, or first read character was NUL
  *   - 1521: a NUL in first and second position was read
  *   - 1523: no prompt text when user is required to input something
- *   - 1525: missing terminating LF, not caused by an EOF
+ *   - 1525: missing terminating LF, not caused by an EOF.
+ *
  *   A bug message need not result in an execution stop.
  * \param[in] stream (not null) source to read the line from.  _stdin_ is
  *   common for user input from the console. 
