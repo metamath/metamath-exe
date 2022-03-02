@@ -17,13 +17,6 @@
 #include "mminou.h"
 #include "mmcmdl.h" /* for g_commandPrompt global */
 
-#ifdef _DOXYGEN_
-/* workaround for doxygen: Some function-like macros providing variable
- * declararations are not properly recognized.  We give explicit declarations
- * for doxygen here */
-      pntrString* backBuffer;
-#endif // _DOXYGEN_
-
 #ifdef __WATCOMC__
   /* Bugs in WATCOMC:
      1. #include <conio.h> has compile errors
