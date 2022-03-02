@@ -123,13 +123,13 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  * \param[in] ask prompt text displayed on the screen before __stream__ is
  *   read.  This prompt can be suppressed by either a NULL value, or a
  *   setting of \a g_commandFileSilentFlag to 1.  It may be compared to
- *   \a g_commandPrompt.  If they are both the same, it is inferred the user is
- *   not scrolling through a lengthy text.
+ *   \a g_commandPrompt.  If both match, it is inferred the user is not
+ *   scrolling through a lengthy text any more.
  * \return a \a vstring containing the read (or interpreted) line.  The result
  *   needs to be deallocated by the caller, if not empty or  NULL.
  * \pre
- *   The following variables are honored during execution, so initialize them
- *   properly:
+ *   The following variables are honored during execution and should be properly
+ *   set:
  *   - \a commandFileSilentFlag value 1 suppresses prompts altogether, not only
  *     those used for scrolling through long text;
  *   - \a g_commandFileNestingLevel a value > 0 indicates a SUBMIT call is
@@ -138,12 +138,19 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  *   - \a g_scrollMode value 1 enables scrolling back through text held in
  *     \a backBuffer;
  *   - \a localScrollMode a value of 0 temporarily disables scrolling, despite
- *     the setting in \a g_scrollMode.
+ *     the setting in \a g_scrollMode;
+ *   - \a g_commandPrompt if its string matches ask, this can terminate a
+ *     scroll loop.
  * \post
  *   \a db is updated and includes the length of the interpreted input.
  * \warning the calling program must deallocate the returned string (if not
  *   null or empty).  Note that the result can be NULL.  This is outside of the
  *   usual behavior of a \a vstring type.
+ * \bug It is possible that the first character read from __stream__ is NUL,
+ *   for example when a file is read.  Reading only stops at a LF or EOF or
+ *   buffer end.  NUL will cause a print of an error message, but execution
+ *   continues and in the wake may cause all kind of undefined behavior, like
+ *   memory accesses beyond allocated buffers.
  */
 vstring cmdInput(FILE *stream, const char *ask);
 /*!
