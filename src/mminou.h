@@ -166,8 +166,10 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  *   - \a g_commandPrompt if its string matches ask, empty input is ignored.
  * \post
  *   \a db is updated and includes the length of the interpreted input.
- *   If the user scrolls through a lengthy text, and hits B or b followed by
- *   enter, 
+ *   Some input is ignored by simply reprinting the prompt:
+ *   - Empty strings in top command level;
+ *   - Isolated 'b' or 'B' input, if scroll mode is active and supported, and a
+ *     previously displayed page is available.
  * \warning the calling program must deallocate the returned string (if not
  *   null or empty).  Note that the result can be NULL.  This is outside of the
  *   usual behavior of a \a vstring type.
