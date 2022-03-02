@@ -163,8 +163,7 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  *     \a backBuffer;
  *   - \a localScrollMode a value of 0 temporarily disables scrolling, despite
  *     the setting in \a g_scrollMode;
- *   - \a g_commandPrompt if its string matches ask, this can terminate a
- *     scroll loop.
+ *   - \a g_commandPrompt if its string matches ask, empty input is ignored.
  * \post
  *   \a db is updated and includes the length of the interpreted input.
  *   If the user scrolls through a lengthy text, and hits B or b followed by
