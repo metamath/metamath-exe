@@ -342,7 +342,7 @@ long getFreeSpace(long max);
  * before exiting the program raising an error condition.
  *
  * \param msg error message displayed to the user.
- * \returns never, but exits the program instead.
+ * \return never, but exits the program instead.
  * \bug calls functions like print2, that in turn may call outOfMemory again
  * under restricted memory conditions, so finally memory error messages are
  * stacked up endlessly.

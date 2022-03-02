@@ -635,6 +635,12 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
   return;
 } /* printLongLine */
 
+/*!
+ * \def CMD_BUFFER_SIZE
+ * Number of bytes allocated for prompted text, including the terminating NUL,
+ * but excluding the return key stroke the user finishes her/his input.
+ */
+#define CMD_BUFFER_SIZE 2000
 
 vstring cmdInput(FILE *stream, const char *ask) {
   /* This function prints a prompt (if 'ask' is not NULL) and gets a line from
@@ -643,7 +649,6 @@ vstring cmdInput(FILE *stream, const char *ask) {
     be freed by the caller. */
   vstring_def(g); /* Always init vstrings to "" for let(&...) to work */
   long i;
-#define CMD_BUFFER_SIZE 2000
 
   while (1) { /* For "B" backup loop */
     if (ask != NULL && !g_commandFileSilentFlag) {

@@ -83,7 +83,9 @@ extern long g_screenWidth; /* Width of screen */
  * \var flag g_scrollMode
  * \brief controls whether output stops after a full page is printed.
  *
- * A value of 1 indicates the user wants prompted page wise output.  
+ * A value of 1 indicates the user wants prompted page wise output.
+ * The command SET SCROLL controls this value.  If followed by CONTINUOUS, this
+ * flag is reset to 0.
  */
 extern flag g_scrollMode; /* Flag for continuous or prompted scroll */
 /*!
@@ -125,7 +127,15 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  *   needs to be deallocated by the caller, if not empty or  NULL.
  * \pre
  *   The following variables have to be prepared in advance:
- *   \a commandFileSilentFlag value 1 suppresses prompts;
+ *   - \a commandFileSilentFlag value 1 suppresses prompts;
+ *   - \a g_commandFileNestingLevel a value > 0 indicates a SUBMIT call is
+ *     executing, where user prompts are suppressed;
+ *   - \a backBuffer contains text to display if the user is allowed to scroll
+ *     back through text;
+ *   - \a g_scrollMode value 1 enables scrolling back through text held in
+ *     \a backBuffer;
+ *   - \a localScrollMode a value of 0 temporarily disables scrolling, despite
+ *     the setting in \a g_scrollMode.
  * \post
  *   \a db is updated and includes the length of the interpreted input.
  * \warning the calling program must deallocate the returned string (if not
