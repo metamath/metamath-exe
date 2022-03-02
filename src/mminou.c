@@ -764,7 +764,6 @@ vstring cmdInput(FILE *stream, const char *ask) {
         break; /* Break out of loop that looks for "B" */
       }
     }
-    printf("\n\n\n++++++++++\n\n\n");fflush(stdout);
   } /* while 1 */
 
   return g;

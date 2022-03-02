@@ -168,8 +168,8 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  *   \a db is updated and includes the length of the interpreted input.
  *   Some input is ignored by simply reprinting the prompt:
  *   - Empty strings in top command level;
- *   - Isolated 'b' or 'B' input, if scroll mode is active and supported, and a
- *     previously displayed page is available.
+ *   - Isolated 'b' or 'B' input, if scroll mode is active, supported and the
+ *     \a backBuffer provides a saved page.
  * \warning the calling program must deallocate the returned string (if not
  *   null or empty).  Note that the result can be NULL.  This is outside of the
  *   usual behavior of a \a vstring type.
