@@ -638,7 +638,7 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
 /*!
  * \def CMD_BUFFER_SIZE
  * Number of bytes allocated for prompted text, including the terminating NUL,
- * but excluding the return key stroke the user finishes her/his input.
+ * but excluding the return key stroke the user finishes her/his input with.
  */
 #define CMD_BUFFER_SIZE 2000
 
@@ -651,6 +651,7 @@ vstring cmdInput(FILE *stream, const char *ask) {
   long i;
 
   while (1) { /* For "B" backup loop */
+// drucke prompt
     if (ask != NULL && !g_commandFileSilentFlag) {
       printf("%s", ask);
 #if __STDC__
@@ -763,6 +764,7 @@ vstring cmdInput(FILE *stream, const char *ask) {
         break; /* Break out of loop that looks for "B" */
       }
     }
+    printf("\n\n\n++++++++++\n\n\n");fflush(stdout);
   } /* while 1 */
 
   return g;

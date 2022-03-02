@@ -114,18 +114,39 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  * NULL, not the empty string, and is formally signalled as an error.
  * Overflowing the buffer is also an error.  No truncated value is returned.
  *
- * If scrolling is enabled, the input is interpreted.  A line consisting of a
- * single character b or B indicates the user wants to scroll back through
- * saved pages of output.
+ * This routine automatically handles input in a loop under following two
+ * conditions:
+ *
+ * 1. If scrolling is enabled, the input is interpreted.  A line consisting of
+ * a single character b or B indicates the user wants to scroll back through
+ * saved pages of output.  This is handled within this routine, as often as
+ * requested and possible.
+ *
+ * 2. The user repetitively hits ENTER (only) while prompted in top level
+ * context.  The prompt is simply replayed as often.  Entering an isolated 'b'
+ * or 'B' is first directed to case 1, and only if it cannot be served there, 
+ * the routine exits, returning the b or B to the caller. 
  *
  * No timeout is applied when waiting for user input from the console.
+ *
+ * Detected format errors result in following bug messages:
+ *   - 1507: The first read character is NUL
+ *   - 1508: line overflow, the last character is not NUL
+ *   - 1519: padding of LF failed, or first read character was NUL
+ *   - 1521: a NUL in first and second position was read
+ *   - 1523: no prompt text when user is required to input something
+ *   - 1525: missing terminating LF, not caused by an EOF
+ *   A bug message need not result in an execution stop.
  * \param[in] stream (not null) source to read the line from.  _stdin_ is
  *   common for user input from the console. 
  * \param[in] ask prompt text displayed on the screen before __stream__ is
- *   read.  This prompt can be suppressed by either a NULL value, or a
- *   setting of \a g_commandFileSilentFlag to 1.  It may be compared to
- *   \a g_commandPrompt.  If both match, it is inferred the user is not
- *   scrolling through a lengthy text any more.
+ *   read.  This prompt is suppressed by either a NULL value, or setting 
+ *   \a g_commandFileSilentFlag to 1.  This prompt must be not NULL (empty is
+ *   fine!) outside of a SUBMIT call, where user is expected to enter input.
+ *
+ *   It may be compared to \a g_commandPrompt.  If both match, it is inferred
+ *   the user is in top level command mode, where empty input is not returned
+ *   to the caller.
  * \return a \a vstring containing the read (or interpreted) line.  The result
  *   needs to be deallocated by the caller, if not empty or  NULL.
  * \pre
@@ -144,6 +165,8 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  *     scroll loop.
  * \post
  *   \a db is updated and includes the length of the interpreted input.
+ *   If the user scrolls through a lengthy text, and hits B or b followed by
+ *   enter, 
  * \warning the calling program must deallocate the returned string (if not
  *   null or empty).  Note that the result can be NULL.  This is outside of the
  *   usual behavior of a \a vstring type.
