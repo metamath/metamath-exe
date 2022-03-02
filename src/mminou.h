@@ -156,6 +156,7 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  *     those used for scrolling through long text;
  *   - \a g_commandFileNestingLevel a value > 0 indicates a SUBMIT call is
  *     executing, where scrolling prompts are suppressed;
+ *   - \a g_outputToString value 1 renders scrolling as pointless and disables it;
  *   - \a backBuffer may contain text to display on scroll back operations;
  *   - \a g_scrollMode value 1 enables scrolling back through text held in
  *     \a backBuffer;
