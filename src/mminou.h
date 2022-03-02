@@ -106,8 +106,9 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  * alone.  It is read, but removed from the result.  Its maximum length is
  * given by CMD_BUFFER_SIZE - 1 (1999).  Reaching EOF (end of file) is
  * equivalent to reading LF, if at least 1 byte was read before.  Note that the
- * NUL character can be part of the line.  This will not lead to an error, but
- * truncate the line at that position if interpreted in the usual manner.
+ * NUL character can be part of the line.  Reading a NUL is not sufficiently
+ * handled in the current implementation and may or may not cause an error
+ * message or even undefined behavior.
  *
  * Reading from an empty __stream__ (or one that is at EOF position) returns
  * NULL, not the empty string, and is formally signalled as an error.
