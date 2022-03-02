@@ -113,7 +113,7 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  * NULL, not the empty string, and is formally signalled as an error.
  * Overflowing the buffer is also an error.  No truncated value is returned.
  *
- * Under certain conditions the input is interpreted.  A line consisting of a
+ * If scrolling is enabled, the input is interpreted.  A line consisting of a
  * single character b or B indicates the user wants to scroll back through
  * saved pages of output.
  *
@@ -127,11 +127,11 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  *   needs to be deallocated by the caller, if not empty or  NULL.
  * \pre
  *   The following variables have to be prepared in advance:
- *   - \a commandFileSilentFlag value 1 suppresses prompts;
+ *   - \a commandFileSilentFlag value 1 suppresses prompts altogether, not only
+ *     those used for scrolling through long text;
  *   - \a g_commandFileNestingLevel a value > 0 indicates a SUBMIT call is
- *     executing, where user prompts are suppressed;
- *   - \a backBuffer contains text to display if the user is allowed to scroll
- *     back through text;
+ *     executing, where scrolling prompts are suppressed;
+ *   - \a backBuffer may contain text to display on scroll back operations;
  *   - \a g_scrollMode value 1 enables scrolling back through text held in
  *     \a backBuffer;
  *   - \a localScrollMode a value of 0 temporarily disables scrolling, despite
