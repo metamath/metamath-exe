@@ -122,11 +122,14 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  *   common for user input from the console. 
  * \param[in] ask prompt text displayed on the screen before __stream__ is
  *   read.  This prompt can be suppressed by either a NULL value, or a
- *   setting of \a g_commandFileSilentFlag to 1.
+ *   setting of \a g_commandFileSilentFlag to 1.  It may be compared to
+ *   \a g_commandPrompt.  If they are both the same, it is inferred the user is
+ *   not scrolling through a lengthy text.
  * \return a \a vstring containing the read (or interpreted) line.  The result
  *   needs to be deallocated by the caller, if not empty or  NULL.
  * \pre
- *   The following variables have to be prepared in advance:
+ *   The following variables are honored during execution, so initialize them
+ *   properly:
  *   - \a commandFileSilentFlag value 1 suppresses prompts altogether, not only
  *     those used for scrolling through long text;
  *   - \a g_commandFileNestingLevel a value > 0 indicates a SUBMIT call is
