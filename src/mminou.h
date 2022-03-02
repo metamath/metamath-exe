@@ -144,7 +144,7 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  *   read.  This prompt is suppressed by either a NULL value, or setting 
  *   \a g_commandFileSilentFlag to 1.  This prompt must be not NULL (empty is
  *   fine!) outside of a SUBMIT call, where user is expected to enter input.
- *
+ *   \n
  *   It may be compared to \a g_commandPrompt.  If both match, it is inferred
  *   the user is in top level command mode, where empty input is not returned
  *   to the caller.
