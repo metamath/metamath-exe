@@ -196,6 +196,19 @@ vstring cmdInput(FILE *stream, const char *ask);
  *   If the prompt needs to be displayed again, only the last line after
  *   wrapping is reprinted.
  * \return not interpreted input.
+ * \pre
+ *   The following variables are honored during execution and should be properly
+ *   set:
+ *   - \a commandFileSilentFlag value 1 suppresses prompts altogether, not only
+ *     those used for scrolling through long text;
+ *   - \a g_commandFileNestingLevel a value > 0 indicates a SUBMIT call is
+ *     executing, where scrolling prompts are suppressed;
+ *   - \a g_outputToString value 1 renders scrolling as pointless and disables it;
+ *   - \a backBuffer may contain text to display on scroll back operations;
+ *   - \a g_scrollMode value 1 enables scrolling back through text held in
+ *     \a backBuffer;
+ *   - \a g_commandPrompt if this string matches ask, top level user input is
+ *     assumed.
  * \post
  *   \a localScrollMode is set to 1
  * \warning the calling program must deallocate the returned string.
