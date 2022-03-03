@@ -28,6 +28,11 @@ extern nmbrString *g_rawArgNmbr;
 extern long g_rawArgs;
 extern pntrString *g_fullArg;
 extern vstring g_fullArgString; /* g_fullArg as one string */
+/*!
+ * \var vstring g_commandPrompt
+ * text displayed at the beginning of the line where a user is supposed to
+ * enter a new command.  For example 'MM>'.
+ */
 extern vstring g_commandPrompt;
 extern vstring g_commandLine;
 extern long g_showStatement;

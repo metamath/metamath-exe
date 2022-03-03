@@ -71,7 +71,10 @@ long g_startTempAllocStack = 0;    /* Where to start freeing temporary allocatio
  * and copies the \a g_tempAllocStackTop into it, marking the begin of its own
  * scope of temporaries.  Before returning, both values are restored again.
  *
- * The scope of top level functions begins at index 0.
+ * The scope of top level functions begins at index 0
+ *.
+ * \invariant
+ * - The entry at \a g_tempAllocStackTop is NULL.
  */
 void *tempAllocStack[MAX_ALLOC_STACK];
 
@@ -89,17 +92,25 @@ void freeTempAlloc(void) {
 } /* freeTempAlloc */
 
 /*!
- * \fn pushTempAlloc
- * \brief pushes a \a temp_vstring onto the \a tempAllocStack.
+ * \fn pushTempAlloc(void *mem)
+ * \brief pushes a pointer onto the \a tempAllocStack.
  *
- * In case of a stack overflow \a bug is called.
+ * In case of a stack overflow \a bug is called.  This function is low level
+ * that does not ensure that invariants of \a tempAllocStack are kept.
  *
  * \param mem (not null) points to either a non-mutable empty string, or
- *   uniquely to allocated memory.  Its contents need not be valid yet,
- *   although it is highly recommended to point to a non-NUL character in the
- *   latter case.  If valid, it should point to a NUL terminated string.
- * \bug In case of stack overflow, the caller is not notified of this
- *   condition, and a memory leak is likely.
+ *   to allocated memory.  Its contents need not be valid yet, although it is
+ *   recommended to point to a non-NUL character.
+ * \pre
+ *   The stack must not be full.
+ * \post
+ *   If not full, \a mem is added on top of \a tempAllocStack, and
+ *   \a g_tempAllocStackTop is increased.  This function
+ *   does not ensure a NULL pointer follows the pushed pointer.  Statistics in
+ *   \a db1 is not updated.
+ * \warning
+ *   In case of stack overflow, the caller is not notified and a memory leak
+ *   is likely.
  */
 static void pushTempAlloc(void *mem)
 {
@@ -114,7 +125,25 @@ static void pushTempAlloc(void *mem)
 } /* pushTempAlloc */
 
 /*!
- * \fn tempAlloc
+ * \fn tempAlloc(long size)
+ *
+ * \brief allocates memory for size bytes and pushes it onto the \a tempAllocStack
+ *
+ * This low level function does NOT initialize the allocated memory.  If the
+ * allocation on the heap fails, \a bug is called.  The statistic value \a db1
+ * is updated.
+ *
+ * \param size (> 0) number of bytes to allocate on the heap.  If the memory is
+ *   intended to hold NUL terminated text, then size must account for the final
+ *   NUL character, too.
+ * \pre
+ *   The \a tempAllocStack must not be full.
+ * \post
+ *   The top of \a tempAllocStack addresses memory at least the size of the
+ *   submitted parameter.
+ * \warning
+ *   In case of stack overflow, the caller is not notified and a memory leak
+ *   is likely.
  */
 static void* tempAlloc(long size)  /* String memory allocation/deallocation */
 {

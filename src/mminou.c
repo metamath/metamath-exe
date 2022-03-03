@@ -57,14 +57,29 @@ long g_screenWidth = MAX_LEN; /* Width default = 79 */
 /* g_screenHeight is one less than the physical screen to account for the
    prompt line after pausing. */
 long g_screenHeight = SCREEN_HEIGHT; /* Default = 23 */
+/*!
+ * \var int printedLines
+ * Lines printed since last user input (mod screen height)
+ */
 int printedLines = 0; /* Lines printed since last user input (mod screen height) */
 flag g_scrollMode = 1; /* Flag for continuous (0) or prompted (1) scroll */
 flag g_quitPrint = 0; /* Flag that user quit the output */
+/*!
+ * \var flag localScrollMode
+ *
+ * temporarily disables prompted scroll (see \a g_scrollMode) until next user
+ * prompt
+ */
 flag localScrollMode = 1; /* 0 = Scroll continuously only till next prompt */
 
 /* Buffer for B (back) command at end-of-page prompt - for future use */
-/*! \var backBuffer
+/*! \var pntrString* backBuffer
  * Buffer for B (back) command at end-of-page prompt.
+ *
+ * Some longer text (like help texts for example) provide a page wise display
+ * with a scroll option, so the user can move freely back and forth in the
+ * text.  This is the storage of already displayed text kept for possible
+ * redisplay.
  */
 pntrString_def(backBuffer);
 /*!
@@ -620,6 +635,12 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
   return;
 } /* printLongLine */
 
+/*!
+ * \def CMD_BUFFER_SIZE
+ * Number of bytes allocated for prompted text, including the terminating NUL,
+ * but excluding the return key stroke the user finishes her/his input with.
+ */
+#define CMD_BUFFER_SIZE 2000
 
 vstring cmdInput(FILE *stream, const char *ask) {
   /* This function prints a prompt (if 'ask' is not NULL) and gets a line from
@@ -628,9 +649,9 @@ vstring cmdInput(FILE *stream, const char *ask) {
     be freed by the caller. */
   vstring_def(g); /* Always init vstrings to "" for let(&...) to work */
   long i;
-#define CMD_BUFFER_SIZE 2000
 
   while (1) { /* For "B" backup loop */
+// drucke prompt
     if (ask != NULL && !g_commandFileSilentFlag) {
       printf("%s", ask);
 #if __STDC__

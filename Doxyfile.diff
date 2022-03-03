@@ -33,8 +33,35 @@ PROJECT_BRIEF          = "executable used to maintain *.mm files"
 
 PROJECT_LOGO           = "Metamath.png"
 
-# disable Graphviz .dot output
+#---------------------------------------------------------------------------
+# Output extent related overrides
+#---------------------------------------------------------------------------
 
+# If you set the HAVE_DOT tag to YES then doxygen will assume the dot tool is
+# available from the path. This tool is part of Graphviz (see:
+# http://www.graphviz.org/), a graph visualization toolkit from AT&T and Lucent
+# Bell Labs. The other options in this section have no effect if this option is
+# set to NO
+# The default value is: YES.
 HAVE_DOT               = NO
 
 GENERATE_LATEX         = NO
+
+#---------------------------------------------------------------------------
+# Parsing C contents related overrides
+#---------------------------------------------------------------------------
+
+# If the EXTRACT_STATIC tag is set to YES, all static members of a file will be
+# included in the documentation.
+# The default value is: NO.
+EXTRACT_STATIC            = YES
+
+# cope with function like macros (pntrString_def and similar).
+# If the MACRO_EXPANSION tag is set to YES, doxygen will expand all macro names
+# in the source code. If set to NO, only conditional compilation will be
+# performed. Macro expansion can be done in a controlled way by setting
+# EXPAND_ONLY_PREDEF to YES.
+# The default value is: NO.
+# This tag requires that the tag ENABLE_PREPROCESSING is set to YES.
+
+MACRO_EXPANSION        = YES
