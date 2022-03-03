@@ -112,9 +112,10 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  * supported in the current implementation and may or may not cause an error
  * message or even undefined behavior.
  *
- * Reading from an empty __stream__ (or one that is at EOF position) returns
- * NULL, not the empty string, and is formally signalled as an error.
- * Overflowing the buffer is also an error.  No truncated value is returned.
+ * Reading from an empty __stream__ (or one that is at EOF position, produced
+ * for example by CTRL-D on the console) returns NULL, not the empty string,
+ * and is formally signalled as an error.  Overflowing the buffer is also an
+ * error.  No truncated value is returned.
  *
  * This routine interprets some input without returning it to the caller under
  * following two conditions:
