@@ -35,9 +35,9 @@ extern vstring g_printString;
 /* Global variables used by cmdInput() */
 /*!
  * \def MAX_COMMAND_FILE_NESTING
- * limits number of nested SUBMIT calls to 10.  A SUBMIT redirects the input
- * to file, which in turn may temporarily redirect input to another file, and
- * so on.
+ * limits number of nested SUBMIT calls.  A SUBMIT redirects the input to a
+ * file, which in turn may temporarily redirect input to another file, and so
+ * on.
  */
 #define MAX_COMMAND_FILE_NESTING 10
 /*!
@@ -152,8 +152,9 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  *   It may be compared to \a g_commandPrompt.  If both match, it is inferred
  *   the user is in top level command mode, where empty input is not returned
  *   to the caller.
- * \return a \a vstring containing the read (or interpreted) line.  The result
- *   needs to be deallocated by the caller, if not empty or  NULL.
+ * \return a \a vstring containing the first read and not interpreted line.
+ *   NULL indicates an error condition.  The result needs to be deallocated by
+ *   the caller, if not empty or NULL.
  * \pre
  *   The following variables are honored during execution and should be properly
  *   set:
@@ -182,10 +183,10 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  */
 vstring cmdInput(FILE *stream, const char *ask);
 /*!
- * gets a line from either the terminal or the command file stream depending on
- * g_commandFileNestingLevel > 0.  It calls cmdInput(), i.e some input lines
- * may be interpreted and not returned to the caller.  The conditions for this
- * are given in \a cmdInput, except that \a localScrollMode is fixed to 1.
+ * gets a line from either stdin or the command file stream depending on
+ * \a g_commandFileNestingLevel.  It uses \a cmdInput(), i.e some input
+ * lines may be interpreted and not returned to the caller.  The conditions for
+ * this are listed in \a cmdInput, except that \a localScrollMode is fixed to 1.
  * \param ask (not null) text displayed before input prompt.  This can be
  *   located in \a tempAllocStack.  If this text contains more than
  *   \a g_screenWidth characters, it is wrapped preferably at space characters
