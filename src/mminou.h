@@ -100,44 +100,48 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  * \brief requests a line of text from the __stream__.
  *
  * If not suppressed, displays a prompt text on the screen.  Then reads a
- * single line from the __stream__.  Returns this line as a \a vstring.
+ * line from the __stream__.  This line may be interpreted as described further
+ * below, in which case the prompt is reprinted and the next line is read.
+ * Returns the first not interpreted line as a \a vstring.
  *
  * A line in the __stream__ is terminated by a LF character (0x0D) character
  * alone.  It is read, but removed from the result.  The maximum line length
  * without the LF is \a CMD_BUFFER_SIZE - 1.  Reaching EOF (end of file) is
  * equivalent to reading LF, if at least 1 byte was read before.  Note that the
  * NUL character can be part of the line.  Reading a NUL is not sufficiently
- * handled in the current implementation and may or may not cause an error
+ * supported in the current implementation and may or may not cause an error
  * message or even undefined behavior.
  *
  * Reading from an empty __stream__ (or one that is at EOF position) returns
  * NULL, not the empty string, and is formally signalled as an error.
  * Overflowing the buffer is also an error.  No truncated value is returned.
  *
- * This routine automatically handles input in a loop under following two
- * conditions:
+ * This routine interprets some input without returning it to the caller under
+ * following two conditions:
  *
- * 1. If scrolling is enabled, the input is interpreted.  A line consisting of
- * a single character b or B indicates the user wants to scroll back through
- * saved pages of output.  This is handled within this routine, as often as
- * requested and possible.
+ * 1. If scrolling is enabled, a line consisting of a single character b or B
+ * may indicate the user wants to scroll back through saved pages of output.
+ * This is handled within this routine, if possible.  If it cannot be served,
+ * the b or B is returned as common user input.
  *
- * 2. The user repetitively hits ENTER (only) while prompted in top level
- * context.  The prompt is simply replayed as often.  Entering an isolated 'b'
- * or 'B' is first directed to case 1, and only if it cannot be served there, 
- * the routine exits, returning the b or B to the caller. 
- *
- * No timeout is applied when waiting for user input from the console.
+ * 2. The user hits ENTER (only) while prompted in top level context.  The
+ * empty line is not returned.
+ * 
+ * No timeout is applied while waiting for user input from the console.
  *
  * Detected format errors result in following bug messages:
  *   - 1507: The first read character is NUL
  *   - 1508: line overflow, the last character is not NUL
  *   - 1519: padding of LF failed, or first read character was NUL
  *   - 1521: a NUL in first and second position was read
- *   - 1523: no prompt text when user is required to input something
+ *   - 1523: NULL instead of a prompt text when user input is required
  *   - 1525: missing terminating LF, not caused by an EOF.
  *
- *   A bug message need not result in an execution stop.
+ *   A bug message need not result in an execution stop.  It is not directed to
+ *   the metamath bug function to avoid stacking up calls (bug calling cmdInput
+ *   again for scrolling etc.).
+ *
+ * \todo clarify recursive call to print2 and the role of backFromCmdInput. 
  * \param[in] stream (not null) source to read the line from.  _stdin_ is
  *   common for user input from the console. 
  * \param[in] ask prompt text displayed on the screen before __stream__ is
@@ -163,32 +167,37 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  *     \a backBuffer;
  *   - \a localScrollMode a value of 0 temporarily disables scrolling, despite
  *     the setting in \a g_scrollMode;
- *   - \a g_commandPrompt if its string matches ask, empty input is ignored.
+ *   - \a g_commandPrompt if this string matches ask, top level user input is
+ *     assumed.
  * \post
- *   \a db is updated and includes the length of the interpreted input.
- *   Some input is ignored by simply reprinting the prompt:
- *   - Empty strings in top command level;
- *   - Isolated 'b' or 'B' input, if scroll mode is active, supported and the
- *     \a backBuffer provides a saved page.
+ *   \a db is updated.
  * \warning the calling program must deallocate the returned string (if not
  *   null or empty).  Note that the result can be NULL.  This is outside of the
  *   usual behavior of a \a vstring type.
  * \warning the returned string need not be valid ASCII or UTF-8.
- * \bug If the first character read from __stream__ is NUL (e.g. a file is
- *   read), this will cause a print of an error message, but execution
- *   continues and in the wake may cause all kind of undefined behavior, like
- *   memory accesses beyond allocated buffers.
+ * \bug If a character read from __stream__ is NUL, this may sometimes cause a
+ *   print of an error message, but execution continues and in the wake may
+ *   cause all kind of undefined behavior, like memory accesses beyond
+ *   allocated buffers.
  */
 vstring cmdInput(FILE *stream, const char *ask);
 /*!
  * gets a line from either the terminal or the command file stream depending on
- * g_commandFileNestingLevel > 0.  It calls cmdInput().
- * \param ask text displayed before input prompt.  This can be located in
- *   \a tempAllocStack.  If this text contains more than \a g_screenWidth
- *   characters, it is wrapped preferably at space characters and split across
- *   multiple lines.  The final line leaves space for enough for a ten
- *   character user input
- * \return the entered input.
+ * g_commandFileNestingLevel > 0.  It calls cmdInput(), i.e some input lines
+ * may be interpreted and not returned to the caller.  The conditions for this
+ * are given in \a cmdInput, except that \a localScrollMode is fixed to 1.
+ * \param ask (not null) text displayed before input prompt.  This can be
+ *   located in \a tempAllocStack.  If this text contains more than
+ *   \a g_screenWidth characters, it is wrapped preferably at space characters
+ *   and split across multiple lines.  If the final line contains spaces in the
+ *   range from position 1 to \a g_screenWidth - 11, it is wrapped such, that
+ *   it leaves enough space for ten character user input.
+ *   \n
+ *   If the prompt needs to be displayed again, only the last line after
+ *   wrapping is reprinted.
+ * \return not interpreted input.
+ * \post
+ *   \a localScrollMode is set to 1
  * \warning the calling program must deallocate the returned string.
  */
 vstring cmdInput1(const char *ask);
