@@ -139,10 +139,11 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
  *
  * offset -3:\n
  *   If this block has free space at the end (is \ref fragmentation
- *   "fragmented"), then it contains its index in the used blocks array, see
- *   \ref memUsedPool.  A value of -1 indicates it is either fully occupied or
- *   totally free.  In any of these cases it is not kept in the used blocks
- *   array.
+ *   "fragmented"), then this value contains its index in the used blocks
+ *   array, see \ref memUsedPool.  A value of -1 indicates it is either fully
+ *   occupied or totally free.  It is not kept in the used blocks array then.
+ *   If this block becomes full in the course of events, it is not
+ *   automatically removed from \ref memUsedPool, though.
  */
 
 /*! \page Pool
