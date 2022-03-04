@@ -232,6 +232,8 @@ long poolTotalFree = 0; /* Total amount of free space allocated in pool */
  * at the end of the array are unused.  Its current usage is given by
  * \ref memUsedPoolSize.  Its capacity is given by \ref memUsedPoolMax.
  *
+ * \attention The pool may contain full \ref block "blocks".
+ *
  * \invariant Each block in the used blocks array has its index noted in its
  * hidden header, for backward reference.
  *
