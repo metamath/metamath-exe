@@ -214,11 +214,16 @@ vstring cmdInput(FILE *stream, const char *ask);
  * again. The full prompt text is never repeated, only its last line after
  * wrapping.
  *
- * 2. In interactive mode, empty lines are usually discarded.  An empty line
- * resulting from an error (buffer overflow) or a premature EOF (CTRL_D) is
- * returned, though.
+ * 2. In interactive mode, empty lines are discarded, and a reprompt triggered.
+ * 
+ * 3. A NULL resulting from an error (buffer overflow) or a premature EOF
+ * (CTRL_D from keyboard) from \ref cmdInput is either returned as "EXIT".  Or
+ * if the last line of the prompt starts with "Do", then it is assumed to
+ * expand to "Do you want to EXIT anyway (Y, N)?" and a "Y" is returned. In any
+ * case, the returned string is printed before it may finally triggers an
+ * immediate stop on the caller's side.
  *
- * \return first not interpreted line as \ref vstring.  An empty string on error.
+ * \return first not interpreted line as \ref vstring, or "EXIT" on error. 
  * \pre
  *   The following variables are honored during execution and should be properly
  *   set:
