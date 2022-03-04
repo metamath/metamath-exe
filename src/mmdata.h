@@ -134,10 +134,10 @@ typedef long nmbrString; /* String of numbers */
  *   pointers are created in subroutines, and they vanish before the caller
  *   gains control again, and can safely deallocate the instances.  A similar
  *   strategy is followed by \ref pntrLet, where deallocations of original and
- *   derived instances are deferred until an operation finally finishes.  More
- *   modern concepts employ reference counting schemes, and by avoiding
- *   dedicated ownership solve this problem more thoroughly, but Metamath is
- *   not up to that level (yet).
+ *   dependent instances are deferred until an operation finally finishes.
+ *   More modern concepts employ reference counting schemes, thus avoiding
+ *   dedicated ownership and solving this problem more thoroughly, but Metamath
+ *   is not up to that level (yet).
  */
 typedef void* pntrString; /* String of pointers */
 
@@ -309,6 +309,31 @@ extern flag g_globalDiscouragement; /* SET DISCOURAGEMENT */
 void *poolFixedMalloc(long size /* bytes */);
 void *poolMalloc(long size /* bytes */);
 void poolFree(void *ptr);
+/*!
+ * \fn addToUsedPool(void *ptr)
+ * \brief announces a block with free capacity for further allocation
+ *
+ * The program maintains pools of memory blocks with free capacity.  In case of
+ * demand such a \ref block can temporarily allocate this capacity for new
+ * usage.  Of course two (or more) clients share different parts of the same
+ * \ref block then, so a newer client must complete its usage before the old
+ * one resumes operation and may want to extend its usage of the \ref block.
+ * \n
+ * This function temporarily freezes the usage of a block for an old client, and
+ * allows temporary reallocation of the free capacity to a new client.
+ * \n
+ * Before \p ptr is added to \ref memUsedPool, the pool size is checked and
+ * increased by \ref MEM_POOL_GROW if full.  This may lead to out-of-memory
+ * \ref bug "bugs".  But if \p prt is added to the end of the \ref memUsedPool,
+ * \ref poolTotalFree is updated.
+ * \param[in] ptr pointer to a \ref block.
+ * \pre
+ *   the block is \ref fragmentation "fragmented" (contains unused pointers)
+ *   If this condition is violated \ref bug is called and the function returns
+ *   without further action.
+ * \post
+ *   \ref poolTotalFree is the current free space in bytes in both pools.
+ */
 void addToUsedPool(void *ptr);
 /* Purges reset memory pool usage */
 void memFreePoolPurge(flag untilOK);

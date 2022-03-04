@@ -197,6 +197,10 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
    The pointer to an array always points to element 0 (recast to right size).
 */
 
+/*!
+ * \def MEM_POOL_GROW
+ * Amount that \ref memUsedPool and \ref memFreePool grows when it overflows.
+ */
 #define MEM_POOL_GROW 1000 /* Amount that a pool grows when it overflows. */
 /*??? Let user set this from menu. */
 long poolAbsoluteMax = 1000000; /* Pools will be purged when this is reached */
@@ -2693,6 +2697,8 @@ void pntrZapLen(pntrString *s, long length) {
  * \invariant
  *   If \p s is contained in a \ref block "block", its administrative header is
  *   NOT updated.
+ * \warning The thoughtless use of this function has the potential to create
+ *   risks mentioned in the warning of \ref pntrString.
  */
 void pntrCpy(pntrString *s, const pntrString *t) {
   long i;
