@@ -332,7 +332,8 @@ void poolFree(void *ptr);
  *   If this condition is violated \ref bug is called and the function returns
  *   without further action.
  * \post
- *   \ref poolTotalFree is the current free space in bytes in both pools.
+ *   - \ref poolTotalFree is the current free space in bytes in both pools.
+ *   - A full \ref block is not added to \ref memUsedPool by this function.
  */
 void addToUsedPool(void *ptr);
 /* Purges reset memory pool usage */
