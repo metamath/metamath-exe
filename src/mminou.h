@@ -20,6 +20,10 @@
 extern int g_errorCount;     /* Total error count */
 
 /* Global variables used by print2() */
+/*!
+ * \var flag g_logFileOpenFlag
+ * If set to 1, logging of input is enabled.
+ */
 extern flag g_logFileOpenFlag;
 extern FILE *g_logFilePtr;
 extern FILE *g_listFile_fp;
@@ -204,24 +208,32 @@ vstring cmdInput(FILE *stream, const char *ask);
  * to the caller is more or less what \ref cmdInput() yields, but some fine
  * tuning is applied.
  *
- * 1. The text used to prompt the user is most useful in interactive mode.  It
- * is wrapped around preferably at spaces to fit into a display of
- * \ref g_screenWidth.  If possible, wrapping shortens the last line such that
- * space for 10 characters is available to the right of the prompt for user
- * input.  Lengthy output may be interrupted for convenient page wise display.
+ * \par Displaying the prompt text
+ *
+ * The text used to prompt the user is wrapped around preferably spaces to fit
+ * into a display of \ref g_screenWidth.  If possible, wrapping shortens the
+ * last line such that space for 10 characters is available to the right of the
+ * prompt for user input.
+ *
+ * \par Interactive Mode
+ *
+ * 1. A long prompt text may be interrupted for convenient page wise display.
  * The user's scroll commands are interpreted internally and not seen by the
  * caller.  If a line is either discarded or interpreted, the user is prompted
  * again. The full prompt text is never repeated, only its last line after
- * wrapping.
+ * wrapping was applied.
  *
- * 2. In interactive mode, empty lines are discarded, and a reprompt triggered.
+ * 2. Empty lines are discarded, and a reprompt is triggered.
  * 
- * 3. A NULL resulting from an error (buffer overflow) or a premature EOF
- * (CTRL_D from keyboard) from \ref cmdInput is either returned as "EXIT".  Or
- * if the last line of the prompt starts with "Do", then it is assumed to
- * expand to "Do you want to EXIT anyway (Y, N)?" and a "Y" is returned. In any
- * case, the returned string is printed before it may finally triggers an
- * immediate stop on the caller's side.
+ * 3. In interactive mode, a NULL resulting from an error (buffer overflow) or
+ * a premature EOF (CTRL_D from keyboard) from \ref cmdInput is either returned
+ * as "EXIT".  Or if the last line of the prompt starts with "Do", then it is
+ * assumed to expand to "Do you want to EXIT anyway (Y, N)?" and a "Y" is
+ * returned. In any case, the returned string is printed before it may finally
+ * trigger an immediate stop on the caller's side.
+ *
+ * 4. Before the line is returned to the caller, it is logged should that be
+ * enabled.
  *
  * \return first not interpreted line as \ref vstring, or "EXIT" on error. 
  * \pre
@@ -240,7 +252,9 @@ vstring cmdInput(FILE *stream, const char *ask);
  *   - \ref localScrollMode a value of 0 temporarily disables scrolling,
  *     overriding the setting in \ref g_scrollMode;
  *   - \ref g_commandPrompt if this string matches ask, top level user input is
- *     assumed, and an empty line is usually discarded.
+ *     assumed, and an empty line is usually discarded;
+ *   - \ref g_logFileOpenFlag if set to 1, a read line is logged before it is
+ *     passed to the caller.
  * \post
  *   \ref localScrollMode is set to 1
  * \attention A CTRL_D can cause a return of an empty line, even if an
