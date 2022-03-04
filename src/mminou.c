@@ -74,7 +74,9 @@ flag localScrollMode = 1; /* 0 = Scroll continuously only till next prompt */
 
 /* Buffer for B (back) command at end-of-page prompt - for future use */
 /*! \var pntrString* backBuffer
- * Buffer for B (back) command at end-of-page prompt.
+ * Buffer for B (back) command at end-of-page prompt.  Although formally a
+ * \ref pntrString is an array of void*, this buffer contains always pointer to
+ * \ref vstring.
  *
  * Some longer text (like help texts for example) provide a page wise display
  * with a scroll option, so the user can move freely back and forth in the
@@ -85,7 +87,8 @@ pntrString_def(backBuffer);
 /*!
  * \var backBufferPos
  *
- * A position within the \ref backBuffer.
+ * Number of entries in the \ref backBuffer that are available for repeatedly
+ * scrolling back.  Initialized to 0.
  *
  * \invariant The value 0 requires an empty \ref backBuffer.
  */

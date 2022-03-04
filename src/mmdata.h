@@ -122,7 +122,22 @@ typedef long nmbrString; /* String of numbers */
  * To summarize the usages of this type:
  * - If you want to resize the array/stack you need a pointer to element 0.
  * - You can iterate from an arbitrary pointer to the end.
- * - Sometimes it denotes an isolated element, not embedded in a greater array.
+ * - Sometimes pntrString denotes an isolated element, not embedded in a
+ *   greater array.
+ *
+ * \warning Simply copying elements around is dangerous, if the elements point
+ *   to allocated memory.  There must be a guard that owns the instances,
+ *   survives each of the copies and finally deallocates the instances.
+ *   Otherwise you risk memory leaks, or even worse, undefined behavior, if a
+ *   copied pointer uses an instance previously freed by the original.  One way
+ *   to provide such a guard is a nested program structure.  All copied
+ *   pointers are created in subroutines, and they vanish before the caller
+ *   gains control again, and can safely deallocate the instances.  A similar
+ *   strategy is followed by \ref pntrLet, where deallocations of original and
+ *   derived instances are deferred until an operation finally finishes.  More
+ *   modern concepts employ reference counting schemes, and by avoiding
+ *   dedicated ownership solve this problem more thoroughly, but Metamath is
+ *   not up to that level (yet).
  */
 typedef void* pntrString; /* String of pointers */
 
@@ -614,6 +629,9 @@ temp_pntrString *pntrMakeTempAlloc(pntrString *s);
 
 
 /* String assignment - MUST be used to assign vstrings */
+/*!
+ * \fn void pntrLet(pntrString **target, const pntrString *source)
+ */
 void pntrLet(pntrString **target, const pntrString *source);
 
 /* String concatenation - last argument MUST be NULL */
@@ -658,7 +676,7 @@ long pntrLen(const pntrString *s);
  * derived from administrative data in the surrounding block.  The result
  * excludes the terminal element reserved for a null pointer.
  *
- * \param[in] s points to a element 0 of a \ref pntrString embedded in a block
+ * \param[in] s points to element 0 of a \ref pntrString embedded in a block
  * \return the maximal number of pointers that can be used in the array pointed
  * to by \p s.
  * \pre the array pointed to by s is the sole user of a \ref block "block".

@@ -238,8 +238,7 @@ vstring cmdInput(FILE *stream, const char *ask);
  * case, the returned string is printed before it may finally trigger an
  * immediate stop on the caller's side.
  *
- * 4. Before the line is returned to the caller, it is logged should that be
- * enabled.
+ * 4. If logging is enabled, prompt and returned input is logged.
  *
  * \return first not interpreted line as \ref vstring, or "EXIT" on error. 
  * \pre
@@ -259,8 +258,8 @@ vstring cmdInput(FILE *stream, const char *ask);
  *     overriding the setting in \ref g_scrollMode;
  *   - \ref g_commandPrompt if this string matches ask, top level user input is
  *     assumed, and an empty line is usually discarded;
- *   - \ref g_logFileOpenFlag if set to 1, a read line is logged before it is
- *     passed to the caller.
+ *   - \ref g_logFileOpenFlag if set to 1, a not interpreted returned line is
+ *     logged before it is passed on to the caller.
  * \post
  *   \ref localScrollMode is set to 1
  * \warning the calling program must deallocate the returned string.
