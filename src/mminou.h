@@ -22,9 +22,15 @@ extern int g_errorCount;     /* Total error count */
 /* Global variables used by print2() */
 /*!
  * \var flag g_logFileOpenFlag
- * If set to 1, logging of input is enabled.
+ * If set to 1, logging of input is enabled.  Initially set to 0.
  */
 extern flag g_logFileOpenFlag;
+/*!
+ * \var FILE *g_logFilePtr
+ * The OPEN LOG command opens a log file.  Its file descriptor is stored here,
+ * and not removed, when the log file is closed.  You should access this
+ * descriptor only when \ref g_logFileOpenFlag is 1.
+ */
 extern FILE *g_logFilePtr;
 extern FILE *g_listFile_fp;
 /* Global variables used by print2() */
@@ -225,12 +231,12 @@ vstring cmdInput(FILE *stream, const char *ask);
  *
  * 2. Empty lines are discarded, and a reprompt is triggered.
  * 
- * 3. In interactive mode, a NULL resulting from an error (buffer overflow) or
- * a premature EOF (CTRL_D from keyboard) from \ref cmdInput is either returned
- * as "EXIT".  Or if the last line of the prompt starts with "Do", then it is
- * assumed to expand to "Do you want to EXIT anyway (Y, N)?" and a "Y" is
- * returned. In any case, the returned string is printed before it may finally
- * trigger an immediate stop on the caller's side.
+ * 3. A NULL resulting from an error (buffer overflow) or a premature EOF
+ * (CTRL_D from keyboard) from \ref cmdInput is either returned as "EXIT".  Or
+ * if the last line of the prompt starts with "Do", then it is assumed to
+ * expand to "Do you want to EXIT anyway (Y, N)?" and a "Y" is returned. In any
+ * case, the returned string is printed before it may finally trigger an
+ * immediate stop on the caller's side.
  *
  * 4. Before the line is returned to the caller, it is logged should that be
  * enabled.
@@ -257,8 +263,6 @@ vstring cmdInput(FILE *stream, const char *ask);
  *     passed to the caller.
  * \post
  *   \ref localScrollMode is set to 1
- * \attention A CTRL_D can cause a return of an empty line, even if an
- *   interactive mode is assumed
  * \warning the calling program must deallocate the returned string.
  */
 vstring cmdInput1(const char *ask);
