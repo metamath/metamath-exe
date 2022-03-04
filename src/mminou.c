@@ -651,7 +651,6 @@ vstring cmdInput(FILE *stream, const char *ask) {
   long i;
 
   while (1) { /* For "B" backup loop */
-// drucke prompt
     if (ask != NULL && !g_commandFileSilentFlag) {
       printf("%s", ask);
 #if __STDC__

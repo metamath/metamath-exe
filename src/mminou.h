@@ -100,33 +100,33 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  * \brief requests a line of text from the __stream__.
  *
  * If not suppressed, displays a prompt text on the screen.  Then reads a
- * line from the __stream__.  This line may be interpreted as described further
+ * line from the __stream__.  Some lines are interpreted as described further
  * below, in which case the prompt is reprinted and the next line is read.
  * Returns the first not interpreted line as a \a vstring.
  *
  * A line in the __stream__ is terminated by a LF character (0x0D) character
  * alone.  It is read, but removed from the result.  The maximum line length
- * without the LF is \a CMD_BUFFER_SIZE - 1.  Reaching EOF (end of file) is
- * equivalent to reading LF, if at least 1 byte was read before.  Note that the
- * NUL character can be part of the line.  Reading a NUL is not sufficiently
- * supported in the current implementation and may or may not cause an error
- * message or even undefined behavior.
+ * without the LF is \a CMD_BUFFER_SIZE - 1.  Reaching EOF (end of file,
+ * CTRL-D) is equivalent to reading LF, if at least 1 byte was read before.
+ * Note that the NUL character can be part of the line.  Reading a NUL is not
+ * sufficiently supported in the current implementation and may or may not
+ * cause an error message or even undefined behavior.
  *
- * Reading from an empty __stream__ (or one that is at EOF position, produced
- * for example by CTRL-D on the console) returns NULL, not the empty string,
- * and is formally signalled as an error.  Overflowing the buffer is also an
- * error.  No truncated value is returned.
+ * Reading from an empty __stream__ (or one that is at EOF position, on the
+ * console CTRL-D) returns NULL, not the empty string, and is formally
+ * signalled as an error.  Overflowing the buffer is also an error.  No
+ * truncated value is returned.
  *
  * This routine interprets some input without returning it to the caller under
  * following two conditions:
  *
  * 1. If scrolling is enabled, a line consisting of a single character b or B
- * may indicate the user wants to scroll back through saved pages of output.
- * This is handled within this routine, if possible.  If it cannot be served,
- * the b or B is returned as common user input.
+ * indicates the user wants to scroll back through saved pages of output.
+ * If it can be served, it is handled within this routine, else the b or B is
+ * returned as user input.
  *
- * 2. The user hits ENTER (only) while prompted in top level context.  The
- * empty line is not returned.
+ * 2. The user hits ENTER only while prompted in top level context.  The empty
+ * line is not returned.
  * 
  * No timeout is applied while waiting for user input from the console.
  *
@@ -159,10 +159,12 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  * \pre
  *   The following variables are honored during execution and should be properly
  *   set:
- *   - \a commandFileSilentFlag value 1 suppresses prompts altogether, not only
- *     those used for scrolling through long text;
+ *   - \a g_commandFileSilentFlag value 1 suppresses all prompts, not only
+ *     those used for scrolling through long text.  It does not suppress error
+ *     messages;
  *   - \a g_commandFileNestingLevel a value > 0 indicates a SUBMIT call is
- *     executing, where scrolling prompts are suppressed;
+ *     executing, a read line is returned as is.  0 is seen as an interactive
+ *     mode, where read lines can be interpreted;
  *   - \a g_outputToString value 1 renders scrolling as pointless and disables it;
  *   - \a backBuffer may contain text to display on scroll back operations;
  *   - \a g_scrollMode value 1 enables scrolling back through text held in
@@ -170,7 +172,7 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  *   - \a localScrollMode a value of 0 temporarily disables scrolling, despite
  *     the setting in \a g_scrollMode;
  *   - \a g_commandPrompt if this string matches ask, top level user input is
- *     assumed.
+ *     assumed, where empty lines are discarded.
  * \post
  *   \a db is updated.
  * \warning the calling program must deallocate the returned string (if not
@@ -195,24 +197,29 @@ vstring cmdInput(FILE *stream, const char *ask);
  *   range from position 1 to \a g_screenWidth - 11, it is wrapped such, that
  *   it leaves enough space for ten character user input.
  *   \n
- *   If the prompt needs to be displayed again, only the last line after
- *   wrapping is reprinted.
- * \return not interpreted input.
+ *   If the user is prompted again, only the last line of the wrapped text is
+ *   reprinted.
+ * \return not interpreted line.
  * \pre
  *   The following variables are honored during execution and should be properly
  *   set:
- *   - \a commandFileSilentFlag value 1 suppresses prompts altogether, not only
- *     those used for scrolling through long text;
+ *   - \a g_commandFileSilentFlag value 1 suppresses output and prompts, but
+ *     not all error messages;
  *   - \a g_commandFileNestingLevel a value > 0 indicates a SUBMIT call is
- *     executing, where scrolling prompts are suppressed;
+ *     executing, where a read line is returned as is. 0 is seen as interactive
+ *     mode, where read lines can be interpreted;
  *   - \a g_outputToString value 1 renders scrolling as pointless and disables it;
  *   - \a backBuffer may contain text to display on scroll back operations;
  *   - \a g_scrollMode value 1 enables scrolling back through text held in
  *     \a backBuffer;
+ *   - \a localScrollMode a value of 0 temporarily disables scrolling, despite
+ *     the setting in \a g_scrollMode;
  *   - \a g_commandPrompt if this string matches ask, top level user input is
- *     assumed.
+ *     assumed, and an empty line is usually discarded.
  * \post
  *   \a localScrollMode is set to 1
+ * \attention A CTRL_D can cause a return of an empty line, even if an
+ *   interactive mode is assumed
  * \warning the calling program must deallocate the returned string.
  */
 vstring cmdInput1(const char *ask);
