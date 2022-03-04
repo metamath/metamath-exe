@@ -45,9 +45,9 @@ extern flag g_commandEcho; /* Echo full command */
 /*!
  * \brief indicates whether the user has turned MEMORY STATUS on.
  *
- * If the user issues SET MEMORY_STATUS ON this \a flag is set to 1.  It is
+ * If the user issues SET MEMORY_STATUS ON this \ref flag is set to 1.  It is
  * reset to 0 again on a SET MEMORY_STATUS OFF command.  When 1, certain
- * memory de/allocations are monitored - see \a db3.
+ * memory de/allocations are monitored - see \ref db3.
  */
 extern flag g_memoryStatus; /* Always show memory */
 

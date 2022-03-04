@@ -32,7 +32,7 @@ This is an emulation of the string functions available in VMS BASIC.
 /*E*/long db1=0;
 /*!
  * \def INCDB1
- * updates \a db1 if NDEBUG is not defined, is a no operation else.
+ * updates \ref db1 if NDEBUG is not defined, is a no operation else.
  *
  * NDEBUG switches C assert instructions off or on.  So the handling of db1 is
  * aligned with assert().
@@ -46,9 +46,9 @@ This is an emulation of the string functions available in VMS BASIC.
 /*!
  * \def MAX_ALLOC_STACK
  *
- * The number of \a vstring pointers set aside for temporary string evaluation.
- * This number covers the needs of ordinary nested functions but it puts a
- * limit to recurrent calls.
+ * The number of \ref vstring pointers set aside for temporary string
+ * evaluation.  This number covers the needs of ordinary nested functions but
+ * it puts a limit to recurrent calls.
  *
  * The number given here is one greater than actually available.  One entry is
  * reserved for the terminal null pointer marking the top of stack.
@@ -61,20 +61,20 @@ long g_startTempAllocStack = 0;    /* Where to start freeing temporary allocatio
 /*!
  * \brief stack for temporary text.
  *
- * This \ref stack "stack" contains \a vstring pointers holding temporary text
- * like fragments, boilerplate and so on.  The current top of the stack is
- * \a g_tempAllocStackTop.  Nested functions share this stack, each setting
+ * This \ref stack "stack" contains \ref vstring pointers holding temporary
+ * text like fragments, boilerplate and so on.  The current top of the stack is
+ * \ref g_tempAllocStackTop.  Nested functions share this stack, each setting
  * aside its own scope.  The scope of the most nested function begins at index
- * \a g_startTempAllocStack.
+ * \ref g_startTempAllocStack.
  *
- * When a nested function starts execution, it saves \a g_startTempAllocStack
- * and copies the \a g_tempAllocStackTop into it, marking the begin of its own
+ * When a nested function starts execution, it saves \ref g_startTempAllocStack
+ * and copies the \ref g_tempAllocStackTop into it, marking the begin of its own
  * scope of temporaries.  Before returning, both values are restored again.
  *
  * The scope of top level functions begins at index 0
  *.
  * \invariant
- * - The entry at \a g_tempAllocStackTop is NULL.
+ * - The entry at \ref g_tempAllocStackTop is NULL.
  */
 void *tempAllocStack[MAX_ALLOC_STACK];
 
@@ -93,10 +93,10 @@ void freeTempAlloc(void) {
 
 /*!
  * \fn pushTempAlloc(void *mem)
- * \brief pushes a pointer onto the \a tempAllocStack.
+ * \brief pushes a pointer onto the \ref tempAllocStack.
  *
- * In case of a stack overflow \a bug is called.  This function is low level
- * that does not ensure that invariants of \a tempAllocStack are kept.
+ * In case of a stack overflow \ref bug is called.  This function is low level
+ * that does not ensure that invariants of \ref tempAllocStack are kept.
  *
  * \param mem (not null) points to either a non-mutable empty string, or
  *   to allocated memory.  Its contents need not be valid yet, although it is
@@ -104,10 +104,10 @@ void freeTempAlloc(void) {
  * \pre
  *   The stack must not be full.
  * \post
- *   If not full, \a mem is added on top of \a tempAllocStack, and
- *   \a g_tempAllocStackTop is increased.  This function
+ *   If not full, \p mem is added on top of \ref tempAllocStack, and
+ *   \ref g_tempAllocStackTop is increased.  This function
  *   does not ensure a NULL pointer follows the pushed pointer.  Statistics in
- *   \a db1 is not updated.
+ *   \ref db1 is not updated.
  * \warning
  *   In case of stack overflow, the caller is not notified and a memory leak
  *   is likely.
@@ -127,19 +127,20 @@ static void pushTempAlloc(void *mem)
 /*!
  * \fn tempAlloc(long size)
  *
- * \brief allocates memory for size bytes and pushes it onto the \a tempAllocStack
+ * \brief allocates memory for size bytes and pushes it onto the
+ *   \ref tempAllocStack
  *
  * This low level function does NOT initialize the allocated memory.  If the
- * allocation on the heap fails, \a bug is called.  The statistic value \a db1
- * is updated.
+ * allocation on the heap fails, \ref bug is called.  The statistic value
+ * \ref db1 is updated.
  *
  * \param size (> 0) number of bytes to allocate on the heap.  If the memory is
  *   intended to hold NUL terminated text, then size must account for the final
  *   NUL character, too.
  * \pre
- *   The \a tempAllocStack must not be full.
+ *   The \ref tempAllocStack must not be full.
  * \post
- *   The top of \a tempAllocStack addresses memory at least the size of the
+ *   The top of \ref tempAllocStack addresses memory at least the size of the
  *   submitted parameter.
  * \warning
  *   In case of stack overflow, the caller is not notified and a memory leak

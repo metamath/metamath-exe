@@ -19,9 +19,9 @@
  * \brief bytes held by vstring instances outside of the stack of temporaries
  *
  * monitors the number of bytes (including the terminal NUL) currently used in
- * all \a vstring pointer variables OUTSIDE of the \a tempAllocStack.  Note:
- * This is NOT the number of bytes allocated, but the portion actually used!  A
- * few memory allocations are also included:
+ * all \ref vstring pointer variables OUTSIDE of the \ref tempAllocStack.
+ * Note: This is NOT the number of bytes allocated, but the portion actually
+ * used!  A few memory allocations are also included:
  * - command line buffers used to hold user input from a console;
  * - buffers used to read file contents in.
  *
@@ -34,8 +34,8 @@
  * \var db1
  * \brief bytes held by vstring instances inside of the stack of temporaries
  *
- * monitors the number of bytes currently pointed to by \a vstring pointers
- * INSIDE the \a tempAllocStack.  Note: This is NOT their capacity, but the
+ * monitors the number of bytes currently pointed to by \ref vstring pointers
+ * INSIDE the \ref tempAllocStack.  Note: This is NOT their capacity, but the
  * portion actually used!
  *
  * Not updated if NDEBUG (usually deactivates asserts in C code) is defined.
@@ -90,17 +90,17 @@ typedef char flag;
  * Obsolete.  Now fixed to 0.  Historically the metamath sources were also used
  * for other purposes than maintaining Metamath files.  One such application, a
  * standalone text processor, was LIST.EXE.  The sources still query this
- * \a flag occasionally, but its value is in fact fixed to 0 in metamath,
+ * \ref flag occasionally, but its value is in fact fixed to 0 in metamath,
  * meaning the LIST.EXE functionality is an integral part of metamath now.
  */
 extern flag g_listMode; /* 0 = metamath, 1 = list utility */
 /*!
  * \var g_toolsMode
  * Metamath has two modes of operation: In its primary mode it handles
- * mathematical contents like proofs.  In this mode \a g_toolsMode  is set to
+ * mathematical contents like proofs.  In this mode \ref g_toolsMode  is set to
  * 0.  This is the value assigned on startup.  A second mode is enabled after
  * executing the 'tools' command.  In this mode text files are processed using
- * high level commands.  It is indicated by a 1 in \a g_toolsMode.
+ * high level commands.  It is indicated by a 1 in \ref g_toolsMode.
  */
 extern flag g_toolsMode; /* In metamath mode:  0 = metamath, 1 = tools */
 
@@ -137,7 +137,7 @@ typedef nmbrString temp_nmbrString;
 
 /*!
  * \typedef temp_pntrString
- * \brief a single \a pntrString element for use in a \ref stack "stack".
+ * \brief a single \ref pntrString element for use in a \ref stack "stack".
  *
  * These elements are pushed onto and popped off a \ref stack 
  * "stack of temporary data".  Special commands can free all pointers on and
@@ -305,7 +305,8 @@ void memFreePoolPurge(flag untilOK);
  * Return the overall statistics about the pools \ref memFreePool
  * "free block array" and the \ref memUsedPool "used block array".  In MEMORY
  * STATUS mode ON, a diagnostic message compares the the contents of
- * \a poolTotalFree to the values found in this statistics.  They should not differ!
+ * \ref poolTotalFree to the values found in this statistics.  They should not
+ * differ!
  *
  * \attention This is NOT full memory usage, because completely used
  * \ref block "blocks" are not tracked!
@@ -369,7 +370,7 @@ extern struct nullNmbrStruct g_NmbrNull;
 
 /*!
  * \struct nullPntrStruct
- * describing a \ref block of \a pntrString containing only the null
+ * describing a \ref block of \ref pntrString containing only the null
  * pointer.  Besides this pointer it is accompanied with a header containing
  * the hidden administrative values of such \ref block "block".
  *
@@ -387,14 +388,14 @@ struct nullPntrStruct {
      */
     long poolLoc;
     /*!
-     * allocated size of the memory block containing the \a pntrString,
+     * allocated size of the memory block containing the \ref pntrString,
      * excluding any hidden administrative data.
      * Note: this is the number of bytes, not elements!  Fixed to the size of a
      * single void* instance.
      */
     long allocSize;
     /*!
-     * currently used size of the memory block containing the \a pntrString,
+     * currently used size of the memory block containing the \ref pntrString,
      * excluding any hidden administrative data.
      * Note: this is the number of bytes, not elements!  Fixed to the size of a
      * single pointer element.
@@ -408,9 +409,9 @@ struct nullPntrStruct {
 /*!
  * \var g_PntrNull
  * Global instance of a memory block structured like a
- * \a pntrString, fixed in size and containing always exactly one null pointer
+ * \ref pntrString, fixed in size and containing always exactly one null pointer
  * element, the terminating NULL.  This setup is recognized as an empty
- * \a pntrString.
+ * \ref pntrString.
  *
  * \attention mark as const
  */
@@ -418,15 +419,15 @@ extern struct nullPntrStruct g_PntrNull;
 /*!
  * \def NULL_PNTRSTRING
  * The address of a \ref block "block" containing an empty, not resizable
- * \a pntrString
- * stack.  Used to initialize \a pntrString variables .
+ * \ref pntrString
+ * stack.  Used to initialize \ref pntrString variables .
  */
 #define NULL_PNTRSTRING &(g_PntrNull.nullElement)
 /*!
  * \def pntrString_def
  *
- * declare a new \a pntrString variable and initialize it to point to a block
- * with an empty, not resizable \a pntrString.
+ * declare a new \ref pntrString variable and initialize it to point to a block
+ * with an empty, not resizable \ref pntrString.
  *
  * \param[in] x variable name
  * \pre The variable does not exist in the current scope.
@@ -592,7 +593,7 @@ long compressedProofSize(const nmbrString *proof, long statemNum);
 /*!
  * \var long g_pntrTempAllocStackTop
  *
- * Index of the current top af the \ref stack "stack" \a pntrTempAlloc.
+ * Index of the current top af the \ref stack "stack" \ref pntrTempAlloc.
  * New data is pushed from this location on if space available.
  *
  * \invariant always refers the null pointer element behind the valid data.
@@ -644,7 +645,7 @@ temp_pntrString *pntrPSpace(long n);
  * derived from administrative data in the surrounding block.
  *
  * \attention This is not the capacity of the array.
- * \param[in] s points to a element 0 of a \a pntrString  embedded in a block
+ * \param[in] s points to a element 0 of a \ref pntrString  embedded in a block
  * \return the number of pointers currently in use in the array pointed to by \p s.
  * \pre the array pointed to by s is the sole user of a \ref block "block".
  */
@@ -657,7 +658,7 @@ long pntrLen(const pntrString *s);
  * derived from administrative data in the surrounding block.  The result
  * excludes the terminal element reserved for a null pointer.
  *
- * \param[in] s points to a element 0 of a \a pntrString  embedded in a block
+ * \param[in] s points to a element 0 of a \ref pntrString embedded in a block
  * \return the maximal number of pointers that can be used in the array pointed
  * to by \p s.
  * \pre the array pointed to by s is the sole user of a \ref block "block".

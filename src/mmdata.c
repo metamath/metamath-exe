@@ -85,9 +85,10 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
  * During execution chunks of memory, either complete \ref block "blocks" or
  * \ref fragmentation "fragments" thereof, become free again.  The suballocator
  * adds them then to internal **pools** for reuse, one dedicated to totally
- * free blocks (\a memFreePool), the other to fragmented ones (\a memUsedPool).
- * We call these pools **free block array** and **used block array** in this
- * documentation.  Fully occupied blocks are not tracked by the suballocator.
+ * free blocks (\ref memFreePool), the other to fragmented ones
+ * (\ref memUsedPool).  We call these pools **free block array** and
+ * **used block array** in this documentation.  Fully occupied blocks are not
+ * tracked by the suballocator.
  *
  * Although the suballocator tries to avoid returning memory to the system, it
  * can do so under extreme memory constraints, or when built-in limits are
@@ -139,7 +140,7 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
  * offset -3:\n
  *   If this block has free space at the end (is \ref fragmentation
  *   "fragmented"), then it contains its index in the used blocks array, see
- *   \a memUsedPool.  A value of -1 indicates it is either fully occupied or
+ *   \ref memUsedPool.  A value of -1 indicates it is either fully occupied or
  *   totally free.  In any of these cases it is not kept in the used blocks
  *   array.
  */
@@ -152,8 +153,8 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
  * In Metamath a pool has no gaps in between.
  *
  * The \ref suballocation "suballocator" uses two pools:
- * - the **free block array** pointed to by \a memFreePool;
- * - the **used block array** pointed to by \a memUsedPool.
+ * - the **free block array** pointed to by \ref memFreePool;
+ * - the **used block array** pointed to by \ref memUsedPool.
  */
 
 /*! \page stack Temporary Allocated Memory
@@ -202,8 +203,8 @@ long poolAbsoluteMax = 1000000; /* Pools will be purged when this is reached */
 /*!
  * \var long poolTotalFree
  * contains the number of free space available in bytes, in both pools
- * \a memFreePool and \a memUsedPool, never counting the hidden headers at the
- * beginning of each block, see \ref block.
+ * \ref memFreePool and \ref memUsedPool, never counting the hidden headers at
+ * the beginning of each block, see \ref block.
  */
 long poolTotalFree = 0; /* Total amount of free space allocated in pool */
 /*E*/long i1,j1_,k1; /* 'j1' is a built-in function */
@@ -224,7 +225,7 @@ long poolTotalFree = 0; /* Total amount of free space allocated in pool */
  *
  * The used block array may only be partially occupied, in which case elements
  * at the end of the array are unused.  Its current usage is given by
- * \a memUsedPoolSize.  Its capacity is given by \a memUsedPoolMax.
+ * \ref memUsedPoolSize.  Its capacity is given by \ref memUsedPoolMax.
  *
  * \invariant Each block in the used blocks array has its index noted in its
  * hidden header, for backward reference.
@@ -241,9 +242,9 @@ void **memUsedPool = NULL;
  * The Metamath suballocator holds fragmented blocks in a used block array.
  * The number of occupied entries is kept in this variable.  Elements at the
  * end of the used block array may be unused.  The fill size is given by this
- * variable.  For further information see \a memUsedPool.
+ * variable.  For further information see \ref memUsedPool.
  *
- * \invariant memUsedPoolSize <= \a memUsedPoolMax.
+ * \invariant memUsedPoolSize <= \ref memUsedPoolMax.
  */
 long memUsedPoolSize = 0; /* Current # of partially filled arrays in use */
 /*!
@@ -253,11 +254,11 @@ long memUsedPoolSize = 0; /* Current # of partially filled arrays in use */
  *
  * The Metamath suballocator holds fragmented blocks in the used block
  * array.  This array may only partially be occupied.  Its total capacity is
- * kept in this variable.  For further information see \a memUsedPool.
+ * kept in this variable.  For further information see \ref memUsedPool.
  *
  * This variable may grow during a reallocation process.
  *
- * \invariant (memUsedPoolMax > 0) == (\a memUsedPool != 0)
+ * \invariant (memUsedPoolMax > 0) == (\ref memUsedPool != 0)
  */
 long memUsedPoolMax = 0; /* Maximum # of entries in 'in use' table (grows
                                as necessary) */
@@ -274,9 +275,9 @@ long memUsedPoolMax = 0; /* Maximum # of entries in 'in use' table (grows
  * The **free block array** contains only totally free \ref block "blocks".
  * This array may only be partially occupied, in which case the elements at the
  * end are the unused ones.  Its current fill size is given by
- * \a memFreePoolSize.  Its capacity is given by \a memFreePoolMax.
+ * \ref memFreePoolSize.  Its capacity is given by \ref memFreePoolMax.
  *
- * Fragmented blocks are kept in a separate \a memUsedPool.  The suballocator
+ * Fragmented blocks are kept in a separate \ref memUsedPool.  The suballocator
  * never tracks fully used blocks.
  */
 void **memFreePool = NULL;
@@ -288,9 +289,9 @@ void **memFreePool = NULL;
  * The Metamath suballocator holds free blocks in a free block array.  The
  * number of occupied entries is kept in this variable.  Elements at the end of
  * the free block array may not be used.  The fill size is given by this
- * variable.  For further information see \a memFreePool.
+ * variable.  For further information see \ref memFreePool.
  *
- * \invariant memFreePoolSize <= \a memFreePoolMax.
+ * \invariant memFreePoolSize <= \ref memFreePoolMax.
  */
 long memFreePoolSize = 0; /* Current # of available, allocated arrays */
 /*!
@@ -300,11 +301,11 @@ long memFreePoolSize = 0; /* Current # of available, allocated arrays */
  *
  * The Metamath suballocator holds free blocks in a **free block array**.  It
  * may only be partially occupied.  Its total capacity is kept in this variable.  For
- * further information see \a memFreePool.
+ * further information see \ref memFreePool.
  *
  * This variable may grow during a reallocation process.
  *
- * \invariant (memFreePoolMax > 0) == (\a memFreePool != 0)
+ * \invariant (memFreePoolMax > 0) == (\ref memFreePool != 0)
  */
 long memFreePoolMax = 0; /* Maximum # of entries in 'free' table (grows
                                as necessary) */
@@ -2414,10 +2415,10 @@ long g_pntrStartTempAllocStack = 0;   /* Where to start freeing temporary alloca
                                     special nested vstring functions) */
 /*!
  * \var pntrTempAllocStack
- * \brief a \ref stack "stack" of \a temp_pntrString.
+ * \brief a \ref stack "stack" of \ref temp_pntrString.
  *
- * Holds pointers to temporarily allocated data of type \a pntrString.  Such a
- * \ref stack "stack" contains strictly __local__ data of a function, not
+ * Holds pointers to temporarily allocated data of type \ref pntrString.  Such
+ * a \ref stack "stack" contains strictly __local__ data of a function, not
  * accessed from outer levels.
  */
 pntrString *pntrTempAllocStack[M_MAX_ALLOC_STACK];
@@ -2665,8 +2666,8 @@ void pntrZapLen(pntrString *s, long length) {
 /* Copy a string to another (pre-allocated) string */
 /* Dangerous for general purpose use */
 /*!
- * \brief copies a null pointer terminated \a pntrString to a destination
- * \a pntrString.
+ * \brief copies a null pointer terminated \ref pntrString to a destination
+ * \ref pntrString.
  *
  * This function determines the length of the source \p t by scanning for a
  * terminating null pointer element.  The destination \p s must have enough
@@ -2687,7 +2688,7 @@ void pntrZapLen(pntrString *s, long length) {
  *   - \p t is terminated by the first null pointer element.
  *   - the target array \p s must have enough free space to hold the source array
  *     \p t including the terminal null pointer.
- *   - \p s and \p t can overlap if \p t points to a later element than \a s
+ *   - \p s and \p t can overlap if \p t points to a later element than \p s
  *     (move left semantics)
  * \invariant
  *   If \p s is contained in a \ref block "block", its administrative header is

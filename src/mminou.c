@@ -67,7 +67,7 @@ flag g_quitPrint = 0; /* Flag that user quit the output */
 /*!
  * \var flag localScrollMode
  *
- * temporarily disables prompted scroll (see \a g_scrollMode) until next user
+ * temporarily disables prompted scroll (see \ref g_scrollMode) until next user
  * prompt
  */
 flag localScrollMode = 1; /* 0 = Scroll continuously only till next prompt */
@@ -85,9 +85,9 @@ pntrString_def(backBuffer);
 /*!
  * \var backBufferPos
  *
- * A position within the \a backBuffer.
+ * A position within the \ref backBuffer.
  *
- * \invariant The value 0 requires an empty \a backBuffer.
+ * \invariant The value 0 requires an empty \ref backBuffer.
  */
 long backBufferPos = 0;
 flag backFromCmdInput = 0; /* User typed "B" at main prompt */
