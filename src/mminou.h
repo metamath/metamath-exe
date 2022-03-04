@@ -197,21 +197,28 @@ vstring cmdInput(FILE *stream, const char *ask);
 /*!
  * \brief print explanatory text and then read a line.
  *
- * gets a line from either stdin or the command file stream depending on
- * \ref g_commandFileNestingLevel.  If this value is 0, interactive input is
- * assumed, else It uses \ref cmdInput(), i.e some input lines may be
- * interpreted and not returned to the caller.  The conditions for this are
- * listed in \ref cmdInput, except that \ref localScrollMode is fixed to 1.
- * \param ask (not null) text displayed before input prompt.  This can be
- *   located in \ref tempAllocStack.  If this text contains more than
- *   \ref g_screenWidth characters, it is wrapped preferably at spaces and
- *   split across multiple lines.  If the final line contains spaces in the
- *   range from position 1 to \ref g_screenWidth - 11, it is wrapped such, that
- *   it leaves enough space for ten character user input.
- *   \n
- *   If the user is prompted again, only the last line of the wrapped text in
- *   \p ask is reprinted.
- * \return not interpreted line.
+ * After some explanatory text is printed, gets a line from either stdin or the
+ * command file stream in \ref g_commandFilePt, depending on the value of
+ * \ref g_commandFileNestingLevel.  If this value is 0, interactive input via
+ * stdin is assumed, else non interpreted lines are read from a file.  The line returned
+ * to the caller is more or less what \ref cmdInput() yields, but some fine
+ * tuning is applied.
+ *
+ * 1. The text used to prompt the user is most useful in interactive mode.  It
+ * is wrapped around preferably at spaces to fit into a display of
+ * \ref g_screenWidth.  If possible, wrapping shortens the last line such that
+ * space for 10 characters is available to the right of the prompt for user
+ * input.  Lengthy output may be interrupted for convenient page wise display.
+ * The user's scroll commands are interpreted internally and not seen by the
+ * caller.  If a line is either discarded or interpreted, the user is prompted
+ * again. The full prompt text is never repeated, only its last line after
+ * wrapping.
+ *
+ * 2. In interactive mode, empty lines are usually discarded.  An empty line
+ * resulting from an error (buffer overflow) or a premature EOF (CTRL_D) is
+ * returned, though.
+ *
+ * \return first not interpreted line as \ref vstring.  An empty string on error.
  * \pre
  *   The following variables are honored during execution and should be properly
  *   set:
