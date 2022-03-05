@@ -115,18 +115,18 @@ typedef long nmbrString; /* String of numbers */
  * \brief an array (maybe of size 1) of untyped pointers (void*)
  *
  * In general this array is organized like a stack: the number of elements in
- * the pntrString grows and shrinks during program flow, values are pushed and
- * popped at the end.  Such a stack is embedded in a \ref block that contains
- * administrative information about the stack.  The stack begins with
+ * the pntrString array grows and shrinks during program flow, values are
+ * pushed and popped at the end.  Such a stack is embedded in a \ref block that
+ * contains administrative information about the stack.  The stack begins with
  * element 0, and the administrative information is accessed through negative
  * indices, but need reinterpretation then.  To allow iterating through the
- * tail of the array from a certain element on, the array terminates with a
+ * tail of an array from a certain element on, an array terminates with a
  * null pointer.  This type of usage forbids null pointer as ordinary elements,
  * and the terminal null pointer is not part of the data in the array.
  *
  * To summarize the usages of this type:
  * - If you want to resize the array/stack you need a pointer to element 0.
- * - You can iterate from an arbitrary pointer to the end.
+ * - You can iterate from an arbitrary element to the end.
  * - Sometimes pntrString denotes an isolated element, not embedded in a
  *   greater array.
  *
@@ -161,7 +161,7 @@ typedef nmbrString temp_nmbrString;
  *
  * These elements are pushed onto and popped off a \ref stack 
  * "stack of temporary data".  All pointer of this type should ONLY refer to
- * adynamically llocated memory on the heap.  Special commands support
+ * dynamically allocated memory on the heap.  Special commands support
  * dependency tracking and free all pointers on and after a particular one in
  * such a stack. 
  */
@@ -324,10 +324,10 @@ void *poolFixedMalloc(long size /* bytes */);
  * the given size is allocated from the system.  In any case, the header of the
  * \ref block is properly initialized.  Exits program on out of memory
  * condition.
- * \param[in] size (in bytes) of the block, not including the block header, but
- *   including space for a terminal NULL.
- * \return a free and initialized block of memory with at least the requested
- *   user space.  Exit on out-of-memory
+ * \param[in] size (in bytes) of the block, not including the block header.
+ * \return a \ref block with enough capacity for \p size bytes of data.  The
+ *   data space is filled with random contents, but in the block header its
+ *   \p size is noted.   Exit on out-of-memory
  */
 void *poolMalloc(long size /* bytes */);
 /*!
@@ -339,7 +339,7 @@ void *poolMalloc(long size /* bytes */);
  * added.
  * \param[in] ptr pointer to a \ref block.
  * \pre
- *   - \p ptr was previously allocated.
+ *   - \p ptr was previously dynamically allocated.
  *   - all memory pointed to by \p ptr is considered free.  This holds even if it
  *     it is kept in \ref memUsedPool. 
  * \post
