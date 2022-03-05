@@ -15,7 +15,7 @@
 
 /* debugging flags & variables */
 /*!
- * \var db
+ * \var long db
  * \brief bytes held by vstring instances outside of the stack of temporaries
  *
  * monitors the number of bytes (including the terminal NUL) currently used in
@@ -31,7 +31,7 @@
 /*E*/extern long db;
 /*E*/extern long db0;
 /*!
- * \var db1
+ * \var long db1
  * \brief bytes held by vstring instances inside of the stack of temporaries
  *
  * monitors the number of bytes currently pointed to by \ref vstring pointers
@@ -43,6 +43,11 @@
  * \bug Seems never be displayed.
  */
 /*E*/extern long db1;
+/*!
+ * \var long db2
+ * Bytes held in \ref blocks managed in \ref tempAllocStack
+ * "temporary pointer stacks".
+ */
 /*E*/extern long db2;
 /*!
  * \var db3
@@ -315,11 +320,11 @@ void *poolFixedMalloc(long size /* bytes */);
  * \ref memFreePool.  If this block exists, but has not sufficient size, it is
  * reallocated from the system.  If the pool is empty, a new \ref block of
  * the given size is allocated from the system.  In any case, the header of the
- * \ref block is properly initialized.
+ * \ref block is properly initialized.  Exits program on out of memory
+ * condition.
  * \param[in] size (in bytes) of the block, not including the block header.
  * \return a free and initialized block of memory with at least the requested
- *   user space.
- * \bug uses outOfMemory that can stack up endlessly
+ *   user space.  Exit on out-of-memory
  */
 void *poolMalloc(long size /* bytes */);
 /*!
@@ -327,15 +332,15 @@ void *poolMalloc(long size /* bytes */);
  *
  * Removes \p ptr from the \ref memUsedPool, if it is listed there.  Then tries
  * adding it to the \ref memFreePool.  If this pool is full, it is increased by
- * \ref MEM_POOL_GROW.  If this fails, an error is created, else \p ptr is
+ * \ref MEM_POOL_GROW.  If this fails, the program is exited, else \p ptr is
  * added.
  * \param[in] ptr pointer to a \ref block.
  * \pre
  *   all memory pointed to by \p ptr is considered free.  This holds even if it
  *   it is kept in \ref memUsedPool. 
  * \post
- *   \ref poolTotalFree is updated
- * \bug calls outOfMemory, that can stack up endlessly
+ *   - \ref poolTotalFree is updated
+ *   - Exit on out-of-memory (the \ref memFreePool overflows)
  */
 void poolFree(void *ptr);
 /*!
@@ -363,7 +368,7 @@ void poolFree(void *ptr);
  * \post
  *   - \ref poolTotalFree is the current free space in bytes in both pools.
  *   - A full \ref block is not added to \ref memUsedPool by this function.
- * \bug calls outOfMemory, that can stack up endlessly
+ *   - Exit on out-of-memory (\ref memUsedPool overflows)
  */
 void addToUsedPool(void *ptr);
 /* Purges reset memory pool usage */
@@ -375,7 +380,7 @@ void memFreePoolPurge(flag untilOK);
  *
  * Return the overall statistics about the pools \ref memFreePool
  * "free block array" and the \ref memUsedPool "used block array".  In MEMORY
- * STATUS mode ON, a diagnostic message compares the the contents of
+ * STATUS mode ON, a diagnostic message compares the contents of
  * \ref poolTotalFree to the values found in this statistics.  They should not
  * differ!
  *
@@ -406,7 +411,7 @@ long getFreeSpace(long max);
 /* Fatal memory allocation error */
 /*!
  * \fn outOfMemory(const char *msg)
- * \brief fatal memory allocation error.
+ * \brief exit after fatal memory allocation error.
  *
  * called when memory cannot be allocated, either because memory/address space
  * is physically exhausted, or because administrative structures would overflow.
@@ -664,12 +669,27 @@ long compressedProofSize(const nmbrString *proof, long statemNum);
 /*!
  * \var long g_pntrTempAllocStackTop
  *
- * Index of the current top af the \ref stack "stack" \ref pntrTempAlloc.
+ * Index of the current top of the \ref stack "stack" \ref pntrTempAlloc.
  * New data is pushed from this location on if space available.
  *
  * \invariant always refers the null pointer element behind the valid data.
  */
 extern long g_pntrTempAllocStackTop;   /* Top of stack for pntrTempAlloc function */
+/*!
+ * \var long g_pntrTempAllocStackStart
+ *
+ * Index of the first entry of the \ref stack "stack" \ref pntrTempAllocStack
+ * eligible for deallocation on the next call to \ref pntrTempAlloc.  Entries
+ * below this value are considered not dependent on the value at this index,
+ * but entries above are.  So when this entry gets deallocated, dependent ones
+ * should follow suit.  A function like \ref pntrTempAlloc or \ref pntrLet
+ * manage this automatic deallocation.
+ * \n
+ * Nested functions using the \ref pntrTempAllocStack usually save the current
+ * value and set it to \ref g_pntrTempAllocStackTop, so they can create their
+ * local dependency chain.  On return the saved value is restored.
+ * \invariant always less or equal to \ref g_pntrTempAllocStackTop.
+ */
 extern long g_pntrStartTempAllocStack; /* Where to start freeing temporary
     allocation when pntrLet() is called (normally 0, except for nested
     pntrString functions) */
@@ -698,7 +718,8 @@ temp_pntrString *pntrMakeTempAlloc(pntrString *s);
  * \post
  *   - the \ref block \p target points to is filled with a copy of
  *     \ref pntrString elements \p source points to, padded with a terminal
- *     NULL, or an outOfMemory error is raised.
+ *     NULL.
+ *   - Exit on out-of-memory
  *   - due to a possible reallocation the pointer \p target points to may
  *     change.
  */
