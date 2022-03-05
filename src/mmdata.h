@@ -316,6 +316,10 @@ void *poolMalloc(long size /* bytes */);
  * \ref MEM_POOL_GROW.  If this fails, an error is created, else \p ptr is
  * added.
  * \param[in] ptr pointer to a \ref block.
+ * \pre
+ *   all memory pointed to by \p ptr is considered free.
+ * \post
+ *   \ref poolTotalFree is updated
  * \bug calls outOfMemory, that can stack up endlessly
  */
 void poolFree(void *ptr);
@@ -323,14 +327,14 @@ void poolFree(void *ptr);
  * \fn addToUsedPool(void *ptr)
  * \brief announces a block with free capacity for further allocation
  *
+ * This function temporarily freezes the usage of a block for an old client, and
+ * allows temporary reallocation of the free capacity to a new client.
+ * \n
  * The program maintains pools of memory blocks with free capacity.  In case of
  * demand such a \ref block can temporarily allocate this capacity for new
  * usage.  Of course two (or more) clients share different parts of the same
  * \ref block then, so a newer client must complete its usage before the old
  * one resumes operation and may want to extend its usage of the \ref block.
- * \n
- * This function temporarily freezes the usage of a block for an old client, and
- * allows temporary reallocation of the free capacity to a new client.
  * \n
  * Before \p ptr is added to \ref memUsedPool, the pool size is checked and
  * increased by \ref MEM_POOL_GROW if full.  This may lead to out-of-memory
@@ -338,9 +342,9 @@ void poolFree(void *ptr);
  * \ref poolTotalFree is updated.
  * \param[in] ptr pointer to a \ref block.
  * \pre
- *   the block is \ref fragmentation "fragmented" (contains unused pointers)
- *   If this condition is violated \ref bug is called and the function returns
- *   without further action.
+ *   the block is \ref fragmentation "fragmented" (contains unused memory)
+ *   If it is full \ref bug is called and the function returns without further
+ *   action.
  * \post
  *   - \ref poolTotalFree is the current free space in bytes in both pools.
  *   - A full \ref block is not added to \ref memUsedPool by this function.
