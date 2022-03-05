@@ -370,7 +370,7 @@ void addToUsedPool(void *ptr);
 void memFreePoolPurge(flag untilOK);
 /* Statistics */
 /*!
- * \fn getPoolStats
+ * \fn getPoolStats(long *freeAlloc, long *usedAlloc, long *usedActual)
  * \brief Provide information about memory in pools at the instant of call.
  *
  * Return the overall statistics about the pools \ref memFreePool
