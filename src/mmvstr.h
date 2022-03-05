@@ -335,7 +335,7 @@ void let(vstring *target, const char *source);
  *   The following parameters are pointers to NUL terminated strings as well,
  *   except for the last parameter that must be NULL.  It is allowed to
  *   duplicate parameters.
- * \return the concatenated \ref temp_string terminated by a NUL character.
+ * \return the concatenated \ref temp_vstring terminated by a NUL character.
  * \post the resulting string is pushed onto the \ref tempAllocStack.
  *   \ref db is updated.
  * \bug a stack overflow of \ref tempAllocStack is not handled correctly.
@@ -358,50 +358,50 @@ int linput(FILE *stream, const char *ask, vstring *target);
 /* Emulation of BASIC string functions */
 /* Indices are 1-based */
 /*!
- * \fn temp_vstring seg(const char *sin, long p1, long p2)
+ * \fn temp_vstring seg(const char *sin, long start, long stop)
  * Extracts a substring from a source and pushes it on \ref tempAllocStack.
  * Note: The bounding indices are 1-based and inclusive.
  *
  * \param[in] sin (not null) pointer to the NUL-terminated source text.
- * \param[in] p1 offset of the first byte of the substring, counted in bytes from
+ * \param[in] start offset of the first byte of the substring, counted in bytes from
  *   the first one of \p sin, a 1-based index.  A value less than 1 is
  *   internally corrected to 1, but it must not point beyond the terminating
- *   NUL of \p sin, if \p p1 <= \p p2.
- * \param[in] p2 offset of the last byte of the substring, counted in bytes from
+ *   NUL of \p sin, if \p start <= \p stop.
+ * \param[in] stop offset of the last byte of the substring, counted in bytes from
  *   the first one of \p sin, a 1-based index.  The natural bounds of this
- *   value are \p p1 - 1 and the length of \p sin.  Values outside of this
- *   range are internally corrected to the closer of these limits.  If \p p2 <
- *   \p p1 the empty string is returned.
+ *   value are \p start - 1 and the length of \p sin.  Values outside of this
+ *   range are internally corrected to the closer of these limits.  If \p stop
+ *   < \p start the empty string is returned.
  * \attention the indices are 1-based: seg("hello", 2, 3) == "el"!
  * \return a pointer to new allocated \ref temp_vstring referencing the
  *   requested substring, that is also pushed onto the top of
  *   \ref tempAllocStack
  * \pre
- *   \p p1 <= length(\p sin).
+ *   \p start <= length(\p sin).
  * \post
  *   A pointer to the substring is pushed on \ref tempAllocStack, even if it
  *   empty;
  * \warning not UTF-8 safe.
  * \bug a stack overflow of \ref tempAllocStack is not handled correctly;
  */
-temp_vstring seg(const char *sin, long p1, long p2);
+temp_vstring seg(const char *sin, long start, long stop);
 /*!
- * \fn temp_vstring mid(const char *sin, long p, long l)
+ * \fn temp_vstring mid(const char *sin, long start, long length)
  * Extracts a substring from a source and pushes it on \ref tempAllocStack
  *
  * \param[in] sin (not null) pointer to the NUL-terminated source text.
- * \param[in] p offset of the substring in bytes from the first byte of \p sin,
- *   1-based.  A value less than 1 is internally corrected to 1, but it must
- *   never point beyond the terminating NUL of \p sin.
- * \param[in] l length of substring in bytes.  Negative values are corrected to 0.
- *   If \p p + \p l exceeds the length of \p sin, then only the portion up
- *   to the terminating NUL is taken.
- * \attention the index \p p is 1-based: mid("hello", 2, 1) == "e"!
+ * \param[in] start offset of the substring in bytes from the first byte of
+ *   \p sin, 1-based.  A value less than 1 is internally corrected to 1, but it
+ *   must never point beyond the terminating NUL of \p sin.
+ * \param[in] length length of substring in bytes.  Negative values are
+ *   corrected to 0.  If \p start + \p length exceeds the length of \p sin,
+ *   then only the portion up to the terminating NUL is taken.
+ * \attention the index \p start is 1-based: mid("hello", 2, 1) == "e"!
  * \return a pointer to new allocated \ref temp_vstring referencing the
  *   requested substring, that is also pushed onto the top of
  *   \ref tempAllocStack
  * \pre
- *   \p p <= length(\p sin).  This must hold even if the requested length is
+ *   \p start <= length(\p sin).  This must hold even if the requested length is
  *   0, because its implementation in C requires the validity of the pointer,
  *   even if it is not dereferenced.
  * \post
@@ -410,7 +410,7 @@ temp_vstring seg(const char *sin, long p1, long p2);
  * \warning not UTF-8 safe.
  * \bug a stack overflow of \ref tempAllocStack is not handled correctly;
  */
-temp_vstring mid(const char *sin, long p, long l);
+temp_vstring mid(const char *sin, long start, long length);
 /*!
  * \fn temp_vstring left(const char *sin, long n)
  * \brief Extract leftmost n characters.

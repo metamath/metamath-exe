@@ -204,12 +204,25 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
  */
 #define MEM_POOL_GROW 1000 /* Amount that a pool grows when it overflows. */
 /*??? Let user set this from menu. */
+/*!
+ * \var long poolAbsoluteMax
+ * The value is a memory amount in bytes.
+ * \n
+ * The \ref suballocator scheme must not hold more memory than is short term
+ * useful.  To the operating system all memory in \ref memFreePool appears as
+ * allocated, although it is not really in use.  To prevent the system from
+ * taking unnecessary action such as saving RAM to disk, a limit to the amount
+ * of free memory managed by the suballocator can be set up.  This limit is
+ * checked in frequent operations, and an automatic purge process is initiated
+ * in \ref memFreePoolPurge should \ref poolTotalFree exceed this value.
+ */
 long poolAbsoluteMax = 1000000; /* Pools will be purged when this is reached */
 /*!
  * \var long poolTotalFree
  * contains the number of free space available in bytes, in both pools
  * \ref memFreePool and \ref memUsedPool, never counting the hidden headers at
- * the beginning of each block, see \ref block.
+ * the beginning of each block, see \ref block.  Exceeding \ref poolAbsoluteMax
+ * may trigger an automatic purge process by \ref memFreePoolPurge.
  */
 long poolTotalFree = 0; /* Total amount of free space allocated in pool */
 /*E*/long i1,j1_,k1; /* 'j1' is a built-in function */
@@ -556,6 +569,21 @@ void addToUsedPool(void *ptr)
 }
 
 /* Free all arrays in the free pool. */
+/*!
+ * \fn void memFreePoolPurge(flag untilOK)
+ * \brief returns memory held in \ref memFreePool
+ * Starting with the last entry in \ref memFreePool, memory held in that pool
+ * is returned to the system until all, or at least a sufficient amount is
+ * freed again (see \p untilOK).
+ * \param[in] untilOK if 1 freeing \ref block "blocks" stops the moment
+ *   \ref poolTotalFree gets within the range of \ref poolAbsoluteMax again.
+ *   Note that it is not guaranteed that the limit \ref poolAbsoluteMax is
+ *   undercut because still too much free memory might be held in the
+ *   \ref memUsedPool.
+ *   \n
+ *   If 0, all \ref memFreePool entries are freed, and the pool itself is
+ *   shrunk back to \ref MEM_POOL_GROW size.
+ */
 void memFreePoolPurge(flag untilOK)
 {
 /*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("e0: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
@@ -2677,9 +2705,9 @@ void pntrZapLen(pntrString *s, long length) {
  * \ref pntrString.
  *
  * This function determines the length of the source \p t by scanning for a
- * terminating null pointer element.  The destination \p s must have enough
- * space for receiving this amount of pointers, including the terminal null
- * pointer.  Then the source pointers are copied beginning with that at the
+ * terminal null pointer element.  The destination \p s must have enough space
+ * for receiving this amount of pointers, including the terminal null pointer.
+ * Then the source pointers are copied beginning with that at the
  * lowest address to the destination area \p t, including the terminal null
  * pointer.
  *
@@ -2695,8 +2723,8 @@ void pntrZapLen(pntrString *s, long length) {
  *   - \p t is terminated by the first null pointer element.
  *   - the target array \p s must have enough free space to hold the source array
  *     \p t including the terminal null pointer.
- *   - \p s and \p t can overlap if \p t points to a later element than \p s
- *     (move left semantics)
+ *   - \p s and \p t can overlap if \p t points to a later or same element than
+ *     \p s (move left semantics).
  * \invariant
  *   If \p s is contained in a \ref block "block", its administrative header is
  *   NOT updated.

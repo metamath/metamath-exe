@@ -307,6 +307,20 @@ extern flag g_globalDiscouragement; /* SET DISCOURAGEMENT */
 
 /* Allocation and deallocation in memory pool */
 void *poolFixedMalloc(long size /* bytes */);
+/*!
+ * \fn void *poolMalloc(long size)
+ * \brief allocates and initializes a new \ref block
+ *
+ * allocates a \ref block, first removing and using the last element of the
+ * \ref memFreePool.  If this block exists, but has not sufficient size, it is
+ * reallocated from the system.  If the pool is empty, a new \ref block of
+ * the given size is allocated from the system.  In any case, the header of the
+ * \ref block is properly initialized.
+ * \param[in] size (in bytes) of the block, not including the block header.
+ * \return a free and initialized block of memory with at least the requested
+ *   user space.
+ * \bug uses outOfMemory that can stack up endlessly
+ */
 void *poolMalloc(long size /* bytes */);
 /*!
  * \fn poolFree(void *ptr)
@@ -317,7 +331,8 @@ void *poolMalloc(long size /* bytes */);
  * added.
  * \param[in] ptr pointer to a \ref block.
  * \pre
- *   all memory pointed to by \p ptr is considered free.
+ *   all memory pointed to by \p ptr is considered free.  This holds even if it
+ *   it is kept in \ref memUsedPool. 
  * \post
  *   \ref poolTotalFree is updated
  * \bug calls outOfMemory, that can stack up endlessly
@@ -327,8 +342,8 @@ void poolFree(void *ptr);
  * \fn addToUsedPool(void *ptr)
  * \brief announces a block with free capacity for further allocation
  *
- * This function temporarily freezes the usage of a block for an old client, and
- * allows temporary reallocation of the free capacity to a new client.
+ * This function temporarily freezes the usage of a block for the current user,
+ * and allows temporary reallocation of the free capacity to a new client.
  * \n
  * The program maintains pools of memory blocks with free capacity.  In case of
  * demand such a \ref block can temporarily allocate this capacity for new
@@ -390,7 +405,7 @@ long getFreeSpace(long max);
 
 /* Fatal memory allocation error */
 /*!
- * \fn outOfMemory
+ * \fn outOfMemory(const char *msg)
  * \brief fatal memory allocation error.
  *
  * called when memory cannot be allocated, either because memory/address space
@@ -408,7 +423,7 @@ void outOfMemory(const char *msg);
 
 /* Bug check error */
 /*!
- * \fn bug
+ * \fn bug(int bugNum)
  */
 void bug(int bugNum);
 
@@ -672,6 +687,20 @@ temp_pntrString *pntrMakeTempAlloc(pntrString *s);
 /* String assignment - MUST be used to assign vstrings */
 /*!
  * \fn void pntrLet(pntrString **target, const pntrString *source)
+ * \param[in,out] target (not null) the address of a pointer pointing to the
+ *   first byte of a \ref block receiving the copied \p source.
+ * \param[in] source (not null) a pointer to the first \ref pntrString element
+ *   in a \ref block, to be copied from.
+ * \pre
+ *   - source does not contain NULL pointer, but is terminated by one.  This
+ *     NULL pointer is not part of the array, but must be present.
+ *   - the target \ref block does not contain used data.
+ * \post
+ *   - the \ref block \p target points to is filled with a copy of
+ *     \ref pntrString elements \p source points to, padded with a terminal
+ *     NULL, or an outOfMemory error is raised.
+ *   - due to a possible reallocation the pointer \p target points to may
+ *     change.
  */
 void pntrLet(pntrString **target, const pntrString *source);
 
@@ -700,8 +729,10 @@ temp_pntrString *pntrPSpace(long n);
  * \brief Determine the length of a pntrString held in a \ref block "block"
  * dedicated to it.
  *
- * returns the number of **used** pointers in the array pointed to by \p s,
- * derived from administrative data in the surrounding block.
+ * returns the number of **reserved** pointers in the array pointed to by \p s,
+ * derived solely from administrative data in the surrounding \ref block.  NULL
+ * pointer in the array are included, a trailing one is not required to
+ * determine the length.´
  *
  * \attention This is not the capacity of the array.
  * \param[in] s points to a element 0 of a \ref pntrString  embedded in a block
