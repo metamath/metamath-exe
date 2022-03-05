@@ -308,6 +308,16 @@ extern flag g_globalDiscouragement; /* SET DISCOURAGEMENT */
 /* Allocation and deallocation in memory pool */
 void *poolFixedMalloc(long size /* bytes */);
 void *poolMalloc(long size /* bytes */);
+/*!
+ * \fn poolFree(void *ptr)
+ *
+ * Removes \p ptr from the \ref memUsedPool, if it is listed there.  Then tries
+ * adding it to the \ref memFreePool.  If this pool is full, it is increased by
+ * \ref MEM_POOL_GROW.  If this fails, an error is created, else \p ptr is
+ * added.
+ * \param[in] ptr pointer to a \ref block.
+ * \bug calls outOfMemory, that can stack up endlessly
+ */
 void poolFree(void *ptr);
 /*!
  * \fn addToUsedPool(void *ptr)
@@ -334,6 +344,7 @@ void poolFree(void *ptr);
  * \post
  *   - \ref poolTotalFree is the current free space in bytes in both pools.
  *   - A full \ref block is not added to \ref memUsedPool by this function.
+ * \bug calls outOfMemory, that can stack up endlessly
  */
 void addToUsedPool(void *ptr);
 /* Purges reset memory pool usage */
