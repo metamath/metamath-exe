@@ -322,7 +322,8 @@ void *poolFixedMalloc(long size /* bytes */);
  * the given size is allocated from the system.  In any case, the header of the
  * \ref block is properly initialized.  Exits program on out of memory
  * condition.
- * \param[in] size (in bytes) of the block, not including the block header.
+ * \param[in] size (in bytes) of the block, not including the block header, but
+ *   including space for a terminal NULL.
  * \return a free and initialized block of memory with at least the requested
  *   user space.  Exit on out-of-memory
  */
@@ -336,11 +337,14 @@ void *poolMalloc(long size /* bytes */);
  * added.
  * \param[in] ptr pointer to a \ref block.
  * \pre
- *   all memory pointed to by \p ptr is considered free.  This holds even if it
- *   it is kept in \ref memUsedPool. 
+ *   - \p ptr was previously allocated.
+ *   - all memory pointed to by \p ptr is considered free.  This holds even if it
+ *     it is kept in \ref memUsedPool. 
  * \post
  *   - \ref poolTotalFree is updated
  *   - Exit on out-of-memory (the \ref memFreePool overflows)
+ * \attention never submit a \p ptr referring to memory not on the heap, like
+ *   NULL_PTRSTRING.
  */
 void poolFree(void *ptr);
 /*!
@@ -410,7 +414,7 @@ long getFreeSpace(long max);
 
 /* Fatal memory allocation error */
 /*!
- * \fn outOfMemory(const char *msg)
+ * \fn void outOfMemory(const char *msg)
  * \brief exit after fatal memory allocation error.
  *
  * called when memory cannot be allocated, either because memory/address space
@@ -428,7 +432,7 @@ void outOfMemory(const char *msg);
 
 /* Bug check error */
 /*!
- * \fn bug(int bugNum)
+ * \fn void bug(int bugNum)
  */
 void bug(int bugNum);
 
@@ -707,21 +711,31 @@ temp_pntrString *pntrMakeTempAlloc(pntrString *s);
 /* String assignment - MUST be used to assign vstrings */
 /*!
  * \fn void pntrLet(pntrString **target, const pntrString *source)
+ * Copies the \ref pntrString elements of \p source to the beginning of a
+ * \ref block referenced by \p target.  If necessary, the \p target block is
+ * reallocated, and if it is, it gets twice the needed size to account for
+ * future growing.  If the \p target block is only partially used after copy it
+ * is added to the \ref memUsedPool.  If \p source is empty, the \p target is
+ * 
  * \param[in,out] target (not null) the address of a pointer pointing to the
- *   first byte of a \ref block receiving the copied \p source.
+ *   first byte of a \ref block receiving the copied elements of \p source.
  * \param[in] source (not null) a pointer to the first \ref pntrString element
  *   in a \ref block, to be copied from.
  * \pre
  *   - source does not contain NULL pointer, but is terminated by one.  This
  *     NULL pointer is not part of the array, but must be present.
- *   - the target \ref block does not contain used data.
+ *   - the target \ref block does not contain any valuable data.
  * \post
  *   - the \ref block \p target points to is filled with a copy of
  *     \ref pntrString elements \p source points to, padded with a terminal
  *     NULL.
- *   - Exit on out-of-memory
  *   - due to a possible reallocation the pointer \p target points to may
  *     change.
+ *   - updates \ref db3 and \ref poolTotalFree.
+ *   - Exit on out-of-memory
+ * \bug If the \p target block is full after the copy operation, it is not
+ *   necessarily removed from the \ref memUsedPool, although other
+ *   functions like \ref addToUsedPool do not support this.
  */
 void pntrLet(pntrString **target, const pntrString *source);
 
@@ -751,9 +765,10 @@ temp_pntrString *pntrPSpace(long n);
  * dedicated to it.
  *
  * returns the number of **reserved** pointers in the array pointed to by \p s,
- * derived solely from administrative data in the surrounding \ref block.  NULL
- * pointer in the array are included, a trailing one is not required to
- * determine the length.´
+ * derived solely from administrative data in the surrounding \ref block. Thus,
+ * the value is valid, even if data has not yet been transferred to the
+ * reserved space, and the terminal NULL is not safely recognized. The returned
+ * value excludes the space set aside for a terminal NULL.
  *
  * \attention This is not the capacity of the array.
  * \param[in] s points to a element 0 of a \ref pntrString  embedded in a block
