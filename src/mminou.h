@@ -259,6 +259,11 @@ vstring cmdInput(FILE *stream, const char *ask);
  * copied from the appropriate entry of \ref g_commandFileSilent, unless the
  * interactive mode is reached; here output is never suppressed (value 0).
  *
+ * 3. remove all CR (0x0D) characters, not only those in compination with LF.
+ *
+ * 4. prompt and command is printed, if not suppressed, then the read line is
+ * returned.
+ *
  * \return first not interpreted line as \ref vstring, or "EXIT" on error. 
  * \pre
  *   The following variables are honored during execution and should be properly
@@ -289,6 +294,9 @@ vstring cmdInput(FILE *stream, const char *ask);
  *     \ref g_pntrStartTempAlloc.
  *   - interactive mode: The \ref backBuffer is cleared, then filled with
  *     prompt (last line only) and input of the user.
+ *   - submit mode: In case of EOF the previous \ref g_commandFileNestingLevel
+ *     is activated, necessary cleanups performed, and 
+ *     the \ref g_commandFileSilentFlag is updated appropriately.
  * \warning the calling program must deallocate the returned string.
  */
 vstring cmdInput1(const char *ask);
