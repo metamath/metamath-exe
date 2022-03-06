@@ -51,8 +51,8 @@
 /*E*/extern long db2;
 /*!
  * \var db3
- * \brief monitors the de/allocations of nmbrString and pntrString outside of
- * temporary arrays.
+ * \brief monitors the de/allocations of nmbrString and \ref pntrString outside
+ * of temporary arrays.
  *
  * The number of bytes held in blocks dedicated to global data.  There exist
  * also temporary stacks, but they are not considered here.  Useful to see
@@ -123,6 +123,12 @@ typedef long nmbrString; /* String of numbers */
  * tail of an array from a certain element on, an array terminates with a
  * null pointer.  This type of usage forbids null pointer as ordinary elements,
  * and the terminal null pointer is not part of the data in the array.
+ * \n
+ * The length of a pntrString array is implicitely given by a terminal NULL
+ * pointer.  If this array is held in a \ref block, its size can also be
+ * determined from its header's administrative data.  Both values must be kept
+ * synchronized.  In early phases of memory allocation, when data wasn't
+ * assigned yet, this need not hold.
  *
  * To summarize the usages of this type:
  * - If you want to resize the array/stack you need a pointer to element 0.
@@ -325,9 +331,11 @@ void *poolFixedMalloc(long size /* bytes */);
  * \ref block is properly initialized.  Exits program on out of memory
  * condition.
  * \param[in] size (in bytes) of the block, not including the block header.
- * \return a \ref block with enough capacity for \p size bytes of data.  The
- *   data space is filled with random contents, but in the block header its
- *   \p size is noted.´   Exit on out-of-memory
+ * \return a \ref block with enough capacity for \p size bytes of data.
+ *  \post
+ *    - The \ref block "block's" header denotes \p size bytes are occupied, but
+ *      they yet contain random data.
+ *    - Exit on out-of-memory.
  */
 void *poolMalloc(long size /* bytes */);
 /*!
@@ -339,7 +347,7 @@ void *poolMalloc(long size /* bytes */);
  * added.
  * \param[in] ptr pointer to a \ref block.
  * \pre
- *   - \p ptr was previously dynamically allocated.
+ *   - \p ptr refers to dynamically allocated memory on the heap.
  *   - all memory pointed to by \p ptr is considered free.  This holds even if it
  *     it is kept in \ref memUsedPool. 
  * \post
