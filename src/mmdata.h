@@ -45,7 +45,7 @@
 /*E*/extern long db1;
 /*!
  * \var long db2
- * Bytes held in \ref blocks managed in \ref tempAllocStack
+ * Bytes held in \ref block "blocks" managed in \ref tempAllocStack
  * "temporary pointer stacks".
  */
 /*E*/extern long db2;
@@ -526,6 +526,25 @@ extern struct nullPntrStruct g_PntrNull;
  * \post The variable is initialized.
  */
 #define pntrString_def(x) pntrString *x = NULL_PNTRSTRING
+/*!
+ * \def free_pntrString
+ * \param[in,out] x variable name
+ * Assigns \ref NULL_PNTRSTRING to a variable \ref pntrString \p x.  Frees all
+ * \ref pntrTempAllocStack, beginning with index 
+ * \ref g_pntrStartTempAllocStack.  See \ref pntrLet.
+ * \pre
+ *   - the \ref block assigned to \p x does not contain any valuable data.
+ *   - all \ref pntrString elements freed in \ref pntrTempAllocStack can be
+ *     discarded without losing relevant references.
+ * \post
+ *   - \p x is assigned NULL_PNTRSTRING.
+ *   - The stack pointer of \ref pntrTempAllocStack is reset to
+ *     \ref g_pntrStartTempAllocStack and all referenced
+ *     \ref block "blocks" on and beyond that are returned to the
+ *     \ref memFreePool.
+ *   - updates \ref db3 and \ref poolTotalFree.
+ *   - Exit on out-of-memory
+ */
 #define free_pntrString(x) pntrLet(&x, NULL_PNTRSTRING)
 
 
@@ -692,7 +711,7 @@ long compressedProofSize(const nmbrString *proof, long statemNum);
  */
 extern long g_pntrTempAllocStackTop;   /* Top of stack for pntrTempAlloc function */
 /*!
- * \var long g_pntrTempAllocStackStart
+ * \var long g_pntrStartTempAllocStack
  *
  * Index of the first entry of the \ref stack "stack" \ref pntrTempAllocStack
  * eligible for deallocation on the next call to \ref pntrTempAlloc.  Entries
@@ -732,7 +751,7 @@ temp_pntrString *pntrMakeTempAlloc(pntrString *s);
  * \n
  * It is assumed that the value persisted in \p target is in fact computed from
  * temporary operands in \ref pntrTempAllocStack.  All blocks starting with
- * the element at \ref g_pntrTempAllocStackStart are returned to the
+ * the element at \ref g_pntrStartTempAllocStack are returned to the
  * \ref memFreePool.
  * \attention freed \ref block "blocks" contain \ref pntrString instances.
  *   See \ref pntrTempAllocStack to learn how this free process can be
@@ -754,7 +773,7 @@ temp_pntrString *pntrMakeTempAlloc(pntrString *s);
  *   - due to a possible reallocation the pointer \p target points to may
  *     change.
  *   - The stack pointer of \ref pntrTempAllocStack is reset to
- *     \ref g_pntrTempAllocStackStart and all referenced
+ *     \ref g_pntrStartTempAllocStack and all referenced
  *     \ref block "blocks" on and beyond that are returned to the
  *     \ref memFreePool.
  *   - updates \ref db3 and \ref poolTotalFree.

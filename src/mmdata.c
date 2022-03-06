@@ -2489,15 +2489,15 @@ pntrString *pntrTempAllocStack[M_MAX_ALLOC_STACK];
  * allocates a \ref block capable of holding \p size \ref pntrString entries
  * and pushes it onto the \ref pntrTempAllocStack.
  * \par size == 0
- * pops off all entries from the \ref pntrTempAllocStack and adds them to the
- * \ref memFreePool.
+ * pops off all entries from index \ref g_pntrStartTempAllocStack on from
+ * \ref pntrTempAllocStack and adds them to the \ref memFreePool.
  * \param[in] size count of \ref pntrString entries.  This value must include
  *   a terminal NULL pointer if needed.
  * \return a pointer to the allocated \ref block, or NULL if deallocation
  *   requested
  * \pre
  *   \p size ==0: all entries in from \ref pntrTempAllocStack from
- *   \ref g_pntrTempAllocStackStart do not contain relevant data any more.
+ *   \ref g_pntrStartTempAllocStack do not contain relevant data any more.
  * \post
  *   - \p size > 0: memory for \p size entries is reserved in the \ref block
  *     "block's" header, but the data is still random.

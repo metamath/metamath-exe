@@ -301,16 +301,16 @@ void freeTempAlloc(void);
  * \pre
  * - \ref g_startTempAllocStack contains the starting index of entries in
  *   \ref tempAllocStack, that is going to be deallocated.
- * - The destination of this function must either be empty, or uniquely point
- *   to a \ref vstring, but not any of the \ref temp_vstring;
- * - The destination need not provide enough space for the source.  If
+ * - The \p target of this function must either be empty, or uniquely point
+ *   to a \ref vstring, but not to any of the \ref temp_vstring;
+ * - The \p target need not provide enough space for the source.  If
  *   necessary, it is reallocated;
  * \post
  * - Entries in \ref tempAllocStack from \ref g_startTempAllocStack (on entry
  *   to the function) are deallocated;
  * - The stack pointer in \ref g_tempAllocStackTop is set to
  *   \ref g_startTempAllocStack (on entry to the function);
- * - If the assigned value is the empty string, but the destination not, it is
+ * - If the assigned value is the empty string, but the \p target not, it is
  *   freed and assigned to a constant "";
  * - \ref db is updated.
  * \bug In an out-of-memory situation the program is not exited
