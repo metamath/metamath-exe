@@ -327,7 +327,7 @@ void *poolFixedMalloc(long size /* bytes */);
  * \param[in] size (in bytes) of the block, not including the block header.
  * \return a \ref block with enough capacity for \p size bytes of data.  The
  *   data space is filled with random contents, but in the block header its
- *   \p size is noted.   Exit on out-of-memory
+ *   \p size is noted.´   Exit on out-of-memory
  */
 void *poolMalloc(long size /* bytes */);
 /*!
@@ -364,13 +364,13 @@ void poolFree(void *ptr);
  * \n
  * Before \p ptr is added to \ref memUsedPool, the pool size is checked and
  * increased by \ref MEM_POOL_GROW if full.  This may lead to out-of-memory
- * \ref bug "bugs".  But if \p prt is added to the end of the \ref memUsedPool,
+ * \ref outOfMemory "exit".  But if \p ptr is added to the end of the \ref memUsedPool,
  * \ref poolTotalFree is updated.
  * \param[in] ptr pointer to a \ref block.
  * \pre
  *   the block is \ref fragmentation "fragmented" (contains unused memory)
- *   If it is full \ref bug is called and the function returns without further
- *   action.
+ *   If it is full, \ref bugfn "bug" is called and the function returns without
+ *   further action.
  * \post
  *   - \ref poolTotalFree is the current free space in bytes in both pools.
  *   - A full \ref block is not added to \ref memUsedPool by this function.
@@ -401,7 +401,7 @@ void memFreePoolPurge(flag untilOK);
  * \param[out] usedActual (not-null) address of a long variable receiving the
  * accumulated bytes consumed by usage so far.  This value includes the hidden
  * header of the block.
- * \pre Do not call within bug().\n
+ * \pre Do not call within \ref bugfn "bug".\n
  *   Submit only non-null pointers, even if not all information is requested.\n
  *   Pointers to irrelevant information may be the same.
  * \post Statistic data is copied to the locations the parameters point to.
@@ -434,7 +434,9 @@ void outOfMemory(const char *msg);
 
 /* Bug check error */
 /*!
+ * \anchor bugfn
  * \fn void bug(int bugNum)
+ * \param[in] bugNum
  */
 void bug(int bugNum);
 

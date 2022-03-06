@@ -95,7 +95,7 @@ void freeTempAlloc(void) {
  * \fn pushTempAlloc(void *mem)
  * \brief pushes a pointer onto the \ref tempAllocStack.
  *
- * In case of a stack overflow \ref bug is called.  This function is low level
+ * In case of a stack overflow \ref bugfn "bug" is called.  This function is low level
  * that does not ensure that invariants of \ref tempAllocStack are kept.
  *
  * \param mem (not null) points to either a non-mutable empty string, or
@@ -131,8 +131,8 @@ static void pushTempAlloc(void *mem)
  *   \ref tempAllocStack
  *
  * This low level function does NOT initialize the allocated memory.  If the
- * allocation on the heap fails, \ref bug is called.  The statistic value
- * \ref db1 is updated.
+ * allocation on the heap fails, \ref bugfn "bug" is called.  The statistic
+ * value \ref db1 is updated.
  *
  * \param size (> 0) number of bytes to allocate on the heap.  If the memory is
  *   intended to hold NUL terminated text, then size must account for the final
