@@ -128,7 +128,7 @@ typedef long nmbrString; /* String of numbers */
  * pointer.  If this array is held in a \ref block, its size can also be
  * determined from its header's administrative data.  Both values must be kept
  * synchronized.  In early phases of memory allocation, when data wasn't
- * assigned yet, this need not hold.
+ * assigned yet, this need not hold, though.
  *
  * To summarize the usages of this type:
  * - If you want to resize the array/stack you need a pointer to element 0.
@@ -728,14 +728,22 @@ temp_pntrString *pntrMakeTempAlloc(pntrString *s);
  * reallocated, and if it is, it gets twice the needed size to account for
  * future growing.  If the \p target block is only partially used after copy it
  * is added to the \ref memUsedPool.  If \p source is empty, the \p target is
- * 
+ * to \ref NULL_PNTRSTRING.
+ * \n
+ * It is assumed that the value persisted in \p target is in fact computed from
+ * temporary operands in \ref pntrTempAllocStack.  All blocks starting with
+ * the element at \ref g_pntrTempAllocStackStart are returned to the
+ * \ref memFreePool.
+ * \attention freed \ref block "blocks" contain \ref pntrString instances.
+ *   See \ref pntrTempAllocStack to learn how this free process can be
+ *   dangerous if no precautions are taken.
  * \param[in,out] target (not null) the address of a pointer pointing to the
  *   first byte of a \ref block receiving the copied elements of \p source.
  * \param[in] source (not null) a pointer to the first \ref pntrString element
  *   in a \ref block, to be copied from.
  * \pre
- *   - source does not contain NULL pointer, but is terminated by one.  This
- *     NULL pointer is not part of the array, but must be present.
+ *   - source does not contain NULL pointerelements , but is terminated by one.
+ *     This final NULL pointer is not part of the array, but must be present.
  *   - the target \ref block does not contain any valuable data.
  * \post
  *   - the \ref block \p target points to is filled with a copy of
@@ -743,6 +751,8 @@ temp_pntrString *pntrMakeTempAlloc(pntrString *s);
  *     NULL.
  *   - due to a possible reallocation the pointer \p target points to may
  *     change.
+ *   - The stack pointer of \ref pntrTempAllocStack is reset to
+ *     \ref g_pntrTempAllocStackStart
  *   - updates \ref db3 and \ref poolTotalFree.
  *   - Exit on out-of-memory
  * \bug If the \p target block is full after the copy operation, it is not

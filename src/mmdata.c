@@ -2468,11 +2468,16 @@ long g_pntrStartTempAllocStack = 0;   /* Where to start freeing temporary alloca
  * \brief a \ref stack "stack" of \ref temp_pntrString.
  *
  * Holds pointers to temporarily allocated data of type \ref temp_pntrString.  Such
- * a \ref stack "stack" is primarily designed to function like a stack for
- * temporary allocated ad hoc operands, as described in \ref stack.  The stack top
- * index is \ref g_pntrTempAllocStackTop, always refering to the next push
- * position.  The \ref g_pntrStartTempAllocStack supports nested operations by
- * indicating where the operands for the upcoming operation start from.
+ * a \ref stack "stack" is primarily designed to operate like one for temporary
+ * allocated ad hoc operands, as described in \ref stack.  The stack top index
+ * is \ref g_pntrTempAllocStackTop, always refering to the next push position.
+ * The \ref g_pntrStartTempAllocStack supports nested operations by indicating
+ * where the operands for the upcoming operation start from.
+ * \attention A \ref pntrString consists of an array of pointers.  These
+ *   pointers may themself refer data that needs a clean up, when the last
+ *   reference  to it disappears (such as deallocating memory for example).
+ *   There is no automatic procedure handling such cases when pointers are
+ *   popped off the stack to be freed.
  * \bug The element type should be temp_pntrString, because a NULL_PNTRSTRING
  *   must not be pushed on the stack.
  */
@@ -2498,6 +2503,8 @@ pntrString *pntrTempAllocStack[M_MAX_ALLOC_STACK];
  *     "block's" header, but the data is still random.
  *   - updates \ref db2
  *   - Exits on out-of-memory
+ * \bug it is unfortunate that the same function is used for opposite
+ *   operations like de-/allocation.
  */
 temp_pntrString *pntrTempAlloc(long size) {
                                 /* pntrString memory allocation/deallocation */
