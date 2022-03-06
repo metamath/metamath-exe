@@ -46,6 +46,12 @@ vstring_def(g_printString);
 long g_commandFileNestingLevel = 0;
 FILE *g_commandFilePtr[MAX_COMMAND_FILE_NESTING + 1];
 vstring g_commandFileName[MAX_COMMAND_FILE_NESTING + 1];
+/*!
+ * \var flag g_commandFileSilent[]
+ * a 1 for a particular \ref g_commandFileNestingLevel suppresses output for
+ * that submit nesting level.  The value for the interactive level
+ * (\ref g_commandFileNestingLevel == 0) is ignored.
+ */
 flag g_commandFileSilent[MAX_COMMAND_FILE_NESTING + 1];
 flag g_commandFileSilentFlag = 0; /* For SUBMIT ... /SILENT */
 

@@ -457,7 +457,7 @@ temp_vstring right(const char *sin, long n);
 /*!
  * \fn temp_vstring edit(const char *sin, long control)
  * perform a combination of transformations on \p sin based on the set bits in
- * \p control.
+ * \p control.  This is an ASCII based transformation.
  *      Bit   Effect
  *      1        Clear parity bits
  *      2        Discard all spaces and tabs
