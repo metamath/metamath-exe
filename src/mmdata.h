@@ -728,7 +728,7 @@ temp_pntrString *pntrMakeTempAlloc(pntrString *s);
  * reallocated, and if it is, it gets twice the needed size to account for
  * future growing.  If the \p target block is only partially used after copy it
  * is added to the \ref memUsedPool.  If \p source is empty, the \p target is
- * to \ref NULL_PNTRSTRING.
+ * set to \ref NULL_PNTRSTRING.
  * \n
  * It is assumed that the value persisted in \p target is in fact computed from
  * temporary operands in \ref pntrTempAllocStack.  All blocks starting with
@@ -745,7 +745,7 @@ temp_pntrString *pntrMakeTempAlloc(pntrString *s);
  *   - source does not contain NULL pointer elements , but is terminated by
  *     one.  This final NULL pointer is not part of the array, but must be present.
  *   - the target \ref block does not contain any valuable data.
- *   - all \ref pntrString elements held in \ref pntrTempAllocStack can be
+ *   - all \ref pntrString elements freed in \ref pntrTempAllocStack can be
  *     discarded without losing relevant references.
  * \post
  *   - the \ref block \p target points to is filled with a copy of

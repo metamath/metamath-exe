@@ -259,8 +259,8 @@ typedef vstring temp_vstring;
  * directly to avoid buildup of temporary strings.
  *
  * \pre
- *   \ref g_startTempAllocStack is the index in \ref tempAllocStack from which
- *   on enties are freed.
+ *   All references freed in \ref tempAllocStack can be safely discarded
+ *   without risking a memory leak.
  * \post
  * - Entries in \ref tempAllocStack from index \ref g_startTempAllocStack on
  *   are freed.  The top of stack \ref g_tempAllocStackTop is back to
@@ -283,31 +283,28 @@ void freeTempAlloc(void);
  * again.  Every entry on and beyond \ref g_startTempAllocStack is considered
  * to be consumed and subject to deallocation.
  *
- * This deallocation procedure is embedded in this operation, since frequently
- * the final string was composed of some fragments, that now can be disposed
- * of.  In fact, this function must ALWAYS be called to assign to a vstring in
- * order for the memory cleanup routines, etc. to work properly.  A new vstring
+ * This deallocation procedure is embedded in this operation, since often the
+ * final string is composed of some fragments, that now can be disposed of.  In
+ * fact, this function must ALWAYS be called to assign to a vstring in order
+ * for the memory cleanup routines, etc. to work properly.  A new vstring
  * should be initialized to "" (the empty string), and the \ref vstring_def
  * macro handles creation of such variables.
  *
  * Possible failures: Out of memory condition.
  *
- * \param[out] target (not null) address of a \ref vstring receiving a copy of
+ * \param[in,out] target (not null) address of a \ref vstring receiving a copy of
  *   the source string.  Its current value, if not empty, must never point to a
- *   true portion of another \ref vstring.  It must not coincide with any of
- *   the temporary strings in \ref tempAllocStack, from index
- *   \ref g_startTempAllocStack on.  You can assign to an entry with index
- *   below this value, though.
+ *   true tail of another \ref vstring.  You must not assign to any of the
+ *   temporary strings in \ref tempAllocStack.
  * \param[in] source (not null) NUL terminated string to be copied from.
  *
  * \pre
  * - \ref g_startTempAllocStack contains the starting index of entries in
  *   \ref tempAllocStack, that is going to be deallocated.
- * - both parameters are not null and point to NUL terminated strings.
  * - The destination of this function must either be empty, or uniquely point
  *   to a \ref vstring, but not any of the \ref temp_vstring;
  * - The destination need not provide enough space for the source.  If
- *   necessary, it is reallocated to point to a larger chunk of memory;
+ *   necessary, it is reallocated;
  * \post
  * - Entries in \ref tempAllocStack from \ref g_startTempAllocStack (on entry
  *   to the function) are deallocated;
@@ -316,6 +313,7 @@ void freeTempAlloc(void);
  * - If the assigned value is the empty string, but the destination not, it is
  *   freed and assigned to a constant "";
  * - \ref db is updated.
+ * \bug In an out-of-memory situation the program is not exited
  */
 void let(vstring *target, const char *source);
 
