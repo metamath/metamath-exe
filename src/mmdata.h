@@ -736,15 +736,17 @@ temp_pntrString *pntrMakeTempAlloc(pntrString *s);
  * \ref memFreePool.
  * \attention freed \ref block "blocks" contain \ref pntrString instances.
  *   See \ref pntrTempAllocStack to learn how this free process can be
- *   dangerous if no precautions are taken.
+ *   dangerous if insufficient precautions are taken.
  * \param[in,out] target (not null) the address of a pointer pointing to the
  *   first byte of a \ref block receiving the copied elements of \p source.
  * \param[in] source (not null) a pointer to the first \ref pntrString element
  *   in a \ref block, to be copied from.
  * \pre
- *   - source does not contain NULL pointerelements , but is terminated by one.
- *     This final NULL pointer is not part of the array, but must be present.
+ *   - source does not contain NULL pointer elements , but is terminated by
+ *     one.  This final NULL pointer is not part of the array, but must be present.
  *   - the target \ref block does not contain any valuable data.
+ *   - all \ref pntrString elements held in \ref pntrTempAllocStack can be
+ *     discarded without losing relevant references.
  * \post
  *   - the \ref block \p target points to is filled with a copy of
  *     \ref pntrString elements \p source points to, padded with a terminal
@@ -752,7 +754,9 @@ temp_pntrString *pntrMakeTempAlloc(pntrString *s);
  *   - due to a possible reallocation the pointer \p target points to may
  *     change.
  *   - The stack pointer of \ref pntrTempAllocStack is reset to
- *     \ref g_pntrTempAllocStackStart
+ *     \ref g_pntrTempAllocStackStart and all referenced
+ *     \ref block "blocks" on and beyond that are returned to the
+ *     \ref memFreePool.
  *   - updates \ref db3 and \ref poolTotalFree.
  *   - Exit on out-of-memory
  * \bug If the \p target block is full after the copy operation, it is not
