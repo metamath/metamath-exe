@@ -2468,8 +2468,11 @@ long g_pntrStartTempAllocStack = 0;   /* Where to start freeing temporary alloca
  * \brief a \ref stack "stack" of \ref temp_pntrString.
  *
  * Holds pointers to temporarily allocated data of type \ref temp_pntrString.  Such
- * a \ref stack "stack" contains strictly __local__ data of a function, not
- * accessed from outer levels.
+ * a \ref stack "stack" is primarily designed to function like a stack for
+ * temporary allocated ad hoc operands, as described in \ref stack.  The stack top
+ * index is \ref g_pntrTempAllocStackTop, always refering to the next push
+ * position.  The \ref g_pntrStartTempAllocStack supports nested operations by
+ * indicating where the operands for the upcoming operation start from.
  * \bug The element type should be temp_pntrString, because a NULL_PNTRSTRING
  *   must not be pushed on the stack.
  */
