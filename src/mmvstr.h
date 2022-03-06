@@ -4,6 +4,9 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
+#ifndef METAMATH_MMVSTR_H_
+#define METAMATH_MMVSTR_H_
+
 /*!
 \file mmvstr.h - VMS-BASIC variable length string library routines header
 This is an emulation of the string functions available in VMS BASIC.
@@ -120,18 +123,15 @@ with 'let(&' and thus has the same effect as 'let(&'.
 
 ******************************************************************************/
 
-
-#ifndef METAMATH_MMVSTR_H_
-#define METAMATH_MMVSTR_H_
-
 #include <stdio.h>
 
-/* A vstring is like a C string, but it contains a control block allowing
-for memory allocation. New vstrings should always be constructed from the
-`vstring_def` macro. */
 /*!
  * \typedef vstring
  * \brief contains NUL terminated,  character oriented data
+ *
+ * A vstring is like a C string, but it contains a control block allowing
+ * for memory allocation. New vstrings should always be constructed from the
+ * `vstring_def` macro.
  *
  * - A vstring is never NULL;
  * - If the text is empty, i.e. the pointer points to the terminating 0x00
@@ -152,48 +152,9 @@ for memory allocation. New vstrings should always be constructed from the
  */
 typedef char* vstring;
 
-/* A vstring is allocated in temporary storage. These strings will be deallocated
-  after the next call to `let`.
-
-  A `temp_vstring` should never be used as the first argument of a `let`.
-  This code is INCORRECT:
-
-    temp_vstring foo = left("foobar", 3);
-    let(&foo, "bar"); // this will cause a double free
-
-  It is okay (and quite common) to use a temp_vstring as the second argument,
-  however. It is best not to hold on to the value, though, because the `let`
-  will free it. This code is INCORRECT:
-
-    vstring_def(x);
-    temp_vstring foobar = cat("foo", "bar");
-    let(&x, foobar); // frees foobar
-    let(&x, foobar); // dangling reference
-
-  There is a converse problem when `temp_vstring`s are used without `let`:
-
-    for (int i = 0; i < 100000; i++) {
-      vstring_def(x);
-      if (strlen(space(i)) == 99999) break;
-    }
-
-  We don't need to deallocate the string returned by `space()` directly,
-  because it returns a `temp_vstring`, but because there is no `let` in
-  this function, we end up allocating a bunch of temporaries and
-  effectively get a memory leak. (There is space for about 100
-  temporaries so this loop will cause a crash.) To solve this problem,
-  we can either use a dummy `let()` statement in the loop, or call
-  `freeTempAlloc` directly:
-
-    for (int i = 0; i < 100000; i++) {
-      vstring_def(x);
-      if (strlen(space(i)) == 99999) break;
-      freeTempAlloc();
-    }
-
-*/
 /*!
- * \typedef temp_vstring
+ * \brief A vstring that is allocated in temporary storage.
+ *   These strings will be deallocated after the next call to `let`.
  *
  * This alias for \a vstring is used to mark an entry in the \a tempAllocStack.
  * Entries in this stack are subject to automatic deallocation by \a let or
@@ -203,7 +164,44 @@ typedef char* vstring;
  * If an empty string is generated as a temporary in the course of a
  * construction of a final \a vstring, it is allocated on the heap as usual.
  *
- * If returned by a function, it is already pushed on the \a tempAllocStack.
+ * If returned by a function, it is already pushed on the \ref tempAllocStack.
+ *
+ * A `temp_vstring` should never be used as the first argument of a `let`.
+ * This code is INCORRECT:
+ *
+ *   temp_vstring foo = left("foobar", 3);
+ *   let(&foo, "bar"); // this will cause a double free
+ *
+ * It is okay (and quite common) to use a temp_vstring as the second argument,
+ * however. It is best not to hold on to the value, though, because the `let`
+ * will free it. This code is INCORRECT:
+ *
+ *   vstring_def(x);
+ *   temp_vstring foobar = cat("foo", "bar");
+ *   let(&x, foobar); // frees foobar
+ *   let(&x, foobar); // dangling reference
+ *
+ * There is a converse problem when `temp_vstring`s are used without `let`:
+ *
+ *   for (int i = 0; i < 100000; i++) {
+ *     vstring_def(x);
+ *     if (strlen(space(i)) == 99999) break;
+ *   }
+ *
+ * We don't need to deallocate the string returned by `space()` directly,
+ * because it returns a `temp_vstring`, but because there is no `let` in
+ * this function, we end up allocating a bunch of temporaries and
+ * effectively get a memory leak. (There is space for about 100
+ * temporaries so this loop will cause a crash.) To solve this problem,
+ * we can either use a dummy `let()` statement in the loop, or call
+ * `freeTempAlloc` directly:
+ *
+ *   for (int i = 0; i < 100000; i++) {
+ *     vstring_def(x);
+ *     if (strlen(space(i)) == 99999) break;
+ *     freeTempAlloc();
+ *   }
+ *
  */
 typedef vstring temp_vstring;
 
@@ -222,6 +220,7 @@ typedef vstring temp_vstring;
  *   conformance with the semantics of a \a vstring.
  */
 #define vstring_def(x) vstring x = ""
+
 /*!
  * \def free_vstring
  * \brief deallocates a \a vstring variable and sets it to the empty string.
@@ -234,7 +233,7 @@ typedef vstring temp_vstring;
  *
  * \param[in,out] x (not null) an initialized \a vstring variable.  According to the
  * semantics of a \a vstring, __x__ is not deallocated, if it points to an
- * empty string. 
+ * empty string.
  * \pre
  *   __x__ was declared and initialized before.
  * \post
@@ -243,9 +242,6 @@ typedef vstring temp_vstring;
  */
 #define free_vstring(x) let(&x, "")
 
-/* Free space allocated for temporaries. This is normally called automatically
-  by let(), but it can also be called directly to avoid buildup of temporary
-  strings. */
 /*!
  * \fn freeTempAlloc
  * \brief Free space allocated for temporary vstring instances.
@@ -269,8 +265,6 @@ typedef vstring temp_vstring;
  */
 void freeTempAlloc(void);
 
-/* `source` must not point into `target` (but this is unlikely to arise if
-   `source` is calculated using `temp_vstring` operations from `target`). */
 /*!
  * \fn let(vstring *target, const char *source)
  * \brief emulation of BASIC string assignment
@@ -299,6 +293,8 @@ void freeTempAlloc(void);
  *   this value, though.
  * \param[in] source (not null) NUL terminated string to be copied from.
  *
+ * \warning `source` must not point into `target` (but this is unlikely to arise if
+ *  `source` is calculated using `temp_vstring` operations from `target`).
  * \pre
  * - \a g_startTempAllocStack contains the starting index of entries in
  *   \a tempAllocStack, that is going to be deallocated.
@@ -318,13 +314,13 @@ void freeTempAlloc(void);
  */
 void let(vstring *target, const char *source);
 
-/* Emulation of BASIC string concatenation - last argument MUST be NULL */
-/* vstring cat(vstring string1, ..., stringN, NULL); */
-/* e.g. 'let(&abc, cat("Hello", " ", left("worldx", 5), "!", NULL);' */
-/* Also the first string must not be `NULL`, i.e. `cat(NULL)` alone is invalid. */
 /*!
  * \fn temp_vstring cat(const char * string1, ...)
  * \brief concatenates several NUL terminated strings to a single string.
+ *
+ * \note last argument MUST be NULL, e.g.
+ *   `let(&abc, cat("Hello", " ", left("worldx", 5), "!", NULL);`
+ *   Also the first string must not be `NULL`, i.e. `cat(NULL)` alone is invalid.
  *
  * Up to MAX_CAT_ARGS - 1 (49) NUL terminated strings submitted as parameters
  * are concatenated to form a single NUL terminated string.  The parameters
@@ -341,21 +337,23 @@ void let(vstring *target, const char *source);
  */
 temp_vstring cat(const char * string1, ...);
 
-/* Emulation of BASIC linput (line input) statement; returns NULL if EOF */
-/* Note that linput assigns target string with let(&target,...) */
-  /*
-    BASIC:  linput "what";a$
-    c:      linput(NULL,"what?",&a);
-
-    BASIC:  linput #1,a$                        (error trap on EOF)
-    c:      if (!linput(file1,NULL,&a)) break;  (break on EOF)
-
-  */
-/* returns whether a (possibly empty) line was successfully read */
+/*!
+ * Emulation of BASIC linput (line input) statement; returns NULL if EOF
+ * \note linput assigns target string with `let(&target,...)`
+ *
+ *     BASIC:  linput "what";a$
+ *     c:      linput(NULL,"what?",&a);
+ *
+ *     BASIC:  linput #1,a$                        (error trap on EOF)
+ *     c:      if (!linput(file1,NULL,&a)) break;  (break on EOF)
+ *
+ * \returns whether a (possibly empty) line was successfully read
+ */
 int linput(FILE *stream, const char *ask, vstring *target);
 
 /* Emulation of BASIC string functions */
 /* Indices are 1-based */
+
 /*!
  * \fn temp_vstring seg(const char *sin, long p1, long p2)
  * Extracts a substring from a source and pushes it on \a tempAllocStack.
@@ -429,6 +427,7 @@ temp_vstring mid(const char *sin, long p, long l);
  * \bug a stack overflow of \a tempAllocStack is not handled correctly.
  */
 temp_vstring left(const char *sin, long n);
+
 /*!
  * \fn temp_vstring right(const char *sin, long n)
  * \brief Extract the substring starting with position n.
@@ -454,6 +453,7 @@ temp_vstring left(const char *sin, long n);
  */
 temp_vstring right(const char *sin, long n);
 temp_vstring edit(const char *sin, long control);
+
 /*!
  * \fn temp_vstring space(long n)
  * pushes a NUL terminated string of __n__ characters onto
@@ -466,6 +466,7 @@ temp_vstring edit(const char *sin, long control);
  * \bug a stack overflow of \a tempAllocStack is not handled correctly.
  */
 temp_vstring space(long n);
+
 /*!
  * \fn temp_vstring string(long n, char c)
  * pushes a NUL terminated string of __n__ characters __c__ onto
@@ -481,6 +482,7 @@ temp_vstring space(long n);
  * \bug a stack overflow of \a tempAllocStack is not handled correctly.
  */
 temp_vstring string(long n, char c);
+
 /*!
  * \fn temp_vstring chr(long n)
  * \brief create a temporary string containing a single byte.
@@ -502,23 +504,40 @@ temp_vstring string(long n, char c);
  * \bug a stack overflow of \a tempAllocStack is not handled correctly.
  */
 temp_vstring chr(long n);
+
 temp_vstring xlate(const char *sin, const char *table);
+
 temp_vstring date(void);
+
 temp_vstring time_(void);
+
 temp_vstring num(double x);
+
 temp_vstring num1(double x);
+
 temp_vstring str(double x);
+
 long len(const char *s);
+
 long instr(long start, const char *string1, const char *string2);
+
 long rinstr(const char *string1, const char *string2);
+
 long ascii_(const char *c);
+
 double val(const char *s);
 
+
 /* Emulation of Progress 4GL string functions */
+
 temp_vstring entry(long element, const char *list);
+
 long lookup(const char *expression, const char *list);
+
 long numEntries(const char *list);
+
 long entryPosition(long element, const char *list);
+
 
 /* Routines may/may not be written (lowest priority):
 vstring place$(vstring sout);
@@ -565,13 +584,14 @@ extern long g_tempAllocStackTop;   /* Top of stack for tempAlloc function */
 extern long g_startTempAllocStack; /* Where to start freeing temporary allocation
     when let() is called (normally 0, except for nested vstring functions) */
 
-/* Make string have temporary allocation to be released by next let().
+/*! \brief Make string have temporary allocation to be released by next let().
+
   This function effectively changes the type of `s`
   from `vstring` (an owned pointer) to `temp_vstring` (a temporary to be
   freed by the next `let()`). See `temp_vstring` for information on what
   you can do with temporary strings.
   In particular, after makeTempAlloc() is called, the vstring may NOT be
   assigned again with let(). */
-temp_vstring makeTempAlloc(vstring s);    /* Make string have temporary allocation to be
-                                    released by next let() */
+temp_vstring makeTempAlloc(vstring s);
+
 #endif /* METAMATH_MMVSTR_H_ */
