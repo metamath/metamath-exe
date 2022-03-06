@@ -167,17 +167,32 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
  * ubiquitous and frequent, that the processor, and all relevant program
  * languages provide simple mechanisms for de/allocation of such __local__
  * data.  Metamath is no exception to this.
+ *
  * While the C compiler silently cares about __local__ variables, it must not
  * interfere with data managed by a \ref suballocation "Suballocator".  Instead
  * of tracking all __locally__ created memory individually for later
- * deallocation, a stack like \ref Pool "pool" allows a command like
- * `free all memory` that has been created after a certain point.  This greatly
- * automatizes handling of these data.
+ * deallocation, a stack like \ref Pool "pool" is used to automate this
+ * handling.
  *
- * A stack is not the same as a \ref block "block", though similar.  Like a
- * block it is defined as an array of elements, but it comes with no hidden
- * header.  Instead openly accessible stack pointer (actually indices) directly
- * support stack semantics.
+ * Stacks of temporary data only contain pointers to dynamically allocated
+ * memory from the heap or the \ref suballocator.  This stack functions like an
+ * operand stack.  A final result depends on fragments, temporary results and
+ * similar, all pushed onto this stack.  When the final operation is executed,
+ * and its result is persisted in some variable, the dependency on its
+ * temporary operands ceases.  Consequently, they should be freed again.  To
+ * automate this operation,  such a stack maintains a __start__ index.  A
+ * client saves this value and sets it to the current stack top, then starts
+ * pushing dynamically allocated operands on the stack.  After the result is
+ * persisted, all entries beginning with the element at index  __start__ are
+ * deallocated again, and the stack top is reset to the __start__ value, while
+ * the __start__ value is reset to the saved value, to accomodate nesting of
+ * this procedure.
+ *
+ * This scheme needs a few conditions to be met:
+ * - No operand is used in more than one evaluation context;
+ * - Operations are executed strictly sequential, or in a nested manner. No two
+ *   operations interleave pushing operands.
+ *   push operands interleaved
  */
 
 /* Memory pools are used to reduce the number of malloc and alloc calls that
@@ -2452,9 +2467,11 @@ long g_pntrStartTempAllocStack = 0;   /* Where to start freeing temporary alloca
  * \var pntrString *pntrTempAllocStack[]
  * \brief a \ref stack "stack" of \ref temp_pntrString.
  *
- * Holds pointers to temporarily allocated data of type \ref pntrString.  Such
+ * Holds pointers to temporarily allocated data of type \ref temp_pntrString.  Such
  * a \ref stack "stack" contains strictly __local__ data of a function, not
  * accessed from outer levels.
+ * \bug The element type should be temp_pntrString, because a NULL_PNTRSTRING
+ *   must not be pushed on the stack.
  */
 pntrString *pntrTempAllocStack[M_MAX_ALLOC_STACK];
 
@@ -2476,8 +2493,8 @@ pntrString *pntrTempAllocStack[M_MAX_ALLOC_STACK];
  * \post
  *   - \p size > 0: memory for \p size entries is reserved in the \ref block
  *     "block's" header, but the data is still random.
- *   - Exits on out-of-memory
  *   - updates \ref db2
+ *   - Exits on out-of-memory
  */
 temp_pntrString *pntrTempAlloc(long size) {
                                 /* pntrString memory allocation/deallocation */

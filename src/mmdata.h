@@ -410,7 +410,7 @@ void memFreePoolPurge(flag untilOK);
  * accumulated bytes consumed by usage so far.  This value includes the hidden
  * header of the block.
  * \pre Do not call within \ref bugfn "bug".\n
- *   Submit only non-null pointers, even if not all information is requested.\n
+ *   Submit only non-null pointers, even if not all information is needed.\n
  *   Pointers to irrelevant information may be the same.
  * \post Statistic data is copied to the locations the parameters point to.
  */
