@@ -858,7 +858,7 @@ flag pntrEq(const pntrString *sout, const pntrString *sin);
  * \attention   
  *   - the pointers in \p g are copied to the result.  If some of them
  *     reference allocated memory, check for possible double free, for example.
- *   - a pointer to constant data is padded to the right.  The refernced memory
+ *   - a pointer to constant data is padded to the right.  The referenced memory
  *     must not be overwritten.
  * \post 
  *   - the elements of \p g are duplicated.

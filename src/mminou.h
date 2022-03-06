@@ -65,6 +65,12 @@ extern long g_commandFileNestingLevel;
  * valid, and point to opened files.
  */
 extern FILE *g_commandFilePtr[MAX_COMMAND_FILE_NESTING + 1];
+/*!
+ * \var vstring g_commandFileName[]
+ * list of command file names in nested SUBMIT commands.  This name need not be
+ * fully qualified (with all directories down from the root directory).  The
+ * first element is reserved for stdin and never set.
+ */
 extern vstring g_commandFileName[MAX_COMMAND_FILE_NESTING + 1];
 extern flag g_commandFileSilent[MAX_COMMAND_FILE_NESTING + 1];
 /*!
@@ -210,9 +216,9 @@ vstring cmdInput(FILE *stream, const char *ask);
  * After some explanatory text is printed, gets a line from either stdin or the
  * command file stream in \ref g_commandFilePt, depending on the value of
  * \ref g_commandFileNestingLevel.  If this value is 0, interactive input via
- * stdin is assumed, else non interpreted lines are read from a file.  The line returned
- * to the caller is more or less what \ref cmdInput() yields, but some fine
- * tuning is applied.
+ * stdin is assumed, else non interpreted lines are read from a file in submit
+ * mode.  The line returned to the caller is more or less what \ref cmdInput()
+ * yields, but some fine tuning is applied.
  *
  * \par Displaying the prompt text
  *
@@ -239,6 +245,19 @@ vstring cmdInput(FILE *stream, const char *ask);
  * immediate stop on the caller's side.
  *
  * 4. If logging is enabled, prompt and returned input is logged.
+ * 
+ * \par Submit Mode
+ *
+ * 1. a non-interpreted line is read from the appropriate entry in
+ * \ref g_commandFilePtr by \ref cmdInput.
+ *
+ * 2. If NULL is returned, reaching EOF is assumed, the file is closed, its
+ * name in \ref g_commandFileName deallocated and the previous
+ * \ref g_commandFileLevel is activated.  In this particular case the read line
+ * is the empty string.  A message indicating the end of the command file is
+ * printed.  The \ref g_commandFileSilentFlag controlling console output is
+ * copied from the appropriate entry of \ref g_commandFileSilent, unless the
+ * interactive mode is reached; here output is never suppressed (value 0).
  *
  * \return first not interpreted line as \ref vstring, or "EXIT" on error. 
  * \pre
@@ -261,7 +280,15 @@ vstring cmdInput(FILE *stream, const char *ask);
  *   - \ref g_logFileOpenFlag if set to 1, a not interpreted returned line is
  *     logged before it is passed on to the caller.
  * \post
- *   \ref localScrollMode is set to 1
+ *   - \ref localScrollMode is set to 1
+ *   - \ref printedLines is reset to 0
+ *   - \ref g_quitPrint is reset to 0
+ *   - interactive mode: \ref tempAllocStack frees top elements down to
+ *     \ref g_startTempAlloc.
+ *   - interactive mode: \ref pntrTempAllocStack frees top elements down to
+ *     \ref g_pntrStartTempAlloc.
+ *   - interactive mode: The \ref backBuffer is cleared, then filled with
+ *     prompt (last line only) and input of the user.
  * \warning the calling program must deallocate the returned string.
  */
 vstring cmdInput1(const char *ask);
