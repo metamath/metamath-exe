@@ -7,27 +7,30 @@
 #ifndef METAMATH_MMVERI_H_
 #define METAMATH_MMVERI_H_
 
+/*! \file */
+
 #include "mmdata.h"
 
 char verifyProof(long statemNum);
 
-/* assignVar() finds an assignment to substScheme variables that match
+/*! assignVar() finds an assignment to substScheme variables that match
    the assumptions specified in the reason string */
 nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
   nmbrString *bigSubstInstAss, long substScheme,
     /* For error messages: */
   long statementNum, long step, flag unkHypFlag);
 
-/* Deallocate the math symbol strings assigned in g_WrkProof structure during
+/*! Deallocate the math symbol strings assigned in g_WrkProof structure during
    proof verification.  This should be called after verifyProof() and after the
-   math symbol strings have been used for proof printouts, etc. */
-/* Note that this does NOT free the other allocations in g_WrkProof.  The
+   math symbol strings have been used for proof printouts, etc.
+  \note this does NOT free the other allocations in g_WrkProof.  The
    ERASE command will do this. */
 void cleanWrkProof(void);
 
-/* Structure for getting info about a step for SHOW PROOF/STEP command */
-/* If getStep.stepNum is nonzero, we should get info about that step. */
-/* This structure should be deallocated after use. */
+/*! \brief Structure for getting info about a step for SHOW PROOF/STEP command
+
+  If getStep.stepNum is nonzero, we should get info about that step.
+  \note This structure should be deallocated after use. */
 struct getStep_struct {
   long stepNum; /* Step # to get info about */
   long sourceStmt; /* Right side of = in proof display */

@@ -7,6 +7,8 @@
 #ifndef METAMATH_MMHLPB_H_
 #define METAMATH_MMHLPB_H_
 
+/*! \file */
+
 #include "mmvstr.h"
 
 void help2(vstring helpCmd);

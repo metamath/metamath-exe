@@ -2541,9 +2541,6 @@ temp_pntrString *pntrTempAlloc(long size) {
 }
 
 
-/* Make string have temporary allocation to be released by next pntrLet() */
-/* Warning:  after pntrMakeTempAlloc() is called, the pntrString may NOT be
-   assigned again with pntrLet() */
 temp_pntrString *pntrMakeTempAlloc(pntrString *s) {
   if (g_pntrTempAllocStackTop>=(M_MAX_ALLOC_STACK-1)) {
     printf(
@@ -2562,12 +2559,6 @@ temp_pntrString *pntrMakeTempAlloc(pntrString *s) {
 }
 
 
-/* pntrString assignment */
-/* This function must ALWAYS be called to make assignment to */
-/* a pntrString in order for the memory cleanup routines, etc. */
-/* to work properly.  If a pntrString has never been assigned before, */
-/* it is the user's responsibility to initialize it to NULL_PNTRSTRING (the */
-/* null string). */
 void pntrLet(pntrString **target, const pntrString *source) {
   long targetLength,sourceLength;
   long targetAllocLen;

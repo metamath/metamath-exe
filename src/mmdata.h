@@ -4,12 +4,13 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-/*!
- * \file mmdata.h - includes for some principal data structures and data-string
- * handling */
-
 #ifndef METAMATH_MMDATA_H_
 #define METAMATH_MMDATA_H_
+
+/*!
+ * \file mmdata.h
+ * \brief includes for some principal data structures and data-string handling
+ */
 
 #include "mmvstr.h"
 
@@ -170,6 +171,11 @@ typedef nmbrString temp_nmbrString;
  * dynamically allocated memory on the heap.  Special commands support
  * dependency tracking and free all pointers on and after a particular one in
  * such a stack. 
+=======
+ * These elements are pushed onto and popped off a \ref stack
+ * "stack of temporary data".  Special commands can free all pointers on and
+ * after a particular one in such a stack.
+>>>>>>> upstream/master
  */
 typedef pntrString temp_pntrString;
 
@@ -189,88 +195,90 @@ enum mTokenType { var_, con_ };
 /* Global variables related to current statement */
 extern int g_currentScope;
 
+/*! The data associated with a statement in the file */
 struct statement_struct { /* Array index is statement number, starting at 1 */
-  long lineNum; /* Line number in file; 0 means not yet determined */
-  vstring fileName; /* File statement is in; "" means not yet determined */
-  vstring labelName; /* Label of statement */
-  flag uniqueLabel; /* Flag that label is unique (future implementations may
+  long lineNum; /*!< Line number in file; 0 means not yet determined */
+  vstring fileName; /*!< File statement is in; "" means not yet determined */
+  vstring labelName; /*!< Label of statement */
+  flag uniqueLabel; /*!< Flag that label is unique (future implementations may
                       allow duplicate labels on hypotheses) */
-  char type;    /* 2nd character of keyword, e.g. 'e' for $e */
-  int scope;    /* Block scope level, increased by ${ and decreased by $};
+  char type;    /*!< 2nd character of keyword, e.g. 'e' for $e */
+  int scope;    /*!< Block scope level, increased by ${ and decreased by $};
        ${ has scope _before_ the increase; $} has scope _before_ the decrease */
-  long beginScopeStatementNum;  /* statement of previous ${ ; 0 if we're in
+  long beginScopeStatementNum;  /*!< statement of previous ${ ; 0 if we're in
                 outermost block */
-  long endScopeStatementNum;  /* statement of next $} (populated for opening
+  long endScopeStatementNum;  /*!< statement of next $} (populated for opening
                                  ${ only, 0 otherwise); g_statements+1 if
                               we're in outermost block */
-  vstring statementPtr; /* Pointer to end of (unmodified) label section used
+  vstring statementPtr; /*!< Pointer to end of (unmodified) label section used
              to determine file and line number for error or info messages about
              the statement */
-  vstring labelSectionPtr; /* Source code before statement keyword
+  vstring labelSectionPtr; /*!< Source code before statement keyword
                  - will be updated if labelSection changed */
   long labelSectionLen;
-  char labelSectionChanged; /* Default is 0; if 1, labelSectionPtr points to an
+  char labelSectionChanged; /*!< Default is 0; if 1, labelSectionPtr points to an
                                allocated vstring that must be freed by ERASE */
-  vstring mathSectionPtr; /* Source code between keyword and $= or $. */
+  vstring mathSectionPtr; /*!< Source code between keyword and $= or $. */
   long mathSectionLen;
-  char mathSectionChanged; /* Default is 0; if 1, mathSectionPtr points to an
+  char mathSectionChanged; /*!< Default is 0; if 1, mathSectionPtr points to an
                                allocated vstring that must be freed by ERASE */
-  vstring proofSectionPtr; /* Source code between $= and $. */
+  vstring proofSectionPtr; /*!< Source code between $= and $. */
   long proofSectionLen;
-  char proofSectionChanged; /* Default is 0; if 1, proofSectionPtr points to an
+  char proofSectionChanged; /*!< Default is 0; if 1, proofSectionPtr points to an
                                allocated vstring that must be freed by ERASE */
-  nmbrString *mathString; /* Parsed mathSection */
+  nmbrString *mathString; /*!< Parsed mathSection */
   long mathStringLen;
-  nmbrString *proofString; /* Parsed proofSection (used by $p's only */
-  nmbrString *reqHypList; /* Required hypotheses (excluding $d's) */
-  nmbrString *optHypList; /* Optional hypotheses (excluding $d's) */
-  long numReqHyp; /* Number of required hypotheses */
-  nmbrString *reqVarList; /* Required variables */
-  nmbrString *optVarList; /* Optional variables */
-  nmbrString *reqDisjVarsA; /* Required disjoint variables, 1st of pair */
-  nmbrString *reqDisjVarsB; /* Required disjoint variables, 2nd of pair */
-  nmbrString *reqDisjVarsStmt; /* Req disjoint variables, statem number */
-  nmbrString *optDisjVarsA; /* Optional disjoint variables, 1st of pair */
-  nmbrString *optDisjVarsB; /* Optional disjoint variables, 2nd of pair */
-  nmbrString *optDisjVarsStmt; /* Opt disjoint variables, statem number */
-  long pinkNumber; /* The $a/$p sequence number for web pages */
-  long headerStartStmt; /* # of stmt following previous $a, $p */
-  };
+  nmbrString *proofString; /*!< Parsed proofSection (used by $p's only */
+  nmbrString *reqHypList; /*!< Required hypotheses (excluding $d's) */
+  nmbrString *optHypList; /*!< Optional hypotheses (excluding $d's) */
+  long numReqHyp; /*!< Number of required hypotheses */
+  nmbrString *reqVarList; /*!< Required variables */
+  nmbrString *optVarList; /*!< Optional variables */
+  nmbrString *reqDisjVarsA; /*!< Required disjoint variables, 1st of pair */
+  nmbrString *reqDisjVarsB; /*!< Required disjoint variables, 2nd of pair */
+  nmbrString *reqDisjVarsStmt; /*!< Req disjoint variables, statem number */
+  nmbrString *optDisjVarsA; /*!< Optional disjoint variables, 1st of pair */
+  nmbrString *optDisjVarsB; /*!< Optional disjoint variables, 2nd of pair */
+  nmbrString *optDisjVarsStmt; /*!< Opt disjoint variables, statem number */
+  long pinkNumber; /*!< The $a/$p sequence number for web pages */
+  long headerStartStmt; /*!< # of stmt following previous $a, $p */
+};
 
-/* Sort keys for statement labels (allocated by parseLabels) */
+/*! Sort keys for statement labels (allocated by parseLabels) */
 extern long *g_labelKey;
 
+/*! This structure holds all information related to $[ $] (include) statements
+   in the input source files, for error message processing. */
 struct includeCall_struct {
-  /* This structure holds all information related to $[ $] (include) statements
-     in the input source files, for error message processing. */
-  vstring source_fn;  /* Name of the file where the
+  vstring source_fn;  /*!< Name of the file where the
        inclusion source is located (= parent file for $( Begin $[... etc.) */
-  vstring included_fn;  /* Name of the file in the
+  vstring included_fn;  /*!< Name of the file in the
        inclusion statement e.g. "$( Begin $[ included_fn..." */
-  long current_offset;  /* This is the starting
+  long current_offset;  /*!< This is the starting
       character position of the included file w.r.t entire source buffer */
-  long current_line; /* The line number
+  long current_line; /*!< The line number
       of the start of the included file (=1) or the continuation line of
       the parent file */
-  flag pushOrPop; /* 0 means included file, 1 means continuation of parent */
-  vstring current_includeSource; /* (Currently) assigned
+  flag pushOrPop; /*!< 0 means included file, 1 means continuation of parent */
+  vstring current_includeSource; /*!< (Currently) assigned
       only if we may need it for a later Begin comparison */
-  long current_includeLength; /* Length of the file
+  long current_includeLength; /*!< Length of the file
       to be included (0 if the file was previously included) */
-  };
+};
 
+/*! The data associated with a math token. */
 struct mathToken_struct {
-  vstring tokenName; /* may be used more than once at different scopes */
-  long length; /* to speed up parsing scans */
-  char tokenType; /* variable or constant - (char)var_ or (char)con_ */
-  flag active;  /* 1 if token is recognized in current scope */
-  int scope;    /* scope level token was declared at */
-  long tmp;     /* Temporary field use to speed up certain functions */
-  long statement; /* Statement declared in */
-  long endStatement; /* Statement of end of scope it was declared in */
-  };
+  vstring tokenName; /*!< may be used more than once at different scopes */
+  long length; /*!< to speed up parsing scans */
+  char tokenType; /*!< variable or constant - (char)var_ or (char)con_ */
+  flag active;  /*!< 1 if token is recognized in current scope */
+  int scope;    /*!< scope level token was declared at */
+  long tmp;     /*!< Temporary field use to speed up certain functions */
+  long statement; /*!< Statement declared in */
+  long endStatement; /*!< Statement of end of scope it was declared in */
+};
 
-/* Sort keys for math tokens (allocated by parseMathDecl) */
+/*! Sort keys for math tokens (allocated by parseMathDecl) */
 extern long *g_mathKey;
 
 extern long g_MAX_STATEMENTS;
@@ -278,7 +286,7 @@ extern long g_MAX_MATHTOKENS;
 extern struct statement_struct *g_Statement;
 /*Obs*/ /*extern struct label_struct *label;*/
 
-/* Warning: mathToken[i] is 0-based, not 1-based! */
+/*! \warning `mathToken[i]` is 0-based, not 1-based! */
 extern struct mathToken_struct *g_MathToken;
 extern long g_statements, /*labels,*/ g_mathTokens;
 
@@ -286,8 +294,8 @@ extern long g_MAX_INCLUDECALLS;
 extern struct includeCall_struct *g_IncludeCall;
 extern long g_includeCalls;
 
-extern char *g_sourcePtr; /* Pointer to buffer in memory with input source */
-extern long g_sourceLen; /* Number of chars. in all inputs files combined (after includes)*/
+extern char *g_sourcePtr; /*!< Pointer to buffer in memory with input source */
+extern long g_sourceLen; /*!< Number of chars. in all inputs files combined (after includes)*/
 
 /* For use by getMarkupFlag() */
 #define PROOF_DISCOURAGED_MARKUP "(Proof modification is discouraged.)"
@@ -385,7 +393,7 @@ void poolFree(void *ptr);
  *   - Exit on out-of-memory (\ref memUsedPool overflows)
  */
 void addToUsedPool(void *ptr);
-/* Purges reset memory pool usage */
+/*! Purges reset memory pool usage */
 void memFreePoolPurge(flag untilOK);
 /* Statistics */
 /*!
@@ -416,13 +424,12 @@ void memFreePoolPurge(flag untilOK);
  */
 void getPoolStats(long *freeAlloc, long *usedAlloc, long *usedActual);
 
-/* Initial memory allocation */
+/*! Initial memory allocation */
 void initBigArrays(void);
 
-/* Find the number of free memory bytes */
+/*! Find the number of free memory bytes */
 long getFreeSpace(long max);
 
-/* Fatal memory allocation error */
 /*!
  * \fn void outOfMemory(const char *msg)
  * \brief exit after fatal memory allocation error.
@@ -440,7 +447,6 @@ long getFreeSpace(long max);
  */
 void outOfMemory(const char *msg);
 
-/* Bug check error */
 /*!
  * \anchor bugfn
  * \fn void bug(int bugNum)
@@ -449,7 +455,7 @@ void outOfMemory(const char *msg);
 void bug(int bugNum);
 
 
-/* Null nmbrString -- -1 flags the end of a nmbrString */
+/*! Null nmbrString -- -1 flags the end of a nmbrString */
 struct nullNmbrStruct {
     long poolLoc;
     long allocSize;
@@ -462,7 +468,9 @@ extern struct nullNmbrStruct g_NmbrNull;
 
 /*!
  * \struct nullPntrStruct
- * describing a \ref block of \ref pntrString containing only the null
+ * \brief Null pntrString -- NULL flags the end of a pntrString
+ *
+ * Describes a \ref block of \ref pntrString containing only the null
  * pointer.  Besides this pointer it is accompanied with a header containing
  * the hidden administrative values of such \ref block "block".
  *
@@ -472,32 +480,32 @@ extern struct nullNmbrStruct g_NmbrNull;
  * \bug The C standard does not require a long having the same size as a
  * void*.  In fact there might be **no** integer type matching a pointer in size.
  */
-/* Null pntrString -- NULL flags the end of a pntrString */
 struct nullPntrStruct {
-    /*!
-     * An instance of a nullPntrStruct is always standalone and never part of a
-     * larger pool.  Indicated by the fixed value -1.
-     */
-    long poolLoc;
-    /*!
-     * allocated size of the memory block containing the \ref pntrString,
-     * excluding any hidden administrative data.
-     * Note: this is the number of bytes, not elements!  Fixed to the size of a
-     * single void* instance.
-     */
-    long allocSize;
-    /*!
-     * currently used size of the memory block containing the \ref pntrString,
-     * excluding any hidden administrative data.
-     * Note: this is the number of bytes, not elements!  Fixed to the size of a
-     * single pointer element.
-     */
-    long actualSize;
-    /*!
-     * memory for a single void* instance, set and fixed to the null pointer.
-     * A null marks the end of the array.
-     */
-    pntrString nullElement; };
+  /*!
+   * An instance of a nullPntrStruct is always standalone and never part of a
+   * larger pool.  Indicated by the fixed value -1.
+   */
+  long poolLoc;
+  /*!
+   * allocated size of the memory block containing the \ref pntrString,
+   * excluding any hidden administrative data.
+   * Note: this is the number of bytes, not elements!  Fixed to the size of a
+   * single void* instance.
+   */
+  long allocSize;
+  /*!
+   * currently used size of the memory block containing the \ref pntrString,
+   * excluding any hidden administrative data.
+   * Note: this is the number of bytes, not elements!  Fixed to the size of a
+   * single pointer element.
+   */
+  long actualSize;
+  /*!
+   * memory for a single void* instance, set and fixed to the null pointer.
+   * A null marks the end of the array.
+   */
+  pntrString nullElement;
+};
 /*!
  * \var g_PntrNull
  * Global instance of a memory block structured like a
@@ -548,12 +556,12 @@ extern struct nullPntrStruct g_PntrNull;
 #define free_pntrString(x) pntrLet(&x, NULL_PNTRSTRING)
 
 
-/* This function returns a 1 if any entry in a comma-separated list
+/*! This function returns a 1 if any entry in a comma-separated list
    matches using the matches() function. */
 flag matchesList(const char *testString, const char *pattern, char wildCard,
     char oneCharWildCard);
 
-/* This function returns a 1 if the first argument matches the pattern of
+/*! This function returns a 1 if the first argument matches the pattern of
    the second argument.  The second argument may have 0-or-more and
    exactly-1 character match wildcards, typically '*' and '?'.*/
 flag matches(const char *testString, const char *pattern, char wildCard,
@@ -573,9 +581,9 @@ extern long g_nmbrStartTempAllocStack; /* Where to start freeing temporary
     allocation when nmbrLet() is called (normally 0, except for nested
     nmbrString functions) */
 
-/* Make string have temporary allocation to be released by next nmbrLet() */
-/* Warning:  after nmbrMakeTempAlloc() is called, the nmbrString may NOT be
-   assigned again with nmbrLet() */
+/*! \brief Make string have temporary allocation to be released by next nmbrLet()
+  \warning after nmbrMakeTempAlloc() is called, the nmbrString may NOT be
+    assigned again with nmbrLet() */
 temp_nmbrString *nmbrMakeTempAlloc(nmbrString *s);
                                     /* Make string have temporary allocation to be
                                     released by next nmbrLet() */
@@ -583,114 +591,118 @@ temp_nmbrString *nmbrMakeTempAlloc(nmbrString *s);
 /**************************************************/
 
 
-/* String assignment - MUST be used to assign vstrings */
+/*! String assignment - MUST be used to assign vstrings */
 void nmbrLet(nmbrString **target, const nmbrString *source);
 
-/* String concatenation - last argument MUST be NULL */
+/*! String concatenation - last argument MUST be NULL */
 temp_nmbrString *nmbrCat(const nmbrString *string1,...);
 
-/* Emulation of nmbrString functions similar to BASIC string functions */
+/*! Emulation of nmbrString functions similar to BASIC string functions */
 temp_nmbrString *nmbrSeg(const nmbrString *sin, long p1, long p2);
 temp_nmbrString *nmbrMid(const nmbrString *sin, long p, long l);
 temp_nmbrString *nmbrLeft(const nmbrString *sin, long n);
 temp_nmbrString *nmbrRight(const nmbrString *sin, long n);
 
-/* Allocate and return an "empty" string n "characters" long */
+/*! Allocate and return an "empty" string n "characters" long */
 temp_nmbrString *nmbrSpace(long n);
 
 long nmbrLen(const nmbrString *s);
 long nmbrAllocLen(const nmbrString *s);
 void nmbrZapLen(nmbrString *s, long length);
 
-/* Search for string2 in string 1 starting at start_position */
+/*! Search for string2 in string 1 starting at start_position */
 long nmbrInstr(long start, const nmbrString *sin, const nmbrString *s);
 
-/* Search for string2 in string 1 in reverse starting at start_position */
-/* (Reverse nmbrInstr) */
+/*! Search for string2 in string 1 in reverse starting at start_position
+ * (Reverse nmbrInstr)
+ */
 long nmbrRevInstr(long start_position, const nmbrString *string1,
    const nmbrString *string2);
 
-/* 1 if strings are equal, 0 otherwise */
+/*! 1 if strings are equal, 0 otherwise */
 flag nmbrEq(const nmbrString *s, const nmbrString *t);
 
-/* Converts mString to a vstring with one space between tokens */
+/*! Converts mString to a vstring with one space between tokens */
 temp_vstring nmbrCvtMToVString(const nmbrString *s);
 
-/* Converts rString to a vstring with one space between tokens */
+/*! Converts rString to a vstring with one space between tokens */
 temp_vstring nmbrCvtRToVString(const nmbrString *s,
     flag explicitTargets,
     long statemNum);
 
-/* Get step numbers in an rString - needed by cvtRToVString & elsewhere */
+/*! Get step numbers in an rString - needed by cvtRToVString & elsewhere */
 nmbrString *nmbrGetProofStepNumbs(const nmbrString *reason);
 
-/* Converts any nmbrString to an ASCII string of numbers corresponding
+/*! Converts any nmbrString to an ASCII string of numbers corresponding
    to the .tokenNum field -- used for debugging only. */
 temp_vstring nmbrCvtAnyToVString(const nmbrString *s);
 
-/* Extract variables from a math token string */
+/*! Extract variables from a math token string */
 temp_nmbrString *nmbrExtractVars(const nmbrString *m);
 
-/* Determine if an element is in a nmbrString; return position if it is */
+/*! Determine if an element is in a nmbrString; return position if it is */
 long nmbrElementIn(long start, const nmbrString *g, long element);
 
-/* Add a single number to end of a nmbrString - faster than nmbrCat */
+/*! Add a single number to end of a nmbrString - faster than nmbrCat */
 temp_nmbrString *nmbrAddElement(const nmbrString *g, long element);
 
-/* Get the set union of two math token strings (presumably
+/*! Get the set union of two math token strings (presumably
    variable lists) */
 temp_nmbrString *nmbrUnion(const nmbrString *m1, const nmbrString *m2);
 
-/* Get the set intersection of two math token strings (presumably
+/*! Get the set intersection of two math token strings (presumably
    variable lists) */
 temp_nmbrString *nmbrIntersection(const nmbrString *m1, const nmbrString *m2);
 
-/* Get the set difference m1-m2 of two math token strings (presumably
+/*! Get the set difference m1-m2 of two math token strings (presumably
    variable lists) */
 temp_nmbrString *nmbrSetMinus(const nmbrString *m1,const nmbrString *m2);
 
 
 
-/* This is a utility function that returns the length of a subproof that
+/*! This is a utility function that returns the length of a subproof that
    ends at step */
 long nmbrGetSubproofLen(const nmbrString *proof, long step);
 
-/* This function returns a "squished" proof, putting in {} references
+/*! This function returns a "squished" proof, putting in {} references
    to previous subproofs. */
 temp_nmbrString *nmbrSquishProof(const nmbrString *proof);
 
-/* This function un-squishes a "squished" proof, replacing {} references
+/*! This function un-squishes a "squished" proof, replacing {} references
    to previous subproofs by the subproofs themselves. */
 temp_nmbrString *nmbrUnsquishProof(const nmbrString *proof);
 
-/* This function returns the indentation level vs. step number of a proof
+/*! This function returns the indentation level vs. step number of a proof
    string.  This information is used for formatting proof displays.  The
    function calls itself recursively, but the first call should be with
    startingLevel = 0. */
 temp_nmbrString *nmbrGetIndentation(const nmbrString *proof,
   long startingLevel);
 
-/* This function returns essential (1) or floating (0) vs. step number of a
+/*! This function returns essential (1) or floating (0) vs. step number of a
    proof string.  This information is used for formatting proof displays.  The
    function calls itself recursively, but the first call should be with
    startingLevel = 0. */
 temp_nmbrString *nmbrGetEssential(const nmbrString *proof);
 
-/* This function returns the target hypothesis vs. step number of a proof
+/*! This function returns the target hypothesis vs. step number of a proof
    string.  This information is used for formatting proof displays.  The
    function calls itself recursively.
    statemNum is the statement being proved. */
 temp_nmbrString *nmbrGetTargetHyp(const nmbrString *proof, long statemNum);
 
-/* Converts a proof string to a compressed-proof-format ASCII string.
-   Normally, the proof string would be compacted with squishProof first,
-   although it's not a requirement. */
-/* The statement number is needed because required hypotheses are
-   implicit in the compressed proof. */
+/*!
+ * Converts a proof string to a compressed-proof-format ASCII string.
+ * Normally, the proof string would be compacted with squishProof first,
+ * although it's not a requirement.
+ *
+ * The statement number is needed because required hypotheses are
+ * implicit in the compressed proof.
+ */
 temp_vstring compressProof(const nmbrString *proof, long statemNum,
     flag oldCompressionAlgorithm);
 
-/* Gets length of the ASCII form of a compressed proof */
+/*! Gets length of the ASCII form of a compressed proof */
 long compressedProofSize(const nmbrString *proof, long statemNum);
 
 
@@ -729,19 +741,20 @@ extern long g_pntrStartTempAllocStack; /* Where to start freeing temporary
     allocation when pntrLet() is called (normally 0, except for nested
     pntrString functions) */
 
-/* Make string have temporary allocation to be released by next pntrLet() */
-/* Warning:  after pntrMakeTempAlloc() is called, the pntrString may NOT be
-   assigned again with pntrLet() */
+/*!
+ * \brief Make string have temporary allocation to be released by next pntrLet()
+ * \warning after pntrMakeTempAlloc() is called, the pntrString may NOT be
+ *   assigned again with pntrLet()
+ */
 temp_pntrString *pntrMakeTempAlloc(pntrString *s);
-                                    /* Make string have temporary allocation to be
-                                    released by next pntrLet() */
 
 /**************************************************/
 
 
-/* String assignment - MUST be used to assign vstrings */
 /*!
  * \fn void pntrLet(pntrString **target, const pntrString *source)
+ * String assignment - MUST be used to assign vstrings.
+ *
  * Copies the \ref pntrString elements of \p source to the beginning of a
  * \ref block referenced by \p target.  If necessary, the \p target block is
  * reallocated, and if it is, it gets twice the needed size to account for
@@ -784,7 +797,7 @@ temp_pntrString *pntrMakeTempAlloc(pntrString *s);
  */
 void pntrLet(pntrString **target, const pntrString *source);
 
-/* String concatenation - last argument MUST be NULL */
+/*! String concatenation - last argument MUST be NULL */
 temp_pntrString *pntrCat(const pntrString *string1,...);
 
 /* Emulation of pntrString functions similar to BASIC string functions */
@@ -793,14 +806,14 @@ temp_pntrString *pntrMid(const pntrString *sin, long p, long length);
 temp_pntrString *pntrLeft(const pntrString *sin, long n);
 temp_pntrString *pntrRight(const pntrString *sin, long n);
 
-/* Allocate and return an "empty" string n "characters" long */
+/*! Allocate and return an "empty" string n "characters" long */
 temp_pntrString *pntrSpace(long n);
 
-/* Allocate and return an "empty" string n "characters" long
+/*! Allocate and return an "empty" string n "characters" long
    initialized to nmbrStrings instead of vStrings */
 temp_pntrString *pntrNSpace(long n);
 
-/* Allocate and return an "empty" string n "characters" long
+/*! Allocate and return an "empty" string n "characters" long
    initialized to pntrStrings instead of vStrings */
 temp_pntrString *pntrPSpace(long n);
 
@@ -837,20 +850,21 @@ long pntrLen(const pntrString *s);
 long pntrAllocLen(const pntrString *s);
 void pntrZapLen(pntrString *s, long length);
 
-/* Search for string2 in string 1 starting at start_position */
+/*! Search for string2 in string 1 starting at start_position */
 long pntrInstr(long start, const pntrString *sin, const pntrString *s);
 
-/* Search for string2 in string 1 in reverse starting at start_position */
-/* (Reverse pntrInstr) */
+/*! Search for string2 in string 1 in reverse starting at start_position
+    (Reverse pntrInstr) */
 long pntrRevInstr(long start_position, const pntrString *string1,
     const pntrString *string2);
 
-/* 1 if strings are equal, 0 otherwise */
+/*! 1 if strings are equal, 0 otherwise */
 flag pntrEq(const pntrString *sout, const pntrString *sin);
 
-/* Add a single null string element to a pntrString - faster than pntrCat */
 /*!
  * \fn temp_pntrString *pntrAddElement(const pntrString *g)
+ * Add a single null string element to a pntrString - faster than pntrCat
+ *
  * \param[in] g points to the first element of a NULL terminated array in a
  *   \ref block.  It is assumed it is an array of pointer to \ref vstring.
  * \return a copy of \p g, the terminal NULL replaced with a \ref vstring ""
@@ -865,62 +879,65 @@ flag pntrEq(const pntrString *sout, const pntrString *sin);
  */
 temp_pntrString *pntrAddElement(const pntrString *g);
 
-/* Add a single null pntrString element to a pntrString - faster than pntrCat */
+/*! Add a single null pntrString element to a pntrString - faster than pntrCat */
 temp_pntrString *pntrAddGElement(const pntrString *g);
 
 /* Utility functions */
 
-/* 0/1 knapsack algorithm */
+/*! 0/1 knapsack algorithm */
 long knapsack01(long items, long *size, long *worth, long maxSize,
        char *itemIncluded /* output: 1 = item included, 0 = not included */);
 
-/* 2D matrix allocation and deallocation */
+/*! 2D matrix allocation */
 long **alloc2DMatrix(size_t xsize, size_t ysize);
+/*! 2D matrix deallocation */
 void free2DMatrix(long **matrix, size_t xsize /*, size_t ysize*/);
 
-/* Returns the amount of indentation of a statement label.  Used to
+/*! Returns the amount of indentation of a statement label.  Used to
    determine how much to indent a saved proof. */
 long getSourceIndentation(long statemNum);
 
-/* Returns any comment (description) that occurs just before a statement */
+/*! Returns any comment (description) that occurs just before a statement */
 vstring getDescription(long statemNum);
 
-/* Returns the label section of a statement with all comments except the
+/*! Returns the label section of a statement with all comments except the
    last removed. */
 vstring getDescriptionAndLabel(long statemNum);
 
-/* Returns 1 if comment has an "is discouraged" markup tag */
+/*! Returns 1 if comment has an "is discouraged" markup tag */
 flag getMarkupFlag(long statemNum, char mode);
 
-/* Extract any contributors and dates from statement description.
+/*! Extract any contributors and dates from statement description.
    If missing, the corresponding return string is blank.
    See GC_RESET etc. modes above.  Caller must deallocate returned
    string. */
 vstring getContrib(long stmtNum, char mode);
 
 
-/* Extract up to 2 dates after a statement's proof.  If no date is present,
+/*! Extract up to 2 dates after a statement's proof.  If no date is present,
    date1 will be blank.  If no 2nd date is present, date2 will be blank. */
 void getProofDate(long stmtNum, vstring *date1, vstring *date2);
 
-/* Get date, month, year fields from a dd-mmm-yyyy date string,
+/*! Get date, month, year fields from a dd-mmm-yyyy date string,
    where dd may be 1 or 2 digits, mmm is 1st 3 letters of month,
    and yyyy is 2 or 4 digits.  A 1 is returned if an error was detected. */
 flag parseDate(vstring dateStr, long *dd, long *mmm, long *yyyy);
 
-/* Build date from numeric fields.  mmm should be a number from 1 to 12. */
+/*! Build date from numeric fields.  mmm should be a number from 1 to 12. */
 void buildDate(long dd, long mmm, long yyyy, vstring *dateStr);
 
-/* Compare two dates in the form dd-mmm-yyyy.  -1 = date1 < date2,
+/*! Compare two dates in the form dd-mmm-yyyy.  -1 = date1 < date2,
    0 = date1 = date2,  1 = date1 > date2.  There is no error checking. */
 flag compareDates(vstring date1, vstring date2);
 
 extern vstring g_qsortKey;
-      /* Used by qsortStringCmp; pointer only, do not deallocate */
-/* Comparison function for qsort */
+/*!
+ * \brief Comparison function for qsort
+ * \note Used by qsortStringCmp; pointer only, do not deallocate
+ */
 int qsortStringCmp(const void *p1, const void *p2);
 
-/* Call on exit to free memory */
+/*! Call on exit to free memory */
 void freeData(void);
 
 #endif /* METAMATH_MMDATA_H_ */
