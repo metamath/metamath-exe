@@ -171,11 +171,6 @@ typedef nmbrString temp_nmbrString;
  * dynamically allocated memory on the heap.  Special commands support
  * dependency tracking and free all pointers on and after a particular one in
  * such a stack. 
-=======
- * These elements are pushed onto and popped off a \ref stack
- * "stack of temporary data".  Special commands can free all pointers on and
- * after a particular one in such a stack.
->>>>>>> upstream/master
  */
 typedef pntrString temp_pntrString;
 
