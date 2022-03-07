@@ -7,6 +7,8 @@
 #ifndef METAMATH_MMWTEX_H_
 #define METAMATH_MMWTEX_H_
 
+/*! \file */
+
 #include "mmvstr.h"
 #include "mmdata.h"
 

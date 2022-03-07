@@ -8,8 +8,8 @@
 #define METAMATH_MMINOU_H_
 
 /*!
- * \file
- * Basic input and output interface.
+ * \file mminou.h
+ * \brief Basic input and output interface.
  */
 
 #include <stdio.h>

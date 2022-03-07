@@ -7,6 +7,8 @@
 #ifndef METAMATH_MMWORD_H_
 #define METAMATH_MMWORD_H_
 
+/*! \file */
+
 #include "mmvstr.h"
 
 /* Tag file changes with revision number tags */

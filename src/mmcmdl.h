@@ -8,7 +8,8 @@
 #define METAMATH_MMCMDL_H_
 
 /*!
- * \file mmcmdl.h - includes for accessing the command line interpreter
+ * \file mmcmdl.h
+ * \brief includes for accessing the command line interpreter
  */
 
 #include "mmvstr.h"

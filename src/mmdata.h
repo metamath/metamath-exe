@@ -8,8 +8,9 @@
 #define METAMATH_MMDATA_H_
 
 /*!
- * \file mmdata.h - includes for some principal data structures and data-string
- * handling */
+ * \file mmdata.h
+ * \brief includes for some principal data structures and data-string handling
+ */
 
 #include "mmvstr.h"
 
