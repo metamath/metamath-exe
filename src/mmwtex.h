@@ -15,84 +15,91 @@
 /* Colors for HTML pages. */
 #define GREEN_TITLE_COLOR "\"#006633\""
 #define MINT_BACKGROUND_COLOR "\"#EEFFFA\""
-#define PINK_NUMBER_COLOR "\"#FA8072\""      /* =salmon; was FF6666 */
+#define PINK_NUMBER_COLOR "\"#FA8072\""
+   /* =salmon; was FF6666 */
 #define PURPLISH_BIBLIO_COLOR "\"#FAEEFF\""
 #define SANDBOX_COLOR "\"#FFFFD9\""
 
 /* TeX flags */
-extern flag g_oldTexFlag; /* Use macros in output; obsolete; take out someday */
+extern flag g_oldTexFlag; /*!< Use macros in output; obsolete; take out someday */
 
 /* HTML flags */
-extern flag g_htmlFlag;  /* HTML flag: 0 = TeX, 1 = HTML */
-extern flag g_altHtmlFlag;  /* Use "althtmldef" instead of "htmldef".  This is
+extern flag g_htmlFlag;  /*!< HTML flag: 0 = TeX, 1 = HTML */
+extern flag g_altHtmlFlag;  /*!< Use "althtmldef" instead of "htmldef".  This is
     intended to allow the generation of pages with the old Symbol font
     instead of the individual GIF files. */
-extern flag g_briefHtmlFlag;  /* Output statement only, for statement display
+extern flag g_briefHtmlFlag;  /*!< Output statement only, for statement display
                 in other HTML pages, such as the Proof Explorer home page */
-extern long g_extHtmlStmt; /* At this statement and above, use the exthtmlxxx
+extern long g_extHtmlStmt; /*!< At this statement and above, use the exthtmlxxx
     variables for title, links, etc.  This was put in to allow proper
     generation of the Hilbert Space Explorer extension to the set.mm
     database. */
-extern vstring g_extHtmlTitle; /* Title of extended section if any; set by
+extern vstring g_extHtmlTitle; /*!< Title of extended section if any; set by
     by exthtmltitle command in special $t comment of database source */
-extern vstring g_htmlVarColor; /* Set by htmlvarcolor commands */
-extern vstring g_htmlHome; /* Set by htmlhome command */
-extern vstring g_htmlBibliography; /* Optional; set by htmlbibliography command */
-extern vstring g_extHtmlBibliography; /* Optional; set by exthtmlbibliography
+extern vstring g_htmlVarColor; /*!< Set by htmlvarcolor commands */
+extern vstring g_htmlHome; /*!< Set by htmlhome command */
+extern vstring g_htmlBibliography; /*!< Optional; set by htmlbibliography command */
+extern vstring g_extHtmlBibliography; /*!< Optional; set by exthtmlbibliography
                                        command */
-extern vstring g_htmlCSS; /* Set by htmlcss commands */
-extern vstring g_htmlFont; /* Optional; set by g_htmlFont command */
+extern vstring g_htmlCSS; /*!< Set by htmlcss commands */
+extern vstring g_htmlFont; /*!< Optional; set by g_htmlFont command */
 
-void eraseTexDefs(void); /* Undo readTexDefs() */
+/*! Undo readTexDefs() */
+void eraseTexDefs(void);
 
 /* TeX/HTML/ALT_HTML word-processor-specific routines */
-/* Returns 2 if there were severe parsing errors, 1 if there were warnings but
-   no errors, 0 if no errors or warnings */
-/* The GIF check ensures that for every 'htmldef' definition containing
-   `IMG SRC="bla.gif"`, `bla.gif` must exist. */
+/*!
+  \param gifCheck The GIF check ensures that for every 'htmldef' definition containing
+   `IMG SRC="bla.gif"`, `bla.gif` must exist.
+  \returns 2 if there were severe parsing errors, 1 if there were warnings but
+    no errors, 0 if no errors or warnings
+*/
 flag readTexDefs(
-  flag errorsOnly,  /* 1 = suppress non-error messages */
-  flag gifCheck   /* 1 = check for missing GIFs */);
+  flag errorsOnly,  /*!< 1 = suppress non-error messages */
+  flag gifCheck   /*!< 1 = check for missing GIFs */);
 
 extern flag g_texDefsRead;
-struct texDef_struct {  /* for "erase" */
-  vstring tokenName; /* ASCII token */
-  vstring texEquiv; /* Converted to TeX */
+/*! for "erase" */
+struct texDef_struct {
+  vstring tokenName; /*!< ASCII token */
+  vstring texEquiv; /*!< Converted to TeX */
 };
-extern struct texDef_struct *g_TexDefs; /* for "erase" */
+extern struct texDef_struct *g_TexDefs; /*!< for "erase" */
 
 
 long texDefWhiteSpaceLen(char *ptr);
 long texDefTokenLen(char *ptr);
-/* Token comparison for qsort */
+/*! Token comparison for qsort */
 int texSortCmp(const void *key1, const void *key2);
-/* Token comparison for bsearch */
+/*! Token comparison for bsearch */
 int texSrchCmp(const void *key, const void *data);
-/* Convert ascii to a string of \tt tex */
-/* (The caller must surround it by {\tt }) */
+/*! Convert ascii to a string of \tt tex
+
+  (The caller must surround it by {\tt }) */
 vstring asciiToTt(vstring s);
 vstring tokenToTex(vstring mtoken, long statemNum);
-/* Converts a comment section in math mode to TeX.  Each math token
+/*! Converts a comment section in math mode to TeX.  Each math token
    MUST be separated by white space.   TeX "$" does not surround the output. */
 vstring asciiMathToTex(vstring mathComment, long statemNum);
-/* Gets the next section of a comment that is in the current mode (text,
+/*! Gets the next section of a comment that is in the current mode (text,
    label, or math).  If 1st char. is not "$", text mode is assumed.
    mode = 0 means end of comment reached.  srcptr is left at 1st char.
    of start of next comment section. */
 vstring getCommentModeSection(vstring *srcptr, char *mode);
 void printTexHeader(flag texHeaderFlag);
 
-/* Prints an embedded comment in TeX.  The commentPtr must point to the first
+/*! Prints an embedded comment in TeX.  The commentPtr must point to the first
    character after the "$(" in the comment.  The printout ends when the first
    "$)" or null character is encountered.   commentPtr must not be a temporary
    allocation.  htmlCenterFlag, if 1, means to center the HTML and add a
-   "Description:" prefix.*/
+   "Description:" prefix
+  \returns 1 if error/warning */
 /* void printTexComment(vstring commentPtr, char htmlCenterFlag); */
-/* returns 1 if error/warning */
-flag printTexComment(vstring commentPtr,    /* Sends result to g_texFilePtr */
-    flag htmlCenterFlag, /* 1 = htmlCenterFlag */
-    long actionBits, /* see indicators below */
-    flag fileCheck /* 1 = fileCheck */);
+flag printTexComment(vstring commentPtr,    /*!< Sends result to g_texFilePtr */
+    flag htmlCenterFlag, /*!< 1 = htmlCenterFlag */
+    long actionBits, /*!< see indicators below */
+    flag fileCheck /*!< 1 = fileCheck */);
+
 /* Indicators for actionBits */
 #define ERRORS_ONLY 1
 #define PROCESS_SYMBOLS 2
@@ -113,7 +120,7 @@ void printTexLongMath(nmbrString *proofStep, vstring startPrefix,
     vstring contPrefix, long hypStmt, long indentationLevel);
 void printTexTrailer(flag texHeaderFlag);
 
-/* Function implementing WRITE THEOREM_LIST / THEOREMS_PER_PAGE nn */
+/*! Function implementing WRITE THEOREM_LIST / THEOREMS_PER_PAGE nn */
 void writeTheoremList(long theoremsPerPage, flag showLemmas,
     flag noVersioning);
 
@@ -130,77 +137,81 @@ flag getSectionHeadings(long stmt, vstring *hugeHdrTitle,
     vstring *bigHdrComment,
     vstring *smallHdrComment,
     vstring *tinyHdrComment,
-    flag fineResolution, /* 0 = consider just successive $a/$p, 1 = all stmts */
-    flag fullComment /* 1 = put $( + header + comment + $) into xxxHdrTitle */
+    flag fineResolution, /*!< 0 = consider just successive $a/$p, 1 = all stmts */
+    flag fullComment /*!< 1 = put $( + header + comment + $) into xxxHdrTitle */
     );
 
 /* TeX normal output */
 extern flag g_texFileOpenFlag;
 extern FILE *g_texFilePtr;
 
-/* Pink statement number HTML code for HTML pages */
-/* Warning: caller must deallocate returned string */
+/*! Pink statement number HTML code for HTML pages
+  \warning caller must deallocate returned string */
 vstring pinkHTML(long statemNum);
 
-/* Pink statement number range HTML code for HTML pages, separated by a "-" */
-/* Warning: caller must deallocate returned string */
+/*! Pink statement number range HTML code for HTML pages, separated by a "-"
+  \warning caller must deallocate returned string */
 vstring pinkRangeHTML(long statemNum1, long statemNum2);
 
 #define PINK_NBSP "&nbsp;" /* Either "" or "&nbsp;" depending on taste, it is
                   the separator between a statement href and its pink number */
 
-/* This function converts a "spectrum" color (1 to maxColor) to an
+/*! This function converts a "spectrum" color (1 to maxColor) to an
    RBG value in hex notation for HTML.  The caller must deallocate the
    returned vstring.  color = 1 (red) to maxColor (violet). */
 vstring spectrumToRGB(long color, long maxColor);
 
-/* Returns the HTML code for GIFs (!g_altHtmlFlag) or Unicode (g_altHtmlFlag),
+/*! Returns the HTML code for GIFs (!g_altHtmlFlag) or Unicode (g_altHtmlFlag),
    or LaTeX when !g_htmlFlag, for the math string (hypothesis or conclusion) that
-   is passed in. */
-/* Warning: The caller must deallocate the returned vstring. */
+   is passed in.
+  \warning The caller must deallocate the returned vstring. */
 vstring getTexLongMath(nmbrString *mathString, long statemNum);
 
-/* Returns the TeX, or HTML code for GIFs (!g_altHtmlFlag) or Unicode
+/*! Returns the TeX, or HTML code for GIFs (!g_altHtmlFlag) or Unicode
    (g_altHtmlFlag), for a statement's hypotheses and assertion in the form
-   hyp & ... & hyp => assertion */
-/* Warning: The caller must deallocate the returned vstring. */
+   hyp & ... & hyp => assertion
+  \warning The caller must deallocate the returned vstring. */
 vstring getTexOrHtmlHypAndAssertion(long statemNum);
 
-/* For WRITE BIBLIOGRAPHY command and error checking by VERIFY MARKUP */
-/* Returns 0 if OK, 1 if error or warning found */
-/* In addition to checking for GIFs (see readTexDefs()),
-   the `fileCheck` flag controls whether to attempt to open and parse the
-   `htmlbibliograhy` or `exthtmlbibliograhy` file to search for anchors,
-   which can be used to verify the correctness of bibliography tags. */
-flag writeBibliography(vstring bibFile,
-    vstring labelMatch, /* Normally "*" except by verifyMarkup() */
-    flag errorsOnly,  /* 1 = no output, just warning msgs if any */
-    flag fileCheck); /* 1 = check external files (gifs and bib) */
+/*!
+  \brief For WRITE BIBLIOGRAPHY command and error checking by VERIFY MARKUP
 
-/* Globals to hold mathbox information.  They should be re-initialized
+  In addition to checking for GIFs (see readTexDefs()),
+  the `fileCheck` flag controls whether to attempt to open and parse the
+  `htmlbibliograhy` or `exthtmlbibliograhy` file to search for anchors,
+  which can be used to verify the correctness of bibliography tags.
+
+  \returns 0 if OK, 1 if error or warning found */
+flag writeBibliography(vstring bibFile,
+  vstring labelMatch, /*!< Normally "*" except by verifyMarkup() */
+  flag errorsOnly,  /*!< 1 = no output, just warning msgs if any */
+  flag fileCheck /*!< 1 = check external files (gifs and bib) */
+);
+
+/*! Globals to hold mathbox information.  They should be re-initialized
    by the ERASE command (eraseSource()).  g_mathboxStmt = 0 indicates
    it and the other variables haven't been initialized. */
 extern long g_mathboxStmt; /* stmt# of "mathbox" label; statements+1 if none */
 extern long g_mathboxes; /* # of mathboxes */
 /* The following 3 "strings" are 0-based e.g. g_mathboxStart[0] is for
    mathbox #1 */
-extern nmbrString *g_mathboxStart; /* Start stmt vs. mathbox # */
-extern nmbrString *g_mathboxEnd; /* End stmt vs. mathbox # */
-extern pntrString *g_mathboxUser; /* User name vs. mathbox # */
+extern nmbrString *g_mathboxStart; /*!< Start stmt vs. mathbox # */
+extern nmbrString *g_mathboxEnd; /*!< End stmt vs. mathbox # */
+extern pntrString *g_mathboxUser; /*!< User name vs. mathbox # */
 
-/* Returns 1 if statements are in different mathboxes */
+/*! Returns 1 if statements are in different mathboxes */
 flag inDiffMathboxes(long stmt1, long stmt2);
-/* Returns the user of the mathbox that a statement is in, or ""
-   if the statement is not in a mathbox. */
-/* Caller should NOT deallocate returned string (it points directly to
+/*! Returns the user of the mathbox that a statement is in, or ""
+   if the statement is not in a mathbox.
+  \attention Caller should NOT deallocate returned string (it points directly to
    g_mathboxUser[] entry); use directly in print2() messages */
 vstring getMathboxUser(long stmt);
-/* Returns the mathbox number (starting at 1) that stmt is in, or 0 if not
+/*! Returns the mathbox number (starting at 1) that stmt is in, or 0 if not
    in a mathbox */
 long getMathboxNum(long stmt);
-/* Populates mathbox information */
+/*! Populates mathbox information */
 void assignMathboxInfo(void);
-/* Creates lists of mathbox starts and user names */
+/*! Creates lists of mathbox starts and user names */
 long getMathboxLoc(nmbrString **mathboxStart, nmbrString **mathboxEnd,
     pntrString **mathboxUser);
 

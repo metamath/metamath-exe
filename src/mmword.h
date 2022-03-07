@@ -11,18 +11,20 @@
 
 #include "mmvstr.h"
 
-/* Tag file changes with revision number tags */
+/*! Tag file changes with revision number tags */
 void revise(FILE *f1_fp, FILE *f2_fp, FILE *f3_fp, vstring addTag, long m);
 
 
-/* Get the largest revision number tag in a file */
-/* Tags are assumed to be of format nn or #nn in comment at end of line */
-/* Used to determine default argument for tag question */
+/*! \brief Get the largest revision number tag in a file
+
+   Tags are assumed to be of format nn or #nn in comment at end of line.
+   Used to determine default argument for tag question. */
 long highestRevision(vstring fileName);
 
 
-/* Get numeric revision from the tag on a line (returns 0 if none) */
-/* Tags are assumed to be of format nn or #nn in comment at end of line */
+/*! \brief Get numeric revision from the tag on a line (returns 0 if none)
+
+   Tags are assumed to be of format nn or #nn in comment at end of line */
 long getRevision(vstring line);
 
 #endif /* METAMATH_MMWORD_H_ */
