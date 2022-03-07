@@ -180,19 +180,17 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
  * similar, all pushed onto this stack.  When the final operation is executed,
  * and its result is persisted in some variable, the dependency on its
  * temporary operands ceases.  Consequently, they should be freed again.  To
- * automate this operation,  such a stack maintains a __start__ index.  A
- * client saves this value and sets it to the current stack top, then starts
- * pushing dynamically allocated operands on the stack.  After the result is
- * persisted, all entries beginning with the element at index  __start__ are
- * deallocated again, and the stack top is reset to the __start__ value, while
- * the __start__ value is reset to the saved value, to accomodate nesting of
- * this procedure.
+ * automate this operation,  such a stack maintains a `start` index.  A client
+ * saves this value and sets it to the current stack top, then starts pushing
+ * dynamically allocated operands on the stack.  After the result is persisted,
+ * all entries beginning with the element at index  `start` are deallocated
+ * again, and the stack top is reset to the `start` value, while the `start`
+ * value is reset to the saved value, to accommodate nesting of this procedure.
  *
  * This scheme needs a few conditions to be met:
  * - No operand is used in more than one evaluation context;
  * - Operations are executed strictly sequential, or in a nested manner. No two
  *   operations interleave pushing operands.
- *   push operands interleaved
  */
 
 /* Memory pools are used to reduce the number of malloc and alloc calls that
@@ -214,15 +212,26 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
 */
 
 /*!
+ * \page doc-todo Improvements in documentation
+ * 
+ * - Revisit the \ref block "block", \ref stack "stack" references to check the
+ *   inserted wording.
+ * - Check what the advantages of __p__ tag are and whether the are better
+ *   replaced with backtick pairs. (\p aParam vs `aParam`)
+ * - Regularly check the warning in \ref pntrString to see whether it still
+ *   holds, or can be made more precise.
+ */
+
+/*!
  * \def MEM_POOL_GROW
  * Amount that \ref memUsedPool and \ref memFreePool grows when it overflows.
  */
-#define MEM_POOL_GROW 1000 /* Amount that a pool grows when it overflows. */
+#define MEM_POOL_GROW 1000
 /*??? Let user set this from menu. */
 /*!
  * \var long poolAbsoluteMax
  * The value is a memory amount in bytes.
- * \n
+ *
  * The \ref suballocator scheme must not hold more memory than is short term
  * useful.  To the operating system all memory in \ref memFreePool appears as
  * allocated, although it is not really in use.  To prevent the system from
@@ -590,14 +599,13 @@ void addToUsedPool(void *ptr)
  * Starting with the last entry in \ref memFreePool, memory held in that pool
  * is returned to the system until all, or at least a sufficient amount is
  * freed again (see \p untilOK).
- * \param[in] untilOK if 1 freeing \ref block "blocks" stops the moment
- *   \ref poolTotalFree gets within the range of \ref poolAbsoluteMax again.
- *   Note that it is not guaranteed that the limit \ref poolAbsoluteMax is
- *   undercut because still too much free memory might be held in the
- *   \ref memUsedPool.
- *   \n
- *   If 0, all \ref memFreePool entries are freed, and the pool itself is
- *   shrunk back to \ref MEM_POOL_GROW size.
+ * \param[in] untilOK
+ *   - if 1 freeing \ref block "blocks" stops the moment \ref poolTotalFree
+ *     gets within the range of \ref poolAbsoluteMax again.  Note that it is
+ *     not guaranteed that the limit \ref poolAbsoluteMax is undercut because
+ *     still too much free memory might be held in the \ref memUsedPool.
+ *   - If 0, all \ref memFreePool entries are freed, and the pool itself is
+ *     shrunk back to \ref MEM_POOL_GROW size.
  */
 void memFreePoolPurge(flag untilOK)
 {

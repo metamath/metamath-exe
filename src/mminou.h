@@ -154,17 +154,9 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  * 
  * No timeout is applied while waiting for user input from the console.
  *
- * Detected format errors result in following bug messages:
- *   - 1507: The first read character is NUL
- *   - 1508: line overflow, the last character is not NUL
- *   - 1519: padding of LF failed, or first read character was NUL
- *   - 1521: a NUL in first and second position was read
- *   - 1523: NULL instead of a prompt text when user input is required
- *   - 1525: missing terminating LF, not caused by an EOF.
- *
- *   A bug message need not result in an execution stop.  It is not directed to
- *   the metamath bug function to avoid stacking up calls (bug calling cmdInput
- *   again for scrolling etc.).
+ * A bug message need not result in an execution stop.  It is not directed to
+ * the metamath bug function to avoid stacking up calls (bug calling cmdInput
+ * again for scrolling etc.).
  *
  * \todo clarify recursive call to print2 and the role of backFromCmdInput. 
  * \param[in] stream (not null) source to read the line from.  _stdin_ is

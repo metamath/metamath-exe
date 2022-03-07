@@ -166,7 +166,7 @@ typedef nmbrString temp_nmbrString;
  * \brief a single \ref pntrString element for use in a \ref stack "stack".
  *
  * These elements are pushed onto and popped off a \ref stack 
- * "stack of temporary data".  All pointer of this type should ONLY refer to
+ * "stack of temporary data".  Pointers of this type should ONLY refer to
  * dynamically allocated memory on the heap.  Special commands support
  * dependency tracking and free all pointers on and after a particular one in
  * such a stack. 
@@ -864,7 +864,6 @@ flag pntrEq(const pntrString *sout, const pntrString *sin);
  *   - the elements of \p g are duplicated.
  *   - a pointer to a NUL byte ("") constant is padded to the right.  Make sure
  *     the referenced memory is never overwritten.
- * \bug a pointer to constant data is added as a writeable void*.
  */
 temp_pntrString *pntrAddElement(const pntrString *g);
 

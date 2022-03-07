@@ -458,22 +458,23 @@ temp_vstring right(const char *sin, long n);
  * \fn temp_vstring edit(const char *sin, long control)
  * perform a combination of transformations on \p sin based on the set bits in
  * \p control.  This is an ASCII based transformation.
- *      Bit   Effect
- *      1        Clear parity bits
- *      2        Discard all spaces and tabs
- *      4        Discard characters: CR, LF, FF, ESC, RUBOUT, and NULL
- *      8        Discard leading spaces and tabs
- *      16       Reduce spaces and tabs to one space
- *      32       Convert lowercase to uppercase
- *      64       Convert [ to ( and ] to )
- *      128      Discard trailing spaces and tabs
- *      256      Do not alter characters inside quotes
- *      512      Convert uppercase to lowercase
- *      1024     Tab the line (convert spaces to equivalent tabs)
- *      2048     Untab the line (convert tabs to equivalent spaces)
- *      4096     Convert VT220 screen print frame graphics to -,|,+ characters
- *      8192     Discard CR only (to assist DOS-to-Unix conversion)
- *      16384    Discard trailing spaces, tabs, and LFs
+ *      Bit    |  Effect
+ *      -----  |  ------
+ *      1      |  Clear parity bits
+ *      2      |  Discard all spaces and tabs
+ *      4      |  Discard characters: CR, LF, FF, ESC, RUBOUT, and NULL
+ *      8      |  Discard leading spaces and tabs
+ *      16     |  Reduce spaces and tabs to one space
+ *      32     |  Convert lowercase to uppercase
+ *      64     |  Convert [ to ( and ] to )
+ *      128    |  Discard trailing spaces and tabs
+ *      256    |  Do not alter characters inside quotes
+ *      512    |  Convert uppercase to lowercase
+ *      1024   |  Tab the line (convert spaces to equivalent tabs)
+ *      2048   |  Untab the line (convert tabs to equivalent spaces)
+ *      4096   |  Convert VT220 screen print frame graphics to -,|,+ characters
+ *      8192   |  Discard CR only (to assist DOS-to-Unix conversion)
+ *      16384  |  Discard trailing spaces, tabs, and LFs
  * \param[in] sin (not null) NUL terminated string to convert
  * \param[in] control a combination of set bit requesting the desired
  *   transformation(s)
