@@ -25,11 +25,4 @@ long highestRevision(vstring fileName);
 /* Tags are assumed to be of format nn or #nn in comment at end of line */
 long getRevision(vstring line);
 
-
-/* These two functions emulate 2 GOSUBs in BASIC, that are part of a
-   translation of a very old BASIC program (by nm) that implemented a
-   difference algorithm (like Unix diff). */
-void gosub_7320(void);
-void gosub_7330(void);
-
 #endif /* METAMATH_MMWORD_H_ */

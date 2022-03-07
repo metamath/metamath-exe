@@ -62,6 +62,12 @@ flag printedAtLeastOne;
      vstring reserve2_[MAX_BUF];
 
 
+/* These two functions emulate 2 GOSUBs in BASIC, that are part of a
+   translation of a very old BASIC program (by nm) that implemented a
+   difference algorithm (like Unix diff). */
+void gosub_7320(void);
+void gosub_7330(void);
+
 /* revise() is called by the UPDATE command of TOOLs.  The idea is to
    keep all past history of a file in the file itself, in the form of
    comments.  In mmcmds.c, see the parsing of the UPDATE command for a
