@@ -7,123 +7,121 @@
 #ifndef METAMATH_MMVSTR_H_
 #define METAMATH_MMVSTR_H_
 
-/*!
-\file mmvstr.h - VMS-BASIC variable length string library routines header
-This is an emulation of the string functions available in VMS BASIC.
-[VAX Basic](http://bitsavers.org/pdf/dec/vax/lang/basic/AA-HY16B-TE_VAX_BASIC_Reference_Manual_Feb90.pdf)
-*/
-
-/******************************************************************************
-
-Variable-length string handler
-------------------------------
-
-     This collection of string-handling functions emulate most of the
-string functions of VMS BASIC.  The objects manipulated by these
-functions are strings of a special type called 'vstring' which have no
-pre-defined upper length limit but are dynamically allocated and
-deallocated as needed.  To use the vstring functions within a program,
-all vstrings must be initially set to the null string when declared or
-before first used, for example:
-
-        vstring_def(string1);
-        vstring stringArray[] = {"", "", ""};
-
-        vstring bigArray[100][10]; /- Must be initialized before using -/
-        int i, j;
-        for (i = 0; i < 100; i++)
-          for (j = 0; j < 10; j++)
-            bigArray[i][j] = ""; /- Initialize -/
-
-
-     After initialization, vstrings should be assigned with the 'let(&'
-function only; for example the statements
-
-        let(&string1, "abc");
-        let(&string1, string2);
-        let(&string1, left(string2, 3));
-
-all assign the second argument to 'string1'.  The 'let(&' function must
-_not_ be used to initialize a vstring the first time.
-
-     Any local vstrings in a function must be deallocated before returning
-from the function, otherwise there will be memory leakage and eventual
-memory overflow.  To deallocate, assign the vstring to "" with 'free_vstring':
-
-        void abc(void) {
-          vstring_def(xyz);
-          ...
-          free_vstring(xyz);
-        }
-
-     The 'cat' function emulates the '+' concatenation operator in BASIC.
-It has a variable number of arguments, and the last argument should always
-be NULL.  For example,
-
-        let(&string1,cat("abc","def",NULL));
-
-assigns "abcdef" to 'string1'.  Warning: 0 will work instead of NULL on the
-VAX but not on the Macintosh, so always use NULL.
-
-     All other functions are generally used exactly like their BASIC
-equivalents.  For example, the BASIC statement
-
-        let string1$=left$("def",len(right$("xxx",2)))+"ghi"+string2$
-
-is emulated in c as
-
-        let(&string1,cat(left("def",len(right("xxx",2))),"ghi",string2,NULL));
-
-Note that ANSI c does not allow "$" as part of an identifier
-name, so the names in c have had the "$" suffix removed.
-
-     The string arguments of the vstring functions may be either standard c
-strings or vstrings (except that the first argument of the 'let(&' function
-must be a vstring).  The standard c string functions may use vstrings or
-vstring functions as their string arguments, as long as the vstring variable
-itself (which is a char * pointer) is not modified and no attempt is made to
-increase the length of a vstring.  Caution must be exercised when
-assigning standard c string pointers to vstrings or the results of
-vstring functions, as the memory space may be deallocated when the
-'let(&' function is next executed.  For example,
-
-        char *stdstr; /- A standard c string pointer -/
-         ...
-        stdstr=left("abc",2);
-
-will assign "ab" to 'stdstr', but this assignment will be lost when the
-next 'let(&' function is executed.  To be safe, use 'strcpy':
-
-        char stdstr1[80]; /- A fixed length standard c string -/
-         ...
-        strcpy(stdstr1,left("abc",2));
-
-Here, of course, the user must ensure that the string copied to 'stdstr1'
-does not exceed 79 characters in length.
-
-     The vstring functions allocate temporary memory whenever they are called.
-This temporary memory is deallocated whenever a 'let(&' assignment is
-made.  The user should be aware of this when using vstring functions
-outside of 'let(&' assignments; for example
-
-        for (i=0; i<10000; i++)
-          print2("%s\n",left(string1,70));
-
-will allocate another 70 bytes or so of memory each pass through the loop.
-If necessary, 'freeTempAlloc' can be used periodically to clear
-this temporary memory:
-
-        for (i=0; i<10000; i++) {
-          print2("%s\n",left(string1,70));
-          freeTempAlloc();
-        }
-
-It should be noted that the 'linput' function assigns its target string
-with 'let(&' and thus has the same effect as 'let(&'.
-
-******************************************************************************/
-
 #include <stdio.h>
+
+/**************************************************************************//**
+ * \file mmvstr.h
+ * \brief VMS-BASIC variable length string library routines header
+ *
+ * Variable-length string handler
+ * ------------------------------
+ *
+ * This collection of string-handling functions emulate most of the
+ * string functions of [VMS BASIC][1]. The objects manipulated by these
+ * functions are strings of a special type called \ref vstring which have no
+ * pre-defined upper length limit but are dynamically allocated and
+ * deallocated as needed.  To use the vstring functions within a program,
+ * all vstrings must be initially set to the null string when declared or
+ * before first used, for example:
+ *
+ *     vstring_def(string1);
+ *     vstring stringArray[] = {"", "", ""};
+ *
+ *     vstring bigArray[100][10]; /- Must be initialized before using -/
+ *     int i, j;
+ *     for (i = 0; i < 100; i++)
+ *       for (j = 0; j < 10; j++)
+ *         bigArray[i][j] = ""; /- Initialize -/
+ *
+ *
+ *  After initialization, vstrings should be assigned with the `let(&`
+ * function only; for example the statements
+ *
+ *     let(&string1, "abc");
+ *     let(&string1, string2);
+ *     let(&string1, left(string2, 3));
+ *
+ * all assign the second argument to `string1`.  The \ref let function must
+ * _not_ be used to initialize a vstring the first time.
+ *
+ * Any local vstrings in a function must be deallocated before returning
+ * from the function, otherwise there will be memory leakage and eventual
+ * memory overflow.  To deallocate, assign the vstring to "" with \ref free_vstring:
+ *
+ *     void abc(void) {
+ *       vstring_def(xyz);
+ *       ...
+ *       free_vstring(xyz);
+ *     }
+ *
+ * The 'cat' function emulates the '+' concatenation operator in BASIC.
+ * It has a variable number of arguments, and the last argument should always
+ * be NULL.  For example,
+ *
+ *     let(&string1,cat("abc","def",NULL));
+ *
+ * assigns "abcdef" to `string1`.  Warning: 0 will work instead of NULL on the
+ * VAX but not on the Macintosh, so always use NULL.
+ *
+ * All other functions are generally used exactly like their BASIC
+ * equivalents.  For example, the BASIC statement
+ *
+ *     let string1$=left$("def",len(right$("xxx",2)))+"ghi"+string2$
+ *
+ * is emulated in C as
+ *
+ *     let(&string1,cat(left("def",len(right("xxx",2))),"ghi",string2,NULL));
+ *
+ * Note that ANSI C does not allow "$" as part of an identifier
+ * name, so the names in C have had the "$" suffix removed.
+ *
+ *      The string arguments of the vstring functions may be either standard C
+ * strings or vstrings (except that the first argument of the `let(&` function
+ * must be a vstring).  The standard C string functions may use vstrings or
+ * vstring functions as their string arguments, as long as the vstring variable
+ * itself (which is a char * pointer) is not modified and no attempt is made to
+ * increase the length of a vstring.  Caution must be exercised when
+ * assigning standard C string pointers to vstrings or the results of
+ * vstring functions, as the memory space may be deallocated when the
+ * `let(&` function is next executed.  For example,
+ *
+ *     char *stdstr; /- A standard c string pointer -/
+ *      ...
+ *     stdstr=left("abc",2);
+ *
+ * will assign "ab" to 'stdstr', but this assignment will be lost when the
+ * next 'let(&' function is executed.  To be safe, use 'strcpy':
+ *
+ *     char stdstr1[80]; /- A fixed length standard c string -/
+ *      ...
+ *     strcpy(stdstr1,left("abc",2));
+ *
+ * Here, of course, the user must ensure that the string copied to `stdstr1`
+ * does not exceed 79 characters in length.
+ *
+ * The vstring functions allocate temporary memory whenever they are called.
+ * This temporary memory is deallocated whenever a `let(&` assignment is
+ * made.  The user should be aware of this when using vstring functions
+ * outside of `let(&` assignments; for example
+ *
+ *     for (i=0; i<10000; i++)
+ *       print2("%s\n",left(string1,70));
+ *
+ * will allocate another 70 bytes or so of memory each pass through the loop.
+ * If necessary, \ref freeTempAlloc can be used periodically to clear
+ * this temporary memory:
+ *
+ *     for (i=0; i<10000; i++) {
+ *       print2("%s\n",left(string1,70));
+ *       freeTempAlloc();
+ *     }
+ *
+ * It should be noted that the \ref linput function assigns its target string
+ * with `let(&` and thus has the same effect as `let(&`.
+ *
+ * [1]: http://bitsavers.org/pdf/dec/vax/lang/basic/AA-HY16B-TE_VAX_BASIC_Reference_Manual_Feb90.pdf
+ *
+ *****************************************************************************/
 
 /*!
  * \typedef vstring
