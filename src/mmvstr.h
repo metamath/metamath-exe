@@ -167,24 +167,24 @@ typedef char* vstring;
  * A `temp_vstring` should never be used as the first argument of a `let`.
  * This code is INCORRECT:
  *
- *   temp_vstring foo = left("foobar", 3);
- *   let(&foo, "bar"); // this will cause a double free
+ *     temp_vstring foo = left("foobar", 3);
+ *     let(&foo, "bar"); // this will cause a double free
  *
  * It is okay (and quite common) to use a temp_vstring as the second argument,
  * however. It is best not to hold on to the value, though, because the `let`
  * will free it. This code is INCORRECT:
  *
- *   vstring_def(x);
- *   temp_vstring foobar = cat("foo", "bar");
- *   let(&x, foobar); // frees foobar
- *   let(&x, foobar); // dangling reference
+ *     vstring_def(x);
+ *     temp_vstring foobar = cat("foo", "bar");
+ *     let(&x, foobar); // frees foobar
+ *     let(&x, foobar); // dangling reference
  *
  * There is a converse problem when `temp_vstring`s are used without `let`:
  *
- *   for (int i = 0; i < 100000; i++) {
- *     vstring_def(x);
- *     if (strlen(space(i)) == 99999) break;
- *   }
+ *     for (int i = 0; i < 100000; i++) {
+ *       vstring_def(x);
+ *       if (strlen(space(i)) == 99999) break;
+ *     }
  *
  * We don't need to deallocate the string returned by `space()` directly,
  * because it returns a `temp_vstring`, but because there is no `let` in
@@ -194,12 +194,11 @@ typedef char* vstring;
  * we can either use a dummy `let()` statement in the loop, or call
  * `freeTempAlloc` directly:
  *
- *   for (int i = 0; i < 100000; i++) {
- *     vstring_def(x);
- *     if (strlen(space(i)) == 99999) break;
- *     freeTempAlloc();
- *   }
- *
+ *     for (int i = 0; i < 100000; i++) {
+ *       vstring_def(x);
+ *       if (strlen(space(i)) == 99999) break;
+ *       freeTempAlloc();
+ *     }
  */
 typedef vstring temp_vstring;
 
