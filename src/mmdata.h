@@ -123,7 +123,7 @@ typedef long nmbrString; /* String of numbers */
  * tail of an array from a certain element on, an array terminates with a
  * null pointer.  This type of usage forbids null pointer as ordinary elements,
  * and the terminal null pointer is not part of the data in the array.
- * \n
+ *
  * The length of a pntrString array is implicitely given by a terminal NULL
  * pointer.  If this array is held in a \ref block, its size can also be
  * determined from its header's administrative data.  Both values must be kept
