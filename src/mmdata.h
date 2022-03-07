@@ -363,13 +363,13 @@ void poolFree(void *ptr);
  *
  * This function temporarily freezes the usage of a block for the current user,
  * and allows temporary reallocation of the free capacity to a new client.
- * \n
+ *
  * The program maintains pools of memory blocks with free capacity.  In case of
  * demand such a \ref block can temporarily allocate this capacity for new
  * usage.  Of course two (or more) clients share different parts of the same
  * \ref block then, so a newer client must complete its usage before the old
  * one resumes operation and may want to extend its usage of the \ref block.
- * \n
+ *
  * Before \p ptr is added to \ref memUsedPool, the pool size is checked and
  * increased by \ref MEM_POOL_GROW if full.  This may lead to out-of-memory
  * \ref outOfMemory "exit".  But if \p ptr is added to the end of the \ref memUsedPool,
@@ -719,7 +719,7 @@ extern long g_pntrTempAllocStackTop;   /* Top of stack for pntrTempAlloc functio
  * but entries above are.  So when this entry gets deallocated, dependent ones
  * should follow suit.  A function like \ref pntrTempAlloc or \ref pntrLet
  * manage this automatic deallocation.
- * \n
+ *
  * Nested functions using the \ref pntrTempAllocStack usually save the current
  * value and set it to \ref g_pntrTempAllocStackTop, so they can create their
  * local dependency chain.  On return the saved value is restored.
@@ -748,7 +748,7 @@ temp_pntrString *pntrMakeTempAlloc(pntrString *s);
  * future growing.  If the \p target block is only partially used after copy it
  * is added to the \ref memUsedPool.  If \p source is empty, the \p target is
  * set to \ref NULL_PNTRSTRING.
- * \n
+ *
  * It is assumed that the value persisted in \p target is in fact computed from
  * temporary operands in \ref pntrTempAllocStack.  All blocks starting with
  * the element at \ref g_pntrStartTempAllocStack are returned to the
