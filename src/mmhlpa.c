@@ -17,7 +17,6 @@
 #include "mmcmds.h"
 #include "mmhlpa.h"
 
-/* help0 is mostly for TOOLS help */
 void help0(vstring helpCmd) {
 
 vstring_def(saveHelpCmd);
@@ -352,7 +351,6 @@ return;
 } /* help0 */
 
 
-/* Note: help1 should contain Metamath help */
 void help1(vstring helpCmd) {
 
 vstring_def(saveHelpCmd);
