@@ -852,18 +852,16 @@ flag pntrEq(const pntrString *sout, const pntrString *sin);
 /*!
  * \fn temp_pntrString *pntrAddElement(const pntrString *g)
  * \param[in] g points to the first element of a NULL terminated array in a
- *   \ref block.
+ *   \ref block.  It is assumed it is an array of pointer to \ref vstring.
  * \return a copy of \p g, the terminal NULL replaced with a \ref vstring ""
  *   followed by NULL.
  * \attention   
- *   - the pointers in \p g are copied to the result.  If some of them
- *     reference allocated memory, check for possible double free, for example.
- *   - a pointer to constant data is padded to the right.  The referenced memory
- *     must not be overwritten.
+ *   the pointers in \p g are copied to the result.  If some of them
+ *   reference allocated memory, check for possible double free, for example.
+ * \pre
+ *   Intended to be used with arrays of \ref vstring * only.
  * \post 
- *   - the elements of \p g are duplicated.
- *   - a pointer to a NUL byte ("") constant is padded to the right.  Make sure
- *     the referenced memory is never overwritten.
+ *   the elements of \p g are duplicated.
  */
 temp_pntrString *pntrAddElement(const pntrString *g);
 

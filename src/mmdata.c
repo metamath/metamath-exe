@@ -216,8 +216,10 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
  * 
  * - Revisit the \ref block "block", \ref stack "stack" references to check the
  *   inserted wording.
- * - Check what the advantages of __p__ tag are and whether the are better
- *   replaced with backtick pairs. (\p aParam vs `aParam`)
+ * - The formatting of __p__ tags seem insufficient.  Figure out whether and
+ *   how doxygen allows assigning formats to a semantic tag.  Do not replace
+ *   a tag with direct formattings like \p aParam vs `aParam`, as some editors
+ *   recognize and highlight semantic tags.
  * - Regularly check the warning in \ref pntrString to see whether it still
  *   holds, or can be made more precise.
  */
