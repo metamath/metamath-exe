@@ -220,6 +220,9 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
  *   how doxygen allows assigning formats to a semantic tag.  Do not replace
  *   a tag with direct formattings like \p aParam vs `aParam`, as some editors
  *   recognize and highlight semantic tags.
+ *     The parameters are included in <code>aParam</code> tags.  You can change
+ *     the appearance by using your customized CSS file and let doxygen use it
+ *     with HTML-EXTRA-STYLESHEET in your own Doxyfile.
  * - Regularly check the warning in \ref pntrString to see whether it still
  *   holds, or can be made more precise.
  */
