@@ -136,7 +136,7 @@
  *   character, then its contents is not allocated memory and not mutable
  *   instead;
  * - If not empty, i.e. the pointer points to a character different from
- *   0x00, then this is never a true left portion of another \a vstring.
+ *   0x00, then this is never a true left portion of another \ref vstring.
  * - Although not required under all circumstances, it is highly recommended to
  *   uniquely point to some allocated memory only.
  *
@@ -154,37 +154,37 @@ typedef char* vstring;
  * \brief A vstring that is allocated in temporary storage.
  *   These strings will be deallocated after the next call to `let`.
  *
- * This alias for \a vstring is used to mark an entry in the \a tempAllocStack.
- * Entries in this stack are subject to automatic deallocation by \a let or
- * calling \a freeTempAlloc.
+ * This alias for \ref vstring is used to mark an entry in the
+ * \ref tempAllocStack.  Entries in this stack are subject to automatic
+ * deallocation by \ref let or \ref freeTempAlloc.
  *
- * Unlike \a vstring this type knows no exceptional handling of empty strings.
- * If an empty string is generated as a temporary in the course of a
- * construction of a final \a vstring, it is allocated on the heap as usual.
+ * Unlike \ref vstring this type knows no exceptional handling of empty
+ * strings.  If an empty string is generated as a temporary in the course of a
+ * construction of a final \ref vstring, it is allocated on the heap as usual.
  *
  * If returned by a function, it is already pushed on the \ref tempAllocStack.
  *
  * A `temp_vstring` should never be used as the first argument of a `let`.
  * This code is INCORRECT:
  *
- *   temp_vstring foo = left("foobar", 3);
- *   let(&foo, "bar"); // this will cause a double free
+ *     temp_vstring foo = left("foobar", 3);
+ *     let(&foo, "bar"); // this will cause a double free
  *
  * It is okay (and quite common) to use a temp_vstring as the second argument,
  * however. It is best not to hold on to the value, though, because the `let`
  * will free it. This code is INCORRECT:
  *
- *   vstring_def(x);
- *   temp_vstring foobar = cat("foo", "bar");
- *   let(&x, foobar); // frees foobar
- *   let(&x, foobar); // dangling reference
+ *     vstring_def(x);
+ *     temp_vstring foobar = cat("foo", "bar");
+ *     let(&x, foobar); // frees foobar
+ *     let(&x, foobar); // dangling reference
  *
  * There is a converse problem when `temp_vstring`s are used without `let`:
  *
- *   for (int i = 0; i < 100000; i++) {
- *     vstring_def(x);
- *     if (strlen(space(i)) == 99999) break;
- *   }
+ *     for (int i = 0; i < 100000; i++) {
+ *       vstring_def(x);
+ *       if (strlen(space(i)) == 99999) break;
+ *     }
  *
  * We don't need to deallocate the string returned by `space()` directly,
  * because it returns a `temp_vstring`, but because there is no `let` in
@@ -194,20 +194,19 @@ typedef char* vstring;
  * we can either use a dummy `let()` statement in the loop, or call
  * `freeTempAlloc` directly:
  *
- *   for (int i = 0; i < 100000; i++) {
- *     vstring_def(x);
- *     if (strlen(space(i)) == 99999) break;
- *     freeTempAlloc();
- *   }
- *
+ *     for (int i = 0; i < 100000; i++) {
+ *       vstring_def(x);
+ *       if (strlen(space(i)) == 99999) break;
+ *       freeTempAlloc();
+ *     }
  */
 typedef vstring temp_vstring;
 
 /*!
  * \def vstring_def
- * \brief creates a new \a vstring variable.
+ * \brief creates a new \ref vstring variable.
  *
- * declares a \a vstring variable and initiates it with empty text ("").
+ * declares a \ref vstring variable and initiates it with empty text ("").
  * If it remains unmodified, freeing of __x__ is possible, but not required.
  *
  * \param[in] x plain C variable name without quote characters.
@@ -215,28 +214,28 @@ typedef vstring temp_vstring;
  *   the variable has not been declared before in the current scope.
  * \post
  *   initialized with empty text.  No administrative data is added, in
- *   conformance with the semantics of a \a vstring.
+ *   conformance with the semantics of a \ref vstring.
  */
 #define vstring_def(x) vstring x = ""
 
 /*!
  * \def free_vstring
- * \brief deallocates a \a vstring variable and sets it to the empty string.
+ * \brief deallocates a \ref vstring variable and sets it to the empty string.
  *
  * Multiple invocations on the same variable is possible.  Can be reused again
- * without a call to \a vstring_def.
+ * without a call to \ref vstring_def.
  *
  * Side effect: Frees and pops off entries on and beyond index
- * \a g_startTempAllocStack from the \a tempAllocStack.
+ * \ref g_startTempAllocStack from the \ref tempAllocStack.
  *
- * \param[in,out] x (not null) an initialized \a vstring variable.  According to the
- * semantics of a \a vstring, __x__ is not deallocated, if it points to an
- * empty string.
+ * \param[in,out] x (not null) an initialized \ref vstring variable.  According to the
+ * semantics of a \ref vstring, \p x is not deallocated, if it points to an
+ * empty string. 
  * \pre
- *   __x__ was declared and initialized before.
+ *   \p x was declared and initialized before.
  * \post
- *   __x__ initialized with empty text.  Entries on and beyond index
- * \a g_startTempAllocStack are freed and popped off the \a tempAllocStack.
+ *   \p x initialized with empty text.  Entries on and beyond index
+ * \ref g_startTempAllocStack are freed and popped off the \ref tempAllocStack.
  */
 #define free_vstring(x) let(&x, "")
 
@@ -244,20 +243,21 @@ typedef vstring temp_vstring;
  * \fn freeTempAlloc
  * \brief Free space allocated for temporary vstring instances.
  *
- * Temporary \a vstring in \a tempAllocStack are used for example to construct
- * final text from patterns, boilerplate etc. along with data to be filled in.
+ * Temporary \ref vstring in \ref tempAllocStack are used for example to
+ * construct final text from patterns, boilerplate etc. along with data to be
+ * filled in.
  *
- * This function frees all entries beginning with \a g_startTempAllocStack.
+ * This function frees all entries beginning with \ref g_startTempAllocStack.
  * It is usually called automatically by let(), but can also be invoked
  * directly to avoid buildup of temporary strings.
  *
  * \pre
- *   \a g_startTempAllocStack is the index in \a tempAllocStack from which
- *   on enties are freed.
+ *   All references freed in \ref tempAllocStack can be safely discarded
+ *   without risking a memory leak.
  * \post
- * - Entries in \a tempAllocStack from index \a g_startTempAllocStack on
- *   are freed.  The top of stack \a g_tempAllocStackTop is back to
- *   \a g_startTempAllocStack again, so the current scope of temporaries is
+ * - Entries in \ref tempAllocStack from index \ref g_startTempAllocStack on
+ *   are freed.  The top of stack \ref g_tempAllocStackTop is back to
+ *   \ref g_startTempAllocStack again, so the current scope of temporaries is
  *   empty;
  * - db1 is updated, if NDEBUG is not defined.
  */
@@ -267,48 +267,46 @@ void freeTempAlloc(void);
  * \fn let(vstring *target, const char *source)
  * \brief emulation of BASIC string assignment
  *
- * assigns to text to a \a vstring pointer.  This includes a bit of memory
+ * assigns to text to a \ref vstring pointer.  This includes a bit of memory
  * management.  Not only is the space of the destination of the assignment
  * reallocated if its previous size was too small.  But in addition the
- * \ref stack "stack" \a tempAllocStack is freed of intermediate values again.
- * Every entry on and beyond \a g_startTempAllocStack is considered to be
- * consumed and subject to deallocation.
+ * \ref stack "stack" \ref tempAllocStack is freed of intermediate values
+ * again.  Every entry on and beyond \ref g_startTempAllocStack is considered
+ * to be consumed and subject to deallocation.
  *
- * This deallocation procedure is embedded in this operation, since frequently
- * the final string was composed of some fragments, that now can be disposed
- * of.  In fact, this function must ALWAYS be called to assign to a vstring in
- * order for the memory cleanup routines, etc. to work properly.  A new vstring
- * should be initialized to "" (the empty string), and the 'vstring_def' macro
- * handles creation of such variables.
+ * This deallocation procedure is embedded in this operation, since often the
+ * final string is composed of some fragments, that now can be disposed of.  In
+ * fact, this function must ALWAYS be called to assign to a vstring in order
+ * for the memory cleanup routines, etc. to work properly.  A new vstring
+ * should be initialized to "" (the empty string), and the \ref vstring_def
+ * macro handles creation of such variables.
  *
  * Possible failures: Out of memory condition.
  *
- * \param[out] target (not null) address of a \a vstring receiving a copy of
+ * \param[in,out] target (not null) address of a \ref vstring receiving a copy of
  *   the source string.  Its current value, if not empty, must never point to a
- *   true portion of another \a vstring.  It must not coincide with any of the
- *   temporary strings in \a tempAllocStack, from index
- *   \a g_startTempAllocStack on.  You can assign to an entry with index below
- *   this value, though.
+ *   true tail of another \ref vstring.  You must not assign to any of the
+ *   temporary strings in \ref tempAllocStack.
  * \param[in] source (not null) NUL terminated string to be copied from.
  *
  * \warning `source` must not point into `target` (but this is unlikely to arise if
  *  `source` is calculated using `temp_vstring` operations from `target`).
  * \pre
- * - \a g_startTempAllocStack contains the starting index of entries in
- *   \a tempAllocStack, that is going to be deallocated.
- * - both parameters are not null and point to NUL terminated strings.
- * - The destination of this function must either be empty, or uniquely point
- *   to a \a vstring, but not any of the temp_vstring;
- * - The destination need not provide enough space for the source.  If
- *   necessary, it is reallocated to point to a larger chunk of memory;
+ * - \ref g_startTempAllocStack contains the starting index of entries in
+ *   \ref tempAllocStack, that is going to be deallocated.
+ * - The \p target of this function must either be empty, or uniquely point
+ *   to a \ref vstring, but not to any of the \ref temp_vstring;
+ * - The \p target need not provide enough space for the source.  If
+ *   necessary, it is reallocated;
  * \post
- * - Entries in \a tempAllocStack from \a g_startTempAllocStack (on entry to the
- *   function) are deallocated;
- * - The stack pointer in \a g_tempAllocStackTop is set to
- *   \a g_startTempAllocStack (on entry to the function);
- * - If the assigned value is the empty string, but the destination not, it is
+ * - Entries in \ref tempAllocStack from \ref g_startTempAllocStack (on entry
+ *   to the function) are deallocated;
+ * - The stack pointer in \ref g_tempAllocStackTop is set to
+ *   \ref g_startTempAllocStack (on entry to the function);
+ * - If the assigned value is the empty string, but the \p target not, it is
  *   freed and assigned to a constant "";
- * - \a db is updated.
+ * - \ref db is updated.
+ * \bug In an out-of-memory situation the program is not exited
  */
 void let(vstring *target, const char *source);
 
@@ -323,15 +321,15 @@ void let(vstring *target, const char *source);
  * Up to MAX_CAT_ARGS - 1 (49) NUL terminated strings submitted as parameters
  * are concatenated to form a single NUL terminated string.  The parameters
  * terminate with a NULL pointer, a single NULL pointer is not allowed, though.
- * The resulting string is pushed on \a tempAllocStack.
+ * The resulting string is pushed on \ref tempAllocStack.
  * \param[in] string1 (not null) a pointer to a NUL terminated string.
  *   The following parameters are pointers to NUL terminated strings as well,
  *   except for the last parameter that must be NULL.  It is allowed to
  *   duplicate parameters.
- * \return the concatenated string terminated by a NUL character.
- * \post the resulting string is pushed onto the \a tempAllocStack.
- *   \a db is updated.
- * \bug a stack overflow of \a tempAllocStack is not handled correctly.
+ * \return the concatenated \ref temp_vstring terminated by a NUL character.
+ * \post the resulting string is pushed onto the \ref tempAllocStack.
+ *   \ref db is updated.
+ * \bug a stack overflow of \ref tempAllocStack is not handled correctly.
  */
 temp_vstring cat(const char * string1, ...);
 
@@ -353,57 +351,59 @@ int linput(FILE *stream, const char *ask, vstring *target);
 /* Indices are 1-based */
 
 /*!
- * \fn temp_vstring seg(const char *sin, long p1, long p2)
- * Extracts a substring from a source and pushes it on \a tempAllocStack.
+ * \fn temp_vstring seg(const char *sin, long start, long stop)
+ * Extracts a substring from a source and pushes it on \ref tempAllocStack.
  * Note: The bounding indices are 1-based and inclusive.
  *
  * \param[in] sin (not null) pointer to the NUL-terminated source text.
- * \param[in] p1 offset of the first byte of the substring, counted in bytes from
- *   the first one of __sin__, a 1-based index.  A value less than 1 is
+ * \param[in] start offset of the first byte of the substring, counted in bytes from
+ *   the first one of \p sin, a 1-based index.  A value less than 1 is
  *   internally corrected to 1, but it must not point beyond the terminating
- *   NUL of __sin__, if __p1__ <= __p2__.
- * \param[in] p2 offset of the last byte of the substring, counted in bytes from
- *   the first one of __sin__, a 1-based index.  The natural bounds of this
- *   value are __p1__ - 1 and the length of __sin__.  Values outside of this
- *   range are internally corrected to the closer of these limits.  If __p2__ <
- *   __p1__ the empty string is returned.
+ *   NUL of \p sin, if \p start <= \p stop.
+ * \param[in] stop offset of the last byte of the substring, counted in bytes from
+ *   the first one of \p sin, a 1-based index.  The natural bounds of this
+ *   value are \p start - 1 and the length of \p sin.  Values outside of this
+ *   range are internally corrected to the closer of these limits.  If \p stop
+ *   < \p start the empty string is returned.
  * \attention the indices are 1-based: seg("hello", 2, 3) == "el"!
- * \return a pointer to new allocated \a temp_vstring referencing the
- *   requested substring, that is also pushed onto the top of \a tempAllocStack
+ * \return a pointer to new allocated \ref temp_vstring referencing the
+ *   requested substring, that is also pushed onto the top of
+ *   \ref tempAllocStack
  * \pre
- *   __p1__ <= length(__sin__).
+ *   \p start <= length(\p sin).
  * \post
- *   A pointer to the substring is pushed on \a tempAllocStack, even if it
+ *   A pointer to the substring is pushed on \ref tempAllocStack, even if it
  *   empty;
  * \warning not UTF-8 safe.
- * \bug a stack overflow of \a tempAllocStack is not handled correctly;
+ * \bug a stack overflow of \ref tempAllocStack is not handled correctly;
  */
-temp_vstring seg(const char *sin, long p1, long p2);
+temp_vstring seg(const char *sin, long start, long stop);
 /*!
- * \fn temp_vstring mid(const char *sin, long p, long l)
- * Extracts a substring from a source and pushes it on \a tempAllocStack
+ * \fn temp_vstring mid(const char *sin, long start, long length)
+ * Extracts a substring from a source and pushes it on \ref tempAllocStack
  *
  * \param[in] sin (not null) pointer to the NUL-terminated source text.
- * \param[in] p offset of the substring in bytes from the first byte of __sin__,
- *   1-based.  A value less than 1 is internally corrected to 1, but it must
- *   never point beyond the terminating NUL of __sin__.
- * \param[in] l length of substring in bytes.  Negative values are corrected to 0.
- *   If __p__ + __l__ exceeds the length of __sin__, then only the portion up
- *   to the terminating NUL is taken.
- * \attention the index __p__ is 1-based: mid("hello", 2, 1) == "e"!
- * \return a pointer to new allocated \a temp_vstring referencing the
- *   requested substring, that is also pushed onto the top of \a tempAllocStack
+ * \param[in] start offset of the substring in bytes from the first byte of
+ *   \p sin, 1-based.  A value less than 1 is internally corrected to 1, but it
+ *   must never point beyond the terminating NUL of \p sin.
+ * \param[in] length length of substring in bytes.  Negative values are
+ *   corrected to 0.  If \p start + \p length exceeds the length of \p sin,
+ *   then only the portion up to the terminating NUL is taken.
+ * \attention the index \p start is 1-based: mid("hello", 2, 1) == "e"!
+ * \return a pointer to new allocated \ref temp_vstring referencing the
+ *   requested substring, that is also pushed onto the top of
+ *   \ref tempAllocStack
  * \pre
- *   __p__ <= length(__sin__).  This must hold even if the requested length is
+ *   \p start <= length(\p sin).  This must hold even if the requested length is
  *   0, because its implementation in C requires the validity of the pointer,
  *   even if it is not dereferenced.
  * \post
- *   A pointer to the substring is pushed on \a tempAllocStack, even if it
- *   empty;
+ *   A pointer to the substring is pushed on \ref tempAllocStack, even if it
+ *   is empty;
  * \warning not UTF-8 safe.
- * \bug a stack overflow of \a tempAllocStack is not handled correctly;
+ * \bug a stack overflow of \ref tempAllocStack is not handled correctly;
  */
-temp_vstring mid(const char *sin, long p, long l);
+temp_vstring mid(const char *sin, long start, long length);
 /*!
  * \fn temp_vstring left(const char *sin, long n)
  * \brief Extract leftmost n characters.
@@ -414,15 +414,15 @@ temp_vstring mid(const char *sin, long p, long l);
  *
  * \param[in] sin (not null) pointer to a NUL terminated string to be copied from.
  * \param[in] n count of bytes to be copied from the source.  The natural bounds of
- *   this value is 0 and the length of __sin__ in bytes.  Any value outside of
+ *   this value is 0 and the length of \p sin in bytes.  Any value outside of
  *   this range is corrected to the closer one of these limits.
- * \return a pointer to new allocated \a temp_vstring referencing the
- *   requested portion, that is also pushed onto the top of \a tempAllocStack
+ * \return a pointer to new allocated \ref temp_vstring referencing the
+ *   requested portion, that is also pushed onto the top of \ref tempAllocStack
  * \post
- *   A pointer to the substring is pushed on \a tempAllocStack, even if it
- *   empty.
+ *   A pointer to the substring is pushed on \ref tempAllocStack, even if it
+ *   is empty.
  * \warning not UTF-8 safe.
- * \bug a stack overflow of \a tempAllocStack is not handled correctly.
+ * \bug a stack overflow of \ref tempAllocStack is not handled correctly.
  */
 temp_vstring left(const char *sin, long n);
 
@@ -438,46 +438,72 @@ temp_vstring left(const char *sin, long n);
  *   from.
  * \param[in] n 1-based index of the first not skipped character at the
  *   beginning of the source.  A value less than 1 is internally corrected to 1.
- * \return a pointer to new allocated \a temp_vstring referencing the
- *   requested portion, that is also pushed onto the top of \a tempAllocStack
- * \attention the index __n__ is 1-based: right("hello", 2) == "ello"!
+ * \return a pointer to new allocated \ref temp_vstring referencing the
+ *   requested portion, that is also pushed onto the top of \ref tempAllocStack
+ * \attention the index \p n is 1-based: right("hello", 2) == "ello"!
  * \pre
- *   __n__ <= length(__sin__)
+ *   \p n <= length(\p sin)
  * \post
- *   A pointer to the substring is pushed on \a tempAllocStack, even if it
- *   empty.
+ *   A pointer to the substring is pushed on \ref tempAllocStack, even if it
+ *   is empty.
  * \warning not UTF-8 safe.
  * \bug a stack overflow of \a tempAllocStack is not handled correctly.
  */
 temp_vstring right(const char *sin, long n);
+/*!
+ * \fn temp_vstring edit(const char *sin, long control)
+ * perform a combination of transformations on \p sin based on the set bits in
+ * \p control.  This is an ASCII based transformation.
+ *      Bit    |  Effect
+ *      -----  |  ------
+ *      1      |  Clear parity bits
+ *      2      |  Discard all spaces and tabs
+ *      4      |  Discard characters: CR, LF, FF, ESC, RUBOUT, and NULL
+ *      8      |  Discard leading spaces and tabs
+ *      16     |  Reduce spaces and tabs to one space
+ *      32     |  Convert lowercase to uppercase
+ *      64     |  Convert [ to ( and ] to )
+ *      128    |  Discard trailing spaces and tabs
+ *      256    |  Do not alter characters inside quotes
+ *      512    |  Convert uppercase to lowercase
+ *      1024   |  Tab the line (convert spaces to equivalent tabs)
+ *      2048   |  Untab the line (convert tabs to equivalent spaces)
+ *      4096   |  Convert VT220 screen print frame graphics to -,|,+ characters
+ *      8192   |  Discard CR only (to assist DOS-to-Unix conversion)
+ *      16384  |  Discard trailing spaces, tabs, and LFs
+ * \param[in] sin (not null) NUL terminated string to convert
+ * \param[in] control a combination of set bit requesting the desired
+ *   transformation(s)
+ * \return the transformed \p sin ready for pushing on \ref tempAllocStack.
+ */
 temp_vstring edit(const char *sin, long control);
 
 /*!
  * \fn temp_vstring space(long n)
- * pushes a NUL terminated string of __n__ characters onto
- * \a tempAllocStack.
+ * pushes a NUL terminated string of \p n characters onto
+ * \ref tempAllocStack.
  * \param[in] n the count of spaces, one less than the memory to allocate in
  *   bytes.
- * \return a pointer to new allocated \a temp_vstring referencing the
- *   requested contents, also pushed onto the top of \a tempAllocStack
+ * \return a pointer to new allocated \ref temp_vstring referencing the
+ *   requested contents, also pushed onto the top of \ref tempAllocStack
  * \post The returned string is NUL terminated
- * \bug a stack overflow of \a tempAllocStack is not handled correctly.
+ * \bug a stack overflow of \ref tempAllocStack is not handled correctly.
  */
 temp_vstring space(long n);
 
 /*!
  * \fn temp_vstring string(long n, char c)
- * pushes a NUL terminated string of __n__ characters __c__ onto
- * \a tempAllocStack.
+ * pushes a NUL terminated string of \p n characters \p c onto
+ * \ref tempAllocStack.
  * \param[in] n one less than the memory to allocate in bytes.
  * \param[in] c character to fill the allocated memory with.  It is padded to
  *   the right with a NUL character.
- * \attention The choice of NUL for __c__ returns the empty string in a block
- *   of __n__ + 1 allocated bytes.
+ * \attention The choice of NUL for \p c returns the empty string in a block
+ *   of \p n + 1 allocated bytes.
  * \post The returned string is NUL terminated
- * \return a pointer to new allocated \a temp_vstring referencing the
- *   requested contents, also pushed onto the top of \a tempAllocStack
- * \bug a stack overflow of \a tempAllocStack is not handled correctly.
+ * \return a pointer to new allocated \ref temp_vstring referencing the
+ *   requested contents, also pushed onto the top of \ref tempAllocStack
+ * \bug a stack overflow of \ref tempAllocStack is not handled correctly.
  */
 temp_vstring string(long n, char c);
 
@@ -486,20 +512,20 @@ temp_vstring string(long n, char c);
  * \brief create a temporary string containing a single byte.
  *
  * create a NUL terminated string containing only the least significant byte of
- * __n__.  If this byte is 0x00, an empty string is the result.  If the most
+ * \p n.  If this byte is 0x00, an empty string is the result.  If the most
  * significant bit of this byte is set, the returned string is not an ASCII
  * or UTF-8 string.
  * \param[in] n The eight least significant bits are converted into a
  *   character used to build a string from.
  * \post A string containing a single character different from NUL, or
- *   the empty string else, is pushed onto the \a tempAllocStack.
- * \return a pointer to new allocated \a temp_vstring referencing the
- *   requested contents, also pushed onto the top of \a tempAllocStack
+ *   the empty string else, is pushed onto the \ref tempAllocStack.
+ * \return a pointer to new allocated \ref temp_vstring referencing the
+ *   requested contents, also pushed onto the top of \ref tempAllocStack
  * \warning
  *   the resulting string need not contain exactly 1 character, and if it does,
  *   this character need not be ASCII or UTF-8.  If CHAR_BITS is not 8
  *   (extremely rare nowadays) there might be a portability issue.
- * \bug a stack overflow of \a tempAllocStack is not handled correctly.
+ * \bug a stack overflow of \ref tempAllocStack is not handled correctly.
  */
 temp_vstring chr(long n);
 
@@ -550,7 +576,7 @@ vstring quo$(vstring sout);
  * \var g_tempAllocStackTop
  * \brief Top of stack for temporary text.
  *
- * Refers to the \ref stack "stack" in \a tempAllocStack for temporary text.
+ * Refers to the \ref stack "stack" in \ref tempAllocStack for temporary text.
  * The current top index referencing the next free entry is kept in this variable.
  *
  * This value is made public for setting up scopes of temporary memory for
@@ -565,7 +591,7 @@ extern long g_tempAllocStackTop;   /* Top of stack for tempAlloc function */
  * \var g_startTempAllocStack
  * \brief references the first entry of the current scope of temporaries.
  *
- * Refers to the \ref stack "stack" in \a tempAllocStack for temporary text.
+ * Refers to the \ref stack "stack" in \ref tempAllocStack for temporary text.
  * Nested functions maintain their own scope of temporary data.  The index
  * referencing the first index of the current scope is kept in this variable.
  *
@@ -577,7 +603,7 @@ extern long g_tempAllocStackTop;   /* Top of stack for tempAlloc function */
  * it restores those values.
  *
  * \invariant
- *   \a g_startTempAllocStack <= \a g_tempAllocStackTop.
+ *   \ref g_startTempAllocStack <= \ref g_tempAllocStackTop.
  */
 extern long g_startTempAllocStack; /* Where to start freeing temporary allocation
     when let() is called (normally 0, except for nested vstring functions) */

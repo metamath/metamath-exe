@@ -46,6 +46,12 @@ vstring_def(g_printString);
 long g_commandFileNestingLevel = 0;
 FILE *g_commandFilePtr[MAX_COMMAND_FILE_NESTING + 1];
 vstring g_commandFileName[MAX_COMMAND_FILE_NESTING + 1];
+/*!
+ * \var flag g_commandFileSilent[]
+ * a 1 for a particular \ref g_commandFileNestingLevel suppresses output for
+ * that submit nesting level.  The value for the interactive level
+ * (\ref g_commandFileNestingLevel == 0) is ignored.
+ */
 flag g_commandFileSilent[MAX_COMMAND_FILE_NESTING + 1];
 flag g_commandFileSilentFlag = 0; /* For SUBMIT ... /SILENT */
 
@@ -67,14 +73,16 @@ flag g_quitPrint = 0; /* Flag that user quit the output */
 /*!
  * \var flag localScrollMode
  *
- * temporarily disables prompted scroll (see \a g_scrollMode) until next user
+ * temporarily disables prompted scroll (see \ref g_scrollMode) until next user
  * prompt
  */
 flag localScrollMode = 1; /* 0 = Scroll continuously only till next prompt */
 
 /* Buffer for B (back) command at end-of-page prompt - for future use */
 /*! \var pntrString* backBuffer
- * Buffer for B (back) command at end-of-page prompt.
+ * Buffer for B (back) command at end-of-page prompt.  Although formally a
+ * \ref pntrString is an array of void*, this buffer contains always pointer to
+ * \ref vstring.
  *
  * Some longer text (like help texts for example) provide a page wise display
  * with a scroll option, so the user can move freely back and forth in the
@@ -85,9 +93,10 @@ pntrString_def(backBuffer);
 /*!
  * \var backBufferPos
  *
- * A position within the \a backBuffer.
+ * Number of entries in the \ref backBuffer that are available for repeatedly
+ * scrolling back.  Initialized to 0.
  *
- * \invariant The value 0 requires an empty \a backBuffer.
+ * \invariant The value 0 requires an empty \ref backBuffer.
  */
 long backBufferPos = 0;
 flag backFromCmdInput = 0; /* User typed "B" at main prompt */
@@ -651,7 +660,6 @@ vstring cmdInput(FILE *stream, const char *ask) {
   long i;
 
   while (1) { /* For "B" backup loop */
-// drucke prompt
     if (ask != NULL && !g_commandFileSilentFlag) {
       printf("%s", ask);
 #if __STDC__

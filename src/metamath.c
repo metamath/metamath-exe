@@ -723,16 +723,16 @@ void command(int argc, char *argv[]);
 /*! \fn int main(int argc, char *argv[])
  * \brief entry point of the metamath program
  * \param argc int number of command line parameters
- * \param argv (char*)[] array of \a argc command line parameters, followed by NULL
+ * \param argv (char*)[] array of \p argc command line parameters, followed by NULL
  * \return success 0 else failure
  *
  * Running metamath
  *   ./metamath 'read set.mm' 'verify proof *'
- * will start main with \a argc set to 2, argv[0] to "read set.mm", argv[1]
+ * will start main with \p argc set to 2, argv[0] to "read set.mm", argv[1]
  * to "verify proof *" (both without quotes) and argv[2] to NULL.
  * Returning 0 indicates successful completion, anything else some kind of
- failure.
- * For details see \ref https://en.cppreference.com/w/cpp/language/main_function.
+ * failure.
+ * For details see https://en.cppreference.com/w/cpp/language/main_function.
  */
 int main(int argc, char *argv[]) {
 

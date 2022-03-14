@@ -16,13 +16,13 @@
 
 /* debugging flags & variables */
 /*!
- * \var db
+ * \var long db
  * \brief bytes held by vstring instances outside of the stack of temporaries
  *
  * monitors the number of bytes (including the terminal NUL) currently used in
- * all \a vstring pointer variables OUTSIDE of the \a tempAllocStack.  Note:
- * This is NOT the number of bytes allocated, but the portion actually used!  A
- * few memory allocations are also included:
+ * all \ref vstring pointer variables OUTSIDE of the \ref tempAllocStack.
+ * Note: This is NOT the number of bytes allocated, but the portion actually
+ * used!  A few memory allocations are also included:
  * - command line buffers used to hold user input from a console;
  * - buffers used to read file contents in.
  *
@@ -32,11 +32,11 @@
 /*E*/extern long db;
 /*E*/extern long db0;
 /*!
- * \var db1
+ * \var long db1
  * \brief bytes held by vstring instances inside of the stack of temporaries
  *
- * monitors the number of bytes currently pointed to by \a vstring pointers
- * INSIDE the \a tempAllocStack.  Note: This is NOT their capacity, but the
+ * monitors the number of bytes currently pointed to by \ref vstring pointers
+ * INSIDE the \ref tempAllocStack.  Note: This is NOT their capacity, but the
  * portion actually used!
  *
  * Not updated if NDEBUG (usually deactivates asserts in C code) is defined.
@@ -44,11 +44,16 @@
  * \bug Seems never be displayed.
  */
 /*E*/extern long db1;
+/*!
+ * \var long db2
+ * Bytes held in \ref block "blocks" managed in \ref tempAllocStack
+ * "temporary pointer stacks".
+ */
 /*E*/extern long db2;
 /*!
  * \var db3
- * \brief monitors the de/allocations of nmbrString and pntrString outside of
- * temporary arrays.
+ * \brief monitors the de/allocations of nmbrString and \ref pntrString outside
+ * of temporary arrays.
  *
  * The number of bytes held in blocks dedicated to global data.  There exist
  * also temporary stacks, but they are not considered here.  Useful to see
@@ -91,17 +96,17 @@ typedef char flag;
  * Obsolete.  Now fixed to 0.  Historically the metamath sources were also used
  * for other purposes than maintaining Metamath files.  One such application, a
  * standalone text processor, was LIST.EXE.  The sources still query this
- * \a flag occasionally, but its value is in fact fixed to 0 in metamath,
+ * \ref flag occasionally, but its value is in fact fixed to 0 in metamath,
  * meaning the LIST.EXE functionality is an integral part of metamath now.
  */
 extern flag g_listMode; /* 0 = metamath, 1 = list utility */
 /*!
  * \var g_toolsMode
  * Metamath has two modes of operation: In its primary mode it handles
- * mathematical contents like proofs.  In this mode \a g_toolsMode  is set to
+ * mathematical contents like proofs.  In this mode \ref g_toolsMode  is set to
  * 0.  This is the value assigned on startup.  A second mode is enabled after
  * executing the 'tools' command.  In this mode text files are processed using
- * high level commands.  It is indicated by a 1 in \a g_toolsMode.
+ * high level commands.  It is indicated by a 1 in \ref g_toolsMode.
  */
 extern flag g_toolsMode; /* In metamath mode:  0 = metamath, 1 = tools */
 
@@ -111,19 +116,40 @@ typedef long nmbrString; /* String of numbers */
  * \brief an array (maybe of size 1) of untyped pointers (void*)
  *
  * In general this array is organized like a stack: the number of elements in
- * the pntrString grows and shrinks during program flow, values are pushed and
- * popped at the end.  Such a stack is embedded in a \ref block that contains
- * administrative information about the stack.  The stack begins with
+ * the pntrString array grows and shrinks during program flow, values are
+ * pushed and popped at the end.  Such a stack is embedded in a \ref block that
+ * contains administrative information about the stack.  The stack begins with
  * element 0, and the administrative information is accessed through negative
  * indices, but need reinterpretation then.  To allow iterating through the
- * tail of the array from a certain element on, the array terminates with a
+ * tail of an array from a certain element on, an array terminates with a
  * null pointer.  This type of usage forbids null pointer as ordinary elements,
  * and the terminal null pointer is not part of the data in the array.
  *
+ * The length of a pntrString array is implicitely given by a terminal NULL
+ * pointer.  If this array is held in a \ref block, its size can also be
+ * determined from its header's administrative data.  Both values must be kept
+ * synchronized.  In early phases of memory allocation, when data wasn't
+ * assigned yet, this need not hold, though.
+ *
  * To summarize the usages of this type:
  * - If you want to resize the array/stack you need a pointer to element 0.
- * - You can iterate from an arbitrary pointer to the end.
- * - Sometimes it denotes an isolated element, not embedded in a greater array.
+ * - You can iterate from an arbitrary element to the end.
+ * - Sometimes pntrString denotes an isolated element, not embedded in a
+ *   greater array.
+ *
+ * \warning Simply copying elements around is dangerous, if the elements point
+ *   to allocated memory.  There must be a guard that owns the instances,
+ *   survives each of the copies and finally deallocates the instances.
+ *   Otherwise you risk memory leaks, or even worse, undefined behavior, if a
+ *   copied pointer uses an instance previously freed by the original.  One way
+ *   to provide such a guard is a nested program structure.  All copied
+ *   pointers are created in subroutines, and they vanish before the caller
+ *   gains control again, and can safely deallocate the instances.  A similar
+ *   strategy is followed by \ref pntrLet, where deallocations of original and
+ *   dependent instances are deferred until an operation finally finishes.
+ *   More modern concepts employ reference counting schemes, thus avoiding
+ *   dedicated ownership and solving this problem more thoroughly, but Metamath
+ *   is not up to that level (yet).
  */
 typedef void* pntrString; /* String of pointers */
 
@@ -138,11 +164,13 @@ typedef nmbrString temp_nmbrString;
 
 /*!
  * \typedef temp_pntrString
- * \brief a single \a pntrString element for use in a \ref stack "stack".
+ * \brief a single \ref pntrString element for use in a \ref stack "stack".
  *
- * These elements are pushed onto and popped off a \ref stack
- * "stack of temporary data".  Special commands can free all pointers on and
- * after a particular one in such a stack.
+ * These elements are pushed onto and popped off a \ref stack 
+ * "stack of temporary data".  Pointers of this type should ONLY refer to
+ * dynamically allocated memory on the heap.  Special commands support
+ * dependency tracking and free all pointers on and after a particular one in
+ * such a stack. 
  */
 typedef pntrString temp_pntrString;
 
@@ -295,20 +323,83 @@ extern flag g_globalDiscouragement; /* SET DISCOURAGEMENT */
 
 /* Allocation and deallocation in memory pool */
 void *poolFixedMalloc(long size /* bytes */);
+/*!
+ * \fn void *poolMalloc(long size)
+ * \brief allocates and initializes a new \ref block
+ *
+ * allocates a \ref block, first removing and using the last element of the
+ * \ref memFreePool.  If this block exists, but has not sufficient size, it is
+ * reallocated from the system.  If the pool is empty, a new \ref block of
+ * the given size is allocated from the system.  In any case, the header of the
+ * \ref block is properly initialized.  Exits program on out of memory
+ * condition.
+ * \param[in] size (in bytes) of the block, not including the block header.
+ * \return a \ref block with enough capacity for \p size bytes of data.
+ *  \post
+ *    - The \ref block "block's" header denotes \p size bytes are occupied, but
+ *      they yet contain random data.
+ *    - Exit on out-of-memory.
+ */
 void *poolMalloc(long size /* bytes */);
+/*!
+ * \fn poolFree(void *ptr)
+ *
+ * Removes \p ptr from the \ref memUsedPool, if it is listed there.  Then tries
+ * adding it to the \ref memFreePool.  If this pool is full, it is increased by
+ * \ref MEM_POOL_GROW.  If this fails, the program is exited, else \p ptr is
+ * added.
+ * \param[in] ptr pointer to a \ref block.
+ * \pre
+ *   - \p ptr refers to dynamically allocated memory on the heap.
+ *   - all memory pointed to by \p ptr is considered free.  This holds even if it
+ *     it is kept in \ref memUsedPool. 
+ * \post
+ *   - \ref poolTotalFree is updated
+ *   - Exit on out-of-memory (the \ref memFreePool overflows)
+ * \attention never submit a \p ptr referring to memory not on the heap, like
+ *   NULL_PTRSTRING.
+ */
 void poolFree(void *ptr);
+/*!
+ * \fn addToUsedPool(void *ptr)
+ * \brief announces a block with free capacity for further allocation
+ *
+ * This function temporarily freezes the usage of a block for the current user,
+ * and allows temporary reallocation of the free capacity to a new client.
+ *
+ * The program maintains pools of memory blocks with free capacity.  In case of
+ * demand such a \ref block can temporarily allocate this capacity for new
+ * usage.  Of course two (or more) clients share different parts of the same
+ * \ref block then, so a newer client must complete its usage before the old
+ * one resumes operation and may want to extend its usage of the \ref block.
+ *
+ * Before \p ptr is added to \ref memUsedPool, the pool size is checked and
+ * increased by \ref MEM_POOL_GROW if full.  This may lead to out-of-memory
+ * \ref outOfMemory "exit".  But if \p ptr is added to the end of the \ref memUsedPool,
+ * \ref poolTotalFree is updated.
+ * \param[in] ptr pointer to a \ref block.
+ * \pre
+ *   the block is \ref fragmentation "fragmented" (contains unused memory)
+ *   If it is full, \ref bugfn "bug" is called and the function returns without
+ *   further action.
+ * \post
+ *   - \ref poolTotalFree is the current free space in bytes in both pools.
+ *   - A full \ref block is not added to \ref memUsedPool by this function.
+ *   - Exit on out-of-memory (\ref memUsedPool overflows)
+ */
 void addToUsedPool(void *ptr);
 /*! Purges reset memory pool usage */
 void memFreePoolPurge(flag untilOK);
 /* Statistics */
 /*!
- * \fn getPoolStats
+ * \fn getPoolStats(long *freeAlloc, long *usedAlloc, long *usedActual)
  * \brief Provide information about memory in pools at the instant of call.
  *
  * Return the overall statistics about the pools \ref memFreePool
  * "free block array" and the \ref memUsedPool "used block array".  In MEMORY
- * STATUS mode ON, a diagnostic message compares the the contents of
- * \a poolTotalFree to the values found in this statistics.  They should not differ!
+ * STATUS mode ON, a diagnostic message compares the contents of
+ * \ref poolTotalFree to the values found in this statistics.  They should not
+ * differ!
  *
  * \attention This is NOT full memory usage, because completely used
  * \ref block "blocks" are not tracked!
@@ -321,8 +412,8 @@ void memFreePoolPurge(flag untilOK);
  * \param[out] usedActual (not-null) address of a long variable receiving the
  * accumulated bytes consumed by usage so far.  This value includes the hidden
  * header of the block.
- * \pre Do not call within bug().\n
- *   Submit only non-null pointers, even if not all information is requested.\n
+ * \pre Do not call within \ref bugfn "bug".\n
+ *   Submit only non-null pointers, even if not all information is needed.\n
  *   Pointers to irrelevant information may be the same.
  * \post Statistic data is copied to the locations the parameters point to.
  */
@@ -335,8 +426,8 @@ void initBigArrays(void);
 long getFreeSpace(long max);
 
 /*!
- * \fn outOfMemory
- * \brief fatal memory allocation error.
+ * \fn void outOfMemory(const char *msg)
+ * \brief exit after fatal memory allocation error.
  *
  * called when memory cannot be allocated, either because memory/address space
  * is physically exhausted, or because administrative structures would overflow.
@@ -352,8 +443,9 @@ long getFreeSpace(long max);
 void outOfMemory(const char *msg);
 
 /*!
- * \fn bug
- * Bug check error
+ * \anchor bugfn
+ * \fn void bug(int bugNum)
+ * \param[in] bugNum
  */
 void bug(int bugNum);
 
@@ -412,9 +504,9 @@ struct nullPntrStruct {
 /*!
  * \var g_PntrNull
  * Global instance of a memory block structured like a
- * \a pntrString, fixed in size and containing always exactly one null pointer
+ * \ref pntrString, fixed in size and containing always exactly one null pointer
  * element, the terminating NULL.  This setup is recognized as an empty
- * \a pntrString.
+ * \ref pntrString.
  *
  * \attention mark as const
  */
@@ -422,21 +514,40 @@ extern struct nullPntrStruct g_PntrNull;
 /*!
  * \def NULL_PNTRSTRING
  * The address of a \ref block "block" containing an empty, not resizable
- * \a pntrString
- * stack.  Used to initialize \a pntrString variables .
+ * \ref pntrString
+ * stack.  Used to initialize \ref pntrString variables .
  */
 #define NULL_PNTRSTRING &(g_PntrNull.nullElement)
 /*!
  * \def pntrString_def
  *
- * declare a new \a pntrString variable and initialize it to point to a block
- * with an empty, not resizable \a pntrString.
+ * declare a new \ref pntrString variable and initialize it to point to a block
+ * with an empty, not resizable \ref pntrString.
  *
  * \param[in] x variable name
  * \pre The variable does not exist in the current scope.
  * \post The variable is initialized.
  */
 #define pntrString_def(x) pntrString *x = NULL_PNTRSTRING
+/*!
+ * \def free_pntrString
+ * \param[in,out] x variable name
+ * Assigns \ref NULL_PNTRSTRING to a variable \ref pntrString \p x.  Frees all
+ * \ref pntrTempAllocStack, beginning with index 
+ * \ref g_pntrStartTempAllocStack.  See \ref pntrLet.
+ * \pre
+ *   - the \ref block assigned to \p x does not contain any valuable data.
+ *   - all \ref pntrString elements freed in \ref pntrTempAllocStack can be
+ *     discarded without losing relevant references.
+ * \post
+ *   - \p x is assigned NULL_PNTRSTRING.
+ *   - The stack pointer of \ref pntrTempAllocStack is reset to
+ *     \ref g_pntrStartTempAllocStack and all referenced
+ *     \ref block "blocks" on and beyond that are returned to the
+ *     \ref memFreePool.
+ *   - updates \ref db3 and \ref poolTotalFree.
+ *   - Exit on out-of-memory
+ */
 #define free_pntrString(x) pntrLet(&x, NULL_PNTRSTRING)
 
 
@@ -600,12 +711,27 @@ long compressedProofSize(const nmbrString *proof, long statemNum);
 /*!
  * \var long g_pntrTempAllocStackTop
  *
- * Index of the current top af the \ref stack "stack" \a pntrTempAlloc.
+ * Index of the current top of the \ref stack "stack" \ref pntrTempAlloc.
  * New data is pushed from this location on if space available.
  *
  * \invariant always refers the null pointer element behind the valid data.
  */
 extern long g_pntrTempAllocStackTop;   /* Top of stack for pntrTempAlloc function */
+/*!
+ * \var long g_pntrStartTempAllocStack
+ *
+ * Index of the first entry of the \ref stack "stack" \ref pntrTempAllocStack
+ * eligible for deallocation on the next call to \ref pntrTempAlloc.  Entries
+ * below this value are considered not dependent on the value at this index,
+ * but entries above are.  So when this entry gets deallocated, dependent ones
+ * should follow suit.  A function like \ref pntrTempAlloc or \ref pntrLet
+ * manage this automatic deallocation.
+ *
+ * Nested functions using the \ref pntrTempAllocStack usually save the current
+ * value and set it to \ref g_pntrTempAllocStackTop, so they can create their
+ * local dependency chain.  On return the saved value is restored.
+ * \invariant always less or equal to \ref g_pntrTempAllocStackTop.
+ */
 extern long g_pntrStartTempAllocStack; /* Where to start freeing temporary
     allocation when pntrLet() is called (normally 0, except for nested
     pntrString functions) */
@@ -620,7 +746,50 @@ temp_pntrString *pntrMakeTempAlloc(pntrString *s);
 /**************************************************/
 
 
-/*! String assignment - MUST be used to assign vstrings */
+/*!
+ * \fn void pntrLet(pntrString **target, const pntrString *source)
+ * String assignment - MUST be used to assign vstrings.
+ *
+ * Copies the \ref pntrString elements of \p source to the beginning of a
+ * \ref block referenced by \p target.  If necessary, the \p target block is
+ * reallocated, and if it is, it gets twice the needed size to account for
+ * future growing.  If the \p target block is only partially used after copy it
+ * is added to the \ref memUsedPool.  If \p source is empty, the \p target is
+ * set to \ref NULL_PNTRSTRING.
+ *
+ * It is assumed that the value persisted in \p target is in fact computed from
+ * temporary operands in \ref pntrTempAllocStack.  All blocks starting with
+ * the element at \ref g_pntrStartTempAllocStack are returned to the
+ * \ref memFreePool.
+ * \attention freed \ref block "blocks" contain \ref pntrString instances.
+ *   See \ref pntrTempAllocStack to learn how this free process can be
+ *   dangerous if insufficient precautions are taken.
+ * \param[in,out] target (not null) the address of a pointer pointing to the
+ *   first byte of a \ref block receiving the copied elements of \p source.
+ * \param[in] source (not null) a pointer to the first \ref pntrString element
+ *   in a \ref block, to be copied from.
+ * \pre
+ *   - source does not contain NULL pointer elements , but is terminated by
+ *     one.  This final NULL pointer is not part of the array, but must be present.
+ *   - the target \ref block does not contain any valuable data.
+ *   - all \ref pntrString elements freed in \ref pntrTempAllocStack can be
+ *     discarded without losing relevant references.
+ * \post
+ *   - the \ref block \p target points to is filled with a copy of
+ *     \ref pntrString elements \p source points to, padded with a terminal
+ *     NULL.
+ *   - due to a possible reallocation the pointer \p target points to may
+ *     change.
+ *   - The stack pointer of \ref pntrTempAllocStack is reset to
+ *     \ref g_pntrStartTempAllocStack and all referenced
+ *     \ref block "blocks" on and beyond that are returned to the
+ *     \ref memFreePool.
+ *   - updates \ref db3 and \ref poolTotalFree.
+ *   - Exit on out-of-memory
+ * \bug If the \p target block is full after the copy operation, it is not
+ *   necessarily removed from the \ref memUsedPool, although other
+ *   functions like \ref addToUsedPool do not support this.
+ */
 void pntrLet(pntrString **target, const pntrString *source);
 
 /*! String concatenation - last argument MUST be NULL */
@@ -648,11 +817,14 @@ temp_pntrString *pntrPSpace(long n);
  * \brief Determine the length of a pntrString held in a \ref block "block"
  * dedicated to it.
  *
- * returns the number of **used** pointers in the array pointed to by \p s,
- * derived from administrative data in the surrounding block.
+ * returns the number of **reserved** pointers in the array pointed to by \p s,
+ * derived solely from administrative data in the surrounding \ref block. Thus,
+ * the value is valid, even if data has not yet been transferred to the
+ * reserved space, and the terminal NULL is not safely recognized. The returned
+ * value excludes the space set aside for a terminal NULL.
  *
  * \attention This is not the capacity of the array.
- * \param[in] s points to a element 0 of a \a pntrString  embedded in a block
+ * \param[in] s points to a element 0 of a \ref pntrString  embedded in a block
  * \return the number of pointers currently in use in the array pointed to by \p s.
  * \pre the array pointed to by s is the sole user of a \ref block "block".
  */
@@ -665,7 +837,7 @@ long pntrLen(const pntrString *s);
  * derived from administrative data in the surrounding block.  The result
  * excludes the terminal element reserved for a null pointer.
  *
- * \param[in] s points to a element 0 of a \a pntrString  embedded in a block
+ * \param[in] s points to element 0 of a \ref pntrString embedded in a block
  * \return the maximal number of pointers that can be used in the array pointed
  * to by \p s.
  * \pre the array pointed to by s is the sole user of a \ref block "block".
@@ -684,7 +856,22 @@ long pntrRevInstr(long start_position, const pntrString *string1,
 /*! 1 if strings are equal, 0 otherwise */
 flag pntrEq(const pntrString *sout, const pntrString *sin);
 
-/*! Add a single null string element to a pntrString - faster than pntrCat */
+/*!
+ * \fn temp_pntrString *pntrAddElement(const pntrString *g)
+ * Add a single null string element to a pntrString - faster than pntrCat
+ *
+ * \param[in] g points to the first element of a NULL terminated array in a
+ *   \ref block.  It is assumed it is an array of pointer to \ref vstring.
+ * \return a copy of \p g, the terminal NULL replaced with a \ref vstring ""
+ *   followed by NULL.
+ * \attention   
+ *   the pointers in \p g are copied to the result.  If some of them
+ *   reference allocated memory, check for possible double free, for example.
+ * \pre
+ *   Intended to be used with arrays of \ref vstring * only.
+ * \post 
+ *   the elements of \p g are duplicated.
+ */
 temp_pntrString *pntrAddElement(const pntrString *g);
 
 /*! Add a single null pntrString element to a pntrString - faster than pntrCat */

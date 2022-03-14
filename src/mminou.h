@@ -20,7 +20,17 @@
 extern int g_errorCount;     /*!< Total error count */
 
 /* Global variables used by print2() */
+/*!
+ * \var flag g_logFileOpenFlag
+ * If set to 1, logging of input is enabled.  Initially set to 0.
+ */
 extern flag g_logFileOpenFlag;
+/*!
+ * \var FILE *g_logFilePtr
+ * The OPEN LOG command opens a log file.  Its file descriptor is stored here,
+ * and not removed, when the log file is closed.  You should access this
+ * descriptor only when \ref g_logFileOpenFlag is 1.
+ */
 extern FILE *g_logFilePtr;
 
 extern FILE *g_listFile_fp;
@@ -29,7 +39,7 @@ extern FILE *g_listFile_fp;
  * \var g_outputToString
  *
  * Global variable redirecting the output of the function print2 from the
- * console ( = 0) to a string ( = 1).
+ * console ( = 0) to a string ( = 1).  Initialized to 0 on program start.
  */
 extern flag g_outputToString;
 
@@ -40,9 +50,9 @@ extern vstring g_printString;
 
 /*!
  * \def MAX_COMMAND_FILE_NESTING
- * limits number of nested SUBMIT calls to 10.  A SUBMIT redirects the input
- * to file, which in turn may temporarily redirect input to another file, and
- * so on.
+ * limits number of nested SUBMIT calls.  A SUBMIT redirects the input to a
+ * file, which in turn may temporarily redirect input to another file, and so
+ * on.
  */
 #define MAX_COMMAND_FILE_NESTING 10
 
@@ -51,16 +61,31 @@ extern vstring g_printString;
  * current level of nested SUBMIT commands.  0 is top level and refers to stdin
  * (usually the user controlled command line).  Any invocation of SUBMIT
  * increases this value by 1.  A return from a SUBMIT decrases it by 1 again.
+ * Limited by \ref MAX_COMMAND_FILE_NESTING.
  */
 extern long g_commandFileNestingLevel;
+/*!
+ * \var FILE *g_commandFilePtr[MAX_COMMAND_FILE_NESTING + 1]
+ * file descriptors pointing to files invoked by SUBMIT commands.  The 0-th
+ * element is fixed to stdin, and neither used nor assigned to.  Other
+ * elements, up to the current value of \ref g_commandFileNestingLevel, are
+ * valid, and point to opened files.
+ */
 extern FILE *g_commandFilePtr[MAX_COMMAND_FILE_NESTING + 1];
+/*!
+ * \var vstring g_commandFileName[]
+ * list of command file names in nested SUBMIT commands.  This name need not be
+ * fully qualified (with all directories down from the root directory).  The
+ * first element is reserved for stdin and never set.
+ */
 extern vstring g_commandFileName[MAX_COMMAND_FILE_NESTING + 1];
 
 extern flag g_commandFileSilent[MAX_COMMAND_FILE_NESTING + 1];
 
 /*!
  * \var g_commandFileSilentFlag
- * If set to 1, suppresses prompts on input.
+ * If set to 1, suppresses prompts on input.  Activated through
+ * SUBMIT ... /SILENT commands.  Initialized to 0 on program start.
  */
 extern flag g_commandFileSilentFlag; /* For SUBMIT ... /SILENT */
 
@@ -111,99 +136,175 @@ extern flag g_quitPrint;
 void printLongLine(const char *line, const char *startNextLine, const char *breakMatch);
 
 /*!
- * \brief requests a line of text from the __stream__.
+ * \brief requests a line of text from the \p stream.
  *
  * If not suppressed, displays a prompt text on the screen.  Then reads a
- * single line from the __stream__.  Returns this line as a \a vstring.
+ * line from the \p stream.  Some lines are interpreted as described further
+ * below, in which case the prompt is reprinted and the next line is read.
+ * Returns the first not interpreted line as a \ref vstring.
  *
- * A line in the __stream__ is terminated by a LF character (0x0D) character
+ * A line in the \p stream is terminated by a LF character (0x0D) character
  * alone.  It is read, but removed from the result.  The maximum line length
- * without the LF is \a CMD_BUFFER_SIZE - 1.  Reaching EOF (end of file) is
- * equivalent to reading LF, if at least 1 byte was read before.  Note that the
- * NUL character can be part of the line.  Reading a NUL is not sufficiently
- * handled in the current implementation and may or may not cause an error
- * message or even undefined behavior.
+ * without the LF is \ref CMD_BUFFER_SIZE - 1.  Reaching EOF (end of file,
+ * CTRL-D) is equivalent to reading LF, if at least 1 byte was read before.
+ * Note that the NUL character can be part of the line.  Reading a NUL is not
+ * sufficiently supported in the current implementation and may or may not
+ * cause an error message or even undefined behavior.
  *
- * Reading from an empty __stream__ (or one that is at EOF position) returns
- * NULL, not the empty string, and is formally signalled as an error.
- * Overflowing the buffer is also an error.  No truncated value is returned.
+ * Reading from an empty \p stream (or one that is at EOF position, on the
+ * console CTRL-D) returns NULL, not the empty string, and is formally
+ * signalled as an error.  Overflowing the buffer is also an error.  No
+ * truncated value is returned.
  *
- * This routine automatically handles input in a loop under following two
- * conditions:
+ * This routine interprets some input without returning it to the caller under
+ * following two conditions:
  *
  * 1. If scrolling is enabled, the input is interpreted.  A line consisting of
  * a single character b or B indicates the user wants to scroll back through
  * saved pages of output.  This is handled within this routine, as often as
  * requested and possible.
  *
- * 2. The user repetitively hits ENTER (only) while prompted in top level
- * context.  The prompt is simply replayed as often.  Entering an isolated 'b'
- * or 'B' is first directed to case 1, and only if it cannot be served there,
- * the routine exits, returning the b or B to the caller.
+ * 2. The user hits ENTER only while prompted in top level context.  The empty
+ * line is not returned.
+ * 
+ * No timeout is applied while waiting for user input from the console.
  *
- * No timeout is applied when waiting for user input from the console.
+ * A bug message need not result in an execution stop.  It is not directed to
+ * the metamath bug function to avoid stacking up calls (bug calling cmdInput
+ * again for scrolling etc.).
  *
- * Detected format errors result in following bug messages:
- *   - 1507: The first read character is NUL
- *   - 1508: line overflow, the last character is not NUL
- *   - 1519: padding of LF failed, or first read character was NUL
- *   - 1521: a NUL in first and second position was read
- *   - 1523: no prompt text when user is required to input something
- *   - 1525: missing terminating LF, not caused by an EOF.
- *
- *   A bug message need not result in an execution stop.
+ * \todo clarify recursive call to print2 and the role of backFromCmdInput. 
  * \param[in] stream (not null) source to read the line from.  _stdin_ is
- *   common for user input from the console.
- * \param[in] ask prompt text displayed on the screen before __stream__ is
- *   read.  This prompt is suppressed by either a NULL value, or setting
- *   \a g_commandFileSilentFlag to 1.  This prompt must be not NULL (empty is
+ *   common for user input from the console. 
+ * \param[in] ask prompt text displayed on the screen before \p stream is
+ *   read.  This prompt is suppressed by either a NULL value, or setting 
+ *   \ref g_commandFileSilentFlag to 1.  This prompt must be not NULL (empty is
  *   fine!) outside of a SUBMIT call, where user is expected to enter input.
  *   \n
- *   It may be compared to \a g_commandPrompt.  If both match, it is inferred
+ *   It may be compared to \ref g_commandPrompt.  If both match, it is inferred
  *   the user is in top level command mode, where empty input is not returned
  *   to the caller.
- * \return a \a vstring containing the read (or interpreted) line.  The result
- *   needs to be deallocated by the caller, if not empty or  NULL.
+ * \return a \ref vstring containing the first read and not interpreted line.
+ *   NULL indicates an error condition.  The result needs to be deallocated by
+ *   the caller, if not empty or NULL.
  * \pre
  *   The following variables are honored during execution and should be properly
  *   set:
- *   - \a commandFileSilentFlag value 1 suppresses prompts altogether, not only
- *     those used for scrolling through long text;
- *   - \a g_commandFileNestingLevel a value > 0 indicates a SUBMIT call is
- *     executing, where scrolling prompts are suppressed;
- *   - \a g_outputToString value 1 renders scrolling as pointless and disables it;
- *   - \a backBuffer may contain text to display on scroll back operations;
- *   - \a g_scrollMode value 1 enables scrolling back through text held in
- *     \a backBuffer;
- *   - \a localScrollMode a value of 0 temporarily disables scrolling, despite
- *     the setting in \a g_scrollMode;
- *   - \a g_commandPrompt if its string matches ask, empty input is ignored.
+ *   - \ref g_commandFileSilentFlag value 1 suppresses all prompts, not only
+ *     those used for scrolling through long text.  It does not suppress error
+ *     messages;
+ *   - \ref g_commandFileNestingLevel a value > 0 indicates a SUBMIT call is
+ *     executing, a read line is returned as is.  0 is seen as an interactive
+ *     mode, where read lines can be interpreted;
+ *   - \ref g_outputToString value 1 renders scrolling as pointless and
+ *     disables it;
+ *   - \ref backBuffer may contain text to display on scroll back operations;
+ *   - \ref g_scrollMode value 1 enables scrolling back through text held in
+ *     \ref backBuffer;
+ *   - \ref localScrollMode a value of 0 temporarily disables scrolling,
+ *     overriding the setting in \ref g_scrollMode;
+ *   - \ref g_commandPrompt if this string matches ask, top level user input is
+ *     assumed, where empty lines are discarded.
  * \post
- *   \a db is updated and includes the length of the interpreted input.
- *   Some input is ignored by simply reprinting the prompt:
- *   - Empty strings in top command level;
- *   - Isolated 'b' or 'B' input, if scroll mode is active, supported and the
- *     \a backBuffer provides a saved page.
+ *   \ref db is updated.
  * \warning the calling program must deallocate the returned string (if not
  *   null or empty).  Note that the result can be NULL.  This is outside of the
- *   usual behavior of a \a vstring type.
+ *   usual behavior of a \ref vstring type.
  * \warning the returned string need not be valid ASCII or UTF-8.
- * \bug If the first character read from __stream__ is NUL (e.g. a file is
- *   read), this will cause a print of an error message, but execution
- *   continues and in the wake may cause all kind of undefined behavior, like
- *   memory accesses beyond allocated buffers.
+ * \bug If a character read from \p stream is NUL, this may sometimes cause a
+ *   print of an error message, but execution continues and in the wake may
+ *   cause all kind of undefined behavior, like memory accesses beyond
+ *   allocated buffers.
  */
 vstring cmdInput(FILE *stream, const char *ask);
 
 /*!
- * gets a line from either the terminal or the command file stream depending on
- * g_commandFileNestingLevel > 0.  It calls cmdInput().
- * \param ask text displayed before input prompt.  This can be located in
- *   \a tempAllocStack.  If this text contains more than \a g_screenWidth
- *   characters, it is wrapped preferably at space characters and split across
- *   multiple lines.  The final line leaves space for enough for a ten
- *   character user input
- * \return the entered input.
+ * \brief print explanatory text and then read a line.
+ *
+ * After some explanatory text is printed, gets a line from either stdin or the
+ * command file stream in \ref g_commandFilePt, depending on the value of
+ * \ref g_commandFileNestingLevel.  If this value is 0, interactive input via
+ * stdin is assumed, else non interpreted lines are read from a file in submit
+ * mode.  The line returned to the caller is more or less what \ref cmdInput()
+ * yields, but some fine tuning is applied.
+ *
+ * \par Displaying the prompt text
+ *
+ * The text used to prompt the user is wrapped around preferably spaces to fit
+ * into a display of \ref g_screenWidth.  If possible, wrapping shortens the
+ * last line such that space for 10 characters is available to the right of the
+ * prompt for user input.
+ *
+ * \par Interactive Mode
+ *
+ * 1. A long prompt text may be interrupted for convenient page wise display.
+ * The user's scroll commands are interpreted internally and not seen by the
+ * caller.  If a line is either discarded or interpreted, the user is prompted
+ * again. The full prompt text is never repeated, only its last line after
+ * wrapping was applied.
+ *
+ * 2. Empty lines are discarded, and a reprompt is triggered.
+ * 
+ * 3. A NULL resulting from an error (buffer overflow) or a premature EOF
+ * (CTRL_D from keyboard) from \ref cmdInput is either returned as "EXIT".  Or
+ * if the last line of the prompt starts with "Do", then it is assumed to
+ * expand to "Do you want to EXIT anyway (Y, N)?" and a "Y" is returned. In any
+ * case, the returned string is printed before it may finally trigger an
+ * immediate stop on the caller's side.
+ *
+ * 4. If logging is enabled, prompt and returned input is logged.
+ * 
+ * \par Submit Mode
+ *
+ * 1. a non-interpreted line is read from the appropriate entry in
+ * \ref g_commandFilePtr by \ref cmdInput.
+ *
+ * 2. If NULL is returned, reaching EOF is assumed, the file is closed, its
+ * name in \ref g_commandFileName deallocated and the previous
+ * \ref g_commandFileLevel is activated.  In this particular case the read line
+ * is the empty string.  A message indicating the end of the command file is
+ * printed.  The \ref g_commandFileSilentFlag controlling console output is
+ * copied from the appropriate entry of \ref g_commandFileSilent, unless the
+ * interactive mode is reached; here output is never suppressed (value 0).
+ *
+ * 3. remove all CR (0x0D) characters, not only those in compination with LF.
+ *
+ * 4. prompt and command is printed, if not suppressed, then the read line is
+ * returned.
+ *
+ * \return first not interpreted line as \ref vstring, or "EXIT" on error. 
+ * \pre
+ *   The following variables are honored during execution and should be properly
+ *   set:
+ *   - \ref g_commandFileSilentFlag value 1 suppresses output and prompts, but
+ *     not all error messages;
+ *   - \ref g_commandFileNestingLevel a value > 0 indicates a SUBMIT call is
+ *     executing, where a read line is returned as is. 0 is seen as interactive
+ *     mode, where read lines can be interpreted;
+ *   - \ref g_outputToString value 1 renders scrolling as pointless and
+ *     disables it;
+ *   - \ref backBuffer may contain text to display on scroll back operations;
+ *   - \ref g_scrollMode value 1 enables scrolling back through text held in
+ *     \ref backBuffer;
+ *   - \ref localScrollMode a value of 0 temporarily disables scrolling,
+ *     overriding the setting in \ref g_scrollMode;
+ *   - \ref g_commandPrompt if this string matches ask, top level user input is
+ *     assumed, and an empty line is usually discarded;
+ *   - \ref g_logFileOpenFlag if set to 1, a not interpreted returned line is
+ *     logged before it is passed on to the caller.
+ * \post
+ *   - \ref localScrollMode is set to 1
+ *   - \ref printedLines is reset to 0
+ *   - \ref g_quitPrint is reset to 0
+ *   - interactive mode: \ref tempAllocStack frees top elements down to
+ *     \ref g_startTempAlloc.
+ *   - interactive mode: \ref pntrTempAllocStack frees top elements down to
+ *     \ref g_pntrStartTempAlloc.
+ *   - interactive mode: The \ref backBuffer is cleared, then filled with
+ *     prompt (last line only) and input of the user.
+ *   - submit mode: In case of EOF the previous \ref g_commandFileNestingLevel
+ *     is activated, necessary cleanups performed, and 
+ *     the \ref g_commandFileSilentFlag is updated appropriately.
  * \warning the calling program must deallocate the returned string.
  */
 vstring cmdInput1(const char *ask);
