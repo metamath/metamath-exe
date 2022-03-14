@@ -93,8 +93,18 @@ extern flag g_commandFileSilentFlag; /* For SUBMIT ... /SILENT */
 extern FILE *g_input_fp;  /*!< File pointers */
 extern vstring g_input_fn, g_output_fn;  /*!< File names */
 
-/*! print2 returns 0 if the user has quit the printout.
-  \warning:  never call print2 with string longer than PRINTBUFFERSIZE - 1  */
+/*!
+ * \fn flag print2(const char* fmt,...)
+ * print2 returns 0 if the user has quit the printout.
+ * \pre
+ *   - \ref backFromCmdInput Force display of a scrolling prompt.
+ * \post
+ *   - \ref backBuffer is allocated and not empty (at least filled with an
+ *     empty string)
+ *   - \ref backBufferPos > 0
+ * \warning:  never call print2 with string longer than PRINTBUFFERSIZE - 1
+ */
+flag print2(const char* fmt,...);
 flag print2(const char* fmt,...);
 extern long g_screenHeight; /*!< Height of screen */
 /*!
@@ -128,7 +138,11 @@ extern flag g_scrollMode;
 /*!
  * \var flag g_quitPrint
  * \brief Flag that user typed 'q' to last scrolling prompt
- * The value 1 indicates the user entered a 'q' at the last scrolling prompt.
+ * The value 1 indicates the user requested leaving the scroll mode by hitting
+ * Q.
+ *
+ * This flag is set in \ref print2 when the user hits Q to leave page-wise
+ * output of a lengthy text.
  */
 extern flag g_quitPrint;
 
@@ -276,6 +290,8 @@ vstring cmdInput(FILE *stream, const char *ask);
  * \pre
  *   The following variables are honored during execution and should be properly
  *   set:
+ *   - \ref g_quitPrint a 1 suppresses wrapping and user controlled paging of
+ *     the prompt text.
  *   - \ref g_commandFileSilentFlag value 1 suppresses output and prompts, but
  *     not all error messages;
  *   - \ref g_commandFileNestingLevel a value > 0 indicates a SUBMIT call is

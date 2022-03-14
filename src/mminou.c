@@ -79,15 +79,18 @@ flag g_quitPrint = 0; /* Flag that user quit the output */
 flag localScrollMode = 1; /* 0 = Scroll continuously only till next prompt */
 
 /* Buffer for B (back) command at end-of-page prompt - for future use */
-/*! \var pntrString* backBuffer
+/*!
+ * \var pntrString* backBuffer
  * Buffer for B (back) command at end-of-page prompt.  Although formally a
- * \ref pntrString is an array of void*, this buffer contains always pointer to
+ * \ref pntrString using void*, this buffer contains always pointer to
  * \ref vstring.
  *
  * Some longer text (like help texts for example) provide a page wise display
  * with a scroll option, so the user can move freely back and forth in the
  * text.  This is the storage of already displayed text kept for possible
  * redisplay.
+ *
+ * The buffer is initialized to not-empty by \ref print2 for example.
  */
 pntrString_def(backBuffer);
 /*!
@@ -99,7 +102,15 @@ pntrString_def(backBuffer);
  * \invariant The value 0 requires an empty \ref backBuffer.
  */
 long backBufferPos = 0;
-flag backFromCmdInput = 0; /* User typed "B" at main prompt */
+/*!
+ * \var flag backFromCmdInput
+ * \brief user entered a B (back command) at scroll prompt.
+ * This \ref flag is set only by \ref cmdInput that handles some of the user's
+ * scroll input commands, in particular the B command for moving backwards
+ * in page-wise display.  The other scroll commands are interpreted by
+ * \ref print2, to which this flag is directed.
+ */
+flag backFromCmdInput = 0;
 
 /* Special:  if global flag g_outputToString = 1, then the output is not
              printed but is added to global string g_printString */
