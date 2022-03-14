@@ -233,9 +233,9 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
 vstring cmdInput(FILE *stream, const char *ask);
 
 /*!
- * \brief print explanatory text and then read a line.
+ * \brief print prompt (or explanatory) text and then read a line.
  *
- * After some explanatory text is printed, gets a line from either stdin or the
+ * After a prompt text is printed, gets a line from either stdin or the
  * command file stream in \ref g_commandFilePt, depending on the value of
  * \ref g_commandFileNestingLevel.  If this value is 0, interactive input via
  * stdin is assumed, else non interpreted lines are read from a file in submit
@@ -244,10 +244,11 @@ vstring cmdInput(FILE *stream, const char *ask);
  *
  * \par Displaying the prompt text
  *
- * The text used to prompt the user is wrapped around preferably spaces to fit
- * into a display of \ref g_screenWidth.  If possible, wrapping shortens the
- * last line such that space for 10 characters is available to the right of the
- * prompt for user input.
+ * This function is prepared to display a longer text, before issuing a final
+ * prompt line (unlike \ref cmdInput).  The text shown to the user is usually
+ * wrapped around preferably at spaces to fit into a display of width
+ * \ref g_screenWidth.  If possible, wrapping shortens the last line such that
+ * space for 10 characters is left to the right for user input.
  *
  * \par Interactive Mode
  *

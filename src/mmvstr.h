@@ -270,7 +270,7 @@ void freeTempAlloc(void);
  * assigns to text to a \ref vstring pointer.  This includes a bit of memory
  * management.  Not only is the space of the destination of the assignment
  * reallocated if its previous size was too small.  But in addition the
- * \ref stack "stack" \ref tempAllocStack is freed of intermediate values
+ * \ref pgStack "stack" \ref tempAllocStack is freed of intermediate values
  * again.  Every entry on and beyond \ref g_startTempAllocStack is considered
  * to be consumed and subject to deallocation.
  *
@@ -576,8 +576,9 @@ vstring quo$(vstring sout);
  * \var g_tempAllocStackTop
  * \brief Top of stack for temporary text.
  *
- * Refers to the \ref stack "stack" in \ref tempAllocStack for temporary text.
- * The current top index referencing the next free entry is kept in this variable.
+ * Refers to the \ref pgStack "stack" in \ref tempAllocStack for temporary
+ * text.  The current top index referencing the next free entry is kept in
+ * this variable.
  *
  * This value is made public for setting up scopes of temporary memory for
  * nested functions.  Each such function allocates/frees scratch memory
@@ -591,9 +592,10 @@ extern long g_tempAllocStackTop;   /* Top of stack for tempAlloc function */
  * \var g_startTempAllocStack
  * \brief references the first entry of the current scope of temporaries.
  *
- * Refers to the \ref stack "stack" in \ref tempAllocStack for temporary text.
- * Nested functions maintain their own scope of temporary data.  The index
- * referencing the first index of the current scope is kept in this variable.
+ * Refers to the \ref pgStack "stack" in \ref tempAllocStack for temporary
+ * text.  Nested functions maintain their own scope of temporary data.  The
+ * index referencing the first index of the current scope is kept in this
+ * variable.
  *
  * This value is made public for setting up scopes of temporary memory for
  * nested functions.  Each such function allocates/frees scratch memory

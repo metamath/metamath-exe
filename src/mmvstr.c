@@ -61,7 +61,7 @@ long g_startTempAllocStack = 0;    /* Where to start freeing temporary allocatio
 /*!
  * \brief stack for temporary text.
  *
- * This \ref stack "stack" contains \ref vstring pointers holding temporary
+ * This \ref pgStack "stack" contains \ref vstring pointers holding temporary
  * text like fragments, boilerplate and so on.  The current top of the stack is
  * \ref g_tempAllocStackTop.  Nested functions share this stack, each setting
  * aside its own scope.  The scope of the most nested function begins at index

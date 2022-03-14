@@ -74,18 +74,18 @@ void pntrNCpy(pntrString *s, const pntrString *t, long n);
 vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate */
 
 /*!
- * \page suballocation Suballocator
+ * \page pgSuballocator Suballocator
  *
  * Metamath does not free memory by returning it to the operating system again.
  * To reduce frequent system de/allocation calls, it instead implements a
  * suballocator.  Each chunk of memory allocated from the system (we call them
- * \ref block "block" in this documentation) is equipped with a hidden header
+ * \ref pgBlock "block" in this documentation) is equipped with a hidden header
  * containing administrative information private to the suballocator.
  *
- * During execution chunks of memory, either complete \ref block "blocks" or
- * \ref fragmentation "fragments" thereof, become free again.  The suballocator
- * adds them then to internal **pools** for reuse, one dedicated to totally
- * free blocks (\ref memFreePool), the other to fragmented ones
+ * During execution chunks of memory, either complete \ref pgBlock "blocks" or
+ * \ref pgFragmentation "fragments" thereof, become free again.  The
+ * suballocator adds them then to internal **pools** for reuse, one dedicated
+ * to totally free blocks (\ref memFreePool), the other to fragmented ones
  * (\ref memUsedPool).  We call these pools **free block array** and
  * **used block array** in this documentation.  Fully occupied blocks are not
  * tracked by the suballocator.
@@ -96,31 +96,32 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
  *
  * The suballocator was designed with stack-like memory usage in mind, where
  * data of the same type is pushed at, or popped off the end all the time.
- * Each \ref block block supports this kind of usage out of the box (see
- * \ref fragmentation).
+ * Each \ref pgBlock block supports this kind of usage out of the box (see
+ * \ref pgFragmentation).
  */
 /*!
- * \page fragmentation Fragmented blocks
+ * \page pgFragmentation Fragmented blocks
  *
- * Memory fragmentation is kept simple in Metamath.  If a \ref block "block"
+ * Memory fragmentation is kept simple in Metamath.  If a \ref pgBlock "block"
  * contains both consumed and free space, all the free space is at the end.
  * This scheme supports the idea of stack-like memory usage, where free space
  * grows and shrinks behind a stack in a fixed size memory area, depending on
  * its usage.
  *
  * Other types of fragmentation is not directly supported by the
- * \ref suballocation "suballocator".
+ * \ref pgSuballocation "suballocator".
  */
 
- /*! \page block Block of memory
+ /*! \page pgBlock Block of memory
  *
- * Each block used by the \ref suballocation "suballocator" is formally treated
- * as an array of pointer (void*).  It is divided into an administrative
- * header, followed by elements reserved for application data.  The header is
- * assigned elements -3 to -1 in the formal array, so that application data
- * starts with element 0.  A **pointer to the block** always refers to element
- * 0, so the header appears somewhat hidden.  Its **size** is given by the
- * bytes reserved for application data, not including the administrative header.
+ * Each block used by the \ref pgSuballocation "suballocator" is formally
+ * treated as an array of pointer (void*).  It is divided into an
+ * administrative header, followed by elements reserved for application data.
+ * The header is assigned elements -3 to -1 in the formal array, so that
+ * application data starts with element 0.  A **pointer to the block** always
+ * refers to element 0, so the header appears somewhat hidden.  Its **size** 
+ * is given by the bytes reserved for application data, not including the
+ * administrative header.
  *
  * The header elements are formally void*, but reinterpreted as long integer.
  * The values support a stack, where data is pushed at and popped off the end
@@ -130,7 +131,7 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
  *   is the current size of the stack (in bytes, not elements!),
  *   without header data. When interpreted as an offset into the stack, it
  *   references the first element past the top of the stack.  (See
- *   \ref fragmentation "fragmentation")
+ *   \ref pgFragmentation)
  *
  * offset -2:\n
  *   the allocated size of the array, in bytes, not counting the
@@ -138,7 +139,7 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
  *   overflows.
  *
  * offset -3:\n
- *   If this block has free space at the end (is \ref fragmentation
+ *   If this block has free space at the end (is \ref pgFragmentation
  *   "fragmented"), then this value contains its index in the used blocks
  *   array, see \ref memUsedPool.  A value of -1 indicates it is either fully
  *   occupied or totally free.  It is not kept in the used blocks array then.
@@ -146,19 +147,19 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
  *   automatically removed from \ref memUsedPool, though.
  */
 
-/*! \page Pool
- * A pool is an array of pointers pointing to \ref block "blocks".  It may only
- * be partially filled, so it is usually accompanied by two variables giving
- * its current fill state and its capacity.
+/*! \page pgPool Pool
+ * A pool is an array of pointers pointing to \ref pgBlock "blocks".  It may
+ * only be partially filled, so it is usually accompanied by two variables
+ * giving its current fill state and its capacity.
  *
  * In Metamath a pool has no gaps in between.
  *
- * The \ref suballocation "suballocator" uses two pools:
+ * The \ref pgSuballocation "suballocator" uses two pools:
  * - the **free block array** pointed to by \ref memFreePool;
  * - the **used block array** pointed to by \ref memUsedPool.
  */
 
-/*! \page stack Temporary Allocated Memory
+/*! \page pgStack Temporary Allocated Memory
  * Very often a routine needs some memory, that must live only as long as the
  * routine is active.  Such memory is called **temporary**, or short **local**.
  * Once a routine finishes, on return to its caller, it deallocates all its
@@ -169,9 +170,9 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
  * data.  Metamath is no exception to this.
  *
  * While the C compiler silently cares about __local__ variables, it must not
- * interfere with data managed by a \ref suballocation "Suballocator".  Instead
- * of tracking all __locally__ created memory individually for later
- * deallocation, a stack like \ref Pool "pool" is used to automate this
+ * interfere with data managed by a \ref pgSuballocation "Suballocator".
+ * Instead of tracking all __locally__ created memory individually for later
+ * deallocation, a stack like \ref pgPool "pool" is used to automate this
  * handling.
  *
  * Stacks of temporary data only contain pointers to dynamically allocated
@@ -214,8 +215,8 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
 /*!
  * \page doc-todo Improvements in documentation
  * 
- * - Revisit the \ref block "block", \ref stack "stack" references to check the
- *   inserted wording.
+ * - Revisit the \ref pgBlock "block", \ref pgStack "stack" references to check
+ *   the inserted wording.
  * - The formatting of __p__ tags seem insufficient.  Figure out whether and
  *   how doxygen allows assigning formats to a semantic tag.  Do not replace
  *   a tag with direct formattings like \p aParam vs `aParam`, as some editors
@@ -250,8 +251,9 @@ long poolAbsoluteMax = 1000000; /* Pools will be purged when this is reached */
  * \var long poolTotalFree
  * contains the number of free space available in bytes, in both pools
  * \ref memFreePool and \ref memUsedPool, never counting the hidden headers at
- * the beginning of each block, see \ref block.  Exceeding \ref poolAbsoluteMax
- * may trigger an automatic purge process by \ref memFreePoolPurge.
+ * the beginning of each block, see \ref pgBlock.  Exceeding
+ * \ref poolAbsoluteMax may trigger an automatic purge process by
+ * \ref memFreePoolPurge.
  */
 long poolTotalFree = 0; /* Total amount of free space allocated in pool */
 /*E*/long i1,j1_,k1; /* 'j1' is a built-in function */
@@ -259,10 +261,10 @@ long poolTotalFree = 0; /* Total amount of free space allocated in pool */
  * \var void** memUsedPool
  * \brief pointer to the pool of fragmented memory blocks
  *
- * If a \ref block "block" contains both consumed and free space, it is
- * \ref fragmentation "fragmented".  All fragmented blocks are kept in the
- * **used block array**, that memUsedPool points to.  See \ref suballocation
- * "suballocator".  Since free space appears at the end of a \ref block
+ * If a \ref pgBlock "block" contains both consumed and free space, it is
+ * \ref pgFragmentation "fragmented".  All fragmented blocks are kept in the
+ * **used block array**, that memUsedPool points to.  See \ref pgSuballocation
+ * "suballocator".  Since free space appears at the end of a \ref pgBlock
  * "block", this scheme supports in particular stack like memory, where data is
  * pushed at and popped off the end.
  *
@@ -274,7 +276,7 @@ long poolTotalFree = 0; /* Total amount of free space allocated in pool */
  * at the end of the array are unused.  Its current usage is given by
  * \ref memUsedPoolSize.  Its capacity is given by \ref memUsedPoolMax.
  *
- * \attention The pool may contain full \ref block "blocks".
+ * \attention The pool may contain full \ref pgBlock "blocks".
  *
  * \invariant Each block in the used blocks array has its index noted in its
  * hidden header, for backward reference.
@@ -315,13 +317,13 @@ long memUsedPoolMax = 0; /* Maximum # of entries in 'in use' table (grows
  * \var void** memFreePool
  * \brief pointer to the pool of completely free memory blocks
  *
- * The \ref suballocation "suballocator" is initially not equipped with a
+ * The \ref pgSuballocation "suballocator" is initially not equipped with a
  * **free block array**, pointed to by memFreePool, indicated by a null value.
  *
- * Once a \ref \block "memory block" is returned to the \ref suballocation
+ * Once a \ref \block "memory block" is returned to the \ref pgSuballocation
  * again, it allocates some space for the now needed array.
  *
- * The **free block array** contains only totally free \ref block "blocks".
+ * The **free block array** contains only totally free \ref pgBlock "blocks".
  * This array may only be partially occupied, in which case the elements at the
  * end are the unused ones.  Its current fill size is given by
  * \ref memFreePoolSize.  Its capacity is given by \ref memFreePoolMax.
@@ -605,7 +607,7 @@ void addToUsedPool(void *ptr)
  * is returned to the system until all, or at least a sufficient amount is
  * freed again (see \p untilOK).
  * \param[in] untilOK
- *   - if 1 freeing \ref block "blocks" stops the moment \ref poolTotalFree
+ *   - if 1 freeing \ref pgBlock "blocks" stops the moment \ref poolTotalFree
  *     gets within the range of \ref poolAbsoluteMax again.  Note that it is
  *     not guaranteed that the limit \ref poolAbsoluteMax is undercut because
  *     still too much free memory might be held in the \ref memUsedPool.
@@ -811,7 +813,7 @@ void bug(int bugNum)
 /*!
  * \def M_MAX_ALLOC_STACK
  *
- * The number of pointers in a \ref stack "stack" available for data reference.
+ * The number of pointers in a \ref pgStack "stack" available for data reference.
  * Since a stack has a terminal null element, the usable count is one less than
  * the number given here.
  */
@@ -2478,12 +2480,13 @@ long g_pntrStartTempAllocStack = 0;   /* Where to start freeing temporary alloca
                                     special nested vstring functions) */
 /*!
  * \var pntrString *pntrTempAllocStack[]
- * \brief a \ref stack "stack" of \ref temp_pntrString.
+ * \brief a \ref pgStack "stack" of \ref temp_pntrString.
  *
  * Holds pointers to temporarily allocated data of type \ref temp_pntrString.  Such
- * a \ref stack "stack" is primarily designed to operate like one for temporary
- * allocated ad hoc operands, as described in \ref stack.  The stack top index
- * is \ref g_pntrTempAllocStackTop, always refering to the next push position.
+ * a \ref pgStack "stack" is primarily designed to operate like one for
+ * temporary allocated ad hoc operands, as described in \ref pgStack.  The
+ * stack top index is \ref g_pntrTempAllocStackTop, always refering to the next
+ * push position.
  * The \ref g_pntrStartTempAllocStack supports nested operations by indicating
  * where the operands for the upcoming operation start from.
  * \attention A \ref pntrString consists of an array of pointers.  These
@@ -2499,20 +2502,20 @@ pntrString *pntrTempAllocStack[M_MAX_ALLOC_STACK];
 /*!
  * \fn temp_pntrString *pntrTempAlloc(long size)
  * \par size > 0
- * allocates a \ref block capable of holding \p size \ref pntrString entries
+ * allocates a \ref pgBlock capable of holding \p size \ref pntrString entries
  * and pushes it onto the \ref pntrTempAllocStack.
  * \par size == 0
  * pops off all entries from index \ref g_pntrStartTempAllocStack on from
  * \ref pntrTempAllocStack and adds them to the \ref memFreePool.
  * \param[in] size count of \ref pntrString entries.  This value must include
  *   a terminal NULL pointer if needed.
- * \return a pointer to the allocated \ref block, or NULL if deallocation
+ * \return a pointer to the allocated \ref pgBlock, or NULL if deallocation
  *   requested
  * \pre
  *   \p size ==0: all entries in from \ref pntrTempAllocStack from
  *   \ref g_pntrStartTempAllocStack do not contain relevant data any more.
  * \post
- *   - \p size > 0: memory for \p size entries is reserved in the \ref block
+ *   - \p size > 0: memory for \p size entries is reserved in the \ref pgBlock
  *     "block's" header, but the data is still random.
  *   - updates \ref db2
  *   - Exits on out-of-memory
@@ -2777,8 +2780,8 @@ void pntrZapLen(pntrString *s, long length) {
  *   - \p s and \p t can overlap if \p t points to a later or same element than
  *     \p s (move left semantics).
  * \invariant
- *   If \p s is contained in a \ref block "block", its administrative header is
- *   NOT updated.
+ *   If \p s is contained in a \ref pgBlock "block", its administrative header
+ *   is NOT updated.
  * \warning The thoughtless use of this function has the potential to create
  *   risks mentioned in the warning of \ref pntrString.
  */
