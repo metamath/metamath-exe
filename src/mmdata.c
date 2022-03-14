@@ -109,12 +109,12 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
  * its usage.
  *
  * Other types of fragmentation is not directly supported by the
- * \ref pgSuballocation "suballocator".
+ * \ref pgSuballocator "suballocator".
  */
 
  /*! \page pgBlock Block of memory
  *
- * Each block used by the \ref pgSuballocation "suballocator" is formally
+ * Each block used by the \ref pgSuballocator "suballocator" is formally´
  * treated as an array of pointer (void*).  It is divided into an
  * administrative header, followed by elements reserved for application data.
  * The header is assigned elements -3 to -1 in the formal array, so that
@@ -154,7 +154,7 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
  *
  * In Metamath a pool has no gaps in between.
  *
- * The \ref pgSuballocation "suballocator" uses two pools:
+ * The \ref pgSuballocator "suballocator" uses two pools:
  * - the **free block array** pointed to by \ref memFreePool;
  * - the **used block array** pointed to by \ref memUsedPool.
  */
@@ -170,23 +170,24 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
  * data.  Metamath is no exception to this.
  *
  * While the C compiler silently cares about __local__ variables, it must not
- * interfere with data managed by a \ref pgSuballocation "Suballocator".
- * Instead of tracking all __locally__ created memory individually for later
+ * interfere with data managed by a \ref pgSuballocator "Suballocator". Instead
+ * of tracking all __locally__ created memory individually for later
  * deallocation, a stack like \ref pgPool "pool" is used to automate this
  * handling.
  *
  * Stacks of temporary data only contain pointers to dynamically allocated
- * memory from the heap or the \ref suballocator.  This stack functions like an
- * operand stack.  A final result depends on fragments, temporary results and
- * similar, all pushed onto this stack.  When the final operation is executed,
- * and its result is persisted in some variable, the dependency on its
- * temporary operands ceases.  Consequently, they should be freed again.  To
- * automate this operation,  such a stack maintains a `start` index.  A client
- * saves this value and sets it to the current stack top, then starts pushing
- * dynamically allocated operands on the stack.  After the result is persisted,
- * all entries beginning with the element at index  `start` are deallocated
- * again, and the stack top is reset to the `start` value, while the `start`
- * value is reset to the saved value, to accommodate nesting of this procedure.
+ * memory from the heap or the \ref pgSuballocator.  This stack functions like
+ * an operand stack.  A final result depends on fragments, temporary results
+ * and similar, all pushed onto this stack.  When the final operation is
+ * executed, and its result is persisted in some variable, the dependency on
+ * its temporary operands ceases.  Consequently, they should be freed again.
+ * To automate this operation,  such a stack maintains a `start` index.  A
+ * client saves this value and sets it to the current stack top, then starts
+ * pushing dynamically allocated operands on the stack.  After the result is
+ * persisted, all entries beginning with the element at index  `start` are
+ * deallocated again, and the stack top is reset to the `start` value, while
+ * the `start` value is reset to the saved value, to accommodate nesting of
+ * this procedure.
  *
  * This scheme needs a few conditions to be met:
  * - No operand is used in more than one evaluation context;
