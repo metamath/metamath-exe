@@ -77,6 +77,11 @@ flag g_quitPrint = 0; /* Flag that user quit the output */
  * prompt
  */
 flag localScrollMode = 1; /* 0 = Scroll continuously only till next prompt */
+/*!
+ * \page pgBackBuffer History of Output
+ *
+ * Lengthy text can be displayed in a page-wise manner
+ */
 
 /* Buffer for B (back) command at end-of-page prompt - for future use */
 /*!
