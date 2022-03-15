@@ -547,9 +547,9 @@ long len(const char *s);
 /*!
  * \fn long instr(long start, const char *string, const char *match)
  * Search for \param match in \param string starting at \param start_position.
- * \param[in] start 1-based position (including) the search begins from.  A
- *   value <= 0 is corrected to 1.  A value beyond the terminating NUL in
- *   \param string is corrected to the terminating NUL.
+ * \param[in] start 1-based position (including) the search begins.  A value <=
+ *   0 is corrected to 1.  A value beyond the terminating NUL in \param string
+ *   is corrected to the terminating NUL.
  * \param[in] string NUL-terminated string to be searched.
  * \param[in] match NUL-terminated match to be found in \param string.  If this
  *   is the empty string, the length of \param string is returned.
