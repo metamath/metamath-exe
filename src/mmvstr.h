@@ -46,7 +46,8 @@
  *
  * Any local vstrings in a function must be deallocated before returning
  * from the function, otherwise there will be memory leakage and eventual
- * memory overflow.  To deallocate, assign the vstring to "" with \ref free_vstring:
+ * memory overflow.  To deallocate, assign the vstring to "" with
+ * \ref free_vstring :
  *
  *     void abc(void) {
  *       vstring_def(xyz);

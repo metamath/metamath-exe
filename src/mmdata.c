@@ -239,7 +239,7 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
  * \var long poolAbsoluteMax
  * The value is a memory amount in bytes.
  *
- * The \ref suballocator scheme must not hold more memory than is short term
+ * The \ref pgSuballocator scheme must not hold more memory than is short term
  * useful.  To the operating system all memory in \ref memFreePool appears as
  * allocated, although it is not really in use.  To prevent the system from
  * taking unnecessary action such as saving RAM to disk, a limit to the amount
@@ -264,7 +264,7 @@ long poolTotalFree = 0; /* Total amount of free space allocated in pool */
  *
  * If a \ref pgBlock "block" contains both consumed and free space, it is
  * \ref pgFragmentation "fragmented".  All fragmented blocks are kept in the
- * **used block array**, that memUsedPool points to.  See \ref pgSuballocation
+ * **used block array**, that memUsedPool points to.  See \ref pgSuballocator
  * "suballocator".  Since free space appears at the end of a \ref pgBlock
  * "block", this scheme supports in particular stack like memory, where data is
  * pushed at and popped off the end.
@@ -318,10 +318,10 @@ long memUsedPoolMax = 0; /* Maximum # of entries in 'in use' table (grows
  * \var void** memFreePool
  * \brief pointer to the pool of completely free memory blocks
  *
- * The \ref pgSuballocation "suballocator" is initially not equipped with a
+ * The \ref pgSuballocator "suballocator" is initially not equipped with a
  * **free block array**, pointed to by memFreePool, indicated by a null value.
  *
- * Once a \ref \block "memory block" is returned to the \ref pgSuballocation
+ * Once a \ref pgBlock "memory block" is returned to the \ref pgSuballocator
  * again, it allocates some space for the now needed array.
  *
  * The **free block array** contains only totally free \ref pgBlock "blocks".

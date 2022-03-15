@@ -95,16 +95,24 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
 
 /*!
  * \fn flag print2(const char* fmt,...)
- * print2 returns 0 if the user has quit the printout.
+ * \brief formatted output with optional page-wise display
+ * \param[in] fmt text to display with embedded placeholders for insertion
+ *   of data (which are converted into text if necessary) pointed to by the
+ *   following parameters.  These should strictly match in number, type and
+ *   order the placeholders in this parameter.  The placeholders are encoded in
+ *   a cryptic syntax explained
+ *   <a href="https://en.wikipedia.org/wiki/Printf_format_string">here</a> or
+ *   <a href="https://en.cppreference.com/w/c/io/fprintf">here</a>.
+ * \param[in] "..." extra parameters
+ * \return 0 if the user has quit the printout.
  * \pre
- *   - \ref backFromCmdInput Force display of a scrolling prompt.
+ *   - \ref backFromCmdInput value 1: force display of a scrolling prompt.
  * \post
  *   - \ref backBuffer is allocated and not empty (at least filled with an
  *     empty string)
  *   - \ref backBufferPos > 0
- * \warning:  never call print2 with string longer than PRINTBUFFERSIZE - 1
+ * \warning never call print2 with string longer than PRINTBUFFERSIZE - 1
  */
-flag print2(const char* fmt,...);
 flag print2(const char* fmt,...);
 extern long g_screenHeight; /*!< Height of screen */
 /*!
@@ -236,7 +244,7 @@ vstring cmdInput(FILE *stream, const char *ask);
  * \brief print prompt (or explanatory) text and then read a line.
  *
  * After a prompt text is printed, gets a line from either stdin or the
- * command file stream in \ref g_commandFilePt, depending on the value of
+ * command file stream in \ref g_commandFilePtr, depending on the value of
  * \ref g_commandFileNestingLevel.  If this value is 0, interactive input via
  * stdin is assumed, else non interpreted lines are read from a file in submit
  * mode.  The line returned to the caller is more or less what \ref cmdInput()
@@ -276,11 +284,12 @@ vstring cmdInput(FILE *stream, const char *ask);
  *
  * 2. If NULL is returned, reaching EOF is assumed, the file is closed, its
  * name in \ref g_commandFileName deallocated and the previous
- * \ref g_commandFileLevel is activated.  In this particular case the read line
- * is the empty string.  A message indicating the end of the command file is
- * printed.  The \ref g_commandFileSilentFlag controlling console output is
- * copied from the appropriate entry of \ref g_commandFileSilent, unless the
- * interactive mode is reached; here output is never suppressed (value 0).
+ * \ref g_commandFileNestingLevel is activated.  In this particular case the
+ * read line is the empty string.  A message indicating the end of the command
+ * file is printed.  The \ref g_commandFileSilentFlag controlling console
+ * output is copied from the appropriate entry of \ref g_commandFileSilent,
+ * unless the interactive mode is reached; here output is never suppressed
+ * (value 0).
  *
  * 3. remove all CR (0x0D) characters, not only those in compination with LF.
  *
@@ -314,9 +323,9 @@ vstring cmdInput(FILE *stream, const char *ask);
  *   - \ref printedLines is reset to 0
  *   - \ref g_quitPrint is reset to 0
  *   - interactive mode: \ref tempAllocStack frees top elements down to
- *     \ref g_startTempAlloc.
+ *     \ref g_startTempAllocStack.
  *   - interactive mode: \ref pntrTempAllocStack frees top elements down to
- *     \ref g_pntrStartTempAlloc.
+ *     \ref g_pntrStartTempAllocStack.
  *   - interactive mode: The \ref backBuffer is cleared, then filled with
  *     prompt (last line only) and input of the user.
  *   - submit mode: In case of EOF the previous \ref g_commandFileNestingLevel
