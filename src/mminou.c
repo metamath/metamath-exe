@@ -73,14 +73,21 @@ flag g_quitPrint = 0; /* Flag that user quit the output */
 /*!
  * \var flag localScrollMode
  *
- * temporarily disables prompted scroll (see \ref g_scrollMode) until next user
- * prompt
+ * value 0: temporarily disables page-wise prompted scroll (see
+ * \ref g_scrollMode) until enabled (value 1) again (usually at next regular
+ * user input).
  */
 flag localScrollMode = 1; /* 0 = Scroll continuously only till next prompt */
 /*!
- * \page pgBackBuffer History of Output
+ * \page pgBackBuffer History of Pages of Output
  *
- * Lengthy text can be displayed in a page-wise manner
+ * Lengthy text can be displayed in a page-wise manner,  if requested.  In this
+ * case the long text is broken down into pieces small enough to fit onto a
+ * single page in a text terminal.  The user input is intercepted and a couple
+ * of at most one-character sized input lines are interpreted as scroll
+ * commands - scroll forward, backward, to the beginning, or quit scrolling.
+ *
+ * The \ref backBuffer contains the pages of output for recall.
  */
 
 /* Buffer for B (back) command at end-of-page prompt - for future use */
