@@ -116,11 +116,12 @@ pntrString_def(backBuffer);
 long backBufferPos = 0;
 /*!
  * \var flag backFromCmdInput
- * \brief user entered a B (back command) at scroll prompt.
+ * \brief user entered a B (scroll back command) when a command was expected.
  * This \ref flag is set only by \ref cmdInput that handles some of the user's
  * scroll input commands, in particular the B command for moving backwards
- * in page-wise display.  The other scroll commands are interpreted by
- * \ref print2, to which this flag is directed.
+ * in page-wise display.  All further scroll commands are interpreted by
+ * \ref print2, to which this flag is directed.  It signals the \ref backBuffer
+ * is being scrolled.
  */
 flag backFromCmdInput = 0;
 
