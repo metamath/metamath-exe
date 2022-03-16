@@ -95,7 +95,13 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
 
 /*!
  * \fn flag print2(const char* fmt,...)
- * \brief formatted output with optional page-wise display
+ * \brief formatted output with optional page-wise display.
+ * Before output is generated from the parameters, a few steps are executed in
+ * advance:
+ *   - initialize the \ref backBuffer, if not already done.
+ *   - if required by context let the user decide whether he wants this output.
+ *     At this point he can also scroll through saved output in the
+ *     \ref pgBackBuffer.
  * \param[in] fmt NUL-terminated text to display with embedded placeholders
  *   for insertion of data (which are converted into text if necessary) pointed
  *   to by the following parameters.  The placeholders are encoded in a cryptic
@@ -159,8 +165,8 @@ extern flag g_quitPrint;
 /*!
  * \fn void printLongLine(const char *line, const char *startNextLine, const char *breakMatch)
  * \brief perform line wrapping and print
- * apply a line wrapping algorithm to fit a text into the screen.  Submit each
- * individual screen line to \ref print2 for output.
+ * apply a line wrapping algorithm to fit a text into the screen rectangle.
+ * Submit each individual broken down line to \ref print2 for output.
  *
  * printLongLine automatically puts a newline in the output line.
  * \param[in] line (not null) NUL-terminated text (may contain LF) to apply
@@ -235,8 +241,8 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  *   - \ref g_commandFileNestingLevel a value > 0 indicates a SUBMIT call is
  *     executing, a read line is returned as is.  0 is seen as an interactive
  *     mode, where read lines can be interpreted;
- *   - \ref g_outputToString value 1 renders scrolling as pointless and
- *     disables it;
+ *   - \ref g_outputToString value 1 output is redirected and scrolling is
+ *     disabled
  *   - \ref backBuffer may contain text to display on scroll back operations;
  *   - \ref g_scrollMode value 1 enables scrolling back through text held in
  *     \ref backBuffer;
@@ -308,7 +314,7 @@ vstring cmdInput(FILE *stream, const char *ask);
  * unless the interactive mode is reached; here output is never suppressed
  * (value 0).
  *
- * 3. remove all CR (0x0D) characters, not only those in compination with LF.
+ * 3. remove all CR (0x0D) characters, not only those in combination with LF.
  *
  * 4. prompt and command is printed, if not suppressed, then the read line is
  * returned.
