@@ -99,9 +99,9 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  * Before output is generated from the parameters, a few steps are executed in
  * advance:
  *   - initialize the \ref backBuffer, if not already done.
- *   - if required by context let the user decide whether he wants this output.
- *     At this point he can also scroll through saved output in the
- *     \ref pgBackBuffer.
+ *   - some contexts allow the user to scroll through saved output in the
+ *     \ref pgBackBuffer.  S/he then needs to confirm the output, too.
+ *
  * \param[in] fmt NUL-terminated text to display with embedded placeholders
  *   for insertion of data (which are converted into text if necessary) pointed
  *   to by the following parameters.  The placeholders are encoded in a cryptic
@@ -114,7 +114,12 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *   the placeholders.
  * \return 0 if the user has quit the printout.
  * \pre
- *   - \ref backFromCmdInput value 1: force display of a scrolling prompt.
+ *   - \ref g_screenWidth if the expanded text exceeds this width, line
+ *     breaking may be required.  Other settings can still prevent this.
+ *   - \ref backFromCmdInput value 1: assume the last entry in \ref backBuffer
+ *     was just printed, \ref backBufferPos points to the entry before the
+ *     last, and the user has to decide how to proceed with scrolling.  This
+ *     flag is managed only by \ref cmdInput.
  * \post
  *   - \ref backBuffer is allocated and not empty (at least filled with an
  *     empty string)
