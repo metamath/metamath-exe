@@ -96,10 +96,10 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
 /*!
  * \fn flag print2(const char* fmt,...)
  * \brief formatted output with optional page-wise display
- * \param[in] fmt text to display with embedded placeholders for insertion
- *   of data (which are converted into text if necessary) pointed to by the
- *   following parameters.  The placeholders are encoded in a cryptic syntax
- *   explained
+ * \param[in] fmt NUL-terminated text to display with embedded placeholders
+ *   for insertion of data (which are converted into text if necessary) pointed
+ *   to by the following parameters.  The placeholders are encoded in a cryptic
+ *   syntax explained
  *   <a href="https://en.wikipedia.org/wiki/Printf_format_string">here</a> or
  *   <a href="https://en.cppreference.com/w/c/io/fprintf">here</a>.
  * \param[in] "..." The data these (possibly empty sequence of) pointers refer
@@ -158,9 +158,17 @@ extern flag g_quitPrint;
 
 /*!
  * \fn void printLongLine(const char *line, const char *startNextLine, const char *breakMatch)
+ * \brief perform line wrapping and print
+ * apply a line wrapping algorithm to fit a text into the screen.  Submit each
+ * individual screen line to \ref print2 for output.
+ *
  * printLongLine automatically puts a newline in the output line.
- * \param[in] startNextLine is the string to place before continuation lines. 
- * \param[in] breakMatch is a list of characters at which the line can be broken.
+ * \param[in] line (not null) NUL-terminated text (may contain LF) to apply
+ *   line wrapping to.
+ * \param[in] startNextLine (not null) NUL-terminated string to place before
+ *   continuation lines.
+ * \param[in] breakMatch (not null) NULL-terminated list of characters at which
+ *   the line can be broken.  If empty, a break is possible anywhere.
  * \post
  *   \ref tempAllocStack is cleared down to \ref g_startTempAllocStack.
  */
