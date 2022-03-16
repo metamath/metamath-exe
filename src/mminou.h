@@ -110,8 +110,8 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *   <a href="https://en.cppreference.com/w/c/io/fprintf">here</a>.
  * \param[in] "..." The data these (possibly empty sequence of) pointers refer
  *   to are converted to string and then inserted at the respective placeholder
- *   position in \param fmt.  They should strictly match in number, type and
- *   order the placeholders.
+ *   position in \p fmt.  They should strictly match in number, type and order
+ *   of the placeholders.
  * \return 0 if the user has quit the printout.
  * \pre
  *   - \ref backFromCmdInput value 1: force display of a scrolling prompt.
