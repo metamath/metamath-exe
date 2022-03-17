@@ -126,7 +126,7 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     was just printed, \ref backBufferPos points to the entry before the
  *     last, and __scroll mode__ is requested.  It overrides other settings
  *     disabling scrolling.  This flag is set by \ref cmdInput only;
- *   - \ref g_commandFileSilentFlag value 1 suppresses line breaks;
+ *   - \ref g_commandFileSilentFlag value 1 suppresses line breaks;long g_screenHeight
  *   - \ref g_commandFileNestingLevel a value > 0 indicates a SUBMIT call is
  *     executing, where __scroll mode__ is disabled, unless
  *     \ref backFromCmdInput is 1;
@@ -136,6 +136,8 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     \ref backFromCmdInput is 1;
  *   - \ref printedLines if indicating a full page of output was reached,
  *     activates __scroll mode__ if not inhibited by other variables.
+ *   - \ref g_screenHeight number of lines to display (page) safely without
+ *     __scroll mode__.
  *   - \ref g_outputToString value 1 output is redirected and __scroll mode__
  *     is disabled, unless \ref backFromCmdInput is 1;
  * \post
@@ -145,7 +147,17 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  * \warning never call print2 with string longer than PRINTBUFFERSIZE - 1
  */
 flag print2(const char* fmt,...);
-extern long g_screenHeight; /*!< Height of screen */
+/*!
+ * \var long g_screenHeight
+ * Number of text lines the (virtual) terminal device can simultaniously
+ * display to the user, one line spared for a prompt and echo of user input.  The
+ * command SET HEIGHT changes this value.
+ *
+ * This value determines the number of lines in a page of output.  After a page
+ * output is interrupted to let the user read the contents and request
+ * resuming. 
+ */
+extern long g_screenHeight;
 /*!
  * \var long g_screenWidth
  * \brief Width of screen
@@ -156,6 +168,7 @@ extern long g_screenWidth;
 /*!
  * \def MAX_LEN
  * \brief Default width of screen
+ * The default setting of \ref g_screenWidth on program start.
  *
  * Number of characters that can always be displayed in a single line.  This
  * notion is reminiscent of CRT tubes with a fixed width character set.
@@ -163,7 +176,14 @@ extern long g_screenWidth;
  * some mobile devices this may be reduced to 30-40 characters.
  */
 #define MAX_LEN 79
-/*! Lines on screen, minus 1 to account for prompt */
+/*!
+ * \def SCREEN_HEIGHT
+ * \brief Default height of screen
+ * The default setting of \ref g_screenHeight on program start.
+ *
+ * This notion is reminiscent of CRT tubes with a fixed width character set.
+ * Graphical Displays on a notebook for example can display much more.
+ */
 #define SCREEN_HEIGHT 23
 /*!
  * \var flag g_scrollMode
