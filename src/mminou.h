@@ -98,9 +98,15 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  * \brief formatted output with optional page-wise display.
  * Before output is generated from the parameters, a few steps are executed in
  * advance:
- *   - initialize the \ref backBuffer, if not already done.
- *   - some contexts allow the user to scroll through saved output in the
- *     \ref pgBackBuffer.  S/he then needs to confirm the output, too.
+ *   - initialize the \ref backBuffer, if not already done.  \ref pgBackBuffer
+ *     is almost exclusively used in this function.
+ *   - If for example a full page of output on the screen is reached, output
+ *     is interrupted, the user's normal input is intercepted and interpreted
+ *     to determine when to resume output, or whether to scroll through saved
+ *     pages in \ref pgBackBuffer.  This particular command mode is called for
+ *     short __scroll mode__ here.  It is almost exclusively handled in this
+ *     function, although \ref cmdInput can trigger it via
+ *     \ref backFromCmdInput, too.
  *
  * \param[in] fmt NUL-terminated text to display with embedded placeholders
  *   for insertion of data (which are converted into text if necessary) pointed
@@ -118,19 +124,20 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     breaking may be required.  Other settings can still prevent this;
  *   - \ref backFromCmdInput value 1: assume the last entry in \ref backBuffer
  *     was just printed, \ref backBufferPos points to the entry before the
- *     last, and input is intercepted to control scrolling.  It overrides
- *     other settings disabling scrolling.  This flag is managed by
- *     \ref cmdInput only;
+ *     last, and __scroll mode__ is requested.  It overrides other settings
+ *     disabling scrolling.  This flag is set by \ref cmdInput only;
  *   - \ref g_commandFileSilentFlag value 1 suppresses line breaks;
  *   - \ref g_commandFileNestingLevel a value > 0 indicates a SUBMIT call is
- *     executing, where scrolling is disabled, unless \ref backFromCmdInput is
- *     1;
- *   - \ref g_scrollMode value 1 enables scrolling back through text held in
- *     \ref backBuffer, unless \ref backFromCmdInput is 1;
- *   - \ref localScrollMode a value of 0 temporarily disables scrolling,
- *     overriding the setting in \ref g_scrollMode;
- *   - \ref g_outputToString value 1 output is redirected and scrolling is
- *     disabled, unless \ref backFromCmdInput is 1;
+ *     executing, where __scroll mode__ is disabled, unless
+ *     \ref backFromCmdInput is 1;
+ *   - \ref g_scrollMode value 0 disables __scroll mode__, unless
+ *     \ref backFromCmdInput is 1;
+ *   - \ref localScrollMode value 0 disables __scroll mode__, unless
+ *     \ref backFromCmdInput is 1;
+ *   - \ref printedLines if indicating a full page of output was reached,
+ *     activates __scroll mode__ if not inhibited by other variables.
+ *   - \ref g_outputToString value 1 output is redirected and __scroll mode__
+ *     is disabled, unless \ref backFromCmdInput is 1;
  * \post
  *   - \ref backBuffer is allocated and not empty (at least filled with an
  *     empty string)
