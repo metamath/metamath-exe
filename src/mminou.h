@@ -115,11 +115,22 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  * \return 0 if the user has quit the printout.
  * \pre
  *   - \ref g_screenWidth if the expanded text exceeds this width, line
- *     breaking may be required.  Other settings can still prevent this.
+ *     breaking may be required.  Other settings can still prevent this;
  *   - \ref backFromCmdInput value 1: assume the last entry in \ref backBuffer
  *     was just printed, \ref backBufferPos points to the entry before the
- *     last, and the user has to decide how to proceed with scrolling.  This
- *     flag is managed only by \ref cmdInput.
+ *     last, and input is intercepted to control scrolling.  It overrides
+ *     other settings disabling scrolling.  This flag is managed by
+ *     \ref cmdInput only;
+ *   - \ref g_commandFileSilentFlag value 1 suppresses line breaks;
+ *   - \ref g_commandFileNestingLevel a value > 0 indicates a SUBMIT call is
+ *     executing, where scrolling is disabled, unless \ref backFromCmdInput is
+ *     1;
+ *   - \ref g_scrollMode value 1 enables scrolling back through text held in
+ *     \ref backBuffer, unless \ref backFromCmdInput is 1;
+ *   - \ref localScrollMode a value of 0 temporarily disables scrolling,
+ *     overriding the setting in \ref g_scrollMode;
+ *   - \ref g_outputToString value 1 output is redirected and scrolling is
+ *     disabled, unless \ref backFromCmdInput is 1;
  * \post
  *   - \ref backBuffer is allocated and not empty (at least filled with an
  *     empty string)
