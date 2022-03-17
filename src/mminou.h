@@ -109,8 +109,8 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  * through these effects here in short:
  * 
  * 1. __Data injection__.  The \p fmt parameter can contain simple text, that
- *     is displayed as is.  Or placeholders are embedded that are replaced with
- *     data pointed to by the following parameters.  If necessary, data are
+ *     is displayed as is.  Or embedded placeholders are replaced with data
+ *     pointed to by the following parameters.  If necessary, data are
  *     converted to strings before insertion.  The cryptic syntax of the
  *     placeholders is explained
  *   <a href="https://en.wikipedia.org/wiki/Printf_format_string">here</a> or
@@ -127,7 +127,7 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     rest of output without further interruption, b or B fetches the previous
  *     page from the \ref backBuffer.  And q or Q discards all pending output
  *     in this command, usually returning control to user command input.
- *     Unrecognized input is simply ignored in the loop.  In some context
+ *     Unrecognized input is simply ignored in the loop.
  * 3. __Line wrapping__.  When the line to display exceeds the limits in
  *     \ref g_screenWidth, line breaking is applied.  The wrapping is actually
  *     done in \ref printLongLine which in turn uses separate print2 calls to
