@@ -99,7 +99,10 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  * Before output is generated from the parameters, a few steps are executed in
  * advance:
  *   - initialize the \ref backBuffer, if not already done.  \ref pgBackBuffer
- *     is almost exclusively used in this function.
+ *     is almost exclusively used in this function.  The initialization adds an
+ *     empty line to \ref backBuffer, so printing the previous page always
+ *     succeeds, of course displaying nothing and repeating the scroll prompt
+ *     only.
  *   - If for example a full page of output on the screen is reached, output
  *     is interrupted, the user's normal input is intercepted and interpreted
  *     to determine when to resume output, or whether to scroll through saved
@@ -108,25 +111,45 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     function, although \ref cmdInput can trigger it via
  *     \ref backFromCmdInput, too.
  *
+ * __scroll mode__:  Page-wise display of long texts.  In this mode certain
+ * user input (empty lines or one character lines) are interpreted as scroll
+ * commands.  An empty line gets the next page of output, s or S finishes the
+ * display of the rest of output without further interruption, b or B fetches
+ * the previous page from the \ref backBuffer.  And q or Q discards the rest of
+ * output, immediately returning control to user command input.  Unrecognized
+ * input is simply ignored.
+ *
  * \param[in] fmt NUL-terminated text to display with embedded placeholders
  *   for insertion of data (which are converted into text if necessary) pointed
  *   to by the following parameters.  The placeholders are encoded in a cryptic
  *   syntax explained
  *   <a href="https://en.wikipedia.org/wiki/Printf_format_string">here</a> or
  *   <a href="https://en.cppreference.com/w/c/io/fprintf">here</a>.
+ *
+ *   This parameter is ignored when \ref backFromCmdInput is 1.
  * \param[in] "..." The data these (possibly empty sequence of) pointers refer
  *   to are converted to string and then inserted at the respective placeholder
  *   position in \p fmt.  They should strictly match in number, type and order
  *   the placeholders.
+ *
+ *   These parameters are ignored when \ref backFromCmdInput is 1.
  * \return 0 if the user has quit the printout.
  * \pre
+ *   - \ref printedLines if indicating a full page of output was reached,
+ *     activates __scroll mode__ if not inhibited by other variables.
+ *   - \ref g_screenHeight number of lines to display (a page of output) to a
+ *     user without need of  __scroll mode__.
  *   - \ref g_screenWidth if the expanded text exceeds this width, line
  *     breaking may be required.  Other settings can still prevent this;
+ *   - \ref g_quitPrint value 1:  Do not enter __scroll mode__ and suppress output to the
+ *     (virtual) text display;
  *   - \ref backFromCmdInput value 1: assume the last entry in \ref backBuffer
  *     was just printed, \ref backBufferPos points to the entry before the
- *     last, and __scroll mode__ is requested.  It overrides other settings
- *     disabling scrolling.  This flag is set by \ref cmdInput only;
- *   - \ref g_commandFileSilentFlag value 1 suppresses line breaks;long g_screenHeight
+ *     last, and __scroll mode__ is requested, and nothing else.  No output
+ *     apart from replaying saved pages in the \ref backBuffer is generated.
+ *     This flag enables __scroll mode__ unconditionally, regardless of other
+ *     settings.  This flag is set by \ref cmdInput only;
+ *   - \ref g_commandFileSilentFlag value 1 suppresses line breaks;
  *   - \ref g_commandFileNestingLevel a value > 0 indicates a SUBMIT call is
  *     executing, where __scroll mode__ is disabled, unless
  *     \ref backFromCmdInput is 1;
@@ -134,13 +157,11 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     \ref backFromCmdInput is 1;
  *   - \ref localScrollMode value 0 disables __scroll mode__, unless
  *     \ref backFromCmdInput is 1;
- *   - \ref printedLines if indicating a full page of output was reached,
- *     activates __scroll mode__ if not inhibited by other variables.
- *   - \ref g_screenHeight number of lines to display (page) safely without
- *     __scroll mode__.
  *   - \ref g_outputToString value 1 output is redirected and __scroll mode__
- *     is disabled, unless \ref backFromCmdInput is 1;
+ *     is disabled, unless \ref backFromCmdInput is 1.
  * \post
+ *   - \ref g_quitPrint is set to 1, if the user entered q or Q in
+ *      __scroll mode__, and \ref backFromCmdInput is 0.
  *   - \ref backBuffer is allocated and not empty (at least filled with an
  *     empty string)
  *   - \ref backBufferPos > 0
@@ -149,11 +170,11 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
 flag print2(const char* fmt,...);
 /*!
  * \var long g_screenHeight
- * Number of text lines the (virtual) terminal device can simultaniously
- * display to the user, one line spared for a prompt and echo of user input.  The
- * command SET HEIGHT changes this value.
+ * Number of lines the (virtual) text display can display to the user at the
+ * same time, apart from an extra line set aside for a prompt and echo of user
+ * input.  The command SET HEIGHT changes this value.
  *
- * This value determines the number of lines in a page of output.  After a page
+ * This value equals the number of lines in a page of output.  After a page
  * output is interrupted to let the user read the contents and request
  * resuming. 
  */
@@ -162,7 +183,8 @@ extern long g_screenHeight;
  * \var long g_screenWidth
  * \brief Width of screen
  *
- * The minimum width of the display, measured in fixed width characters.
+ * The minimum width of the (virtual) text display, measured in fixed width
+ * characters.  The command SET WIDTH changes this value.
  */
 extern long g_screenWidth;
 /*!
@@ -197,11 +219,10 @@ extern flag g_scrollMode;
 /*!
  * \var flag g_quitPrint
  * \brief Flag that user typed 'q' to last scrolling prompt
- * The value 1 indicates the user requested leaving the scroll mode by hitting
- * Q.
+ * The value 1 indicates the user requested immediately discarding pending
+ * output, and return back to normal command input.
  *
- * This flag is set in \ref print2 when the user hits Q to leave page-wise
- * output of a lengthy text.
+ * This flag is set in \ref print2 when the user inputs q or Q.
  */
 extern flag g_quitPrint;
 
@@ -261,7 +282,6 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  * the metamath bug function to avoid stacking up calls (bug calling cmdInput
  * again for scrolling etc.).
  *
- * \todo clarify recursive call to print2 and the role of backFromCmdInput. 
  * \param[in] stream (not null) source to read the line from.  _stdin_ is
  *   common for user input from the console. 
  * \param[in] ask prompt text displayed on the screen before \p stream is
