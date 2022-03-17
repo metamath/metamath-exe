@@ -95,29 +95,49 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
 
 /*!
  * \fn flag print2(const char* fmt,...)
- * \brief formatted output with optional page-wise display.
- * Before output is generated from the parameters, a few steps are executed in
- * advance:
- *   - initialize the \ref backBuffer, if not already done.  \ref pgBackBuffer
- *     is almost exclusively used in this function.  The initialization adds an
- *     empty line to \ref backBuffer, so printing the previous page always
- *     succeeds, of course displaying nothing and repeating the scroll prompt
- *     only.
- *   - If for example a full page of output on the screen is reached, output
- *     is interrupted, the user's normal input is intercepted and interpreted
- *     to determine when to resume output, or whether to scroll through saved
- *     pages in \ref pgBackBuffer.  This particular command mode is called for
- *     short __scroll mode__ here.  It is almost exclusively handled in this
- *     function, although \ref cmdInput can trigger it via
- *     \ref backFromCmdInput, too.
+ * \brief formatted output of a single line with optional page-wise display.
  *
- * __scroll mode__:  Page-wise display of long texts.  In this mode certain
- * user input (empty lines or one character lines) are interpreted as scroll
- * commands.  An empty line gets the next page of output, s or S finishes the
- * display of the rest of output without further interruption, b or B fetches
- * the previous page from the \ref backBuffer.  And q or Q discards the rest of
- * output, immediately returning control to user command input.  Unrecognized
- * input is simply ignored.
+ * It is important to understand that the submitted parameters result in a
+ * NUL-terminated string that contains at most one LF character, only allowed
+ * in final position.  A long line exceeding \ref g_screenWidth is broken down
+ * into multiple lines using a built-in line wrap algorithm.  But this must
+ * never be preempted by preparing parameters accordingly.
+ *
+ * Although the output of a single line is the main goal of this function, it
+ * does a lot on the side, each effect individually enabled or disabled by
+ * various global variables that are honored, sometimes even updated.  We skim
+ * through these effects here in short:
+ * 
+ * 1. __Data injection__.  The \p fmt parameter can contain simple text, that
+ *     is displayed as is.  Or placeholders are embedded that are replaced with
+ *     data pointed to by the following parameters.  If necessary, data are
+ *     converted to strings before insertion.  The cryptic syntax of the
+ *     placeholders is explained
+ *   <a href="https://en.wikipedia.org/wiki/Printf_format_string">here</a> or
+ *   <a href="https://en.cppreference.com/w/c/io/fprintf">here</a>.
+ * 2. Supporting __page-wise display__.  Output on the virtual text display is
+ *     stopped after showing \ref g_screenHeight lines, called a __page__ here.
+ *     The user can read the text at rest, and then request resuming output
+ *     with a short command.  In fact, this feature is enhanced by maintaining
+ *     a \ref pgBackBuffer, allowing the user to recall previously shown pages,
+ *     and navigate them freely forward and backwards.  This feature
+ *     temporarily grabs user input and interprets short commands as navigating
+ *     instructions.  In a loop following commands are recognized:  an empty
+ *     line starts the next page of output, s or S finishes the display of the
+ *     rest of output without further interruption, b or B fetches the previous
+ *     page from the \ref backBuffer.  And q or Q discards all pending output
+ *     in this command, usually returning control to user command input.
+ *     Unrecognized input is simply ignored in the loop.  In some context
+ * 3. __Line wrapping__.  When the line to display exceeds the limits in
+ *     \ref g_screenWidth, line breaking is applied.  The wrapping is actually
+ *     done in \ref printLongLine which in turn uses separate print2 calls to
+ *     output each individual line.  This requires a minimum synchronization of
+ *     both the 'master' and 'slave' calls, so that relevant state is carried
+ *     back to the outer, temporarily suspended call.
+ * 4. __Redirection__.  Instead of displaying output on the virtual text
+ *     display, it may be stored in a NUL-terminated string variable.  Or even
+ *     completely suppressed, when executing a SUBMIT, for example.
+ * 5. __Logging__.  Output may be logged into a file for examination.
  *
  * \param[in] fmt NUL-terminated text to display with embedded placeholders
  *   for insertion of data (which are converted into text if necessary) pointed
@@ -133,7 +153,7 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *   the placeholders.
  *
  *   These parameters are ignored when \ref backFromCmdInput is 1.
- * \return 0 if the user has quit the printout.
+ * \return \ref g_quitPrint 0: user has quit the printout.
  * \pre
  *   - \ref printedLines if indicating a full page of output was reached,
  *     activates __scroll mode__ if not inhibited by other variables.

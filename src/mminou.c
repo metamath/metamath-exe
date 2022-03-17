@@ -65,9 +65,11 @@ long g_screenWidth = MAX_LEN; /* Width default = 79 */
 long g_screenHeight = SCREEN_HEIGHT; /* Default = 23 */
 /*!
  * \var int printedLines
- * Lines printed since last user input (mod screen height)
+ * Lines printed since last user input (mod screen height).  This value is used
+ * to determine when a page of output is completed, and the user needs to be
+ * prompted for continuing output.
  */
-int printedLines = 0; /* Lines printed since last user input (mod screen height) */
+int printedLines = 0;
 flag g_scrollMode = 1; /* Flag for continuous (0) or prompted (1) scroll */
 flag g_quitPrint = 0; /* Flag that user quit the output */
 /*!
