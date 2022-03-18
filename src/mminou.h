@@ -111,10 +111,7 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  * 1. __Data injection__.  The \p fmt parameter can contain simple text, that
  *     is displayed as is.  Or embedded placeholders are replaced with data
  *     pointed to by the following parameters.  If necessary, data are
- *     converted to strings before insertion.  The cryptic syntax of the
- *     placeholders is explained
- *   <a href="https://en.wikipedia.org/wiki/Printf_format_string">here</a> or
- *   <a href="https://en.cppreference.com/w/c/io/fprintf">here</a>.
+ *     converted to strings before insertion.
  * 2. Supporting __page-wise display__.  Output on the virtual text display is
  *     stopped after showing \ref g_screenHeight lines, called a __page__ here.
  *     The user can read the text at rest, and then request resuming output
@@ -137,7 +134,16 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  * 4. __Redirection__.  Instead of displaying output on the virtual text
  *     display, it may be stored in a NUL-terminated string variable.  Or even
  *     completely suppressed, when executing a SUBMIT, for example.
- * 5. __Logging__.  Output may be logged into a file for examination.
+ * 5. __Logging__.  Output may be logged to a file for examination.
+ *
+ * These effects need not be carried out in this order, some may even be
+ * omitted.  We depict order of steps and their respective conditions here.
+ * 
+ * a. The \ref backBuffer is almost private to this function, so its
+ *     initialization is done here, right at the beginning.  The
+ *     \ref backBufferPos is always at least 1, a value of 0 indicates the
+ *     \ref backBuffer needs to be allocated, and an empty string is loaded as
+ *     a guard into it.
  *
  * \param[in] fmt NUL-terminated text to display with embedded placeholders
  *   for insertion of data (which are converted into text if necessary) pointed

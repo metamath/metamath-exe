@@ -83,13 +83,29 @@ flag localScrollMode = 1; /* 0 = Scroll continuously only till next prompt */
 /*!
  * \page pgBackBuffer History of Pages of Output
  *
- * Lengthy text can be displayed in a page-wise manner,  if requested.  In this
- * case the long text is broken down into pieces small enough to fit onto a
- * single page in a text terminal.  The user input is intercepted and a couple
- * of at most one-character sized input lines are interpreted as scroll
- * commands - scroll forward, backward, to the beginning, or quit scrolling.
+ * Lengthy text can be displayed in a page-wise manner,  if requested.  In such
+ * a case text output is broken down into pieces small enough to fit into the
+ * screen rectangle of a virtual text device called a __page__ here.  The
+ * dimensions of this rectangle or page are given in \ref g_screenWidth and
+ * \ref g_screenHeight. An extra line outside of the page is reserved for a
+ * prompt and the echo of the user response.
  *
- * The \ref backBuffer contains the pages of output for recall.
+ * Regular output (not prompts or error messages) is added line by line both
+ * to the screen and the latest entry of a stack of strings \ref backBuffer,
+ * the.__current page__.  The number of lines pushed to it is kept in
+ * \ref printedLines.  The moment this value indicates a full page, a new empty
+ * page is pushed on the stack, and output is suspended to let the user read
+ * displayed contents in rest.  A user prompt asks for resuming pending output,
+ * alternatively s/he may step backwards and forward through the sequence of
+ * saved pages for redisplay.  The variable \ref backBufferPos tracks which
+ * page the user requested last (or points to the current page).
+ *
+ * On initialization memory is allocated for the \ref backBuffer, and an empty
+ * string (empty page) is pushed onto the stack as a guard.  This is a simple
+ * technical means to formally carry out a back step, even when you have just
+ * recalled the very first saved page.  The display of this empty guard page
+ * has no other effect than repeating the prompt.  The \ref backBufferPos is
+ * never updated to point (value 0) to this guard page.
  */
 
 /* Buffer for B (back) command at end-of-page prompt - for future use */
@@ -113,7 +129,7 @@ pntrString_def(backBuffer);
  * Number of entries in the \ref backBuffer that are available for repeatedly
  * scrolling back.  Initialized to 0.
  *
- * \invariant The value 0 requires an empty \ref backBuffer.
+ * \invariant The value 0 indicates an empty \ref backBuffer.
  */
 long backBufferPos = 0;
 /*!
