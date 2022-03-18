@@ -108,7 +108,7 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  * various global variables that are honored, sometimes even updated.  We skim
  * through these effects here in short:
  * 
- * 1. __Data injection__.  The \p fmt parameter can contain simple text, that
+ * 1. __Data embedding__.  The \p fmt parameter can contain simple text, that
  *     is displayed as is.  Or embedded placeholders are replaced with data
  *     pointed to by the following parameters.  If necessary, data are
  *     converted to strings before insertion.
@@ -141,9 +141,9 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  * 
  * a. The \ref backBuffer is almost private to this function, so its
  *     initialization is done here, right at the beginning.  The
- *     \ref backBufferPos is always at least 1, a value of 0 indicates the
- *     \ref backBuffer needs to be allocated, and an empty string is loaded as
- *     a guard into it.
+ *     \ref backBufferPos is always at least 1, so a value of 0 indicates an
+ *     outstanding \ref backBuffer memory allocation, and an empty string is
+ *     pushed as a first (guard) page onto it (see \ref pgBackBuffer).
  *
  * \param[in] fmt NUL-terminated text to display with embedded placeholders
  *   for insertion of data (which are converted into text if necessary) pointed
