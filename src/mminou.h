@@ -282,15 +282,17 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     \ref backFromCmdInput is 1;
  *   - \ref localScrollMode value 0 disables __step 2__, unless
  *     \ref backFromCmdInput is 1;
- *   - \ref g_outputToString value 1 output is redirected and __scroll mode__
- *     is disabled, unless \ref backFromCmdInput is 1.
+ *   - \ref g_outputToString value 1 output is redirected and __step 2__ is
+ *     disabled, unless \ref backFromCmdInput is 1.
  * \post
- *   - \ref g_quitPrint is set to 1, if the user entered q or Q in
+ *   - \ref g_quitPrint is set to 1, if the user entered _q_ or _Q_ in
  *      __scroll mode__, and \ref backFromCmdInput is 0.
  *   - \ref backBuffer is allocated and not empty (at least filled with an
  *     empty string)
- *   - \ref backBufferPos > 0
- *   - \ref localScrollMode = 0 if the user requested uninterrupted output.
+ *   - \ref backBufferPos > 0, updated
+ *   - \ref localScrollMode = 0 if the user entered _s_ or _S_.
+ *   - \ref g_printString receives the output if \ref g_outputToString = 1.
+ *   - \ref printedLines updated
  * \bug It is possible to produce lines exceeding \ref g_screenWidth by
  *   concatenating substrings smaller than this value, but having no LF at the
  *   end.
