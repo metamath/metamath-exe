@@ -30,6 +30,13 @@ extern int cprintf(const char *f__mt,...);
 #endif
 #endif  /* End #ifdef __WATCOMC__ */
 
+/*!
+ * \def QUOTED_SPACE
+ * The general line wrapping algorithm looks out for spaces as break positions.
+ * To prevent a quote delimited by __"__ be broken down, spaces are temporarily
+ * replaced with 0x03 (ETX, end of transmission), hopefully never used on
+ * purpose.
+ */
 #define QUOTED_SPACE 3 /* ASCII 3 that temporarily zaps a space */
 
 

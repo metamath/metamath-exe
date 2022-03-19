@@ -134,47 +134,57 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  * These effects need not be carried out in this order, some may even be
  * omitted.  We show the order of steps and their respective conditions here.
  * 
- * a. The \ref backBuffer is almost private to this function, so its
+ * -# The \ref backBuffer is almost private to this function, so its
  *     initialization is done here, right at the beginning.  The
  *     \ref backBufferPos is always at least 1, so a value of 0 indicates an
  *     outstanding \ref backBuffer memory allocation, and an empty string is
  *     pushed as a first (guard) page onto it (see \ref pgBackBuffer).
  *
- * b. If the current page is full and further output would overflow it, as
+ * -# If the current page is full and further output would overflow it, as
  *     indicated by \ref pageLines, output may be suspended as described in
- *     (2) and the user is prompted for scrolling actions.
- *
+ *     (2) and the user is prompted for scrolling actions.\n
  *     This step is unconditionally executed when \ref backFromCmdInput = 1
  *     (\ref cmdInput explicitely requested it).  The values in
  *     \ref g_quitPrint and \ref localScrollMode are retained, regardless of
- *     user input.
- *
+ *     user input.\n
+ *   \n
  *     Other conditions prevent this step:  Output is discarded on user request
  *     (\ref g_quitPrint = 1), a SUBMIT call is running
  *     (\ref g_commandFileNestingLevel > 0), scrolling is generally
  *     (\ref g_scrollMode = 0) or temporarily (\ref localScrollMode = 0)
- *     disabled, output is redirected (\ref g_outputToString = 1).
- *
+ *     disabled, output is redirected (\ref g_outputToString = 1).\n
+ *   \n
  *     This step can set \ref g_quitPrint to 1 (if \ref backFromCmdInput = 0).
  *     It can modify \ref \backBufferPos (by command _q_ or _Q_) and set
  *     \ref localScrollMode = 0 (by command _s_ or _S_, and
  *     \ref backFromCmdInput = 0).
  *
- * c. If pending output would overflow the screen, \ref backBuffer is extended
- *     by a new page to receive pending output.
- *
- *     Several conditions can prevent this step:  Step (b) was not executed,
+ * -# If pending output would overflow the screen, \ref backBuffer is extended
+ *     by a new page to receive pending output.\n
+ *     Several conditions can prevent this step:  Step (2) was not executed,
  *     output is discarded on user request (\ref g_quitPrint = 1),
- *     \ref backFromCmdInput = 1 (\ref cmdInput needs the scrolling loop only).
- *
+ *     \ref backFromCmdInput = 1 (\ref cmdInput needs the scrolling loop
+ *     only).\n
+ *   \n
  *     Sets \ref printLines to 0, indicating that nothing has been added to the
  *     new page yet. Increments \ref backBufferPos so all pending output is
  *     copied to the new page.
  *
- * d. The submitted parameters are used to create a new line from their values.
+ * -# The submitted parameters are used to create a new line from their values.
  *     Placeholders in \p fmt are replaced with their respective and to text
- *     converted data values.  All stored in an internal buffer first.
+ *     converted data values.  All stored in an internal buffer first.\n
+ *  \n
+ *     Some contexts prevent this step: Output (only screen output is affected)
+ *     is discarded on user request (\ref g_quitPrint = 1 and
+ *     \ref g_outputToString = 0), \ref backFromCmdInput = 1 (\ref cmdInput
+ *     uses only the scrolling features)
  *
+ * -# Revert any \ref QUOTED_SPACE back to space characters in the string
+ *     produced in step (4).  \ref printLongLine might have introduced these
+ *     characters to prevent line breaks at certain space characters.  A
+ *     \ref QUOTED_SPACE must not be part of the regular output to make this
+ *     work flawlessly.\n
+ *  \n
  *     Some contexts prevent this step: Output (only screen output is affected)
  *     is discarded on user request (\ref g_quitPrint = 1 and
  *     \ref g_outputToString = 0), \ref backFromCmdInput = 1 (\ref cmdInput
