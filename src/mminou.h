@@ -43,6 +43,11 @@ extern FILE *g_listFile_fp;
  */
 extern flag g_outputToString;
 
+/*!
+ * \var vstring g_printString
+ * If output is redirected to a string by \ref g_outputToString, this variable
+ * receives the contents.
+ */
 extern vstring g_printString;
 
 
@@ -228,14 +233,18 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  * -# Add the output to the \ref backBuffer.
  *  \n
  *     Some contexts prevent this step: Step (7) was not executed.
- * -# Log the output to a file.\n
+ * -# Log the output to a file given by \ref g_logFilePtr. \n
  *  \n
- *     Some contexts prevent this step: A log file is not opened
- *     (\ref g_logFileOpenFlag = 0), output is redirected to a string
- *     (\ref g_outputToString = 1), output is discarded on user request
- *     (\ref g_quitPrint = 1), \ref backFromCmdInput = 1 (\ref cmdInput uses
- *     only the scrolling features)\n
- *     
+ *     Some contexts prevent this step: Step (4) was not executed, a log file
+ *     is not opened (\ref g_logFileOpenFlag = 0), output is redirected to a string
+ *     (\ref g_outputToString = 1), \ref backFromCmdInput = 1 (\ref cmdInput
+ *     uses only the scrolling features)\n
+ * -# Copy the prepare output to \ref g_printString. \n
+ *   \n
+ *     Some contexts prevent this step: Step (4) was not executed, output is
+ *     not redirected to a string (\ref g_outputToString = 0),
+ *     \ref backFromCmdInput = 1 (\ref cmdInput uses only the scrolling
+ *     features)\n
  *
  * \param[in] fmt NUL-terminated text to display with embedded placeholders
  *   for insertion of data (which are converted into text if necessary) pointed
