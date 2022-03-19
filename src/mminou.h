@@ -239,26 +239,24 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     is not opened (\ref g_logFileOpenFlag = 0), output is redirected to a string
  *     (\ref g_outputToString = 1), \ref backFromCmdInput = 1 (\ref cmdInput
  *     uses only the scrolling features)\n
- * -# Copy the prepare output to \ref g_printString. \n
+ * -# Copy the prepared output in step (4) to \ref g_printString. \n
  *   \n
  *     Some contexts prevent this step: Step (4) was not executed, output is
  *     not redirected to a string (\ref g_outputToString = 0),
  *     \ref backFromCmdInput = 1 (\ref cmdInput uses only the scrolling
- *     features)\n
- *
+ *     features)
+ * .
  * \param[in] fmt NUL-terminated text to display with embedded placeholders
  *   for insertion of data (which are converted into text if necessary) pointed
  *   to by the following parameters.  The placeholders are encoded in a cryptic
  *   syntax explained
  *   <a href="https://en.wikipedia.org/wiki/Printf_format_string">here</a> or
  *   <a href="https://en.cppreference.com/w/c/io/fprintf">here</a>.
- *
  *   This parameter is ignored when \ref backFromCmdInput is 1.
  * \param[in] "..." The data these (possibly empty sequence of) pointers refer
  *   to are converted to string and then inserted at the respective placeholder
  *   position in \p fmt.  They should strictly match in number, type and order
  *   the placeholders.
- *
  *   These parameters are ignored when \ref backFromCmdInput is 1.
  * \return \ref g_quitPrint 0: user has quit the printout.
  * \pre
