@@ -111,13 +111,13 @@ flag localScrollMode = 1; /* 0 = Scroll continuously only till next prompt */
  * interpreted as scroll commands.  These commands are at most a single
  * character, followed by a LF.  A _b_ or _B_ backs up one step further in
  * history,  an empty line means one step forward, _s_ or _S_ scrolls to the
- * end, showing all pages in between without interruption, and _q_ or _Q_ skips
- * all pending output and gets you back to normal input.  You cannot back up to
- * the guard page (although it is shown on input B when at the very first saved
- * page).  Moving a step forward when at the very last history page resumes
- * pending normal output.  Unrecognized input is simply ignored.  The loop
- * controlling these movements is found in \ref print2, but \ref cmdInput can
- * trigger it as well.
+ * end, showing all pages in between and all pending output at one swoop,
+ * and _q_ or _Q_ skips all pending output and gets you directly back to normal
+ * input.  You cannot back up to the guard page (although it is shown on input
+ * B when at the very first saved page).  Moving a step forward when at the
+ * very last history page resumes pending normal output.  Unrecognized input is
+ * simply ignored.  The loop controlling these movements is found in
+ * \ref print2, but \ref cmdInput can trigger it as well.
  */
 
 /* Buffer for B (back) command at end-of-page prompt - for future use */
