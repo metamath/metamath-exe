@@ -168,7 +168,17 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     \ref backFromCmdInput = 1 (\ref cmdInput needs the scrolling loop only).
  *
  *     Sets \ref printLines to 0, indicating that nothing has been added to the
- *     new page yet.
+ *     new page yet. Increments \ref backBufferPos so all pending output is
+ *     copied to the new page.
+ *
+ * d. The submitted parameters are used to create a new line from their values.
+ *     Placeholders in \p fmt are replaced with their respective and to text
+ *     converted data values.  All stored in an internal buffer first.
+ *
+ *     Some contexts prevent this step: Output (only screen output is affected)
+ *     is discarded on user request (\ref g_quitPrint = 1 and
+ *     \ref g_outputToString = 0), \ref backFromCmdInput = 1 (\ref cmdInput
+ *     uses only the scrolling features)
  *
  * \param[in] fmt NUL-terminated text to display with embedded placeholders
  *   for insertion of data (which are converted into text if necessary) pointed
