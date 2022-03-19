@@ -174,10 +174,10 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     Placeholders in \p fmt are replaced with their respective and to text
  *     converted data values.  All stored in an internal buffer first.\n
  *  \n
- *     Some contexts prevent this step: Output (only screen output is affected)
- *     is discarded on user request (\ref g_quitPrint = 1 and
- *     \ref g_outputToString = 0), \ref backFromCmdInput = 1 (\ref cmdInput
- *     uses only the scrolling features)
+ *     Some contexts prevent this step: Output (if to screen) is discarded on
+ *     user request (\ref g_quitPrint = 1 and \ref g_outputToString = 0),
+ *     \ref backFromCmdInput = 1 (\ref cmdInput uses only the scrolling
+ *     features)
  *
  * -# Revert any \ref QUOTED_SPACE back to space characters in the string
  *     produced in step (4).  \ref printLongLine might have introduced these
@@ -185,10 +185,31 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     \ref QUOTED_SPACE must not be part of the regular output to make this
  *     work flawlessly.\n
  *  \n
- *     Some contexts prevent this step: Output (only screen output is affected)
- *     is discarded on user request (\ref g_quitPrint = 1 and
- *     \ref g_outputToString = 0), \ref backFromCmdInput = 1 (\ref cmdInput
- *     uses only the scrolling features)
+ *     Some contexts prevent this step: Output (if to screen) is discarded on
+ *     user request (\ref g_quitPrint = 1 and \ref g_outputToString = 0),
+ *     \ref backFromCmdInput = 1 (\ref cmdInput uses only the scrolling
+ *     features)
+ *
+ * -# Perform line wrapping.  The wrapping is actually done in
+ *     \ref printLongLine, which in turn calls this function to handle each
+ *     broken down line separately.  The output generated in step (4) is copied
+ *     onto \ref tempAllocStack, omitting a trailing LF.\n
+ *  \n
+ *     Some contexts prevent this step: The output needs no wrapping, because
+ *     the line length (excluding a trailing LF) does not exceed
+ *     \ref g_screenWidth, output is redirected to a string
+ *     (\ref g_outputToString = 1), \ref backFromCmdInput = 1 (\ref cmdInput
+ *     uses only the scrolling features)\n
+ *  \n
+ *     \todo clarify variants/invariants
+ * -# Print the prepared output onto the screen.\n
+ *  \n
+ *     Some contexts prevent this step: Step (6) (line wrapping) was executed,
+ *     output is redirected to a string (\ref g_outputToString = 1), 
+ *     \ref backFromCmdInput = 1 (\ref cmdInput uses only the scrolling
+ *     features)\n
+ *  \n
+ *     \ref printLines is increased if the prepared output terminates with LF.
  *
  * \param[in] fmt NUL-terminated text to display with embedded placeholders
  *   for insertion of data (which are converted into text if necessary) pointed
