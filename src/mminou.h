@@ -196,14 +196,16 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     onto \ref tempAllocStack, omitting a trailing LF.\n
  *  \n
  *     Some contexts prevent this step: The output from step (4) (excluding a
- *     trailing LF) does not exceed \ref g_screenWidth, output is redirected to
- *     a string (\ref g_outputToString = 1), \ref backFromCmdInput = 1
+ *     trailing LF) does not exceed \ref g_screenWidth, output is discarded on
+ *     user request (\ref g_quitPrint = 1), output is redirected to a string
+ *     (\ref g_outputToString = 1), \ref backFromCmdInput = 1
  *     (\ref cmdInput uses only the scrolling features)\n
  *  \n
  *      __todo__ clarify variants/invariants
  * -# Print the prepared output onto the screen.\n
  *  \n
  *     Some contexts prevent this step: Step (6) (line wrapping) was executed,
+ *     output is discarded on user request (\ref g_quitPrint = 1)
  *     output is redirected to a string (\ref g_outputToString = 1), a SUBMIT
  *     is silently executing (\ref g_commandFileSilentFlag = 1),
  *     \ref backFromCmdInput = 1 (\ref cmdInput uses only the scrolling
@@ -218,20 +220,22 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     Some contexts prevent this step: Step (7) was not executed,
  *     \ref printedLines <= \ref g_screenHeight allows another line of output,
  *     the output printed in step (7) has no trailing LF and is appended to the
- *     last line of output, output is redirected (\ref g_outputToString = 1), a
- *     SUBMIT is silently executing (\ref g_commandFileSilentFlag = 1),
- *     scrolling is enabled (\ref g_scrollMode = 1, step (3) handles this
- *     case),  \ref backFromCmdInput = 1 (\ref cmdInput uses only the scrolling
- *     features)\n
+ *     last line of output, a SUBMIT is silently executing
+ *     (\ref g_commandFileSilentFlag = 1), scrolling is enabled
+ *     (\ref g_scrollMode = 1, step (3) handles this case).\n
  *  \n
  *     \ref printedLines is set to 1.  \ref backBufferPos is increased.
  * -# Add the output to the \ref backBuffer.
  *  \n
- *     Some contexts prevent this step: Step (7) was not executed,
- *     output is redirected (\ref g_outputToString = 1), a
- *     SUBMIT is silently executing (\ref g_commandFileSilentFlag = 1),
- *     \ref backFromCmdInput = 1 (\ref cmdInput uses only the scrolling
- *     features)
+ *     Some contexts prevent this step: Step (7) was not executed.
+ * -# Log the output to a file.\n
+ *  \n
+ *     Some contexts prevent this step: A log file is not opened
+ *     (\ref g_logFileOpenFlag = 0), output is redirected to a string
+ *     (\ref g_outputToString = 1), output is discarded on user request
+ *     (\ref g_quitPrint = 1), \ref backFromCmdInput = 1 (\ref cmdInput uses
+ *     only the scrolling features)\n
+ *     
  *
  * \param[in] fmt NUL-terminated text to display with embedded placeholders
  *   for insertion of data (which are converted into text if necessary) pointed
