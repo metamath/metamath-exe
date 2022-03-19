@@ -74,7 +74,9 @@ long g_screenHeight = SCREEN_HEIGHT; /* Default = 23 */
  * \var int printedLines
  * Lines printed since last user input (mod screen height).  This value is used
  * to determine when a page of output is completed, and the user needs to be
- * prompted for continuing output.
+ * prompted for continuing output.  It counts the number of LF characters,
+ * which may differ from the lines actually used because some hard line breaks
+ * are enforced by overly long lines.
  */
 int printedLines = 0;
 flag g_scrollMode = 1; /* Flag for continuous (0) or prompted (1) scroll */

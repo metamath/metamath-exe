@@ -143,15 +143,18 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     initialization is done here, right at the beginning.  The
  *     \ref backBufferPos is always at least 1, so a value of 0 indicates an
  *     outstanding \ref backBuffer memory allocation, and an empty string is
- *     pushed as a first (guard) page onto it (see \ref pgBackBuffer).
+ *     pushed as a first (guard) page onto it (see \ref pgBackBuffer).\n
+ *  \n
+ *     \ref g_pntrTempAllocStackTop may be reset to
+ *     \ref g_pntrStartTempAllocStack.
  *
  * -# If the current page is full and further output would overflow it, as
  *     indicated by \ref printedLines, output may be suspended as described ins
  *     (2) and the user is prompted for scrolling actions.\n
  *     This step is unconditionally executed when \ref backFromCmdInput = 1
  *     (\ref cmdInput explicitely requested it).  The values in
- *     \ref g_quitPrint and \ref localScrollMode are retained, regardless of
- *     user input.\n
+ *     \ref g_quitPrint and \ref localScrollMode are retained then, regardless
+ *     of user input.\n
  *   \n
  *     Other conditions prevent this step:  Output is discarded on user request
  *     (\ref g_quitPrint = 1), a SUBMIT call is running
@@ -173,7 +176,8 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *   \n
  *     Sets \ref printedLines to 0, indicating that nothing has been added to
  *     the new page yet. Increments \ref backBufferPos so all pending output is
- *     copied to the new page.
+ *     copied to the new page.  \ref g_pntrTempAllocStackTop may be reset to
+ *     \ref g_pntrStartTempAllocStack.
  *
  * -# The submitted parameters are used to create a new line from their values.
  *     Placeholders in \p fmt are replaced with their respective and to text
@@ -230,9 +234,13 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     (\ref g_scrollMode = 1, step (3) handles this case).\n
  *  \n
  *     \ref printedLines is set to 1.  \ref backBufferPos is increased.
+ *     \ref g_pntrTempAllocStackTop may be reset to
+ *     \ref g_pntrStartTempAllocStack.
  * -# Add the output to the \ref backBuffer.
  *  \n
- *     Some contexts prevent this step: Step (7) was not executed.
+ *     Some contexts prevent this step: Step (7) was not executed.\n
+ *   \n
+ *     \ref g_tempAllocStackPos is reset to \ref g_startTempAllocStack.
  * -# Log the output to a file given by \ref g_logFilePtr. \n
  *  \n
  *     Some contexts prevent this step: Step (4) was not executed, a log file
@@ -293,6 +301,8 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *   - \ref localScrollMode = 0 if the user entered _s_ or _S_.
  *   - \ref g_printString receives the output if \ref g_outputToString = 1.
  *   - \ref printedLines updated
+ *   - \ref g_pntrTempAllocStackTop may be reset to
+ *     \ref g_pntrStartTempAllocStack.
  * \bug It is possible to produce lines exceeding \ref g_screenWidth by
  *   concatenating substrings smaller than this value, but having no LF at the
  *   end.

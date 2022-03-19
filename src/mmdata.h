@@ -781,10 +781,10 @@ temp_pntrString *pntrMakeTempAlloc(pntrString *s);
  *     NULL.
  *   - due to a possible reallocation the pointer \p target points to may
  *     change.
- *   - The stack pointer of \ref pntrTempAllocStack is reset to
- *     \ref g_pntrStartTempAllocStack and all referenced
- *     \ref pgBlock "blocks" on and beyond that are returned to the
- *     \ref memFreePool.
+ *   - The stack pointer \ref g_pntrTempAllocStackTop of
+ *     \ref pntrTempAllocStack is reset to \ref g_pntrStartTempAllocStack and
+ *     all referenced \ref pgBlock "blocks" on and beyond that are returned to
+ *     the \ref memFreePool.
  *   - updates \ref db3 and \ref poolTotalFree.
  *   - Exit on out-of-memory
  * \bug If the \p target block is full after the copy operation, it is not
