@@ -261,26 +261,26 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  * \return \ref g_quitPrint 0: user has quit the printout.
  * \pre
  *   - \ref printedLines if indicating a full page of output was reached,
- *     activates __scroll mode__ if not inhibited by other variables.
+ *     activates __step 2__ if not inhibited by other variables.
  *   - \ref g_screenHeight number of lines to display (a page of output) to a
- *     user without need of  __scroll mode__.
+ *     user without need of  __step 2__.
  *   - \ref g_screenWidth if the expanded text exceeds this width, line
  *     breaking may be required.  Other settings can still prevent this;
- *   - \ref g_quitPrint value 1:  Do not enter __scroll mode__ and suppress output to the
- *     (virtual) text display;
+ *   - \ref g_quitPrint value 1:  Do not enter __step 2__ and suppress output
+ *     to the (virtual) text display;
  *   - \ref backFromCmdInput value 1: assume the last entry in \ref backBuffer
  *     was just printed, \ref backBufferPos points to the entry before the
- *     last, and __scroll mode__ is requested, and nothing else.  No output
- *     apart from replaying saved pages in the \ref backBuffer is generated.
- *     This flag enables __scroll mode__ unconditionally, regardless of other
- *     settings.  This flag is set by \ref cmdInput only;
+ *     last, and __step 2__ is requested, and nothing else.  No output apart
+ *     from replaying saved pages in the \ref backBuffer is generated.  This
+ *     flag enables __step 2__ unconditionally, regardless of other settings.
+ *     This flag is set by \ref cmdInput only;
  *   - \ref g_commandFileSilentFlag value 1 suppresses output on the screen;
  *   - \ref g_commandFileNestingLevel a value > 0 indicates a SUBMIT call is
  *     executing, where __scroll mode__ is disabled, unless
  *     \ref backFromCmdInput is 1;
- *   - \ref g_scrollMode value 0 disables __scroll mode__, unless
+ *   - \ref g_scrollMode value 0 disables __step 2__, unless
  *     \ref backFromCmdInput is 1;
- *   - \ref localScrollMode value 0 disables __scroll mode__, unless
+ *   - \ref localScrollMode value 0 disables __step 2__, unless
  *     \ref backFromCmdInput is 1;
  *   - \ref g_outputToString value 1 output is redirected and __scroll mode__
  *     is disabled, unless \ref backFromCmdInput is 1.
@@ -290,6 +290,7 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *   - \ref backBuffer is allocated and not empty (at least filled with an
  *     empty string)
  *   - \ref backBufferPos > 0
+ *   - \ref localScrollMode = 0 if the user requested uninterrupted output.
  * \bug It is possible to produce lines exceeding \ref g_screenWidth by
  *   concatenating substrings smaller than this value, but having no LF at the
  *   end.
