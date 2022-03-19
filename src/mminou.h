@@ -166,8 +166,8 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     \ref backFromCmdInput = 1 (\ref cmdInput needs the scrolling loop
  *     only).\n
  *   \n
- *     Sets \ref printLines to 0, indicating that nothing has been added to the
- *     new page yet. Increments \ref backBufferPos so all pending output is
+ *     Sets \ref printedLines to 0, indicating that nothing has been added to
+ *     the new page yet. Increments \ref backBufferPos so all pending output is
  *     copied to the new page.
  *
  * -# The submitted parameters are used to create a new line from their values.
@@ -195,21 +195,43 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     broken down line separately.  The output generated in step (4) is copied
  *     onto \ref tempAllocStack, omitting a trailing LF.\n
  *  \n
- *     Some contexts prevent this step: The output needs no wrapping, because
- *     the line length (excluding a trailing LF) does not exceed
- *     \ref g_screenWidth, output is redirected to a string
- *     (\ref g_outputToString = 1), \ref backFromCmdInput = 1 (\ref cmdInput
- *     uses only the scrolling features)\n
+ *     Some contexts prevent this step: The output from step (4) (excluding a
+ *     trailing LF) does not exceed \ref g_screenWidth, output is redirected to
+ *     a string (\ref g_outputToString = 1), \ref backFromCmdInput = 1
+ *     (\ref cmdInput uses only the scrolling features)\n
  *  \n
- *     \todo clarify variants/invariants
+ *      __todo__ clarify variants/invariants
  * -# Print the prepared output onto the screen.\n
  *  \n
  *     Some contexts prevent this step: Step (6) (line wrapping) was executed,
- *     output is redirected to a string (\ref g_outputToString = 1), 
+ *     output is redirected to a string (\ref g_outputToString = 1), a SUBMIT
+ *     is silently executing (\ref g_commandFileSilentFlag = 1),
  *     \ref backFromCmdInput = 1 (\ref cmdInput uses only the scrolling
  *     features)\n
  *  \n
- *     \ref printLines is increased if the prepared output terminates with LF.
+ *     \ref printedLines is increased if the prepared output terminates with
+ *     LF.
+ * -# Add a new history page in \ref backBuffer for the output generated in
+ *     step (4) if the current page has overflown.  Do this even when scrolling
+ *     is disabled.\n
+ *  \n
+ *     Some contexts prevent this step: Step (7) was not executed,
+ *     \ref printedLines <= \ref g_screenHeight allows another line of output,
+ *     the output printed in step (7) has no trailing LF and is appended to the
+ *     last line of output, output is redirected (\ref g_outputToString = 1), a
+ *     SUBMIT is silently executing (\ref g_commandFileSilentFlag = 1),
+ *     scrolling is enabled (\ref g_scrollMode = 1, step (3) handles this
+ *     case),  \ref backFromCmdInput = 1 (\ref cmdInput uses only the scrolling
+ *     features)\n
+ *  \n
+ *     \ref printedLines is set to 1.  \ref backBufferPos is increased.
+ * -# Add the output to the \ref backBuffer.
+ *  \n
+ *     Some contexts prevent this step: Step (7) was not executed,
+ *     output is redirected (\ref g_outputToString = 1), a
+ *     SUBMIT is silently executing (\ref g_commandFileSilentFlag = 1),
+ *     \ref backFromCmdInput = 1 (\ref cmdInput uses only the scrolling
+ *     features)
  *
  * \param[in] fmt NUL-terminated text to display with embedded placeholders
  *   for insertion of data (which are converted into text if necessary) pointed
@@ -241,7 +263,7 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     apart from replaying saved pages in the \ref backBuffer is generated.
  *     This flag enables __scroll mode__ unconditionally, regardless of other
  *     settings.  This flag is set by \ref cmdInput only;
- *   - \ref g_commandFileSilentFlag value 1 suppresses line breaks;
+ *   - \ref g_commandFileSilentFlag value 1 suppresses output on the screen;
  *   - \ref g_commandFileNestingLevel a value > 0 indicates a SUBMIT call is
  *     executing, where __scroll mode__ is disabled, unless
  *     \ref backFromCmdInput is 1;
@@ -257,6 +279,9 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *   - \ref backBuffer is allocated and not empty (at least filled with an
  *     empty string)
  *   - \ref backBufferPos > 0
+ * \bug It is possible to produce lines exceeding \ref g_screenWidth by
+ *   concatenating substrings smaller than this value, but having no LF at the
+ *   end.
  * \warning never call print2 with string longer than PRINTBUFFERSIZE - 1
  */
 flag print2(const char* fmt,...);

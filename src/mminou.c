@@ -34,8 +34,8 @@ extern int cprintf(const char *f__mt,...);
  * \def QUOTED_SPACE
  * The general line wrapping algorithm looks out for spaces as break positions.
  * To prevent a quote delimited by __"__ be broken down, spaces are temporarily
- * replaced with 0x03 (ETX, end of transmission), hopefully never used on
- * purpose.
+ * replaced with 0x03 (ETX, end of transmission), hopefully never used in
+ * text in this application.
  */
 #define QUOTED_SPACE 3 /* ASCII 3 that temporarily zaps a space */
 
@@ -83,10 +83,13 @@ flag g_quitPrint = 0; /* Flag that user quit the output */
  * \var flag localScrollMode
  *
  * value 0: temporarily disables page-wise prompted scroll (see
- * \ref g_scrollMode) until enabled (value 1) again (usually at next regular
- * user input).
+ * \ref g_scrollMode) until enabled (value 1) again.  Normal user input by
+ * \ref cmdInput1 allows scrolling during output (value 1).  A value of 0
+ * indicates the user has issued command _s_ or _S_ (see \ref pgBackBuffer)
+ * to print all pending output without interruption.  In this case the value 0
+ * is assigned temporarily to skip prompts.
  */
-flag localScrollMode = 1; /* 0 = Scroll continuously only till next prompt */
+flag localScrollMode = 1;
 /*!
  * \page pgBackBuffer History of Pages of Output
  *
