@@ -119,12 +119,7 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     a \ref pgBackBuffer, allowing the user to recall previously shown pages,
  *     and navigate them freely forward and backwards.  This feature
  *     temporarily grabs user input and interprets short commands as navigating
- *     instructions.  In a loop following commands are recognized:  an empty
- *     line starts the next page of output, s or S finishes the display of the
- *     rest of output without further interruption, b or B fetches the previous
- *     page from the \ref backBuffer.  And q or Q discards all pending output
- *     in this command, usually returning control to user command input.
- *     Unrecognized input is simply ignored in the loop.
+ *     instructions.  For more see \ref pgBackBuffer.
  * 3. __Line wrapping__.  When the line to display exceeds the limits in
  *     \ref g_screenWidth, line breaking is applied.  The wrapping is actually
  *     done in \ref printLongLine which in turn uses separate print2 calls to
@@ -137,13 +132,23 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  * 5. __Logging__.  Output may be logged to a file for examination.
  *
  * These effects need not be carried out in this order, some may even be
- * omitted.  We depict order of steps and their respective conditions here.
+ * omitted.  We show the order of steps and their respective conditions here.
  * 
  * a. The \ref backBuffer is almost private to this function, so its
  *     initialization is done here, right at the beginning.  The
  *     \ref backBufferPos is always at least 1, so a value of 0 indicates an
  *     outstanding \ref backBuffer memory allocation, and an empty string is
  *     pushed as a first (guard) page onto it (see \ref pgBackBuffer).
+ * b. If the current page is full and further output woulfd overflow it, as
+ *     indicated by \ref pageLines, output may be suspended as described in
+ *     (2).  Several conditions can prevent this:  The user wants pending
+ *     output be discarded (\ref g_quitPrint = 1), a SUBMIT call is running, so
+ *     input is read from an external source (\ref g_commandFileNestingLevel
+ *     > 0), scrolling is generally (\ref g_scrollMode = 0) or temporarily
+ *     (\ref localScrollMode = 0) disabled, output is redirected
+ *     (\ref g_outputToString = 1).  All of this is overridden by
+ *     \ref backFromCmdInput = 1, when \ref cmdInput explicitely requests this
+ *     step.
  *
  * \param[in] fmt NUL-terminated text to display with embedded placeholders
  *   for insertion of data (which are converted into text if necessary) pointed

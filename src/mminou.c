@@ -98,7 +98,7 @@ flag localScrollMode = 1; /* 0 = Scroll continuously only till next prompt */
  * displayed contents in rest.  A user prompt asks for resuming pending output,
  * alternatively s/he may step backwards and forward through the sequence of
  * saved pages for redisplay.  The variable \ref backBufferPos tracks which
- * page the user requested last (or points to the current page).
+ * page the user requested last (or points to the currently built-up page).
  *
  * On initialization memory is allocated for the \ref backBuffer, and an empty
  * string (empty page) is pushed onto the stack as a guard.  This is a simple
@@ -106,6 +106,18 @@ flag localScrollMode = 1; /* 0 = Scroll continuously only till next prompt */
  * recalled the very first saved page.  The display of this empty guard page
  * has no other effect than repeating the prompt.  The \ref backBufferPos is
  * never updated to point (value 0) to this guard page.
+ *
+ * During a replay of the history normal user input is intercepted and
+ * interpreted as scroll commands.  These commands are at most a single
+ * character, followed by a LF.  A _b_ or _B_ backs up one step further in
+ * history,  an empty line means one step forward, _s_ or _S_ scrolls to the
+ * end, showing all pages in between without interruption, and _q_ or _Q_ skips
+ * all pending output and gets you back to normal input.  You cannot back up to
+ * the guard page (although it is shown on input B when at the very first saved
+ * page).  Moving a step forward when at the very last history page resumes
+ * pending normal output.  Unrecognized input is simply ignored.  The loop
+ * controlling these movements is found in \ref print2, but \ref cmdInput can
+ * trigger it as well.
  */
 
 /* Buffer for B (back) command at end-of-page prompt - for future use */
@@ -113,14 +125,18 @@ flag localScrollMode = 1; /* 0 = Scroll continuously only till next prompt */
  * \var pntrString* backBuffer
  * Buffer for B (back) command at end-of-page prompt.  Although formally a
  * \ref pntrString is using void*, this buffer contains pointer to \ref vstring
- * only.
+ * only.  Its element at index 0 is fixed to an empty string (page), a guard
+ * representing contents not available.
  *
  * Some longer text (like help texts for example) provide a page wise display
  * with a scroll option, so the user can move freely back and forth in the
  * text.  This is the storage of already displayed text kept for possible
  * redisplay (see \ref pgBackBuffer).
  *
- * The buffer is initialized to not-empty by \ref print2 for example.
+ * The element last displayed, or currently built up, is denoted by
+ * \ref backBufferPos.
+ *
+ * The buffer is allocated and initialized to not-empty by \ref print2.
  */
 pntrString_def(backBuffer);
 /*!
