@@ -146,7 +146,7 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     pushed as a first (guard) page onto it (see \ref pgBackBuffer).
  *
  * -# If the current page is full and further output would overflow it, as
- *     indicated by \ref pageLines, output may be suspended as described in
+ *     indicated by \ref printedLines, output may be suspended as described ins
  *     (2) and the user is prompted for scrolling actions.\n
  *     This step is unconditionally executed when \ref backFromCmdInput = 1
  *     (\ref cmdInput explicitely requested it).  The values in
@@ -160,7 +160,7 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     disabled, output is redirected (\ref g_outputToString = 1).\n
  *   \n
  *     This step can set \ref g_quitPrint to 1 (if \ref backFromCmdInput = 0).
- *     It can modify \ref \backBufferPos (by command _q_ or _Q_) and set
+ *     It can modify \ref backBufferPos (by command _q_ or _Q_) and set
  *     \ref localScrollMode = 0 (by command _s_ or _S_, and
  *     \ref backFromCmdInput = 0).
  *
