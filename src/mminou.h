@@ -239,7 +239,7 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  * -# Add the output to the \ref backBuffer.
  *  \n
  *     Some contexts prevent this step: Step (7) was not executed.\n
- *   \n
+ *  \n
  *     \ref g_tempAllocStackPos is reset to \ref g_startTempAllocStack.
  * -# Log the output to a file given by \ref g_logFilePtr. \n
  *  \n
@@ -247,6 +247,8 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     is not opened (\ref g_logFileOpenFlag = 0), output is redirected to a string
  *     (\ref g_outputToString = 1), \ref backFromCmdInput = 1 (\ref cmdInput
  *     uses only the scrolling features)\n
+ *  \n
+ *     \ref g_tempAllocStackPos is reset to \ref g_startTempAllocStack.
  * -# Copy the prepared output in step (4) to \ref g_printString. \n
  *   \n
  *     Some contexts prevent this step: Step (4) was not executed, output is
@@ -303,6 +305,7 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *   - \ref printedLines updated
  *   - \ref g_pntrTempAllocStackTop may be reset to
  *     \ref g_pntrStartTempAllocStack.
+ *     \ref g_tempAllocStackPos may be reset to \ref g_startTempAllocStack.
  * \bug It is possible to produce lines exceeding \ref g_screenWidth by
  *   concatenating substrings smaller than this value, but having no LF at the
  *   end.
