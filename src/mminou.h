@@ -112,6 +112,9 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  * into multiple lines using a built-in line wrap algorithm.  But this must
  * never be preempted by preparing parameters accordingly.
  *
+ * The presence of the LF character controls whether a new line of output is
+ * generated, or the output is padded right to the last line.
+ *
  * Although the output of a single line is the main goal of this function, it
  * does a lot on the side, each effect individually enabled or disabled by
  * various global variables that are honored, sometimes even updated.  We skim
@@ -308,11 +311,11 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     disabled, unless \ref backFromCmdInput is 1.
  * \post
  *   - \ref g_quitPrint is set to 1, if the user entered _q_ or _Q_ in
- *      __scroll mode__, and \ref backFromCmdInput is 0.
+ *      __step b__, and \ref backFromCmdInput is 0.
  *   - \ref backBuffer is allocated and not empty (at least filled with an
  *     empty string)
  *   - \ref backBufferPos > 0, updated
- *   - \ref localScrollMode = 0 if the user entered _s_ or _S_.
+ *   - \ref localScrollMode = 0 if the user entered _s_ or _S_ in __step b__.
  *   - \ref g_printString receives the output if \ref g_outputToString = 1.
  *   - \ref printedLines updated
  *   - \ref g_pntrTempAllocStackTop may be reset to
