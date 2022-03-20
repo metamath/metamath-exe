@@ -133,8 +133,8 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     \ref g_screenWidth, line breaking is applied.  The wrapping is actually
  *     done in \ref printLongLine which in turn uses separate print2 calls to
  *     output each individual line.  This requires a minimum synchronization of
- *     both the 'master' and 'slave' calls, so that relevant state is carried
- *     back to the outer, temporarily suspended call.
+ *     both the outer and inner calls, so that relevant state is carried back
+ *     to the outer, temporarily suspended call.
  * 4. __Redirection__.  Instead of displaying output on the virtual text
  *     display, it may be stored in a NUL-terminated string variable.  Or even
  *     completely suppressed, when executing a SUBMIT, for example.
