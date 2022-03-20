@@ -160,7 +160,7 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  * 2. If the current page is full and further output would overflow it, as
  *     indicated by \ref printedLines, output may be suspended as described in
  *     (b) and the user is prompted for scrolling actions.\n
- *     This step is unconditionally executed when \f$ \ref backFromCmdInput = 1 \f$
+ *     This step is unconditionally executed when \ref backFromCmdInput = 1
  *     (\ref cmdInput explicitly requested it).  The values in
  *     \ref g_quitPrint and \ref localScrollMode are retained then, regardless
  *     of user input.
