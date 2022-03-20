@@ -192,7 +192,7 @@ flag print2(const char* fmt, ...) {
 
   char *printBuffer; /* Allocated dynamically */
 
-/* step (a) initialize backBuffer  */
+/* step (1) initialize backBuffer  */
 
   if (backBufferPos == 0) {
     /* Initialize backBuffer - 1st time in program */
@@ -216,7 +216,7 @@ flag print2(const char* fmt, ...) {
       || backFromCmdInput) {
     /* It requires a scrolling prompt */
 
-/* step (b) perform scrolling */
+/* step (2) perform scrolling */
 
     while(1) {
       if (backFromCmdInput && backBufferPos == pntrLen(backBuffer))
@@ -304,7 +304,7 @@ flag print2(const char* fmt, ...) {
     if (backFromCmdInput)
       goto PRINT2_RETURN;
 
-/* step (c) allocate a new page of output */
+/* step (3) allocate a new page of output */
 
     printedLines = 0; /* Reset the number of lines printed on the screen */
     if (!g_quitPrint) {
@@ -323,7 +323,7 @@ flag print2(const char* fmt, ...) {
   if (g_quitPrint && !g_outputToString) goto PRINT2_RETURN;
 
 
-/* step (d) evaluate the output text */
+/* step (4) evaluate the output text */
 
   /* Allow unlimited output size */
   va_start(ap, fmt);
@@ -350,7 +350,7 @@ flag print2(const char* fmt, ...) {
   nlpos = instr(1, printBuffer, "\n");
   lineLen = (long)strlen(printBuffer);
 
-/* step (e) revert QUOTED_SPACE to space  */
+/* step (5) revert QUOTED_SPACE to space  */
 
   /* Change any ASCII 3's back to spaces, where they were set in
      printLongLine to handle the broken quote problem */
@@ -361,7 +361,7 @@ flag print2(const char* fmt, ...) {
   if ((lineLen > g_screenWidth + 1)
          && !g_outputToString  /* for HTML */ ) {
 
-/* step (f) line wrapping */
+/* step (6) line wrapping */
 
     /* Force wrapping of lines that are too long by recursively calling
        print2() via printLongLine().  Note:  "+ 1" above accounts for \n. */
@@ -378,7 +378,7 @@ flag print2(const char* fmt, ...) {
   if (!g_outputToString && !g_commandFileSilentFlag) {
     if (nlpos == 0) { /* Partial line (usu. status bar) - print immediately */
 
-/* step (g) print to screen, part 1 */
+/* step (7) print to screen, part 1 */
 
 #ifdef __WATCOMC__
       cprintf("%s", printBuffer); /* Immediate console I/O (printf buffers it)*/
@@ -399,7 +399,7 @@ flag print2(const char* fmt, ...) {
 
     } else {
 
-/* step (g) print to screen, part 2 */
+/* step (7) print to screen, part 2 */
 
       printf("%s", printBuffer); /* Normal line */
 #if __STDC__
@@ -408,7 +408,7 @@ flag print2(const char* fmt, ...) {
       printedLines++;
       if (!(g_scrollMode == 1 && localScrollMode == 1)) {
 
-/* step (h) address overflowed page */
+/* step (8) address overflowed page */
 
         /* Even in non-scroll (continuous output) mode, still put paged-mode
            lines into backBuffer in case user types a "B" command later,
@@ -432,7 +432,7 @@ flag print2(const char* fmt, ...) {
 #endif
     }
 
-/* step (i) copy output to backBuffer */
+/* step (9) copy output to backBuffer */
 
     let((vstring *)(&(backBuffer[backBufferPos - 1])), cat(
         (vstring)(backBuffer[backBufferPos - 1]), printBuffer, NULL));
@@ -440,7 +440,7 @@ flag print2(const char* fmt, ...) {
 
   if (g_logFileOpenFlag && !g_outputToString) {
 
-/* step (j) log output to file  */
+/* step (10) log output to file  */
 
     fprintf(g_logFilePtr, "%s", printBuffer);  /* Print to log file */
 #if __STDC__
@@ -455,7 +455,7 @@ flag print2(const char* fmt, ...) {
 
   if (g_outputToString) {
 
-/* step (k) redirect output to a string */
+/* step (11) redirect output to a string */
 
     let(&g_printString, cat(g_printString, printBuffer, NULL));
   }

@@ -122,33 +122,33 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  * various global variables that are honored, sometimes even updated.  We skim
  * through these effects here in short:
  *
- * 1. __Data embedding__.  The \p fmt parameter can contain simple text, that
- *     is displayed as is.  Or embedded placeholders are replaced with data
- *     pointed to by the following parameters.  If necessary, data are
- *     converted to strings before insertion.
- * 2. Supporting __page-wise display__.  Output on the virtual text display is
- *     stopped after showing \ref g_screenHeight lines, called a __page__ here.
- *     The user can read the text at rest, and then request resuming output
- *     with a short command.  In fact, this feature is enhanced by maintaining
- *     a \ref pgBackBuffer, allowing the user to recall previously shown pages,
- *     and navigate them freely forward and backwards.  This feature
- *     temporarily grabs user input and interprets short commands as navigating
- *     instructions.  For more see \ref pgBackBuffer.
- * 3. __Line wrapping__.  When the line to display exceeds the limits in
- *     \ref g_screenWidth, line breaking is applied.  The wrapping is actually
- *     done in \ref printLongLine which in turn uses separate print2 calls to
- *     output each individual line.  This requires a minimum synchronization of
- *     both the outer and inner calls, so that relevant state is carried back
- *     to the outer, temporarily suspended call.
- * 4. __Redirection__.  Instead of displaying output on the virtual text
- *     display, it may be stored in a NUL-terminated string variable.  Or even
- *     completely suppressed, for example when executing a SUBMIT.
- * 5. __Logging__.  Output may be logged to a file for examination.
+ * - (a) __Data embedding__.  The \p fmt parameter can contain simple text,
+ *   that is displayed as is.  Or embedded placeholders are replaced with data
+ *   pointed to by the following parameters.  If necessary, data are converted
+ *   to strings before insertion.
+ * - (b) Supporting __page-wise display__.  Output on the virtual text display
+ *   is stopped after showing \ref g_screenHeight lines, called a __page__
+ *   here.  The user can read the text at rest, and then request resuming
+ *   output with a short command.  In fact, this feature is enhanced by
+ *   maintaining a \ref pgBackBuffer, allowing the user to recall previously
+ *   shown pages, and navigate them freely forward and backwards.  This feature
+ *   temporarily grabs user input and interprets short commands as navigating
+ *   instructions.  For more see \ref pgBackBuffer.
+ * - (c) __Line wrapping__.  When the line to display exceeds the limits in
+ *   \ref g_screenWidth, line breaking is applied.  The wrapping is actually
+ *   done in \ref printLongLine which in turn uses separate print2 calls to
+ *   output each individual line.  This requires a minimum synchronization of
+ *   both the outer and inner calls, so that relevant state is carried back to
+ *   the outer, temporarily suspended call.
+ * - (d) __Redirection__.  Instead of displaying output on the virtual text
+ *   display, it may be stored in a NUL-terminated string variable.  Or even
+ *   completely suppressed, for example when executing a SUBMIT.
+ * - (e) __Logging__.  Output may be logged to a file for examination.
  *
  * These effects need not be carried out in this order, some may even be
  * omitted.  We show the order of steps and their respective conditions here.
  *
- * - (a) The \ref backBuffer is almost private to this function, so its
+ * 1. The \ref backBuffer is almost private to this function, so its
  *     initialization is done here, right at the beginning.  The
  *     \ref backBufferPos is always at least 1, so a value of 0 indicates an
  *     outstanding \ref backBuffer memory allocation, and an empty string is
@@ -157,10 +157,10 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     \ref g_pntrTempAllocStackTop may be reset to
  *     \ref g_pntrStartTempAllocStack.
  *
- * - (b) If the current page is full and further output would overflow it, as
+ * 2. If the current page is full and further output would overflow it, as
  *     indicated by \ref printedLines, output may be suspended as described in
- *     (2) and the user is prompted for scrolling actions.\n
- *     This step is unconditionally executed when \ref backFromCmdInput = 1
+ *     (b) and the user is prompted for scrolling actions.\n
+ *     This step is unconditionally executed when \f$ \ref backFromCmdInput = 1 \f$
  *     (\ref cmdInput explicitly requested it).  The values in
  *     \ref g_quitPrint and \ref localScrollMode are retained then, regardless
  *     of user input.
@@ -176,10 +176,10 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     \ref localScrollMode = 0 (by command _s_ or _S_, and
  *     \ref backFromCmdInput = 0).
  *
- * - (c) If pending output would overflow the screen, \ref backBuffer is extended
+ * 3. If pending output would overflow the screen, \ref backBuffer is extended
  *     by a new page to receive pending output.
  *
- *     Several conditions can prevent this step:  Step (b) was not executed,
+ *     Several conditions can prevent this step:  Step (2) was not executed,
  *     output is discarded on user request (\ref g_quitPrint = 1),
  *     \ref backFromCmdInput = 1 (\ref cmdInput needs the scrolling loop
  *     only).
@@ -189,18 +189,18 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     copied to the new page.  \ref g_pntrTempAllocStackTop may be reset to
  *     \ref g_pntrStartTempAllocStack.
  *
- * - (d) The function parameters are used to create a new line.  Placeholders in
- *      \p fmt (see its description for details) are replaced with their
- *      respective data values, converted to text  All data is first stored in
- *      an internal buffer.
+ * 4. The function parameters are used to create a new line.  Placeholders in
+ *     \p fmt (see its description for details) are replaced with their
+ *     respective data values, converted to text  All data is first stored in
+ *     an internal buffer.
  *
  *     Some contexts prevent this step: Output (if to screen) is discarded on
  *     user request (\ref g_quitPrint = 1 and \ref g_outputToString = 0),
  *     \ref backFromCmdInput = 1 (\ref cmdInput uses only the scrolling
  *     features)
  *
- * - (e) Revert any \ref QUOTED_SPACE back to space characters in the string
- *     produced in step (d) (\ref printLongLine might have introduced these
+ * 5. Revert any \ref QUOTED_SPACE back to space characters in the string
+ *     produced in step (4) (\ref printLongLine might have introduced these
  *     characters to prevent line breaks at certain space characters).  For
  *     this to work correctly, \ref QUOTED_SPACE must not be part of the
  *     regular output. (Doing so will trigger a bug check in
@@ -211,12 +211,12 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     \ref backFromCmdInput = 1 (\ref cmdInput uses only the scrolling
  *     features)
  *
- * - (f) Perform line wrapping.  The wrapping is actually done in
+ * 6. Perform line wrapping.  The wrapping is actually done in
  *     \ref printLongLine, which in turn calls this function to handle each
- *     broken down line separately.  The output generated in step (d) is copied
+ *     broken down line separately.  The output generated in step (4) is copied
  *     onto \ref tempAllocStack, omitting a trailing LF.
  *
- *     Some contexts prevent this step: The output from step (d) (excluding a
+ *     Some contexts prevent this step: The output from step (4) (excluding a
  *     trailing LF) does not exceed \ref g_screenWidth, output is discarded on
  *     user request (\ref g_quitPrint = 1), output is redirected to a string
  *     (\ref g_outputToString = 1), \ref backFromCmdInput = 1
@@ -224,9 +224,9 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *
  *      __todo__ clarify variants/invariants
  *
- * - (g) Print the prepared output onto the screen.
+ * 7. Print the prepared output onto the screen.
  *
- *     Some contexts prevent this step: Step (f) (line wrapping) was executed,
+ *     Some contexts prevent this step: Step (6) (line wrapping) was executed,
  *     output is discarded on user request (\ref g_quitPrint = 1)
  *     output is redirected to a string (\ref g_outputToString = 1), a SUBMIT
  *     is silently executing (\ref g_commandFileSilentFlag = 1),
@@ -236,13 +236,13 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     \ref printedLines is increased if the prepared output terminates with
  *     LF.
  *
- * - (h) Add a new history page in \ref backBuffer for the output generated in
+ * 8. Add a new history page in \ref backBuffer for the output generated in
  *     step (4) if the current page has overflowed.  Do this even when scrolling
  *     is disabled.
  *
- *     Some contexts prevent this step: Step (g) was not executed,
+ *     Some contexts prevent this step: Step (7) was not executed,
  *     \ref printedLines <= \ref g_screenHeight allows another line of output,
- *     the output printed in step (g) has no trailing LF and is appended to the
+ *     the output printed in step (7) has no trailing LF and is appended to the
  *     last line of output, a SUBMIT is silently executing
  *     (\ref g_commandFileSilentFlag = 1), scrolling is enabled
  *     (\ref g_scrollMode = 1, step (c) handles this case).
@@ -251,24 +251,24 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     \ref g_pntrTempAllocStackTop may be reset to
  *     \ref g_pntrStartTempAllocStack.
  *
- * - (i) Add the output to the \ref backBuffer.
+ * 9. Add the output to the \ref backBuffer.
  *
- *     Some contexts prevent this step: Step (g) was not executed.
+ *     Some contexts prevent this step: Step (7) was not executed.
  *
  *     \ref g_tempAllocStackPos is reset to \ref g_startTempAllocStack.
  *
- * - (j) Log the output to a file given by \ref g_logFilePtr.
+ * 10. Log the output to a file given by \ref g_logFilePtr.
  *
- *     Some contexts prevent this step: Step (d) was not executed, a log file
+ *     Some contexts prevent this step: Step (4) was not executed, a log file
  *     is not opened (\ref g_logFileOpenFlag = 0), output is redirected to a string
  *     (\ref g_outputToString = 1), \ref backFromCmdInput = 1 (\ref cmdInput
  *     uses only the scrolling features)
  *
  *     \ref g_tempAllocStackPos is reset to \ref g_startTempAllocStack.
  *
- * - (k) Copy the prepared output in step (d) to \ref g_printString.
+ * 11. Copy the prepared output in step (4) to \ref g_printString.
  *
- *     Some contexts prevent this step: Step (d) was not executed, output is
+ *     Some contexts prevent this step: Step (4) was not executed, output is
  *     not redirected to a string (\ref g_outputToString = 0),
  *     \ref backFromCmdInput = 1 (\ref cmdInput uses only the scrolling
  *     features)
