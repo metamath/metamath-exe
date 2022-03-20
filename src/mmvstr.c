@@ -30,6 +30,7 @@ This is an emulation of the string functions available in VMS BASIC.
 */
 
 /*E*/long db1=0;
+
 /*!
  * \def INCDB1
  * updates \ref db1 if NDEBUG is not defined, is a no operation else.
@@ -58,6 +59,7 @@ long g_tempAllocStackTop = 0;      /* Top of stack for tempAlloc function */
 long g_startTempAllocStack = 0;    /* Where to start freeing temporary allocation
                                     when let() is called (normally 0, except in
                                     special nested vstring functions) */
+
 /*!
  * \brief stack for temporary text.
  *

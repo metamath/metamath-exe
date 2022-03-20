@@ -99,6 +99,7 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
  * Each \ref pgBlock block supports this kind of usage out of the box (see
  * \ref pgFragmentation).
  */
+
 /*!
  * \page pgFragmentation Fragmented blocks
  *
@@ -235,6 +236,7 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
  */
 #define MEM_POOL_GROW 1000
 /*??? Let user set this from menu. */
+
 /*!
  * \var long poolAbsoluteMax
  * The value is a memory amount in bytes.
@@ -248,6 +250,7 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
  * in \ref memFreePoolPurge should \ref poolTotalFree exceed this value.
  */
 long poolAbsoluteMax = 1000000; /* Pools will be purged when this is reached */
+
 /*!
  * \var long poolTotalFree
  * contains the number of free space available in bytes, in both pools
@@ -258,6 +261,7 @@ long poolAbsoluteMax = 1000000; /* Pools will be purged when this is reached */
  */
 long poolTotalFree = 0; /* Total amount of free space allocated in pool */
 /*E*/long i1,j1_,k1; /* 'j1' is a built-in function */
+
 /*!
  * \var void** memUsedPool
  * \brief pointer to the pool of fragmented memory blocks
@@ -286,6 +290,7 @@ long poolTotalFree = 0; /* Total amount of free space allocated in pool */
  * kept in the used block array.
  */
 void **memUsedPool = NULL;
+
 /*!
  * \var long memUsedPoolSize
  * \attention this is the number of individual blocks, not the accumulated
@@ -299,6 +304,7 @@ void **memUsedPool = NULL;
  * \invariant memUsedPoolSize <= \ref memUsedPoolMax.
  */
 long memUsedPoolSize = 0; /* Current # of partially filled arrays in use */
+
 /*!
  * \var long memUsedPoolMax
  * \attention this is the number of individual free blocks, not the accumulated
@@ -314,6 +320,7 @@ long memUsedPoolSize = 0; /* Current # of partially filled arrays in use */
  */
 long memUsedPoolMax = 0; /* Maximum # of entries in 'in use' table (grows
                                as necessary) */
+
 /*!
  * \var void** memFreePool
  * \brief pointer to the pool of completely free memory blocks
@@ -333,6 +340,7 @@ long memUsedPoolMax = 0; /* Maximum # of entries in 'in use' table (grows
  * never tracks fully used blocks.
  */
 void **memFreePool = NULL;
+
 /*!
  * \var long memFreePoolSize
  * \attention this is the number of individual free blocks, not the accumulated
@@ -346,6 +354,7 @@ void **memFreePool = NULL;
  * \invariant memFreePoolSize <= \ref memFreePoolMax.
  */
 long memFreePoolSize = 0; /* Current # of available, allocated arrays */
+
 /*!
  * \var long memFreePoolMax
  * \attention this is the number of individual free blocks, not the accumulated
@@ -601,6 +610,7 @@ void addToUsedPool(void *ptr)
 }
 
 /* Free all arrays in the free pool. */
+
 /*!
  * \fn void memFreePoolPurge(flag untilOK)
  * \brief returns memory held in \ref memFreePool
@@ -2479,6 +2489,7 @@ long g_pntrTempAllocStackTop = 0;     /* Top of stack for pntrTempAlloc function
 long g_pntrStartTempAllocStack = 0;   /* Where to start freeing temporary allocation
                                     when pntrLet() is called (normally 0, except in
                                     special nested vstring functions) */
+
 /*!
  * \var pntrString *pntrTempAllocStack[]
  * \brief a \ref pgStack "stack" of \ref temp_pntrString.
@@ -2755,6 +2766,7 @@ void pntrZapLen(pntrString *s, long length) {
 
 /* Copy a string to another (pre-allocated) string */
 /* Dangerous for general purpose use */
+
 /*!
  * \brief copies a null pointer terminated \ref pntrString to a destination
  * \ref pntrString.

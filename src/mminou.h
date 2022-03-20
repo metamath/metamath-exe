@@ -20,11 +20,13 @@
 extern int g_errorCount;     /*!< Total error count */
 
 /* Global variables used by print2() */
+
 /*!
  * \var flag g_logFileOpenFlag
  * If set to 1, logging of input is enabled.  Initially set to 0.
  */
 extern flag g_logFileOpenFlag;
+
 /*!
  * \var FILE *g_logFilePtr
  * The OPEN LOG command opens a log file.  Its file descriptor is stored here,
@@ -69,6 +71,7 @@ extern vstring g_printString;
  * Limited by \ref MAX_COMMAND_FILE_NESTING.
  */
 extern long g_commandFileNestingLevel;
+
 /*!
  * \var FILE *g_commandFilePtr[MAX_COMMAND_FILE_NESTING + 1]
  * file descriptors pointing to files invoked by SUBMIT commands.  The 0-th
@@ -77,6 +80,7 @@ extern long g_commandFileNestingLevel;
  * valid, and point to opened files.
  */
 extern FILE *g_commandFilePtr[MAX_COMMAND_FILE_NESTING + 1];
+
 /*!
  * \var vstring g_commandFileName[]
  * list of command file names in nested SUBMIT commands.  This name need not be
@@ -312,6 +316,7 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  * \warning never call print2 with string longer than PRINTBUFFERSIZE - 1
  */
 flag print2(const char* fmt,...);
+
 /*!
  * \var long g_screenHeight
  * Number of lines the (virtual) text display can display to the user at the
@@ -323,6 +328,7 @@ flag print2(const char* fmt,...);
  * resuming. 
  */
 extern long g_screenHeight;
+
 /*!
  * \var long g_screenWidth
  * \brief Width of screen
@@ -331,6 +337,7 @@ extern long g_screenHeight;
  * characters.  The command SET WIDTH changes this value.
  */
 extern long g_screenWidth;
+
 /*!
  * \def MAX_LEN
  * \brief Default width of screen
@@ -342,6 +349,7 @@ extern long g_screenWidth;
  * some mobile devices this may be reduced to 30-40 characters.
  */
 #define MAX_LEN 79
+
 /*!
  * \def SCREEN_HEIGHT
  * \brief Default height of screen
@@ -351,6 +359,7 @@ extern long g_screenWidth;
  * Graphical Displays on a notebook for example can display much more.
  */
 #define SCREEN_HEIGHT 23
+
 /*!
  * \var flag g_scrollMode
  * \brief controls whether output stops after a full page is printed.
@@ -360,6 +369,7 @@ extern long g_screenWidth;
  * flag is reset to 0.
  */
 extern flag g_scrollMode;
+
 /*!
  * \var flag g_quitPrint
  * \brief Flag that user typed 'q' to last scrolling prompt

@@ -15,6 +15,7 @@
 #include "mmvstr.h"
 
 /* debugging flags & variables */
+
 /*!
  * \var long db
  * \brief bytes held by vstring instances outside of the stack of temporaries
@@ -31,6 +32,7 @@
  */
 /*E*/extern long db;
 /*E*/extern long db0;
+
 /*!
  * \var long db1
  * \brief bytes held by vstring instances inside of the stack of temporaries
@@ -44,12 +46,14 @@
  * \bug Seems never be displayed.
  */
 /*E*/extern long db1;
+
 /*!
  * \var long db2
  * Bytes held in \ref pgBlock "blocks" managed in \ref tempAllocStack
  * "temporary pointer stacks".
  */
 /*E*/extern long db2;
+
 /*!
  * \var db3
  * \brief monitors the de/allocations of nmbrString and \ref pntrString outside
@@ -65,6 +69,7 @@
  */
 /*E*/extern long db3;
 /*E*/extern long db4,db5,db6,db7,db8;
+
 /*!
  * \var db9
  * \brief log memory pool usage for debugging purpose.
@@ -83,6 +88,7 @@
  *   disables memory logging in conjunction with other debugging aid.
  */
 /*E*/extern long db9;
+
 /*!
  * \typedef flag
  * a char whose range is restricted to 0 (equivalent to false/no) and 1
@@ -100,6 +106,7 @@ typedef char flag;
  * meaning the LIST.EXE functionality is an integral part of metamath now.
  */
 extern flag g_listMode; /* 0 = metamath, 1 = list utility */
+
 /*!
  * \var g_toolsMode
  * Metamath has two modes of operation: In its primary mode it handles
@@ -111,6 +118,7 @@ extern flag g_listMode; /* 0 = metamath, 1 = list utility */
 extern flag g_toolsMode; /* In metamath mode:  0 = metamath, 1 = tools */
 
 typedef long nmbrString; /* String of numbers */
+
 /*!
  * \typedef pntrString
  * \brief an array (maybe of size 1) of untyped pointers (void*)
@@ -324,6 +332,7 @@ extern flag g_globalDiscouragement; /* SET DISCOURAGEMENT */
 
 /* Allocation and deallocation in memory pool */
 void *poolFixedMalloc(long size /* bytes */);
+
 /*!
  * \fn void *poolMalloc(long size)
  * \brief allocates and initializes a new \ref pgBlock
@@ -342,6 +351,7 @@ void *poolFixedMalloc(long size /* bytes */);
  *    - Exit on out-of-memory.
  */
 void *poolMalloc(long size /* bytes */);
+
 /*!
  * \fn poolFree(void *ptr)
  *
@@ -361,6 +371,7 @@ void *poolMalloc(long size /* bytes */);
  *   NULL_PTRSTRING.
  */
 void poolFree(void *ptr);
+
 /*!
  * \fn addToUsedPool(void *ptr)
  * \brief announces a block with free capacity for further allocation
@@ -392,6 +403,7 @@ void addToUsedPool(void *ptr);
 /*! Purges reset memory pool usage */
 void memFreePoolPurge(flag untilOK);
 /* Statistics */
+
 /*!
  * \fn getPoolStats(long *freeAlloc, long *usedAlloc, long *usedActual)
  * \brief Provide information about memory in pools at the instant of call.
@@ -502,6 +514,7 @@ struct nullPntrStruct {
    */
   pntrString nullElement;
 };
+
 /*!
  * \var g_PntrNull
  * Global instance of a memory block structured like a
@@ -512,6 +525,7 @@ struct nullPntrStruct {
  * \attention mark as const
  */
 extern struct nullPntrStruct g_PntrNull;
+
 /*!
  * \def NULL_PNTRSTRING
  * The address of a \ref pgBlock "block" containing an empty, not resizable
@@ -519,6 +533,7 @@ extern struct nullPntrStruct g_PntrNull;
  * stack.  Used to initialize \ref pntrString variables .
  */
 #define NULL_PNTRSTRING &(g_PntrNull.nullElement)
+
 /*!
  * \def pntrString_def
  *
@@ -530,6 +545,7 @@ extern struct nullPntrStruct g_PntrNull;
  * \post The variable is initialized.
  */
 #define pntrString_def(x) pntrString *x = NULL_PNTRSTRING
+
 /*!
  * \def free_pntrString
  * \param[in,out] x variable name
@@ -718,6 +734,7 @@ long compressedProofSize(const nmbrString *proof, long statemNum);
  * \invariant always refers the null pointer element behind the valid data.
  */
 extern long g_pntrTempAllocStackTop;   /* Top of stack for pntrTempAlloc function */
+
 /*!
  * \var long g_pntrStartTempAllocStack
  *
@@ -830,6 +847,7 @@ temp_pntrString *pntrPSpace(long n);
  * \pre the array pointed to by s is the sole user of a \ref pgBlock "block".
  */
 long pntrLen(const pntrString *s);
+
 /*!
  * \fn long pntrAllocLen(const pntrString *s)
  * \brief Determine the capacity of a pntrString embedded in a dedicated block

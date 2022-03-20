@@ -379,6 +379,7 @@ int linput(FILE *stream, const char *ask, vstring *target);
  * \bug a stack overflow of \ref tempAllocStack is not handled correctly;
  */
 temp_vstring seg(const char *sin, long start, long stop);
+
 /*!
  * \fn temp_vstring mid(const char *sin, long start, long length)
  * Extracts a substring from a source and pushes it on \ref tempAllocStack
@@ -405,6 +406,7 @@ temp_vstring seg(const char *sin, long start, long stop);
  * \bug a stack overflow of \ref tempAllocStack is not handled correctly;
  */
 temp_vstring mid(const char *sin, long start, long length);
+
 /*!
  * \fn temp_vstring left(const char *sin, long n)
  * \brief Extract leftmost n characters.
@@ -451,6 +453,7 @@ temp_vstring left(const char *sin, long n);
  * \bug a stack overflow of \a tempAllocStack is not handled correctly.
  */
 temp_vstring right(const char *sin, long n);
+
 /*!
  * \fn temp_vstring edit(const char *sin, long control)
  * perform a combination of transformations on \p sin based on the set bits in
@@ -600,6 +603,7 @@ vstring quo$(vstring sout);
  * it restores those values.
  */
 extern long g_tempAllocStackTop;   /* Top of stack for tempAlloc function */
+
 /*!
  * \var g_startTempAllocStack
  * \brief references the first entry of the current scope of temporaries.

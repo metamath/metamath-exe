@@ -53,6 +53,7 @@ vstring_def(g_printString);
 long g_commandFileNestingLevel = 0;
 FILE *g_commandFilePtr[MAX_COMMAND_FILE_NESTING + 1];
 vstring g_commandFileName[MAX_COMMAND_FILE_NESTING + 1];
+
 /*!
  * \var flag g_commandFileSilent[]
  * a 1 for a particular \ref g_commandFileNestingLevel suppresses output for
@@ -70,6 +71,7 @@ long g_screenWidth = MAX_LEN; /* Width default = 79 */
 /* g_screenHeight is one less than the physical screen to account for the
    prompt line after pausing. */
 long g_screenHeight = SCREEN_HEIGHT; /* Default = 23 */
+
 /*!
  * \var int printedLines
  * Lines printed since last user input (mod screen height).  This value is used
@@ -81,6 +83,7 @@ long g_screenHeight = SCREEN_HEIGHT; /* Default = 23 */
 int printedLines = 0;
 flag g_scrollMode = 1; /* Flag for continuous (0) or prompted (1) scroll */
 flag g_quitPrint = 0; /* Flag that user quit the output */
+
 /*!
  * \var flag localScrollMode
  *
@@ -92,6 +95,7 @@ flag g_quitPrint = 0; /* Flag that user quit the output */
  * is assigned temporarily to skip prompts.
  */
 flag localScrollMode = 1;
+
 /*!
  * \page pgBackBuffer History of Pages of Output
  *
@@ -132,7 +136,6 @@ flag localScrollMode = 1;
  * \ref print2, but \ref cmdInput can trigger it as well.
  */
 
-/* Buffer for B (back) command at end-of-page prompt - for future use */
 /*!
  * \var pntrString* backBuffer
  * Buffer for B (back) command at end-of-page prompt.  Although formally a
@@ -151,6 +154,7 @@ flag localScrollMode = 1;
  * The buffer is allocated and initialized to not-empty by \ref print2.
  */
 pntrString_def(backBuffer);
+
 /*!
  * \var backBufferPos
  *
@@ -160,6 +164,7 @@ pntrString_def(backBuffer);
  * \invariant The value 0 indicates an unitialized and empty  \ref backBuffer.
  */
 long backBufferPos = 0;
+
 /*!
  * \var flag backFromCmdInput
  * \brief user entered a B (scroll back command) when a command was expected.
