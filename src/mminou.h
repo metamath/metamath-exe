@@ -283,28 +283,28 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  * \return \ref g_quitPrint 0: user has quit the printout.
  * \pre
  *   - \ref printedLines if indicating a full page of output was reached,
- *     activates __step 2__ if not inhibited by other variables.
+ *     activates __step b__ if not inhibited by other variables.
  *   - \ref g_screenHeight number of lines to display (a page of output) to a
- *     user without need of  __step 2__.
+ *     user without need of  __step b__.
  *   - \ref g_screenWidth if the expanded text exceeds this width, line
  *     breaking may be required.  Other settings can still prevent this;
- *   - \ref g_quitPrint value 1:  Do not enter __step 2__ and suppress output
+ *   - \ref g_quitPrint value 1:  Do not enter __step b__ and suppress output
  *     to the (virtual) text display;
  *   - \ref backFromCmdInput value 1: assume the last entry in \ref backBuffer
  *     was just printed, \ref backBufferPos points to the entry before the
- *     last, and __step 2__ is requested, and nothing else.  No output apart
- *     from replaying saved pages in the \ref backBuffer is generated.  This
- *     flag enables __step 2__ unconditionally, regardless of other settings.
+ *     last.  All steps but __a__ and __b__ are disabled, and __step b__ is
+ *     enforced, regardless of other settings.  No output apart from replaying
+ *     saved pages in the \ref backBuffer is generated.
  *     This flag is set by \ref cmdInput only;
  *   - \ref g_commandFileSilentFlag value 1 suppresses output on the screen;
  *   - \ref g_commandFileNestingLevel a value > 0 indicates a SUBMIT call is
  *     executing, where __scroll mode__ is disabled, unless
  *     \ref backFromCmdInput is 1;
- *   - \ref g_scrollMode value 0 disables __step 2__, unless
+ *   - \ref g_scrollMode value 0 disables __step b__, unless
  *     \ref backFromCmdInput is 1;
- *   - \ref localScrollMode value 0 disables __step 2__, unless
+ *   - \ref localScrollMode value 0 disables __step b__, unless
  *     \ref backFromCmdInput is 1;
- *   - \ref g_outputToString value 1 output is redirected and __step 2__ is
+ *   - \ref g_outputToString value 1 output is redirected and __step b__ is
  *     disabled, unless \ref backFromCmdInput is 1.
  * \post
  *   - \ref g_quitPrint is set to 1, if the user entered _q_ or _Q_ in
