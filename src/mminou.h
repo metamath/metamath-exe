@@ -232,7 +232,7 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     LF.
  *
  * - (h) Add a new history page in \ref backBuffer for the output generated in
- *     step (4) if the current page has overflown.  Do this even when scrolling
+ *     step (4) if the current page has overflowed.  Do this even when scrolling
  *     is disabled.
  *
  *     Some contexts prevent this step: Step (g) was not executed,
