@@ -303,7 +303,7 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     This flag is set by \ref cmdInput only;
  *   - \ref g_commandFileSilentFlag value 1 suppresses output on the screen;
  *   - \ref g_commandFileNestingLevel a value > 0 indicates a SUBMIT call is
- *     executing, where __scroll mode__ is disabled, unless
+ *     executing, where __step b__ is disabled, unless
  *     \ref backFromCmdInput is 1;
  *   - \ref g_scrollMode value 0 disables __step b__, unless
  *     \ref backFromCmdInput is 1;
