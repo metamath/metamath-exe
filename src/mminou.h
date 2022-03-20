@@ -153,7 +153,7 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     \ref g_pntrStartTempAllocStack.
  *
  * -# If the current page is full and further output would overflow it, as
- *     indicated by \ref printedLines, output may be suspended as described ins
+ *     indicated by \ref printedLines, output may be suspended as described in
  *     (2) and the user is prompted for scrolling actions.\n
  *     This step is unconditionally executed when \ref backFromCmdInput = 1
  *     (\ref cmdInput explicitely requested it).  The values in
