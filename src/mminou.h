@@ -269,12 +269,11 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     features)
  * .
  *
- * \param[in] fmt NUL-terminated text to display with embedded placeholders
- *   for insertion of data (which are converted into text if necessary) pointed
- *   to by the following parameters.  The placeholders are encoded in a cryptic
- *   syntax explained
- *   <a href="https://en.wikipedia.org/wiki/Printf_format_string">here</a> or
- *   <a href="https://en.cppreference.com/w/c/io/fprintf">here</a>.
+ * \param[in] fmt (not null) NUL-terminated text to display with embedded
+ *   placeholders for insertion of data (which are converted into text if
+ *   necessary) pointed to by the following parameters.  The format string uses
+ *   the same syntax as 
+ *   <a href="https://en.wikipedia.org/wiki/Printf_format_string">[printf]</a>.
  *   This parameter is ignored when \ref backFromCmdInput is 1.
  * \param[in] "..." The data these (possibly empty sequence of) pointers refer
  *   to are converted to string and then inserted at the respective placeholder
