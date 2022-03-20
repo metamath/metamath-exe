@@ -113,7 +113,9 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  * never be preempted by preparing parameters accordingly.
  *
  * The presence of the LF character controls whether a new line of output is
- * generated, or the output is padded right to the last line.
+ * generated, or the following output is padded right to the last line, except
+ * that output of more than \ref g_screenWidth characters is always closes the
+ * line.
  *
  * Although the output of a single line is the main goal of this function, it
  * does a lot on the side, each effect individually enabled or disabled by
