@@ -192,7 +192,7 @@ flag print2(const char* fmt, ...) {
 
   char *printBuffer; /* Allocated dynamically */
 
-/* (a) in the doxygen description */
+/* step (a) initialize backBuffer  */
 
   if (backBufferPos == 0) {
     /* Initialize backBuffer - 1st time in program */
@@ -216,7 +216,7 @@ flag print2(const char* fmt, ...) {
       || backFromCmdInput) {
     /* It requires a scrolling prompt */
 
-/* (b) in the doxygen description */
+/* step (b) perform scrolling */
 
     while(1) {
       if (backFromCmdInput && backBufferPos == pntrLen(backBuffer))
@@ -301,10 +301,11 @@ flag print2(const char* fmt, ...) {
       while (c != '\n') c = (char)(getchar());
     } /* While 1 */
 
-/* (c) in the doxygen description */
-
     if (backFromCmdInput)
       goto PRINT2_RETURN;
+
+/* step (c) allocate a new page of output */
+
     printedLines = 0; /* Reset the number of lines printed on the screen */
     if (!g_quitPrint) {
       backBufferPos++;
@@ -322,7 +323,7 @@ flag print2(const char* fmt, ...) {
   if (g_quitPrint && !g_outputToString) goto PRINT2_RETURN;
 
 
-/* (d) in the doxygen description */
+/* step (d) evaluate the output text */
 
   /* Allow unlimited output size */
   va_start(ap, fmt);
@@ -349,7 +350,7 @@ flag print2(const char* fmt, ...) {
   nlpos = instr(1, printBuffer, "\n");
   lineLen = (long)strlen(printBuffer);
 
-/* (e) in the doxygen description */
+/* step (e) revert QUOTED_SPACE to space  */
 
   /* Change any ASCII 3's back to spaces, where they were set in
      printLongLine to handle the broken quote problem */
@@ -360,7 +361,7 @@ flag print2(const char* fmt, ...) {
   if ((lineLen > g_screenWidth + 1)
          && !g_outputToString  /* for HTML */ ) {
 
-/* (f) in the doxygen description */
+/* step (f) line wrapping */
 
     /* Force wrapping of lines that are too long by recursively calling
        print2() via printLongLine().  Note:  "+ 1" above accounts for \n. */
@@ -377,7 +378,7 @@ flag print2(const char* fmt, ...) {
   if (!g_outputToString && !g_commandFileSilentFlag) {
     if (nlpos == 0) { /* Partial line (usu. status bar) - print immediately */
 
-/* (g) in the doxygen description, part 1 */
+/* step (g) print to screen, part 1 */
 
 #ifdef __WATCOMC__
       cprintf("%s", printBuffer); /* Immediate console I/O (printf buffers it)*/
@@ -398,7 +399,7 @@ flag print2(const char* fmt, ...) {
 
     } else {
 
-/* (g) in the doxygen description, part 2 */
+/* step (g) print to screen, part 2 */
 
       printf("%s", printBuffer); /* Normal line */
 #if __STDC__
@@ -407,7 +408,7 @@ flag print2(const char* fmt, ...) {
       printedLines++;
       if (!(g_scrollMode == 1 && localScrollMode == 1)) {
 
-/* (h) in the doxygen description */
+/* step (h) address overflowed page */
 
         /* Even in non-scroll (continuous output) mode, still put paged-mode
            lines into backBuffer in case user types a "B" command later,
@@ -431,7 +432,7 @@ flag print2(const char* fmt, ...) {
 #endif
     }
 
-/* (i) in the doxygen description */
+/* step (i) copy output to backBuffer */
 
     let((vstring *)(&(backBuffer[backBufferPos - 1])), cat(
         (vstring)(backBuffer[backBufferPos - 1]), printBuffer, NULL));
@@ -439,7 +440,7 @@ flag print2(const char* fmt, ...) {
 
   if (g_logFileOpenFlag && !g_outputToString) {
 
-/* (j) in the doxygen description */
+/* step (j) log output to file  */
 
     fprintf(g_logFilePtr, "%s", printBuffer);  /* Print to log file */
 #if __STDC__
@@ -454,7 +455,7 @@ flag print2(const char* fmt, ...) {
 
   if (g_outputToString) {
 
-/* (k) in the doxygen description */
+/* step (k) redirect output to a string */
 
     let(&g_printString, cat(g_printString, printBuffer, NULL));
   }
