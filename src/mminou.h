@@ -273,7 +273,7 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *   placeholders for insertion of data (which are converted into text if
  *   necessary) pointed to by the following parameters.  The format string uses
  *   the same syntax as 
- *   <a href="https://en.wikipedia.org/wiki/Printf_format_string">[printf]</a>.
+ *   <a href="https://en.cppreference.com/w/c/io/fprintf">[printf]</a>.
  *   This parameter is ignored when \ref backFromCmdInput is 1.
  * \param[in] "..." The data these (possibly empty sequence of) pointers refer
  *   to are converted to string and then inserted at the respective placeholder
