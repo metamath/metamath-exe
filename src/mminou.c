@@ -30,6 +30,13 @@ extern int cprintf(const char *f__mt,...);
 #endif
 #endif  /* End #ifdef __WATCOMC__ */
 
+/*!
+ * \def QUOTED_SPACE
+ * The general line wrapping algorithm looks out for spaces as break positions.
+ * To prevent a quote delimited by __"__ be broken down, spaces are temporarily
+ * replaced with 0x03 (ETX, end of transmission), hopefully never used in
+ * text in this application.
+ */
 #define QUOTED_SPACE 3 /* ASCII 3 that temporarily zaps a space */
 
 
@@ -46,6 +53,7 @@ vstring_def(g_printString);
 long g_commandFileNestingLevel = 0;
 FILE *g_commandFilePtr[MAX_COMMAND_FILE_NESTING + 1];
 vstring g_commandFileName[MAX_COMMAND_FILE_NESTING + 1];
+
 /*!
  * \var flag g_commandFileSilent[]
  * a 1 for a particular \ref g_commandFileNestingLevel suppresses output for
@@ -63,43 +71,110 @@ long g_screenWidth = MAX_LEN; /* Width default = 79 */
 /* g_screenHeight is one less than the physical screen to account for the
    prompt line after pausing. */
 long g_screenHeight = SCREEN_HEIGHT; /* Default = 23 */
+
 /*!
  * \var int printedLines
- * Lines printed since last user input (mod screen height)
+ * Lines printed since last user input (mod screen height).  This value is used
+ * to determine when a page of output is completed, and the user needs to be
+ * prompted for continuing output.  It counts the number of LF characters,
+ * which may differ from the lines actually used because some hard line breaks
+ * are enforced by overly long lines.
  */
-int printedLines = 0; /* Lines printed since last user input (mod screen height) */
+int printedLines = 0;
 flag g_scrollMode = 1; /* Flag for continuous (0) or prompted (1) scroll */
 flag g_quitPrint = 0; /* Flag that user quit the output */
+
 /*!
  * \var flag localScrollMode
  *
- * temporarily disables prompted scroll (see \ref g_scrollMode) until next user
- * prompt
+ * value 0: temporarily disables page-wise prompted scroll (see
+ * \ref g_scrollMode) until enabled (value 1) again.  Normal user input by
+ * \ref cmdInput1 allows scrolling during output (value 1).  A value of 0
+ * indicates the user has issued command _s_ or _S_ (see \ref pgBackBuffer)
+ * to print all pending output without interruption.  In this case the value 0
+ * is assigned temporarily to skip prompts.
  */
-flag localScrollMode = 1; /* 0 = Scroll continuously only till next prompt */
+flag localScrollMode = 1;
 
-/* Buffer for B (back) command at end-of-page prompt - for future use */
-/*! \var pntrString* backBuffer
+/*!
+ * \page pgBackBuffer History of Pages of Output
+ *
+ * Lengthy text can be displayed in a page-wise manner,  if requested.  In such
+ * a case text output is broken down into pieces small enough to fit into the
+ * screen rectangle of a virtual text device called a __page__ here.  The
+ * dimensions of this rectangle or page are given in \ref g_screenWidth and
+ * \ref g_screenHeight. An extra line outside of the page is reserved for a
+ * prompt and the echo of the user response.
+ *
+ * Regular output (not prompts or error messages) is added line by line both
+ * to the screen and the latest entry of a stack of strings \ref backBuffer,
+ * the.__current page__.  The number of lines pushed to it is kept in
+ * \ref printedLines.  The moment this value indicates a full page, a new empty
+ * page is pushed on the stack, and output is suspended to let the user read
+ * displayed contents in rest.  A user prompt asks for resuming pending output,
+ * alternatively s/he may step backwards and forward through the sequence of
+ * saved pages for redisplay.  The variable \ref backBufferPos tracks which
+ * page the user requested last (or points to the currently built-up page).
+ *
+ * On initialization memory is allocated for the \ref backBuffer, and an empty
+ * string (empty page) is pushed onto the stack as a guard.  This is a simple
+ * technical means to formally carry out a back step, even when you have just
+ * recalled the very first saved page.  The display of this empty guard page
+ * has no other effect than repeating the prompt.  The \ref backBufferPos is
+ * never updated to point (value 0) to this guard page.
+ *
+ * During a replay of the history normal user input is intercepted and
+ * interpreted as scroll commands.  These commands are at most a single
+ * character, followed by a LF.  A _b_ or _B_ backs up one step further in
+ * history,  an empty line means one step forward, _s_ or _S_ scrolls to the
+ * end, showing all pages in between and all pending output at one swoop,
+ * and _q_ or _Q_ skips all pending output and gets you directly back to normal
+ * input.  You cannot back up to the guard page (although it is shown on input
+ * B when at the very first saved page).  Moving a step forward when at the
+ * very last history page resumes pending normal output.  Unrecognized input is
+ * simply ignored.  The loop controlling these movements is found in
+ * \ref print2, but \ref cmdInput can trigger it as well.
+ */
+
+/*!
+ * \var pntrString* backBuffer
  * Buffer for B (back) command at end-of-page prompt.  Although formally a
- * \ref pntrString is an array of void*, this buffer contains always pointer to
- * \ref vstring.
+ * \ref pntrString is using void*, this buffer contains pointer to \ref vstring
+ * only.  Its element at index 0 is fixed to an empty string (page), a guard
+ * representing contents not available.
  *
  * Some longer text (like help texts for example) provide a page wise display
  * with a scroll option, so the user can move freely back and forth in the
  * text.  This is the storage of already displayed text kept for possible
- * redisplay.
+ * redisplay (see \ref pgBackBuffer).
+ *
+ * The element last displayed, or currently built up, is denoted by
+ * \ref backBufferPos.
+ *
+ * The buffer is allocated and initialized to not-empty by \ref print2.
  */
 pntrString_def(backBuffer);
+
 /*!
  * \var backBufferPos
  *
  * Number of entries in the \ref backBuffer that are available for repeatedly
  * scrolling back.  Initialized to 0.
  *
- * \invariant The value 0 requires an empty \ref backBuffer.
+ * \invariant The value 0 indicates an unitialized and empty  \ref backBuffer.
  */
 long backBufferPos = 0;
-flag backFromCmdInput = 0; /* User typed "B" at main prompt */
+
+/*!
+ * \var flag backFromCmdInput
+ * \brief user entered a B (scroll back command) when a command was expected.
+ * This \ref flag is set only by \ref cmdInput that handles some of the user's
+ * scroll input commands, in particular the B command for moving backwards
+ * in page-wise display.  All further scroll commands are interpreted by
+ * \ref print2, to which this flag is directed.  It signals the \ref backBuffer
+ * is being scrolled.
+ */
+flag backFromCmdInput = 0;
 
 /* Special:  if global flag g_outputToString = 1, then the output is not
              printed but is added to global string g_printString */
@@ -116,6 +191,8 @@ flag print2(const char* fmt, ...) {
   long i;
 
   char *printBuffer; /* Allocated dynamically */
+
+/* step (1) initialize backBuffer  */
 
   if (backBufferPos == 0) {
     /* Initialize backBuffer - 1st time in program */
@@ -138,6 +215,9 @@ flag print2(const char* fmt, ...) {
       && printedLines >= g_screenHeight && !g_outputToString)
       || backFromCmdInput) {
     /* It requires a scrolling prompt */
+
+/* step (2) perform scrolling */
+
     while(1) {
       if (backFromCmdInput && backBufferPos == pntrLen(backBuffer))
         break; /* Exhausted buffer */
@@ -220,8 +300,12 @@ flag print2(const char* fmt, ...) {
       }
       while (c != '\n') c = (char)(getchar());
     } /* While 1 */
+
     if (backFromCmdInput)
       goto PRINT2_RETURN;
+
+/* step (3) allocate a new page of output */
+
     printedLines = 0; /* Reset the number of lines printed on the screen */
     if (!g_quitPrint) {
       backBufferPos++;
@@ -238,6 +322,8 @@ flag print2(const char* fmt, ...) {
     a string since we want to complete the writing to the string. */
   if (g_quitPrint && !g_outputToString) goto PRINT2_RETURN;
 
+
+/* step (4) evaluate the output text */
 
   /* Allow unlimited output size */
   va_start(ap, fmt);
@@ -264,6 +350,8 @@ flag print2(const char* fmt, ...) {
   nlpos = instr(1, printBuffer, "\n");
   lineLen = (long)strlen(printBuffer);
 
+/* step (5) revert QUOTED_SPACE to space  */
+
   /* Change any ASCII 3's back to spaces, where they were set in
      printLongLine to handle the broken quote problem */
   for (i = 0; i < lineLen; i++) {
@@ -272,6 +360,9 @@ flag print2(const char* fmt, ...) {
 
   if ((lineLen > g_screenWidth + 1)
          && !g_outputToString  /* for HTML */ ) {
+
+/* step (6) line wrapping */
+
     /* Force wrapping of lines that are too long by recursively calling
        print2() via printLongLine().  Note:  "+ 1" above accounts for \n. */
     /* Note that breakMatch is "" so it may break in middle of a word */
@@ -286,6 +377,8 @@ flag print2(const char* fmt, ...) {
 
   if (!g_outputToString && !g_commandFileSilentFlag) {
     if (nlpos == 0) { /* Partial line (usu. status bar) - print immediately */
+
+/* step (7) print to screen, part 1 */
 
 #ifdef __WATCOMC__
       cprintf("%s", printBuffer); /* Immediate console I/O (printf buffers it)*/
@@ -305,12 +398,18 @@ flag print2(const char* fmt, ...) {
 #endif
 
     } else {
+
+/* step (7) print to screen, part 2 */
+
       printf("%s", printBuffer); /* Normal line */
 #if __STDC__
       fflush(stdout);
 #endif
       printedLines++;
       if (!(g_scrollMode == 1 && localScrollMode == 1)) {
+
+/* step (8) address overflowed page */
+
         /* Even in non-scroll (continuous output) mode, still put paged-mode
            lines into backBuffer in case user types a "B" command later,
            so user can page back from end. */
@@ -332,11 +431,17 @@ flag print2(const char* fmt, ...) {
       fflush(stdout);
 #endif
     }
+
+/* step (9) copy output to backBuffer */
+
     let((vstring *)(&(backBuffer[backBufferPos - 1])), cat(
         (vstring)(backBuffer[backBufferPos - 1]), printBuffer, NULL));
   } /* End if !g_outputToString */
 
   if (g_logFileOpenFlag && !g_outputToString) {
+
+/* step (10) log output to file  */
+
     fprintf(g_logFilePtr, "%s", printBuffer);  /* Print to log file */
 #if __STDC__
     fflush(g_logFilePtr);
@@ -349,6 +454,9 @@ flag print2(const char* fmt, ...) {
   }
 
   if (g_outputToString) {
+
+/* step (11) redirect output to a string */
+
     let(&g_printString, cat(g_printString, printBuffer, NULL));
   }
 

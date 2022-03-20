@@ -46,7 +46,8 @@
  *
  * Any local vstrings in a function must be deallocated before returning
  * from the function, otherwise there will be memory leakage and eventual
- * memory overflow.  To deallocate, assign the vstring to "" with \ref free_vstring:
+ * memory overflow.  To deallocate, assign the vstring to "" with
+ * \ref free_vstring :
  *
  *     void abc(void) {
  *       vstring_def(xyz);
@@ -270,7 +271,7 @@ void freeTempAlloc(void);
  * assigns to text to a \ref vstring pointer.  This includes a bit of memory
  * management.  Not only is the space of the destination of the assignment
  * reallocated if its previous size was too small.  But in addition the
- * \ref stack "stack" \ref tempAllocStack is freed of intermediate values
+ * \ref pgStack "stack" \ref tempAllocStack is freed of intermediate values
  * again.  Every entry on and beyond \ref g_startTempAllocStack is considered
  * to be consumed and subject to deallocation.
  *
@@ -378,6 +379,7 @@ int linput(FILE *stream, const char *ask, vstring *target);
  * \bug a stack overflow of \ref tempAllocStack is not handled correctly;
  */
 temp_vstring seg(const char *sin, long start, long stop);
+
 /*!
  * \fn temp_vstring mid(const char *sin, long start, long length)
  * Extracts a substring from a source and pushes it on \ref tempAllocStack
@@ -404,6 +406,7 @@ temp_vstring seg(const char *sin, long start, long stop);
  * \bug a stack overflow of \ref tempAllocStack is not handled correctly;
  */
 temp_vstring mid(const char *sin, long start, long length);
+
 /*!
  * \fn temp_vstring left(const char *sin, long n)
  * \brief Extract leftmost n characters.
@@ -450,6 +453,7 @@ temp_vstring left(const char *sin, long n);
  * \bug a stack overflow of \a tempAllocStack is not handled correctly.
  */
 temp_vstring right(const char *sin, long n);
+
 /*!
  * \fn temp_vstring edit(const char *sin, long control)
  * perform a combination of transformations on \p sin based on the set bits in
@@ -543,7 +547,18 @@ temp_vstring str(double x);
 
 long len(const char *s);
 
-long instr(long start, const char *string1, const char *string2);
+/*!
+ * \fn long instr(long start, const char *string, const char *match)
+ * Search for \p match in \p string starting at \p start.
+ * \param[in] start 1-based position (including) the search begins.  A value <=
+ *   0 is corrected to 1.  A value beyond the terminating NUL in \p string
+ *   is corrected to the terminating NUL.
+ * \param[in] string NUL-terminated string to be searched.
+ * \param[in] match NUL-terminated match to be found in \p string.  If
+ *   this is the empty string, the length of \p string is returned.
+ * \return the 1-based position of the first hit, or 0 if not found.
+ */
+long instr(long start, const char *string, const char *match);
 
 long rinstr(const char *string1, const char *string2);
 
@@ -576,8 +591,9 @@ vstring quo$(vstring sout);
  * \var g_tempAllocStackTop
  * \brief Top of stack for temporary text.
  *
- * Refers to the \ref stack "stack" in \ref tempAllocStack for temporary text.
- * The current top index referencing the next free entry is kept in this variable.
+ * Refers to the \ref pgStack "stack" in \ref tempAllocStack for temporary
+ * text.  The current top index referencing the next free entry is kept in
+ * this variable.
  *
  * This value is made public for setting up scopes of temporary memory for
  * nested functions.  Each such function allocates/frees scratch memory
@@ -587,13 +603,15 @@ vstring quo$(vstring sout);
  * it restores those values.
  */
 extern long g_tempAllocStackTop;   /* Top of stack for tempAlloc function */
+
 /*!
  * \var g_startTempAllocStack
  * \brief references the first entry of the current scope of temporaries.
  *
- * Refers to the \ref stack "stack" in \ref tempAllocStack for temporary text.
- * Nested functions maintain their own scope of temporary data.  The index
- * referencing the first index of the current scope is kept in this variable.
+ * Refers to the \ref pgStack "stack" in \ref tempAllocStack for temporary
+ * text.  Nested functions maintain their own scope of temporary data.  The
+ * index referencing the first index of the current scope is kept in this
+ * variable.
  *
  * This value is made public for setting up scopes of temporary memory for
  * nested functions.  Each such function allocates/frees scratch memory

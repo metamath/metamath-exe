@@ -30,6 +30,7 @@ This is an emulation of the string functions available in VMS BASIC.
 */
 
 /*E*/long db1=0;
+
 /*!
  * \def INCDB1
  * updates \ref db1 if NDEBUG is not defined, is a no operation else.
@@ -58,10 +59,11 @@ long g_tempAllocStackTop = 0;      /* Top of stack for tempAlloc function */
 long g_startTempAllocStack = 0;    /* Where to start freeing temporary allocation
                                     when let() is called (normally 0, except in
                                     special nested vstring functions) */
+
 /*!
  * \brief stack for temporary text.
  *
- * This \ref stack "stack" contains \ref vstring pointers holding temporary
+ * This \ref pgStack "stack" contains \ref vstring pointers holding temporary
  * text like fragments, boilerplate and so on.  The current top of the stack is
  * \ref g_tempAllocStackTop.  Nested functions share this stack, each setting
  * aside its own scope.  The scope of the most nested function begins at index
@@ -659,21 +661,18 @@ temp_vstring chr(long n) {
 } /* chr */
 
 
-/* Search for string2 in string1 starting at start_position */
-/* If there is no match, 0 is returned */
-/* If string2 is "", (length of the string) + 1 is returned */
-long instr(long start_position, const char *string1, const char *string2) {
+long instr(long start, const char *string, const char *match) {
   const char *sp1, *sp2;
   long ls1, ls2;
   long found = 0;
-  if (start_position < 1) start_position = 1;
-  ls1 = (long)strlen(string1);
-  ls2 = (long)strlen(string2);
-  if (start_position > ls1) start_position = ls1 + 1;
-  sp1 = string1 + start_position - 1;
-  while ((sp2 = strchr(sp1, string2[0])) != 0) {
-    if (strncmp(sp2, string2, (size_t)ls2) == 0) {
-      found = sp2 - string1 + 1;
+  if (start < 1) start = 1;
+  ls1 = (long)strlen(string);
+  ls2 = (long)strlen(match);
+  if (start > ls1) start = ls1 + 1;
+  sp1 = string + start - 1;
+  while ((sp2 = strchr(sp1, match[0])) != 0) {
+    if (strncmp(sp2, match, (size_t)ls2) == 0) {
+      found = sp2 - string + 1;
       break;
     } else
       sp1 = sp2 + 1;

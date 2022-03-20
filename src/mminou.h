@@ -20,11 +20,13 @@
 extern int g_errorCount;     /*!< Total error count */
 
 /* Global variables used by print2() */
+
 /*!
  * \var flag g_logFileOpenFlag
  * If set to 1, logging of input is enabled.  Initially set to 0.
  */
 extern flag g_logFileOpenFlag;
+
 /*!
  * \var FILE *g_logFilePtr
  * The OPEN LOG command opens a log file.  Its file descriptor is stored here,
@@ -43,6 +45,11 @@ extern FILE *g_listFile_fp;
  */
 extern flag g_outputToString;
 
+/*!
+ * \var vstring g_printString
+ * If output is redirected to a string by \ref g_outputToString, this variable
+ * receives the contents.
+ */
 extern vstring g_printString;
 
 
@@ -64,6 +71,7 @@ extern vstring g_printString;
  * Limited by \ref MAX_COMMAND_FILE_NESTING.
  */
 extern long g_commandFileNestingLevel;
+
 /*!
  * \var FILE *g_commandFilePtr[MAX_COMMAND_FILE_NESTING + 1]
  * file descriptors pointing to files invoked by SUBMIT commands.  The 0-th
@@ -72,6 +80,7 @@ extern long g_commandFileNestingLevel;
  * valid, and point to opened files.
  */
 extern FILE *g_commandFilePtr[MAX_COMMAND_FILE_NESTING + 1];
+
 /*!
  * \var vstring g_commandFileName[]
  * list of command file names in nested SUBMIT commands.  This name need not be
@@ -93,20 +102,259 @@ extern flag g_commandFileSilentFlag; /* For SUBMIT ... /SILENT */
 extern FILE *g_input_fp;  /*!< File pointers */
 extern vstring g_input_fn, g_output_fn;  /*!< File names */
 
-/*! print2 returns 0 if the user has quit the printout.
-  \warning:  never call print2 with string longer than PRINTBUFFERSIZE - 1  */
+/*!
+ * \fn flag print2(const char* fmt,...)
+ * \brief formatted output of a single line with optional page-wise display.
+ *
+ * It is important to understand that the submitted parameters result in a
+ * NUL-terminated string that contains at most one LF character, only allowed
+ * in final position.  A long line exceeding \ref g_screenWidth is broken down
+ * into multiple lines using a built-in line wrap algorithm.  But this must
+ * never be preempted by preparing parameters accordingly.
+ *
+ * The presence of the LF character controls whether a new line of output is
+ * generated, or the following output is padded right to the last line, except
+ * that output of more than \ref g_screenWidth characters always closes the
+ * line.
+ *
+ * Although the output of a single line is the main goal of this function, it
+ * does a lot on the side, each effect individually enabled or disabled by
+ * various global variables that are honored, sometimes even updated.  We skim
+ * through these effects here in short:
+ *
+ * - (a) __Data embedding__.  The \p fmt parameter can contain simple text,
+ *   that is displayed as is.  Or embedded placeholders are replaced with data
+ *   pointed to by the following parameters.  If necessary, data are converted
+ *   to strings before insertion.
+ * - (b) Supporting __page-wise display__.  Output on the virtual text display
+ *   is stopped after showing \ref g_screenHeight lines, called a __page__
+ *   here.  The user can read the text at rest, and then request resuming
+ *   output with a short command.  In fact, this feature is enhanced by
+ *   maintaining a \ref pgBackBuffer, allowing the user to recall previously
+ *   shown pages, and navigate them freely forward and backwards.  This feature
+ *   temporarily grabs user input and interprets short commands as navigating
+ *   instructions.  For more see \ref pgBackBuffer.
+ * - (c) __Line wrapping__.  When the line to display exceeds the limits in
+ *   \ref g_screenWidth, line breaking is applied.  The wrapping is actually
+ *   done in \ref printLongLine which in turn uses separate print2 calls to
+ *   output each individual line.  This requires a minimum synchronization of
+ *   both the outer and inner calls, so that relevant state is carried back to
+ *   the outer, temporarily suspended call.
+ * - (d) __Redirection__.  Instead of displaying output on the virtual text
+ *   display, it may be stored in a NUL-terminated string variable.  Or even
+ *   completely suppressed, for example when executing a SUBMIT.
+ * - (e) __Logging__.  Output may be logged to a file for examination.
+ *
+ * These effects need not be carried out in this order, some may even be
+ * omitted.  We show the order of steps and their respective conditions here.
+ *
+ * 1. The \ref backBuffer is almost private to this function, so its
+ *     initialization is done here, right at the beginning.  The
+ *     \ref backBufferPos is always at least 1, so a value of 0 indicates an
+ *     outstanding \ref backBuffer memory allocation, and an empty string is
+ *     pushed as a first (guard) page onto it (see \ref pgBackBuffer).
+ *
+ *     \ref g_pntrTempAllocStackTop may be reset to
+ *     \ref g_pntrStartTempAllocStack.
+ *
+ * 2. If the current page is full and further output would overflow it, as
+ *     indicated by \ref printedLines, output may be suspended as described in
+ *     (b) and the user is prompted for scrolling actions.\n
+ *     This step is unconditionally executed when \ref backFromCmdInput = 1
+ *     (\ref cmdInput explicitly requested it).  The values in
+ *     \ref g_quitPrint and \ref localScrollMode are retained then, regardless
+ *     of user input.
+ *
+ *     Other conditions prevent this step:  Output is discarded on user request
+ *     (\ref g_quitPrint = 1), a SUBMIT call is running
+ *     (\ref g_commandFileNestingLevel > 0), scrolling is generally
+ *     (\ref g_scrollMode = 0) or temporarily (\ref localScrollMode = 0)
+ *     disabled, output is redirected (\ref g_outputToString = 1).
+ *
+ *     This step can set \ref g_quitPrint to 1 (if \ref backFromCmdInput = 0).
+ *     It can modify \ref backBufferPos (by command _q_ or _Q_) and set
+ *     \ref localScrollMode = 0 (by command _s_ or _S_, and
+ *     \ref backFromCmdInput = 0).
+ *
+ * 3. If pending output would overflow the screen, \ref backBuffer is extended
+ *     by a new page to receive pending output.
+ *
+ *     Several conditions can prevent this step:  Step (2) was not executed,
+ *     output is discarded on user request (\ref g_quitPrint = 1),
+ *     \ref backFromCmdInput = 1 (\ref cmdInput needs the scrolling loop
+ *     only).
+ *
+ *     Sets \ref printedLines to 0, indicating that nothing has been added to
+ *     the new page yet. Increments \ref backBufferPos so all pending output is
+ *     copied to the new page.  \ref g_pntrTempAllocStackTop may be reset to
+ *     \ref g_pntrStartTempAllocStack.
+ *
+ * 4. The function parameters are used to create a new line.  Placeholders in
+ *     \p fmt (see its description for details) are replaced with their
+ *     respective data values, converted to text  All data is first stored in
+ *     an internal buffer.
+ *
+ *     Some contexts prevent this step: Output (if to screen) is discarded on
+ *     user request (\ref g_quitPrint = 1 and \ref g_outputToString = 0),
+ *     \ref backFromCmdInput = 1 (\ref cmdInput uses only the scrolling
+ *     features)
+ *
+ * 5. Revert any \ref QUOTED_SPACE back to space characters in the string
+ *     produced in step (4) (\ref printLongLine might have introduced these
+ *     characters to prevent line breaks at certain space characters).  For
+ *     this to work correctly, \ref QUOTED_SPACE must not be part of the
+ *     regular output. (Doing so will trigger a bug check in
+ *     \ref printLongLine .)
+ *
+ *     Some contexts prevent this step: Output (if to screen) is discarded on
+ *     user request (\ref g_quitPrint = 1 and \ref g_outputToString = 0),
+ *     \ref backFromCmdInput = 1 (\ref cmdInput uses only the scrolling
+ *     features)
+ *
+ * 6. Perform line wrapping.  The wrapping is actually done in
+ *     \ref printLongLine, which in turn calls this function to handle each
+ *     broken down line separately.  The output generated in step (4) is copied
+ *     onto \ref tempAllocStack, omitting a trailing LF.
+ *
+ *     Some contexts prevent this step: The output from step (4) (excluding a
+ *     trailing LF) does not exceed \ref g_screenWidth, output is discarded on
+ *     user request (\ref g_quitPrint = 1), output is redirected to a string
+ *     (\ref g_outputToString = 1), \ref backFromCmdInput = 1
+ *     (\ref cmdInput uses only the scrolling features)
+ *
+ *      __todo__ clarify variants/invariants
+ *
+ * 7. Print the prepared output onto the screen.
+ *
+ *     Some contexts prevent this step: Step (6) (line wrapping) was executed,
+ *     output is discarded on user request (\ref g_quitPrint = 1)
+ *     output is redirected to a string (\ref g_outputToString = 1), a SUBMIT
+ *     is silently executing (\ref g_commandFileSilentFlag = 1),
+ *     \ref backFromCmdInput = 1 (\ref cmdInput uses only the scrolling
+ *     features)
+ *
+ *     \ref printedLines is increased if the prepared output terminates with
+ *     LF.
+ *
+ * 8. Add a new history page in \ref backBuffer for the output generated in
+ *     step (4) if the current page has overflowed.  Do this even when scrolling
+ *     is disabled.
+ *
+ *     Some contexts prevent this step: Step (7) was not executed,
+ *     \ref printedLines <= \ref g_screenHeight allows another line of output,
+ *     the output printed in step (7) has no trailing LF and is appended to the
+ *     last line of output, a SUBMIT is silently executing
+ *     (\ref g_commandFileSilentFlag = 1), scrolling is enabled
+ *     (\ref g_scrollMode = 1, step (c) handles this case).
+ *
+ *     \ref printedLines is set to 1.  \ref backBufferPos is increased.
+ *     \ref g_pntrTempAllocStackTop may be reset to
+ *     \ref g_pntrStartTempAllocStack.
+ *
+ * 9. Add the output to the \ref backBuffer.
+ *
+ *     Some contexts prevent this step: Step (7) was not executed.
+ *
+ *     \ref g_tempAllocStackPos is reset to \ref g_startTempAllocStack.
+ *
+ * 10. Log the output to a file given by \ref g_logFilePtr.
+ *
+ *     Some contexts prevent this step: Step (4) was not executed, a log file
+ *     is not opened (\ref g_logFileOpenFlag = 0), output is redirected to a string
+ *     (\ref g_outputToString = 1), \ref backFromCmdInput = 1 (\ref cmdInput
+ *     uses only the scrolling features)
+ *
+ *     \ref g_tempAllocStackPos is reset to \ref g_startTempAllocStack.
+ *
+ * 11. Copy the prepared output in step (4) to \ref g_printString.
+ *
+ *     Some contexts prevent this step: Step (4) was not executed, output is
+ *     not redirected to a string (\ref g_outputToString = 0),
+ *     \ref backFromCmdInput = 1 (\ref cmdInput uses only the scrolling
+ *     features)
+ * .
+ *
+ * \param[in] fmt (not null) NUL-terminated text to display with embedded
+ *   placeholders for insertion of data (which are converted into text if
+ *   necessary) pointed to by the following parameters.  The format string uses
+ *   the same syntax as 
+ *   <a href="https://en.cppreference.com/w/c/io/fprintf">[printf]</a>.
+ *   This parameter is ignored when \ref backFromCmdInput is 1.
+ * \param[in] "..." The data these (possibly empty sequence of) pointers refer
+ *   to are converted to string and then inserted at the respective placeholder
+ *   position in \p fmt.  They should strictly match in number, type and order
+ *   the placeholders.
+ *   These parameters are ignored when \ref backFromCmdInput is 1.
+ * \return \ref g_quitPrint 0: user has quit the printout.
+ * \pre
+ *   - \ref printedLines if indicating a full page of output was reached,
+ *     activates __step 2__ if not inhibited by other variables.
+ *   - \ref g_screenHeight number of lines to display (a page of output) to a
+ *     user without need of  __step 2__.
+ *   - \ref g_screenWidth if the expanded text exceeds this width, line
+ *     breaking may be required.  Other settings can still prevent this;
+ *   - \ref g_quitPrint value 1:  Do not enter __step 2__ and suppress output
+ *     to the (virtual) text display;
+ *   - \ref backFromCmdInput value 1: assume the last entry in \ref backBuffer
+ *     was just printed, \ref backBufferPos points to the entry before the
+ *     last.  All steps but __1__ and __2__ are disabled, and __step 2__ is
+ *     enforced, regardless of other settings.  No output apart from replaying
+ *     saved pages in the \ref backBuffer is generated.
+ *     This flag is set by \ref cmdInput only;
+ *   - \ref g_commandFileSilentFlag value 1 suppresses output on the screen;
+ *   - \ref g_commandFileNestingLevel a value > 0 indicates a SUBMIT call is
+ *     executing, where __step 2__ is disabled, unless
+ *     \ref backFromCmdInput is 1;
+ *   - \ref g_scrollMode value 0 disables __step 2__, unless
+ *     \ref backFromCmdInput is 1;
+ *   - \ref localScrollMode value 0 disables __step 2__, unless
+ *     \ref backFromCmdInput is 1;
+ *   - \ref g_outputToString value 1 output is redirected and __step 2__ is
+ *     disabled, unless \ref backFromCmdInput is 1.
+ * \post
+ *   - \ref g_quitPrint is set to 1, if the user entered _q_ or _Q_ in
+ *      __step 2__, and \ref backFromCmdInput is 0.
+ *   - \ref backBuffer is allocated and not empty (at least filled with an
+ *     empty string)
+ *   - \ref backBufferPos > 0, updated
+ *   - \ref localScrollMode = 0 if the user entered _s_ or _S_ in __step 2__.
+ *   - \ref g_printString receives the output if \ref g_outputToString = 1.
+ *   - \ref printedLines updated
+ *   - \ref g_pntrTempAllocStackTop may be reset to
+ *     \ref g_pntrStartTempAllocStack.
+ *     \ref g_tempAllocStackPos may be reset to \ref g_startTempAllocStack.
+ * \bug It is possible to produce lines exceeding \ref g_screenWidth by
+ *   concatenating substrings smaller than this value, but having no LF at the
+ *   end.
+ * \warning never call print2 with string longer than PRINTBUFFERSIZE - 1
+ */
 flag print2(const char* fmt,...);
-extern long g_screenHeight; /*!< Height of screen */
+
+/*!
+ * \var long g_screenHeight
+ * Number of lines the (virtual) text display can display to the user at the
+ * same time, apart from an extra line set aside for a prompt and echo of user
+ * input.  The command SET HEIGHT changes this value.
+ *
+ * This value equals the number of lines in a page of output.  After a page
+ * output is interrupted to let the user read the contents and request
+ * resuming.
+ */
+extern long g_screenHeight;
+
 /*!
  * \var long g_screenWidth
  * \brief Width of screen
  *
- * The minimum width of the display, measured in fixed width characters.
+ * The minimum width of the (virtual) text display, measured in fixed width
+ * characters.  The command SET WIDTH changes this value.
  */
 extern long g_screenWidth;
+
 /*!
  * \def MAX_LEN
  * \brief Default width of screen
+ * The default setting of \ref g_screenWidth on program start.
  *
  * Number of characters that can always be displayed in a single line.  This
  * notion is reminiscent of CRT tubes with a fixed width character set.
@@ -114,8 +362,17 @@ extern long g_screenWidth;
  * some mobile devices this may be reduced to 30-40 characters.
  */
 #define MAX_LEN 79
-/*! Lines on screen, minus 1 to account for prompt */
+
+/*!
+ * \def SCREEN_HEIGHT
+ * \brief Default height of screen
+ * The default setting of \ref g_screenHeight on program start.
+ *
+ * This notion is reminiscent of CRT tubes with a fixed width character set.
+ * Graphical Displays on a notebook for example can display much more.
+ */
 #define SCREEN_HEIGHT 23
+
 /*!
  * \var flag g_scrollMode
  * \brief controls whether output stops after a full page is printed.
@@ -125,14 +382,33 @@ extern long g_screenWidth;
  * flag is reset to 0.
  */
 extern flag g_scrollMode;
+
 /*!
  * \var flag g_quitPrint
  * \brief Flag that user typed 'q' to last scrolling prompt
- * The value 1 indicates the user entered a 'q' at the last scrolling prompt.
+ * The value 1 indicates the user requested immediately discarding pending
+ * output, and return back to normal command input.
+ *
+ * This flag is set in \ref print2 when the user inputs q or Q.
  */
 extern flag g_quitPrint;
 
-/*! printLongLine automatically puts a newline \n in the output line. */
+/*!
+ * \fn void printLongLine(const char *line, const char *startNextLine, const char *breakMatch)
+ * \brief perform line wrapping and print
+ * apply a line wrapping algorithm to fit a text into the screen rectangle.
+ * Submit each individual broken down line to \ref print2 for output.
+ *
+ * printLongLine automatically puts a newline in the output line.
+ * \param[in] line (not null) NUL-terminated text (may contain LF) to apply
+ *   line wrapping to.
+ * \param[in] startNextLine (not null) NUL-terminated string to place before
+ *   continuation lines.
+ * \param[in] breakMatch (not null) NULL-terminated list of characters at which
+ *   the line can be broken.  If empty, a break is possible anywhere.
+ * \post
+ *   \ref tempAllocStack is cleared down to \ref g_startTempAllocStack.
+ */
 void printLongLine(const char *line, const char *startNextLine, const char *breakMatch);
 
 /*!
@@ -166,18 +442,17 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  *
  * 2. The user hits ENTER only while prompted in top level context.  The empty
  * line is not returned.
- * 
+ *
  * No timeout is applied while waiting for user input from the console.
  *
  * A bug message need not result in an execution stop.  It is not directed to
  * the metamath bug function to avoid stacking up calls (bug calling cmdInput
  * again for scrolling etc.).
  *
- * \todo clarify recursive call to print2 and the role of backFromCmdInput. 
  * \param[in] stream (not null) source to read the line from.  _stdin_ is
- *   common for user input from the console. 
+ *   common for user input from the console.
  * \param[in] ask prompt text displayed on the screen before \p stream is
- *   read.  This prompt is suppressed by either a NULL value, or setting 
+ *   read.  This prompt is suppressed by either a NULL value, or setting
  *   \ref g_commandFileSilentFlag to 1.  This prompt must be not NULL (empty is
  *   fine!) outside of a SUBMIT call, where user is expected to enter input.
  *   \n
@@ -196,8 +471,8 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  *   - \ref g_commandFileNestingLevel a value > 0 indicates a SUBMIT call is
  *     executing, a read line is returned as is.  0 is seen as an interactive
  *     mode, where read lines can be interpreted;
- *   - \ref g_outputToString value 1 renders scrolling as pointless and
- *     disables it;
+ *   - \ref g_outputToString value 1 output is redirected and scrolling is
+ *     disabled
  *   - \ref backBuffer may contain text to display on scroll back operations;
  *   - \ref g_scrollMode value 1 enables scrolling back through text held in
  *     \ref backBuffer;
@@ -219,10 +494,10 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
 vstring cmdInput(FILE *stream, const char *ask);
 
 /*!
- * \brief print explanatory text and then read a line.
+ * \brief print prompt (or explanatory) text and then read a line.
  *
- * After some explanatory text is printed, gets a line from either stdin or the
- * command file stream in \ref g_commandFilePt, depending on the value of
+ * After a prompt text is printed, gets a line from either stdin or the
+ * command file stream in \ref g_commandFilePtr, depending on the value of
  * \ref g_commandFileNestingLevel.  If this value is 0, interactive input via
  * stdin is assumed, else non interpreted lines are read from a file in submit
  * mode.  The line returned to the caller is more or less what \ref cmdInput()
@@ -230,10 +505,11 @@ vstring cmdInput(FILE *stream, const char *ask);
  *
  * \par Displaying the prompt text
  *
- * The text used to prompt the user is wrapped around preferably spaces to fit
- * into a display of \ref g_screenWidth.  If possible, wrapping shortens the
- * last line such that space for 10 characters is available to the right of the
- * prompt for user input.
+ * This function is prepared to display a longer text, before issuing a final
+ * prompt line (unlike \ref cmdInput).  The text shown to the user is usually
+ * wrapped around preferably at spaces to fit into a display of width
+ * \ref g_screenWidth.  If possible, wrapping shortens the last line such that
+ * space for 10 characters is left to the right for user input.
  *
  * \par Interactive Mode
  *
@@ -244,7 +520,7 @@ vstring cmdInput(FILE *stream, const char *ask);
  * wrapping was applied.
  *
  * 2. Empty lines are discarded, and a reprompt is triggered.
- * 
+ *
  * 3. A NULL resulting from an error (buffer overflow) or a premature EOF
  * (CTRL_D from keyboard) from \ref cmdInput is either returned as "EXIT".  Or
  * if the last line of the prompt starts with "Do", then it is assumed to
@@ -253,7 +529,7 @@ vstring cmdInput(FILE *stream, const char *ask);
  * immediate stop on the caller's side.
  *
  * 4. If logging is enabled, prompt and returned input is logged.
- * 
+ *
  * \par Submit Mode
  *
  * 1. a non-interpreted line is read from the appropriate entry in
@@ -261,21 +537,24 @@ vstring cmdInput(FILE *stream, const char *ask);
  *
  * 2. If NULL is returned, reaching EOF is assumed, the file is closed, its
  * name in \ref g_commandFileName deallocated and the previous
- * \ref g_commandFileLevel is activated.  In this particular case the read line
- * is the empty string.  A message indicating the end of the command file is
- * printed.  The \ref g_commandFileSilentFlag controlling console output is
- * copied from the appropriate entry of \ref g_commandFileSilent, unless the
- * interactive mode is reached; here output is never suppressed (value 0).
+ * \ref g_commandFileNestingLevel is activated.  In this particular case the
+ * read line is the empty string.  A message indicating the end of the command
+ * file is printed.  The \ref g_commandFileSilentFlag controlling console
+ * output is copied from the appropriate entry of \ref g_commandFileSilent,
+ * unless the interactive mode is reached; here output is never suppressed
+ * (value 0).
  *
- * 3. remove all CR (0x0D) characters, not only those in compination with LF.
+ * 3. remove all CR (0x0D) characters, not only those in combination with LF.
  *
  * 4. prompt and command is printed, if not suppressed, then the read line is
  * returned.
  *
- * \return first not interpreted line as \ref vstring, or "EXIT" on error. 
+ * \return first not interpreted line as \ref vstring, or "EXIT" on error.
  * \pre
  *   The following variables are honored during execution and should be properly
  *   set:
+ *   - \ref g_quitPrint a 1 suppresses wrapping and user controlled paging of
+ *     the prompt text.
  *   - \ref g_commandFileSilentFlag value 1 suppresses output and prompts, but
  *     not all error messages;
  *   - \ref g_commandFileNestingLevel a value > 0 indicates a SUBMIT call is
@@ -297,13 +576,13 @@ vstring cmdInput(FILE *stream, const char *ask);
  *   - \ref printedLines is reset to 0
  *   - \ref g_quitPrint is reset to 0
  *   - interactive mode: \ref tempAllocStack frees top elements down to
- *     \ref g_startTempAlloc.
+ *     \ref g_startTempAllocStack.
  *   - interactive mode: \ref pntrTempAllocStack frees top elements down to
- *     \ref g_pntrStartTempAlloc.
+ *     \ref g_pntrStartTempAllocStack.
  *   - interactive mode: The \ref backBuffer is cleared, then filled with
  *     prompt (last line only) and input of the user.
  *   - submit mode: In case of EOF the previous \ref g_commandFileNestingLevel
- *     is activated, necessary cleanups performed, and 
+ *     is activated, necessary cleanups performed, and
  *     the \ref g_commandFileSilentFlag is updated appropriately.
  * \warning the calling program must deallocate the returned string.
  */
