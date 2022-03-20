@@ -156,7 +156,7 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     indicated by \ref printedLines, output may be suspended as described in
  *     (2) and the user is prompted for scrolling actions.\n
  *     This step is unconditionally executed when \ref backFromCmdInput = 1
- *     (\ref cmdInput explicitely requested it).  The values in
+ *     (\ref cmdInput explicitly requested it).  The values in
  *     \ref g_quitPrint and \ref localScrollMode are retained then, regardless
  *     of user input.
  *
