@@ -137,7 +137,7 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     to the outer, temporarily suspended call.
  * 4. __Redirection__.  Instead of displaying output on the virtual text
  *     display, it may be stored in a NUL-terminated string variable.  Or even
- *     completely suppressed, when executing a SUBMIT, for example.
+ *     completely suppressed, for example when executing a SUBMIT.
  * 5. __Logging__.  Output may be logged to a file for examination.
  *
  * These effects need not be carried out in this order, some may even be
