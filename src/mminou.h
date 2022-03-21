@@ -403,6 +403,9 @@ extern flag g_quitPrint;
  *   line wrapping to.
  * \param[in] startNextLine (not null) NUL-terminated string to place before
  *   continuation lines.
+ *   The following characters in first position trigger a special mode:
+ *     ~ (0x7E) all broken down lines end on a ~ character.  The rest of this
+ *       parameter is ignored, no prefix is applied.
  * \param[in] breakMatch (not null) NULL-terminated list of characters at which
  *   the line can be broken.  If empty, a break is possible anywhere.
  *   The following characters in first position allow line breaks at spaces (SP), but
@@ -411,7 +414,7 @@ extern flag g_quitPrint;
  *     " (0x22) a string in quotes (") immediately following a = is NOT broken
  *        at space characters, even if this produces a line longer than
  *        \ref g_screenWidth.  You cannot escape a quote character within such
- *       a quote.  For use in HTML generation.
+ *        a quote.  For use in HTML code.
  * \post
  *   \ref tempAllocStack is cleared down to \ref g_startTempAllocStack.
  */
