@@ -112,10 +112,9 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  * into multiple lines using a built-in line wrap algorithm.  But this must
  * never be preempted by preparing parameters accordingly.
  *
- * The presence of the LF character controls whether a new line of output is
- * generated, or the following output is padded right to the last line, except
- * that output of more than \ref g_screenWidth characters always closes the
- * line.
+ * The presence of the LF character controls whether output closes the line,
+ * or the following output is padded right to the last line, except that output
+ * of more than \ref g_screenWidth characters always closes the line.
  *
  * Although the output of a single line is the main goal of this function, it
  * does a lot on the side, each effect individually enabled or disabled by
@@ -406,6 +405,13 @@ extern flag g_quitPrint;
  *   continuation lines.
  * \param[in] breakMatch (not null) NULL-terminated list of characters at which
  *   the line can be broken.  If empty, a break is possible anywhere.
+ *   The following characters in first position allow line breaks at spaces (SP), but
+ *   trigger in addition special modes:
+ *     SOH (0x01) nested tree display (right justify continuation lines);
+ *     " (0x22) a string in quotes (") immediately following a = is NOT broken
+ *        at space characters, even if this produces a line longer than
+ *        \ref g_screenWidth.  You cannot escape a quote character within such
+ *       a quote.  For use in HTML generation.
  * \post
  *   \ref tempAllocStack is cleared down to \ref g_startTempAllocStack.
  */
