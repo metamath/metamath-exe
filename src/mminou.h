@@ -286,7 +286,7 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *   position in \p fmt.  They should strictly match in number, type and order
  *   the placeholders.  The characters LF and ETX (0x03) must not be produced,
  *   with the exemption that an LF is possible if it appers at the end of the
- *   resulting text after embedding (see (a)).
+ *   expanded text (see (a)).
  *   These parameters are ignored when \ref backFromCmdInput is 1.
  * \return \ref g_quitPrint 0: user has quit the printout.
  * \pre
@@ -350,7 +350,7 @@ extern long g_screenHeight;
  * \brief Width of screen
  *
  * The minimum width of the (virtual) text display, measured in fixed width
- * characters.  The command SET WIDTH changes this value.
+ * characters, minus 1.  The command SET WIDTH changes this value.
  */
 extern long g_screenWidth;
 
@@ -404,18 +404,22 @@ extern flag g_quitPrint;
  * Submit each individual broken down line to \ref print2 for output.  All
  * flags and data controlling \ref print2 are in effect.
  *
- * printLongLine automatically puts a LF character at the end of the output
+ * printLongLine automatically pads a LF character to the right of the output
  * line.
  * \param[in] line (not null) NUL-terminated text to apply line wrapping to.
  *    If the text contains LF characters, line breaks are enforced at these
  *    positions.
  * \param[in] startNextLine (not null) NUL-terminated string to place before
- *   continuation lines.
+ *   continuation lines.  If this prefix leaves not at least 4 characters for
+ *   regular output on a screen line (\ref g_screenWidth), it is chopped
+ *   accordingly.
+ *
  *   The following characters in first position trigger a special mode:
  *     ~ (0x7E) all broken down lines end on a ~ character.  The rest of this
- *       parameter is ignored, no prefix is applied.
+ *       parameter is ignored, a single space will be used as a prefix.
  * \param[in] breakMatch (not null) NULL-terminated list of characters at which
  *   the line can be broken.  If empty, a break is possible anywhere.
+ *
  *   The following characters in first position allow line breaks at spaces (SP), but
  *   trigger in addition special modes:
  *     SOH (0x01) nested tree display (right justify continuation lines);
@@ -423,8 +427,11 @@ extern flag g_quitPrint;
  *        at space characters, even if this produces a line longer than
  *        \ref g_screenWidth.  You cannot escape a quote character within such
  *        a quote.  For use in HTML code.
+ *     \ (0x5C) pad each line that is continued with a % character  to the
+ *       right (LaTeX support).
  * \post
  *   \ref tempAllocStack is cleared down to \ref g_startTempAllocStack.
+ * \warning not UTF-8 safe.
  */
 void printLongLine(const char *line, const char *startNextLine, const char *breakMatch);
 
