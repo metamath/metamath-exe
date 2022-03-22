@@ -112,9 +112,10 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  * into multiple lines using a built-in line wrap algorithm.  But this must
  * never be preempted by preparing parameters accordingly.
  *
- * The presence of the LF character controls whether output closes the line,
- * or the following output is padded right to the last line, except that output
- * of more than \ref g_screenWidth characters always closes the line.
+ * The presence of the LF character in a line shorter than \ref g_screenWidth
+ * controls whether the current screen line is closed after print, or output in
+ * a later call to print2 is padded right.  Output of more characters than this
+ * limit always closes the screen line.
  *
  * Although the output of a single line is the main goal of this function, it
  * does a lot on the side, each effect individually enabled or disabled by
@@ -277,12 +278,15 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *   placeholders for insertion of data (which are converted into text if
  *   necessary) pointed to by the following parameters.  The format string uses
  *   the same syntax as 
- *   <a href="https://en.cppreference.com/w/c/io/fprintf">[printf]</a>.
+ *   <a href="https://en.cppreference.com/w/c/io/fprintf">[printf]</a>.  A LF
+ *   character must only be in final position, and ETX (0x03) is not allowed.
  *   This parameter is ignored when \ref backFromCmdInput is 1.
  * \param[in] "..." The data these (possibly empty sequence of) pointers refer
  *   to are converted to string and then inserted at the respective placeholder
  *   position in \p fmt.  They should strictly match in number, type and order
- *   the placeholders.
+ *   the placeholders.  The characters LF and ETX (0x03) must not be produced,
+ *   with the exemption that an LF is possible if it appers at the end of the
+ *   resulting text after embedding (see (a)).
  *   These parameters are ignored when \ref backFromCmdInput is 1.
  * \return \ref g_quitPrint 0: user has quit the printout.
  * \pre
@@ -395,12 +399,16 @@ extern flag g_quitPrint;
 /*!
  * \fn void printLongLine(const char *line, const char *startNextLine, const char *breakMatch)
  * \brief perform line wrapping and print
- * apply a line wrapping algorithm to fit a text into the screen rectangle.
- * Submit each individual broken down line to \ref print2 for output.
+ * apply a line wrapping algorithm to fit a text into the screen rectangle
+ * defined by \ref g_screenWidth and \ref g_screenHeight.
+ * Submit each individual broken down line to \ref print2 for output.  All
+ * flags and data controlling \ref print2 are in effect.
  *
- * printLongLine automatically puts a newline in the output line.
- * \param[in] line (not null) NUL-terminated text (may contain LF) to apply
- *   line wrapping to.
+ * printLongLine automatically puts a LF character at the end of the output
+ * line.
+ * \param[in] line (not null) NUL-terminated text to apply line wrapping to.
+ *    If the text contains LF characters, line breaks are enforced at these
+ *    positions.
  * \param[in] startNextLine (not null) NUL-terminated string to place before
  *   continuation lines.
  *   The following characters in first position trigger a special mode:
