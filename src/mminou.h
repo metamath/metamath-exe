@@ -404,8 +404,28 @@ extern flag g_quitPrint;
  * Submit each individual broken down line to \ref print2 for output.  All
  * flags and data controlling \ref print2 are in effect.
  *
- * printLongLine automatically pads a LF character to the right of the output
- * line.
+ * printLongLine automatically pads a LF character to the right of \p line, if
+ * necessary, and honors interspersed LF characters.  Even though, each
+ * individual line might need further breakdown.  The maximal line length is
+ * not limited by the general \p g_screenWidth + 1 only, but may be further
+ * reduced by leading or trailing prefix or suffix text.
+ *
+ * The following prefixes or suffixes are possible, and are applied to lines
+ * too wide for the virtual text display:
+ * - (a) reserve the last column for a trailing ~ (0x7E) that appears at the
+ *        end of each line needing a break down, and is left blank on the last
+ *        one.  Each follow-up line is indented by a space (SP, 0x20).
+ * - (b) a trailing % (0x25) is padded to the right at each line that needs to
+ *        be continued on following lines.
+ *
+ * Methods of breaking a long line not containing a LF character:
+ *
+ * 1. __Break at any character__.  The \p line is broken into equally sized
+ *    pieces (\ref g_screenWidth + 1, reduced by \p startNextLine), except for
+ *    the first and last line.  The first one is not reduced by
+ *    \p startNextLine, and may receive more characters than the following
+ *    ones, the last simply takes the rest.  This method is not UTF-8 safe.
+ *
  * \param[in] line (not null) NUL-terminated text to apply line wrapping to.
  *    If the text contains LF characters, line breaks are enforced at these
  *    positions.
@@ -417,8 +437,9 @@ extern flag g_quitPrint;
  *   The following characters in first position trigger a special mode:
  *     ~ (0x7E) all broken down lines end on a ~ character.  The rest of this
  *       parameter is ignored, a single space will be used as a prefix.
- * \param[in] breakMatch (not null) NULL-terminated list of characters at which
- *   the line can be broken.  If empty, a break is possible anywhere.
+ * \param[in] breakMatch (not null) NUL-terminated list of characters at which
+ *   the line can be broken.  If empty, a break is possible anywhere
+ *   (method 1.).
  *
  *   The following characters in first position allow line breaks at spaces (SP), but
  *   trigger in addition special modes:
