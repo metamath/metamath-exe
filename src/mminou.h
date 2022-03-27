@@ -112,10 +112,10 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  * into multiple lines using a built-in line wrap algorithm.  But this must
  * never be preempted by preparing parameters accordingly.
  *
- * The presence of the LF character controls whether a new line of output is
- * generated, or the following output is padded right to the last line, except
- * that output of more than \ref g_screenWidth characters always closes the
- * line.
+ * The presence of the LF character in a line shorter than \ref g_screenWidth
+ * controls whether the current screen line is closed after print, or output in
+ * a later call to print2 is padded right.  Output of more characters than this
+ * limit always closes the screen line.
  *
  * Although the output of a single line is the main goal of this function, it
  * does a lot on the side, each effect individually enabled or disabled by
@@ -278,12 +278,15 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *   placeholders for insertion of data (which are converted into text if
  *   necessary) pointed to by the following parameters.  The format string uses
  *   the same syntax as 
- *   <a href="https://en.cppreference.com/w/c/io/fprintf">[printf]</a>.
+ *   <a href="https://en.cppreference.com/w/c/io/fprintf">[printf]</a>.  A LF
+ *   character must only be in final position, and ETX (0x03) is not allowed.
  *   This parameter is ignored when \ref backFromCmdInput is 1.
  * \param[in] "..." The data these (possibly empty sequence of) pointers refer
  *   to are converted to string and then inserted at the respective placeholder
  *   position in \p fmt.  They should strictly match in number, type and order
- *   the placeholders.
+ *   the placeholders.  The characters LF and ETX (0x03) must not be produced,
+ *   with the exemption that an LF is possible if it appers at the end of the
+ *   expanded text (see (a)).
  *   These parameters are ignored when \ref backFromCmdInput is 1.
  * \return \ref g_quitPrint 0: user has quit the printout.
  * \pre
@@ -347,7 +350,7 @@ extern long g_screenHeight;
  * \brief Width of screen
  *
  * The minimum width of the (virtual) text display, measured in fixed width
- * characters.  The command SET WIDTH changes this value.
+ * characters, minus 1.  The command SET WIDTH changes this value.
  */
 extern long g_screenWidth;
 
@@ -396,18 +399,60 @@ extern flag g_quitPrint;
 /*!
  * \fn void printLongLine(const char *line, const char *startNextLine, const char *breakMatch)
  * \brief perform line wrapping and print
- * apply a line wrapping algorithm to fit a text into the screen rectangle.
- * Submit each individual broken down line to \ref print2 for output.
+ * apply a line wrapping algorithm to fit a text into the screen rectangle
+ * defined by \ref g_screenWidth and \ref g_screenHeight.
+ * Submit each individual broken down line to \ref print2 for output.  All
+ * flags and data controlling \ref print2 are in effect.
  *
- * printLongLine automatically puts a newline in the output line.
- * \param[in] line (not null) NUL-terminated text (may contain LF) to apply
- *   line wrapping to.
+ * printLongLine automatically pads a LF character to the right of \p line, if
+ * necessary, and honors interspersed LF characters.  Even though, each
+ * individual line might need further breakdown.  The maximal line length is
+ * not limited by the general \p g_screenWidth + 1 only, but may be further
+ * reduced by leading or trailing prefix or suffix text.
+ *
+ * The following prefixes or suffixes are possible, and are applied to lines
+ * too wide for the virtual text display:
+ * - (a) reserve the last column for a trailing ~ (0x7E) that appears at the
+ *        end of each line needing a break down, and is left blank on the last
+ *        one.  Each follow-up line is indented by a space (SP, 0x20).
+ * - (b) a trailing % (0x25) is padded to the right at each line that needs to
+ *        be continued on following lines.
+ *
+ * Methods of breaking a long line not containing a LF character:
+ *
+ * 1. __Break at any character__.  The \p line is broken into equally sized
+ *    pieces (\ref g_screenWidth + 1, reduced by \p startNextLine), except for
+ *    the first and last line.  The first one is not reduced by
+ *    \p startNextLine, and may receive more characters than the following
+ *    ones, the last simply takes the rest.  This method is not UTF-8 safe.
+ *
+ * \param[in] line (not null) NUL-terminated text to apply line wrapping to.
+ *    If the text contains LF characters, line breaks are enforced at these
+ *    positions.
  * \param[in] startNextLine (not null) NUL-terminated string to place before
- *   continuation lines.
- * \param[in] breakMatch (not null) NULL-terminated list of characters at which
- *   the line can be broken.  If empty, a break is possible anywhere.
+ *   continuation lines.  If this prefix leaves not at least 4 characters for
+ *   regular output on a screen line (\ref g_screenWidth), it is chopped
+ *   accordingly.
+ *
+ *   The following characters in first position trigger a special mode:
+ *     ~ (0x7E) all broken down lines end on a ~ character.  The rest of this
+ *       parameter is ignored, a single space will be used as a prefix.
+ * \param[in] breakMatch (not null) NUL-terminated list of characters at which
+ *   the line can be broken.  If empty, a break is possible anywhere
+ *   (method 1.).
+ *
+ *   The following characters in first position allow line breaks at spaces (SP), but
+ *   trigger in addition special modes:
+ *     SOH (0x01) nested tree display (right justify continuation lines);
+ *     " (0x22) a string in quotes (") immediately following a = is NOT broken
+ *        at space characters, even if this produces a line longer than
+ *        \ref g_screenWidth.  You cannot escape a quote character within such
+ *        a quote.  For use in HTML code.
+ *     \ (0x5C) pad each line that is continued with a % character  to the
+ *       right (LaTeX support).
  * \post
  *   \ref tempAllocStack is cleared down to \ref g_startTempAllocStack.
+ * \warning not UTF-8 safe.
  */
 void printLongLine(const char *line, const char *startNextLine, const char *breakMatch);
 
