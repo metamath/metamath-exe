@@ -408,13 +408,13 @@ extern flag g_quitPrint;
  * necessary, and honors interspersed LF characters.  Still, each individual
  * line might need further breakdown to fit into the dimensions of the virtual
  * text display.  The maximal line length is not limited by the general
- * \p g_screenWidth + 1, but may be further reduced by leading or trailing
- * prefix or suffix text.
+ * \p g_screenWidth + 1 alone, leading or trailing prefix or suffix text also
+ * reduce the available space.
  *
  * The following prefixes or suffixes are possible, and are applied to lines
  * too wide for the virtual text display, and, thus, are presented in a
  * multi-line fashion.  We distinguish the first line, optional follow-up
- * lines, except for the last line that is a special case.  They are visually
+ * lines, except for the last line being a special case.  They are visually
  * indicated in following ways:
  * - (a) leave the first line as is, start follow-up lines and the last line
  *      with a prefix \p startNextLine.
@@ -431,10 +431,16 @@ extern flag g_quitPrint;
  * follow-up and last lines:
  *
  * 1. __Break at given characters__.  The \p breakMatch contains a non-empty
- *    set of characters marking optional break positions.  If used as a break
- *    point, it is zapped, and the substring before it becomes a screen line,
- *    the part after it is subject to further line breaking again.  If not used
- *    as a break point, the character is left as is.
+ *    set of characters marking optional break positions.  If a break occurs at
+ *    such a point, the character is zapped, the substring before it becomes a
+ *    screen line, the part after it is subject to further line breaking again.
+ *    If not used as a break point, the character is left as is.
+ *    The last character from \p breakMatch within the allowed line size
+ *    determines the break position.  If there is none, the width of the
+ *    virtual text display is temporarily suspended and increased as long by
+ *    one, until the breaking algorithm finds a fit into the more and more
+ *    widened text rectangle.  This temporary increase of dimensions affects
+ *    the current screen line only, exposing no potential break position.
  * 2. __Break at any character__.  The \p line is broken into equally sized
  *    pieces, except for the first and last line.  The first one is not reduced by
  *    \p startNextLine, and may receive more characters than the following
