@@ -442,7 +442,14 @@ extern flag g_quitPrint;
  *    one, until the breaking algorithm finds a fit into the more and more
  *    widened text rectangle.  This temporary increase of dimensions affects
  *    the current screen line only, never exposing a potential break position.
- * 2. __Break at any character__.  The \p line is broken into equally sized
+ * 2. __Keep quotes__.  This mode is similar to 1., but text between two
+ *    pairing quote characters " (0x22) is never split.  This mode allows
+ *    breaks only at spaces (SP, 0x20) not cantained in a quote.  For technical
+ *    reasons the ETX (0x03) character must not appear in \p line.
+ *    The parsing algorithm is kept simple, There is no way to escape a "
+ *    character, hence always delimiting a quote.  Apart from these
+ *    differences, all rules in 1. apply.
+ * 3. __Break at any character__.  The \p line is broken into equally sized
  *    pieces, except for the first and last line.  The first one is not reduced by
  *    \p startNextLine, and may receive more characters than the following
  *    ones, the last simply takes the rest.  This method is not UTF-8 safe.
@@ -460,15 +467,12 @@ extern flag g_quitPrint;
  *       parameter is ignored, a single space will be used as a prefix.
  * \param[in] breakMatch (not null) NUL-terminated list of characters at which
  *   the line can be broken.  If empty, a break is possible anywhere
- *   (method 2.).
+ *   (method 3.).
  *\n
  *   The following characters in first position allow line breaks at spaces (SP), but
  *   trigger in addition special modes:
  *     SOH (0x01) nested tree display (right justify continuation lines);\n
- *     " (0x22) a string in quotes (") immediately following a = is NOT broken
- *        at space characters, even if this produces a line longer than
- *        \ref g_screenWidth.  You cannot escape a quote character within such
- *        a quote.  For use in HTML code.\n
+ *     " (0x22) activates method 3. (keep quotes).  For use in HTML code.\n
  *     \ (0x5C) trailing % character (LaTeX support), see (c).
  * \post
  *   \ref tempAllocStack is cleared down to \ref g_startTempAllocStack.
