@@ -405,24 +405,38 @@ extern flag g_quitPrint;
  * flags and data controlling \ref print2 are in effect.
  *
  * printLongLine automatically pads a LF character to the right of \p line, if
- * necessary, and honors interspersed LF characters.  Even though, each
- * individual line might need further breakdown.  The maximal line length is
- * not limited by the general \p g_screenWidth + 1 only, but may be further
- * reduced by leading or trailing prefix or suffix text.
+ * necessary, and honors interspersed LF characters.  Still, each individual
+ * line might need further breakdown to fit into the dimensions of the virtual
+ * text display.  The maximal line length is not limited by the general
+ * \p g_screenWidth + 1, but may be further reduced by leading or trailing
+ * prefix or suffix text.
  *
  * The following prefixes or suffixes are possible, and are applied to lines
- * too wide for the virtual text display:
- * - (a) reserve the last column for a trailing ~ (0x7E) that appears at the
- *        end of each line needing a break down, and is left blank on the last
- *        one.  Each follow-up line is indented by a space (SP, 0x20).
- * - (b) a trailing % (0x25) is padded to the right at each line that needs to
- *        be continued on following lines.
+ * too wide for the virtual text display, and, thus, are presented in a
+ * multi-line fashion.  We distinguish the first line, optional follow-up
+ * lines, except for the last line that is a special case.  They are visually
+ * indicated in following ways:
+ * - (a) leave the first line as is, start follow-up lines and the last line
+ *      with a prefix \p startNextLine.
+ * - (b) reserve the last column for a trailing ~ (0x7E) padded to the right of
+ *      the first and every follow-up line, but not to the last one.
+ *      The last and each follow-up line is indented by a space (SP, 0x20).
+ *      The padded ~ follows the line immediately, the last column is a
+ *      last resort and left blank in case of no need.
+ * - (c) support for LaTeX: the same as (b), but the ~ character is replaced
+ *      with a trailing % (0x25).  The last and each follow-up line is indented
+ *      by a space (SP, 0x20).
  *
- * Methods of breaking a long line not containing a LF character:
+ * Methods of breaking a long line not containing a LF character into a first,
+ * follow-up and last lines:
  *
- * 1. __Break at any character__.  The \p line is broken into equally sized
- *    pieces (\ref g_screenWidth + 1, reduced by \p startNextLine), except for
- *    the first and last line.  The first one is not reduced by
+ * 1. __Break at given characters__.  The \p breakMatch contains a non-empty
+ *    set of characters marking optional break positions.  If used as a break
+ *    point, it is zapped, and the substring before it becomes a screen line,
+ *    the part after it is subject to further line breaking again.  If not used
+ *    as a break point, the character is left as is.
+ * 2. __Break at any character__.  The \p line is broken into equally sized
+ *    pieces, except for the first and last line.  The first one is not reduced by
  *    \p startNextLine, and may receive more characters than the following
  *    ones, the last simply takes the rest.  This method is not UTF-8 safe.
  *
