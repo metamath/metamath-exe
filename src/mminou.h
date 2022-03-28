@@ -399,7 +399,8 @@ extern flag g_quitPrint;
 /*!
  * \fn void printLongLine(const char *line, const char *startNextLine, const char *breakMatch)
  * \brief perform line wrapping and print
- * apply a line wrapping algorithm to fit a text into the screen rectangle
+ *
+ * Apply a line wrapping algorithm to fit a text into the screen rectangle
  * defined by \ref g_screenWidth and \ref g_screenHeight.
  * Submit each individual broken down line to \ref print2 for output.  All
  * flags and data controlling \ref print2 are in effect.
@@ -412,7 +413,7 @@ extern flag g_quitPrint;
  * reduce the available space.
  *
  * The following prefixes or suffixes are possible, and are applied to lines
- * too wide for the virtual text display, and, thus, are presented in a
+ * too wide for the virtual text display, and, thus, they are presented in a
  * multi-line fashion.  We distinguish the first line, optional follow-up
  * lines, except for the last line being a special case.  They are visually
  * indicated in following ways:
@@ -423,12 +424,12 @@ extern flag g_quitPrint;
  *      The last and each follow-up line is indented by a space (SP, 0x20).
  *      The padded ~ follows the line immediately, the last column is a
  *      last resort and left blank in case of no need.
- * - (c) support for LaTeX: the same as (b), but the ~ character is replaced
- *      with a trailing % (0x25).  The last and each follow-up line is indented
+ * - (c) support for LaTeX: the same as (b), but instead of the ~ character a
+ *      trailing % (0x25) is used.  The last and each follow-up line is indented
  *      by a space (SP, 0x20).
  *
- * Methods of breaking a long line not containing a LF character into a first,
- * follow-up and last lines:
+ * Methods of breaking a long line not containing a LF character up into a
+ * first, follow-up and last lines:
  *
  * 1. __Break at given characters__.  The \p breakMatch contains a non-empty
  *    set of characters marking optional break positions.  If a break occurs at
@@ -440,7 +441,7 @@ extern flag g_quitPrint;
  *    virtual text display is temporarily suspended and increased as long by
  *    one, until the breaking algorithm finds a fit into the more and more
  *    widened text rectangle.  This temporary increase of dimensions affects
- *    the current screen line only, exposing no potential break position.
+ *    the current screen line only, never exposing a potential break position.
  * 2. __Break at any character__.  The \p line is broken into equally sized
  *    pieces, except for the first and last line.  The first one is not reduced by
  *    \p startNextLine, and may receive more characters than the following
@@ -453,23 +454,22 @@ extern flag g_quitPrint;
  *   continuation lines.  If this prefix leaves not at least 4 characters for
  *   regular output on a screen line (\ref g_screenWidth), it is chopped
  *   accordingly.
- *
- *   The following characters in first position trigger a special mode:
+ *\n
+ *   The following characters in first position trigger a special mode:\n
  *     ~ (0x7E) all broken down lines end on a ~ character.  The rest of this
  *       parameter is ignored, a single space will be used as a prefix.
  * \param[in] breakMatch (not null) NUL-terminated list of characters at which
  *   the line can be broken.  If empty, a break is possible anywhere
- *   (method 1.).
- *
+ *   (method 2.).
+ *\n
  *   The following characters in first position allow line breaks at spaces (SP), but
  *   trigger in addition special modes:
- *     SOH (0x01) nested tree display (right justify continuation lines);
+ *     SOH (0x01) nested tree display (right justify continuation lines);\n
  *     " (0x22) a string in quotes (") immediately following a = is NOT broken
  *        at space characters, even if this produces a line longer than
  *        \ref g_screenWidth.  You cannot escape a quote character within such
- *        a quote.  For use in HTML code.
- *     \ (0x5C) pad each line that is continued with a % character  to the
- *       right (LaTeX support).
+ *        a quote.  For use in HTML code.\n
+ *     \ (0x5C) trailing % character (LaTeX support), see (c).
  * \post
  *   \ref tempAllocStack is cleared down to \ref g_startTempAllocStack.
  * \warning not UTF-8 safe.
