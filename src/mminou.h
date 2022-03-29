@@ -441,7 +441,7 @@ extern flag g_quitPrint;
  *    virtual text display is temporarily suspended and increased as long by
  *    one, until the breaking algorithm finds a fit into the more and more
  *    widened text rectangle.  This temporary increase of dimensions affects
- *    the current screen line only, never exposing a potential break position.
+ *    the current screen line only.
  * 2. __Keep quotes__.  This mode is similar to 1., but text between two
  *    pairing quote characters " (0x22) is never split.  This mode allows
  *    breaks only at spaces (SP, 0x20) not contained in a quote.  For technical
@@ -458,9 +458,9 @@ extern flag g_quitPrint;
  *    If the text contains LF characters, line breaks are enforced at these
  *    positions.
  * \param[in] startNextLine (not null) NUL-terminated string to place before
- *   continuation lines.  If this prefix leaves not at least 4 characters for
- *   regular output on a screen line (\ref g_screenWidth), it is truncated
- *   accordingly.
+ *   any follow-up and the last line.  If this prefix leaves not at least 4
+ *   characters for regular output on a screen line (\ref g_screenWidth), it is
+ *   truncated accordingly (not UTF-8 safe).
  *\n
  *   The following characters in first position trigger a special mode:\n
  *     ~ (0x7E) trailing ~ character, see (b). The rest of this parameter is
