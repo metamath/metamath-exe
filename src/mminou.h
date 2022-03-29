@@ -444,11 +444,11 @@ extern flag g_quitPrint;
  *    the current screen line only, never exposing a potential break position.
  * 2. __Keep quotes__.  This mode is similar to 1., but text between two
  *    pairing quote characters " (0x22) is never split.  This mode allows
- *    breaks only at spaces (SP, 0x20) not cantained in a quote.  For technical
+ *    breaks only at spaces (SP, 0x20) not contained in a quote.  For technical
  *    reasons the ETX (0x03) character must not appear in \p line.
- *    The parsing algorithm is kept simple, There is no way to escape a "
- *    character, hence always delimiting a quote.  Apart from these
- *    differences, all rules in 1. apply.
+ *    The parsing algorithm is kept simple, there is no way to use a " within a
+ *    quote, it always delimits a quote.  Apart from these differences, all
+ *    rules in 1. apply.
  * 3. __Break at any character__.  The \p line is broken into equally sized
  *    pieces, except for the first and last line.  The first one is not reduced by
  *    \p startNextLine, and may receive more characters than the following
@@ -459,12 +459,12 @@ extern flag g_quitPrint;
  *    positions.
  * \param[in] startNextLine (not null) NUL-terminated string to place before
  *   continuation lines.  If this prefix leaves not at least 4 characters for
- *   regular output on a screen line (\ref g_screenWidth), it is chopped
+ *   regular output on a screen line (\ref g_screenWidth), it is truncated
  *   accordingly.
  *\n
  *   The following characters in first position trigger a special mode:\n
- *     ~ (0x7E) all broken down lines end on a ~ character.  The rest of this
- *       parameter is ignored, a single space will be used as a prefix.
+ *     ~ (0x7E) trailing ~ character, see (b). The rest of this parameter is
+ *       ignored, a single space will be used as a prefix.
  * \param[in] breakMatch (not null) NUL-terminated list of characters at which
  *   the line can be broken.  If empty, a break is possible anywhere
  *   (method 3.).
@@ -472,7 +472,7 @@ extern flag g_quitPrint;
  *   The following characters in first position allow line breaks at spaces (SP), but
  *   trigger in addition special modes:
  *     SOH (0x01) nested tree display (right justify continuation lines);\n
- *     " (0x22) activates method 3. (keep quotes).  For use in HTML code.\n
+ *     " (0x22) activates method 3. (keep quotes).  For use in HTML code.\n´
  *     \ (0x5C) trailing % character (LaTeX support), see (c).
  * \post
  *   \ref tempAllocStack is cleared down to \ref g_startTempAllocStack.
