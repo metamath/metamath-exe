@@ -398,7 +398,7 @@ extern flag g_quitPrint;
 
 /*!
  * \fn void printLongLine(const char *line, const char *startNextLine, const char *breakMatch)
- * \brief perform line wrapping and print
+ * \brief print lines and perform line wrapping on each line.
  *
  * Apply a line wrapping algorithm to fit a text into the screen rectangle
  * defined by \ref g_screenWidth and \ref g_screenHeight.
@@ -428,8 +428,14 @@ extern flag g_quitPrint;
  *      trailing % (0x25) is used.  The last and each follow-up line is indented
  *      by a space (SP, 0x20).
  *
- * Methods of breaking a long line not containing a LF character up into a
- * first, follow-up and last lines:
+ * The following list shows methods of breaking up a long line not containing a
+ * LF character into first, follow-up and last lines.  Although the methods aim
+ * at keeping each individual screen line within the limit given by
+ * \ref g_screenWidth, some allow exceptions if otherwise for example an
+ * embedded link address is broken.  This supports HTML output, where the
+ * virtual text display is not really important.  On the other hand, it likely
+ * does not affect usual human readable text, because that has enough spaces
+ * as break locations for even a small sized text display.
  *
  * 1. __Break at given characters__.  The \p breakMatch contains a non-empty
  *    set of characters marking optional break positions.  If a break occurs at
