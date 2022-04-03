@@ -255,7 +255,7 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *
  *     Some contexts prevent this step: Step (7) was not executed.
  *
- *     \ref g_tempAllocStackPos is reset to \ref g_startTempAllocStack.
+ *     \ref g_tempAllocStackTop is reset to \ref g_startTempAllocStack.
  *
  * 10. Log the output to a file given by \ref g_logFilePtr.
  *
@@ -264,7 +264,7 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     (\ref g_outputToString = 1), \ref backFromCmdInput = 1 (\ref cmdInput
  *     uses only the scrolling features)
  *
- *     \ref g_tempAllocStackPos is reset to \ref g_startTempAllocStack.
+ *     \ref g_tempAllocStackTop is reset to \ref g_startTempAllocStack.
  *
  * 11. Copy the prepared output in step (4) to \ref g_printString.
  *
@@ -325,7 +325,7 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *   - \ref printedLines updated
  *   - \ref g_pntrTempAllocStackTop may be reset to
  *     \ref g_pntrStartTempAllocStack.
- *     \ref g_tempAllocStackPos may be reset to \ref g_startTempAllocStack.
+ *   - \ref g_tempAllocStackTop may be reset to \ref g_startTempAllocStack.
  * \bug It is possible to produce lines exceeding \ref g_screenWidth by
  *   concatenating substrings smaller than this value, but having no LF at the
  *   end.
@@ -419,12 +419,15 @@ extern flag g_quitPrint;
  * indicated in following ways:
  * - (a) leave the first line as is, start follow-up lines and the last line
  *      with a prefix \p startNextLine.
- * - (b) reserve the last column for a trailing ~ (0x7E) padded to the right of
+ * - (b) The same as (a) but right justify displayed text (the prefix
+ *      \p startNextLine is still left aligned!) on the screen line.  The fill
+ *      character is a SP (0x20).
+ * - (c) reserve the last column for a trailing ~ (0x7E) padded to the right of
  *      the first and every follow-up line, but not to the last one.
  *      The last and each follow-up line is indented by a space (SP, 0x20).
  *      The padded ~ follows the line immediately, the last column is a
  *      last resort and left blank in case of no need.
- * - (c) support for LaTeX: the same as (b), but instead of the ~ character a
+ * - (d) support for LaTeX: the same as (c), but instead of the ~ character a
  *      trailing % (0x25) is used.  The last and each follow-up line is indented
  *      by a space (SP, 0x20).
  *
@@ -482,21 +485,32 @@ extern flag g_quitPrint;
  *   truncated accordingly (not UTF-8 safe).
  *\n
  *   The following characters in first position trigger a special mode:\n
- *     ~ (0x7E) trailing ~ character, see (b). The rest of this parameter is
+ *     ~ (0x7E) trailing ~ character, see (c). The rest of this parameter is
  *       ignored, a single space will be used as a prefix.
  * \param[in] breakMatch (not null) NUL-terminated list of characters at which
  *   the line can be broken.  If empty, a break is possible anywhere
- *   (method 3.).
+ *   (method 3.).\n
+ *   Special cases:
  *\n
  *   The following characters in first position allow line breaks at spaces (SP), but
  *   trigger in addition special modes:\n
  *     SOH (0x01) nested tree display (right justify continuation lines);\n
  *     " (0x22) activates method 3. (keep quotes).  For use in HTML code;\n
- *     \ (0x5C) trailing % character (LaTeX support), see (c);\n
- *     & (0x46) best followed by SP activates method 4.
+ *     \ (0x5C) trailing % character (LaTeX support), see (d);\n
+ * \n
+ *   An & (0x46) in first position activates method 4.  It should be followed
+ *   by a SP (0x20) used to break down a list of theorem labels.  Besides
+ *   activating method 4., an & in \p line also marks a potential break
+ *   location, so this character must neither be used in label names, or
+ *   in encoding compressed proofs.
+ * \pre
+ *   method 4 requires the encoding of a compressed proof to not use an &.
  * \post
  *   \ref tempAllocStack is cleared down to \ref g_startTempAllocStack.
  * \warning not UTF-8 safe.
+ * \bug
+ *   the use of & in \p breakMatch is unnecessarily inconsistent with other
+ *   special characters like SOH " or \ .
  */
 void printLongLine(const char *line, const char *startNextLine, const char *breakMatch);
 
