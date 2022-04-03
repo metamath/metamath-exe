@@ -398,17 +398,17 @@ extern flag g_quitPrint;
 
 /*!
  * \fn void printLongLine(const char *line, const char *startNextLine, const char *breakMatch)
- * \brief print lines and perform line wrapping on each line.
+ * \brief print lines and perform line wrapping on each one.
  *
  * Apply a line wrapping algorithm to fit a text into the screen rectangle
- * defined by \ref g_screenWidth and \ref g_screenHeight.
+ * defined by \ref g_screenWidth + 1 and \ref g_screenHeight + 1.
  * Submit each individual broken down line to \ref print2 for output.  All
  * flags and data controlling \ref print2 are in effect.
  *
- * printLongLine automatically pads a LF character to the right of \p line, if
- * necessary, and honors interspersed LF characters.  Still, each individual
- * line might need further breakdown to fit into the dimensions of the virtual
- * text display.  The maximal line length is not limited by the general
+ * \p printLongLine pads a LF character to the right of \p line, if missing,
+ * and honors embedded LF characters.  Still, each individual line
+ * might need further breakdown to fit into the dimensions of the virtual
+ * text display.  The maximal width available for a line is not limited by
  * \p g_screenWidth + 1 alone, leading or trailing prefix or suffix text also
  * reduce the available space.
  *
@@ -431,8 +431,8 @@ extern flag g_quitPrint;
  * The following list shows methods of breaking up a long line not containing a
  * LF character into first, follow-up and last lines.  Although the methods aim
  * at keeping each individual screen line within the limit given by
- * \ref g_screenWidth, some allow exceptions if otherwise for example an
- * embedded link address is broken.  This supports HTML output, where the
+ * \ref g_screenWidth, some allow exceptions if for example an embedded link
+ * address would be destroyed.  This supports HTML output, where the
  * virtual text display is not really important.  On the other hand, it likely
  * does not affect usual human readable text, because that has enough spaces
  * as break locations for even a small sized text display.
