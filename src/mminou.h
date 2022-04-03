@@ -493,7 +493,7 @@ extern flag g_quitPrint;
  *     SOH (0x01) nested tree display (right justify continuation lines);\n
  *     " (0x22) activates method 3. (keep quotes).  For use in HTML code;\n
  *     \ (0x5C) trailing % character (LaTeX support), see (c);\n
- *    & (0x46) best followed by SP activates method 4.
+ *     & (0x46) best followed by SP activates method 4.
  * \post
  *   \ref tempAllocStack is cleared down to \ref g_startTempAllocStack.
  * \warning not UTF-8 safe.
