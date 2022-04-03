@@ -459,6 +459,19 @@ extern flag g_quitPrint;
  *    pieces, except for the first and last line.  The first one is not reduced by
  *    \p startNextLine, and may receive more characters than the following
  *    ones, the last simply takes the rest.  This method is not UTF-8 safe.
+ * 4. __Compressed proof__.  This mode targets proof lines in Metamath that are
+ *    encoded in a compressed style.  An example of a compressed proof is:
+ *    \code{.unparsed}
+ *    ( wa wn wo wi pm3.4 pm2.24 adantr pm2.21 jaoi pm2.27 imdistani orcd
+ *    adantrr jca olcd adantrl pm2.61ian impbii ) ABDZAEZCDZFZABGZUCCGZDZUBUHUD
+ *    UBUFUGABHAUGBACIJQUDUFUGUCUFCABKJUCCHQLAUHUEAUFUEUGAUFDUBUDAUFBABMNOPUCUG
+ *    UEUFUCUGDUDUBUCUGCUCCMNRSTUA $.
+ *    \endcode
+ *    Both the label section in braces and the following coded proof may exceed
+ *    the virtual screen width as shown above, and need being broken down.
+ *    The label section comprises of blank separated theorem names usually
+ *    short enough to fit in a screen line.  The proof can be split at any
+ *    position, except that the bounding __$=__ and __$.__ must be left intact.
  *
  * \param[in] line (not null) NUL-terminated text to apply line wrapping to.
  *    If the text contains LF characters, line breaks are enforced at these
@@ -476,10 +489,11 @@ extern flag g_quitPrint;
  *   (method 3.).
  *\n
  *   The following characters in first position allow line breaks at spaces (SP), but
- *   trigger in addition special modes:
+ *   trigger in addition special modes:\n
  *     SOH (0x01) nested tree display (right justify continuation lines);\n
- *     " (0x22) activates method 3. (keep quotes).  For use in HTML code.\n´
- *     \ (0x5C) trailing % character (LaTeX support), see (c).
+ *     " (0x22) activates method 3. (keep quotes).  For use in HTML code;\n
+ *     \ (0x5C) trailing % character (LaTeX support), see (c);\n
+ *    & (0x46) best followed by SP activates method 4.
  * \post
  *   \ref tempAllocStack is cleared down to \ref g_startTempAllocStack.
  * \warning not UTF-8 safe.
