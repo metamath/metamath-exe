@@ -420,8 +420,8 @@ extern flag g_quitPrint;
  * - (a) leave the first line as is, start follow-up lines and the last line
  *      with a prefix \p startNextLine.
  * - (b) The same as (a) but right justify displayed text (the prefix
- *      \p startNextLine is still left aligned!) on the screen line.  The fill
- *      character is a SP (0x20).
+ *      \p startNextLine is still left aligned!) on virtual text display.  The
+ *      fill character is a SP (0x20).
  * - (c) reserve the last column for a trailing ~ (0x7E) padded to the right of
  *      the first and every follow-up line, but not to the last one.
  *      The last and each follow-up line is indented by a space (SP, 0x20).
@@ -432,8 +432,8 @@ extern flag g_quitPrint;
  *      by a space (SP, 0x20).
  *
  * The following list shows methods of breaking up a long line not containing a
- * LF character into first, follow-up and last lines.  Although the methods aim
- * at keeping each individual screen line within the limit given by
+ * LF character into first, follow-up and last screen lines.  Although the
+ * methods aim at keeping each individual screen line within the limit given by
  * \ref g_screenWidth, some allow exceptions if for example an embedded link
  * address would be destroyed.  This supports HTML output, where the
  * virtual text display is not really important.  On the other hand, it likely
@@ -475,6 +475,7 @@ extern flag g_quitPrint;
  *    The label section comprises of blank separated theorem names usually
  *    short enough to fit in a screen line.  The proof can be split at any
  *    position, except that the bounding __$=__ and __$.__ must be left intact.
+ *    This method is not UTF-8 safe.
  *
  * \param[in] line (not null) NUL-terminated text to apply line wrapping to.
  *    If the text contains LF characters, line breaks are enforced at these
@@ -504,9 +505,34 @@ extern flag g_quitPrint;
  *   location, so this character must neither be used in label names, or
  *   in encoding compressed proofs.
  * \pre
- *   method 4 requires the encoding of a compressed proof to not use an &.
+ *   - method 4 requires the \p line containing a compressed proof to neither
+ *     use an & or a multi-byte unicode character.
+ *   - method 3 requires a \p line to not use a multi-byte UTF-8 character.
+ *   - if a full page of lines is reached (\ref printedLines), a user prompt
+ *     asking for continuation is issued, if not inhibited by other variables.
+ *   - \ref g_screenHeight number of lines to display (a page of output) to a
+ *     user without a prompt.
+ *   - \ref g_screenWidth if the expanded text exceeds this width, usually line
+ *     breaking occurs.  Method 1. and 2. can extend the width temporarily, if
+ *     no break location is found;
+ *   - \ref g_quitPrint value 1:  Do not prompt (any longer) and suppress
+ *     output to the (virtual) text display;
+ *   - \ref g_commandFileSilentFlag value 1 suppresses output on the screen;
+ *   - \ref g_commandFileNestingLevel a value > 0 indicates a SUBMIT call is
+ *     executing, where prompting is disabled;
+ *   - \ref g_scrollMode value 0 disables prompting;
+ *   - \ref g_outputToString value 1 output is redirected and prompting is
+ *     disabled.
  * \post
- *   \ref tempAllocStack is cleared down to \ref g_startTempAllocStack.
+ *   - \ref g_quitPrint is set to 1, if the user entered _q_ or _Q_ in
+ *      __step 2__, and \ref backFromCmdInput is 0.
+ *   - \ref backBuffer is allocated and not empty (at least filled with an
+ *     empty string)
+ *   - \ref g_printString receives the output if \ref g_outputToString = 1.
+ *   - \ref printedLines updated
+ *   - \ref g_pntrTempAllocStackTop may be reset to
+ *     \ref g_pntrStartTempAllocStack.
+ *   - \ref tempAllocStack is cleared down to \ref g_startTempAllocStack.
  * \warning not UTF-8 safe.
  * \bug
  *   the use of & in \p breakMatch is unnecessarily inconsistent with other
