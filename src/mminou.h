@@ -255,7 +255,7 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *
  *     Some contexts prevent this step: Step (7) was not executed.
  *
- *     \ref g_tempAllocStackPos is reset to \ref g_startTempAllocStack.
+ *     \ref g_tempAllocStackTop is reset to \ref g_startTempAllocStack.
  *
  * 10. Log the output to a file given by \ref g_logFilePtr.
  *
@@ -264,7 +264,7 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *     (\ref g_outputToString = 1), \ref backFromCmdInput = 1 (\ref cmdInput
  *     uses only the scrolling features)
  *
- *     \ref g_tempAllocStackPos is reset to \ref g_startTempAllocStack.
+ *     \ref g_tempAllocStackTop is reset to \ref g_startTempAllocStack.
  *
  * 11. Copy the prepared output in step (4) to \ref g_printString.
  *
@@ -325,7 +325,7 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *   - \ref printedLines updated
  *   - \ref g_pntrTempAllocStackTop may be reset to
  *     \ref g_pntrStartTempAllocStack.
- *     \ref g_tempAllocStackPos may be reset to \ref g_startTempAllocStack.
+ *   - \ref g_tempAllocStackTop may be reset to \ref g_startTempAllocStack.
  * \bug It is possible to produce lines exceeding \ref g_screenWidth by
  *   concatenating substrings smaller than this value, but having no LF at the
  *   end.
@@ -398,61 +398,145 @@ extern flag g_quitPrint;
 
 /*!
  * \fn void printLongLine(const char *line, const char *startNextLine, const char *breakMatch)
- * \brief perform line wrapping and print
- * apply a line wrapping algorithm to fit a text into the screen rectangle
- * defined by \ref g_screenWidth and \ref g_screenHeight.
+ * \brief print lines and perform line wrapping on each one.
+ *
+ * Apply a line wrapping algorithm to fit a text into the screen rectangle
+ * defined by \ref g_screenWidth + 1 and \ref g_screenHeight + 1.
  * Submit each individual broken down line to \ref print2 for output.  All
  * flags and data controlling \ref print2 are in effect.
  *
- * printLongLine automatically pads a LF character to the right of \p line, if
- * necessary, and honors interspersed LF characters.  Even though, each
- * individual line might need further breakdown.  The maximal line length is
- * not limited by the general \p g_screenWidth + 1 only, but may be further
- * reduced by leading or trailing prefix or suffix text.
+ * \p printLongLine pads a LF character to the right of \p line, if missing,
+ * and honors embedded LF characters.  Still, each individual line
+ * might need further breakdown to fit into the dimensions of the virtual
+ * text display.  The maximal width available for a line is not limited by
+ * \p g_screenWidth + 1 alone, leading or trailing prefix or suffix text also
+ * reduce the available space.
  *
  * The following prefixes or suffixes are possible, and are applied to lines
- * too wide for the virtual text display:
- * - (a) reserve the last column for a trailing ~ (0x7E) that appears at the
- *        end of each line needing a break down, and is left blank on the last
- *        one.  Each follow-up line is indented by a space (SP, 0x20).
- * - (b) a trailing % (0x25) is padded to the right at each line that needs to
- *        be continued on following lines.
+ * too wide for the virtual text display, and, thus, they are presented in a
+ * multi-line fashion.  We distinguish the first line, optional follow-up
+ * lines, except for the last line being a special case.  They are visually
+ * indicated in following ways:
+ * - (a) leave the first line as is, start follow-up lines and the last line
+ *      with a prefix \p startNextLine.
+ * - (b) The same as (a) but right justify displayed text (the prefix
+ *      \p startNextLine is still left aligned!) on virtual text display.  The
+ *      fill character is a SP (0x20).
+ * - (c) reserve the last column for a trailing ~ (0x7E) padded to the right of
+ *      the first and every follow-up line, but not to the last one.
+ *      The last and each follow-up line is indented by a space (SP, 0x20).
+ *      The padded ~ follows the line immediately, the last column is a
+ *      last resort and left blank in case of no need.
+ * - (d) support for LaTeX: the same as (c), but instead of the ~ character a
+ *      trailing % (0x25) is used.  The last and each follow-up line is indented
+ *      by a space (SP, 0x20).
  *
- * Methods of breaking a long line not containing a LF character:
+ * The following list shows methods of breaking up a long line not containing a
+ * LF character into first, follow-up and last screen lines.  Although the
+ * methods aim at keeping each individual screen line within the limit given by
+ * \ref g_screenWidth, some allow exceptions if for example an embedded link
+ * address would be destroyed.  This supports HTML output, where the
+ * virtual text display is not really important.  On the other hand, it likely
+ * does not affect usual human readable text, because that has enough spaces
+ * as break locations for even a small sized text display.
  *
- * 1. __Break at any character__.  The \p line is broken into equally sized
- *    pieces (\ref g_screenWidth + 1, reduced by \p startNextLine), except for
- *    the first and last line.  The first one is not reduced by
+ * 1. __Break at given characters__.  The \p breakMatch contains a non-empty
+ *    set of characters marking optional break positions.  If a break occurs at
+ *    such a point, the character is zapped, the substring before it becomes a
+ *    screen line, the part after it is subject to further line breaking again.
+ *    If not used as a break point, the character is left as is.
+ *    The last character from \p breakMatch within the allowed line size
+ *    determines the break position.  If there is none, the width of the
+ *    virtual text display is temporarily suspended and increased as long by
+ *    one, until the breaking algorithm finds a fit into the more and more
+ *    widened text rectangle.  This temporary increase of dimensions affects
+ *    the current screen line only.
+ * 2. __Keep quotes__.  This mode is similar to 1., but text between two
+ *    pairing quote characters " (0x22) is never split.  This mode allows
+ *    breaks only at spaces (SP, 0x20) not contained in a quote.  For technical
+ *    reasons the ETX (0x03) character must not appear in \p line.
+ *    The parsing algorithm is kept simple, there is no way to use a " within a
+ *    quote, it always delimits a quote.  Apart from these differences, all
+ *    rules in 1. apply.
+ * 3. __Break at any character__.  The \p line is broken into equally sized
+ *    pieces, except for the first and last line.  The first one is not reduced by
  *    \p startNextLine, and may receive more characters than the following
  *    ones, the last simply takes the rest.  This method is not UTF-8 safe.
+ * 4. __Compressed proof__.  This mode targets proof lines in Metamath that are
+ *    encoded in a compressed style.  An example of a compressed proof is:
+ *    \code{.unparsed}
+ *    ( wa wn wo wi pm3.4 pm2.24 adantr pm2.21 jaoi pm2.27 imdistani orcd
+ *    adantrr jca olcd adantrl pm2.61ian impbii ) ABDZAEZCDZFZABGZUCCGZDZUBUHUD
+ *    UBUFUGABHAUGBACIJQUDUFUGUCUFCABKJUCCHQLAUHUEAUFUEUGAUFDUBUDAUFBABMNOPUCUG
+ *    UEUFUCUGDUDUBUCUGCUCCMNRSTUA $.
+ *    \endcode
+ *    Both the label section in braces and the following coded proof may exceed
+ *    the virtual screen width as shown above, and need being broken down.
+ *    The label section comprises of blank separated theorem names usually
+ *    short enough to fit in a screen line.  The proof can be split at any
+ *    position, except that the bounding __$=__ and __$.__ must be left intact.
+ *    This method is not UTF-8 safe.
  *
  * \param[in] line (not null) NUL-terminated text to apply line wrapping to.
  *    If the text contains LF characters, line breaks are enforced at these
  *    positions.
  * \param[in] startNextLine (not null) NUL-terminated string to place before
- *   continuation lines.  If this prefix leaves not at least 4 characters for
- *   regular output on a screen line (\ref g_screenWidth), it is chopped
- *   accordingly.
- *
- *   The following characters in first position trigger a special mode:
- *     ~ (0x7E) all broken down lines end on a ~ character.  The rest of this
- *       parameter is ignored, a single space will be used as a prefix.
+ *   any follow-up and the last line.  If this prefix leaves not at least 4
+ *   characters for regular output on a screen line (\ref g_screenWidth), it is
+ *   truncated accordingly (not UTF-8 safe).
+ *\n
+ *   The following characters in first position trigger a special mode:\n
+ *     ~ (0x7E) trailing ~ character, see (c). The rest of this parameter is
+ *       ignored, a single space will be used as a prefix.
  * \param[in] breakMatch (not null) NUL-terminated list of characters at which
  *   the line can be broken.  If empty, a break is possible anywhere
- *   (method 1.).
- *
+ *   (method 3.).\n
+ *   Special cases:
+ *\n
  *   The following characters in first position allow line breaks at spaces (SP), but
- *   trigger in addition special modes:
- *     SOH (0x01) nested tree display (right justify continuation lines);
- *     " (0x22) a string in quotes (") immediately following a = is NOT broken
- *        at space characters, even if this produces a line longer than
- *        \ref g_screenWidth.  You cannot escape a quote character within such
- *        a quote.  For use in HTML code.
- *     \ (0x5C) pad each line that is continued with a % character  to the
- *       right (LaTeX support).
+ *   trigger in addition special modes:\n
+ *     SOH (0x01) nested tree display (right justify continuation lines);\n
+ *     " (0x22) activates method 3. (keep quotes).  For use in HTML code;\n
+ *     \ (0x5C) trailing % character (LaTeX support), see (d);\n
+ * \n
+ *   An & (0x46) in first position activates method 4.  It should be followed
+ *   by a SP (0x20) used to break down a list of theorem labels.  Besides
+ *   activating method 4., an & in \p line also marks a potential break
+ *   location, so this character must neither be used in label names, or
+ *   in encoding compressed proofs.
+ * \pre
+ *   - method 4 requires the \p line containing a compressed proof to neither
+ *     use an & or a multi-byte unicode character.
+ *   - method 3 requires a \p line to not use a multi-byte UTF-8 character.
+ *   - if a full page of lines is reached (\ref printedLines), a user prompt
+ *     asking for continuation is issued, if not inhibited by other variables.
+ *   - \ref g_screenHeight number of lines to display (a page of output) to a
+ *     user without a prompt.
+ *   - \ref g_screenWidth if the expanded text exceeds this width, usually line
+ *     breaking occurs.  Method 1. and 2. can extend the width temporarily, if
+ *     no break location is found;
+ *   - \ref g_quitPrint value 1:  Do not prompt (any longer) and suppress
+ *     output to the (virtual) text display;
+ *   - \ref g_commandFileSilentFlag value 1 suppresses output on the screen;
+ *   - \ref g_commandFileNestingLevel a value > 0 indicates a SUBMIT call is
+ *     executing, where prompting is disabled;
+ *   - \ref g_scrollMode value 0 disables prompting;
+ *   - \ref g_outputToString value 1 output is redirected and prompting is
+ *     disabled.
  * \post
- *   \ref tempAllocStack is cleared down to \ref g_startTempAllocStack.
+ *   - \ref g_quitPrint is set to 1, if the user entered _q_ or _Q_ in
+ *      __step 2__, and \ref backFromCmdInput is 0.
+ *   - \ref backBuffer is allocated and not empty (at least filled with an
+ *     empty string)
+ *   - \ref g_printString receives the output if \ref g_outputToString = 1.
+ *   - \ref printedLines updated
+ *   - \ref g_pntrTempAllocStackTop may be reset to
+ *     \ref g_pntrStartTempAllocStack.
+ *   - \ref tempAllocStack is cleared down to \ref g_startTempAllocStack.
  * \warning not UTF-8 safe.
+ * \bug
+ *   the use of & in \p breakMatch is unnecessarily inconsistent with other
+ *   special characters like SOH " or \ .
  */
 void printLongLine(const char *line, const char *startNextLine, const char *breakMatch);
 
