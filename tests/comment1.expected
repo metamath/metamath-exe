@@ -1,0 +1,13 @@
+MM> READ "comment1.mm"
+Reading source file "comment1.mm"... 9 bytes
+
+?Error on line 1 of file "comment1.mm":
+$( $( $)
+   ^^
+Nested comments are not allowed.
+
+9 bytes were read into the source buffer.
+The source has 0 statements; 0 are $a and 0 are $p.
+
+One error was found.
+MM> Continuous scrolling is now in effect.
