@@ -1,0 +1,10 @@
+MM> READ "local-var-good.mm"
+Reading source file "local-var-good.mm"... 313 bytes
+313 bytes were read into the source buffer.
+The source has 10 statements; 1 are $a and 0 are $p.
+No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
+if you want to check them.
+MM> Continuous scrolling is now in effect.
+MM> 0 10%  20%  30%  40%  50%  60%  70%  80%  90% 100%
+..................................................
+All proofs in the database were verified.
