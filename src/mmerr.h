@@ -59,7 +59,7 @@ struct ErrorPreAllocParams {
  * get the \ref ErrorPreAllocParams used to allocate the current data. */
 ErrorPreAllocParams const& getErrorPreAllocParams();
 /*! set the limitations of the internal buffer.
- * This may fail, becausebool setErrorPreAllocParams(ErrorPreAllocParams const& settings
+ * This may fail, because settings
  *  - there is not enough memory available for the new buffer size including
  *    two safety offsets.
  *  - if one of the pointers in \p settings is NULL
@@ -68,7 +68,7 @@ ErrorPreAllocParams const& getErrorPreAllocParams();
  *    encoded text.
  * \return true, if the new settings are installed.
  */
-);
+bool setErrorPreAllocParams(ErrorPreAllocParams const&);
 
 /*! \fn reallocPreAllocatedBuffer
  * frees any currently in-use pre-allocated buffer and installs a new one
