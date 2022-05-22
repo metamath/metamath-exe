@@ -138,7 +138,6 @@ long getStatementNum(
 );
 
 /*! For HELP processing */
-extern flag g_printHelp;
 void H(vstring helpLine);
 
 /*! For MIDI files */

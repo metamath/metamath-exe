@@ -24,7 +24,6 @@
 vstring bigAdd(vstring bignum1, vstring bignum2);
 vstring bigSub(vstring bignum1, vstring bignum2);
 
-flag g_printHelp = 0;
 
 /* For HTML output */
 vstring_def(g_printStringForReferencedBy);
@@ -5892,9 +5891,7 @@ long getStatementNum(vstring stmtName, /* Possibly with wildcards */
 /* Called by help() - prints a help line */
 void H(vstring helpLine)
 {
-  if (g_printHelp) {
     print2("%s\n", helpLine);
-  }
 } /* H */
 
 

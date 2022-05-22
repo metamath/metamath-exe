@@ -1,0 +1,23 @@
+MM> READ "local-var-bad.mm"
+Reading source file "local-var-bad.mm"... 290 bytes
+290 bytes were read into the source buffer.
+The source has 9 statements; 1 are $a and 0 are $p.
+
+?Error on line 11 of file "local-var-bad.mm" at statement 8, label "wal", type
+"$a":
+    wal $a formula A. x ph $.
+                      ^
+This variable does not occur in any active "$e" or "$f" hypothesis.  All
+variables in "$a" and "$p" statements must appear in at least one such
+hypothesis.
+
+?Error on line 11 of file "local-var-bad.mm" at statement 8, label "wal", type
+"$a":
+    wal $a formula A. x ph $.
+The variable "x" does not appear in an active "$f" statement.
+
+2 errors were found.
+MM> Continuous scrolling is now in effect.
+MM> 0 10%  20%  30%  40%  50%  60%  70%  80%  90% 100%
+..................................................
+All proofs in the database were verified.
