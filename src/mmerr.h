@@ -11,7 +11,7 @@
 
 /*! \page pgError "Simple Error Messaging"
  * When a fatal error occurs, the internal structures of a program are usually 
- * corrupted.  It is therfore not safe to assume resources are still available.
+ * corrupted.  Hence it is not safe to assume resources are still available.
  * Instead the program exits immediately after displaying some diagnostic
  * message.
  *
@@ -55,7 +55,7 @@ struct ErrorPreAllocParams {
     char const* ellipsis;
 };
 
-/*! \fn getIError
+/*! \fn getErrorPreAllocParams
  * get the \ref ErrorPreAllocParams used to allocate the current data. */
 ErrorPreAllocParams const& getErrorPreAllocParams();
 /*! set the limitations of the internal buffer.
