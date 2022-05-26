@@ -6296,7 +6296,7 @@ void command(int argc, char *argv[]) {
       i = switchPos("/ WINDOW");
       if (i) searchWindow = (long)val(g_fullArg[i + 1]);
       /*??? Implement SEARCH /WINDOW */
-      if (i) print2("Sorry, WINDOW has not be implemented yet.\n");
+      if (i) print2("Sorry, WINDOW has not been implemented yet.\n");
 
       let(&str2, g_fullArg[3]); /* Search string */
       let(&str2, edit(str2, 32)); /* Convert to upper case */

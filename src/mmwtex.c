@@ -2113,7 +2113,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
         /* Start of error-checking */
         if (fileCheck) {
           if (!bibTags[0]) {
-            /* The bibliography file has not be read in yet. */
+            /* The bibliography file has not been read in yet. */
             free_vstring(bibFileContents);
             if (errorsOnly == 0) {
               print2("Reading HTML bibliographic tags from file \"%s\"...\n",
