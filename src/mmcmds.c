@@ -5852,7 +5852,7 @@ long getStatementNum(vstring stmtName, /* Possibly with wildcards */
           stmtName);
       } else {
         print2("?You must specify a statement "
-          "that occurs earlier the one being proved.\n");
+          "that occurs earlier than the one being proved.\n");
       }
     } else {
       /* This is normally for ASSIGN */
@@ -5863,7 +5863,7 @@ long getStatementNum(vstring stmtName, /* Possibly with wildcards */
             "being proved.", NULL), "", " ");
       } else {
         print2("?You must specify a statement "
-          "that occurs earlier the one being proved.\n");
+          "that occurs earlier than the one being proved.\n");
       }
     }
   } else if (matchesFound == 2) {

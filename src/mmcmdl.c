@@ -1771,11 +1771,11 @@ static flag getFullArg(long arg, const char *cmdList1) {
       if (!tmpFp) {
         let(&tmpStr, cat("?Sorry, couldn't open the file \"", tmpStr, "\".", NULL));
         printCommandError(errorLine, arg, tmpStr);
-        free_vstring(tmpStr);
         ret = 0;
       } else {
         fclose(tmpFp);
       }
+      free_vstring(tmpStr);
     }
     goto getFullArg_ret;
   }

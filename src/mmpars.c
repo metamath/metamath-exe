@@ -6054,6 +6054,7 @@ vstring readSourceAndIncludes(const char *inputFn /*input*/, long *size /*output
          getNextInclusion() call. */
   }
   print2("Reading source file \"%s\"... %ld bytes\n", fullInputFn, *size);
+  free_vstring(fullInputFn);
 
   /* Create a fictitious initial include for the main file (at least 2
      g_IncludeCall structure array entries have been already been allocated
