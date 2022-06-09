@@ -479,10 +479,10 @@ flag readTexDefs(
           if (fbPtr[0] != '\"' && fbPtr[0] != '\'') bug(2330);
           j = (long)strlen(partialToken);
           for (i = 0; i < j - 1; i++) {
-            if (token[i] == fbPtr[0] &&
-                token[i + 1] == fbPtr[0]) {
+            if (partialToken[i] == fbPtr[0] &&
+                partialToken[i + 1] == fbPtr[0]) {
               let(&partialToken, cat(left(partialToken,
-                  i + 1), right(token, i + 3), NULL));
+                  i + 1), right(partialToken, i + 3), NULL));
               j--;
             }
           }
