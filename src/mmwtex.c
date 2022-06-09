@@ -5373,7 +5373,7 @@ flag writeBibliography(vstring bibFile,
             let(&str2, left(str2, k - 1));
             break;
           }
-          let(&str2, str2);
+          freeTempAlloc();
         }
 
         free_vstring(newstr);
