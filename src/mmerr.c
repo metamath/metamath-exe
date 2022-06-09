@@ -18,18 +18,25 @@
 #define INIT_BUFFERSIZE (25 * 80 * 6)
 
 /*! \def INIT_SAFETY_OFFSET unused memory on each side of the buffer to guard
- * against accidental overwrites.
+ * against accidental overwrites near the buffer boundaries.
+ *
+ * A frequent memory violation is triggered by an off-by-a small-number index.
+ * Adjacent memory blocks could suffer an overwrite then, usually only near their
+ * boundaries.  Keeping other memory blocks away by a safety region can guard
+ * against accidental overwrite.
  */
 #define INIT_SAFETY_OFFSET 200
 
 /*! \def INIT_ELLIPSIS used on startup */
 #define INIT_ELLIPSIS "..."
 
+static char NUL = 0;
 static char initEllipsis[] = INIT_ELLIPSIS;
 
-/*! \var settings
+/*!
  * set of \ref ErrorPreAllocParams used to pre-allocate data.  Can be modified
- * by \ref setErrorPreAllocParams */
+ * by \ref setErrorPreAllocParams
+ */
 static ErrorPreAllocParams settings = {
     INIT_BUFFERSIZE,
     INIT_SAFETY_OFFSET,
@@ -42,12 +49,10 @@ struct Buffer {
     char message[];
 };
 
-/*! \var buffer
- * pointer to the pre-allocated buffer receiving the error message */
-static Buffer* buffer = 0;
+/*! pointer to the pre-allocated buffer receiving the error message */
+static Buffer* buffer = NUL;
 
 /*!
- * \fn addCheckOverflow
  * adds two non-zero values and tests whether overflow occurred.  Zeros are
  * indicative of a previous overflow and are propagated.
  * \param x addend, 0 indicates it is the result of a previous overflow
@@ -61,7 +66,6 @@ static size_t addCheckOverflow(size_t x, size_t y)
 }
 
 /*!
- * \fn needPreAllocateSize
  * determines the size in bytes needed for a pre-allocated buffer matching the
  * requirements in \p settings.
  * \param settings parameters describing the buffer layout.
@@ -79,7 +83,7 @@ static size_t needPreAllocateSize(ErrorPreAllocParams const& settings)
     return addCheckOverflow(size, strlen(settings.ellipsis) + 1 /* NUL */);
 }
 
-/*! \fn freePreAllocBuffer
+/*!
  * frees the currently allocated space for the given error message buffer.  Is
  * a no-op if \p buffer is NULL.
  * \param buffer (null ok) pointer to the message portion of the pre-allocated memory
@@ -97,7 +101,7 @@ static void freePreAllocBuffer(
         free((char*)buffer - settings.safety);
 }
 
-/*! \fn initPreAllocatedBuffer
+/*!
  * initializes a block of memory \p mem according to the description in
  * \p settings, so that it can be used as a pre-allocated message buffer.
  * \param mem [not-null] pointer to a block of memory large enough to contain
@@ -149,47 +153,182 @@ bool reallocPreAllocatedBuffer(
     return result;
 }
 
+/*!
+ * A simple parsing scheme allows inserting data in a prepared general message.
+ * The scheme is a simple downgrade of the C format string.  Allowed are only
+ * placeholders %s that are replaced with given text data.  The percent sign % is
+ * available through duplication %%.  For this kind of simple grammar 5 separate
+ * process states are sufficient.  Besides the placeholder handling, the end-of-text
+ * condition must be recognized - both at the final NUL character, and when the
+ * buffer boundary is reached.
+ *
+ * Note that the complete state needs position  information, too.
+ */
 enum ParserState {
-    TEXT, // copy from format parameter
-    PLACEHOLDER_PREFIX, // % encountered
-    PARAMETER_COPY, // inserting data from a parameter
-    BUFFER_OVERFLOW, // truncation needed
-    END_OF_TEXT, // final NUL encountered, exit
+    /*! copy directly from format parameter */
+    TEXT,
+    /*! a percent sign was encountered.  This may either be a placeholder
+     * or a duplicted % representing a percent proper. */
+    PLACEHOLDER_PREFIX,
+    /*! copying a parameter replacing a placeholder in the format string. */
+    PARAMETER_COPY,
+    /*! the buffer end was reached.  Add an ellipsis to indicate truncation. */
+    BUFFER_OVERFLOW,
+    /*! terminating NUL in format string encountered */
+    END_OF_TEXT
 }
 
-struct ParserData {
-    ParserState currentState;
+/*!
+ * This structure is used to represent the full state during the placeholder
+ * replacement in the format string.
+ */
+struct ParserState {
+    /*! the principal state selecting the proper operation type. */
+    ParserState state;
+    /*! the next reading position in the format string */
     char const* formatPos;
-    char const* bufferEnd;
+    /*! the next writing position in the buffer */
     char* buffer;
+    /* the list of parameters inserted at placeholders.  This structure allows
+     * traversing all entries. */
     va_list args;
+    /*! cached location of the buffer end to determine truncation */
+    char const* bufferEnd;
 }
 
-static bool initParserData(
-    ParserData& data,
+/*!
+ * initialize a \ref ParserState with a startup state.  The \ref buffer is a
+ * pre-allocated chunk of memory.
+ *
+ * \attention the list of parameters \p args is not initialized.
+ *
+ * \param state structure to be initialized
+ * \param format a pointer to a format string with %s placeholders representing
+ *   the error message
+ * \returns false if either the format string or the \ref buffer is NULL, else true
+ *
+ * \post all pointers in \p data are setup for starting a parsing loop.
+ */ 
+static bool initParserState(
+    ParserData& state,
     char const* format)
 {
     bool result = format != 0 && buffer != 0 && buffer->length > 0;
     if (result)
     {
-        data.currentState = TEXT;
-        data.formatPos = format;
-        data.buffer = buffer->message;
-        data.bufferEnd = data.buffer + buffer->length;
+        state.state = TEXT;
+        state.formatPos = format;
+        state.buffer = buffer->message;
+        state.bufferEnd = state.buffer + buffer->length;
     }
 }
 
-static bool parseAndCopy(ParserState& data)
+/*!
+ * assume the last character read from the format string was
+ * no placeholder and is simply to be copied as is to the buffer.
+ *
+ * \pre the next format character is not NUL and there is still
+ *   a byte left in the buffer
+ * \pre the grammar state is TEXT
+ */
+static void handleTextState(ParserState& state)
 {
+    char formatChar = *(state.formatPos++);
+    switch (formatChar)
+    {
+        case '%':
+            state.state = PLACEHOLDER_PREFIX;
+            break;
+        default:
+            *(state.buffer++) = formatChar;
+            break;
+    }
+}
+
+/*!
+ * assume the last character read from the format string was
+ * a % and we now need to check it is a placeholder.
+ *
+ * \pre the next format character is not NUL and there is still
+ *   a byte left in the buffer
+ * \pre the grammar state is PLACEHOLDER_PREFIX, a % was
+ *   encountered in the format string.
+ */
+static void handlePlaceholderPrefixState(ParserState& state)
+{
+    char formatChar = *(state.formatPos++);
+    switch (formatChar)
+   {
+        case '%':
+            // two successive % are replaced with a single %
+            state.state = TEXT;
+            *(state.buffer++) = formatChar;
+            break;
+        case 's':
+            // a %s sequence is recognized as a placeholder.
+            state.state = PARAMETER_COPY;
+            break;
+        default:
+            // don't recognize as a placeholder and copy verbatim.
+            *(state.buffer++) = '%';
+            *(state.buffer++) = formatChar;
+            state.state = TEXT;            
+            break;
+    }
+    return result;
+}
+
+/*! evaluate the next character in the format string, append the
+ * appropriate text in the message buffer and update the state in
+ * \p state.
+ *
+ * \param state holds the parsing state 
+ * 
+ * \returns false iff the state END_OF_TEXT or
+ *  BUFFER_OVERFLOW is reached.
+ *
+ * \pre \p state is initialized.
+ * \post \p state is updated to handle the next character in the
+ *   format string
+ * \post depending on the format character text is appended to
+ *   the message in the buffer.
+ */
+static bool parseAndCopy(ParserState& state)
+{
+    bool result = false;
+    if (*state.formatPos == NUL)
+        state.state = END_OF_TEXT;
+    else if (state.buffer != state.bufferEnd)
+        // cannot even copy the terminating NUL any more...
+        state.state = BUFFER_OVERFLOW;
+    else
+    {
+        result = true;
+        switch (state.state)
+        {
+        TEXT:
+            handleTextState(state);
+            break;
+        PLACEHOLDER_PREFIX:
+            handlePlaceholderPrefixState(state);
+            break;
+        PLACEHOLDER_COPY:
+        };
+    }
+    return result;
 }
 
 bool setErrorMessage(char const* format, ...)
 {
     ParserState state;
     // everything but the args traversal...
-    initParserData(state, format);
-    // init args traversal
-    va_start(state.args, format);
-    while (parseAndCopy(state));
-    va_end(state.args);
+    bool ok = initParserState(state, format);
+    if (ok)
+    {
+        // init args traversal
+        va_start(state.args, format);
+        while (parseAndCopy(state));
+        va_end(state.args);
+    }
+    return ok;
 }
