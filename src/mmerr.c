@@ -14,25 +14,25 @@
 #include <stdlib.h>
 #include "mmerr.h"
 
-/*! \def INIT_BUFFERSIZE corresponding to 25*80 UTF-8 characters (worst case,
- * assuming 6 bytes each character).
+/*! corresponding to 25*80 UTF-8 characters (worst case, assuming 6 bytes each
+ * character).
  */
 #define INIT_BUFFERSIZE (25 * 80 * 6)
 
-/*! \def INIT_SAFETY_OFFSET unused memory on each side of the buffer to guard
+/*! unused memory on each side of the buffer to guard
  * against accidental overwrites near the buffer boundaries.
  *
  * A frequent memory violation is triggered by an off-by-a small-number index.
  * Adjacent memory blocks could suffer an overwrite then, usually only near their
  * boundaries.  Keeping other memory blocks away by a safety region can guard
- * against accidental overwrite.
+ * against this type of accidental overwrite.
  */
 #define INIT_SAFETY_OFFSET 200
 
-/*! \def INIT_ELLIPSIS used on startup */
+/*! used on startup */
 #define INIT_ELLIPSIS "..."
 
-static char NUL = 0;
+static char const NUL = 0;
 static char initEllipsis[] = INIT_ELLIPSIS;
 
 /*!
@@ -50,7 +50,7 @@ struct ErrorPreAllocParams const* getErrorPreAllocParams()
     return &settings;
 }
 
-/*! portion of the pre-allocated buffer containing the error message */
+/*! descriptor of the pre-allocated buffer containing the final error message */
 struct Buffer {
     size_t length;
     char message[];
@@ -169,9 +169,9 @@ int reallocPreAllocatedBuffer(
  * condition must be recognized - both at the final NUL character, and when the
  * buffer boundary is reached.
  *
- * Note that the complete state needs position  information, too.
+ * Note that the complete state needs position information, too.
  */
-enum ParserStateTag {
+enum ParserProcessState {
     /*! copy directly from format parameter */
     TEXT,
     /*! a percent sign was encountered.  This may either be a placeholder
@@ -191,7 +191,7 @@ enum ParserStateTag {
  */
 struct ParserState {
     /*! the principal state selecting the proper operation type. */
-    enum ParserStateTag state;
+    enum ParserProcessState state;
     /*! the next reading position in the format string */
     char const* formatPos;
     /*! the next writing position in the buffer */
@@ -216,7 +216,8 @@ struct ParserState {
  *   the error message
  * \returns false if either the format string or the \ref buffer is NULL, else true
  *
- * \post all pointers in \p data are setup for starting a parsing loop.
+ * \post all pointers in \p data are setup for starting a parsing loop, except the
+ *   list of parameters.
  */ 
 static int initParserState(
     struct ParserState* state,
@@ -261,8 +262,9 @@ static void handleTextState(struct ParserState* state)
 
 /*!
  * assume the last character read from the format string was a % and we now
- * need to check it introduced a placeholder.  If not, the % is ignored.  In
- * particular, a sequence %% is reduced to a single %.
+ * need to check it introduced a placeholder.  If not, the % only is ignored 
+ * (not messing with UTF-8).  In particular, a sequence %% is reduced to a
+ * single %.
  *
  * A NULL parameter is allowed, and has the same effect as an empty string.
  *
@@ -296,15 +298,15 @@ static void handlePlaceholderPrefixState(struct ParserState* state)
  * assume we encountered a placeholder %s, and now copy characters from the
  * parameter.  The parameter is always copied verbatim, no search for
  * placeholders takes place.  The parameter terminates with the NUL character,
- * that is not copied
+ * that is not copied.
  *
  * \param state not null, holds the parsing state
  *
  * \pre the next format character is not NUL and there is still
  *   a byte left in the buffer
- * \pre state.arg contains a pointer to the parameter to insert verbatim.
- * \pre the grammar state in state.state is PARAMETER_COPY, so a %s was
- *   previously encountered in the format string.
+ * \pre state->arg contains a pointer to the parameter to insert verbatim.
+ * \pre the grammar state in state->state is PARAMETER_COPY, after a %s was
+ *   encountered in the format string.
  */
 static void handleParameterCopyState(struct ParserState* state)
 {
@@ -328,6 +330,7 @@ static void handleParameterCopyState(struct ParserState* state)
  * \returns false iff the state END_OF_TEXT or
  *  BUFFER_OVERFLOW is reached.
  *
+ * \returns 0: message completed (possibly after a truncation)
  * \pre \p state is initialized.
  * \post \p state is updated to handle the next character in the
  *   format string

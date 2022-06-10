@@ -90,7 +90,9 @@ typedef char const* ErrorFormat;
 
 /*! fill the internal buffer with submitted data, expanding placeholders
  * if available.
- * \ref ErrorFormat.
+ * \param format a message with embedded %s placeholders, see \ref ErrorFormat
+ *   followed by a list of string values to be inserted at placeholders in the given order.
+ * \returns 0, if not even a truncated message could be created.
  */
 int setErrorMessage(ErrorFormat format, ...);
 
