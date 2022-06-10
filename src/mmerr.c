@@ -10,7 +10,9 @@
  */
 
 #include <stdarg.h>
-#include "mmerr.h
+#include <string.h>
+#include <stdlib.h>
+#include "mmerr.h"
 
 /*! \def INIT_BUFFERSIZE corresponding to 25*80 UTF-8 characters (worst case,
  * assuming 6 bytes each character).
@@ -37,11 +39,16 @@ static char initEllipsis[] = INIT_ELLIPSIS;
  * set of \ref ErrorPreAllocParams used to pre-allocate data.  Can be modified
  * by \ref setErrorPreAllocParams
  */
-static ErrorPreAllocParams settings = {
+static struct ErrorPreAllocParams settings = {
     INIT_BUFFERSIZE,
     INIT_SAFETY_OFFSET,
     0, // null only accepted during startup
 };
+
+struct ErrorPreAllocParams const* getErrorPreAllocParams()
+{
+    return &settings;
+}
 
 /*! portion of the pre-allocated buffer containing the error message */
 struct Buffer {
@@ -50,7 +57,7 @@ struct Buffer {
 };
 
 /*! pointer to the pre-allocated buffer receiving the error message */
-static Buffer* buffer = NUL;
+static struct Buffer* buffer = 0;
 
 /*!
  * adds two non-zero values and tests whether overflow occurred.  Zeros are
@@ -72,15 +79,15 @@ static size_t addCheckOverflow(size_t x, size_t y)
  * \returns the size in bytes, or 0, if the \p settings requirements cannot be
  *   fulfilled.
  */
-static size_t needPreAllocateSize(ErrorPreAllocParams const& settings)
+static size_t needPreAllocateSize(struct ErrorPreAllocParams const* settings)
 {
-    size_t size = addCheckOverflow(settings.bufferSize, sizeof(Buffer.length));
-    if (settings.safetyOffset)
+    size_t size = addCheckOverflow(settings->bufferSize, sizeof(buffer->length));
+    if (settings->safetyOffset)
     {
-        size = addCheckOverflow(size, settings.safetyOffset);
-        size = addCheckOverflow(size, settings.safetyOffset);
+        size = addCheckOverflow(size, settings->safetyOffset);
+        size = addCheckOverflow(size, settings->safetyOffset);
     }
-    return addCheckOverflow(size, strlen(settings.ellipsis) + 1 /* NUL */);
+    return addCheckOverflow(size, strlen(settings->ellipsis) + 1 /* NUL */);
 }
 
 /*!
@@ -94,11 +101,11 @@ static size_t needPreAllocateSize(ErrorPreAllocParams const& settings)
  * \post the memory block is freed, if not NULL.
  */
 static void freePreAllocBuffer(
-    Buffer* buffer, 
-    ErrorPreAllocParams const& settings)
+    struct Buffer* buffer, 
+    struct ErrorPreAllocParams const* settings)
 {
     if (buffer)
-        free((char*)buffer - settings.safety);
+        free((char*)buffer - settings->safetyOffset);
 }
 
 /*!
@@ -112,42 +119,42 @@ static void freePreAllocBuffer(
  * \post the returned buffer is ready for use as a pre-allocated message
  *   buffer.
  */
-static Buffer* initPreAllocatedBuffer(
+static struct Buffer* initPreAllocatedBuffer(
     void* mem,
-    ErrorPreAllocParams const& settings)
+    struct ErrorPreAllocParams const* settings)
 {
     /* layout: safety--buffer.length--buffer.message--ellipsis--safety */
     char* p = mem;
     
     // put the buffer behind a safety block
-    p += settings.safetyOffset;
-    Buffer* result = (void*)p;
-    result->length = settings.bufferSize;
+    p += settings->safetyOffset;
+    struct Buffer* result = (void*)p;
+    result->length = settings->bufferSize;
     
     // copy the ellipsis right behind the buffer
-    p += sizeof(result->length) + settings.bufferSize;
-    strcpy(p, settings.ellipsis);
+    p += sizeof(result->length) + settings->bufferSize;
+    strcpy(p, settings->ellipsis);
     return result;
 }
 
-bool reallocPreAllocatedBuffer(
-    ErrorPreAllocParams const& newSettings)
+int reallocPreAllocatedBuffer(
+    struct ErrorPreAllocParams* newSettings)
 {
     // sanity check
     size_t size = needPreAllocateSize(newSettings);
-    bool result = size > 0;
+    int result = size > 0? 1 : 0;
     if (result)
     {
         // allocate
         void* mem = malloc(size);
-        result = mem != 0;
+        result = mem != 0? 1 : 0;
         if (result)
         {
+            // free the old buffer
+            freePreAllocBuffer(buffer, &settings);
             // initialize the new one
             buffer = initPreAllocatedBuffer(mem, newSettings);
-            settings = newSettings;
-            // free the old buffer
-            freeBuffer(buffer, settings);
+            settings = *newSettings;
         }
     }
     return result;
@@ -164,7 +171,7 @@ bool reallocPreAllocatedBuffer(
  *
  * Note that the complete state needs position  information, too.
  */
-enum ParserState {
+enum ParserStateTag {
     /*! copy directly from format parameter */
     TEXT,
     /*! a percent sign was encountered.  This may either be a placeholder
@@ -176,7 +183,7 @@ enum ParserState {
     BUFFER_OVERFLOW,
     /*! terminating NUL in format string encountered */
     END_OF_TEXT
-}
+};
 
 /*!
  * This structure is used to represent the full state during the placeholder
@@ -184,7 +191,7 @@ enum ParserState {
  */
 struct ParserState {
     /*! the principal state selecting the proper operation type. */
-    ParserState state;
+    enum ParserStateTag state;
     /*! the next reading position in the format string */
     char const* formatPos;
     /*! the next writing position in the buffer */
@@ -192,9 +199,11 @@ struct ParserState {
     /* the list of parameters inserted at placeholders.  This structure allows
      * traversing all entries. */
     va_list args;
+    /*! used to hold the current parameter for a %s placeholder */
+    char const* arg;
     /*! cached location of the buffer end to determine truncation */
     char const* bufferEnd;
-}
+};
 
 /*!
  * initialize a \ref ParserState with a startup state.  The \ref buffer is a
@@ -209,80 +218,112 @@ struct ParserState {
  *
  * \post all pointers in \p data are setup for starting a parsing loop.
  */ 
-static bool initParserState(
-    ParserData& state,
+static int initParserState(
+    struct ParserState* state,
     char const* format)
 {
-    bool result = format != 0 && buffer != 0 && buffer->length > 0;
+    int result = format != 0 && buffer != 0 && buffer->length > 0? 1 : 0;
     if (result)
     {
-        state.state = TEXT;
-        state.formatPos = format;
-        state.buffer = buffer->message;
-        state.bufferEnd = state.buffer + buffer->length;
+        state->state = TEXT;
+        state->formatPos = format;
+        state->buffer = buffer->message;
+        state->arg = 0;
+        state->bufferEnd = state->buffer + buffer->length;
     }
+    return result;
 }
 
 /*!
  * assume the last character read from the format string was
  * no placeholder and is simply to be copied as is to the buffer.
  *
+ * \param state not null, holds the parsing state
+ *
  * \pre the next format character is not NUL and there is still
  *   a byte left in the buffer
  * \pre the grammar state is TEXT
  */
-static void handleTextState(ParserState& state)
+static void handleTextState(struct ParserState* state)
 {
-    char formatChar = *(state.formatPos++);
+    char formatChar = *(state->formatPos++);
     switch (formatChar)
     {
         case '%':
-            state.state = PLACEHOLDER_PREFIX;
+            // ignore the %
+            state->state = PLACEHOLDER_PREFIX;
             break;
         default:
-            *(state.buffer++) = formatChar;
-            break;
+            // keep the TEXT state
+            *(state->buffer++) = formatChar;
     }
 }
 
 /*!
- * assume the last character read from the format string was
- * a % and we now need to check it is a placeholder.
+ * assume the last character read from the format string was a % and we now
+ * need to check it introduced a placeholder.  If not, the % is ignored.  In
+ * particular, a sequence %% is reduced to a single %.
+ *
+ * A NULL parameter is allowed, and has the same effect as an empty string.
+ *
+ * \param state not null, holds the parsing state
  *
  * \pre the next format character is not NUL and there is still
  *   a byte left in the buffer
- * \pre the grammar state is PLACEHOLDER_PREFIX, a % was
- *   encountered in the format string.
+ * \pre the grammar state in state.state is PLACEHOLDER_PREFIX, so a % was
+ *   previously encountered in the format string.
  */
-static void handlePlaceholderPrefixState(ParserState& state)
+static void handlePlaceholderPrefixState(struct ParserState* state)
 {
-    char formatChar = *(state.formatPos++);
+    char formatChar = *(state->formatPos++);
     switch (formatChar)
    {
-        case '%':
-            // two successive % are replaced with a single %
-            state.state = TEXT;
-            *(state.buffer++) = formatChar;
-            break;
         case 's':
-            // a %s sequence is recognized as a placeholder.
-            state.state = PARAMETER_COPY;
+            // a %s sequence is recognized as a placeholder.  Don't copy
+            // anything, if the parameter is NULL.
+            state->arg = va_arg(state->args, char const*);
+            state->state = state->arg == 0? TEXT : PARAMETER_COPY;
             break;
         default:
-            // don't recognize as a placeholder and copy verbatim.
-            *(state.buffer++) = '%';
-            *(state.buffer++) = formatChar;
-            state.state = TEXT;            
-            break;
+            // ignore the leading %, but copy the following character
+            // to the buffer.  
+            *(state->buffer++) = formatChar;
+            state->state = TEXT;
     }
-    return result;
 }
 
-/*! evaluate the next character in the format string, append the
- * appropriate text in the message buffer and update the state in
- * \p state.
+/*!
+ * assume we encountered a placeholder %s, and now copy characters from the
+ * parameter.  The parameter is always copied verbatim, no search for
+ * placeholders takes place.  The parameter terminates with the NUL character,
+ * that is not copied
  *
- * \param state holds the parsing state 
+ * \param state not null, holds the parsing state
+ *
+ * \pre the next format character is not NUL and there is still
+ *   a byte left in the buffer
+ * \pre state.arg contains a pointer to the parameter to insert verbatim.
+ * \pre the grammar state in state.state is PARAMETER_COPY, so a %s was
+ *   previously encountered in the format string.
+ */
+static void handleParameterCopyState(struct ParserState* state)
+{
+    char paramChar = *(state->arg++);
+    switch (paramChar)
+    {
+        case 0:
+            state->arg = 0;
+            state->state = TEXT;
+            break;
+        default:
+            *(state->buffer++) = paramChar;
+    }
+}
+
+/*! evaluate the next character in the format string, append the appropriate
+ * text in the message buffer and update the state in \p state.
+ *
+ * \param state holds the parsing state
  * 
  * \returns false iff the state END_OF_TEXT or
  *  BUFFER_OVERFLOW is reached.
@@ -293,18 +334,18 @@ static void handlePlaceholderPrefixState(ParserState& state)
  * \post depending on the format character text is appended to
  *   the message in the buffer.
  */
-static bool parseAndCopy(ParserState& state)
+static int parseAndCopy(struct ParserState* state)
 {
-    bool result = false;
-    if (*state.formatPos == NUL)
-        state.state = END_OF_TEXT;
-    else if (state.buffer != state.bufferEnd)
+    int result = 0;
+    if (state->state != PARAMETER_COPY && *state->formatPos == NUL)
+        state->state = END_OF_TEXT;
+    else if (state->buffer != state->bufferEnd)
         // cannot even copy the terminating NUL any more...
-        state.state = BUFFER_OVERFLOW;
+        state->state = BUFFER_OVERFLOW;
     else
     {
-        result = true;
-        switch (state.state)
+        result = 1;
+        switch (state->state)
         {
         TEXT:
             handleTextState(state);
@@ -312,22 +353,24 @@ static bool parseAndCopy(ParserState& state)
         PLACEHOLDER_PREFIX:
             handlePlaceholderPrefixState(state);
             break;
-        PLACEHOLDER_COPY:
+        PARAMETER_COPY:
+            handleParameterCopyState(state);
+            break;
         };
     }
     return result;
 }
 
-bool setErrorMessage(char const* format, ...)
+int setErrorMessage(char const* format, ...)
 {
-    ParserState state;
+    struct ParserState state;
     // everything but the args traversal...
-    bool ok = initParserState(state, format);
+    int ok = initParserState(&state, format);
     if (ok)
     {
         // init args traversal
         va_start(state.args, format);
-        while (parseAndCopy(state));
+        while (parseAndCopy(&state));
         va_end(state.args);
     }
     return ok;

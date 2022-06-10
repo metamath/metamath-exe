@@ -26,7 +26,7 @@
  * placeholders are restricted to those of %s type.
  */
 
-/*! \struct ErrorPreAllocParams
+/*!
  * Basic parameters controlling pre-allocation of basic routines and data.
  */
 struct ErrorPreAllocParams {
@@ -55,9 +55,11 @@ struct ErrorPreAllocParams {
     char const* ellipsis;
 };
 
-/*! \fn getErrorPreAllocParams
- * get the \ref ErrorPreAllocParams used to allocate the current data. */
-ErrorPreAllocParams const& getErrorPreAllocParams();
+/*!
+ * get the \ref ErrorPreAllocParams used to allocate the current data.
+ * \returns a non-null pointer to the current settings intended for reading only.
+ */
+struct ErrorPreAllocParams const* getErrorPreAllocParams();
 /*! set the limitations of the internal buffer.
  * This may fail, because
  *  - there is not enough memory available for the new buffer size including
@@ -66,31 +68,31 @@ ErrorPreAllocParams const& getErrorPreAllocParams();
  *  - if the size of the default Message exceeds the buffer size
  *  - if the ellipsis or default message is not a UTF-8 (superset of ASCII)
  *    encoded text.
- * \return true, if the new settings are installed.
+ * \return 0, if the new settings weren't installed.
  */
-bool setErrorPreAllocParams(ErrorPreAllocParams const& settings);
+int setErrorPreAllocParams(struct ErrorPreAllocParams const* settings);
 
-/*! \fn reallocPreAllocatedBuffer
+/*!
  * frees any currently in-use pre-allocated buffer and installs a new one
  * matching given requirements.
  * \param newSettings the requirements of a new pre-allocated message buffer,
  *   replacing the current one, if exists.
- * \returns whether the reallocation was successful.
+ * \returns whether the reallocation was successful (not 0).
  * \post If no new buffer could be allocated, the old one stays in place.
  */
-bool reallocPreAllocatedBuffer(
-    ErrorPreAllocParams const& newSettings);
+int reallocPreAllocatedBuffer(
+    struct ErrorPreAllocParams* newSettings);
 
-/*! \typedef ErrorFormat
+/*!
  * Allows only %s as placeholders
  */
-typedef ErrorFormat char const*;
+typedef char const* ErrorFormat;
 
 /*! fill the internal buffer with submitted data, expanding placeholders
  * if available.
  * \ref ErrorFormat.
  */
-bool setErrorMessage(char const* format, ...);
+int setErrorMessage(ErrorFormat format, ...);
 
 void raiseFatalError(
     char const* message,
