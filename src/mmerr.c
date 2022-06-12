@@ -165,7 +165,7 @@ static size_t addCheckOverflow(size_t x, size_t y)
  * \returns the size in bytes, or 0, if the \p settings requirements cannot be
  *   fulfilled.
  */
-static size_t needPreAllocatedSize(struct ErrorPreAllocParams const* settings)
+static size_t needPreAllocatedSize(struct ErrorPreAllocatedParams const* settings)
 {
     size_t size = addCheckOverflow(settings->bufferSize, sizeof(buffer->length));
     if (settings->safetyOffset)
@@ -188,7 +188,7 @@ static size_t needPreAllocatedSize(struct ErrorPreAllocParams const* settings)
  */
 static void freePreAllocatedBuffer(
     struct Buffer* buffer, 
-    struct ErrorPreAllocParams const* settings)
+    struct ErrorPreAllocatedParams const* settings)
 {
     if (buffer)
         free((char*)buffer - settings->safetyOffset);
@@ -207,7 +207,7 @@ static void freePreAllocatedBuffer(
  */
 static struct Buffer* initPreAllocatedBuffer(
     void* mem,
-    struct ErrorPreAllocParams const* settings)
+    struct ErrorPreAllocatedParams const* settings)
 {
     /* layout: safety--buffer.length--buffer.message--ellipsis--safety */
     char* p = mem;
