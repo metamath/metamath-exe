@@ -10,26 +10,38 @@
 #include <stdio.h>
 
 /*! \page pgError "Simple Error Messaging"
- * When a fatal error occurs, the internal structures of a program are usually 
- * corrupted.  Hence it is not safe to assume resources are still available.
- * Instead the program exits immediately after displaying some diagnostic
- * message.
+ * When a fatal error occurs, the internal structures of a program may be 
+ * corrupted to the point that recovery is impossible.  The program exits
+ * immediately, but hopefully still displaying a diagnostic message.
  *
- * In order to display this final message, the program is restricted to very
- * basic self-contained routines, not dependent on any state of the program.
+ * To display this final message, we restrict its code to very basic,
+ * self-contained routines, independent on the rest of the program to the
+ * extent possible, thus dodging corrupted data.
+ *
  * In particular everything should be pre-allocated and initialized, so the
- * chance of a failure is minimized, even if the program state is corrupted.
- * This goes at the expense of flexibility, in particular, support for dynamic
- * behavior is limited.  For example, the whole diagnostic message is fitted
- * into a buffer of a given size, truncation enforced.  Internal structures used
- * are isolated from the rest of the program.  The possible formats with
- * placeholders are restricted to those of %s type.
+ * chance of a failure in a corrupted environment is minimized.  This is to the
+ * detriment of flexibility, in particular, support for dynamic behavior is
+ * limited.
+ *
+ * Often it is sensible to embed details in a diagnosis message.  Placeholders
+ * in the format string mark insertion points for such values, much as in
+ * \p printf. The variety and functionality is greatly reduced in our case,
+ * though.  Only pieces of text can be embedded (%s placeholder).
+ * 
+ * Still, for this kind of expansion you need a buffer where the final message is
+ * constructed.  In our context, this buffer is pre-allocated, and fixed in size,
+ * truncation enforced.
  */
 
 /*!
  * Basic parameters controlling pre-allocation of basic routines and data.
+ * Pre-allocation helps to construct a diagnosis message, even in a
+ * corrupt environment.
+ * 
+ * A pre-allocated buffer is provided to allow embedding data in a diagnosis
+ * message.  
  */
-struct ErrorPreAllocParams {
+struct ErrorPreAllocatedParams {
     /*! size of pre-allocated buffer, excluding the space needed for \p ellipsis.
      * Sensible values range between the size of a single line (around 80
      * characters) up to a few KBytes.  If you want to support UTF-8 then each
@@ -56,32 +68,23 @@ struct ErrorPreAllocParams {
 };
 
 /*!
- * get the \ref ErrorPreAllocParams used to allocate the current data.
+ * get the \ref ErrorPreAllocatedParams used to allocate the current data.
  * \returns a non-null pointer to the current settings intended for reading only.
  */
-struct ErrorPreAllocParams const* getErrorPreAllocParams();
-/*! set the limitations of the internal buffer.
+struct ErrorPreAllocatedParams const* getErrorPreAllocatedParams();
+/*!
+ * frees any currently in-use pre-allocated buffer and installs a new one
+ * matching given requirements.
  * This may fail, because
  *  - there is not enough memory available for the new buffer size including
  *    two safety offsets.
  *  - if one of the pointers in \p settings is NULL
- *  - if the size of the default Message exceeds the buffer size
- *  - if the ellipsis or default message is not a UTF-8 (superset of ASCII)
- *    encoded text.
- * \return 0, if the new settings weren't installed.
- */
-int setErrorPreAllocParams(struct ErrorPreAllocParams const* settings);
-
-/*!
- * frees any currently in-use pre-allocated buffer and installs a new one
- * matching given requirements.
  * \param newSettings the requirements of a new pre-allocated message buffer,
  *   replacing the current one, if exists.
- * \returns whether the reallocation was successful (not 0).
+ * \returns whether the reallocation was successful (1).
  * \post If no new buffer could be allocated, the old one stays in place.
  */
-int reallocPreAllocatedBuffer(
-    struct ErrorPreAllocParams* newSettings);
+int setErrorPreAllocatedParams(struct ErrorPreAllocatedParams const* settings);
 
 /*!
  * Allows only %s as placeholders

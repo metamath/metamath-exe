@@ -12,52 +12,138 @@
 #include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stddef.h>
 #include "mmerr.h"
 
-/*! corresponding to 25*80 UTF-8 characters (worst case, assuming 6 bytes each
- * character).
+/*!
+ * corresponding to 25*80 UTF-8 characters (worst case, assuming 6 bytes each
+ * character).  The default size of the memory block set aside for a diagnosis
+ * message in case of a fatal error.  It is assumed that the message is not a
+ * fixed text, but has some explanatory data embedded, or needs translation,
+ * so a preparation phase is in order.  A buffer of INIT_BUFFERSIZE serves this
+ * purpose.
  */
 #define INIT_BUFFERSIZE (25 * 80 * 6)
 
-/*! unused memory on each side of the buffer to guard
- * against accidental overwrites near the buffer boundaries.
+/*!
+ * unused memory in bytes on each side of the message buffer to guard
+ * against accidental overwrites near the boundaries.
  *
  * A frequent memory violation is triggered by an off-by-a small-number index.
  * Adjacent memory blocks could suffer an overwrite then, usually only near their
  * boundaries.  Keeping other memory blocks away by a safety region can guard
- * against this type of accidental overwrite.
+ * against this type of accidental overwrite.  Obviously this is necessary only
+ * if the buffer contains some preset data.  So far it is just an ellipsis as an
+ * indicator of truncation that is preloaded to the buffer.
  */
 #define INIT_SAFETY_OFFSET 200
 
-/*! used on startup */
+/*!
+ * The message buffer is fixed in size, and cannot be increased on demand, as
+ * memory allocation might be dysfunctional.  It is assumed that a truncated
+ * diagnosis message is better than no message at all.  So an indicator of
+ * truncation (commonly an ellipsis is used for that) is padded to the right of
+ * the message.  On startup the string given here indicates truncation.  Note
+ * that U+2026 is a replacement in Unicode.
+ */
 #define INIT_ELLIPSIS "..."
 
-static char const NUL = 0;
-static char initEllipsis[] = INIT_ELLIPSIS;
+/*! terminating character in a text string never used elsewhere */ 
+#define NUL '\x00'
 
 /*!
- * set of \ref ErrorPreAllocParams used to pre-allocate data.  Can be modified
- * by \ref setErrorPreAllocParams
+ * C has no boolean type, instead an int is used.  To ease code reading we
+ * encode one boolean value here.
+ * int cond = FALSE; if (cond) { } skips the code block.
  */
-static struct ErrorPreAllocParams settings = {
-    INIT_BUFFERSIZE,
-    INIT_SAFETY_OFFSET,
-    0, // null only accepted during startup
+#define FALSE 0
+/*!
+ * C has no boolean type, instead an int is used.  To ease code reading we
+ * encode one boolean value here.
+ * int cond = TRUE; if (cond) { } branches into the code block.
+ */
+#define TRUE 1
+
+/*!
+ * Formatting allows values be embedded in a message text.  The locations
+ * are marked with placeholders %s.
+ */
+
+#define PLACEHOLDER_CHAR '%'
+#define PLACEHOLDER_TYPE_STRING 's'
+
+/*!
+ * A simple grammar scheme allows inserting data in a prepared general message.
+ * The scheme is a simple downgrade of the C format string.  Allowed are only
+ * placeholders %s that are replaced with given text data.  The percent sign % is
+ * available through duplication %%.  For this kind of simple grammar 5 separate
+ * process states are sufficient.  Besides the placeholder handling, the end-of-text
+ * condition must be recognized - both at the final NUL character, and when the
+ * buffer boundary is reached.
+ *
+ * Note that the complete state needs position information, too.
+ */
+enum ParserProcessState {
+    /*! copy directly from format parameter */
+    TEXT,
+    /*! a percent sign was encountered.  This may either be a placeholder
+     * or a duplicted % representing a percent proper. */
+    PLACEHOLDER_PREFIX,
+    /*! copying a parameter replacing a placeholder in the format string. */
+    PARAMETER_COPY,
+    /*! the buffer end was reached.  Add an ellipsis to indicate truncation. */
+    BUFFER_OVERFLOW,
+    /*! terminating NUL in format string encountered */
+    END_OF_TEXT
 };
 
-struct ErrorPreAllocParams const* getErrorPreAllocParams()
-{
-    return &settings;
-}
+/*!
+ * This structure is used to represent the full state during the placeholder
+ * replacement in the format string.
+ */
+struct ParserState {
+    /*! the principal state selecting the proper operation type. */
+    enum ParserProcessState processState;
+    /*! the next reading position in the format string */
+    char const* formatPos;
+    /*! the next writing position in the buffer */
+    char* buffer;
+    /* the list of parameters inserted at placeholders.  This structure allows
+     * traversing all entries. */
+    va_list args;
+    /*! used to hold the current parameter for a %s placeholder */
+    char const* arg;
+    /*! cached location of the buffer end to determine truncation */
+    char const* bufferEnd;
+};
 
-/*! descriptor of the pre-allocated buffer containing the final error message */
+/*! heading descriptor of the pre-allocated buffer containing the final error
+ * message
+ */
 struct Buffer {
     size_t length;
     char message[];
 };
 
+static char initEllipsis[] = INIT_ELLIPSIS;
+
 /*! pointer to the pre-allocated buffer receiving the error message */
-static struct Buffer* buffer = 0;
+static struct Buffer* buffer = NULL;
+
+/*!
+ * set of \ref ErrorPreAllocatedParams used to pre-allocate data.  Can be modified
+ * by \ref setErrorPreAllocatedParams
+ */
+static struct ErrorPreAllocatedParams settings = {
+    INIT_BUFFERSIZE,
+    INIT_SAFETY_OFFSET,
+    NULL, // memory address, null only accepted during startup
+};
+
+struct ErrorPreAllocatedParams const* getErrorPreAllocatedParams()
+{
+    return &settings;
+}
 
 /*!
  * adds two non-zero values and tests whether overflow occurred.  Zeros are
@@ -79,7 +165,7 @@ static size_t addCheckOverflow(size_t x, size_t y)
  * \returns the size in bytes, or 0, if the \p settings requirements cannot be
  *   fulfilled.
  */
-static size_t needPreAllocateSize(struct ErrorPreAllocParams const* settings)
+static size_t needPreAllocatedSize(struct ErrorPreAllocParams const* settings)
 {
     size_t size = addCheckOverflow(settings->bufferSize, sizeof(buffer->length));
     if (settings->safetyOffset)
@@ -100,7 +186,7 @@ static size_t needPreAllocateSize(struct ErrorPreAllocParams const* settings)
  *   Irrelevant if \p buffer is NULL.
  * \post the memory block is freed, if not NULL.
  */
-static void freePreAllocBuffer(
+static void freePreAllocatedBuffer(
     struct Buffer* buffer, 
     struct ErrorPreAllocParams const* settings)
 {
@@ -137,73 +223,25 @@ static struct Buffer* initPreAllocatedBuffer(
     return result;
 }
 
-int reallocPreAllocatedBuffer(
-    struct ErrorPreAllocParams* newSettings)
+int setPreAllocatedBuffer(
+    struct ErrorPreAllocatedParams* newSettings)
 {
-    // sanity check
-    size_t size = needPreAllocateSize(newSettings);
-    int result = size > 0? 1 : 0;
+    // includes a sanity check
+    size_t size = needPreAllocatedSize(newSettings);
+    int result = size > 0? TRUE : FALSE;
     if (result)
     {
-        // allocate
         void* mem = malloc(size);
-        result = mem != 0? 1 : 0;
+        result = mem != 0? TRUE : FALSE;
         if (result)
         {
-            // free the old buffer
-            freePreAllocBuffer(buffer, &settings);
-            // initialize the new one
+            freePreAllocatedBuffer(buffer, &settings);
             buffer = initPreAllocatedBuffer(mem, newSettings);
             settings = *newSettings;
         }
     }
     return result;
 }
-
-/*!
- * A simple parsing scheme allows inserting data in a prepared general message.
- * The scheme is a simple downgrade of the C format string.  Allowed are only
- * placeholders %s that are replaced with given text data.  The percent sign % is
- * available through duplication %%.  For this kind of simple grammar 5 separate
- * process states are sufficient.  Besides the placeholder handling, the end-of-text
- * condition must be recognized - both at the final NUL character, and when the
- * buffer boundary is reached.
- *
- * Note that the complete state needs position information, too.
- */
-enum ParserProcessState {
-    /*! copy directly from format parameter */
-    TEXT,
-    /*! a percent sign was encountered.  This may either be a placeholder
-     * or a duplicted % representing a percent proper. */
-    PLACEHOLDER_PREFIX,
-    /*! copying a parameter replacing a placeholder in the format string. */
-    PARAMETER_COPY,
-    /*! the buffer end was reached.  Add an ellipsis to indicate truncation. */
-    BUFFER_OVERFLOW,
-    /*! terminating NUL in format string encountered */
-    END_OF_TEXT
-};
-
-/*!
- * This structure is used to represent the full state during the placeholder
- * replacement in the format string.
- */
-struct ParserState {
-    /*! the principal state selecting the proper operation type. */
-    enum ParserProcessState state;
-    /*! the next reading position in the format string */
-    char const* formatPos;
-    /*! the next writing position in the buffer */
-    char* buffer;
-    /* the list of parameters inserted at placeholders.  This structure allows
-     * traversing all entries. */
-    va_list args;
-    /*! used to hold the current parameter for a %s placeholder */
-    char const* arg;
-    /*! cached location of the buffer end to determine truncation */
-    char const* bufferEnd;
-};
 
 /*!
  * initialize a \ref ParserState with a startup state.  The \ref buffer is a
@@ -223,13 +261,13 @@ static int initParserState(
     struct ParserState* state,
     char const* format)
 {
-    int result = format != 0 && buffer != 0 && buffer->length > 0? 1 : 0;
+    int result = format != NULL && buffer != NULL && buffer->length > 0? TRUE : FALSE;
     if (result)
     {
-        state->state = TEXT;
+        state->processState = TEXT;
         state->formatPos = format;
         state->buffer = buffer->message;
-        state->arg = 0;
+        state->arg = NULL;
         state->bufferEnd = state->buffer + buffer->length;
     }
     return result;
@@ -250,9 +288,9 @@ static void handleTextState(struct ParserState* state)
     char formatChar = *(state->formatPos++);
     switch (formatChar)
     {
-        case '%':
-            // ignore the %
-            state->state = PLACEHOLDER_PREFIX;
+        case PLACEHOLDER_CHAR:
+            // skip the % in output
+            state->processState = PLACEHOLDER_PREFIX;
             break;
         default:
             // keep the TEXT state
@@ -280,17 +318,17 @@ static void handlePlaceholderPrefixState(struct ParserState* state)
     char formatChar = *(state->formatPos++);
     switch (formatChar)
    {
-        case 's':
+        case PLACEHOLDER_TYPE_STRING:
             // a %s sequence is recognized as a placeholder.  Don't copy
             // anything, if the parameter is NULL.
             state->arg = va_arg(state->args, char const*);
-            state->state = state->arg == 0? TEXT : PARAMETER_COPY;
+            state->processState = state->arg == NULL? TEXT : PARAMETER_COPY;
             break;
         default:
             // ignore the leading %, but copy the following character
             // to the buffer.  
             *(state->buffer++) = formatChar;
-            state->state = TEXT;
+            state->processState = TEXT;
     }
 }
 
@@ -313,9 +351,9 @@ static void handleParameterCopyState(struct ParserState* state)
     char paramChar = *(state->arg++);
     switch (paramChar)
     {
-        case 0:
-            state->arg = 0;
-            state->state = TEXT;
+        case NUL:
+            state->arg = NULL;
+            state->processState = TEXT;
             break;
         default:
             *(state->buffer++) = paramChar;
@@ -326,7 +364,7 @@ static void handleParameterCopyState(struct ParserState* state)
  * text in the message buffer and update the state in \p state.
  *
  * \param state holds the parsing state
- * 
+ *
  * \returns false iff the state END_OF_TEXT or
  *  BUFFER_OVERFLOW is reached.
  *
@@ -339,16 +377,16 @@ static void handleParameterCopyState(struct ParserState* state)
  */
 static int parseAndCopy(struct ParserState* state)
 {
-    int result = 0;
-    if (state->state != PARAMETER_COPY && *state->formatPos == NUL)
-        state->state = END_OF_TEXT;
+    int result = FALSE;
+    if (state->processState != PARAMETER_COPY && *state->formatPos == NUL)
+        state->processState = END_OF_TEXT;
     else if (state->buffer != state->bufferEnd)
         // cannot even copy the terminating NUL any more...
-        state->state = BUFFER_OVERFLOW;
+        state->processState = BUFFER_OVERFLOW;
     else
     {
-        result = 1;
-        switch (state->state)
+        result = TRUE;
+        switch (state->processState)
         {
         TEXT:
             handleTextState(state);
