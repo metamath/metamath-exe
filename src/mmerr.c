@@ -71,6 +71,7 @@
 
 #define PLACEHOLDER_CHAR '%'
 #define PLACEHOLDER_TYPE_STRING 's'
+#define PLACEHOLDER_TYPE_UNSIGNED 'u'
 
 /*!
  * A simple grammar scheme allows inserting data in a prepared general message.
@@ -156,6 +157,26 @@ static size_t addCheckOverflow(size_t x, size_t y)
 {
     size_t result = x + y;
     return x == 0 || y == 0 || x <= result? 0 : result;
+}
+
+/*!
+ * converts an unsigned int to a sequence of decimal digits representing its value
+ */
+static char const* unsignedToString(unsigned value)
+{
+    // each byte of an unsigned covers log(256) < 2.5 decimal digits.  Add 1 to
+    // round up, and 1 for the terminating NUL
+    static char ascii [(5 * sizeof(unsigned)) / 2 + 2];
+
+    int digits = value == 0? 1 : 0;
+    ascii[0] = '0';
+    while (value)
+    {
+        ascii[digits++] = (value % 10) + '0';
+        value /= 10;
+    }
+    ascii[digits] = NUL;
+    return ascii;
 }
 
 /*!
@@ -324,6 +345,10 @@ static void handlePlaceholderPrefixState(struct ParserState* state)
             state->arg = va_arg(state->args, char const*);
             state->processState = state->arg == NULL? TEXT : PARAMETER_COPY;
             break;
+        case PLACEHOLDER_TYPE_UNSIGNED:
+            state->arg = unsignedToString(va_arg(state->args, unsigned));
+            state->processState = PARAMETER_COPY;
+            break;
         default:
             // ignore the leading %, but copy the following character
             // to the buffer.  
@@ -333,10 +358,10 @@ static void handlePlaceholderPrefixState(struct ParserState* state)
 }
 
 /*!
- * assume we encountered a placeholder %s, and now copy characters from the
- * parameter.  The parameter is always copied verbatim, no search for
- * placeholders takes place.  The parameter terminates with the NUL character,
- * that is not copied.
+ * assume we encountered a placeholder %s or %u, and copy now from
+ * the parameter, given as astring.  It is always copied verbatim, no
+ * recursive search for placeholders takes place. The terminating NUL is not
+ * copied.
  *
  * \param state not null, holds the parsing state
  *

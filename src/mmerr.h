@@ -49,7 +49,7 @@ struct ErrorPreAllocatedParams {
      * accomodated accordingly.
      */
     size_t bufferSize;
-    /*!
+    /*!3
      * Pre-allocated data can to some extent be secured against accidental
      * overwrites by embedding it in a frame of allocated, but unused memory.
      * The bigger the size the better the extra security, since 1. the target
@@ -87,7 +87,7 @@ struct ErrorPreAllocatedParams const* getErrorPreAllocatedParams();
 int setErrorPreAllocatedParams(struct ErrorPreAllocatedParams const* settings);
 
 /*!
- * Allows only %s as placeholders
+ * Allows only %s and %u as placeholders
  */
 typedef char const* ErrorFormat;
 
@@ -101,7 +101,7 @@ int setErrorMessage(ErrorFormat format, ...);
 
 void raiseFatalError(
     char const* message,
-    char const* line,
+    unsigned line,
     char const* file
 );
 
