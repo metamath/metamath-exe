@@ -11,6 +11,7 @@ noinst_HEADERS = \
 	mmcmdl.h \
 	mmcmds.h \
 	mmdata.h \
+	mmerr.h \
 	mmhlpa.h \
 	mmhlpb.h \
 	mminou.h \
@@ -28,6 +29,7 @@ metamath_SOURCES = \
 	mmcmdl.c \
 	mmcmds.c \
 	mmdata.c \
+	mmerr.c \
 	mmhlpa.c \
 	mmhlpb.c \
 	mminou.c \

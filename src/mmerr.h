@@ -12,11 +12,11 @@
 /*! \page pgError "Simple Error Messaging"
  * When a fatal error occurs, the internal structures of a program may be 
  * corrupted to the point that recovery is impossible.  The program exits
- * immediately, but hopefully still displaying a diagnostic message.
+ * immediately, but hopefully still displays a diagnostic message.
  *
  * To display this final message, we restrict its code to very basic,
- * self-contained routines, independent on the rest of the program to the
- * extent possible, thus dodging corrupted data.
+ * self-contained routines, independent of the rest of the program to the
+ * extent possible, thus dodging any corrupted data.
  *
  * In particular everything should be pre-allocated and initialized, so the
  * chance of a failure in a corrupted environment is minimized.  This is to the
@@ -26,34 +26,36 @@
  * Often it is sensible to embed details in a diagnosis message.  Placeholders
  * in the format string mark insertion points for such values, much as in
  * \p printf. The variety and functionality is greatly reduced in our case,
- * though.  Only pieces of text can be embedded (%s placeholder).
+ * though.  Only pieces of text or unsigned integers can be embedded
+ * (%s or %u placeholder).
  * 
- * Still, for this kind of expansion you need a buffer where the final message is
+ * For this kind of expansion you still need a buffer where the final message is
  * constructed.  In our context, this buffer is pre-allocated, and fixed in size,
  * truncation enforced.
  */
 
+//---------------------   Allocation Of An Error Buffer   ---------------------
 /*!
  * Basic parameters controlling pre-allocation of basic routines and data.
  * Pre-allocation helps to construct a diagnosis message, even in a
  * corrupt environment.
  * 
  * A pre-allocated buffer is provided to allow embedding data in a diagnosis
- * message.  
+ * message.
  */
-struct ErrorPreAllocatedParams {
+struct FatalErrorBufferDescriptor {
     /*! size of pre-allocated buffer, excluding the space needed for \p ellipsis.
      * Sensible values range between the size of a single line (around 80
      * characters) up to a few KBytes.  If you want to support UTF-8 then each
-     * character can consume up to 6 bytes.  The buffer size should be
+     * character can consume up to 6 bytes.  The capacity should be
      * accomodated accordingly.
      */
-    size_t bufferSize;
-    /*!3
+    size_t capacity;
+    /*!
      * Pre-allocated data can to some extent be secured against accidental
      * overwrites by embedding it in a frame of allocated, but unused memory.
-     * The bigger the size the better the extra security, since 1. the target
-     * size reduces in relation to all allocated memory, and 2. range
+     * The bigger the size the better the extra security, since (1) the used
+     * size reduces in relation to all allocated memory, and (2) range
      * violations often trepass on memory close to regular accesses only.  The
      * value given here describes the extra bytes on one side only.  If you
      * think this is a paranoid idea, set this value to zero.
@@ -68,41 +70,55 @@ struct ErrorPreAllocatedParams {
 };
 
 /*!
- * get the \ref ErrorPreAllocatedParams used to allocate the current data.
- * \returns a non-null pointer to the current settings intended for reading only.
+ * get the \ref FatalErrorBufferDescriptor used to allocate the current memory.
+ * \returns a non-null pointer to the current descriptor intended for reading only.
  */
-struct ErrorPreAllocatedParams const* getErrorPreAllocatedParams();
+struct FatalErrorBufferDescriptor const* getFatalErrorBufferDescriptor();
+
 /*!
- * frees any currently in-use pre-allocated buffer and installs a new one
- * matching given requirements.
+ * get the current contents of the fatal error buffer, or NULL if no buffer is assigned.
+ * \returns the current contents as a NUL terminated string.
+ */
+char const* getFatalErrorMessage();
+
+/*!
+ * frees any previously allocated buffer and installs a new one matching
+ * the submitted given requirements.
+ *
  * This may fail, because
  *  - there is not enough memory available for the new buffer size including
  *    two safety offsets.
- *  - if one of the pointers in \p settings is NULL
- * \param newSettings the requirements of a new pre-allocated message buffer,
- *   replacing the current one, if exists.
- * \returns whether the reallocation was successful (1).
+ *  - if bufferSize is 0, or ellipsis in \p descriptor is NULL
+ * \param descriptor [not null] the requirements of a new pre-allocated message
+ *   buffer, replacing the current one, if exists.
+ * \returns whether the (re-)allocation was successful (1), or not (0).
  * \post If no new buffer could be allocated, the old one stays in place.
  */
-int setErrorPreAllocatedParams(struct ErrorPreAllocatedParams const* settings);
+int allocFatalErrorBuffer(struct FatalErrorBufferDescriptor const* descriptor);
+
+//----------------   Filling the buffer with an error message   -------------
 
 /*!
- * Allows only %s and %u as placeholders
+ * Allows only %s and %u placeholders.  %s for embedded strings, %u for
+ * embedded unsigned integers.
  */
-typedef char const* ErrorFormat;
+typedef char const* FatalErrorFormat;
 
 /*! fill the internal buffer with submitted data, expanding placeholders
- * if available.
- * \param format a message with embedded %s placeholders, see \ref ErrorFormat
+ * if any.
+ * \param format a message with embedded placeholders, see \ref ErrorFormat,
  *   followed by a list of string values to be inserted at placeholders in the given order.
- * \returns 0, if not even a truncated message could be created.
+ * \returns 0, if not even a truncated message could be created, 1 else.
  */
-int setErrorMessage(ErrorFormat format, ...);
+int setFatalErrorMessage(FatalErrorFormat format, ...);
 
+/*!
+ * creates an error message, prints it to cerr and raises an exception.
+ */
 void raiseFatalError(
-    char const* message,
     unsigned line,
-    char const* file
+    char const* file,
+    FatalErrorFormat messageFormat, ...
 );
 
 #endif /* include guard */
