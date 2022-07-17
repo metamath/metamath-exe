@@ -29,7 +29,7 @@
  */
 #define TRUE 1
 
-/*! terminating character in a text string never used elsewhere */ 
+/*! terminating character of a text string never used elsewhere */ 
 #define NUL '\x00'
 
 /*!
@@ -62,9 +62,9 @@ static struct FatalErrorBufferDescriptor descriptor = {
 
 /*!
  * pre-allocated memory block used for fatal error messages.  The size of the
- * block is derived from a \ref FatalErrorBufferDescriptor.  There is only
- * a single global instance maintained.  All values assigned to \p memBlock
- * must be a result of a \p malloc call.
+ * block is derived from a \ref FatalErrorBufferDescriptor.  Only a single
+ * global instance ismaintained.  All values assigned to \p memBlock must be a
+ * result of a \p malloc call.
  * \invariant \ref descriptor describes the memory layout correctly if this
  *   pointer is different from NULL.
  */
@@ -76,10 +76,10 @@ struct FatalErrorBufferDescriptor const* getFatalErrorBufferDescriptor()
 }
 
 /*!
- * does the submitted \ref FatalErrorBufferDescriptor fulfill minimum
+ * does the submitted \ref FatalErrorBufferDescriptor fulfil minimum
  * requirements for a valid pre-allocation?
- * \attention an affirmative result is not a final answer.  Allocation requires
- *   in the end also information about available memory.
+ * \attention an affirmative result is not the final answer.  Allocation
+ *   requires also information about available memory.
  * \param aDescriptor [null] a pointer to a \ref FatalErrorBufferDescriptor
  *   under investigation.
  * \returns 0 if not acceptable, 1 else.
@@ -170,8 +170,9 @@ static void initFatalErrorBuffer()
 {
     clearFatalErrorBuffer();
     char const* bufferEnd = fatalErrorBufferEnd();
-    strcpy(fatalErrorBufferEnd(), descriptor.ellipsis);
-    // This decouples from any user space supplied ellipsis, 
+    strcpy(bufferEnd, descriptor.ellipsis);
+    // This decouples from any user space supplied memory, that can safely be
+    // deallocated any time now
     descriptor.ellipsis = bufferEnd;
 }
 
@@ -454,7 +455,6 @@ static int parseAndCopy(struct ParserState* state)
 static void appendMessage(struct ParserState* state)
 {
     while (parseAndCopy(state));
-    va_end(state->args);
 }
 
 int setFatalErrorMessage(FatalErrorFormat format, ...)
@@ -465,6 +465,7 @@ int setFatalErrorMessage(FatalErrorFormat format, ...)
     {
         va_start(state.args, format);
         appendMessage(&state); 
+        va_end(state.args);
     }
     return ok;
 }
@@ -480,4 +481,6 @@ void raiseFatalError(
     state.formatPos = messageFormat;
     va_start(state.args, messageFormat);
     appendMessage(&state); 
+    va_end(state.args);
+
 }

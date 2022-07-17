@@ -68,15 +68,19 @@ struct FatalErrorBufferDescriptor {
     size_t safetyOffset;
     /*! not-null, NUL-terminated trailing character sequence indicating the
      * error message was truncated due to buffer limitations.  The submitted
-     * text is copied internally so no extra reference to its memory is
-     * generated.
-´     */
+     * text is copied internally so no reference to its memory is generated.
+     * It can safely be deallocated again after a call to
+     * \ref allocFatalErrorBuffer.
+     */
     char const* ellipsis;
 };
 
 /*!
  * get the \ref FatalErrorBufferDescriptor used to allocate the current memory.
  * \returns a non-null pointer to the current descriptor intended for reading only.
+ * \attention the pointer to the ellipsis must be used for immediate reading
+ *   only.  It is not stable and the referenced memory may change after a
+ *   reallocation.
  */
 struct FatalErrorBufferDescriptor const* getFatalErrorBufferDescriptor();
 
@@ -98,6 +102,8 @@ char const* getFatalErrorMessage();
  *   buffer, replacing the current one, if exists.
  * \returns whether the (re-)allocation was successful (1), or not (0).
  * \post If no new buffer could be allocated, the old one stays in place.
+ * \post the memory of the ellipsis pointed to in \p descriptor is not needed
+ *   after the call.
  */
 int allocFatalErrorBuffer(struct FatalErrorBufferDescriptor const* descriptor);
 
