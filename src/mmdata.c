@@ -732,7 +732,7 @@ void outOfMemory(const char *msg) {
         "To solve this problem, remove some unnecessary statements or file\n"
         "inclusions to reduce the size of your input source.\n"
         "Monitor memory periodically with SHOW MEMORY.\n";
-  exitFatalError(0, NULL, format, msg);
+  exitOnFatalError(0, NULL, format, msg);
 }
 
 
