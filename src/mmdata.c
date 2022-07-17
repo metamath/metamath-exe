@@ -720,23 +720,19 @@ long getFreeSpace(long max)
 
 /* Fatal memory allocation error */
 void outOfMemory(const char *msg) {
-  vstring_def(tmpStr);
-  print2("*** FATAL ERROR:  Out of memory.\n");
-  print2("Internal identifier (for technical support):  %s\n", msg);
-  print2("To solve this problem, remove some unnecessary statements or file\n");
-  print2("inclusions to reduce the size of your input source.\n");
-  print2("Monitor memory periodically with SHOW MEMORY.\n");
-  print2("\n");
-  print2("Press <return> to exit Metamath.\n");
-  tmpStr = cmdInput1("");
-  free_vstring(tmpStr);
   /* Close the log to make sure error log is saved */
   if (g_logFileOpenFlag) {
     fclose(g_logFilePtr);
     g_logFileOpenFlag = 0;
   }
 
-  exit(1);
+  char const* format =
+        "*** FATAL ERROR:  Out of memory.\n"
+        "Internal identifier (for technical support):  %s\n"
+        "To solve this problem, remove some unnecessary statements or file\n"
+        "inclusions to reduce the size of your input source.\n"
+        "Monitor memory periodically with SHOW MEMORY.\n";
+  exitFatalError(0, NULL, format, msg);
 }
 
 
