@@ -196,6 +196,17 @@ int allocFatalErrorBuffer(struct FatalErrorBufferDescriptor const* aDescriptor)
     return  result;
 }
 
+void freeFatalErrorBuffer()
+{
+    if (memBlock)
+    {
+        free(memBlock);
+        descriptor.capacity = 0;
+        descriptor.dmz = 0;
+        descriptor.ellipsis = NULL;
+    }
+}
+
 char const* getFatalErrorMessage()
 {
     return memBlock? fatalErrorBufferBegin() : NULL;
