@@ -319,7 +319,7 @@ static int resetParserState(
     return result;
 }
 
-int isBufferFull(struct ParserState* state)
+static int isBufferFull(struct ParserState* state)
 {
     return state->buffer >= state->bufferEnd;
 }
@@ -430,7 +430,7 @@ static int parseAndCopy(struct ParserState* state)
     int result = FALSE;
     if (state->processState != PARAMETER_COPY && *state->formatPos == NUL)
         state->processState = END_OF_TEXT;
-    else if (state->buffer == state->bufferEnd)
+    else if (isBufferFull(state))
         // cannot even copy the terminating NUL any more...
         state->processState = BUFFER_OVERFLOW;
     else
