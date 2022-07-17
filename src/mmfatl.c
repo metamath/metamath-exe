@@ -321,7 +321,7 @@ static int resetParserState(
 
 int isBufferFull(struct ParserState* state)
 {
-    return state->buffer == state->bufferEnd;
+    return state->buffer >= state->bufferEnd;
 }
 
 /*!
@@ -513,6 +513,7 @@ void exitFatalError(
     struct ParserState state;
     resetParserState(&state, messageFormat);
 
+    // marks the current end position in the buffer
     state.buffer = setLocationData(line, file);
 
     // now process the message
