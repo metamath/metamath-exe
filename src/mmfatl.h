@@ -145,7 +145,7 @@ int setFatalErrorMessage(FatalErrorFormat format, ...);
  *   format specifiers to be expanded by the following parameters.
  * \returns never
  */
-void exitFatalError(
+void exitOnFatalError(
     unsigned line,
     char const* file,
     FatalErrorFormat messageFormat, ...

@@ -505,7 +505,7 @@ static char* setLocationData(unsigned line, char const* file)
     return result;
 }
 
-void exitFatalError(
+void exitOnFatalError(
     unsigned line,
     char const* file,
     FatalErrorFormat messageFormat, ...)
