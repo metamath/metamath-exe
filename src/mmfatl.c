@@ -43,7 +43,7 @@
 static size_t addCheckOverflow(size_t x, size_t y)
 {
     size_t result = x + y;
-    return x == 0 || y == 0 || x <= result? 0 : result;
+    return x == 0 || result <= x? 0 : result;
 }
 
 //=============   Allocation of Memory for Fatal Error Messages   ===========

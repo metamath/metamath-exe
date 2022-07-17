@@ -113,8 +113,7 @@ int allocFatalErrorBuffer(struct FatalErrorBufferDescriptor const* descriptor);
 /*!
  * call this only during a normal program exit.  We don't need a clean exit
  * state in case of a fatal error.  Some debugging tools like Valgrind complain
- * when they detect allocated memory not freed again, and they may trigger
- * warnings.
+ * when they detect allocated memory not freed again.
  * \post pre-allocated memory is returned to the system.
  */
 void freeFatalErrorBuffer();

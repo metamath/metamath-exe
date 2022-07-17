@@ -725,7 +725,7 @@ void command(int argc, char *argv[]);
  * \fn setupFatalErrorHandling()
  * \brief prepares message handling in case of a fatal error
  */
-void setupFatalErrorHandling()
+void setupFatalErrorBuffer()
 {
     int const maxReportLines = 10;
     int const dmz = 100;
@@ -761,6 +761,8 @@ int main(int argc, char *argv[]) {
 
 /* argc is the number of arguments; argv points to an array containing them */
 
+  setupFatalErrorBuffer();
+
   /****** If g_listMode is set to 1 here, the startup will be Text Tools
           utilities, and Metamath will be disabled ***************************/
   /* (Historically, this mode was used for the creation of a stand-alone
@@ -795,11 +797,9 @@ int main(int argc, char *argv[]) {
     fclose(g_listFile_fp);
   }
 
+  freeFatalErrorBuffer();
   return 0;
-
 }
-
-
 
 
 void command(int argc, char *argv[]) {
