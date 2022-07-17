@@ -137,7 +137,13 @@ int setFatalErrorMessage(FatalErrorFormat format, ...);
 /*!
  * creates an error message, prints it to stderr and exits with exit code 1.
  * \param line the program line where the fatal error occurred.  This value is
- *   conveniently created by the __LINE__ macro.  Set to 0 if not available.
+ *   conveniently created by the __LINE__ macro.  Set to 0, if not available.
+ * \param file [null] the program file containing the faulting program line.
+ *   This value is conveniently created by the __FILE__ macro.  Set to NULL,
+ *   if not available
+ * \param messageFormat [not null] the message to be displayed with embedded
+ *   format specifiers to be expanded by the following parameters.
+ * \returns never
  */
 void exitFatalError(
     unsigned line,
