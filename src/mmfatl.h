@@ -135,9 +135,11 @@ typedef char const* FatalErrorFormat;
 int setFatalErrorMessage(FatalErrorFormat format, ...);
 
 /*!
- * creates an error message, prints it to cerr and raises an exception.
+ * creates an error message, prints it to stderr and exits with exit code 1.
+ * \param line the program line where the fatal error occurred.  This value is
+ *   conveniently created by the __LINE__ macro.  Set to 0 if not available.
  */
-void raiseFatalError(
+void exitFatalError(
     unsigned line,
     char const* file,
     FatalErrorFormat messageFormat, ...

@@ -481,17 +481,26 @@ int setFatalErrorMessage(FatalErrorFormat format, ...)
     return ok;
 }
 
-void raiseFatalError(
+void exitFatalError(
     unsigned line,
     char const* file,
     FatalErrorFormat messageFormat, ...)
 {
     struct ParserState state;
-    if (setFatalErrorMessage("%s@%u:\n", file, line) == FALSE)
+    int hasPosInfo = line != 0 || (file != NULL && *file != NUL);
+    if (hasPosInfo)
+    {
         initParserState(&state, messageFormat);
-    state.formatPos = messageFormat;
+        // if this fails, fall back to parsing without position data
+        hasPosInfo = setFatalErrorMessage(line == 0? "%s:\n" : "%s@%u:\n", file, line);
+        // (only important if hasPosInfo is TRUE) continue parsing with the message
+        state.formatPos = messageFormat;
+    }
+    if (!hasPosInfo)
+        initParserState(&state, messageFormat);
+    
     va_start(state.args, messageFormat);
     appendMessage(&state); 
     va_end(state.args);
-
+    exit(1);
 }
