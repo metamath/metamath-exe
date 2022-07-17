@@ -717,8 +717,31 @@
 #include "mmunif.h"
 #include "mmword.h"
 #include "mmwtex.h"
+#include "mmfatl.h"
 
 void command(int argc, char *argv[]);
+
+/*!
+ * \fn setupFatalErrorHandling()
+ * \brief prepares message handling in case of a fatal error
+ */
+void setupFatalErrorHandling()
+{
+    int const maxReportLines = 10;
+    int const dmz = 100;
+
+    struct FatalErrorBufferDescriptor descriptor = {
+        maxReportLines*80, // roughly 10 lines for a message
+        dmz, // safety zone on each side securing administrative data
+        "..."
+    };
+
+    if (!allocFatalErrorBuffer(&descriptor))
+    {
+        fprintf(stderr, "*** FATAL ERROR: Cannot even allocate memory for a fatal error report\n");
+        abort();
+    }
+}
 
 /*! \fn int main(int argc, char *argv[])
  * \brief entry point of the metamath program

@@ -57,15 +57,18 @@ struct FatalErrorBufferDescriptor {
      */
     size_t capacity;
     /*!
-     * Pre-allocated data can to some extent be secured against accidental
-     * overwrites by embedding it in a frame of allocated, but unused memory.
-     * The bigger the size the better the extra security, since (1) the used
-     * size reduces in relation to all allocated memory, and (2) range
-     * violations often trepass on memory close to regular accesses only.  The
-     * value given here describes the extra bytes on one side only.  If you
-     * think this is a paranoid idea, set this value to zero.
+     * Pre-allocated data (in particular administrative data describing the
+     * buffer size and the like) can to some extent be secured against
+     * accidental overwrites by embedding it in a frame of allocated, but
+     * unused memory.  We call this zone a DMZ, or de-militarized zone, a word
+     * coined for such safety concepts.  The bigger the size the better the
+     * extra security, since (1) the used size reduces in relation to all
+     * allocated memory, and (2) range violations often trepass on memory close
+     * to regular accesses only.  The value given here describes the extra
+     * bytes on one side only.  If you think this is a paranoid idea, set this
+     * value to zero.
      */
-    size_t safetyOffset;
+    size_t dmz;
     /*! not-null, NUL-terminated trailing character sequence indicating the
      * error message was truncated due to buffer limitations.  The submitted
      * text is copied internally so no reference to its memory is generated.

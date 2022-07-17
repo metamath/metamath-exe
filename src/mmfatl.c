@@ -56,7 +56,7 @@ static size_t addCheckOverflow(size_t x, size_t y)
  */
 static struct FatalErrorBufferDescriptor descriptor = {
     0,  // capacity
-    0,  // safetyOffset
+    0,  // dmz
     NULL, // no ellipsis.  Null only accepted during startup
 };
 
@@ -108,11 +108,11 @@ static size_t evalRequestedMemSize(
     {
         result = aDescriptor->capacity;
 
-        size_t offset = aDescriptor->safetyOffset;
-        if (offset > 0)
+        size_t dmz = aDescriptor->dmz;
+        if (dmz > 0)
         {
-            result = addCheckOverflow(result, offset);
-            result = addCheckOverflow(result, offset);            
+            result = addCheckOverflow(result, dmz);
+            result = addCheckOverflow(result, dmz);            
         }
 
         result = addCheckOverflow(
@@ -130,7 +130,7 @@ static size_t evalRequestedMemSize(
  */
 static char* fatalErrorBufferBegin()
 {
-    return (char*)memBlock + descriptor.safetyOffset;
+    return (char*)memBlock + descriptor.dmz;
 }
 
 /*!
@@ -169,7 +169,7 @@ static void clearFatalErrorBuffer()
 static void initFatalErrorBuffer()
 {
     clearFatalErrorBuffer();
-    char const* bufferEnd = fatalErrorBufferEnd();
+    char* bufferEnd = fatalErrorBufferEnd();
     strcpy(bufferEnd, descriptor.ellipsis);
     // This decouples from any user space supplied memory, that can safely be
     // deallocated any time now
