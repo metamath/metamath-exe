@@ -303,14 +303,13 @@ struct ParserState {
  * \post On success, all pointers in \p state are setup for starting a parsing loop, except the
  *   list of parameters (field args).
  */ 
-static int initParserState(
+static int resetParserState(
     struct ParserState* state,
     FatalErrorFormat format)
 {
     int result = format != NULL && memBlock != NULL? TRUE : FALSE;
     if (result)
     {
-        clearFatalErrorBuffer();
         state->processState = TEXT;
         state->formatPos = format;
         state->buffer = fatalErrorBufferBegin();
@@ -471,7 +470,8 @@ static void appendMessage(struct ParserState* state)
 int setFatalErrorMessage(FatalErrorFormat format, ...)
 {
     struct ParserState state;
-    int ok = initParserState(&state, format);
+    int ok = resetParserState(&state, format);
+    clearFatalErrorBuffer();
     if (ok)
     {
         va_start(state.args, format);
@@ -486,19 +486,26 @@ void exitFatalError(
     char const* file,
     FatalErrorFormat messageFormat, ...)
 {
-    struct ParserState state;
     int hasPosInfo = line != 0 || (file != NULL && *file != NUL);
     if (hasPosInfo)
     {
-        initParserState(&state, messageFormat);
-        // if this fails, fall back to parsing without position data
-        hasPosInfo = setFatalErrorMessage(line == 0? "%s:\n" : "%s@%u:\n", file, line);
-        // (only important if hasPosInfo is TRUE) continue parsing with the message
-        state.formatPos = messageFormat;
+        char const* posFormat = line == 0? "%s:\n" : "%s@%u:\n";
+        hasPosInfo = setFatalErrorMessage(posFormat, file, line);
     }
-    if (!hasPosInfo)
-        initParserState(&state, messageFormat);
-    
+    // now process the message
+    struct ParserState state;
+    resetParserState(&state, messageFormat);
+
+    if (hasPosInfo)
+    {
+        char* bufferStart = fatalErrorBufferBegin();
+        // continue parsing with the message
+        state.formatPos = messageFormat;
+        state.buffer = bufferStart + strlen(bufferStart);
+    }
+    else
+        clearFatalErrorBuffer();
+
     va_start(state.args, messageFormat);
     appendMessage(&state); 
     va_end(state.args);
