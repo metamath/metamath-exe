@@ -39,7 +39,7 @@
  * truncation enforced.
  */
 
-//---------------------   Allocation Of An Error Buffer   ---------------------
+/*---------------------   Allocation Of An Error Buffer   ---------------------*/
 /*!
  * Basic parameters controlling pre-allocation of basic routines and data.
  * Pre-allocation helps to construct a diagnosis message, even in a
@@ -118,7 +118,7 @@ int allocFatalErrorBuffer(struct FatalErrorBufferDescriptor const* descriptor);
  */
 void freeFatalErrorBuffer();
 
-//----------------   Filling the buffer with an error message   -------------
+/*----------------   Filling the buffer with an error message   -------------*/
 
 /*!
  * Allows only %s and %u placeholders.  %s for embedded strings, %u for

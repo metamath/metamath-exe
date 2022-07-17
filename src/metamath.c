@@ -731,8 +731,8 @@ void setupFatalErrorBuffer()
     int const dmz = 100;
 
     struct FatalErrorBufferDescriptor descriptor = {
-        maxReportLines*80, // roughly 10 lines for a message
-        dmz, // safety zone on each side securing administrative data
+        maxReportLines*80, /* roughly 10 lines for a message */
+        dmz, /* safety zone on each side securing administrative data */
         "..."
     };
 

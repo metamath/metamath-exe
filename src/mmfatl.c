@@ -46,7 +46,7 @@ static size_t addCheckOverflow(size_t x, size_t y)
     return x == 0 || result <= x? 0 : result;
 }
 
-//=============   Allocation of Memory for Fatal Error Messages   ===========
+/*=============   Allocation of Memory for Fatal Error Messages   ===========*/
 
 /*!
  * a \ref FatalErrorBufferDescriptor describing a pre-allocated
@@ -55,9 +55,9 @@ static size_t addCheckOverflow(size_t x, size_t y)
  * modified by \ref allocFatalErrorBuffer
  */
 static struct FatalErrorBufferDescriptor descriptor = {
-    0,  // capacity
-    0,  // dmz
-    NULL, // no ellipsis.  Null only accepted during startup
+    0,  /* capacity */
+    0,  /* dmz */
+    NULL, /* no ellipsis.  Null only accepted during startup */
 };
 
 /*!
@@ -171,8 +171,8 @@ static void initFatalErrorBuffer()
     clearFatalErrorBuffer();
     char* bufferEnd = fatalErrorBufferEnd();
     strcpy(bufferEnd, descriptor.ellipsis);
-    // This decouples from any user space supplied memory, that can safely be
-    // deallocated any time now
+    /* This decouples from any user space supplied memory, that can safely be 
+     * deallocated any time now */
     descriptor.ellipsis = bufferEnd;
 }
 
@@ -187,7 +187,7 @@ int allocFatalErrorBuffer(struct FatalErrorBufferDescriptor const* aDescriptor)
         {
             free(memBlock);
             memBlock = newBlock;
-            // the assignment of the ellipsis is temporary only.
+            /* the assignment of the ellipsis is temporary only. */
             descriptor = *aDescriptor;
             initFatalErrorBuffer();
             result = TRUE;
@@ -212,7 +212,7 @@ char const* getFatalErrorMessage()
     return memBlock? fatalErrorBufferBegin() : NULL;
 }
 
-//===================    Parsing the Format String   =====================
+/*===================    Parsing the Format String   =====================*/
 
 #define PLACEHOLDER_PREFIX_CHAR '%'
 #define PLACEHOLDER_TYPE_STRING 's'
@@ -227,8 +227,8 @@ char const* getFatalErrorMessage()
  */
 static char const* unsignedToString(unsigned value)
 {
-    // each byte of an unsigned covers log(256) < 2.5 decimal digits.  Add 1 to
-    // round up, and 1 for the terminating NUL
+    /* each byte of an unsigned covers log(256) < 2.5 decimal digits.  Add 1 to
+     * round up, and 1 for the terminating NUL */
     static char digits[(5 * sizeof(unsigned)) / 2 + 2];
 
     digits[0] = '0';
@@ -340,11 +340,11 @@ static void handleTextState(struct ParserState* state)
     switch (formatChar)
     {
         case PLACEHOLDER_PREFIX_CHAR:
-            // skip the % in output
+            /* skip the % in output */
             state->processState = CHECK_PLACEHOLDER;
             break;
         default:
-            // keep the TEXT state
+            /* keep the TEXT state */
             *(state->buffer++) = formatChar;
     }
 }
@@ -370,8 +370,8 @@ static void handlePlaceholderPrefixState(struct ParserState* state)
     switch (formatChar)
    {
         case PLACEHOLDER_TYPE_STRING:
-            // a %s sequence is recognized as a placeholder.  Don't copy
-            // anything, if the parameter is NULL.
+            /* a %s sequence is recognized as a placeholder.  Don't copy
+             * anything, if the parameter is NULL. */
             state->arg = va_arg(state->args, char const*);
             state->processState = state->arg == NULL? TEXT : PARAMETER_COPY;
             break;
@@ -380,8 +380,8 @@ static void handlePlaceholderPrefixState(struct ParserState* state)
             state->processState = PARAMETER_COPY;
             break;
         default:
-            // ignore the leading %, but copy the following character
-            // to the buffer.  
+            /* ignore the leading %, but copy the following character
+             * to the buffer.  */
             *(state->buffer++) = formatChar;
             state->processState = TEXT;
     }
@@ -431,7 +431,7 @@ static int parseAndCopy(struct ParserState* state)
     if (state->processState != PARAMETER_COPY && *state->formatPos == NUL)
         state->processState = END_OF_TEXT;
     else if (isBufferFull(state))
-        // cannot even copy the terminating NUL any more...
+        /* cannot even copy the terminating NUL any more... */
         state->processState = BUFFER_OVERFLOW;
     else
     {
@@ -513,10 +513,10 @@ void exitOnFatalError(
     struct ParserState state;
     resetParserState(&state, messageFormat);
 
-    // marks the current end position in the buffer
+    /* marks the current end position in the buffer */
     state.buffer = setLocationData(line, file);
 
-    // now process the message
+    /* now process the message */
     va_start(state.args, messageFormat);
     appendMessage(&state); 
     va_end(state.args);
