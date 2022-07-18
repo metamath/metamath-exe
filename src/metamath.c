@@ -5176,48 +5176,37 @@ void command(int argc, char *argv[]) {
 
       /* Fill the usefulStatements array */
       for (k = 1; k < g_proveStatement; k++) {
-        usefulStatements[k] = 1;
+        usefulStatements[k] = 0;
 
-        if (!mathboxFlag && k >= g_mathboxStmt && k < thisMathboxStartStmt) {
-          usefulStatements[k] = 0;
+        if (!mathboxFlag && k >= g_mathboxStmt && k < thisMathboxStartStmt)
           continue;
-        }
 
-        if (g_Statement[k].type != (char)p_ && g_Statement[k].type != (char)a_) {
-          usefulStatements[k] = 0;
+        if (g_Statement[k].type != (char)p_ && g_Statement[k].type != (char)a_)
           continue;
-        }
-        if (!matchesList(g_Statement[k].labelName, g_fullArg[1], '*', '?')) {
-          usefulStatements[k] = 0;
+
+        if (!matchesList(g_Statement[k].labelName, g_fullArg[1], '*', '?'))
           continue;
-        }
 
         if (exceptPos != 0) {
           /* Skip any match to the EXCEPT argument */
           if (matchesList(g_Statement[k].labelName, g_fullArg[exceptPos + 1],
-                '*', '?')) {
-            usefulStatements[k] = 0;
+                '*', '?'))
             continue;
-          }
         }
 
         if (forbidMatchList[0]) { /* User provided a /FORBID list */
           /* First, we check to make sure we're not trying a statement
              in the forbidMatchList directly (traceProof() won't find
              this) */
-          if (matchesList(g_Statement[k].labelName, forbidMatchList, '*', '?')) {
-            usefulStatements[k] = 0;
+          if (matchesList(g_Statement[k].labelName, forbidMatchList, '*', '?'))
             continue;
-          }
         }
 
         /* Check to see if statement comment specified a usage
            restriction */
         if (!overrideFlag) {
-          if (getMarkupFlag(k, USAGE_DISCOURAGED)) {
-            usefulStatements[k] = 0;
+          if (getMarkupFlag(k, USAGE_DISCOURAGED))
             continue;
-          }
         }
 
         /* Check if all math constants used in statement k are present
@@ -5225,12 +5214,17 @@ void command(int argc, char *argv[]) {
         mString = g_Statement[k].mathString;
         mlen = nmbrLen(mString);
 
+        usefulStatements[k] = 1;
         for (i = 0; i < mlen; i++) {
           if (g_MathToken[mString[i]].tokenType == (char)con_) {
             if (!g_MathToken[mString[i]].tmp)
+            {
               usefulStatements[k] = 0;
+              break;
+            }
           }
         }
+
         usefulCount += usefulStatements[k];
       }
       if (verboseMode)
