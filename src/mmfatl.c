@@ -537,6 +537,14 @@ void exitOnFatalError(
     {
         int result = 1;
         result &= testcase_addCheckOverflow(0, 0, 0);
+        result &= testcase_addCheckOverflow(0, 1, 0);
+        result &= testcase_addCheckOverflow(0, ~ (size_t) 0, 0);
+        result &= testcase_addCheckOverflow(1, 0, 0);
+        result &= testcase_addCheckOverflow(~ (size_t) 0, 0, 0);
+        result &= testcase_addCheckOverflow(1, 1, 2);
+        result &= testcase_addCheckOverflow(1, ~ (size_t) 0, 0);
+        result &= testcase_addCheckOverflow(~ (size_t) 0, 1, 0);
+        result &= testcase_addCheckOverflow(~ (size_t) 0, ~ (size_t) 0, 0);
         return result;
     }
 
