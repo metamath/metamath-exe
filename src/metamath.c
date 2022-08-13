@@ -736,6 +736,9 @@ void setupFatalErrorBuffer()
         "..."
     };
 
+    // running the test suite of mmfatl.h, if macro TEST_MMFATL is defined.
+    mmfatl_test();
+
     if (!allocFatalErrorBuffer(&descriptor))
     {
         fprintf(stderr, "*** FATAL ERROR: Cannot even allocate memory for a fatal error report\n");

@@ -9,6 +9,15 @@
 
 #include <stdio.h>
 
+/* #undef or #define TEST_MMFATL to run a test suite on program
+ * startup. */
+#define TEST_MMFATL
+#ifdef TEST_MMFATL
+    extern void mmfatl_test(void);
+#else
+#   define mmfatl_test(x)
+#endif
+
 /*! \page pgError "Simple Fatal Error Messaging"
  * When a fatal error occurs, the internal structures of a program may be 
  * corrupted to the point that recovery is impossible.  The program exits

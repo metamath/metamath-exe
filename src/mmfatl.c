@@ -63,7 +63,7 @@ static struct FatalErrorBufferDescriptor descriptor = {
 /*!
  * pre-allocated memory block used for fatal error messages.  The size of the
  * block is derived from a \ref FatalErrorBufferDescriptor.  Only a single
- * global instance ismaintained.  All values assigned to \p memBlock must be a
+ * global instance is maintained.  All values assigned to \p memBlock must be a
  * result of a \p malloc call.
  * \invariant \ref descriptor describes the memory layout correctly if this
  *   pointer is different from NULL.
@@ -82,7 +82,7 @@ struct FatalErrorBufferDescriptor const* getFatalErrorBufferDescriptor()
  *   requires also information about available memory.
  * \param aDescriptor [null] a pointer to a \ref FatalErrorBufferDescriptor
  *   under investigation.
- * \returns 0 if not acceptable, 1 else.
+ * \returns 1 if acceptable, 0 else.
  */
 static int isValidFatalErrorBufferDescriptor(
     struct FatalErrorBufferDescriptor const* aDescriptor)
@@ -522,3 +522,27 @@ void exitOnFatalError(
     va_end(state.args);
     exit(1);
 }
+
+#ifdef TEST_MMFATL
+
+    int testcase_addCheckOverflow(size_t x, size_t y, size_t expected)
+    {
+        int result = addCheckOverflow(x, y) == expected? 1 : 0;
+        if (!result)
+            printf("addCheckOverflow(%zu, %zu) failed\n", x, y);
+        return result;
+    }
+
+    int testall_addCheckOverflow()
+    {
+        int result = 1;
+        result &= testcase_addCheckOverflow(0, 0, 0);
+        return result;
+    }
+
+    void mmfatl_test()
+    {
+        testall_addCheckOverflow();
+    }
+
+#endif
