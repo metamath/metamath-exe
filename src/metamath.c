@@ -722,7 +722,7 @@
 void command(int argc, char *argv[]);
 
 /*!
- * \fn setupFatalErrorHandling()
+ * \fn setupFatalErrorBuffer()
  * \brief prepares message handling in case of a fatal error
  */
 void setupFatalErrorBuffer()

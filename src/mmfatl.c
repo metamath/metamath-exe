@@ -523,7 +523,7 @@ void exitOnFatalError(
     exit(1);
 }
 
-#ifdef TEST_MMFATL
+#if defined(TEST_MMFATL)
 
     int testcase_addCheckOverflow(size_t x, size_t y, size_t expected)
     {
@@ -535,6 +535,7 @@ void exitOnFatalError(
 
     int testall_addCheckOverflow()
     {
+        printf("testing addCheckOverflow...\n");
         int result = 1;
         result &= testcase_addCheckOverflow(0, 0, 0);
         result &= testcase_addCheckOverflow(0, 1, 0);
@@ -548,9 +549,19 @@ void exitOnFatalError(
         return result;
     }
 
+    int test_getFatalErrorDescriptor()
+    {
+        printf("testing getFatalErrorBufferDescriptor...\n");
+        int result = getFatalErrorBufferDescriptor() == &descriptor? 1 : 0;
+        if (!result)
+            printf("getFatalErrorBufferDescriptor() failed\n");
+        return result;
+    }
+
     void mmfatl_test()
     {
         testall_addCheckOverflow();
+        test_getFatalErrorDescriptor();
     }
 
 #endif
