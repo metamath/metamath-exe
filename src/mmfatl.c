@@ -558,10 +558,117 @@ void exitOnFatalError(
         return result;
     }
 
+    int testall_isValidFatalErrorBufferDescriptor()
+    {
+        printf("testing isValidFatalErrorBufferDescriptor...\n");
+        struct TestCase {
+            struct FatalErrorBufferDescriptor descriptor;
+            int result; };
+        struct TestCase tests[] =
+        {
+            { // case 0
+                {
+                    0, 0, NULL
+                }
+                , 0
+            },
+            { // case 1
+                {
+                    0, 100, NULL
+                }
+                , 0
+            },
+            { // case 2
+                {
+                    1000, 0, NULL
+                }
+                , 0
+            },
+            { // case 3
+                {
+                    1000, 100, NULL
+                }
+                , 0
+            },
+            { // case 4
+                {
+                    0, 0, ""
+                }
+                , 0
+            },
+            { // case 5
+                {
+                    0, 0, "?"
+                }
+                , 0
+            },
+            { // case 6
+                {
+                    0, 100, ""
+                }
+                , 0
+            },
+            { // case 7
+                {
+                    0, 100, "?"
+                }
+                , 0
+            },
+            { // case 8
+                {
+                    1000, 0, ""
+                }
+                , 1
+            },
+            { // case 9
+                {
+                    1000, 100, ""
+                }
+                , 1
+            },
+            { // case 10
+                {
+                    1000, 0, "?"
+                }
+                , 1
+            },
+            { // case 11
+                {
+                    1000, 100, "?"
+                }
+                , 1
+            },
+            { // case 12
+                {
+                    1000, 0, "..."
+                }
+                , 1
+            },
+            { // case 13
+                {
+                    1000, 100, "..."
+                }
+                , 1
+            },
+        };
+        int result = isValidFatalErrorBufferDescriptor(0) == 0;
+        if (!result)
+                printf ("submitting NULL failed\n");
+            
+        for (unsigned i = 0; i < sizeof(tests) / sizeof(struct TestCase); ++i)
+            if (isValidFatalErrorBufferDescriptor(&tests[i].descriptor) != tests[i].result)
+            {
+                printf ("case %i failed\n", i);
+                result = 0;
+            }
+        return result;
+    }
+
     void mmfatl_test()
     {
         testall_addCheckOverflow();
         test_getFatalErrorDescriptor();
+        testall_isValidFatalErrorBufferDescriptor();
     }
 
 #endif
