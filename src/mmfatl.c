@@ -581,12 +581,42 @@ void exitOnFatalError(
             {{ 1000, 0, "..." }, 1 },  // case 12
             {{ 1000, 100, "..." }, 1 }, // case 13
         };
-        int result = isValidFatalErrorBufferDescriptor(0) == 0;
+        int result = isValidFatalErrorBufferDescriptor(0) == 0? 1 : 0;
         if (!result)
             printf ("submitting NULL failed\n");
 
         for (unsigned i = 0; i < sizeof(tests) / sizeof(struct TestCase); ++i)
             if (isValidFatalErrorBufferDescriptor(&tests[i].descriptor) != tests[i].result)
+            {
+                printf ("case %i failed\n", i);
+                result = 0;
+            }
+        return result;
+    }
+    
+    int testall_evalRequestedMemSize()
+    {
+        printf("testing evalRequestedMemSize...\n");
+        int result = evalRequestedMemSize(0) == 0? 1 : 0;
+        if (!result)
+            printf("submitting NULL failed\n");
+
+        struct TestCase {
+            struct FatalErrorBufferDescriptor descriptor;
+            size_t result; };
+        struct TestCase tests[] =
+        {
+            {{ 0, 0, NULL }, 0 },  // case 0
+            {{ 1000, 0, "" }, 1001u },  // case 1
+            {{ 1000, 100, "" }, 1201u },  // case 2
+            {{ ~ (size_t) 0, 0, "" }, 0 },  // case 3
+            {{ (~ (size_t) 0) - 1u , 0, "" }, ~ (size_t) 0 },  // case 4
+            {{ (~ (size_t) 0) - 50u , 100, "" }, 0 },  // case 5
+            {{ (~ (size_t) 0) - 204u , 100, "..." }, ~ (size_t) 0 },  // case 6
+            {{ (~ (size_t) 0) - 1u , 0, "..." }, 0 },  // case 7
+        };
+        for (unsigned i = 0; i < sizeof(tests) / sizeof(struct TestCase); ++i)
+            if (evalRequestedMemSize(&tests[i].descriptor) != tests[i].result)
             {
                 printf ("case %i failed\n", i);
                 result = 0;
@@ -599,6 +629,7 @@ void exitOnFatalError(
         testall_addCheckOverflow();
         test_getFatalErrorDescriptor();
         testall_isValidFatalErrorBufferDescriptor();
+        testall_evalRequestedMemSize();
     }
 
 #endif
