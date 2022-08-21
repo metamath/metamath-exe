@@ -684,6 +684,29 @@ void exitOnFatalError(
         return result;
     }
 
+    int test_clearFatalErrorBuffer()
+    {
+        printf("testing clearFatalErrorBuffer...\n");
+        
+        unsigned const dmz = 100;
+        unsigned const size = 1000;
+        char buffer[size + 2 * dmz + 3 /* ellipsis */ + 1 /* NUL */];
+        struct FatalErrorBufferDescriptor memDescriptor = { size, dmz, "..." };
+        void* bufferPt = buffer;
+        int result = test_swapMemBlock(&memDescriptor, &bufferPt, sizeof(buffer));
+        if (result)
+        {
+            clearFatalErrorBuffer();
+            result = strlen(fatalErrorBufferBegin()) == 0? 1 : 0;
+            if (!result)
+                printf ("failed to clear the fatal error buffer\n");
+            test_swapMemBlock(&memDescriptor, &bufferPt, 0);
+        }
+        else
+            printf ("test setup is incorrect, descriptor does not describe the given buffer\n");
+        return result;
+    }
+
     void mmfatl_test()
     {
         testall_addCheckOverflow();
@@ -692,6 +715,7 @@ void exitOnFatalError(
         testall_evalRequestedMemSize();
         test_fatalErrorBufferBegin();
         test_fatalErrorBufferEnd();
+        test_clearFatalErrorBuffer();
     }
 
 #endif
