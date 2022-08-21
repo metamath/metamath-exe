@@ -55,7 +55,7 @@ static size_t addCheckOverflow(size_t x, size_t y)
  * modified by \ref allocFatalErrorBuffer
  */
 static struct FatalErrorBufferDescriptor descriptor = {
-    0,  /* capacity */
+    0,  /* size */
     0,  /* dmz */
     NULL, /* no ellipsis.  Null only accepted during startup */
 };
@@ -88,7 +88,7 @@ static int isValidFatalErrorBufferDescriptor(
     struct FatalErrorBufferDescriptor const* aDescriptor)
 {
     return aDescriptor != NULL 
-        && aDescriptor->capacity > 0
+        && aDescriptor->size > 0
         && aDescriptor->ellipsis != NULL? TRUE : FALSE;
 }
 
@@ -106,7 +106,7 @@ static size_t evalRequestedMemSize(
     size_t result = 0;
     if (isValidFatalErrorBufferDescriptor(aDescriptor))
     {
-        result = aDescriptor->capacity;
+        result = aDescriptor->size;
 
         size_t dmz = aDescriptor->dmz;
         if (dmz > 0)
@@ -143,7 +143,7 @@ static char* fatalErrorBufferBegin()
  */
 static char* fatalErrorBufferEnd()
 {
-    return fatalErrorBufferBegin() + descriptor.capacity;
+    return fatalErrorBufferBegin() + descriptor.dmz + descriptor.size;
 }
 
 /*!
@@ -201,7 +201,7 @@ void freeFatalErrorBuffer()
     if (memBlock)
     {
         free(memBlock);
-        descriptor.capacity = 0;
+        descriptor.size = 0;
         descriptor.dmz = 0;
         descriptor.ellipsis = NULL;
     }
@@ -645,8 +645,9 @@ void exitOnFatalError(
         printf("testing fatalErrorBufferBegin...\n");
         
         unsigned const dmz = 100;
-        char buffer[1000 + 2 * dmz + 3 + 1 /* NUL */];
-        struct FatalErrorBufferDescriptor memDescriptor = { 1000, dmz, "..." };
+        unsigned const size = 1000;
+        char buffer[size + 2 * dmz + 3 /* ellipsis */ + 1 /* NUL */];
+        struct FatalErrorBufferDescriptor memDescriptor = { size, dmz, "..." };
         void* bufferPt = buffer;
         int result = test_swapMemBlock(&memDescriptor, &bufferPt, sizeof(buffer));
         if (result)

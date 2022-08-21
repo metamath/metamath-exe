@@ -58,13 +58,15 @@
  * message.
  */
 struct FatalErrorBufferDescriptor {
-    /*! size of pre-allocated buffer, excluding the space needed for \p ellipsis.
-     * Sensible values range between the size of a single line (around 80
-     * characters) up to a few KBytes.  If you want to support UTF-8 then each
-     * character can consume up to 6 bytes.  The capacity should be
-     * accomodated accordingly.
+    /*! size of pre-allocated buffer, excluding the space needed for
+     * \p ellipsis and any dmz space.  Sensible values range between the size
+     * of a single line (around 80 characters) up to a few KBytes.  If you want
+     * to support UTF-8 then each character can consume up to 6 bytes.  The
+     * size should be accomodated accordingly.
+     * Messages up to this size (excluding the terminating NUL character) can
+     * be displayed unabbreviated.
      */
-    size_t capacity;
+    size_t size;
     /*!
      * Pre-allocated data (in particular administrative data describing the
      * buffer size and the like) can to some extent be secured against
