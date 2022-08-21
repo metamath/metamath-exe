@@ -16,6 +16,16 @@
 #include <stdarg.h>
 #include <string.h>
 
+#ifdef TEST_MMFATL
+    // We intercept malloc/free to ensure proper
+    // freeing after allocation of memory
+    static void* MALLOC(size_t size);
+    static void FREE(void* ptr);
+#else
+#   define FREE free
+#   define MALLOC malloc
+#endif
+
 /*!
  * C has no boolean type, instead an int is used.  To ease code reading we
  * encode one boolean value here.
@@ -174,17 +184,25 @@ static void initFatalErrorBuffer()
     descriptor.ellipsis = strcpy(fatalErrorBufferEnd(), descriptor.ellipsis);
 }
 
+void freeFatalErrorBuffer()
+{
+    FREE(memBlock);
+    memBlock = NULL;
+    descriptor.size = 0;
+    descriptor.dmz = 0;
+    descriptor.ellipsis = NULL;
+}
+
 int allocFatalErrorBuffer(struct FatalErrorBufferDescriptor const* aDescriptor)
 {
     int result = FALSE;
-    size_t memSize = evalRequestedMemSize(aDescriptor);
+    freeFatalErrorBuffer();
+    size_t memSize = isValidFatalErrorBufferDescriptor(aDescriptor)? evalRequestedMemSize(aDescriptor) : 0;
     if (memSize > 0)
     {
-        void* newBlock = malloc(memSize);
-        if (newBlock)
+        memBlock = MALLOC(memSize);
+        if (memBlock)
         {
-            free(memBlock);
-            memBlock = newBlock;
             /* the assignment of the ellipsis is temporary only. */
             descriptor = *aDescriptor;
             initFatalErrorBuffer();
@@ -192,17 +210,6 @@ int allocFatalErrorBuffer(struct FatalErrorBufferDescriptor const* aDescriptor)
         }
     }
     return  result;
-}
-
-void freeFatalErrorBuffer()
-{
-    if (memBlock)
-    {
-        free(memBlock);
-        descriptor.size = 0;
-        descriptor.dmz = 0;
-        descriptor.ellipsis = NULL;
-    }
 }
 
 char const* getFatalErrorMessage()
@@ -523,234 +530,331 @@ void exitOnFatalError(
 
 #ifdef TEST_MMFATL
 
-    int testcase_addCheckOverflow(size_t x, size_t y, size_t expected)
+static void* memAllocated = NULL;
+static int missingFree = 0;
+static int freeOutOfOrder = 0;
+
+// intercept malloc/free for checking proper pairing of both
+// There is only one buffer in use, so we can assume
+// a sequence alloc -> free -> alloc -> free and so on.
+
+static void* MALLOC(size_t size)
+{
+    void* result = malloc(size);
+    if (memAllocated)
+        missingFree = 1;
+    memAllocated = result;
+    return result;
+}
+
+static void FREE(void* ptr)
+{
+    free(ptr);
+    if (ptr == memAllocated)
+        memAllocated = NULL;
+    else if (ptr != NULL)
+        freeOutOfOrder = 1;
+}
+
+int testcase_addCheckOverflow(size_t x, size_t y, size_t expected)
+{
+    int result = addCheckOverflow(x, y) == expected? 1 : 0;
+    if (!result)
+        printf("addCheckOverflow(%zu, %zu) failed\n", x, y);
+    return result;
+}
+
+int testall_addCheckOverflow()
+{
+    printf("testing addCheckOverflow...\n");
+    int result = 1;
+    result &= testcase_addCheckOverflow(0, 0, 0); // both summands are invalid
+    result &= testcase_addCheckOverflow(0, 1, 0); // the first summand is invalid
+    result &= testcase_addCheckOverflow(0, ~ (size_t) 0, 0); // border case
+    result &= testcase_addCheckOverflow(1, 0, 0); // the second summand is invalid
+    result &= testcase_addCheckOverflow(~ (size_t) 0, 0, 0); // border case
+    result &= testcase_addCheckOverflow(1, 1, 2); // summation possible
+    result &= testcase_addCheckOverflow(1, ~ (size_t) 0, 0); // overflow situation, border case
+    result &= testcase_addCheckOverflow(~ (size_t) 0, 1, 0);  // overflow situation, border case
+    result &= testcase_addCheckOverflow(~ (size_t) 0, ~ (size_t) 0, 0); // overflow situation, huge
+    return result;
+}
+
+int test_getFatalErrorDescriptor()
+{
+    printf("testing getFatalErrorBufferDescriptor...\n");
+    int result = getFatalErrorBufferDescriptor() == &descriptor? 1 : 0;
+    if (!result)
+        printf("getFatalErrorBufferDescriptor() failed\n");
+    return result;
+}
+
+int testall_isValidFatalErrorBufferDescriptor()
+{
+    printf("testing isValidFatalErrorBufferDescriptor...\n");
+    struct TestCase {
+        struct FatalErrorBufferDescriptor descriptor;
+        int result; };
+    struct TestCase tests[] =
     {
-        int result = addCheckOverflow(x, y) == expected? 1 : 0;
+        {{ 0, 0, NULL }, 0 },  // case 0, size and ellipsis invalid
+        {{ 0, 100, NULL }, 0 },  // case 1, size and ellipsis invalid, dmz requested
+        {{ 1000, 0, NULL }, 0 },  // case 2, ellipsis invalid
+        {{ 1000, 100, NULL }, 0 },  // case 3, ellipsis invalid, dmz requested
+        {{ 0, 0, "" }, 0 },  // case 4, size invalid
+        {{ 0, 0, "?" }, 0 },  // case 5, size invalid, single character ellipsis
+        {{ 0, 100, "" }, 0 }, // case 6, size invalid, no ellipsis, dmz requested
+        {{ 0, 100, "?" }, 0 },  // case 7, size invalid, single character ellipsis, dmz requested
+        {{ 1000, 0, "" }, 1 },  // case 8, no ellipsis, no dmz
+        {{ 1000, 100, "" }, 1 },  // case 9, no ellipsis, dmz requested
+        {{ 1000, 0, "?" }, 1 },  // case 10, single character ellipsis, no dmz
+        {{ 1000, 100, "?" }, 1 },  // case 11, single character ellipsis, dmz requested
+        {{ 1000, 0, "..." }, 1 },  // case 12, complex ellipsis, no dmz
+        {{ 1000, 100, "..." }, 1 }, // case 13, complex ellipsis, dmz requested
+    };
+    int result = isValidFatalErrorBufferDescriptor(0) == 0? 1 : 0;
+    if (!result)
+        printf ("submitting NULL failed\n");
+
+    for (unsigned i = 0; i < sizeof(tests) / sizeof(struct TestCase); ++i)
+        if (isValidFatalErrorBufferDescriptor(&tests[i].descriptor) != tests[i].result)
+        {
+            printf ("case %i failed\n", i);
+            result = 0;
+        }
+    return result;
+}
+
+int testall_evalRequestedMemSize()
+{
+    printf("testing evalRequestedMemSize...\n");
+    int result = evalRequestedMemSize(0) == 0? 1 : 0;
+    if (!result)
+        printf("submitting NULL failed\n");
+
+    struct TestCase {
+        struct FatalErrorBufferDescriptor descriptor;
+        size_t result; };
+    struct TestCase tests[] =
+    {
+        {{ 0, 0, NULL }, 0 },  // case 0
+        {{ 1000, 0, "" }, 1001u },  // case 1
+        {{ 1000, 100, "" }, 1201u },  // case 2
+        {{ ~ (size_t) 0, 0, "" }, 0 },  // case 3
+        {{ (~ (size_t) 0) - 1u , 0, "" }, ~ (size_t) 0 },  // case 4
+        {{ (~ (size_t) 0) - 50u , 100, "" }, 0 },  // case 5
+        {{ (~ (size_t) 0) - 101u , 100, "" }, 0 },  // case 6
+        {{ (~ (size_t) 0) - 204u , 100, "..." }, ~ (size_t) 0 },  // case 7
+        {{ (~ (size_t) 0) - 1u , 0, "..." }, 0 },  // case 8
+    };
+    for (unsigned i = 0; i < sizeof(tests) / sizeof(struct TestCase); ++i)
+        if (evalRequestedMemSize(&tests[i].descriptor) != tests[i].result)
+        {
+            printf ("case %i failed\n", i);
+            result = 0;
+        }
+    return result;
+}
+
+int test_swapMemBlock(struct FatalErrorBufferDescriptor* data, void** buffer, size_t bufferSize)
+{
+    int result = bufferSize == 0 || evalRequestedMemSize(data) == bufferSize? 1 : 0;
+    if (result)
+    {
+        void* backupBuffer = memBlock;
+        struct FatalErrorBufferDescriptor backupDescriptor = descriptor;
+        memBlock = *buffer;
+        descriptor = *data;
+        *buffer = backupBuffer;
+        *data = backupDescriptor;
+    }
+    return result;
+}
+
+int test_fatalErrorBufferBegin()
+{
+    printf("testing fatalErrorBufferBegin...\n");
+
+    unsigned const dmz = 100;
+    unsigned const size = 1000;
+    char buffer[size + 2 * dmz + 3 /* ellipsis */ + 1 /* NUL */];
+    struct FatalErrorBufferDescriptor memDescriptor = { size, dmz, "..." };
+    void* bufferPt = buffer;
+    int result = test_swapMemBlock(&memDescriptor, &bufferPt, sizeof(buffer));
+    if (result)
+    {
+        result = fatalErrorBufferBegin() == (buffer + dmz)? 1 : 0;
         if (!result)
-            printf("addCheckOverflow(%zu, %zu) failed\n", x, y);
-        return result;
+            printf ("failed to return the pointer to the begin of the fatal error buffer\n");
+        test_swapMemBlock(&memDescriptor, &bufferPt, 0);
     }
+    else
+        printf ("test setup is incorrect, descriptor does not describe the given buffer\n");
+    return result;
+}
 
-    int testall_addCheckOverflow()
-    {
-        printf("testing addCheckOverflow...\n");
-        int result = 1;
-        result &= testcase_addCheckOverflow(0, 0, 0);
-        result &= testcase_addCheckOverflow(0, 1, 0);
-        result &= testcase_addCheckOverflow(0, ~ (size_t) 0, 0);
-        result &= testcase_addCheckOverflow(1, 0, 0);
-        result &= testcase_addCheckOverflow(~ (size_t) 0, 0, 0);
-        result &= testcase_addCheckOverflow(1, 1, 2);
-        result &= testcase_addCheckOverflow(1, ~ (size_t) 0, 0);
-        result &= testcase_addCheckOverflow(~ (size_t) 0, 1, 0);
-        result &= testcase_addCheckOverflow(~ (size_t) 0, ~ (size_t) 0, 0);
-        return result;
-    }
+int test_fatalErrorBufferEnd()
+{
+    printf("testing fatalErrorBufferEnd...\n");
 
-    int test_getFatalErrorDescriptor()
+    unsigned const dmz = 100;
+    unsigned const size = 1000;
+    char buffer[size + 2 * dmz + 3 /* ellipsis */ + 1 /* NUL */];
+    struct FatalErrorBufferDescriptor memDescriptor = { size, dmz, "..." };
+    void* bufferPt = buffer;
+    int result = test_swapMemBlock(&memDescriptor, &bufferPt, sizeof(buffer));
+    if (result)
     {
-        printf("testing getFatalErrorBufferDescriptor...\n");
-        int result = getFatalErrorBufferDescriptor() == &descriptor? 1 : 0;
+        result = fatalErrorBufferEnd() - fatalErrorBufferBegin() == size? 1 : 0;
         if (!result)
-            printf("getFatalErrorBufferDescriptor() failed\n");
-        return result;
+            printf ("failed to return the pointer to the end of the fatal error buffer\n");
+        test_swapMemBlock(&memDescriptor, &bufferPt, 0);
     }
+    else
+        printf ("test setup is incorrect, descriptor does not describe the given buffer\n");
+    return result;
+}
 
-    int testall_isValidFatalErrorBufferDescriptor()
+int test_clearFatalErrorBuffer()
+{
+    printf("testing clearFatalErrorBuffer...\n");
+
+    unsigned const dmz = 100;
+    unsigned const size = 1000;
+    char buffer[size + 2 * dmz + 3 /* ellipsis */ + 1 /* NUL */];
+    struct FatalErrorBufferDescriptor memDescriptor = { size, dmz, "..." };
+    void* bufferPt = buffer;
+    int result = test_swapMemBlock(&memDescriptor, &bufferPt, sizeof(buffer));
+    if (result)
     {
-        printf("testing isValidFatalErrorBufferDescriptor...\n");
-        struct TestCase {
-            struct FatalErrorBufferDescriptor descriptor;
-            int result; };
-        struct TestCase tests[] =
-        {
-            {{ 0, 0, NULL }, 0 },  // case 0
-            {{ 0, 100, NULL }, 0 },  // case 1
-            {{ 1000, 0, NULL }, 0 },  // case 2
-            {{ 1000, 100, NULL }, 0 },  // case 3
-            {{ 0, 0, "" }, 0 },  // case 4
-            {{ 0, 0, "?" }, 0 },  // case 5
-            {{ 0, 100, "" }, 0 }, // case 6
-            {{ 0, 100, "?" }, 0 },  // case 7
-            {{ 1000, 0, "" }, 1 },  // case 8
-            {{ 1000, 100, "" }, 1 },  // case 9
-            {{ 1000, 0, "?" }, 1 },  // case 10
-            {{ 1000, 100, "?" }, 1 },  // case 11
-            {{ 1000, 0, "..." }, 1 },  // case 12
-            {{ 1000, 100, "..." }, 1 }, // case 13
-        };
-        int result = isValidFatalErrorBufferDescriptor(0) == 0? 1 : 0;
+        clearFatalErrorBuffer();
+        result = strlen(fatalErrorBufferBegin()) == 0? 1 : 0;
         if (!result)
-            printf ("submitting NULL failed\n");
-
-        for (unsigned i = 0; i < sizeof(tests) / sizeof(struct TestCase); ++i)
-            if (isValidFatalErrorBufferDescriptor(&tests[i].descriptor) != tests[i].result)
-            {
-                printf ("case %i failed\n", i);
-                result = 0;
-            }
-        return result;
+            printf ("failed to clear the fatal error buffer\n");
+        test_swapMemBlock(&memDescriptor, &bufferPt, 0);
     }
+    else
+        printf ("test setup is incorrect, descriptor does not describe the given buffer\n");
+    return result;
+}
 
-    int testall_evalRequestedMemSize()
+int test_initFatalErrorBuffer()
+{
+    printf("testing clearFatalErrorBuffer...\n");
+
+    unsigned const dmz = 100;
+    unsigned const size = 1000;
+    char const* ellipsis = "...";
+    char buffer[size + 2 * dmz + 3 /* ellipsis */ + 1 /* NUL */];
+    struct FatalErrorBufferDescriptor memDescriptor = { size, dmz, ellipsis };
+    void* bufferPt = buffer;
+    int result = test_swapMemBlock(&memDescriptor, &bufferPt, sizeof(buffer));
+    if (result)
     {
-        printf("testing evalRequestedMemSize...\n");
-        int result = evalRequestedMemSize(0) == 0? 1 : 0;
+        initFatalErrorBuffer();
+        ellipsis = NULL;
+        result = strlen(fatalErrorBufferBegin()) == 0? 1 : 0;
         if (!result)
-            printf("submitting NULL failed\n");
-
-        struct TestCase {
-            struct FatalErrorBufferDescriptor descriptor;
-            size_t result; };
-        struct TestCase tests[] =
+            printf ("failed to clear the fatal error buffer\n");
+        if (result && strlen(fatalErrorBufferEnd()) != 3)
         {
-            {{ 0, 0, NULL }, 0 },  // case 0
-            {{ 1000, 0, "" }, 1001u },  // case 1
-            {{ 1000, 100, "" }, 1201u },  // case 2
-            {{ ~ (size_t) 0, 0, "" }, 0 },  // case 3
-            {{ (~ (size_t) 0) - 1u , 0, "" }, ~ (size_t) 0 },  // case 4
-            {{ (~ (size_t) 0) - 50u , 100, "" }, 0 },  // case 5
-            {{ (~ (size_t) 0) - 101u , 100, "" }, 0 },  // case 6
-            {{ (~ (size_t) 0) - 204u , 100, "..." }, ~ (size_t) 0 },  // case 7
-            {{ (~ (size_t) 0) - 1u , 0, "..." }, 0 },  // case 8
-        };
-        for (unsigned i = 0; i < sizeof(tests) / sizeof(struct TestCase); ++i)
-            if (evalRequestedMemSize(&tests[i].descriptor) != tests[i].result)
-            {
-                printf ("case %i failed\n", i);
-                result = 0;
-            }
-        return result;
-    }
-
-    int test_swapMemBlock(struct FatalErrorBufferDescriptor* data, void** buffer, size_t bufferSize)
-    {
-        int result = bufferSize == 0 || evalRequestedMemSize(data) == bufferSize? 1 : 0;
-        if (result)
-        {
-            void* backupBuffer = memBlock;
-            struct FatalErrorBufferDescriptor backupDescriptor = descriptor;
-            memBlock = *buffer;
-            descriptor = *data;
-            *buffer = backupBuffer;
-            *data = backupDescriptor;
+            printf ("failed to copy the ellipsis to the fatal error buffer\n");
+            result = 0;
         }
-        return result;
-    }
-
-    int test_fatalErrorBufferBegin()
-    {
-        printf("testing fatalErrorBufferBegin...\n");
-
-        unsigned const dmz = 100;
-        unsigned const size = 1000;
-        char buffer[size + 2 * dmz + 3 /* ellipsis */ + 1 /* NUL */];
-        struct FatalErrorBufferDescriptor memDescriptor = { size, dmz, "..." };
-        void* bufferPt = buffer;
-        int result = test_swapMemBlock(&memDescriptor, &bufferPt, sizeof(buffer));
-        if (result)
+        if (result && strcmp(fatalErrorBufferEnd(), descriptor.ellipsis) != 0)
         {
-            result = fatalErrorBufferBegin() == (buffer + dmz)? 1 : 0;
-            if (!result)
-                printf ("failed to return the pointer to the begin of the fatal error buffer\n");
-            test_swapMemBlock(&memDescriptor, &bufferPt, 0);
+            printf ("failed to secure the pointer to ellipsis in the descriptor\n");
+            result = 0;
         }
-        else
-            printf ("test setup is incorrect, descriptor does not describe the given buffer\n");
-        return result;
+        test_swapMemBlock(&memDescriptor, &bufferPt, 0);
     }
+    else
+        printf ("test setup is incorrect, descriptor does not describe the given buffer\n");
+    return result;
+}
 
-    int test_fatalErrorBufferEnd()
+int test_freeFatalErrorBuffer()
+{
+    freeFatalErrorBuffer();
+    int result = isValidFatalErrorBufferDescriptor(getFatalErrorBufferDescriptor())? 0 : 1;
+    if (!result)
+        printf ("failed to reset the descriptor after free\n");
+    if (memBlock)
     {
-        printf("testing fatalErrorBufferEnd...\n");
-
-        unsigned const dmz = 100;
-        unsigned const size = 1000;
-        char buffer[size + 2 * dmz + 3 /* ellipsis */ + 1 /* NUL */];
-        struct FatalErrorBufferDescriptor memDescriptor = { size, dmz, "..." };
-        void* bufferPt = buffer;
-        int result = test_swapMemBlock(&memDescriptor, &bufferPt, sizeof(buffer));
-        if (result)
-        {
-            result = fatalErrorBufferEnd() - fatalErrorBufferBegin() == size? 1 : 0;
-            if (!result)
-                printf ("failed to return the pointer to the end of the fatal error buffer\n");
-            test_swapMemBlock(&memDescriptor, &bufferPt, 0);
-        }
-        else
-            printf ("test setup is incorrect, descriptor does not describe the given buffer\n");
-        return result;
+        result = 0;
+        printf ("failed to reset the pointer to buffer after free\n");
     }
-
-    int test_clearFatalErrorBuffer()
+    if (freeOutOfOrder)
     {
-        printf("testing clearFatalErrorBuffer...\n");
-
-        unsigned const dmz = 100;
-        unsigned const size = 1000;
-        char buffer[size + 2 * dmz + 3 /* ellipsis */ + 1 /* NUL */];
-        struct FatalErrorBufferDescriptor memDescriptor = { size, dmz, "..." };
-        void* bufferPt = buffer;
-        int result = test_swapMemBlock(&memDescriptor, &bufferPt, sizeof(buffer));
-        if (result)
-        {
-            clearFatalErrorBuffer();
-            result = strlen(fatalErrorBufferBegin()) == 0? 1 : 0;
-            if (!result)
-                printf ("failed to clear the fatal error buffer\n");
-            test_swapMemBlock(&memDescriptor, &bufferPt, 0);
-        }
-        else
-            printf ("test setup is incorrect, descriptor does not describe the given buffer\n");
-        return result;
+        result = 0;
+        printf ("freeing memory not allocated immediately before\n");
     }
+    return result;
+}
 
-    int test_initFatalErrorBuffer()
+int test_allocFatalErrorBuffer(struct FatalErrorBufferDescriptor* d, int expectResult, int testCase)
+{
+    int result = allocFatalErrorBuffer(d) == expectResult? 1 : 0;
+    if (!result)
+        printf("allocation in case %i failed: expected result %i missed\n", testCase, expectResult);
+    if (result && expectResult != isValidFatalErrorBufferDescriptor(&descriptor))
     {
-        printf("testing clearFatalErrorBuffer...\n");
-
-        unsigned const dmz = 100;
-        unsigned const size = 1000;
-        char const* ellipsis = "...";
-        char buffer[size + 2 * dmz + 3 /* ellipsis */ + 1 /* NUL */];
-        struct FatalErrorBufferDescriptor memDescriptor = { size, dmz, ellipsis };
-        void* bufferPt = buffer;
-        int result = test_swapMemBlock(&memDescriptor, &bufferPt, sizeof(buffer));
-        if (result)
-        {
-            initFatalErrorBuffer();
-            ellipsis = NULL;
-            result = strlen(fatalErrorBufferBegin()) == 0? 1 : 0;
-            if (!result)
-                printf ("failed to clear the fatal error buffer\n");
-            if (result && strlen(fatalErrorBufferEnd()) != 3)
-            {
-                printf ("failed to copy the ellipsis to the fatal error buffer\n");
-                result = 0;
-            }
-            if (result && strcmp(fatalErrorBufferEnd(), descriptor.ellipsis) != 0)
-            {
-                printf ("failed to secure the pointer to ellipsis in the descriptor\n");
-                result = 0;
-            }
-            test_swapMemBlock(&memDescriptor, &bufferPt, 0);
-        }
-        else
-            printf ("test setup is incorrect, descriptor does not describe the given buffer\n");
-        return result;
+        result = 0;
+        printf ("failed to set the descriptor after allocation in case %i\n", testCase);
     }
-
-    void mmfatl_test()
+    if (result && expectResult != (memBlock? 1 : 0))
     {
-        if (testall_addCheckOverflow()
-            && test_getFatalErrorDescriptor()
-            && testall_isValidFatalErrorBufferDescriptor()
-            && testall_evalRequestedMemSize()
-            && test_fatalErrorBufferBegin()
-            && test_fatalErrorBufferEnd()
-            && test_clearFatalErrorBuffer()
-            && test_initFatalErrorBuffer()
-        ) { }
+        result = 0;
+        printf ("failed to set the buffer pointer after allocation in case %i\n", testCase);
     }
+    if (result && freeOutOfOrder)
+    {
+        result = 0;
+        printf ("freeing memory not allocated immediately before in case %i\n", testCase);
+    }
+    if (result && missingFree)
+    {
+        result = 0;
+        printf ("memory not freed before allocation in case %i\n", testCase);
+    }
+    return result;
+}
+
+int testall_Allocation()
+{
+    printf("testing allocation of memory...\n");
+
+    // free without allocation
+    int result = test_freeFatalErrorBuffer();
+    struct FatalErrorBufferDescriptor d[] =
+    {
+        { 1000, 0, "" },
+        { 2000, 0, "" },
+        { 0, 0, NULL },
+    };
+    if (result)
+        result = test_allocFatalErrorBuffer(d + 0, 1, 0);
+    // reallocation
+    if (result)
+        result = test_allocFatalErrorBuffer(d + 1, 1, 1);
+    // invalid allocation
+    if (result)
+        result = test_allocFatalErrorBuffer(d + 2, 0, 2);
+    return result;
+}
+
+void mmfatl_test()
+{
+    if (testall_addCheckOverflow()
+        && test_getFatalErrorDescriptor()
+        && testall_isValidFatalErrorBufferDescriptor()
+        && testall_evalRequestedMemSize()
+        && test_fatalErrorBufferBegin()
+        && test_fatalErrorBufferEnd()
+        && test_clearFatalErrorBuffer()
+        && test_initFatalErrorBuffer()
+        && testall_Allocation()
+    ) { }
+}
 
 #endif

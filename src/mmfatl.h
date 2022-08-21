@@ -115,9 +115,10 @@ char const* getFatalErrorMessage();
  * \param descriptor [not null] the requirements of a new pre-allocated message
  *   buffer, replacing the current one, if exists.
  * \returns whether the (re-)allocation was successful (1), or not (0).
- * \post If no new buffer could be allocated, the old one stays in place.
+ * \post Any previously allocated error buffer is returned
  * \post the memory of the ellipsis pointed to in \p descriptor is not needed
  *   after the call.
+ * \post the descriptor describes any (re-)allocated buffer, or is invalid on failure. 
  */
 int allocFatalErrorBuffer(struct FatalErrorBufferDescriptor const* descriptor);
 
@@ -125,7 +126,8 @@ int allocFatalErrorBuffer(struct FatalErrorBufferDescriptor const* descriptor);
  * call this only during a normal program exit.  We don't need a clean exit
  * state in case of a fatal error.  Some debugging tools like Valgrind complain
  * when they detect allocated memory not freed again.
- * \post pre-allocated memory is returned to the system.
+ * \post any pre-allocated memory for the error buffer is returned to the system.
+ * \post the buffer descriptor is reset to invalid 
  */
 void freeFatalErrorBuffer();
 
