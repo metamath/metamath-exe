@@ -612,8 +612,9 @@ void exitOnFatalError(
             {{ ~ (size_t) 0, 0, "" }, 0 },  // case 3
             {{ (~ (size_t) 0) - 1u , 0, "" }, ~ (size_t) 0 },  // case 4
             {{ (~ (size_t) 0) - 50u , 100, "" }, 0 },  // case 5
-            {{ (~ (size_t) 0) - 204u , 100, "..." }, ~ (size_t) 0 },  // case 6
-            {{ (~ (size_t) 0) - 1u , 0, "..." }, 0 },  // case 7
+            {{ (~ (size_t) 0) - 101u , 100, "" }, 0 },  // case 6
+            {{ (~ (size_t) 0) - 204u , 100, "..." }, ~ (size_t) 0 },  // case 7
+            {{ (~ (size_t) 0) - 1u , 0, "..." }, 0 },  // case 8
         };
         for (unsigned i = 0; i < sizeof(tests) / sizeof(struct TestCase); ++i)
             if (evalRequestedMemSize(&tests[i].descriptor) != tests[i].result)
@@ -623,6 +624,42 @@ void exitOnFatalError(
             }
         return result;
     }
+    
+    int test_swapMemBlock(struct FatalErrorBufferDescriptor* data, void** buffer, size_t bufferSize)
+    {
+        int result = bufferSize == 0 || evalRequestedMemSize(data) == bufferSize? 1 : 0;
+        if (result)
+        {
+            void* backupBuffer = memBlock;
+            struct FatalErrorBufferDescriptor backupDescriptor = descriptor;
+            memBlock = *buffer;
+            descriptor = *data;
+            *buffer = backupBuffer;
+            *data = backupDescriptor;
+        }
+        return result;
+    }
+    
+    int test_fatalErrorBufferBegin()
+    {
+        printf("testing fatalErrorBufferBegin...\n");
+        
+        unsigned const dmz = 100;
+        char buffer[1000 + 2 * dmz + 3 + 1 /* NUL */];
+        struct FatalErrorBufferDescriptor memDescriptor = { 1000, dmz, "..." };
+        void* bufferPt = buffer;
+        int result = test_swapMemBlock(&memDescriptor, &bufferPt, sizeof(buffer));
+        if (result)
+        {
+            result = fatalErrorBufferBegin() == (buffer + dmz)? 1 : 0;
+            if (!result)
+                printf ("failed to return the correct pointer to the start of the fatal error buffer\n");
+            test_swapMemBlock(&memDescriptor, &bufferPt, 0);
+        }
+        else
+          printf ("test setup is incorrect, descriptor does not describe the given buffer\n");
+        return result;
+    }
 
     void mmfatl_test()
     {
@@ -630,6 +667,7 @@ void exitOnFatalError(
         test_getFatalErrorDescriptor();
         testall_isValidFatalErrorBufferDescriptor();
         testall_evalRequestedMemSize();
+        test_fatalErrorBufferBegin();
     }
 
 #endif
