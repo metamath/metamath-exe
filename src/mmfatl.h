@@ -11,7 +11,7 @@
 
 /* #undef or #define TEST_MMFATL to run a test suite on program
  * startup. */
-#define TEST_MMFATL
+#undef TEST_MMFATL
 #ifdef TEST_MMFATL
     extern void mmfatl_test(void);
 #else
