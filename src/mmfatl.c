@@ -143,7 +143,7 @@ static char* fatalErrorBufferBegin()
  */
 static char* fatalErrorBufferEnd()
 {
-    return fatalErrorBufferBegin() + descriptor.dmz + descriptor.size;
+    return fatalErrorBufferBegin() + descriptor.size;
 }
 
 /*!
@@ -654,11 +654,33 @@ void exitOnFatalError(
         {
             result = fatalErrorBufferBegin() == (buffer + dmz)? 1 : 0;
             if (!result)
-                printf ("failed to return the correct pointer to the start of the fatal error buffer\n");
+                printf ("failed to return the pointer to the begin of the fatal error buffer\n");
             test_swapMemBlock(&memDescriptor, &bufferPt, 0);
         }
         else
-          printf ("test setup is incorrect, descriptor does not describe the given buffer\n");
+            printf ("test setup is incorrect, descriptor does not describe the given buffer\n");
+        return result;
+    }
+
+    int test_fatalErrorBufferEnd()
+    {
+        printf("testing fatalErrorBufferEnd...\n");
+        
+        unsigned const dmz = 100;
+        unsigned const size = 1000;
+        char buffer[size + 2 * dmz + 3 /* ellipsis */ + 1 /* NUL */];
+        struct FatalErrorBufferDescriptor memDescriptor = { size, dmz, "..." };
+        void* bufferPt = buffer;
+        int result = test_swapMemBlock(&memDescriptor, &bufferPt, sizeof(buffer));
+        if (result)
+        {
+            result = fatalErrorBufferEnd() - fatalErrorBufferBegin() == size? 1 : 0;
+            if (!result)
+                printf ("failed to return the pointer to the end of the fatal error buffer\n");
+            test_swapMemBlock(&memDescriptor, &bufferPt, 0);
+        }
+        else
+            printf ("test setup is incorrect, descriptor does not describe the given buffer\n");
         return result;
     }
 
@@ -669,6 +691,7 @@ void exitOnFatalError(
         testall_isValidFatalErrorBufferDescriptor();
         testall_evalRequestedMemSize();
         test_fatalErrorBufferBegin();
+        test_fatalErrorBufferEnd();
     }
 
 #endif
