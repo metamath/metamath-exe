@@ -169,11 +169,9 @@ static void clearFatalErrorBuffer()
 static void initFatalErrorBuffer()
 {
     clearFatalErrorBuffer();
-    char* bufferEnd = fatalErrorBufferEnd();
-    strcpy(bufferEnd, descriptor.ellipsis);
-    /* This decouples from any user space supplied memory, that can safely be 
+    /* This decouples from any user space memory, that can safely be changed or
      * deallocated any time now */
-    descriptor.ellipsis = bufferEnd;
+    descriptor.ellipsis = strcpy(fatalErrorBufferEnd(), descriptor.ellipsis);
 }
 
 int allocFatalErrorBuffer(struct FatalErrorBufferDescriptor const* aDescriptor)
@@ -523,7 +521,7 @@ void exitOnFatalError(
     exit(1);
 }
 
-#if defined(TEST_MMFATL)
+#ifdef TEST_MMFATL
 
     int testcase_addCheckOverflow(size_t x, size_t y, size_t expected)
     {
@@ -593,7 +591,7 @@ void exitOnFatalError(
             }
         return result;
     }
-    
+
     int testall_evalRequestedMemSize()
     {
         printf("testing evalRequestedMemSize...\n");
@@ -624,7 +622,7 @@ void exitOnFatalError(
             }
         return result;
     }
-    
+
     int test_swapMemBlock(struct FatalErrorBufferDescriptor* data, void** buffer, size_t bufferSize)
     {
         int result = bufferSize == 0 || evalRequestedMemSize(data) == bufferSize? 1 : 0;
@@ -639,11 +637,11 @@ void exitOnFatalError(
         }
         return result;
     }
-    
+
     int test_fatalErrorBufferBegin()
     {
         printf("testing fatalErrorBufferBegin...\n");
-        
+
         unsigned const dmz = 100;
         unsigned const size = 1000;
         char buffer[size + 2 * dmz + 3 /* ellipsis */ + 1 /* NUL */];
@@ -665,7 +663,7 @@ void exitOnFatalError(
     int test_fatalErrorBufferEnd()
     {
         printf("testing fatalErrorBufferEnd...\n");
-        
+
         unsigned const dmz = 100;
         unsigned const size = 1000;
         char buffer[size + 2 * dmz + 3 /* ellipsis */ + 1 /* NUL */];
@@ -687,7 +685,7 @@ void exitOnFatalError(
     int test_clearFatalErrorBuffer()
     {
         printf("testing clearFatalErrorBuffer...\n");
-        
+
         unsigned const dmz = 100;
         unsigned const size = 1000;
         char buffer[size + 2 * dmz + 3 /* ellipsis */ + 1 /* NUL */];
@@ -707,15 +705,52 @@ void exitOnFatalError(
         return result;
     }
 
+    int test_initFatalErrorBuffer()
+    {
+        printf("testing clearFatalErrorBuffer...\n");
+
+        unsigned const dmz = 100;
+        unsigned const size = 1000;
+        char const* ellipsis = "...";
+        char buffer[size + 2 * dmz + 3 /* ellipsis */ + 1 /* NUL */];
+        struct FatalErrorBufferDescriptor memDescriptor = { size, dmz, ellipsis };
+        void* bufferPt = buffer;
+        int result = test_swapMemBlock(&memDescriptor, &bufferPt, sizeof(buffer));
+        if (result)
+        {
+            initFatalErrorBuffer();
+            ellipsis = NULL;
+            result = strlen(fatalErrorBufferBegin()) == 0? 1 : 0;
+            if (!result)
+                printf ("failed to clear the fatal error buffer\n");
+            if (result && strlen(fatalErrorBufferEnd()) != 3)
+            {
+                printf ("failed to copy the ellipsis to the fatal error buffer\n");
+                result = 0;
+            }
+            if (result && strcmp(fatalErrorBufferEnd(), descriptor.ellipsis) != 0)
+            {
+                printf ("failed to secure the pointer to ellipsis in the descriptor\n");
+                result = 0;
+            }
+            test_swapMemBlock(&memDescriptor, &bufferPt, 0);
+        }
+        else
+            printf ("test setup is incorrect, descriptor does not describe the given buffer\n");
+        return result;
+    }
+
     void mmfatl_test()
     {
-        testall_addCheckOverflow();
-        test_getFatalErrorDescriptor();
-        testall_isValidFatalErrorBufferDescriptor();
-        testall_evalRequestedMemSize();
-        test_fatalErrorBufferBegin();
-        test_fatalErrorBufferEnd();
-        test_clearFatalErrorBuffer();
+        if (testall_addCheckOverflow()
+            && test_getFatalErrorDescriptor()
+            && testall_isValidFatalErrorBufferDescriptor()
+            && testall_evalRequestedMemSize()
+            && test_fatalErrorBufferBegin()
+            && test_fatalErrorBufferEnd()
+            && test_clearFatalErrorBuffer()
+            && test_initFatalErrorBuffer()
+        ) { }
     }
 
 #endif
