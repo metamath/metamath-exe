@@ -17,7 +17,7 @@
 #include <string.h>
 
 #ifdef TEST_MMFATL
-    // We intercept malloc/free to ensure proper
+    // We intercept malloc/free to test proper
     // freeing after allocation of memory
     static void* MALLOC(size_t size);
     static void FREE(void* ptr);
@@ -227,8 +227,8 @@ char const* getFatalErrorMessage()
  * converts an unsigned int to a sequence of decimal digits representing its value
  * \param value an unsigned value that is to be converted to string of decimal
  *   digits.
- * \returns a pointer to a string converted from \p value.  Note that this
- *   result is stable only until the next call to this function.
+ * \returns a pointer to a string converted from \p value.
+ * \attention  The result is stable only until the next call to this function.
  */
 static char const* unsignedToString(unsigned value)
 {
@@ -236,14 +236,18 @@ static char const* unsignedToString(unsigned value)
      * round up, and 1 for the terminating NUL */
     static char digits[(5 * sizeof(unsigned)) / 2 + 2];
 
-    digits[0] = '0';
+    char temp[(5 * sizeof(unsigned)) / 2 + 2];
+    temp[0] = '0';
     int ofs = value == 0? 1 : 0;
     while (value)
     {
-        digits[ofs++] = (value % 10) + '0';
+        temp[ofs++] = (value % 10) + '0';
         value /= 10;
     }
     digits[ofs] = NUL;
+    int dest = 0;
+    for (; --ofs >= 0;)
+        digits[dest++] = temp[ofs];
     return digits;
 }
 
@@ -843,6 +847,48 @@ int testall_Allocation()
     return result;
 }
 
+int test_unsignedToString(unsigned value, char const* digits)
+{
+    char const* computed = unsignedToString(value);
+    int result = strcmp(computed, digits) == 0? 1 : 0; 
+    if (!result)
+        printf ("conversion of %i yielded \"%s\"\n", value, computed);
+    return result;
+}
+
+int testall_unsignedToString()
+{
+    printf("testing unsignedToInt...\n");
+    int result = 
+        test_unsignedToString(0u, "0")
+    && test_unsignedToString(1u, "1")
+    && test_unsignedToString(2u, "2")
+    && test_unsignedToString(3u, "3")
+    && test_unsignedToString(4u, "4")
+    && test_unsignedToString(5u, "5")
+    && test_unsignedToString(6u, "6")
+    && test_unsignedToString(7u, "7")
+    && test_unsignedToString(8u, "8")
+    && test_unsignedToString(9u, "9")
+    && test_unsignedToString(10u, "10")
+    && test_unsignedToString(99u, "99")
+    && test_unsignedToString(100u, "100")
+    && test_unsignedToString(65535u, "65535")? 1 : 0;
+# if UINT_MAX >= 4294967295UL
+    result =
+    result
+    && test_unsignedToString(65536ul, "65536")
+    && test_unsignedToString(4294967295ul, "4294967295")? 1 : 0;
+#   endif
+#   if UINT_MAX >= 18446744073709551615ULL
+    result =
+    result
+    && test_unsignedToString(4294967296ull, "4294967296")
+    && test_unsignedToString(18446744073709551615ull, "18446744073709551615")? 1 : 0;
+#   endif
+    return result;
+}
+
 void mmfatl_test()
 {
     if (testall_addCheckOverflow()
@@ -854,6 +900,7 @@ void mmfatl_test()
         && test_clearFatalErrorBuffer()
         && test_initFatalErrorBuffer()
         && testall_Allocation()
+        && testall_unsignedToString()
     ) { }
 }
 
