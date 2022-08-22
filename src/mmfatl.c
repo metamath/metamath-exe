@@ -236,18 +236,23 @@ static char const* unsignedToString(unsigned value)
      * round up, and 1 for the terminating NUL */
     static char digits[(5 * sizeof(unsigned)) / 2 + 2];
 
-    char temp[(5 * sizeof(unsigned)) / 2 + 2];
-    temp[0] = '0';
-    int ofs = value == 0? 1 : 0;
-    while (value)
+    if (value == 0)
     {
-        temp[ofs++] = (value % 10) + '0';
-        value /= 10;
+        digits[0] = '0';
+        digits[1] = NUL;
     }
-    digits[ofs] = NUL;
-    int dest = 0;
-    for (; --ofs >= 0;)
-        digits[dest++] = temp[ofs];
+    else
+    {
+        int ofs = sizeof(digits) - 1;
+        digits[ofs] = NUL;
+        while (value)
+        {
+            digits[--ofs] = (value % 10) + '0';
+            value /= 10;
+        }
+        if (ofs > 0)
+            memmove(digits, digits + ofs, sizeof(digits) - ofs);
+    }
     return digits;
 }
 
