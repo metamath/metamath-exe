@@ -898,7 +898,7 @@ void test_allocTestErrorBuffer()
 {
     struct FatalErrorBufferDescriptor d;
     d.size = 20;
-    d.dmz = 10;
+    d.dmz = 0;
     d.ellipsis = "?";
     allocFatalErrorBuffer(&d);
 }
@@ -954,6 +954,8 @@ int testall_resetParserState()
                         result =
                             state.processState == TEXT
                             && state.arg == NULL
+                            && state.bufferEnd - state.buffer == 20
+                            && *state.bufferEnd == '?'
                             && *state.formatPos == 'x' ? 1 : 0;
                 }
             }
