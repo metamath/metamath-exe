@@ -321,7 +321,7 @@ static int resetParserState(
     struct ParserState* state,
     FatalErrorFormat format)
 {
-    int result = format != NULL && memBlock != NULL? TRUE : FALSE;
+    int result = state != NULL && format != NULL && memBlock != NULL? TRUE : FALSE;
     if (result)
     {
         state->processState = TEXT;
@@ -891,6 +891,75 @@ int testall_unsignedToString()
     && test_unsignedToString(4294967296ull, "4294967296")
     && test_unsignedToString(18446744073709551615ull, "18446744073709551615")? 1 : 0;
 #   endif
+    return result;
+}
+
+void test_allocTestErrorBuffer()
+{
+    struct FatalErrorBufferDescriptor d;
+    d.size = 20;
+    d.dmz = 10;
+    d.ellipsis = "?";
+    allocFatalErrorBuffer(&d);
+}
+
+int testall_resetParserState()
+{
+    printf("testing resetParserState...\n");
+    int result = resetParserState(0, 0) == 0? 1 : 0;
+    if (!result)
+        printf ("case 0: expected failure\n");
+    else
+    {
+        result = resetParserState(0, "x") == 0? 1 : 0;
+        if (result)
+            printf ("case 1: expected failure\n");
+    }
+    if (result)
+    {
+        struct ParserState state;
+        result = resetParserState(&state, 0) == 0? 1 : 0;
+        if (!result)
+            printf ("case 2: expected failure\n");  
+        else
+        {
+            result = resetParserState(&state, "") == 0? 1 : 0;
+            if (!result)
+                printf ("case 3: expected failure\n");  
+        }
+    }
+    if (result)
+    {
+        test_allocTestErrorBuffer();
+        result = resetParserState(0, 0) == 0? 1 : 0;
+        if (!result)
+            printf ("case 4: expected failure\n");
+        else
+        {
+            result = resetParserState(0, "x") == 0? 1 : 0;
+            if (result)
+                printf ("case 5: expected failure\n");
+            else
+            {
+                struct ParserState state;
+                result = resetParserState(&state, 0) == 0? 1 : 0;
+                if (!result)
+                    printf ("case 6: expected failure\n");  
+                else
+                {
+                    result = resetParserState(&state, "x") == 1? 1 : 0;
+                    if (!result)
+                        printf ("case 7: expected success\n");
+                    else
+                        result =
+                            state.processState == TEXT
+                            && state.arg == NULL
+                            && *state.formatPos == 'x' ? 1 : 0;
+                }
+            }
+        }
+    }
+    freeFatalErrorBuffer();
     return result;
 }
 
