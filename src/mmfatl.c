@@ -912,7 +912,7 @@ int testall_resetParserState()
     else
     {
         result = resetParserState(0, "x") == 0? 1 : 0;
-        if (result)
+        if (!result)
             printf ("case 1: expected failure\n");
     }
     if (result)
@@ -937,7 +937,7 @@ int testall_resetParserState()
         else
         {
             result = resetParserState(0, "x") == 0? 1 : 0;
-            if (result)
+            if (!result)
                 printf ("case 5: expected failure\n");
             else
             {
@@ -977,6 +977,7 @@ void mmfatl_test()
         && test_initFatalErrorBuffer()
         && testall_Allocation()
         && testall_unsignedToString()
+        && testall_resetParserState()
     ) { }
 }
 
