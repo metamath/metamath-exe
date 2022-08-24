@@ -903,62 +903,44 @@ void test_allocTestErrorBuffer()
     allocFatalErrorBuffer(&d);
 }
 
+int test_resetParserState(int index, struct  ParserState* state,
+                          char const* format, int expectedResult)
+{
+    int result = resetParserState(state, format) == expectedResult? 1 : 0;
+    if (!result)
+        printf ("case %i: expected %s\n", index,
+                expectedResult == 0? "failure" : "success");
+    return result;
+}
+
+
 int testall_resetParserState()
 {
     printf("testing resetParserState...\n");
-    int result = resetParserState(0, 0) == 0? 1 : 0;
-    if (!result)
-        printf ("case 0: expected failure\n");
-    else
-    {
-        result = resetParserState(0, "x") == 0? 1 : 0;
-        if (!result)
-            printf ("case 1: expected failure\n");
-    }
-    if (result)
-    {
-        struct ParserState state;
-        result = resetParserState(&state, 0) == 0? 1 : 0;
-        if (!result)
-            printf ("case 2: expected failure\n");  
-        else
-        {
-            result = resetParserState(&state, "") == 0? 1 : 0;
-            if (!result)
-                printf ("case 3: expected failure\n");  
-        }
-    }
+    struct ParserState state;
+    int result = 
+        test_resetParserState(0, 0, 0, 0)
+        && test_resetParserState(1, 0, "x", 0)
+        && test_resetParserState(2, &state, 0, 0)
+        && test_resetParserState(3, &state, "", 0)? 1 : 0;
     if (result)
     {
         test_allocTestErrorBuffer();
-        result = resetParserState(0, 0) == 0? 1 : 0;
-        if (!result)
-            printf ("case 4: expected failure\n");
-        else
+        result =
+            test_resetParserState(4, 0, 0, 0)
+            && test_resetParserState(5, 0, "x", 0)
+            && test_resetParserState(6, &state, 0, 0)
+            && test_resetParserState(7, &state, "x", 1);
+        if (result)
         {
-            result = resetParserState(0, "x") == 0? 1 : 0;
+            result =
+                state.processState == TEXT
+                && state.arg == NULL
+                && state.bufferEnd - state.buffer == 20
+                && *state.bufferEnd == '?'
+                && *state.formatPos == 'x' ? 1 : 0;
             if (!result)
-                printf ("case 5: expected failure\n");
-            else
-            {
-                struct ParserState state;
-                result = resetParserState(&state, 0) == 0? 1 : 0;
-                if (!result)
-                    printf ("case 6: expected failure\n");  
-                else
-                {
-                    result = resetParserState(&state, "x") == 1? 1 : 0;
-                    if (!result)
-                        printf ("case 7: expected success\n");
-                    else
-                        result =
-                            state.processState == TEXT
-                            && state.arg == NULL
-                            && state.bufferEnd - state.buffer == 20
-                            && *state.bufferEnd == '?'
-                            && *state.formatPos == 'x' ? 1 : 0;
-                }
-            }
+                printf("case 7: incorrect initialization of struct ParserState");
         }
     }
     freeFatalErrorBuffer();
