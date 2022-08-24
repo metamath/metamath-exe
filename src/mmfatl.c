@@ -330,12 +330,24 @@ static int resetParserState(
         state->bufferEnd = fatalErrorBufferEnd();
         state->arg = NULL;
     }
+    else if (state)
+    {
+        state->processState = END_OF_TEXT;
+        state ->formatPos = NULL;
+        state->buffer = NULL;
+        state->bufferEnd = NULL;
+        state->arg = NULL;
+    }    
     return result;
 }
 
-static int isBufferFull(struct ParserState* state)
+static size_t freeBufferSpace(struct ParserState* state)
 {
-    return state->buffer >= state->bufferEnd;
+    return 
+        state
+        && state->buffer
+        && state->buffer < state->bufferEnd?
+            state->bufferEnd - state->buffer : 0;
 }
 
 /*!
@@ -444,7 +456,7 @@ static int parseAndCopy(struct ParserState* state)
     int result = FALSE;
     if (state->processState != PARAMETER_COPY && *state->formatPos == NUL)
         state->processState = END_OF_TEXT;
-    else if (isBufferFull(state))
+    else if (freeBufferSpace(state) == 0)
         /* cannot even copy the terminating NUL any more... */
         state->processState = BUFFER_OVERFLOW;
     else
@@ -947,6 +959,48 @@ int testall_resetParserState()
     return result;
 }
 
+int test_freeBufferSpace(int index, struct ParserState* state, size_t expectedResult)
+{
+    size_t free = freeBufferSpace(state);
+    int result = free == expectedResult? 1 : 0;
+    if (!result)
+        printf ("case %i: expected %zu, got %zu\n", index,
+                expectedResult, free);
+    return result;
+}
+
+int testall_freeBufferSpace()
+{
+    printf("testing freeBufferSpace...\n");
+    struct ParserState state;
+    resetParserState(&state, NULL);
+    int result =
+        test_freeBufferSpace(0, 0, 0);
+    if (result)
+    {
+        test_allocTestErrorBuffer();
+        resetParserState(&state,"");
+        test_freeBufferSpace(1, &state, 20);
+    }
+    if (result)
+    {
+        state.buffer += state.bufferEnd - state.buffer - 1;
+        test_freeBufferSpace(2, &state, 1);
+    }
+    if (result)
+    {
+        state.buffer++;
+        test_freeBufferSpace(3, &state, 0);
+    }
+    if (result)
+    {
+        state.buffer++;
+        test_freeBufferSpace(4, &state, 0);
+    }
+    freeFatalErrorBuffer();
+    return result;
+}
+
 void mmfatl_test()
 {
     if (testall_addCheckOverflow()
@@ -960,6 +1014,7 @@ void mmfatl_test()
         && testall_Allocation()
         && testall_unsignedToString()
         && testall_resetParserState()
+        && testall_freeBufferSpace()
     ) { }
 }
 
