@@ -27,7 +27,7 @@ metamath \- Formal proof verifier and proof assistant
 is a formal proof verifier and proof assistant for the Metamath language.
 It can be initialized via a series of
 .I commands
-or with a data base
+or with a database
 .IR file ,
 which can then be explored interactively.
 .PP
@@ -38,10 +38,10 @@ installed along with the package.
 .SH LANGUAGE
 A Metamath database consists of a sequence of three kinds of tokens
 separated by white space (which is any sequence of one or more white
-space characters). The set of keyword tokens is
+space characters).  The set of keyword tokens is
 .BR ${ ", " $} ", " $c ", " $v ", " $f ", " $e ", " $d ", " $a ", " $p ", "
 .BR $. ", " $= ", " $( ", " $) ", " $[ ", and " $] .
-The latter four are called auxiliary or preprocessing keywords. A
+The latter four are called auxiliary or preprocessing keywords.  A
 .I label
 token consists of any combination of letters, digits, and the characters hyphen,
 underscore, and period.
@@ -62,29 +62,29 @@ Include the contents of a
 .IR file .
 .TP
 .BI ${ " statements " $}
-Scoped block of statements. A math symbol becomes active when declared and
+Scoped block of statements.  A math symbol becomes active when declared and
 stays active until the end of the block in which it is declared.
 .TP
 .BI $v " symbols " $.
 Declare
 .I symbols
-as variables. A variable may not be declared a second time while it is active,
+as variables.  A variable may not be declared a second time while it is active,
 but it may be declared again (as a variable, but not as a constant) after it
 becomes inactive.
 .TP
 .BI $c " symbols " $.
 Declare
 .I symbols
-as constants. A constant must be declared in the outermost block and may not be
-declared a second time.
+as constants.  A constant must be declared in the outermost block and may not
+be declared a second time.
 .TP
 .IB "label " $f " constant variable " $.
 Variable-type hypothesis to specify the nature or type of a variable (such as
-`let x be an integer.'). A variable must have its type specified in a
+`let x be an integer.').  A variable must have its type specified in a
 .B $f
 statement before it may be used in a
 .BR $e ", " $a ", or " $p
-statement. There may not be two active
+statement.  There may not be two active
 .B $f
 statements containing the same variable.
 .TP
@@ -93,7 +93,7 @@ Logical hypothesis, expressing a logical truth (such as `assume x is prime')
 that must be established in order for an assertion requiring it to also be true.
 .TP
 .BI $d " variables " $.
-Disjoint variable restriction. For distinct active
+Disjoint variable restriction.  For distinct active
 .IR variables ,
 it forbids the substitution of one variable with another.
 .TP
@@ -101,23 +101,23 @@ it forbids the substitution of one variable with another.
 Axiomatic assertion.
 .TP
 .IB "label " $p " constant symbols " $= " proof " $.
-Provable assertion. The
+Provable assertion.  The
 .I proof
 is a sequence of statement
 .IR label s.
 This label sequence serves as a set of instructions that the Metamath program
-uses to construct a series of math symbol sequences. The construction must
+uses to construct a series of math symbol sequences.  The construction must
 ultimately result in the math symbol sequence contained between the
 .BR $p " and " $=
 keywords of the
 .B $p
-statement. For details, see section 4.3 in [1].
+statement.  For details, see section 4.3 in [1].
 Proofs are most easily written using the interactive prompt in
 .BR metamath .
 .SH FILES
 .I /usr/share/metamath
 .RS
-Data base files for several formal theories.
+Database files for several formal theories.
 .SH SEE ALSO
 .B "[1]"
 Norman Megill:
