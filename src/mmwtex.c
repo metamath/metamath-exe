@@ -5317,6 +5317,8 @@ flag writeBibliography(vstring bibFile,
               || !strcmp(mid(str2, k, (long)strlen("SCOLION")), "SCOLION")
               || !strcmp(mid(str2, k, (long)strlen("SUBSECTION")), "SUBSECTION")
               || !strcmp(mid(str2, k, (long)strlen("TABLE")), "TABLE")
+              || !strcmp(mid(str2, k, (long)strlen("CRITERION")), "CRITERION")
+              || !strcmp(mid(str2, k, (long)strlen("CRITERIA")), "CRITERIA")
               ) {
             m = k;
             break;
