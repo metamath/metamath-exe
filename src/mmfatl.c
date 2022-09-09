@@ -333,7 +333,7 @@ static int resetParserState(
     else if (state)
     {
         state->processState = END_OF_TEXT;
-        state ->formatPos = NULL;
+        state->formatPos = NULL;
         state->buffer = NULL;
         state->bufferEnd = NULL;
         state->arg = NULL;
@@ -341,7 +341,7 @@ static int resetParserState(
     return result;
 }
 
-static size_t freeBufferSpace(struct ParserState* state)
+static size_t freeSpaceInBuffer(const struct ParserState* state)
 {
     return 
         state
@@ -362,17 +362,18 @@ static size_t freeBufferSpace(struct ParserState* state)
  */
 static void handleTextState(struct ParserState* state)
 {
-    char formatChar = *(state->formatPos++);
-    switch (formatChar)
-    {
-        case PLACEHOLDER_PREFIX_CHAR:
-            /* skip the % in output */
-            state->processState = CHECK_PLACEHOLDER;
-            break;
-        default:
-            /* keep the TEXT state */
-            *(state->buffer++) = formatChar;
-    }
+     char formatChar = *(state->formatPos++);
+     switch (formatChar)
+     {
+         case PLACEHOLDER_PREFIX_CHAR:
+             /* skip the % in output */
+             state->processState = CHECK_PLACEHOLDER;
+             --state->formatPos;
+             break;
+         default:
+             /* keep the TEXT state */
+             *(state->buffer++) = formatChar;
+     }
 }
 
 /*!
@@ -456,7 +457,7 @@ static int parseAndCopy(struct ParserState* state)
     int result = FALSE;
     if (state->processState != PARAMETER_COPY && *state->formatPos == NUL)
         state->processState = END_OF_TEXT;
-    else if (freeBufferSpace(state) == 0)
+    else if (freeSpaceInBuffer(state) == 0)
         /* cannot even copy the terminating NUL any more... */
         state->processState = BUFFER_OVERFLOW;
     else
@@ -925,6 +926,46 @@ int test_resetParserState(int index, struct  ParserState* state,
     return result;
 }
 
+int compareParserState(int testCase, const struct ParserState* state,
+            enum ParserProcessState processState, unsigned freeSpace, char last, char nextChar)
+{
+    int result = state->processState == processState? 1 : 0;
+    if (!result)
+        printf("case %i: incorrect parser process state, expected %i, got %i\n", testCase, processState, state->processState);
+    else
+    {
+        unsigned space = freeSpaceInBuffer(state);
+        if (space != freeSpace)
+        {
+            printf("case %i: incorrect buffer contents, expected free space %i, got %i\n", testCase, freeSpace, space);
+            result = 0;
+        }
+    }
+    if (result && last != NUL)
+    {
+        char c = *(state->buffer - 1);
+        if (c != last)
+        {
+            printf("case %i: incorrect buffer contents, expected char %c, got %c\n", testCase, last, c);
+            result = 0;
+        }
+    }
+    if (result)
+    {
+        char c = *(state->formatPos);
+        if (c != nextChar)
+        {
+            if (c == NUL)
+                printf("case %i: incorrect format position, at the end prematurely\n", testCase);
+            else if (nextChar == NUL)
+                printf("case %i: incorrect format position, not at end\n", testCase);
+            else
+                printf("case %i: incorrect format position, expected '%c', got '%c'\n", testCase, nextChar, c);
+            result = 0;
+        }
+    }
+    return result;
+}
 
 int testall_resetParserState()
 {
@@ -946,22 +987,24 @@ int testall_resetParserState()
         if (result)
         {
             result =
-                state.processState == TEXT
-                && state.arg == NULL
-                && state.bufferEnd - state.buffer == 20
-                && *state.bufferEnd == '?'
-                && *state.formatPos == 'x' ? 1 : 0;
-            if (!result)
-                printf("case 7: incorrect initialization of struct ParserState");
+                compareParserState(8, &state, TEXT, 20, NUL, 'x');
+            if (result)
+            {
+                result = 
+                    state.arg == NULL
+                    && *state.bufferEnd == '?'? 1 : 0;
+                if (!result)
+                    printf("case 8: incorrect initialization of struct ParserState");
+            }
         }
     }
     freeFatalErrorBuffer();
     return result;
 }
 
-int test_freeBufferSpace(int index, struct ParserState* state, size_t expectedResult)
+int test_freeSpaceInBuffer(int index, struct ParserState* state, size_t expectedResult)
 {
-    size_t free = freeBufferSpace(state);
+    size_t free = freeSpaceInBuffer(state);
     int result = free == expectedResult? 1 : 0;
     if (!result)
         printf ("case %i: expected %zu, got %zu\n", index,
@@ -969,34 +1012,58 @@ int test_freeBufferSpace(int index, struct ParserState* state, size_t expectedRe
     return result;
 }
 
-int testall_freeBufferSpace()
+int testall_freeSpaceInBuffer()
 {
-    printf("testing freeBufferSpace...\n");
+    printf("testing freeSpaceInBuffer...\n");
     struct ParserState state;
     resetParserState(&state, NULL);
     int result =
-        test_freeBufferSpace(0, 0, 0);
+        test_freeSpaceInBuffer(0, 0, 0);
     if (result)
     {
         test_allocTestErrorBuffer();
         resetParserState(&state,"");
-        test_freeBufferSpace(1, &state, 20);
+        test_freeSpaceInBuffer(1, &state, 20);
     }
     if (result)
     {
         state.buffer += state.bufferEnd - state.buffer - 1;
-        test_freeBufferSpace(2, &state, 1);
+        test_freeSpaceInBuffer(2, &state, 1);
     }
     if (result)
     {
         state.buffer++;
-        test_freeBufferSpace(3, &state, 0);
+        test_freeSpaceInBuffer(3, &state, 0);
     }
     if (result)
     {
         state.buffer++;
-        test_freeBufferSpace(4, &state, 0);
+        test_freeSpaceInBuffer(4, &state, 0);
     }
+    freeFatalErrorBuffer();
+    return result;
+}
+
+int testall_handleTextState()
+{
+    printf("testing handleTextState...\n");
+    struct ParserState state;
+    test_allocTestErrorBuffer();
+    resetParserState(&state, "abcdefghij");
+    handleTextState(&state);
+    int result = compareParserState(0, &state, TEXT, 19, 'a', 'b');
+    freeFatalErrorBuffer();
+    return result;
+}
+
+int testall_handlePlaceholderPrefixState()
+{
+    printf("testing handlePlaceholderPrefixState...\n");
+    struct ParserState state;
+    test_allocTestErrorBuffer();
+    resetParserState(&state, "%");
+    handleTextState(&state);
+    int result = compareParserState(0, &state, CHECK_PLACEHOLDER, 20, NUL, '%');
     freeFatalErrorBuffer();
     return result;
 }
@@ -1014,7 +1081,9 @@ void mmfatl_test()
         && testall_Allocation()
         && testall_unsignedToString()
         && testall_resetParserState()
-        && testall_freeBufferSpace()
+        && testall_freeSpaceInBuffer()
+        && testall_handleTextState()
+        && testall_handlePlaceholderPrefixState()
     ) { }
 }
 

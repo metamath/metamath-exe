@@ -45,7 +45,7 @@
  * 
  * For this kind of expansion you still need a buffer where the final message is
  * constructed.  In our context, this buffer is pre-allocated, and fixed in size,
- * truncation enforced.
+ * truncation of overflowing text enforced.
  */
 
 /*---------------------   Allocation Of An Error Buffer   ---------------------*/
