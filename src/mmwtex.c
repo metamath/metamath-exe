@@ -5274,6 +5274,14 @@ flag writeBibliography(vstring bibFile,
           /* **IMPORTANT** Make sure to update mmhlpa.c HELP WRITE BIBLIOGRAPHY
              if new items are added to this list. */
           if (0
+             /* The first five keywords are more frequent so are put first for
+                 efficiency; the rest is in alphabetical order. */
+              || !strcmp(mid(str2, k, (long)strlen("THEOREM")), "THEOREM")
+              || !strcmp(mid(str2, k, (long)strlen("EQUATION")), "EQUATION")
+              || !strcmp(mid(str2, k, (long)strlen("DEFINITION")), "DEFINITION")
+              || !strcmp(mid(str2, k, (long)strlen("LEMMA")), "LEMMA")
+              || !strcmp(mid(str2, k, (long)strlen("EXERCISE")), "EXERCISE")
+              // ---- end of optimized search -----
               || !strcmp(mid(str2, k, (long)strlen("AXIOM")), "AXIOM")
               || !strcmp(mid(str2, k, (long)strlen("CHAPTER")), "CHAPTER")
               || !strcmp(mid(str2, k, (long)strlen("CLAIM")), "CLAIM")
@@ -5284,15 +5292,11 @@ flag writeBibliography(vstring bibFile,
               || !strcmp(mid(str2, k, (long)strlen("COROLLARY")), "COROLLARY")
               || !strcmp(mid(str2, k, (long)strlen("CRITERIA")), "CRITERIA")
               || !strcmp(mid(str2, k, (long)strlen("CRITERION")), "CRITERION")
-              || !strcmp(mid(str2, k, (long)strlen("DEFINITION")), "DEFINITION")
-              || !strcmp(mid(str2, k, (long)strlen("EQUATION")), "EQUATION")
               || !strcmp(mid(str2, k, (long)strlen("EXAMPLE")), "EXAMPLE")
-              || !strcmp(mid(str2, k, (long)strlen("EXERCISE")), "EXERCISE")
               || !strcmp(mid(str2, k, (long)strlen("FACT")), "FACT")
               || !strcmp(mid(str2, k, (long)strlen("FIGURE")), "FIGURE")
               || !strcmp(mid(str2, k, (long)strlen("INTRODUCTION")), "INTRODUCTION")
               || !strcmp(mid(str2, k, (long)strlen("ITEM")), "ITEM")
-              || !strcmp(mid(str2, k, (long)strlen("LEMMA")), "LEMMA")
               || !strcmp(mid(str2, k, (long)strlen("LEMMAS")), "LEMMAS")
               || !strcmp(mid(str2, k, (long)strlen("LINE")), "LINE")
               || !strcmp(mid(str2, k, (long)strlen("LINES")), "LINES")
@@ -5316,7 +5320,6 @@ flag writeBibliography(vstring bibFile,
               || !strcmp(mid(str2, k, (long)strlen("STATEMENT")), "STATEMENT")
               || !strcmp(mid(str2, k, (long)strlen("SUBSECTION")), "SUBSECTION")
               || !strcmp(mid(str2, k, (long)strlen("TABLE")), "TABLE")
-              || !strcmp(mid(str2, k, (long)strlen("THEOREM")), "THEOREM")
               ) {
             m = k;
             break;
