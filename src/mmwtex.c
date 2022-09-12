@@ -5271,7 +5271,7 @@ flag writeBibliography(vstring bibFile,
         /* (The string search below is rather inefficient; maybe improve
            the algorithm if speed becomes a problem.) */
         for (k = j - 1; k >= 1; k--) {
-          /* **IMPORTANT** Make sure to update mmhlpb.c HELP WRITE BIBLIOGRAPHY
+          /* **IMPORTANT** Make sure to update mmhlpa.c HELP WRITE BIBLIOGRAPHY
              if new items are added to this list. */
           if (0
               /* Put the most frequent ones first to speed up search;
