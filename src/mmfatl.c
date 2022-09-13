@@ -220,8 +220,8 @@ char const* getFatalErrorMessage()
 /*===================    Parsing the Format String   =====================*/
 
 #define PLACEHOLDER_PREFIX_CHAR '%'
-#define PLACEHOLDER_TYPE_STRING 's'
-#define PLACEHOLDER_TYPE_UNSIGNED 'u'
+#define PLACEHOLDER_CHAR_STRING 's'
+#define PLACEHOLDER_CHAR_UNSIGNED 'u'
 
 /*!
  * converts an unsigned int to a sequence of decimal digits representing its value
@@ -356,29 +356,30 @@ static size_t freeSpaceInBuffer(const struct ParserState* state)
  *
  * \param state not null, holds the parsing state
  *
- * \pre the next format character is not NUL and there is still
- *   a byte left in the buffer
- * \pre the grammar state is TEXT
+ * \pre there is still a byte left in the buffer for any copy action
+ * \pre the grammar state is TEXT or END_OF_TEXT
  */
 static void handleTextState(struct ParserState* state)
 {
-     char formatChar = *(state->formatPos++);
+     char formatChar = *state->formatPos;
      switch (formatChar)
      {
          case PLACEHOLDER_PREFIX_CHAR:
-             /* skip the % in output */
              state->processState = CHECK_PLACEHOLDER;
-             --state->formatPos;
+             break;
+         case NUL:
+             state->processState = END_OF_TEXT;
              break;
          default:
              /* keep the TEXT state */
+             state->formatPos++;
              *(state->buffer++) = formatChar;
      }
 }
 
 /*!
- * assume the last character read from the format string was a % and we now
- * need to check it introduced a placeholder.  If not, the % only is ignored 
+ * assume the current character in the format string is a % and we now
+ * need to check it introduced a placeholder.  If not, the % is copied verbatim 
  * (not messing with UTF-8).  In particular, a sequence %% is reduced to a
  * single %.
  *
@@ -386,36 +387,46 @@ static void handleTextState(struct ParserState* state)
  *
  * \param state not null, holds the parsing state
  *
- * \pre the next format character is not NUL and there is still
- *   a byte left in the buffer
- * \pre the grammar state in state.state is PLACEHOLDER_PREFIX, so a % was
- *   previously encountered in the format string.
+ * \pre there is still a byte left in the buffer
+ * \pre the grammar state in state.state is PLACEHOLDER_PREFIX, so a % is
+ *   the current character in the format string.
+ * \post the % is handled, either copied, or introducing a parameter.
  */
 static void handlePlaceholderPrefixState(struct ParserState* state)
 {
-    char formatChar = *(state->formatPos++);
+    char formatChar = *(++state->formatPos);
     switch (formatChar)
    {
-        case PLACEHOLDER_TYPE_STRING:
+        case PLACEHOLDER_CHAR_STRING:
             /* a %s sequence is recognized as a placeholder.  Don't copy
              * anything, if the parameter is NULL. */
             state->arg = va_arg(state->args, char const*);
-            state->processState = state->arg == NULL? TEXT : PARAMETER_COPY;
+            if (state->arg == NULL)
+            {
+                /* skip the placeholder, we are done */
+                state->formatPos++;
+                state->processState = TEXT;
+            }
+            else
+                state->processState = PARAMETER_COPY;
             break;
-        case PLACEHOLDER_TYPE_UNSIGNED:
+        case PLACEHOLDER_CHAR_UNSIGNED:
             state->arg = unsignedToString(va_arg(state->args, unsigned));
             state->processState = PARAMETER_COPY;
             break;
+        case PLACEHOLDER_PREFIX_CHAR:
+            /* two consecutive %, ignore the first, copy the second */
+            state->formatPos++;
+            /* fall through */
         default:
-            /* ignore the leading %, but copy the following character
-             * to the buffer.  */
-            *(state->buffer++) = formatChar;
+            /* copy the % to the buffer. */
+            *(state->buffer++) = PLACEHOLDER_PREFIX_CHAR;
             state->processState = TEXT;
     }
 }
 
 /*!
- * assume we encountered a placeholder %s or %u, and copy now from
+ * assume we encountered a placeholder %s or %u, and now copy from
  * the parameter, given as astring.  It is always copied verbatim, no
  * recursive search for placeholders takes place. The terminating NUL is not
  * copied.
@@ -556,9 +567,10 @@ static void* memAllocated = NULL;
 static int missingFree = 0;
 static int freeOutOfOrder = 0;
 
-// intercept malloc/free for checking proper pairing of both
-// There is only one buffer in use, so we can assume
-// a sequence alloc -> free -> alloc -> free and so on.
+/* intercept malloc/free for checking proper pairing of both
+ * There is only one buffer in use, so we can assume
+ * a sequence alloc -> free -> alloc -> free and so on.
+ */
 
 static void* MALLOC(size_t size)
 {
@@ -971,7 +983,7 @@ int testall_resetParserState()
 {
     printf("testing resetParserState...\n");
     struct ParserState state;
-    int result = 
+    int result =
         test_resetParserState(0, 0, 0, 0)
         && test_resetParserState(1, 0, "x", 0)
         && test_resetParserState(2, &state, 0, 0)
@@ -1049,11 +1061,48 @@ int testall_handleTextState()
     printf("testing handleTextState...\n");
     struct ParserState state;
     test_allocTestErrorBuffer();
-    resetParserState(&state, "abcdefghij");
+    resetParserState(&state, "a%");
     handleTextState(&state);
-    int result = compareParserState(0, &state, TEXT, 19, 'a', 'b');
+    int result = compareParserState(0, &state, TEXT, 19, 'a', '%');
+    if (result)
+    {
+        handleTextState(&state);
+        result = compareParserState(1, &state, CHECK_PLACEHOLDER, 19, 'a', '%');
+    }
+    if (result)
+    {
+        resetParserState(&state, "");
+        handleTextState(&state);
+        result = compareParserState(2, &state, END_OF_TEXT, 20, NUL, NUL);
+    }
     freeFatalErrorBuffer();
     return result;
+}
+
+int test_handlePlaceholderPrefix(int testCase, char const* match, struct ParserState* state, ...)
+{
+    va_start(state->args, state);
+    handleTextState(state);
+    char const* format = state->formatPos + (match? 1 : 2);
+    enum ParserProcessState expect = match? PARAMETER_COPY : TEXT;
+    handlePlaceholderPrefixState(state);
+    char const* current = state->arg;
+    int ok = compareParserState(testCase, state, expect, 20, NUL, *format);
+    if (ok && match)
+    {
+        int pos = -1;
+        while(ok && *match)
+        {
+            ok = *match++ == *current++? 1 : 0;
+            ++pos;
+        }
+        if (!ok)
+        printf("arg differs from parameter at pos %i in test case %i\n", pos, testCase);
+    }
+    if (ok && state->formatPos != format)
+        printf("format pointer not in correct position in test case %i\n", testCase);
+    va_end(state->args);
+    return ok;
 }
 
 int testall_handlePlaceholderPrefixState()
@@ -1061,9 +1110,25 @@ int testall_handlePlaceholderPrefixState()
     printf("testing handlePlaceholderPrefixState...\n");
     struct ParserState state;
     test_allocTestErrorBuffer();
+    // case 0: single percent not followed by a legal format character
     resetParserState(&state, "%");
     handleTextState(&state);
-    int result = compareParserState(0, &state, CHECK_PLACEHOLDER, 20, NUL, '%');
+    handlePlaceholderPrefixState(&state);
+    int result = compareParserState(0, &state, TEXT, 19, '%', NUL);
+    if (result)
+    {
+        // case 1: escaped percent, representing a single percent
+        resetParserState(&state, "%%");
+        handleTextState(&state);
+        handlePlaceholderPrefixState(&state);
+        result = compareParserState(1, &state, TEXT, 19, '%', NUL);
+    }
+    if (result)
+    {
+        // case 2: placeholder for text
+        resetParserState(&state, "%s");
+        test_handlePlaceholderPrefix(2, "xx", &state, "xx");
+    }
     freeFatalErrorBuffer();
     return result;
 }
