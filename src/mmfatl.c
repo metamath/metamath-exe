@@ -436,8 +436,8 @@ static void handlePlaceholderPrefixState(struct ParserState* state)
  * \pre the next format character is not NUL and there is still
  *   a byte left in the buffer
  * \pre state->arg contains a pointer to the parameter to insert verbatim.
- * \pre the grammar state in state->state is PARAMETER_COPY, after a %s was
- *   encountered in the format string.
+ * \pre the grammar state in state->state is PARAMETER_COPY, after e.g. a %s
+ *   was encountered in the format string.
  */
 static void handleParameterCopyState(struct ParserState* state)
 {
@@ -447,6 +447,7 @@ static void handleParameterCopyState(struct ParserState* state)
         case NUL:
             state->arg = NULL;
             state->processState = TEXT;
+            state->formatPos++;
             break;
         default:
             *(state->buffer++) = paramChar;
@@ -1108,29 +1109,62 @@ int test_handlePlaceholderPrefix(int testCase, char const* match, struct ParserS
 int testall_handlePlaceholderPrefixState()
 {
     printf("testing handlePlaceholderPrefixState...\n");
-    struct ParserState state;
     test_allocTestErrorBuffer();
-    // case 0: single percent not followed by a legal format character
+    struct ParserState state;
+    // case 1: single percent not followed by a legal format character
     resetParserState(&state, "%");
     handleTextState(&state);
     handlePlaceholderPrefixState(&state);
-    int result = compareParserState(0, &state, TEXT, 19, '%', NUL);
+    int result = compareParserState(1, &state, TEXT, 19, '%', NUL);
     if (result)
     {
-        // case 1: escaped percent, representing a single percent
+        // case 2 escaped percent, representing a single percent
         resetParserState(&state, "%%");
         handleTextState(&state);
         handlePlaceholderPrefixState(&state);
-        result = compareParserState(1, &state, TEXT, 19, '%', NUL);
+        result = compareParserState(2, &state, TEXT, 19, '%', NUL);
     }
     if (result)
     {
-        // case 2: placeholder for text
+        // case 3: placeholder for text
         resetParserState(&state, "%s");
-        test_handlePlaceholderPrefix(2, "xx", &state, "xx");
+        test_handlePlaceholderPrefix(3, "xx", &state, "xx");
     }
+    if (result)
+    {
+        // case 4: placeholder for unsigned integer
+        resetParserState(&state, "%u");
+        test_handlePlaceholderPrefix(4, "1234", &state, 1234);
+    }
+    if (result)
+    {
+        // case 5: placeholder for unsigned integer
+        resetParserState(&state, "%s");
+        test_handlePlaceholderPrefix(5, NULL, &state, (char const*)NULL);
+    }
+
     freeFatalErrorBuffer();
     return result;
+}
+
+int testall_handleParameterCopyState()
+{
+    printf("testing handleParameterCopyState...\n");
+    test_allocTestErrorBuffer();
+    // case 1: copying a character from the parameter
+    struct ParserState state;
+    resetParserState(&state, "%s");
+    test_handlePlaceholderPrefix(0, "1", &state, "1");
+    handleParameterCopyState(&state);
+    int ok = compareParserState(1, &state, PARAMETER_COPY, 19, '1', 's');
+    if (ok)
+    {
+        // case 2: reacting on terminating NUL of parameter
+        handleParameterCopyState(&state);
+        ok = compareParserState(2, &state, TEXT, 19, NUL, NUL);
+    }
+    freeFatalErrorBuffer();
+    return ok;
 }
 
 void mmfatl_test()
@@ -1149,6 +1183,7 @@ void mmfatl_test()
         && testall_freeSpaceInBuffer()
         && testall_handleTextState()
         && testall_handlePlaceholderPrefixState()
+        && testall_handleParameterCopyState()
     ) { }
 }
 
