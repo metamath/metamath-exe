@@ -1185,7 +1185,7 @@ int testall_parseAndCopy()
     resetParserState(&state, "x%s%u%s");
     char const* buffer = state.buffer;
     test_parseAndCopy(&state, "y", 1, NULL);
-    int ok = compareParserState(1, &state, BUFFER_OVERFLOW, 0, '1', NUL);
+    int ok = compareParserState(1, &state, BUFFER_OVERFLOW, 0, '1', 'u');
     if (ok && strcmp(buffer, "xy1?") != 0)
         printf("test 1: expected buffer contents 'xy1?', got %s", buffer);
 
@@ -1219,6 +1219,7 @@ void mmfatl_test()
         && testall_handleTextState()
         && testall_handlePlaceholderPrefixState()
         && testall_handleParameterCopyState()
+        && testall_parseAndCopy()
     ) { }
 }
 
