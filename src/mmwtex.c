@@ -5274,7 +5274,7 @@ flag writeBibliography(vstring bibFile,
           /* **IMPORTANT** Make sure to update mmhlpa.c HELP WRITE BIBLIOGRAPHY
              if new items are added to this list. */
           if (0
-             /* The first five keywords are more frequent so are put first for
+              /* The first five keywords are more frequent so are put first for
                  efficiency; the rest is in alphabetical order. */
               || !strcmp(mid(str2, k, (long)strlen("THEOREM")), "THEOREM")
               || !strcmp(mid(str2, k, (long)strlen("EQUATION")), "EQUATION")
