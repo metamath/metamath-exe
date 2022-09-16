@@ -467,11 +467,14 @@ static void handleParameterCopyState(struct ParserState* state)
 static int parseAndCopy(struct ParserState* state)
 {
     int result = FALSE;
-    if (state->processState != PARAMETER_COPY && *state->formatPos == NUL)
-        state->processState = END_OF_TEXT;
-    else if (freeSpaceInBuffer(state) == 0)
+    if (freeSpaceInBuffer(state) == 0)
         /* cannot even copy the terminating NUL any more... */
         state->processState = BUFFER_OVERFLOW;
+    else if (*state->formatPos == NUL)
+    {
+        state->processState = END_OF_TEXT;
+        *state->buffer = NUL;
+    }
     else
     {
         result = TRUE;
@@ -920,10 +923,10 @@ int testall_unsignedToString()
     return result;
 }
 
-void test_allocTestErrorBuffer()
+void test_allocTestErrorBuffer(unsigned size)
 {
     struct FatalErrorBufferDescriptor d;
-    d.size = 20;
+    d.size = size;
     d.dmz = 0;
     d.ellipsis = "?";
     allocFatalErrorBuffer(&d);
@@ -991,7 +994,7 @@ int testall_resetParserState()
         && test_resetParserState(3, &state, "", 0)? 1 : 0;
     if (result)
     {
-        test_allocTestErrorBuffer();
+        test_allocTestErrorBuffer(20);
         result =
             test_resetParserState(4, 0, 0, 0)
             && test_resetParserState(5, 0, "x", 0)
@@ -1034,7 +1037,7 @@ int testall_freeSpaceInBuffer()
         test_freeSpaceInBuffer(0, 0, 0);
     if (result)
     {
-        test_allocTestErrorBuffer();
+        test_allocTestErrorBuffer(20);
         resetParserState(&state,"");
         test_freeSpaceInBuffer(1, &state, 20);
     }
@@ -1061,7 +1064,7 @@ int testall_handleTextState()
 {
     printf("testing handleTextState...\n");
     struct ParserState state;
-    test_allocTestErrorBuffer();
+    test_allocTestErrorBuffer(20);
     resetParserState(&state, "a%");
     handleTextState(&state);
     int result = compareParserState(0, &state, TEXT, 19, 'a', '%');
@@ -1109,7 +1112,7 @@ int test_handlePlaceholderPrefix(int testCase, char const* match, struct ParserS
 int testall_handlePlaceholderPrefixState()
 {
     printf("testing handlePlaceholderPrefixState...\n");
-    test_allocTestErrorBuffer();
+    test_allocTestErrorBuffer(20);
     struct ParserState state;
     // case 1: single percent not followed by a legal format character
     resetParserState(&state, "%");
@@ -1150,7 +1153,7 @@ int testall_handlePlaceholderPrefixState()
 int testall_handleParameterCopyState()
 {
     printf("testing handleParameterCopyState...\n");
-    test_allocTestErrorBuffer();
+    test_allocTestErrorBuffer(20);
     // case 1: copying a character from the parameter
     struct ParserState state;
     resetParserState(&state, "%s");
@@ -1163,6 +1166,38 @@ int testall_handleParameterCopyState()
         handleParameterCopyState(&state);
         ok = compareParserState(2, &state, TEXT, 19, NUL, NUL);
     }
+    freeFatalErrorBuffer();
+    return ok;
+}
+
+void test_parseAndCopy(struct ParserState* state, ...)
+{
+    va_start(state->args, state);
+    while (parseAndCopy(state));
+    va_end(state->args);
+}
+
+int testall_parseAndCopy()
+{
+    printf("testing parseAndCopy...\n");
+    test_allocTestErrorBuffer(3);
+    struct ParserState state;
+    resetParserState(&state, "x%s%u%s");
+    char const* buffer = state.buffer;
+    test_parseAndCopy(&state, "y", 1, NULL);
+    int ok = compareParserState(1, &state, BUFFER_OVERFLOW, 0, '1', NUL);
+    if (ok && strcmp(buffer, "xy1?") != 0)
+        printf("test 1: expected buffer contents 'xy1?', got %s", buffer);
+
+    if (ok)
+    {
+        resetParserState(&state, "%u");
+        test_parseAndCopy(&state, 12);
+        ok = compareParserState(2, &state, END_OF_TEXT, 1, '2', NUL);
+    }
+    if (ok && strcmp(buffer, "12") != 0)
+        printf("test 2: expected buffer contents '12', got %s", buffer);
+
     freeFatalErrorBuffer();
     return ok;
 }
