@@ -92,7 +92,7 @@ struct FatalErrorBufferDescriptor const* getFatalErrorBufferDescriptor()
  *   requires also information about available memory.
  * \param aDescriptor [null] a pointer to a \ref FatalErrorBufferDescriptor
  *   under investigation.
- * \returns 1 if acceptabe, 0 else.
+ * \returns 1 if acceptable, 0 else.
  */
 static int isValidFatalErrorBufferDescriptor(
     struct FatalErrorBufferDescriptor const* aDescriptor)
@@ -512,10 +512,11 @@ static void appendMessage(struct ParserState* state)
 int setFatalErrorMessage(FatalErrorFormat format, ...)
 {
     struct ParserState state;
+    if (getFatalErrorMessage() != NULL)
+        clearFatalErrorBuffer();
     int ok = resetParserState(&state, format);
     if (ok)
     {
-        clearFatalErrorBuffer();
         va_start(state.args, format);
         appendMessage(&state); 
         va_end(state.args);
@@ -528,6 +529,7 @@ int setFatalErrorMessage(FatalErrorFormat format, ...)
  * If not successful, the buffer remains in an empty state.
  * \param line program line causing the error, or 0 if not available.
  * \param file file containing the faulting line, or NULL if not available.
+ * \pre A buffer has been set up.
  * \returns a pointer to the end of the buffer contents.
  */
 static char* setLocationData(unsigned line, char const* file)
@@ -1251,46 +1253,58 @@ static int testall_setFatalErrorMessage()
     {
         ok = setFatalErrorMessage("") && strcmp(getFatalErrorMessage(), "") == 0;
         if(!ok)
-            printf("test 3: expected message '', got '%s'\n", (char const*)memBlock);
+            printf("test 4: expected message '', got '%s'\n", (char const*)memBlock);
     }
     if(ok)
     {
         ok = setFatalErrorMessage("abc") && strcmp(getFatalErrorMessage(), "abc") == 0;
         if(!ok)
-            printf("test 3: expected message 'abc', got '%s'\n", (char const*)memBlock);
+            printf("test 5: expected message 'abc', got '%s'\n", (char const*)memBlock);
     }
     if(ok)
     {
         ok = setFatalErrorMessage("%s", NULL) && strcmp(getFatalErrorMessage(), "") == 0;
         if(!ok)
-            printf("test 3: expected message '', got '%s'\n", (char const*)memBlock);
+            printf("test 6: expected message '', got '%s'\n", (char const*)memBlock);
     }
     if(ok)
     {
         ok = setFatalErrorMessage("%s", "abc") && strcmp(getFatalErrorMessage(), "abc") == 0;
         if(!ok)
-            printf("test 3: expected message 'abc', got '%s'\n", (char const*)memBlock);
+            printf("test 7: expected message 'abc', got '%s'\n", (char const*)memBlock);
     }
     if(ok)
     {
         ok = setFatalErrorMessage("%u", 1234) && strcmp(getFatalErrorMessage(), "1234") == 0;
         if(!ok)
-            printf("test 3: expected message '1234', got '%s'\n", (char const*)memBlock);
+            printf("test 8: expected message '1234', got '%s'\n", (char const*)memBlock);
     }
     if(ok)
     {
         ok = setFatalErrorMessage("%u%s", 1234, "5678") && strcmp(getFatalErrorMessage(), "12345678") == 0;
         if(!ok)
-            printf("test 3: expected message '12345678', got '%s'\n", (char const*)memBlock);
+            printf("test 9: expected message '12345678', got '%s'\n", (char const*)memBlock);
     }
     if(ok)
     {
         ok = setFatalErrorMessage("%u%s", 1234, "5678901") && strcmp(getFatalErrorMessage(), "1234567890?") == 0;
         if(!ok)
-            printf("test 3: expected message '1234567890?', got '%s'\n", (char const*)memBlock);
+            printf("test 10: expected message '1234567890?', got '%s'\n", (char const*)memBlock);
     }
     freeFatalErrorBuffer();    
-    return 0;
+    return ok;
+}
+
+static int testall_setLocationData()
+{
+    printf("testing setLocationData...\n");
+    test_allocTestErrorBuffer(20);
+    char const* data = setLocationData(0, NULL);
+    int ok = strcmp(data, "") == 0;
+    if (!ok)
+        printf("test 1: expected '', got '%s'\n", data);
+    freeFatalErrorBuffer();
+    return ok;
 }
 
 void mmfatl_test()
@@ -1313,6 +1327,7 @@ void mmfatl_test()
         && testall_parseAndCopy()
         && testall_appendMessage()
         && testall_setFatalErrorMessage()
+        && testall_setLocationData()
     ) { }
 }
 
