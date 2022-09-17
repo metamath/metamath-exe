@@ -518,7 +518,7 @@ int setFatalErrorMessage(FatalErrorFormat format, ...)
     if (ok)
     {
         va_start(state.args, format);
-        appendMessage(&state); 
+        appendMessage(&state);
         va_end(state.args);
     }
     return ok;
@@ -529,16 +529,17 @@ int setFatalErrorMessage(FatalErrorFormat format, ...)
  * If not successful, the buffer remains in an empty state.
  * \param line program line causing the error, or 0 if not available.
  * \param file file containing the faulting line, or NULL if not available.
- * \pre A buffer has been set up.
+ * \pre a buffer has been set up.
  * \returns a pointer to the end of the buffer contents.
  */
-static char* setLocationData(unsigned line, char const* file)
+static char* setLocationData(char const* file, unsigned line)
 {
     char* result = fatalErrorBufferBegin();
-    int hasPosInfo = line != 0 || (file != NULL && *file != NUL);
+    int hasFileInfo = file != NULL && *file != NUL;
+    int hasPosInfo = line != 0 || hasFileInfo;
     if (hasPosInfo)
     {
-        char const* posFormat = line == 0? "%s:\n" : "%s@%u:\n";
+        char const* posFormat = line == 0? "%s:" : (hasFileInfo? "%s:%u:" : "%s%u:");
         hasPosInfo = setFatalErrorMessage(posFormat, file, line);
     }
     if (hasPosInfo)
@@ -558,7 +559,7 @@ void exitOnFatalError(
     resetParserState(&state, messageFormat);
 
     /* marks the current end position in the buffer */
-    state.buffer = setLocationData(line, file);
+    state.buffer = setLocationData(file, line);
 
     /* now process the message */
     va_start(state.args, messageFormat);
@@ -1295,14 +1296,27 @@ static int testall_setFatalErrorMessage()
     return ok;
 }
 
+static int test_setLocationData(int testCase, char const* file, unsigned line, char const* expected)
+{
+    char const* begin = fatalErrorBufferBegin();
+    char const* end = setLocationData(file, line);
+    int ok = strcmp(begin, expected) == 0;
+    if (!ok)
+        printf("test %u: expected '%s', got '%s'\n", testCase, expected, begin);
+    else if(strlen(expected) != (size_t)(end - begin))
+        printf("test %u: returned pointer does not point to the current end of buffer", testCase);
+    return ok;
+}
+
 static int testall_setLocationData()
 {
     printf("testing setLocationData...\n");
     test_allocTestErrorBuffer(20);
-    char const* data = setLocationData(0, NULL);
-    int ok = strcmp(data, "") == 0;
-    if (!ok)
-        printf("test 1: expected '', got '%s'\n", data);
+    int ok = test_setLocationData(1, NULL, 0, "")
+    && test_setLocationData(2, "", 0, "")
+    && test_setLocationData(3, "", 123, "123:")
+    && test_setLocationData(4, "metamath.c", 0, "metamath.c:")
+    && test_setLocationData(5, "metamath.c", 123, "metamath.c:123:");
     freeFatalErrorBuffer();
     return ok;
 }
