@@ -513,9 +513,9 @@ int setFatalErrorMessage(FatalErrorFormat format, ...)
 {
     struct ParserState state;
     int ok = resetParserState(&state, format);
-    clearFatalErrorBuffer();
     if (ok)
     {
+        clearFatalErrorBuffer();
         va_start(state.args, format);
         appendMessage(&state); 
         va_end(state.args);
@@ -567,6 +567,8 @@ void exitOnFatalError(
 
 #ifdef TEST_MMFATL
 
+/*  automatic testing to prevent regression   */
+
 static void* memAllocated = NULL;
 static int missingFree = 0;
 static int freeOutOfOrder = 0;
@@ -594,7 +596,7 @@ static void FREE(void* ptr)
         freeOutOfOrder = 1;
 }
 
-int testcase_addCheckOverflow(size_t x, size_t y, size_t expected)
+static int testcase_addCheckOverflow(size_t x, size_t y, size_t expected)
 {
     int result = addCheckOverflow(x, y) == expected? 1 : 0;
     if (!result)
@@ -602,7 +604,7 @@ int testcase_addCheckOverflow(size_t x, size_t y, size_t expected)
     return result;
 }
 
-int testall_addCheckOverflow()
+static int testall_addCheckOverflow()
 {
     printf("testing addCheckOverflow...\n");
     int result = 1;
@@ -618,7 +620,7 @@ int testall_addCheckOverflow()
     return result;
 }
 
-int test_getFatalErrorDescriptor()
+static int test_getFatalErrorDescriptor()
 {
     printf("testing getFatalErrorBufferDescriptor...\n");
     int result = getFatalErrorBufferDescriptor() == &descriptor? 1 : 0;
@@ -627,7 +629,7 @@ int test_getFatalErrorDescriptor()
     return result;
 }
 
-int testall_isValidFatalErrorBufferDescriptor()
+static int testall_isValidFatalErrorBufferDescriptor()
 {
     printf("testing isValidFatalErrorBufferDescriptor...\n");
     struct TestCase {
@@ -663,7 +665,7 @@ int testall_isValidFatalErrorBufferDescriptor()
     return result;
 }
 
-int testall_evalRequestedMemSize()
+static int testall_evalRequestedMemSize()
 {
     printf("testing evalRequestedMemSize...\n");
     int result = evalRequestedMemSize(0) == 0? 1 : 0;
@@ -694,7 +696,7 @@ int testall_evalRequestedMemSize()
     return result;
 }
 
-int test_swapMemBlock(struct FatalErrorBufferDescriptor* data, void** buffer, size_t bufferSize)
+static int test_swapMemBlock(struct FatalErrorBufferDescriptor* data, void** buffer, size_t bufferSize)
 {
     int result = bufferSize == 0 || evalRequestedMemSize(data) == bufferSize? 1 : 0;
     if (result)
@@ -709,7 +711,7 @@ int test_swapMemBlock(struct FatalErrorBufferDescriptor* data, void** buffer, si
     return result;
 }
 
-int test_fatalErrorBufferBegin()
+static int test_fatalErrorBufferBegin()
 {
     printf("testing fatalErrorBufferBegin...\n");
 
@@ -731,7 +733,7 @@ int test_fatalErrorBufferBegin()
     return result;
 }
 
-int test_fatalErrorBufferEnd()
+static int test_fatalErrorBufferEnd()
 {
     printf("testing fatalErrorBufferEnd...\n");
 
@@ -753,7 +755,7 @@ int test_fatalErrorBufferEnd()
     return result;
 }
 
-int test_clearFatalErrorBuffer()
+static int test_clearFatalErrorBuffer()
 {
     printf("testing clearFatalErrorBuffer...\n");
 
@@ -776,7 +778,7 @@ int test_clearFatalErrorBuffer()
     return result;
 }
 
-int test_initFatalErrorBuffer()
+static int test_initFatalErrorBuffer()
 {
     printf("testing clearFatalErrorBuffer...\n");
 
@@ -811,7 +813,7 @@ int test_initFatalErrorBuffer()
     return result;
 }
 
-int test_freeFatalErrorBuffer()
+static int test_freeFatalErrorBuffer()
 {
     freeFatalErrorBuffer();
     int result = isValidFatalErrorBufferDescriptor(getFatalErrorBufferDescriptor())? 0 : 1;
@@ -830,7 +832,7 @@ int test_freeFatalErrorBuffer()
     return result;
 }
 
-int test_allocFatalErrorBuffer(struct FatalErrorBufferDescriptor* d, int expectResult, int testCase)
+static int test_allocFatalErrorBuffer(struct FatalErrorBufferDescriptor* d, int expectResult, int testCase)
 {
     int result = allocFatalErrorBuffer(d) == expectResult? 1 : 0;
     if (!result)
@@ -858,7 +860,7 @@ int test_allocFatalErrorBuffer(struct FatalErrorBufferDescriptor* d, int expectR
     return result;
 }
 
-int testall_Allocation()
+static int testall_Allocation()
 {
     printf("testing allocation of memory...\n");
 
@@ -881,7 +883,7 @@ int testall_Allocation()
     return result;
 }
 
-int test_unsignedToString(unsigned value, char const* digits)
+static int test_unsignedToString(unsigned value, char const* digits)
 {
     char const* computed = unsignedToString(value);
     int result = strcmp(computed, digits) == 0? 1 : 0; 
@@ -890,7 +892,7 @@ int test_unsignedToString(unsigned value, char const* digits)
     return result;
 }
 
-int testall_unsignedToString()
+static int testall_unsignedToString()
 {
     printf("testing unsignedToInt...\n");
     int result = 
@@ -923,7 +925,7 @@ int testall_unsignedToString()
     return result;
 }
 
-void test_allocTestErrorBuffer(unsigned size)
+static void test_allocTestErrorBuffer(unsigned size)
 {
     struct FatalErrorBufferDescriptor d;
     d.size = size;
@@ -932,7 +934,7 @@ void test_allocTestErrorBuffer(unsigned size)
     allocFatalErrorBuffer(&d);
 }
 
-int test_resetParserState(int index, struct  ParserState* state,
+static int test_resetParserState(int index, struct  ParserState* state,
                           char const* format, int expectedResult)
 {
     int result = resetParserState(state, format) == expectedResult? 1 : 0;
@@ -942,7 +944,7 @@ int test_resetParserState(int index, struct  ParserState* state,
     return result;
 }
 
-int compareParserState(int testCase, const struct ParserState* state,
+static int compareParserState(int testCase, const struct ParserState* state,
             enum ParserProcessState processState, unsigned freeSpace, char last, char nextChar)
 {
     int result = state->processState == processState? 1 : 0;
@@ -983,7 +985,7 @@ int compareParserState(int testCase, const struct ParserState* state,
     return result;
 }
 
-int testall_resetParserState()
+static int testall_resetParserState()
 {
     printf("testing resetParserState...\n");
     struct ParserState state;
@@ -1018,7 +1020,7 @@ int testall_resetParserState()
     return result;
 }
 
-int test_freeSpaceInBuffer(int index, struct ParserState* state, size_t expectedResult)
+static int test_freeSpaceInBuffer(int index, struct ParserState* state, size_t expectedResult)
 {
     size_t free = freeSpaceInBuffer(state);
     int result = free == expectedResult? 1 : 0;
@@ -1028,7 +1030,7 @@ int test_freeSpaceInBuffer(int index, struct ParserState* state, size_t expected
     return result;
 }
 
-int testall_freeSpaceInBuffer()
+static int testall_freeSpaceInBuffer()
 {
     printf("testing freeSpaceInBuffer...\n");
     struct ParserState state;
@@ -1060,7 +1062,7 @@ int testall_freeSpaceInBuffer()
     return result;
 }
 
-int testall_handleTextState()
+static int testall_handleTextState()
 {
     printf("testing handleTextState...\n");
     struct ParserState state;
@@ -1083,7 +1085,7 @@ int testall_handleTextState()
     return result;
 }
 
-int test_handlePlaceholderPrefix(int testCase, char const* match, struct ParserState* state, ...)
+static int test_handlePlaceholderPrefix(int testCase, char const* match, struct ParserState* state, ...)
 {
     va_start(state->args, state);
     handleTextState(state);
@@ -1109,7 +1111,7 @@ int test_handlePlaceholderPrefix(int testCase, char const* match, struct ParserS
     return ok;
 }
 
-int testall_handlePlaceholderPrefixState()
+static int testall_handlePlaceholderPrefixState()
 {
     printf("testing handlePlaceholderPrefixState...\n");
     test_allocTestErrorBuffer(20);
@@ -1150,7 +1152,7 @@ int testall_handlePlaceholderPrefixState()
     return result;
 }
 
-int testall_handleParameterCopyState()
+static int testall_handleParameterCopyState()
 {
     printf("testing handleParameterCopyState...\n");
     test_allocTestErrorBuffer(20);
@@ -1170,14 +1172,14 @@ int testall_handleParameterCopyState()
     return ok;
 }
 
-void test_parseAndCopy(struct ParserState* state, ...)
+static void test_parseAndCopy(struct ParserState* state, ...)
 {
     va_start(state->args, state);
     while (parseAndCopy(state));
     va_end(state->args);
 }
 
-int testall_parseAndCopy()
+static int testall_parseAndCopy()
 {
     printf("testing parseAndCopy...\n");
     test_allocTestErrorBuffer(3);
@@ -1187,7 +1189,7 @@ int testall_parseAndCopy()
     test_parseAndCopy(&state, "y", 1, NULL);
     int ok = compareParserState(1, &state, BUFFER_OVERFLOW, 0, '1', 'u');
     if (ok && strcmp(buffer, "xy1?") != 0)
-        printf("test 1: expected buffer contents 'xy1?', got %s", buffer);
+        printf("test 1: expected buffer contents 'xy1?', got %s\n", buffer);
 
     if (ok)
     {
@@ -1196,13 +1198,13 @@ int testall_parseAndCopy()
         ok = compareParserState(2, &state, END_OF_TEXT, 1, '2', NUL);
     }
     if (ok && strcmp(buffer, "12") != 0)
-        printf("test 2: expected buffer contents '12', got %s", buffer);
+        printf("test 2: expected buffer contents '12', got %s\n", buffer);
 
     freeFatalErrorBuffer();
     return ok;
 }
 
-int testall_appendMessage()
+static int testall_appendMessage()
 {
     printf("testing appendMessage...\n");
     test_allocTestErrorBuffer(10);
@@ -1212,7 +1214,7 @@ int testall_appendMessage()
     appendMessage(&state);
     int ok = compareParserState(1, &state, END_OF_TEXT, 3, 'f', NUL);
     if (ok && strcmp(buffer, "abc%def") != 0)
-        printf("test 1: expected buffer contents 'abc%%def', got %s", buffer);
+        printf("test 1: expected buffer contents 'abc%%def', got %s\n", buffer);
     if(ok)
     {
         state.formatPos = "1234";
@@ -1220,10 +1222,75 @@ int testall_appendMessage()
         appendMessage(&state);
         ok = compareParserState(2, &state, BUFFER_OVERFLOW, 0, '3', '4');
         if (ok && strcmp(buffer, "abc%def123?") != 0)
-            printf("test 2: expected buffer contents 'abc%%def123?', got %s", buffer);
+            printf("test 2: expected buffer contents 'abc%%def123?', got %s\n", buffer);
     }
     freeFatalErrorBuffer();
     return ok;
+}
+
+static int testall_setFatalErrorMessage()
+{
+    printf("testing setFatalErrorMessage...\n");
+    int ok = setFatalErrorMessage("xy") == 0;
+    if(!ok)
+        printf("test 1: expected failure due to missing buffer\n");
+    if(ok)
+    {
+        ok = setFatalErrorMessage(NULL) == 0;
+        if(!ok)
+            printf("test 2: expected failure due to missing buffer, format\n");
+    }
+    test_allocTestErrorBuffer(10);
+    if(ok)
+    {
+        ok = setFatalErrorMessage(NULL) == 0;
+        if(!ok)
+            printf("test 3: expected failure due to missing format\n");
+    }
+    if(ok)
+    {
+        ok = setFatalErrorMessage("") && strcmp(getFatalErrorMessage(), "") == 0;
+        if(!ok)
+            printf("test 3: expected message '', got '%s'\n", (char const*)memBlock);
+    }
+    if(ok)
+    {
+        ok = setFatalErrorMessage("abc") && strcmp(getFatalErrorMessage(), "abc") == 0;
+        if(!ok)
+            printf("test 3: expected message 'abc', got '%s'\n", (char const*)memBlock);
+    }
+    if(ok)
+    {
+        ok = setFatalErrorMessage("%s", NULL) && strcmp(getFatalErrorMessage(), "") == 0;
+        if(!ok)
+            printf("test 3: expected message '', got '%s'\n", (char const*)memBlock);
+    }
+    if(ok)
+    {
+        ok = setFatalErrorMessage("%s", "abc") && strcmp(getFatalErrorMessage(), "abc") == 0;
+        if(!ok)
+            printf("test 3: expected message 'abc', got '%s'\n", (char const*)memBlock);
+    }
+    if(ok)
+    {
+        ok = setFatalErrorMessage("%u", 1234) && strcmp(getFatalErrorMessage(), "1234") == 0;
+        if(!ok)
+            printf("test 3: expected message '1234', got '%s'\n", (char const*)memBlock);
+    }
+    if(ok)
+    {
+        ok = setFatalErrorMessage("%u%s", 1234, "5678") && strcmp(getFatalErrorMessage(), "12345678") == 0;
+        if(!ok)
+            printf("test 3: expected message '12345678', got '%s'\n", (char const*)memBlock);
+    }
+    if(ok)
+    {
+        ok = setFatalErrorMessage("%u%s", 1234, "5678901") && strcmp(getFatalErrorMessage(), "1234567890?") == 0;
+        if(!ok)
+            printf("test 3: expected message '1234567890?', got '%s'\n", (char const*)memBlock);
+    }
+    freeFatalErrorBuffer();    
+    return 0;
 }
 
 void mmfatl_test()
@@ -1245,6 +1312,7 @@ void mmfatl_test()
         && testall_handleParameterCopyState()
         && testall_parseAndCopy()
         && testall_appendMessage()
+        && testall_setFatalErrorMessage()
     ) { }
 }
 
