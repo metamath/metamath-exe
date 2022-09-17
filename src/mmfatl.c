@@ -92,7 +92,7 @@ struct FatalErrorBufferDescriptor const* getFatalErrorBufferDescriptor()
  *   requires also information about available memory.
  * \param aDescriptor [null] a pointer to a \ref FatalErrorBufferDescriptor
  *   under investigation.
- * \returns 1 if acceptable, 0 else.
+ * \returns 1 if acceptabe, 0 else.
  */
 static int isValidFatalErrorBufferDescriptor(
     struct FatalErrorBufferDescriptor const* aDescriptor)
@@ -502,7 +502,7 @@ static int parseAndCopy(struct ParserState* state)
  *   \ref ParserState containing parameters, a destination memory block, and a
  *   format string to interpret.
  * \pre \p state is initialized.
- * \post \p state is consumed.
+ * \post \p state is in an end state.
  */
 static void appendMessage(struct ParserState* state)
 {
@@ -1202,6 +1202,21 @@ int testall_parseAndCopy()
     return ok;
 }
 
+int testall_appendMessage()
+{
+    printf("testing appendMessage...\n");
+    test_allocTestErrorBuffer(20);
+    struct ParserState state;
+    resetParserState(&state, "abc%%def");
+    char const* buffer = state.buffer;
+    appendMessage(&state);
+    int ok = compareParserState(1, &state, END_OF_TEXT, 13, 'f', NUL);
+    if (ok && strcmp(buffer, "abc%def") != 0)
+        printf("test 1: expected buffer contents 'abc%%def', got %s", buffer);
+    freeFatalErrorBuffer();
+    return ok;
+}
+
 void mmfatl_test()
 {
     if (testall_addCheckOverflow()
@@ -1220,6 +1235,7 @@ void mmfatl_test()
         && testall_handlePlaceholderPrefixState()
         && testall_handleParameterCopyState()
         && testall_parseAndCopy()
+        && testall_appendMessage()
     ) { }
 }
 
