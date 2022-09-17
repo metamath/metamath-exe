@@ -1205,14 +1205,23 @@ int testall_parseAndCopy()
 int testall_appendMessage()
 {
     printf("testing appendMessage...\n");
-    test_allocTestErrorBuffer(20);
+    test_allocTestErrorBuffer(10);
     struct ParserState state;
     resetParserState(&state, "abc%%def");
     char const* buffer = state.buffer;
     appendMessage(&state);
-    int ok = compareParserState(1, &state, END_OF_TEXT, 13, 'f', NUL);
+    int ok = compareParserState(1, &state, END_OF_TEXT, 3, 'f', NUL);
     if (ok && strcmp(buffer, "abc%def") != 0)
         printf("test 1: expected buffer contents 'abc%%def', got %s", buffer);
+    if(ok)
+    {
+        state.formatPos = "1234";
+        state.processState = TEXT;
+        appendMessage(&state);
+        ok = compareParserState(2, &state, BUFFER_OVERFLOW, 0, '3', '4');
+        if (ok && strcmp(buffer, "abc%def123?") != 0)
+            printf("test 2: expected buffer contents 'abc%%def123?', got %s", buffer);
+    }
     freeFatalErrorBuffer();
     return ok;
 }
