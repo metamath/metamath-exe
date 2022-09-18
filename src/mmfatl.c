@@ -39,7 +39,7 @@
  */
 #define TRUE 1
 
-/*! terminating character of a text string never used elsewhere */ 
+/*! terminating character of a text string never used elsewhere */
 #define NUL '\x00'
 
 /*!
@@ -97,7 +97,7 @@ struct FatalErrorBufferDescriptor const* getFatalErrorBufferDescriptor()
 static int isValidFatalErrorBufferDescriptor(
     struct FatalErrorBufferDescriptor const* aDescriptor)
 {
-    return aDescriptor != NULL 
+    return aDescriptor != NULL
         && aDescriptor->size > 0
         && aDescriptor->ellipsis != NULL? TRUE : FALSE;
 }
@@ -122,11 +122,11 @@ static size_t evalRequestedMemSize(
         if (dmz > 0)
         {
             result = addCheckOverflow(result, dmz);
-            result = addCheckOverflow(result, dmz);            
+            result = addCheckOverflow(result, dmz);
         }
 
         result = addCheckOverflow(
-            result, strlen(aDescriptor->ellipsis) + 1 /* NUL */);        
+            result, strlen(aDescriptor->ellipsis) + 1 /* NUL */);
     }
     return result;
 }
@@ -318,7 +318,7 @@ struct ParserState {
  *
  * \post On success, all pointers in \p state are setup for starting a parsing
  *   loop, except the list of parameters (field args).
- */ 
+ */
 static int resetParserState(
     struct ParserState* state,
     FatalErrorFormat format)
@@ -340,13 +340,13 @@ static int resetParserState(
         state->buffer = NULL;
         state->bufferEnd = NULL;
         state->arg = NULL;
-    }    
+    }
     return result;
 }
 
 static size_t freeSpaceInBuffer(const struct ParserState* state)
 {
-    return 
+    return
         state
         && state->buffer
         && state->buffer < state->bufferEnd?
@@ -382,7 +382,7 @@ static void handleTextState(struct ParserState* state)
 
 /*!
  * assume the current character in the format string is a % and we now
- * need to check it introduced a placeholder.  If not, the % is copied verbatim 
+ * need to check it introduced a placeholder.  If not, the % is copied verbatim
  * (not messing with UTF-8).  In particular, a sequence %% is reduced to a
  * single %.
  *
@@ -552,7 +552,7 @@ static char* setLocationData(char const* file, unsigned line)
         result += strlen(result);
     else
        clearFatalErrorBuffer();
-    
+
     return result;
 }
 
@@ -569,7 +569,7 @@ void exitOnFatalError(
 
     /* now process the message */
     va_start(state.args, messageFormat);
-    appendMessage(&state); 
+    appendMessage(&state);
     va_end(state.args);
     exit(1);
 }
@@ -716,7 +716,7 @@ static int testall_evalRequestedMemSize()
 static int test_swapMemBlock(struct FatalErrorBufferDescriptor* data,
                              void** buffer, size_t bufferSize)
 {
-    int result = bufferSize == 0 
+    int result = bufferSize == 0
             || evalRequestedMemSize(data) == bufferSize? 1 : 0;
     if (result)
     {
@@ -843,7 +843,7 @@ static int test_initFatalErrorBuffer()
 static int test_freeFatalErrorBuffer()
 {
     freeFatalErrorBuffer();
-    int result = 
+    int result =
         isValidFatalErrorBufferDescriptor(getFatalErrorBufferDescriptor())?
             0 : 1;
     if (!result)
@@ -920,7 +920,7 @@ static int testall_Allocation()
 static int test_unsignedToString(unsigned value, char const* digits)
 {
     char const* computed = unsignedToString(value);
-    int result = strcmp(computed, digits) == 0? 1 : 0; 
+    int result = strcmp(computed, digits) == 0? 1 : 0;
     if (!result)
         printf ("conversion of %i yielded \"%s\"\n", value, computed);
     return result;
@@ -929,7 +929,7 @@ static int test_unsignedToString(unsigned value, char const* digits)
 static int testall_unsignedToString()
 {
     printf("testing unsignedToInt...\n");
-    int result = 
+    int result =
         test_unsignedToString(0u, "0")
     && test_unsignedToString(1u, "1")
     && test_unsignedToString(2u, "2")
@@ -1050,7 +1050,7 @@ static int testall_resetParserState()
                 compareParserState(8, &state, TEXT, 20, NUL, 'x');
             if (result)
             {
-                result = 
+                result =
                     state.arg == NULL
                     && *state.bufferEnd == '?'? 1 : 0;
                 if (!result)
@@ -1322,7 +1322,7 @@ static int testall_setFatalErrorMessage()
     }
     if(ok)
     {
-        ok = setFatalErrorMessage("%s", "abc") 
+        ok = setFatalErrorMessage("%s", "abc")
                 && strcmp(getFatalErrorMessage(), "abc") == 0;
         if(!ok)
             printf("test 7: expected message 'abc', got '%s'\n",
@@ -1351,7 +1351,7 @@ static int testall_setFatalErrorMessage()
         if(!ok)
             printf("test 10: expected message '1234567890?', got '%s'\n", (char const*)memBlock);
     }
-    freeFatalErrorBuffer();    
+    freeFatalErrorBuffer();
     return ok;
 }
 

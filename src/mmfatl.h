@@ -10,13 +10,13 @@
 /*!
  * \file mmfatl.h
  * \brief supports generating of fatal error messages
- * 
+ *
  * part of the application's infrastructure
  *
  * Rationale
  * =========
  *
- * When a fatal error occurs, the internal structures of a program may be 
+ * When a fatal error occurs, the internal structures of a program may be
  * corrupted to the point that recovery is impossible.  The program exits
  * immediately, but hopefully still displays a diagnostic message.
  *
@@ -46,7 +46,7 @@
  *
  * Documentation
  * =============
- * 
+ *
  * Most comments are written in <a href="https://doxygen.nl/index.html">
  * doxygen</a> (Qt variant) style.  If you have doxygen installed on your
  * computer, you may generate HTML documentation out of them with its root
@@ -109,7 +109,7 @@
  * Basic parameters controlling pre-allocation of basic routines and data.
  * Pre-allocation helps to construct a diagnosis message, even in a
  * corrupt environment.
- * 
+ *
  * A pre-allocated buffer is provided to allow embedding data in a diagnosis
  * message.
  */
@@ -177,7 +177,7 @@ char const* getFatalErrorMessage();
  * \post the memory of the ellipsis pointed to in \p descriptor is not needed
  *   after the call.
  * \post the descriptor describes any (re-)allocated buffer, or is invalid on
- *   failure. 
+ *   failure.
  */
 int allocFatalErrorBuffer(struct FatalErrorBufferDescriptor const* descriptor);
 
@@ -187,7 +187,7 @@ int allocFatalErrorBuffer(struct FatalErrorBufferDescriptor const* descriptor);
  * when they detect allocated memory not freed again.
  * \post any pre-allocated memory for the error buffer is returned to the
  *   system.
- * \post the buffer descriptor is reset to invalid 
+ * \post the buffer descriptor is reset to invalid
  */
 void freeFatalErrorBuffer();
 
