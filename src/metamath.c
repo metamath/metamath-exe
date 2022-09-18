@@ -67,8 +67,9 @@
  * The version string is extracted and then processed by shell and perl
  * scripts.  To avoid problems during replacements:
  * - use only printable characters from the ASCII range;
- * - avoid characters from the following set, eligible for escaping in text, regular
- *     expressions and so on like -begin of list ][`*+^$'?"{/}\ end of list-;
+ * - avoid characters from the following set, eligible for escaping in text,
+ *     regular expressions and so on like
+ *     -begin of list ][`*+^$'?"{/}\ end of list-;
  * - use no space character other than simple space (U+0020);
  * - never use space characters at the beginning or at the end;
  * - the length is limited to 26 characters.
@@ -741,7 +742,8 @@ void setupFatalErrorBuffer()
 
     if (!allocFatalErrorBuffer(&descriptor))
     {
-        fprintf(stderr, "*** FATAL ERROR: Cannot even allocate memory for a fatal error report\n");
+        fprintf(stderr, "*** FATAL ERROR: Cannot even allocate memory for a "
+                        "fatal error report\n");
         abort();
     }
 }
