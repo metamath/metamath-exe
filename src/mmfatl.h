@@ -30,7 +30,7 @@
  * A corrupt state is often caused by limit violations overwriting adjacent
  * memory.  To specifically guard against this, the pre-allocated memory area,
  * at your option, may include safety borders detaching necessary pre-set
- * administrative data from the rest.
+ * administrative data from other memory.
  *
  * Often it is sensible to embed details in a diagnosis message.  Placeholders
  * in the format string mark insertion points for such values, much as in
@@ -48,7 +48,7 @@
  * Most comments are written in <a href="https://doxygen.nl/index.html">
  * doxygen</a> (Qt variant) style.  If you have doxygen installed on your
  * computer, you may generate HTML documentation out of them with its root
- * placed in build/html/index.html by running build.sh with the -d option.
+ * page placed in build/html/index.html by running build.sh with the -d option.
  *
  * Regression tests
  * ================
@@ -93,7 +93,7 @@
 // #define TEST_MMFATL
 
 #ifdef TEST_MMFATL
-    /* regression tests are implemented and called by this function */
+    /* regression tests are implemented and called through this function */
     extern void mmfatl_test(void);
 #else
     /* an empty macro deletes any call to the regression test suite at
