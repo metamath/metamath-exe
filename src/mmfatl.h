@@ -1,69 +1,19 @@
 /*****************************************************************************/
-/*        Copyright (C) 2022  Wolf Lammen                                        */
+/*            Copyright (C) 2022  Wolf Lammen                                */
 /*            License terms:  GNU General Public License                     */
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-#ifndef METAMATH_MMERR_H_
-#define METAMATH_MMERR_H_
-
-/* for size_t, NULL */
-#include <stddef.h>
+#ifndef METAMATH_MMFATL_H_
+#define METAMATH_MMFATL_H_
 
 /*!
- * Documentation
- * =============
- * 
- * Most comments are written in <a href="https://doxygen.nl/index.html">
- * doxygen</a> (Qt variant) style.  If you have doxygen installed on your
- * computer, you may generate HTML documentation out of them with its root
- * placed in build/html/index.html by running build.sh with the -d option.
- */
-
-/*!
- * Regression tests
- * ================
+ * \file mmfatl.h
+ * \brief supports generating of fatal error messages
  *
- * If the macro \p REGRESSION_TEST is defined (option -t of build.sh) or
- * \p TEST_MMFATL is defined below, then regression tests are implemented.
+ * Rationale
+ * =========
  *
- * In order to run implemented regression tests properly we suggest to add a
- * \code{.c}
- * mmfatl_test();
- * \endcode
- * line to main() close to its begin and BEFORE any function declared in this
- * header file is called.
- *
- * If tests are disabled this line evaluates to nothing.  In addition, the
- * compiler skips any test code, and the artifact size will not grow.  All in
- * all, a disabled test suite does not come with a linking or runtime penalty.
- *
- * If enabled, running tests document its progress to stdout.  The test stops
- * on the first regression found with a diagnostic message further detailing on
- * the context of the failure.  The tests, if called as described above, do not
- * interfere with Metamath program behaviour, even not when detecting a
- * regression, in any way other than generating extra output on program start.
- *
- * We recommend running the tests each time you modify mmfatl.h or mmfatl.c
- * to ensure it still executes as desired.
- */
-#undef TEST_MMFATL
-
-/* REGRESSION_TEST overrides the setting of TEST_MMFATL */
-#ifdef REGRESSION_TEST
-#   define TEST_MMFATL
-#endif
-
-#ifdef TEST_MMFATL
-    /* regression tests are implemented and called by this function */
-    extern void mmfatl_test(void);
-#else
-    /* an empty macro deletes any call to the regression test suite at
-     * compile time */
-#   define mmfatl_test(x)
-#endif
-
-/*! \page pgError "Simple Fatal Error Messaging"
  * When a fatal error occurs, the internal structures of a program may be 
  * corrupted to the point that recovery is impossible.  The program exits
  * immediately, but hopefully still displays a diagnostic message.
@@ -87,11 +37,70 @@
  * \p printf. The variety and functionality is greatly reduced in our case,
  * though.  Only pieces of text or unsigned integers can be embedded
  * (%s or %u placeholder).
- * 
+ *
  * For this kind of expansion you still need a buffer where the final message is
  * constructed.  In our context, this buffer is pre-allocated, and fixed in size,
  * truncation of overflowing text enforced.
+ *
+ * Documentation
+ * =============
+ * 
+ * Most comments are written in <a href="https://doxygen.nl/index.html">
+ * doxygen</a> (Qt variant) style.  If you have doxygen installed on your
+ * computer, you may generate HTML documentation out of them with its root
+ * placed in build/html/index.html by running build.sh with the -d option.
+ *
+ * Regression tests
+ * ================
+ *
+ * If the macro **REGRESSION_TEST** is defined (option -t of build.sh) or
+ * **TEST_MMFATL** is defined, then regression tests are implemented.  Invoke
+ * in addition option -c on build.sh, should you switch between with/out
+ * testing, but no intermediate source file change.
+ *
+ * In order to run implemented regression tests properly we suggest to add a
+ * \code{.c}
+ * mmfatl_test();
+ * \endcode
+ * line to main() close to its begin and **before** any function declared in
+ * this header file is called.
+ *
+ * If tests are disabled this line evaluates to nothing.  In addition, the
+ * compiler skips any test code, and the artifact size will not grow.  All in
+ * all, a disabled test suite does not come with a linking or runtime penalty.
+ *
+ * If enabled, running tests document its progress to stdout.  The test stops
+ * on the first regression found with a diagnostic message further detailing on
+ * the context of the failure.  The tests, if called as described above, do not
+ * interfere with Metamath program behaviour, even not when detecting a
+ * regression, in any way other than generating extra output on program start.
+ *
+ * We recommend running the tests each time you modify mmfatl.h or mmfatl.c
+ * to ensure it still executes as desired.
  */
+
+#include <stddef.h>
+
+/* REGRESSION_TEST overrides the setting of TEST_MMFATL */
+#ifdef REGRESSION_TEST
+#   define TEST_MMFATL
+#endif
+
+/* uncomment one of the following to enforce disabling/enabling of regression
+ * tests unconditionally
+ */
+// #undef TEST_MMFATL
+// #define TEST_MMFATL
+
+#ifdef TEST_MMFATL
+    /* regression tests are implemented and called by this function */
+    extern void mmfatl_test(void);
+#else
+    /* an empty macro deletes any call to the regression test suite at
+     * compile time */
+#   define mmfatl_test(x)
+#endif
+
 
 /*---------------------   Allocation Of An Error Buffer   ---------------------*/
 /*!
@@ -175,6 +184,7 @@ int allocFatalErrorBuffer(struct FatalErrorBufferDescriptor const* descriptor);
  * \post the buffer descriptor is reset to invalid 
  */
 void freeFatalErrorBuffer();
+
 
 /*----------------   Filling the buffer with an error message   -------------*/
 
