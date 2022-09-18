@@ -22,6 +22,7 @@ Possible options are:
     Relative paths are relative to the current directory.
 -o followed by a directory: optionally clean directory and build all artefacts there.
     Relative paths are relative to the destination'"'"'s top metamath-exe directory.
+-t run regression tests in the executable
 -v extract the version from metamath sources, print it and exit'
 
 #============   evaluate command line parameters   ==========
@@ -34,8 +35,9 @@ version_only=0
 version_for_autoconf=0
 unset dest_dir
 top_dir="$(pwd)"
+do_tests=0
 
-while getopts abcdhm:o:v flag
+while getopts abcdhm:o:tv flag
 do
   case "${flag}" in
     a) version_for_autoconf=1;;
@@ -45,6 +47,7 @@ do
     h) print_help=1;;
     m) cd "${OPTARG}" && top_dir=$(pwd);;
     o) dest_dir=${OPTARG};;
+    t) test_flag="CFLAGS=-DREGRESSION_TEST";;
     v) version_only=1;;
   esac
 done
@@ -116,7 +119,7 @@ then
   autoreconf -i
 
   cd "$build_dir"
-  "$top_dir/configure" -q
+  "$top_dir/configure" -q $test_flag
 fi
 
 #===========   do the build   =====================
