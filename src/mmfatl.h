@@ -10,6 +10,8 @@
 /*!
  * \file mmfatl.h
  * \brief supports generating of fatal error messages
+ * 
+ * part of the application's infrastructure
  *
  * Rationale
  * =========
@@ -38,9 +40,9 @@
  * though.  Only pieces of text or unsigned integers can be embedded
  * (%s or %u placeholder).
  *
- * For this kind of expansion you still need a buffer where the final message is
- * constructed.  In our context, this buffer is pre-allocated, and fixed in size,
- * truncation of overflowing text enforced.
+ * For this kind of expansion you still need a buffer where the final message
+ * is constructed.  In our context, this buffer is pre-allocated, and fixed in
+ * size, truncation of overflowing text enforced.
  *
  * Documentation
  * =============
@@ -102,7 +104,7 @@
 #endif
 
 
-/*---------------------   Allocation Of An Error Buffer   ---------------------*/
+/*--------------------   Allocation Of An Error Buffer   --------------------*/
 /*!
  * Basic parameters controlling pre-allocation of basic routines and data.
  * Pre-allocation helps to construct a diagnosis message, even in a
@@ -145,7 +147,8 @@ struct FatalErrorBufferDescriptor {
 
 /*!
  * get the \ref FatalErrorBufferDescriptor used to allocate the current memory.
- * \returns a non-null pointer to the current descriptor intended for reading only.
+ * \returns a non-null pointer to the current descriptor intended for reading
+ *   only.
  * \attention the pointer to the ellipsis must be used for immediate reading
  *   only.  It is not stable and the referenced memory may change after a
  *   reallocation.
@@ -153,7 +156,8 @@ struct FatalErrorBufferDescriptor {
 struct FatalErrorBufferDescriptor const* getFatalErrorBufferDescriptor();
 
 /*!
- * get the current contents of the fatal error buffer, or NULL if no buffer is assigned.
+ * get the current contents of the fatal error buffer, or NULL if no buffer is
+ * assigned.
  * \returns the current contents as a NUL terminated string.
  */
 char const* getFatalErrorMessage();
@@ -172,7 +176,8 @@ char const* getFatalErrorMessage();
  * \post Any previously allocated error buffer is returned
  * \post the memory of the ellipsis pointed to in \p descriptor is not needed
  *   after the call.
- * \post the descriptor describes any (re-)allocated buffer, or is invalid on failure. 
+ * \post the descriptor describes any (re-)allocated buffer, or is invalid on
+ *   failure. 
  */
 int allocFatalErrorBuffer(struct FatalErrorBufferDescriptor const* descriptor);
 
@@ -180,7 +185,8 @@ int allocFatalErrorBuffer(struct FatalErrorBufferDescriptor const* descriptor);
  * call this only during a normal program exit.  We don't need a clean exit
  * state in case of a fatal error.  Some debugging tools like Valgrind complain
  * when they detect allocated memory not freed again.
- * \post any pre-allocated memory for the error buffer is returned to the system.
+ * \post any pre-allocated memory for the error buffer is returned to the
+ *   system.
  * \post the buffer descriptor is reset to invalid 
  */
 void freeFatalErrorBuffer();
@@ -197,7 +203,8 @@ typedef char const* FatalErrorFormat;
 /*! fill the internal buffer with submitted data, expanding placeholders
  * if any.
  * \param format a message with embedded placeholders, see \ref ErrorFormat,
- *   followed by a list of string values to be inserted at placeholders in the given order.
+ *   followed by a list of string values to be inserted at placeholders in the
+ *   given order.
  * \returns 0, if not even a truncated message could be created, 1 else.
  */
 int setFatalErrorMessage(FatalErrorFormat format, ...);
