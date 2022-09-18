@@ -10,19 +10,27 @@
 /* for size_t, NULL */
 #include <stddef.h>
 
-/*
- * Most comments are written in doxygen style.  If you have doxygen installed
- * on your computer, you may generate a HTML documentation with its root placed
- * in build/html/index.html by running build.sh with the -d option.
+/*!
+ * Documentation
+ * =============
+ * 
+ * Most comments are written in <a href="https://doxygen.nl/index.html">
+ * doxygen</a> (Qt variant) style.  If you have doxygen installed on your
+ * computer, you may generate HTML documentation out of them with its root
+ * placed in build/html/index.html by running build.sh with the -d option.
  */
 
-/*! If the macro \p REGRESSION_TEST is defined (option -t of build.sh) or
+/*!
+ * Regression tests
+ * ================
+ *
+ * If the macro \p REGRESSION_TEST is defined (option -t of build.sh) or
  * \p TEST_MMFATL is defined below, then regression tests are implemented.
  *
  * In order to run implemented regression tests properly we suggest to add a
- *
- *     mmfatl_test();
- *
+ * \code{.c}
+ * mmfatl_test();
+ * \endcode
  * line to main() close to its begin and BEFORE any function declared in this
  * header file is called.
  *
@@ -30,12 +38,11 @@
  * compiler skips any test code, and the artifact size will not grow.  All in
  * all, a disabled test suite does not come with a linking or runtime penalty.
  *
- * If enabled, running tests document the various aspects covered to stdout.
- * The test stops on the first regression found with a diagnostic message
- * further detailing on the context of the failure.  The tests, if called as
- * described above, do not interfere with Metamath program behaviour, not even
- * when detecting a regression, in any way other than generating extra output
- * on program start.
+ * If enabled, running tests document its progress to stdout.  The test stops
+ * on the first regression found with a diagnostic message further detailing on
+ * the context of the failure.  The tests, if called as described above, do not
+ * interfere with Metamath program behaviour, even not when detecting a
+ * regression, in any way other than generating extra output on program start.
  *
  * We recommend running the tests each time you modify mmfatl.h or mmfatl.c
  * to ensure it still executes as desired.
