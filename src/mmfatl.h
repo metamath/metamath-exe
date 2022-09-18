@@ -66,10 +66,10 @@
  * this header file is called.
  *
  * If tests are disabled this line evaluates to nothing.  In addition, the
- * compiler skips any test code, and the artifact size will not grow.  All in
+ * compiler skips any test code, so the artifact size will not grow.  All in
  * all, a disabled test suite does not come with a linking or runtime penalty.
  *
- * If enabled, running tests document its progress to stdout.  The test stops
+ * If enabled, running tests document their progress to stdout.  Testing stops
  * on the first regression found with a diagnostic message further detailing on
  * the context of the failure.  The tests, if called as described above, do not
  * interfere with Metamath program behaviour, even not when detecting a
