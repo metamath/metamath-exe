@@ -80,7 +80,9 @@
      Remove mmmaci and everything related to THINK_C compiler
    4-Jan-2022 mc - change VERIFY MARKUP /TOP_DATE_SKIP and /FILE_SKIP to
      /TOP_DATE_CHECK and /FILE_CHECK (with opposite meaning), and make the
-     skip behavior the default. */
+     skip behavior the default.
+   7-Sep-2022 bj mmwtex.c, mmhlpa.c Added CRITERIA CRITERION to [bib]
+     keywords */
 /* 0.198 nm 7-Aug-2021 mmpars.c - Fix cosmetic bug in WRITE SOURCE ... /REWRAP
    that prevented end of sentence (e.g. period) from appearing in column 79,
    thus causing some lines to be shorter than necessary. */

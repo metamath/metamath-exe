@@ -127,7 +127,7 @@ you can use "make uninstall" to remove it.
 List of databases
 -----------------
 
-The data base files included are:
+The database files included are:
 
   set.mm - logic and set theory database (see Ch. 3 of the Metamath book).
       The Metamath Proof Explorer pages were generated from this database.
