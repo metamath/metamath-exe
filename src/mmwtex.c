@@ -5271,25 +5271,31 @@ flag writeBibliography(vstring bibFile,
         /* (The string search below is rather inefficient; maybe improve
            the algorithm if speed becomes a problem.) */
         for (k = j - 1; k >= 1; k--) {
-          /* **IMPORTANT** Make sure to update mmhlpb.c HELP WRITE BIBLIOGRAPHY
+          /* **IMPORTANT** Make sure to update mmhlpa.c HELP WRITE BIBLIOGRAPHY
              if new items are added to this list. */
           if (0
-              /* Put the most frequent ones first to speed up search;
-                 TODO: count occurrences in mmbiblio.html to find optimal order */
+              /* The first five keywords are more frequent so are put first for
+                 efficiency; the rest is in alphabetical order. */
               || !strcmp(mid(str2, k, (long)strlen("THEOREM")), "THEOREM")
               || !strcmp(mid(str2, k, (long)strlen("EQUATION")), "EQUATION")
               || !strcmp(mid(str2, k, (long)strlen("DEFINITION")), "DEFINITION")
               || !strcmp(mid(str2, k, (long)strlen("LEMMA")), "LEMMA")
               || !strcmp(mid(str2, k, (long)strlen("EXERCISE")), "EXERCISE")
+              // ---- end of optimized search -----
               || !strcmp(mid(str2, k, (long)strlen("AXIOM")), "AXIOM")
-              || !strcmp(mid(str2, k, (long)strlen("CLAIM")), "CLAIM")
               || !strcmp(mid(str2, k, (long)strlen("CHAPTER")), "CHAPTER")
+              || !strcmp(mid(str2, k, (long)strlen("CLAIM")), "CLAIM")
               || !strcmp(mid(str2, k, (long)strlen("COMPARE")), "COMPARE")
+              || !strcmp(mid(str2, k, (long)strlen("CONCLUSION")), "CONCLUSION")
               || !strcmp(mid(str2, k, (long)strlen("CONDITION")), "CONDITION")
               || !strcmp(mid(str2, k, (long)strlen("CONJECTURE")), "CONJECTURE")
               || !strcmp(mid(str2, k, (long)strlen("COROLLARY")), "COROLLARY")
+              || !strcmp(mid(str2, k, (long)strlen("CRITERIA")), "CRITERIA")
+              || !strcmp(mid(str2, k, (long)strlen("CRITERION")), "CRITERION")
               || !strcmp(mid(str2, k, (long)strlen("EXAMPLE")), "EXAMPLE")
+              || !strcmp(mid(str2, k, (long)strlen("FACT")), "FACT")
               || !strcmp(mid(str2, k, (long)strlen("FIGURE")), "FIGURE")
+              || !strcmp(mid(str2, k, (long)strlen("INTRODUCTION")), "INTRODUCTION")
               || !strcmp(mid(str2, k, (long)strlen("ITEM")), "ITEM")
               || !strcmp(mid(str2, k, (long)strlen("LEMMAS")), "LEMMAS")
               || !strcmp(mid(str2, k, (long)strlen("LINE")), "LINE")
@@ -5297,24 +5303,21 @@ flag writeBibliography(vstring bibFile,
               || !strcmp(mid(str2, k, (long)strlen("NOTATION")), "NOTATION")
               || !strcmp(mid(str2, k, (long)strlen("NOTE")), "NOTE")
               || !strcmp(mid(str2, k, (long)strlen("OBSERVATION")), "OBSERVATION")
+              || !strcmp(mid(str2, k, (long)strlen("PARAGRAPH")), "PARAGRAPH")
               || !strcmp(mid(str2, k, (long)strlen("PART")), "PART")
               || !strcmp(mid(str2, k, (long)strlen("POSTULATE")), "POSTULATE")
               || !strcmp(mid(str2, k, (long)strlen("PROBLEM")), "PROBLEM")
+              || !strcmp(mid(str2, k, (long)strlen("PROOF")), "PROOF")
               || !strcmp(mid(str2, k, (long)strlen("PROPERTY")), "PROPERTY")
               || !strcmp(mid(str2, k, (long)strlen("PROPOSITION")), "PROPOSITION")
               || !strcmp(mid(str2, k, (long)strlen("REMARK")), "REMARK")
               || !strcmp(mid(str2, k, (long)strlen("RESULT")), "RESULT")
               || !strcmp(mid(str2, k, (long)strlen("RULE")), "RULE")
               || !strcmp(mid(str2, k, (long)strlen("SCHEME")), "SCHEME")
-              || !strcmp(mid(str2, k, (long)strlen("SECTION")), "SECTION")
-              || !strcmp(mid(str2, k, (long)strlen("PROOF")), "PROOF")
-              || !strcmp(mid(str2, k, (long)strlen("STATEMENT")), "STATEMENT")
-              || !strcmp(mid(str2, k, (long)strlen("CONCLUSION")), "CONCLUSION")
-              || !strcmp(mid(str2, k, (long)strlen("FACT")), "FACT")
-              || !strcmp(mid(str2, k, (long)strlen("INTRODUCTION")), "INTRODUCTION")
-              || !strcmp(mid(str2, k, (long)strlen("PARAGRAPH")), "PARAGRAPH")
               || !strcmp(mid(str2, k, (long)strlen("SCOLIA")), "SCOLIA")
               || !strcmp(mid(str2, k, (long)strlen("SCOLION")), "SCOLION")
+              || !strcmp(mid(str2, k, (long)strlen("SECTION")), "SECTION")
+              || !strcmp(mid(str2, k, (long)strlen("STATEMENT")), "STATEMENT")
               || !strcmp(mid(str2, k, (long)strlen("SUBSECTION")), "SUBSECTION")
               || !strcmp(mid(str2, k, (long)strlen("TABLE")), "TABLE")
               ) {
