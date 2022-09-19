@@ -203,8 +203,8 @@ typedef char const* FatalErrorFormat;
 /*! fill the internal buffer with submitted data, expanding placeholders
  * if any.
  * \param format a message with embedded placeholders, see \ref ErrorFormat,
- *   followed by a list of string values to be inserted at placeholders in the
- *   given order.
+ *   followed by a list of string or unsigned values to be inserted at
+ *   placeholders in the given order.
  * \returns 0, if not even a truncated message could be created, 1 else.
  */
 int setFatalErrorMessage(FatalErrorFormat format, ...);

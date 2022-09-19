@@ -1382,6 +1382,12 @@ static int testall_setLocationData()
     return ok;
 }
 
+int testSuccessMessage()
+{
+    printf("Regression tests in " __FILE__ " indicate no error\n\n");
+    return TRUE;
+}
+
 void mmfatl_test()
 {
     if (testall_addCheckOverflow()
@@ -1403,6 +1409,7 @@ void mmfatl_test()
         && testall_appendMessage()
         && testall_setFatalErrorMessage()
         && testall_setLocationData()
+        && testSuccessMessage()
     ) { }
 }
 
