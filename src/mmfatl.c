@@ -56,6 +56,39 @@ static size_t addCheckOverflow(size_t x, size_t y)
     return x == 0 || result <= x? 0 : result;
 }
 
+/*!
+ * utility function:
+ * In case of truncation due to a full buffer the last UTF-8 multi-byte
+ * sequence may not be transferred completely.  Trace back to the last
+ * character of a completely transferred sequence.  ASCII encoding is a single byte
+ * subset encoding of UTF-8 that always yields the last transferred byte.
+ * \param begin [not null] a pointer to the buffer start.
+ * \param last [not null] a pointer to the last transferred byte in the buffer.
+ * \returns a pointer to the last valid byte, or NULL if it does not exist.
+ *   The latter can happen only if either your buffer is less than 4 bytes
+ *   long, or if it contains invalid UTF-8 encoding.
+ */
+
+static char* findLastUTF8Byte(char const* begin, char* end)
+{
+    if (*end >= 0) // ASCII character
+        return end;
+    char* pt = end + 1;
+    // skip backwards all UTF-8 continuation bytes
+    while ((*--pt & 0xC0) == 0x80 && pt != begin);
+    // should be a leading byte here, otherwise invalid UTF-8
+    unsigned char leadByte = *pt;
+    if ((leadByte & 0xC0) <= 0x80)
+        return NULL;
+    // number of stored continuaton bytes
+    int buffered = end - pt;
+    if (buffered > 3)
+        return NULL;
+    // up to 3 continuation bytes possible
+    int expected = leadByte >= 0xF0? 3 : (leadByte >= 0xE0? 2 : 1);
+    return buffered == expected? end : (pt == begin? NULL : pt - 1);
+}
+
 /*=============   Allocation of Memory for Fatal Error Messages   ===========*/
 
 /*!
@@ -511,6 +544,15 @@ static int parseAndCopy(struct ParserState* state)
 static void appendMessage(struct ParserState* state)
 {
     while (parseAndCopy(state));
+    if (state->processState == BUFFER_OVERFLOW)
+    {
+        // overwrite truncated UTF-8 character sequences with spaces
+        // will not affect ASCII only text
+        char* end = fatalErrorBufferEnd();
+        char* last = findLastUTF8Byte(fatalErrorBufferBegin(), end - 1);
+        while (++last != end)
+            *last = ' ';
+    }
 }
 
 int setFatalErrorMessage(FatalErrorFormat format, ...)
@@ -628,6 +670,125 @@ static int testall_addCheckOverflow()
       // huge overflow
     result &= testcase_addCheckOverflow(~ (size_t) 0, ~ (size_t) 0, 0);
     return result;
+}
+
+static int testall_findLastUTF8Byte()
+{
+    printf("testing findLastUTF8Byte...\n");
+    char buffer[6] = { 0, 0, 0, 0, 0, 0 };
+    int ok = 1;
+    if (findLastUTF8Byte(buffer, buffer) != buffer)
+    {
+        printf("test 1 ASCII NUL failed\n");
+        ok = 0;
+    }
+    buffer[0] = 0x7F;
+    if (ok && findLastUTF8Byte(buffer, buffer) != buffer)
+    {
+        printf("test 2 ASCII 7F failed\n");
+        ok = 0;
+    }
+    if (ok && findLastUTF8Byte(buffer, buffer + 1) != buffer + 1)
+    {
+        printf("test 3 trailing NUL failed\n");
+        ok = 0;
+    }
+    if (ok && findLastUTF8Byte(buffer, buffer + 2) != buffer + 2)
+    {
+        printf("test 4 trailing NUL failed\n");
+        ok = 0;
+    }
+    buffer[0] = 0x87;
+    if (ok && findLastUTF8Byte(buffer, buffer) != NULL)
+    {
+        printf("test 5 continuation byte failed\n");
+        ok = 0;
+    }
+    buffer[1] = 0x84;
+    if (ok && findLastUTF8Byte(buffer, buffer + 1) != NULL)
+    {
+        printf("test 6 continuation byte failed\n");
+        ok = 0;
+    }
+    buffer[0] = 0x00;
+    if (ok && findLastUTF8Byte(buffer, buffer + 1) != NULL)
+    {
+        printf("test 7 leading ASCII followed by continuation byte failed\n");
+        ok = 0;
+    }
+    buffer[1] = 0xC4;
+    if (ok && findLastUTF8Byte(buffer + 1, buffer + 1) != NULL)
+    {
+        printf("test 8 truncated 2 byte character failed\n");
+        ok = 0;
+    }
+    if (ok && findLastUTF8Byte(buffer, buffer + 1) != buffer)
+    {
+        printf("test 9 truncated 2 byte character failed\n");
+        ok = 0;
+    }
+    buffer[2] = 0x89;
+    if (ok && findLastUTF8Byte(buffer, buffer + 2) != buffer + 2)
+    {
+        printf("test 10 2 byte character at end failed\n");
+        ok = 0;
+    }
+    buffer[1] = 0xE9;
+    if (ok && findLastUTF8Byte(buffer + 1, buffer + 1) != NULL)
+    {
+        printf("test 11 truncated 3 byte character at end failed\n");
+        ok = 0;
+    }
+    if (ok && findLastUTF8Byte(buffer + 1, buffer + 2) != NULL)
+    {
+        printf("test 12 truncated 3 byte character at end failed\n");
+        ok = 0;
+    }
+    if (ok && findLastUTF8Byte(buffer, buffer + 2) != buffer)
+    {
+        printf("test 13 truncated 3 byte character at end failed\n");
+        ok = 0;
+    }
+    buffer[3] = 0x82;
+    if (ok && findLastUTF8Byte(buffer, buffer + 3) != buffer + 3)
+    {
+        printf("test 14 3 byte character at end failed\n");
+        ok = 0;
+    }
+    buffer[1] = 0xF2;
+    if (ok && findLastUTF8Byte(buffer + 1, buffer + 1) != NULL)
+    {
+        printf("test 15 truncated 4 byte character at end failed\n");
+        ok = 0;
+    }
+    if (ok && findLastUTF8Byte(buffer + 1, buffer + 2) != NULL)
+    {
+        printf("test 16 truncated 4 byte character at end failed\n");
+        ok = 0;
+    }
+    if (ok && findLastUTF8Byte(buffer + 1, buffer + 3) != NULL)
+    {
+        printf("test 17 truncated 4 byte character at end failed\n");
+        ok = 0;
+    }
+    if (ok && findLastUTF8Byte(buffer, buffer + 3) != buffer)
+    {
+        printf("test 18 truncated 4 byte character at end failed\n");
+        ok = 0;
+    }
+    buffer[4] = 0x82;
+    if (ok && findLastUTF8Byte(buffer + 1, buffer + 4) != buffer + 4)
+    {
+        printf("test 19 4 byte character at end failed\n");
+        ok = 0;
+    }
+    buffer[5] = 0x85;
+    if (ok && findLastUTF8Byte(buffer, buffer + 5) != NULL)
+    {
+        printf("test 20 excess continuation bytes failed\n");
+        ok = 0;
+    }
+    return ok;
 }
 
 static int test_getFatalErrorDescriptor()
@@ -1391,6 +1552,7 @@ int testSuccessMessage()
 void mmfatl_test()
 {
     if (testall_addCheckOverflow()
+        && testall_findLastUTF8Byte()
         && test_getFatalErrorDescriptor()
         && testall_isValidFatalErrorBufferDescriptor()
         && testall_evalRequestedMemSize()
