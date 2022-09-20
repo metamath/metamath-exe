@@ -201,7 +201,9 @@ void freeFatalErrorBuffer();
 typedef char const* FatalErrorFormat;
 
 /*! fill the internal buffer with submitted data, expanding placeholders
- * if any.
+ * if any.  If the buffer overflows, the message is truncated, incomplete
+ * UTF-8 multi-byte character sequences at the end will be replaced with
+ * space.
  * \param format a message with embedded placeholders, see \ref ErrorFormat,
  *   followed by a list of string or unsigned values to be inserted at
  *   placeholders in the given order.
@@ -210,7 +212,8 @@ typedef char const* FatalErrorFormat;
 int setFatalErrorMessage(FatalErrorFormat format, ...);
 
 /*!
- * creates an error message, prints it to stderr and exits with exit code 1.
+ * creates an error message (for details see setFatalErrorMessage), prints it
+ * to stderr and exits with exit code 1.
  * \param line the program line where the fatal error occurred.  This value is
  *   conveniently created by the __LINE__ macro.  Set to 0, if not available.
  * \param file [null] the program file containing the faulting program line.

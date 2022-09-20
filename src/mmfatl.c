@@ -534,7 +534,8 @@ static int parseAndCopy(struct ParserState* state)
 /*!
  * evaluate a message according to the information in \p state, and append it
  * to \ref memBlock. Truncate if the destination has not enough memory
- * available.
+ * available.  Replace truncated UTF-8 multibyte sequences with space
+ * characters.
  * \param state [ParserState, not null] an already initialized
  *   \ref ParserState containing parameters, a destination memory block, and a
  *   format string to interpret.
@@ -550,8 +551,9 @@ static void appendMessage(struct ParserState* state)
         // will not affect ASCII only text
         char* end = fatalErrorBufferEnd();
         char* last = findLastUTF8Byte(fatalErrorBufferBegin(), end - 1);
-        while (++last != end)
-            *last = ' ';
+        if (last != NULL)
+            while (++last != end)
+                *last = ' ';
     }
 }
 
