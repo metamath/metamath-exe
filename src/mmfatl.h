@@ -204,16 +204,16 @@ typedef char const* FatalErrorFormat;
  * if any.  If the buffer overflows, the message is truncated, incomplete
  * UTF-8 multi-byte character sequences at the end will be replaced with
  * space.
- * \param format a message with embedded placeholders, see \ref ErrorFormat,
- *   followed by a list of string or unsigned values to be inserted at
- *   placeholders in the given order.
+ * \param format a UTF-8 (includes ASCII) message with embedded placeholders,
+ *   see \ref ErrorFormat, followed by a list of string or unsigned values to
+ *   be inserted at placeholders in the given order.
  * \returns 0, if not even a truncated message could be created, 1 else.
  */
 int setFatalErrorMessage(FatalErrorFormat format, ...);
 
 /*!
- * creates an error message (for details see setFatalErrorMessage), prints it
- * to stderr and exits with exit code 1.
+ * creates an error message (for details see \ref setFatalErrorMessage), prints
+ * it to stderr and exits with exit code 1.
  * \param line the program line where the fatal error occurred.  This value is
  *   conveniently created by the __LINE__ macro.  Set to 0, if not available.
  * \param file [null] the program file containing the faulting program line.
