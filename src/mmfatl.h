@@ -202,8 +202,7 @@ typedef char const* FatalErrorFormat;
 
 /*! fill the internal buffer with submitted data, expanding placeholders
  * if any.  If the buffer overflows, the message is truncated, incomplete
- * UTF-8 multi-byte character sequences at the end will be replaced with
- * space.
+ * UTF-8 multi-byte sequences at the end will be replaced with space.
  * \param format a UTF-8 (includes ASCII) message with embedded placeholders,
  *   see \ref ErrorFormat, followed by a list of string or unsigned values to
  *   be inserted at placeholders in the given order.
