@@ -1437,6 +1437,16 @@ static int testall_appendMessage()
             printf("test 2: expected buffer contents 'abc%%def123?', "
                    "got %s\n", buffer);
     }
+    if(ok)
+    {
+        // Unicode
+        resetParserState(&state, "123456789\xC2\xA2");
+        appendMessage(&state);
+        ok = compareParserState(3, &state, BUFFER_OVERFLOW, 0, ' ', 0xA2);
+        if (ok && strcmp(buffer, "123456789 ?") != 0)
+            printf("test 2: expected buffer contents '123456789 ?', "
+                   "got %s\n", buffer);
+    }
     freeFatalErrorBuffer();
     return ok;
 }
