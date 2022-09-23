@@ -601,8 +601,8 @@ static char* setLocationData(char const* file, unsigned line)
 }
 
 void exitOnFatalError(
-    unsigned line,
     char const* file,
+    unsigned line,
     FatalErrorFormat messageFormat, ...)
 {
     struct ParserState state;
@@ -615,6 +615,7 @@ void exitOnFatalError(
     va_start(state.args, messageFormat);
     appendMessage(&state);
     va_end(state.args);
+    fprintf(stderr, getFatalErrorMessage());
     exit(1);
 }
 

@@ -701,7 +701,7 @@ void initBigArrays(void)
 /* Find the number of free memory bytes */
 long getFreeSpace(long max)
 {
-  long i , j, k;
+  long i, j, k;
   char *s;
   i = 0;
   j = max + 2;
@@ -732,9 +732,8 @@ void outOfMemory(const char *msg) {
         "To solve this problem, remove some unnecessary statements or file\n"
         "inclusions to reduce the size of your input source.\n"
         "Monitor memory periodically with SHOW MEMORY.\n";
-  exitOnFatalError(0, NULL, format, msg);
+  exitOnFatalError(__FILE__, __LINE__, format, msg);
 }
-
 
 /* Bug check */
 void bug(int bugNum)
@@ -3067,16 +3066,12 @@ long **alloc2DMatrix(size_t xsize, size_t ysize)
   long **matrix;
   long i;
   matrix = malloc(xsize * sizeof(long *));
-  if (matrix == NULL) {
-    fprintf(stderr,"?FATAL ERROR 1376 Out of memory\n");
-    exit(1);
-  }
+  if (matrix == NULL)
+    exitOnFatalError(__FILE__, __LINE__, "?FATAL ERROR 1376 Out of memory\n");
   for (i = 0; i < (long)xsize; i++) {
     matrix[i] = malloc(ysize * sizeof(long));
-    if (matrix[i] == NULL) {
-      fprintf(stderr,"?FATAL ERROR 1377 Out of memory\n");
-      exit(1);
-    }
+    if (matrix[i] == NULL)
+      exitOnFatalError(__FILE__, __LINE__, "?FATAL ERROR 1377 Out of memory\n");
   }
   return matrix;
 } /* alloc2DMatrix */
