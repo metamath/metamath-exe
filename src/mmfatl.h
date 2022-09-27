@@ -97,6 +97,7 @@
  */
 
 #include <stddef.h>
+#include <stdbool.h>
 
 /* REGRESSION_TEST overrides the setting of TEST_MMFATL */
 #ifdef REGRESSION_TEST
@@ -187,14 +188,14 @@ char const* getFatalErrorMessage();
  *  - if bufferSize is 0, or ellipsis in \p descriptor is NULL
  * \param descriptor [not null] the requirements of a new pre-allocated message
  *   buffer, replacing the current one, if exists.
- * \returns whether the (re-)allocation was successful (1), or not (0).
+ * \returns whether the (re-)allocation was successful, or not.
  * \post Any previously allocated error buffer is returned
  * \post the memory of the ellipsis pointed to in \p descriptor is not needed
  *   after the call.
  * \post the descriptor describes any (re-)allocated buffer, or is invalid on
  *   failure.
  */
-int allocFatalErrorBuffer(struct FatalErrorBufferDescriptor const* descriptor);
+bool allocFatalErrorBuffer(struct FatalErrorBufferDescriptor const* descriptor);
 
 /*!
  * call this only during a normal program exit.  We don't need a clean exit
@@ -221,9 +222,9 @@ typedef char const* FatalErrorFormat;
  * \param format a UTF-8 (includes ASCII) message with embedded placeholders,
  *   see \ref ErrorFormat, followed by a list of string or unsigned values to
  *   be inserted at placeholders in the given order.
- * \returns 0, if not even a truncated message could be created, 1 else.
+ * \returns whether at least a truncated message could be created.
  */
-int setFatalErrorMessage(FatalErrorFormat format, ...);
+bool setFatalErrorMessage(FatalErrorFormat format, ...);
 
 /*!
  * creates an error message (for details see \ref setFatalErrorMessage), prints
