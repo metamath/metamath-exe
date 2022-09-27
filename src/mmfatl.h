@@ -42,8 +42,7 @@
  * This is to the detriment of flexibility, in particular, support for dynamic
  * behavior is limited.  Many Standard C library functions like printf MUST NOT
  * be called when heap problems arise, since they use it internally.  GNU tags
- * such functions as 'AS-Unsafe corrupt heap' in their documentation
- * (libc.pdf).
+ * such functions as 'AS-Unsafe heap' in their documentation (libc.pdf).
  *
  * A corrupt state is often caused by limit violations overwriting adjacent
  * memory.  To specifically guard against this, the pre-allocated memory area,

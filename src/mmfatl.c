@@ -602,7 +602,7 @@ void exitOnFatalError(
     appendMessage(&state);
     va_end(state.args);
     fputs(getFatalErrorMessage(), stderr);
-    exit(1);
+    exit(EXIT_FAILURE);
 }
 
 #ifdef TEST_MMFATL
