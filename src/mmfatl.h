@@ -7,6 +7,19 @@
 #ifndef METAMATH_MMFATL_H_
 #define METAMATH_MMFATL_H_
 
+/*
+ * Documentation
+ * =============
+ *
+ * Most comments are written in <a href="https://doxygen.nl/index.html">
+ * doxygen</a> (Qt variant) style.  If you have doxygen installed on your
+ * computer, you may generate HTML documentation out of them with its root
+ * page placed in build/html/index.html by running build.sh with the -d option.
+ *
+ * Delete this once we have this description available in a central location.
+ * Keep this as a simple comment, so it is outside of Doxygen documentation.
+ */
+
 /*!
  * \file mmfatl.h
  * \brief supports generating of fatal error messages
@@ -27,7 +40,9 @@
  * In particular everything should be pre-allocated and initialized, so the
  * risk of a failure in a corrupted or memory-tight environment is minimized.
  * This is to the detriment of flexibility, in particular, support for dynamic
- * behavior is limited.
+ * behavior is limited.  In particular many Standard C library functions like
+ * printf MUST NOT be called in this context, since they use the heap
+ * internally.
  *
  * A corrupt state is often caused by limit violations overwriting adjacent
  * memory.  To specifically guard against this, the pre-allocated memory area,
@@ -43,14 +58,6 @@
  * For this kind of expansion you still need a buffer where the final message
  * is constructed.  In our context, this buffer is pre-allocated, and fixed in
  * size, truncation of overflowing text enforced.
- *
- * Documentation
- * =============
- *
- * Most comments are written in <a href="https://doxygen.nl/index.html">
- * doxygen</a> (Qt variant) style.  If you have doxygen installed on your
- * computer, you may generate HTML documentation out of them with its root
- * page placed in build/html/index.html by running build.sh with the -d option.
  *
  * Regression tests
  * ================
@@ -79,6 +86,14 @@
  *
  * We recommend running the tests each time you modify mmfatl.h or mmfatl.c
  * to ensure it still executes as desired.
+ *
+ * UTF-8 support
+ * =============
+ *
+ * UTF-8 is a superset of ASCII encoding, so ASCII is fully supported.  UTF-8
+ * uses multi-byte encodings to represent character outside of ASCII.  It is
+ * ensured that valid multi-byte characters are not split or crippled during
+ * text operations in functions presented in this file.
  */
 
 #include <stddef.h>
@@ -89,7 +104,7 @@
 #endif
 
 /* uncomment one of the following to enforce disabling/enabling of regression
- * tests unconditionally
+ * tests of this file unconditionally
  */
 // #undef TEST_MMFATL
 // #define TEST_MMFATL

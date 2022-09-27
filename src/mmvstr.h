@@ -34,7 +34,7 @@
  *         bigArray[i][j] = ""; /- Initialize -/
  *
  *
- *  After initialization, vstrings should be assigned with the `let(&`
+ * After initialization, vstrings should be assigned with the `let(&`
  * function only; for example the statements
  *
  *     let(&string1, "abc");
