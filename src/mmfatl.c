@@ -601,7 +601,7 @@ void exitOnFatalError(
     va_start(state.args, messageFormat);
     appendMessage(&state);
     va_end(state.args);
-    fprintf(stderr, getFatalErrorMessage());
+    fputs(getFatalErrorMessage(), stderr);
     exit(1);
 }
 

@@ -40,9 +40,10 @@
  * In particular everything should be pre-allocated and initialized, so the
  * risk of a failure in a corrupted or memory-tight environment is minimized.
  * This is to the detriment of flexibility, in particular, support for dynamic
- * behavior is limited.  In particular many Standard C library functions like
- * printf MUST NOT be called in this context, since they use the heap
- * internally.
+ * behavior is limited.  Many Standard C library functions like printf MUST NOT
+ * be called when heap problems arise, since they use it internally.  GNU tags
+ * such functions as 'AS-Unsafe corrupt heap' in their documentation
+ * (libc.pdf).
  *
  * A corrupt state is often caused by limit violations overwriting adjacent
  * memory.  To specifically guard against this, the pre-allocated memory area,
