@@ -10,4 +10,28 @@
  * conditions (corrupt state, out of memory).
  */
 
+#include <stdbool.h>
+#include <stdio.h>
+
 #include "mmfatl.h"
+
+//=================   Regression tests   =====================
+
+#ifdef TEST_MMFATL
+
+/*  automatic testing to prevent regression   */
+
+bool testSuccessMessage()
+{
+    printf("Regression tests in " __FILE__ " indicate no error\n\n");
+    return true;
+}
+
+void mmfatl_test()
+{
+    if (true
+        && testSuccessMessage()
+    ) { }
+}
+
+#endif

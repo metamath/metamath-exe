@@ -45,6 +45,60 @@
  * For this kind of expansion you still need a buffer where the final message
  * is constructed.  In our context, this buffer is pre-allocated, and fixed in
  * size, truncation of overflowing text enforced.
+ *
+ * Regression tests
+ * ================
+ *
+ * If the macro **REGRESSION_TEST** is defined (option -t of build.sh) or
+ * **TEST_MMFATL** is defined, then regression tests are implemented.  Invoke
+ * in addition option -c on build.sh, should you switch between with/out
+ * testing, but no intermediate source file change.
+ *
+ * In order to run implemented regression tests properly we suggest to add a
+ * \code{.c}
+ * mmfatl_test();
+ * \endcode
+ * line to main() close to its begin and **before** any function declared in
+ * this header file is called.
+ *
+ * If tests are disabled this line evaluates to nothing.  In addition, the
+ * compiler skips any test code, so the artifact size will not grow.  All in
+ * all, a disabled test suite does not come with a linking or runtime penalty.
+ *
+ * If enabled, running tests document their progress to stdout.  Testing stops
+ * on the first regression found with a diagnostic message further detailing on
+ * the context of the failure.  The tests, if called as described above, do not
+ * interfere with Metamath program behaviour, even not when detecting a
+ * regression, in any way other than generating extra output on program start.
+ *
+ * We recommend running the tests each time you modify mmfatl.h or mmfatl.c
+ * to ensure it still executes as desired.
  */
+
+// Setting TEST_MMFATL to en/disable regression tests in this module
+//------------------------------------------------------------------
+
+/* If REGRESSION_TEST is defined compilation of regression tests is requested
+ * from an outside source.  This can still be overridden locally by setting
+ * TEST_MMFATL explicitely below.
+ */
+#ifdef REGRESSION_TEST
+#   define TEST_MMFATL
+#endif
+
+/* uncomment one of the following to enforce disabling/enabling of regression
+ * tests in this file unconditionally
+ */
+// #undef TEST_MMFATL
+// #define TEST_MMFATL
+
+#ifdef TEST_MMFATL
+    /* regression tests are implemented and called through this function */
+    extern void mmfatl_test(void);
+#else
+    /* an empty macro deletes any call to the regression test suite at
+     * compile time */
+#   define mmfatl_test(x)
+#endif
 
 #endif /* include guard */

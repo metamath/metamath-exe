@@ -10,9 +10,7 @@ help_text=\
 'Builds all artefacts in the metamath-exe/build subfolder (if not directed
 otherwise).  Change to the metamath-exe top folder first before running
 this script, or issue the -m option.
-
 Possible options are:
-
 -a Used by autotools. Put hyphens in the version string when used with -v
 -b build binary only, no reconfigure. Faster, but should not be used on first run.
 -c Clean the build directory.
@@ -22,6 +20,7 @@ Possible options are:
     Relative paths are relative to the current directory.
 -o followed by a directory: optionally clean directory and build all artefacts there.
     Relative paths are relative to the destination'"'"'s top metamath-exe directory.
+-t run regression tests in the executable
 -v extract the version from metamath sources, print it and exit'
 
 #============   evaluate command line parameters   ==========
@@ -34,8 +33,9 @@ version_only=0
 version_for_autoconf=0
 unset dest_dir
 top_dir="$(pwd)"
+do_tests=0
 
-while getopts abcdhm:o:v flag
+while getopts abcdhm:o:tv flag
 do
   case "${flag}" in
     a) version_for_autoconf=1;;
@@ -45,6 +45,7 @@ do
     h) print_help=1;;
     m) cd "${OPTARG}" && top_dir=$(pwd);;
     o) dest_dir=${OPTARG};;
+    t) test_flag="CFLAGS=-DREGRESSION_TEST";;
     v) version_only=1;;
   esac
 done
@@ -116,7 +117,7 @@ then
   autoreconf -i
 
   cd "$build_dir"
-  "$top_dir/configure" -q
+  "$top_dir/configure" -q $test_flag
 fi
 
 #===========   do the build   =====================
