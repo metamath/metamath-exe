@@ -27,7 +27,7 @@ bool testSuccessMessage()
     return true;
 }
 
-void mmfatl_test()
+void test_mmfatl()
 {
     if (true
         && testSuccessMessage()

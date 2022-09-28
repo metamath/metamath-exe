@@ -94,11 +94,11 @@
 
 #ifdef TEST_MMFATL
     /* regression tests are implemented and called through this function */
-    extern void mmfatl_test(void);
+    extern void test_mmfatl(void);
 #else
     /* an empty macro deletes any call to the regression test suite at
      * compile time */
-#   define mmfatl_test(x)
+#   define test_mmfatl(x)
 #endif
 
 #endif /* include guard */
