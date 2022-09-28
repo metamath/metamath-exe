@@ -719,6 +719,7 @@
 #include "mmunif.h"
 #include "mmword.h"
 #include "mmwtex.h"
+#include "mmfatl.h"
 
 void command(int argc, char *argv[]);
 
@@ -740,6 +741,7 @@ int main(int argc, char *argv[]) {
 
 /* argc is the number of arguments; argv points to an array containing them */
 
+  mmfatl_test();
   /****** If g_listMode is set to 1 here, the startup will be Text Tools
           utilities, and Metamath will be disabled ***************************/
   /* (Historically, this mode was used for the creation of a stand-alone
