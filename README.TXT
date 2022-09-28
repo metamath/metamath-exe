@@ -143,3 +143,15 @@ The database files included are:
   peano.mm - A nicely commented presentation of Peano arithmetic, written
       by Robert Solovay (unlike the ones above, this database is NOT public
       domain but is copyright under the terms of the GNU GPL license)
+
+
+Documentation
+-------------
+
+Many comments are written in
+
+https://doxygen.nl/index.html
+
+Doxygen (Qt variant) style.  If you have Doxygen installed on your
+computer, you may generate HTML documentation out of them with its root
+page placed in build/html/index.html by running build.sh with the -d option.
