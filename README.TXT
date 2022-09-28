@@ -148,7 +148,10 @@ The database files included are:
 Documentation
 -------------
 
-Many comments are written in <a href="https://doxygen.nl/index.html">
-doxygen</a> (Qt variant) style.  If you have doxygen installed on your
+Many comments are written in
+
+https://doxygen.nl/index.html
+
+Doxygen (Qt variant) style.  If you have Doxygen installed on your
 computer, you may generate HTML documentation out of them with its root
 page placed in build/html/index.html by running build.sh with the -d option.
