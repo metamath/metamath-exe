@@ -10,7 +10,9 @@ help_text=\
 'Builds all artefacts in the metamath-exe/build subfolder (if not directed
 otherwise).  Change to the metamath-exe top folder first before running
 this script, or issue the -m option.
+
 Possible options are:
+
 -a Used by autotools. Put hyphens in the version string when used with -v
 -b build binary only, no reconfigure. Faster, but should not be used on first run.
 -c Clean the build directory.
