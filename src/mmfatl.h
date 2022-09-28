@@ -56,7 +56,7 @@
  *
  * In order to run implemented regression tests properly we suggest to add a
  * \code{.c}
- * mmfatl_test();
+ * test_mmfatl();
  * \endcode
  * line to main() close to its begin and **before** any function declared in
  * this header file is called.
