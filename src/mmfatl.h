@@ -7,19 +7,6 @@
 #ifndef METAMATH_MMFATL_H_
 #define METAMATH_MMFATL_H_
 
-/*
- * Documentation
- * =============
- *
- * Most comments are written in <a href="https://doxygen.nl/index.html">
- * doxygen</a> (Qt variant) style.  If you have doxygen installed on your
- * computer, you may generate HTML documentation out of them with its root
- * page placed in build/html/index.html by running build.sh with the -d option.
- *
- * Delete this once we have this description available in a central location.
- * Keep this as a simple comment, so it is outside of Doxygen documentation.
- */
-
 /*!
  * \file mmfatl.h
  * \brief supports generating of fatal error messages
