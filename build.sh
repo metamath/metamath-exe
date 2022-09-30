@@ -34,6 +34,7 @@ print_help=0
 version_only=0
 version_for_autoconf=0
 unset dest_dir
+unset test_flag
 top_dir="$(pwd)"
 
 while getopts abcdhm:o:tv flag
