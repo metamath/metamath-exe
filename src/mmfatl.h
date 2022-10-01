@@ -79,7 +79,7 @@
 //------------------------------------------------------------------
 
 /* If BUILD_REQUESTS_REGRESSION_TEST is defined compilation of regression
- * tests is requested from a somewhere outside of C files.  This can still be
+ * tests is requested from somewhere outside of C files.  This can still be
  * overridden locally by setting TEST_MMFATL explicitely below.
  */
 #ifdef BUILD_REQUESTS_REGRESSION_TEST
