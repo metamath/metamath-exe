@@ -78,11 +78,11 @@
 // Setting TEST_MMFATL to en/disable regression tests in this module
 //------------------------------------------------------------------
 
-/* If REGRESSION_TEST is defined compilation of regression tests is requested
- * from an outside source.  This can still be overridden locally by setting
- * TEST_MMFATL explicitely below.
+/* If BUILD_REQUESTS_REGRESSION_TEST is defined compilation of regression
+ * tests is requested from a somewhere outside of C files.  This can still be
+ * overridden locally by setting TEST_MMFATL explicitely below.
  */
-#ifdef REGRESSION_TEST
+#ifdef BUILD_REQUESTS_REGRESSION_TEST
 #   define TEST_MMFATL
 #endif
 

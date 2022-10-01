@@ -34,7 +34,7 @@ print_help=0
 version_only=0
 version_for_autoconf=0
 unset dest_dir
-unset test_flag
+unset cflag_regression_test
 top_dir="$(pwd)"
 
 while getopts abcdhm:o:tv flag
@@ -47,7 +47,7 @@ do
     h) print_help=1;;
     m) cd "${OPTARG}" && top_dir=$(pwd);;
     o) dest_dir=${OPTARG};;
-    t) test_flag="CFLAGS=-DREGRESSION_TEST";;
+    t) cflag_regression_test="CFLAGS=-DBUILD_REQUESTS_REGRESSION_TEST";;
     v) version_only=1;;
   esac
 done
@@ -119,7 +119,7 @@ then
   autoreconf -i
 
   cd "$build_dir"
-  "$top_dir/configure" -q $test_flag
+  "$top_dir/configure" -q $cflag_regression_test
 fi
 
 #===========   do the build   =====================
