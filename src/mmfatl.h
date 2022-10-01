@@ -49,10 +49,10 @@
  * Regression tests
  * ================
  *
- * If the macro **REGRESSION_TEST** is defined (option -t of build.sh) or
- * **TEST_MMFATL** is defined, then regression tests are implemented.  Invoke
- * in addition option -c on build.sh, should you switch between with/out
- * testing, but no intermediate source file change.
+ * If the macro **BUILD_REQUESTS_REGRESSION_TEST** is defined (option -t of
+ * build.sh) or **TEST_MMFATL** is defined, then regression tests are
+ * implemented.  Invoke in addition option -c on build.sh, should you switch
+ * between with/out testing, but no intermediate source file change.
  *
  * In order to run implemented regression tests properly we suggest to add a
  * \code{.c}
