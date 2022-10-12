@@ -119,7 +119,7 @@ then
   autoreconf -i
 
   cd "$build_dir"
-  "$top_dir/configure" -q $cflag_regression_test
+  "$top_dir/configure" -q
 fi
 
 #===========   do the build   =====================
