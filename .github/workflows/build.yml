@@ -28,4 +28,4 @@ jobs:
         run: ./build.sh -t
 
       - name: test
-        run: metamath_test
+        run: ./metamath_test
