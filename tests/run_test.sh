@@ -7,8 +7,7 @@ Run tests from the test suite.
 
 Each TEST should be the name of a TEST.in file in the current directory.
 It calls 'metamath TEST.mm < TEST.in > TEST.produced' and compares
-TEST.produced with TEST.expected, printing a test failure report,
-except for 'builtin.in'.  This input file runs 'metamath_test' instead.
+TEST.produced with TEST.expected, printing a test failure report.
 
 If TEST.mm does not exist, then it just calls metamath without arguments.
 
@@ -36,16 +35,13 @@ cmd="${METAMATH:-metamath}"
 # Alternatively, use the '-c metamath' argument which overrides the env variable
 if [ "$1" = "-c" ]; then shift; cmd=$1; shift; fi
 
-# a separately compiled executable running built-in tests in metamath sources
-builtin_test="${cmd}_test"
-
 if [ "$1" = "--bless" ]; then bless=1; shift; fi
 
 # Check that the 'metamath' command actually exists
 if ! [ -x "$(command -v "$cmd")" ]; then
   echo >&2 "'$cmd' not found on the PATH."
   if [ "$METAMATH" != "" ]; then
-    echo >&2 "note: The METAMATH environment variable is set to '$METAMATH'."
+    echo >&2 "note: The METAMATH enviroment variable is set to '$METAMATH'."
   fi
   echo >&2 "Try 'METAMATH=path/to/metamath ./run_test.sh ...', or check your installation"
   exit 2
@@ -82,32 +78,17 @@ for test in "$@"; do
   # For tests with `! expect_fail` we expect exit code 1 instead of 0
   ! grep -q "! expect_fail" "$test.in"; expect=$?
 
-  # Which program is to use for the test?
-  executable="$cmd"
-  if [ "$test" = "builtin" ]; then
-    executable="$builtin_test"
-    # Check that the 'metamath' command actually exists
-    if ! [ -x "$(command -v "$builtin_test")" ]; then
-      echo >&2 "'$builtin_test' not found on the PATH."
-      if [ "$METAMATH" != "" ]; then
-        echo >&2 "note: The METAMATH environment variable is set to '$METAMATH'."
-      fi
-      echo >&2 "Check your installation"
-      exit 2
-    fi
-  fi
-
   # Actually run the program
   if [ -f "$test.mm" ]; then
     echo -n "test ${white}$test${off}.in + $test.mm: "
     result=$(echo 'set scroll continuous' |
       cat - "$test.in" |
-      "$executable" "$test.mm")
+      "$cmd" "$test.mm")
   else
     echo -n "test ${white}$test${off}.in: "
     result=$(echo 'set scroll continuous' |
       cat - "$test.in" |
-      "$executable")
+      "$cmd")
   fi
   result_code=$?
 
