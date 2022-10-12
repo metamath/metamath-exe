@@ -12,6 +12,7 @@
 
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "mmfatl.h"
 
@@ -21,17 +22,22 @@
 
 /*  automatic testing to prevent regression   */
 
-bool testSuccessMessage()
+bool testSuccessMessage(bool silent)
 {
-    printf("Regression tests in " __FILE__ " indicate no error\n\n");
+    if (!silent)
+        printf("Regression tests in " __FILE__ " indicate no error\n\n");
     return true;
 }
 
 void test_mmfatl()
 {
-    if (true
-        && testSuccessMessage()
-    ) { }
+    bool silent = TEST_MMFATL_SILENT;
+
+    bool ok = true
+        && testSuccessMessage(silent);
+
+    if (!ok)
+        exit(EXIT_FAILURE);
 }
 
 #endif

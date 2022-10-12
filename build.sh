@@ -22,7 +22,7 @@ Possible options are:
     Relative paths are relative to the current directory.
 -o followed by a directory: optionally clean directory and build all artefacts there.
     Relative paths are relative to the destination'"'"'s top metamath-exe directory.
--t run regression tests in the executable
+-t compile an additional metamath_test executable for regression tests
 -v extract the version from metamath sources, print it and exit'
 
 #============   evaluate command line parameters   ==========
@@ -30,11 +30,11 @@ Possible options are:
 do_autoconf=1
 do_clean=0
 do_doc=0
+do_make_test=0
 print_help=0
 version_only=0
 version_for_autoconf=0
 unset dest_dir
-unset cflag_regression_test
 top_dir="$(pwd)"
 
 while getopts abcdhm:o:tv flag
@@ -47,7 +47,7 @@ do
     h) print_help=1;;
     m) cd "${OPTARG}" && top_dir=$(pwd);;
     o) dest_dir=${OPTARG};;
-    t) cflag_regression_test="CFLAGS=-DBUILD_REQUESTS_REGRESSION_TEST";;
+    t) do_make_test=1;;
     v) version_only=1;;
   esac
 done
@@ -124,6 +124,15 @@ fi
 
 #===========   do the build   =====================
 
+if [ $do_make_test -eq 1 ]
+then
+  # create an executable running regression tests
+  make "CFLAGS=-DBUILD_REQUESTS_REGRESSION_TEST"
+  mv src/metamath "$top_dir"/metamath_test
+  make clean
+fi
+
+# normal executable
 make
 mv src/metamath "$top_dir"
 

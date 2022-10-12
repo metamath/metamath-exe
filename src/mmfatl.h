@@ -84,6 +84,12 @@
  */
 #ifdef BUILD_REQUESTS_REGRESSION_TEST
 #   define TEST_MMFATL
+#   define TEST_MMFATL
+/* optimized for continuous integration */
+#   define TEST_MMFATL_SILENT true
+#else
+/* each test prints a confirmation on the screen */  
+#   define TEST_MMFATL_SILENT false
 #endif
 
 /* uncomment one of the following to enforce disabling/enabling of regression
