@@ -130,11 +130,11 @@ then
   make "CFLAGS=-DBUILD_REQUESTS_REGRESSION_TEST"
   mv src/metamath "$top_dir"/metamath_test
   make clean
+else
+  # normal executable
+  make
+  mv src/metamath "$top_dir"
 fi
-
-# normal executable
-make
-mv src/metamath "$top_dir"
 
 #===========   run Doxygen documentation generator   =====================
 
