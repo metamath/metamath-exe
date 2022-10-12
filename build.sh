@@ -22,7 +22,7 @@ Possible options are:
     Relative paths are relative to the current directory.
 -o followed by a directory: optionally clean directory and build all artefacts there.
     Relative paths are relative to the destination'"'"'s top metamath-exe directory.
--t compile an additional metamath_test executable for regression tests
+-t compile a metamath_test executable for regression tests
 -v extract the version from metamath sources, print it and exit'
 
 #============   evaluate command line parameters   ==========
