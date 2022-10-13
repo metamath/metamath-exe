@@ -22,6 +22,7 @@ Possible options are:
     Relative paths are relative to the current directory.
 -o followed by a directory: optionally clean directory and build all artefacts there.
     Relative paths are relative to the destination'"'"'s top metamath-exe directory.
+-t compile a metamath_test executable for regression tests
 -v extract the version from metamath sources, print it and exit'
 
 #============   evaluate command line parameters   ==========
@@ -29,13 +30,14 @@ Possible options are:
 do_autoconf=1
 do_clean=0
 do_doc=0
+do_make_test=0
 print_help=0
 version_only=0
 version_for_autoconf=0
 unset dest_dir
 top_dir="$(pwd)"
 
-while getopts abcdhm:o:v flag
+while getopts abcdhm:o:tv flag
 do
   case "${flag}" in
     a) version_for_autoconf=1;;
@@ -45,6 +47,7 @@ do
     h) print_help=1;;
     m) cd "${OPTARG}" && top_dir=$(pwd);;
     o) dest_dir=${OPTARG};;
+    t) do_make_test=1;;
     v) version_only=1;;
   esac
 done
@@ -121,8 +124,16 @@ fi
 
 #===========   do the build   =====================
 
-make
-mv src/metamath "$top_dir"
+if [ $do_make_test -eq 1 ]
+then
+  # create an executable running regression tests
+  make "CFLAGS=-DBUILD_REQUESTS_REGRESSION_TEST"
+  mv src/metamath "$top_dir"/metamath_test
+else
+  # normal executable
+  make
+  mv src/metamath "$top_dir"
+fi
 
 #===========   run Doxygen documentation generator   =====================
 

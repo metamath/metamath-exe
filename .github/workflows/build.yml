@@ -6,7 +6,7 @@ name: ci
 
 jobs:
   build:
-    name: Build
+    name: Build + Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -17,3 +17,15 @@ jobs:
       - name: test
         working-directory: tests
         run: env METAMATH=../metamath ./run_test.sh *.in
+
+  regression:
+    name: Regression Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: build
+        run: ./build.sh -t
+
+      - name: test
+        run: ./metamath_test

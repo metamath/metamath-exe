@@ -145,10 +145,10 @@ The database files included are:
       domain but is copyright under the terms of the GNU GPL license)
 
 
-Documentation
--------------
+Source code documentation
+-------------------------
 
-Many comments are written in
+Many comments in the source code are written in
 
 https://doxygen.nl/index.html
 
