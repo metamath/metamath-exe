@@ -7,6 +7,8 @@
 #ifndef METAMATH_MMFATL_H_
 #define METAMATH_MMFATL_H_
 
+#include <stdbool.h>
+
 /*!
  * \file mmfatl.h
  * \brief supports generating of fatal error messages
@@ -83,7 +85,6 @@
  */
 #ifdef BUILD_REQUESTS_REGRESSION_TEST
 #   define TEST_MMFATL
-#   define TEST_MMFATL
 /* optimized for continuous integration */
 #   define TEST_MMFATL_SILENT true
 #else
@@ -95,15 +96,14 @@
  * tests in this file unconditionally
  */
 // #undef TEST_MMFATL
-// #define TEST_MMFATL
+#define TEST_MMFATL
 
 #ifdef TEST_MMFATL
+
+/* enable regression tests in main() in metamath.c */
+#   define RUN_REGRESSION_TEST
     /* regression tests are implemented and called through this function */
-    extern void test_mmfatl(void);
-#else
-    /* an empty macro deletes any call to the regression test suite at
-     * compile time */
-#   define test_mmfatl(x)
+    extern bool test_mmfatl(void);
 #endif
 
 #endif /* include guard */

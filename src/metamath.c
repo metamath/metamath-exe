@@ -741,9 +741,13 @@ int main(int argc, char *argv[]) {
 
 /* argc is the number of arguments; argv points to an array containing them */
 
-  test_mmfatl();
-# ifdef BUILD_REQUESTS_REGRESSION_TEST
-  exit(EXIT_SUCCESS);
+# ifdef RUN_REGRESSION_TEST
+
+  bool regressionTestResult =
+    test_mmfatl();
+
+  exit(regressionTestResult? EXIT_SUCCESS : EXIT_FAILURE);
+
 # endif
 
   /****** If g_listMode is set to 1 here, the startup will be Text Tools
