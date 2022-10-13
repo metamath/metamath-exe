@@ -76,36 +76,56 @@
  * Github checks on each push request.
  */
 
-// Setting TEST_MMFATL to en/disable regression tests in this module
+// Setting TEST_ENABLE to en/disable regression tests in this module
 //------------------------------------------------------------------
-
-/* If BUILD_REQUESTS_REGRESSION_TEST is defined compilation of regression
- * tests is requested from somewhere outside of C files.  This can still be
- * overridden locally by setting TEST_MMFATL explicitely below.
- */
-#ifdef BUILD_REQUESTS_REGRESSION_TEST
-#   define TEST_MMFATL
-/* optimized for continuous integration */
-#   define TEST_MMFATL_SILENT true
-#else
-/* each test prints a confirmation on the screen */  
-#   define TEST_MMFATL_SILENT false
-#endif
 
 /* uncomment one of the following to enforce disabling/enabling of regression
  * tests in this file unconditionally
  */
-// #undef TEST_MMFATL
-// #define TEST_MMFATL
+ #define TEST_FORCE_ENABLE 0
+// #define TEST_FORCE_ENABLE 1
 
-#ifdef TEST_MMFATL
+/* the function running regression tests in this module */
+#define TEST_FUNCTION(x) test_mmfatl(x)
+
+/* -----   copy & paste code, the same in all modules -----  */
+
+/* in case an included header file of another module has defined it */
+#undef TEST_ENABLE
+
+/* If BUILD_REQUESTS_REGRESSION_TEST is defined compilation of regression
+ * tests is requested from somewhere outside of C files.  This can still be
+ * overridden locally by setting TEST_ENABLE explicitely below.
+ */
+#ifdef BUILD_REQUESTS_REGRESSION_TEST
+#   define TEST_ENABLE
+/* optimized for continuous integration, suppresses success messages */
+#   define TEST_SILENT true
+#else
+/* each test prints a confirmation on the screen */  
+#   define TEST_SILENT false
+#endif
+
+#ifdef TEST_FORCE_ENABLE
+#   if TEST_FORCE_ENABLE
+#       define TEST_ENABLE
+#   else
+#       undef TEST_ENABLE
+#   endif
+#endif
+
+#ifdef TEST_ENABLE
 
 /* enable regression tests in main() in metamath.c */
 #   define RUN_REGRESSION_TEST
     /* regression tests are implemented and called through this function */
-    extern void test_mmfatl(bool*);
-#else
-    /* still necessary should another unit request regression tests */
+    extern void TEST_FUNCTION(bool*);
+#endif
+
+/* -----   end of copy & paste code   ----- */
+
+#ifndef TEST_ENABLE
+    /* still necessary should another module request regression tests */
 #   define test_mmfatl(x)
 #endif
 

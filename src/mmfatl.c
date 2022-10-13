@@ -18,7 +18,7 @@
 
 //=================   Regression tests   =====================
 
-#ifdef TEST_MMFATL
+#ifdef TEST_ENABLE
 
 /*  automatic testing to prevent regression   */
 
@@ -31,7 +31,7 @@ bool testSuccessMessage(bool silent)
 
 void test_mmfatl(bool* ok)
 {
-    bool silent = TEST_MMFATL_SILENT;
+    bool silent = TEST_SILENT;
 
     *ok = *ok
         && testSuccessMessage(silent);
