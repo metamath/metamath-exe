@@ -129,7 +129,6 @@ then
   # create an executable running regression tests
   make "CFLAGS=-DBUILD_REQUESTS_REGRESSION_TEST"
   mv src/metamath "$top_dir"/metamath_test
-  make clean
 else
   # normal executable
   make
