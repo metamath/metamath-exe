@@ -65,14 +65,13 @@
  * compiler skips any test code, so the artifact size will not grow.  All in
  * all, a disabled test suite does not come with a linking or runtime penalty.
  *
- * If enabled, running tests document their progress to stdout.  Testing stops
+ * If enabled, running tests document their progress to stdout.  Testing exits
  * on the first regression found with a diagnostic message further detailing on
- * the context of the failure.  The tests, if called as described above, do not
- * interfere with Metamath program behaviour, even not when detecting a
- * regression, in any way other than generating extra output on program start.
+ * the context of the failure.
  *
  * We recommend running the tests each time you modify mmfatl.h or mmfatl.c
- * to ensure it still executes as desired.
+ * to ensure it still executes as desired.  They are automatically invoked by
+ * Github checks on each push request.
  */
 
 // Setting TEST_MMFATL to en/disable regression tests in this module
