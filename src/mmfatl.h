@@ -105,7 +105,7 @@
     /* regression tests are implemented and called through this function */
     extern void test_mmfatl(bool*);
 #else
-    /* still necessary should another unit requests regression tests */
+    /* still necessary should another unit request regression tests */
 #   define test_mmfatl(x)
 #endif
 
