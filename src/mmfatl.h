@@ -96,14 +96,14 @@
  * tests in this file unconditionally
  */
 // #undef TEST_MMFATL
-#define TEST_MMFATL
+// #define TEST_MMFATL
 
 #ifdef TEST_MMFATL
 
 /* enable regression tests in main() in metamath.c */
 #   define RUN_REGRESSION_TEST
     /* regression tests are implemented and called through this function */
-    extern bool test_mmfatl(void);
+    extern void test_mmfatl(bool*);
 #endif
 
 #endif /* include guard */

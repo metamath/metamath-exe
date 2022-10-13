@@ -29,14 +29,12 @@ bool testSuccessMessage(bool silent)
     return true;
 }
 
-bool test_mmfatl()
+void test_mmfatl(bool* ok)
 {
     bool silent = TEST_MMFATL_SILENT;
 
-    bool ok = true
+    *ok = *ok
         && testSuccessMessage(silent);
-
-    return ok;
 }
 
 #endif

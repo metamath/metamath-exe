@@ -743,8 +743,11 @@ int main(int argc, char *argv[]) {
 
 # ifdef RUN_REGRESSION_TEST
 
-  bool regressionTestResult =
-    test_mmfatl();
+// activated if at least one unit requests regression tests
+
+  bool regressionTestResult = true;
+
+  test_mmfatl(&regressionTestResult);
 
   exit(regressionTestResult? EXIT_SUCCESS : EXIT_FAILURE);
 
