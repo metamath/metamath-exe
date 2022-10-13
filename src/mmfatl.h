@@ -79,6 +79,7 @@
 // Setting TEST_ENABLE to en/disable regression tests in this module
 //------------------------------------------------------------------
 
+#undef TEST_FORCE_ENABLE
 /* uncomment one of the following to enforce disabling/enabling of regression
  * tests in this file unconditionally
  */
