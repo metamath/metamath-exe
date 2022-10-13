@@ -104,6 +104,9 @@
 #   define RUN_REGRESSION_TEST
     /* regression tests are implemented and called through this function */
     extern void test_mmfatl(bool*);
+#else
+    /* still necessary should another unit requests regression tests */
+#   define test_mmfatl(x)
 #endif
 
 #endif /* include guard */
