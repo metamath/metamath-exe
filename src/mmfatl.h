@@ -82,7 +82,7 @@
 /* uncomment one of the following to enforce disabling/enabling of regression
  * tests in this file unconditionally
  */
- #define TEST_FORCE_ENABLE 0
+// #define TEST_FORCE_ENABLE 0
 // #define TEST_FORCE_ENABLE 1
 
 /* the function running regression tests in this module */
