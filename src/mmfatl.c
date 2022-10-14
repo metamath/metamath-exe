@@ -79,36 +79,15 @@ bool test_initBuffer(bool silent)
     // check the buffer is filled with NUL...
     for (; ok && i < BUFFERSIZE; ++i)
         ok = buffer[i] == NUL;
+    // ...and has the ELLIPSIS string at the end...
+    char ellipsis[] = ELLIPSIS;
+    unsigned j = 0;
+    for (; ok && ellipsis[j] != NUL; ++i, ++j)
+        ok = buffer[i] == ellipsis[j];
+    ok = ok && buffer[i] == NUL;
     if (!ok)
-       printf("initBuffer: uninitialized character at offset %u\n", i);
-    else
-    {
-        // ...and has the ELLIPSIS string at the end...
-        char ellipsis[] = ELLIPSIS;
-        unsigned j = 0;
-        unsigned tailStart = i;
-
-        for (; ok && ellipsis[j] != NUL; ++i, ++j)
-            ok = buffer[i] == ellipsis[j];
-        if (!ok)
-        {
-            char bufferTail[sizeof(ELLIPSIS) + 1];
-
-            bufferTail[sizeof(ELLIPSIS)] = NUL;
-            memcpy(bufferTail, buffer + tailStart, sizeof(ELLIPSIS));
-
-            printf("initBuffer: assumed %s at the end, found %s instead\n",
-                   ellipsis, bufferTail);
-        }
-    }
-    if (ok)
-    {
-        ok = buffer[i] == NUL;
-        if (!ok)
-            printf("initBuffer: "
-                "no NUL character following the ellipsis at the end\n");
-    }
-    if (ok && !silent)
+        printf("initBuffer: initialization failed\n");
+    else if (!silent)
         printf("initBuffer OK\n");
     return ok;
 }
