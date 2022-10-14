@@ -703,6 +703,7 @@
 
 /*----------------------------------------------------------------------*/
 
+#undef RUN_REGRESSION_TEST
 
 #include <string.h>
 #include <stdlib.h>
@@ -742,7 +743,6 @@ int main(int argc, char *argv[]) {
 /* argc is the number of arguments; argv points to an array containing them */
 
 # ifdef RUN_REGRESSION_TEST
-
 // activated if at least one unit requests regression tests
 
   bool regressionTestResult = true;

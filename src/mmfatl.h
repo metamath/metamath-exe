@@ -79,6 +79,7 @@
 // Setting TEST_ENABLE to en/disable regression tests in this module
 //------------------------------------------------------------------
 
+// in case an included header has set this to something
 #undef TEST_FORCE_ENABLE
 /* uncomment one of the following to enforce disabling/enabling of regression
  * tests in this file unconditionally
@@ -86,47 +87,50 @@
 // #define TEST_FORCE_ENABLE 0
 // #define TEST_FORCE_ENABLE 1
 
-/* the function running regression tests in this module */
+// the function running regression tests in this module
 #define TEST_FUNCTION(x) test_mmfatl(x)
 
 /* -----   copy & paste code, the same in all modules -----  */
 
-/* in case an included header file of another module has defined it */
-#undef TEST_ENABLE
-
 /* If BUILD_REQUESTS_REGRESSION_TEST is defined compilation of regression
  * tests is requested from somewhere outside of C files.  This can still be
- * overridden locally by setting TEST_ENABLE explicitely below.
+ * overridden locally by setting TEST_FORCE_ENABLE explicitely before.
  */
+#undef TEST_SILENT
+#undef TEST_ENABLE
+
 #ifdef BUILD_REQUESTS_REGRESSION_TEST
-#   define TEST_ENABLE
-/* optimized for continuous integration, suppresses success messages */
+// optimized for continuous integration, suppresses success messages
 #   define TEST_SILENT true
+#   define TEST_ENABLE 1
 #else
-/* each test prints a confirmation on the screen */  
+// each test prints a confirmation on the screen
 #   define TEST_SILENT false
+#   define TEST_ENABLE 0
 #endif
 
+// we do not assume TEST_FORCE_ENABLE is restricted to 0 or 1
 #ifdef TEST_FORCE_ENABLE
+#   undef TEST_ENABLE
 #   if TEST_FORCE_ENABLE
-#       define TEST_ENABLE
+#       define TEST_ENABLE 1
 #   else
-#       undef TEST_ENABLE
+#       define TEST_ENABLE 0
 #   endif
 #endif
 
-#ifdef TEST_ENABLE
+#if TEST_ENABLE
 
-/* enable regression tests in main() in metamath.c */
+// enable regression tests in main() in metamath.c
 #   define RUN_REGRESSION_TEST
-    /* regression tests are implemented and called through this function */
+    // regression tests are implemented and called through this function
     extern void TEST_FUNCTION(bool*);
 #endif
 
 /* -----   end of copy & paste code   ----- */
 
-#ifndef TEST_ENABLE
-    /* still necessary should another module request regression tests */
+#if ! TEST_ENABLE
+    // still necessary should another module request regression tests
 #   define test_mmfatl(x)
 #endif
 
