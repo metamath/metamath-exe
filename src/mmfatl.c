@@ -117,6 +117,8 @@ bool testSuccessMessage(bool silent)
 {
     if (!silent)
         printf("Regression tests in " __FILE__ " indicate no error\n\n");
+    else
+        printf("Regression tests in " __FILE__ " OK\n");
     return true;
 }
 
