@@ -94,7 +94,7 @@
 
 /* If BUILD_REQUESTS_REGRESSION_TEST is defined compilation of regression
  * tests is requested from somewhere outside of C files.  This can still be
- * overridden locally by setting TEST_FORCE_ENABLE explicitely before.
+ * overridden locally by setting TEST_FORCE_ENABLE explicitly before.
  */
 #undef TEST_SILENT
 #undef TEST_ENABLE
