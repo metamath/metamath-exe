@@ -101,7 +101,7 @@
 
 #ifdef BUILD_REQUESTS_REGRESSION_TEST
 // optimized for continuous integration, suppresses success messages
-#   define TEST_SILENT true
+#   define TEST_SILENT false
 #   define TEST_ENABLE 1
 #else
 // each test prints a confirmation on the screen
