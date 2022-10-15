@@ -73,7 +73,7 @@ static void initBuffer()
 #define CHECK_TRUE(bool_expr)                      \
     if(!(bool_expr)) {                             \
         printf("assertion %s failed", #bool_expr); \
-        printf(" at %u:%s\n", __LINE__, __FILE__); \
+        printf(" at %u:%s\n", __FILE__, __LINE__); \
         exit(EXIT_FAILURE);                              \
     }
     
