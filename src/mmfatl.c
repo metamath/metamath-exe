@@ -16,6 +16,9 @@
 
 #include "mmfatl.h"
 
+/*!
+ * character constant
+ */ 
 #define NUL '\x00'
 
 //----------
@@ -44,7 +47,7 @@
  */
 #define ELLIPSIS "..."
 
-char buffer[BUFFERSIZE + sizeof(ELLIPSIS)];
+static char buffer[BUFFERSIZE + sizeof(ELLIPSIS)];
 
 /*
  * We do not rely on any initialization during program start.  Instead we

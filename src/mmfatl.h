@@ -52,7 +52,7 @@
  * ================
  *
  * If the macro **BUILD_REQUESTS_REGRESSION_TEST** is defined (option -t of
- * build.sh) or **TEST_MMFATL** is defined, then regression tests are
+ * build.sh) or **TEST_FORCE_ENABLE** is defined, then regression tests are
  * implemented.  Invoke in addition option -c on build.sh, should you switch
  * between with/out testing, but no intermediate source file change.
  *
@@ -76,6 +76,7 @@
  * Github checks on each push request.
  */
 
+
 // Setting TEST_ENABLE to en/disable regression tests in this module
 //------------------------------------------------------------------
 
@@ -92,15 +93,34 @@
 
 /* -----   copy & paste code, the same in all modules -----  */
 
-/* If BUILD_REQUESTS_REGRESSION_TEST is defined compilation of regression
- * tests is requested from somewhere outside of C files.  This can still be
- * overridden locally by setting TEST_FORCE_ENABLE explicitly before.
+/*!
+ * \def TEST_SILENT
+ * macro, either true or false.
+ *
+ * Controls the verbosity of a regression test.  If true, success messages are
+ * mostly suppressed during a test run.  A failing test always produces output.
  */
 #undef TEST_SILENT
+
+/*!
+ * \def TEST_ENABLE
+ * macro, is either 0 or 1.
+ *
+ * Controls whether the regression tests for a
+ * particular module is in/excluded.
+ */
 #undef TEST_ENABLE
 
+/*!
+ * \def BUILD_REQUESTS_REGRESSION_TEST
+ * If BUILD_REQUESTS_REGRESSION_TEST is defined, compilation of regression
+ * tests is requested from somewhere outside of C files.  This can still be
+ * overridden locally by setting TEST_FORCE_ENABLE explicitly before.
+ * 
+ * BUILD_REQUESTS_REGRESSION_TEST is only set by the build process and must
+ * never be changed by software.
+ */
 #ifdef BUILD_REQUESTS_REGRESSION_TEST
-// optimized for continuous integration, suppresses success messages
 #   define TEST_SILENT false
 #   define TEST_ENABLE 1
 #else
@@ -109,7 +129,12 @@
 #   define TEST_ENABLE 0
 #endif
 
-// we do not assume TEST_FORCE_ENABLE is restricted to 0 or 1
+/*! \def TEST_FORCE_ENABLE
+ * allows overriding the BUILD_REQUESTS_REGRESSION_TEST setting and
+ * unconditionally implement or disable regression tests local to this module.
+ * Set to 1 to enable tests, 0 to disable them locally, or leave it undefined
+ * if you want default behaviour.
+ */
 #ifdef TEST_FORCE_ENABLE
 #   undef TEST_ENABLE
 #   if TEST_FORCE_ENABLE

@@ -35,6 +35,7 @@ print_help=0
 version_only=0
 version_for_autoconf=0
 unset dest_dir
+unset doc_dir
 top_dir="$(pwd)"
 
 while getopts abcdhm:o:tv flag
@@ -62,6 +63,7 @@ fi
 
 src_dir="$top_dir/src"
 build_dir=${dest_dir:-"$top_dir/build"}
+doc_dir=${dest_dir:-"$top_dir/build"}
 
 # verify we can navigate to the sources
 if [ ! -f "$src_dir/metamath.c" ]
@@ -139,6 +141,8 @@ fi
 
 if [ $do_doc -eq 1 ]
 then
+  rm -rf "$doc_dir/html"
+
   if ! command doxygen -v &> /dev/null; then
     echo >&2 'doxygen not found. Cannot build documentation.'
     exit 1
@@ -160,12 +164,12 @@ then
 
   # ... except for the source/destination directory.  Force this to folders
   # based on this build.
-  echo "OUTPUT_DIRECTORY = \"$build_dir\"" >> Doxyfile.local
+  echo "OUTPUT_DIRECTORY = \"$doc_dir\"" >> Doxyfile.local
   echo "INPUT = \"$src_dir\"" >> Doxyfile.local
 
   # make sure the logo is in the build directory
   cp --force --symbolic-link "$top_dir/doc/Metamath.png" .
 
   doxygen Doxyfile.local
-  echo "Documentation has been generated at $build_dir/html/index.html"
+  echo "Documentation has been generated at $doc_dir/html/index.html"
 fi
