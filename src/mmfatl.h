@@ -85,7 +85,7 @@
  * tests in this file unconditionally
  */
 // #define TEST_FORCE_ENABLE 0
- #define TEST_FORCE_ENABLE 1
+// #define TEST_FORCE_ENABLE 1
 
 // the function running regression tests in this module
 #define TEST_FUNCTION(x) test_mmfatl(x)
