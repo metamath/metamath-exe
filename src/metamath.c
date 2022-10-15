@@ -743,13 +743,12 @@ int main(int argc, char *argv[]) {
 /* argc is the number of arguments; argv points to an array containing them */
 
 # ifdef RUN_REGRESSION_TEST
-// activated if at least one unit requests regression tests
+// activated if at least one unit requests regression tests.
+// a failing test MUST terminate the program with exit(EXIT_FAILURE).
 
-  bool regressionTestResult = true;
+  test_mmfatl();
 
-  test_mmfatl(&regressionTestResult);
-
-  exit(regressionTestResult? EXIT_SUCCESS : EXIT_FAILURE);
+  exit(EXIT_SUCCESS);
 
 # endif
 

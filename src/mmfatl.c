@@ -65,49 +65,60 @@ static void initBuffer()
 
 #if TEST_ENABLE
 
-/*  automatic testing to prevent regression   */
+/* -----   copy & paste code, the same in all modules -----  */
 
-bool test_initBuffer(bool silent)
+/*
+ * If bool_expr evaluates to false, print the message and return to caller
+ */
+#define CHECK_TRUE(bool_expr)                      \
+    if(!(bool_expr)) {                             \
+        printf("assertion %s failed", #bool_expr); \
+        printf(" at %u:%s\n", __LINE__, __FILE__); \
+        exit(EXIT_FAILURE);                              \
+    }
+    
+#define REGRESSION_TEST_SUCCESS            \
+    printf("Regression tests in " __FILE__ \
+        " completed with success\n");
+
+#define SINGLE_TEST_SUCCESS(name) \
+    if (! TEST_SILENT )                          \
+      printf(#name " OK\n");
+
+/* -----   end of copy & paste code   ----- */
+
+void test_initBuffer()
 {
     // emulate memory corruption
     memset(buffer, 'x', sizeof(buffer));
 
     initBuffer();
 
-    bool ok = true;
     unsigned i = 0;
+
     // check the buffer is filled with NUL...
-    for (; ok && i < BUFFERSIZE; ++i)
-        ok = buffer[i] == NUL;
+    for (;i < BUFFERSIZE; ++i)
+        CHECK_TRUE(buffer[i] == NUL)
+
     // ...and has the ELLIPSIS string at the end...
     char ellipsis[] = ELLIPSIS;
     unsigned j = 0;
-    for (; ok && ellipsis[j] != NUL; ++i, ++j)
-        ok = buffer[i] == ellipsis[j];
-    ok = ok && buffer[i] == NUL;
-    if (!ok)
-        printf("initBuffer: initialization failed\n");
-    else if (!silent)
-        printf("initBuffer OK\n");
-    return ok;
+    for (;ellipsis[j] != NUL; ++i, ++j)
+        CHECK_TRUE(buffer[i] == ellipsis[j])
+
+    // ... and a terminating NUL character
+    CHECK_TRUE(buffer[i] == NUL)
+    
+    CHECK_TRUE(1 == 2)
+
+    SINGLE_TEST_SUCCESS(initBuffer)
 }
 
-bool testSuccessMessage(bool silent)
-{
-    if (!silent)
-        printf("Regression tests in " __FILE__ " indicate no error\n\n");
-    else
-        printf("Regression tests in " __FILE__ " OK\n");
-    return true;
-}
 
-void test_mmfatl(bool* ok)
+void test_mmfatl()
 {
-    bool silent = TEST_SILENT;
-
-    *ok = *ok
-        && test_initBuffer(silent)
-        && testSuccessMessage(silent);
+    test_initBuffer();
+    REGRESSION_TEST_SUCCESS
 }
 
 #endif // TEST_ENABLE

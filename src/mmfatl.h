@@ -85,7 +85,7 @@
  * tests in this file unconditionally
  */
 // #define TEST_FORCE_ENABLE 0
-// #define TEST_FORCE_ENABLE 1
+ #define TEST_FORCE_ENABLE 1
 
 // the function running regression tests in this module
 #define TEST_FUNCTION(x) test_mmfatl(x)
@@ -124,7 +124,7 @@
 // enable regression tests in main() in metamath.c
 #   define RUN_REGRESSION_TEST
     // regression tests are implemented and called through this function
-    extern void TEST_FUNCTION(bool*);
+    extern void TEST_FUNCTION();
 #endif
 
 /* -----   end of copy & paste code   ----- */
