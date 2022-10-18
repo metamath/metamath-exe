@@ -4,6 +4,7 @@ autom4te.cache/
 stamp-h1
 missing
 metamath
+metamath_test
 Makefile
 Makefile.in
 compile

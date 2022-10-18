@@ -18,25 +18,11 @@
 
 /*!
  * character constant
- */ 
+ */
 #define NUL '\x00'
 
 //----------
 
-/*
- * During development you may not want to expose preliminary results to the
- * normal compile, as this would trigger 'unused' warnings, for example.  In
- * the regression test environment your code may be referenced by testing code,
- * though.
- *
- * This section should be empty, or even removed, once your development is
- * finished.
- */
-#if TEST_ENABLE
-#   define UNDER_DEVELOPMENT
-#endif
-
-#ifdef UNDER_DEVELOPMENT
 /* the size a fatal error message including the terminating NUL character can
  * assume without truncation.
  */
@@ -54,84 +40,43 @@ static char buffer[BUFFERSIZE + sizeof(ELLIPSIS)];
  * assume the worst case, a corrupted pointer overwrote the buffer.  So we
  * initialize it again immediately before use.
  */
-static void initBuffer()
-{
-    char ellipsis[] = ELLIPSIS;
+static void initBuffer(void) {
+  char ellipsis[] = ELLIPSIS;
 
-    memset(buffer, NUL, BUFFERSIZE);
-    memcpy(buffer + BUFFERSIZE, ellipsis, sizeof(ellipsis));
+  memset(buffer, NUL, BUFFERSIZE);
+  memcpy(buffer + BUFFERSIZE, ellipsis, sizeof(ellipsis));
 }
-
-#endif // UNDER_DEVELOPMENT
 
 //=================   Regression tests   =====================
 
-#if TEST_ENABLE
+#ifdef TEST_ENABLE
 
-/* -----   copy & paste code, the same in all modules -----  */
+bool test_initBuffer(void) {
+  // emulate memory corruption
+  memset(buffer, 'x', sizeof(buffer));
 
-/*
- * If bool_expr evaluates to false, print an error message and die.
- *
- * Use the string constant 'context' to easily identify the error location, in
- * particular if file and line number is not sufficient to locate the failing
- * test. 
- */
-#define CHECK_TRUE_W_CONTEXT(bool_expr, context)   \
-    if(!(bool_expr)) {                             \
-        printf("%s:\n", context);                  \
-        printf("assertion %s failed", #bool_expr); \
-        printf(" at %s:%u\n", __FILE__, __LINE__); \
-        exit(EXIT_FAILURE);                        \
-    }
+  initBuffer();
 
-/*
- * If bool_expr evaluates to false, print an error message and die.
- *
- * File, line and the function this macro is embedded in is sufficient to
- * identify the error position.
- */
-#define CHECK_TRUE(bool_expr) CHECK_TRUE_W_CONTEXT(bool_expr, __func__)
+  unsigned i = 0;
 
-#define REGRESSION_TEST_SUCCESS            \
-    printf("Regression tests in " __FILE__ \
-        " completed with success\n");
+  // check the buffer is filled with NUL...
+  for (;i < BUFFERSIZE; ++i)
+    ASSERT(buffer[i] == NUL);
 
-#define SINGLE_TEST_SUCCESS(name) \
-    if (! TEST_SILENT )           \
-      printf(#name " OK\n");
+  // ...and has the ELLIPSIS string at the end...
+  char ellipsis[] = ELLIPSIS;
+  unsigned j = 0;
+  for (;ellipsis[j] != NUL; ++i, ++j)
+    ASSERT(buffer[i] == ellipsis[j]);
 
-/* -----   end of copy & paste code   ----- */
-
-void test_initBuffer()
-{
-    // emulate memory corruption
-    memset(buffer, 'x', sizeof(buffer));
-
-    initBuffer();
-
-    unsigned i = 0;
-
-    // check the buffer is filled with NUL...
-    for (;i < BUFFERSIZE; ++i)
-        CHECK_TRUE(buffer[i] == NUL)
-
-    // ...and has the ELLIPSIS string at the end...
-    char ellipsis[] = ELLIPSIS;
-    unsigned j = 0;
-    for (;ellipsis[j] != NUL; ++i, ++j)
-        CHECK_TRUE(buffer[i] == ellipsis[j])
-
-    // ... and a terminating NUL character
-    CHECK_TRUE(buffer[i] == NUL)
-
-    SINGLE_TEST_SUCCESS(initBuffer)
+  // ... and a terminating NUL character
+  ASSERT(buffer[i] == NUL);
+  ASSERT(0 == 1);
+  return true;
 }
 
-void test_mmfatl()
-{
-    test_initBuffer();
-    REGRESSION_TEST_SUCCESS
+void test_mmfatl(void) {
+  RUN_TEST(test_initBuffer);
 }
 
 #endif // TEST_ENABLE

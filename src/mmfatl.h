@@ -8,6 +8,7 @@
 #define METAMATH_MMFATL_H_
 
 #include <stdbool.h>
+#include "mmtest.h"
 
 /*!
  * \file mmfatl.h
@@ -47,116 +48,12 @@
  * For this kind of expansion you still need a buffer where the final message
  * is constructed.  In our context, this buffer is pre-allocated, and fixed in
  * size, truncation of overflowing text enforced.
- *
- * Regression tests
- * ================
- *
- * If the macro **BUILD_REQUESTS_REGRESSION_TEST** is defined (option -t of
- * build.sh) or **TEST_FORCE_ENABLE** is defined, then regression tests are
- * implemented.  Invoke in addition option -c on build.sh, should you switch
- * between with/out testing, but no intermediate source file change.
- *
- * In order to run implemented regression tests properly we suggest to add a
- * \code{.c}
- * test_mmfatl();
- * \endcode
- * line to main() close to its begin and **before** any function declared in
- * this header file is called.
- *
- * If tests are disabled this line evaluates to nothing.  In addition, the
- * compiler skips any test code, so the artifact size will not grow.  All in
- * all, a disabled test suite does not come with a linking or runtime penalty.
- *
- * If enabled, running tests document their progress to stdout.  Testing exits
- * on the first regression found with a diagnostic message further detailing on
- * the context of the failure.
- *
- * We recommend running the tests each time you modify mmfatl.h or mmfatl.c
- * to ensure it still executes as desired.  They are automatically invoked by
- * Github checks on each push request.
  */
 
+#ifdef TEST_ENABLE
 
-// Setting TEST_ENABLE to en/disable regression tests in this module
-//------------------------------------------------------------------
+extern void test_mmfatl(void);
 
-// in case an included header has set this to something
-#undef TEST_FORCE_ENABLE
-/* uncomment one of the following to enforce disabling/enabling of regression
- * tests in this file unconditionally
- */
-// #define TEST_FORCE_ENABLE 0
-// #define TEST_FORCE_ENABLE 1
-
-// the function running regression tests in this module
-#define TEST_FUNCTION(x) test_mmfatl(x)
-
-/* -----   copy & paste code, the same in all modules -----  */
-
-/*!
- * \def TEST_SILENT
- * macro, either true or false.
- *
- * Controls the verbosity of a regression test.  If true, success messages are
- * mostly suppressed during a test run.  A failing test always produces output.
- */
-#undef TEST_SILENT
-
-/*!
- * \def TEST_ENABLE
- * macro, is either 0 or 1.
- *
- * Controls whether the regression tests for a
- * particular module is in/excluded.
- */
-#undef TEST_ENABLE
-
-/*!
- * \def BUILD_REQUESTS_REGRESSION_TEST
- * If BUILD_REQUESTS_REGRESSION_TEST is defined, compilation of regression
- * tests is requested from somewhere outside of C files.  This can still be
- * overridden locally by setting TEST_FORCE_ENABLE explicitly before.
- * 
- * BUILD_REQUESTS_REGRESSION_TEST is only set by the build process and must
- * never be changed by software.
- */
-#ifdef BUILD_REQUESTS_REGRESSION_TEST
-#   define TEST_SILENT false
-#   define TEST_ENABLE 1
-#else
-// each test prints a confirmation on the screen
-#   define TEST_SILENT false
-#   define TEST_ENABLE 0
-#endif
-
-/*! \def TEST_FORCE_ENABLE
- * allows overriding the BUILD_REQUESTS_REGRESSION_TEST setting and
- * unconditionally implement or disable regression tests local to this module.
- * Set to 1 to enable tests, 0 to disable them locally, or leave it undefined
- * if you want default behaviour.
- */
-#ifdef TEST_FORCE_ENABLE
-#   undef TEST_ENABLE
-#   if TEST_FORCE_ENABLE
-#       define TEST_ENABLE 1
-#   else
-#       define TEST_ENABLE 0
-#   endif
-#endif
-
-#if TEST_ENABLE
-
-// enable regression tests in main() in metamath.c
-#   define RUN_REGRESSION_TEST
-    // regression tests are implemented and called through this function
-    extern void TEST_FUNCTION();
-#endif
-
-/* -----   end of copy & paste code   ----- */
-
-#if ! TEST_ENABLE
-    // still necessary should another module request regression tests
-#   define test_mmfatl(x)
 #endif
 
 #endif /* include guard */

@@ -129,7 +129,7 @@ fi
 if [ $do_make_test -eq 1 ]
 then
   # create an executable running regression tests
-  make "CFLAGS=-DBUILD_REQUESTS_REGRESSION_TEST"
+  make "CFLAGS=-DTEST_ENABLE"
   mv src/metamath "$top_dir"/metamath_test
 else
   # normal executable
