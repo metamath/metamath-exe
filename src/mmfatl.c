@@ -72,11 +72,11 @@ static void initBuffer()
 
 /*
  * Use this extension of CHECK_TRUE if file and line number is not
- * sufficient to locate the failing test.
+ * sufficient to locate the failing test.  context is a string constant. 
  */
 #define CHECK_TRUE_W_CONTEXT(bool_expr, context)         \
     if(!(bool_expr)) {                                   \
-        printf("In %s\n", #context);                     \
+        printf(context);                                 \
         printf("assertion %s failed", #bool_expr);       \
         printf(" in %s at %s:%u\n", __FILE__, __LINE__); \
         exit(EXIT_FAILURE);                              \
