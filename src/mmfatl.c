@@ -71,21 +71,28 @@ static void initBuffer()
 /* -----   copy & paste code, the same in all modules -----  */
 
 /*
- * If bool_expr evaluates to false, print the message and return to caller
+ * Use this extension of CHECK_TRUE if file and line number is not
+ * sufficient to locate the failing test.
  */
-#define CHECK_TRUE(bool_expr)                      \
-    if(!(bool_expr)) {                             \
-        printf("assertion %s failed", #bool_expr); \
-        printf(" at %s:%u\n", __FILE__, __LINE__); \
+#define CHECK_TRUE_W_CONTEXT(bool_expr, context)         \
+    if(!(bool_expr)) {                                   \
+        printf("In %s\n", #context);                     \
+        printf("assertion %s failed", #bool_expr);       \
+        printf(" in %s at %s:%u\n", __FILE__, __LINE__); \
         exit(EXIT_FAILURE);                              \
     }
-    
+
+/*
+ * If bool_expr evaluates to false, print the message and return to caller
+ */
+#define CHECK_TRUE(bool_expr) CHECK_TRUE_W_CONTEXT(bool_expr, __func__)
+
 #define REGRESSION_TEST_SUCCESS            \
     printf("Regression tests in " __FILE__ \
         " completed with success\n");
 
 #define SINGLE_TEST_SUCCESS(name) \
-    if (! TEST_SILENT )                          \
+    if (! TEST_SILENT )           \
       printf(#name " OK\n");
 
 /* -----   end of copy & paste code   ----- */
