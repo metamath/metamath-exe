@@ -23,6 +23,21 @@
 
 //----------
 
+/*
+ * During development you may not want to expose preliminary results to the
+ * normal compile, as this would trigger 'unused' warnings, for example.  In
+ * the regression test environment your code may be referenced by testing code,
+ * though.
+ *
+ * This section should be empty, or even removed, once your development is
+ * finished.
+ */
+#if TEST_ENABLE
+#   define UNDER_DEVELOPMENT
+#endif
+
+#ifdef UNDER_DEVELOPMENT
+
 /* the size a fatal error message including the terminating NUL character can
  * assume without truncation.
  */
@@ -46,6 +61,8 @@ static void initBuffer(void) {
   memset(buffer, NUL, BUFFERSIZE);
   memcpy(buffer + BUFFERSIZE, ellipsis, sizeof(ellipsis));
 }
+
+#endif // UNDER_DEVELOPMENT
 
 //=================   Regression tests   =====================
 
