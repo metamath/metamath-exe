@@ -703,8 +703,6 @@
 
 /*----------------------------------------------------------------------*/
 
-#undef RUN_REGRESSION_TEST
-
 #include <string.h>
 #include <stdlib.h>
 #include "mmvstr.h"
@@ -746,7 +744,6 @@ int main(int argc, char *argv[]) {
 #ifdef TEST_ENABLE // enable this in mmtest.h or via './build.sh -t'
 
   RUN_TESTS();
-  exit(EXIT_SUCCESS);
 #endif
 
   /****** If g_listMode is set to 1 here, the startup will be Text Tools
