@@ -119,6 +119,8 @@ void test_initBuffer()
     // ... and a terminating NUL character
     CHECK_TRUE(buffer[i] == NUL)
 
+    CHECK_TRUE(1 == 2)
+
     SINGLE_TEST_SUCCESS(initBuffer)
 }
 
