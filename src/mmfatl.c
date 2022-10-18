@@ -85,7 +85,7 @@ static void initBuffer()
 /*
  * If bool_expr evaluates to false, print the message and return to caller
  */
-#define CHECK_TRUE(bool_expr) CHECK_TRUE_W_CONTEXT(bool_expr, __func__)
+#define CHECK_TRUE(bool_expr) CHECK_TRUE_W_CONTEXT(bool_expr, "")
 
 #define REGRESSION_TEST_SUCCESS            \
     printf("Regression tests in " __FILE__ \
