@@ -34,11 +34,6 @@
  * be called when heap problems arise, since they use it internally.  GNU tags
  * such functions as 'AS-Unsafe heap' in their documentation (libc.pdf).
  *
- * A corrupt state is often caused by limit violations overwriting adjacent
- * memory.  To specifically guard against this, the pre-allocated memory area,
- * at your option, may include safety borders detaching necessary pre-set
- * administrative data from other memory.
- *
  * Often it is sensible to embed details in a diagnosis message.  Placeholders
  * in the format string mark insertion points for such values, much as in
  * \p printf. The variety and functionality is greatly reduced in our case,
