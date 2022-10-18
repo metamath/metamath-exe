@@ -64,6 +64,7 @@ static void initBuffer(void) {
 
 #endif // UNDER_DEVELOPMENT
 
+
 //=================   Regression tests   =====================
 
 #ifdef TEST_ENABLE

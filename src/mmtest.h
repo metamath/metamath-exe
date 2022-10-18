@@ -62,7 +62,8 @@
 
 #ifdef TEST_ENABLE
 
-  extern void runTest(bool (*test)(), const char* funcName, const char* testName);
+  extern void runTest(
+      bool (*test)(), const char* funcName, const char* testName);
   #define RUN_TEST(testName) runTest(testName, __func__, #testName)
 
   /*
@@ -73,12 +74,12 @@
   * sufficient to locate the failing test.
   * Accepts a format string for the assertion message.
   */
-  #define ASSERTF(bool_expr, ...)                \
-    if (!(bool_expr)) {                          \
-      printf("\n%s: ", __func__);                \
-      printf(__VA_ARGS__);                       \
+  #define ASSERTF(bool_expr, ...)              \
+    if (!(bool_expr)) {                        \
+      printf("\n%s: ", __func__);              \
+      printf(__VA_ARGS__);                     \
       printf(" at %s:%u", __FILE__, __LINE__); \
-      return false;                              \
+      return false;                            \
     }
 
   /*
@@ -88,7 +89,8 @@
   * File, line and the function this macro is embedded in is sufficient to
   * identify the error position.
   */
-  #define ASSERT(bool_expr) ASSERTF(bool_expr, "assertion %s failed", #bool_expr)
+  #define ASSERT(bool_expr) \
+      ASSERTF(bool_expr, "assertion %s failed", #bool_expr)
 
   extern void runTests(void);
   #define RUN_TESTS() runTests()
