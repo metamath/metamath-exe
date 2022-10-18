@@ -72,20 +72,20 @@ static void initBuffer()
 
 /*
  * Use this extension of CHECK_TRUE if file and line number is not
- * sufficient to locate the failing test.  context is a string constant. 
+ * sufficient to locate the failing test.  'context' is a string constant. 
  */
-#define CHECK_TRUE_W_CONTEXT(bool_expr, context)         \
-    if(!(bool_expr)) {                                   \
-        printf(context);                                 \
-        printf("assertion %s failed", #bool_expr);       \
+#define CHECK_TRUE_W_CONTEXT(bool_expr, context)   \
+    if(!(bool_expr)) {                             \
+        printf("%s:\n", context);                  \
+        printf("assertion %s failed", #bool_expr); \
         printf(" at %s:%u\n", __FILE__, __LINE__); \
-        exit(EXIT_FAILURE);                              \
+        exit(EXIT_FAILURE);                        \
     }
 
 /*
  * If bool_expr evaluates to false, print the message and return to caller
  */
-#define CHECK_TRUE(bool_expr) CHECK_TRUE_W_CONTEXT(bool_expr, __func__" ")
+#define CHECK_TRUE(bool_expr) CHECK_TRUE_W_CONTEXT(bool_expr, __func__)
 
 #define REGRESSION_TEST_SUCCESS            \
     printf("Regression tests in " __FILE__ \
