@@ -88,8 +88,8 @@ static void initBuffer()
 /*
  * If bool_expr evaluates to false, print an error message and die.
  *
- * File, line and the function this macro is embedded is sufficient to identify
- * the error position.
+ * File, line and the function this macro is embedded in is sufficient to
+ * identify the error position.
  */
 #define CHECK_TRUE(bool_expr) CHECK_TRUE_W_CONTEXT(bool_expr, __func__)
 
