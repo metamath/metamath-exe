@@ -78,7 +78,7 @@ static void initBuffer()
     if(!(bool_expr)) {                                   \
         printf(context);                                 \
         printf("assertion %s failed", #bool_expr);       \
-        printf(" in %s at %s:%u\n", __FILE__, __LINE__); \
+        printf(" at %s:%u\n", __FILE__, __LINE__); \
         exit(EXIT_FAILURE);                              \
     }
 
