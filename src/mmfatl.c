@@ -71,7 +71,6 @@ bool test_initBuffer(void) {
 
   // ... and a terminating NUL character
   ASSERT(buffer[i] == NUL);
-  ASSERT(0 == 1);
   return true;
 }
 
