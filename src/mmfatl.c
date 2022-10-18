@@ -71,8 +71,11 @@ static void initBuffer()
 /* -----   copy & paste code, the same in all modules -----  */
 
 /*
- * Use this extension of CHECK_TRUE if file and line number is not
- * sufficient to locate the failing test.  'context' is a string constant. 
+ * If bool_expr evaluates to false, print an error message and die.
+ *
+ * Use the string constant 'context' to easily identify the error location, in
+ * particular if file and line number is not sufficient to locate the failing
+ * test. 
  */
 #define CHECK_TRUE_W_CONTEXT(bool_expr, context)   \
     if(!(bool_expr)) {                             \
@@ -83,7 +86,10 @@ static void initBuffer()
     }
 
 /*
- * If bool_expr evaluates to false, print the message and return to caller
+ * If bool_expr evaluates to false, print an error message and die.
+ *
+ * File, line and the function this macro is embedded is sufficient to identify
+ * the error position.
  */
 #define CHECK_TRUE(bool_expr) CHECK_TRUE_W_CONTEXT(bool_expr, __func__)
 
