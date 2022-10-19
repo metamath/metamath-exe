@@ -207,7 +207,7 @@ char const* testcase_appendText(char const* text, unsigned adv,
 }
 
 // wrapper macro to get the function, line number right, and prevent
-// further test cases
+// further test cases on error
 #define TESTCASE_appendText(format, adv, match, from, lg, begin)  \
   {                                                               \
     char const* errmsg =                                          \
