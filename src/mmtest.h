@@ -37,7 +37,7 @@
 
 /*!
  * \def TEST_ENABLE
- * macro, only defined or not is evaluated.
+ * macro, no value, just defined or not.
  *
  * Controls whether the regression tests for a
  * particular module is in/excluded.
