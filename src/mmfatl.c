@@ -227,7 +227,6 @@ bool test_appendText()
   // _ STRING, % FORMAT
   // corner case 1: insertion at the very beginning of the buffer
   TESTCASE_appendText("_$", 1, "$", -1, 2, 1);
-
   // corner case 2: empty text, placeholder handling
   TESTCASE_appendText("%", 0, "$", -1, 2, 1)
   TESTCASE_appendText("%%", 0, "$", -1, 2, 1);
@@ -235,7 +234,7 @@ bool test_appendText()
   TESTCASE_appendText("%abc", 3, "$abc", -4, 5, 4);
   TESTCASE_appendText("%def%", 3, "$abcdef", -7, 8, 7);
   TESTCASE_appendText("_gh%i", 4, "$abcdefgh%i", -11, 12, 11);
-  // corner case 3: checking for buffer overflow
+  // corner case 3: no space left
   buffer.begin = buffer.end;
   *(buffer.end - 1) = '$';
   *(buffer.end) = '$';
