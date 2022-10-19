@@ -137,7 +137,7 @@ enum TextType
  */
 static char const* appendText(char const* source, enum TextType type)
 {
-  char escape = type == FORMAT? PLACEHOLDER_CHAR : NUL;
+  char escape = type == FORMAT ? PLACEHOLDER_CHAR : NUL;
   while (buffer.begin != buffer.end
       && *source != NUL && *source != escape)
         *buffer.begin++ = *source++;
@@ -157,7 +157,7 @@ bool test_initBuffer(void) {
 
   initBuffer();
 
-  ASSERT(buffer.begin == buffer.text)
+  ASSERT(buffer.begin == buffer.text);
   unsigned i = 0;
 
   // check the buffer is filled with NUL...
@@ -182,8 +182,8 @@ char const* bufferCompare(char const* match, int from, unsigned lg,
 {
   if (memcmp(buffer.begin + from, match, lg) != 0)
     return "unexpected buffer contents";
-  return buffer.begin == buffer.text + begin?
-    (char const*)0 : "unexpected buffer begin";
+  return buffer.begin == buffer.text + begin ?
+    NULL : "unexpected buffer begin";
 }
 
 /*
@@ -200,8 +200,8 @@ char const* bufferCompare(char const* match, int from, unsigned lg,
 char const* testcase_appendText(char const* text, unsigned adv,
         char const* match, int from, int lg, unsigned begin)
 {
-    enum TextType type = *text == PLACEHOLDER_CHAR? FORMAT : STRING;
-    return appendText(text + 1, type) == text + adv + 1?
+    enum TextType type = *text == PLACEHOLDER_CHAR ? FORMAT : STRING;
+    return appendText(text + 1, type) == text + adv + 1 ?
                 bufferCompare(match, from, lg, begin)
                 : "format pointer not properly advanced";
 }
@@ -212,7 +212,7 @@ char const* testcase_appendText(char const* text, unsigned adv,
   {                                                               \
     char const* errmsg =                                          \
         testcase_appendText(format, adv, match, from, lg, begin); \
-    ASSERTF(errmsg == NULL, "%s\n", errmsg)                       \
+    ASSERTF(errmsg == NULL, "%s\n", errmsg);                      \
   }
 
 bool test_appendText()
