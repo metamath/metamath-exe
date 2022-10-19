@@ -8,6 +8,7 @@
 #define METAMATH_MMFATL_H_
 
 #include <stdbool.h>
+#include "mmtest.h"
 
 /*!
  * \file mmfatl.h
@@ -33,11 +34,6 @@
  * be called when heap problems arise, since they use it internally.  GNU tags
  * such functions as 'AS-Unsafe heap' in their documentation (libc.pdf).
  *
- * A corrupt state is often caused by limit violations overwriting adjacent
- * memory.  To specifically guard against this, the pre-allocated memory area,
- * at your option, may include safety borders detaching necessary pre-set
- * administrative data from other memory.
- *
  * Often it is sensible to embed details in a diagnosis message.  Placeholders
  * in the format string mark insertion points for such values, much as in
  * \p printf. The variety and functionality is greatly reduced in our case,
@@ -47,87 +43,12 @@
  * For this kind of expansion you still need a buffer where the final message
  * is constructed.  In our context, this buffer is pre-allocated, and fixed in
  * size, truncation of overflowing text enforced.
- *
- * Regression tests
- * ================
- *
- * If the macro **BUILD_REQUESTS_REGRESSION_TEST** is defined (option -t of
- * build.sh) or **TEST_MMFATL** is defined, then regression tests are
- * implemented.  Invoke in addition option -c on build.sh, should you switch
- * between with/out testing, but no intermediate source file change.
- *
- * In order to run implemented regression tests properly we suggest to add a
- * \code{.c}
- * test_mmfatl();
- * \endcode
- * line to main() close to its begin and **before** any function declared in
- * this header file is called.
- *
- * If tests are disabled this line evaluates to nothing.  In addition, the
- * compiler skips any test code, so the artifact size will not grow.  All in
- * all, a disabled test suite does not come with a linking or runtime penalty.
- *
- * If enabled, running tests document their progress to stdout.  Testing exits
- * on the first regression found with a diagnostic message further detailing on
- * the context of the failure.
- *
- * We recommend running the tests each time you modify mmfatl.h or mmfatl.c
- * to ensure it still executes as desired.  They are automatically invoked by
- * Github checks on each push request.
  */
-
-// Setting TEST_ENABLE to en/disable regression tests in this module
-//------------------------------------------------------------------
-
-#undef TEST_FORCE_ENABLE
-/* uncomment one of the following to enforce disabling/enabling of regression
- * tests in this file unconditionally
- */
-// #define TEST_FORCE_ENABLE 0
-// #define TEST_FORCE_ENABLE 1
-
-/* the function running regression tests in this module */
-#define TEST_FUNCTION(x) test_mmfatl(x)
-
-/* -----   copy & paste code, the same in all modules -----  */
-
-/* in case an included header file of another module has defined it */
-#undef TEST_ENABLE
-
-/* If BUILD_REQUESTS_REGRESSION_TEST is defined compilation of regression
- * tests is requested from somewhere outside of C files.  This can still be
- * overridden locally by setting TEST_ENABLE explicitely below.
- */
-#ifdef BUILD_REQUESTS_REGRESSION_TEST
-#   define TEST_ENABLE
-/* optimized for continuous integration, suppresses success messages */
-#   define TEST_SILENT true
-#else
-/* each test prints a confirmation on the screen */  
-#   define TEST_SILENT false
-#endif
-
-#ifdef TEST_FORCE_ENABLE
-#   if TEST_FORCE_ENABLE
-#       define TEST_ENABLE
-#   else
-#       undef TEST_ENABLE
-#   endif
-#endif
 
 #ifdef TEST_ENABLE
 
-/* enable regression tests in main() in metamath.c */
-#   define RUN_REGRESSION_TEST
-    /* regression tests are implemented and called through this function */
-    extern void TEST_FUNCTION(bool*);
-#endif
+extern void test_mmfatl(void);
 
-/* -----   end of copy & paste code   ----- */
-
-#ifndef TEST_ENABLE
-    /* still necessary should another module request regression tests */
-#   define test_mmfatl(x)
 #endif
 
 #endif /* include guard */

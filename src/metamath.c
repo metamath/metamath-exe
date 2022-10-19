@@ -703,7 +703,6 @@
 
 /*----------------------------------------------------------------------*/
 
-
 #include <string.h>
 #include <stdlib.h>
 #include "mmvstr.h"
@@ -720,6 +719,7 @@
 #include "mmword.h"
 #include "mmwtex.h"
 #include "mmfatl.h"
+#include "mmtest.h"
 
 void command(int argc, char *argv[]);
 
@@ -741,17 +741,10 @@ int main(int argc, char *argv[]) {
 
 /* argc is the number of arguments; argv points to an array containing them */
 
-# ifdef RUN_REGRESSION_TEST
-
-// activated if at least one unit requests regression tests
-
-  bool regressionTestResult = true;
-
-  test_mmfatl(&regressionTestResult);
-
-  exit(regressionTestResult? EXIT_SUCCESS : EXIT_FAILURE);
-
-# endif
+#ifdef TEST_ENABLE // enable this in mmtest.h or via './build.sh -t'
+  RUN_TESTS();
+  // you never get here
+#endif
 
   /****** If g_listMode is set to 1 here, the startup will be Text Tools
           utilities, and Metamath will be disabled ***************************/
