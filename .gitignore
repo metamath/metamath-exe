@@ -9,6 +9,7 @@ Makefile
 Makefile.in
 compile
 configure
+configure~
 config.*
 depcomp
 install-sh

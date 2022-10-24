@@ -37,7 +37,7 @@
  * This section should be empty, or even removed, once your development is
  * finished.
  */
-#if TEST_ENABLE
+#ifdef TEST_ENABLE
 #   define UNDER_DEVELOPMENT
 #endif
 
@@ -120,8 +120,7 @@ static void initBuffer(void) {
  * used to indicate whether \ref PLACEHOLDER_CHAR is a normal character, or
  * is an escape character in a format string.
  */
-enum TextType
-{
+enum TextType {
   STRING, //<! NUL terminated text
   FORMAT  //<! NUL terminated format containing placeholders
 };
@@ -135,12 +134,10 @@ enum TextType
  *   insertion point of other data, and stops the copy process.
  * \return a pointer to the character following the last one copied.
  */
-static char const* appendText(char const* source, enum TextType type)
-{
+static char const* appendText(char const* source, enum TextType type) {
   char escape = type == FORMAT ? PLACEHOLDER_CHAR : NUL;
-  while (buffer.begin != buffer.end
-      && *source != NUL && *source != escape)
-        *buffer.begin++ = *source++;
+  while (buffer.begin != buffer.end && *source != NUL && *source != escape)
+    *buffer.begin++ = *source++;
   return source;
 }
 
@@ -161,15 +158,15 @@ bool test_initBuffer(void) {
   unsigned i = 0;
 
   // check the buffer is filled with NUL...
-  for (;i < BUFFERSIZE; ++i)
+  for (; i < BUFFERSIZE; ++i)
     ASSERT(buffer.text[i] == NUL);
 
-  ASSERT(buffer.end == buffer.text + i)
+  ASSERT(buffer.end == buffer.text + i);
 
   // ...and has the ELLIPSIS string at the end...
   char ellipsis[] = ELLIPSIS;
   unsigned j = 0;
-  for (;ellipsis[j] != NUL; ++i, ++j)
+  for (; ellipsis[j] != NUL; ++i, ++j)
     ASSERT(buffer.text[i] == ellipsis[j]);
 
   // ... and a terminating NUL character
@@ -178,7 +175,7 @@ bool test_initBuffer(void) {
 }
 
 char const* bufferCompare(char const* match, int from, unsigned lg,
-                        unsigned begin)
+    unsigned begin)
 {
   if (memcmp(buffer.begin + from, match, lg) != 0)
     return "unexpected buffer contents";
@@ -198,22 +195,21 @@ char const* bufferCompare(char const* match, int from, unsigned lg,
  * \return NULL on success, otherwise a message describing a failure
  */
 char const* testcase_appendText(char const* text, unsigned adv,
-        char const* match, int from, int lg, unsigned begin)
+    char const* match, int from, int lg, unsigned begin)
 {
-    enum TextType type = *text == PLACEHOLDER_CHAR ? FORMAT : STRING;
-    return appendText(text + 1, type) == text + adv + 1 ?
-                bufferCompare(match, from, lg, begin)
-                : "format pointer not properly advanced";
+  enum TextType type = *text == PLACEHOLDER_CHAR ? FORMAT : STRING;
+  return appendText(text + 1, type) == text + adv + 1 ?
+    bufferCompare(match, from, lg, begin) :
+    "format pointer not properly advanced";
 }
 
 // wrapper macro to get the function, line number right, and prevent
 // further test cases on error
-#define TESTCASE_appendText(format, adv, match, from, lg, begin)  \
-  {                                                               \
-    char const* errmsg =                                          \
-        testcase_appendText(format, adv, match, from, lg, begin); \
-    ASSERTF(errmsg == NULL, "%s\n", errmsg);                      \
-  }
+#define TESTCASE_appendText(format, adv, match, from, lg, begin) { \
+  char const* errmsg =                                             \
+    testcase_appendText(format, adv, match, from, lg, begin);      \
+  ASSERTF(errmsg == NULL, "%s\n", errmsg);                         \
+}
 
 bool test_appendText(void) {
   initBuffer();
