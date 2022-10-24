@@ -19,15 +19,15 @@
 
 #if CHAR_BIT > 8
 /* C99 does not mandate a byte to be an octet, but such systems have become
- * really exotic nowadays.  If you really want to run Metamath, say, on a
+ * exotic nowadays.  If you really want to run Metamath, say, on a
  * CDC 3600 (wide spread in 1965), then you are a bit on your own here.
  * We recommend a contemporary machine type to achieve reasonable results.
  * 
  * Our assumption is CHAR_BIT == 8 from now on.  This allows us to map integer
  * limits roughly to required memory space.  We could alternatively evaluate
  * CHAR_BIT in the start-up phase of the program, and dynamically pre-allocate
- * memory accordingly to resolve these compatibility issues.  We think it is not
- * worth the effort.
+ * memory accordingly to resolve such compatibility issues.  Or introduce boost
+ * libraries to the same effect.  We think it is not worth the effort.
  */
 #   error "machine type not supported, expect a byte to be an octet."
 #endif
