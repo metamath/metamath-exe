@@ -85,41 +85,39 @@
  * value.  The value range is known to be at least 2^32 by the C Standard 99
  * (see https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1256.pdf).  We
  * support unsigned long in formatted error output to allow for macros like
- * __LINE__ in denoting error positions in text files.
+ * __LINE__ denoting error positions in text files.
+ *
+ * The alternative to this function is strtoul.  Unfortunately this library
+ * function is tagged 'unsafe' under tight memory conditions.
  * \param value an unsigned long value to be converted to a string of decimal
  *   digits.
  * \returns a pointer to a string converted from \p value.  Except for zero,
  *   the result has a leading non-zero digit.
  * \attention  The result is stable only until the next call to this function.
  */
-static char const* unsignedToString(unsigned long value)
-{
-    /*
-     * CHAR_BIT == 8 is assumed here, so a byte's capacity is that of an octet,
-     * amounting to slightly less than 2.5 decimal digits per byte.  The two
-     * extra bytes compensate rounding errors, and allow for a terminating
-     * NUL character.
-     */
-    static char digits[(5 * sizeof(unsigned long)) / 2 + 2];
+static char const* unsignedToString(unsigned long value) {
+  /*
+   * CHAR_BIT == 8 is assumed here, so a byte's capacity is that of an octet,
+   * amounting to slightly less than 2.5 decimal digits per byte.  The two
+   * extra bytes compensate truncation errors, and allow for a terminating
+   * NUL character.
+   */
+  static char digits[(5 * sizeof(unsigned long)) / 2 + 2];
 
-    if (value == 0)
-    {
-        digits[0] = '0';
-        digits[1] = NUL;
+  if (value == 0) {
+    digits[0] = '0';
+    digits[1] = NUL;
+  } else {
+    int ofs = sizeof(digits) - 1;
+    digits[ofs] = NUL;
+    while (value) {
+      digits[--ofs] = (value % 10) + '0';
+      value /= 10;
     }
-    else
-    {
-        int ofs = sizeof(digits) - 1;
-        digits[ofs] = NUL;
-        while (value)
-        {
-            digits[--ofs] = (value % 10) + '0';
-            value /= 10;
-        }
-        if (ofs > 0)
-            memmove(digits, digits + ofs, sizeof(digits) - ofs);
-    }
-    return digits;
+    if (ofs > 0)
+      memmove(digits, digits + ofs, sizeof(digits) - ofs);
+  }
+  return digits;
 }
 
 /*!
