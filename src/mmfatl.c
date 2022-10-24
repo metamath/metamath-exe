@@ -104,20 +104,17 @@ static char const* unsignedToString(unsigned long value) {
    */
   static char digits[(5 * sizeof(unsigned long)) / 2 + 2];
 
-  if (value == 0) {
-    digits[0] = '0';
-    digits[1] = NUL;
-  } else {
-    int ofs = sizeof(digits) - 1;
-    digits[ofs] = NUL;
+  unsigned ofs = sizeof(digits) - 1;
+  digits[ofs] = NUL;
+  if (value == 0)
+    digits[--ofs] = '0';
+  else {
     while (value) {
       digits[--ofs] = (value % 10) + '0';
       value /= 10;
     }
-    if (ofs > 0)
-      memmove(digits, digits + ofs, sizeof(digits) - ofs);
   }
-  return digits;
+  return digits + ofs;
 }
 
 /*!
