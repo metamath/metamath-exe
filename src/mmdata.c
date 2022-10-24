@@ -120,7 +120,7 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
  * administrative header, followed by elements reserved for application data.
  * The header is assigned elements -3 to -1 in the formal array, so that
  * application data starts with element 0.  A **pointer to the block** always
- * refers to element 0, so the header appears somewhat hidden.  Its **size** 
+ * refers to element 0, so the header appears somewhat hidden.  Its **size**
  * is given by the bytes reserved for application data, not including the
  * administrative header.
  *
@@ -216,7 +216,7 @@ vstring g_qsortKey; /* Used by qsortStringCmp; pointer only, do not deallocate *
 
 /*!
  * \page doc-todo Improvements in documentation
- * 
+ *
  * - Revisit the \ref pgBlock "block", \ref pgStack "stack" references to check
  *   the inserted wording.
  * - The formatting of __p__ tags seem insufficient.  Figure out whether and
@@ -3971,7 +3971,7 @@ int qsortStringCmp(const void *p1, const void *p2)
   }
 }
 
-void freeData() {
+void freeData(void) {
   /* 15-Aug-2020 nm TODO: are some of these called twice? (in eraseSource) */
   free(g_IncludeCall);
   free(g_Statement);

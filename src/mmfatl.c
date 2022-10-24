@@ -215,8 +215,7 @@ char const* testcase_appendText(char const* text, unsigned adv,
     ASSERTF(errmsg == NULL, "%s\n", errmsg);                      \
   }
 
-bool test_appendText()
-{
+bool test_appendText(void) {
   initBuffer();
 
   // uncomment to deliberately trigger an error message
