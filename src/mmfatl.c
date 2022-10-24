@@ -243,25 +243,20 @@ static struct ParserInput state;
  * \post the substituted value is written to \ref buffer.
  * \post the format member in \ref state is skipped
  */
-static void handleSubstitution()
-{
+static void handleSubstitution(void) {
   char const* arg = PLACEHOLDER_STRING;  // default: no substitution case
   int advFormatPtr = 2; // advance by this many characters
-  switch (*(state.format + 1))
-  {
+  switch (*(state.format + 1)) {
     case PLACEHOLDER_TYPE_STRING:
       arg = va_arg(state.args, char const*);
       break;
-
     case PLACEHOLDER_TYPE_UNSIGNED:
       // a %u format specifier is recognized. 
       arg = unsignedToString(va_arg(state.args, unsigned));
       break;
-
     case PLACEHOLDER_CHAR:
       // %%
       break;
-
     default:;
       // stray %
       advFormatPtr = 1;
