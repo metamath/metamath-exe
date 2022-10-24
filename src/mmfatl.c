@@ -384,6 +384,9 @@ bool test_unsignedToString(void)
 bool test_handleSubstitution1(int dummy, ...) {
   char const* format = state.format;
   va_start(state.args, dummy);
+  
+  // without initializing the buffer each test appends
+  // to the result of the former test.
 
   // %s NULL
   initBuffer();
