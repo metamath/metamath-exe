@@ -86,9 +86,6 @@
  * (see https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1256.pdf).  We
  * support unsigned long in formatted error output to allow for macros like
  * __LINE__ denoting error positions in text files.
- *
- * The alternative to this function is strtoul.  Unfortunately this library
- * function is tagged 'unsafe' under tight memory conditions.
  * \param value an unsigned long value to be converted to a string of decimal
  *   digits.
  * \returns a pointer to a string converted from \p value.  Except for zero,
