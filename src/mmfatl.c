@@ -387,25 +387,25 @@ bool test_handleSubstitution1(int dummy, ...) {
 
   // %s NULL
   initBuffer();
-  handleSubstitution(PLACEHOLDER_TYPE_STRING);
+  handleSubstitution();
   format += 2;
   ASSERT(format == state.format);
   ASSERT(strcmp(buffer.text, "") == 0);
 
   // %s ""
-  handleSubstitution(PLACEHOLDER_TYPE_STRING);
+  handleSubstitution();
   format += 2;
   ASSERT(format == state.format);
   ASSERT(strcmp(buffer.text, "") == 0);
 
   // %s "abc"
-  handleSubstitution(PLACEHOLDER_TYPE_STRING);
+  handleSubstitution();
   format += 2;
   ASSERT(format == state.format);
   ASSERT(strcmp(buffer.text, "abc") == 0);
 
   // %s "%s"
-  handleSubstitution(PLACEHOLDER_TYPE_STRING);
+  handleSubstitution();
   format += 2;
   ASSERT(format == state.format);
   ASSERT(strcmp(buffer.text, "abc%s") == 0);
