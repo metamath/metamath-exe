@@ -10,11 +10,27 @@
  * conditions (corrupt state, out of memory).
  */
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "mmfatl.h"
+
+#if CHAR_BIT > 8
+/* C99 does not mandate a byte to be an octet, but such systems have become
+ * really exotic nowadays.  If you really want to run Metamath, say, on a
+ * CDC 3600 (wide spread in 1965), then you are a bit on your own here.
+ * We recommend a contemporary machine type to achieve reasonable results.
+ * 
+ * Our assumption is CHAR_BIT == 8 from now on.  This allows us to map integer
+ * limits roughly to required memory space.  We could alternatively evaluate
+ * CHAR_BIT in the start-up phase of the program, and dynamically pre-allocate
+ * memory accordingly to resolve these compatibility issues.  We think it is not
+ * worth the effort.
+ */
+#   error "machine type not supported, expect a byte to be an octet."
+#endif
 
 /*!
  * string terminating character
@@ -22,9 +38,20 @@
 #define NUL '\x00'
 
 /*!
- * format placeholder character
+ * format placeholder character, not NUL
  */
 #define PLACEHOLDER_CHAR '%'
+#define PLACEHOLDER_STRING  "%"
+/*!
+ * marks a string type in a placeholder substitution
+ */
+#define PLACEHOLDER_TYPE_STRING 's'
+
+/*!
+ * marks an unsigned type in a placeholder substitution
+ */
+#define PLACEHOLDER_TYPE_UNSIGNED 'u'
+
 
 //----------
 
@@ -52,6 +79,48 @@
  * user is aware a displayed message is incomplete.
  */
 #define ELLIPSIS "..."
+
+/*!
+ * converts an unsigned long to a sequence of decimal digits representing its
+ * value.  The value range is known to be at least 2^32 by the C Standard 99
+ * (see https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1256.pdf).  We
+ * support unsigned long in formatted error output to allow for macros like
+ * __LINE__ in denoting error positions in text files.
+ * \param value an unsigned long value to be converted to a string of decimal
+ *   digits.
+ * \returns a pointer to a string converted from \p value.  Except for zero,
+ *   the result has a leading non-zero digit.
+ * \attention  The result is stable only until the next call to this function.
+ */
+static char const* unsignedToString(unsigned long value)
+{
+    /*
+     * CHAR_BIT == 8 is assumed here, so a byte's capacity is that of an octet,
+     * amounting to slightly less than 2.5 decimal digits per byte.  The two
+     * extra bytes compensate rounding errors, and allow for a terminating
+     * NUL character.
+     */
+    static char digits[(5 * sizeof(unsigned long)) / 2 + 2];
+
+    if (value == 0)
+    {
+        digits[0] = '0';
+        digits[1] = NUL;
+    }
+    else
+    {
+        int ofs = sizeof(digits) - 1;
+        digits[ofs] = NUL;
+        while (value)
+        {
+            digits[--ofs] = (value % 10) + '0';
+            value /= 10;
+        }
+        if (ofs > 0)
+            memmove(digits, digits + ofs, sizeof(digits) - ofs);
+    }
+    return digits;
+}
 
 /*!
  * \brief declares a buffer used to generate a text message through a
@@ -248,9 +317,18 @@ bool test_appendText(void) {
   return true;
 }
 
+bool test_unsignedToString(void)
+{
+  ASSERT(strcmp(unsignedToString(0), "0") == 0);
+  ASSERT(strcmp(unsignedToString(123), "123") == 0);
+  // test max unsigned by converting back and forth
+  ASSERT(strtoul(unsignedToString(~0u), NULL, 10) == ~0u);
+}
+
 void test_mmfatl(void) {
   RUN_TEST(test_initBuffer);
   RUN_TEST(test_appendText);
+  RUN_TEST(test_unsignedToString);
 }
 
 #endif // TEST_ENABLE
