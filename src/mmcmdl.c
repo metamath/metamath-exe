@@ -2240,7 +2240,7 @@ void printCommandError(vstring line1, long arg, vstring errorMsg)
   free_vstring(line);
 } /* printCommandError */
 
-void freeCommandLine() {
+void freeCommandLine(void) {
   long i, j;
   j = pntrLen(g_rawArgPntr);
   for (i = 0; i < j; i++) free_vstring(*(vstring *)(&g_rawArgPntr[i]));

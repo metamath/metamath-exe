@@ -758,7 +758,7 @@ double val(const char *s) {
 
 
 /* Returns current date as an ASCII string */
-temp_vstring date() {
+temp_vstring date(void) {
   struct tm *time_structure;
   time_t time_val;
   char *month[12];
@@ -792,7 +792,7 @@ temp_vstring date() {
 
 
 /* Return current time as an ASCII string */
-temp_vstring time_() {
+temp_vstring time_(void) {
   struct tm *time_structure;
   time_t time_val;
   int i;

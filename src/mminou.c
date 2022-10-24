@@ -1516,7 +1516,7 @@ double getRunTime(double *timeSinceLastCall) {
 }
 
 
-void freeInOu() {
+void freeInOu(void) {
   long i, j;
   j = pntrLen(backBuffer);
   for (i = 0; i < j; i++) free_vstring(*(vstring *)(&backBuffer[i]));
