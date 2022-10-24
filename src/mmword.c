@@ -348,7 +348,7 @@ l7240: /* */
 
 
 
-void gosub_7320() {
+void gosub_7320(void) {
         /* Subroutine:  get next L1_ from original file */
   vstring_def(tmpLin);
   if (r1) {     /*  Get next line from save array */
@@ -382,7 +382,7 @@ void gosub_7320() {
   return;
 }
 
-void gosub_7330() {
+void gosub_7330(void) {
         /*  Subroutine:  get next L2_ from edited file */
   vstring_def(tmpLin);
   vstring tmpStrPtr; /* pointer only */
