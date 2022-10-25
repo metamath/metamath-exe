@@ -92,7 +92,7 @@ static char const* unsignedToString(unsigned long value) {
    * in an unsigned long.  Two extra bytes compensate the truncation error in the
    * division and allow for a terminating NUL character.
    */
-  static char [(sizeof(unsigned long) * CHAR_BIT * 146) / 485 + 2];
+  static char digits[(sizeof(unsigned long) * CHAR_BIT * 146) / 485 + 2];
 
   unsigned ofs = sizeof(digits) - 1;
   digits[ofs] = NUL;
