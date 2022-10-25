@@ -19,10 +19,11 @@
 #include "mmfatl.h"
 
 #if CHAR_BIT != 8
-/* C99 does not mandate a byte to be an octet, but such systems have become
- * exotic nowadays.  If you really want to run Metamath, say, on a
- * CDC 3600 (wide spread in 1965), then you are a bit on your own here.
- * We recommend a contemporary machine type to achieve reasonable results.
+/* C99 (see https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1256.pdf) does
+ * not mandate a byte to be an octet, but such systems have become exotic
+ * nowadays.  If you really want to run Metamath, say, on a CDC 3600 (wide
+ * spread in 1965), then you are a bit on your own here.  We recommend
+ * contemporary hardware to achieve reasonable results.
  * 
  * Our assumption is CHAR_BIT == 8 from now on.  This allows us to map integer
  * limits roughly to required memory space.  We could alternatively evaluate
@@ -30,7 +31,7 @@
  * memory accordingly to resolve such compatibility issues.  Or introduce Boost
  * preprocessor libraries to the same effect.  We think it is not worth the effort.
  */
-#   error "machine type not supported, expect a byte to be an octet."
+# error "machine type not supported, expect a byte to be an octet."
 #endif
 
 /*!
@@ -84,11 +85,13 @@
 /*!
  * converts an unsigned long to a sequence of decimal digits representing its
  * value.  The value range is known to be at least 2^32 by the C Standard 99
- * (see https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1256.pdf).  We
+ * .  We
  * support unsigned long in formatted error output to allow for macros like
  * __LINE__ denoting error positions in text files.
  *
- * There exist no utoa in the C99 standard library, that could be used instead.
+ * There exist no utoa in the C99 standard library, that could be used instead,
+ * and sprintf must not be used in a memory-tight situation (AS Unsafe heap,
+ * https://www.gnu.org/software/libc/manual/html_node/Formatted-Output-Functions.html).
  * \param value an unsigned long value to be converted to a string of decimal
  *   digits.
  * \returns a pointer to a string converted from \p value.  Except for zero,
@@ -99,7 +102,7 @@ static char const* unsignedToString(unsigned long value) {
   /*
    * CHAR_BIT == 8 is assumed here, so a byte's capacity is that of an octet,
    * amounting to slightly less than 2.5 decimal digits per byte.  The two
-   * extra bytes compensate truncation errors, and allow for a terminating
+   * extra bytes compensate a truncation error, and allow for a terminating
    * NUL character.
    */
   static char digits[(5 * sizeof(unsigned long)) / 2 + 2];
