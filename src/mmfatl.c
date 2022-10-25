@@ -27,7 +27,7 @@
  * Our assumption is CHAR_BIT == 8 from now on.  This allows us to map integer
  * limits roughly to required memory space.  We could alternatively evaluate
  * CHAR_BIT in the start-up phase of the program, and dynamically pre-allocate
- * memory accordingly to resolve such compatibility issues.  Or introduce boost
+ * memory accordingly to resolve such compatibility issues.  Or introduce Boost
  * preprocessor libraries to the same effect.  We think it is not worth the effort.
  */
 #   error "machine type not supported, expect a byte to be an octet."
