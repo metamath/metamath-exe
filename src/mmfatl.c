@@ -18,22 +18,6 @@
 
 #include "mmfatl.h"
 
-#if CHAR_BIT != 8
-/* C99 (see https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1256.pdf) does
- * not mandate a byte to be an octet, but such systems have become exotic
- * nowadays.  If you really want to run Metamath, say, on a CDC 3600 (wide
- * spread in 1965), then you are a bit on your own here.  We recommend
- * contemporary hardware to achieve reasonable results.
- * 
- * Our assumption is CHAR_BIT == 8 from now on.  This allows us to map integer
- * limits roughly to required memory space.  We could alternatively evaluate
- * CHAR_BIT in the start-up phase of the program, and dynamically pre-allocate
- * memory accordingly to resolve such compatibility issues.  Or introduce Boost
- * preprocessor libraries to the same effect.  We think it is not worth the effort.
- */
-# error "machine type not supported, expect a byte to be an octet."
-#endif
-
 /*!
  * string terminating character
  */
@@ -42,8 +26,8 @@
 /*!
  * format placeholder character, not NUL
  */
-#define PLACEHOLDER_CHAR '%'
-#define PLACEHOLDER_STRING  "%"
+#define PLACEHOLDER_CHAR   '%'
+#define PLACEHOLDER_STRING "%"
 /*!
  * marks a string type in a placeholder substitution
  */
@@ -99,12 +83,13 @@
  */
 static char const* unsignedToString(unsigned long value) {
   /*
-   * CHAR_BIT == 8 is assumed here, so a byte's capacity is that of an octet,
-   * amounting to slightly less than 2.5 decimal digits per byte.  The two
-   * extra bytes compensate a truncation error, and allow for a terminating
-   * NUL character.
+   * sizeof(unsigned long) * CHAR_BIT are the bits available in an unsigned long,
+   * the factor 146/485, derived from a chained fraction, is about 0.3010309 or log 2.
+   * So the number within the bracket is the number of decimal digits encodable
+   * in an unsigned long.  Two extra bytes compensate the truncation error and
+   * leave space for a terminal NUL character.
    */
-  static char digits[(5 * sizeof(unsigned long)) / 2 + 2];
+  static char digits[(sizeof(unsigned long) * CHAR_BIT * 146) / 485 + 2];
 
   unsigned ofs = sizeof(digits) - 1;
   digits[ofs] = NUL;
