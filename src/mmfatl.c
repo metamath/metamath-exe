@@ -85,8 +85,7 @@
 /*!
  * converts an unsigned long to a sequence of decimal digits representing its
  * value.  The value range is known to be at least 2^32 by the C Standard 99
- * .  We
- * support unsigned long in formatted error output to allow for macros like
+ * .  We support unsigned long in formatted error output to allow for macros like
  * __LINE__ denoting error positions in text files.
  *
  * There exist no utoa in the C99 standard library, that could be used instead,
