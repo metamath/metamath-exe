@@ -85,7 +85,7 @@ static char const* unsignedToString(unsigned long value) {
   /*
    * sizeof(unsigned long) * CHAR_BIT are the bits available in an unsigned long,
    * the factor 146/485, derived from a chained fraction, is about 0.3010309 or log 2.
-   * So the number within the bracket is the number of decimal digits encodable
+   * So the number within the brackets is the number of decimal digits encodable
    * in an unsigned long.  Two extra bytes compensate the truncation error and
    * leave space for a terminal NUL character.
    */
