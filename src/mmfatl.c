@@ -30,7 +30,7 @@
  * format placeholder character, not NUL
  */
 #define PLACEHOLDER_CHAR '%'
-#define PLACEHOLDER_STRING  "%"
+#define PLACEHOLDER_STRING "%"
 /*!
  * marks a string type in a placeholder substitution
  */
@@ -71,8 +71,8 @@
 
 /*!
  * converts an unsigned long to a sequence of decimal digits representing its
- * value.  The value range is known to be at least 2^32 by the C Standard 99
- * .  We support unsigned long in formatted error output to allow for macros like
+ * value.  The value range is known to be at least 2**32 by the C 99 Standard.
+ * We support unsigned long in formatted error output to allow for macros like
  * __LINE__ denoting error positions in text files.
  *
  * There exist no utoa in the C99 standard library, that could be used instead,
@@ -215,7 +215,7 @@ struct ParserInput {
 static struct ParserInput state;
 
 /*!
- * a format specifier is a two character combination, where a PLACEHOLDER_CHAR
+ * A format specifier is a two character combination, where a PLACEHOLDER_CHAR
  * is followed by an alphabetic character designating a type.  A placeholder
  * is substituted by the next argument in member *args* of \ref state.  This
  * function handles this substitution when member *format* of \ref state points
