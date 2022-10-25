@@ -8,6 +8,9 @@
  * \file mmfatl.c a self-contained set of text printing routines using
  * dedicated pre-allocated memory, designed to likely run even under difficult
  * conditions (corrupt state, out of memory).
+ *
+ * C99 (https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1256.pdf)
+ * compatible.
  */
 
 #include <limits.h>
@@ -26,8 +29,8 @@
 /*!
  * format placeholder character, not NUL
  */
-#define PLACEHOLDER_CHAR   '%'
-#define PLACEHOLDER_STRING "%"
+#define PLACEHOLDER_CHAR '%'
+#define PLACEHOLDER_STRING  "%"
 /*!
  * marks a string type in a placeholder substitution
  */
@@ -83,13 +86,13 @@
  */
 static char const* unsignedToString(unsigned long value) {
   /*
-   * sizeof(unsigned long) * CHAR_BIT are the bits available in an unsigned long,
+   * sizeof(unsigned long) * CHAR_BIT are the bits encodable in an unsigned long,
    * the factor 146/485, derived from a chained fraction, is about 0.3010309 or log 2.
-   * So the number within the brackets is the number of decimal digits encodable
-   * in an unsigned long.  Two extra bytes compensate the truncation error and
-   * allow for a terminating NUL character.
+   * So the number within the bracket is the number of decimal digits encodable
+   * in an unsigned long.  Two extra bytes compensate the truncation error in the
+   * division and allow for a terminating NUL character.
    */
-  static char digits[(sizeof(unsigned long) * CHAR_BIT * 146) / 485 + 2];
+  static char [(sizeof(unsigned long) * CHAR_BIT * 146) / 485 + 2];
 
   unsigned ofs = sizeof(digits) - 1;
   digits[ofs] = NUL;
