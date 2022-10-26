@@ -370,9 +370,9 @@ bool test_unsignedToString(void)
   ASSERT(strtoul(unsignedToString(~0u), NULL, 10) == ~0u);
 }
 
-bool test_handleSubstitution1(int dummy, ...) {
-  char const* format = state.format;
-  va_start(state.args, dummy);
+bool test_handleSubstitution1(char const* format, ...) {
+  state.format = format;
+  va_start(state.args, format);
   
   // without initializing the buffer each test appends
   // to the result of the former test.
@@ -456,8 +456,8 @@ bool test_handleSubstitution1(int dummy, ...) {
 }
 
 bool test_handleSubstitution(void) {
-  state.format = "%s%s%s%s%u%u%u%s%%%;%";
-  bool result = test_handleSubstitution1(0,
+  bool result = test_handleSubstitution1(
+    "%s%s%s%s%u%u%u%s%%%;%",
     NULL, "", "abc", "%s", 0, 123, ~0u, "overflow");
   return result;
 }
