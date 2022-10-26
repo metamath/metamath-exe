@@ -196,9 +196,9 @@ static char const* appendText(char const* source, enum TextType type) {
 
 /*!
  * A simple grammar scheme allows inserting data in a prepared general message.
- * The scheme is a simple downgrade of the C format string.  Allowed are only
+ * The scheme is a downgrade of the C format string.  Allowed are only
  * placeholders %s and %u that are replaced with given data.  The percent sign
- * % is available through duplication %%.  For this kind of simple grammar 5
+ * % is available through duplication %%.  For this kind of grammar 4
  * separate process states are sufficient.
  */
 
