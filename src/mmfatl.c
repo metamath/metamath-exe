@@ -71,7 +71,7 @@
 
 /*!
  * converts an unsigned long to a sequence of decimal digits representing its
- * value.  The value range is known to be at least 2**32 by the C 99 Standard.
+ * value.  The value range is known to be at least 2**32 by the C99 standard.
  * We support unsigned long in formatted error output to allow for macros like
  * __LINE__ denoting error positions in text files.
  *
