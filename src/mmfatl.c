@@ -78,13 +78,12 @@
  * There exist no utoa in the C99 standard library, that could be used instead,
  * and sprintf must not be used in a memory-tight situation (AS Unsafe heap,
  * https://www.gnu.org/software/libc/manual/html_node/Formatted-Output-Functions.html).
- * \param value an unsigned long value to be converted to a string of decimal
- *   digits.
+ * \param value an unsigned value to convert.
  * \returns a pointer to a string converted from \p value.  Except for zero,
  *   the result has a leading non-zero digit.
  * \attention  The result is stable only until the next call to this function.
  */
-static char const* unsignedToString(unsigned long value) {
+static char const* unsignedToString(unsigned value) {
   /*
    * sizeof(unsigned long) * CHAR_BIT are the bits encodable in an unsigned long,
    * the factor 146/485, derived from a chained fraction, is about 0.3010309,
@@ -93,7 +92,7 @@ static char const* unsignedToString(unsigned long value) {
    * compensate for the truncation error of the division and allow for a
    * terminating NUL.
    */
-  static char digits[(sizeof(unsigned long) * CHAR_BIT * 146) / 485 + 2];
+  static char digits[(sizeof(value) * CHAR_BIT * 146) / 485 + 2];
 
   unsigned ofs = sizeof(digits) - 1;
   digits[ofs] = NUL;
