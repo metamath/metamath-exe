@@ -88,8 +88,8 @@ static char const* unsignedToString(unsigned value) {
    * sizeof(value) * CHAR_BIT are the bits encodable in value, the factor 146/485,
    * derived from a chained fraction, is about 0.3010309, slightly greater than
    * log 2.  So the number within the brackets is the count of decimal digits
-   * encodable in an unsigned long.  Two extra bytes compensate for the
-   * truncation error of the division and allow for a terminating NUL.
+   * encodable in value.  Two extra bytes compensate for the truncation error of
+   * the division and allow for a terminating NUL.
    */
   static char digits[(sizeof(value) * CHAR_BIT * 146) / 485 + 2];
 
