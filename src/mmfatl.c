@@ -451,6 +451,7 @@ bool test_handleSubstitution1(int dummy, ...) {
   ASSERT(format == state.format);
   ASSERT(strcmp(buffer.text, "%%%") == 0);
 
+  va_end(state.args);
   return true;
 }
 
@@ -458,7 +459,6 @@ bool test_handleSubstitution(void) {
   state.format = "%s%s%s%s%u%u%u%s%%%;%";
   bool result = test_handleSubstitution1(0,
     NULL, "", "abc", "%s", 0, 123, ~0u, "overflow");
-  va_end(state.args);
   return result;
 }
 
