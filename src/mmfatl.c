@@ -71,9 +71,9 @@
 
 /*!
  * converts an unsigned to a sequence of decimal digits representing its value.
- * The value range is known to be at least 2**32 on contemporary hardware.
- * We support unsigned in formatted error output to allow for macros like
- * __LINE__ denoting error positions in text files.
+ * The value range is known to be at least 2**32 on contemporary hardware, but
+ * C99 guarantees just 2**16.  We support unsigned in formatted error output
+ * to allow for macros like __LINE__ denoting error positions in text files.
  *
  * There exist no utoa in the C99 standard library, that could be used instead,
  * and sprintf must not be used in a memory-tight situation (AS Unsafe heap,
