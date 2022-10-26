@@ -70,9 +70,9 @@
 #define ELLIPSIS "..."
 
 /*!
- * converts an unsigned long to a sequence of decimal digits representing its
- * value.  The value range is known to be at least 2**32 by the C99 standard.
- * We support unsigned long in formatted error output to allow for macros like
+ * converts an unsigned to a sequence of decimal digits representing its value.
+ * The value range is known to be at least 2**32 on contemporary hardware.
+ * We support unsigned in formatted error output to allow for macros like
  * __LINE__ denoting error positions in text files.
  *
  * There exist no utoa in the C99 standard library, that could be used instead,
@@ -85,12 +85,11 @@
  */
 static char const* unsignedToString(unsigned value) {
   /*
-   * sizeof(unsigned long) * CHAR_BIT are the bits encodable in an unsigned long,
-   * the factor 146/485, derived from a chained fraction, is about 0.3010309,
-   * slightly greater than log 2.  So the number within the brackets is the
-   * count of decimal digits encodable in an unsigned long.  Two extra bytes
-   * compensate for the truncation error of the division and allow for a
-   * terminating NUL.
+   * sizeof(value) * CHAR_BIT are the bits encodable in value, the factor 146/485,
+   * derived from a chained fraction, is about 0.3010309, slightly greater than
+   * log 2.  So the number within the brackets is the count of decimal digits
+   * encodable in an unsigned long.  Two extra bytes compensate for the
+   * truncation error of the division and allow for a terminating NUL.
    */
   static char digits[(sizeof(value) * CHAR_BIT * 146) / 485 + 2];
 
@@ -415,7 +414,7 @@ bool test_handleSubstitution1(int dummy, ...) {
   ASSERT(format == state.format);
   ASSERT(strcmp(buffer.text, "abc%s0123") == 0);
 
-  // %u ~0
+  // %u ~0u
   initBuffer();
   handleSubstitution();
   format += 2;
