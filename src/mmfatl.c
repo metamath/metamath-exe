@@ -246,7 +246,7 @@ static void handleSubstitution(void) {
     case PLACEHOLDER_CHAR:
       // %%
       break;
-    default:;
+    default:
       // stray %
       advFormatPtr = 1;
   }
