@@ -368,6 +368,8 @@ bool test_unsignedToString(void)
   ASSERT(strcmp(unsignedToString(123), "123") == 0);
   // test max unsigned by converting back and forth
   ASSERT(strtoul(unsignedToString(~0u), NULL, 10) == ~0u);
+
+  return true;
 }
 
 bool test_handleSubstitution1(char const* format, ...) {
