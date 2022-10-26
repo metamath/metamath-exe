@@ -456,10 +456,9 @@ bool test_handleSubstitution1(char const* format, ...) {
 }
 
 bool test_handleSubstitution(void) {
-  bool result = test_handleSubstitution1(
+  return test_handleSubstitution1(
     "%s%s%s%s%u%u%u%s%%%;%",
     NULL, "", "abc", "%s", 0, 123, ~0u, "overflow");
-  return result;
 }
 
 void test_mmfatl(void) {
