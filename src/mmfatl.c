@@ -302,6 +302,8 @@ static void parse(char const* format) {
     else
       state.format += appendText(state.format, FORMAT);
   }
+  if (isBufferOverflow())
+    state.format += strlen(format);
 }
 
 // see header file for description
@@ -313,8 +315,6 @@ bool fatalErrorPush(char const* format, ...) {
     overflow = isBufferOverflow();
     va_end(state.args);
   }
-  if (isBufferOverflow())
-    format += strlen(format);
 
   return !overflow;
 }
