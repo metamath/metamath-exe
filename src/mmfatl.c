@@ -155,6 +155,14 @@ struct ParserState {
 
 static struct ParserState state;
 
+// reflect buffer overflow in the parser state
+static bool checkOverflow() {
+  bool result = !isBufferOverflow();
+  if (!result)
+    state.format += strlen(state.format);
+  return result;
+}
+
 /*!
  * initializes \ref state.
  * \post establish the invariant in state
@@ -280,10 +288,12 @@ static void handleSubstitution(void) {
       arg = defaultArg;
       placeholderSize = 1;
   }
-  if (arg)
+  state.format += placeholderSize;
+  if (arg) {
     // parameter was not NULL
     appendText(arg, STRING);
-  state.format += placeholderSize;
+    checkOverflow();
+  }
 }
 
 /*!
@@ -296,14 +306,12 @@ static void handleSubstitution(void) {
  */
 static void parse(char const* format) {
   state.format = format;
-  while (!isBufferOverflow() && *state.format != NUL) {
+  while (checkOverflow() && *state.format != NUL) {
     if (*state.format == MMFATL_PH_PREFIX)
       handleSubstitution();
     else
       state.format += appendText(state.format, FORMAT);
   }
-  if (isBufferOverflow())
-    state.format += strlen(format);
 }
 
 // see header file for description
@@ -403,6 +411,15 @@ static bool test_isBufferOverflow(void) {
   ASSERT(isBufferOverflow());
   limitFreeBuffer(1);
   ASSERT(!isBufferOverflow());
+
+  char const* format = "abc";
+  state.format = format;
+  limitFreeBuffer(1);
+  ASSERT(checkOverflow());
+  ASSERT(state.format == format);
+  limitFreeBuffer(0);
+  ASSERT(!checkOverflow());
+  ASSERT(*state.format == NUL);
 
   return true;  
 }
@@ -541,12 +558,13 @@ static bool test_handleSubstitution1(char const* format, ...) {
   limitFreeBuffer(1);
   handleSubstitution();
   format += 2;
-  ASSERT(state.format == format);
+  ASSERT(*state.format == NUL);
   char const* errmsg = bufferCompare("$o$", -2, 3, 2);
   ASSERTF(errmsg == NULL, "%s\n", errmsg);
   
   // %%
   initBuffer();
+  state.format = format;
   handleSubstitution();
   format += 2;
   ASSERT(format == state.format);
