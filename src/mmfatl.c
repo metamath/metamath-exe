@@ -127,13 +127,12 @@ inline static bool isBufferOverflow() {
  * % is available through duplication %%.  For this kind of grammar 4
  * separate process states are sufficient, encoded in the \ref format pointer:
  *
- * 1. the format pointer is NULL (buffer overflow);
- * 2. the current format pointer points to \ref NUL (regular end of parse);
- * 3. the current format pointer points to a \ref MMFATL_PH_PREFIX;
- * 4. the current format pointer points to any other character;
+ * 1. the current format pointer points to \ref NUL (end of parse);
+ * 2. the current format pointer points to a \ref MMFATL_PH_PREFIX;
+ * 3. the current format pointer points to any other character;
  * 
- * During a parse, the state alternates between 3 and 4, until one of the
- * terminating states 1 or 2 is reached.
+ * During a parse, the state alternates between 2 and 3, until the terminating
+ * state 1 is reached.
  */
 struct ParserState {
     /*! 
@@ -314,6 +313,8 @@ bool fatalErrorPush(char const* format, ...) {
     overflow = isBufferOverflow();
     va_end(state.args);
   }
+  if (isBufferOverflow())
+    format += strlen(format);
 
   return !overflow;
 }
