@@ -10,7 +10,13 @@
  * conditions (corrupt state, out of memory).
  *
  * C99 (https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1256.pdf)
- * compatible.
+ * compatible.  For a check enter the directory where build.sh is located,
+ * concatenate the following command lines into a single line, and run:
+ *
+ * cd build/src && gcc -I. -I../../src -I.. -std=c99 -pedantic
+ * -DINLINE=inline -DTEST_ENABLE -c -o mmfatl.o ../../src/mmfatl.c
+ *
+ * This should not produce an error or a warning. 
  */
 
 #include <limits.h>
@@ -24,50 +30,175 @@
 /*!
  * string terminating character
  */
-#define NUL '\x00'
+enum {
+  NUL = '\x00',
+};
+
+// see header file for description
+char const* fatalErrorPlaceholder(enum fatalErrorPlaceholderType type)
+{
+  static char result[3];
+  
+  switch (type)
+  {
+    case MMFATL_PH_PREFIX:
+    case MMFATL_PH_STRING:
+    case MMFATL_PH_UNSIGNED:
+      result[0] = MMFATL_PH_PREFIX;
+      result[1] = type;
+      result[2] = NUL;
+      break;
+    default:
+      return NULL;
+  }
+  return result;
+}
 
 /*!
- * format placeholder character, not NUL
+ * \brief declares a buffer used to generate a text message through a
+ * formatting procedure.
+ *
+ * This buffer type is used to send a final diagnostic message to the user,
+ * before the program dies because of insufficient, or even corrupt memory.
+ * Under such severe conditions support from the C library is limited.  In
+ * particular the memory heap is not available, thus forbidding dynamic program
+ * features.  That is why a buffer of this type is usally preallocated.
+ *
+ * The main buffer operation is appending to already available contents, much
+ * in the way of a stream.  Occasionally we want to tentatively append
+ * characters, so the semantics of this buffer does not match exactly that of a
+ * stream.
+ *
+ * Apart from the writeable portion of the buffer, a fixed text \ref ELLIPSIS
+ * is padded to the right, so in case of a buffer overflow both concatenated
+ * portions automatically indicate truncated text.
+ *
+ * The available unallocated buffer space is delimited by member *end*  on the
+ * right.  Write operations must never write to its address, or even trespass
+ * it.  The current implementation sees its value as constant once it got
+ * initialized.
+ *
+ * The buffer is filled by a formatting procedure, that usually appends to
+ * previously generated text.  The current insertion point on the left is
+ * marked by the member *begin* pointer.  Each insertion forwards it in
+ * the direction of *end*.
  */
-#define PLACEHOLDER_CHAR '%'
-#define PLACEHOLDER_STRING "%"
-/*!
- * marks a string type in a placeholder substitution
- */
-#define PLACEHOLDER_TYPE_STRING 's'
+struct Buffer {
+  char* begin; /*!< points to first unallocated character */
+  /*!
+   * marks the end of the writeable portion, where the \ref ELLIPSIS begins.
+   * Logically constant once it got initialized.  Never overwrite this value.
+   */
+  char* end;
+  /*!
+   * the writeable buffer, followed by fixed text indicating truncation if
+   * necessary.
+   */
+  char text[MMFATL_BUFFERSIZE + sizeof(MMFATL_ELLIPSIS)];
+};
 
 /*!
- * marks an unsigned type in a placeholder substitution
+ * a preallocated buffer supporting formatting.
  */
-#define PLACEHOLDER_TYPE_UNSIGNED 'u'
-
-
-//----------
+static struct Buffer buffer;
 
 /*
- * During development you may not want to expose preliminary results to the
- * normal compile, as this would trigger 'unused' warnings, for example.  In
- * the regression test environment your code may be referenced by testing code,
- * though.
+ * We do not rely on any initialization during program start.  Instead we
+ * assume the worst case; a corrupted pointer overwrote buffer and state.
+ * So we initialize it again immediately before use.
+ */
+static void initBuffer(void) {
+  char ellipsis[] = MMFATL_ELLIPSIS;
+
+  buffer.begin = buffer.text;
+  buffer.end = buffer.text + MMFATL_BUFFERSIZE;
+  memset(buffer.begin, NUL, MMFATL_BUFFERSIZE);
+  memcpy(buffer.end, ellipsis, sizeof(ellipsis));
+}
+
+inline static bool isBufferOverflow() {
+  return buffer.begin == buffer.end;
+}
+
+/*!
+ * A simple grammar scheme allows inserting data in a prepared general message.
+ * The scheme is a downgrade of the C format string.  Allowed are only
+ * placeholders %s and %u that are replaced with given data.  The percent sign
+ * % is available through duplication %%.  For this kind of grammar 4
+ * separate process states are sufficient, encoded in the \ref format pointer:
  *
- * This section should be empty, or even removed, once your development is
- * finished.
+ * 1. the format pointer is NULL (buffer overflow);
+ * 2. the current format pointer points to \ref NUL (regular end of parse);
+ * 3. the current format pointer points to a \ref MMFATL_PH_PREFIX;
+ * 4. the current format pointer points to any other character;
+ * 
+ * During a parse, the state alternates between 3 and 4, until one of the
+ * terminating states 1 or 2 is reached.
  */
-#ifdef TEST_ENABLE
-#   define UNDER_DEVELOPMENT
-#endif
+struct ParserState {
+    /*! 
+     * the next reading position in a NUL-terminated format string.  Will be
+     * consumed, i.e. scanned only once from begin to end.
+     * \invariant never NULL.
+     */
+    char const* format;
+    /*!
+     * the list of parameters substituting placeholders.  This structure allows
+     * traversing all entries.
+     *
+     * \invariant The parameters match the placeholders in \ref format in
+     * type, and their number is not less than that of the placeholders.
+     * This invariant cannot be verified at runtime in this module, but must be
+     * guaranteed on invocation by the caller.
+     */
+    va_list args;
+};
 
-#ifdef UNDER_DEVELOPMENT
+static struct ParserState state;
 
-/* the size a fatal error message including the terminating NUL character can
- * assume without truncation.
+/*!
+ * initializes \ref state.
+ * \post establish the invariant in state
  */
-#define BUFFERSIZE 1024
+static void initState(void) {
+  // The invariants in state are established.
+  static char empty[] = "";
+  state.format = empty;
+}
 
-/* the character sequence appended to a truncated fatal error message, so a
- * user is aware a displayed message is incomplete.
+// see header file for description
+void fatalErrorInit(void) {
+  initState();
+  initBuffer();
+}
+
+/*!
+ * used to indicate whether \ref MMFATL_PH_PREFIX is a normal character, or is
+ * an escape character in a format string with placeholders embedded.
  */
-#define ELLIPSIS "..."
+enum TextType {
+  STRING, //<! NUL terminated text
+  FORMAT  //<! NUL terminated format containing placeholders
+};
+
+/*!
+ * append characters to the current end of the buffer from a format string
+ * until a terminating \ref NUL or \ref MMFATL_PH_PREFIX is encountered, or the
+ * buffer overflows.  A terminating character is not copied but automatically
+ * added at the end of the buffer.
+ * \param source [not null] the source from which bytes are copied.
+ * \param type if \ref FORMAT, a \ref MMFATL_PH_PREFIX is interpreted as a
+ *   possible insertion point of other data, and stops the copy process.
+ * \return the number of characters copied.
+ */
+static unsigned appendText(char const* source, enum TextType type) {
+  char escape = type == FORMAT ? MMFATL_PH_PREFIX : NUL;
+
+  char const* start = buffer.begin;
+  while (*source != NUL && *source != escape && !isBufferOverflow())
+    *buffer.begin++ = *source++;
+  return buffer.begin - start;
+}
 
 /*!
  * converts an unsigned to a sequence of decimal digits representing its value.
@@ -107,190 +238,176 @@ static char const* unsignedToString(unsigned value) {
 }
 
 /*!
- * \brief declares a buffer used to generate a text message through a
- * formatting procedure.
- *
- * This buffer type is used to send a final diagnostic message to the user,
- * before the program dies because of insufficient, or even corrupt memory.
- * Under such severe conditions support from the C library is limited.  In
- * particular the memory heap is not available, thus forbidding dynamic program
- * features.  That is why a buffer of this type is usally preallocated.
- *
- * The main buffer operation is appending to already available contents, much
- * in the way of a stream.  Occasionally we want to tentatively append
- * characters, so the semantics of this buffer does not match exactly that of a
- * stream.
- *
- * Apart from the writeable portion of the buffer, a fixed text \ref ELLIPSIS
- * is padded to the right, so in case of a buffer overflow both concatenated
- * portions automatically indicate truncated text.
- *
- * The available unallocated buffer space is delimited by member *end*  on the
- * right.  Write operations must never write to its address, or even trespass
- * it.  The current implementation sees its value as constant once it got
- * initialized.
- *
- * The buffer is filled by a formatting procedure, that usually appends to
- * previously generated text.  The current insertion point on the left is
- * marked by the member *begin* pointer.  Each insertion forwards it in
- * the direction of *end*.
- */
-
-struct Buffer {
-  char* begin; /*!< points to first unallocated character */
-  /*!
-   * marks the end of the writeable portion, where the \ref ELLIPSIS begins.
-   * Logically constant once it got initialized.  Never overwrite this value.
-   */
-  char* end;
-  /*!
-   * the writeable buffer, followed by fixed text indicating truncation if
-   * necessary.
-   */
-  char text[BUFFERSIZE + sizeof(ELLIPSIS)];
-};
-
-/*!
- * a preallocated buffer supporting formatting.
- */
-static struct Buffer buffer;
-
-/*
- * We do not rely on any initialization during program start.  Instead we
- * assume the worst case, a corrupted pointer overwrote the buffer.  So we
- * initialize it again immediately before use.
- */
-static void initBuffer(void) {
-  char ellipsis[] = ELLIPSIS;
-
-  buffer.begin = buffer.text;
-  buffer.end = buffer.text + BUFFERSIZE;
-  memset(buffer.begin, NUL, BUFFERSIZE);
-  memcpy(buffer.end, ellipsis, sizeof(ellipsis));
-}
-
-/*!
- * used to indicate whether \ref PLACEHOLDER_CHAR is a normal character, or
- * is an escape character in a format string.
- */
-enum TextType {
-  STRING, //<! NUL terminated text
-  FORMAT  //<! NUL terminated format containing placeholders
-};
-
-/*!
- * append characters to the current end of the buffer from a format string
- * until a terminating NUL or PLACEHOLDER_CHAR is encountered, or the buffer
- * overflows.  A terminating character is not copied.
- * \param source [not null] the source from which bytes are copied.
- * \param type if \ref FORMAT, a PLACEHOLDER_CHAR is interpreted as a possible
- *   insertion point of other data, and stops the copy process.
- * \return a pointer to the character following the last one copied.
- */
-static char const* appendText(char const* source, enum TextType type) {
-  char escape = type == FORMAT ? PLACEHOLDER_CHAR : NUL;
-  while (buffer.begin != buffer.end && *source != NUL && *source != escape)
-    *buffer.begin++ = *source++;
-  return source;
-}
-
-/*!
- * A simple grammar scheme allows inserting data in a prepared general message.
- * The scheme is a downgrade of the C format string.  Allowed are only
- * placeholders %s and %u that are replaced with given data.  The percent sign
- * % is available through duplication %%.  For this kind of grammar 4
- * separate process states are sufficient.
- */
-
-struct ParserInput {
-    /*! the next reading position in the format string.  Will be consumed, i.e.
-     scanned only once from begin to end. */
-    char const* format;
-    /* the list of parameters substituting placeholders.  This structure allows
-     * traversing all entries. */
-    va_list args;
-};
-
-static struct ParserInput state;
-
-/*!
- * A format specifier is a two character combination, where a PLACEHOLDER_CHAR
- * is followed by an alphabetic character designating a type.  A placeholder
- * is substituted by the next argument in member *args* of \ref state.  This
- * function handles this substitution when member *format* of \ref state points
- * to a placeholder.
+ * A format specifier is a two character combination, where a
+ * \ref MMFATL_PH_PREFIX is followed by an alphabetic character denoting a
+ * type.  A placeholder is substituted by the next argument in
+ * member *args* of \ref state.  This function handles this substitution when
+ * member *format* of \ref state points to a placeholder.
  *
  * This function also handles the case where the type character is missing or
- * invalid.  Usually we want to log the presence of stray PLACEHOLDER_CHAR
+ * invalid.  Usually we want to log the presence of stray \ref MMFATL_PH_PREFIX
  * characters in a format string to some file, or at least display a warning.
  * But we are in the process of a fatal error already, so we gracefully accept
- * garbage and simply copy that character to the output, in the hope, misplaced
- * characters are somehow noticed there.
- * Note that a duplicated PLACEHOLDER_CHAR is the accepted way to embed such a
- * character in a format string.  This is correctly handled in this function.
- * \pre the format member in \ref state points to a PLACEHOLDER_CHAR.
- * \post the substituted value is written to \ref buffer.
- * \post the format member in \ref state is skipped
+ * garbage to some extent and simply copy that character to the output, in the
+ * hope, misplaced characters are somehow noticed there.
+ * Note that a duplicated \ref MMFATL_PH_PREFIX is the accepted way to
+ * embed such a character verbatim in a format string.  This is correctly
+ * handled in this function.
+ * \pre the format member in \ref state points to a \ref MMFATL_PH_PREFIX.
+ * \post the substituted value is written to \ref buffer, to the extent
+ *   possible (buffer overflow).
+ * \post the placeholder in the format member in \ref state is skipped,
+ *   if no buffer overflow.
  */
 static void handleSubstitution(void) {
-  char const* arg = PLACEHOLDER_STRING;  // default: no substitution case
-  int advFormatPtr = 2; // advance by this many characters
+  // replacement value for a token representing MMFATL_PH_PREFIX itself
+  static char const defaultArg[2] = { MMFATL_PH_PREFIX, NUL };
+  char const* arg;
+  int placeholderSize = 2; // advance state.format by this many characters
   switch (*(state.format + 1)) {
-    case PLACEHOLDER_TYPE_STRING:
+    case MMFATL_PH_STRING:
       arg = va_arg(state.args, char const*);
       break;
-    case PLACEHOLDER_TYPE_UNSIGNED:
+    case MMFATL_PH_UNSIGNED:
       // a %u format specifier is recognized. 
       arg = unsignedToString(va_arg(state.args, unsigned));
       break;
-    case PLACEHOLDER_CHAR:
+    case MMFATL_PH_PREFIX:
       // %%
+      arg = defaultArg;
       break;
     default:
       // stray %
-      advFormatPtr = 1;
+      arg = defaultArg;
+      placeholderSize = 1;
   }
-  if (arg != NULL)
+  if (arg)
+    // parameter was not NULL
     appendText(arg, STRING);
-  state.format += advFormatPtr;
+  state.format += placeholderSize;
 }
 
-#endif // UNDER_DEVELOPMENT
+/*!
+ * parses the submitted format string, replacing each placeholder with one of
+ * the values in member args of \ref state, and appends the result to the
+ * current contents of \ref buffer.
+ *
+ * \param format [not null] the error message, possibly with placeholders
+ *   embedded.
+ */
+static void parse(char const* format) {
+  state.format = format;
+  while (!isBufferOverflow() && *state.format != NUL) {
+    if (*state.format == MMFATL_PH_PREFIX)
+      handleSubstitution();
+    else
+      state.format += appendText(state.format, FORMAT);
+  }
+}
+
+// see header file for description
+bool fatalErrorPush(char const* format, ...) {
+  bool overflow = isBufferOverflow();
+  if (!overflow && format != NULL) {
+    va_start(state.args, format);
+    parse(format);
+    overflow = isBufferOverflow();
+    va_end(state.args);
+  }
+
+  return !overflow;
+}
+
+// see header file for a description
+void fatalErrorPrintAndExit()
+{
+#ifndef TEST_ENABLE // we don't want a test program terminate here
+  fputs(buffer.text, stderr);
+  exit(EXIT_FAILURE);
+#endif
+}
+
+// see header file for a description
+void fatalErrorExitAt(char const* file, unsigned line,
+                      char const* msgWithPlaceholders, ...) {
+  fatalErrorInit();
+
+  // a format for the error location, only showing relevant data
+  char const* format = NULL;
+  if (file && *file)
+  {
+    if (line > 0)
+      format = "At %s:%u\n";
+    else
+      format = "In file %s:\n";
+  }
+  else if (line > 0)
+    format = "%sIn line %u:\n";
+
+  if (fatalErrorPush(format, file, line) && msgWithPlaceholders) {
+    va_start(state.args, msgWithPlaceholders);
+    parse(msgWithPlaceholders);
+    va_end(state.args);
+  }
+
+  fatalErrorPrintAndExit();
+}
 
 
 //=================   Regression tests   =====================
 
 #ifdef TEST_ENABLE
 
-bool test_initBuffer(void) {
+static bool test_fatalErrorInit(void) {
   // emulate memory corruption
   memset(&buffer, 'x', sizeof(buffer));
+  state.format = NULL;
 
-  initBuffer();
+  fatalErrorInit();
 
+  ASSERT(*state.format == NUL);
   ASSERT(buffer.begin == buffer.text);
+  
   unsigned i = 0;
-
   // check the buffer is filled with NUL...
-  for (; i < BUFFERSIZE; ++i)
+  for (; i < MMFATL_BUFFERSIZE; ++i)
     ASSERT(buffer.text[i] == NUL);
 
   ASSERT(buffer.end == buffer.text + i);
 
   // ...and has the ELLIPSIS string at the end...
-  char ellipsis[] = ELLIPSIS;
-  unsigned j = 0;
-  for (; ellipsis[j] != NUL; ++i, ++j)
+  char ellipsis[] = MMFATL_ELLIPSIS;
+  for (unsigned j = 0; ellipsis[j] != NUL; ++i, ++j)
     ASSERT(buffer.text[i] == ellipsis[j]);
 
   // ... and a terminating NUL character
   ASSERT(buffer.text[i] == NUL);
+
   return true;
 }
 
-char const* bufferCompare(char const* match, int from, unsigned lg,
-    unsigned begin)
-{
+// for buffer overflow tests, free space is surrounded by $
+static void limitFreeBuffer(unsigned size) {
+  initBuffer();
+  *buffer.begin++ = '$';
+  buffer.end = buffer.begin + size;
+  *buffer.end = '$';
+  *(buffer.end + 1) = NUL;
+}
+
+static bool test_isBufferOverflow(void) {
+  fatalErrorInit();
+  
+  limitFreeBuffer(0);
+  ASSERT(isBufferOverflow());
+  limitFreeBuffer(1);
+  ASSERT(!isBufferOverflow());
+
+  return true;  
+}
+
+static char const* bufferCompare(char const* match, int from,
+                                 unsigned lg, unsigned begin) {
   if (memcmp(buffer.begin + from, match, lg) != 0)
     return "unexpected buffer contents";
   return buffer.begin == buffer.text + begin ?
@@ -299,8 +416,8 @@ char const* bufferCompare(char const* match, int from, unsigned lg,
 
 /*
  * \param text source text, first character is skipped and indicates its type:
- *   % a format string with special treatment of the PLACEHOLDER_CHAR, else
- *   normal NUL terminated string
+ *   % a format string with special treatment of the MMFATL_PH_PREFIX,
+ *   else normal NUL terminated string
  * \param adv that many characters are expected to be copied
  * \param match memory dump of buffer after copy...
  * \param from ... counting from this offset from buffer.begin after copy...
@@ -308,13 +425,12 @@ char const* bufferCompare(char const* match, int from, unsigned lg,
  * \param begin offset of buffer.begin from buffer.text after copy.
  * \return NULL on success, otherwise a message describing a failure
  */
-char const* testcase_appendText(char const* text, unsigned adv,
-    char const* match, int from, int lg, unsigned begin)
-{
-  enum TextType type = *text == PLACEHOLDER_CHAR ? FORMAT : STRING;
-  return appendText(text + 1, type) == text + adv + 1 ?
+static char const* testcase_appendText(char const* text, unsigned adv,
+    char const* match, int from, int lg, unsigned begin) {
+  enum TextType type = *text == MMFATL_PH_PREFIX ? FORMAT : STRING;
+  return appendText(text + 1, type) == adv ?
     bufferCompare(match, from, lg, begin) :
-    "format pointer not properly advanced";
+    "incorrect number of bytes copied";
 }
 
 // wrapper macro to get the function, line number right, and prevent
@@ -325,15 +441,16 @@ char const* testcase_appendText(char const* text, unsigned adv,
   ASSERTF(errmsg == NULL, "%s\n", errmsg);                         \
 }
 
-bool test_appendText(void) {
-  initBuffer();
+static bool test_appendText(void) {
+  fatalErrorInit();
+
+  // The first character of the source is a type character and skipped:
+  // _ STRING, % FORMAT
 
   // uncomment to deliberately trigger an error message
   // TESTCASE_appendText("_$", 1, "x$", -1, 2, 1);
 
 
-  // The first character of the source is a type character and skipped:
-  // _ STRING, % FORMAT
   // corner case 1: insertion at the very beginning of the buffer
   TESTCASE_appendText("_$", 1, "$", -1, 2, 1);
   // corner case 2: empty text, placeholder handling
@@ -344,26 +461,22 @@ bool test_appendText(void) {
   TESTCASE_appendText("%def%", 3, "$abcdef", -7, 8, 7);
   TESTCASE_appendText("_gh%i", 4, "$abcdefgh%i", -11, 12, 11);
   // corner case 3: no space left
-  buffer.begin = buffer.end;
-  *(buffer.end - 1) = '$';
-  *(buffer.end) = '$';
-  TESTCASE_appendText("%", 0, "$$", -1, 2, BUFFERSIZE);
-  TESTCASE_appendText("%%", 0, "$$", -1, 2, BUFFERSIZE);
-  TESTCASE_appendText("%abc", 0, "$$", -1, 2, BUFFERSIZE);
+  limitFreeBuffer(0);
+  TESTCASE_appendText("%", 0, "$$", -1, 2, 1);
+  TESTCASE_appendText("%%", 0, "$$", -1, 2, 1);
+  TESTCASE_appendText("%abc", 0, "$$", -1, 2, 1);
   // corner case 4: truncation in the middle of the text due to overflow
-  *(buffer.end - 2) = '$';
-  buffer.begin = buffer.end - 1;
-  TESTCASE_appendText("_a", 1, "$a$", -2, 3, BUFFERSIZE);
-  buffer.begin = buffer.end - 1;
-  TESTCASE_appendText("%def", 1, "$d$", -2, 3, BUFFERSIZE);
-  buffer.begin = buffer.end - 1;
-  TESTCASE_appendText("%g%", 1, "$g$", -2, 3, BUFFERSIZE);
+  limitFreeBuffer(1);
+  TESTCASE_appendText("_a", 1, "$a$", -2, 3, 2);
+  limitFreeBuffer(1);
+  TESTCASE_appendText("%def", 1, "$d$", -2, 3, 2);
+  limitFreeBuffer(1);
+  TESTCASE_appendText("%g%", 1, "$g$", -2, 3, 2);
 
   return true;
 }
 
-bool test_unsignedToString(void)
-{
+static bool test_unsignedToString(void) {
   ASSERT(strcmp(unsignedToString(0), "0") == 0);
   ASSERT(strcmp(unsignedToString(123), "123") == 0);
   // test max unsigned by converting back and forth
@@ -372,15 +485,15 @@ bool test_unsignedToString(void)
   return true;
 }
 
-bool test_handleSubstitution1(char const* format, ...) {
-  state.format = format;
+static bool test_handleSubstitution1(char const* format, ...) {
   va_start(state.args, format);
   
   // without initializing the buffer each test appends
   // to the result of the former test.
 
   // %s NULL
-  initBuffer();
+  fatalErrorInit();
+  state.format = format;
   handleSubstitution();
   format += 2;
   ASSERT(format == state.format);
@@ -424,15 +537,13 @@ bool test_handleSubstitution1(char const* format, ...) {
   ASSERT(strtoul(buffer.text, NULL, 10) == ~0u);
 
   // case buffer overflow
-  buffer.begin = buffer.end;
-  *(buffer.end - 1) = '$';
-  *buffer.end = '$';
+  limitFreeBuffer(1);
   handleSubstitution();
   format += 2;
-  ASSERT(format == state.format);
-  char const* errmsg = bufferCompare("$$", -1, 2, BUFFERSIZE);
+  ASSERT(state.format == format);
+  char const* errmsg = bufferCompare("$o$", -2, 3, 2);
   ASSERTF(errmsg == NULL, "%s\n", errmsg);
-
+  
   // %%
   initBuffer();
   handleSubstitution();
@@ -457,17 +568,119 @@ bool test_handleSubstitution1(char const* format, ...) {
   return true;
 }
 
-bool test_handleSubstitution(void) {
+static bool test_handleSubstitution(void) {
   return test_handleSubstitution1(
     "%s%s%s%s%u%u%u%s%%%;%",
     NULL, "", "abc", "%s", 0, 123, ~0u, "overflow");
 }
 
+static bool test_fatalErrorPlaceholder(void) {
+  char const* result = fatalErrorPlaceholder(MMFATL_PH_PREFIX);
+  ASSERT(result && strcmp(result, "%%") == 0);
+  result = fatalErrorPlaceholder(MMFATL_PH_UNSIGNED);
+  ASSERT(result && strcmp(result, "%u") == 0);
+  ASSERT(fatalErrorPlaceholder(
+      (enum fatalErrorPlaceholderType)NUL) == NULL);
+  return true;
+}
+
+static char const* testcase_parse(char const* expect, char const* format, ...) {
+  fatalErrorInit();
+  va_start(state.args, format);
+  parse(format);
+  va_end(state.args);
+  return strcmp(buffer.text, expect) == 0?
+    NULL 
+    : "text mismatch";
+}
+
+// wrapper macro to get the function, line number right, and prevent
+// further test cases on error
+#define TESTCASE_parse(expect, format, ...) {    \
+  char const* errmsg =                           \
+    testcase_parse(expect, format, __VA_ARGS__); \
+  ASSERTF(errmsg == NULL, "%s\n", errmsg);       \
+}
+
+static bool test_parse(void) {
+  ASSERT(testcase_parse("", "") == NULL);
+  ASSERT(testcase_parse("abc", "abc") == NULL);
+
+  TESTCASE_parse("abc", "%s", "abc");
+  TESTCASE_parse("123", "%u", 123);
+  TESTCASE_parse("123abc", "%u%s", 123, "abc");
+  TESTCASE_parse("123%abc", "%u%%%s", 123, "abc");
+  TESTCASE_parse("XY123ABabcST", "XY%uAB%sST", 123, "abc");
+  // buffer overflow
+  limitFreeBuffer(0);
+  parse("");
+  ASSERT(strcmp(buffer.text, "$$") == 0);
+  limitFreeBuffer(1);
+  parse("123");
+  ASSERT(strcmp(buffer.text, "$1$") == 0);
+
+  return true;
+}
+
+static bool test_fatalErrorPush() {
+  fatalErrorInit(); // pre-condition
+
+  // case format NULL or empty (do nothing)
+  ASSERT(fatalErrorPush(NULL));
+  ASSERT(strcmp(buffer.text, "") == 0);
+  ASSERT(fatalErrorPush(""));
+  ASSERT(strcmp(buffer.text, "") == 0);
+
+  // simple message, no placeholder
+  ASSERT(fatalErrorPush("abc"));
+  ASSERT(strcmp(buffer.text, "abc") == 0);
+
+  // message with placeholders, appended
+  ASSERT(fatalErrorPush("x%sy%uz", "--", 123));
+  ASSERT(strcmp(buffer.text, "abcx--y123z") == 0);
+
+  // overflow
+  limitFreeBuffer(2);
+  ASSERT(!fatalErrorPush("abc"));
+  ASSERT(strcmp(buffer.text, "$ab$") == 0);
+
+  ASSERT(!fatalErrorPush(NULL));
+  ASSERT(!fatalErrorPush(""));
+  ASSERT(strcmp(buffer.text, "$ab$") == 0);
+
+  return true;
+}
+
+static bool test_fatalErrorExitAt() {
+  // note that in test mode the fatalErrorExitAt neither prints to stderr
+  // nor exits.  The message is still in the buffer.
+
+  fatalErrorExitAt("test.c", 1000, "%s failed!", "program");
+  ASSERT(strcmp(buffer.text, "At test.c:1000\nprogram failed!") == 0);
+  // ignoring line
+  fatalErrorExitAt("x.c", 0, "test %u failed!", 5);
+  ASSERT(strcmp(buffer.text, "In file x.c:\ntest 5 failed!") == 0);
+  // ignoring file
+  fatalErrorExitAt(NULL, 123, "%s", "need help!");
+  ASSERT(strcmp(buffer.text, "In line 123:\nneed help!") == 0);
+
+  // ignoring error location
+  fatalErrorExitAt(NULL, 0, "take lessons, you fool!");
+  ASSERT(strcmp(buffer.text, "take lessons, you fool!") == 0);
+
+  return true;
+}
+
 void test_mmfatl(void) {
-  RUN_TEST(test_initBuffer);
-  RUN_TEST(test_appendText);
+  RUN_TEST(test_fatalErrorPlaceholder);
   RUN_TEST(test_unsignedToString);
+  RUN_TEST(test_fatalErrorInit);
+  RUN_TEST(test_isBufferOverflow);
+  RUN_TEST(test_appendText);
   RUN_TEST(test_handleSubstitution);
+  RUN_TEST(test_parse);
+  RUN_TEST(test_fatalErrorPush);
+  RUN_TEST(test_fatalErrorExitAt);
 }
 
 #endif // TEST_ENABLE
