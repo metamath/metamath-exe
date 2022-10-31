@@ -134,8 +134,8 @@ inline static bool isBufferOverflow(void) {
  * or the buffer overflows.
  * \param source [not null] the source from which bytes are copied.
  * \param escape an alternative character besides \ref NUL, that stops copying.
- *   It is allowed to set this parameter to \ref NUL, so no alternative to
- *   \ref NUL is actually given.
+ *   It is allowed to set this parameter to \ref NUL, so no alternative is
+ *   actually given.
  * \return the number of characters copied.
  */
 static unsigned appendText(char const* source, char escape) {
@@ -153,7 +153,7 @@ static unsigned appendText(char const* source, char escape) {
  * separate process states are sufficient, encoded in the \ref format pointer:
  *
  * 1. the current format pointer points to \ref NUL (end of parse);
- * 2. the current format pointer points to a \ref MMFATL_PH_PREFIX;
+ * 2. the current format pointer points to a placeholder (\ref MMFATL_PH_PREFIX);
  * 3. the current format pointer points to any other character;
  * 
  * During a parse, the state alternates between 2 and 3, until the terminating
@@ -321,12 +321,8 @@ static void handleSubstitution(void) {
  * parses the submitted format string, replacing each placeholder with one of
  * the values in member args of \ref state, and appends the result to the
  * current contents of \ref buffer.
- *
- * \param format [not null] the error message, possibly with placeholders
- *   embedded.
  */
-static void parse(char const* format) {
-  state.format = format;
+static void parse(void) {
   do {
     if (*state.format == MMFATL_PH_PREFIX)
       handleSubstitution();
@@ -339,8 +335,10 @@ static void parse(char const* format) {
 bool fatalErrorPush(char const* format, ...) {
   bool overflow = isBufferOverflow();
   if (!overflow && format != NULL) {
+    // initialize the parser state
+    state.format = format;
     va_start(state.args, format);
-    parse(format);
+    parse();
     overflow = isBufferOverflow();
     va_end(state.args);
   }
@@ -375,8 +373,9 @@ void fatalErrorExitAt(char const* file, unsigned line,
     format = "%sIn line %u:\n";
 
   if (fatalErrorPush(format, file, line) && msgWithPlaceholders) {
+    state.format = msgWithPlaceholders;
     va_start(state.args, msgWithPlaceholders);
-    parse(msgWithPlaceholders);
+    parse();
     va_end(state.args);
   }
 
@@ -416,7 +415,8 @@ static bool test_fatalErrorInit(void) {
   return true;
 }
 
-// for buffer overflow tests, free space is surrounded by $
+// for buffer overflow tests, free space is surrounded by $, so
+// limit violations can be detected.
 static void limitFreeBuffer(unsigned size) {
   initBuffer();
   *buffer.begin++ = '$';
@@ -659,7 +659,8 @@ static bool test_fatalErrorPlaceholder(void) {
 static char const* testcase_parse(char const* expect, char const* format, ...) {
   fatalErrorInit();
   va_start(state.args, format);
-  parse(format);
+  state.format = format;
+  parse();
   va_end(state.args);
   return strcmp(buffer.text, expect) == 0?
     NULL 
@@ -685,10 +686,12 @@ static bool test_parse(void) {
   TESTCASE_parse("XY123ABabcST", "XY%uAB%sST", 123, "abc");
   // buffer overflow
   limitFreeBuffer(0);
-  parse("");
+  state.format = "";
+  parse();
   ASSERT(strcmp(buffer.text, "$$") == 0);
   limitFreeBuffer(1);
-  parse("123");
+  state.format = "123";
+  parse();
   ASSERT(strcmp(buffer.text, "$1$") == 0);
 
   return true;
