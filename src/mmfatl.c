@@ -160,22 +160,22 @@ static unsigned appendText(char const* source, char escape) {
  * state 1 is reached.
  */
 struct ParserState {
-    /*! 
-     * the next reading position in a NUL-terminated format string.  Will be
-     * consumed, i.e. scanned only once from begin to end.
-     * \invariant never NULL.
-     */
-    char const* format;
-    /*!
-     * the list of parameters substituting placeholders.  This structure allows
-     * traversing all entries.
-     *
-     * \invariant The parameters match the placeholders in \ref format in
-     * type, and their number is not less than that of the placeholders.
-     * This invariant cannot be verified at runtime in this module, but must be
-     * guaranteed on invocation by the caller.
-     */
-    va_list args;
+  /*! 
+   * the next reading position in a NUL-terminated format string.  Will be
+   * consumed, i.e. scanned only once from begin to end.
+   * \invariant never NULL.
+   */
+  char const* format;
+  /*!
+   * the list of parameters substituting placeholders.  This structure allows
+   * traversing all entries.
+   *
+   * \invariant The parameters match the placeholders in \ref format in
+   * type, and their number is not less than that of the placeholders.
+   * This invariant cannot be verified at runtime in this module, but must be
+   * guaranteed on invocation by the caller.
+   */
+  va_list args;
 };
 
 static struct ParserState state;
