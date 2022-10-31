@@ -349,7 +349,7 @@ bool fatalErrorPush(char const* format, ...) {
 }
 
 // see header file for a description
-void fatalErrorPrintAndExit()
+void fatalErrorPrintAndExit(void)
 {
 #ifndef TEST_ENABLE // we don't want a test program terminate here
   fputs(buffer.text, stderr);

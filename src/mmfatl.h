@@ -174,7 +174,7 @@ extern bool fatalErrorPush(char const* format, ...);
  * \post [noreturn] the program terminates with an error code, after
  *   writing the buffer contents to stderr.
  */
-extern void fatalErrorPrintAndExit();
+extern void fatalErrorPrintAndExit(void);
 
 /*!
  * convenience function, covering a sequence of \ref fatalErrorInit,
