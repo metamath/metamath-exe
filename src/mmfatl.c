@@ -102,10 +102,14 @@ struct Buffer {
  */
 static struct Buffer buffer;
 
-/*
+/*!
  * We do not rely on any initialization during program start.  Instead we
- * assume the worst case; a corrupted pointer overwrote buffer and state.
- * So we initialize it again immediately before use.
+ * assume the worst case; memory corruption overwrote buffer and state.
+ * So we initialize it again immediately before use.  \ref MMFATL_ELLIPSIS is
+ * padded to the right of the buffer, so if the buffer's capacity is
+ * insufficient, the final character copied is not \ref NUL, and the
+ * ellipsis automatically appears at the end.
+ * \post \ref buffer is initialized to empty.
  */
 static void initBuffer(void) {
   char ellipsis[] = MMFATL_ELLIPSIS;
@@ -116,8 +120,29 @@ static void initBuffer(void) {
   memcpy(buffer.end, ellipsis, sizeof(ellipsis));
 }
 
-inline static bool isBufferOverflow() {
+/*!
+ * \return true, iff the current contents exceeds the capacity of the
+ *   \ref buffer, so at least the terminating \ref NUL is cut off, maybe more.
+ */
+inline static bool isBufferOverflow(void) {
   return buffer.begin == buffer.end;
+}
+
+/*!
+ * append characters to the current end of the buffer from a string until a
+ * terminating \ref NUL, or optionally a given second character is encountered,
+ * or the buffer overflows.
+ * \param source [not null] the source from which bytes are copied.
+ * \param escape an alternative character besides \ref NUL, that stops copying.
+ *   It is allowed to set this parameter to \ref NUL, so no alternative to
+ *   \ref NUL is actually given.
+ * \return the number of characters copied.
+ */
+static unsigned appendText(char const* source, char escape) {
+  char const* start = buffer.begin;
+  while (*source != NUL && *source != escape && !isBufferOverflow())
+    *buffer.begin++ = *source++;
+  return buffer.begin - start;
 }
 
 /*!
@@ -155,8 +180,17 @@ struct ParserState {
 
 static struct ParserState state;
 
+/*!
+ * to be used on call to \ref appendText as a second parameter, to better express the
+ * type of source.
+ */
+enum SourceType {
+  STRING = NUL, //<! NUL terminated text
+  FORMAT = MMFATL_PH_PREFIX  //<! NUL terminated format containing placeholders
+};
+
 // reflect buffer overflow in the parser state
-static bool checkOverflow() {
+static bool checkOverflow(void) {
   bool result = !isBufferOverflow();
   if (!result)
     state.format += strlen(state.format);
@@ -177,34 +211,6 @@ static void initState(void) {
 void fatalErrorInit(void) {
   initState();
   initBuffer();
-}
-
-/*!
- * used to indicate whether \ref MMFATL_PH_PREFIX is a normal character, or is
- * an escape character in a format string with placeholders embedded.
- */
-enum TextType {
-  STRING, //<! NUL terminated text
-  FORMAT  //<! NUL terminated format containing placeholders
-};
-
-/*!
- * append characters to the current end of the buffer from a format string
- * until a terminating \ref NUL or \ref MMFATL_PH_PREFIX is encountered, or the
- * buffer overflows.  A terminating character is not copied but automatically
- * added at the end of the buffer.
- * \param source [not null] the source from which bytes are copied.
- * \param type if \ref FORMAT, a \ref MMFATL_PH_PREFIX is interpreted as a
- *   possible insertion point of other data, and stops the copy process.
- * \return the number of characters copied.
- */
-static unsigned appendText(char const* source, enum TextType type) {
-  char escape = type == FORMAT ? MMFATL_PH_PREFIX : NUL;
-
-  char const* start = buffer.begin;
-  while (*source != NUL && *source != escape && !isBufferOverflow())
-    *buffer.begin++ = *source++;
-  return buffer.begin - start;
 }
 
 /*!
@@ -245,6 +251,19 @@ static char const* unsignedToString(unsigned value) {
 }
 
 /*!
+ * copy text verbatim from a format string to the message buffer, until either
+ * the format ends, or a placeholder is encountered.
+ * \post member format of \ref state is advanced over the copied text, if no
+ *   overflow.
+ * \post member format of \ref state points to the terminating \ref NUL on
+ *   overflow.
+ */
+static void handleText(void) {
+  state.format += appendText(state.format, FORMAT);
+  checkOverflow();
+}
+
+/*!
  * A format specifier is a two character combination, where a
  * \ref MMFATL_PH_PREFIX is followed by an alphabetic character denoting a
  * type.  A placeholder is substituted by the next argument in
@@ -265,6 +284,8 @@ static char const* unsignedToString(unsigned value) {
  *   possible (buffer overflow).
  * \post the placeholder in the format member in \ref state is skipped,
  *   if no buffer overflow.
+ * \post member format of \ref state points to the terminating \ref NUL on
+ *   overflow.
  */
 static void handleSubstitution(void) {
   // replacement value for a token representing MMFATL_PH_PREFIX itself
@@ -306,12 +327,12 @@ static void handleSubstitution(void) {
  */
 static void parse(char const* format) {
   state.format = format;
-  while (checkOverflow() && *state.format != NUL) {
+  do {
     if (*state.format == MMFATL_PH_PREFIX)
       handleSubstitution();
     else
-      state.format += appendText(state.format, FORMAT);
-  }
+      handleText();
+  } while (*state.format != NUL);
 }
 
 // see header file for description
@@ -445,8 +466,8 @@ static char const* bufferCompare(char const* match, int from,
  */
 static char const* testcase_appendText(char const* text, unsigned adv,
     char const* match, int from, int lg, unsigned begin) {
-  enum TextType type = *text == MMFATL_PH_PREFIX ? FORMAT : STRING;
-  return appendText(text + 1, type) == adv ?
+  char escape = *text == MMFATL_PH_PREFIX ? FORMAT : STRING;
+  return appendText(text + 1, escape) == adv ?
     bufferCompare(match, from, lg, begin) :
     "incorrect number of bytes copied";
 }
@@ -499,6 +520,38 @@ static bool test_unsignedToString(void) {
   ASSERT(strcmp(unsignedToString(123), "123") == 0);
   // test max unsigned by converting back and forth
   ASSERT(strtoul(unsignedToString(~0u), NULL, 10) == ~0u);
+
+  return true;
+}
+
+static bool test_handleText(void) {
+  fatalErrorInit();
+  char const* format = state.format;
+  // no format
+  handleText();
+  ASSERT(strcmp(buffer.text, "") == 0);
+  ASSERT(format == state.format);
+
+  state.format = "abc";
+  handleText();
+  ASSERT(strcmp(buffer.text, "abc") == 0);
+  ASSERT(*state.format == NUL);
+
+  state.format = "abc%s";
+  handleText();
+  ASSERT(strcmp(buffer.text, "abcabc") == 0);
+  ASSERT(*state.format == '%');
+
+  limitFreeBuffer(1);
+  state.format = "%s";
+  handleText();
+  ASSERT(*state.format == '%');
+  ASSERT(buffer.begin == buffer.text + 1);  
+  
+  state.format = "abc";
+  handleText();
+  ASSERT(strcmp(buffer.text, "$a$") == 0);
+  ASSERT(*state.format == NUL);
 
   return true;
 }
@@ -696,6 +749,7 @@ void test_mmfatl(void) {
   RUN_TEST(test_fatalErrorInit);
   RUN_TEST(test_isBufferOverflow);
   RUN_TEST(test_appendText);
+  RUN_TEST(test_handleText);
   RUN_TEST(test_handleSubstitution);
   RUN_TEST(test_parse);
   RUN_TEST(test_fatalErrorPush);
