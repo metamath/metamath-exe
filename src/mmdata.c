@@ -1927,6 +1927,7 @@ nmbrString *nmbrGetEssential(const nmbrString *proof) {
   nmbrString *nmbrTmpPtr2;
 
   plen = nmbrLen(proof);
+  if (plen == 0) bug(1343);
   stmt = proof[plen - 1];
   nmbrLet(&essentialFlags, nmbrSpace(plen));
   essentialFlags[plen - 1] = 1;

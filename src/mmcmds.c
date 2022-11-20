@@ -1596,7 +1596,8 @@ void typeProof(long statemNum,
        So remove this bug check, which seems spurious.  I can't see that
        getRelStepNums() cares whether we are in MM-PA. */
     /* if (!pipFlag) bug(255); */
-    relativeStepNums = getRelStepNums(g_ProofInProgress.proof);
+    relativeStepNums = getRelStepNums(
+      pipFlag ? g_ProofInProgress.proof : g_WrkProof.proofString);
   }
 
   /* Get steps not unified (pipFlag only) */
@@ -5683,7 +5684,7 @@ long getStepNum(vstring relStep, /* User's argument */
  RETURN_POINT:
   /* Deallocate memory */
   free_vstring(relStepCaps);
-  free_nmbrString(*&essentialFlags);
+  free_nmbrString(essentialFlags);
 
   return actualStepVal;
 } /* getStepNum */
@@ -5715,7 +5716,7 @@ nmbrString *getRelStepNums(nmbrString *pfInProgress) {
   }
 
   /* Deallocate memory */
-  free_nmbrString(*&essentialFlags);
+  free_nmbrString(essentialFlags);
 
   return relSteps;
 } /* getRelStepNums */
