@@ -17,6 +17,7 @@ Possible options are:
 -b build binary only, no reconfigure. Faster, but should not be used on first run.
 -c Clean the build directory.
 -d build documentation using Doxygen, in addition to building the executable.
+-g build in debug mode: enables debug symbols and turns off optimizations
 -h print this help and exit.
 -m followed by a directory: top folder of metamath-exe.
     Relative paths are relative to the current directory.
@@ -30,6 +31,7 @@ Possible options are:
 do_autoconf=1
 do_clean=0
 do_doc=0
+debug=0
 do_make_test=0
 print_help=0
 version_only=0
@@ -38,13 +40,14 @@ unset dest_dir
 unset doc_dir
 top_dir="$(pwd)"
 
-while getopts abcdhm:o:tv flag
+while getopts abcdghm:o:tv flag
 do
   case "${flag}" in
     a) version_for_autoconf=1;;
     b) do_autoconf=0;;
     c) do_clean=1;;
     d) do_doc=1;;
+    g) debug=1;;
     h) print_help=1;;
     m) cd "${OPTARG}" && top_dir=$(pwd);;
     o) dest_dir=${OPTARG};;
@@ -121,7 +124,13 @@ then
   autoreconf -i
 
   cd "$build_dir"
-  "$top_dir/configure" -q
+  if [ $debug -eq 1 ]; then
+    # FIXME: this gives conflicting -O flags to gcc
+    # but It Works on My Machine (TM)
+    "$top_dir/configure" -q CFLAGS="-g -O0"
+  else
+    "$top_dir/configure" -q
+  fi
 fi
 
 #===========   do the build   =====================
