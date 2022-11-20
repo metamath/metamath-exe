@@ -762,7 +762,7 @@ void bug(int bugNum)
     print2("To get technical support, please open an issue \n");
     print2("(https://github.com/metamath/metamath-exe/issues) with the\n");
     print2("detailed command sequence or a command file that reproduces this bug,\n");
-    print2("along with the source file that was used.  See HELP LOG for help on\n");
+    print2("along with the source file that was used.  See HELP OPEN LOG for help on\n");
     print2("recording a session.  See HELP SUBMIT for help on command files.  Search\n");
     print2("for \"bug(%ld)\" in the m*.c source code to find its origin.\n", bugNum);
     print2("If earlier errors were reported, try fixing them first, because they\n");
