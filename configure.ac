@@ -7,8 +7,8 @@
     # configure script.  As of this writing version 2.71 is published.
 AC_PREREQ([2.65])
 
-    # program name, version, email to report bugs
-AC_INIT([metamath], [m4_esyscmd_s([./build.sh -va])], [nm.NOSPAM@alum.mit.edu])
+    # program name, version
+AC_INIT([metamath], [m4_esyscmd_s([./build.sh -va])])
 
     # Put auxiliary autoconf scripts in config/
 AC_CONFIG_AUX_DIR([config])
