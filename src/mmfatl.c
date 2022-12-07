@@ -8,10 +8,15 @@
  * \file mmfatl.c a self-contained set of text printing routines using
  * dedicated pre-allocated memory, designed to likely run even under difficult
  * conditions (corrupt state, out of memory).
+ *
+ * C99 (https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1256.pdf)
+ * compatible.
  */
 
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 
 #include "mmfatl.h"
@@ -22,9 +27,20 @@
 #define NUL '\x00'
 
 /*!
- * format placeholder character
+ * format placeholder character, not NUL
  */
 #define PLACEHOLDER_CHAR '%'
+#define PLACEHOLDER_STRING "%"
+/*!
+ * marks a string type in a placeholder substitution
+ */
+#define PLACEHOLDER_TYPE_STRING 's'
+
+/*!
+ * marks an unsigned type in a placeholder substitution
+ */
+#define PLACEHOLDER_TYPE_UNSIGNED 'u'
+
 
 //----------
 
@@ -52,6 +68,43 @@
  * user is aware a displayed message is incomplete.
  */
 #define ELLIPSIS "..."
+
+/*!
+ * converts an unsigned to a sequence of decimal digits representing its value.
+ * The value range is known to be at least 2**32 on contemporary hardware, but
+ * C99 guarantees just 2**16.  We support unsigned in formatted error output
+ * to allow for macros like __LINE__ denoting error positions in text files.
+ *
+ * There exist no utoa in the C99 standard library, that could be used instead,
+ * and sprintf must not be used in a memory-tight situation (AS Unsafe heap,
+ * https://www.gnu.org/software/libc/manual/html_node/Formatted-Output-Functions.html).
+ * \param value an unsigned value to convert.
+ * \returns a pointer to a string converted from \p value.  Except for zero,
+ *   the result has a leading non-zero digit.
+ * \attention  The result is stable only until the next call to this function.
+ */
+static char const* unsignedToString(unsigned value) {
+  /*
+   * sizeof(value) * CHAR_BIT are the bits encodable in value, the factor 146/485,
+   * derived from a chained fraction, is about 0.3010309, slightly greater than
+   * log 2.  So the number within the brackets is the count of decimal digits
+   * encodable in value.  Two extra bytes compensate for the truncation error of
+   * the division and allow for a terminating NUL.
+   */
+  static char digits[(sizeof(value) * CHAR_BIT * 146) / 485 + 2];
+
+  unsigned ofs = sizeof(digits) - 1;
+  digits[ofs] = NUL;
+  if (value == 0)
+    digits[--ofs] = '0';
+  else {
+    while (value) {
+      digits[--ofs] = (value % 10) + '0';
+      value /= 10;
+    }
+  }
+  return digits + ofs;
+}
 
 /*!
  * \brief declares a buffer used to generate a text message through a
@@ -139,6 +192,67 @@ static char const* appendText(char const* source, enum TextType type) {
   while (buffer.begin != buffer.end && *source != NUL && *source != escape)
     *buffer.begin++ = *source++;
   return source;
+}
+
+/*!
+ * A simple grammar scheme allows inserting data in a prepared general message.
+ * The scheme is a downgrade of the C format string.  Allowed are only
+ * placeholders %s and %u that are replaced with given data.  The percent sign
+ * % is available through duplication %%.  For this kind of grammar 4
+ * separate process states are sufficient.
+ */
+
+struct ParserInput {
+    /*! the next reading position in the format string.  Will be consumed, i.e.
+     scanned only once from begin to end. */
+    char const* format;
+    /* the list of parameters substituting placeholders.  This structure allows
+     * traversing all entries. */
+    va_list args;
+};
+
+static struct ParserInput state;
+
+/*!
+ * A format specifier is a two character combination, where a PLACEHOLDER_CHAR
+ * is followed by an alphabetic character designating a type.  A placeholder
+ * is substituted by the next argument in member *args* of \ref state.  This
+ * function handles this substitution when member *format* of \ref state points
+ * to a placeholder.
+ *
+ * This function also handles the case where the type character is missing or
+ * invalid.  Usually we want to log the presence of stray PLACEHOLDER_CHAR
+ * characters in a format string to some file, or at least display a warning.
+ * But we are in the process of a fatal error already, so we gracefully accept
+ * garbage and simply copy that character to the output, in the hope, misplaced
+ * characters are somehow noticed there.
+ * Note that a duplicated PLACEHOLDER_CHAR is the accepted way to embed such a
+ * character in a format string.  This is correctly handled in this function.
+ * \pre the format member in \ref state points to a PLACEHOLDER_CHAR.
+ * \post the substituted value is written to \ref buffer.
+ * \post the format member in \ref state is skipped
+ */
+static void handleSubstitution(void) {
+  char const* arg = PLACEHOLDER_STRING;  // default: no substitution case
+  int advFormatPtr = 2; // advance by this many characters
+  switch (*(state.format + 1)) {
+    case PLACEHOLDER_TYPE_STRING:
+      arg = va_arg(state.args, char const*);
+      break;
+    case PLACEHOLDER_TYPE_UNSIGNED:
+      // a %u format specifier is recognized. 
+      arg = unsignedToString(va_arg(state.args, unsigned));
+      break;
+    case PLACEHOLDER_CHAR:
+      // %%
+      break;
+    default:
+      // stray %
+      advFormatPtr = 1;
+  }
+  if (arg != NULL)
+    appendText(arg, STRING);
+  state.format += advFormatPtr;
 }
 
 #endif // UNDER_DEVELOPMENT
@@ -248,9 +362,112 @@ bool test_appendText(void) {
   return true;
 }
 
+bool test_unsignedToString(void)
+{
+  ASSERT(strcmp(unsignedToString(0), "0") == 0);
+  ASSERT(strcmp(unsignedToString(123), "123") == 0);
+  // test max unsigned by converting back and forth
+  ASSERT(strtoul(unsignedToString(~0u), NULL, 10) == ~0u);
+
+  return true;
+}
+
+bool test_handleSubstitution1(char const* format, ...) {
+  state.format = format;
+  va_start(state.args, format);
+  
+  // without initializing the buffer each test appends
+  // to the result of the former test.
+
+  // %s NULL
+  initBuffer();
+  handleSubstitution();
+  format += 2;
+  ASSERT(format == state.format);
+  ASSERT(strcmp(buffer.text, "") == 0);
+
+  // %s ""
+  handleSubstitution();
+  format += 2;
+  ASSERT(format == state.format);
+  ASSERT(strcmp(buffer.text, "") == 0);
+
+  // %s "abc"
+  handleSubstitution();
+  format += 2;
+  ASSERT(format == state.format);
+  ASSERT(strcmp(buffer.text, "abc") == 0);
+
+  // %s "%s"
+  handleSubstitution();
+  format += 2;
+  ASSERT(format == state.format);
+  ASSERT(strcmp(buffer.text, "abc%s") == 0);
+
+  // %u 0
+  handleSubstitution();
+  format += 2;
+  ASSERT(format == state.format);
+  ASSERT(strcmp(buffer.text, "abc%s0") == 0);
+
+  // %u 123
+  handleSubstitution();
+  format += 2;
+  ASSERT(format == state.format);
+  ASSERT(strcmp(buffer.text, "abc%s0123") == 0);
+
+  // %u ~0u
+  initBuffer();
+  handleSubstitution();
+  format += 2;
+  ASSERT(format == state.format);
+  ASSERT(strtoul(buffer.text, NULL, 10) == ~0u);
+
+  // case buffer overflow
+  buffer.begin = buffer.end;
+  *(buffer.end - 1) = '$';
+  *buffer.end = '$';
+  handleSubstitution();
+  format += 2;
+  ASSERT(format == state.format);
+  char const* errmsg = bufferCompare("$$", -1, 2, BUFFERSIZE);
+  ASSERTF(errmsg == NULL, "%s\n", errmsg);
+
+  // %%
+  initBuffer();
+  handleSubstitution();
+  format += 2;
+  ASSERT(format == state.format);
+  ASSERT(strcmp(buffer.text, "%") == 0);
+
+  // %;
+  handleSubstitution();
+  ++state.format; // skip the ;
+  format += 2;
+  ASSERT(format == state.format);
+  ASSERT(strcmp(buffer.text, "%%") == 0);
+
+  // %<NUL>
+  handleSubstitution();
+  ++format;
+  ASSERT(format == state.format);
+  ASSERT(strcmp(buffer.text, "%%%") == 0);
+
+  va_end(state.args);
+  return true;
+}
+
+bool test_handleSubstitution(void) {
+  return test_handleSubstitution1(
+    "%s%s%s%s%u%u%u%s%%%;%",
+    NULL, "", "abc", "%s", 0, 123, ~0u, "overflow");
+}
+
 void test_mmfatl(void) {
   RUN_TEST(test_initBuffer);
   RUN_TEST(test_appendText);
+  RUN_TEST(test_unsignedToString);
+  RUN_TEST(test_handleSubstitution);
 }
 
 #endif // TEST_ENABLE
