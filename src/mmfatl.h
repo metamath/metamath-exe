@@ -45,6 +45,40 @@
  * size, truncation of overflowing text enforced.
  */
 
+/*! the size a fatal error message including the terminating NUL character can
+ * assume without truncation. Must be in the range of an int.
+ */
+enum {
+  MMFATL_BUFFERSIZE = 1024,
+};
+
+/* the character sequence appended to a truncated fatal error message due to
+ * a buffer overflow, so a reader is aware a displayed text is incomplete.
+ */
+#define MMFATL_ELLIPSIS "..."
+
+/*!
+ * supported value types of a two character placeholder token in a format
+ * string.  The first character of a placeholder is always an escape
+ * character \ref MMFATL_PH_PREFIX, followed by one of the type characters
+ * mentioned here.  A valid placeholder in a format string is replaced with a
+ * submitted value during a parse phase.  The values in the enumeration here
+ * are all ASCII characters different from NUL, and distinct from each other.
+ *
+ * Two \ref MMFATL_PH_PREFIX in succession serve as a special token denoting
+ * the character \ref MMFATL_PH_PREFIX itself, as an ordinary text character.
+ * It is neither necessary nor allowed to provide a value for substitution
+ * in this particular case.
+ */
+enum fatalErrorPlaceholderType {
+  MMFATL_PH_PREFIX = '%', //!< escape character marking a placeholder
+  //! type character marking a placeholder for a string
+  MMFATL_PH_STRING = 's',
+  //! type character marking a placeholder for an unsigned
+  MMFATL_PH_UNSIGNED = 'u',
+};
+
+
 #ifdef TEST_ENABLE
 
 extern void test_mmfatl(void);
