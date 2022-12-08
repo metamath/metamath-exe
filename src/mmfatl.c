@@ -171,12 +171,11 @@ enum SourceType {
 
 /*!
  * append characters to the current end of the buffer from a string until a
- * terminating \ref NUL, or optionally a given second character is encountered,
- * or the buffer overflows.
+ * terminating \ref NUL, or optionally a placeholder is encountered, or the
+ * buffer overflows.
  * \param source [not null] the source from which bytes are copied.
- * \param escape an alternative character besides \ref NUL, that stops copying.
- *   It is allowed to set this parameter to \ref NUL, so no alternative is
- *   actually given.
+ * \param type If \ref FORMAT, \ref MMFATL_PH_PREFIX besides \ref NUL stops
+ *   copying.
  * \return the number of characters copied.
  */
 static unsigned appendText(char const* source, enum SourceType type) {
