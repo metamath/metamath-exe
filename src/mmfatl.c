@@ -324,6 +324,20 @@ static void handleSubstitution(void) {
   }
 }
 
+/*!
+ * parses the submitted format string, replacing each placeholder with one of
+ * the values in member args of \ref state, and appends the result to the
+ * current contents of \ref buffer.
+ */
+static void parse(void) {
+  do {
+    if (*state.format == MMFATL_PH_PREFIX)
+      handleSubstitution();
+    else
+      handleText();
+  } while (*state.format != NUL);
+}
+
 #endif // UNDER_DEVELOPMENT
 
 
@@ -591,11 +605,53 @@ bool test_handleSubstitution(void) {
     NULL, "", "abc", "%s", 0, 123, ~0u, "overflow");
 }
 
+static char const* testcase_parse(char const* expect, char const* format, ...) {
+  fatalErrorInit();
+  va_start(state.args, format);
+  state.format = format;
+  parse();
+  va_end(state.args);
+  return strcmp(buffer.text, expect) == 0?
+    NULL 
+    : "text mismatch";
+}
+
+// wrapper macro to get the function, line number right, and prevent
+// further test cases on error
+#define TESTCASE_parse(expect, format, ...) {    \
+  char const* errmsg =                           \
+    testcase_parse(expect, format, __VA_ARGS__); \
+  ASSERTF(errmsg == NULL, "%s\n", errmsg);       \
+}
+
+static bool test_parse(void) {
+  ASSERT(testcase_parse("", "") == NULL);
+  ASSERT(testcase_parse("abc", "abc") == NULL);
+
+  TESTCASE_parse("abc", "%s", "abc");
+  TESTCASE_parse("123", "%u", 123);
+  TESTCASE_parse("123abc", "%u%s", 123, "abc");
+  TESTCASE_parse("123%abc", "%u%%%s", 123, "abc");
+  TESTCASE_parse("XY123ABabcST", "XY%uAB%sST", 123, "abc");
+  // buffer overflow
+  limitFreeBuffer(0);
+  state.format = "";
+  parse();
+  ASSERT(strcmp(buffer.text, "$$") == 0);
+  limitFreeBuffer(1);
+  state.format = "123";
+  parse();
+  ASSERT(strcmp(buffer.text, "$1$") == 0);
+
+  return true;
+}
+
 void test_mmfatl(void) {
   RUN_TEST(test_fatalErrorInit);
   RUN_TEST(test_isBufferOverflow);
   RUN_TEST(test_appendText);
   RUN_TEST(test_handleText);
+  RUN_TEST(test_parse);
   RUN_TEST(test_unsignedToString);
   RUN_TEST(test_handleSubstitution);
 }
