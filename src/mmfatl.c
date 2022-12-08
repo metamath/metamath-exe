@@ -130,7 +130,7 @@ struct Buffer {
    * the writeable buffer, followed by fixed text indicating truncation if
    * necessary.
    */
-  char text[MMFATL_BUFFERSIZE + sizeof(MMFATL_ELLIPSIS)];
+  char text[MMFATL_MAX_MSG_SIZE + sizeof(MMFATL_ELLIPSIS)];
 };
 
 /*!
@@ -147,8 +147,8 @@ static void initBuffer(void) {
   char ellipsis[] = MMFATL_ELLIPSIS;
 
   buffer.begin = buffer.text;
-  buffer.end = buffer.text + MMFATL_BUFFERSIZE;
-  memset(buffer.begin, NUL, MMFATL_BUFFERSIZE);
+  buffer.end = buffer.text + MMFATL_MAX_MSG_SIZE;
+  memset(buffer.begin, NUL, MMFATL_MAX_MSG_SIZE);
   memcpy(buffer.end, ellipsis, sizeof(ellipsis));
 }
 
@@ -170,19 +170,21 @@ enum SourceType {
 };
 
 /*!
- * append characters to the current end of the buffer from a format string
- * until a terminating NUL or MMFATL_PH_PREFIX is encountered, or the buffer
- * overflows.  A terminating character is not copied.
+ * append characters to the current end of the buffer from a string until a
+ * terminating \ref NUL, or optionally a given second character is encountered,
+ * or the buffer overflows.
  * \param source [not null] the source from which bytes are copied.
- * \param type if \ref FORMAT, a MMFATL_PH_PREFIX is interpreted as a possible
- *   insertion point of other data, and stops the copy process.
- * \return a pointer to the character following the last one copied.
+ * \param escape an alternative character besides \ref NUL, that stops copying.
+ *   It is allowed to set this parameter to \ref NUL, so no alternative is
+ *   actually given.
+ * \return the number of characters copied.
  */
-static char const* appendText(char const* source, enum SourceType type) {
-  char escape = type == FORMAT ? MMFATL_PH_PREFIX : NUL;
+static unsigned appendText(char const* source, enum SourceType type) {
+  char escape = type == FORMAT? MMFATL_PH_PREFIX : NUL;
+  char const* start = buffer.begin;
   while (*source != NUL && *source != escape && !isBufferOverflow())
     *buffer.begin++ = *source++;
-  return source;
+  return buffer.begin - start;
 }
 
 /*!
@@ -329,7 +331,7 @@ static bool test_fatalErrorInit(void) {
 
   unsigned i = 0;
   // check the buffer is filled with NUL...
-  for (; i < MMFATL_BUFFERSIZE; ++i)
+  for (; i < MMFATL_MAX_MSG_SIZE; ++i)
     ASSERT(buffer.text[i] == NUL);
 
   ASSERT(buffer.end == buffer.text + i);
@@ -383,10 +385,10 @@ char const* bufferCompare(char const* match, int from, unsigned lg,
     NULL : "unexpected buffer begin";
 }
 
-/*
+/*!
  * \param text source text, first character is skipped and indicates its type:
- *   % a format string with special treatment of the PLACEHOLDER_CHAR, else
- *   normal NUL terminated string
+ *   % a format string with special treatment of the MMFATL_PH_PREFIX,
+ *   else normal NUL terminated string
  * \param adv that many characters are expected to be copied
  * \param match memory dump of buffer after copy...
  * \param from ... counting from this offset from buffer.begin after copy...
@@ -394,13 +396,12 @@ char const* bufferCompare(char const* match, int from, unsigned lg,
  * \param begin offset of buffer.begin from buffer.text after copy.
  * \return NULL on success, otherwise a message describing a failure
  */
-char const* testcase_appendText(char const* text, unsigned adv,
-    char const* match, int from, int lg, unsigned begin)
-{
-  enum SourceType type = *text == MMFATL_PH_PREFIX ? FORMAT : STRING;
-  return appendText(text + 1, type) == text + adv + 1 ?
+static char const* testcase_appendText(char const* text, unsigned adv,
+    char const* match, int from, int lg, unsigned begin) {
+  char escape = *text == '%' ? FORMAT : STRING;
+  return appendText(text + 1, escape) == adv ?
     bufferCompare(match, from, lg, begin) :
-    "format pointer not properly advanced";
+    "incorrect number of bytes copied";
 }
 
 // wrapper macro to get the function, line number right, and prevent

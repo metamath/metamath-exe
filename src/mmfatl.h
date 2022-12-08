@@ -49,7 +49,7 @@
  * assume without truncation. Must be in the range of an int.
  */
 enum {
-  MMFATL_BUFFERSIZE = 1024,
+  MMFATL_MAX_MSG_SIZE = 1024,
 };
 
 /* the character sequence appended to a truncated fatal error message due to
