@@ -138,10 +138,11 @@ struct Buffer {
  */
 static struct Buffer buffer;
 
-/*
+/*!
  * We do not rely on any initialization during program start.  Instead we
  * assume the worst case, a corrupted pointer overwrote the buffer.  So we
  * initialize it again immediately before use.
+ * \post \ref buffer is initialized 
  */
 static void initBuffer(void) {
   char ellipsis[] = MMFATL_ELLIPSIS;
@@ -156,7 +157,7 @@ static void initBuffer(void) {
  * \return true, iff the current contents exceeds the capacity of the
  *   \ref buffer, so at least the terminating \ref NUL is cut off, maybe more.
  */
-inline static bool isBufferOverflow(void) {
+inline static bool isBufferOverflow() {
   return buffer.begin == buffer.end;
 }
 
@@ -225,17 +226,20 @@ static struct ParserState state;
  * initializes \ref state.
  * \post establish the invariant in state
  */
-static void initState(void) {
+static void initState(struct ParserState* state) {
   // The invariants in state are established.
   static char empty[] = "";
-  state.format = empty;
+  state->format = empty;
 }
 
-// reflect buffer overflow in the parser state
-static bool checkOverflow(void) {
+/*! reflect buffer overflow in the parser state
+ * \param state struct ParserState* parser state being updated in case of
+ *   overflow
+ */
+static bool checkOverflow(struct ParserState* state) {
   bool result = !isBufferOverflow();
   if (!result)
-    state.format += strlen(state.format);
+    state->format += strlen(state->format);
   return result;
 }
 
@@ -257,7 +261,7 @@ static bool checkOverflow(void) {
  *   a message from a format string and parameter values.
  */
 static void fatalErrorInit(void) {
-  initState();
+  initState(&state);
   initBuffer();
 }
 
@@ -268,10 +272,11 @@ static void fatalErrorInit(void) {
  *   overflow.
  * \post member format of \ref state points to the terminating \ref NUL on
  *   overflow.
+ * \param state struct ParserState* parser state going to be handled and updated
  */
-static void handleText(void) {
-  state.format += appendText(state.format, FORMAT);
-  checkOverflow();
+static void handleText(struct ParserState* state) {
+  state->format += appendText(state->format, FORMAT);
+  checkOverflow(state);
 }
 
 /*!
@@ -293,19 +298,20 @@ static void handleText(void) {
  * \pre the format member in \ref state points to a MMFATL_PH_PREFIX.
  * \post the substituted value is written to \ref buffer.
  * \post the format member in \ref state is skipped
+ * \param state struct ParserState* parser state going to be handled and updated
  */
-static void handleSubstitution(void) {
+static void handleSubstitution(struct ParserState* state) {
   // replacement value for a token representing MMFATL_PH_PREFIX itself
   static char const defaultArg[2] = { MMFATL_PH_PREFIX, NUL };
   char const* arg;
   int placeholderSize = 2; // advance state.format by this many characters
-  switch (*(state.format + 1)) {
+  switch (*(state->format + 1)) {
     case MMFATL_PH_STRING:
-      arg = va_arg(state.args, char const*);
+      arg = va_arg(state->args, char const*);
       break;
     case MMFATL_PH_UNSIGNED:
       // a %u format specifier is recognized. 
-      arg = unsignedToString(va_arg(state.args, unsigned));
+      arg = unsignedToString(va_arg(state->args, unsigned));
       break;
     case MMFATL_PH_PREFIX:
       // %%
@@ -316,11 +322,11 @@ static void handleSubstitution(void) {
       arg = defaultArg;
       placeholderSize = 1;
   }
-  state.format += placeholderSize;
+  state->format += placeholderSize;
   if (arg) {
     // parameter was not NULL
     appendText(arg, STRING);
-    checkOverflow();
+    checkOverflow(state);
   }
 }
 
@@ -328,14 +334,15 @@ static void handleSubstitution(void) {
  * parses the submitted format string, replacing each placeholder with one of
  * the values in member args of \ref state, and appends the result to the
  * current contents of \ref buffer.
+ * \param state struct ParserState* parser state going to be handled and updated
  */
-static void parse(void) {
+static void parse(struct ParserState* state) {
   do {
-    if (*state.format == MMFATL_PH_PREFIX)
-      handleSubstitution();
+    if (*state->format == MMFATL_PH_PREFIX)
+      handleSubstitution(state);
     else
-      handleText();
-  } while (*state.format != NUL);
+      handleText(state);
+  } while (*state->format != NUL);
 }
 
 #endif // UNDER_DEVELOPMENT
@@ -394,15 +401,16 @@ static bool test_isBufferOverflow(void) {
   char const* format = "abc";
   state.format = format;
   limitFreeBuffer(1);
-  ASSERT(checkOverflow());
+  ASSERT(checkOverflow(&state));
   ASSERT(state.format == format);
   limitFreeBuffer(0);
-  ASSERT(!checkOverflow());
+  ASSERT(!checkOverflow(&state));
   ASSERT(*state.format == NUL);
 
   return true;
 }
-char const* bufferCompare(char const* match, int from, unsigned lg,
+
+static char const* bufferCompare(char const* match, int from, unsigned lg,
     unsigned begin)
 {
   if (memcmp(buffer.begin + from, match, lg) != 0)
@@ -477,28 +485,28 @@ static bool test_handleText(void) {
   fatalErrorInit();
   char const* format = state.format;
   // no format
-  handleText();
+  handleText(&state);
   ASSERT(strcmp(buffer.text, "") == 0);
   ASSERT(format == state.format);
 
   state.format = "abc";
-  handleText();
+  handleText(&state);
   ASSERT(strcmp(buffer.text, "abc") == 0);
   ASSERT(*state.format == NUL);
 
   state.format = "abc%s";
-  handleText();
+  handleText(&state);
   ASSERT(strcmp(buffer.text, "abcabc") == 0);
   ASSERT(*state.format == '%');
 
   limitFreeBuffer(1);
   state.format = "%s";
-  handleText();
+  handleText(&state);
   ASSERT(*state.format == '%');
   ASSERT(buffer.begin == buffer.text + 1);  
   
   state.format = "abc";
-  handleText();
+  handleText(&state);
   ASSERT(strcmp(buffer.text, "$a$") == 0);
   ASSERT(*state.format == NUL);
 
@@ -524,51 +532,51 @@ static bool test_handleSubstitution1(char const* format, ...) {
   // %s NULL
   fatalErrorInit();
   state.format = format;
-  handleSubstitution();
+  handleSubstitution(&state);
   format += 2;
   ASSERT(format == state.format);
   ASSERT(strcmp(buffer.text, "") == 0);
 
   // %s ""
-  handleSubstitution();
+  handleSubstitution(&state);
   format += 2;
   ASSERT(format == state.format);
   ASSERT(strcmp(buffer.text, "") == 0);
 
   // %s "abc"
-  handleSubstitution();
+  handleSubstitution(&state);
   format += 2;
   ASSERT(format == state.format);
   ASSERT(strcmp(buffer.text, "abc") == 0);
 
   // %s "%s"
-  handleSubstitution();
+  handleSubstitution(&state);
   format += 2;
   ASSERT(format == state.format);
   ASSERT(strcmp(buffer.text, "abc%s") == 0);
 
   // %u 0
-  handleSubstitution();
+  handleSubstitution(&state);
   format += 2;
   ASSERT(format == state.format);
   ASSERT(strcmp(buffer.text, "abc%s0") == 0);
 
   // %u 123
-  handleSubstitution();
+  handleSubstitution(&state);
   format += 2;
   ASSERT(format == state.format);
   ASSERT(strcmp(buffer.text, "abc%s0123") == 0);
 
   // %u ~0u
   initBuffer();
-  handleSubstitution();
+  handleSubstitution(&state);
   format += 2;
   ASSERT(format == state.format);
   ASSERT(strtoul(buffer.text, NULL, 10) == ~0u);
 
   // case buffer overflow
   limitFreeBuffer(1);
-  handleSubstitution();
+  handleSubstitution(&state);
   format += 2;
   ASSERT(*state.format == NUL);
   char const* errmsg = bufferCompare("$o$", -2, 3, 2);
@@ -577,20 +585,20 @@ static bool test_handleSubstitution1(char const* format, ...) {
   // %%
   initBuffer();
   state.format = format;
-  handleSubstitution();
+  handleSubstitution(&state);
   format += 2;
   ASSERT(format == state.format);
   ASSERT(strcmp(buffer.text, "%") == 0);
 
   // %;
-  handleSubstitution();
+  handleSubstitution(&state);
   ++state.format; // skip the ;
   format += 2;
   ASSERT(format == state.format);
   ASSERT(strcmp(buffer.text, "%%") == 0);
 
   // %<NUL>
-  handleSubstitution();
+  handleSubstitution(&state);
   ++format;
   ASSERT(format == state.format);
   ASSERT(strcmp(buffer.text, "%%%") == 0);
@@ -609,7 +617,7 @@ static char const* testcase_parse(char const* expect, char const* format, ...) {
   fatalErrorInit();
   va_start(state.args, format);
   state.format = format;
-  parse();
+  parse(&state);
   va_end(state.args);
   return strcmp(buffer.text, expect) == 0?
     NULL 
@@ -636,11 +644,11 @@ static bool test_parse(void) {
   // buffer overflow
   limitFreeBuffer(0);
   state.format = "";
-  parse();
+  parse(&state);
   ASSERT(strcmp(buffer.text, "$$") == 0);
   limitFreeBuffer(1);
   state.format = "123";
-  parse();
+  parse(&state);
   ASSERT(strcmp(buffer.text, "$1$") == 0);
 
   return true;
