@@ -130,7 +130,7 @@ struct Buffer {
    * the writeable buffer, followed by fixed text indicating truncation if
    * necessary.
    */
-  char text[MMFATL_BUFFERSIZE + sizeof(MMFATL_ELLIPSIS)];
+  char text[MMFATL_MAX_MSG_SIZE + sizeof(MMFATL_ELLIPSIS)];
 };
 
 /*!
@@ -147,8 +147,8 @@ static void initBuffer(void) {
   char ellipsis[] = MMFATL_ELLIPSIS;
 
   buffer.begin = buffer.text;
-  buffer.end = buffer.text + MMFATL_BUFFERSIZE;
-  memset(buffer.begin, NUL, MMFATL_BUFFERSIZE);
+  buffer.end = buffer.text + MMFATL_MAX_MSG_SIZE;
+  memset(buffer.begin, NUL, MMFATL_MAX_MSG_SIZE);
   memcpy(buffer.end, ellipsis, sizeof(ellipsis));
 }
 
@@ -329,7 +329,7 @@ static bool test_fatalErrorInit(void) {
 
   unsigned i = 0;
   // check the buffer is filled with NUL...
-  for (; i < MMFATL_BUFFERSIZE; ++i)
+  for (; i < MMFATL_MAX_MSG_SIZE; ++i)
     ASSERT(buffer.text[i] == NUL);
 
   ASSERT(buffer.end == buffer.text + i);
