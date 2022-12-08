@@ -11,11 +11,10 @@
  *
  * C99 (https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1256.pdf)
  * compatible.  For a check enter the directory where build.sh is located,
- * create a subdirectory named 'build', concatenate the following command lines
- * into a single line, and run:
+ * create a subdirectory named 'build', and run:
  *
- * cd build && gcc -I. -I../src -I.. -std=c99 -pedantic
- * -DINLINE=inline -DTEST_ENABLE -c -o mmfatl.o ../src/mmfatl.c
+ * cd build && gcc -I. -I../src -I.. -std=c99 -pedantic \
+ *   -DINLINE=inline -DTEST_ENABLE -c -o mmfatl.o ../src/mmfatl.c
  *
  * This should not produce an error or a warning.
  */
