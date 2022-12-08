@@ -262,6 +262,19 @@ static void fatalErrorInit(void) {
 }
 
 /*!
+ * copy text verbatim from a format string to the message buffer, until either
+ * the format ends, or a placeholder is encountered.
+ * \post member format of \ref state is advanced over the copied text, if no
+ *   overflow.
+ * \post member format of \ref state points to the terminating \ref NUL on
+ *   overflow.
+ */
+static void handleText(void) {
+  state.format += appendText(state.format, FORMAT);
+  checkOverflow();
+}
+
+/*!
  * A format specifier is a two character combination, where a placeholder
  * character \ref MMFATL_PH_PREFIX is followed by an alphabetic character
  * designating a type.  A placeholder is substituted by the next argument in
@@ -446,6 +459,38 @@ static bool test_appendText(void) {
   return true;
 }
 
+static bool test_handleText(void) {
+  fatalErrorInit();
+  char const* format = state.format;
+  // no format
+  handleText();
+  ASSERT(strcmp(buffer.text, "") == 0);
+  ASSERT(format == state.format);
+
+  state.format = "abc";
+  handleText();
+  ASSERT(strcmp(buffer.text, "abc") == 0);
+  ASSERT(*state.format == NUL);
+
+  state.format = "abc%s";
+  handleText();
+  ASSERT(strcmp(buffer.text, "abcabc") == 0);
+  ASSERT(*state.format == '%');
+
+  limitFreeBuffer(1);
+  state.format = "%s";
+  handleText();
+  ASSERT(*state.format == '%');
+  ASSERT(buffer.begin == buffer.text + 1);  
+  
+  state.format = "abc";
+  handleText();
+  ASSERT(strcmp(buffer.text, "$a$") == 0);
+  ASSERT(*state.format == NUL);
+
+  return true;
+}
+
 bool test_unsignedToString(void)
 {
   ASSERT(strcmp(unsignedToString(0), "0") == 0);
@@ -550,6 +595,7 @@ void test_mmfatl(void) {
   RUN_TEST(test_fatalErrorInit);
   RUN_TEST(test_isBufferOverflow);
   RUN_TEST(test_appendText);
+  RUN_TEST(test_handleText);
   RUN_TEST(test_unsignedToString);
   RUN_TEST(test_handleSubstitution);
 }
