@@ -157,7 +157,7 @@ static void initBuffer(void) {
  * \return true, iff the current contents exceeds the capacity of the
  *   \ref buffer, so at least the terminating \ref NUL is cut off, maybe more.
  */
-inline static bool isBufferOverflow() {
+inline static bool isBufferOverflow(void) {
   return buffer.begin == buffer.end;
 }
 
