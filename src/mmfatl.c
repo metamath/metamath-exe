@@ -142,23 +142,25 @@ static struct Buffer buffer;
  * We do not rely on any initialization during program start.  Instead we
  * assume the worst case, a corrupted pointer overwrote the buffer.  So we
  * initialize it again immediately before use.
- * \post \ref buffer is initialized 
+ * \post \ref buffer is initialized
+ * \param buffer [not null] the output buffer to empty and initialize
  */
-static void initBuffer(void) {
+static void initBuffer(struct Buffer* buffer) {
   char ellipsis[] = MMFATL_ELLIPSIS;
 
-  buffer.begin = buffer.text;
-  buffer.end = buffer.text + MMFATL_MAX_MSG_SIZE;
-  memset(buffer.begin, NUL, MMFATL_MAX_MSG_SIZE);
-  memcpy(buffer.end, ellipsis, sizeof(ellipsis));
+  buffer->begin = buffer->text;
+  buffer->end = buffer->text + MMFATL_MAX_MSG_SIZE;
+  memset(buffer->begin, NUL, MMFATL_MAX_MSG_SIZE);
+  memcpy(buffer->end, ellipsis, sizeof(ellipsis));
 }
 
 /*!
+ * \param buffer [const, not null] the buffer to check for overflow.
  * \return true, iff the current contents exceeds the capacity of the
  *   \ref buffer, so at least the terminating \ref NUL is cut off, maybe more.
  */
-inline static bool isBufferOverflow(void) {
-  return buffer.begin == buffer.end;
+inline static bool isBufferOverflow(struct Buffer const* buffer) {
+  return buffer->begin == buffer->end;
 }
 
 /*!
@@ -177,14 +179,16 @@ enum SourceType {
  * \param source [not null] the source from which bytes are copied.
  * \param type If \ref FORMAT, \ref MMFATL_PH_PREFIX besides \ref NUL stops
  *   copying.
+ * \param buffer [not null] the output buffer where to append the source text.
  * \return the number of characters copied.
  */
-static unsigned appendText(char const* source, enum SourceType type) {
+static unsigned appendText(char const* source, enum SourceType type,
+                           struct Buffer* buffer) {
   char escape = type == FORMAT? MMFATL_PH_PREFIX : NUL;
-  char const* start = buffer.begin;
-  while (*source != NUL && *source != escape && !isBufferOverflow())
-    *buffer.begin++ = *source++;
-  return buffer.begin - start;
+  char const* start = buffer->begin;
+  while (*source != NUL && *source != escape && !isBufferOverflow(buffer))
+    *buffer->begin++ = *source++;
+  return buffer->begin - start;
 }
 
 /*!
@@ -202,6 +206,12 @@ static unsigned appendText(char const* source, enum SourceType type) {
  * state 1 is reached.
  */
 struct ParserState {
+  /*!
+   * The buffer the expanded format string is written to.  The buffer updates
+   * its own state if accessed only through \ref initBuffer and \ref appendText.
+   * \invariant never NULL
+   */
+  struct Buffer* out;
   /*!
    * the next reading position in a NUL-terminated format string.  Will be
    * consumed, i.e. scanned only once from begin to end.
@@ -225,19 +235,23 @@ static struct ParserState state;
 /*!
  * initializes \ref state.
  * \post establish the invariant in state
+ * \param state [not null] the struct \ref ParserState to initialize.
+ * \param buffer [not null] the buffer to use for output 
  */
-static void initState(struct ParserState* state) {
+static void initState(struct ParserState* state, struct Buffer* buffer) {
   // The invariants in state are established.
   static char empty[] = "";
+  state->out = buffer;
   state->format = empty;
 }
 
-/*! reflect buffer overflow in the parser state
- * \param state struct ParserState* parser state being updated in case of
+/*! reflect a possible buffer overflow in the parser state
+ * \param state [not null] ParserState object being updated in case of
  *   overflow
+ * \return false in case of overflow
  */
 static bool checkOverflow(struct ParserState* state) {
-  bool result = !isBufferOverflow();
+  bool result = !isBufferOverflow(state->out);
   if (!result)
     state->format += strlen(state->format);
   return result;
@@ -261,8 +275,8 @@ static bool checkOverflow(struct ParserState* state) {
  *   a message from a format string and parameter values.
  */
 static void fatalErrorInit(void) {
-  initState(&state);
-  initBuffer();
+  initBuffer(&buffer);
+  initState(&state, &buffer);
 }
 
 /*!
@@ -275,7 +289,7 @@ static void fatalErrorInit(void) {
  * \param state struct ParserState* parser state going to be handled and updated
  */
 static void handleText(struct ParserState* state) {
-  state->format += appendText(state->format, FORMAT);
+  state->format += appendText(state->format, FORMAT, &buffer);
   checkOverflow(state);
 }
 
@@ -325,7 +339,7 @@ static void handleSubstitution(struct ParserState* state) {
   state->format += placeholderSize;
   if (arg) {
     // parameter was not NULL
-    appendText(arg, STRING);
+    appendText(arg, STRING, state->out);
     checkOverflow(state);
   }
 }
@@ -383,7 +397,7 @@ static bool test_fatalErrorInit(void) {
 // for buffer overflow tests, free space is surrounded by $, so
 // limit violations can be detected.
 static void limitFreeBuffer(unsigned size) {
-  initBuffer();
+  initBuffer(&buffer);
   *buffer.begin++ = '$';
   buffer.end = buffer.begin + size;
   *buffer.end = '$';
@@ -394,9 +408,9 @@ static bool test_isBufferOverflow(void) {
   fatalErrorInit();
 
   limitFreeBuffer(0);
-  ASSERT(isBufferOverflow());
+  ASSERT(isBufferOverflow(&buffer));
   limitFreeBuffer(1);
-  ASSERT(!isBufferOverflow());
+  ASSERT(!isBufferOverflow(&buffer));
 
   char const* format = "abc";
   state.format = format;
@@ -433,7 +447,7 @@ static char const* bufferCompare(char const* match, int from, unsigned lg,
 static char const* testcase_appendText(char const* text, unsigned adv,
     char const* match, int from, int lg, unsigned begin) {
   char escape = *text == '%' ? FORMAT : STRING;
-  return appendText(text + 1, escape) == adv ?
+  return appendText(text + 1, escape, &buffer) == adv ?
     bufferCompare(match, from, lg, begin) :
     "incorrect number of bytes copied";
 }
@@ -568,7 +582,7 @@ static bool test_handleSubstitution1(char const* format, ...) {
   ASSERT(strcmp(buffer.text, "abc%s0123") == 0);
 
   // %u ~0u
-  initBuffer();
+  initBuffer(&buffer);
   handleSubstitution(&state);
   format += 2;
   ASSERT(format == state.format);
@@ -583,7 +597,7 @@ static bool test_handleSubstitution1(char const* format, ...) {
   ASSERTF(errmsg == NULL, "%s\n", errmsg);
 
   // %%
-  initBuffer();
+  initBuffer(&buffer);
   state.format = format;
   handleSubstitution(&state);
   format += 2;
