@@ -172,6 +172,19 @@ extern void fatalErrorInit(void);
  * \return false iff the message buffer is in overflow state.
  */
 
+/*!
+ * \brief display buffer contents and exit program with code EXIT_FAILURE.
+ * 
+ * This function does not return.
+ * 
+ * \pre \ref fatalErrorInit has initialized the internal error message
+ *   buffer, possibly followed by a sequence of \ref fatalErrorPush
+ *   filling it with a message.
+ * \post [noreturn] the program terminates with error code EXIT_FAILURE, after
+ *   writing the buffer contents to stderr.
+ */
+extern void fatalErrorPrintAndExit(void);
+
 #ifdef TEST_ENABLE
 
 extern void test_mmfatl(void);

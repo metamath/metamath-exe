@@ -333,7 +333,8 @@ static void parse(struct ParserState* state) {
  * not to be exposed through the interface.
  */
 
-char const* getFatalErrorPlaceholderToken(enum fatalErrorPlaceholderType type){
+char const* getFatalErrorPlaceholderToken(
+                    enum fatalErrorPlaceholderType type) {
 
   static char result[3];
 
@@ -369,6 +370,13 @@ bool fatalErrorPush(char const* format, ...) {
   }
 
   return !overflow;
+}
+
+void fatalErrorPrintAndExit(void) {
+#ifndef TEST_ENABLE // we don't want a test program terminate here
+  fputs(buffer.text, stderr);
+  exit(EXIT_FAILURE);
+#endif
 }
 
 
