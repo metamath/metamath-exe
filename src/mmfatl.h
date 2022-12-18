@@ -68,7 +68,7 @@ enum {
  * character \ref MMFATL_PH_PREFIX, followed by one of the type characters
  * mentioned here.  A valid placeholder in a format string is replaced with a
  * submitted value during a parse phase.  The values in the enumeration here
- * are all ASCII characters different from NUL, and mutally distinct.
+ * are all ASCII characters different from NUL, and mutually distinct.
  *
  * Two \ref MMFATL_PH_PREFIX in succession serve as a special token denoting
  * the character \ref MMFATL_PH_PREFIX itself, as an ordinary text character.
