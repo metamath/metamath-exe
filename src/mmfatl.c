@@ -261,28 +261,6 @@ static bool checkOverflow(struct ParserState* state) {
 }
 
 /*!
- * \brief Preparing internal data structures for an error message.
- *
- * Empties the message buffer used to construct error messages.
- *
- * Prior to generating an error message some internal data structures need to
- * be initialized.  Usually such initialization is automatically executed on
- * program startup.  Since we are in a fatal error situation, we do not rely
- * on this.  Instead we assume memory corruption has affected this module's
- * data and renders its state useless.  So we initialize it immediately before
- * the error message is generated.  Note that we still rely on part of the
- * system be running.  We cannot overcome a fully clobbered system, we only
- * can increase our chances of bypassing some degree of memory corruption.
- *
- * \post internal data structures are initialized and ready for constructing
- *   a message from a format string and parameter values.
- */
-static void fatalErrorInit(void) {
-  initBuffer(&buffer);
-  initState(&state, &buffer);
-}
-
-/*!
  * copy text verbatim from a format string to the message buffer, until either
  * the format ends, or a placeholder is encountered.
  * \post member format of \ref state is advanced over the copied text, if no
@@ -384,6 +362,12 @@ char const* getFatalErrorPlaceholderToken(enum fatalErrorPlaceholderType type){
   }
   return result;
 }
+
+void fatalErrorInit(void) {
+  initBuffer(&buffer);
+  initState(&state, &buffer);
+}
+
 
 //=================   Regression tests   =====================
 
