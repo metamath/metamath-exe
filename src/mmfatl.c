@@ -38,58 +38,6 @@ enum {
 //***     utility code used in the implementation of the interface    ***
 
 
-/*
- * During development you may not want to expose preliminary results to the
- * normal compile, as this would trigger 'unused' warnings, for example.  In
- * the regression test environment your code may be referenced by testing code,
- * though.
- *
- * This section should be empty, or even removed, once development is
- * finished.
- */
-#ifdef TEST_ENABLE
-#   define UNDER_DEVELOPMENT
-#endif
-
-#ifdef UNDER_DEVELOPMENT
-
-/*!
- * converts an unsigned to a sequence of decimal digits representing its value.
- * The value range is known to be at least 2**32 on contemporary hardware, but
- * C99 guarantees just 2**16.  We support unsigned in formatted error output
- * to allow for macros like __LINE__ denoting error positions in text files.
- *
- * There exist no utoa in the C99 standard library, that could be used instead,
- * and sprintf must not be used in a memory-tight situation (AS Unsafe heap,
- * https://www.gnu.org/software/libc/manual/html_node/Formatted-Output-Functions.html).
- * \param value an unsigned value to convert.
- * \returns a pointer to a string converted from \p value.  Except for zero,
- *   the result has a leading non-zero digit.
- * \attention  The result is stable only until the next call to this function.
- */
-static char const* unsignedToString(unsigned value) {
-  /*
-   * sizeof(value) * CHAR_BIT are the bits encodable in value, the factor 146/485,
-   * derived from a chained fraction, is about 0.3010309, slightly greater than
-   * log 2.  So the number within the brackets is the count of decimal digits
-   * encodable in value.  Two extra bytes compensate for the truncation error of
-   * the division and allow for a terminating NUL.
-   */
-  static char digits[(sizeof(value) * CHAR_BIT * 146) / 485 + 2];
-
-  unsigned ofs = sizeof(digits) - 1;
-  digits[ofs] = NUL;
-  if (value == 0)
-    digits[--ofs] = '0';
-  else {
-    while (value) {
-      digits[--ofs] = (value % 10) + '0';
-      value /= 10;
-    }
-  }
-  return digits + ofs;
-}
-
 /*!
  * \brief declares a buffer used to generate a text message through a
  * formatting procedure.
@@ -247,6 +195,43 @@ static void initState(struct ParserState* state, struct Buffer* buffer) {
   state->format = empty;
 }
 
+/*!
+ * converts an unsigned to a sequence of decimal digits representing its value.
+ * The value range is known to be at least 2**32 on contemporary hardware, but
+ * C99 guarantees just 2**16.  We support unsigned in formatted error output
+ * to allow for macros like __LINE__ denoting error positions in text files.
+ *
+ * There exist no utoa in the C99 standard library, that could be used instead,
+ * and sprintf must not be used in a memory-tight situation (AS Unsafe heap,
+ * https://www.gnu.org/software/libc/manual/html_node/Formatted-Output-Functions.html).
+ * \param value an unsigned value to convert.
+ * \returns a pointer to a string converted from \p value.  Except for zero,
+ *   the result has a leading non-zero digit.
+ * \attention  The result is stable only until the next call to this function.
+ */
+static char const* unsignedToString(unsigned value) {
+  /*
+   * sizeof(value) * CHAR_BIT are the bits encodable in value, the factor 146/485,
+   * derived from a chained fraction, is about 0.3010309, slightly greater than
+   * log 2.  So the number within the brackets is the count of decimal digits
+   * encodable in value.  Two extra bytes compensate for the truncation error of
+   * the division and allow for a terminating NUL.
+   */
+  static char digits[(sizeof(value) * CHAR_BIT * 146) / 485 + 2];
+
+  unsigned ofs = sizeof(digits) - 1;
+  digits[ofs] = NUL;
+  if (value == 0)
+    digits[--ofs] = '0';
+  else {
+    while (value) {
+      digits[--ofs] = (value % 10) + '0';
+      value /= 10;
+    }
+  }
+  return digits + ofs;
+}
+
 /*! reflect a possible buffer overflow in the parser state
  * \param state [not null] ParserState object being updated in case of
  *   overflow
@@ -340,9 +325,13 @@ static void parse(struct ParserState* state) {
   } while (*state->format != NUL);
 }
 
-#endif // UNDER_DEVELOPMENT
-
 /****    Implementation of the interface in the header file   ****/
+
+/* See the header file for descriptions
+ * Global instances buffer and state are known to the following functions.
+ * They must not be passed as parameters, as they are implementation details
+ * not to be exposed through the interface.
+ */
 
 char const* getFatalErrorPlaceholderToken(enum fatalErrorPlaceholderType type){
 
@@ -366,6 +355,20 @@ char const* getFatalErrorPlaceholderToken(enum fatalErrorPlaceholderType type){
 void fatalErrorInit(void) {
   initBuffer(&buffer);
   initState(&state, &buffer);
+}
+
+bool fatalErrorPush(char const* format, ...) {
+  bool overflow = isBufferOverflow(&buffer);
+  if (!overflow && format != NULL) {
+    // initialize the parser state
+    state.format = format;
+    va_start(state.args, format);
+    parse(&state);
+    overflow = isBufferOverflow(&buffer);
+    va_end(state.args);
+  }
+
+  return !overflow;
 }
 
 
@@ -685,6 +688,35 @@ static bool test_getFatalErrorPlaceholderToken(void) {
   return true;
 }
 
+static bool test_fatalErrorPush() {
+  fatalErrorInit(); // pre-condition
+
+  // case format NULL or empty (do nothing)
+  ASSERT(fatalErrorPush(NULL));
+  ASSERT(strcmp(buffer.text, "") == 0);
+  ASSERT(fatalErrorPush(""));
+  ASSERT(strcmp(buffer.text, "") == 0);
+
+  // simple message, no placeholder
+  ASSERT(fatalErrorPush("abc"));
+  ASSERT(strcmp(buffer.text, "abc") == 0);
+
+  // message with placeholders, appended
+  ASSERT(fatalErrorPush("x%sy%uz", "--", 123));
+  ASSERT(strcmp(buffer.text, "abcx--y123z") == 0);
+
+  // overflow
+  limitFreeBuffer(2);
+  ASSERT(!fatalErrorPush("abc"));
+  ASSERT(strcmp(buffer.text, "$ab$") == 0);
+
+  ASSERT(!fatalErrorPush(NULL));
+  ASSERT(!fatalErrorPush(""));
+  ASSERT(strcmp(buffer.text, "$ab$") == 0);
+
+  return true;
+}
+
 
 void test_mmfatl(void) {
   RUN_TEST(test_fatalErrorInit);
@@ -695,6 +727,7 @@ void test_mmfatl(void) {
   RUN_TEST(test_unsignedToString);
   RUN_TEST(test_handleSubstitution);
   RUN_TEST(test_getFatalErrorPlaceholderToken);
+  RUN_TEST(test_fatalErrorPush);
 }
 
 #endif // TEST_ENABLE

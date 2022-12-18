@@ -124,6 +124,54 @@ extern char const* getFatalErrorPlaceholderToken(
 extern void fatalErrorInit(void);
 
 
+/*!
+ * \brief appends text to the current contents in the message buffer.
+ * 
+ * appends new text to the message buffer.  The submitted extra parameters
+ * following \p format must match the placeholders in the \p format string
+ * in type.  It is possible to add more parameters than necessary (they are
+ * simply ignored then), but never fewer.  The caller is responsible for
+ * this pre-condition, no runtime check is performed.
+ * 
+ * \param format [null] a format string usually containing NUL terminated
+ *   ASCII encoded text, along with embedded placeholders, that are replaced
+ *   with parameters following \p format in the call.
+ *
+ *   A placeholder begins with an escape character \ref MMFATL_PH_PREFIX,
+ *   immediately followed by a type character.  Currently two types are
+ *   implemented \ref MMFATL_PH_STRING and \ref MMFATL_PH_UNSIGNED.
+ *
+ *   If you need a \ref MMFATL_PH_PREFIX verbatim in the error message, use
+ *   two \ref MMFATL_PH_PREFIX in succession.  They will automatically be
+ *   replaced with a single one.
+ *
+ *   For convenience \ref getFatalErrorPlaceholderToken may provide the
+ *   correct placeholder token.
+ *
+ *   NULL is equivalent to an empty format string, and supported both as a
+ *   \ref format string and as a parameter for a string placeholder, to
+ *   enhance robustness.
+ * 
+ * The \p format is followed by a possibly empty list of paramaters substituted
+ *   for placeholders.  Currently unsigned int values may replace a
+ *   \ref MMFATL_PH_UNSIGNED type placeholder, and a char const* pointer a
+ *   \ref MMFATL_PH_STRING type placeholder.  If the latter pointer is NULL,
+ *   the placeholder is replaced with an empty string, else it must point to
+ *   ASCII encoded text.  No value is required for the \ref MMFATL_PH_PREFIX
+ *   type tokens.
+ * 
+ * \pre \p format if not NULL, contains NUL terminated ASCII text.
+ * \pre string parameters following
+ * \pre \ref fatalErrorInit was called before.
+ * \pre the submitted parameters following \p format must match in type the
+ *   placeholders in \p format.  Their count may exceed that of the
+ *   placeholders, but must never be less.  String parameters 
+ * \post the message is appended to the current buffer contents.  It is
+ *   truncated if there is insufficient space for it, including the
+ *   terminating NUL.
+ * \return false iff the message buffer is in overflow state.
+ */
+
 #ifdef TEST_ENABLE
 
 extern void test_mmfatl(void);
