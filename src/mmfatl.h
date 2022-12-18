@@ -84,6 +84,25 @@ enum fatalErrorPlaceholderType {
   MMFATL_PH_UNSIGNED = 'u',
 };
 
+/*!
+ * \brief grammar support: generates a placeholder token for insertion into a
+ *   format string.
+ *
+ * The placeholders in fatal errors are a subset of those used in the C library
+ * function printf.  A flexible implementation might want to query placeholder
+ * tokens during an automatic message generation, rather than hardcoding them
+ * directly in the format string.
+ * \param type data type of the value replacing the placeholder in a format
+ *   string.  \ref MMFATL_PH_PREFIX is allowed as a type, yielding a token
+ *   standing for the character \ref MMFATL_PH_PREFIX itself.
+ * \return a placeholder of a supported type, or NULL, if you somehow
+ *   manage to dodge C type checking.
+ * \attention the result is stable only until the next call to this
+ *   function.
+ */
+extern char const* getFatalErrorPlaceholderToken(
+                enum fatalErrorPlaceholderType aType);
+
 
 #ifdef TEST_ENABLE
 

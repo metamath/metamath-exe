@@ -34,7 +34,9 @@ enum {
   NUL = '\x00',
 };
 
-//----------
+
+//***     utility code used in the implementation of the interface    ***
+
 
 /*
  * During development you may not want to expose preliminary results to the
@@ -42,7 +44,7 @@ enum {
  * the regression test environment your code may be referenced by testing code,
  * though.
  *
- * This section should be empty, or even removed, once your development is
+ * This section should be empty, or even removed, once development is
  * finished.
  */
 #ifdef TEST_ENABLE
@@ -249,12 +251,13 @@ static void initState(struct ParserState* state, struct Buffer* buffer) {
  * \param state [not null] ParserState object being updated in case of
  *   overflow
  * \return false in case of overflow
+ * \post in case of overflow the current format position is moved to the end
  */
 static bool checkOverflow(struct ParserState* state) {
-  bool result = !isBufferOverflow(state->out);
-  if (!result)
+  bool isOverflow = isBufferOverflow(state->out);
+  if (isOverflow)
     state->format += strlen(state->format);
-  return result;
+  return !isOverflow;
 }
 
 /*!
@@ -361,6 +364,26 @@ static void parse(struct ParserState* state) {
 
 #endif // UNDER_DEVELOPMENT
 
+/****    Implementation of the interface in the header file   ****/
+
+char const* getFatalErrorPlaceholderToken(enum fatalErrorPlaceholderType type){
+
+  static char result[3];
+
+  switch (type)
+  {
+    case MMFATL_PH_PREFIX:
+    case MMFATL_PH_STRING:
+    case MMFATL_PH_UNSIGNED:
+      result[0] = MMFATL_PH_PREFIX;
+      result[1] = type;
+      result[2] = NUL;
+      break;
+    default:
+      return NULL;
+  }
+  return result;
+}
 
 //=================   Regression tests   =====================
 
@@ -668,6 +691,17 @@ static bool test_parse(void) {
   return true;
 }
 
+static bool test_getFatalErrorPlaceholderToken(void) {
+  char const* result = getFatalErrorPlaceholderToken(MMFATL_PH_PREFIX);
+  ASSERT(result && strcmp(result, "%%") == 0);
+  result = getFatalErrorPlaceholderToken(MMFATL_PH_UNSIGNED);
+  ASSERT(result && strcmp(result, "%u") == 0);
+  ASSERT(getFatalErrorPlaceholderToken(
+      (enum fatalErrorPlaceholderType)NUL) == NULL);
+  return true;
+}
+
+
 void test_mmfatl(void) {
   RUN_TEST(test_fatalErrorInit);
   RUN_TEST(test_isBufferOverflow);
@@ -676,6 +710,7 @@ void test_mmfatl(void) {
   RUN_TEST(test_parse);
   RUN_TEST(test_unsignedToString);
   RUN_TEST(test_handleSubstitution);
+  RUN_TEST(test_getFatalErrorPlaceholderToken);
 }
 
 #endif // TEST_ENABLE
