@@ -27,23 +27,28 @@
  * self-contained routines, independent of the rest of the program to the
  * extent possible, thus avoiding any corrupted data.
  *
- * In particular everything should be pre-allocated and initialized, so the
- * risk of a failure in a corrupted or memory-tight environment is minimized.
- * This is to the detriment of flexibility, in particular, support for dynamic
- * behavior is limited.  Many Standard C library functions like printf MUST NOT
- * be called when heap problems arise, since they use it internally.  GNU tags
- * such functions as 'AS-Unsafe heap' in their documentation (libc.pdf).
+ * In particular everything should be pre-allocated, so the risk of a failure
+ * in a corrupted or memory-tight environment is minimized.  This is to the
+ * detriment of flexibility, in particular, support for dynamic behavior is
+ * limited.  Many Standard C library functions like printf MUST NOT be called
+ * when heap problems arise, since they use it internally.  GNU tags such
+ * functions as 'AS-Unsafe heap' in their documentation (libc.pdf).
  *
  * Often it is sensible to embed details in a diagnosis message.  Placeholders
  * in the format string mark insertion points for such values, much as in
  * \p printf. The variety and functionality is greatly reduced in our case,
  * though.  Only pieces of text or unsigned integers can be embedded
- * (%s or %u placeholder).
+ * (%s or %u placeholder).  This is sufficient to embed an error location
+ * given by __FILE__ and __LINE__ into the message.
  *
  * For this kind of expansion you still need a buffer where the final message
  * is constructed.  In our context, this buffer is pre-allocated, and fixed in
  * size, truncation of overflowing text enforced.
  */
+
+
+/***   Export basic features of the fatal error message processing   ***/
+
 
 /*! the size a fatal error message including the terminating NUL character can
  * assume without truncation. Must be in the range of an int.
@@ -52,8 +57,8 @@ enum {
   MMFATL_MAX_MSG_SIZE = 1024,
 };
 
-/* the character sequence appended to a truncated fatal error message due to
- * a buffer overflow, so a reader is aware a displayed text is incomplete.
+/*! the character sequence appended to a truncated fatal error message due to
+ * a buffer overflow, so its reader is aware a displayed text is incomplete.
  */
 #define MMFATL_ELLIPSIS "..."
 
@@ -63,7 +68,7 @@ enum {
  * character \ref MMFATL_PH_PREFIX, followed by one of the type characters
  * mentioned here.  A valid placeholder in a format string is replaced with a
  * submitted value during a parse phase.  The values in the enumeration here
- * are all ASCII characters different from NUL, and distinct from each other.
+ * are all ASCII characters different from NUL, and mutally distinct.
  *
  * Two \ref MMFATL_PH_PREFIX in succession serve as a special token denoting
  * the character \ref MMFATL_PH_PREFIX itself, as an ordinary text character.
@@ -71,7 +76,8 @@ enum {
  * in this particular case.
  */
 enum fatalErrorPlaceholderType {
-  MMFATL_PH_PREFIX = '%', //!< escape character marking a placeholder
+   //! escape character marking a placeholder
+  MMFATL_PH_PREFIX = '%',
   //! type character marking a placeholder for a string
   MMFATL_PH_STRING = 's',
   //! type character marking a placeholder for an unsigned
