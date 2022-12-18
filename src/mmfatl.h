@@ -185,6 +185,27 @@ extern void fatalErrorInit(void);
  */
 extern void fatalErrorPrintAndExit(void);
 
+/*!
+ * convenience function, covering a sequence of \ref fatalErrorInit,
+ * \ref fatalErrorPush and \ref fatalErrorPrintAndExit in succession.  This
+ * function does not return.
+ *
+ * \param file [null] filename of code responsible for calling this function,
+ *   suitable for macro __FILE__.  Part of an error location.
+ * \param line [unsigned] if greater 0, interpreted as a line number, where
+ *   a call to this function is initiated, suitable for macro __LINE__.
+ *   Part of an error location.
+ * \param msgWithPlaceholders the error message to display.  This message
+ *   may include placeholders, in which case it must be followed by more
+ *   parameters, corresponding to the values to replace the placeholders.
+ *   These values must match in type that of the placeholders, and their
+ *   number must be enough (can be more) to cover all placeholders.
+ * \post the program exits with failure code, after writing the error
+ *   location and message to stderr.
+ */
+extern void fatalErrorExitAt(char const* file, unsigned line,
+                             char const* msgWithPlaceholders, ...);
+
 #ifdef TEST_ENABLE
 
 extern void test_mmfatl(void);

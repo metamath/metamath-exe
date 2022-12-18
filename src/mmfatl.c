@@ -379,6 +379,32 @@ void fatalErrorPrintAndExit(void) {
 #endif
 }
 
+void fatalErrorExitAt(char const* file, unsigned line,
+                      char const* msgWithPlaceholders, ...) {
+  fatalErrorInit();
+
+  // a format for the error location, only showing relevant data
+  char const* format = NULL;
+  if (file && *file)
+  {
+    if (line > 0)
+      format = "At %s:%u\n";
+    else
+      format = "In file %s:\n";
+  }
+  else if (line > 0)
+    format = "%sIn line %u:\n";
+
+  if (fatalErrorPush(format, file, line) && msgWithPlaceholders) {
+    state.format = msgWithPlaceholders;
+    va_start(state.args, msgWithPlaceholders);
+    parse(&state);
+    va_end(state.args);
+  }
+
+  fatalErrorPrintAndExit();
+}
+
 
 //=================   Regression tests   =====================
 
@@ -725,17 +751,38 @@ static bool test_fatalErrorPush() {
   return true;
 }
 
+static bool test_fatalErrorExitAt() {
+  // note that in test mode the fatalErrorExitAt neither prints to stderr
+  // nor exits.  The message is still in the buffer.
+
+  fatalErrorExitAt("test.c", 1000, "%s failed!", "program");
+  ASSERT(strcmp(buffer.text, "At test.c:1000\nprogram failed!") == 0);
+  // ignoring line
+  fatalErrorExitAt("x.c", 0, "test %u failed!", 5);
+  ASSERT(strcmp(buffer.text, "In file x.c:\ntest 5 failed!") == 0);
+  // ignoring file
+  fatalErrorExitAt(NULL, 123, "%s", "need help!");
+  ASSERT(strcmp(buffer.text, "In line 123:\nneed help!") == 0);
+
+  // ignoring error location
+  fatalErrorExitAt(NULL, 0, "take lessons, you fool!");
+  ASSERT(strcmp(buffer.text, "take lessons, you fool!") == 0);
+
+  return true;
+}
+
 
 void test_mmfatl(void) {
+  RUN_TEST(test_unsignedToString);
   RUN_TEST(test_fatalErrorInit);
   RUN_TEST(test_isBufferOverflow);
   RUN_TEST(test_appendText);
   RUN_TEST(test_handleText);
   RUN_TEST(test_parse);
-  RUN_TEST(test_unsignedToString);
   RUN_TEST(test_handleSubstitution);
   RUN_TEST(test_getFatalErrorPlaceholderToken);
   RUN_TEST(test_fatalErrorPush);
+  RUN_TEST(test_fatalErrorExitAt);
 }
 
 #endif // TEST_ENABLE
