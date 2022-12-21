@@ -169,6 +169,11 @@ extern void fatalErrorInit(void);
  * \post the message is appended to the current buffer contents.  It is
  *   truncated if there is insufficient space for it, including the
  *   terminating NUL.
+ * \warning This function does not automatically wrap messages and insert LF
+ *   characters at the end of the declared screen width (g_screenWidth in
+ *   mminou.h) as print2 does.  Tests show that usual terminal emulators break
+ *   up text at the last column, but that may depend on the used
+ *   hard-/software.
  * \return false iff the message buffer is in overflow state.
  */
 
@@ -182,6 +187,14 @@ extern void fatalErrorInit(void);
  *   filling it with a message.
  * \post [noreturn] the program terminates with error code EXIT_FAILURE, after
  *   writing the buffer contents to stderr.
+ * \warning
+ *   the output is to stderr, not to stdout.  As long as you do not redirect
+ *   stderr to, say, a log file, the error message is displayed to the user on
+ *   his terminal.
+ * \warning previous versions of Metamath returned the exit code 1.  Many
+ *   implementations define EXIT_FAILURE to this very value, but that is not
+ *   mandated by the C11 standard.  In fact, some systems may interpret 1 as a
+ *   success code, so EXIT_FAILURE is more appropriate.
  */
 extern void fatalErrorPrintAndExit(void);
 
@@ -199,9 +212,10 @@ extern void fatalErrorPrintAndExit(void);
  *   may include placeholders, in which case it must be followed by more
  *   parameters, corresponding to the values to replace the placeholders.
  *   These values must match in type that of the placeholders, and their
- *   number must be enough (can be more) to cover all placeholders.
- * \post the program exits with failure code, after writing the error
- *   location and message to stderr.
+ *   number must be enough (can be more) to cover all placeholders.  The
+ *   details of this process is explained in \ref fatalErrorPush.
+ * \post the program exits with EXIT_FAILURE return code, after writing the
+ *   error location and message to stderr.
  */
 extern void fatalErrorExitAt(char const* file, unsigned line,
                              char const* msgWithPlaceholders, ...);
