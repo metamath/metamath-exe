@@ -59,8 +59,10 @@ enum {
 
 /*! the character sequence appended to a truncated fatal error message due to
  * a buffer overflow, so its reader is aware a displayed text is incomplete.
+ * The ellipsis is followed by a line feed to seprate the message from the
+ * command prompt following an exit.
  */
-#define MMFATL_ELLIPSIS "..."
+#define MMFATL_ELLIPSIS "...\n"
 
 /*!
  * supported value types of a two character placeholder token in a format
@@ -151,6 +153,9 @@ extern void fatalErrorInit(void);
  *   NULL is equivalent to an empty format string, and supported both as a
  *   \ref format string and as a parameter for a string placeholder, to
  *   enhance robustness.
+ *
+ *   It is recommended to let the message end with a LF character, so a command
+ *   prompt following it is displayed on a new line.
  * 
  * The \p format is followed by a possibly empty list of paramaters substituted
  *   for placeholders.  Currently unsigned int values may replace a
