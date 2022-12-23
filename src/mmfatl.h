@@ -59,7 +59,7 @@ enum {
 
 /*! the character sequence appended to a truncated fatal error message due to
  * a buffer overflow, so its reader is aware a displayed text is incomplete.
- * The ellipsis is followed by a line feed to seprate the message from the
+ * The ellipsis is followed by a line feed to separate the message from the
  * command prompt following an exit.
  */
 #define MMFATL_ELLIPSIS "...\n"
