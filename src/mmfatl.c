@@ -28,10 +28,11 @@
 #include "mmfatl.h"
 
 /*!
- * string terminating character
+ * some ASCII control characters
  */
 enum {
   NUL = '\x00',
+  LF = '\n',
 };
 
 
@@ -69,7 +70,8 @@ enum {
  */
 
 struct Buffer {
-  char* begin; /*!< points to first unallocated character */
+  /*! points to first unallocated character */
+  char* begin;
   /*!
    * marks the end of the writeable portion, where the \ref MMFATL_ELLIPSIS
    * begins. Logically constant once it got initialized.  Never overwrite this
@@ -92,7 +94,11 @@ static struct Buffer buffer;
  * We do not rely on any initialization during program start.  Instead we
  * assume the worst case, a corrupted pointer overwrote the buffer.  So we
  * initialize it again immediately before use.
- * \post \ref buffer is initialized
+ * \pre the ellipsis appended to the writeable portion of the buffer must
+ *   terminate with a LF, so printing a buffer in overflow state will keep
+ *   a command prompt in a new line ater program exit.
+ * \post \ref buffer is initialized with all NUL characters, so NUL need
+ *   not be copied
  * \param buffer [not null] the output buffer to empty and initialize
  */
 static void initBuffer(struct Buffer* buffer) {
@@ -105,9 +111,30 @@ static void initBuffer(struct Buffer* buffer) {
 }
 
 /*!
+ * \param buffer [const, not null] the buffer to check for emptiness.
+ * \return true, iff the \ref buffer is in its initial state.
+ * \pre \ref initBuffer was called
+ */
+inline static bool isBufferEmpty(struct Buffer const* buffer) {
+  return buffer->begin == buffer->text;
+}
+
+/*!
+ * Get the last stored character in the buffer.  Discarded characters due to
+ * overflow are ignored.  A returned NUL indicates the buffer is empty.
+ * \param buffer [const, not null] the buffer to investigate.
+ * \return the last character stored in buffer, or NUL iff empty.
+ * \pre \ref initBuffer was called
+ */
+static char getLastBufferedChar(struct Buffer const* buffer) {
+  return isBufferEmpty(buffer)? NUL : *(buffer->begin - 1);
+}
+
+/*!
  * \param buffer [const, not null] the buffer to check for overflow.
  * \return true, iff the current contents exceeds the capacity of the
  *   \ref buffer, so at least the terminating \ref NUL is cut off, maybe more.
+ * \pre \ref initBuffer was called
  */
 inline static bool isBufferOverflow(struct Buffer const* buffer) {
   return buffer->begin == buffer->end;
@@ -115,7 +142,7 @@ inline static bool isBufferOverflow(struct Buffer const* buffer) {
 
 /*!
  * used to indicate whether \ref MMFATL_PH_PREFIX is a normal character, or
- * is an escape character in a format string.
+ * an escape character in a format string.
  */
 enum SourceType {
   STRING, //<! NUL terminated text
@@ -131,6 +158,7 @@ enum SourceType {
  *   copying.
  * \param buffer [not null] the output buffer where to append the source text.
  * \return the number of characters copied.
+ * \pre \ref initBuffer was called
  */
 static unsigned appendText(char const* source, enum SourceType type,
                            struct Buffer* buffer) {
@@ -236,6 +264,7 @@ static char const* unsignedToString(unsigned value) {
  * \param state [not null] ParserState object being updated in case of
  *   overflow
  * \return false in case of overflow
+ * \pre \ref initState was called
  * \post in case of overflow the current format position is moved to the end
  */
 static bool checkOverflow(struct ParserState* state) {
@@ -248,11 +277,12 @@ static bool checkOverflow(struct ParserState* state) {
 /*!
  * copy text verbatim from a format string to the message buffer, until either
  * the format ends, or a placeholder is encountered.
+ * \param state struct ParserState* parser state going to be handled and updated
+ * \pre \ref initState was called
  * \post member format of \ref state is advanced over the copied text, if no
  *   overflow.
  * \post member format of \ref state points to the terminating \ref NUL on
  *   overflow.
- * \param state struct ParserState* parser state going to be handled and updated
  */
 static void handleText(struct ParserState* state) {
   state->format += appendText(state->format, FORMAT, &buffer);
@@ -276,6 +306,7 @@ static void handleText(struct ParserState* state) {
  * Note that a duplicated MMFATL_PH_PREFIX is the accepted way to embed such a
  * character in a format string.  This is correctly handled in this function.
  * \pre the format member in \ref state points to a MMFATL_PH_PREFIX.
+ * \pre \ref initState was called
  * \post the substituted value is written to \ref buffer.
  * \post the format member in \ref state is skipped
  * \param state struct ParserState* parser state going to be handled and updated
@@ -315,6 +346,7 @@ static void handleSubstitution(struct ParserState* state) {
  * the values in member args of \ref state, and appends the result to the
  * current contents of \ref buffer.
  * \param state struct ParserState* parser state going to be handled and updated
+ * \pre \ref initState was called
  */
 static void parse(struct ParserState* state) {
   do {
@@ -353,28 +385,57 @@ char const* getFatalErrorPlaceholderToken(
   return result;
 }
 
+/*!
+ * gets the instance of Buffer to use with this interface (currently a global
+ * singleton).  The returned instance is not guaranteed to be initialized.
+ * \return [not null] a pointer to the Buffer instance
+ */
+inline static struct Buffer* getBufferInstance(void) {
+  return &buffer;
+}
+
+/*!
+ * gets the instance of ParserState to use with this interface (currently a
+ * global singleton).  The returned instance is not guaranteed to be
+ * initialized.
+ * \return [not null] a pointer to the ParserState instance 
+ */
+inline static struct ParserState* getParserStateInstance(void) {
+  return &state;
+}
+
 void fatalErrorInit(void) {
-  initBuffer(&buffer);
-  initState(&state, &buffer);
+  struct Buffer* buffer = getBufferInstance();
+
+  initBuffer(buffer);
+  initState(getParserStateInstance(), buffer);
 }
 
 bool fatalErrorPush(char const* format, ...) {
-  bool overflow = isBufferOverflow(&buffer);
+  struct ParserState* state = getParserStateInstance();
+
+  bool overflow = isBufferOverflow(state->out);
   if (!overflow && format != NULL) {
     // initialize the parser state
-    state.format = format;
-    va_start(state.args, format);
-    parse(&state);
-    overflow = isBufferOverflow(&buffer);
-    va_end(state.args);
+    state->format = format;
+    va_start(state->args, format);
+    parse(state);
+    overflow = isBufferOverflow(state->out);
+    va_end(state->args);
   }
 
   return !overflow;
 }
 
 void fatalErrorPrintAndExit(void) {
+  struct Buffer* buffer = getBufferInstance();
+
+  if (!isBufferOverflow(buffer)
+      && !isBufferEmpty(buffer)
+      && getLastBufferedChar(buffer) != LF)
+    fatalErrorPush("\n");
 #ifndef TEST_ENABLE // we don't want a test program terminate here
-  fputs(buffer.text, stderr);
+  fputs(buffer->text, stderr);
   exit(EXIT_FAILURE);
 #endif
 }
@@ -396,10 +457,12 @@ void fatalErrorExitAt(char const* file, unsigned line,
     format = "%sIn line %u:\n";
 
   if (fatalErrorPush(format, file, line) && msgWithPlaceholders) {
-    state.format = msgWithPlaceholders;
-    va_start(state.args, msgWithPlaceholders);
-    parse(&state);
-    va_end(state.args);
+    struct ParserState* state = getParserStateInstance();
+
+    state->format = msgWithPlaceholders;
+    va_start(state->args, msgWithPlaceholders);
+    parse(state);
+    va_end(state->args);
   }
 
   fatalErrorPrintAndExit();
@@ -537,6 +600,29 @@ static bool test_appendText(void) {
   TESTCASE_appendText("%g%", 1, "$g$", -2, 3, 2);
 
   return true;
+}
+
+static bool test_isBufferEmpty(void) {
+  fatalErrorInit();
+  ASSERT(isBufferEmpty(&buffer));
+  appendText("a", STRING, &buffer);
+  ASSERT(!isBufferEmpty(&buffer));
+  limitFreeBuffer(0);
+  ASSERT(!isBufferEmpty(&buffer));
+
+  return true;  
+}
+
+static bool test_getLastBufferedChar(void) {
+  fatalErrorInit();
+  ASSERT(getLastBufferedChar(&buffer) == NUL);
+  appendText("a", STRING, &buffer);
+  ASSERT(getLastBufferedChar(&buffer) == 'a');
+  limitFreeBuffer(1);
+  appendText("bc", STRING, &buffer);
+  ASSERT(getLastBufferedChar(&buffer) == 'b');
+
+  return true;  
 }
 
 static bool test_handleText(void) {
@@ -751,22 +837,44 @@ static bool test_fatalErrorPush() {
   return true;
 }
 
+static bool test_fatalErrorPrintAndExit(void) {
+  fatalErrorInit(); // pre-condition
+  fatalErrorPrintAndExit();
+  ASSERT(strcmp(buffer.text, "") == 0);
+  
+  fatalErrorPush("aaa");
+  fatalErrorPrintAndExit();
+  ASSERT(strcmp(buffer.text, "aaa\n") == 0);
+  
+  // no second \n is appended 
+  fatalErrorPrintAndExit();
+  ASSERT(strcmp(buffer.text, "aaa\n") == 0);
+  
+  // in overflow condition do not append a LF
+  fatalErrorInit();
+  while (!isBufferOverflow(&buffer)) // fill the buffer with "a"
+    fatalErrorPush("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+  ASSERT(strcmp(buffer.text + MMFATL_MAX_MSG_SIZE - 3, "aaa" MMFATL_ELLIPSIS) == 0);
+
+  return true;
+}
+
 static bool test_fatalErrorExitAt() {
   // note that in test mode the fatalErrorExitAt neither prints to stderr
   // nor exits.  The message is still in the buffer.
 
   fatalErrorExitAt("test.c", 1000, "%s failed!", "program");
-  ASSERT(strcmp(buffer.text, "At test.c:1000\nprogram failed!") == 0);
+  ASSERT(strcmp(buffer.text, "At test.c:1000\nprogram failed!\n") == 0);
   // ignoring line
   fatalErrorExitAt("x.c", 0, "test %u failed!", 5);
-  ASSERT(strcmp(buffer.text, "In file x.c:\ntest 5 failed!") == 0);
+  ASSERT(strcmp(buffer.text, "In file x.c:\ntest 5 failed!\n") == 0);
   // ignoring file
-  fatalErrorExitAt(NULL, 123, "%s", "need help!");
-  ASSERT(strcmp(buffer.text, "In line 123:\nneed help!") == 0);
+  fatalErrorExitAt(NULL, 123, "%s", "need help!\n");
+  ASSERT(strcmp(buffer.text, "In line 123:\nneed help!\n") == 0);
 
   // ignoring error location
   fatalErrorExitAt(NULL, 0, "take lessons, you fool!");
-  ASSERT(strcmp(buffer.text, "take lessons, you fool!") == 0);
+  ASSERT(strcmp(buffer.text, "take lessons, you fool!\n") == 0);
 
   return true;
 }
@@ -777,11 +885,14 @@ void test_mmfatl(void) {
   RUN_TEST(test_fatalErrorInit);
   RUN_TEST(test_isBufferOverflow);
   RUN_TEST(test_appendText);
+  RUN_TEST(test_isBufferEmpty);
+  RUN_TEST(test_getLastBufferedChar);
   RUN_TEST(test_handleText);
   RUN_TEST(test_parse);
   RUN_TEST(test_handleSubstitution);
   RUN_TEST(test_getFatalErrorPlaceholderToken);
   RUN_TEST(test_fatalErrorPush);
+  RUN_TEST(test_fatalErrorPrintAndExit);
   RUN_TEST(test_fatalErrorExitAt);
 }
 

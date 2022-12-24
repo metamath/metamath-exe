@@ -59,8 +59,9 @@ enum {
 
 /*! the character sequence appended to a truncated fatal error message due to
  * a buffer overflow, so its reader is aware a displayed text is incomplete.
- * The ellipsis is followed by a line feed to separate the message from the
- * command prompt following an exit.
+ * The ellipsis is followed by a line feed to ensure even an overflown message
+ * ends with one.  This is to separate a message from the command prompt
+ * following an exit.
  */
 #define MMFATL_ELLIPSIS "...\n"
 
@@ -155,22 +156,24 @@ extern void fatalErrorInit(void);
  *   enhance robustness.
  *
  *   It is recommended to let the message end with a LF character, so a command
- *   prompt following it is displayed on a new line.
+ *   prompt following it is displayed on a new line.  If it is missing
+ *   \ref fatalErrorPrintAndExit will supply one, but relying on this adds to
+ *   unnecessary steps undere severe conditions.
+ *   
  * 
  * The \p format is followed by a possibly empty list of paramaters substituted
  *   for placeholders.  Currently unsigned int values may replace a
  *   \ref MMFATL_PH_UNSIGNED type placeholder, and a char const* pointer a
  *   \ref MMFATL_PH_STRING type placeholder.  If the latter pointer is NULL,
  *   the placeholder is replaced with an empty string, else it must point to
- *   ASCII encoded text.  No value is required for the \ref MMFATL_PH_PREFIX
- *   type tokens.
+ *   ASCII encoded NUL terminated text.  No value is required for the
+ *   \ref MMFATL_PH_PREFIX type tokens.
  * 
  * \pre \p format if not NULL, contains NUL terminated ASCII text.
- * \pre string parameters following
  * \pre \ref fatalErrorInit was called before.
- * \pre the submitted parameters following \p format must match in type the
- *   placeholders in \p format.  Their count may exceed that of the
- *   placeholders, but must never be less.  String parameters 
+ * \pre the submitted parameters following \p format must match in type and
+ *   order the placeholders in \p format.  Their count may exceed that of the
+ *   placeholders, but must never be less.
  * \post the message is appended to the current buffer contents.  It is
  *   truncated if there is insufficient space for it, including the
  *   terminating NUL.
@@ -181,6 +184,7 @@ extern void fatalErrorInit(void);
  *   hard-/software.
  * \return false iff the message buffer is in overflow state.
  */
+extern bool fatalErrorPush(char const* format, ...);
 
 /*!
  * \brief display buffer contents and exit program with code EXIT_FAILURE.
@@ -192,6 +196,8 @@ extern void fatalErrorInit(void);
  *   filling it with a message.
  * \post [noreturn] the program terminates with error code EXIT_FAILURE, after
  *   writing the buffer contents to stderr.
+ * \post a line feed is appended to any non-empty message, if it is not
+ *   provided
  * \warning
  *   the output is to stderr, not to stdout.  As long as you do not redirect
  *   stderr to, say, a log file, the error message is displayed to the user on
