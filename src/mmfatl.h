@@ -158,7 +158,7 @@ extern void fatalErrorInit(void);
  *   It is recommended to let the message end with a LF character, so a command
  *   prompt following it is displayed on a new line.  If it is missing
  *   \ref fatalErrorPrintAndExit will supply one, but relying on this adds to
- *   unnecessary steps undere severe conditions.
+ *   unnecessary steps under severe conditions.
  *   
  * 
  * The \p format is followed by a possibly empty list of paramaters substituted
