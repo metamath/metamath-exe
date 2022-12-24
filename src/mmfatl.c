@@ -96,7 +96,7 @@ static struct Buffer buffer;
  * initialize it again immediately before use.
  * \pre the ellipsis appended to the writeable portion of the buffer must
  *   terminate with a LF, so printing a buffer in overflow state will keep
- *   a command prompt in a new line ater program exit.
+ *   a command prompt in a new line after program exit.
  * \post \ref buffer is initialized with all NUL characters, so NUL need
  *   not be copied
  * \param buffer [not null] the output buffer to empty and initialize
