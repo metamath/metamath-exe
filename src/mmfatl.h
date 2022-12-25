@@ -10,6 +10,19 @@
 #include <stdbool.h>
 #include "mmtest.h"
 
+/* Documentation
+ * =============
+ *
+ * Most comments are written in <a href="https://doxygen.nl/index.html">
+ * doxygen</a> (Qt variant) style.  If you have doxygen installed on your
+ * computer, you may generate a hyperlinked HTML documentation out of them with
+ * its root page placed in build/html/index.html by running build.sh with the
+ * -d option.
+ *
+ * Delete this once we have this description available in a central location.
+ * Keep this as a simple comment, so it is outside of Doxygen documentation.
+ */
+
 /*!
  * \file mmfatl.h
  * \brief supports generating of fatal error messages
@@ -49,7 +62,6 @@
  * is constructed.  In our context, this buffer is pre-allocated, and fixed in
  * size, truncation of overflowing text enforced.
  */
-
 
 /***   Export basic features of the fatal error message processing   ***/
 

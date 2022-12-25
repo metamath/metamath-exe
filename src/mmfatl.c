@@ -17,10 +17,6 @@
  *   -DINLINE=inline -DTEST_ENABLE -c -o mmfatl.o ../src/mmfatl.c
  *
  * This should not produce an error or a warning.
- *
- * If you have Doxygen installed the parameter -d of the build.sh script
- * generates a hyperlinked documentation from the comments both here and in the
- * header file.
  */
 
 #include <limits.h>
