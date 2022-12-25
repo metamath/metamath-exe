@@ -265,6 +265,10 @@ extern void fatalErrorPrintAndExit(void);
  * with an error code.  If possible use \ref fatalErrorPrintAndExit directly
  * instead.
  *
+ * If you need to concat two or more pieces to form the error message, use
+ * a sequence of \ref fatalErrorInit, multiple \ref fatalErrorPush and finally
+ * \ref fatalErrorPrintAndExit instead of this function.
+ *
  * \param file [null] filename of code responsible for calling this function,
  *   suitable for macro __FILE__.  Part of an error location.  Ignored in case
  *   of NULL.
