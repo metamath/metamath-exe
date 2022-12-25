@@ -14,14 +14,18 @@
  * \file mmfatl.h
  * \brief supports generating of fatal error messages
  *
- * part of the application's infrastructure
+ * In a sort of 3-tier architecture consisting of resource/configuration/data
+ * management, operation logic and algorithms, and presentation layer (or user
+ * interface), this code is interfacing the operating system on the
+ * lowest infrastructure (resource) layer.
  *
  * Rationale
  * =========
  *
  * When a fatal error occurs, the internal structures of a program may be
  * corrupted to the point that recovery is impossible.  The program exits
- * immediately, but hopefully still displays a diagnostic message.
+ * immediately with a failure code, but hopefully still displays a diagnostic
+ * message.
  *
  * To display this final message, we restrict its code to very basic,
  * self-contained routines, independent of the rest of the program to the
@@ -31,7 +35,7 @@
  * in a corrupted or memory-tight environment is minimized.  This is to the
  * detriment of flexibility, in particular, support for dynamic behavior is
  * limited.  Many Standard C library functions like printf MUST NOT be called
- * when heap problems arise, since they use it internally.  GNU tags such
+ * when heap problems arise, since they rely on it internally.  GNU tags such
  * functions as 'AS-Unsafe heap' in their documentation (libc.pdf).
  *
  * Often it is sensible to embed details in a diagnosis message.  Placeholders
@@ -50,22 +54,30 @@
 /***   Export basic features of the fatal error message processing   ***/
 
 
-/*! the size a fatal error message including the terminating NUL character can
+/*!
+ * \brief size of a text buffer used to construct a message
+ *
+ * the size a fatal error message including the terminating NUL character can
  * assume without truncation. Must be in the range of an int.
  */
 enum {
   MMFATL_MAX_MSG_SIZE = 1024,
 };
 
-/*! the character sequence appended to a truncated fatal error message due to
- * a buffer overflow, so its reader is aware a displayed text is incomplete.
- * The ellipsis is followed by a line feed to ensure even an overflown message
- * ends with one.  This is to separate a message from the command prompt
- * following an exit.
+/*!
+ * \brief ASCII text sequence indicating truncated text
+ *
+ * the character sequence appended to a truncated fatal error message due to a
+ * buffer overflow, so its reader is aware a displayed text is incomplete.  The
+ * ellipsis is followed by a line feed to ensure even an overflown message ends
+ * with one.  This is to separate a message from the command prompt following
+ * an exit.
  */
 #define MMFATL_ELLIPSIS "...\n"
 
 /*!
+ * \brief ASCII characters used for placeholder tokens, printf style
+ *
  * supported value types of a two character placeholder token in a format
  * string.  The first character of a placeholder is always an escape
  * character \ref MMFATL_PH_PREFIX, followed by one of the type characters
@@ -79,7 +91,7 @@ enum {
  * in this particular case.
  */
 enum fatalErrorPlaceholderType {
-   //! escape character marking a placeholder
+   //! escape character marking a placeholder, followed by a type character
   MMFATL_PH_PREFIX = '%',
   //! type character marking a placeholder for a string
   MMFATL_PH_STRING = 's',
@@ -152,13 +164,13 @@ extern void fatalErrorInit(void);
  *   correct placeholder token.
  *
  *   NULL is equivalent to an empty format string, and supported both as a
- *   \ref format string and as a parameter for a string placeholder, to
+ *   \p format string and as a parameter for a string placeholder, to
  *   enhance robustness.
  *
  *   It is recommended to let the message end with a LF character, so a command
  *   prompt following it is displayed on a new line.  If it is missing
- *   \ref fatalErrorPrintAndExit will supply one, but relying on this adds to
- *   unnecessary steps under severe conditions.
+ *   \ref fatalErrorPrintAndExit will supply one, but relying on this adds an
+ *   unnecessary correction under severe conditions.
  *   
  * 
  * The \p format is followed by a possibly empty list of paramaters substituted
@@ -190,7 +202,21 @@ extern bool fatalErrorPush(char const* format, ...);
  * \brief display buffer contents and exit program with code EXIT_FAILURE.
  * 
  * This function does not return.
- * 
+ *
+ * A NUL terminated message has been prepared in an internal buffer using a
+ * sequence of \ref fatalErrorPush.  This function writes this message to
+ * stderr (by default tied to the terminal screen like stdout), and exits the
+ * program afterwards, indicating a failure to the operating system.
+ *
+ * A line feed is appended to a prepared non-empty message if it is not its
+ * last character.  This keeps the message and a command prompt following the
+ * exit on separare lines.  It is recommended to avoid this corrective
+ * measure and supply a terminating line feed as part of the message.
+ *
+ * It is possible to call this function without preparing a message.  In this
+ * case nothing is written to stderr, and the program just exits with a failure
+ * code.
+ *
  * \pre \ref fatalErrorInit has initialized the internal error message
  *   buffer, possibly followed by a sequence of \ref fatalErrorPush
  *   filling it with a message.
@@ -203,28 +229,43 @@ extern bool fatalErrorPush(char const* format, ...);
  *   stderr to, say, a log file, the error message is displayed to the user on
  *   his terminal.
  * \warning previous versions of Metamath returned the exit code 1.  Many
- *   implementations define EXIT_FAILURE to this very value, but that is not
- *   mandated by the C11 standard.  In fact, some systems may interpret 1 as a
- *   success code, so EXIT_FAILURE is more appropriate.
+ *   systemss define EXIT_FAILURE to this very value, but that is not mandated
+ *   by the C11 standard.  In fact, some systems may interpret 1 as a success
+ *   code, so EXIT_FAILURE is more appropriate.
  */
 extern void fatalErrorPrintAndExit(void);
 
 /*!
- * convenience function, covering a sequence of \ref fatalErrorInit,
+ * \brief standard error reporting and program exit with failure code.
+ *
+ * Convenience function, covering a sequence of \ref fatalErrorInit,
  * \ref fatalErrorPush and \ref fatalErrorPrintAndExit in succession.  This
  * function does not return.
  *
+ * If an error location is given, it is printed first, followed by any
+ * non-empty message.  A line feed is padded to the right of the message if it
+ * is missing.  This is to keep a following command prompt on a new line.  It
+ * is recommended to avoid this corrective measure and supply a line feed as
+ * part of the message.
+ *
+ * If all parameters are NULL or 0, no message is printed, not even the
+ * automatically supplied line feed, and this function just exits the program
+ * with an error code.  If possible use \ref fatalErrorPrintAndExit directly
+ * instead.
+ *
  * \param file [null] filename of code responsible for calling this function,
- *   suitable for macro __FILE__.  Part of an error location.
+ *   suitable for macro __FILE__.  Part of an error location.  Ignored in case
+ *   of NULL.
  * \param line [unsigned] if greater 0, interpreted as a line number, where
  *   a call to this function is initiated, suitable for macro __LINE__.
  *   Part of an error location.
- * \param msgWithPlaceholders the error message to display.  This message
- *   may include placeholders, in which case it must be followed by more
- *   parameters, corresponding to the values to replace the placeholders.
- *   These values must match in type that of the placeholders, and their
- *   number must be enough (can be more) to cover all placeholders.  The
- *   details of this process is explained in \ref fatalErrorPush.
+ * \param msgWithPlaceholders [null] the error message to display.  This
+ *   message may include placeholders in printf style, in which case it must be
+ *   followed by more parameters, corresponding to the values replacing
+ *   placeholders.  These values must match in type that of the placeholders,
+ *   and their number must be enough (can be more) to cover all placeholders.
+ *   The details of this process is explained in \ref fatalErrorPush.  Ignored
+ *   if NULL.
  * \post the program exits with EXIT_FAILURE return code, after writing the
  *   error location and message to stderr.
  */

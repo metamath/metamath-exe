@@ -17,6 +17,10 @@
  *   -DINLINE=inline -DTEST_ENABLE -c -o mmfatl.o ../src/mmfatl.c
  *
  * This should not produce an error or a warning.
+ *
+ * If you have Doxygen installed the parameter -d of the build.sh script
+ * generates a hyperlinked documentation from the comments both here and in the
+ * header file.
  */
 
 #include <limits.h>
@@ -91,9 +95,11 @@ struct Buffer {
 static struct Buffer buffer;
 
 /*!
+ * \brief initilize and empty the message buffer.
+ *
  * We do not rely on any initialization during program start.  Instead we
  * assume the worst case, a corrupted pointer overwrote the buffer.  So we
- * initialize it again immediately before use.
+ * initialize it immediately before use.
  * \pre the ellipsis appended to the writeable portion of the buffer must
  *   terminate with a LF, so printing a buffer in overflow state will keep
  *   a command prompt in a new line after program exit.
@@ -111,6 +117,8 @@ static void initBuffer(struct Buffer* buffer) {
 }
 
 /*!
+ * \brief checking the message buffer for emptiness
+ *
  * \param buffer [const, not null] the buffer to check for emptiness.
  * \return true, iff the \ref buffer is in its initial state.
  * \pre \ref initBuffer was called
@@ -120,6 +128,8 @@ inline static bool isBufferEmpty(struct Buffer const* buffer) {
 }
 
 /*!
+ * \brief last character in the message buffer
+ *
  * Get the last stored character in the buffer.  Discarded characters due to
  * overflow are ignored.  A returned NUL indicates the buffer is empty.
  * \param buffer [const, not null] the buffer to investigate.
@@ -131,6 +141,8 @@ static char getLastBufferedChar(struct Buffer const* buffer) {
 }
 
 /*!
+ * \brief check whether the buffer is overflown
+ *
  * \param buffer [const, not null] the buffer to check for overflow.
  * \return true, iff the current contents exceeds the capacity of the
  *   \ref buffer, so at least the terminating \ref NUL is cut off, maybe more.
@@ -141,6 +153,8 @@ inline static bool isBufferOverflow(struct Buffer const* buffer) {
 }
 
 /*!
+ * \brief modes to append text to the message buffer
+ *
  * used to indicate whether \ref MMFATL_PH_PREFIX is a normal character, or
  * an escape character in a format string.
  */
@@ -150,6 +164,8 @@ enum SourceType {
 };
 
 /*!
+ * \brief append text to the current contents of the message buffer
+ *
  * append characters to the current end of the buffer from a string until a
  * terminating \ref NUL, or optionally a placeholder is encountered, or the
  * buffer overflows.
@@ -170,6 +186,8 @@ static unsigned appendText(char const* source, enum SourceType type,
 }
 
 /*!
+ * \brief state of the parser scanning a formatted message in printf style
+ *
  * A simple grammar scheme allows inserting data in a prepared general message.
  * The scheme is a downgrade of the C format string.  Allowed are only
  * placeholders %s and %u that are replaced with given data.  The percent sign
@@ -211,6 +229,8 @@ struct ParserState {
 static struct ParserState state;
 
 /*!
+ * \brief initializes the parser state (but not the associated message buffer!)
+ *
  * initializes \ref state.
  * \post establish the invariant in state
  * \param state [not null] the struct \ref ParserState to initialize.
@@ -224,6 +244,8 @@ static void initState(struct ParserState* state, struct Buffer* buffer) {
 }
 
 /*!
+ * \brief converting an unsigned to a string of decimal numbers
+ *
  * converts an unsigned to a sequence of decimal digits representing its value.
  * The value range is known to be at least 2**32 on contemporary hardware, but
  * C99 guarantees just 2**16.  We support unsigned in formatted error output
@@ -260,7 +282,10 @@ static char const* unsignedToString(unsigned value) {
   return digits + ofs;
 }
 
-/*! reflect a possible buffer overflow in the parser state
+/*!
+ * \brief update the parser state in case of message buffer overflow
+ *
+ * reflect a possible buffer overflow in the parser state
  * \param state [not null] ParserState object being updated in case of
  *   overflow
  * \return false in case of overflow
@@ -275,6 +300,8 @@ static bool checkOverflow(struct ParserState* state) {
 }
 
 /*!
+ * \brief copy a portion of text verbatim to the message buffer
+ *
  * copy text verbatim from a format string to the message buffer, until either
  * the format ends, or a placeholder is encountered.
  * \param state struct ParserState* parser state going to be handled and updated
@@ -290,6 +317,8 @@ static void handleText(struct ParserState* state) {
 }
 
 /*!
+ * \brief handle a placeholder in a formatted message
+ *
  * A format specifier is a two character combination, where a placeholder
  * character \ref MMFATL_PH_PREFIX is followed by an alphabetic character
  * designating a type.  A placeholder is substituted by the next argument in
@@ -342,6 +371,8 @@ static void handleSubstitution(struct ParserState* state) {
 }
 
 /*!
+ * \brief convert a formatted message to human readable text
+ *
  * parses the submitted format string, replacing each placeholder with one of
  * the values in member args of \ref state, and appends the result to the
  * current contents of \ref buffer.
@@ -386,6 +417,8 @@ char const* getFatalErrorPlaceholderToken(
 }
 
 /*!
+ * \brief get the message buffer instance
+ *
  * gets the instance of Buffer to use with this interface (currently a global
  * singleton).  The returned instance is not guaranteed to be initialized.
  * \return [not null] a pointer to the Buffer instance
@@ -395,6 +428,8 @@ inline static struct Buffer* getBufferInstance(void) {
 }
 
 /*!
+ * \brief get the parser state instance
+ *
  * gets the instance of ParserState to use with this interface (currently a
  * global singleton).  The returned instance is not guaranteed to be
  * initialized.
