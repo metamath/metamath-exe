@@ -59,8 +59,8 @@
  * given by __FILE__ and __LINE__ into the message.
  *
  * For this kind of expansion you still need a buffer where the final message
- * is constructed.  In our context, this buffer is pre-allocated, and fixed in
- * size, truncation of overflowing text enforced.
+ * is constructed.  In our context, this buffer is pre-allocated, fixed in
+ * size, and truncation of overflowing text enforced.
  */
 
 /***   Export basic features of the fatal error message processing   ***/
@@ -81,16 +81,15 @@ enum {
  *
  * the character sequence appended to a truncated fatal error message due to a
  * buffer overflow, so its reader is aware a displayed text is incomplete.  The
- * ellipsis is followed by a line feed to ensure even an overflown message ends
- * with one.  This is to separate a message from the command prompt following
- * an exit.
+ * ellipsis is followed by a line feed to ensure an overflown message is still
+ * on the previous line of the command prompt following program exit.
  */
 #define MMFATL_ELLIPSIS "...\n"
 
 /*!
  * \brief ASCII characters used for placeholder tokens, printf style
  *
- * supported value types of a two character placeholder token in a format
+ * Supported value types of a two character placeholder token in a format
  * string.  The first character of a placeholder is always an escape
  * character \ref MMFATL_PH_PREFIX, followed by one of the type characters
  * mentioned here.  A valid placeholder in a format string is replaced with a
@@ -192,6 +191,7 @@ extern void fatalErrorInit(void);
  *   the placeholder is replaced with an empty string, else it must point to
  *   ASCII encoded NUL terminated text.  No value is required for the
  *   \ref MMFATL_PH_PREFIX type tokens.
+ * \return false iff the message buffer is in overflow state.
  * 
  * \pre \p format if not NULL, contains NUL terminated ASCII text.
  * \pre \ref fatalErrorInit was called before.
@@ -206,7 +206,6 @@ extern void fatalErrorInit(void);
  *   mminou.h) as print2 does.  Tests show that usual terminal emulators break
  *   up text at the last column, but that may depend on the used
  *   hard-/software.
- * \return false iff the message buffer is in overflow state.
  */
 extern bool fatalErrorPush(char const* format, ...);
 
@@ -241,7 +240,7 @@ extern bool fatalErrorPush(char const* format, ...);
  *   stderr to, say, a log file, the error message is displayed to the user on
  *   his terminal.
  * \warning previous versions of Metamath returned the exit code 1.  Many
- *   systemss define EXIT_FAILURE to this very value, but that is not mandated
+ *   systems define EXIT_FAILURE to this very value, but that is not mandated
  *   by the C11 standard.  In fact, some systems may interpret 1 as a success
  *   code, so EXIT_FAILURE is more appropriate.
  */
