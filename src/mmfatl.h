@@ -111,7 +111,7 @@ enum fatalErrorPlaceholderType {
 };
 
 /*!
- * \brief grammar support: generates a placeholder token for insertion into a
+ * \brief grammar support: generate a placeholder token for insertion into a
  *   format string.
  *
  * The placeholders in fatal errors are a subset of those used in the C library
@@ -130,7 +130,7 @@ extern char const* getFatalErrorPlaceholderToken(
                 enum fatalErrorPlaceholderType aType);
 
 /*!
- * \brief Preparing internal data structures for an error message.
+ * \brief Prepare internal data structures for an error message.
  * 
  * Empties the message buffer used to construct error messages by
  * \ref fatalErrorPush.
@@ -151,9 +151,9 @@ extern void fatalErrorInit(void);
 
 
 /*!
- * \brief appends text to the current contents in the message buffer.
+ * \brief append text to the current contents in the message buffer.
  * 
- * appends new text to the message buffer.  The submitted extra parameters
+ * Appends new text to the message buffer.  The submitted extra parameters
  * following \p format must match the placeholders in the \p format string
  * in type.  It is possible to add more parameters than necessary (they are
  * simply ignored then), but never fewer.  The caller is responsible for
