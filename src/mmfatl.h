@@ -47,9 +47,9 @@
  * In particular everything should be pre-allocated, so the risk of a failure
  * in a corrupted or memory-tight environment is minimized.  This is to the
  * detriment of flexibility, in particular, support for dynamic behavior is
- * limited.  Many Standard C library functions like printf MUST NOT be called
- * when heap problems arise, since they rely on it internally.  GNU tags such
- * functions as 'AS-Unsafe heap' in their documentation (libc.pdf).
+ * limited.  Many Standard C library functions like \p printf MUST NOT be
+ * called when heap problems arise, since they rely on it internally.  GNU tags
+ * such functions as 'AS-Unsafe heap' in their documentation (libc.pdf).
  *
  * Often it is sensible to embed details in a diagnosis message.  Placeholders
  * in the format string mark insertion points for such values, much as in
@@ -65,8 +65,9 @@
  * Implementation hint
  * -------------------
  *
- * In a memory tight situation we cannot reset the memory heap to free space
- * again, even though we are about to exit program execution, for two reasons:
+ * In a memory tight situation we cannot reset the memory heap, or stack, to
+ * have free space again for, say, \p printf, even though we are about to exit
+ * program execution, for two reasons:
  *   - We want to gather diagnostic information, so the program structures need
  *     to be intact;
  *   - The fatal error routines need not be the last portion of the program
@@ -121,6 +122,9 @@ enum fatalErrorPlaceholderType {
   //! type character marking a placeholder for an unsigned
   MMFATL_PH_UNSIGNED = 'u',
 };
+
+/***   Interface of fatal error message processing   ***/
+
 
 /*!
  * \brief grammar support: generate a placeholder token for insertion into a
@@ -250,6 +254,10 @@ extern bool fatalErrorPush(char const* format, ...);
  * \post a line feed is appended to any non-empty message, if it is not
  *   provided
  * \invariant the memory state of the rest of the program is not changed.
+ * \attention Although this function does not return to the caller, we must not
+ *   assume it is the last piece of program code executing.  A function
+ *   registered with \p atexit executes after \p exit is triggered.  That is
+ *   why the above invariant is important to keep.
  * \warning the output is to stderr, not to stdout.  As long as you do not
  *   redirect stderr to, say, a log file, the error message is displayed to the
  *   user on the terminal.
