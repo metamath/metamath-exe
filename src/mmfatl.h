@@ -61,6 +61,14 @@
  * For this kind of expansion you still need a buffer where the final message
  * is constructed.  In our context, this buffer is pre-allocated, fixed in
  * size, and truncation of overflowing text enforced.
+ *
+ * It is not possible to simply reset memory in a memory tight situation, for
+ * two reasons:
+ *   - We want to gather diagnostic information, so the program structures need
+ *     to be left intact;
+ *   - The fatal error routines need not be the last portion of the program
+ *     executed.  If a function is registered with atexit, it is called after an
+ *     exit is triggered, and this function may rely on allocated program data.
  */
 
 /***   Export basic features of the fatal error message processing   ***/
@@ -146,6 +154,7 @@ extern char const* getFatalErrorPlaceholderToken(
  * \post internal data structures are initialized and ready for constructing
  *   a message from a format string and parameter values.  Any previous
  *   contents is discarded.
+ * \invariant the memory state of the rest of the program is not changed.
  */
 extern void fatalErrorInit(void);
 
@@ -201,6 +210,7 @@ extern void fatalErrorInit(void);
  * \post the message is appended to the current buffer contents.  It is
  *   truncated if there is insufficient space for it, including the
  *   terminating NUL.
+ * \invariant the memory state of the rest of the program is not changed.
  * \warning This function does not automatically wrap messages and insert LF
  *   characters at the end of the declared screen width (g_screenWidth in
  *   mminou.h) as print2 does.  Tests show that usual terminal emulators break
@@ -235,10 +245,10 @@ extern bool fatalErrorPush(char const* format, ...);
  *   writing the buffer contents to stderr.
  * \post a line feed is appended to any non-empty message, if it is not
  *   provided
- * \warning
- *   the output is to stderr, not to stdout.  As long as you do not redirect
- *   stderr to, say, a log file, the error message is displayed to the user on
- *   his terminal.
+ * \invariant the memory state of the rest of the program is not changed.
+ * \warning the output is to stderr, not to stdout.  As long as you do not
+ *   redirect stderr to, say, a log file, the error message is displayed to the
+ *   user on his terminal.
  * \warning previous versions of Metamath returned the exit code 1.  Many
  *   systems define EXIT_FAILURE to this very value, but that is not mandated
  *   by the C11 standard.  In fact, some systems may interpret 1 as a success
@@ -283,6 +293,7 @@ extern void fatalErrorPrintAndExit(void);
  *   if NULL.
  * \post the program exits with EXIT_FAILURE return code, after writing the
  *   error location and message to stderr.
+ * \invariant the memory state of the rest of the program is not changed.
  */
 extern void fatalErrorExitAt(char const* file, unsigned line,
                              char const* msgWithPlaceholders, ...);
