@@ -62,13 +62,17 @@
  * is constructed.  In our context, this buffer is pre-allocated, fixed in
  * size, and truncation of overflowing text enforced.
  *
- * It is not possible to simply reset memory in a memory tight situation, for
- * two reasons:
+ * Implementation hint
+ * -------------------
+ *
+ * In a memory tight situation we cannot reset the memory heap to free space
+ * again, even though we are about to exit program execution, for two reasons:
  *   - We want to gather diagnostic information, so the program structures need
- *     to be left intact;
+ *     to be intact;
  *   - The fatal error routines need not be the last portion of the program
- *     executed.  If a function is registered with atexit, it is called after an
- *     exit is triggered, and this function may rely on allocated program data.
+ *     executing.  If a function is registered with \p atexit, it is called
+ *     after an exit is triggered, and this function may rely on allocated
+ *     data.
  */
 
 /***   Export basic features of the fatal error message processing   ***/
@@ -248,7 +252,7 @@ extern bool fatalErrorPush(char const* format, ...);
  * \invariant the memory state of the rest of the program is not changed.
  * \warning the output is to stderr, not to stdout.  As long as you do not
  *   redirect stderr to, say, a log file, the error message is displayed to the
- *   user on his terminal.
+ *   user on the terminal.
  * \warning previous versions of Metamath returned the exit code 1.  Many
  *   systems define EXIT_FAILURE to this very value, but that is not mandated
  *   by the C11 standard.  In fact, some systems may interpret 1 as a success
