@@ -28,69 +28,20 @@
 #include "mmfatl.h"
 
 /*!
- * string terminating character
+ * some ASCII control characters
  */
 enum {
   NUL = '\x00',
+  LF = '\n',
 };
 
-//----------
 
-/*
- * During development you may not want to expose preliminary results to the
- * normal compile, as this would trigger 'unused' warnings, for example.  In
- * the regression test environment your code may be referenced by testing code,
- * though.
- *
- * This section should be empty, or even removed, once your development is
- * finished.
- */
-#ifdef TEST_ENABLE
-#   define UNDER_DEVELOPMENT
-#endif
+//***     utility code used in the implementation of the interface    ***
 
-#ifdef UNDER_DEVELOPMENT
 
 /*!
- * converts an unsigned to a sequence of decimal digits representing its value.
- * The value range is known to be at least 2**32 on contemporary hardware, but
- * C99 guarantees just 2**16.  We support unsigned in formatted error output
- * to allow for macros like __LINE__ denoting error positions in text files.
- *
- * There exist no utoa in the C99 standard library, that could be used instead,
- * and sprintf must not be used in a memory-tight situation (AS Unsafe heap,
- * https://www.gnu.org/software/libc/manual/html_node/Formatted-Output-Functions.html).
- * \param value an unsigned value to convert.
- * \returns a pointer to a string converted from \p value.  Except for zero,
- *   the result has a leading non-zero digit.
- * \attention  The result is stable only until the next call to this function.
- */
-static char const* unsignedToString(unsigned value) {
-  /*
-   * sizeof(value) * CHAR_BIT are the bits encodable in value, the factor 146/485,
-   * derived from a chained fraction, is about 0.3010309, slightly greater than
-   * log 2.  So the number within the brackets is the count of decimal digits
-   * encodable in value.  Two extra bytes compensate for the truncation error of
-   * the division and allow for a terminating NUL.
-   */
-  static char digits[(sizeof(value) * CHAR_BIT * 146) / 485 + 2];
-
-  unsigned ofs = sizeof(digits) - 1;
-  digits[ofs] = NUL;
-  if (value == 0)
-    digits[--ofs] = '0';
-  else {
-    while (value) {
-      digits[--ofs] = (value % 10) + '0';
-      value /= 10;
-    }
-  }
-  return digits + ofs;
-}
-
-/*!
- * \brief declares a buffer used to generate a text message through a
- * formatting procedure.
+ * \brief a buffer used to generate a text message through a formatting
+ * procedure.
  *
  * This buffer type is used to send a final diagnostic message to the user,
  * before the program dies because of insufficient, or even corrupt memory.
@@ -119,7 +70,8 @@ static char const* unsignedToString(unsigned value) {
  */
 
 struct Buffer {
-  char* begin; /*!< points to first unallocated character */
+  /*! points to first unallocated character */
+  char* begin;
   /*!
    * marks the end of the writeable portion, where the \ref MMFATL_ELLIPSIS
    * begins. Logically constant once it got initialized.  Never overwrite this
@@ -139,10 +91,16 @@ struct Buffer {
 static struct Buffer buffer;
 
 /*!
+ * \brief initialize and empty the message buffer
+ *
  * We do not rely on any initialization during program start.  Instead we
  * assume the worst case, a corrupted pointer overwrote the buffer.  So we
- * initialize it again immediately before use.
- * \post \ref buffer is initialized
+ * initialize it immediately before use.
+ * \pre the ellipsis appended to the writeable portion of the buffer must
+ *   terminate with a LF, so printing a buffer in overflow state will keep
+ *   a command prompt in a new line after program exit.
+ * \post \ref buffer is initialized with all NUL characters, so NUL need
+ *   not be copied
  * \param buffer [not null] the output buffer to empty and initialize
  */
 static void initBuffer(struct Buffer* buffer) {
@@ -155,17 +113,46 @@ static void initBuffer(struct Buffer* buffer) {
 }
 
 /*!
+ * \brief check the message buffer for emptiness
+ *
+ * \param buffer [const, not null] the buffer to check for emptiness.
+ * \return true, iff the \ref buffer is in its initial state.
+ * \pre \ref initBuffer was called
+ */
+inline static bool isBufferEmpty(struct Buffer const* buffer) {
+  return buffer->begin == buffer->text;
+}
+
+/*!
+ * \brief last character in the message buffer
+ *
+ * Get the last stored character in the buffer.  Discarded characters due to
+ * overflow are ignored.  A returned NUL indicates the buffer is empty.
+ * \param buffer [const, not null] the buffer to investigate.
+ * \return the last character stored in buffer, or NUL iff empty.
+ * \pre \ref initBuffer was called
+ */
+static char getLastBufferedChar(struct Buffer const* buffer) {
+  return isBufferEmpty(buffer)? NUL : *(buffer->begin - 1);
+}
+
+/*!
+ * \brief check whether the buffer is overflown
+ *
  * \param buffer [const, not null] the buffer to check for overflow.
  * \return true, iff the current contents exceeds the capacity of the
  *   \ref buffer, so at least the terminating \ref NUL is cut off, maybe more.
+ * \pre \ref initBuffer was called
  */
 inline static bool isBufferOverflow(struct Buffer const* buffer) {
   return buffer->begin == buffer->end;
 }
 
 /*!
- * used to indicate whether \ref MMFATL_PH_PREFIX is a normal character, or
- * is an escape character in a format string.
+ * \brief modes of appending text to the message buffer
+ *
+ * Used to indicate whether \ref MMFATL_PH_PREFIX is a normal character, or
+ * an escape character in a format string.
  */
 enum SourceType {
   STRING, //<! NUL terminated text
@@ -173,7 +160,9 @@ enum SourceType {
 };
 
 /*!
- * append characters to the current end of the buffer from a string until a
+ * \brief append text to the current contents of the message buffer
+ *
+ * Append characters to the current end of the buffer from a string until a
  * terminating \ref NUL, or optionally a placeholder is encountered, or the
  * buffer overflows.
  * \param source [not null] the source from which bytes are copied.
@@ -181,6 +170,7 @@ enum SourceType {
  *   copying.
  * \param buffer [not null] the output buffer where to append the source text.
  * \return the number of characters copied.
+ * \pre \ref initBuffer was called
  */
 static unsigned appendText(char const* source, enum SourceType type,
                            struct Buffer* buffer) {
@@ -192,6 +182,8 @@ static unsigned appendText(char const* source, enum SourceType type,
 }
 
 /*!
+ * \brief state of the parser scanning a formatted message in printf style
+ *
  * A simple grammar scheme allows inserting data in a prepared general message.
  * The scheme is a downgrade of the C format string.  Allowed are only
  * placeholders %s and %u that are replaced with given data.  The percent sign
@@ -233,7 +225,9 @@ struct ParserState {
 static struct ParserState state;
 
 /*!
- * initializes \ref state.
+ * \brief initialize the parser state (but not the associated message buffer!)
+ *
+ * Initializes \ref state.
  * \post establish the invariant in state
  * \param state [not null] the struct \ref ParserState to initialize.
  * \param buffer [not null] the buffer to use for output 
@@ -245,48 +239,73 @@ static void initState(struct ParserState* state, struct Buffer* buffer) {
   state->format = empty;
 }
 
-/*! reflect a possible buffer overflow in the parser state
+/*!
+ * \brief convert an unsigned to a string of decimal numbers
+ *
+ * Converts an unsigned to a sequence of decimal digits representing its value.
+ * The value range is known to be at least 2**32 on contemporary hardware, but
+ * C99 guarantees just 2**16.  We support unsigned in formatted error output
+ * to allow for macros like __LINE__ denoting error positions in text files.
+ *
+ * There exist no utoa in the C99 standard library, that could be used instead,
+ * and sprintf must not be used in a memory-tight situation (AS Unsafe heap,
+ * https://www.gnu.org/software/libc/manual/html_node/Formatted-Output-Functions.html).
+ * \param value an unsigned value to convert.
+ * \returns a pointer to a string converted from \p value.  Except for zero,
+ *   the result has a leading non-zero digit.
+ * \attention  The result is stable only until the next call to this function.
+ */
+static char const* unsignedToString(unsigned value) {
+  /*
+   * sizeof(value) * CHAR_BIT are the bits encodable in value, the factor 146/485,
+   * derived from a chained fraction, is about 0.3010309, slightly greater than
+   * log 2.  So the number within the brackets is the count of decimal digits
+   * encodable in value.  Two extra bytes compensate for the truncation error of
+   * the division and allow for a terminating NUL.
+   */
+  static char digits[(sizeof(value) * CHAR_BIT * 146) / 485 + 2];
+
+  unsigned ofs = sizeof(digits) - 1;
+  digits[ofs] = NUL;
+  if (value == 0)
+    digits[--ofs] = '0';
+  else {
+    while (value) {
+      digits[--ofs] = (value % 10) + '0';
+      value /= 10;
+    }
+  }
+  return digits + ofs;
+}
+
+/*!
+ * \brief update the parser state in case of message buffer overflow
+ *
+ * Reflect a possible buffer overflow in the parser state
  * \param state [not null] ParserState object being updated in case of
  *   overflow
  * \return false in case of overflow
+ * \pre \ref initState was called
+ * \post in case of overflow the current format position is moved to the end
  */
 static bool checkOverflow(struct ParserState* state) {
-  bool result = !isBufferOverflow(state->out);
-  if (!result)
+  bool isOverflow = isBufferOverflow(state->out);
+  if (isOverflow)
     state->format += strlen(state->format);
-  return result;
+  return !isOverflow;
 }
 
 /*!
- * \brief Preparing internal data structures for an error message.
+ * \brief copy a portion of text verbatim to the message buffer
  *
- * Empties the message buffer used to construct error messages.
- *
- * Prior to generating an error message some internal data structures need to
- * be initialized.  Usually such initialization is automatically executed on
- * program startup.  Since we are in a fatal error situation, we do not rely
- * on this.  Instead we assume memory corruption has affected this module's
- * data and renders its state useless.  So we initialize it immediately before
- * the error message is generated.  Note that we still rely on part of the
- * system be running.  We cannot overcome a fully clobbered system, we only
- * can increase our chances of bypassing some degree of memory corruption.
- *
- * \post internal data structures are initialized and ready for constructing
- *   a message from a format string and parameter values.
- */
-static void fatalErrorInit(void) {
-  initBuffer(&buffer);
-  initState(&state, &buffer);
-}
-
-/*!
- * copy text verbatim from a format string to the message buffer, until either
+ * Copy text verbatim from a format string to the message buffer, until either
  * the format ends, or a placeholder is encountered.
+ * \param state struct ParserState* parser state going to be handled and updated
+ * \pre \ref initState was called
  * \post member format of \ref state is advanced over the copied text, if no
  *   overflow.
  * \post member format of \ref state points to the terminating \ref NUL on
  *   overflow.
- * \param state struct ParserState* parser state going to be handled and updated
  */
 static void handleText(struct ParserState* state) {
   state->format += appendText(state->format, FORMAT, &buffer);
@@ -294,6 +313,8 @@ static void handleText(struct ParserState* state) {
 }
 
 /*!
+ * \brief handle a placeholder in a formatted message
+ *
  * A format specifier is a two character combination, where a placeholder
  * character \ref MMFATL_PH_PREFIX is followed by an alphabetic character
  * designating a type.  A placeholder is substituted by the next argument in
@@ -310,6 +331,7 @@ static void handleText(struct ParserState* state) {
  * Note that a duplicated MMFATL_PH_PREFIX is the accepted way to embed such a
  * character in a format string.  This is correctly handled in this function.
  * \pre the format member in \ref state points to a MMFATL_PH_PREFIX.
+ * \pre \ref initState was called
  * \post the substituted value is written to \ref buffer.
  * \post the format member in \ref state is skipped
  * \param state struct ParserState* parser state going to be handled and updated
@@ -345,10 +367,13 @@ static void handleSubstitution(struct ParserState* state) {
 }
 
 /*!
- * parses the submitted format string, replacing each placeholder with one of
+ * \brief convert a formatted message to human readable text
+ *
+ * Parses the submitted format string, replacing each placeholder with one of
  * the values in member args of \ref state, and appends the result to the
  * current contents of \ref buffer.
  * \param state struct ParserState* parser state going to be handled and updated
+ * \pre \ref initState was called
  */
 static void parse(struct ParserState* state) {
   do {
@@ -359,7 +384,120 @@ static void parse(struct ParserState* state) {
   } while (*state->format != NUL);
 }
 
-#endif // UNDER_DEVELOPMENT
+/****    Implementation of the interface in the header file   ****/
+
+/* See the header file for descriptions
+ * Global instances buffer and state are known to the following functions.
+ * They must not be passed as parameters, as they are implementation details
+ * not to be exposed through the interface.
+ */
+
+char const* getFatalErrorPlaceholderToken(
+                    enum fatalErrorPlaceholderType type) {
+
+  static char result[3];
+
+  switch (type)
+  {
+    case MMFATL_PH_PREFIX:
+    case MMFATL_PH_STRING:
+    case MMFATL_PH_UNSIGNED:
+      result[0] = MMFATL_PH_PREFIX;
+      result[1] = type;
+      result[2] = NUL;
+      break;
+    default:
+      return NULL;
+  }
+  return result;
+}
+
+/*!
+ * \brief get the message buffer instance
+ *
+ * Gets the instance of Buffer to use with this interface (currently a global
+ * singleton).  The returned instance is not guaranteed to be initialized.
+ * \return [not null] a pointer to the Buffer instance
+ */
+inline static struct Buffer* getBufferInstance(void) {
+  return &buffer;
+}
+
+/*!
+ * \brief get the parser state instance
+ *
+ * Gets the instance of ParserState to use with this interface (currently a
+ * global singleton).  The returned instance is not guaranteed to be
+ * initialized.
+ * \return [not null] a pointer to the ParserState instance 
+ */
+inline static struct ParserState* getParserStateInstance(void) {
+  return &state;
+}
+
+void fatalErrorInit(void) {
+  struct Buffer* buffer = getBufferInstance();
+
+  initBuffer(buffer);
+  initState(getParserStateInstance(), buffer);
+}
+
+bool fatalErrorPush(char const* format, ...) {
+  struct ParserState* state = getParserStateInstance();
+
+  bool overflow = isBufferOverflow(state->out);
+  if (!overflow && format != NULL) {
+    // initialize the parser state
+    state->format = format;
+    va_start(state->args, format);
+    parse(state);
+    overflow = isBufferOverflow(state->out);
+    va_end(state->args);
+  }
+
+  return !overflow;
+}
+
+void fatalErrorPrintAndExit(void) {
+  struct Buffer* buffer = getBufferInstance();
+
+  if (!isBufferOverflow(buffer)
+      && !isBufferEmpty(buffer)
+      && getLastBufferedChar(buffer) != LF)
+    fatalErrorPush("\n");
+#ifndef TEST_ENABLE // we don't want a test program terminate here
+  fputs(buffer->text, stderr);
+  exit(EXIT_FAILURE);
+#endif
+}
+
+void fatalErrorExitAt(char const* file, unsigned line,
+                      char const* msgWithPlaceholders, ...) {
+  fatalErrorInit();
+
+  // a format for the error location, only showing relevant data
+  char const* format = NULL;
+  if (file && *file)
+  {
+    if (line > 0)
+      format = "At %s:%u\n";
+    else
+      format = "In file %s:\n";
+  }
+  else if (line > 0)
+    format = "%sIn line %u:\n";
+
+  if (fatalErrorPush(format, file, line) && msgWithPlaceholders) {
+    struct ParserState* state = getParserStateInstance();
+
+    state->format = msgWithPlaceholders;
+    va_start(state->args, msgWithPlaceholders);
+    parse(state);
+    va_end(state->args);
+  }
+
+  fatalErrorPrintAndExit();
+}
 
 
 //=================   Regression tests   =====================
@@ -493,6 +631,29 @@ static bool test_appendText(void) {
   TESTCASE_appendText("%g%", 1, "$g$", -2, 3, 2);
 
   return true;
+}
+
+static bool test_isBufferEmpty(void) {
+  fatalErrorInit();
+  ASSERT(isBufferEmpty(&buffer));
+  appendText("a", STRING, &buffer);
+  ASSERT(!isBufferEmpty(&buffer));
+  limitFreeBuffer(0);
+  ASSERT(!isBufferEmpty(&buffer));
+
+  return true;  
+}
+
+static bool test_getLastBufferedChar(void) {
+  fatalErrorInit();
+  ASSERT(getLastBufferedChar(&buffer) == NUL);
+  appendText("a", STRING, &buffer);
+  ASSERT(getLastBufferedChar(&buffer) == 'a');
+  limitFreeBuffer(1);
+  appendText("bc", STRING, &buffer);
+  ASSERT(getLastBufferedChar(&buffer) == 'b');
+
+  return true;  
 }
 
 static bool test_handleText(void) {
@@ -668,14 +829,102 @@ static bool test_parse(void) {
   return true;
 }
 
+static bool test_getFatalErrorPlaceholderToken(void) {
+  char const* result = getFatalErrorPlaceholderToken(MMFATL_PH_PREFIX);
+  ASSERT(result && strcmp(result, "%%") == 0);
+  result = getFatalErrorPlaceholderToken(MMFATL_PH_UNSIGNED);
+  ASSERT(result && strcmp(result, "%u") == 0);
+  ASSERT(getFatalErrorPlaceholderToken(
+      (enum fatalErrorPlaceholderType)NUL) == NULL);
+  return true;
+}
+
+static bool test_fatalErrorPush() {
+  fatalErrorInit(); // pre-condition
+
+  // case format NULL or empty (do nothing)
+  ASSERT(fatalErrorPush(NULL));
+  ASSERT(strcmp(buffer.text, "") == 0);
+  ASSERT(fatalErrorPush(""));
+  ASSERT(strcmp(buffer.text, "") == 0);
+
+  // simple message, no placeholder
+  ASSERT(fatalErrorPush("abc"));
+  ASSERT(strcmp(buffer.text, "abc") == 0);
+
+  // message with placeholders, appended
+  ASSERT(fatalErrorPush("x%sy%uz", "--", 123));
+  ASSERT(strcmp(buffer.text, "abcx--y123z") == 0);
+
+  // overflow
+  limitFreeBuffer(2);
+  ASSERT(!fatalErrorPush("abc"));
+  ASSERT(strcmp(buffer.text, "$ab$") == 0);
+
+  ASSERT(!fatalErrorPush(NULL));
+  ASSERT(!fatalErrorPush(""));
+  ASSERT(strcmp(buffer.text, "$ab$") == 0);
+
+  return true;
+}
+
+static bool test_fatalErrorPrintAndExit(void) {
+  fatalErrorInit(); // pre-condition
+  fatalErrorPrintAndExit();
+  ASSERT(strcmp(buffer.text, "") == 0);
+  
+  fatalErrorPush("aaa");
+  fatalErrorPrintAndExit();
+  ASSERT(strcmp(buffer.text, "aaa\n") == 0);
+  
+  // no second \n is appended 
+  fatalErrorPrintAndExit();
+  ASSERT(strcmp(buffer.text, "aaa\n") == 0);
+  
+  // in overflow condition do not append a LF
+  fatalErrorInit();
+  while (!isBufferOverflow(&buffer)) // fill the buffer with "a"
+    fatalErrorPush("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
+  ASSERT(strcmp(buffer.text + MMFATL_MAX_MSG_SIZE - 3, "aaa" MMFATL_ELLIPSIS) == 0);
+
+  return true;
+}
+
+static bool test_fatalErrorExitAt() {
+  // note that in test mode the fatalErrorExitAt neither prints to stderr
+  // nor exits.  The message is still in the buffer.
+
+  fatalErrorExitAt("test.c", 1000, "%s failed!", "program");
+  ASSERT(strcmp(buffer.text, "At test.c:1000\nprogram failed!\n") == 0);
+  // ignoring line
+  fatalErrorExitAt("x.c", 0, "test %u failed!", 5);
+  ASSERT(strcmp(buffer.text, "In file x.c:\ntest 5 failed!\n") == 0);
+  // ignoring file
+  fatalErrorExitAt(NULL, 123, "%s", "need help!\n");
+  ASSERT(strcmp(buffer.text, "In line 123:\nneed help!\n") == 0);
+
+  // ignoring error location
+  fatalErrorExitAt(NULL, 0, "take lessons, you fool!");
+  ASSERT(strcmp(buffer.text, "take lessons, you fool!\n") == 0);
+
+  return true;
+}
+
+
 void test_mmfatl(void) {
+  RUN_TEST(test_unsignedToString);
   RUN_TEST(test_fatalErrorInit);
   RUN_TEST(test_isBufferOverflow);
   RUN_TEST(test_appendText);
+  RUN_TEST(test_isBufferEmpty);
+  RUN_TEST(test_getLastBufferedChar);
   RUN_TEST(test_handleText);
   RUN_TEST(test_parse);
-  RUN_TEST(test_unsignedToString);
   RUN_TEST(test_handleSubstitution);
+  RUN_TEST(test_getFatalErrorPlaceholderToken);
+  RUN_TEST(test_fatalErrorPush);
+  RUN_TEST(test_fatalErrorPrintAndExit);
+  RUN_TEST(test_fatalErrorExitAt);
 }
 
 #endif // TEST_ENABLE
