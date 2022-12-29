@@ -76,7 +76,7 @@
  *     data.
  */
 
-/***   Export basic features of the fatal error message processing   ***/
+// ***   Export basic features of the fatal error message processing   ***/
 
 
 /*!
@@ -123,7 +123,7 @@ enum fatalErrorPlaceholderType {
   MMFATL_PH_UNSIGNED = 'u',
 };
 
-/***   Interface of fatal error message processing   ***/
+// ***   Interface of fatal error message processing   ***/
 
 
 /*!
