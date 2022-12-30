@@ -32,6 +32,7 @@
     mmvstr.c - BASIC-like string functions
     mmwtex.c - LaTeX/HTML source generation
     mmword.c - File revision utility (for TOOLS> UPDATE) (not generally useful)
+    mmfatl.c - Fatal error handler
 */
 
 /* Compilation instructions (gcc on Unix/Linus/Cygwin, lcc on Windows):
