@@ -23,6 +23,7 @@ mmdata.c
 #include "mmcmdl.h" /* Needed for g_logFileName */
 #include "mmpfas.h" /* Needed for g_proveStatement */
 #include "mmwtex.h" /* Needed for SMALL_DECORATION etc. */
+#include "mmfatl.h"
 
 /*E*/long db=0,db0=0,db2=0,db3=0,db4=0,db5=0,db6=0,db7=0,db8=0,db9=0;
 flag g_listMode = 0; /* 0 = metamath, 1 = list utility */
@@ -719,23 +720,18 @@ long getFreeSpace(long max)
 
 /* Fatal memory allocation error */
 void outOfMemory(const char *msg) {
-  vstring_def(tmpStr);
-  print2("*** FATAL ERROR:  Out of memory.\n");
-  print2("Internal identifier (for technical support):  %s\n", msg);
-  print2("To solve this problem, remove some unnecessary statements or file\n");
-  print2("inclusions to reduce the size of your input source.\n");
-  print2("Monitor memory periodically with SHOW MEMORY.\n");
-  print2("\n");
-  print2("Press <return> to exit Metamath.\n");
-  tmpStr = cmdInput1("");
-  free_vstring(tmpStr);
   /* Close the log to make sure error log is saved */
   if (g_logFileOpenFlag) {
     fclose(g_logFilePtr);
     g_logFileOpenFlag = 0;
   }
-
-  exit(1);
+  char const* format =
+        "*** FATAL ERROR:  Out of memory.\n"
+        "Internal identifier (for technical support):  %s\n"
+        "To solve this problem, remove some unnecessary statements or file\n"
+        "inclusions to reduce the size of your input source.\n"
+        "Monitor memory periodically with SHOW MEMORY.\n";
+  fatalErrorExitAt(__FILE__, __LINE__, format, msg);
 }
 
 
@@ -3071,16 +3067,12 @@ long **alloc2DMatrix(size_t xsize, size_t ysize)
   long **matrix;
   long i;
   matrix = malloc(xsize * sizeof(long *));
-  if (matrix == NULL) {
-    fprintf(stderr,"?FATAL ERROR 1376 Out of memory\n");
-    exit(1);
-  }
+  if (matrix == NULL)
+    exitOnFatalError(__FILE__, __LINE__, "?FATAL ERROR 1376 Out of memory\n");
   for (i = 0; i < (long)xsize; i++) {
     matrix[i] = malloc(ysize * sizeof(long));
-    if (matrix[i] == NULL) {
-      fprintf(stderr,"?FATAL ERROR 1377 Out of memory\n");
-      exit(1);
-    }
+    if (matrix[i] == NULL)
+      exitOnFatalError(__FILE__, __LINE__, "?FATAL ERROR 1377 Out of memory\n");
   }
   return matrix;
 } /* alloc2DMatrix */
