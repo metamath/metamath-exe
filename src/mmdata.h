@@ -444,14 +444,10 @@ long getFreeSpace(long max);
  *
  * called when memory cannot be allocated, either because memory/address space
  * is physically exhausted, or because administrative structures would overflow.
- * Stops execution and wait for the user to confirm having read the message,
- * before exiting the program raising an error condition.
+ * A non-recoverable condition, so stops execution with an error condition
  *
- * \param msg error message displayed to the user.
+ * \param msg a short error message displayed to the user.
  * \return never, but exits the program instead.
- * \bug calls functions like print2, that in turn may call outOfMemory again
- * under restricted memory conditions, so finally memory error messages are
- * stacked up endlessly.
  */
 void outOfMemory(const char *msg);
 

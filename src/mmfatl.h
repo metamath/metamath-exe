@@ -211,7 +211,7 @@ extern void fatalErrorInit(void);
  * \return false iff the message buffer is in overflow state.
  * 
  * \pre \p format if not NULL, contains NUL terminated ASCII text.
- * \pre \ref fatalErrorInit was called before.
+ * \pre the buffer is initialized, by calling \ref fatalErrorInit prior
  * \pre the submitted parameters following \p format must match in type and
  *   order the placeholders in \p format.  Their count may exceed that of the
  *   placeholders, but must never be less.
@@ -246,9 +246,9 @@ extern bool fatalErrorPush(char const* format, ...);
  * case nothing is written to stderr, and the program just exits with a failure
  * code.
  *
- * \pre \ref fatalErrorInit has initialized the internal error message
- *   buffer, possibly followed by a sequence of \ref fatalErrorPush
- *   filling it with a message.
+ * \pre the buffer is initialized, by calling \ref fatalErrorInit prior,
+ *   possibly followed by a sequence of \ref fatalErrorPush filling it with a
+ *   message.
  * \post [noreturn] the program terminates with error code EXIT_FAILURE, after
  *   writing the buffer contents to stderr.
  * \post a line feed is appended to any non-empty message, if it is not

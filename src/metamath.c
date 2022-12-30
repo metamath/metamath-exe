@@ -22,6 +22,7 @@
     mmdata.c - Defines global data structures and manipulates arrays
                with functions similar to BASIC string functions;
                memory management; converts between proof formats
+    mmfatl.c - Fatal error handler
     mmhlpa.c - The help file, part 1.
     mmhlpb.c - The help file, part 2.
     mminou.c - Basic input and output interface
