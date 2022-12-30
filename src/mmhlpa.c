@@ -58,12 +58,12 @@ H("  UNDUPLICATE - Eliminate duplicate occurrences of lines in a file");
 H("  DUPLICATE - Extract first occurrence of any line occurring more than");
 H("      once in a file, discarding lines occurring exactly once");
 H("  UNIQUE - Extract lines occurring exactly once in a file");
-H(
-"  (UNDUPLICATE, DUPLICATE, and UNIQUE also sort the lines as a side effect.)");
+H("  (UNDUPLICATE, DUPLICATE, and UNIQUE also sort the lines as a side");
+H("      effect.)");
 H("  UPDATE (deprecated) - Update a C program for revision control");
 H("  TYPE (10 lines) - Display 10 lines of a file; similar to Unix \"head\"");
-H(
-"  COPY - Similar to Unix \"cat\" but safe (same input & output name allowed)");
+H("  COPY - Similar to Unix \"cat\" but safe (same input & output name");
+H("      allowed)");
 H("  SUBMIT - Run a script containing Tools commands.");
 H("");
 H("Command syntax ([] means optional):");
@@ -71,8 +71,8 @@ H("  From TOOLS prompt:  TOOLS> <command> [<arg1> <arg2>...]");
 H("You need to type only as many characters of the command as are needed to");
 H("uniquely specify it.  Any arguments will answer questions automatically");
 H("until the argument list is exhausted; the remaining questions will be");
-H("prompted.  An argument may be optionally enclosed in quotes.  Use \"\" for");
-H("default or null argument.");
+H("prompted.  An argument may be optionally enclosed in quotes.  Use \"\"");
+H("for default or null argument.");
 H("");
 H("Notes:");
 H("(1) The commands are not case sensitive.  File names and match strings");
@@ -322,16 +322,16 @@ H("non-keyword argument such as a file name is expected at that point,");
 H("because the CLI will think the ? is the argument.");
 H("");
 H("Some commands have one or more optional qualifiers which modify the");
-H("behavior of the command.  Qualifiers are indicated by a slash (/), such as");
-H("in ABC xyz / IJK.  Spaces are optional around the /.  If you need");
+H("behavior of the command.  Qualifiers are indicated by a slash (/), such");
+H("as in ABC xyz / IJK.  Spaces are optional around the /.  If you need");
 H("to use a slash in a command argument, as in a Unix file name, put single");
 H("or double quotes around the command argument.");
 H("");
 H("If the response to a command is more than a screenful, you will be");
 H("prompted to \"<return> to continue, Q to quit, or S to scroll to end\".");
 H("Q will complete the command internally but suppress further output until");
-H("the next \"TOOLS>\" prompt.  S will suppress further pausing until the next");
-H("\"TOOLS>\" prompt.");
+H("the next \"TOOLS>\" prompt.  S will suppress further pausing until the");
+H("next \"TOOLS>\" prompt.");
 H("");
 H("A command line enclosed in quotes is executed by your operating system.");
 H("See HELP SYSTEM.");
@@ -387,12 +387,10 @@ vstring_def(saveHelpCmd);
    for the same reason.)  */
 let(&saveHelpCmd, helpCmd);
 
-
 if (!strcmp(saveHelpCmd, "HELP CLI")) {
 H("The Metamath program was first developed on a VAX/VMS system, and some");
 H("aspects of its command line behavior reflect this heritage.  Hopefully");
-H(
-"you will find it reasonably user-friendly once you get used to it.");
+H("you will find it reasonably user-friendly once you get used to it.");
 H("");
 H("Each command line is a sequence of English-like words separated by");
 H("spaces, as in SHOW SETTINGS.  Command words are not case sensitive, and");
@@ -418,11 +416,12 @@ H("non-keyword argument such as a file name is expected at that point,");
 H("because the CLI will think the ? is the argument.");
 H("");
 H("Some commands have one or more optional qualifiers that modify the");
-H("behavior of the command.  Qualifiers are indicated by a slash (/), such as");
-H("in READ set.mm / VERIFY.  Spaces are optional around / and =.  If you need");
-H("to use / or = in a command argument, as in a Unix file name, put single");
-H("or double quotes around the command argument.  See the last section of");
-H("HELP LET for more information on special characters in arguments.");
+H("behavior of the command.  Qualifiers are indicated by a slash (/), such");
+H("as in READ set.mm / VERIFY.  Spaces are optional around / and =.  If you");
+H("need to use / or = in a command argument, as in a Unix file name, put");
+H("single or double quotes around the command argument.  See the last");
+H("section of HELP LET for more information on special characters in");
+H("arguments.");
 H("");
 H("The OPEN LOG command will save everything you see on the screen, and is");
 H("useful to help you recover should something go wrong in a proof, or if");
@@ -453,8 +452,6 @@ H("    HELP SUBMIT");
 H("    HELP UNDO (or REDO) - in Proof Assistant only");
 H("");
 }
-
-
 
 if (!strcmp(saveHelpCmd, "HELP LANGUAGE")) {
 H("The language is best learned by reading the book and studying a few proofs");

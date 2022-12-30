@@ -1107,9 +1107,6 @@ void command(int argc, char *argv[]) {
           clang (which takes (void) as an ignore indicator)
           and gcc (which doesn't but is fooled by the ! operator). */
         (void)!system(str1);
-#ifdef VAXC
-        printf("\n"); /* Last line from VAX doesn't have new line */
-#endif
         continue;
       }
     }
@@ -2250,7 +2247,7 @@ void command(int argc, char *argv[]) {
         continue;
       }
       /* Note: in older versions the "~1" string was OS-dependent, but we
-         don't support VAX or THINK C anymore...  Anyway we reopen it
+         do not support VAX or THINK C anymore...  Anyway we reopen it
          here with the renamed file in case the OS won't let us rename
          an opened file during the fSafeOpen for write above. */
       list1_fp = fSafeOpen(cat(g_fullArg[2], "~1", NULL), "r",

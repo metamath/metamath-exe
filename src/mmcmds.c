@@ -4691,10 +4691,6 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
   vstring_def(tmpStr);
 #endif
 
-#ifdef VAXC
-  vstring_def(tmpStr);
-#endif
-
 #ifdef CLOCKS_PER_SEC
   clockStart = clock();  /* Retrieve start time */
 #endif

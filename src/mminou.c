@@ -462,12 +462,11 @@ flag print2(const char* fmt, ...) {
 
   /* Check for lines too long */
   if (lineLen > g_screenWidth + 1) { /* The +1 ignores \n */
-    /* Warning:  Don't call bug(), because it calls print2. */
+    /* Warning:  Do not call bug(), because it calls print2. */
     /* If this bug occurs, the calling function should be fixed. */
     printf("*** PROGRAM BUG #1505 (not serious, but please report it)\n");
     printf("Line exceeds screen width; caller should use printLongLine.\n");
     printf("%ld %s\n", lineLen, printBuffer);
-    /*printf(NULL);*/  /* Force crash on VAXC to see where it came from */
 #if __STDC__
     fflush(stdout);
 #endif
@@ -1152,13 +1151,6 @@ FILE *fSafeOpen(const char *fileName, const char *mode, flag noVersioningFlag) {
 #elif defined __GNUC__ /* Assume unix */
       let(&prefix, cat(fileName, "~", NULL));
       free_vstring(postfix);
-
-#elif defined VAXC /* Assume VMS */
-      /* For debugging on VMS: */
-      /* let(&prefix, cat(fileName, "-", NULL));
-         let(&postfix, "-"); */
-      /* Normal: */
-      goto skip_backup;
 
 #else /* Unknown; assume unix standard */
       /*if (1) goto skip_backup;*/  /* [if no backup desired] */
