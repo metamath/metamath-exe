@@ -5128,7 +5128,7 @@ flag writeBibliography(vstring bibFile,
         return 1;
       }
       /* Note: in older versions the "~1" string was OS-dependent, but we
-         don't support VAX or THINK C anymore...  Anyway we reopen it
+         do not support VAX or THINK C anymore...  Anyway we reopen it
          here with the renamed file in case the OS won't let us rename
          an opened file during the fSafeOpen for write above. */
       list1_fp = fSafeOpen(cat(bibFile, "~1", NULL), "r", 0/*noVersioningFlag*/);

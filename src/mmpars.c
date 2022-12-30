@@ -906,21 +906,11 @@ void parseStatements(void) {
     symbolLenExists[g_MathToken[i].length] = 1;
   }
 
-
   g_currentScope = 0;
   beginScopeStmtNum = 0;
 
   /* Scan all statements.  Fill in statement structure and look for errors. */
   for (stmt = 1; stmt <= g_statements; stmt++) {
-
-#ifdef VAXC
-    /* This line fixes an obscure bug with the VAXC compiler.  If it is taken
-       out, the variable 'stmt' does not get referenced properly when used as
-       an array index.  May be due to some boundary condition in optimization?
-       The assembly code is significantly different with this statement
-       removed. */
-    stmt = stmt;  /* Work around VAXC bug */
-#endif
 
     g_Statement[stmt].beginScopeStatementNum = beginScopeStmtNum;
     /* endScopeStatementNum is always 0 except in ${ statements */
