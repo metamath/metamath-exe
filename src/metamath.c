@@ -22,6 +22,7 @@
     mmdata.c - Defines global data structures and manipulates arrays
                with functions similar to BASIC string functions;
                memory management; converts between proof formats
+    mmfatl.c - Fatal error handler
     mmhlpa.c - The help file, part 1.
     mmhlpb.c - The help file, part 2.
     mminou.c - Basic input and output interface
@@ -32,7 +33,6 @@
     mmvstr.c - BASIC-like string functions
     mmwtex.c - LaTeX/HTML source generation
     mmword.c - File revision utility (for TOOLS> UPDATE) (not generally useful)
-    mmfatl.c - Fatal error handler
 */
 
 /* Compilation instructions (gcc on Unix/Linus/Cygwin, lcc on Windows):
