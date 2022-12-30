@@ -3068,11 +3068,11 @@ long **alloc2DMatrix(size_t xsize, size_t ysize)
   long i;
   matrix = malloc(xsize * sizeof(long *));
   if (matrix == NULL)
-    exitOnFatalError(__FILE__, __LINE__, "?FATAL ERROR 1376 Out of memory\n");
+    fatalErrorExitAt(__FILE__, __LINE__, "?FATAL ERROR 1376 Out of memory\n");
   for (i = 0; i < (long)xsize; i++) {
     matrix[i] = malloc(ysize * sizeof(long));
     if (matrix[i] == NULL)
-      exitOnFatalError(__FILE__, __LINE__, "?FATAL ERROR 1377 Out of memory\n");
+      fatalErrorExitAt(__FILE__, __LINE__, "?FATAL ERROR 1377 Out of memory\n");
   }
   return matrix;
 } /* alloc2DMatrix */
