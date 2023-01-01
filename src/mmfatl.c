@@ -386,32 +386,6 @@ static void parse(struct ParserState* state) {
 
 /****    Implementation of the interface in the header file   ****/
 
-/* See the header file for descriptions
- * Global instances buffer and state are known to the following functions.
- * They must not be passed as parameters, as they are implementation details
- * not to be exposed through the interface.
- */
-
-char const* getFatalErrorPlaceholderToken(
-                    enum fatalErrorPlaceholderType type) {
-
-  static char result[3];
-
-  switch (type)
-  {
-    case MMFATL_PH_PREFIX:
-    case MMFATL_PH_STRING:
-    case MMFATL_PH_UNSIGNED:
-      result[0] = MMFATL_PH_PREFIX;
-      result[1] = type;
-      result[2] = NUL;
-      break;
-    default:
-      return NULL;
-  }
-  return result;
-}
-
 /*!
  * \brief get the message buffer instance
  *
@@ -829,16 +803,6 @@ static bool test_parse(void) {
   return true;
 }
 
-static bool test_getFatalErrorPlaceholderToken(void) {
-  char const* result = getFatalErrorPlaceholderToken(MMFATL_PH_PREFIX);
-  ASSERT(result && strcmp(result, "%%") == 0);
-  result = getFatalErrorPlaceholderToken(MMFATL_PH_UNSIGNED);
-  ASSERT(result && strcmp(result, "%u") == 0);
-  ASSERT(getFatalErrorPlaceholderToken(
-      (enum fatalErrorPlaceholderType)NUL) == NULL);
-  return true;
-}
-
 static bool test_fatalErrorPush() {
   fatalErrorInit(); // pre-condition
 
@@ -921,7 +885,6 @@ void test_mmfatl(void) {
   RUN_TEST(test_handleText);
   RUN_TEST(test_parse);
   RUN_TEST(test_handleSubstitution);
-  RUN_TEST(test_getFatalErrorPlaceholderToken);
   RUN_TEST(test_fatalErrorPush);
   RUN_TEST(test_fatalErrorPrintAndExit);
   RUN_TEST(test_fatalErrorExitAt);
