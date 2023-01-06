@@ -17,6 +17,9 @@
  *   -DINLINE=inline -DTEST_ENABLE -c -o mmfatl.o ../src/mmfatl.c
  *
  * This should not produce an error or a warning.
+ *
+ * The regession tests are run by
+ * build.sh -ct
  */
 
 #include <limits.h>
@@ -36,7 +39,7 @@ enum {
 };
 
 
-//***     utility code used in the implementation of the interface    ***
+// ***     utility code used in the implementation of the interface    ***
 
 
 /*!
@@ -96,12 +99,12 @@ static struct Buffer buffer;
  * We do not rely on any initialization during program start.  Instead we
  * assume the worst case, a corrupted pointer overwrote the buffer.  So we
  * initialize it immediately before use.
+ * \param[in,out] buffer [not null] the output buffer to empty and initialize
  * \pre the ellipsis appended to the writeable portion of the buffer must
  *   terminate with a LF, so printing a buffer in overflow state will keep
  *   a command prompt in a new line after program exit.
  * \post \ref buffer is initialized with all NUL characters, so NUL need
  *   not be copied
- * \param buffer [not null] the output buffer to empty and initialize
  */
 static void initBuffer(struct Buffer* buffer) {
   char ellipsis[] = MMFATL_ELLIPSIS;
@@ -115,7 +118,7 @@ static void initBuffer(struct Buffer* buffer) {
 /*!
  * \brief check the message buffer for emptiness
  *
- * \param buffer [const, not null] the buffer to check for emptiness.
+ * \param[in] buffer [const, not null] the buffer to check for emptiness.
  * \return true, iff the \ref buffer is in its initial state.
  * \pre \ref initBuffer was called
  */
@@ -128,7 +131,7 @@ inline static bool isBufferEmpty(struct Buffer const* buffer) {
  *
  * Get the last stored character in the buffer.  Discarded characters due to
  * overflow are ignored.  A returned NUL indicates the buffer is empty.
- * \param buffer [const, not null] the buffer to investigate.
+ * \param[in] buffer [const, not null] the buffer to investigate.
  * \return the last character stored in buffer, or NUL iff empty.
  * \pre \ref initBuffer was called
  */
@@ -139,7 +142,7 @@ static char getLastBufferedChar(struct Buffer const* buffer) {
 /*!
  * \brief check whether the buffer is overflown
  *
- * \param buffer [const, not null] the buffer to check for overflow.
+ * \param[in] buffer [const, not null] the buffer to check for overflow.
  * \return true, iff the current contents exceeds the capacity of the
  *   \ref buffer, so at least the terminating \ref NUL is cut off, maybe more.
  * \pre \ref initBuffer was called
@@ -165,10 +168,11 @@ enum SourceType {
  * Append characters to the current end of the buffer from a string until a
  * terminating \ref NUL, or optionally a placeholder is encountered, or the
  * buffer overflows.
- * \param source [not null] the source from which bytes are copied.
- * \param type If \ref FORMAT, \ref MMFATL_PH_PREFIX besides \ref NUL stops
+ * \param[in] source [not null] the source from which bytes are copied.
+ * \param[in] type If \ref FORMAT, \ref MMFATL_PH_PREFIX besides \ref NUL stops
  *   copying.
- * \param buffer [not null] the output buffer where to append the source text.
+ * \param[in,out] buffer [not null] the output buffer where to append the
+ *   source text.
  * \return the number of characters copied.
  * \pre \ref initBuffer was called
  */
@@ -228,9 +232,9 @@ static struct ParserState state;
  * \brief initialize the parser state (but not the associated message buffer!)
  *
  * Initializes \ref state.
+ * \param[in,out] state [not null] the struct \ref ParserState to initialize.
+ * \param[in,out] buffer [not null] the buffer to use for output 
  * \post establish the invariant in state
- * \param state [not null] the struct \ref ParserState to initialize.
- * \param buffer [not null] the buffer to use for output 
  */
 static void initState(struct ParserState* state, struct Buffer* buffer) {
   // The invariants in state are established.
@@ -250,7 +254,7 @@ static void initState(struct ParserState* state, struct Buffer* buffer) {
  * There exist no utoa in the C99 standard library, that could be used instead,
  * and sprintf must not be used in a memory-tight situation (AS Unsafe heap,
  * https://www.gnu.org/software/libc/manual/html_node/Formatted-Output-Functions.html).
- * \param value an unsigned value to convert.
+ * \param[in] value an unsigned value to convert.
  * \returns a pointer to a string converted from \p value.  Except for zero,
  *   the result has a leading non-zero digit.
  * \attention  The result is stable only until the next call to this function.
@@ -282,7 +286,7 @@ static char const* unsignedToString(unsigned value) {
  * \brief update the parser state in case of message buffer overflow
  *
  * Reflect a possible buffer overflow in the parser state
- * \param state [not null] ParserState object being updated in case of
+ * \param[in,out] state [not null] ParserState object being updated in case of
  *   overflow
  * \return false in case of overflow
  * \pre \ref initState was called
@@ -300,7 +304,8 @@ static bool checkOverflow(struct ParserState* state) {
  *
  * Copy text verbatim from a format string to the message buffer, until either
  * the format ends, or a placeholder is encountered.
- * \param state struct ParserState* parser state going to be handled and updated
+ * \param[in,out] state struct ParserState* parser state going to be handled
+ *   and updated
  * \pre \ref initState was called
  * \post member format of \ref state is advanced over the copied text, if no
  *   overflow.
@@ -330,11 +335,11 @@ static void handleText(struct ParserState* state) {
  *
  * Note that a duplicated MMFATL_PH_PREFIX is the accepted way to embed such a
  * character in a format string.  This is correctly handled in this function.
+ * \param[in,out] state struct ParserState* parser state going to be handled and updated
  * \pre the format member in \ref state points to a MMFATL_PH_PREFIX.
  * \pre \ref initState was called
  * \post the substituted value is written to \ref buffer.
  * \post the format member in \ref state is skipped
- * \param state struct ParserState* parser state going to be handled and updated
  */
 static void handleSubstitution(struct ParserState* state) {
   // replacement value for a token representing MMFATL_PH_PREFIX itself
@@ -372,7 +377,7 @@ static void handleSubstitution(struct ParserState* state) {
  * Parses the submitted format string, replacing each placeholder with one of
  * the values in member args of \ref state, and appends the result to the
  * current contents of \ref buffer.
- * \param state struct ParserState* parser state going to be handled and updated
+ * \param[in,out] state struct ParserState* parser state going to be handled and updated
  * \pre \ref initState was called
  */
 static void parse(struct ParserState* state) {
@@ -546,14 +551,14 @@ static char const* bufferCompare(char const* match, int from, unsigned lg,
 }
 
 /*!
- * \param text source text, first character is skipped and indicates its type:
- *   % a format string with special treatment of the MMFATL_PH_PREFIX,
+ * \param[in] text source text, first character is skipped and indicates its
+ *   type: % a format string with special treatment of the MMFATL_PH_PREFIX,
  *   else normal NUL terminated string
- * \param adv that many characters are expected to be copied
- * \param match memory dump of buffer after copy...
- * \param from ... counting from this offset from buffer.begin after copy...
- * \param lg ...and this many characters.
- * \param begin offset of buffer.begin from buffer.text after copy.
+ * \param[in] adv that many characters are expected to be copied
+ * \param[in] match memory dump of buffer after copy
+ * \param[in] from ... counting from this offset from buffer.begin after copy
+ * \param[in] lg ...and this many characters.
+ * \param[in] begin offset of buffer.begin from buffer.text after copy.
  * \return NULL on success, otherwise a message describing a failure
  */
 static char const* testcase_appendText(char const* text, unsigned adv,

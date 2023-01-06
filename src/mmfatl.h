@@ -149,7 +149,8 @@ enum fatalErrorPlaceholderType {
  * \post internal data structures are initialized and ready for constructing
  *   a message from a format string and parameter values.  Any previous
  *   contents is discarded.
- * \invariant the memory state of the rest of the program is not changed.
+ * \invariant the memory state of the rest of the program is not changed (in
+ *   case there is still a function in the atexit queue).
  */
 extern void fatalErrorInit(void);
 
@@ -163,9 +164,9 @@ extern void fatalErrorInit(void);
  * simply ignored then), but never fewer.  The caller is responsible for
  * this pre-condition, no runtime check is performed.
  * 
- * \param format [null] a format string usually containing NUL terminated
- *   ASCII encoded text, along with embedded placeholders, that are replaced
- *   with parameters following \p format in the call.
+ * \param[in] format [null] a format string containing NUL terminated ASCII
+ *   encoded text, along with embedded placeholders, that are replaced with
+ *   parameters following \p format in the call.
  *
  *   A placeholder begins with an escape character \ref MMFATL_PH_PREFIX,
  *   immediately followed by a type character.  Currently two types are
@@ -188,16 +189,15 @@ extern void fatalErrorInit(void);
  *   unnecessary correction under severe conditions.
  *   
  * 
- * The \p format is followed by a possibly empty list of paramaters substituted
+ * The \p format is followed by a possibly empty list of parameters substituted
  *   for placeholders.  Currently unsigned int values may replace a
- *   \ref MMFATL_PH_UNSIGNED type placeholder, and a char const* pointer a
- *   \ref MMFATL_PH_STRING type placeholder.  If the latter pointer is NULL,
- *   the placeholder is replaced with an empty string, else it must point to
- *   ASCII encoded NUL terminated text.  No value is required for the
+ *   \ref MMFATL_PH_UNSIGNED type placeholder (%u), and a char const* pointer a
+ *   \ref MMFATL_PH_STRING type placeholder (%s).  If the latter pointer is
+ *   NULL, the placeholder is replaced with an empty string, else it must point
+ *   to ASCII encoded NUL terminated text.  No value is required for the
  *   \ref MMFATL_PH_PREFIX type tokens.
  * \return false iff the message buffer is in overflow state.
  * 
- * \pre \p format if not NULL, contains NUL terminated ASCII text.
  * \pre the buffer is initialized, by calling \ref fatalErrorInit prior
  * \pre the submitted parameters following \p format must match in type and
  *   order the placeholders in \p format.  Their count may exceed that of the
@@ -205,7 +205,8 @@ extern void fatalErrorInit(void);
  * \post the message is appended to the current buffer contents.  It is
  *   truncated if there is insufficient space for it, including the
  *   terminating NUL.
- * \invariant the memory state of the rest of the program is not changed.
+ * \invariant the memory state of the rest of the program is not changed (in
+ *   case there is still a function in the atexit queue).
  * \warning This function does not automatically wrap messages and insert LF
  *   characters at the end of the declared screen width (g_screenWidth in
  *   mminou.h) as print2 does.  Tests show that usual terminal emulators break
@@ -240,7 +241,8 @@ extern bool fatalErrorPush(char const* format, ...);
  *   writing the buffer contents to stderr.
  * \post a line feed is appended to any non-empty message, if it is not
  *   provided
- * \invariant the memory state of the rest of the program is not changed.
+ * \invariant the memory state of the rest of the program is not changed (in
+ *   case there is still a function in the atexit queue).
  * \attention Although this function does not return to the caller, we must not
  *   assume it is the last piece of program code executing.  A function
  *   registered with \p atexit executes after \p exit is triggered.  That is
@@ -277,13 +279,13 @@ extern void fatalErrorPrintAndExit(void);
  * a sequence of \ref fatalErrorInit, multiple \ref fatalErrorPush and finally
  * \ref fatalErrorPrintAndExit instead of this function.
  *
- * \param file [null] filename of code responsible for calling this function,
- *   suitable for macro __FILE__.  Part of an error location.  Ignored in case
- *   of NULL.
- * \param line [unsigned] if greater 0, interpreted as a line number, where
- *   a call to this function is initiated, suitable for macro __LINE__.
- *   Part of an error location.
- * \param msgWithPlaceholders [null] the error message to display.  This
+ * \param[in] file [null] filename of code responsible for calling this
+ *   function, suitable for macro __FILE__.  Part of an error location.
+ *   Ignored in case of NULL.
+ * \param[in] line [unsigned] if greater 0, interpreted as a line number, where
+ *   a call to this function is initiated, suitable for macro __LINE__.  Part
+ *   of an error location.
+ * \param[in] msgWithPlaceholders [null] the error message to display.  This
  *   message may include placeholders in printf style, in which case it must be
  *   followed by more parameters, corresponding to the values replacing
  *   placeholders.  These values must match in type that of the placeholders,
@@ -292,7 +294,8 @@ extern void fatalErrorPrintAndExit(void);
  *   if NULL.
  * \post the program exits with EXIT_FAILURE return code, after writing the
  *   error location and message to stderr.
- * \invariant the memory state of the rest of the program is not changed.
+ * \invariant the memory state of the rest of the program is not changed (in
+ *   case there is still a function in the atexit queue).
  */
 extern void fatalErrorExitAt(char const* file, unsigned line,
                              char const* msgWithPlaceholders, ...);
