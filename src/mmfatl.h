@@ -41,8 +41,14 @@
  * message.
  *
  * To display this final message, we restrict its code to very basic,
- * self-contained routines, independent of the rest of the program to the
- * extent possible, thus avoiding any corrupted data.
+ * self-contained routines.  It does not share state with the rest of the
+ * program, and uses shared resources only to the bare minimum:
+ * (a) needs a few hundred bytes of stack memory, i.e. the most basic execution
+ *     environment capable of calling a library function;
+ * (b) expects only a simple library function forwarding 1 KB of raw text to
+ *     stderr being operational.
+ * In particular memory corruption in the Metamath executable cannot affect the
+ * handling of the fatal error.
  *
  * In particular everything should be pre-allocated, so the risk of a failure
  * in a corrupted or memory-tight environment is minimized.  This is to the
