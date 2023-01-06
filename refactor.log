@@ -1,0 +1,8 @@
+======================   Refactor log   ======================
+
+Protocol of the changes applied to the executable 'metamath'.  Each change
+should correspond to a small set of commits implementing this change, and
+nothing else (apart from cosmetic corrections).
+
+[wl c6a76d9] Comment update: Better explain the design principles of the fatal
+   error handler in the 'Rationale' section.
