@@ -12,6 +12,7 @@
  * \brief Basic input and output interface.
  */
 
+#include <stdbool.h>
 #include <stdio.h>
 
 #include "mmvstr.h"
@@ -21,11 +22,42 @@ extern int g_errorCount;     /*!< Total error count */
 
 /* Global variables used by print2() */
 
+/* Getter and Setter for the logging state */
+
 /*!
- * \var flag g_logFileOpenFlag
- * If set to 1, logging of input is enabled.  Initially set to 0.
+ * Query the current logging state.
+ * \return whether logging is enabled.
  */
-extern flag g_logFileOpenFlag;
+extern bool isLoggingEnabled(void);
+
+/*!
+ * \brief close any opened log file
+ *
+ * Disable logging, if currently enabled.  No footer message is printed to the
+ * log file.  Avoiding the footer is in particular useful on abnormal program
+ * termination when insufficient memory is available for such an operation.
+ * \post any unsaved contents is flushed to the log file
+ * \post a log file, if open, is closed again.
+ */
+extern void disableLogging(void);
+
+/*!
+ * \brief open a log file
+ *
+ * start direct logging to the given file, overwriting any previous contents,
+ * but saving the old contents to a history file (ending in ~n).  No header
+ * message is printed to the log file.  Any opened log file will automatically
+ * be closed on program exit (See C11 specs
+ * https://en.cppreference.com/w/c/program/exit), both on normal, or fatal
+ * error condition.
+ * \param[in] logFileName path (if not absolute it is relative to the current
+ *   directory) and name of the log file
+ * \return whether a new log file could successfully be opened.
+ * \pre no log file is open
+ * \post a new empty log file is opened, if true is returned
+ * \invariant at most one log file is open
+ */
+extern bool enableLogging(const vstring logFileName);
 
 /*!
  * \var FILE *g_logFilePtr

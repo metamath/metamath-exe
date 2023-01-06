@@ -16,3 +16,7 @@ nothing else (apart from cosmetic corrections).
    stable across program versions, and may cause confusion.  Metamath used #nn
    markers instead, that can be easily found per text search, and do not have
    this drawback.  Discontinue support of this kind of location markers.
+[wl 7209823] bug() has an error exit, that was overseen.  Using fatalErrorExit
+   also cures a very rare bug: The returned value 1 need not necessarily
+   indicate a failure, and can definitly be different from EXIT_FAILURE.
+   See https://en.cppreference.com/w/c/program/exit.

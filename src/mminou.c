@@ -43,8 +43,28 @@ extern int cprintf(const char *f__mt,...);
 int g_errorCount = 0;
 
 /* Global variables used by print2() */
-flag g_logFileOpenFlag = 0;
+bool g_logFileOpenFlag = 0;
 FILE *g_logFilePtr;
+
+bool isLoggingEnabled(void) {
+  return g_logFileOpenFlag != 0;
+}
+
+void disableLogging(void) {
+  if (isLoggingEnabled()) {
+    fclose(g_logFilePtr);
+    g_logFileOpenFlag = false;
+  }
+}
+
+bool enableLogging(const vstring logFileName) {
+  g_logFilePtr = fSafeOpen(logFileName, "w", 0/*noVersioningFlag*/);
+  if (g_logFilePtr)
+    g_logFileOpenFlag = true;
+
+  return isLoggingEnabled();
+}
+
 FILE *g_listFile_fp = NULL;
 /* Global variables used by print2() */
 flag g_outputToString = 0;
@@ -438,7 +458,7 @@ flag print2(const char* fmt, ...) {
         (vstring)(backBuffer[backBufferPos - 1]), printBuffer, NULL));
   } /* End if !g_outputToString */
 
-  if (g_logFileOpenFlag && !g_outputToString) {
+  if (isLoggingEnabled() && !g_outputToString) {
 
 /* step (10) log output to file  */
 
@@ -932,7 +952,7 @@ vstring cmdInput1(const char *ask) {
         }
         printf("%s\n", commandLn); /* Let user see what's happening */
       }
-      if (g_logFileOpenFlag) fprintf(g_logFilePtr, "%s%s\n", ask1, commandLn);
+      if (isLoggingEnabled()) fprintf(g_logFilePtr, "%s%s\n", ask1, commandLn);
 
       /* Clear backBuffer from previous scroll session */
       for (i = 0; i < pntrLen(backBuffer); i++) {

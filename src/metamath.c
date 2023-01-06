@@ -1276,11 +1276,10 @@ void command(int argc, char *argv[]) {
           fclose(g_texFilePtr);
           g_texFileOpenFlag = 0;
         }
-        if (g_logFileOpenFlag) {
+        if (isLoggingEnabled()) {
           print2("The log file \"%s\" was closed %s %s.\n",g_logFileName,
               date(),time_());
-          fclose(g_logFilePtr);
-          g_logFileOpenFlag = 0;
+          disableLogging();
         }
 
         /* Free remaining allocations before exiting */
@@ -3198,7 +3197,7 @@ void command(int argc, char *argv[]) {
         print2("(SHOW...) The default statement for SHOW commands is \"%s\".\n",
             g_Statement[g_showStatement].labelName);
       }
-      if (g_logFileOpenFlag) {
+      if (isLoggingEnabled()) {
         print2("(OPEN LOG...) The log file \"%s\" is open.\n", g_logFileName);
       } else {
         print2("(OPEN LOG...) No log file is currently open.\n");
@@ -6201,23 +6200,20 @@ void command(int argc, char *argv[]) {
     if (cmdMatches("OPEN LOG")) {
         /* Open a log file */
         let(&g_logFileName, g_fullArg[2]);
-        g_logFilePtr = fSafeOpen(g_logFileName, "w", 0/*noVersioningFlag*/);
-        if (!g_logFilePtr) continue; /* Couldn't open it (err msg was provided) */
-        g_logFileOpenFlag = 1;
-        print2("The log file \"%s\" was opened %s %s.\n",g_logFileName,
+        if (enableLogging(g_logFileName))
+          print2("The log file \"%s\" was opened %s %s.\n",g_logFileName,
             date(),time_());
         continue;
     }
 
     if (cmdMatches("CLOSE LOG")) {
         /* Close the log file */
-        if (!g_logFileOpenFlag) {
+        if (!isLoggingEnabled()) {
           print2("?Sorry, there is no log file currently open.\n");
         } else {
           print2("The log file \"%s\" was closed %s %s.\n",g_logFileName,
               date(),time_());
-          fclose(g_logFilePtr);
-          g_logFileOpenFlag = 0;
+          disableLogging();
         }
         free_vstring(g_logFileName);
         continue;

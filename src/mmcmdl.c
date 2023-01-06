@@ -272,7 +272,7 @@ flag processCommandLine(void) {
     if (cmdMatches("OPEN")) {
       if (!getFullArg(1, "LOG|TEX|<LOG>")) goto pclbad;
       if (cmdMatches("OPEN LOG")) {
-        if (g_logFileOpenFlag) {
+        if (isLoggingEnabled()) {
           printLongLine(cat(
               "?Sorry, the log file \"", g_logFileName, "\" is currently open.  ",
               "Type CLOSE LOG to close the current log if you want to open another one.",
