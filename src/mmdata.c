@@ -731,7 +731,7 @@ void outOfMemory(const char *msg) {
         "To solve this problem, remove some unnecessary statements or file\n"
         "inclusions to reduce the size of your input source.\n"
         "Monitor memory periodically with SHOW MEMORY.\n";
-  fatalErrorExitAt(__FILE__, __LINE__, format, msg);
+  fatalErrorExit(format, msg);
 }
 
 
@@ -3068,11 +3068,11 @@ long **alloc2DMatrix(size_t xsize, size_t ysize)
   long i;
   matrix = malloc(xsize * sizeof(long *));
   if (matrix == NULL)
-    fatalErrorExitAt(__FILE__, __LINE__, "?FATAL ERROR 1376 Out of memory\n");
+    fatalErrorExit("?FATAL ERROR 1376 Out of memory\n");
   for (i = 0; i < (long)xsize; i++) {
     matrix[i] = malloc(ysize * sizeof(long));
     if (matrix[i] == NULL)
-      fatalErrorExitAt(__FILE__, __LINE__, "?FATAL ERROR 1377 Out of memory\n");
+      fatalErrorExit("?FATAL ERROR 1377 Out of memory\n");
   }
   return matrix;
 } /* alloc2DMatrix */

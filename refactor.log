@@ -6,6 +6,13 @@ nothing else (apart from cosmetic corrections).
 
 [wl c6a76d9] Comment update: Better explain the design principles of the fatal
    error handler in the 'Rationale' section.
-[] Doxygen: mark which parameters are constant, and which may be updated.
-   Common order of parameters, return and pre-/postconditions.  A few
+[wl 322468e] Doxygen: mark which parameters are constant, and which may be
+   updated.  Common order of parameters, return and pre-/postconditions.  A few
    improvements in comment texts.
+[] The __FILE__ and __LINE__ macros define a source code location, which, for
+   example, causes an error.  This is a very standard way to mark a position.
+   The problem is: during development these locations may vary because of code
+   insertion or deletion.  So this form of report is not stable across program
+   versions, and may cause confusion.  Metamath used #nn markers instead, that
+   can be easily found per text search, and do not have this drawback.
+   Discontinue support of this kind of location marks in mmfatl.
