@@ -813,8 +813,7 @@ void bug(int bugNum)
     fclose(g_logFilePtr);
     g_logFileOpenFlag = 0;
   }
-  print2("The program was aborted.\n");
-  exit(1); /* Use 1 instead of 0 to flag abnormal termination to scripts */
+  fatalErrorExit("The program was aborted.");
 }
 
 /*!
