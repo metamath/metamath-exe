@@ -295,6 +295,6 @@ extern void fatalErrorExitAt(char const* file, unsigned line,
 
 extern void test_mmfatl(void);
 
-#endif
+#endif // TEST_ENABLE
 
-#endif /* include guard */
+#endif // METAMATH_MMFATL_H_
