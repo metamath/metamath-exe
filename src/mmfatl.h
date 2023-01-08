@@ -41,10 +41,16 @@
  * message.
  *
  * To display this final message, we restrict its code to very basic,
- * self-contained routines, independent of the rest of the program to the
- * extent possible, thus avoiding any corrupted data.
+ * self-contained routines.  It does not share state with the rest of the
+ * program, and uses shared resources only to the bare minimum:
+ * (a) needs a few hundred bytes of stack memory, i.e. the most basic execution
+ *     environment capable of calling a library function;
+ * (b) expects only a simple library function forwarding 1 KB of raw text to
+ *     stderr being operational.
+ * In particular memory corruption in the Metamath executable cannot affect the
+ * handling of the fatal error.
  *
- * In particular everything should be pre-allocated, so the risk of a failure
+ * To achieve this everything should be pre-allocated, so the risk of a failure
  * in a corrupted or memory-tight environment is minimized.  This is to the
  * detriment of flexibility, in particular, support for dynamic behavior is
  * limited.  Many Standard C library functions like \p printf MUST NOT be
@@ -68,8 +74,8 @@
  * In a memory tight situation we cannot reset the memory heap, or stack, to
  * have free space again for, say, \p printf, even though we are about to exit
  * program execution, for two reasons:
- *   - We want to gather diagnostic information, so the program structures need
- *     to be intact;
+ *   - We want to gather diagnostic information, so some program structures
+ *     need to be intact;
  *   - The fatal error routines need not be the last portion of the program
  *     executing.  If a function is registered with \p atexit, it is called
  *     after an exit is triggered, and this function may rely on allocated
