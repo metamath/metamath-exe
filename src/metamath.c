@@ -786,8 +786,6 @@ int main(int argc, char *argv[]) {
 }
 
 
-
-
 void command(int argc, char *argv[]) {
   /* Command line user interface -- this is an infinite loop; it fetches and
      processes a command; returns only if the command is 'EXIT' or 'QUIT' and
@@ -6366,7 +6364,6 @@ void command(int argc, char *argv[]) {
 
       /*continue;*/ /* ???Not implemented */
     } /* end if xxx UNIVERSE */
-
 
 
     if (cmdMatches("SET DEBUG FLAG")) {

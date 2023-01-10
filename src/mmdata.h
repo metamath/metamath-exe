@@ -576,7 +576,6 @@ flag matches(const char *testString, const char *pattern, char wildCard,
     char oneCharWildCard);
 
 
-
 /*******************************************************************/
 /*********** Number string functions *******************************/
 /*******************************************************************/
@@ -665,7 +664,6 @@ temp_nmbrString *nmbrIntersection(const nmbrString *m1, const nmbrString *m2);
 /*! Get the set difference m1-m2 of two math token strings (presumably
    variable lists) */
 temp_nmbrString *nmbrSetMinus(const nmbrString *m1,const nmbrString *m2);
-
 
 
 /*! This is a utility function that returns the length of a subproof that

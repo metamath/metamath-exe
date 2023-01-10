@@ -226,8 +226,6 @@ char verifyProof(long statemNum)
 } /* verifyProof */
 
 
-
-
 /* assignVar() finds an assignment to substScheme variables that match
    the assumptions specified in the reason string */
 nmbrString *assignVar(nmbrString *bigSubstSchemeAss,

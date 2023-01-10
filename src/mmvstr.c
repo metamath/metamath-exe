@@ -864,7 +864,6 @@ temp_vstring num(double f) {
 } /* num */
 
 
-
 /* Emulate PROGRESS "entry" and related string functions */
 /* (PROGRESS is a 4-GL database language) */
 
@@ -992,7 +991,6 @@ long entryPosition(long element, const char *list) {
   if (list[lastComma + 1] == ',') return 0;
   return (lastComma + 2);
 }
-
 
 
 /* For debugging */

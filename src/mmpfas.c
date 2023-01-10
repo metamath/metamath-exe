@@ -226,7 +226,6 @@ void interactiveMatch(long step, long maxEssential)
 } /* interactiveMatch */
 
 
-
 /* Assign a statement to an unknown proof step */
 void assignStatement(long statemNum, long step)
 {
@@ -247,7 +246,6 @@ void assignStatement(long statemNum, long step)
   free_nmbrString(hypList);
   return;
 } /* assignStatement */
-
 
 
 /* Find proof of formula by using the replaceStatement() algorithm i.e.
@@ -972,7 +970,6 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
 } /* replaceStatement */
 
 
-
 /* This function identifies all steps in the proof in progress that (1) are
    independent of step refStep, (2) have no dummy variables, (3) are
    not $f's or $e's, and (4) have subproofs that are complete
@@ -1070,7 +1067,6 @@ vstring getIndepKnownSteps(long proofStmt, long refStep)
 } /* getIndepKnownSteps */
 
 
-
 /* This function classifies each proof step in g_ProofInProgress.proof
    as known or unknown ('K' or 'U' in the returned string) depending
    on whether the step has a completely known subproof.
@@ -1125,7 +1121,6 @@ vstring getKnownSubProofs(void)
   return unkSubPrfSteps; /* Caller must deallocate */
 
 } /* getKnownSubProofs */
-
 
 
 /* Add a subproof in place of an unknown step to g_ProofInProgress.  The
@@ -1756,7 +1751,6 @@ nmbrString *proveFloating(const nmbrString *mString, long statemNum, long maxEDe
     if (breakFlag) continue; /* To next stmt */
 
 
-
     /* Change all variables in the statement to dummy vars for unification */
     nmbrLet(&scheme, stmtMathPtr);
     schemeVars = reqVars; /* S.b. same after eliminated new $e vars above */
@@ -1950,7 +1944,6 @@ nmbrString *proveFloating(const nmbrString *mString, long statemNum, long maxEDe
 /*E*/if(db8){if(!depth)print2("Trials: %ld\n", trials);}
   return (proof); /* Caller must deallocate */
 } /* proveFloating */
-
 
 
 /* This function does quick check for some common conditions that prevent
@@ -2251,8 +2244,6 @@ void initStep(long step)
 
   return;
 } /* initStep */
-
-
 
 
 /* Look for completely known subproofs in g_ProofInProgress.proof and
@@ -2745,7 +2736,6 @@ char interactiveUnify(const nmbrString *schemeA, const nmbrString *schemeB,
 } /* interactiveUnify */
 
 
-
 /* Automatically unify steps that have unique unification */
 /* Prints "congratulation" if congrats = 1 */
 void autoUnify(flag congrats)
@@ -3143,7 +3133,6 @@ void declareDummyVars(long numNewVars)
   return;
 
 } /* declareDummyVars */
-
 
 
 /* Copy inProofStruct to outProofStruct.  A proof structure contains

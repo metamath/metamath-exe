@@ -35,7 +35,6 @@ long wrkMathPoolMaxSize = 0; /* Max mathStringPool size so far - it may grow */
 struct wrkProof_struct g_WrkProof;
 
 
-
 /* This function returns a pointer to a buffer containing the contents of an
    input file and its 'include' calls.  'Size' returns the buffer's size.
    Partial parsing is done; when 'include' statements are found, this function
@@ -522,7 +521,6 @@ void parseLabels(void) {
 /*E*/    if (i >= g_numLabelKeys) break;
 /*E*/    print2("%s ",g_Statement[g_labelKeyBase[i]].labelName);
 /*E*/  } print2("\n");}
-
 
 
   /* Copy the keys for all possible labels for lookup by the
@@ -2770,7 +2768,6 @@ char parseProof(long statemNum)
 } /* parseProof() */
 
 
-
 /* Parse proof in compressed format */
 /* Parse proof of one statement in source file.  Uses wrkProof structure. */
 /* Returns 0 if OK; returns 1 if proof is incomplete (is empty or has '?'
@@ -3451,7 +3448,6 @@ nmbrString *getProof(long statemNum, flag printFlag) {
   /* cleanWrkProof(); */ /* Deallocate verifyProof() storage */
   return proof;
 } /* getProof */
-
 
 
 void rawSourceError(char *startFile, char *ptr, long tokLen, vstring errMsg) {
@@ -5138,7 +5134,6 @@ cmdType = 'S':
 } /* getNextInclusion */
 
 
-
 /* This function transfers the content of the g_Statement[] array
    to a linear buffer in preparation for creating the output file.
    Any changes such as modified proofs will be updated in the buffer. */
@@ -5522,7 +5517,6 @@ void assignStmtFileAndLineNum(long stmtNum) {
       g_Statement[stmtNum].statementPtr, &(g_Statement[stmtNum].lineNum));
   return;
 } /* assignStmtFileAndLineNum */
-
 
 
 /* This function returns a pointer to a buffer containing the contents of an

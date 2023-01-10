@@ -1344,7 +1344,6 @@ H("");
 }
 
 
-
 if (!strcmp(saveHelpCmd, "HELP EXPAND")) {
 H("Syntax:  EXPAND <label-match>");
 H("");
