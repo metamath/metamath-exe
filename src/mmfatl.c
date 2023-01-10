@@ -465,7 +465,7 @@ void fatalErrorExit(char const* msgWithPlaceholders, ...) {
   fatalErrorPrintAndExit();
 }
 
-#if 1 /* fatalErrorExitAt */
+#if 0 /* fatalErrorExitAt */
 
 /* 
  * This extension to the fatal error interface allows you to pinpoint a source
