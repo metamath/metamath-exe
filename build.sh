@@ -53,6 +53,8 @@ do
     o) dest_dir=${OPTARG};;
     t) do_make_test=1;;
     v) version_only=1;;
+    *) echo "unknown parameter" >&2
+       exit 1;;
   esac
 done
 
@@ -76,13 +78,13 @@ then
   exit
 fi
 
-cd "$top_dir"
+cd "$top_dir" || exit
 
 #=========   extract the version from metamath.c  =============
 
 # look in metamath.c for a line matching the pattern '  #define MVERSION "<version>" '
 # and save the line in VERSION
-version=`grep '[[:space:]]*#[[:space:]]*define[[:space:]][[:space:]]*MVERSION[[:space:]][[:space:]]*"[^"]*"' "$src_dir/metamath.c"`
+version=$(grep '[[:space:]]*#[[:space:]]*define[[:space:]][[:space:]]*MVERSION[[:space:]][[:space:]]*"[^"]*"' "$src_dir/metamath.c")
 
 # extract the version (without quotes) from the saved line
 
@@ -110,7 +112,7 @@ fi
 
 # Enter the build directory
 mkdir -p "$build_dir"
-cd "$build_dir"
+cd "$build_dir" || exit
 
 # allow external programs easy access to the metamath version extracted from
 # the sources
@@ -120,10 +122,10 @@ echo "$version" > metamath_version
 
 if [ $do_autoconf -eq 1 ]
 then
-  cd "$top_dir"
+  cd "$top_dir" || exit
   autoreconf -i
 
-  cd "$build_dir"
+  cd "$build_dir" || exit
   if [ $debug -eq 1 ]; then
     # FIXME: this gives conflicting -O flags to gcc
     # but It Works on My Machine (TM)
