@@ -465,6 +465,84 @@ void fatalErrorExit(char const* msgWithPlaceholders, ...) {
   fatalErrorPrintAndExit();
 }
 
+#if 1 /* fatalErrorExitAt */
+
+/* 
+ * This extension to the fatal error interface allows you to pinpoint a source
+ * code line as the origin of a fatal error, based on the  __FILE__  and
+ * __LINE__ macros, and add it as a location info to the error message.
+ * While tempting because fairly easy to invoke in your program code, it does
+ * not come without problems:
+ * (1) the error position is not stable across program versions;
+ * (2) it is not a descriptive identifier that you can search your program for,
+ *     or cross reference in documentation;
+ * (3) Metamath has already an error location system based on numbers #nn in
+ *     place, that was sufficient so far.
+ *
+ * Because of these limitations, and because Metamath code as of January 2023
+ * does not need this extension, it is disabled.  The knowledge is available,
+ * though.  On request it can be activated and put to use fairly easily.
+ *
+ * The call for a fatal error report with error location is
+ *
+ * fatalErrorExitAt(
+ *    createErrorLocation(__FILE__, __LINE_),
+ *    "We are %s here, in need %u help, unable %u continue",
+ *    "screwed", 4, 2);
+ */
+
+struct ErrorLocation {
+  char const* file;
+  unsigned line;
+};
+
+/*
+ * result is stable only the next call to this function
+ */
+struct ErrorLocation const* createErrorLocation(char const* file,
+        unsigned line) {
+  static struct ErrorLocation loc;
+  loc.file = file;
+  loc.line = line;
+  return &loc;
+}
+
+bool fatalErrorPos(struct ErrorLocation const* loc) {
+  // a format for the error location, only showing relevant data
+  char const* format = NULL;
+  bool result = true;
+  if (loc)
+  {
+    if (loc->file && *(loc->file)) {
+      if (loc->line > 0)
+        format = "At %s:%u\n";
+      else
+        format = "In file %s:\n";
+      }
+    else if (loc->line > 0)
+      format = "%sIn line %u:\n";
+    result = fatalErrorPush(format, loc->file, loc->line);
+  }
+  return result;
+}
+
+void fatalErrorExitAt(struct ErrorLocation const* loc,
+                  char const* msgWithPlaceholders, ...) {
+  fatalErrorInit();
+  
+  if (fatalErrorPos(loc) && msgWithPlaceholders) {
+    struct ParserState* state = getParserStateInstance();
+
+    state->format = msgWithPlaceholders;
+    va_start(state->args, msgWithPlaceholders);
+    parse(state);
+    va_end(state->args);
+  }
+
+  fatalErrorPrintAndExit();
+}
+
+#endif /* fatalErrorExitAt */
 
 //=================   Regression tests   =====================
 
