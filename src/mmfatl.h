@@ -279,12 +279,6 @@ extern void fatalErrorPrintAndExit(void);
  * a sequence of \ref fatalErrorInit, multiple \ref fatalErrorPush and finally
  * \ref fatalErrorPrintAndExit instead of this function.
  *
- * \param[in] file [null] filename of code responsible for calling this
- *   function, suitable for macro __FILE__.  Part of an error location.
- *   Ignored in case of NULL.
- * \param[in] line [unsigned] if greater 0, interpreted as a line number, where
- *   a call to this function is initiated, suitable for macro __LINE__.  Part
- *   of an error location.
  * \param[in] msgWithPlaceholders [null] the error message to display.  This
  *   message may include placeholders in printf style, in which case it must be
  *   followed by more parameters, corresponding to the values replacing
@@ -293,12 +287,11 @@ extern void fatalErrorPrintAndExit(void);
  *   The details of this process is explained in \ref fatalErrorPush.  Ignored
  *   if NULL.
  * \post the program exits with EXIT_FAILURE return code, after writing the
- *   error location and message to stderr.
+ *   error message to stderr.
  * \invariant the memory state of the rest of the program is not changed (in
  *   case there is still a function in the atexit queue).
  */
-extern void fatalErrorExitAt(char const* file, unsigned line,
-                             char const* msgWithPlaceholders, ...);
+extern void fatalErrorExit(char const* msgWithPlaceholders, ...);
 
 #ifdef TEST_ENABLE
 

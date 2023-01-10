@@ -450,23 +450,10 @@ void fatalErrorPrintAndExit(void) {
 #endif // TEST_ENABLE
 }
 
-void fatalErrorExitAt(char const* file, unsigned line,
-                      char const* msgWithPlaceholders, ...) {
+void fatalErrorExit(char const* msgWithPlaceholders, ...) {
   fatalErrorInit();
 
-  // a format for the error location, only showing relevant data
-  char const* format = NULL;
-  if (file && *file)
-  {
-    if (line > 0)
-      format = "At %s:%u\n";
-    else
-      format = "In file %s:\n";
-  }
-  else if (line > 0)
-    format = "%sIn line %u:\n";
-
-  if (fatalErrorPush(format, file, line) && msgWithPlaceholders) {
+  if (msgWithPlaceholders) {
     struct ParserState* state = getParserStateInstance();
 
     state->format = msgWithPlaceholders;
@@ -859,21 +846,21 @@ static bool test_fatalErrorPrintAndExit(void) {
   return true;
 }
 
-static bool test_fatalErrorExitAt() {
-  // note that in test mode the fatalErrorExitAt neither prints to stderr
+static bool test_fatalErrorExit() {
+  // note that in test mode the fatalErrorExit neither prints to stderr
   // nor exits.  The message is still in the buffer.
 
-  fatalErrorExitAt("test.c", 1000, "%s failed!", "program");
-  ASSERT(strcmp(buffer.text, "At test.c:1000\nprogram failed!\n") == 0);
+  fatalErrorExit("%s failed!", "program");
+  ASSERT(strcmp(buffer.text, "program failed!\n") == 0);
   // ignoring line
-  fatalErrorExitAt("x.c", 0, "test %u failed!", 5);
-  ASSERT(strcmp(buffer.text, "In file x.c:\ntest 5 failed!\n") == 0);
+  fatalErrorExit("test %u failed!", 5);
+  ASSERT(strcmp(buffer.text, "test 5 failed!\n") == 0);
   // ignoring file
-  fatalErrorExitAt(NULL, 123, "%s", "need help!\n");
-  ASSERT(strcmp(buffer.text, "In line 123:\nneed help!\n") == 0);
+  fatalErrorExit("%s", "need help!\n");
+  ASSERT(strcmp(buffer.text, "need help!\n") == 0);
 
   // ignoring error location
-  fatalErrorExitAt(NULL, 0, "take lessons, you fool!");
+  fatalErrorExit("take lessons, you fool!");
   ASSERT(strcmp(buffer.text, "take lessons, you fool!\n") == 0);
 
   return true;
@@ -892,7 +879,7 @@ void test_mmfatl(void) {
   RUN_TEST(test_handleSubstitution);
   RUN_TEST(test_fatalErrorPush);
   RUN_TEST(test_fatalErrorPrintAndExit);
-  RUN_TEST(test_fatalErrorExitAt);
+  RUN_TEST(test_fatalErrorExit);
 }
 
 #endif // TEST_ENABLE
