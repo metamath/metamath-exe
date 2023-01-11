@@ -989,7 +989,6 @@ void typeStatement(long showStmt,
 } /* typeStatement */
 
 
-
 /* Get the HTML string of dummy variables used by a proof for the
    theorem's web page.  It should be called only if we're in
    HTML output mode i.e.  SHOW STATEMENT .../HTML or /ALT_HTML */
@@ -1119,7 +1118,6 @@ vstring htmlDummyVars(long showStmt)
 
   return htmlDummyVarList;
 } /* htmlDummyVars */
-
 
 
 /* Get the HTML string of "allowed substitutions" list for an axiom
@@ -1294,7 +1292,6 @@ vstring htmlAllowedSubst(long showStmt)
 } /* htmlAllowedSubst */
 
 
-
 /* Displays a proof (or part of a proof, depending on arguments). */
 /* Note that parseProof() and verifyProof() are assumed to have been called,
    so that the g_WrkProof structure elements are assigned for the current
@@ -1417,8 +1414,6 @@ void typeProof(long statemNum,
   /* if (noIndentFlag) skipRepeatedSteps = 1; */
 
   if (htmlFlag && texFlag) {
-
-
 
 
     g_outputToString = 1; /* Flag for print2 to add to g_printString */
@@ -1636,7 +1631,6 @@ void typeProof(long statemNum,
       maxStepNumOffsetLen++;
     }
   }
-
 
 
   /* Get local labels and maximum label length */
@@ -3743,7 +3737,6 @@ vstring traceUsage(long statemNum,
 } /* traceUsage */
 
 
-
 /* This implements the READ command (although the / VERIFY qualifier is
    processed separately in metamath.c). */
 void readInput(void)
@@ -5426,7 +5419,6 @@ void verifyMarkup(vstring labelMatch,
 } /* verifyMarkup */
 
 
-
 /* Function to process markup in an arbitrary non-Metamath HTML file, treating
    the file as a giant comment. */
 void processMarkup(vstring inputFileName, vstring outputFileName,
@@ -5883,14 +5875,11 @@ long getStatementNum(vstring stmtName, /* Possibly with wildcards */
 } /* getStatementNum */
 
 
-
-
 /* Called by help() - prints a help line */
 void H(vstring helpLine)
 {
     print2("%s\n", helpLine);
 } /* H */
-
 
 
 /******** The MIDI output algorithm is in this function, outputMidi(). ******/

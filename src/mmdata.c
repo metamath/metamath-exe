@@ -423,7 +423,6 @@ void *poolFixedMalloc(long size /* bytes */)
 }
 
 
-
 /* poolMalloc tries first to use an array in the memFreePool before actually
    malloc'ing */
 void *poolMalloc(long size /* bytes */)
@@ -671,7 +670,6 @@ void getPoolStats(long *freeAlloc, long *usedAlloc, long *usedActual)
 /*E*/ if (!db9)print2("poolTotalFree %ld  alloc %ld\n", poolTotalFree, *freeAlloc +
 /*E*/   *usedAlloc);
 }
-
 
 
 void initBigArrays(void)
@@ -990,8 +988,6 @@ flag matches(const char *testString, const char *pattern, char wildCard,
 }
 
 
-
-
 /*******************************************************************/
 /*********** Number string functions *******************************/
 /*******************************************************************/
@@ -1165,7 +1161,6 @@ void nmbrLet(nmbrString **target, const nmbrString *source) {
 }
 
 
-
 temp_nmbrString *nmbrCat(const nmbrString *string1,...) /* String concatenation */
 #define M_MAX_CAT_ARGS 30
 {
@@ -1206,7 +1201,6 @@ temp_nmbrString *nmbrCat(const nmbrString *string1,...) /* String concatenation 
   return ptr;
 
 }
-
 
 
 /* Find out the length of a nmbrString */
@@ -1782,8 +1776,6 @@ long nmbrGetSubproofLen(const nmbrString *proof, long step)
   }
   return (step - pos);
 }
-
-
 
 
 /* This function returns a packed or "squished" proof, putting in local label
@@ -2477,7 +2469,6 @@ long compressedProofSize(const nmbrString *proof, long statemNum) {
 } /* compressedProofSize */
 
 
-
 /*******************************************************************/
 /*********** Pointer string functions ******************************/
 /*******************************************************************/
@@ -2683,7 +2674,6 @@ void pntrLet(pntrString **target, const pntrString *source) {
 }
 
 
-
 /* String concatenation */
 temp_pntrString *pntrCat(const pntrString *string1,...) {
   va_list ap;   /* Declare list incrementer */
@@ -2725,7 +2715,6 @@ temp_pntrString *pntrCat(const pntrString *string1,...) {
   return ptr;
 
 }
-
 
 
 /* Find out the length of a pntrString */
@@ -3937,8 +3926,6 @@ flag compareDates(vstring date1, vstring date2) {
     return 1;
   }
 } /* compareDates */
-
-
 
 
 /* Compare strings via pointers for qsort */

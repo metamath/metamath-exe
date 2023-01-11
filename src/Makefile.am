@@ -5,7 +5,7 @@
 # the executable created by make
 bin_PROGRAMS = metamath
 
-# the following header files are used during build, but need not be installed.
+# The following header files are used during build, but need not be installed.
 # There is nothing exported to external software.
 noinst_HEADERS = \
 	mmcmdl.h \
@@ -44,5 +44,5 @@ metamath_SOURCES = \
 	mmwtex.c \
 	$(noinst_HEADERS)
 
-# man pages for the executable´
+# man pages for the executable.
 dist_man_MANS = metamath.1

@@ -1627,7 +1627,6 @@ flag processCommandLine(void) {
 } /* processCommandLine */
 
 
-
 /* This function converts the user's abbreviated keyword in
    g_rawArgPntr[arg] to a full, upper-case keyword,
    in g_fullArg[arg], matching
@@ -1697,7 +1696,6 @@ static flag getFullArg(long arg, const char *cmdList1) {
     free_vstring(tmpStr);
     goto getFullArg_ret;
   }
-
 
 
   /* Handle special case - any arbitrary string is OK */
@@ -1779,7 +1777,6 @@ static flag getFullArg(long arg, const char *cmdList1) {
     }
     goto getFullArg_ret;
   }
-
 
 
   /* Parse the choices available */
@@ -1955,7 +1952,6 @@ getFullArg_ret:
   free_vstring(cmdList);
   return ret;
 } /* getFullArg */
-
 
 
 /* This function breaks up line into individual tokens

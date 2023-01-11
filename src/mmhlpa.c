@@ -696,7 +696,6 @@ H("");
 }
 
 
-
 if (!strcmp(saveHelpCmd, "HELP HTML")) {
 H("(Note: See HELP WRITE SOURCE for the \"<HTML>\" tag in comments.)");
 H("To create an HTML output file for a $a or $p statement, use");

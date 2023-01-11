@@ -145,7 +145,6 @@ nmbrString_def(g_lastConst);
 nmbrString_def(g_oneConst);
 
 
-
 /* Typical call:
      nmbrStringXxx = makeSubstUnif(&newVarFlag,trialScheme,
          stateVector);
@@ -265,9 +264,6 @@ nmbrString *makeSubstUnif(flag *newVarFlag,
   free_nmbrString(stackUnkVar); /* Deallocate */
   return (result);
 } /* makeSubstUnif */
-
-
-
 
 
 char unify(
@@ -1254,7 +1250,6 @@ nmbrString *oldStackUnkVarLen; /* Pointer only - not allocated */
   }
   return(0); /* Dummy return value - never happens */
 } /* oneDirUnif */
-
 
 
 /* uniqueUnif() is like unify(), but there is no reEntryFlag, and 3 possible

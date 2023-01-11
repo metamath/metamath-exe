@@ -347,7 +347,6 @@ l7240: /* */
 }
 
 
-
 void gosub_7320(void) {
         /* Subroutine:  get next L1_ from original file */
   vstring_def(tmpLin);
