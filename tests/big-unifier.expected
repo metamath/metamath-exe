@@ -1,6 +1,6 @@
 MM> READ "big-unifier.mm"
-Reading source file "big-unifier.mm"... 21981 bytes
-21981 bytes were read into the source buffer.
+Reading source file "big-unifier.mm"... 21978 bytes
+21978 bytes were read into the source buffer.
 The source has 29 statements; 4 are $a and 2 are $p.
 No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
 if you want to check them.

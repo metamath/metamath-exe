@@ -1,13 +1,13 @@
 MM> READ "big-unifier-bad1.mm"
-Reading source file "big-unifier-bad1.mm"... 3369 bytes
-3369 bytes were read into the source buffer.
+Reading source file "big-unifier-bad1.mm"... 3366 bytes
+3366 bytes were read into the source buffer.
 The source has 28 statements; 4 are $a and 1 are $p.
 No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
 if you want to check them.
 MM> Continuous scrolling is now in effect.
 MM> 0 10%  20%  30%  40%  50%  60%  70%  80%  90% 100%
 ..................................................
-?Error on line 68 of file "big-unifier-bad1.mm" at statement 28, label
+?Error on line 67 of file "big-unifier-bad1.mm" at statement 28, label
 "theorem1", type "$p":
    FFZMPAFFZFPFQPFZFLRFFLNKMJAJNQPLAPGPMKBADCEOARLIH $.
                                                   ^

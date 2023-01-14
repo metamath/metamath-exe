@@ -1,6 +1,6 @@
 MM> READ "anatomy.mm"
-Reading source file "anatomy.mm"... 671 bytes
-671 bytes were read into the source buffer.
+Reading source file "anatomy.mm"... 669 bytes
+669 bytes were read into the source buffer.
 The source has 8 statements; 1 are $a and 1 are $p.
 No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
 if you want to check them.

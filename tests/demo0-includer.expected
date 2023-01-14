@@ -1,7 +1,7 @@
 MM> READ "demo0-includer.mm"
-Reading source file "demo0-includer.mm"... 492 bytes
-Reading included file "demo0-includee.mm"... 1117 bytes
-1655 bytes were read into the source buffer.
+Reading source file "demo0-includer.mm"... 490 bytes
+Reading included file "demo0-includee.mm"... 1115 bytes
+1651 bytes were read into the source buffer.
 The source has 19 statements; 7 are $a and 1 are $p.
 No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
 if you want to check them.

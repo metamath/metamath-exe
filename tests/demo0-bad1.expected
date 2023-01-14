@@ -1,13 +1,13 @@
 MM> READ "demo0-bad1.mm"
-Reading source file "demo0-bad1.mm"... 1325 bytes
-1325 bytes were read into the source buffer.
+Reading source file "demo0-bad1.mm"... 1323 bytes
+1323 bytes were read into the source buffer.
 The source has 19 statements; 7 are $a and 1 are $p.
 No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
 if you want to check them.
 MM> Continuous scrolling is now in effect.
 MM> 0 10%  20%  30%  40%  50%  60%  70%  80%  90% 100%
 ..................................................
-?Error on line 50 of file "demo0-bad1.mm" at statement 19, label "th1", type
+?Error on line 48 of file "demo0-bad1.mm" at statement 19, label "th1", type
 "$p":
        tt tze tpl tt tt a1 mp mp
                               ^^
