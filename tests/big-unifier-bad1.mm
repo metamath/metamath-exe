@@ -10,7 +10,8 @@ The public domain release applies worldwide.  In case this is not
 legally possible, the right is granted to use the work for any purpose,
 without any conditions, unless such conditions are required by law.
 
-Norman Megill - http://metamath.org $)
+Norman Megill - http://metamath.org
+$)
 
 $(
 This file (big-unifier.mm) is a unification and substitution test for
