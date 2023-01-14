@@ -99,5 +99,4 @@
   #define RUN_TESTS()
 #endif // TEST_ENABLE
 
-
-#endif /* include guard */
+#endif // METAMATH_MMTEST_H_

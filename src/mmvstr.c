@@ -164,7 +164,6 @@ static void* tempAlloc(long size)  /* String memory allocation/deallocation */
   return memptr;
 } /* tempAlloc */
 
-
 /* Put string in temporary allocation arena */
 temp_vstring makeTempAlloc(vstring s) {
   if (s[0]) { /* Don't do it if vstring is empty */
@@ -175,7 +174,6 @@ temp_vstring makeTempAlloc(vstring s) {
   }
   return s;
 } /* makeTempAlloc */
-
 
 /* String assignment */
 void let(vstring *target, const char *source) {
@@ -214,7 +212,6 @@ void let(vstring *target, const char *source) {
   }
 
   freeTempAlloc(); /* Free up temporary strings used in expression computation */
-
 } /* let */
 
 /* String concatenation */
@@ -252,7 +249,6 @@ temp_vstring cat(const char *string1, ...) {
     strcpy(result + argPos[i], arg[i]);
   return result;
 } /* cat */
-
 
 /* Input a line from the user or from a file */
 /* Returns 1 if a (possibly empty) line was successfully read, 0 if EOF */
@@ -303,19 +299,16 @@ int linput(FILE *stream, const char* ask, vstring *target) {
   return result;
 } /* linput */
 
-
 /* Find out the length of a string */
 long len(const char *s) {
   return (long)strlen(s);
 } /* len */
-
 
 /* Extract sin from character position start to stop into sout */
 temp_vstring seg(const char *sin, long start, long stop) {
   if (start < 1) start = 1;
   return mid(sin, start, stop - start + 1);
 } /* seg */
-
 
 /* Extract sin from character position start for length len */
 temp_vstring mid(const char *sin, long start, long length) {
@@ -328,18 +321,15 @@ temp_vstring mid(const char *sin, long start, long length) {
   return sout;
 } /* mid */
 
-
 /* Extract leftmost n characters */
 temp_vstring left(const char *sin, long n) {
   return mid(sin, 1, n);
 } /* left */
 
-
 /* Extract after character n */
 temp_vstring right(const char *sin, long n) {
   return seg(sin, n, (long)(strlen(sin)));
 } /* right */
-
 
 /* Emulate VMS BASIC edit$ command */
 temp_vstring edit(const char *sin, long control) {
@@ -634,7 +624,6 @@ temp_vstring edit(const char *sin, long control) {
   return sout;
 } /* edit */
 
-
 /* Return a string of the same character */
 temp_vstring string(long n, char c) {
   long j = 0;
@@ -645,12 +634,10 @@ temp_vstring string(long n, char c) {
   return (sout);
 } /* string */
 
-
 /* Return a string of spaces */
 temp_vstring space(long n) {
   return string(n, ' ');
 } /* space */
-
 
 /* Return a character given its ASCII value */
 temp_vstring chr(long n) {
@@ -659,7 +646,6 @@ temp_vstring chr(long n) {
   sout[1] = 0;
   return sout;
 } /* chr */
-
 
 long instr(long start, const char *string, const char *match) {
   const char *sp1, *sp2;
@@ -680,7 +666,6 @@ long instr(long start, const char *string, const char *match) {
   return found;
 } /* instr */
 
-
 /* Search for _last_ occurrence of string2 in string1 */
 /* 1 = 1st string character; 0 = not found */
 /* ??? Future - this could be made more efficient by searching directly,
@@ -696,7 +681,6 @@ long rinstr(const char *string1, const char *string2) {
   }
   return savePos;
 } /* rinstr */
-
 
 /* Translate string in sin to sout based on table.
    Table must be 256 characters long!! <- not true anymore? */
@@ -720,12 +704,10 @@ temp_vstring xlate(const char *sin, const char *table)
   return (sout);
 } /* xlate */
 
-
 /* Returns the ascii value of a character */
 long ascii_(const char *c) {
   return (unsigned char)c[0];
 } /* ascii_ */
-
 
 /* Returns the floating-point value of a numeric string */
 double val(const char *s) {
@@ -755,7 +737,6 @@ double val(const char *s) {
   return (atof(s));
   */
 } /* val */
-
 
 /* Returns current date as an ASCII string */
 temp_vstring date(void) {
@@ -789,7 +770,6 @@ temp_vstring date(void) {
       (int)((time_structure->tm_year) + 1900));
   return sout;
 } /* date */
-
 
 /* Return current time as an ASCII string */
 temp_vstring time_(void) {
@@ -827,7 +807,6 @@ temp_vstring time_(void) {
   return sout;
 } /* time */
 
-
 /* Return a number as an ASCII string */
 temp_vstring str(double f) {
   /* This function converts a floating point number to a string in the */
@@ -848,7 +827,6 @@ temp_vstring str(double f) {
   return s;
 } /* str */
 
-
 /* Return a number as an ASCII string */
 /* (This may have differed slightly from str() in BASIC but I forgot how.
    It should be considered deprecated.) */
@@ -856,13 +834,11 @@ temp_vstring num1(double f) {
   return str(f);
 } /* num1 */
 
-
 /* Return a number as an ASCII string surrounded by spaces */
 /* (This should be considered deprecated.) */
 temp_vstring num(double f) {
   return cat(" ", str(f), " ", NULL);
 } /* num */
-
 
 /* Emulate PROGRESS "entry" and related string functions */
 /* (PROGRESS is a 4-GL database language) */
@@ -940,7 +916,6 @@ long lookup(const char *expression, const char *list) {
   return 0;
 }
 
-
 /* Emulate PROGRESS num-entries function */
 /* Returns the number of items in a comma-separated list.  If the
    list is the empty string, return 0. */
@@ -991,7 +966,6 @@ long entryPosition(long element, const char *list) {
   if (list[lastComma + 1] == ',') return 0;
   return (lastComma + 2);
 }
-
 
 /* For debugging */
 /*

@@ -134,7 +134,6 @@ void hentyAdd(nmbrString *hentyVars, nmbrString *hentyVarStart,
     nmbrString *hentyVarLen, nmbrString *hentySubstList,
     pntrString **stateVector);
 
-
 /* For heuristics */
 int maxNestingLevel = -1;
 int nestingLevel = 0;
@@ -143,7 +142,6 @@ int nestingLevel = 0;
 nmbrString_def(g_firstConst);
 nmbrString_def(g_lastConst);
 nmbrString_def(g_oneConst);
-
 
 /* Typical call:
      nmbrStringXxx = makeSubstUnif(&newVarFlag,trialScheme,
@@ -265,7 +263,6 @@ nmbrString *makeSubstUnif(flag *newVarFlag,
   return (result);
 } /* makeSubstUnif */
 
-
 char unify(
     const nmbrString *schemeA,
     const nmbrString *schemeB,
@@ -273,7 +270,6 @@ char unify(
     pntrString **stateVector,
     long reEntryFlag)
 {
-
 
 /* This function unifies two math token strings, schemeA and
    schemeB.  The result is contained in unifiedScheme.
@@ -338,7 +334,6 @@ char unify(
   /* static char g_bracketMatchInit = 0; */ /* Global so ERASE can init it */
   long bracketScanStart, bracketScanStop; /* For one-time $a scan */
   flag bracketMismatchFound;
-
 
 /*E*/long d;
 /*E*/vstring_def(tmpStr);
@@ -410,7 +405,6 @@ char unify(
       }
     } /* Next stmt */
   }
-
 
   if (!reEntryFlag) {
     /* First time called */
@@ -528,7 +522,6 @@ char unify(
     for (i = 0; i < unkVarsLen; i++) {
       g_MathToken[unkVars[i]].tmp = -1;
     }
-
   } else { /* reEntryFlag != 0 */
 
     /* We are re-entering to get the next possible assignment. */
@@ -561,8 +554,6 @@ char unify(
     goto backtrack;
    reEntry1: /* goto backtrack will come back here if reEntryFlag is set */
     reEntryFlag = 0;
-
-
   }
 
   /* Perform the unification */
@@ -723,7 +714,6 @@ char unify(
      failed, so backtrack */
 /*E*/if(db6)print2("Neither scheme has unknown variable\n");
   goto backtrack;
-
 
  substitute:
 /*E*/if(db6)print2("Entering substitute...\n");
@@ -1188,7 +1178,6 @@ char unify(
   return (0);
 } /* unify */
 
-
 /* oneDirUnif() is like unify(), except that when reEntryFlag is 1,
    a new unification is returned ONLY if the assignments to the
    variables in schemeA have changed.  This is used to speed up the
@@ -1250,7 +1239,6 @@ nmbrString *oldStackUnkVarLen; /* Pointer only - not allocated */
   }
   return(0); /* Dummy return value - never happens */
 } /* oneDirUnif */
-
 
 /* uniqueUnif() is like unify(), but there is no reEntryFlag, and 3 possible
    values are returned:
@@ -1372,9 +1360,7 @@ char uniqueUnif(
   }
 
   return (3); /* Return flag that unification is not unique */
-
 } /* uniqueUnif */
-
 
 /* Deallocates the contents of a stateVector */
 /* Note:  If unifyH() returns 0, there were no more unifications and
@@ -1416,9 +1402,7 @@ void purgeStateVector(pntrString **stateVector) {
   free_pntrString(*stateVector);
 
   return;
-
 } /* purgeStateVector */
-
 
 /* Prints the substitutions determined by unify for debugging purposes */
 void printSubst(pntrString *stateVector) {
@@ -1449,7 +1433,6 @@ void printSubst(pntrString *stateVector) {
   }
 } /* printSubst */
 
-
 /* unifyH() is like unify(), except that when reEntryFlag is 1, a new
    unification is returned ONLY if the normalized unification does not
    previously exist in the "Henty filter" part of the  stateVector.  This
@@ -1472,7 +1455,6 @@ char unifyH(
   if (!g_hentyFilter) return unify(schemeA, schemeB, stateVector, reEntryFlag);
 
   if (!reEntryFlag) {
-
     tmpFlag = unify(schemeA, schemeB, stateVector, 0);
     if (tmpFlag == 1) { /* Unification OK */
 
@@ -1483,12 +1465,9 @@ char unifyH(
       /* This is the first unification so add it to the filter then return 1 */
       hentyAdd(hentyVars, hentyVarStart, hentyVarLen,
           hentySubstList, stateVector);
-
     }
     return (tmpFlag);
-
   } else {
-
     while (1) {
       tmpFlag = unify(schemeA, schemeB, stateVector, 1);
       if (tmpFlag == 1) { /* 0 = not possible, 1 == OK, 2 = timed out */
@@ -1507,7 +1486,6 @@ char unifyH(
               hentySubstList, stateVector);
           return (1);
         }
-
       } else {
         /* No unification is possible, or it timed out */
         break;
@@ -1515,7 +1493,6 @@ char unifyH(
 
       /* If we get here this unification is in the Henty filter, so bypass it
          and get the next unification. */
-
     } /* End while (1) */
 
     /* Deallocate memory (when reEntryFlag is 1 and (not possible or timeout)).
@@ -1526,7 +1503,6 @@ char unifyH(
     free_nmbrString(hentyVarLen);
     free_nmbrString(hentySubstList);
     return (tmpFlag);
-
   }
 } /* unifyH */
 
@@ -1651,7 +1627,6 @@ void hentyNormalize(nmbrString **hentyVars, nmbrString **hentyVarStart,
   free_nmbrString(substList);
 
   return;
-
 } /* hentyNormalize */
 
 /* Check to see if an equivalent unification exists in the Henty filter */

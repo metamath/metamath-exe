@@ -106,7 +106,6 @@ vstring_def(sandboxTitle);
 vstring_def(g_htmlBibliographyTags);
 vstring_def(extHtmlBibliographyTags);
 
-
 void eraseTexDefs(void) {
   /* Deallocate the texdef/htmldef storage */
   long i;
@@ -121,7 +120,6 @@ void eraseTexDefs(void) {
   }
   return;
 } /* eraseTexDefs */
-
 
 /* Returns 2 if there were severe parsing errors, 1 if there were warnings but
    no errors, 0 if no errors or warnings */
@@ -225,7 +223,6 @@ flag readTexDefs(
   for (i = 0; i < j; i++) {
     if (fileBuf[i] == '\n') lineNumOffset--;
   }
-
 
 #define LATEXDEF 1
 #define HTMLDEF 2
@@ -503,11 +500,9 @@ flag readTexDefs(
 
           /* Combine the string part to the main token we're building */
           let(&token, cat(token, partialToken, NULL));
-
         } /* (parsePass == 2) */
 
         fbPtr = fbPtr + tokenLength;
-
 
         /* Get next token - "+" or ";" */
         fbPtr = fbPtr + texDefWhiteSpaceLen(fbPtr);
@@ -533,9 +528,7 @@ flag readTexDefs(
         fbPtr = fbPtr + tokenLength;
 
         if (fbPtr[-1] == ';') break;
-
       } /* End while */
-
 
       if (parsePass == 2) {
         if ((cmd == LATEXDEF && !g_htmlFlag)
@@ -599,7 +592,6 @@ flag readTexDefs(
           || (cmd == ALTHTMLDEF && g_htmlFlag && g_altHtmlFlag)) {
         numSymbs++;
       }
-
     } /* End while */
 
     if (fbPtr != fileBuf + charCount) bug(2305);
@@ -612,9 +604,7 @@ flag readTexDefs(
       g_TexDefs = malloc((size_t)numSymbs * sizeof(struct texDef_struct));
       if (!g_TexDefs) outOfMemory("#99 (TeX symbols)");
     }
-
   } /* next parsePass */
-
 
   /* Sort the tokens for later lookup */
   qsort(g_TexDefs, (size_t)numSymbs, sizeof(struct texDef_struct), texSortCmp);
@@ -702,7 +692,6 @@ flag readTexDefs(
     }
   }
 
-
   /* Look up the extended database start label */
   if (extHtmlLabel[0]) {
     for (i = 1; i <= g_statements; i++) {
@@ -754,7 +743,6 @@ flag readTexDefs(
   j = instr(i + 1, g_htmlHome, "\"");
   let(&g_htmlHomeIMG, seg(g_htmlHome, i + 1, j - 1));
 
-
   /* Compose abbreviated title from capital letters */
   j = (long)strlen(htmlTitle);
   let(&htmlTitleAbbr, "");
@@ -795,14 +783,12 @@ flag readTexDefs(
     let(&g_extHtmlTitleAbbr, cat(g_extHtmlTitleAbbr, " Home", NULL));
   }
 
-
   free_vstring(token); /* Deallocate */
   free_vstring(partialToken); /* Deallocate */
   free_vstring(fileBuf);
   g_texDefsRead = 1;  /* Set global flag that it's been read in */
   return warningFound; /* Return indicator that parsing passed (0) or
                            had warning(s) (1) */
-
 } /* readTexDefs */
 
 /* This function returns the length of the white space starting at ptr.
@@ -842,7 +828,6 @@ long texDefWhiteSpaceLen(char *ptr)
   bug(2307);
   return 0; /* Dummy return - never executed */
 } /* texDefWhiteSpaceLen */
-
 
 /* This function returns the length of the token (non-white-space) starting at
    ptr.  Comments are considered white space.  ptr should point to the first
@@ -895,7 +880,6 @@ int texSortCmp(const void *key1, const void *key2)
   return strcmp(((struct texDef_struct *)key1)->tokenName,
       ((struct texDef_struct *)key2)->tokenName);
 } /* texSortCmp */
-
 
 /* Token comparison for bsearch */
 int texSrchCmp(const void *key, const void *data)
@@ -994,7 +978,6 @@ vstring asciiToTt(vstring s)
   return ttstr;
 } /* asciiToTt */
 
-
 /* Convert ascii token to TeX equivalent */
 /* The "$" math delimiter is not placed around the returned arg. here */
 /* *** Note: The caller must deallocate the returned string */
@@ -1068,12 +1051,10 @@ vstring tokenToTex(vstring mtoken, long statemNum /*for error msgs*/)
     /* Make all letters Roman; put inside mbox */
     if (!g_htmlFlag)
       let(&tex, cat("\\mbox{\\rm ", tex, "}", NULL));
-
   } /* End if */
 
   return tex;
 } /* tokenToTex */
-
 
 /* Converts a comment section in math mode to TeX.  Each math token
    MUST be separated by white space.   TeX "$" does not surround the output. */
@@ -1139,7 +1120,6 @@ vstring asciiMathToTex(vstring mathComment, long statemNum)
 
   return texLine;
 } /* asciiMathToTex */
-
 
 /* Gets the next section of a comment that is in the current mode (text,
    label, or math).  If 1st char. is not "$" (DOLLAR_SUBST), text mode is
@@ -1214,7 +1194,6 @@ vstring getCommentModeSection(vstring *srcptr, char *mode)
   } /* End while */
   return NULL; /* Dummy return - never executes */
 } /* getCommentModeSection */
-
 
 /* The texHeaderFlag means this:
     If !g_htmlFlag (i.e. TeX mode), then 1 means print header
@@ -1358,7 +1337,6 @@ void printTexHeader(flag texHeaderFlag)
           left(g_texFileName, (long)strlen(g_texFileName) - 5),
           " - ", g_extHtmlTitle,
           "</TITLE>", NULL));
-
     } else {
       /* "Mathbox for <username>" */
       /* Scan from this statement backwards until a big header is found */
@@ -1397,7 +1375,6 @@ void printTexHeader(flag texHeaderFlag)
           left(g_texFileName, (long)strlen(g_texFileName) - 5),
           " - ", localSandboxTitle,
           "</TITLE>", NULL), "", "\"");
-
     }
     /* Icon for bookmark */
     print2("%s%s\n", "<LINK REL=\"shortcut icon\" HREF=\"favicon.ico\" ",
@@ -1574,18 +1551,14 @@ void printTexHeader(flag texHeaderFlag)
 
       /* Print the GIF/Unicode Font choice, if directories are specified */
       if (htmlDir[0]) {
-
         if (g_altHtmlFlag) {
           print2("      <A HREF=\"%s%s\">GIF version</A>\n",
                 htmlDir, g_texFileName);
-
         } else {
           print2("      <A HREF=\"%s%s\">Unicode version</A>\n",
                 altHtmlDir, g_texFileName);
-
         }
       }
-
     } else { /* texHeaderFlag=0 for HTML means not to put prev/next links */
       /* there is no table open (mmascii, mmdefinitions), so don't
          add </TD> which caused HTML validation failure */
@@ -1608,7 +1581,6 @@ void printTexHeader(flag texHeaderFlag)
       else {
         print2("&nbsp;\n");
       }
-
     }
 
     print2("      </FONT>\n");
@@ -1616,9 +1588,7 @@ void printTexHeader(flag texHeaderFlag)
     print2("  </TR>\n");
     print2("</TABLE>\n");
 
-
     print2("<HR NOSHADE SIZE=1>\n");
-
   } /* g_htmlFlag */
   fprintf(g_texFilePtr, "%s", g_printString);
   g_outputToString = 0;
@@ -1626,7 +1596,6 @@ void printTexHeader(flag texHeaderFlag)
 
   /* Deallocate strings */
   free_vstring(tmpStr);
-
 } /* printTexHeader */
 
 /* Prints an embedded comment in TeX or HTML.  The commentPtr must point to the first
@@ -1744,7 +1713,6 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
      math symbols are replaced with blanks in cmdMasked */
   let(&cmtMasked, cmt);
 
-
   /* This section is independent and can be removed without side effects */
   if (g_htmlFlag) {
     /* Convert special characters <, &, etc. to HTML entities */
@@ -1800,7 +1768,6 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
     free_vstring(tmpStrMasked);
   }
 
-
   /* Add leading and trailing HTML markup to comment here
      (instead of in caller).  Also convert special characters. */
   if (g_htmlFlag) {
@@ -1813,7 +1780,6 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
           cmtMasked, "</TD></TR></TABLE></CENTER>", NULL));
     }
   }
-
 
   /* Mask out _ (underscore) in labels so they won't become subscripts
      (reported by Benoit Jubin) */
@@ -1853,7 +1819,6 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
       }  /* while (1) */
     } /* while (1) */
   } /* if g_htmlFlag */
-
 
   /* Handle dollar signs in comments converted to LaTeX */
   /* This section is independent and can be removed without side effects */
@@ -2002,7 +1967,6 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
               pos1 = pos2 + 4; /* Adjust for 5-1 extra chars in "let" above */
             }
             continue;
-
           } else {
             /* Found <nonwhitespace>_<whitespace> - not an opening "_" */
             /* Do nothing in this case */
@@ -2183,10 +2147,8 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
           /*} else {*/
           } else if (g_showStatement < g_mathboxStmt) {
             let(&extHtmlBibliographyTags, bibTags);
-
           } else {
             let(&g_htmlBibliographyTags, bibTags);
-
           }
           /* Done reading in HTML file with bibliography */
         } /* end if (!bibTags[0]) */
@@ -2292,7 +2254,6 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
           }
           free_vstring(tmp);
         }
-
       }
     }
     if (cmt[i] == '~' && mode != 'm') {
@@ -2346,7 +2307,6 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
           clen = clen - 1;
         }
         free_vstring(tmp);
-
       }
     }
 
@@ -2374,7 +2334,6 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
         clen = clen - 1;
       }
       free_vstring(tmp);
-
     }
     /* clen should always remain comment length - do a sanity check here */
     if ((signed)(strlen(cmt)) != clen) {
@@ -2382,7 +2341,6 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
     }
   } /* Next i */
   /* End convert line to the old $m..$n and $l..$n */
-
 
   /* Put <HTML> and </HTML> at beginning of line so preformattedMode won't
      be switched on or off in the middle of processing a line */
@@ -2422,7 +2380,6 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
 
     let(&cmt, cat(left(cmt, pos1 - 1), "\n", right(cmt, pos1), NULL));
   }
-
 
   cmtptr = cmt; /* cmtptr is for scanning cmt */
 
@@ -2475,7 +2432,6 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
     }
     free_vstring(tmpStr); /* Deallocate */
 
-
     /* Convert all sections of the line to text, math, or labels */
     let(&outputLine, "");
     srcptr = sourceLine;
@@ -2509,7 +2465,6 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
                 NULL), "", " ");
             returnVal = 1; /* Error/warning printed */
             g_outputToString = 1;
-
           }
 
           if (!strcmp("http://", left(tmpStr, 7))
@@ -2535,7 +2490,6 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
               }
               let(&outputLine, cat(outputLine, "\\url{", tmpStr,
                   "}", tmp, NULL));
-
             }
           } else {
             /* Do binary search through just $a's and $p's (there
@@ -2756,9 +2710,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
   free_vstring(bibTags);
 
   return returnVal; /* 1 if error/warning found */
-
 } /* printTexComment */
-
 
 void printTexLongMath(nmbrString *mathString,
     vstring startPrefix, /* Start prefix in "screen display" mode e.g.
@@ -3114,9 +3066,7 @@ void printTexTrailer(flag texTrailerFlag) {
     fprintf(g_texFilePtr, "%s", g_printString);
     free_vstring(g_printString);
   }
-
 } /* printTexTrailer */
-
 
 /* WRITE THEOREM_LIST command:  Write out theorem list
    into mmtheorems.html, mmtheorems1.html,... */
@@ -3269,14 +3219,12 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
         ")</B></FONT>",
         NULL), "", "\"");
 
-
     /* Put Previous/Next links into web page */
     print2("</TD><TD NOWRAP ALIGN=RIGHT VALIGN=TOP WIDTH=\"25%c\"><FONT\n", '%');
     print2(" SIZE=-1 FACE=sans-serif>\n");
 
     /* Output title with current page */
     /* Output previous and next */
-
 
     /* Assign prevNextLinks once here since it is used 3 times */
     let(&prevNextLinks, cat("<A HREF=\"mmtheorems",
@@ -3362,7 +3310,6 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
       print2("&nbsp;&gt;&nbsp;<A HREF=\"mmrecent.html\">\n");
       print2("Recent Proofs</A>\n");
     }
-
 
     print2("&nbsp; &nbsp; &nbsp; <B><FONT COLOR=%s>\n", GREEN_TITLE_COLOR);
     print2("This page:</FONT></B> \n");
@@ -3710,15 +3657,12 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
         } /* next stmt */
         /* 8-May-2015 nm Do we need the HR below? */
         fprintf(outputFilePtr, "<HR NOSHADE SIZE=1>\n");
-
       } /* next passNumber */
-
     } /* if page 0 */
     /* End table of contents */
 
     /* Just skip over instead of a big if indent */
     if (page == 0) goto SKIP_LIST;
-
 
     /* Put in color key */
     g_outputToString = 1;
@@ -3768,7 +3712,6 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
       print2("<TD WIDTH=10>&nbsp;</TD>\n");
       print2("\n");
 
-
       /* Mathbox stuff */
       print2("<TD BGCOLOR=%s NOWRAP><A\n", SANDBOX_COLOR);
       print2(" HREF=\"mathbox.html\"><IMG SRC=\"_sandbox.gif\"\n");
@@ -3786,7 +3729,6 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
       print2("<TD WIDTH=10>&nbsp;</TD>\n");
       print2("\n");
 
-
       print2("</TR></TABLE></CENTER>\n");
     } /* end if (g_extHtmlStmt < g_mathboxStmt) */
 
@@ -3794,7 +3736,6 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
     fprintf(outputFilePtr, "%s", g_printString);
     g_outputToString = 0;
     let(&g_printString, "");
-
 
     /* Write the main table header */
     g_outputToString = 1;
@@ -4184,7 +4125,6 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
    SKIP_LIST: /* (skipped when page == 0) */
     g_outputToString = 1; /* To compensate for skipped assignment above */
 
-
     /* Put extra Prev/Next hyperlinks here for convenience */
     print2("<TABLE BORDER=0 WIDTH=\"100%c\">\n", '%');
     print2("  <TR>\n");
@@ -4201,20 +4141,16 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
     print2("  </TR>\n");
     print2("</TABLE>\n");
 
-
     print2("<HR NOSHADE SIZE=1>\n");
-
 
     g_outputToString = 0;
     fprintf(outputFilePtr, "%s", g_printString);
     free_vstring(g_printString);
 
-
     fprintf(outputFilePtr, "<A NAME=\"mmpglst\"></A>\n");
     fprintf(outputFilePtr, "<CENTER>\n");
     fprintf(outputFilePtr, "<B>Page List</B>\n");
     fprintf(outputFilePtr, "</CENTER>\n");
-
 
     /* Output links to the other pages */
     fprintf(outputFilePtr, "Jump to page: \n");
@@ -4250,7 +4186,6 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
       let(&str1, cat(str1, PINK_NBSP, str3, NULL));
       fprintf(outputFilePtr, "%s\n", str1);
     }
-
 
     g_outputToString = 1;
     print2("<HR NOSHADE SIZE=1>\n");
@@ -4301,9 +4236,7 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
   free_pntrString(pntrSmallHdr);
   for (i = 0; i <= g_statements; i++) free_vstring(*(vstring *)(&pntrTinyHdr[i]));
   free_pntrString(pntrTinyHdr);
-
 } /* writeTheoremList */
-
 
 /* This function extracts any section headers in the comment sections
    prior to the label of statement stmt.   If a huge (####...) header isn't
@@ -4629,7 +4562,6 @@ flag getSectionHeadings(long stmt,
   return errorFound;
 } /* getSectionHeadings */
 
-
 /* Returns HTML for the pink number to print after the statement labels
    in HTML output.  (Note that "pink" means "rainbow colored" number now.) */
 /* Warning: The caller must deallocate the returned vstring (i.e. this
@@ -4662,7 +4594,6 @@ vstring pinkHTML(long statemNum)
   return htmlCode;
 } /* pinkHTML */
 
-
 /* Returns HTML for a range of pink numbers separated by a "-". */
 /* Warning: The caller must deallocate the returned vstring (i.e. this
    function cannot be used in let statements but must be assigned to
@@ -4684,7 +4615,6 @@ vstring pinkRangeHTML(long statemNum1, long statemNum2) {
   free_vstring(str4); /* Deallocate */
   return htmlCode;
 } /* pinkRangeHTML */
-
 
 /* This function converts a "spectrum" color (1 to maxColor) to an
    RBG value in hex notation for HTML.  The caller must deallocate the
@@ -4811,7 +4741,6 @@ vstring spectrumToRGB(long color, long maxColor) {
   /*printf("<FONT COLOR='#%02X%02X%02X'>a </FONT>\n", red, green, blue);*/
   return str1;
 } /* spectrumToRGB */
-
 
 /* Returns the HTML code for GIFs (!g_altHtmlFlag) or Unicode (g_altHtmlFlag),
    or LaTeX when !g_htmlFlag, for the math string (hypothesis or conclusion) that
@@ -4992,7 +4921,6 @@ vstring getTexLongMath(nmbrString *mathString, long statemNum)
   return texLine;
 } /* getTexLongMath */
 
-
 /* Returns the TeX, or HTML code for GIFs (!g_altHtmlFlag) or Unicode
    (g_altHtmlFlag), for a statement's hypotheses and assertion in the form
    hyp & ... & hyp => assertion */
@@ -5075,7 +5003,6 @@ vstring getTexOrHtmlHypAndAssertion(long statemNum) {
   free_vstring(str2);
   return texOrHtmlCode;
 }  /* getTexOrHtmlHypAndAssertion */
-
 
 /* Called by the WRITE BIBLIOGRAPHY command and also by VERIFY MARKUP
    for error checking */
@@ -5478,7 +5405,6 @@ flag writeBibliography(vstring bibFile,
     }
   }
 
-
   /* Discard the input file up to the special "<!-- #END# -->" comment */
   if (fileCheck) {
     while (1) {
@@ -5521,7 +5447,6 @@ flag writeBibliography(vstring bibFile,
     free_pntrString(pntrTmp);
   }
 
-
  BIB_ERROR:
   if (fileCheck) {
     fclose(list1_fp);
@@ -5541,7 +5466,6 @@ flag writeBibliography(vstring bibFile,
   if (errFlag == 2) warnFlag = 2;
   return warnFlag;
 }  /* writeBibliography */
-
 
 /* Returns 1 if stmt1 and stmt2 are in different mathboxes, 0 if
    they are in the same mathbox or if one of them is not in a mathbox. */
@@ -5578,7 +5502,6 @@ long getMathboxNum(long stmt) {
   return mbox;
 } /* getMathboxNum */
 
-
 /* Assign the global variable g_mathboxStmt, the statement number with the
    label "mathbox", as well as g_mathboxes, g_mathboxStart[], g_mathboxEnd[],
    and g_mathboxUser[].  For speed, we do the lookup only if it hasn't been
@@ -5600,7 +5523,6 @@ void assignMathboxInfo(void) {
   }
   return;
 } /* assignMathboxInfo */
-
 
 /* Returns the number of mathboxes, while assigning start statement, end
    statement, and mathbox name. */
@@ -5652,4 +5574,4 @@ long getMathboxLoc(nmbrString **mathboxStart, nmbrString **mathboxEnd,
   free_vstring(comment);
   free_vstring(user);
   return mathboxes;
-} /* getMathboxLoc */
+} // getMathboxLoc

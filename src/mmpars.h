@@ -92,7 +92,6 @@ long countLines(const char *start, long length);
 extern long *g_allLabelKeyBase;
 extern long g_numAllLabelKeys;
 
-
 extern long g_wrkProofMaxSize; /*!< Maximum size so far - it may grow */
 struct sortHypAndLoc {  /* Used for sorting hypAndLocLabel field */
   long labelTokenNum;

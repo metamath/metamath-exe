@@ -7,9 +7,7 @@ This file is placed in the public domain per the Creative Commons Public
 Domain Dedication. http://creativecommons.org/licenses/publicdomain/
 
 Norman Megill
-
 $)
-
 
 $[ demo0-includee.mm $]
 

@@ -231,7 +231,7 @@ typedef vstring temp_vstring;
  *
  * \param[in,out] x (not null) an initialized \ref vstring variable.  According to the
  * semantics of a \ref vstring, \p x is not deallocated, if it points to an
- * empty string. 
+ * empty string.
  * \pre
  *   \p x was declared and initialized before.
  * \post
@@ -566,7 +566,6 @@ long ascii_(const char *c);
 
 double val(const char *s);
 
-
 /* Emulation of Progress 4GL string functions */
 
 temp_vstring entry(long element, const char *list);
@@ -576,7 +575,6 @@ long lookup(const char *expression, const char *list);
 long numEntries(const char *list);
 
 long entryPosition(long element, const char *list);
-
 
 /* Routines may/may not be written (lowest priority):
 vstring place$(vstring sout);

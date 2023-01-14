@@ -31,10 +31,8 @@
 /* Set to 79, 80, etc. - length of line after tag is added */
 #define LINE_LENGTH 80
 
-
    /* 7000 ! ***** "DIFF" Option ***** from DO LIST */
 /*  gosub_7000(f1_name, f2_name, f3_name, &f3_fp, m); */
-
 
 char strcmpe(vstring s1, vstring s2);
 vstring stripAndTag(vstring line, vstring tag, flag tagBlankLines);
@@ -60,7 +58,6 @@ flag printedAtLeastOne;
      vstring line2_[MAX_LINES];
      vstring reserve1_[MAX_BUF];
      vstring reserve2_[MAX_BUF];
-
 
 /* These two functions emulate 2 GOSUBs in BASIC, that are part of a
    translation of a very old BASIC program (by nm) that implemented a
@@ -88,7 +85,6 @@ void revise(FILE *f1_fp, FILE *f2_fp, FILE *f3_fp, vstring addTag, long m)
   let(&delStartTag_, "/******* Start of deleted section *******");
   let(&delEndTag_, "******* End of deleted section *******/");
 
-
   /* Initialize vstring arrays */
   for (i = 0; i < MAX_LINES; i++) {
     line1_[i] = "";
@@ -102,7 +98,6 @@ void revise(FILE *f1_fp, FILE *f2_fp, FILE *f3_fp, vstring addTag, long m)
   if (m < 1) m = 1;
 
   r0=r1=r2=i0=i1_=i2_=d=t=i=j=i9=0;
-
 
   let(&ctlz_,chr(26));  /* End-of-file character */
 
@@ -343,9 +338,7 @@ l7240: /* */
        let(&l1_,ctlz_);
        let(&l2_,ctlz_);
        goto l7100;
-
 }
-
 
 void gosub_7320(void) {
         /* Subroutine:  get next L1_ from original file */
@@ -442,9 +435,7 @@ void gosub_7330(void) {
   let(&l2_, cat(tmpLin, l2_, NULL)); /* Add any blank lines */
   free_vstring(tmpLin); /* Deallocate */
   return;
-
 }
-
 
 /* Return 0 if difference lines are the same, non-zero otherwise */
 char strcmpe(vstring s1, vstring s2)
@@ -496,7 +487,6 @@ char strcmpe(vstring s1, vstring s2)
   free_vstring(tmps2); /* Deallocate string */
   return (cmpflag);
 }
-
 
 /* Strip any old tag from line and put new tag on it */
 /* (Caller must deallocate returned string) */

@@ -1,4 +1,4 @@
-$( Here we have two variable typecodes A and B, and one logical 
+$( Here we have two variable typecodes A and B, and one logical
    typecode |-, and the question is whether |- connects to A or B.
    It parses either way. This is actually an unambiguous formal system,
    because we require only that there are no two ways to derive the proof

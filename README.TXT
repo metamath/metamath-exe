@@ -1,5 +1,4 @@
-This package contains the metamath program and several Metamath
-databases.
+This package contains the metamath program and several Metamath databases.
 
 
 Copyright
@@ -8,11 +7,11 @@ Copyright
 The metamath program is copyright under the terms of the GNU GPL license
 version 2 or later.  See the file LICENSE.TXT in this directory.
 
-Individual databases (*.mm files) are either public domain or under
-the GNU GPL, as indicated by comments in their headers.
+Individual databases (*.mm files) are either public domain or under the GNU
+GPL, as indicated by comments in their headers.
 
-See http://us.metamath.org/copyright.html for further license and
-copyright information that applies to the content of this package.
+See http://us.metamath.org/copyright.html for further license and copyright
+information that applies to the content of this package.
 
 
 Instructions
@@ -20,23 +19,21 @@ Instructions
 
 For Windows, click on "metamath.exe" and type "read set.mm".
 
-For Unix/Linux/Cygwin/MacOSX using the gcc compiler, compile with the
-command "cd src && gcc m*.c -o metamath", then type
-"./metamath set.mm" to run.
+For Unix/Linux/Cygwin/MacOSX using the gcc compiler, compile with the command
+"cd src && gcc m*.c -o metamath", then type "./metamath set.mm" to run.
 
-As an alternative, if you have autoconf, automake, and a C compiler, you
-can compile with the command "cd src && autoreconf -i && ./configure && make".
-This "autoconf" approach automatically finds your compiler and its
-options, and configure takes the usual options (e.g., "--prefix=/usr").
-The resulting executable will typically be faster because it will check for
-and enable available optimizations; tests found that the "improve"
-command ran 28% faster on gcc when using an autoconf-generated "configure".
-You can again type "./metamath set.mm" to run.  After "make" you may
-install it elsewhere using "sudo make install" (note that this installs
-".mm" files in the pkgdata directory, by default
-"/usr/local/share/metamath/").  If you install it this way, you can then
-run metamath as "metamath /usr/share/metamath/set.mm", copy set.mm
-locally (cp /usr/share/metamath/set.mm . ; metamath set.mm), or run
+As an alternative, if you have autoconf, automake, and a C compiler, you can
+compile with the command "cd src && autoreconf -i && ./configure && make".
+This "autoconf" approach automatically finds your compiler and its options, and
+configure takes the usual options (e.g., "--prefix=/usr").  The resulting
+executable will typically be faster because it will check for and enable
+available optimizations; tests found that the "improve" command ran 28% faster
+on gcc when using an autoconf-generated "configure".  You can again type
+"./metamath set.mm" to run.  After "make" you may install it elsewhere using
+"sudo make install" (note that this installs ".mm" files in the pkgdata
+directory, by default "/usr/local/share/metamath/").  If you install it this
+way, you can then run metamath as "metamath /usr/share/metamath/set.mm", copy
+set.mm locally (cp /usr/share/metamath/set.mm . ; metamath set.mm), or run
 metamath and type:  read "/usr/share/metamath/set.mm" (note that inside
 metamath, filenames containing "/" must be quoted).
 
@@ -49,21 +46,18 @@ For optimized performance under gcc, you can compile as follows:
   gcc m*.c -o metamath -O3 -funroll-loops -finline-functions \
      -fomit-frame-pointer -Wall -pedantic
 
-If your compiler supports it, you can also add the option -DINLINE=inline
-to achieve the 28% performance increase described above.
+If your compiler supports it, you can also add the option -DINLINE=inline to
+achieve the 28% performance increase described above.
 
+On Linux/MacOSX/Unix, the Metamath program will be more pleasant to use if you
+run it inside of rlwrap http://utopia.knoware.nl/~hlub/rlwrap/ (checked
+3-Jun-2015) which provides up-arrow command history and other command-line
+editing features.  After you install rlwrap per its instructions, invoke the
+Metamath program with "rlwrap ./metamath set.mm".
 
-On Linux/MacOSX/Unix, the Metamath program will be more pleasant to use
-if you run it inside of rlwrap http://utopia.knoware.nl/~hlub/rlwrap/
-(checked 3-Jun-2015) which provides up-arrow command history and other
-command-line editing features.  After you install rlwrap per its
-instructions, invoke the Metamath program with "rlwrap ./metamath
-set.mm".
-
-
-In some Linux distributions (such as Debian Woody), if the Backspace
-key doesn't delete characters typed after the "MM>" prompt, try adding
-this line to your ~/.bash_profile file:
+In some Linux distributions (such as Debian Woody), if the Backspace key does
+not delete characters typed after the "MM>" prompt, try adding this line to
+your ~/.bash_profile file:
 
   stty echoe echok echoctl echoke
 
@@ -73,11 +67,11 @@ Using rlwrap as described above will also solve this problem.
 Additional MacOSX information
 -----------------------------
 
-On MacOSX, select the Terminal application from Applications/Utilities
-to get to the command line.  On recent versions of MacOSX, you need to
-install gcc separately.  Typing "whereis gcc" will return "/usr/bin/gcc"
-if it is installed.  The XCode package is typically used to install it,
-but it can also be installed without XCode; see
+On MacOSX, select the Terminal application from Applications/Utilities to get
+to the command line.  On recent versions of MacOSX, you need to install gcc
+separately.  Typing "whereis gcc" will return "/usr/bin/gcc" if it is
+installed.  The XCode package is typically used to install it, but it can also
+be installed without XCode; see
 
   https://github.com/kennethreitz/osx-gcc-installer/ (checked 15-Feb-2014)
 
@@ -85,24 +79,24 @@ but it can also be installed without XCode; see
 Optional rlwrap user interface enhancement
 ------------------------------------------
 
-On Linux/MacOSX/Unix, the Metamath program will be more pleasant to use
-if you run it inside of rlwrap:
+On Linux/MacOSX/Unix, the Metamath program will be more pleasant to use if you
+run it inside of rlwrap:
 
   http://utopia.knoware.nl/~hlub/uck/rlwrap/ (checked 15-Feb-2014)
 
 which provides up-arrow command history and other command-line editing
-features.  After you install rlwrap per its instructions, invoke the
-Metamath program with "rlwrap ./metamath set.mm".
+features.  After you install rlwrap per its instructions, invoke the Metamath
+program with "rlwrap ./metamath set.mm".
 
-(The Windows version of the Metamath program was compiled with lcc,
-which has similar features built-in.)
+The Windows version of the Metamath program was compiled with lcc, which has
+similar features built-in.)
 
 
 Windows Compilation
 -------------------
 
-To reproduce the included metamath.exe for Windows, use lcc-win32
-version 3.8, with the following command:
+To reproduce the included metamath.exe for Windows, use lcc-win32 version 3.8,
+with the following command:
 
   lc -O m*.c -o metamath.exe
 
@@ -117,11 +111,11 @@ information, see the Metamath book available at http://metamath.org .
 To uninstall
 ------------
 
-To uninstall, just delete the "metamath" directory - nothing else
-(Registry, etc.) is touched in your system.
+To uninstall, just delete the "metamath" directory - nothing else (Registry,
+etc.) is touched in your system.
 
-If you used autoconf's "make install" to install it in system locations,
-you can use "make uninstall" to remove it.
+If you used autoconf's "make install" to install it in system locations, you
+can use "make uninstall" to remove it.
 
 
 List of databases
@@ -142,7 +136,7 @@ The database files included are:
   big-unifier.mm - A unification stress test (see comments in the file).
   peano.mm - A nicely commented presentation of Peano arithmetic, written
       by Robert Solovay (unlike the ones above, this database is NOT public
-      domain but is copyright under the terms of the GNU GPL license)
+      domain but is copyright under the terms of the GNU GPL license).
 
 
 Source code documentation
@@ -152,6 +146,6 @@ Many comments in the source code are written in
 
 https://doxygen.nl/index.html
 
-Doxygen (Qt variant) style.  If you have Doxygen installed on your
-computer, you may generate HTML documentation out of them with its root
-page placed in build/html/index.html by running build.sh with the -d option.
+Doxygen (Qt variant) style.  If you have Doxygen installed on your computer,
+you may generate HTML documentation from them with its root page placed in
+build/html/index.html by running build.sh with the -d option.

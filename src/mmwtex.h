@@ -66,7 +66,6 @@ struct texDef_struct {
 };
 extern struct texDef_struct *g_TexDefs; /*!< for "erase" */
 
-
 long texDefWhiteSpaceLen(char *ptr);
 long texDefTokenLen(char *ptr);
 /*! Token comparison for qsort */

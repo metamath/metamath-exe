@@ -58,7 +58,6 @@
       See the README.TXT file for more information.
 */
 
-
 /*! \def MVERSION
  * The current version of metamath.  It is incremented each time the software
  * is modified.  When main versions are released, the version consists of a
@@ -701,7 +700,6 @@
 
 /*****************************************************************************/
 
-
 /*----------------------------------------------------------------------*/
 
 #include <string.h>
@@ -758,7 +756,6 @@ int main(int argc, char *argv[]) {
      of a program as C-style comments embedded in the newer version.) */
   g_listMode = 0; /* Force Metamath mode as startup */
 
-
   g_toolsMode = g_listMode;
 
   if (!g_listMode) {
@@ -782,9 +779,7 @@ int main(int argc, char *argv[]) {
   }
 
   return 0;
-
 }
-
 
 void command(int argc, char *argv[]) {
   /* Command line user interface -- this is an infinite loop; it fetches and
@@ -1178,7 +1173,6 @@ void command(int argc, char *argv[]) {
       }
       continue;
     }
-
 
     if (cmdMatches("SET SCROLL")) {
       if (cmdMatches("SET SCROLL CONTINUOUS")) {
@@ -1889,7 +1883,6 @@ void command(int argc, char *argv[]) {
         continue;
       }
 
-
       if (cmdMatches("NUMBER")) {
         list1_fp = fSafeOpen(g_fullArg[1], "w", 0/*noVersioningFlag*/);
         if (!list1_fp) continue; /* Couldn't open it (error msg was provided) */
@@ -2143,7 +2136,6 @@ void command(int argc, char *argv[]) {
       continue;
     } /* End of WRITE SOURCE */
 
-
     if (cmdMatches("WRITE THEOREM_LIST")) {
       /* Write out an HTML summary of the theorems to
          mmtheorems.html, mmtheorems1.html,... */
@@ -2183,7 +2175,6 @@ void command(int argc, char *argv[]) {
       continue;
     }  /* End of "WRITE THEOREM_LIST" */
 
-
     if (cmdMatches("WRITE BIBLIOGRAPHY")) {
       /* This command builds the bibliographical cross-references to various
          textbooks and updates the user-specified file normally called
@@ -2195,7 +2186,6 @@ void command(int argc, char *argv[]) {
           1); /* 1 = check external files (gifs and bib) */
       continue;
     }  /* End of "WRITE BIBLIOGRAPHY" */
-
 
     if (cmdMatches("WRITE RECENT_ADDITIONS")) {
       /* This utility creates a list of recent proof descriptions and updates
@@ -2307,7 +2297,6 @@ void command(int argc, char *argv[]) {
             g_outputToString = 1;
             print2("\n"); /* Blank line for HTML human readability */
             printLongLine(cat(
-
                 /*
                 (stmt < g_extHtmlStmt) ?
                      "<TR>" :
@@ -2415,7 +2404,6 @@ void command(int argc, char *argv[]) {
             g_outputToString = 0;
             fprintf(list2_fp, "%s", g_printString);
             free_vstring(g_printString);
-
           }
         } /* Next stmt - statement number */
         /* Decrement date */
@@ -2431,7 +2419,6 @@ void command(int argc, char *argv[]) {
           }
         }
       } /* next while - Scan next date */
-
 
       /* Discard the input file up to the special "<!-- #END# -->" comment */
       while (1) {
@@ -2478,7 +2465,6 @@ void command(int argc, char *argv[]) {
       }
       continue;
     }  /* End of "WRITE RECENT_ADDITIONS" */
-
 
     if (cmdMatches("SHOW LABELS")) {
       linearFlag = 0;
@@ -2576,7 +2562,6 @@ void command(int argc, char *argv[]) {
       continue;
     } /* if (cmdMatches("SHOW SOURCE")) */
 
-
     if (cmdMatches("SHOW STATEMENT") && (
         switchPos("/ HTML")
         || switchPos("/ BRIEF_HTML")
@@ -2670,7 +2655,6 @@ void command(int argc, char *argv[]) {
              compared to g_extHtmlStmt in printTexHeader in mmwtex.c */
           g_showStatement = 1;
         }
-
 
         /*** Open the html file ***/
         g_htmlFlag = 1;
@@ -2908,7 +2892,6 @@ void command(int argc, char *argv[]) {
           } /* next i (statement number) */
           g_outputToString = 0;  /* closing will write out the string */
           free_vstring(bgcolor); /* Deallocate (to improve fragmentation) */
-
         } else { /* s > 0 */
 
           if (printTime == 1) {
@@ -2928,7 +2911,6 @@ void command(int argc, char *argv[]) {
                 timeIncr,
                 g_texFileName);
           }
-
         } /* if s <= 0 */
 
        ABORT_S:
@@ -2937,7 +2919,6 @@ void command(int argc, char *argv[]) {
         fclose(g_texFilePtr);
         g_texFileOpenFlag = 0;
         free_vstring(g_texFileName);
-
       } /* next s */
 
       if (!q) {
@@ -2953,7 +2934,6 @@ void command(int argc, char *argv[]) {
      htmlDone:
       continue;
     } /* if (cmdMatches("SHOW STATEMENT") && switchPos("/ HTML")...) */
-
 
     /* Write mnemosyne.txt */
     if (cmdMatches("SHOW STATEMENT") && switchPos("/ MNEMONICS")) {
@@ -3015,7 +2995,6 @@ void command(int argc, char *argv[]) {
           fprintf(g_texFilePtr, "%s</FONT></TD>", str1);
         }
 
-
         let(&str1, "</TABLE>");
         fprintf(g_texFilePtr, "%s", str1);
 
@@ -3065,7 +3044,6 @@ void command(int argc, char *argv[]) {
         briefFlag = 1;
       }
 
-
       if (switchPos("/ FULL")) {
         briefFlag = 0;
         commentOnlyFlag = 0;
@@ -3113,7 +3091,6 @@ void command(int argc, char *argv[]) {
         q = 1; /* Flag that at least one matching statement was found */
 
         g_showStatement = s;
-
 
         typeStatement(g_showStatement,
             briefFlag,
@@ -3238,7 +3215,6 @@ void command(int argc, char *argv[]) {
       continue;
     } /* if (cmdMatches("SHOW ELAPSED_TIME")) */
 
-
     if (cmdMatches("SHOW TRACE_BACK")) {
       essentialFlag = 0;
       axiomFlag = 0;
@@ -3319,7 +3295,6 @@ void command(int argc, char *argv[]) {
                 0 /* testOnlyFlag */);
           }
         }
-
       } /* next i */
       if (g_showStatement == 0) {
         printLongLine(cat("?There are no $p labels matching \"",
@@ -3331,7 +3306,6 @@ void command(int argc, char *argv[]) {
       free_vstring(traceToList); /* Deallocate memory */
       continue;
     } /* if (cmdMatches("SHOW TRACE_BACK")) */
-
 
     if (cmdMatches("SHOW USAGE")) {
 
@@ -3439,7 +3413,6 @@ void command(int argc, char *argv[]) {
       continue;
     } /* if cmdMatches("SHOW USAGE") */
 
-
     if (cmdMatches("SHOW PROOF")
         || cmdMatches("SHOW NEW_PROOF")
         || cmdMatches("SAVE PROOF")
@@ -3518,7 +3491,6 @@ void command(int argc, char *argv[]) {
           continue;
         }
       }
-
 
       /* Establish defaults for omitted qualifiers */
       startStep = 0;
@@ -3599,7 +3571,6 @@ void command(int argc, char *argv[]) {
         if (!pipFlag) let(&labelMatch, g_fullArg[2]);
       }
 
-
       if (texFlag) {
         if (!g_texFileOpenFlag) {
           print2(
@@ -3625,7 +3596,6 @@ void command(int argc, char *argv[]) {
         print2(
             "Reformatting and saving (but not recompressing) all proofs...\n");
       }
-
 
       q = 0;  /* Flag that at least one matching statement was found */
       for (stmt = 1; stmt <= g_statements; stmt++) {
@@ -3729,7 +3699,6 @@ void command(int argc, char *argv[]) {
                 outStatement /*statemNum, used only if explicitTargets*/));
           }
 
-
           if (saveFlag) {
             /* ??? This is a problem when mixing html and save proof */
             if (g_printString[0]) bug(1114);
@@ -3738,7 +3707,6 @@ void command(int argc, char *argv[]) {
             /* Set flag for print2() to put output in g_printString instead
                of displaying it on the screen */
             g_outputToString = 1;
-
           } else {
             if (!print2("Proof of \"%s\":\n", g_Statement[outStatement].labelName))
               break; /* Break for speedup if user quit */
@@ -3870,7 +3838,6 @@ void command(int argc, char *argv[]) {
             g_printString = "";
             g_outputToString = 0;
 
-
             if (!pipFlag) {
               if (!(fastFlag && !strcmp("*", labelMatch))) {
                 printLongLine(
@@ -3889,7 +3856,6 @@ void command(int argc, char *argv[]) {
               print2("SAVE PROOF run time = %6.2f sec for \"%s\"\n", timeIncr,
                   g_Statement[outStatement].labelName);
             }
-
           } else {
             /*print2("\n");*/ /* Add a blank line to make clipping easier */
             print2(cat(
@@ -3944,7 +3910,6 @@ void command(int argc, char *argv[]) {
             }
           }
         }
-
 
         if (texFlag) print2("Outputting proof of \"%s\"...\n",
             g_Statement[outStatement].labelName);
@@ -4046,7 +4011,6 @@ void command(int argc, char *argv[]) {
       continue;
     } /* if (cmdMatches("SHOW/SAVE [NEW_]PROOF" or" MIDI") */
 
-
 /*E*/ /*???????? DEBUG command for debugging only */
     if (cmdMatches("DBG")) {
       print2("DEBUGGING MODE IS FOR DEVELOPER'S USE ONLY!\n");
@@ -4084,7 +4048,6 @@ void command(int argc, char *argv[]) {
         continue; /* Error msg was provided if not unique */
       }
       g_proveStatement = i;
-
 
       /* 1 means to override usage locks */
       overrideFlag = ( (switchPos("/ OVERRIDE")) ? 1 : 0)
@@ -4171,7 +4134,6 @@ void command(int argc, char *argv[]) {
       processUndoStack(&g_ProofInProgress, PUS_PUSH, "", 0);
       continue;
     }
-
 
     if (cmdMatches("UNDO")) {
       processUndoStack(&g_ProofInProgress, PUS_UNDO, "", 0);
@@ -4416,11 +4378,9 @@ void command(int argc, char *argv[]) {
 
         autoUnify(1);
 
-
         g_proofChangedFlag = 1; /* Flag to push 'undo' stack */
         g_proofChanged = 1; /* Cumulative flag */
         processUndoStack(&g_ProofInProgress, PUS_PUSH, g_fullArgString, 0);
-
       }
 
       if (cmdMatches("LET STEP")) {
@@ -4463,7 +4423,6 @@ void command(int argc, char *argv[]) {
           0 /*g_htmlFlag*/);
       continue;
     }
-
 
     if (cmdMatches("ASSIGN")) {
       s = getStepNum(g_fullArg[1], g_ProofInProgress.proof,
@@ -4571,9 +4530,7 @@ void command(int argc, char *argv[]) {
       g_proofChanged = 1; /* Cumulative flag */
       processUndoStack(&g_ProofInProgress, PUS_PUSH, g_fullArgString, 0);
       continue;
-
     } /* cmdMatches("ASSIGN") */
-
 
     if (cmdMatches("REPLACE")) {
       /* 1 means to override usage locks */
@@ -4714,7 +4671,6 @@ void command(int argc, char *argv[]) {
               "", " ");
       }
 
-
       /* Automatically display new unknown steps
          ???Future - add switch to enable/defeat this */
       if (g_proofChangedFlag)
@@ -4735,9 +4691,7 @@ void command(int argc, char *argv[]) {
             0 /*g_htmlFlag*/);
 
       continue;
-
     } /* REPLACE */
-
 
     if (cmdMatches("IMPROVE")) {
 
@@ -4966,7 +4920,6 @@ void command(int argc, char *argv[]) {
                   improveDepth,
                   overrideFlag,
                   mathboxFlag);
-
               }
               if (!nmbrLen(nmbrTmpPtr)) {
                 /* REPLACE algorithm also failed */
@@ -5008,7 +4961,6 @@ void command(int argc, char *argv[]) {
           }
 
           if (searchAlg == 1) break; /* Old algorithm does just 1st pass */
-
         } /* Next improveAllIter */
 
         if (g_proofChangedFlag) {
@@ -5025,7 +4977,6 @@ void command(int argc, char *argv[]) {
              the message if the proof is complete */
           autoUnify(1); /* 1 = 'Congrats' if done */
         }
-
       } /* End if IMPROVE ALL */
 
       /* Automatically display new unknown steps
@@ -5048,9 +4999,7 @@ void command(int argc, char *argv[]) {
             0 /*g_htmlFlag*/);
 
       continue;
-
     } /* cmdMatches("IMPROVE") */
-
 
     if (cmdMatches("MINIMIZE_WITH")) {
 
@@ -5256,7 +5205,6 @@ void command(int argc, char *argv[]) {
               }
             }
 
-
             /* Because of the slow speed of traceBack(),
                we only want to check the /NO_NEW_AXIOMS_FROM list in the
                relatively rare case where a minimization occurred.  If the
@@ -5353,7 +5301,6 @@ void command(int argc, char *argv[]) {
                 continue; /* Continue at 'Next k' loop end below */
               }
             } /* end if (true) */
-
 
             /* Make sure the compressed proof length
                decreased, otherwise revert.  Also, we will use the
@@ -5521,9 +5468,7 @@ void command(int argc, char *argv[]) {
             /* Save the changed proof in case we have to restore
                it later */
             copyProofStruct(&saveProofForReverting, g_ProofInProgress);
-
           }
-
         } /* Next k (statement) */
 
         if (g_proofChangedFlag && forwRevPass == 2) {
@@ -5547,7 +5492,6 @@ void command(int argc, char *argv[]) {
             print2("The forward scan results were used.\n");
           }
         }
-
       } /* next forwRevPass */
 
       if (prntStatus == 1 && !mayGrowFlag)
@@ -5599,9 +5543,7 @@ void command(int argc, char *argv[]) {
         processUndoStack(&g_ProofInProgress, PUS_PUSH, g_fullArgString, 0);
       }
       continue;
-
     } /* End if MINIMIZE_WITH */
-
 
     if (cmdMatches("EXPAND")) {
 
@@ -5648,7 +5590,6 @@ void command(int argc, char *argv[]) {
       free_nmbrString(nmbrTmp);
       continue;
     } /* EXPAND */
-
 
     if (cmdMatches("DELETE STEP") || (cmdMatches("DELETE ALL"))) {
 
@@ -5707,7 +5648,6 @@ void command(int argc, char *argv[]) {
       processUndoStack(&g_ProofInProgress, PUS_PUSH, g_fullArgString, 0);
 
       continue;
-
     }
 
     if (cmdMatches("DELETE FLOATING_HYPOTHESES")) {
@@ -5768,7 +5708,6 @@ void command(int argc, char *argv[]) {
       }
 
       continue;
-
     } /* End if DELETE FLOATING_HYPOTHESES */
 
     if (cmdMatches("INITIALIZE")) {
@@ -5825,9 +5764,7 @@ void command(int argc, char *argv[]) {
       g_proofChanged = 1; /* Cumulative flag */
       processUndoStack(&g_ProofInProgress, PUS_PUSH, g_fullArgString, 0);
       continue;
-
     }
-
 
     if (cmdMatches("SEARCH")) {
       if (switchPos("/ ALL")) {
@@ -6017,7 +5954,6 @@ void command(int argc, char *argv[]) {
       continue;
     }
 
-
     if (cmdMatches("SET ECHO")) {
       if (cmdMatches("SET ECHO ON")) {
         g_commandEcho = 1;
@@ -6042,7 +5978,6 @@ void command(int argc, char *argv[]) {
       continue;
     }
 
-
     if (cmdMatches("SET JEREMY_HENTY_FILTER")) {
       if (cmdMatches("SET JEREMY_HENTY_FILTER ON")) {
         print2("The unification equivalence filter has been turned on.\n");
@@ -6055,7 +5990,6 @@ void command(int argc, char *argv[]) {
       }
       continue;
     }
-
 
     if (cmdMatches("SET EMPTY_SUBSTITUTION")) {
       if (cmdMatches("SET EMPTY_SUBSTITUTION ON")) {
@@ -6073,7 +6007,6 @@ void command(int argc, char *argv[]) {
         continue;
       }
     }
-
 
     if (cmdMatches("SET SEARCH_LIMIT")) {
       s = (long)val(g_fullArg[2]); /* Timeout value */
@@ -6095,7 +6028,6 @@ void command(int argc, char *argv[]) {
       continue;
     }
 
-
     if (cmdMatches("SET HEIGHT")) {
       s = (long)val(g_fullArg[2]); /* Screen height value */
       if (s < 2) s = 2;  /* Less than 2 makes no sense */
@@ -6107,7 +6039,6 @@ void command(int argc, char *argv[]) {
          prompt line after pausing. */
       continue;
     }
-
 
     if (cmdMatches("SET DISCOURAGEMENT")) {
       if (!strcmp(g_fullArg[2], "ON")) {
@@ -6129,14 +6060,12 @@ void command(int argc, char *argv[]) {
       continue;
     }
 
-
     if (cmdMatches("SET CONTRIBUTOR")) {
       print2("\"Contributed by...\" name was changed from \"%s\" to \"%s\"\n",
           g_contributorName, g_fullArg[2]);
       let(&g_contributorName, g_fullArg[2]);
       continue;
     }
-
 
     if (cmdMatches("SET ROOT_DIRECTORY")) {
       let(&str1, g_rootDirectory); /* Save previous one */
@@ -6165,7 +6094,6 @@ void command(int argc, char *argv[]) {
       continue;
     }
 
-
     if (cmdMatches("SET UNDO")) {
       s = (long)val(g_fullArg[2]); /* Maximum UNDOs */
       if (s < 0) s = 0;  /* Less than 0 UNDOs makes no sense */
@@ -6186,7 +6114,6 @@ void command(int argc, char *argv[]) {
       continue;
     }
 
-
     if (cmdMatches("SET UNIFICATION_TIMEOUT")) {
       s = (long)val(g_fullArg[2]); /* Timeout value */
       print2("Unification timeout has been changed from %ld to %ld\n",
@@ -6194,7 +6121,6 @@ void command(int argc, char *argv[]) {
       g_userMaxUnifTrials = s;
       continue;
     }
-
 
     if (cmdMatches("OPEN LOG")) {
         /* Open a log file */
@@ -6284,7 +6210,6 @@ void command(int argc, char *argv[]) {
       continue;
     } /* end MORE */
 
-
     if (cmdMatches("FILE SEARCH")) {
       /* Search the contents of a file and type on the screen */
 
@@ -6354,17 +6279,14 @@ void command(int argc, char *argv[]) {
       }
       free_pntrString(pntrTmp);
 
-
       continue;
     }
-
 
     if (cmdMatches("SET UNIVERSE") || cmdMatches("ADD UNIVERSE") ||
         cmdMatches("DELETE UNIVERSE")) {
 
       /*continue;*/ /* ???Not implemented */
     } /* end if xxx UNIVERSE */
-
 
     if (cmdMatches("SET DEBUG FLAG")) {
       print2("Notice:  The DEBUG mode is intended for development use only.\n");
@@ -6455,8 +6377,5 @@ void command(int argc, char *argv[]) {
 
     print2("?This command has not been implemented.\n");
     continue;
-
   }
-} /* command */
-
-
+} // command

@@ -57,7 +57,6 @@ if (!strcmp(saveHelpCmd, "HELP COMMENTS")) {
     H("");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP INVOKE")) {
 H("To invoke Metamath from a Unix/Linux/MacOSX prompt, assuming that the");
 H("Metamath program is in the current directory, type");
@@ -107,14 +106,12 @@ H("on modern machines with virtual memory.");
 H("");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP SHOW SETTINGS")) {
 H("Syntax:  SHOW SETTINGS");
 H("");
 H("This command shows the state of various parameters.");
 H("");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP SHOW ELAPSED_TIME")) {
 H("Syntax:  SHOW ELAPSED_TIME");
@@ -123,7 +120,6 @@ H("This command shows the time elapsed in the session and from any");
 H("previous use of SHOW ELAPSED_TIME.");
 H("");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP SHOW LABELS")) {
 H("Syntax:  SHOW LABELS <label-match> [/ ALL] [/ LINEAR]");
@@ -138,7 +134,6 @@ H("    / LINEAR - Display only one label per line.  This can be useful for");
 H("        building scripts in conjunction with the TOOLS utility.");
 H("");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP SHOW DISCOURAGED")) {
 H("Syntax:  SHOW DISCOURAGED");
@@ -160,7 +155,6 @@ H("but SHOW SOURCE can be used to see statements with multiple comments");
 H("and to see the exact content of the Metamath database.");
 H("");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP SHOW STATEMENT")) {
 H("Syntax:  SHOW STATEMENT <label-match> [/ COMMENT] [/ FULL] [/ TEX]");
@@ -204,7 +198,6 @@ H("        Mnemosyne http://www.mnemosyne-proj.org/principles.php.  Should");
 H("        not be used with any other qualifier.");
 H("");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP SHOW PROOF")) {
 H("Syntax:  SHOW PROOF <label-match> [<qualifiers (see below)>]");
@@ -276,7 +269,6 @@ H("        HELP SAVE PROOF.");
 H("");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP MIDI")) {
 H("Syntax:  MIDI <label> [/ PARAMETER \"<parameter string>\"]");
 H("");
@@ -320,7 +312,6 @@ H("Quotes around the parameter string are optional if it has no spaces.");
 H("");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP SHOW NEW_PROOF")) {
 H("Syntax:  SHOW NEW_PROOF [<qualifiers (see below)]");
 H("");
@@ -345,7 +336,6 @@ H("See also:  SHOW PROOF");
 H("");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP SHOW USAGE")) {
 H("Syntax:  SHOW USAGE <label-match> [/ RECURSIVE]");
 H("");
@@ -367,7 +357,6 @@ free_vstring(saveHelpCmd); /* Deallocate memory */
 return;
 } /* help2 */
 
-
 /* Split up help2 into help2 and help3 so lcc optimizer wouldn't overflow */
 void help3(vstring helpCmd) {
 
@@ -378,7 +367,6 @@ vstring_def(saveHelpCmd);
    allocated copy here.  (And after this let(), helpCmd will become invalid
    for the same reason.)  */
 let(&saveHelpCmd, helpCmd);
-
 
 if (!strcmp(saveHelpCmd, "HELP SHOW TRACE_BACK")) {
 H("Syntax:  SHOW TRACE_BACK <label-match> [/ ESSENTIAL] [/ AXIOMS] [/ TREE]");
@@ -412,7 +400,6 @@ H("        multiple paths from ac6s back to ax-reg, all statements involved");
 H("        in all paths are listed.");
 H("");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP SEARCH")) {
 H("Syntax:  SEARCH <label-match> \"<symbol-match>\" [/ ALL] [/ COMMENTS]");
@@ -489,7 +476,6 @@ H("characters.");
 H("");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP SET ECHO")) {
 H("Syntax:  SET ECHO ON or SET ECHO OFF");
 H("");
@@ -503,7 +489,6 @@ H("prepended to each echoed command line.");
 H("");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP SET SCROLL")) {
 H("Syntax:  SET SCROLL PROMPTED or SET SCROLL CONTINUOUS");
 H("");
@@ -513,7 +498,6 @@ H("screenful of a long listing.  In CONTINUOUS mode, long listings will be");
 H("scrolled without pausing.");
 H("");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP SET WIDTH")) {
 H("Syntax:  SET WIDTH <number>");
@@ -532,7 +516,6 @@ H("");
 H("Note:  This command was SET SCREEN_WIDTH prior to Version 0.07.9.");
 H("");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP SET HEIGHT")) {
 H("Syntax:  SET HEIGHT <number>");
@@ -599,7 +582,6 @@ H("again.");
 H("");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP SET EMPTY_SUBSTITUTION")) {
 H("Syntax:  SET EMPTY_SUBSTITUTION ON or SET EMPTY_SUBSTITUTION OFF");
 H("");
@@ -620,7 +602,6 @@ H("empty assumption lists would be permissible.)");
 H("");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP SET SEARCH_LIMIT")) {
 H("Syntax:  SET SEARCH_LIMIT <number>");
 H("");
@@ -633,7 +614,6 @@ H("value.");
 H("");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP SET JEREMY_HENTY_FILTER")) {
 H("Syntax:  SET JEREMY_HENTY_FILTER ON or SET JEREMY_HENTY_FILTER OFF");
 H("");
@@ -645,7 +625,6 @@ H("\"equivalent\" ones in a sense defined by Henty.  Normally this filter");
 H("is ON, and the only reason to turn it off would be for debugging.");
 H("");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP VERIFY PROOF")) {
 H("Syntax:  VERIFY PROOF <label-match> [/ SYNTAX_ONLY]");
@@ -667,7 +646,6 @@ H("from errors in Metamath language but will not check the markup language");
 H("in comments.  See HELP VERIFY MARKUP.");
 H("");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP VERIFY MARKUP")) {
 H("Syntax:  VERIFY MARKUP <label-match> [/ DATE_SKIP] [/ TOP_DATE_CHECK]");
@@ -717,7 +695,6 @@ H("see the 21-Dec-2017 entry in http://us.metamath.org/mpeuni/mmnotes.txt .");
 H("");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP SUBMIT")) {
 H("Syntax:  SUBMIT <filename> [/ SILENT]");
 H("");
@@ -740,7 +717,6 @@ H("        file itself).  The screen output of any operating system commands");
 H("        inside the command file (see HELP SYSTEM) is not suppressed.");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP SYSTEM")) {
 H("A line enclosed in single or double quotes will be executed by your");
 H("computer's operating system, if it has such a feature.  For example, on a");
@@ -753,7 +729,6 @@ H("For your convenience, the trailing quote is optional, for example:");
 H("    MM> 'ls | less -EX");
 H("");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP MM-PA")) {
 H("See HELP PROOF_ASSISTANT");
@@ -770,7 +745,6 @@ H("do this, such as \"less -EX\" in Linux.)");
 H("");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP FILE SEARCH")) {
 H("Syntax:  FILE SEARCH <filename> \"<search string>\" [/ FROM_LINE");
 H("             <number>] [/ TO_LINE <number>]");
@@ -782,7 +756,6 @@ H("deprecated.  See HELP SYSTEM to invoke your operating system's");
 H("equivalent command, such as \"grep\" in Linux.)");
 H("");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP PROVE")) {
 H("Syntax:  PROVE <label> [/ OVERRIDE]");
@@ -799,7 +772,6 @@ H("");
 H("See also:  HELP PROOF_ASSISTANT and HELP EXIT");
 H("");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP PROOF_ASSISTANT")) {
 H("Before using the Proof Assistant, you must add a $p to your source file");
@@ -912,7 +884,6 @@ H("See also HELP REDO and HELP SET UNDO.");
 H("");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP REDO")) {
 H("Syntax:  REDO");
 H("");
@@ -923,7 +894,6 @@ H("were issued after the last UNDO.  A sequence of REDOs will reverse as");
 H("many UNDOs as were issued since the last proof-changing command.");
 H("");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP SET UNDO")) {
 H("Syntax:  SET UNDO <number>");
@@ -938,7 +908,6 @@ H("If this command is issued while inside of the Proof Assistant, the");
 H("UNDO stack is reset (i.e. previous possible UNDOs will be lost).");
 H("");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP ASSIGN")) {
 H("Syntax:  ASSIGN <step> <label> [/ NO_UNIFY] [/ OVERRIDE]");
@@ -972,7 +941,6 @@ H("        if \"(New usage is discouraged.)\" is present in the statement's");
 H("        description comment.  This qualifier will allow the assignment.");
 H("");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP REPLACE")) {
 H("Syntax:  REPLACE <step> <label> [/ OVERRIDE]");
@@ -1041,7 +1009,6 @@ H("    / ESSENTIAL_ONLY - in the MATCH ALL statement, only the steps that");
 H("        would be listed in SHOW NEW_PROOF display are matched.");
 H("");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP LET")) {
 H("Syntax:  LET VARIABLE <variable> = \"<symbol sequence>\"");
@@ -1113,7 +1080,6 @@ H("  MM-PA> SHOW NEW_PROOF/UNKNOWN");
 H("");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP UNIFY")) {
 H("HELP UNIFY");
 H("Syntax:  UNIFY STEP <step>");
@@ -1135,7 +1101,6 @@ H("it to 1000000 can help difficult cases.  The LET VARIABLE command to");
 H("manually assign unknown variables also helps difficult cases.");
 H("");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP INITIALIZE")) {
 H("Syntax:  INITIALIZE ALL");
@@ -1163,7 +1128,6 @@ H("See also:  UNIFY and DELETE");
 H("");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP DELETE")) {
 H("Syntax:  DELETE STEP <step>");
 H("         DELETE ALL");
@@ -1182,7 +1146,6 @@ H("step with a $f hypothesis as the target is completely known, the IMPROVE");
 H("command can usually fill in the proof for that step.");
 H("");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP IMPROVE")) {
 H("Syntax:  IMPROVE <step> [/ DEPTH <number>] [/ NO_DISTINCT] [/ 2] [/ 3]");
@@ -1271,7 +1234,6 @@ H("See also:  HELP SET SEARCH_LIMIT");
 H("");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP MINIMIZE_WITH")) {
 H("Syntax:  MINIMIZE_WITH <label-match> [/ VERBOSE] [/ MAY_GROW]");
 H("              [/ EXCEPT <label-match>] [/ INCLUDE_MATHBOXES]");
@@ -1343,7 +1305,6 @@ H("    / TIME - prints out the run time used by the MINIMIZE_WITH run.");
 H("");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP EXPAND")) {
 H("Syntax:  EXPAND <label-match>");
 H("");
@@ -1359,7 +1320,6 @@ H("labels rather than EXPAND * because the proof size grows exponentially as");
 H("each layer is eliminated.");
 H("");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP SAVE PROOF")) {
 H("Syntax:  SAVE PROOF <label-match> [/ <qualifier>] [/ <qualifier>]...");
@@ -1401,7 +1361,6 @@ H("affecting any proofs.");
 H("");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP SAVE NEW_PROOF")) {
 H("Syntax:  SAVE NEW_PROOF <label-match> [/ <qualifier>] [/ <qualifier>]...");
 H("");
@@ -1430,7 +1389,6 @@ H("Note that if no qualifier is specified, / NORMAL is assumed.");
 H("");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP DEMO")) {
 H("For a quick demo that enables you to see Metamath do something, type");
 H("the following:");
@@ -1446,7 +1404,6 @@ H("will show all statements with subset then union in them.");
 H("");
 }
 
-if (strcmp(helpCmd, saveHelpCmd)) bug(1401); /* helpCmd got corrupted */
-free_vstring(saveHelpCmd); /* Deallocate memory */
-
+if (strcmp(helpCmd, saveHelpCmd)) bug(1401); // helpCmd got corrupted
+free_vstring(saveHelpCmd); // deallocate memory
 }

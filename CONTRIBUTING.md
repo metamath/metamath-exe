@@ -120,12 +120,12 @@ https://guides.lib.berkeley.edu/how-to-write-good-documentation
     an entry point to documentation a README.TXT is kept in the main folder of
     Metamath.  This file is pure [ASCII](https://en.wikipedia.org/wiki/ASCII)
     encoded [plain text](https://en.wikipedia.org/wiki/Plain_text).
-    
+
 The following rules are strong recommendations.  We encourage to follow them as
 much as possible.  But in the end we think that some sort of documentation is
 better than no documentation, so bypassing any of them is possible if somehow
 inevitable.
-    
+
 2. If your documentation is simple enough to be expressed as
     [plain text](https://en.wikipedia.org/wiki/Plain_text), we recommend to
     rely as much as possible on [ASCII](https://en.wikipedia.org/wiki/ASCII)
@@ -138,7 +138,7 @@ inevitable.
     legible in simple editors.  Its format is in detail documented
     [here](https://github.github.com/gfm), and is an extension to the
     widespread [Markdown](https://commonmark.org/help/) format.
-    
+
 4. Source code documentation within sources should follow the
     [Doxygen](https://www.doxygen.nl/index.html) style, so documentation of
     variables and functions can be generated automatically.  Doxygen extracts
