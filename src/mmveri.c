@@ -349,7 +349,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
   v = -1; /* Position in bigSubstSchemeVars */
   p = 0; /* Position in bigSubstSchemeAss */
   q = 0; /* Position in bigSubstInstAss */
-  ambiguityCheck: /* Re-entry point to see if unification is unique */
+ambiguityCheck: /* Re-entry point to see if unification is unique */
   while (p != bigSubstSchemeLen-1 || q != bigSubstInstLen-1) {
 /*E*/if(db7&&v>=0)printLongLine(cat("p ", str((double)p), " q ", str((double)q), " VAR ",str((double)v),
 /*E*/    " ASSIGNED ", nmbrCvtMToVString(

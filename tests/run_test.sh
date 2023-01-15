@@ -32,7 +32,7 @@ if [ "$1" = "--help" ]; then usage; exit; fi
 # Allow overriding the 'metamath' command using the METAMATH env variable
 cmd="${METAMATH:-metamath}"
 
-# Alternately, use the '-c metamath' argument which overrides the env variable
+# Alternatively, use the '-c metamath' argument which overrides the env variable
 if [ "$1" = "-c" ]; then shift; cmd=$1; shift; fi
 
 if [ "$1" = "--bless" ]; then bless=1; shift; fi

@@ -111,7 +111,7 @@ flag localScrollMode = 1;
  * \ref printedLines.  The moment this value indicates a full page, a new empty
  * page is pushed on the stack, and output is suspended to let the user read
  * displayed contents in rest.  A user prompt asks for resuming pending output,
- * alternatively s/he may step backwards and forward through the sequence of
+ * or alternatively step backwards and forward through the sequence of
  * saved pages for redisplay.  The variable \ref backBufferPos tracks which
  * page the user requested last (or points to the currently built-up page).
  *
