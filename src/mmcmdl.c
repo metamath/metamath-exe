@@ -37,7 +37,6 @@ flag g_memoryStatus = 0; /* Always show memory */
 flag g_sourceHasBeenRead = 0; /* 1 if a source file has been read in */
 vstring_def(g_rootDirectory); /* Directory prefix to use for included files */
 
-
 static flag getFullArg(long arg, const char *cmdList);
 
 flag processCommandLine(void) {
@@ -313,7 +312,6 @@ flag processCommandLine(void) {
           }
           /* break; */ /* Break if only 1 switch is allowed */
         } /* End while for switch loop */
-
       }
       goto pclgood;
     }
@@ -331,7 +329,6 @@ flag processCommandLine(void) {
           goto pclbad;
         if (!getFullArg(3, "* What is the string to search for? "))
           goto pclbad;
-
 
         /* Get any switches */
         i = 3;
@@ -370,7 +367,6 @@ flag processCommandLine(void) {
           /* break; */ /* Break if only 1 switch is allowed */
         } /* End while for switch loop */
 
-
         goto pclgood;
       } /* End if (cmdMatches("FILE SEARCH")) */
       goto pclgood;
@@ -396,7 +392,6 @@ flag processCommandLine(void) {
       } else {
         let(&defaultArg, "");
       }
-
 
       if (cmdMatches("SHOW TRACE_BACK")) {
         if (g_sourceHasBeenRead == 0) {
@@ -471,7 +466,6 @@ flag processCommandLine(void) {
         goto pclgood;
       } /* End if (cmdMatches("SHOW USAGE")) */
 
-
       if (cmdMatches("SHOW LABELS")) {
         if (g_sourceHasBeenRead == 0) {
           print2("?No source file has been read in.  Use READ first.\n");
@@ -534,7 +528,6 @@ flag processCommandLine(void) {
         goto pclgood;
       }
 
-
       if (cmdMatches("SHOW PROOF")) {
         if (g_sourceHasBeenRead == 0) {
           print2("?No source file has been read in.  Use READ first.\n");
@@ -594,7 +587,6 @@ flag processCommandLine(void) {
         goto pclgood;
       } /* End if (cmdMatches("SHOW PROOF")) */
 
-
       if (cmdMatches("SHOW NEW_PROOF")) {
         if (g_sourceHasBeenRead == 0) {
           print2("?No source file has been read in.  Use READ first.\n");
@@ -646,7 +638,6 @@ flag processCommandLine(void) {
         goto pclgood;
       } /* End if (cmdMatches("SHOW NEW_PROOF")) */
 
-
       goto pclgood;
     } /* End of SHOW */
 
@@ -675,7 +666,6 @@ flag processCommandLine(void) {
         /*break;*/ /* Break if only 1 switch is allowed */
       }
       goto pclgood;
-
     } /* End of SEARCH */
 
     if (cmdMatches("SAVE")) {
@@ -695,7 +685,6 @@ flag processCommandLine(void) {
       } else {
         let(&defaultArg, "");
       }
-
 
       if (cmdMatches("SAVE PROOF")) {
         if (g_sourceHasBeenRead == 0) {
@@ -726,7 +715,6 @@ flag processCommandLine(void) {
         goto pclgood;
       } /* End if (cmdMatches("SAVE PROOF")) */
 
-
       if (cmdMatches("SAVE NEW_PROOF")) {
         if (g_sourceHasBeenRead == 0) {
           print2("?No source file has been read in.  Use READ first.\n");
@@ -752,7 +740,6 @@ flag processCommandLine(void) {
         }
         goto pclgood;
       } /* End if (cmdMatches("SAVE NEW_PROOF")) */
-
 
       goto pclgood;
     } /* End of SAVE */
@@ -1092,7 +1079,6 @@ flag processCommandLine(void) {
         goto pclgood;
       }
 
-
       if (cmdMatches("SET JEREMY_HENTY_FILTER")) {
         if (g_hentyFilter) {
           if (!getFullArg(2, "ON|OFF|<OFF>")) goto pclbad;
@@ -1167,7 +1153,6 @@ flag processCommandLine(void) {
         }
         goto pclgood;
       }
-
     } /* end if SET */
 
     if (cmdMatches("ERASE")) {
@@ -1337,7 +1322,6 @@ flag processCommandLine(void) {
 
       goto pclgood;
     }
-
   } else { /* g_toolsMode */
     /* Text tools mode */
     let(&tmpStr, cat(
@@ -1588,7 +1572,6 @@ flag processCommandLine(void) {
 
   /* Should never get here */
 
-
  pclgood:
   /* Strip off the last g_fullArg if a null argument was added by getFullArg
      in the case when "$" (nothing) is allowed */
@@ -1613,7 +1596,6 @@ flag processCommandLine(void) {
   }
   let(&g_fullArgString, right(g_fullArgString, 2)); /* Strip leading space */
 
-
   /* Deallocate memory */
   free_vstring(defaultArg);
   free_vstring(tmpStr);
@@ -1625,7 +1607,6 @@ flag processCommandLine(void) {
   free_vstring(tmpStr);
   return 0;
 } /* processCommandLine */
-
 
 /* This function converts the user's abbreviated keyword in
    g_rawArgPntr[arg] to a full, upper-case keyword,
@@ -1672,7 +1653,6 @@ static flag getFullArg(long arg, const char *cmdList1) {
       let((vstring *)(&g_rawArgPntr[arg]), argLine);
       free_vstring(argLine);
       g_rawArgNmbr[arg] = len(cmdList) - 1;/* Line position for error msgs */
-
     } /* End of asking user for additional argument */
 
     /* Make sure that the argument is a non-negative integer */
@@ -1696,7 +1676,6 @@ static flag getFullArg(long arg, const char *cmdList1) {
     free_vstring(tmpStr);
     goto getFullArg_ret;
   }
-
 
   /* Handle special case - any arbitrary string is OK */
   /* '*' means any string, '&' means a file */
@@ -1777,7 +1756,6 @@ static flag getFullArg(long arg, const char *cmdList1) {
     }
     goto getFullArg_ret;
   }
-
 
   /* Parse the choices available */
   long possCmds = 0;
@@ -1953,7 +1931,6 @@ getFullArg_ret:
   return ret;
 } /* getFullArg */
 
-
 /* This function breaks up line into individual tokens
    and puts them into g_rawArgPntr[].  g_rawArgs is the number of tokens.
    g_rawArgPntr[] is the starting position of each token on the line;
@@ -2107,7 +2084,6 @@ parseCommandLine_ret:
   }
 } /* parseCommandLine */
 
-
 flag lastArgMatches(vstring argString) {
   /* This functions checks to see if the last field was argString */
   if (!strcmp(argString, g_fullArg[pntrLen(g_fullArg)-1])) {
@@ -2145,7 +2121,6 @@ flag cmdMatches(vstring cmdString) {
     return 0;
   }
 } /* cmdMatches */
-
 
 long switchPos(vstring swString) {
   /* This function checks that fields i through j of g_fullArg match
@@ -2194,7 +2169,6 @@ long switchPos(vstring swString) {
   free_vstring(swString1);
   return j + 1;
 } /* switchPos */
-
 
 void printCommandError(vstring line1, long arg, vstring errorMsg)
 {

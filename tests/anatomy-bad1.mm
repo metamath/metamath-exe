@@ -7,9 +7,7 @@ This file is placed in the public domain per the Creative Commons Public
 Domain Dedication. http://creativecommons.org/licenses/publicdomain/
 
 Norman Megill
-
 $)
-
 
 $( This file is the introductory formal system example described
    in Chapter 4 of the Metamath book, "Anatomy of a proof". $)

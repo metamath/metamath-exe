@@ -57,5 +57,4 @@ extern flag g_memoryStatus;
 extern flag g_sourceHasBeenRead; /*!< 1 if a source file has been read in */
 extern vstring g_rootDirectory; /*!< Directory to use for included files */
 
-
-#endif /* METAMATH_MMCMDL_H_ */
+#endif // METAMATH_MMCMDL_H_

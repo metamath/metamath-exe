@@ -25,10 +25,8 @@ extern nmbrString *g_firstConst;
 extern nmbrString *g_lastConst;
 extern nmbrString *g_oneConst;
 
-
 nmbrString *makeSubstUnif(flag *newVarFlag,
     const nmbrString *trialScheme, pntrString *stateVector);
-
 
 /*! This function unifies two math token strings, schemeA and
    schemeB.  The result is contained in unifiedScheme.
@@ -59,7 +57,6 @@ char unify(
     pntrString **stateVector,
     long reEntryFlag);
 
-
 /*! oneDirUnif() is like unify(), except that when reEntryFlag is 1,
    a new unification is returned ONLY if the assignments to the
    variables in schemeA have changed.  This is used to speed up the
@@ -69,7 +66,6 @@ flag oneDirUnif(
     const nmbrString *schemeB,
     pntrString **stateVector,
     long reEntryFlag);
-
 
 /*! uniqueUnif() is like unify(), but there is no reEntryFlag, and 3 possible
    values are returned:

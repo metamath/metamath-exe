@@ -121,7 +121,6 @@ void interactiveMatch(long step, long maxEssential)
       free_vstring(timeoutFlags);
       return;
     }
-
   }
 
   nmbrLet(&matchList, nmbrSpace(matchCount));
@@ -207,7 +206,6 @@ void interactiveMatch(long step, long maxEssential)
     print2("Step %ld was assigned statement %s.\n",
         (long)(step + 1),
         g_Statement[stmt].labelName);
-
   } /* End if matchCount == 1 */
 
   /* Add to statement to the proof */
@@ -222,9 +220,7 @@ void interactiveMatch(long step, long maxEssential)
   free_nmbrString(matchList);
   free_nmbrString(timeoutList);
   return;
-
 } /* interactiveMatch */
-
 
 /* Assign a statement to an unknown proof step */
 void assignStatement(long statemNum, long step)
@@ -246,7 +242,6 @@ void assignStatement(long statemNum, long step)
   free_nmbrString(hypList);
   return;
 } /* assignStatement */
-
 
 /* Find proof of formula by using the replaceStatement() algorithm i.e.
    see if any statement matches current step AND each of its hypotheses
@@ -327,7 +322,6 @@ nmbrString *proveByReplacement(long prfStmt,
   }
   return trialPrf;  /* Proof not found - return empty proof */
 }
-
 
 nmbrString *replaceStatement(long replStatemNum, long prfStep,
     long provStmtNum,
@@ -508,7 +502,6 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
   /* Initialize list of hypotheses after substitutions made */
   pntrLet(&hypMakeSubstList, pntrNSpace(schReqHyps));
 
-
   g_unifTrialCount = 1; /* Reset unification timeout */
   reEntryFlag = 0; /* For unifyH() */
 
@@ -574,7 +567,6 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
         if (g_Statement[g_Statement[replStatemNum].reqHypList[hypSortMap[hyp]]
              ].type != (char)f_) bug(1824);
       }
-
 
       /* Scan all known steps of existing subproof to find a hypothesis
          match */
@@ -752,7 +744,6 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
           } /* end if not reentry */
           /* (End speedup) */
 
-
           hypReEntryFlagList[hypSortMap[hyp]] = 2; /* For next unifyH() */
           hypStepList[hypSortMap[hyp]] = trialStep;
 
@@ -912,7 +903,6 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
         hyp = hyp - 2; /* Go back one iteration (subtract 2 to offset
                           end of loop increment) */
       } /* if (!foundTrialStepMatch) */
-
     } /* next hyp */
 
     if (noHypMatch) {
@@ -931,7 +921,6 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
                                                      /* Complete the proof */
 
     goto returnPoint;
-
   } /* End while (next unifyH() call for main replacement statement) */
 
   free_nmbrString(proof);  /* Proof not possible */
@@ -961,14 +950,12 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
   free_vstring(hasFloatingProof);
   free_vstring(tryFloatingProofLater);
 
-
 /*E*/if(db8)print2("%s\n", cat("Returned: ",
 /*E*/   nmbrCvtRToVString(proof,
 /*E*/                0, /*explicitTargets*/
 /*E*/                0 /*statemNum, used only if explicitTargets*/), NULL));
   return proof; /* Caller must deallocate */
 } /* replaceStatement */
-
 
 /* This function identifies all steps in the proof in progress that (1) are
    independent of step refStep, (2) have no dummy variables, (3) are
@@ -1063,9 +1050,7 @@ vstring getIndepKnownSteps(long proofStmt, long refStep)
   free_vstring(unkSubPrfSteps); /* Deallocate */
 
   return indepSteps; /* Caller must deallocate */
-
 } /* getIndepKnownSteps */
-
 
 /* This function classifies each proof step in g_ProofInProgress.proof
    as known or unknown ('K' or 'U' in the returned string) depending
@@ -1119,9 +1104,7 @@ vstring getKnownSubProofs(void)
   if (stackPtr != 0) bug(1841);
   free_vstring(unkSubPrfStack); /* Deallocate */
   return unkSubPrfSteps; /* Caller must deallocate */
-
 } /* getKnownSubProofs */
-
 
 /* Add a subproof in place of an unknown step to g_ProofInProgress.  The
    .target, .source, and .user fields are initialized to empty (except
@@ -1294,7 +1277,6 @@ nmbrString *expandProof(
        process nested references to sourceStmt */
   } /* end while(1) */
 
-
  RETURN_POINT:
   if (nmbrEq(origTargetProof, expandedTargetProof)) {
     /*
@@ -1338,7 +1320,6 @@ nmbrString *expandProof(
   return expandedTargetProof;
 } /* expandProof */
 
-
 /* Delete a subproof starting (in reverse from) step.  The step is replaced
    with an unknown step, and its .target and .user fields are retained. */
 void deleteSubProof(long step) {
@@ -1371,7 +1352,6 @@ void deleteSubProof(long step) {
       step - sbPfLen + 1), pntrRight(g_ProofInProgress.user,
       step + 1), NULL));
 } /* deleteSubProof */
-
 
 /* Check to see if a statement will match the g_ProofInProgress.target (or .user)
    of an unknown step.  Returns 1 if match, 0 if not, 2 if unification
@@ -1507,8 +1487,7 @@ char checkStmtMatch(long statemNum, long step)
 
   if (!targetFlag || !userFlag) return (0);
   if (targetFlag == 1 && userFlag == 1) return (1);
-  return (2);
-
+  return 2;
 } /* checkStmtMatch */
 
 /* Check to see if a (user-specified) math string will match the
@@ -1532,10 +1511,8 @@ char checkMStringMatch(const nmbrString *mString, long step) {
 
   if (!targetFlag || !sourceFlag) return (0);
   if (targetFlag == 1 && sourceFlag == 1) return (1);
-  return (2);
-
+  return 2;
 } /* checkMStringMatch */
-
 
 /* Find proof of formula or simple theorem (no new vars in $e's) */
 /* maxEDepth is the maximum depth at which statements with $e hypotheses are
@@ -1614,7 +1591,6 @@ nmbrString *proveFloating(const nmbrString *mString, long statemNum, long maxEDe
     maxDepthExceeded = 1;  /* Flag to exit recursion */
     goto returnPoint;
   }
-
 
   /* First see if mString matches a required or optional hypothesis; if so,
      we're done; the proof is just the hypothesis. */
@@ -1750,7 +1726,6 @@ nmbrString *proveFloating(const nmbrString *mString, long statemNum, long maxEDe
     } /* Next hyp */
     if (breakFlag) continue; /* To next stmt */
 
-
     /* Change all variables in the statement to dummy vars for unification */
     nmbrLet(&scheme, stmtMathPtr);
     schemeVars = reqVars; /* S.b. same after eliminated new $e vars above */
@@ -1865,7 +1840,6 @@ nmbrString *proveFloating(const nmbrString *mString, long statemNum, long maxEDe
        hypOrdMap[0] = j;
 
        continue; /* Not possible; get next unification */
-
       } /* End if breakFlag */
 
       /* Proofs were found for all hypotheses */
@@ -1915,7 +1889,6 @@ nmbrString *proveFloating(const nmbrString *mString, long statemNum, long maxEDe
         free_nmbrString(*(nmbrString **)(&hypProofList[hyp]));
       }
       goto returnPoint;
-
     } /* End while (next unifyH() call) */
 
     /* Deallocate hypothesis schemes and proofs */
@@ -1923,7 +1896,6 @@ nmbrString *proveFloating(const nmbrString *mString, long statemNum, long maxEDe
       free_nmbrString(*(nmbrString **)(&hypList[hyp]));
       free_nmbrString(*(nmbrString **)(&hypProofList[hyp]));
     }
-
   } /* Next stmt */
 
   free_nmbrString(proof);  /* Proof not possible */
@@ -1944,7 +1916,6 @@ nmbrString *proveFloating(const nmbrString *mString, long statemNum, long maxEDe
 /*E*/if(db8){if(!depth)print2("Trials: %ld\n", trials);}
   return (proof); /* Caller must deallocate */
 } /* proveFloating */
-
 
 /* This function does quick check for some common conditions that prevent
    a trial statement (scheme) from being unified with a given instance.
@@ -1979,7 +1950,6 @@ INLINE flag quickMatchFilter(long trialStmt, const nmbrString *mString,
   lastSymbol = mString[mStringLen - 1];
   if (g_MathToken[lastSymbol].tokenType != (char)con_) lastSymbol = 0;
   /* (End of common section) */
-
 
   stmtMathPtr = g_Statement[trialStmt].mathString;
 
@@ -2040,9 +2010,7 @@ INLINE flag quickMatchFilter(long trialStmt, const nmbrString *mString,
   } /* if dummyVarFlag == 0 */
 
   return 1;
-
 } /* quickMatchFilter */
-
 
 /* Shorten proof by using specified statement. */
 void minimizeProof(long repStatemNum, long prvStatemNum,
@@ -2152,9 +2120,7 @@ void minimizeProof(long repStatemNum, long prvStatemNum,
     /* break; */  /* For special replacement with same label: always break
                       to prevent inf loop */
   } /* end while */
-
 } /* minimizeProof */
-
 
 /* Initialize g_ProofInProgress.source of the step, and .target of all
    hypotheses, to schemes using new dummy variables. */
@@ -2245,7 +2211,6 @@ void initStep(long step)
   return;
 } /* initStep */
 
-
 /* Look for completely known subproofs in g_ProofInProgress.proof and
    assign g_ProofInProgress.target and .source.  Calls assignKnownSteps(). */
 void assignKnownSubProofs(void)
@@ -2275,11 +2240,9 @@ void assignKnownSubProofs(void)
 
     /* Adjust pos for next pass through 'for' loop */
     pos = pos - subplen + 1;
-
   } /* Next pos */
   return;
 } /* assignKnownSubProofs */
-
 
 /* This function assigns math strings to all steps (g_ProofInProgress.target and
    .source fields) in a subproof with all known steps. */
@@ -2426,7 +2389,6 @@ void assignKnownSteps(long startStep, long sbProofLen)
       stackPtr = stackPtr - reqHyps;
       stack[stackPtr] = pos;
       stackPtr++;
-
     } /* End if (not) $e, $f */
   } /* Next pos */
 
@@ -2446,7 +2408,6 @@ void assignKnownSteps(long startStep, long sbProofLen)
   free_nmbrString(assertion);
   return;
 } /* assignKnownSteps */
-
 
 /* Interactively unify a step.  Calls interactiveUnify(). */
 /* If two unifications must take place (.target,.user and .source,.user),
@@ -2507,15 +2468,12 @@ void interactiveUnifyStep(long step, char messageFlag)
     g_proofChangedFlag = 1; /* Flag to push 'undo' stack */
 
     makeSubstAll(stateVector);
-
   } /* End if unifFlag = 1 */
 
   purgeStateVector(&stateVector);
 
   return;
-
 } /* interactiveUnifyStep */
-
 
 /* Interactively select one of several possible unifications */
 /* Returns:  0 = no unification possible
@@ -2577,7 +2535,6 @@ char interactiveUnify(const nmbrString *schemeA, const nmbrString *schemeB,
     if (!unifFlag) break;
     reEntryFlag = 1;
 
-
     /* Compute heuristic "weight" of resulting unification */
     /* The unification with the least "weight" is intended to be the
        most likely correct choice.  The heuristic was based on
@@ -2604,11 +2561,9 @@ char interactiveUnify(const nmbrString *schemeA, const nmbrString *schemeB,
       for (i = 0; i < nmbrLen(substResult); i++) {
         if (substResult[i] > g_mathTokens) unkCount++;
       }
-
     } /* Next var */
     thisUnifWeight = thisUnifWeight - onesCount;
     thisUnifWeight = thisUnifWeight + 7 * unkCount;
-
 
     /* Get new min and max weight for interactive scan ordering */
     if (thisUnifWeight > maxUnifWeight) maxUnifWeight = thisUnifWeight;
@@ -2715,9 +2670,7 @@ char interactiveUnify(const nmbrString *schemeA, const nmbrString *schemeB,
         }
         free_vstring(tmpStr);
       }
-
     } /* Next unifNum */
-
   } /* Next unifTrialWeight */
 
   /* (The user should reject everything to test for this bug) */
@@ -2732,9 +2685,7 @@ char interactiveUnify(const nmbrString *schemeA, const nmbrString *schemeB,
   free_nmbrString(unifWeight); /* Deallocate */
   free_nmbrString(substResult); /* Deallocate */
   return returnValue;
-
 } /* interactiveUnify */
-
 
 /* Automatically unify steps that have unique unification */
 /* Prints "congratulation" if congrats = 1 */
@@ -2829,9 +2780,7 @@ void autoUnify(flag congrats)
   }
 
   return;
-
 } /* autoUnify */
-
 
 /* Make stateVector substitutions in all steps.  The stateVector must
    contain the result of a valid unification. */
@@ -2862,7 +2811,6 @@ void makeSubstAll(pntrString *stateVector) {
         stateVector);
       free_nmbrString(nmbrTmpPtr);
     }
-
   } /* Next step */
   return;
 } /* makeSubstAll */
@@ -2955,7 +2903,6 @@ long subproofLen(const nmbrString *proof, long endStep) {
   }
   return (endStep - p + 1);
 } /* subproofLen */
-
 
 /* If testStep has no dummy variables, return 0;
    if testStep has isolated dummy variables (that don't affect rest of
@@ -3055,7 +3002,6 @@ char checkDummyVarIsolation(long testStep) { /* 0=1st step, 1=2nd, etc. */
   return dummyVarIndicator;
 } /* checkDummyVarIsolation */
 
-
 /* Given a starting step, find its parent (the step it is a hypothesis of) */
 /* If the starting step is the last proof step, just return it */
 long getParentStep(long startStep) /* 0=1st step, 1=2nd, etc. */
@@ -3085,7 +3031,6 @@ long getParentStep(long startStep) /* 0=1st step, 1=2nd, etc. */
   if (startStep != proofLen - 1) bug(1844); /* Didn't find parent... */
   return startStep; /* ...unless we started with the last proof step */
 } /* getParentStep */
-
 
 /* This function puts numNewVars dummy variables, named "$nnn", at the end
    of the g_MathToken array and modifies the global variable g_dummyVars. */
@@ -3125,15 +3070,12 @@ void declareDummyVars(long numNewVars)
     g_MathToken[g_mathTokens + g_dummyVars].active = 1;
     g_MathToken[g_mathTokens + g_dummyVars].tokenType = (char)var_;
     g_MathToken[g_mathTokens + g_dummyVars].tmp = 0;
-
   }
 
   g_startTempAllocStack = saveTempAllocStack;
 
   return;
-
 } /* declareDummyVars */
-
 
 /* Copy inProofStruct to outProofStruct.  A proof structure contains
    the state of the proof in the Proof Assistant MM-PA.  The one
@@ -3175,7 +3117,6 @@ void copyProofStruct(struct pip_struct *outProofStruct,
   return;
 } /* copyProofStruct */
 
-
 /* Create an initial proof structure needed for the Proof Assistant, given
    a starting proof.  Normally, proofStruct is the global g_ProofInProgress,
    although we've made it an argument to help modularize the function.  There
@@ -3215,7 +3156,6 @@ void initProofStruct(struct pip_struct *proofStruct, const nmbrString *proof,
   return;
 } /* initProofStruct */
 
-
 /* Deallocate memory used by a proof structure and set it to the initial
    state.  A proof structure contains the state of the proof in the Proof
    Assistant MM-PA.  It is assumed that proofStruct was declared with:
@@ -3238,8 +3178,7 @@ void deallocProofStruct(struct pip_struct *proofStruct)
   free_pntrString(proofStruct->source);
   free_pntrString(proofStruct->user);
   return;
-} /* deallocProofStruct */
-
+} // deallocProofStruct
 
 #define DEFAULT_UNDO_STACK_SIZE 20
 /* This function handles the UNDO/REDO commands.  It is called

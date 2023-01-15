@@ -179,7 +179,7 @@ typedef nmbrString temp_nmbrString;
  * \ref pgStack "stack of temporary data".  Pointers of this type should ONLY
  * refer to dynamically allocated memory on the heap.  Special commands support
  * dependency tracking and free all pointers on and after a particular one in
- * such a stack. 
+ * such a stack.
  */
 typedef pntrString temp_pntrString;
 
@@ -363,7 +363,7 @@ void *poolMalloc(long size /* bytes */);
  * \pre
  *   - \p ptr refers to dynamically allocated memory on the heap.
  *   - all memory pointed to by \p ptr is considered free.  This holds even if it
- *     it is kept in \ref memUsedPool. 
+ *     it is kept in \ref memUsedPool.
  * \post
  *   - \ref poolTotalFree is updated
  *   - Exit on out-of-memory (the \ref memFreePool overflows)
@@ -458,7 +458,6 @@ void outOfMemory(const char *msg);
  */
 void bug(int bugNum);
 
-
 /*! Null nmbrString -- -1 flags the end of a nmbrString */
 struct nullNmbrStruct {
     long poolLoc;
@@ -546,7 +545,7 @@ extern struct nullPntrStruct g_PntrNull;
  * \def free_pntrString
  * \param[in,out] x variable name
  * Assigns \ref NULL_PNTRSTRING to a variable \ref pntrString \p x.  Frees all
- * \ref pntrTempAllocStack, beginning with index 
+ * \ref pntrTempAllocStack, beginning with index
  * \ref g_pntrStartTempAllocStack.  See \ref pntrLet.
  * \pre
  *   - the \ref pgBlock assigned to \p x does not contain any valuable data.
@@ -563,7 +562,6 @@ extern struct nullPntrStruct g_PntrNull;
  */
 #define free_pntrString(x) pntrLet(&x, NULL_PNTRSTRING)
 
-
 /*! This function returns a 1 if any entry in a comma-separated list
    matches using the matches() function. */
 flag matchesList(const char *testString, const char *pattern, char wildCard,
@@ -574,7 +572,6 @@ flag matchesList(const char *testString, const char *pattern, char wildCard,
    exactly-1 character match wildcards, typically '*' and '?'.*/
 flag matches(const char *testString, const char *pattern, char wildCard,
     char oneCharWildCard);
-
 
 /*******************************************************************/
 /*********** Number string functions *******************************/
@@ -596,7 +593,6 @@ temp_nmbrString *nmbrMakeTempAlloc(nmbrString *s);
                                     released by next nmbrLet() */
 
 /**************************************************/
-
 
 /*! String assignment - MUST be used to assign vstrings */
 void nmbrLet(nmbrString **target, const nmbrString *source);
@@ -665,7 +661,6 @@ temp_nmbrString *nmbrIntersection(const nmbrString *m1, const nmbrString *m2);
    variable lists) */
 temp_nmbrString *nmbrSetMinus(const nmbrString *m1,const nmbrString *m2);
 
-
 /*! This is a utility function that returns the length of a subproof that
    ends at step */
 long nmbrGetSubproofLen(const nmbrString *proof, long step);
@@ -711,7 +706,6 @@ temp_vstring compressProof(const nmbrString *proof, long statemNum,
 /*! Gets length of the ASCII form of a compressed proof */
 long compressedProofSize(const nmbrString *proof, long statemNum);
 
-
 /*******************************************************************/
 /*********** Pointer string functions ******************************/
 /*******************************************************************/
@@ -756,7 +750,6 @@ extern long g_pntrStartTempAllocStack; /* Where to start freeing temporary
 temp_pntrString *pntrMakeTempAlloc(pntrString *s);
 
 /**************************************************/
-
 
 /*!
  * \fn void pntrLet(pntrString **target, const pntrString *source)
@@ -877,12 +870,12 @@ flag pntrEq(const pntrString *sout, const pntrString *sin);
  *   \ref pgBlock.  It is assumed it is an array of pointer to \ref vstring.
  * \return a copy of \p g, the terminal NULL replaced with a \ref vstring ""
  *   followed by NULL.
- * \attention   
+ * \attention
  *   the pointers in \p g are copied to the result.  If some of them
  *   reference allocated memory, check for possible double free, for example.
  * \pre
  *   Intended to be used with arrays of \ref vstring * only.
- * \post 
+ * \post
  *   the elements of \p g are duplicated.
  */
 temp_pntrString *pntrAddElement(const pntrString *g);
@@ -920,7 +913,6 @@ flag getMarkupFlag(long statemNum, char mode);
    See GC_RESET etc. modes above.  Caller must deallocate returned
    string. */
 vstring getContrib(long stmtNum, char mode);
-
 
 /*! Extract up to 2 dates after a statement's proof.  If no date is present,
    date1 will be blank.  If no 2nd date is present, date2 will be blank. */

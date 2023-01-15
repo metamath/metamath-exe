@@ -10,10 +10,10 @@ The public domain release applies worldwide.  In case this is not
 legally possible, the right is granted to use the work for any purpose,
 without any conditions, unless such conditions are required by law.
 
-Norman Megill - http://metamath.org $)
+Norman Megill - http://metamath.org
+$)
 
 $(
-
 This file (big-unifier.mm) is a unification and substitution test for
 Metamath verifiers, where small input expressions blow up to thousands
 of symbols.  It is a translation of William McCune's "big-unifier.in"
@@ -26,7 +26,6 @@ for the OTTER theorem prover:
         detachment.  These occur in Larry Wos's proofs that XCB is a single
         axiom for EC."
 $)
-
 
  $c wff |- e ( , ) $.
  $v x y z w v u v1 v2 v3 v4 v5 v6 v7 v8 v9 v10 v11 $.
@@ -68,7 +67,6 @@ $)
    FFZMPAFFZFPFQPFZFLRFFLNKMJAJNQPLAPGPMKBADCEOAR $.
 
 $(
-
 This comment holds a simple typesetting definition file so that HTML
 pages can be created with "show statement theorem1/html" in the
 metamath program.

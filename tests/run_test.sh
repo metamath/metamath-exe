@@ -1,13 +1,13 @@
 #!/bin/sh
 
 usage() {
-  cat >&2 << "HELP"
+  cat >&2 <<"HELP"
 Usage: run_test [-c CMD] [--bless] TESTS...
 Run tests from the test suite.
 
-Each TEST should be the name of a TEST.in file in the current directory.
-It calls 'metamath TEST.mm < TEST.in > TEST.produced' and compares
-TEST.produced with TEST.expected, printing a test failure report.
+Each TEST should be the name of a TEST.in file in the current directory.  It
+calls 'metamath TEST.mm < TEST.in > TEST.produced' and compares TEST.produced
+with TEST.expected, printing a test failure report.
 
 If TEST.mm does not exist, then it just calls metamath without arguments.
 
@@ -15,15 +15,15 @@ The 'metamath' command can be modified by setting the METAMATH environment
 variable, or via the '-c CMD' option (which takes priority).
 
 The --bless option can be used to update the TEST.expected file to match
-TEST.produced. Always review the changes after a call to run_test --bless.
+TEST.produced.  Always review the changes after a call to run_test --bless.
 
 TEST.in files have the syntax of metamath scripts, so leading ! can be used to
-write comments. This script contains some special directives in tests:
+write comments.  This script contains some special directives in tests:
 
 * '! run_test' means that the output will be ignored: TEST.produced will not be
   created and TEST.expected does not have to exist.
-* '! expect_fail' means that we expect metamath to return exit code 1
-  instead of 0 on this input.
+* '! expect_fail' means that we expect metamath to return exit code 1 instead
+  of 0 on this input.
 HELP
 }
 

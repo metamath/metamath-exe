@@ -39,7 +39,6 @@ extern int cprintf(const char *f__mt,...);
  */
 #define QUOTED_SPACE 3 /* ASCII 3 that temporarily zaps a space */
 
-
 int g_errorCount = 0;
 
 /* Global variables used by print2() */
@@ -112,7 +111,7 @@ flag localScrollMode = 1;
  * \ref printedLines.  The moment this value indicates a full page, a new empty
  * page is pushed on the stack, and output is suspended to let the user read
  * displayed contents in rest.  A user prompt asks for resuming pending output,
- * alternatively s/he may step backwards and forward through the sequence of
+ * or alternatively step backwards and forward through the sequence of
  * saved pages for redisplay.  The variable \ref backBufferPos tracks which
  * page the user requested last (or points to the currently built-up page).
  *
@@ -279,7 +278,6 @@ flag print2(const char* fmt, ...) {
           if (!backFromCmdInput)
             localScrollMode = 0; /* Continuous scroll */
           break;
-
         }
         if (backBufferPos > 1) {
           if (c == 'b' || c == 'B') {
@@ -316,11 +314,9 @@ flag print2(const char* fmt, ...) {
     }
   }
 
-
   /* User typed 'q' above or earlier; don't return if we're outputting to
     a string since we want to complete the writing to the string. */
   if (g_quitPrint && !g_outputToString) goto PRINT2_RETURN;
-
 
 /* step (4) evaluate the output text */
 
@@ -395,7 +391,6 @@ flag print2(const char* fmt, ...) {
       */
       fflush(stdout);
 #endif
-
     } else {
 
 /* step (7) print to screen, part 2 */
@@ -487,7 +482,6 @@ flag print2(const char* fmt, ...) {
  PRINT2_RETURN:
   return !g_quitPrint;
 }
-
 
 /* printLongLine automatically puts a newline \n in the output line. */
 /* startNextLine is the string to place before continuation lines. */
@@ -594,14 +588,12 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
     }
   } /* if (breakMatch1[0] == '\"') */
 
-
   /* The tilde is a special flag for printLongLine to print a
      tilde before the carriage return in a split line, not after */
   if (startNextLine1[0] == '~') {
     tildeFlag = 1;
     let(&startNextLine1, " ");
   }
-
 
   while (multiLine[0]) { /* While there are multiple caller-inserted newlines */
 
@@ -738,7 +730,6 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
       print2("%s\n",longLine);
     }
     g_screenWidth = saveScreenWidth; /* Restore to normal */
-
   } /* end while multiLine != "" */
 
   free_vstring(multiLine); /* Deallocate */
@@ -796,7 +787,6 @@ vstring cmdInput(FILE *stream, const char *ask) {
 #if __STDC__
       fflush(stdout);
 #endif
-
     } else {
       /* The last line in the file has no new-line */
       if (g[i - 1] != '\n') {
@@ -953,7 +943,6 @@ vstring cmdInput1(const char *ask) {
         /* Put line in list.tmp as comment */
         fprintf(g_listFile_fp, "! %s\n", commandLn);
       }
-
     } else { /* Get line from SUBMIT file */
       commandLn = cmdInput(g_commandFilePtr[g_commandFileNestingLevel], NULL);
       if (!commandLn) { /* EOF found */
@@ -985,7 +974,6 @@ vstring cmdInput1(const char *ask) {
   free_vstring(ask1);
   return commandLn;
 } /* cmdInput1 */
-
 
 void errorMessage(vstring line, long lineNum, long column, long tokenLength,
   vstring error, vstring fileName, long statementNum, flag severity)
@@ -1100,7 +1088,6 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
   if (line1) free_vstring(line1);
 } /* errorMessage() */
 
-
 /* Opens files with error message; opens output files with
    backup of previous version.   Mode must be "r" or "w" or "d" (delete). */
 FILE *fSafeOpen(const char *fileName, const char *mode, flag noVersioningFlag) {
@@ -1156,7 +1143,6 @@ FILE *fSafeOpen(const char *fileName, const char *mode, flag noVersioningFlag) {
 
 #endif
 
-
       /* See if the lowest version already exists. */
       let(&bakName, cat(prefix, str(1), postfix, NULL));
       fp = fopen(bakName, "r");
@@ -1193,7 +1179,6 @@ FILE *fSafeOpen(const char *fileName, const char *mode, flag noVersioningFlag) {
           let(&newBakName, cat(prefix, str((double)v + 1), postfix, NULL));
           rename(bakName/*old*/, newBakName/*new*/);
         }
-
       }
       let(&bakName, cat(prefix, str(1), postfix, NULL));
       rename(fileName, bakName);
@@ -1236,10 +1221,8 @@ FILE *fSafeOpen(const char *fileName, const char *mode, flag noVersioningFlag) {
   } /* End if mode = "w" or "d" */
 
   bug(1510); /* Illegal mode */
-  return(NULL);
-
+  return NULL;
 } /* fSafeOpen() */
-
 
 /* Renames a file with backup of previous version.  If non-zero
    is returned, there was an error. */
@@ -1284,7 +1267,6 @@ int fSafeRename(const char *oldFileName, const char *newFileName) {
   return error;
 } /* fSafeRename */
 
-
 /* Finds the name of the first file of the form filePrefix +
    nnn + ".tmp" that does not exist.  THE CALLER MUST DEALLOCATE
    THE RETURNED STRING [i.e. assign function return directly
@@ -1312,7 +1294,6 @@ vstring fGetTmpName(const char *filePrefix) {
   }
   return fname; /* Caller must deallocate! */
 } /* fGetTmpName() */
-
 
 /* This function returns a character string containing the entire contents of
    an ASCII file, or Unicode file with only ASCII characters.   On some
@@ -1482,7 +1463,6 @@ vstring readFileToString(const char *fileName, char verbose, long *charCount) {
   return (char *)fileBuf;
 } /* readFileToString */
 
-
 /* Returns total elapsed time in seconds since starting session (for the
    lcc compiler) or the CPU time used (for the gcc compiler).  The
    argument is assigned the time since the last call to this function. */
@@ -1503,7 +1483,6 @@ double getRunTime(double *timeSinceLastCall) {
   return 0;
 #endif
 }
-
 
 void freeInOu(void) {
   long i, j;

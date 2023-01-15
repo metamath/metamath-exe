@@ -85,7 +85,6 @@ void writeDict(void);
 void eraseSource(void);
 void verifyProofs(vstring labelMatch, flag verifyFlag);
 
-
 /*! If checkFiles = 0, do not open external files.
    If checkFiles = 1, check for presence of gifs and biblio file */
 void verifyMarkup(vstring labelMatch, flag dateCheck, flag topDateCheck,
@@ -146,5 +145,4 @@ extern vstring g_midiParam; /*!< Parameter string for MIDI file */
 void outputMidi(long plen, nmbrString *indentationLevels,
   nmbrString *logicalFlags, vstring g_midiParameter, vstring statementLabel);
 
-
-#endif /* METAMATH_MMCMDS_H_ */
+#endif // METAMATH_MMCMDS_H_

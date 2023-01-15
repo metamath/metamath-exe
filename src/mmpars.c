@@ -27,13 +27,11 @@ long g_numLabelKeys; /* Number of assertion labels */
 long *g_allLabelKeyBase; /* Start of all labels */
 long g_numAllLabelKeys; /* Number of all labels */
 
-
 /* Working structure for parsing proofs */
 /* This structure should be deallocated by the ERASE command. */
 long g_wrkProofMaxSize = 0; /* Maximum size so far - it may grow */
 long wrkMathPoolMaxSize = 0; /* Max mathStringPool size so far - it may grow */
 struct wrkProof_struct g_WrkProof;
-
 
 /* This function returns a pointer to a buffer containing the contents of an
    input file and its 'include' calls.  'Size' returns the buffer's size.
@@ -82,7 +80,6 @@ char *readRawSource(vstring fileBuf, long *size) {
       fbPtr++;
       continue;
     }
-
 
     /* Detect missing whitespace around keywords (per current
        Metamath language spec) */
@@ -136,7 +133,6 @@ char *readRawSource(vstring fileBuf, long *size) {
           /* $[ ... $] should have been processed by readSourceAndIncludes() */
           rawSourceError(fileBuf, fbPtr - 1, 2,
               "\"$[\" is unterminated or has ill-formed \"$]\".");
-
         }
         continue;
       case ']':
@@ -169,8 +165,7 @@ char *readRawSource(vstring fileBuf, long *size) {
   print2("%ld bytes were read into the source buffer.\n", charCount);
 
   if (*size != charCount) bug(1761);
-  return (fileBuf);
-
+  return fileBuf;
 } /* readRawSource */
 
 /* This function initializes the g_Statement[] structure array and assigns
@@ -415,14 +410,12 @@ void parseKeywords(void)
      pinkHTML() in mmwtex.c */
   g_Statement[g_statements].pinkNumber = j;
 
-
 /*E*/if(db5){for (i=1; i<=g_statements; i++){
 /*E*/  if (i == 5) { print2("(etc.)\n");} else { if (i<5) {
 /*E*/  assignStmtFileAndLineNum(i);
 /*E*/  print2("Statement %ld: line %ld file %s.\n",i,g_Statement[i].lineNum,
 /*E*/      g_Statement[i].fileName);
 /*E*/}}}}
-
 }
 
 /* This function parses the label sections of the g_Statement[] structure array.
@@ -442,7 +435,6 @@ void parseLabels(void) {
   illegalLabelChar['-'] = 0;
   illegalLabelChar['_'] = 0;
   illegalLabelChar['.'] = 0;
-
 
   /* Scan all statements and extract their labels */
   for (stmt = 1; stmt <= g_statements; stmt++) {
@@ -522,7 +514,6 @@ void parseLabels(void) {
 /*E*/    print2("%s ",g_Statement[g_labelKeyBase[i]].labelName);
 /*E*/  } print2("\n");}
 
-
   /* Copy the keys for all possible labels for lookup by the
      squishProof command when local labels are generated in packed proofs. */
   g_allLabelKeyBase = malloc((size_t)g_numLabelKeys * sizeof(long));
@@ -554,7 +545,6 @@ void parseLabels(void) {
          "This label is declared more than once.  All labels must be unique.");
     }
   }
-
 }
 
 /* This functions retrieves all possible math symbols from $c and $v
@@ -618,7 +608,6 @@ void parseMathDecl(void) {
           g_MathToken[g_mathTokens].endStatement = g_statements; /* Unknown for now */
                 /* (Assign to 'g_statements' in case it's active until the end) */
           g_mathTokens++;
-
         }
 
         /* Create the symbol list for this statement */
@@ -657,7 +646,6 @@ void parseMathDecl(void) {
   g_MathToken[g_mathTokens].statement = 0; /* Never used */
   g_MathToken[g_mathTokens].endStatement = g_statements; /* Never used */
 
-
   /* Sort the math symbols for later lookup */
   g_mathKey = malloc((size_t)g_mathTokens * sizeof(long));
   if (!g_mathKey) outOfMemory("#11 (g_mathKey)");
@@ -670,7 +658,6 @@ void parseMathDecl(void) {
 /*E*/    if (i >= g_mathTokens) break;
 /*E*/    print2("%s ",g_MathToken[g_mathKey[i]].tokenName);
 /*E*/  } print2("\n");}
-
 
   /* Check for labels with the same name as math tokens */
   /* (This section implements the Metamath spec change proposed by O'Cat that
@@ -701,7 +688,6 @@ void parseMathDecl(void) {
     }
   }
 }
-
 
 /* This functions parses statement contents, except for proofs */
 void parseStatements(void) {
@@ -765,7 +751,6 @@ void parseStatements(void) {
   nmbrString *wrkHypPtr3;
   long activeHypStackSize = 30; /* Starting value; could be as large as
                                    g_statements. */
-
 
   struct activeDisjHypStack_struct { /* Stack of disjoint variables in $d's */
     long tokenNumA; /* First variable in disjoint pair */
@@ -999,7 +984,6 @@ void parseStatements(void) {
           }
         }
 
-
         i = 0; /* Symbol position in mathString */
         nmbrTmpPtr = g_Statement[stmt].mathString;
         while (1) {
@@ -1029,7 +1013,6 @@ void parseStatements(void) {
                 }
               }
             }
-
 
             /* Make sure that no constant has the same name
                as a variable or vice-versa */
@@ -1263,7 +1246,6 @@ void parseStatements(void) {
           }
         }
 
-
         /* Assign mathString to statement array */
         nmbrTmpPtr = poolFixedMalloc(
             (mathStringLen + 1) * (long)(sizeof(nmbrString)));
@@ -1279,7 +1261,6 @@ void parseStatements(void) {
         break;  /* Switch case break */
       default:
         bug(1707);
-
     } /* End switch */
 
     /****** Process hypothesis and variable stacks *******/
@@ -1295,9 +1276,7 @@ void parseStatements(void) {
       case p_:
         /* Flag the label as active */
         labelActiveFlag[stmt] = 1;
-
     } /* End switch */
-
 
     switch (type) {
       case d_:
@@ -1369,7 +1348,6 @@ void parseStatements(void) {
 
               activeDisjHypStackPtr++;
             }
-
           } /* Next j */
         } /* Next i */
 
@@ -1565,9 +1543,7 @@ void parseStatements(void) {
             j++;
             tokenNum = nmbrTmpPtr[j];
           } /* End while */
-
         } /* Next i */
-
 
         /* Error check:  make sure that all variables in the original statement
            appeared in some hypothesis */
@@ -1589,7 +1565,6 @@ void parseStatements(void) {
           j++;
           k = nmbrTmpPtr[j];
         }
-
 
         /* We have finished determining required $e & $f hyps, so allocate the
            permanent list for the statement array */
@@ -1636,7 +1611,6 @@ void parseStatements(void) {
           nmbrTmpPtr[optHyps] = -1;
           g_Statement[stmt].optHypList = nmbrTmpPtr;
         }
-
 
         /* Scan the list of disjoint variable ($d) hypotheses to find those
            that are required */
@@ -1714,9 +1688,7 @@ void parseStatements(void) {
               * sizeof(nmbrString));
           nmbrTmpPtr[optHyps] = -1;
           g_Statement[stmt].optDisjVarsStmt = nmbrTmpPtr;
-
         }
-
 
         /* Create list of optional variables (i.e. active but not required) */
         optVars = 0;
@@ -1739,7 +1711,6 @@ void parseStatements(void) {
         }
 
         if (optVars + reqVars != activeVarStackPtr) bug(1708);
-
 
         break;  /* Switch case break */
     }
@@ -1843,7 +1814,6 @@ void parseStatements(void) {
         } /* if not $f else is $f */
       } /* next i ($e hyp scan of this statement, or its $a/$p) */
     } /* if stmt is $a or $p */
-
   } /* Next stmt */
 
   if (g_currentScope > 0) {
@@ -1856,7 +1826,6 @@ void parseStatements(void) {
         g_Statement[g_statements].labelSectionLen, 2, 0,
         cat(tmpStr," missing at the end of the file.",NULL));
   }
-
 
   /* Filter out all hypothesis labels from the label key array.  We do not
      need them anymore, since they are stored locally in each statement
@@ -1875,7 +1844,6 @@ void parseStatements(void) {
   }
   g_numLabelKeys = g_numLabelKeys - j;
 /*E*/if(db5)print2(".  After: %ld\n",g_numLabelKeys);
-
 
   /* Deallocate temporary space */
   free(mathTokenSameAs);
@@ -1910,7 +1878,6 @@ void parseStatements(void) {
   free(symbolLenExists);
   free_vstring(tmpStr);
 }
-
 
 /* Parse proof of one statement in source file.  Uses g_WrkProof structure. */
 /* Returns 0 if OK; returns 1 if proof is incomplete (is empty or has '?'
@@ -2091,7 +2058,6 @@ char parseProof(long statemNum)
   qsort(g_WrkProof.hypAndLocLabel, (size_t)(g_WrkProof.numHypAndLoc),
       sizeof(struct sortHypAndLoc), hypAndLocSortCmp);
 
-
   /* Scan the parsed tokens for local label assignments */
   fbPtr = g_WrkProof.tokenSrcPtrPntr[0];
   if (fbPtr[0] == ':') {
@@ -2223,7 +2189,6 @@ char parseProof(long statemNum)
 
     g_WrkProof.numHypAndLoc++;
     g_WrkProof.localLabelPoolPtr = &g_WrkProof.localLabelPoolPtr[tokLength + 1];
-
   } /* Next i */
 
   /* Collect all target labels in /EXPLICIT format */
@@ -2313,7 +2278,6 @@ char parseProof(long statemNum)
         if (returnFlag < 2) returnFlag = 2;
       } /* End if duplicate label */
     } /* Next i */
-
   } /* End if there are local labels */
 
   /* Build the proof string and check the RPN stack */
@@ -2536,7 +2500,6 @@ char parseProof(long statemNum)
           m = g_WrkProof.RPNStackPtr - numReqHyp + k; /* Stack position of hyp */
           hypStepNum = g_WrkProof.RPNStack[m]; /* Step number of hypothesis k */
 
-
           /* Temporarily zap the token's end with a null for string comparisons */
           fbPtr = targetPntr[hypStepNum];
           zapSave = fbPtr[targetNmbr[hypStepNum]];
@@ -2611,7 +2574,6 @@ char parseProof(long statemNum)
     g_WrkProof.RPNStackPtr = g_WrkProof.RPNStackPtr - numReqHyp;
     g_WrkProof.RPNStack[g_WrkProof.RPNStackPtr] = step;
     g_WrkProof.RPNStackPtr++;
-
   } /* Next step */
 
   /* The stack should have one entry */
@@ -2749,7 +2711,6 @@ char parseProof(long statemNum)
               (g_WrkProof.proofString)[i] = wrkProofString[i];
             }
             break; /* Break out of the 'for (step...' loop */
-
           } /* if k>step */
         } /* if k<= -1000 */
       } /* next step */
@@ -2763,10 +2724,8 @@ char parseProof(long statemNum)
   } /* if (explicitTargets) */
 
   g_WrkProof.errorSeverity = returnFlag;
-  return (returnFlag);
-
+  return returnFlag;
 } /* parseProof() */
-
 
 /* Parse proof in compressed format */
 /* Parse proof of one statement in source file.  Uses wrkProof structure. */
@@ -2847,7 +2806,6 @@ char parseCompressedProof(long statemNum)
     chrType['$'] = 4; /* Dollar */
     chrType['?'] = 5; /* Question mark */
   }
-
 
   if (g_Statement[statemNum].type != p_) {
     bug(1724); /* should never get here */
@@ -2930,7 +2888,6 @@ char parseCompressedProof(long statemNum)
 
   fbPtr++;
   /* fbPtr points to the first token now. */
-
 
   /****** This part of the code is heavily borrowed from the regular
    ****** proof parsing, with local label and RPN handling removed,
@@ -3076,7 +3033,6 @@ char parseCompressedProof(long statemNum)
       g_WrkProof.errorCount++;
       if (returnFlag < 2) returnFlag = 2;
     }
-
   } /* Next step */
 
   /******* Create the starting label map (local labels will be
@@ -3214,7 +3170,6 @@ char parseCompressedProof(long statemNum)
           g_WrkProof.RPNStackPtr = g_WrkProof.RPNStackPtr - numReqHyp;
           g_WrkProof.RPNStack[g_WrkProof.RPNStackPtr] = g_WrkProof.numSteps;
           g_WrkProof.RPNStackPtr++;
-
         }
 
         g_WrkProof.numSteps++;
@@ -3355,7 +3310,6 @@ char parseCompressedProof(long statemNum)
 
     if (breakFlag) break;
     fbPtr++;
-
   } /* End while (1) */
 
   if (labelMapIndex) { /* In the middle of some digits */
@@ -3410,10 +3364,8 @@ char parseCompressedProof(long statemNum)
   }
 
   g_WrkProof.errorSeverity = returnFlag;
-  return (returnFlag);
-
+  return returnFlag;
 } /* parseCompressedProof */
-
 
 /* The caller must deallocate the returned nmbrString! */
 /* This function just gets the proof so the caller doesn't have to worry
@@ -3448,7 +3400,6 @@ nmbrString *getProof(long statemNum, flag printFlag) {
   /* cleanWrkProof(); */ /* Deallocate verifyProof() storage */
   return proof;
 } /* getProof */
-
 
 void rawSourceError(char *startFile, char *ptr, long tokLen, vstring errMsg) {
   char *startLine;
@@ -3586,7 +3537,6 @@ void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
   free_vstring(fileName);
 } /* sourceError */
 
-
 void mathTokenError(long tokenNum /* 0 is 1st one */,
     nmbrString *tokenList, long stmtNum, vstring errMsg)
 {
@@ -3662,7 +3612,6 @@ long lookupLabel(const char *label)
   return statemNum;
 } /* lookupLabel */
 
-
 /* Label comparison for qsort */
 int labelSortCmp(const void *key1, const void *key2) {
   /* Returns -1 if key1 < key2, 0 if equal, 1 if key1 > key2 */
@@ -3670,13 +3619,11 @@ int labelSortCmp(const void *key1, const void *key2) {
       g_Statement[ *((long *)key2) ].labelName);
 } /* labelSortCmp */
 
-
 /* Label comparison for bsearch */
 int labelSrchCmp(const void *key, const void *data) {
   /* Returns -1 if key < data, 0 if equal, 1 if key > data */
   return strcmp(key, g_Statement[ *((long *)data) ].labelName);
 } /* labelSrchCmp */
-
 
 /* Math symbol comparison for qsort */
 int mathSortCmp(const void *key1, const void *key2) {
@@ -3685,14 +3632,12 @@ int mathSortCmp(const void *key1, const void *key2) {
       g_MathToken[ *((long *)key2) ].tokenName);
 }
 
-
 /* Math symbol comparison for bsearch */
 /* Here, key is pointer to a character string. */
 int mathSrchCmp(const void *key, const void *data) {
   /* Returns -1 if key < data, 0 if equal, 1 if key > data */
   return strcmp(key, g_MathToken[ *((long *)data) ].tokenName);
 }
-
 
 /* Hypotheses and local label comparison for qsort */
 int hypAndLocSortCmp(const void *key1, const void *key2) {
@@ -3702,14 +3647,12 @@ int hypAndLocSortCmp(const void *key1, const void *key2) {
     ((struct sortHypAndLoc *)key2)->labelName);
 }
 
-
 /* Hypotheses and local label comparison for bsearch */
 /* Here, key is pointer to a character string. */
 int hypAndLocSrchCmp(const void *key, const void *data) {
   /* Returns -1 if key < data, 0 if equal, 1 if key > data */
   return strcmp(key, ((struct sortHypAndLoc *)data)->labelName);
 }
-
 
 /* This function returns the length of the white space starting at ptr.
    Comments are considered white space.  ptr should point to the first character
@@ -3761,7 +3704,6 @@ long whiteSpaceLen(char *ptr) {
   return 0; /* Dummy return - never happens */
 } /* whiteSpaceLen */
 
-
 /* For .mm file splitting */
 /* This function is like whiteSpaceLen() except that comments are NOT
    considered white space.  ptr should point to the first character
@@ -3778,7 +3720,6 @@ long rawWhiteSpaceLen(char *ptr) {
   }
   return 0; /* Dummy return - never happens */
 } /* rawWhiteSpaceLen */
-
 
 /* This function returns the length of the token (non-white-space) starting at
    ptr.  Comments are considered white space.  ptr should point to the first
@@ -3815,7 +3756,6 @@ long tokenLen(char *ptr)
   return 0; /* Dummy return (never happens) */
 } /* tokenLen */
 
-
 /* This function returns the length of the token (non-white-space) starting at
    ptr.  Comments are considered white space.  ptr should point to the first
    character of the token.  If ptr points to a white space character, 0
@@ -3836,7 +3776,6 @@ long rawTokenLen(char *ptr)
   }
   return 0; /* Dummy return (never happens) */
 } /* rawTokenLen */
-
 
 /* This function returns the length of the proof token starting at
    ptr.  Comments are considered white space.  ptr should point to the first
@@ -3874,7 +3813,6 @@ long proofTokenLen(char *ptr)
   return 0; /* Dummy return - never happens */
 }
 
-
 /* Counts the number of \n between start for length chars.
    If length = -1, then use end-of-string 0 to stop.
    If length >= 0, then scan at most length chars, but stop
@@ -3897,7 +3835,6 @@ long countLines(const char *start, long length) {
   }
   return lines;
 } /* countLines */
-
 
 /* Return (for output) the complete contents of a statement, including all
    white space and comments, from first token through all white space and
@@ -3960,7 +3897,6 @@ vstring outputStatement(long stmt, flag reformatFlag) {
   let(&labelSectionSave, labelSection);
   let(&mathSectionSave, mathSection);
   let(&proofSectionSave, proofSection);
-
 
   /* Reformat statements to match the current set.mm convention */
   if (reformatFlag > 0) {  /* 1 = WRITE SOURCE / FORMAT or 2 = / REWRAP */
@@ -4291,7 +4227,6 @@ vstring outputStatement(long stmt, flag reformatFlag) {
       let(&output, cat(output, "$=", proofSection, NULL));
     }
     let(&output, cat(output, "$.", NULL));
-
   }
 
   /* Make sure the line has no carriage-returns */
@@ -4504,7 +4439,6 @@ vstring rewrapComment(const char *comment1) {
     }
   }
 
-
   /* Put two spaces after end of sentence and colon */
   ch = ""; /* Prevent compiler warning */
   for (i = 0; i < 4; i++) {
@@ -4629,10 +4563,8 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
   vstring_def(tmpStr);
   vstring_def(nlUserText);
 
-
   long *mathTokenSameAs; /* Flag that symbol is unique (for speed up) */
   long *reverseMathKey; /* Map from g_mathTokens to g_mathKey */
-
 
   /* Temporary working space */
   long wrkLen;
@@ -4717,9 +4649,7 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
     symbolLenExists[g_MathToken[i].length] = 1;
   }
 
-
   g_currentScope = g_Statement[statemNum].scope; /* Scope of the ref. statement */
-
 
   /* The code below is indented because it was borrowed from parseStatements().
      We will leave the indentation intact for easier future comparison
@@ -4822,7 +4752,6 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
             } /* End if fbPtr == '$' */
          } /* End if symbolLen == 0 */
 
-
           if (symbolLen == 0) { /* Symbol was not found */
             symbolLen = tokenLen(fbPtr);
             errCount++;
@@ -4850,7 +4779,6 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
           }
         } /* End while */
 
-
         /* Assign mathString */
         nmbrLet(&mathString, nmbrSpace(mathStringLen));
         for (i = 0; i < mathStringLen; i++) {
@@ -4873,7 +4801,6 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
 
   return nmbrMakeTempAlloc(mathString); /* Flag for dealloc */
 } /* parseMathTokens */
-
 
 /* For .mm file splitting */
 /* Get the next real $[...$] or virtual $( Begin $[... inclusion */
@@ -5105,7 +5032,6 @@ cmdType = 'S':
         break;
       }
       tmpPtr++;
-
     } /* while (1) */
 
     if (i == 0) {
@@ -5130,9 +5056,7 @@ cmdType = 'S':
     free_vstring(*fileName);
   }
   return;
-
 } /* getNextInclusion */
-
 
 /* This function transfers the content of the g_Statement[] array
    to a linear buffer in preparation for creating the output file.
@@ -5243,7 +5167,6 @@ vstring writeSourceToBuffer(void) {
   buf[size] = 0; /* End of string marker */
   return buf;
 } /* writeSourceToBuffer */
-
 
 /* This function creates split files containing $[ $] inclusions, from
    an unsplit source with $( Begin $[... etc. inclusions */
@@ -5390,7 +5313,6 @@ vstring writeSourceToBuffer(void) {
   free_vstring(fileNameWithPath);
 } /* writeSplitSource */
 
-
 /* When "write source" does not have the "/split" qualifier, by default
    (i.e. without "/no_delete") the included modules are "deleted" (renamed
    to ~1) since their content will be in the main output file. */
@@ -5461,7 +5383,6 @@ vstring writeSourceToBuffer(void) {
   return;
 } /* deleteSplits */
 
-
 /* Get file name and line number given a pointer into the read buffer */
 /* The user must deallocate the returned string (file name) */
 /* The global g_IncludeCall structure and g_includeCalls are used */
@@ -5501,7 +5422,6 @@ vstring getFileAndLineNum(const char *buffPtr /* start of read buffer */,
   return fileName;
 } /* getFileAndLineNo */
 
-
 /* g_Statement[stmtNum].fileName and .lineNum are initialized to "" and 0.
    To save CPU time, they aren't normally assigned until needed, but once
    assigned they can be reused without looking them up again.  This function
@@ -5517,7 +5437,6 @@ void assignStmtFileAndLineNum(long stmtNum) {
       g_Statement[stmtNum].statementPtr, &(g_Statement[stmtNum].lineNum));
   return;
 } /* assignStmtFileAndLineNum */
-
 
 /* This function returns a pointer to a buffer containing the contents of an
    input file and its 'include' calls.  'Size' returns the buffer's size.  */
@@ -5613,7 +5532,6 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
           - g_IncludeCall[g_includeCalls].current_offset);\
     */
 
-
     /* If we're here, cmdType is 'B', 'I', or 'S' */
 
     /* Create 2 new includeCall entries before recursive call, so that
@@ -5648,7 +5566,6 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
     g_IncludeCall[saveInclCalls].included_fn = "";
     let(&g_IncludeCall[saveInclCalls].included_fn,
         sourceFileName); /* Continuation of parent file after this include */
-
 
     /* See if includeFn file has already been included */
     alreadyInclBy = -1;
@@ -5977,7 +5894,6 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
     g_IncludeCall[saveInclCalls - 1].current_includeLength = inclSize; /* Length of the file
         to be included (0 if the file was previously included) */
 
-
     /* Initialize a new include call for the continuation of the parent. */
     /* This entry is identified by pushOrPop = 1 */
     g_IncludeCall[saveInclCalls].source_fn = "";  /* Name of the file to be
@@ -5992,7 +5908,6 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
         only if we may need it for a later Begin comparison */
     g_IncludeCall[saveInclCalls].current_includeLength = 0; /* Length of the file
         to be included (0 if the file was previously included) */
-
   } /* while (1) */
 
   /* Deallocate strings */
@@ -6007,7 +5922,6 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
 
   return newFileBuf;
 } /* readInclude */
-
 
 /* This function returns a pointer to a buffer containing the contents of an
    input file and its 'include' calls.  'Size' returns the buffer's size.  */
@@ -6115,6 +6029,5 @@ vstring readSourceAndIncludes(const char *inputFn /*input*/, long *size /*output
 /*D*//*g_IncludeCall[i].current_offset,g_IncludeCall[i].current_includeLength); */
     return newFileBuf;
   }
-
 } /* readSourceAndIncludes */
 

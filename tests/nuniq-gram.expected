@@ -1,6 +1,6 @@
 MM> READ "nuniq-gram.mm"
-Reading source file "nuniq-gram.mm"... 449 bytes
-449 bytes were read into the source buffer.
+Reading source file "nuniq-gram.mm"... 448 bytes
+448 bytes were read into the source buffer.
 The source has 7 statements; 3 are $a and 0 are $p.
 No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
 if you want to check them.

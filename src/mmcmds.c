@@ -24,7 +24,6 @@
 vstring bigAdd(vstring bignum1, vstring bignum2);
 vstring bigSub(vstring bignum1, vstring bignum2);
 
-
 /* For HTML output */
 vstring_def(g_printStringForReferencedBy);
 
@@ -303,7 +302,6 @@ void typeStatement(long showStmt,
             str2 = tokenToTex(g_MathToken[nmbrTmpPtr1[k]].tokenName, showStmt);
                  /* tokenToTex allocates str2; we must deallocate it */
             let(&htmlDistinctVars, cat(htmlDistinctVars, str2, NULL));
-
           }
           nmbrLet(&nmbrDDList, nmbrAddElement(nmbrDDList, nmbrTmpPtr1[k]));
         }
@@ -321,7 +319,6 @@ void typeStatement(long showStmt,
             str2 = tokenToTex(g_MathToken[nmbrTmpPtr2[k]].tokenName, showStmt);
                  /* tokenToTex allocates str2; we must deallocate it */
             let(&htmlDistinctVars, cat(htmlDistinctVars, str2, NULL));
-
           }
           nmbrLet(&nmbrDDList, nmbrAddElement(nmbrDDList, nmbrTmpPtr2[k]));
         }
@@ -352,7 +349,6 @@ void typeStatement(long showStmt,
         if (g_Statement[g_Statement[showStmt].reqHypList[i]].type
           == (char)f_) k++;
       }
-
     }
     if (k) {
       if (texFlag) {
@@ -456,7 +452,6 @@ void typeStatement(long showStmt,
         /* print2("    \\label{eq:%s}\n",g_Statement[showStmt].labelName); */
         print2("\\end{align}\n");
 
-
         /* Distinguish axiom, definition, theorem for LaTeX */
         /* Note: changes here must be mirrored in the \begin{...} above */
         if (g_Statement[showStmt].type == a_) {
@@ -473,7 +468,6 @@ void typeStatement(long showStmt,
         fprintf(g_texFilePtr, "%s", g_printString);
         let(&g_printString, "");
         g_outputToString = 0;
-
       } else { /* old TeX code */
         let(&str3, space((long)strlen(str2))); /* 3rd argument of printTexLongMath
             cannot be temp allocated */
@@ -597,7 +591,6 @@ void typeStatement(long showStmt,
         }
       } /* if (i && type == p_) */
 
-
       if (texFlag && htmlFlag) { /* It's a web page */
 
         if (htmlDistinctVars[0] != 0) {
@@ -634,7 +627,6 @@ void typeStatement(long showStmt,
           printLongLine(str2, "", "\"");
           g_outputToString = 0;
         }
-
       } /* if (texFlag && htmlFlag) */
 
       if (texFlag) {
@@ -739,7 +731,6 @@ void typeStatement(long showStmt,
       } /* Next i */
     } /* if (subType == SYNTAX) */
 
-
     /* For definitions, we pretend that the definition is a "wff" (hard-coded
        here; the .mm database provided by the user must use this convention).
        We use the proof assistant tools to prove that the statement is
@@ -823,7 +814,6 @@ void typeStatement(long showStmt,
           /* Deallocate storage */
           free_vstring(str1);
           free_nmbrString(nmbrTmpPtr2);
-
         } else { /* if (nmbrLen(nmbrTmpPtr2)) else */
           /* Proof was not found - probable syntax error */
           if (g_outputToString != 0) bug(246);
@@ -833,22 +823,16 @@ void typeStatement(long showStmt,
               "\".", NULL), "    ", " ");
         }
 
-
         /* Restore the zapped statement structure */
         g_Statement[showStmt].type = (char)a_;
         (g_Statement[showStmt].mathString)[0] = zapStatement1stToken;
 
         /* Deallocate storage */
         free_nmbrString(nmbrTmpPtr1);
-
       } /* if (wffToken >= 0) */
-
     } /* if (subType == DEFINITION) */
-
-
   } /* if (htmlFlag && texFlag) */
   /* End of finding definition for syntax statement */
-
 
   /* Start of creating used-by list for html page */
   if (htmlFlag && texFlag) {
@@ -914,13 +898,10 @@ void typeStatement(long showStmt,
             let(&str2, "");
           }
         } /* next m (statement number) */
-
-
       } else {
         /* There is no usage of this statement; print "(None)" */
         let(&str5, "");
         let(&str2, cat(str2, " (None)", NULL));
-
       } /* if (str1[0] == 'Y') */
       /* Include buffer in output string */
       let(&str2, cat(str5, str2, "</FONT></TD></TR>", NULL));
@@ -946,7 +927,6 @@ void typeStatement(long showStmt,
     g_outputToString = 0;
   } /* if (htmlFlag && texFlag) */
   /* End of used-by list for html page */
-
 
   /* After the block above, so referenced statements
      show up first for convenience */
@@ -987,7 +967,6 @@ void typeStatement(long showStmt,
   free_vstring(str5);
   free_vstring(htmlDistinctVars);
 } /* typeStatement */
-
 
 /* Get the HTML string of dummy variables used by a proof for the
    theorem's web page.  It should be called only if we're in
@@ -1110,7 +1089,6 @@ vstring htmlDummyVars(long showStmt)
         NULL));
   } /* htmlDummyVars */
 
-
  RETURN_POINT:
   /* Deallocate strings */
   free_vstring(dummyVarUsed);
@@ -1118,7 +1096,6 @@ vstring htmlDummyVars(long showStmt)
 
   return htmlDummyVarList;
 } /* htmlDummyVars */
-
 
 /* Get the HTML string of "allowed substitutions" list for an axiom
    or theorem's web page.  It should be called only if we're in
@@ -1259,7 +1236,6 @@ vstring htmlAllowedSubst(long showStmt)
       }
     }
     let(&htmlAllowedList, cat(htmlAllowedList, ")", NULL));
-
   } /* next i (wff or class var) */
 
  RETURN_POINT:
@@ -1290,7 +1266,6 @@ vstring htmlAllowedSubst(long showStmt)
 
   return htmlAllowedList;
 } /* htmlAllowedSubst */
-
 
 /* Displays a proof (or part of a proof, depending on arguments). */
 /* Note that parseProof() and verifyProof() are assumed to have been called,
@@ -1415,7 +1390,6 @@ void typeProof(long statemNum,
 
   if (htmlFlag && texFlag) {
 
-
     g_outputToString = 1; /* Flag for print2 to add to g_printString */
     if (essentialFlag) {
 
@@ -1527,7 +1501,6 @@ void typeProof(long statemNum,
     } /* next step */
   }
 
-
   /* Collect local labels */
   for (step = 0; step < plen; step++) {
     stmt = proof[step];
@@ -1632,7 +1605,6 @@ void typeProof(long statemNum,
     }
   }
 
-
   /* Get local labels and maximum label length */
   /* lent = target length, lens = source length */
   for (step = 0; step < plen; step++) {
@@ -1657,7 +1629,6 @@ void typeProof(long statemNum,
            the proof display, but this is felt to be too rare to be a serious
            drawback. */
         localLabelNames[step] = stepRenumber[step];
-
       }
       lens = (long)strlen(g_Statement[stmt].labelName);
     }
@@ -1800,13 +1771,11 @@ void typeProof(long statemNum,
           /* Add hypothesis list after label */
           let(&srcLabel, cat(hypStr, " ", srcLabel, NULL));
         }
-
       } else {
         let(&srcLabel, cat("=", g_Statement[stmt].labelName, NULL));
       }
       type = g_Statement[stmt].type;
     }
-
 
 #define PF_INDENT_INC 2
     /* Print the proof line */
@@ -1859,8 +1828,8 @@ void typeProof(long statemNum,
             str((double)(stepRenumber[step])),
             tmpStr,
             " ", NULL));
-        let(&startStringWithoutNum, space(maxStepNumLen + 1));
 
+        let(&startStringWithoutNum, space(maxStepNumLen + 1));
 
         let(&startPrefix, cat(
             startStringWithNum,
@@ -1917,7 +1886,6 @@ void typeProof(long statemNum,
               cat(startPrefix, " $", chr(type), " ", NULL),
               contPrefix, stmt, indentationLevel[step]);
         }
-
       } else { /* pipFlag */
         if (texFlag) {
           /* It doesn't make sense to do this and it hasn't been tested anyway */
@@ -1959,10 +1927,8 @@ void typeProof(long statemNum,
                 cat(startPrefix, " $", chr(type), " ", NULL),
                 contPrefix, 0, 0);
           }
-
         }
         if (nmbrLen(g_ProofInProgress.user[step])) {
-
           if (!texFlag) {
             printLongLine(cat(userPrefix, "  = ",
                 nmbrCvtMToVString(g_ProofInProgress.user[step]),
@@ -1974,12 +1940,9 @@ void typeProof(long statemNum,
                 cat(userPrefix, "  = ", NULL),
                 contPrefix, 0, 0);
           }
-
         }
       }
     }
-
-
   } /* Next step */
 
   if (!pipFlag) {
@@ -2176,8 +2139,6 @@ void typeProof(long statemNum,
           let(&tmpStr, cat(tmpStr, "<A HREF=\"",
               g_Statement[stmt].labelName, ".html\">",
               g_Statement[stmt].labelName, "</A>", tmpStr1, NULL));
-
-
         }
       }
       if (tmpStr[0]) {
@@ -2186,7 +2147,6 @@ void typeProof(long statemNum,
         printLongLine(tmpStr, "", "\"");
       }
       /* End of syntax hints list */
-
 
       /* Get list of axioms and definitions assumed by proof */
       free_vstring(statementUsedFlags);
@@ -2256,7 +2216,6 @@ void typeProof(long statemNum,
 "<TR><TD ALIGN=left >&nbsp;<B><FONT COLOR=\"#FF6600\">",
 "WARNING: This theorem has an incomplete proof.</FONT></B><BR></TD></TR>",
               NULL), "", "\"");
-
         } else {
           printLongLine(cat(
 "<TR><TD ALIGN=left >&nbsp;</TD><TD><B><FONT COLOR=\"#FF6600\">",
@@ -2285,9 +2244,7 @@ void typeProof(long statemNum,
            g_printStringForReferencedBy should never be empty */
         bug(263);
       }
-
     }  /* if essentialFlag */
-
 
     /* Printing of the trailer in mmwtex.c will close out string later */
     g_outputToString = 0;
@@ -2353,7 +2310,6 @@ void showDetailStep(long statemNum, long detailStep) {
   getStep.stepNum = detailStep; /* Non-zero is flag for verifyProof */
   parseProof(statemNum); /* ???Do we need to do this again? */
   verifyProof(statemNum);
-
 
   nmbrLet(&proof, g_WrkProof.proofString); /* The proof */
   plen = nmbrLen(proof);
@@ -2618,7 +2574,6 @@ void showDetailStep(long statemNum, long detailStep) {
   free_nmbrString(localLabelNames);
   free_nmbrString(proof);
   free_nmbrString(targetHyps);
-
 } /* showDetailStep */
 
 /* Summary of statements in proof for SHOW PROOF / STATEMENT_SUMMARY */
@@ -2791,7 +2746,6 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
         printTexLongMath(g_Statement[stmt].mathString,
             str2, str3, 0, 0);
       }
-
     } /* End if (statementUsedFlag[stmt] == 'Y') */
   } /* Next stmt */
 
@@ -2802,9 +2756,7 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
   free_nmbrString(statementList);
   free_nmbrString(proof);
   free_nmbrString(essentialFlags);
-
 } /* proofStmtSumm */
-
 
 /* Traces back the statements used by a proof, recursively. */
 /* Returns 1 if at least one label is printed (or would be printed in
@@ -3029,7 +2981,6 @@ void traceProofWork(long statemNum,
   free_nmbrString(statementList);
   free_vstring(str1);
   return;
-
 } /* traceProofWork */
 
 nmbrString_def(stmtFoundList);
@@ -3059,7 +3010,6 @@ void traceProofTree(long statemNum,
   free_nmbrString(stmtFoundList);
 } /* traceProofTree */
 
-
 void traceProofTreeRec(long statemNum,
   flag essentialFlag, long endIndent, long recursDepth)
 {
@@ -3070,7 +3020,6 @@ void traceProofTreeRec(long statemNum,
   flag unprovedFlag = 0;
   nmbrString_def(proof);
   nmbrString_def(essentialFlags);
-
 
   free_vstring(outputStr);
   outputStr = getDescription(statemNum); /* Get statement comment */
@@ -3195,9 +3144,7 @@ void traceProofTreeRec(long statemNum,
   free_nmbrString(localPrintedList);
   free_nmbrString(proof);
   free_nmbrString(essentialFlags);
-
 } /* traceProofTreeRec */
-
 
 /* Called by SHOW TRACE_BACK <label> / COUNT_STEPS */
 /* Counts the number of steps a completely exploded proof would require */
@@ -3347,7 +3294,6 @@ double countSteps(long statemNum, flag essentialFlag)
             free_vstring(tmpBig1);
             tmpBig1 = bigSub(stepBigCount, "1");
             let(&stepBigCount, tmpBig1);
-
           }
         }
       }
@@ -3359,7 +3305,6 @@ double countSteps(long statemNum, flag essentialFlag)
       stepNodeCount = stepNodeCount + stmtNodeCount[stmt];
       stepDistSum = stepDistSum + stmtAveDist[stmt] + 1;
     }
-
   } /* Next step */
 
  returnPoint:
@@ -3438,7 +3383,6 @@ double countSteps(long statemNum, flag essentialFlag)
                  " x 10^",
                  str((double)strlen(stepBigCount) - 1), NULL),
 
-
        " steps if fully expanded back to axiom references.  ",
        "The maximum path length is ",
        str((double)(stmtDist[statemNum])),
@@ -3459,7 +3403,6 @@ double countSteps(long statemNum, flag essentialFlag)
       free_vstring(stmtBigCount[stmt]);
     }
     free(stmtBigCount);
-
   }
 
   /* Deallocate local strings */
@@ -3468,7 +3411,6 @@ double countSteps(long statemNum, flag essentialFlag)
 
   return stepCount;
 } /* countSteps */
-
 
 /* Add two arbitrary precision nonnegative integers represented
    as strings of digits e.g. bigAdd("1234", "55") returns "1289".
@@ -3509,7 +3451,6 @@ vstring bigAdd(vstring bignum1, vstring bignum2) {
   return bignum3;
 }
 
-
 /* Subtract a nonnegative number (2nd arg) from a larger nonnegative number
    (1st arg).  If the 1st arg is smaller than the 2nd, results are
    not meaningful; there is no error checking for this.  */
@@ -3545,7 +3486,6 @@ vstring bigSub(vstring bignum1, vstring bignum2) {
   free_vstring(bignum1cmpl); /* Deallocate */
   return bignum3;
 }
-
 
 /**** 12-Nov-2018 nm In case multiplication is ever needed, this
   code will do it but is commented out because currently there
@@ -3620,7 +3560,6 @@ vstring bigMul(vstring bignum1, vstring bignum2) {
   return bignum3;
 }
 **** end commented out section added 12-Nov-2018 ***/
-
 
 /* Traces what statements require the use of a given statement */
 /* The output string must be deallocated by the user. */
@@ -3736,7 +3675,6 @@ vstring traceUsage(long statemNum,
   return (statementUsedFlags);
 } /* traceUsage */
 
-
 /* This implements the READ command (although the / VERIFY qualifier is
    processed separately in metamath.c). */
 void readInput(void)
@@ -3761,7 +3699,6 @@ void readInput(void)
 
  RETURN_POINT:
   free_vstring(fullInput_fn);
-
 } /* readInput */
 
 /* This function implements the WRITE SOURCE command. */
@@ -3850,13 +3787,11 @@ void writeSource(
 
   print2("%ld source statement(s) were written.\n", g_statements);
 
-
  RETURN_POINT:
   free_vstring(buffer); /* Deallocate vstring */
   free_vstring(fullOutput_fn); /* Deallocate vstring */
   return;
 } /* writeSource */
-
 
 /* Get info for WRITE SOURCE ... / EXTRACT */
 void writeExtractedSource(
@@ -3898,7 +3833,6 @@ void writeExtractedSource(
   vstring_def(hdrSuffix);
   FILE *fp;
   vstring_def(buf);
-
 
   /* Note that extractNeeded is 1-based to match 1-based
      indices of the g_Statement array.  We also may need labelSection of entry
@@ -4071,7 +4005,6 @@ void writeExtractedSource(
       break; /* Found the $t, so no reason to continue */
     }
   }
-
 
   /* Get header information about which headers to use */
   print2("Analyzing scopes of section headings...\n");
@@ -4362,7 +4295,6 @@ void writeExtractedSource(
           fprintf(fp, "\n");
         }
       } /* if (stmt != statements + 1) */
-
     } /* if (extractNeeded[stmt] == 'Y') */
   } /* next stmt */
 
@@ -4432,7 +4364,6 @@ void writeExtractedSource(
   free_vstring(buf);
   return;
 } /* getExtractionInfo */
-
 
 /* Some labels in comments may not exist in statements extracted
    with WRITE SOURCE ... / EXTRACT.  This function changes them
@@ -4520,7 +4451,6 @@ void fixUndefinedLabels(vstring extractNeeded/*'Y'/'N' list*/,
   return;
 } /* fixUndefinedLabels */
 
-
 void writeDict(void)
 {
   print2("This function has not been implemented yet.\n");
@@ -4605,7 +4535,6 @@ void eraseSource(void)    /* ERASE command */
       /* Deallocate proof if not original source */
       free_vstring(g_Statement[i].proofSectionPtr);
     }
-
   } /* Next i (statement) */
 
   /* g_MathToken[g_mathTokens].tokenName is assigned in
@@ -4664,9 +4593,7 @@ void eraseSource(void)    /* ERASE command */
 
   /* getContrib uses g_statements (global var), so don't do this earlier */
   g_statements = 0; /* getContrib uses g_statements for loop limit */
-
 } /* eraseSource */
-
 
 /* If verify = 0, parse the proofs only for gross error checking.
    If verify = 1, do the full verification. */
@@ -4745,15 +4672,12 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
 #else
       print2("All proofs in the database were verified.\n");
 #endif
-
     } else {
       print2("All proofs in the database passed the syntax-only check.\n");
     }
   }
   free_vstring(emptyProofList); /* Deallocate */
-
 } /* verifyProofs */
-
 
 void verifyMarkup(vstring labelMatch,
     flag dateCheck, /* 1 = check date consistency */
@@ -4877,10 +4801,7 @@ void verifyMarkup(vstring labelMatch,
         }
       }
     }
-
-
   } /* next stmtNum */
-
 
   /* Check for math tokens containing "@" or "?" */
   /* Note:  g_MathToken[] is 0-based, not 1-based */
@@ -4916,7 +4837,6 @@ void verifyMarkup(vstring labelMatch,
     }
   }
 
-
   /* Check $a ax-* vs. $p ax* */
   for (stmtNum = 1; stmtNum <= g_statements; stmtNum++) {
     if (g_Statement[stmtNum].type != a_) {
@@ -4942,7 +4862,6 @@ void verifyMarkup(vstring labelMatch,
     if (verboseMode == 1) {
       print2("Comparing \"%s\" to \"%s\"...\n", str2, str1);
     }
-
 
     /* Compare statements */
     if (nmbrEq(g_Statement[stmtNum].mathString,
@@ -5017,7 +4936,6 @@ void verifyMarkup(vstring labelMatch,
     } /* next p2 */
   } /* next stmtNum */
 
-
   /* Check line lengths */
   free_vstring(str1); /* Prepare to use as pointer */
   free_vstring(str2); /* Prepare to use as pointer */
@@ -5081,11 +4999,9 @@ void verifyMarkup(vstring labelMatch,
             NULL), "    ", " ");
         errFound = 1;
       }
-
     } /* next p1 */
     str1 = ""; /* Restore pointer for use as vstring */
   } /* end of line length check - if (g_statements >= 1... */
-
 
   /* Check $t comment content */
 
@@ -5113,7 +5029,6 @@ void verifyMarkup(vstring labelMatch,
             fileCheck /* 1 = GIF file existence check */  );
   }
   if (f != 0) errFound = 1;
-
 
   /* Check date consistency and comment markup in all statements */
   print2("Checking statement comments...\n");
@@ -5161,7 +5076,6 @@ void verifyMarkup(vstring labelMatch,
         let(&mostRecentDate, str1);
         mostRecentStmt = stmtNum;
       }
-
     }
 
     free_vstring(descr);
@@ -5252,7 +5166,6 @@ void verifyMarkup(vstring labelMatch,
     }
   } /* if (topDateCheck) */
 
-
   print2("Checking section header comments...\n");
   for (stmtNum = 1; stmtNum <= g_statements; stmtNum++) {
     if (g_Statement[stmtNum].type != a_ && g_Statement[stmtNum].type != p_) {
@@ -5307,7 +5220,6 @@ void verifyMarkup(vstring labelMatch,
 "    (The warning above refers to a header above the referenced statement.)\n");
     if (f != 0) errFound = 1;
   } /* next stmtNum */
-
 
   /* Use the errors-only (no output) feature of writeBibliography() */
   print2("Checking bibliographic references...\n");
@@ -5415,9 +5327,7 @@ void verifyMarkup(vstring labelMatch,
   free_vstring(smallHdrComment);
   free_vstring(tinyHdrComment);
   return;
-
 } /* verifyMarkup */
-
 
 /* Function to process markup in an arbitrary non-Metamath HTML file, treating
    the file as a giant comment. */
@@ -5487,7 +5397,6 @@ void processMarkup(vstring inputFileName, vstring outputFileName,
   free_vstring(g_printString);
   return;
 }
-
 
 /* List "discouraged" statements with "(Proof modification is discouraged."
    and "(New usage is discouraged.)" comment markup tags. */
@@ -5677,7 +5586,6 @@ long getStepNum(vstring relStep, /* User's argument */
   return actualStepVal;
 } /* getStepNum */
 
-
 /* Convert the actual step numbers of an unassigned step to the relative
    -1, -2, etc. offset for SHOW NEW_PROOF ...  /UNKNOWN, to make it easier
    for the user to ASSIGN the relative step number. A 0 is returned
@@ -5708,7 +5616,6 @@ nmbrString *getRelStepNums(nmbrString *pfInProgress) {
 
   return relSteps;
 } /* getRelStepNums */
-
 
 /* This procedure finds the next statement number whose label matches
    stmtName.  Wildcards are allowed.  If uniqueFlag is 1,
@@ -5874,13 +5781,11 @@ long getStatementNum(vstring stmtName, /* Possibly with wildcards */
   return matchStmt;
 } /* getStatementNum */
 
-
 /* Called by help() - prints a help line */
 void H(vstring helpLine)
 {
     print2("%s\n", helpLine);
 } /* H */
-
 
 /******** The MIDI output algorithm is in this function, outputMidi(). ******/
 /*** Warning:  If you want to experiment with the MIDI output, please
@@ -6058,7 +5963,6 @@ void outputMidi(long plen, nmbrString *indentationLevels,
 
   /* End of parsing user's parameter string */
 
-
   /* Map keyboard key numbers to MIDI notes */
   absMinKey = MIN_NOTE; /* Initialize for ALLKEYSFLAG case */
   absMaxKey = MAX_NOTE;
@@ -6200,7 +6104,6 @@ void outputMidi(long plen, nmbrString *indentationLevels,
         }
       }
       midiTime += 24; /* Add 24 to the MIDI time stamp */
-
     } else {
 
       /*** Process the deeper sustained notes for logical steps ***/
@@ -6226,7 +6129,6 @@ void outputMidi(long plen, nmbrString *indentationLevels,
           midiNote);
       midiTime += 24; /* Add 24 to the MIDI time stamp */
       midiPreviousLogicalStep = midiNote; /* Save for next step */
-
     }
   } /* next step */
 
@@ -6250,4 +6152,4 @@ void outputMidi(long plen, nmbrString *indentationLevels,
   free_vstring(midiFileName);
   free_vstring(tmpStr);
   free_vstring(midiLocalParam);
-} /* outputMidi */
+} // outputMidi

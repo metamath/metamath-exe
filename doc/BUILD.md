@@ -1,6 +1,6 @@
 # Building the Metamath executable from sources
 
-## Introductionary notes
+## Introductory notes
 
 In this file we describe how to build the executable metamath on a __Unix/Linux__
 system from scratch using only the sources and a few auxiliary files, all
@@ -12,7 +12,7 @@ distributed through the Github Metamath git repository.
 It bundles files and subdirectories into a single folder called __repository__.
 Unlike a simple folder a repository tracks changes to its contents, so you can
 checkout older versions of a file, or different versions if multiple persons
-work on files simultaniously.  It is out of the scope of this particular
+work on files simultaneously.  It is out of the scope of this particular
 document to detail on how this system works.  Instead we assume you have a
 fresh set of metamath source files ready in a single folder.  It is of no
 importance here how you got it.  The name of the folder is arbitrary, but for
@@ -62,7 +62,7 @@ A few decades ago that was less obvious, and the system had to be checked for
 its existence.  The shell script _configure_ carries out this check, and it has
 know-how built in to deal with lots of variants of both the file itself, and
 where to find it on a system.  The test result is then issued to the _config.h_
-result.  Either the above is copied verbatim, or 
+result.  Either the above is copied verbatim, or
 ```
 /* Define to 1 if stdbool.h conforms to C99. */
 #define HAVE_STDBOOL_H 1
@@ -152,7 +152,7 @@ _M4_ macros adapted to _automake_ directed commands.  This extends the
 functionality of _autoconf_ in a way that it can parse and process the
 _configure.ac_ file.
 
-_autoreconf_ automatically calls this program during the build process. 
+_autoreconf_ automatically calls this program during the build process.
 
 #### aclocal.m4
 
@@ -199,13 +199,13 @@ This Unix program called __autoconf__, or its sibling __autoreconf__, is
 capable of generating a _configure_ shell script from the input _configure.ac_.
 It uses functions defined in _aclocal.m4_ to perform its task.
 
-[Dokumentation](https://www.gnu.org/software/autoconf/)
+[Documentation](https://www.gnu.org/software/autoconf/)
 
 ### Makefile.am
 
 ### automake
 
-[Dokumentation](https://www.gnu.org/software/automake/manual)
+[Documentation](https://www.gnu.org/software/automake/manual)
 
 ### invoking configure
 
@@ -220,6 +220,5 @@ individual settings evaluated by _configure_ are compiled in.  So this script
 can recreate _config.h_ multiple times without carrying out the OS checks.
 
 ### config.h
-
 
 ... to be continued

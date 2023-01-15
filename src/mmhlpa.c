@@ -85,7 +85,6 @@ H("type it ahead to let you know when the current command is finished.");
 H("");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP ADD")) {
 H("This command adds a character string prefix and/or suffix to each");
 H("line in a file.  To add only a prefix, set <endstr> to the empty string,");
@@ -159,13 +158,11 @@ H("Syntax:  SUBSTITUTE <iofile> <oldstr> <newstr> <occurrence> <matchstr>");
 H("Note: The SUBSTITUTE command may be abbreviated by S.");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP SWAP")) {
 H("This command swaps the parts of each line before and after a");
 H("specified string <middle>.");
 H("Syntax:  SWAP <iofile> <middle>");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP INSERT")) {
 H("This command inserts a string at a specified column in each line");
@@ -175,7 +172,6 @@ H("line is shorter than <column>, then it is padded with spaces so that");
 H("<string> is still added at <column>.");
 H("Syntax:  INSERT <iofile> <string> <column>");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP BREAK")) {
 H("This command breaks up a file into tokens, one per line, breaking at");
@@ -191,13 +187,11 @@ H("as many as will fit per line, separating them with spaces.");
 H("Syntax:  BUILD <iofile>");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP MATCH")) {
 H("This command extracts from a file those lines containing (Y) or not");
 H("containing (N) a specified string.");
 H("Syntax:  MATCH <iofile> <matchstr> <Y/N>");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP SORT")) {
 H("This command sorts a file, comparing lines starting at a key string.");
@@ -206,12 +200,10 @@ H("If a line doesn't contain the key, it is compared starting at column 1.");
 H("Syntax:  SORT <iofile> <key>");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP UNDUPLICATE")) {
 H("This command sorts a file then removes any duplicate lines from the output.");
 H("Syntax:  UNDUPLICATE <iofile>");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP DUPLICATE")) {
 H("This command finds all duplicate lines in a file and places them, in");
@@ -219,19 +211,16 @@ H("sorted order, into the output file.");
 H("Syntax:  DUPLICATE <iofile>");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP UNIQUE")) {
 H("This command finds all unique lines in a file and places them, in");
 H("sorted order, into the output file.");
 H("Syntax:  UNIQUE <iofile>");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP REVERSE")) {
 H("This command reverses the order of the lines in a file.");
 H("Syntax:  REVERSE <iofile>");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP RIGHT")) {
 H("This command right-justifies the lines in a file by putting spaces in");
@@ -240,7 +229,6 @@ H("in the file.");
 H("Syntax:  RIGHT <iofile>");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP PARALLEL")) {
 H("This command puts two files side-by-side.");
 H("The two files should have the same number of lines; if not, a warning is");
@@ -248,13 +236,11 @@ H("issued and the longer file paralleled with empty strings at the end.");
 H("Syntax:  PARALLEL <inpfile1> <inpfile2> <outfile> <btwnstr>");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP NUMBER")) {
 H("This command creates a list of numbers.  Hint:  Use the RIGHT command to");
 H("right-justify the list after creating it.");
 H("Syntax:  NUMBER <outfile> <first> <last> <incr>");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP COUNT")) {
 H("This command counts the occurrences of a string in a file and displays");
@@ -264,7 +250,6 @@ H("numbers.");
 H("Syntax:  COUNT <inpfile> <string>");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP TYPE") || !strcmp(helpCmd, "HELP T")) {
 H("This command displays (i.e. types out) the first n lines of a file on the");
 H("terminal screen.  If n is not specified, it will default to 10.  If n is");
@@ -272,7 +257,6 @@ H("the string \"ALL\", then the whole file will be typed.");
 H("Syntax:  TYPE <inpfile> <n>");
 H("Note: The TYPE command may be abbreviated by T.");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP COPY") || !strcmp(helpCmd, "HELP C")) {
 H("This command copies (concatenates) all input files in a comma-separated");
@@ -357,7 +341,6 @@ H("SUBMIT can be called recursively, i.e., SUBMIT commands are allowed");
 H("inside of a command file.");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP SYSTEM")) {
 H("A line enclosed in single or double quotes will be executed by your");
 H("computer's operating system, if it has such a feature.  For example, on a");
@@ -375,7 +358,6 @@ free_vstring(saveHelpCmd); /* Deallocate memory */
 
 return;
 } /* help0 */
-
 
 void help1(vstring helpCmd) {
 
@@ -604,7 +586,6 @@ H("       recursive, or self reference to a file is ignored");
 H("");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP MARKUP")) {
 H("(See HELP VERIFY MARKUP for the markup language used in database");
 H("comments.)");
@@ -658,7 +639,6 @@ H("characters in math symbols.");
 H("");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP EXPLORE")) {
 H("When you first enter Metamath, you will first want to READ in a Metamath");
 H("source file.  The source file provided for set theory is called set.mm;");
@@ -694,7 +674,6 @@ H("    SHOW USAGE <label> - Shows what later proofs make use of this");
 H("        statement.");
 H("");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP HTML")) {
 H("(Note: See HELP WRITE SOURCE for the \"<HTML>\" tag in comments.)");
@@ -825,7 +804,6 @@ H("containing a $t token.  See the set.mm file for an example.");
 H("");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP BEEP") || !strcmp(helpCmd, "HELP B")) {
 H("Syntax:  BEEP");
 H("");
@@ -840,14 +818,12 @@ H("command.");
 H("");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP QUIT")) {
 H("Syntax:  QUIT [/ FORCE]");
 H("");
 H("This command is a synonym for EXIT.  See HELP EXIT.");
 H("");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP EXIT")) {
 H("Syntax:  EXIT [/ FORCE]");
@@ -875,7 +851,6 @@ H("unconditionally.  This means any unsaved work will be lost.");
 H("");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP _EXIT_PA")) {
 H("Syntax:  _EXIT_PA [/ FORCE]");
 H("");
@@ -885,7 +860,6 @@ H("can help prevent accidentally exiting Metamath when a script fails to");
 H("enter the Proof Assistant (PROVE command).  See HELP EXIT.");
 H("");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP READ")) {
 H("Syntax:  READ <file> [/ VERIFY]");
@@ -915,7 +889,6 @@ H("See also HELP ERASE.");
 H("");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP ERASE")) {
 H("Syntax:  ERASE");
 H("");
@@ -925,7 +898,6 @@ H("database.  The user will be prompted for confirmation if the database was");
 H("changed but not saved with WRITE SOURCE.");
 H("");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP OPEN LOG")) {
 H("Syntax:  OPEN LOG <file>");
@@ -942,7 +914,6 @@ H("closed upon exiting Metamath.");
 H("");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP CLOSE LOG")) {
 H("Syntax:  CLOSE LOG");
 H("");
@@ -950,7 +921,6 @@ H("The CLOSE LOG command closes a log file if one is open.  See also OPEN");
 H("LOG.");
 H("");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP OPEN TEX")) {
 H("Syntax:  OPEN TEX <file> [/ NO_HEADER] [/ OLD_TEX]");
@@ -976,7 +946,6 @@ H("See also CLOSE TEX.");
 H("");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP CLOSE TEX")) {
 H("Syntax:  CLOSE TEX");
 H("");
@@ -986,7 +955,6 @@ H("");
 H("See also OPEN TEX.");
 H("");
 }
-
 
 if (!strcmp(saveHelpCmd, "HELP TOOLS")) {
 H("Syntax:  TOOLS");
@@ -1159,7 +1127,6 @@ H("See also");
 H("https://github.com/metamath/set.mm/pull/1761#issuecomment-672433658");
 }
 
-
 if (!strcmp(saveHelpCmd, "HELP WRITE RECENT_ADDITIONS")) {
 H("Syntax:  WRITE RECENT_ADDITIONS <filename>");
 H("");
@@ -1184,8 +1151,6 @@ H("GIF format unless ALT_HTML was previously set as shown in SHOW SETTINGS.");
 H("");
 }
 
-
-free_vstring(saveHelpCmd); /* Deallocate memory */
+free_vstring(saveHelpCmd); // deallocate memory
 return;
-
-} /* help1 */
+} // help1

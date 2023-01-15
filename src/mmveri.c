@@ -156,7 +156,6 @@ char verifyProof(long statemNum)
               g_WrkProof.RPNStack[i]));
         }
       } /* End of if (getStep.stepNum) */
-
     }
 
 /*E*/if(db7)printLongLine(cat("step ", str((double)step+1), " sch ",
@@ -184,12 +183,10 @@ char verifyProof(long statemNum)
       }
     }
 
-
     /* Pop the stack */
     g_WrkProof.RPNStackPtr = g_WrkProof.RPNStackPtr - numReqHyp;
     g_WrkProof.RPNStack[g_WrkProof.RPNStackPtr] = step;
     g_WrkProof.RPNStackPtr++;
-
   } /* Next step */
 
   /* If there was a stack error, the verifier should have never been
@@ -221,10 +218,8 @@ char verifyProof(long statemNum)
   free_nmbrString(bigSubstSchemeHyp);
   free_nmbrString(bigSubstInstHyp);
 
-  return (returnFlag);
-
-} /* verifyProof */
-
+  return returnFlag;
+} // verifyProof
 
 /* assignVar() finds an assignment to substScheme variables that match
    the assumptions specified in the reason string */
@@ -354,7 +349,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
   v = -1; /* Position in bigSubstSchemeVars */
   p = 0; /* Position in bigSubstSchemeAss */
   q = 0; /* Position in bigSubstInstAss */
- ambiguityCheck: /* Re-entry point to see if unification is unique */
+ambiguityCheck: /* Re-entry point to see if unification is unique */
   while (p != bigSubstSchemeLen-1 || q != bigSubstInstLen-1) {
 /*E*/if(db7&&v>=0)printLongLine(cat("p ", str((double)p), " q ", str((double)q), " VAR ",str((double)v),
 /*E*/    " ASSIGNED ", nmbrCvtMToVString(
@@ -544,7 +539,6 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
     free_nmbrString(result);
   }
 
-
   /***** Get step information if requested *****/
   if (!ambiguityCheckFlag) { /* This is the real (first) unification */
     if (getStep.stepNum) {
@@ -588,7 +582,6 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
     } /* End if (getStep.stepNum) */
   } /* End if (!ambiguityCheckFlag) */
   /***** End of getting step information *****/
-
 
   /***** Check for $d violations *****/
   if (!ambiguityCheckFlag) { /* This is the real (first) unification */
@@ -839,7 +832,6 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
     goto ambiguityCheck;
   }
 
-
  returnPoint:
 
   /* Free up all allocated nmbrString space */
@@ -858,9 +850,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
 
   g_nmbrStartTempAllocStack = nmbrSaveTempAllocStack;
   return result;
-
-}
-
+} // assignVar
 
 /* Deallocate the math symbol strings assigned in wrkProof structure during
    proof verification.  This should be called after verifyProof() and after the
@@ -882,5 +872,4 @@ void cleanWrkProof(void) {
       }
     }
   }
-
-}
+} // cleanWrkProof

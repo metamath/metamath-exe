@@ -1,6 +1,6 @@
 MM> READ "demo0.mm"
-Reading source file "demo0.mm"... 1325 bytes
-1325 bytes were read into the source buffer.
+Reading source file "demo0.mm"... 1323 bytes
+1323 bytes were read into the source buffer.
 The source has 19 statements; 7 are $a and 1 are $p.
 No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
 if you want to check them.

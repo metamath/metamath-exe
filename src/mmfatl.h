@@ -84,7 +84,6 @@
 
 // ***   Export basic features of the fatal error message processing   ***/
 
-
 /*!
  * \brief size of a text buffer used to construct a message
  *
@@ -131,10 +130,9 @@ enum fatalErrorPlaceholderType {
 
 // ***   Interface of fatal error message processing   ***/
 
-
 /*!
  * \brief Prepare internal data structures for an error message.
- * 
+ *
  * Empties the message buffer used to construct error messages by
  * \ref fatalErrorPush.
  *
@@ -154,16 +152,15 @@ enum fatalErrorPlaceholderType {
  */
 extern void fatalErrorInit(void);
 
-
 /*!
  * \brief append text to the current contents in the message buffer.
- * 
+ *
  * Appends new text to the message buffer.  The submitted extra parameters
  * following \p format must match the placeholders in the \p format string
  * in type.  It is possible to add more parameters than necessary (they are
  * simply ignored then), but never fewer.  The caller is responsible for
  * this pre-condition, no runtime check is performed.
- * 
+ *
  * \param[in] format [null] a format string containing NUL terminated ASCII
  *   encoded text, along with embedded placeholders, that are replaced with
  *   parameters following \p format in the call.
@@ -187,8 +184,7 @@ extern void fatalErrorInit(void);
  *   prompt following it is displayed on a new line.  If it is missing
  *   \ref fatalErrorPrintAndExit will supply one, but relying on this adds an
  *   unnecessary correction under severe conditions.
- *   
- * 
+ *
  * The \p format is followed by a possibly empty list of parameters substituted
  *   for placeholders.  Currently unsigned int values may replace a
  *   \ref MMFATL_PH_UNSIGNED type placeholder (%u), and a char const* pointer a
@@ -197,7 +193,7 @@ extern void fatalErrorInit(void);
  *   to ASCII encoded NUL terminated text.  No value is required for the
  *   \ref MMFATL_PH_PREFIX type tokens.
  * \return false iff the message buffer is in overflow state.
- * 
+ *
  * \pre the buffer is initialized, by calling \ref fatalErrorInit prior
  * \pre the submitted parameters following \p format must match in type and
  *   order the placeholders in \p format.  Their count may exceed that of the
@@ -217,7 +213,7 @@ extern bool fatalErrorPush(char const* format, ...);
 
 /*!
  * \brief display buffer contents and exit program with code EXIT_FAILURE.
- * 
+ *
  * This function does not return.
  *
  * A NUL terminated message has been prepared in an internal buffer using a

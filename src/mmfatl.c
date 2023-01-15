@@ -38,9 +38,7 @@ enum {
   LF = '\n',
 };
 
-
 // ***     utility code used in the implementation of the interface    ***
-
 
 /*!
  * \brief a buffer used to generate a text message through a formatting
@@ -233,7 +231,7 @@ static struct ParserState state;
  *
  * Initializes \ref state.
  * \param[in,out] state [not null] the struct \ref ParserState to initialize.
- * \param[in,out] buffer [not null] the buffer to use for output 
+ * \param[in,out] buffer [not null] the buffer to use for output
  * \post establish the invariant in state
  */
 static void initState(struct ParserState* state, struct Buffer* buffer) {
@@ -351,7 +349,7 @@ static void handleSubstitution(struct ParserState* state) {
       arg = va_arg(state->args, char const*);
       break;
     case MMFATL_PH_UNSIGNED:
-      // a %u format specifier is recognized. 
+      // a %u format specifier is recognized.
       arg = unsignedToString(va_arg(state->args, unsigned));
       break;
     case MMFATL_PH_PREFIX:
@@ -408,7 +406,7 @@ inline static struct Buffer* getBufferInstance(void) {
  * Gets the instance of ParserState to use with this interface (currently a
  * global singleton).  The returned instance is not guaranteed to be
  * initialized.
- * \return [not null] a pointer to the ParserState instance 
+ * \return [not null] a pointer to the ParserState instance
  */
 inline static struct ParserState* getParserStateInstance(void) {
   return &state;
@@ -477,7 +475,6 @@ void fatalErrorExitAt(char const* file, unsigned line,
 
   fatalErrorPrintAndExit();
 }
-
 
 //=================   Regression tests   =====================
 
@@ -586,7 +583,6 @@ static bool test_appendText(void) {
   // uncomment to deliberately trigger an error message
   // TESTCASE_appendText("_$", 1, "x$", -1, 2, 1);
 
-
   // corner case 1: insertion at the very beginning of the buffer
   TESTCASE_appendText("_$", 1, "$", -1, 2, 1);
   // corner case 2: empty text, placeholder handling
@@ -620,7 +616,7 @@ static bool test_isBufferEmpty(void) {
   limitFreeBuffer(0);
   ASSERT(!isBufferEmpty(&buffer));
 
-  return true;  
+  return true;
 }
 
 static bool test_getLastBufferedChar(void) {
@@ -632,7 +628,7 @@ static bool test_getLastBufferedChar(void) {
   appendText("bc", STRING, &buffer);
   ASSERT(getLastBufferedChar(&buffer) == 'b');
 
-  return true;  
+  return true;
 }
 
 static bool test_handleText(void) {
@@ -657,8 +653,8 @@ static bool test_handleText(void) {
   state.format = "%s";
   handleText(&state);
   ASSERT(*state.format == '%');
-  ASSERT(buffer.begin == buffer.text + 1);  
-  
+  ASSERT(buffer.begin == buffer.text + 1);
+
   state.format = "abc";
   handleText(&state);
   ASSERT(strcmp(buffer.text, "$a$") == 0);
@@ -679,7 +675,7 @@ bool test_unsignedToString(void)
 
 static bool test_handleSubstitution1(char const* format, ...) {
   va_start(state.args, format);
-  
+
   // without initializing the buffer each test appends
   // to the result of the former test.
 
@@ -774,7 +770,7 @@ static char const* testcase_parse(char const* expect, char const* format, ...) {
   parse(&state);
   va_end(state.args);
   return strcmp(buffer.text, expect) == 0?
-    NULL 
+    NULL
     : "text mismatch";
 }
 
@@ -841,15 +837,15 @@ static bool test_fatalErrorPrintAndExit(void) {
   fatalErrorInit(); // pre-condition
   fatalErrorPrintAndExit();
   ASSERT(strcmp(buffer.text, "") == 0);
-  
+
   fatalErrorPush("aaa");
   fatalErrorPrintAndExit();
   ASSERT(strcmp(buffer.text, "aaa\n") == 0);
-  
-  // no second \n is appended 
+
+  // no second \n is appended
   fatalErrorPrintAndExit();
   ASSERT(strcmp(buffer.text, "aaa\n") == 0);
-  
+
   // in overflow condition do not append a LF
   fatalErrorInit();
   while (!isBufferOverflow(&buffer)) // fill the buffer with "a"
@@ -878,7 +874,6 @@ static bool test_fatalErrorExitAt() {
 
   return true;
 }
-
 
 void test_mmfatl(void) {
   RUN_TEST(test_unsignedToString);
