@@ -1914,7 +1914,7 @@ nmbrString *proveFloating(const nmbrString *mString, long statemNum, long maxEDe
 /*E*/                0, /*explicitTargets*/
 /*E*/                0 /*statemNum, used only if explicitTargets*/), NULL));
 /*E*/if(db8){if(!depth)print2("Trials: %ld\n", trials);}
-  return (proof); /* Caller must deallocate */
+  return proof; /* Caller must deallocate */
 } /* proveFloating */
 
 /* This function does quick check for some common conditions that prevent

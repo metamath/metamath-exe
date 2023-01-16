@@ -365,7 +365,7 @@ char unify(
   if (g_MathToken[schemeA[j-1]].tokenType == (char)con_) {
     if (g_MathToken[schemeB[k-1]].tokenType == (char)con_) {
       if (schemeA[j-1] != schemeB[k-1]) {
-        return (0);
+        return 0;
       }
     }
   }

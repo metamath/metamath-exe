@@ -108,16 +108,43 @@ vstring_def(extHtmlBibliographyTags);
 
 void eraseTexDefs(void) {
   /* Deallocate the texdef/htmldef storage */
-  long i;
   if (g_texDefsRead) {  /* If not (already deallocated or never allocated) */
     g_texDefsRead = 0;
 
-    for (i = 0; i < numSymbs; i++) {  /* Deallocate structure member i */
+    for (long i = 0; i < numSymbs; i++) {  /* Deallocate structure member i */
       free_vstring(g_TexDefs[i].tokenName);
       free_vstring(g_TexDefs[i].texEquiv);
     }
     free(g_TexDefs); /* Deallocate the structure */
   }
+  free_vstring(htmlTitle);
+  free_vstring(g_htmlHome);
+  free_vstring(g_htmlCSS);
+  free_vstring(g_htmlFont);
+  free_vstring(g_htmlVarColor);
+  free_vstring(htmlExtUrl);
+  free_vstring(htmlTitle);
+  free_vstring(htmlTitleAbbr);
+  free_vstring(g_htmlHome);
+  free_vstring(g_htmlHomeHREF);
+  free_vstring(g_htmlHomeIMG);
+  free_vstring(g_htmlBibliography);
+  free_vstring(extHtmlLabel);
+  free_vstring(g_extHtmlTitle);
+  free_vstring(g_extHtmlTitleAbbr);
+  free_vstring(extHtmlHome);
+  free_vstring(extHtmlHomeHREF);
+  free_vstring(extHtmlHomeIMG);
+  free_vstring(extHtmlBibliography);
+  free_vstring(htmlDir);
+  free_vstring(altHtmlDir);
+  free_vstring(sandboxHome);
+  free_vstring(sandboxHomeHREF);
+  free_vstring(sandboxHomeIMG);
+  free_vstring(sandboxTitle);
+  free_vstring(sandboxTitleAbbr);
+  free_vstring(g_htmlBibliographyTags);
+  free_vstring(extHtmlBibliographyTags);
   return;
 } /* eraseTexDefs */
 
@@ -892,9 +919,7 @@ int texSrchCmp(const void *key, const void *data)
 /* Convert ascii to a string of \tt tex; must not have control chars */
 /* (The caller must surround it by {\tt }) */
 /* ***Note:  The caller must deallocate returned string */
-vstring asciiToTt(vstring s)
-{
-
+vstring asciiToTt(vstring s) {
   vstring_def(ttstr);
   vstring_def(tmp);
   long i, j, k;
@@ -977,6 +1002,10 @@ vstring asciiToTt(vstring s)
   free_vstring(tmp);  /* Deallocate */
   return ttstr;
 } /* asciiToTt */
+
+temp_vstring asciiToTt_temp(vstring s) {
+  return makeTempAlloc(asciiToTt(s));
+}
 
 /* Convert ascii token to TeX equivalent */
 /* The "$" math delimiter is not placed around the returned arg. here */

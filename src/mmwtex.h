@@ -76,6 +76,7 @@ int texSrchCmp(const void *key, const void *data);
 
   (The caller must surround it by {\tt }) */
 vstring asciiToTt(vstring s);
+temp_vstring asciiToTt_temp(vstring s);
 vstring tokenToTex(vstring mtoken, long statemNum);
 /*! Converts a comment section in math mode to TeX.  Each math token
    MUST be separated by white space.   TeX "$" does not surround the output. */
