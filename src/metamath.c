@@ -1278,8 +1278,8 @@ void command(int argc, char *argv[]) {
         /* Free remaining allocations before exiting */
         freeCommandLine();
         freeInOu();
-        memFreePoolPurge(0);
         eraseSource();
+        eraseTexDefs();
         freeData(); /* Call AFTER eraseSource()(->initBigArrays->malloc) */
         free_vstring(g_commandPrompt);
         free_vstring(g_commandLine);
@@ -3887,7 +3887,7 @@ void command(int argc, char *argv[]) {
               print2("\\vspace{1ex} %%1\n");
               printLongLine(cat("Proof of ",
                   "{\\tt ",
-                  asciiToTt(g_Statement[outStatement].labelName),
+                  asciiToTt_temp(g_Statement[outStatement].labelName),
                   "}:", NULL), "", " ");
               print2("\n");
               print2("\n");

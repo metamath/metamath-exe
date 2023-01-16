@@ -110,7 +110,7 @@ void typeStatement(long showStmt,
       if (!(htmlFlag && texFlag)) {
         /*
         printLongLine(cat(str1, "{\\tt ",
-            asciiToTt(g_Statement[showStmt].fileName),
+            asciiToTt_temp(g_Statement[showStmt].fileName),
             "}.", NULL), "", " ");
         */
       } else {
@@ -1402,7 +1402,7 @@ void typeProof(long statemNum,
       if (tmpStr[0] != 0) {
         print2("<CENTER><B>Proof of Theorem <FONT\n");
         printLongLine(cat("   COLOR=", GREEN_TITLE_COLOR, ">",
-            asciiToTt(g_Statement[statemNum].labelName),
+            asciiToTt_temp(g_Statement[statemNum].labelName),
             "</FONT></B></CENTER>", NULL), "", "\"");
         /* Print the list of dummy variables */
         printLongLine(tmpStr, "", "\"");
@@ -1418,7 +1418,7 @@ void typeProof(long statemNum,
         print2("SUMMARY=\"Proof of theorem\">\n");
         print2("<CAPTION><B>Proof of Theorem <FONT\n");
         printLongLine(cat("   COLOR=", GREEN_TITLE_COLOR, ">",
-            asciiToTt(g_Statement[statemNum].labelName),
+            asciiToTt_temp(g_Statement[statemNum].labelName),
             "</FONT></B></CAPTION>", NULL), "", "\"");
       }
     } else {
@@ -1436,7 +1436,7 @@ void typeProof(long statemNum,
         print2("<CAPTION><B>Detailed syntax breakdown of Definition <FONT\n");
       }
       printLongLine(cat("   COLOR=", GREEN_TITLE_COLOR, ">",
-          asciiToTt(g_Statement[statemNum].labelName),
+          asciiToTt_temp(g_Statement[statemNum].labelName),
           "</FONT></B></CAPTION>", NULL), "", "\"");
     }
     print2(
@@ -2604,12 +2604,12 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
       print2("\\vspace{1ex} %%3\n");
       printLongLine(cat("Summary of statements used in the proof of ",
           "{\\tt ",
-          asciiToTt(g_Statement[statemNum].labelName),
+          asciiToTt_temp(g_Statement[statemNum].labelName),
           "}:", NULL), "", " ");
     } else {
       printLongLine(cat("Summary of statements used in the proof of ",
           "<B>",
-          asciiToTt(g_Statement[statemNum].labelName),
+          asciiToTt_temp(g_Statement[statemNum].labelName),
           "</B>:", NULL), "", "\"");
     }
     g_outputToString = 0;
@@ -2684,16 +2684,16 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
           print2("\n");
           print2("\\vspace{1ex} %%4\n");
           printLongLine(cat("Statement {\\tt ",
-              asciiToTt(g_Statement[stmt].labelName), "} ",
+              asciiToTt_temp(g_Statement[stmt].labelName), "} ",
               str1, "{\\tt ",
-              asciiToTt(g_Statement[stmt].fileName),
+              asciiToTt_temp(g_Statement[stmt].fileName),
               "}.", NULL), "", " ");
           print2("\n");
         } else {
           printLongLine(cat("Statement <B>",
-              asciiToTt(g_Statement[stmt].labelName), "</B> ",
+              asciiToTt_temp(g_Statement[stmt].labelName), "</B> ",
               str1, " <B>",
-              asciiToTt(g_Statement[stmt].fileName),
+              asciiToTt_temp(g_Statement[stmt].fileName),
               "</B> ", NULL), "", "\"");
         }
         g_outputToString = 0;
@@ -3672,7 +3672,9 @@ vstring traceUsage(long statemNum,
         bug(212);
     statementUsedFlags[stmt] = 'Y';
   }
-  return (statementUsedFlags);
+  free_nmbrString(statementList);
+  free_nmbrString(proof);
+  return statementUsedFlags;
 } /* traceUsage */
 
 /* This implements the READ command (although the / VERIFY qualifier is
@@ -4497,6 +4499,7 @@ void eraseSource(void)    /* ERASE command */
   for (i = 1; i <= g_statements + 1; i++) { /* g_statements + 1 is a dummy statement
                                           to hold source after last statement */
 
+    if (g_Statement[i].fileName[0]) free(g_Statement[i].fileName);
     if (g_Statement[i].labelName[0]) free(g_Statement[i].labelName);
     if (g_Statement[i].mathString != NULL_NMBRSTRING)
         poolFree(g_Statement[i].mathString);

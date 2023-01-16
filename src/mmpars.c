@@ -5890,7 +5890,7 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
         needed because we're just assigning a new name to inclSource */
     inclSource = ""; /* Detach from
         g_IncludeCall[saveInclCalls - 1].current_includeSource for later reuse */
-    g_IncludeCall[saveInclCalls - 1].current_includeSource = "";
+    let(&g_IncludeCall[saveInclCalls - 1].current_includeSource, "");
     g_IncludeCall[saveInclCalls - 1].current_includeLength = inclSize; /* Length of the file
         to be included (0 if the file was previously included) */
 

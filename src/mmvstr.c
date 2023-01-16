@@ -631,7 +631,7 @@ temp_vstring string(long n, char c) {
   temp_vstring sout = tempAlloc(n + 1);
   while (j < n) sout[j++] = c;
   sout[j] = 0;
-  return (sout);
+  return sout;
 } /* string */
 
 /* Return a string of spaces */
