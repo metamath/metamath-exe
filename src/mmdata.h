@@ -585,6 +585,12 @@ extern long g_nmbrStartTempAllocStack; /* Where to start freeing temporary
     allocation when nmbrLet() is called (normally 0, except for nested
     nmbrString functions) */
 
+/*!
+  When "size" is >0, "size" instances of nmbrString are allocated.
+  When "size" is 0, all memory previously allocated with this function
+  is deallocated, down to g_nmbrStartTempAllocStack. */
+temp_nmbrString *nmbrTempAlloc(long size);
+
 /*! \brief Make string have temporary allocation to be released by next nmbrLet()
   \warning after nmbrMakeTempAlloc() is called, the nmbrString may NOT be
     assigned again with nmbrLet() */
