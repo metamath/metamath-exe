@@ -36,7 +36,7 @@ char verifyProof(long statemNum) {
   g_WrkProof.RPNStackPtr = 0;
 
   if (g_WrkProof.numSteps == 0) return 2;
-                        /* Empty proof caused by error found by in parseProof */
+                        /* Empty proof caused by error found in parseProof */
 
   nmbrString_def(bigSubstSchemeHyp);
   nmbrString_def(bigSubstInstHyp);
