@@ -22,41 +22,27 @@ struct getStep_struct getStep = {0, 0, 0, 0, 0,
 /* Returns 0 if proof is OK; 1 if proof is incomplete (has '?' tokens);
    returns 2 if error found; returns 3 if not severe error
    found; returns 4 if not a $p statement */
-char verifyProof(long statemNum)
-{
-
-  long stmt; /* Contents of proof string location */
-  long i, j, step;
-  char type;
-  char *fbPtr;
-  long tokenLength;
-  long numReqHyp;
-  char returnFlag = 0;
-  nmbrString *nmbrTmpPtr;
-  nmbrString *nmbrHypPtr;
-  nmbrString_def(bigSubstSchemeHyp);
-  nmbrString_def(bigSubstInstHyp);
-  flag unkHypFlag;
-  nmbrString_def(nmbrTmp); /* Used to force tmp stack dealloc */
-
-  if (g_Statement[statemNum].type != p_) return (4); /* Do nothing if not $p */
+char verifyProof(long statemNum) {
+  if (g_Statement[statemNum].type != p_) return 4; /* Do nothing if not $p */
 
   /* Initialize pointers to math strings in RPN stack and vs. statement. */
   /* (Must be initialized, even if severe error, to prevent crashes later.) */
-  for (i = 0; i < g_WrkProof.numSteps; i++) {
+  for (long i = 0; i < g_WrkProof.numSteps; i++) {
     g_WrkProof.mathStringPtrs[i] = NULL_NMBRSTRING;
   }
 
-  if (g_WrkProof.errorSeverity > 2) return (g_WrkProof.errorSeverity);
+  if (g_WrkProof.errorSeverity > 2) return g_WrkProof.errorSeverity;
                                     /* Error too severe to check here */
   g_WrkProof.RPNStackPtr = 0;
 
-  if (g_WrkProof.numSteps == 0) return (2);
-                        /* Empty proof caused by error found by in parseProof */
+  if (g_WrkProof.numSteps == 0) return 2;
+                        /* Empty proof caused by error found in parseProof */
 
-  for (step = 0; step < g_WrkProof.numSteps; step++) {
-
-    stmt = g_WrkProof.proofString[step];
+  nmbrString_def(bigSubstSchemeHyp);
+  nmbrString_def(bigSubstInstHyp);
+  char returnFlag = 0;
+  for (long step = 0; step < g_WrkProof.numSteps; step++) {
+    long stmt = g_WrkProof.proofString[step]; /* Contents of proof string location */
 
     /* Handle unknown proof steps */
     if (stmt == -(long)'?') {
@@ -74,7 +60,7 @@ char verifyProof(long statemNum)
     if (stmt < 0) {
       /* It's a local label reference */
       if (stmt > -1000) bug(2101);
-      i = -1000 - stmt; /* Get the step number it refers to */
+      long i = -1000 - stmt; /* Get the step number it refers to */
 
       /* Push the stack */
       g_WrkProof.RPNStack[g_WrkProof.RPNStackPtr] = step;
@@ -88,7 +74,7 @@ char verifyProof(long statemNum)
       continue;
     }
 
-    type = g_Statement[stmt].type;
+    char type = g_Statement[stmt].type;
 
     /* See if the proof token is a hypothesis */
     if (type == e_ || type == f_) {
@@ -110,8 +96,8 @@ char verifyProof(long statemNum)
     if (type != a_ && type != p_) bug(2102);
 
     /* It's an valid assertion. */
-    numReqHyp = g_Statement[stmt].numReqHyp;
-    nmbrHypPtr = g_Statement[stmt].reqHypList;
+    long numReqHyp = g_Statement[stmt].numReqHyp;
+    nmbrString *nmbrHypPtr = g_Statement[stmt].reqHypList;
 
     /* Assemble the hypotheses into two big math strings for unification */
     /* Use a "dummy" token, the top of g_mathTokens array, to separate them. */
@@ -121,10 +107,10 @@ char verifyProof(long statemNum)
 
     nmbrLet(&bigSubstSchemeHyp, nmbrAddElement(NULL_NMBRSTRING, g_mathTokens));
     nmbrLet(&bigSubstInstHyp, nmbrAddElement(NULL_NMBRSTRING, g_mathTokens));
-    unkHypFlag = 0; /* Flag that there are unknown hypotheses */
-    j = 0;
-    for (i = g_WrkProof.RPNStackPtr - numReqHyp; i < g_WrkProof.RPNStackPtr; i++) {
-      nmbrTmpPtr = g_WrkProof.mathStringPtrs[
+    flag unkHypFlag = 0; /* Flag that there are unknown hypotheses */
+    long j = 0;
+    for (long i = g_WrkProof.RPNStackPtr - numReqHyp; i < g_WrkProof.RPNStackPtr; i++) {
+      nmbrString *nmbrTmpPtr = g_WrkProof.mathStringPtrs[
           g_WrkProof.RPNStack[i]];
       if (nmbrTmpPtr[0] == -1) { /* If length is zero, hyp is unknown */
         unkHypFlag = 1;
@@ -166,13 +152,13 @@ char verifyProof(long statemNum)
        the variables of the scheme.  If some of the hypotheses are unknown
        (due to proof being debugged or previous error) we will try to unify
        anyway; if the result is unique, we will use it. */
-    nmbrTmpPtr = assignVar(bigSubstSchemeHyp,
+    nmbrString *nmbrTmpPtr = assignVar(bigSubstSchemeHyp,
         bigSubstInstHyp, stmt, statemNum, step, unkHypFlag);
 /*E*/if(db7)printLongLine(cat("step ", str((double)step+1), " res ",
 /*E*/    nmbrCvtMToVString(nmbrTmpPtr), NULL), "", " ");
 
     /* Deallocate stack built up if there are many $d violations */
-    free_nmbrString(nmbrTmp);
+    nmbrTempAlloc(0);
 
     /* Assign the substituted assertion (must be deallocated by
          cleanWrkProof()!) */
@@ -198,8 +184,8 @@ char verifyProof(long statemNum)
     if (!nmbrEq(g_Statement[statemNum].mathString,
         g_WrkProof.mathStringPtrs[g_WrkProof.numSteps - 1])) {
       if (!g_WrkProof.errorCount) {
-        fbPtr = g_WrkProof.stepSrcPtrPntr[g_WrkProof.numSteps - 1];
-        tokenLength = g_WrkProof.stepSrcPtrNmbr[g_WrkProof.numSteps - 1];
+        char *fbPtr = g_WrkProof.stepSrcPtrPntr[g_WrkProof.numSteps - 1];
+        long tokenLength = g_WrkProof.stepSrcPtrNmbr[g_WrkProof.numSteps - 1];
         /*??? Make sure suggested commands are correct. */
         sourceError(fbPtr, tokenLength, statemNum, cat(
             "The result of the proof (step ", str((double)(g_WrkProof.numSteps)),
@@ -228,59 +214,20 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
   /* For error messages: */
   long statementNum, long step, flag unkHypFlag)
 {
+  nmbrString_def(result); /* value returned */
   nmbrString_def(bigSubstSchemeVars);
   nmbrString_def(substSchemeFrstVarOcc);
   nmbrString_def(varAssLen);
   nmbrString_def(substInstFrstVarOcc);
-  nmbrString_def(result); /* value returned */
-  long bigSubstSchemeLen,bigSubstInstLen,bigSubstSchemeVarLen,substSchemeLen,
-      resultLen;
-  long i,v,v1,p,q,tokenNum;
-  flag breakFlag, contFlag;
-  vstring_def(tmpStr);
-  vstring_def(tmpStr2);
-  flag ambiguityCheckFlag = 0;
   nmbrString_def(saveResult);
 
-  /* Variables for disjoint variable ($d) check */
-  nmbrString *nmbrTmpPtrAS;
-  nmbrString *nmbrTmpPtrBS;
-  nmbrString *nmbrTmpPtrAIR;
-  nmbrString *nmbrTmpPtrBIR;
-  nmbrString *nmbrTmpPtrAIO;
-  nmbrString *nmbrTmpPtrBIO;
-  long dLen, pos, substAPos, substALen, instAPos, substBPos, substBLen,
-      instBPos, a, b, aToken, bToken, aToken2, bToken2, dILenR, dILenO,
-      optStart, reqStart;
-  flag foundFlag;
-
-  /* Variables for getting step info */
-  long j,k,m;
-  long numReqHyp;
-  nmbrString *nmbrHypPtr;
-
-  nmbrString_def(nmbrTmp); /* Used to force tmp stack dealloc */
-
-  long nmbrSaveTempAllocStack;
-
-  /* Initialization to avoid compiler warnings (should not be theoretically
-     necessary) */
-  dILenR = 0;
-  dILenO = 0;
-  optStart = 0;
-  reqStart = 0;
-  nmbrTmpPtrAIR = NULL_NMBRSTRING;
-  nmbrTmpPtrBIR = NULL_NMBRSTRING;
-  nmbrTmpPtrAIO = NULL_NMBRSTRING;
-  nmbrTmpPtrBIO = NULL_NMBRSTRING;
-
-  nmbrSaveTempAllocStack = g_nmbrStartTempAllocStack;
+  long nmbrSaveTempAllocStack = g_nmbrStartTempAllocStack;
   g_nmbrStartTempAllocStack = g_nmbrTempAllocStackTop; /* For nmbrLet() stack cleanup*/
 
-  bigSubstSchemeLen = nmbrLen(bigSubstSchemeAss);
-  bigSubstInstLen = nmbrLen(bigSubstInstAss);
+  long bigSubstSchemeLen = nmbrLen(bigSubstSchemeAss);
+  long bigSubstInstLen = nmbrLen(bigSubstInstAss);
   nmbrLet(&bigSubstSchemeVars,nmbrExtractVars(bigSubstSchemeAss));
-  bigSubstSchemeVarLen = nmbrLen(bigSubstSchemeVars);
+  long bigSubstSchemeVarLen = nmbrLen(bigSubstSchemeVars);
 
   /* If there are no variables in the hypotheses, there won't be any in the
      assertion (unless there was a previously detected error).  In this case,
@@ -320,7 +267,7 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
     }
   }
 
-  for (i = 0; i < bigSubstSchemeVarLen; i++) {
+  for (long i = 0; i < bigSubstSchemeVarLen; i++) {
     substSchemeFrstVarOcc[i] = -1; /* Initialize */
     /* (varAssLen[], substInstFrstVarOcc[], are
        all initialized to 0 by nmbrSpace().) */
@@ -328,13 +275,13 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
 
   /* Use the .tmp field of g_MathToken[]. to hold position of variable in
      bigSubstSchemeVars for quicker lookup */
-  for (i = 0; i < bigSubstSchemeVarLen; i++) {
+  for (long i = 0; i < bigSubstSchemeVarLen; i++) {
     g_MathToken[bigSubstSchemeVars[i]].tmp = i;
   }
 
   /* Scan bigSubstSchemeAss to get substSchemeFrstVarOcc[] (1st var
      occurrence) */
-  for (i = 0; i < bigSubstSchemeLen; i++) {
+  for (long i = 0; i < bigSubstSchemeLen; i++) {
     if (g_MathToken[bigSubstSchemeAss[i]].tokenType ==
         (char)var_) {
       if (substSchemeFrstVarOcc[g_MathToken[bigSubstSchemeAss[
@@ -346,9 +293,11 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
   }
 
   /* Do the scan */
-  v = -1; /* Position in bigSubstSchemeVars */
-  p = 0; /* Position in bigSubstSchemeAss */
-  q = 0; /* Position in bigSubstInstAss */
+  flag breakFlag = 0;
+  long v = -1; /* Position in bigSubstSchemeVars */
+  long p = 0; /* Position in bigSubstSchemeAss */
+  long q = 0; /* Position in bigSubstInstAss */
+  flag ambiguityCheckFlag = 0;
 ambiguityCheck: /* Re-entry point to see if unification is unique */
   while (p != bigSubstSchemeLen-1 || q != bigSubstInstLen-1) {
 /*E*/if(db7&&v>=0)printLongLine(cat("p ", str((double)p), " q ", str((double)q), " VAR ",str((double)v),
@@ -356,8 +305,8 @@ ambiguityCheck: /* Re-entry point to see if unification is unique */
 /*E*/    nmbrMid(bigSubstInstAss,substInstFrstVarOcc[v]+1,
 /*E*/    varAssLen[v])), NULL), "", " ");
 /*E*/if(db7)nmbrLet(&bigSubstInstAss,bigSubstInstAss);
-/*E*/if(db7){print2("Enter scan: v=%ld,p=%ld,q=%ld\n",v,p,q); free_vstring(tmpStr);}
-    tokenNum = bigSubstSchemeAss[p];
+/*E*/if(db7)print2("Enter scan: v=%ld,p=%ld,q=%ld\n",v,p,q);
+    long tokenNum = bigSubstSchemeAss[p];
     if (g_MathToken[tokenNum].tokenType == (char)con_) {
       /* Constants must match in both substScheme and definiendum assumptions */
       if (tokenNum == bigSubstInstAss[q]) {
@@ -368,7 +317,7 @@ ambiguityCheck: /* Re-entry point to see if unification is unique */
       } else {
         /* Backtrack to last variable assigned and add 1 to its length */
         breakFlag = 0;
-        contFlag = 1;
+        flag contFlag = 1;
         while (contFlag) {
           if (v < 0) {
             breakFlag = 1;
@@ -403,7 +352,7 @@ ambiguityCheck: /* Re-entry point to see if unification is unique */
       }
     } else {
       /* It's a variable.  If its the first occurrence, init length to 0 */
-      v1 = g_MathToken[tokenNum].tmp;
+      long v1 = g_MathToken[tokenNum].tmp;
       if (v1 > v) {
         if (v1 != v + 1) bug(2105);
         v = v1;
@@ -414,7 +363,7 @@ ambiguityCheck: /* Re-entry point to see if unification is unique */
         continue;
       } else { /* It's not the first occurrence; check that it matches */
         breakFlag = 0;
-        for (i = 0; i < varAssLen[v1]; i++) {
+        for (long i = 0; i < varAssLen[v1]; i++) {
           if (q + i >= bigSubstInstLen) {
             /* It overflowed the end of bigSubstInstAss */
             breakFlag = 1;
@@ -430,7 +379,7 @@ ambiguityCheck: /* Re-entry point to see if unification is unique */
         if (breakFlag) {
           /* Backtrack to last variable assigned and add 1 to its length */
           breakFlag = 0;
-          contFlag = 1;
+          flag contFlag = 1;
           while (contFlag) {
             if (v < 0) {
               breakFlag = 1;
@@ -485,10 +434,11 @@ ambiguityCheck: /* Re-entry point to see if unification is unique */
       goto returnPoint;
     }
     if (!g_WrkProof.errorCount) {
-      let(&tmpStr, "");
-      j = g_Statement[substScheme].numReqHyp;
-      for (i = 0; i < j; i++) {
-        k = g_WrkProof.RPNStack[g_WrkProof.RPNStackPtr - j + i]; /* Step */
+      vstring_def(tmpStr);
+      vstring_def(tmpStr2);
+      long j = g_Statement[substScheme].numReqHyp;
+      for (long i = 0; i < j; i++) {
+        long k = g_WrkProof.RPNStack[g_WrkProof.RPNStackPtr - j + i]; /* Step */
         let(&tmpStr2, nmbrCvtMToVString(g_WrkProof.mathStringPtrs[k]));
         if (tmpStr2[0] == 0) let(&tmpStr2,
             "? (Unknown step or previous error; unification ignored)");
@@ -546,30 +496,30 @@ ambiguityCheck: /* Re-entry point to see if unification is unique */
       if (step + 1 == getStep.stepNum) {
         nmbrLet(&getStep.sourceSubstsNmbr, nmbrExtractVars(
             g_Statement[substScheme].mathString));
-        k = nmbrLen(getStep.sourceSubstsNmbr);
+        long k = nmbrLen(getStep.sourceSubstsNmbr);
         pntrLet(&getStep.sourceSubstsPntr,
             pntrNSpace(k));
-        for (m = 0; m < k; m++) {
-          pos = g_MathToken[getStep.sourceSubstsNmbr[m]].tmp; /* Subst pos */
+        for (long m = 0; m < k; m++) {
+          long pos = g_MathToken[getStep.sourceSubstsNmbr[m]].tmp; /* Subst pos */
           nmbrLet((nmbrString **)(&getStep.sourceSubstsPntr[m]),
               nmbrMid(bigSubstInstAss,
               substInstFrstVarOcc[pos] + 1, /* Subst pos */
               varAssLen[pos]) /* Subst length */ );
         }
       }
-      /* See if this step is a target hyp; if so get target substitutions */
-      j = 0;
-      numReqHyp = g_Statement[substScheme].numReqHyp;
-      nmbrHypPtr = g_Statement[substScheme].reqHypList;
-      for (i = g_WrkProof.RPNStackPtr - numReqHyp; i < g_WrkProof.RPNStackPtr; i++) {
+      /* See if this step is a target nmbrString *hyp; if so get target substitutions */
+      long j = 0;
+      long numReqHyp = g_Statement[substScheme].numReqHyp;
+      nmbrString *nmbrHypPtr = g_Statement[substScheme].reqHypList;
+      for (long i = g_WrkProof.RPNStackPtr - numReqHyp; i < g_WrkProof.RPNStackPtr; i++) {
         if (g_WrkProof.RPNStack[i] == getStep.stepNum - 1) {
           /* This is parent of target; get hyp's variable substitutions */
           nmbrLet(&getStep.targetSubstsNmbr, nmbrExtractVars(
               g_Statement[nmbrHypPtr[j]].mathString));
-          k = nmbrLen(getStep.targetSubstsNmbr);
+          long k = nmbrLen(getStep.targetSubstsNmbr);
           pntrLet(&getStep.targetSubstsPntr, pntrNSpace(k));
-          for (m = 0; m < k; m++) {
-            pos = g_MathToken[getStep.targetSubstsNmbr[m]].tmp;
+          for (long m = 0; m < k; m++) {
+            long pos = g_MathToken[getStep.targetSubstsNmbr[m]].tmp;
                                                      /* Substitution position */
             nmbrLet((nmbrString **)(&getStep.targetSubstsPntr[m]),
                 nmbrMid(bigSubstInstAss,
@@ -585,141 +535,72 @@ ambiguityCheck: /* Re-entry point to see if unification is unique */
 
   /***** Check for $d violations *****/
   if (!ambiguityCheckFlag) { /* This is the real (first) unification */
-    nmbrTmpPtrAS = g_Statement[substScheme].reqDisjVarsA;
-    nmbrTmpPtrBS = g_Statement[substScheme].reqDisjVarsB;
-    dLen = nmbrLen(nmbrTmpPtrAS); /* Number of disjoint variable pairs */
+    nmbrString *nmbrTmpPtrAS = g_Statement[substScheme].reqDisjVarsA;
+    nmbrString *nmbrTmpPtrBS = g_Statement[substScheme].reqDisjVarsB;
+    long dLen = nmbrLen(nmbrTmpPtrAS); /* Number of disjoint variable pairs */
     if (dLen) { /* There is a disjoint variable requirement */
       /* (Speedup) Save pointers and lengths for statement being proved */
-      nmbrTmpPtrAIR = g_Statement[statementNum].reqDisjVarsA;
-      nmbrTmpPtrBIR = g_Statement[statementNum].reqDisjVarsB;
-      dILenR = nmbrLen(nmbrTmpPtrAIR); /* Number of disj hypotheses */
-      nmbrTmpPtrAIO = g_Statement[statementNum].optDisjVarsA;
-      nmbrTmpPtrBIO = g_Statement[statementNum].optDisjVarsB;
-      dILenO = nmbrLen(nmbrTmpPtrAIO); /* Number of disj hypotheses */
-    }
-    for (pos = 0; pos < dLen; pos++) { /* Scan the disj var pairs */
-      substAPos = g_MathToken[nmbrTmpPtrAS[pos]].tmp;
-      substALen = varAssLen[substAPos];
-      instAPos = substInstFrstVarOcc[substAPos];
-      substBPos = g_MathToken[nmbrTmpPtrBS[pos]].tmp;
-      substBLen = varAssLen[substBPos];
-      instBPos = substInstFrstVarOcc[substBPos];
-      for (a = 0; a < substALen; a++) { /* Scan subst of 1st var in disj pair */
-        aToken = bigSubstInstAss[instAPos + a];
-        if (g_MathToken[aToken].tokenType == (char)con_) continue; /* Ignore */
+      nmbrString *nmbrTmpPtrAIR = g_Statement[statementNum].reqDisjVarsA;
+      nmbrString *nmbrTmpPtrBIR = g_Statement[statementNum].reqDisjVarsB;
+      long dILenR = nmbrLen(nmbrTmpPtrAIR); /* Number of disj hypotheses */
+      nmbrString *nmbrTmpPtrAIO = g_Statement[statementNum].optDisjVarsA;
+      nmbrString *nmbrTmpPtrBIO = g_Statement[statementNum].optDisjVarsB;
+      long dILenO = nmbrLen(nmbrTmpPtrAIO); /* Number of disj hypotheses */
+      for (long pos = 0; pos < dLen; pos++) { /* Scan the disj var pairs */
+        long substAPos = g_MathToken[nmbrTmpPtrAS[pos]].tmp;
+        long substALen = varAssLen[substAPos];
+        long instAPos = substInstFrstVarOcc[substAPos];
+        long substBPos = g_MathToken[nmbrTmpPtrBS[pos]].tmp;
+        long substBLen = varAssLen[substBPos];
+        long instBPos = substInstFrstVarOcc[substBPos];
+        for (long a = 0; a < substALen; a++) { /* Scan subst of 1st var in disj pair */
+          long aToken = bigSubstInstAss[instAPos + a];
+          if (g_MathToken[aToken].tokenType == (char)con_) continue; /* Ignore */
 
-        /* Speed up:  find the 1st occurrence of aToken in the disjoint variable
-           list of the statement being proved. */
-        /* To bypass speedup, we would do this:
-              reqStart = 0;
-              optStart = 0; */
-        /* First, see if the variable is in the required list. */
-        foundFlag = 0;
-        for (i = 0; i < dILenR; i++) {
-          if (nmbrTmpPtrAIR[i] == aToken
-              || nmbrTmpPtrBIR[i] == aToken) {
-            foundFlag = 1;
-            reqStart = i;
-            break;
-          }
-        }
-        /* If not, see if it is in the optional list. */
-        if (!foundFlag) {
-          reqStart = dILenR; /* Force skipping required scan */
-          foundFlag = 0;
-          for (i = 0; i < dILenO; i++) {
-            if (nmbrTmpPtrAIO[i] == aToken
-                || nmbrTmpPtrBIO[i] == aToken) {
+          /* Speed up:  find the 1st occurrence of aToken in the disjoint variable
+            list of the statement being proved. */
+          long optStart, reqStart = 0;
+          /* To bypass speedup, we would do this:
+                reqStart = 0;
+                optStart = 0; */
+          /* First, see if the variable is in the required list. */
+          flag foundFlag = 0;
+          for (long i = 0; i < dILenR; i++) {
+            if (nmbrTmpPtrAIR[i] == aToken
+                || nmbrTmpPtrBIR[i] == aToken) {
               foundFlag = 1;
-              optStart = i;
+              reqStart = i;
               break;
             }
           }
-          if (!foundFlag) optStart = dILenO; /* Force skipping optional scan */
-        } else {
-          optStart = 0;
-        } /* (End if (!foundFlag)) */
-        /* (End of speedup section) */
-
-        for (b = 0; b < substBLen; b++) { /* Scan subst of 2nd var in pair */
-          bToken = bigSubstInstAss[instBPos + b];
-          if (g_MathToken[bToken].tokenType == (char)con_) continue; /* Ignore */
-          if (aToken == bToken) {
-            if (!g_WrkProof.errorCount) { /* No previous errors in this proof */
-              sourceError(g_WrkProof.stepSrcPtrPntr[step], /* source ptr */
-                  g_WrkProof.stepSrcPtrNmbr[step], /* size of token */
-                  statementNum, cat(
-                  "There is a disjoint variable ($d) violation at proof step ",
-                  str((double)step + 1),".  Assertion \"",
-                  g_Statement[substScheme].labelName,
-                  "\" requires that variables \"",
-                  g_MathToken[nmbrTmpPtrAS[pos]].tokenName,
-                  "\" and \"",
-                  g_MathToken[nmbrTmpPtrBS[pos]].tokenName,
-                  "\" be disjoint.  But \"",
-                  g_MathToken[nmbrTmpPtrAS[pos]].tokenName,
-                  "\" was substituted with \"",
-                  nmbrCvtMToVString(nmbrMid(bigSubstInstAss,instAPos + 1,
-                      substALen)),
-                  "\" and \"",
-                  g_MathToken[nmbrTmpPtrBS[pos]].tokenName,
-                  "\" was substituted with \"",
-                  nmbrCvtMToVString(nmbrMid(bigSubstInstAss,instBPos + 1,
-                      substBLen)),
-                  "\".  These substitutions have variable \"",
-                  g_MathToken[aToken].tokenName,
-                  "\" in common.",
-                  NULL));
-              freeTempAlloc(); /* Force tmp string stack dealloc */
-              free_nmbrString(nmbrTmp); /* Force tmp stack dealloc */
-            } /* (End if (!g_WrkProof.errorCount) ) */
-          } else { /* aToken != bToken */
-            /* The variables are different.  We're still not done though:  We
-               must make sure that the $d's of the statement being proved
-               guarantee that they will be disjoint. */
-            /*???Future:  use bsearch for speedup?  Must modify main READ
-               parsing to produce sorted disj var lists; this would slow down
-               the main READ. */
-            /* Make sure that the variables are in the right order for lookup.*/
-            if (aToken > bToken) {
-              aToken2 = bToken;
-              bToken2 = aToken;
-            } else {
-              aToken2 = aToken;
-              bToken2 = bToken;
-            }
-            /* Scan the required disjoint variable hypotheses to see if they're
-               in it. */
-            /* First, see if both variables are in the required list. */
+          /* If not, see if it is in the optional list. */
+          if (!foundFlag) {
+            reqStart = dILenR; /* Force skipping required scan */
             foundFlag = 0;
-            for (i = reqStart; i < dILenR; i++) {
-              if (nmbrTmpPtrAIR[i] == aToken2) {
-                if (nmbrTmpPtrBIR[i] == bToken2) {
-                  foundFlag = 1;
-                  break;
-                }
+            for (long i = 0; i < dILenO; i++) {
+              if (nmbrTmpPtrAIO[i] == aToken
+                  || nmbrTmpPtrBIO[i] == aToken) {
+                foundFlag = 1;
+                optStart = i;
+                break;
               }
             }
-            /* If not, see if they are in the optional list. */
-            if (!foundFlag) {
-              foundFlag = 0;
-              for (i = optStart; i < dILenO; i++) {
-                if (nmbrTmpPtrAIO[i] == aToken2) {
-                  if (nmbrTmpPtrBIO[i] == bToken2) {
-                    foundFlag = 1;
-                    break;
-                  }
-                }
-              }
-            } /* (End if (!foundFlag)) */
-            /* If they were in neither place, we have a violation. */
-            if (!foundFlag) {
+            if (!foundFlag) optStart = dILenO; /* Force skipping optional scan */
+          } else {
+            optStart = 0;
+          } /* (End if (!foundFlag)) */
+          /* (End of speedup section) */
+
+          for (long b = 0; b < substBLen; b++) { /* Scan subst of 2nd var in pair */
+            long bToken = bigSubstInstAss[instBPos + b];
+            if (g_MathToken[bToken].tokenType == (char)con_) continue; /* Ignore */
+            if (aToken == bToken) {
               if (!g_WrkProof.errorCount) { /* No previous errors in this proof */
-                sourceError(g_WrkProof.stepSrcPtrPntr[step], /* source */
+                sourceError(g_WrkProof.stepSrcPtrPntr[step], /* source ptr */
                     g_WrkProof.stepSrcPtrNmbr[step], /* size of token */
                     statementNum, cat(
-                   "There is a disjoint variable ($d) violation at proof step ",
-                    str((double)step + 1), ".  Assertion \"",
+                    "There is a disjoint variable ($d) violation at proof step ",
+                    str((double)step + 1),".  Assertion \"",
                     g_Statement[substScheme].labelName,
                     "\" requires that variables \"",
                     g_MathToken[nmbrTmpPtrAS[pos]].tokenName,
@@ -728,50 +609,121 @@ ambiguityCheck: /* Re-entry point to see if unification is unique */
                     "\" be disjoint.  But \"",
                     g_MathToken[nmbrTmpPtrAS[pos]].tokenName,
                     "\" was substituted with \"",
-                    nmbrCvtMToVString(nmbrMid(bigSubstInstAss, instAPos + 1,
+                    nmbrCvtMToVString(nmbrMid(bigSubstInstAss,instAPos + 1,
                         substALen)),
                     "\" and \"",
                     g_MathToken[nmbrTmpPtrBS[pos]].tokenName,
                     "\" was substituted with \"",
-                    nmbrCvtMToVString(nmbrMid(bigSubstInstAss, instBPos + 1,
+                    nmbrCvtMToVString(nmbrMid(bigSubstInstAss,instBPos + 1,
                         substBLen)),
-                    "\".", NULL));
-                /* Put missing $d requirement in new line so grep can find
-                   them easily in log file */
-                printLongLine(cat("Variables \"",
-                    /* Put in alphabetic order for easier use if
-                       user sorts the list of errors */
-                    /* strcmp returns <0 if 1st<2nd */
-                    (strcmp(g_MathToken[aToken].tokenName,
-                        g_MathToken[bToken].tokenName) < 0)
-                      ? g_MathToken[aToken].tokenName
-                      : g_MathToken[bToken].tokenName,
-                    "\" and \"",
-                    (strcmp(g_MathToken[aToken].tokenName,
-                        g_MathToken[bToken].tokenName) < 0)
-                      ? g_MathToken[bToken].tokenName
-                      : g_MathToken[aToken].tokenName,
-                    "\" do not have a disjoint variable requirement in the ",
-                    "assertion being proved, \"",
-                    g_Statement[statementNum].labelName,
-                    "\".", NULL), "", " ");
+                    "\".  These substitutions have variable \"",
+                    g_MathToken[aToken].tokenName,
+                    "\" in common.",
+                    NULL));
                 freeTempAlloc(); /* Force tmp string stack dealloc */
-                free_nmbrString(nmbrTmp); /* Force tmp stack dealloc */
+                nmbrTempAlloc(0); /* Force tmp stack dealloc */
               } /* (End if (!g_WrkProof.errorCount) ) */
-            } /* (End if (!foundFlag)) */
-          } /* (End if (aToken == bToken)) */
-        } /* (Next b) */
-      } /* (Next a) */
-    } /* (Next pos) */
+            } else { /* aToken != bToken */
+              /* The variables are different.  We're still not done though:  We
+                must make sure that the $d's of the statement being proved
+                guarantee that they will be disjoint. */
+              /*???Future:  use bsearch for speedup?  Must modify main READ
+                parsing to produce sorted disj var lists; this would slow down
+                the main READ. */
+              /* Make sure that the variables are in the right order for lookup.*/
+              long aToken2, bToken2;
+              if (aToken > bToken) {
+                aToken2 = bToken;
+                bToken2 = aToken;
+              } else {
+                aToken2 = aToken;
+                bToken2 = bToken;
+              }
+              /* Scan the required disjoint variable hypotheses to see if they're
+                in it. */
+              /* First, see if both variables are in the required list. */
+              flag foundFlag = 0;
+              for (long i = reqStart; i < dILenR; i++) {
+                if (nmbrTmpPtrAIR[i] == aToken2) {
+                  if (nmbrTmpPtrBIR[i] == bToken2) {
+                    foundFlag = 1;
+                    break;
+                  }
+                }
+              }
+              /* If not, see if they are in the optional list. */
+              if (!foundFlag) {
+                foundFlag = 0;
+                for (long i = optStart; i < dILenO; i++) {
+                  if (nmbrTmpPtrAIO[i] == aToken2) {
+                    if (nmbrTmpPtrBIO[i] == bToken2) {
+                      foundFlag = 1;
+                      break;
+                    }
+                  }
+                }
+              } /* (End if (!foundFlag)) */
+              /* If they were in neither place, we have a violation. */
+              if (!foundFlag) {
+                if (!g_WrkProof.errorCount) { /* No previous errors in this proof */
+                  sourceError(g_WrkProof.stepSrcPtrPntr[step], /* source */
+                      g_WrkProof.stepSrcPtrNmbr[step], /* size of token */
+                      statementNum, cat(
+                    "There is a disjoint variable ($d) violation at proof step ",
+                      str((double)step + 1), ".  Assertion \"",
+                      g_Statement[substScheme].labelName,
+                      "\" requires that variables \"",
+                      g_MathToken[nmbrTmpPtrAS[pos]].tokenName,
+                      "\" and \"",
+                      g_MathToken[nmbrTmpPtrBS[pos]].tokenName,
+                      "\" be disjoint.  But \"",
+                      g_MathToken[nmbrTmpPtrAS[pos]].tokenName,
+                      "\" was substituted with \"",
+                      nmbrCvtMToVString(nmbrMid(bigSubstInstAss, instAPos + 1,
+                          substALen)),
+                      "\" and \"",
+                      g_MathToken[nmbrTmpPtrBS[pos]].tokenName,
+                      "\" was substituted with \"",
+                      nmbrCvtMToVString(nmbrMid(bigSubstInstAss, instBPos + 1,
+                          substBLen)),
+                      "\".", NULL));
+                  /* Put missing $d requirement in new line so grep can find
+                    them easily in log file */
+                  printLongLine(cat("Variables \"",
+                      /* Put in alphabetic order for easier use if
+                        user sorts the list of errors */
+                      /* strcmp returns <0 if 1st<2nd */
+                      (strcmp(g_MathToken[aToken].tokenName,
+                          g_MathToken[bToken].tokenName) < 0)
+                        ? g_MathToken[aToken].tokenName
+                        : g_MathToken[bToken].tokenName,
+                      "\" and \"",
+                      (strcmp(g_MathToken[aToken].tokenName,
+                          g_MathToken[bToken].tokenName) < 0)
+                        ? g_MathToken[bToken].tokenName
+                        : g_MathToken[aToken].tokenName,
+                      "\" do not have a disjoint variable requirement in the ",
+                      "assertion being proved, \"",
+                      g_Statement[statementNum].labelName,
+                      "\".", NULL), "", " ");
+                  freeTempAlloc(); /* Force tmp string stack dealloc */
+                  nmbrTempAlloc(0); /* Force tmp stack dealloc */
+                } /* (End if (!g_WrkProof.errorCount) ) */
+              } /* (End if (!foundFlag)) */
+            } /* (End if (aToken == bToken)) */
+          } /* (Next b) */
+        } /* (Next a) */
+      } /* (Next pos) */
+    } /* (end if dLen) */
   } /* (End if (!ambiguityCheck)) */
   /***** (End of $d violation check) *****/
 
   /* Assemble the final result */
-  substSchemeLen = nmbrLen(g_Statement[substScheme].mathString);
+  long substSchemeLen = nmbrLen(g_Statement[substScheme].mathString);
   /* Calculate the length of the final result */
   q = 0;
-  for (p = 0; p < substSchemeLen; p++) {
-    tokenNum = g_Statement[substScheme].mathString[p];
+  for (long p = 0; p < substSchemeLen; p++) {
+    long tokenNum = g_Statement[substScheme].mathString[p];
     if (g_MathToken[tokenNum].tokenType == (char)con_) {
       q++;
     } else {
@@ -779,17 +731,18 @@ ambiguityCheck: /* Re-entry point to see if unification is unique */
     }
   }
   /* Allocate space for the final result */
-  resultLen = q;
+  long resultLen = q;
   nmbrLet(&result,nmbrSpace(resultLen));
   /* Assign the final result */
   q = 0;
-  for (p = 0; p < substSchemeLen; p++) {
-    tokenNum = g_Statement[substScheme].mathString[p];
+  for (long p = 0; p < substSchemeLen; p++) {
+    long tokenNum = g_Statement[substScheme].mathString[p];
     if (g_MathToken[tokenNum].tokenType == (char)con_) {
       result[q] = tokenNum;
       q++;
     } else {
-      for (i = 0; i < varAssLen[g_MathToken[tokenNum].tmp]; i++){
+      long i = 0;
+      for (; i < varAssLen[g_MathToken[tokenNum].tmp]; i++) {
         result[q + i] = bigSubstInstAss[i +
             substInstFrstVarOcc[g_MathToken[tokenNum].tmp]];
       }
@@ -835,7 +788,7 @@ ambiguityCheck: /* Re-entry point to see if unification is unique */
  returnPoint:
 
   /* Free up all allocated nmbrString space */
-  for (i = 0; i < bigSubstSchemeVarLen; i++) {
+  for (long i = 0; i < bigSubstSchemeVarLen; i++) {
     /* Make the data-holding structures legal nmbrStrings before nmbrLet() */
     /*???Make more efficient by deallocating directly*/
     substSchemeFrstVarOcc[i] = 0;
