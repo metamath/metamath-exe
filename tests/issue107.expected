@@ -1,0 +1,17 @@
+MM> READ "issue107.mm"
+Reading source file "issue107.mm"... 122 bytes
+122 bytes were read into the source buffer.
+The source has 7 statements; 2 are $a and 1 are $p.
+SET EMPTY_SUBSTITUTION was turned ON (allowed) for this database.
+No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
+if you want to check them.
+MM> Continuous scrolling is now in effect.
+MM> 0 10%  20%  30%  40%  50%  60%  70%  80%  90% 100%
+..................................................
+?Error on line 10 of file "issue107.mm" at statement 7, label "th", type "$p":
+th $p thesis $= ax mp $.
+                   ^^
+The hypotheses of statement "mp" at proof step 2 cannot be unified.
+  Hypothesis 1:  hypothesis
+  Step 1:  axiom
+

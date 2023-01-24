@@ -229,18 +229,13 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
   nmbrLet(&bigSubstSchemeVars,nmbrExtractVars(bigSubstSchemeAss));
   long bigSubstSchemeVarLen = nmbrLen(bigSubstSchemeVars);
 
-  /* If there are no variables in the hypotheses, there won't be any in the
-     assertion (unless there was a previously detected error).  In this case,
-     the unification is just the assertion itself. */
-  if (!bigSubstSchemeVarLen) {
-    if (!nmbrLen(g_Statement[substScheme].reqVarList)) {
-      nmbrLet(&result,g_Statement[substScheme].mathString);
-    } else {
-      /* There must have been a previous error; let result remain empty */
-      if (!unkHypFlag) bug(2109);
-    }
-    goto returnPoint;
-  }
+  // If there are no variables in the hypotheses (bigSubstSchemeVarLen == 0),
+  // there won't be any in the assertion (unless there was a previously
+  // detected error). In this case, the unification is just the assertion itself.
+  //
+  // However, we still have to go through the motions of creating the
+  // substitution because we may need to report a unification failure error
+  // (see #107).
 
   /* Allocate nmbrStrings used only to hold extra data for bigSubstSchemeAss;
      don't use further nmbrString functions on them! */
@@ -428,7 +423,7 @@ ambiguityCheck: /* Re-entry point to see if unification is unique */
 /*E*/"p=%ld,bigSubstSchemeLen=%ld;q=%ld,bigSubstInstLen=%ld;v=%ld,bigSubstSchemeVarLen=%ld\n",
 /*E*/  p,bigSubstSchemeLen,q,bigSubstInstLen,v,bigSubstSchemeVarLen);
   /* See if the assignment completed normally */
-  if (v == -1) {
+  if (breakFlag) {
     if (ambiguityCheckFlag) {
       /* This is what we wanted to see -- no further unification possible */
       goto returnPoint;
