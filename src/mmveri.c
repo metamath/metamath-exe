@@ -806,13 +806,9 @@ ambiguityCheck: /* Re-entry point to see if unification is unique */
 /* Note that this does NOT free the other allocations in g_WrkProof.  The
    ERASE command will do this. */
 void cleanWrkProof(void) {
-
-  long step;
-  char type;
-
-  for (step = 0; step < g_WrkProof.numSteps; step++) {
+  for (long step = 0; step < g_WrkProof.numSteps; step++) {
     if (g_WrkProof.proofString[step] > 0) {
-      type = g_Statement[g_WrkProof.proofString[step]].type;
+      char type = g_Statement[g_WrkProof.proofString[step]].type;
       if (type == a_ || type == p_) {
         /* Allocation was only done if: (1) it's not a local label reference
            and (2) it's not a hypothesis.  In this case, deallocate. */

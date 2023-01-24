@@ -1339,46 +1339,6 @@ void typeProof(long statemNum,
         - determined by the global variable g_midiFlag, not by a parameter to
         typeProof()
   */
-  long i, j, plen, step, stmt, lens, lent, maxStepNum;
-  vstring_def(tmpStr);
-  vstring_def(tmpStr1);
-  vstring_def(locLabDecl);
-  vstring_def(tgtLabel);
-  vstring_def(srcLabel);
-  vstring_def(startPrefix);
-  vstring_def(tgtPrefix);
-  vstring_def(srcPrefix);
-  vstring_def(userPrefix);
-  vstring_def(contPrefix);
-  vstring_def(statementUsedFlags);
-  vstring_def(startStringWithNum);
-  vstring_def(startStringWithoutNum);
-  nmbrString_def(proof);
-  nmbrString_def(localLabels);
-  nmbrString_def(localLabelNames);
-  nmbrString_def(indentationLevel);
-  nmbrString_def(targetHyps);
-  nmbrString_def(essentialFlags);
-  nmbrString_def(stepRenumber);
-  nmbrString_def(notUnifiedFlags);
-  nmbrString_def(unprovedList); /* For traceProofWork() */
-  nmbrString_def(relativeStepNums); /* For unknownFlag */
-  long maxLabelLen = 0;
-  long maxStepNumLen = 1;
-  long maxStepNumOffsetLen = 0;
-  char type;
-  flag stepPrintFlag;
-  long fromStep, toStep, byStep;
-  vstring_def(hypStr);
-  nmbrString *hypPtr;
-  long hyp, hypStep;
-
-  /* For statement syntax breakdown (see "syntax hints" section below),
-    we declare the following 3 variables. */
-  static long wffToken = -1; /* array index of the hard-coded token "wff" -
-      static so we only have to look it up once - set to -2 if not found */
-  nmbrString *nmbrTmpPtr1; /* Pointer only; not allocated directly */
-  nmbrString *nmbrTmpPtr2; /* Pointer only; not allocated directly */
 
   if (htmlFlag && texFlag) skipRepeatedSteps = 1; /* Keep old behavior */
   /* Comment out the following line if you want to revert to the old
@@ -1397,8 +1357,7 @@ void typeProof(long statemNum,
          "Proof of Theorem", which means we have to make the "Proof of
          Theorem" line separate and not the table caption, so that the
          "Distinct variables..." line does not become part of the table. */
-      free_vstring(tmpStr);
-      tmpStr = htmlDummyVars(statemNum);
+      vstring tmpStr = htmlDummyVars(statemNum);
       if (tmpStr[0] != 0) {
         print2("<CENTER><B>Proof of Theorem <FONT\n");
         printLongLine(cat("   COLOR=", GREEN_TITLE_COLOR, ">",
@@ -1406,12 +1365,10 @@ void typeProof(long statemNum,
             "</FONT></B></CENTER>", NULL), "", "\"");
         /* Print the list of dummy variables */
         printLongLine(tmpStr, "", "\"");
-        free_vstring(tmpStr);
         print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=%s\n",
             MINT_BACKGROUND_COLOR);
         print2("SUMMARY=\"Proof of theorem\">\n");
       } else {
-
         /* For bobby.cast.org approval */
         print2("<CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR=%s\n",
             MINT_BACKGROUND_COLOR);
@@ -1421,6 +1378,7 @@ void typeProof(long statemNum,
             asciiToTt_temp(g_Statement[statemNum].labelName),
             "</FONT></B></CAPTION>", NULL), "", "\"");
       }
+      free_vstring(tmpStr);
     } else {
       /* This is a syntax breakdown "proof" of a definition called
          from typeStatement */
@@ -1463,6 +1421,7 @@ void typeProof(long statemNum,
     verifyProof(g_showStatement);
   }
 
+  nmbrString_def(proof);
   if (!pipFlag) {
     nmbrLet(&proof, g_WrkProof.proofString); /* The proof */
     if (g_midiFlag) {
@@ -1472,7 +1431,7 @@ void typeProof(long statemNum,
   } else {
     nmbrLet(&proof, g_ProofInProgress.proof); /* The proof */
   }
-  plen = nmbrLen(proof);
+  long plen = nmbrLen(proof);
 
   /* To reduce the number of steps displayed in an html proof,
      we will use a local label to reference the 2nd or later reference to a
@@ -1483,13 +1442,13 @@ void typeProof(long statemNum,
     bug(218);
   }
   if (skipRepeatedSteps) {
-    for (step = 0; step < plen; step++) {
-      stmt = proof[step];
+    for (long step = 0; step < plen; step++) {
+      long stmt = proof[step];
       if (stmt < 0) continue;  /* Unknown or label ref */
-      type = g_Statement[stmt].type;
+      char type = g_Statement[stmt].type;
       if (type == f_ || type == e_  /* It's a hypothesis */
           || g_Statement[stmt].numReqHyp == 0) { /* A statement w/ no hyp */
-        for (i = 0; i < step; i++) {
+        for (long i = 0; i < step; i++) {
           if (stmt == proof[i]) {
             /* The hypothesis at 'step' matches an earlier hypothesis at i,
                so we will back-reference 'step' to i with a local label */
@@ -1502,8 +1461,9 @@ void typeProof(long statemNum,
   }
 
   /* Collect local labels */
-  for (step = 0; step < plen; step++) {
-    stmt = proof[step];
+  nmbrString_def(localLabels);
+  for (long step = 0; step < plen; step++) {
+    long stmt = proof[step];
     if (stmt <= -1000) {
       stmt = -1000 - stmt;
       if (!nmbrElementIn(1, localLabels, stmt)) {
@@ -1514,15 +1474,19 @@ void typeProof(long statemNum,
 
   /* localLabelNames[] hold an integer which, when converted to string,
     is the local label name. */
+  nmbrString_def(localLabelNames);
   nmbrLet(&localLabelNames, nmbrSpace(plen));
 
   /* Get the indentation level */
+  nmbrString_def(indentationLevel);
   nmbrLet(&indentationLevel, nmbrGetIndentation(proof, 0));
 
   /* Get the target hypotheses */
+  nmbrString_def(targetHyps);
   nmbrLet(&targetHyps, nmbrGetTargetHyp(proof, statemNum));
 
   /* Get the essential step flags, if required */
+  nmbrString_def(essentialFlags);
   if (essentialFlag || g_midiFlag) {
     nmbrLet(&essentialFlags, nmbrGetEssential(proof));
   } else {
@@ -1537,13 +1501,14 @@ void typeProof(long statemNum,
   }
 
   /* Get the step renumbering */
+  nmbrString_def(stepRenumber);
   nmbrLet(&stepRenumber, nmbrSpace(plen)); /* This initializes all step
       renumbering to step 0.  Later, we will use (for html) the fact that
       a step renumbered to 0 is a step to be skipped. */
-  i = 0;
-  maxStepNum = 0;
-  for (step = 0; step < plen; step++) {
-    stepPrintFlag = 1; /* Note: stepPrintFlag is reused below with a
+  long i = 0;
+  long maxStepNum = 0;
+  for (long step = 0; step < plen; step++) {
+    flag stepPrintFlag = 1; /* Note: stepPrintFlag is reused below with a
         slightly different meaning (i.e. it will be printed after
         a filter such as notUnified is applied) */
     if (renumberFlag && essentialFlag) {
@@ -1559,6 +1524,7 @@ void typeProof(long statemNum,
   }
 
   /* Get the relative offset (0, -1, -2,...) for unknown steps */
+  nmbrString_def(relativeStepNums);
   if (unknownFlag) {
     /* There could be unknown steps outside of MM-PA
        So remove this bug check, which seems spurious.  I can't see that
@@ -1569,10 +1535,11 @@ void typeProof(long statemNum,
   }
 
   /* Get steps not unified (pipFlag only) */
+  nmbrString_def(notUnifiedFlags);
   if (notUnifiedFlag) {
     if (!pipFlag) bug(205);
     nmbrLet(&notUnifiedFlags, nmbrSpace(plen));
-    for (step = 0; step < plen; step++) {
+    for (long step = 0; step < plen; step++) {
       notUnifiedFlags[step] = 0;
       if (nmbrLen(g_ProofInProgress.source[step])) {
         if (!nmbrEq(g_ProofInProgress.target[step],
@@ -1587,14 +1554,16 @@ void typeProof(long statemNum,
 
   /* Get the printed character length of the largest step number */
   i = maxStepNum;
+  long maxStepNumLen = 1;
   while (i >= 10) {
     i = i/10; /* The number is printed in base 10 */
     maxStepNumLen++;
   }
   /* Add extra space for negative offset numbers e.g. "3:-1" */
+  long maxStepNumOffsetLen = 0;
   if (unknownFlag) {
     maxStepNumOffsetLen = 3; /* :, -, # */
-    j = 0;
+    long j = 0;
     for (i = 0; i < plen; i++) {
       j = relativeStepNums[i];
       if (j <= 0) break; /* Found first unknown step (largest offset) */
@@ -1607,9 +1576,11 @@ void typeProof(long statemNum,
 
   /* Get local labels and maximum label length */
   /* lent = target length, lens = source length */
-  for (step = 0; step < plen; step++) {
-    lent = (long)strlen(g_Statement[targetHyps[step]].labelName);
-    stmt = proof[step];
+  long maxLabelLen = 0;
+  for (long step = 0; step < plen; step++) {
+    long lent = (long)strlen(g_Statement[targetHyps[step]].labelName);
+    long stmt = proof[step];
+    long lens;
     if (stmt < 0) {
       if (stmt <= -1000) {
         stmt = -1000 - stmt;
@@ -1639,6 +1610,7 @@ void typeProof(long statemNum,
   } /* Next step */
 
   /* Print the steps */
+  long fromStep, toStep, byStep;
   if (reverseFlag && !g_midiFlag) {
     fromStep = plen - 1;
     toStep = -1;
@@ -1648,10 +1620,9 @@ void typeProof(long statemNum,
     toStep = plen;
     byStep = 1;
   }
-  for (step = fromStep; step != toStep; step = step + byStep) {
-
+  for (long step = fromStep; step != toStep; step += byStep) {
     /* Filters to decide whether to print the step */
-    stepPrintFlag = 1;
+    flag stepPrintFlag = 1;
     if (startStep > 0) { /* The user's FROM_STEP */
       if (step + 1 < startStep) stepPrintFlag = 0;
     }
@@ -1681,13 +1652,14 @@ void typeProof(long statemNum,
 
     if (!stepPrintFlag) continue;
 
-    if (noIndentFlag) {
-      let(&tgtLabel, "");
-    } else {
+    vstring_def(srcLabel);
+    vstring_def(tgtLabel);
+    if (!noIndentFlag) {
       let(&tgtLabel, g_Statement[targetHyps[step]].labelName);
     }
-    let(&locLabDecl, ""); /* Local label declaration */
-    stmt = proof[step];
+    vstring_def(locLabDecl); /* Local label declaration */
+    long stmt = proof[step];
+    char type;
     if (stmt < 0) {
       if (stmt <= -1000) {
         stmt = -1000 - stmt;
@@ -1726,14 +1698,14 @@ void typeProof(long statemNum,
         let(&srcLabel, g_Statement[stmt].labelName);
 
         /* For non-indented mode, add step numbers of hypotheses after label */
-        let(&hypStr, "");
-        hypStep = step - 1;
-        hypPtr = g_Statement[stmt].reqHypList;
-        for (hyp = g_Statement[stmt].numReqHyp - 1; hyp >=0; hyp--) {
+        vstring_def(hypStr);
+        long hypStep = step - 1;
+        nmbrString *hypPtr = g_Statement[stmt].reqHypList;
+        for (long hyp = g_Statement[stmt].numReqHyp - 1; hyp >= 0; hyp--) {
           if (!essentialFlag || g_Statement[hypPtr[hyp]].type == (char)e_) {
             i = stepRenumber[hypStep];
             if (i == 0) {
-              if (!(skipRepeatedSteps)) bug(221);
+              if (!skipRepeatedSteps) bug(221);
               if (proof[hypStep] != -(long)'?') {
                 if (proof[hypStep] > -1000) bug(222);
                 if (localLabelNames[-1000 - proof[hypStep]] == 0) bug(223);
@@ -1771,6 +1743,7 @@ void typeProof(long statemNum,
           /* Add hypothesis list after label */
           let(&srcLabel, cat(hypStr, " ", srcLabel, NULL));
         }
+        free_vstring(hypStr);
       } else {
         let(&srcLabel, cat("=", g_Statement[stmt].labelName, NULL));
       }
@@ -1779,6 +1752,11 @@ void typeProof(long statemNum,
 
 #define PF_INDENT_INC 2
     /* Print the proof line */
+    vstring_def(startPrefix);
+    vstring_def(srcPrefix);
+    vstring_def(tgtPrefix);
+    vstring_def(userPrefix);
+    vstring_def(contPrefix);
     if (stepPrintFlag) {
 
       if (noIndentFlag) {
@@ -1814,7 +1792,7 @@ void typeProof(long statemNum,
 
         /* Compute prefix with and without step number.  For 'show new_proof
            /unknown', unknownFlag is set, and we add the negative offset. */
-        let(&tmpStr, "");
+        vstring_def(tmpStr);
         if (unknownFlag) {
           if (relativeStepNums[step] < 0) {
             let(&tmpStr, cat(" ", str((double)(relativeStepNums[step])), NULL));
@@ -1823,12 +1801,15 @@ void typeProof(long statemNum,
               - (long)(strlen(tmpStr))), NULL));
         }
 
+        vstring_def(startStringWithNum);
         let(&startStringWithNum, cat(
             space(maxStepNumLen - (long)strlen(str((double)(stepRenumber[step])))),
             str((double)(stepRenumber[step])),
             tmpStr,
             " ", NULL));
+        free_vstring(tmpStr);
 
+        vstring_def(startStringWithoutNum);
         let(&startStringWithoutNum, space(maxStepNumLen + 1));
 
         let(&startPrefix, cat(
@@ -1867,6 +1848,8 @@ void typeProof(long statemNum,
               space(maxLabelLen - (long)strlen(tgtLabel) - (long)strlen("=(User)")),
               NULL));
         }
+        free_vstring(startStringWithNum);
+        free_vstring(startStringWithoutNum);
         let(&contPrefix, ""); /* Continuation lines use whole screen width */
       }
 
@@ -1943,7 +1926,19 @@ void typeProof(long statemNum,
         }
       }
     }
+    free_vstring(srcLabel);
+    free_vstring(tgtLabel);
+    free_vstring(userPrefix);
+    free_vstring(locLabDecl);
+    free_vstring(startPrefix);
+    free_vstring(tgtPrefix);
+    free_vstring(srcPrefix);
+    free_vstring(userPrefix);
+    free_vstring(contPrefix);
   } /* Next step */
+  free_nmbrString(stepRenumber);
+  free_nmbrString(notUnifiedFlags);
+  free_nmbrString(relativeStepNums);
 
   if (!pipFlag) {
     cleanWrkProof(); /* Deallocate verifyProof storage */
@@ -1963,9 +1958,10 @@ void typeProof(long statemNum,
         definition which is called from typeStatement() */
 
       /* Create list of syntax statements used */
+      vstring_def(statementUsedFlags);
       let(&statementUsedFlags, string(g_statements + 1, 'N')); /* Init. to 'no' */
-      for (step = 0; step < plen; step++) {
-        stmt = proof[step];
+      for (long step = 0; step < plen; step++) {
+        long stmt = proof[step];
         /* Convention: collect all $a's that don't begin with "|-" */
         if (stmt > 0) {
           if (g_Statement[stmt].type == a_) {
@@ -1982,6 +1978,8 @@ void typeProof(long statemNum,
          list in the HTML pages, parse the wffs comprising the hypotheses
          and the statement, and add their syntax to the hints list. */
 
+      static long wffToken = -1; /* array index of the hard-coded token "wff" -
+          static so we only have to look it up once - set to -2 if not found */
       /* Look up the token "wff" (hard-coded) if we haven't found it before */
       if (wffToken == -1) { /* First time */
         wffToken = -2; /* In case it's not found because the user's source
@@ -2000,10 +1998,10 @@ void typeProof(long statemNum,
            and find a proof for each of them expressed as a wff */
         for (i = -1; i < g_Statement[statemNum].numReqHyp; i++) {
           /* i = -1 is the statement itself; i >= 0 is hypotheses i */
+          nmbrString_def(nmbrTmpPtr1);
           if (i == -1) {
             /* If it's not a $p we shouldn't be here */
             if (g_Statement[statemNum].type != (char)p_) bug(245);
-            nmbrTmpPtr1 = NULL_NMBRSTRING;
             nmbrLet(&nmbrTmpPtr1, g_Statement[statemNum].mathString);
           } else {
             /* Ignore $f */
@@ -2012,14 +2010,13 @@ void typeProof(long statemNum,
             /* Must therefore be a $e */
             if (g_Statement[g_Statement[statemNum].reqHypList[i]].type
                 != (char)e_) bug(234);
-            nmbrTmpPtr1 = NULL_NMBRSTRING;
             nmbrLet(&nmbrTmpPtr1,
                 g_Statement[g_Statement[statemNum].reqHypList[i]].mathString);
           }
           if (strcmp("|-", g_MathToken[nmbrTmpPtr1[0]].tokenName)) {
             /* Since non-standard logics may not have this,
                just break out of this section gracefully */
-            nmbrTmpPtr2 = NULL_NMBRSTRING; /* To be known after break */
+            free_nmbrString(nmbrTmpPtr1);
             break;
           }
           /* Turn "|-" assertion into a "wff" assertion */
@@ -2029,23 +2026,25 @@ void typeProof(long statemNum,
           /* maxEDepth is the maximum depth at which statements with $e
              hypotheses are
              considered.  A value of 0 means none are considered. */
-          nmbrTmpPtr2 = proveFloating(nmbrTmpPtr1 /*mString*/,
+          nmbrString *nmbrTmpPtr2 = proveFloating(nmbrTmpPtr1 /*mString*/,
               statemNum /*statemNum*/, 0 /*maxEDepth*/,
               0, /* step; 0 = step 1 */ /*For messages*/
               0,  /*not noDistinct*/
               2, /* override discouraged-usage statements silently */
               1 /* Always allow other mathboxes */
               );
+          free_nmbrString(nmbrTmpPtr1);
           if (!nmbrLen(nmbrTmpPtr2)) {
             /* Didn't find syntax proof */
             /* Since a proof may not be found for non-standard
                logics, just break out of this section gracefully */
+            free_nmbrString(nmbrTmpPtr2);
             break;
           }
 
           /* Add to list of syntax statements used */
-          for (step = 0; step < nmbrLen(nmbrTmpPtr2); step++) {
-            stmt = nmbrTmpPtr2[step];
+          for (long step = 0; step < nmbrLen(nmbrTmpPtr2); step++) {
+            long stmt = nmbrTmpPtr2[step];
             /* Convention: collect all $a's that don't begin with "|-" */
             if (stmt > 0) {
               if (statementUsedFlags[stmt] == 'N') { /* For slight speedup */
@@ -2067,20 +2066,14 @@ void typeProof(long statemNum,
               bug(238);
             }
           }
-
-          /* Deallocate memory */
           free_nmbrString(nmbrTmpPtr2);
-          free_nmbrString(nmbrTmpPtr1);
         } /* next i */
-        /* Deallocate memory in case we broke out above */
-        free_nmbrString(nmbrTmpPtr2);
-        free_nmbrString(nmbrTmpPtr1);
       } /* if (wffToken >= 0) */
       /* End of syntax hints section */
       /******************************************************************/
 
-      let(&tmpStr, "");
-      for (stmt = 1; stmt <= g_statements; stmt++) {
+      vstring_def(tmpStr);
+      for (long stmt = 1; stmt <= g_statements; stmt++) {
         if (statementUsedFlags[stmt] == 'Y') {
           if (!tmpStr[0]) {
             let(&tmpStr,
@@ -2090,7 +2083,7 @@ void typeProof(long statemNum,
           /* Get the main symbol in the syntax */
           /* This section can be deleted if not wanted - it is custom
              for set.mm and might not work with other .mm's */
-          free_vstring(tmpStr1);
+          vstring_def(tmpStr1);
           for (i = 1 /* Skip |- */; i < g_Statement[stmt].mathStringLen; i++) {
             if (g_MathToken[(g_Statement[stmt].mathString)[i]].tokenType ==
                 (char)con_) {
@@ -2145,11 +2138,13 @@ void typeProof(long statemNum,
         let(&tmpStr, cat(tmpStr,
             "</FONT></TD></TR>", NULL));
         printLongLine(tmpStr, "", "\"");
+        let(&tmpStr, "");
       }
       /* End of syntax hints list */
 
       /* Get list of axioms and definitions assumed by proof */
-      free_vstring(statementUsedFlags);
+      let(&statementUsedFlags, "");
+      nmbrString_def(unprovedList);
       traceProofWork(statemNum,
           1, /*essentialFlag*/
           "", /*traceToList*/
@@ -2158,9 +2153,9 @@ void typeProof(long statemNum,
       if ((signed)(strlen(statementUsedFlags)) != g_statements + 1) bug(227);
 
       /* First get axioms */
-      let(&tmpStr, "");
-      for (stmt = 1; stmt <= g_statements; stmt++) {
+      for (long stmt = 1; stmt <= g_statements; stmt++) {
         if (statementUsedFlags[stmt] == 'Y' && g_Statement[stmt].type == a_) {
+          vstring_def(tmpStr1);
           let(&tmpStr1, left(g_Statement[stmt].labelName, 3));
           if (!strcmp(tmpStr1, "ax-")) {
             if (!tmpStr[0]) {
@@ -2173,17 +2168,19 @@ void typeProof(long statemNum,
                 g_Statement[stmt].labelName, ".html\">",
                 g_Statement[stmt].labelName, "</A>", tmpStr1, NULL));
           }
+          free_vstring(tmpStr1);
         }
       } /* next stmt */
       if (tmpStr[0]) {
         let(&tmpStr, cat(tmpStr, "</FONT></TD></TR>", NULL));
         printLongLine(tmpStr, "", "\"");
+        let(&tmpStr, "");
       }
 
       /* Then get definitions */
-      let(&tmpStr, "");
-      for (stmt = 1; stmt <= g_statements; stmt++) {
+      for (long stmt = 1; stmt <= g_statements; stmt++) {
         if (statementUsedFlags[stmt] == 'Y' && g_Statement[stmt].type == a_) {
+          vstring_def(tmpStr1);
           let(&tmpStr1, left(g_Statement[stmt].labelName, 3));
           if (!strcmp(tmpStr1, "df-")) {
             if (!tmpStr[0]) {
@@ -2196,11 +2193,14 @@ void typeProof(long statemNum,
                 g_Statement[stmt].labelName, ".html\">",
                 g_Statement[stmt].labelName, "</A>", tmpStr1, NULL));
           }
+          free_vstring(tmpStr1);
         }
       } /* next stmt */
+      free_vstring(statementUsedFlags);
       if (tmpStr[0]) {
         let(&tmpStr, cat(tmpStr, "</FONT></TD></TR>", NULL));
         printLongLine(tmpStr, "", "\"");
+        let(&tmpStr, "");
       }
 
       /* Print any unproved statements */
@@ -2221,7 +2221,6 @@ void typeProof(long statemNum,
 "<TR><TD ALIGN=left >&nbsp;</TD><TD><B><FONT COLOR=\"#FF6600\">",
 "WARNING: This proof depends on the following unproved theorem(s): ",
               NULL), "", "\"");
-          let(&tmpStr, "");
           for (i = 0; i < nmbrLen(unprovedList); i++) {
             let(&tmpStr, cat(tmpStr, " <A HREF=\"",
                 g_Statement[unprovedList[i]].labelName, ".html\">",
@@ -2229,8 +2228,10 @@ void typeProof(long statemNum,
                 NULL));
           }
           printLongLine(cat(tmpStr, "</B></FONT></TD></TR>", NULL), "", "\"");
+          let(&tmpStr, "");
         }
       }
+      free_nmbrString(unprovedList);
 
       /* End of axiom list */
 
@@ -2251,30 +2252,12 @@ void typeProof(long statemNum,
   }
 
  typeProof_return:
-  free_vstring(tmpStr);
-  free_vstring(tmpStr1);
-  free_vstring(statementUsedFlags);
-  free_vstring(locLabDecl);
-  free_vstring(tgtLabel);
-  free_vstring(srcLabel);
-  free_vstring(startPrefix);
-  free_vstring(tgtPrefix);
-  free_vstring(srcPrefix);
-  free_vstring(userPrefix);
-  free_vstring(contPrefix);
-  free_vstring(hypStr);
-  free_vstring(startStringWithNum);
-  free_vstring(startStringWithoutNum);
-  free_nmbrString(unprovedList);
+  free_nmbrString(proof);
   free_nmbrString(localLabels);
   free_nmbrString(localLabelNames);
-  free_nmbrString(proof);
-  free_nmbrString(targetHyps);
   free_nmbrString(indentationLevel);
+  free_nmbrString(targetHyps);
   free_nmbrString(essentialFlags);
-  free_nmbrString(stepRenumber);
-  free_nmbrString(notUnifiedFlags);
-  free_nmbrString(relativeStepNums);
 } /* typeProof() */
 
 /* Show details of one proof step */
