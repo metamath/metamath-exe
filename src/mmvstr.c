@@ -16,7 +16,7 @@ This is an emulation of the string functions available in VMS BASIC.
 #include <string.h>
 #include <time.h>
 #include "mmvstr.h"
-/*E*/ /*Next line is need to declare "db" for debugging*/
+/*E*/ // Next line is needed to declare "db" for debugging
 #include "mmdata.h"
 /* mmdata.h is also used to declare the bug() function that is called in
    several places by mmvstr.c.  To make mmvstr.c and mmvstr.h completely
@@ -29,7 +29,7 @@ This is an emulation of the string functions available in VMS BASIC.
      http://us.metamath.org/downloads/quantum-logic.tar.gz
 */
 
-/*E*/long db1=0;
+/*E*/ long db1=0;
 
 /*!
  * \def INCDB1
@@ -42,7 +42,7 @@ This is an emulation of the string functions available in VMS BASIC.
 # define INCDB1(x)
 #else
 # define INCDB1(x) db1 += (x)
-#endif
+#endif // NDEBUG
 
 /*!
  * \def MAX_ALLOC_STACK
@@ -81,17 +81,17 @@ long g_startTempAllocStack = 0;    /* Where to start freeing temporary allocatio
 void *tempAllocStack[MAX_ALLOC_STACK];
 
 void freeTempAlloc(void) {
-  /* All memory previously allocated with tempAlloc is deallocated. */
-  /* EXCEPT:  When g_startTempAllocStack != 0, the freeing will start at
-     g_startTempAllocStack. */
+  // All memory previously allocated with tempAlloc is deallocated.
+  // EXCEPT:  When g_startTempAllocStack != 0, the freeing will start at
+  // g_startTempAllocStack.
   long i;
   for (i = g_startTempAllocStack; i < g_tempAllocStackTop; i++) {
-/*E*/INCDB1(-1 - (long)strlen(tempAllocStack[i]));
-/*E* /printf("%ld removing [%s]\n", db1, tempAllocStack[i]);*/
+/*E*/ INCDB1(-1 - (long)strlen(tempAllocStack[i]));
+/*E*/ // printf("%ld removing [%s]\n", db1, tempAllocStack[i]);
     free(tempAllocStack[i]);
   }
   g_tempAllocStackTop = g_startTempAllocStack;
-} /* freeTempAlloc */
+} // freeTempAlloc
 
 /*!
  * \fn pushTempAlloc(void *mem)
@@ -120,11 +120,11 @@ static void pushTempAlloc(void *mem)
     printf("*** FATAL ERROR ***  Temporary string stack overflow\n");
 #if __STDC__
     fflush(stdout);
-#endif
+#endif // __STDC__
     bug(2201);
   }
   tempAllocStack[g_tempAllocStackTop++] = mem;
-} /* pushTempAlloc */
+} // pushTempAlloc
 
 /*!
  * \fn tempAlloc(long size)
@@ -148,107 +148,104 @@ static void pushTempAlloc(void *mem)
  *   In case of stack overflow, the caller is not notified and a memory leak
  *   is likely.
  */
-static void* tempAlloc(long size)  /* String memory allocation/deallocation */
+static void* tempAlloc(long size)  // String memory allocation/deallocation
 {
   void* memptr = malloc((size_t)size);
   if (!memptr || size == 0) {
     printf("*** FATAL ERROR ***  Temporary string allocation failed\n");
 #if __STDC__
     fflush(stdout);
-#endif
+#endif // __STDC__
     bug(2202);
   }
   pushTempAlloc(memptr);
-/*E*/INCDB1(size);
-/*E* /printf("%ld adding\n",db1);*/
+/*E*/ INCDB1(size);
+/*E*/ // printf("%ld adding\n",db1);
   return memptr;
-} /* tempAlloc */
+} // tempAlloc
 
-/* Put string in temporary allocation arena */
+// Put string in temporary allocation arena
 temp_vstring makeTempAlloc(vstring s) {
-  if (s[0]) { /* Don't do it if vstring is empty */
+  if (s[0]) { // do not do it if vstring is empty
     pushTempAlloc(s);
-/*E*/INCDB1((long)strlen(s) + 1);
-/*E*/db-=(long)strlen(s) + 1;
-/*E* /printf("%ld temping[%s]\n", db1, s);*/
+/*E*/ INCDB1((long)strlen(s) + 1);
+/*E*/ db-=(long)strlen(s) + 1;
+/*E*/ // printf("%ld temping[%s]\n", db1, s);
   }
   return s;
-} /* makeTempAlloc */
+} // makeTempAlloc
 
-/* String assignment */
+// String assignment
 void let(vstring *target, const char *source) {
-
-  size_t sourceLength = strlen(source);  /* Save its length */
-  size_t targetLength = strlen(*target); /* Save its length */
+  size_t sourceLength = strlen(source);  // save its length
+  size_t targetLength = strlen(*target); // save its length
 /*E*/if (targetLength) {
 /*E*/  db -= (long)targetLength+1;
-/*E*/  /* printf("%ld Deleting %s\n",db,*target); */
+/*E*/  // printf("%ld Deleting %s\n",db,*target);
 /*E*/}
 /*E*/if (sourceLength) {
 /*E*/  db += (long)sourceLength+1;
-/*E*/  /* printf("%ld Adding %s\n",db,source); */
+/*E*/  // printf("%ld Adding %s\n",db,source);
 /*E*/}
-  if (targetLength < sourceLength) { /* Old string has not enough room for new one */
-    /* Free old string space and allocate new space */
+  if (targetLength < sourceLength) { // old string has not enough room for new one
+    // free old string space and allocate new space
     if (targetLength)
-      free(*target);  /* Free old space */
-    *target = malloc(sourceLength + 1); /* Allocate new space */
+      free(*target);  // free old space
+    *target = malloc(sourceLength + 1); // allocate new space
     if (!*target) {
-      printf("*** FATAL ERROR ***  String memory couldn't be allocated\n");
+      printf("*** FATAL ERROR ***  String memory could not be allocated\n");
 #if __STDC__
       fflush(stdout);
-#endif
+#endif // __STDC__
       bug(2204);
     }
   }
   if (sourceLength) {
     strcpy(*target, source);
   } else {
-    /* Empty strings could still be temporaries, so always assign a constant */
+    // empty strings could still be temporaries, so always assign a constant
     if (targetLength) {
       free(*target);
     }
     *target = "";
   }
+  freeTempAlloc(); // free up temporary strings used in expression computation
+} // let
 
-  freeTempAlloc(); /* Free up temporary strings used in expression computation */
-} /* let */
-
-/* String concatenation */
+// String concatenation
 temp_vstring cat(const char *string1, ...) {
 #define MAX_CAT_ARGS 50
-  va_list ap;   /* Declare list incrementer */
-  const char *arg[MAX_CAT_ARGS];    /* Array to store arguments */
-  size_t argPos[MAX_CAT_ARGS]; /* Array of argument positions in result */
+  va_list ap; // declare list incrementer
+  const char *arg[MAX_CAT_ARGS]; // array to store arguments
+  size_t argPos[MAX_CAT_ARGS]; // array of argument positions in result
   int i;
-  int numArgs = 0;        /* Define "last argument" */
-
+  int numArgs = 0; // define "last argument"
   size_t pos = 0;
   const char* curArg = string1;
 
-  va_start(ap, string1); /* Begin the session */
+  va_start(ap, string1); // begin the session
   do {
-        /* User-provided argument list must terminate with 0 */
+    // user-provided argument list must terminate with 0
     if (numArgs >= MAX_CAT_ARGS) {
       printf("*** FATAL ERROR ***  Too many cat() arguments\n");
 #if __STDC__
       fflush(stdout);
-#endif
+#endif // __STDC__
       bug(2206);
     }
     arg[numArgs] = curArg;
     argPos[numArgs] = pos;
     pos += strlen(curArg);
   } while (++numArgs, (curArg = va_arg(ap,char *)) != 0);
-  va_end(ap);           /* End varargs session */
+  va_end(ap); // end varargs session
 
-  /* Allocate the memory for it */
+  // allocate the memory for it
   temp_vstring result = tempAlloc((long)pos+1);
-  /* Move the strings into the newly allocated area */
+  // move the strings into the newly allocated area
   for (i = 0; i < numArgs; ++i)
     strcpy(result + argPos[i], arg[i]);
   return result;
-} /* cat */
+} // cat
 
 /* Input a line from the user or from a file */
 /* Returns 1 if a (possibly empty) line was successfully read, 0 if EOF */
@@ -274,7 +271,7 @@ int linput(FILE *stream, const char* ask, vstring *target) {
     printf("%s", ask);
 #if __STDC__
     fflush(stdout);
-#endif
+#endif // __STDC__
   }
   if (stream == NULL) stream = stdin;
   while (!eol_found && fgets(f, sizeof(f), stream))
@@ -967,7 +964,7 @@ long entryPosition(long element, const char *list) {
   return (lastComma + 2);
 }
 
-/* For debugging */
+// for debugging
 /*
 
 int main(void)

@@ -207,7 +207,7 @@ typedef vstring temp_vstring;
  * \def vstring_def
  * \brief creates a new \ref vstring variable.
  *
- * declares a \ref vstring variable and initiates it with empty text ("").
+ * Declares a \ref vstring variable and initiates it with empty text ("").
  * If it remains unmodified, freeing of __x__ is possible, but not required.
  *
  * \param[in] x plain C variable name without quote characters.
@@ -634,4 +634,4 @@ extern long g_startTempAllocStack; /* Where to start freeing temporary allocatio
   assigned again with let(). */
 temp_vstring makeTempAlloc(vstring s);
 
-#endif /* METAMATH_MMVSTR_H_ */
+#endif // METAMATH_MMVSTR_H_

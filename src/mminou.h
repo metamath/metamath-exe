@@ -750,4 +750,4 @@ double getRunTime(double *timeSinceLastCall);
 /*! Call before exiting to free memory allocated by this module */
 void freeInOu(void);
 
-#endif /* METAMATH_MMINOU_H_*/
+#endif // METAMATH_MMINOU_H_

@@ -96,4 +96,4 @@ void purgeStateVector(pntrString **stateVector);
 /*! Prints the substitutions determined by unify for debugging purposes */
 void printSubst(pntrString *stateVector);
 
-#endif /* METAMATH_MMUNIF_H_ */
+#endif // METAMATH_MMUNIF_H_

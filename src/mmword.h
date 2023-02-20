@@ -25,4 +25,4 @@ long highestRevision(vstring fileName);
    Tags are assumed to be of format nn or #nn in comment at end of line */
 long getRevision(vstring line);
 
-#endif /* METAMATH_MMWORD_H_ */
+#endif // METAMATH_MMWORD_H_

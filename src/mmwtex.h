@@ -215,4 +215,4 @@ void assignMathboxInfo(void);
 long getMathboxLoc(nmbrString **mathboxStart, nmbrString **mathboxEnd,
     pntrString **mathboxUser);
 
-#endif /* METAMATH_MMWTEX_H_ */
+#endif // METAMATH_MMWTEX_H_

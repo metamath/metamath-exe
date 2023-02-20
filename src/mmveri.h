@@ -45,4 +45,4 @@ struct getStep_struct {
 };
 extern struct getStep_struct getStep;
 
-#endif /* METAMATH_MMVERI_H_ */
+#endif // METAMATH_MMVERI_H_

@@ -16,4 +16,4 @@ void help0(vstring helpCmd);
 /*! \note help1 should contain Metamath help */
 void help1(vstring helpCmd);
 
-#endif /* METAMATH_MMHLPA_H_ */
+#endif // METAMATH_MMHLPA_H_

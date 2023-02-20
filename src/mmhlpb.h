@@ -14,4 +14,4 @@
 void help2(vstring helpCmd);
 void help3(vstring helpCmd);
 
-#endif /* METAMATH_MMHLPB_H_ */
+#endif // METAMATH_MMHLPB_H_

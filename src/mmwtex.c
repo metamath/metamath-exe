@@ -924,15 +924,15 @@ vstring asciiToTt(vstring s) {
   vstring_def(tmp);
   long i, j, k;
 
-  let(&ttstr, s); /* In case the input s is temporarily allocated */
+  let(&ttstr, s); // In case the input s is temporarily allocated
   j = (long)strlen(ttstr);
 
-  /* Put special \tt font characters in a form that TeX can understand */
+  // Put special \tt font characters in a form that TeX can understand
   for (i = 0; i < j; i++) {
     k = 1;
     if (!g_htmlFlag) {
       switch (ttstr[i]) {
-        /* For all unspecified cases, TeX will accept the character 'as is' */
+        // For all unspecified cases, TeX will accept the character 'as is'
         case ' ':
         case '$':
         case '%':
@@ -959,23 +959,23 @@ vstring asciiToTt(vstring s) {
           let(&ttstr,cat(left(ttstr,i),"\\char`\\",right(ttstr,i+1),NULL));
           k = 8;
           break;
-      } /* End switch mtoken[i] */
+      } // end switch mtoken[i]
     } else {
       switch (ttstr[i]) {
-        /* For all unspecified cases, HTML will accept the character 'as is' */
+        // For all unspecified cases, HTML will accept the character 'as is'
         /* Don't convert to &amp; but leave as is.  This
            will allow the user to insert HTML entities for Unicode etc.
            directly in the database source. */
-        /* case '&': ... */
+        // case '&': ...
         case '<':
-          /* Leave in HTML tags (case must match) */
+          // Leave in HTML tags (case must match)
           if (!strcmp(mid(ttstr, i + 1, 6), "<HTML>")) {
-            let(&ttstr, ttstr); /* Purge stack to prevent overflow by 'mid' */
+            let(&ttstr, ttstr); // purge stack to prevent overflow by 'mid'
             i = i + 6;
             break;
           }
           if (!strcmp(mid(ttstr, i + 1, 7), "</HTML>")) {
-            let(&ttstr, ttstr); /* Purge stack to prevent overflow by 'mid' */
+            let(&ttstr, ttstr); // purge stack to prevent overflow by 'mid'
             i = i + 7;
             break;
           }
@@ -990,18 +990,18 @@ vstring asciiToTt(vstring s) {
           let(&ttstr,cat(left(ttstr,i),"&quot;",right(ttstr,i+2),NULL));
           k = 6;
           break;
-      } /* End switch mtoken[i] */
+      } // end switch mtoken[i]
     }
 
-    if (k > 1) { /* Adjust iteration and length */
+    if (k > 1) { // adjust iteration and length
       i = i + k - 1;
       j = j + k - 1;
     }
-  } /* Next i */
+  } // next i
 
-  free_vstring(tmp);  /* Deallocate */
+  free_vstring(tmp);  // deallocate
   return ttstr;
-} /* asciiToTt */
+} // asciiToTt
 
 temp_vstring asciiToTt_temp(vstring s) {
   return makeTempAlloc(asciiToTt(s));
@@ -1015,19 +1015,19 @@ vstring tokenToTex(vstring mtoken, long statemNum /*for error msgs*/)
   vstring_def(tex);
   vstring tmpStr;
   long i, j, k;
-  void *texDefsPtr; /* For binary search */
+  void *texDefsPtr; // for binary search
   flag saveOutputToString;
 
   if (!g_texDefsRead) {
-    bug(2320); /* This shouldn't be called if definitions weren't read */
+    bug(2320); // this should not be called if definitions were not read
   }
 
   texDefsPtr = (void *)bsearch(mtoken, g_TexDefs, (size_t)numSymbs,
       sizeof(struct texDef_struct), texSrchCmp);
-  if (texDefsPtr) { /* Found it */
+  if (texDefsPtr) { // found
     let(&tex, ((struct texDef_struct *)texDefsPtr)->texEquiv);
   } else {
-    /* If it wasn't found, give user a warning... */
+    // if it was not found, give user a warning
     saveOutputToString = g_outputToString;
     g_outputToString = 0;
     /* It is possible for statemNum to be 0 when
@@ -1035,33 +1035,33 @@ vstring tokenToTex(vstring mtoken, long statemNum /*for error msgs*/)
        printTexLongMath(), when its hypStmt argument is 0 (= not associated
        with a statement).  (Reported by Wolf Lammen.) */
     if (statemNum < 0 || statemNum > g_statements) bug(2331);
-    if (statemNum > 0) {   /* Include statement label in error message */
+    if (statemNum > 0) {   // Include statement label in error message
       printLongLine(cat("?Warning: In the comment for statement \"",
           g_Statement[statemNum].labelName,
           "\", math symbol token \"", mtoken,
           "\" does not have a LaTeX and/or an HTML definition.", NULL),
           "", " ");
-    } else { /* There is no statement associated with the error message */
+    } else { // There is no statement associated with the error message
       printLongLine(cat("?Warning: Math symbol token \"", mtoken,
           "\" does not have a LaTeX and/or an HTML definition.", NULL),
           "", " ");
     }
     g_outputToString = saveOutputToString;
-    /* ... but we'll still leave in the old default conversion anyway: */
+    // ... but we will still leave in the old default conversion anyway:
 
-    /* If it wasn't found, use built-in conversion rules */
+    // if it was not found, use built-in conversion rules
     let(&tex, mtoken);
 
-    /* First, see if it's a tilde followed by a letter */
-    /* If so, remove the tilde.  (This is actually obsolete.) */
-    /* (The tilde was an escape in the obsolete syntax.) */
+    // First, see if it is a tilde followed by a letter.
+    // If so, remove the tilde.  (This is actually obsolete.)
+    // (The tilde was an escape in the obsolete syntax.)
     if (tex[0] == '~') {
       if (isalpha((unsigned char)(tex[1]))) {
-        let(&tex, right(tex, 2)); /* Remove tilde */
+        let(&tex, right(tex, 2)); // remove tilde
       }
     }
 
-    /* Next, convert punctuation characters to tt font */
+    // Next, convert punctuation characters to tt font
     j = (long)strlen(tex);
     for (i = 0; i < j; i++) {
       if (ispunct((unsigned char)(tex[i]))) {
@@ -1071,25 +1071,24 @@ vstring tokenToTex(vstring mtoken, long statemNum /*for error msgs*/)
         k = (long)strlen(tmpStr);
         let(&tex,
             cat(left(tex, i), tmpStr, right(tex, i + 2), NULL));
-        i = i + k - 1; /* Adjust iteration */
-        j = j + k - 1; /* Adjust length */
-        free_vstring(tmpStr); /* Deallocate */
+        i = i + k - 1; // adjust iteration
+        j = j + k - 1; // adjust length
+        free_vstring(tmpStr); // deallocate
       }
-    } /* Next i */
+    } // next i
 
-    /* Make all letters Roman; put inside mbox */
+    // make all letters Roman in math mode
     if (!g_htmlFlag)
-      let(&tex, cat("\\mbox{\\rm ", tex, "}", NULL));
-  } /* End if */
+      let(&tex, cat("\\mathrm{", tex, "}", NULL));
+  } // end if
 
   return tex;
-} /* tokenToTex */
+} // tokenToTex
 
 /* Converts a comment section in math mode to TeX.  Each math token
-   MUST be separated by white space.   TeX "$" does not surround the output. */
+   MUST be separated by white space.  TeX "$" does not surround the output. */
 vstring asciiMathToTex(vstring mathComment, long statemNum)
 {
-
   vstring tex;
   vstring_def(texLine);
   vstring_def(lastTex);
@@ -1122,17 +1121,17 @@ vstring asciiMathToTex(vstring mathComment, long statemNum)
         converted to char.  Thanks to Wolf Lammen for pointing this out. */
       alphnew = !!isalpha((unsigned char)(tex[0]));
       unknownnew = 0;
-      if (!strcmp(left(tex, 10), "\\mbox{\\rm ")) { /* Token not in table */
+      if (!strcmp(left(tex, 8), "\\mathrm{")) { // token not in table
         unknownnew = 1;
       }
       alphold = !!isalpha((unsigned char)(lastTex[0]));
       unknownold = 0;
-      if (!strcmp(left(lastTex, 10), "\\mbox{\\rm ")) { /* Token not in table*/
+      if (!strcmp(left(lastTex, 8), "\\mathrm{")) { // token not in table
         unknownold = 1;
       }
-      /* Put thin space only between letters and/or unknowns */
+      // put thin space only between letters and/or unknowns
       if ((alphold || unknownold) && (alphnew || unknownnew)) {
-        /* Put additional thin space between two letters */
+        // put additional thin space between two letters
         let(&texLine, cat(texLine, "\\,", tex, " ", NULL));
       } else {
         let(&texLine, cat(texLine, tex, " ", NULL));
@@ -1140,15 +1139,15 @@ vstring asciiMathToTex(vstring mathComment, long statemNum)
     } else {
       let(&texLine, cat(texLine, tex, NULL));
     }
-    free_vstring(lastTex); /* Deallocate */
-    lastTex = tex; /* Pass deallocation responsibility for tex to lastTex */
-  } /* End while (1) */
+    free_vstring(lastTex); // deallocate
+    lastTex = tex; // pass deallocation responsibility for tex to lastTex
+  } // end while(1)
 
-  free_vstring(lastTex); /* Deallocate */
-  free_vstring(token); /* Deallocate */
+  free_vstring(lastTex); // deallocate
+  free_vstring(token); // deallocate
 
   return texLine;
-} /* asciiMathToTex */
+} // asciiMathToTex
 
 /* Gets the next section of a comment that is in the current mode (text,
    label, or math).  If 1st char. is not "$" (DOLLAR_SUBST), text mode is
@@ -1157,16 +1156,16 @@ vstring asciiMathToTex(vstring mathComment, long statemNum)
 vstring getCommentModeSection(vstring *srcptr, char *mode)
 {
   vstring_def(modeSection);
-  vstring ptr; /* Not allocated */
+  vstring ptr; // not allocated
   flag addMode = 0;
   if (!g_outputToString) bug(2319);
 
   if ((*srcptr)[0] != DOLLAR_SUBST /*'$'*/) {
-    if ((*srcptr)[0] == 0) { /* End of string */
-      *mode = 0; /* End of comment */
+    if ((*srcptr)[0] == 0) { // end of string
+      *mode = 0; // end of comment
       return "";
     } else {
-      *mode = 'n'; /* Normal text */
+      *mode = 'n'; // normal text
       addMode = 1;
     }
   } else {
@@ -1176,10 +1175,10 @@ vstring getCommentModeSection(vstring *srcptr, char *mode)
       case 'n':
         *mode = (*srcptr)[1];
         break;
-      case ')':  /* Obsolete */
+      case ')':  // obsolete
         bug(2317);
-        /* Leave old code in case user continues through the bug */
-        *mode = 0; /* End of comment */
+        // Leave old code in case user continues through the bug
+        *mode = 0; // end of comment
         return "";
         break;
       default:
@@ -1195,7 +1194,7 @@ vstring getCommentModeSection(vstring *srcptr, char *mode)
         case 'l':
         case 'm':
         case 'n':
-        case ')':  /* Obsolete (will never happen) */
+        case ')':  // obsolete (will never happen)
           if (ptr[1] == ')') bug(2318);
           let(&modeSection, space(ptr - (*srcptr)));
           memcpy(modeSection, *srcptr, (size_t)(ptr - (*srcptr)));
@@ -1220,9 +1219,9 @@ vstring getCommentModeSection(vstring *srcptr, char *mode)
       }
     }
     ptr++;
-  } /* End while */
-  return NULL; /* Dummy return - never executes */
-} /* getCommentModeSection */
+  } // end while
+  return NULL; // dummy return - never executes
+} // getCommentModeSection
 
 /* The texHeaderFlag means this:
     If !g_htmlFlag (i.e. TeX mode), then 1 means print header
@@ -1260,10 +1259,16 @@ void printTexHeader(flag texHeaderFlag)
 
     if (texHeaderFlag && !g_oldTexFlag) {
       print2("\\documentclass{article}\n");
-      print2("\\usepackage{graphicx} %% For rotated iota\n");
+      print2("\\usepackage{graphicx} %% For rotated iota\n");// to be removed after latexdef of "iota" is changed to \riota (see next line)
+      print2("\\usepackage{phonetic} %% for \\riota\n");
+      // see https://www.ctan.org/pkg/phonetic
+      // see https://www.ctan.org/pkg/comprehensive "Reflecting and rotating existing symbols"
       print2("\\usepackage{amssymb}\n");
-      print2("\\usepackage{amsmath} %% For \\begin{align}...\n");
-      print2("\\usepackage{amsthm}\n");
+      print2("\\usepackage{mathtools} %% loads package amsmath\n");
+      // see https://www.ctan.org/pkg/mathtools
+      // see https://www.ctan.org/pkg/amsmath
+      print2("\\usepackage{amsthm} %% amsthm must be loaded after amsmath\n");
+      // see https://www.ctan.org/pkg/amsthm
       print2("\\theoremstyle{plain}\n");
       print2("\\newtheorem{theorem}{Theorem}[section]\n");
       print2("\\newtheorem{definition}[theorem]{Definition}\n");
@@ -1271,16 +1276,19 @@ void printTexHeader(flag texHeaderFlag)
       print2("\\newtheorem{axiom}{Axiom}\n");
       print2("\\allowdisplaybreaks[1] %% Allow page breaks in {align}\n");
       print2("\\usepackage[plainpages=false,pdfpagelabels]{hyperref}\n");
+      // see https://www.ctan.org/pkg/hyperref
       print2("\\hypersetup{colorlinks} %% Get rid of boxes around links\n");
       print2("\\begin{document}\n");
       print2("\n");
     }
 
     if (texHeaderFlag && g_oldTexFlag) {
-      /* LaTeX 2e */
+      // LaTeX 2e
       print2("\\documentclass[leqno]{article}\n");
-      /* LaTeX 2e */
-      print2("\\usepackage{graphicx}\n"); /* For rotated iota */
+      print2("\\usepackage{graphicx} %% For rotated iota\n");// to be removed after latexdef of "iota" is changed to \riota (see next line)
+      print2("\\usepackage{phonetic} %% for \\riota\n");
+      // see https://www.ctan.org/pkg/phonetic
+      // see https://www.ctan.org/pkg/comprehensive "Reflecting and rotating existing symbols"
       print2("\\usepackage{amssymb}\n");
       print2("\\raggedbottom\n");
       print2("\\raggedright\n");
@@ -4797,12 +4805,12 @@ vstring getTexLongMath(nmbrString *mathString, long statemNum)
       /* Also, anything not in table will have space added */
       alphnew = !!isalpha((unsigned char)(tex[0]));
       unknownnew = 0;
-      if (!strcmp(left(tex, 10), "\\mbox{\\rm ")) { /* Token not in table */
+      if (!strcmp(left(tex, 8), "\\mathrm{")) { // token not in table
         unknownnew = 1;
       }
       alphold = !!isalpha((unsigned char)(lastTex[0]));
       unknownold = 0;
-      if (!strcmp(left(lastTex, 10), "\\mbox{\\rm ")) { /* Token not in table*/
+      if (!strcmp(left(lastTex, 8), "\\mathrm{")) { // token not in table
         unknownold = 1;
       }
       /* Put thin space only between letters and/or unknowns */
@@ -5562,14 +5570,14 @@ long getMathboxLoc(nmbrString **mathboxStart, nmbrString **mathboxEnd,
   long mathboxes = 0;
   vstring_def(comment);
   vstring_def(user);
-  assignMathboxInfo(); /* Assign g_mathboxStmt */
+  assignMathboxInfo(); // assign g_mathboxStmt
   tagLen = (long)strlen(MB_TAG);
-  /* Ensure lists are initialized */
+  // ensure lists are initialized
   if (pntrLen((pntrString *)(*mathboxUser)) != 0) bug(2347);
   if (nmbrLen((nmbrString *)(*mathboxStart)) != 0) bug(2348);
   if (nmbrLen((nmbrString *)(*mathboxEnd)) != 0) bug(2349);
   for (stmt = g_mathboxStmt + 1; stmt <= g_statements; stmt++) {
-    /* Heuristic to match beginning of mathbox */
+    // heuristic to match beginning of mathbox
     let(&comment, left(g_Statement[stmt].labelSectionPtr,
         g_Statement[stmt].labelSectionLen));
     p = 0;
@@ -5578,27 +5586,27 @@ long getMathboxLoc(nmbrString **mathboxStart, nmbrString **mathboxEnd,
     while (1) {
       q = instr(p + 1, comment, MB_TAG);
       if (q == 0) break;
-      p = q; /* Save last "Mathbox for " */
+      p = q; // save last "Mathbox for "
     }
-    if (p == 0) continue; /* No "Mathbox for " in this statement's comment */
+    if (p == 0) continue; // no "Mathbox for " in this statement's comment
 
-    /* Found a mathbox; assign user and start statement */
+    // Found a mathbox; assign user and start statement
     mathboxes++;
     q = instr(p, comment, "\n");
-    if (q == 0) bug(2350); /* No end of line */
+    if (q == 0) bug(2350); // no end of line
     let(&user, seg(comment, p + tagLen, q - 1));
     pntrLet(&(*mathboxUser), pntrAddElement(*mathboxUser));
     (*mathboxUser)[mathboxes - 1] = "";
     let((vstring *)(&((*mathboxUser)[mathboxes - 1])), user);
     nmbrLet(&(*mathboxStart), nmbrAddElement(*mathboxStart, stmt));
-  } /* next stmt */
+  } // next stmt
   if (mathboxes == 0) goto RETURN_POINT;
-  /* Assign end statements */
-  nmbrLet(&(*mathboxEnd), nmbrSpace(mathboxes)); /* Pre-allocate */
+  // assign end statements
+  nmbrLet(&(*mathboxEnd), nmbrSpace(mathboxes)); // preallocate
   for (m = 0; m < mathboxes - 1; m++) {
     (*mathboxEnd)[m] = (*mathboxStart)[m + 1] - 1;
   }
-  (*mathboxEnd)[mathboxes - 1] = g_statements; /* Assumed end of last mathbox */
+  (*mathboxEnd)[mathboxes - 1] = g_statements; // assumed end of last mathbox
  RETURN_POINT:
   free_vstring(comment);
   free_vstring(user);

@@ -204,4 +204,4 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
     /*vstring inclFileName,*/ const char *sourceFileName,
     long *size, long parentLineNum, flag *errorFlag);
 
-#endif /* METAMATH_MMPARS_H_ */
+#endif // METAMATH_MMPARS_H_

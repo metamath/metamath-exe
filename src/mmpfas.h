@@ -212,4 +212,4 @@ long processUndoStack(struct pip_struct *proofStruct,
     vstring info, /*!< Info to print upon UNDO or REDO */
     long newStackSize /*!< Used only by NEW_SIZE */);
 
-#endif /* METAMATH_MMPFAS_H_ */
+#endif // METAMATH_MMPFAS_H_

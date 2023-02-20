@@ -946,4 +946,4 @@ int qsortStringCmp(const void *p1, const void *p2);
 /*! Call on exit to free memory */
 void freeData(void);
 
-#endif /* METAMATH_MMDATA_H_ */
+#endif // METAMATH_MMDATA_H_
