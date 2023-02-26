@@ -1234,7 +1234,7 @@ void printTexHeader(flag texHeaderFlag)
   long i, j, k;
   vstring_def(tmpStr);
 
-  /* "Mathbox for <username>" mod */
+  // "Mathbox for <username>" mod
   vstring_def(localSandboxTitle);
   vstring_def(hugeHdr);
   vstring_def(bigHdr);
@@ -1250,19 +1250,20 @@ void printTexHeader(flag texHeaderFlag)
        "?There was an error in the $t comment's LaTeX/HTML definitions.\n");
     return;
   }
-  /*}*/
 
-  g_outputToString = 1;  /* Redirect print2 and printLongLine to g_printString */
+  g_outputToString = 1;  // redirect print2 and printLongLine to g_printString
   if (!g_htmlFlag) {
     print2("%s This LaTeX file was created by Metamath on %s %s.\n",
        "%", date(), time_());
-
     if (texHeaderFlag && !g_oldTexFlag) {
+      // LaTeX 2e
       print2("\\documentclass{article}\n");
-      print2("\\usepackage{graphicx} %% For rotated iota\n");// to be removed after latexdef of "iota" is changed to \riota (see next line)
+      print2("\\usepackage{graphicx} %% for rotated iota\n"); // to be removed after latexdef of "iota" is changed to \riota (see next line)
       print2("\\usepackage{phonetic} %% for \\riota\n");
       // see https://www.ctan.org/pkg/phonetic
       // see https://www.ctan.org/pkg/comprehensive "Reflecting and rotating existing symbols"
+      print2("\\usepackage{mathrsfs} %% for \\mathscr\n");
+      // see https://www.ctan.org/pkg/mathrsfs
       print2("\\usepackage{amssymb}\n");
       print2("\\usepackage{mathtools} %% loads package amsmath\n");
       // see https://www.ctan.org/pkg/mathtools
@@ -1281,15 +1282,19 @@ void printTexHeader(flag texHeaderFlag)
       print2("\\begin{document}\n");
       print2("\n");
     }
-
     if (texHeaderFlag && g_oldTexFlag) {
       // LaTeX 2e
       print2("\\documentclass[leqno]{article}\n");
-      print2("\\usepackage{graphicx} %% For rotated iota\n");// to be removed after latexdef of "iota" is changed to \riota (see next line)
+      print2("\\usepackage{graphicx} %% for rotated iota\n"); // to be removed after latexdef of "iota" is changed to \riota (see next line)
       print2("\\usepackage{phonetic} %% for \\riota\n");
       // see https://www.ctan.org/pkg/phonetic
       // see https://www.ctan.org/pkg/comprehensive "Reflecting and rotating existing symbols"
+      print2("\\usepackage{mathrsfs} %% for \\mathscr\n");
+      // see https://www.ctan.org/pkg/mathrsfs
       print2("\\usepackage{amssymb}\n");
+      print2("\\usepackage{mathtools} %% loads package amsmath\n");
+      // see https://www.ctan.org/pkg/mathtools
+      // see https://www.ctan.org/pkg/amsmath
       print2("\\raggedbottom\n");
       print2("\\raggedright\n");
       print2("%%\\title{Your title here}\n");
@@ -1316,7 +1321,7 @@ void printTexHeader(flag texHeaderFlag)
       print2("  \\box\\mlinebox\n");
       print2("}\n");
     }
-  } else { /* g_htmlFlag */
+  } else { // g_htmlFlag
 
     print2("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"\n");
     print2(     "    \"http://www.w3.org/TR/html4/loose.dtd\">\n");
@@ -1557,7 +1562,7 @@ void printTexHeader(flag texHeaderFlag)
         print2("      Mathboxes</A>&nbsp; &gt;\n");
       }
       print2("      &nbsp;%s\n",
-          /* Strip off ".html" */
+          // Strip off ".html"
           left(g_texFileName, (long)strlen(g_texFileName) - 5));
       print2("      </FONT>\n");
       print2("    </TD>\n");
@@ -1626,14 +1631,14 @@ void printTexHeader(flag texHeaderFlag)
     print2("</TABLE>\n");
 
     print2("<HR NOSHADE SIZE=1>\n");
-  } /* g_htmlFlag */
+  } // g_htmlFlag
   fprintf(g_texFilePtr, "%s", g_printString);
   g_outputToString = 0;
   free_vstring(g_printString);
 
-  /* Deallocate strings */
+  // deallocate strings
   free_vstring(tmpStr);
-} /* printTexHeader */
+} // printTexHeader
 
 /* Prints an embedded comment in TeX or HTML.  The commentPtr must point to the first
    character after the "$(" in the comment.  The printout ends when the first
@@ -3074,14 +3079,14 @@ void printTexLongMath(nmbrString *mathString,
   free_vstring(tmp); /* Deallocate */
   free_vstring(texLine); /* Deallocate */
   free_vstring(tex); /* Deallocate */
-} /* printTexLongMath */
+} // printTexLongMath
 
 void printTexTrailer(flag texTrailerFlag) {
 
   if (texTrailerFlag) {
-    g_outputToString = 1; /* Redirect print2 and printLongLine to g_printString */
+    g_outputToString = 1; // redirect print2 and printLongLine to g_printString
     if (!g_htmlFlag) let(&g_printString, "");
-        /* May have stuff to be printed */
+        // may have stuff to be printed
     if (!g_htmlFlag) {
       print2("\\end{document}\n");
     } else {
@@ -3099,11 +3104,11 @@ void printTexTrailer(flag texTrailerFlag) {
       print2("</FONT></TD></TR></TABLE>\n");
       print2("</BODY></HTML>\n");
     }
-    g_outputToString = 0; /* Restore normal output */
+    g_outputToString = 0; // restore normal output
     fprintf(g_texFilePtr, "%s", g_printString);
     free_vstring(g_printString);
   }
-} /* printTexTrailer */
+} // printTexTrailer
 
 /* WRITE THEOREM_LIST command:  Write out theorem list
    into mmtheorems.html, mmtheorems1.html,... */
@@ -3116,15 +3121,15 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
   vstring_def(str3);
   vstring_def(str4);
   vstring_def(prevNextLinks);
-  long partCntr;        /* Counter for hugeHdr */
-  long sectionCntr;     /* Counter for bigHdr */
-  long subsectionCntr;  /* Counter for smallHdr */
-  long subsubsectionCntr;  /* Counter for tinyHdr */
+  long partCntr;        // Counter for hugeHdr
+  long sectionCntr;     // Counter for bigHdr
+  long subsectionCntr;  // Counter for smallHdr
+  long subsubsectionCntr;  // Counter for tinyHdr
   vstring_def(outputFileName);
   FILE *outputFilePtr;
-  long passNumber; /* for summary/detailed table of contents */
+  long passNumber; // for summary/detailed table of contents
 
-  /* for table of contents */
+  // for table of contents
   vstring_def(hugeHdr);
   vstring_def(bigHdr);
   vstring_def(smallHdr);
@@ -3146,20 +3151,20 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
   vstring_def(hdrCommentAnchor);
   flag hdrCommentAnchorDone = 0;
 
-  /* Populate the statement map */
-  /* ? ? ? Future:  is assertions same as g_Statement[g_statements].pinkNumber? */
+  // Populate the statement map
+  // ? ? ? Future:  is assertions same as g_Statement[g_statements].pinkNumber?
   nmbrLet(&nmbrStmtNmbr, nmbrSpace(g_statements + 1));
-  assertions = 0; /* Number of $p's + $a's */
+  assertions = 0; // Number of $p's + $a's
   for (s = 1; s <= g_statements; s++) {
     if (g_Statement[s].type == a_ || g_Statement[s].type == p_) {
-      assertions++; /* Corresponds to pink number */
+      assertions++; // Corresponds to pink number
       nmbrStmtNmbr[assertions] = s;
     }
   }
   if (assertions != g_Statement[g_statements].pinkNumber) bug(2328);
 
-  /* Table of contents */
-  /* Allocate array for section headers found */
+  // Table of contents
+  // Allocate array for section headers found
   pntrLet(&pntrHugeHdr, pntrSpace(g_statements + 1));
   pntrLet(&pntrBigHdr, pntrSpace(g_statements + 1));
   pntrLet(&pntrSmallHdr, pntrSpace(g_statements + 1));
@@ -3171,15 +3176,15 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
 
   pages = ((assertions - 1) / theoremsPerPage) + 1;
   for (page = 0; page <= pages; page++) {
-    /* Open file */
+    // Open file
     let(&outputFileName,
         cat("mmtheorems", (page > 0) ? str((double)page) : "", ".html", NULL));
     print2("Creating %s\n", outputFileName);
     outputFilePtr = fSafeOpen(outputFileName, "w", noVersioning);
-    if (!outputFilePtr) goto TL_ABORT; /* Couldn't open it (error msg was provided)*/
+    if (!outputFilePtr) goto TL_ABORT; // Could not open it (error msg was provided)
 
-    /* Output header */
-    /* TODO 14-Jan-2016: why aren't we using printTexHeader? */
+    // Output header
+    // TODO 14-Jan-2016: why aren't we using printTexHeader?
 
     g_outputToString = 1;
     print2("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"\n");
