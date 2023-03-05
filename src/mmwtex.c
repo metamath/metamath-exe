@@ -1077,9 +1077,9 @@ vstring tokenToTex(vstring mtoken, long statemNum /*for error msgs*/)
       }
     } /* Next i */
 
-    /* Make all letters Roman; put inside mbox */
+    /* Make all letters Roman in math mode */
     if (!g_htmlFlag)
-      let(&tex, cat("\\mbox{\\rm ", tex, "}", NULL));
+      let(&tex, cat("\\mathrm{", tex, "}", NULL));
   } /* End if */
 
   return tex;
@@ -1122,12 +1122,12 @@ vstring asciiMathToTex(vstring mathComment, long statemNum)
         converted to char.  Thanks to Wolf Lammen for pointing this out. */
       alphnew = !!isalpha((unsigned char)(tex[0]));
       unknownnew = 0;
-      if (!strcmp(left(tex, 10), "\\mbox{\\rm ")) { /* Token not in table */
+      if (!strcmp(left(tex, 8), "\\mathrm{")) { // token not in table
         unknownnew = 1;
       }
       alphold = !!isalpha((unsigned char)(lastTex[0]));
       unknownold = 0;
-      if (!strcmp(left(lastTex, 10), "\\mbox{\\rm ")) { /* Token not in table*/
+      if (!strcmp(left(tex, 8), "\\mathrm{")) { // token not in table
         unknownold = 1;
       }
       /* Put thin space only between letters and/or unknowns */
@@ -1259,11 +1259,20 @@ void printTexHeader(flag texHeaderFlag)
        "%", date(), time_());
 
     if (texHeaderFlag && !g_oldTexFlag) {
+      /* LaTeX 2e */
       print2("\\documentclass{article}\n");
-      print2("\\usepackage{graphicx} %% For rotated iota\n");
+      print2("\\usepackage{graphicx} %% for rotated iota\n"); // to be removed after latexdef of "iota" is changed to \riota (see next line)
+      print2("\\usepackage{phonetic} %% for \\riota\n");
+      // see https://www.ctan.org/pkg/phonetic
+      // see https://www.ctan.org/pkg/comprehensive "Reflecting and rotating existing symbols"
+      print2("\\usepackage{mathrsfs} %% for \\mathscr\n");
+      // see https://www.ctan.org/pkg/mathrsfs
       print2("\\usepackage{amssymb}\n");
-      print2("\\usepackage{amsmath} %% For \\begin{align}...\n");
-      print2("\\usepackage{amsthm}\n");
+      print2("\\usepackage{mathtools} %% loads package amsmath\n");
+      // see https://www.ctan.org/pkg/mathtools
+      // see https://www.ctan.org/pkg/amsmath
+      print2("\\usepackage{amsthm} %% amsthm must be loaded after amsmath\n");
+      // see https://www.ctan.org/pkg/amsthm
       print2("\\theoremstyle{plain}\n");
       print2("\\newtheorem{theorem}{Theorem}[section]\n");
       print2("\\newtheorem{definition}[theorem]{Definition}\n");
@@ -1271,6 +1280,7 @@ void printTexHeader(flag texHeaderFlag)
       print2("\\newtheorem{axiom}{Axiom}\n");
       print2("\\allowdisplaybreaks[1] %% Allow page breaks in {align}\n");
       print2("\\usepackage[plainpages=false,pdfpagelabels]{hyperref}\n");
+      // see https://www.ctan.org/pkg/hyperref
       print2("\\hypersetup{colorlinks} %% Get rid of boxes around links\n");
       print2("\\begin{document}\n");
       print2("\n");
@@ -1279,9 +1289,16 @@ void printTexHeader(flag texHeaderFlag)
     if (texHeaderFlag && g_oldTexFlag) {
       /* LaTeX 2e */
       print2("\\documentclass[leqno]{article}\n");
-      /* LaTeX 2e */
-      print2("\\usepackage{graphicx}\n"); /* For rotated iota */
+      print2("\\usepackage{graphicx} %% for rotated iota\n"); // to be removed after latexdef of "iota" is changed to \riota (see next line)
+      print2("\\usepackage{phonetic} %% for \\riota\n");
+      // see https://www.ctan.org/pkg/phonetic
+      // see https://www.ctan.org/pkg/comprehensive "Reflecting and rotating existing symbols"
+      print2("\\usepackage{mathrsfs} %% for \\mathscr\n");
+      // see https://www.ctan.org/pkg/mathrsfs
       print2("\\usepackage{amssymb}\n");
+      print2("\\usepackage{mathtools} %% loads package amsmath\n");
+      // see https://www.ctan.org/pkg/mathtools
+      // see https://www.ctan.org/pkg/amsmath
       print2("\\raggedbottom\n");
       print2("\\raggedright\n");
       print2("%%\\title{Your title here}\n");
@@ -4797,12 +4814,12 @@ vstring getTexLongMath(nmbrString *mathString, long statemNum)
       /* Also, anything not in table will have space added */
       alphnew = !!isalpha((unsigned char)(tex[0]));
       unknownnew = 0;
-      if (!strcmp(left(tex, 10), "\\mbox{\\rm ")) { /* Token not in table */
+      if (!strcmp(left(tex, 8), "\\mathrm{")) { // token not in table
         unknownnew = 1;
       }
       alphold = !!isalpha((unsigned char)(lastTex[0]));
       unknownold = 0;
-      if (!strcmp(left(lastTex, 10), "\\mbox{\\rm ")) { /* Token not in table*/
+      if (!strcmp(left(tex, 8), "\\mathrm{")) { // token not in table
         unknownold = 1;
       }
       /* Put thin space only between letters and/or unknowns */
