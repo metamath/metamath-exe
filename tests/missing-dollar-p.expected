@@ -1,0 +1,15 @@
+MM> READ "missing-dollar-p.mm"
+Reading source file "missing-dollar-p.mm"... 15 bytes
+15 bytes were read into the source buffer.
+The source has 2 statements; 0 are $a and 0 are $p.
+
+?Error on line 1 of file "missing-dollar-p.mm" at statement 2, type "$}":
+${ mytoken $}
+   ^^^^^^^
+A label isn't allowed for this statement type.
+
+One error was found.
+MM> Continuous scrolling is now in effect.
+MM> 0 10%  20%  30%  40%  50%  60%  70%  80%  90% 100%
+..................................................
+All proofs in the database were verified.
