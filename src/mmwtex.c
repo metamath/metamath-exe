@@ -1261,7 +1261,7 @@ void printTexHeader(flag texHeaderFlag)
     if (texHeaderFlag && !g_oldTexFlag) {
       /* LaTeX 2e */
       print2("\\documentclass{article}\n");
-      print2("\\usepackage{amssymb} %% amssymb must be loaded after phonetic\n");
+      print2("\\usepackage{amssymb} %% amssymb must be loaded before phonetic\n");
       print2("\\usepackage{phonetic} %% for \\riota\n");
       // see https://www.ctan.org/pkg/phonetic
       // see https://www.ctan.org/pkg/comprehensive "Reflecting and rotating existing symbols"
@@ -1290,7 +1290,7 @@ void printTexHeader(flag texHeaderFlag)
     if (texHeaderFlag && g_oldTexFlag) {
       /* LaTeX 2e */
       print2("\\documentclass[leqno]{article}\n");
-      print2("\\usepackage{amssymb} %% amssymb must be loaded after phonetic\n");
+      print2("\\usepackage{amssymb} %% amssymb must be loaded before phonetic\n");
       print2("\\usepackage{phonetic} %% for \\riota\n");
       // see https://www.ctan.org/pkg/phonetic
       // see https://www.ctan.org/pkg/comprehensive "Reflecting and rotating existing symbols"
