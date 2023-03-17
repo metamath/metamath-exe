@@ -1261,12 +1261,12 @@ void printTexHeader(flag texHeaderFlag)
     if (texHeaderFlag && !g_oldTexFlag) {
       /* LaTeX 2e */
       print2("\\documentclass{article}\n");
+      print2("\\usepackage{amssymb} %% amssymb must be loaded after phonetic\n");
       print2("\\usepackage{phonetic} %% for \\riota\n");
       // see https://www.ctan.org/pkg/phonetic
       // see https://www.ctan.org/pkg/comprehensive "Reflecting and rotating existing symbols"
       print2("\\usepackage{mathrsfs} %% for \\mathscr\n");
       // see https://www.ctan.org/pkg/mathrsfs
-      print2("\\usepackage{amssymb}\n");
       print2("\\usepackage{mathtools} %% loads package amsmath\n");
       // see https://www.ctan.org/pkg/mathtools
       // see https://www.ctan.org/pkg/amsmath
@@ -1290,12 +1290,12 @@ void printTexHeader(flag texHeaderFlag)
     if (texHeaderFlag && g_oldTexFlag) {
       /* LaTeX 2e */
       print2("\\documentclass[leqno]{article}\n");
+      print2("\\usepackage{amssymb} %% amssymb must be loaded after phonetic\n");
       print2("\\usepackage{phonetic} %% for \\riota\n");
       // see https://www.ctan.org/pkg/phonetic
       // see https://www.ctan.org/pkg/comprehensive "Reflecting and rotating existing symbols"
       print2("\\usepackage{mathrsfs} %% for \\mathscr\n");
       // see https://www.ctan.org/pkg/mathrsfs
-      print2("\\usepackage{amssymb}\n");
       print2("\\usepackage{mathtools} %% loads package amsmath\n");
       // see https://www.ctan.org/pkg/mathtools
       // see https://www.ctan.org/pkg/amsmath
