@@ -1261,7 +1261,6 @@ void printTexHeader(flag texHeaderFlag)
     if (texHeaderFlag && !g_oldTexFlag) {
       /* LaTeX 2e */
       print2("\\documentclass{article}\n");
-      print2("\\usepackage{graphicx} %% for rotated iota\n"); // to be removed after latexdef of "iota" is changed to \riota (see next line)
       print2("\\usepackage{phonetic} %% for \\riota\n");
       // see https://www.ctan.org/pkg/phonetic
       // see https://www.ctan.org/pkg/comprehensive "Reflecting and rotating existing symbols"
@@ -1291,7 +1290,6 @@ void printTexHeader(flag texHeaderFlag)
     if (texHeaderFlag && g_oldTexFlag) {
       /* LaTeX 2e */
       print2("\\documentclass[leqno]{article}\n");
-      print2("\\usepackage{graphicx} %% for rotated iota\n"); // to be removed after latexdef of "iota" is changed to \riota (see next line)
       print2("\\usepackage{phonetic} %% for \\riota\n");
       // see https://www.ctan.org/pkg/phonetic
       // see https://www.ctan.org/pkg/comprehensive "Reflecting and rotating existing symbols"
