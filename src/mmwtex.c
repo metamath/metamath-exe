@@ -1261,18 +1261,19 @@ void printTexHeader(flag texHeaderFlag)
     if (texHeaderFlag && !g_oldTexFlag) {
       /* LaTeX 2e */
       print2("\\documentclass{article}\n");
-      print2("\\usepackage{graphicx} %% for rotated iota\n"); // to be removed after latexdef of "iota" is changed to \riota (see next line)
+      print2("\\usepackage{amssymb} %% amssymb must be loaded before phonetic\n");
       print2("\\usepackage{phonetic} %% for \\riota\n");
       // see https://www.ctan.org/pkg/phonetic
       // see https://www.ctan.org/pkg/comprehensive "Reflecting and rotating existing symbols"
       print2("\\usepackage{mathrsfs} %% for \\mathscr\n");
       // see https://www.ctan.org/pkg/mathrsfs
-      print2("\\usepackage{amssymb}\n");
       print2("\\usepackage{mathtools} %% loads package amsmath\n");
       // see https://www.ctan.org/pkg/mathtools
       // see https://www.ctan.org/pkg/amsmath
       print2("\\usepackage{amsthm} %% amsthm must be loaded after amsmath\n");
       // see https://www.ctan.org/pkg/amsthm
+      print2("\\usepackage{accents} %% accents should be loaded after mathtools\n");
+      // see https://www.ctan.org/pkg/accents
       print2("\\theoremstyle{plain}\n");
       print2("\\newtheorem{theorem}{Theorem}[section]\n");
       print2("\\newtheorem{definition}[theorem]{Definition}\n");
@@ -1289,16 +1290,17 @@ void printTexHeader(flag texHeaderFlag)
     if (texHeaderFlag && g_oldTexFlag) {
       /* LaTeX 2e */
       print2("\\documentclass[leqno]{article}\n");
-      print2("\\usepackage{graphicx} %% for rotated iota\n"); // to be removed after latexdef of "iota" is changed to \riota (see next line)
+      print2("\\usepackage{amssymb} %% amssymb must be loaded before phonetic\n");
       print2("\\usepackage{phonetic} %% for \\riota\n");
       // see https://www.ctan.org/pkg/phonetic
       // see https://www.ctan.org/pkg/comprehensive "Reflecting and rotating existing symbols"
       print2("\\usepackage{mathrsfs} %% for \\mathscr\n");
       // see https://www.ctan.org/pkg/mathrsfs
-      print2("\\usepackage{amssymb}\n");
       print2("\\usepackage{mathtools} %% loads package amsmath\n");
       // see https://www.ctan.org/pkg/mathtools
       // see https://www.ctan.org/pkg/amsmath
+      print2("\\usepackage{accents} %% accents should be loaded after mathtools\n");
+      // see https://www.ctan.org/pkg/accents
       print2("\\raggedbottom\n");
       print2("\\raggedright\n");
       print2("%%\\title{Your title here}\n");
