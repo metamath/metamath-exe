@@ -3056,6 +3056,13 @@ void command(int argc, char *argv[]) {
               g_htmlFlag ? "HTML" : "LaTeX");
           continue;
         }
+
+        if (!g_texDefsRead) {
+          print2(
+      "?Error: Cannot output %s because the $t command could not be read.\n",
+              g_htmlFlag ? "HTML" : "LaTeX");
+          continue;
+        }
       }
 
       if (texFlag && (commentOnlyFlag || briefFlag)) {

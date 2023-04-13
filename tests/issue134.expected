@@ -1,0 +1,16 @@
+MM> READ "issue134.mm"
+Reading source file "issue134.mm"... 20 bytes
+20 bytes were read into the source buffer.
+The source has 2 statements; 1 are $a and 0 are $p.
+SET EMPTY_SUBSTITUTION was turned ON (allowed) for this database.
+No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
+if you want to check them.
+MM> Continuous scrolling is now in effect.
+MM> Created LaTeX output file "issue134.tex".
+Reading definitions from $t statement of issue134.mm...
+?Error: There is no $t command in the file "issue134.mm".
+The file should have exactly one comment of the form $(...$t...$) with
+the LaTeX and HTML definitions between $t and $).
+?There was an error in the $t comment's LaTeX/HTML definitions.
+MM> ?Error: Cannot output LaTeX because the $t command could not be read.
+MM> EXIT
