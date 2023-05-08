@@ -2054,10 +2054,10 @@ void minimizeProof(long repStatemNum, long prvStatemNum,
 
       /* Try the replacement */
       /* Don't replace a step with itself (will cause infinite loop in
-         ALLOW_GROWTH mode) */
+         MAY_GROW mode) */
       if ((g_ProofInProgress.proof)[step] != repStatemNum
           /* || 1 */  /* For special replacement with same label; also below */
-          /* When not in ALLOW_GROWTH mode i.e. when an infinite loop can't
+          /* When not in MAY_GROW mode i.e. when an infinite loop can't
              occur, we _do_ let a label be tested against itself so that e.g. a
              do-nothing chain of bitr's/pm4.2's will be trimmed off with a
              better bitr match. */
@@ -2093,7 +2093,7 @@ void minimizeProof(long repStatemNum, long prvStatemNum,
         /* Delete the old subproof only if it is not an unknown
            step (since if it is an unknown step, it is already deleted) */
         if ((g_ProofInProgress.proof)[step] == -(long)'?') {
-          /* This can only occur in / ALLOW_GROWTH mode */
+          /* This can only occur in / MAY_GROW mode */
           if (!allowGrowthFlag) bug(1831);
         } else {
           deleteSubProof(step);
@@ -2112,9 +2112,9 @@ void minimizeProof(long repStatemNum, long prvStatemNum,
 
 #define MAX_GROWTH_FACTOR 2
     if (allowGrowthFlag && plen > MAX_GROWTH_FACTOR * startingPlen) {
-      /* This will prevent an infinite loop in some cases with ALLOW_GROWTH,
-         for example 'MINIMIZE_WITH idi/ALLOW_GROWTH' in 'PROVE a1i' */
-      print2("Suppressed excessive ALLOW_GROWTH growth.\n");
+      /* This will prevent an infinite loop in some cases with MAY_GROW,
+         for example 'MINIMIZE_WITH idi/MAY_GROW' in 'PROVE a1i' */
+      print2("Suppressed excessive MAY_GROW growth.\n");
       break; /* Too much growth */
     }
     /* break; */  /* For special replacement with same label: always break
