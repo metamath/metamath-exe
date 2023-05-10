@@ -105,14 +105,13 @@ void revise(FILE *f1_fp, FILE *f2_fp, FILE *f3_fp, vstring addTag, long m)
   let(&l2_,ctlz_);
   eof1=eof2=0; // End-of-file flags
   d=0;
-
-l7100:  // Lines 7100 through 7300 are a modified version of the compare loop
-        // in DEC's FILCOM.BAS program.
-
+// Lines 7100 through 7300 are a modified version of the compare loop in DEC's
+// FILCOM.BAS program.
+l7100:  
         if (!strcmpe(l1_,l2_)) { // The lines are the same
                 if (strcmpe(l2_,ctlz_)) {
-                  fprintf(f3_fp_, "%s\n", l2_); // Use edited version
-                                                // of line when they are the same.
+                  // Use edited version of line when they are the same.
+                  fprintf(f3_fp_, "%s\n", l2_);
                 }
                 gosub_7320();
                 gosub_7330();
@@ -145,8 +144,8 @@ l7100:  // Lines 7100 through 7300 are a modified version of the compare loop
                         return;
                 }
         }
-        d=d+1; // Number of difference sections found so far
-               // (For user information only)
+        // Number of difference sections found so far (For user information only)
+        d=d+1; 
         i1_=i2_=m-1;
         let(&line1_[0],l1_);
         let(&line2_[0],l2_);
@@ -285,9 +284,9 @@ l7240:
                  addTag_, 0);
              fprintf(f3_fp_, "%s\n", tmpLine);
            }
+           // Output original deleted lines // freeTempAlloc();
+           // Clear vstring stack
            fprintf(f3_fp_, "%s\n", line1_[i]);
-                                     // Output original deleted lines
-           // freeTempAlloc(); // Clear vstring stack
          }
        }
        if (printedAtLeastOne) {
@@ -306,9 +305,9 @@ l7240:
                // Put tags on blank lines *inside* of new section
                tmpLine = stripAndTag(line2_[i], addTag_, 1);
              }
+             // Output tagged edited lines // freeTempAlloc();
+             // Clear vstring stack
              fprintf(f3_fp_, "%s\n", tmpLine);
-                                     // Output tagged edited lines
-             // freeTempAlloc(); // Clear vstring stack
            }
          }
        }
@@ -321,9 +320,9 @@ l7240:
              // Put tags on blank lines *inside* of new section
              tmpLine = stripAndTag(line2_[i], addTag_, 1);
            }
-           fprintf(f3_fp_, "%s\n", tmpLine);
-                                     // Print remaining edited lines
-           // freeTempAlloc(); // Clear vstring stack
+           // Print remaining edited lines // freeTempAlloc();
+           // Clear vstring stack
+           fprintf(f3_fp_, "%s\n", tmpLine);                  
          }
        }
        for (i=0; i<=m-1; i++) {
@@ -347,7 +346,7 @@ void gosub_7320(void) {
     for (i9=0; i9<=r1-1; i9++) {
       let(&reserve1_[i9],reserve1_[i9+1]);
     }
-  } else {              // Get next line from input file
+  } else { // Get next line from input file
     if (eof1) {
       let(&l1_,ctlz_);
     } else {
@@ -373,7 +372,7 @@ void gosub_7320(void) {
 }
 
 void gosub_7330(void) {
-        // Subroutine:  get next L2_ from edited file
+  // Subroutine: get next L2_ from edited file
   vstring_def(tmpLin);
   vstring tmpStrPtr; // pointer only
   flag stripDeletedSectionMode;
@@ -383,7 +382,7 @@ void gosub_7330(void) {
     for (i9 = 0; i9 < r2; i9++) {
       let(&reserve2_[i9],reserve2_[i9+1]);
     }
-  } else {              // Get next line from input file
+  } else { // Get next line from input file
     if (eof2) {
       let(&l2_,ctlz_);
     } else {
