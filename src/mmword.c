@@ -284,9 +284,9 @@ l7240:
                  addTag_, 0);
              fprintf(f3_fp_, "%s\n", tmpLine);
            }
-           // Output original deleted lines // freeTempAlloc();
-           // Clear vstring stack
+           // Output original deleted lines 
            fprintf(f3_fp_, "%s\n", line1_[i]);
+           // freeTempAlloc(); // Clear vstring stack
          }
        }
        if (printedAtLeastOne) {
@@ -305,9 +305,9 @@ l7240:
                // Put tags on blank lines *inside* of new section
                tmpLine = stripAndTag(line2_[i], addTag_, 1);
              }
-             // Output tagged edited lines // freeTempAlloc();
-             // Clear vstring stack
+             // Output tagged edited lines 
              fprintf(f3_fp_, "%s\n", tmpLine);
+             // freeTempAlloc(); // Clear vstring stack
            }
          }
        }
@@ -320,9 +320,9 @@ l7240:
              // Put tags on blank lines *inside* of new section
              tmpLine = stripAndTag(line2_[i], addTag_, 1);
            }
-           // Print remaining edited lines // freeTempAlloc();
-           // Clear vstring stack
-           fprintf(f3_fp_, "%s\n", tmpLine);                  
+           // Print remaining edited lines
+           fprintf(f3_fp_, "%s\n", tmpLine); 
+           // freeTempAlloc(); // Clear vstring stack
          }
        }
        for (i=0; i<=m-1; i++) {
