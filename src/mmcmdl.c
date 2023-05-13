@@ -2131,7 +2131,7 @@ flag cmdMatches(vstring cmdString) {
 // "DISPLAY PROOF / UNKNOWN / START_STEP = 10 / ESSENTIAL"
 // and swString is "START_STEP", switchPos will return 5.
 long switchPos(const char *swString) {
-  if (instr(0, swString, " ")) bug(1108);
+  if (instr(1, swString, " ")) bug(1108);
 
   long k = pntrLen(g_fullArg);
   for (long i = 0; i < k; i++) {
