@@ -1222,7 +1222,7 @@ void command(int argc, char *argv[]) {
           print2(
               "Warning:  You have not saved changes to the proof of \"%s\".\n",
               g_Statement[g_proveStatement].labelName);
-          if (switchPos("/ FORCE") == 0) {
+          if (switchPos("FORCE") == 0) {
             str1 = cmdInput1("Do you want to EXIT anyway (Y, N) <N>? ");
             if (str1[0] != 'y' && str1[0] != 'Y') {
               print2("Use SAVE NEW_PROOF to save the proof.\n");
@@ -1248,7 +1248,7 @@ void command(int argc, char *argv[]) {
       } else {
         if (g_sourceChanged) {
           print2("Warning:  You have not saved changes to the source.\n");
-          if (switchPos("/ FORCE") == 0) {
+          if (switchPos("FORCE") == 0) {
             str1 = cmdInput1("Do you want to EXIT anyway (Y, N) <N>? ");
             if (str1[0] != 'y' && str1[0] != 'Y') {
               print2("Use WRITE SOURCE to save the changes.\n");
@@ -1304,7 +1304,7 @@ void command(int argc, char *argv[]) {
       let(&g_commandFileName[g_commandFileNestingLevel], g_fullArg[1]);
 
       g_commandFileSilent[g_commandFileNestingLevel] = 0;
-      if (switchPos("/ SILENT")
+      if (switchPos("SILENT")
           || g_commandFileSilentFlag /* Propagate silence from outer level */) {
         g_commandFileSilent[g_commandFileNestingLevel] = 1;
       } else {
@@ -2070,7 +2070,7 @@ void command(int argc, char *argv[]) {
 
       readInput();
 
-      if (switchPos("/ VERIFY")) {
+      if (switchPos("VERIFY")) {
         verifyProofs("*",1); /* Parse and verify */
       } else {
         /* verifyProofs("*",0); */ /* Parse only (for gross error checking) */
@@ -2079,7 +2079,7 @@ void command(int argc, char *argv[]) {
       if (g_sourceHasBeenRead == 1) {
         if (!g_errorCount) {
           let(&str1, "No errors were found.");
-          if (!switchPos("/ VERIFY")) {
+          if (!switchPos("VERIFY")) {
               let(&str1, cat(str1,
          "  However, proofs were not checked.  Type VERIFY PROOF *",
          " if you want to check them.",
@@ -2102,20 +2102,20 @@ void command(int argc, char *argv[]) {
     if (cmdMatches("WRITE SOURCE")) {
       let(&g_output_fn, g_fullArg[2]);
 
-      if (switchPos("/ REWRAP") > 0) {
+      if (switchPos("REWRAP") > 0) {
         r = 2; /* Re-wrap then format (more aggressive than / FORMAT) */
-      } else if (switchPos("/ FORMAT") > 0) {
+      } else if (switchPos("FORMAT") > 0) {
         r = 1; /* Format output according to set.mm standard */
       } else {
         r = 0; /* Keep formatting as-is */
       }
 
-      i = switchPos("/ EXTRACT");
+      i = switchPos("EXTRACT");
       if (i > 0) {
         let(&str1, g_fullArg[i + 1]); /* List of labels */
         if (r > 0
-            || switchPos("/ SPLIT") > 0
-            || switchPos("/ KEEP_INCLUDES") > 0) {
+            || switchPos("SPLIT") > 0
+            || switchPos("KEEP_INCLUDES") > 0) {
           print2(
 "?You may not use / SPLIT, / REWRAP, or / KEEP_INCLUDES with / EXTRACT.\n");
           continue;
@@ -2125,9 +2125,9 @@ void command(int argc, char *argv[]) {
       }
 
       writeSource((char)r, /* Rewrap type */
-        ((switchPos("/ SPLIT") > 0) ? 1 : 0),
-        ((switchPos("/ NO_VERSIONING") > 0) ? 1 : 0),
-        ((switchPos("/ KEEP_INCLUDES") > 0) ? 1 : 0),
+        ((switchPos("SPLIT") > 0) ? 1 : 0),
+        ((switchPos("NO_VERSIONING") > 0) ? 1 : 0),
+        ((switchPos("KEEP_INCLUDES") > 0) ? 1 : 0),
         str1 /* Label list to extract */
           );
       g_sourceChanged = 0;
@@ -2143,26 +2143,26 @@ void command(int argc, char *argv[]) {
 #define THEOREMS_PER_PAGE 100
       /* theoremsPerPage is the actual number of proof descriptions to output. */
       /* See if the user overrode the default. */
-      i = switchPos("/ THEOREMS_PER_PAGE");
+      i = switchPos("THEOREMS_PER_PAGE");
       if (i != 0) {
         theoremsPerPage = (long)val(g_fullArg[i + 1]); /* Use user's value */
       } else {
         theoremsPerPage = THEOREMS_PER_PAGE; /* Use the default value */
       }
-      showLemmas = (switchPos("/ SHOW_LEMMAS") != 0);
-      noVersioning = (switchPos("/ NO_VERSIONING") != 0);
+      showLemmas = (switchPos("SHOW_LEMMAS") != 0);
+      noVersioning = (switchPos("NO_VERSIONING") != 0);
 
       g_htmlFlag = 1;
       /* If not specified, for backwards compatibility in scripts
          leave g_altHtmlFlag at current value */
-      if (switchPos("/ HTML") != 0) {
-        if (switchPos("/ ALT_HTML") != 0) {
+      if (switchPos("HTML") != 0) {
+        if (switchPos("ALT_HTML") != 0) {
           print2("?Please specify only one of / HTML and / ALT_HTML.\n");
           continue;
         }
         g_altHtmlFlag = 0;
       } else {
-        if (switchPos("/ ALT_HTML") != 0) g_altHtmlFlag = 1;
+        if (switchPos("ALT_HTML") != 0) g_altHtmlFlag = 1;
       }
 
       if (2/*error*/ == readTexDefs(0 /* 1 = check errors only */,
@@ -2196,7 +2196,7 @@ void command(int argc, char *argv[]) {
 #define RECENT_COUNT 100
       /* i is the actual number of proof descriptions to output. */
       /* See if the user overrode the default. */
-      i = switchPos("/ LIMIT");
+      i = switchPos("LIMIT");
       if (i) {
         i = (long)val(g_fullArg[i + 1]); /* Use user's value */
       } else {
@@ -2206,14 +2206,14 @@ void command(int argc, char *argv[]) {
       g_htmlFlag = 1;
       /* If not specified, for backwards compatibility in scripts
          leave g_altHtmlFlag at current value */
-      if (switchPos("/ HTML") != 0) {
-        if (switchPos("/ ALT_HTML") != 0) {
+      if (switchPos("HTML") != 0) {
+        if (switchPos("ALT_HTML") != 0) {
           print2("?Please specify only one of / HTML and / ALT_HTML.\n");
           continue;
         }
         g_altHtmlFlag = 0;
       } else {
-        if (switchPos("/ ALT_HTML") != 0) g_altHtmlFlag = 1;
+        if (switchPos("ALT_HTML") != 0) g_altHtmlFlag = 1;
       }
 
       /* readTexDefs() rereads based on changed in g_htmlFlag, g_altHtmlFlag */
@@ -2468,8 +2468,8 @@ void command(int argc, char *argv[]) {
 
     if (cmdMatches("SHOW LABELS")) {
       linearFlag = 0;
-      if (switchPos("/ LINEAR")) linearFlag = 1;
-      if (switchPos("/ ALL")) {
+      if (switchPos("LINEAR")) linearFlag = 1;
+      if (switchPos("ALL")) {
         m = 1;  /* Include $e, $f statements */
         print2(
 "The labels that match are shown with statement number, label, and type.\n");
@@ -2563,19 +2563,19 @@ void command(int argc, char *argv[]) {
     } /* if (cmdMatches("SHOW SOURCE")) */
 
     if (cmdMatches("SHOW STATEMENT") && (
-        switchPos("/ HTML")
-        || switchPos("/ BRIEF_HTML")
-        || switchPos("/ ALT_HTML")
-        || switchPos("/ BRIEF_ALT_HTML"))) {
+        switchPos("HTML")
+        || switchPos("BRIEF_HTML")
+        || switchPos("ALT_HTML")
+        || switchPos("BRIEF_ALT_HTML"))) {
       /* Special processing for the / HTML qualifiers - for each matching
          statement, a .html file is opened, the statement is output,
          and depending on statement type a proof or other information
          is output. */
 
-      noVersioning = (switchPos("/ NO_VERSIONING") != 0);
+      noVersioning = (switchPos("NO_VERSIONING") != 0);
       i = 5;  /* # arguments with only / HTML or / ALT_HTML */
       if (noVersioning) i = i + 2;
-      if (switchPos("/ TIME")) i = i + 2;
+      if (switchPos("TIME")) i = i + 2;
       if (g_rawArgs != i) {
         printLongLine(cat("?The HTML qualifiers may not be combined with",
             " others except / NO_VERSIONING and / TIME.\n", NULL), "  ", " ");
@@ -2583,13 +2583,13 @@ void command(int argc, char *argv[]) {
       }
 
       printTime = 0;
-      if (switchPos("/ TIME") != 0) {
+      if (switchPos("TIME") != 0) {
         printTime = 1;
       }
 
       g_htmlFlag = 1;
 
-      if (switchPos("/ BRIEF_HTML") || switchPos("/ BRIEF_ALT_HTML")) {
+      if (switchPos("BRIEF_HTML") || switchPos("BRIEF_ALT_HTML")) {
         if (strcmp(g_fullArg[2], "*")) {
           print2(
               "?For BRIEF_HTML or BRIEF_ALT_HTML, the label must be \"*\"\n");
@@ -2600,7 +2600,7 @@ void command(int argc, char *argv[]) {
         g_briefHtmlFlag = 0;
       }
 
-      if (switchPos("/ ALT_HTML") || switchPos("/ BRIEF_ALT_HTML")) {
+      if (switchPos("ALT_HTML") || switchPos("BRIEF_ALT_HTML")) {
         g_altHtmlFlag = 1;
       } else {
         g_altHtmlFlag = 0;
@@ -2933,10 +2933,10 @@ void command(int argc, char *argv[]) {
          (non-html) below. */
      htmlDone:
       continue;
-    } /* if (cmdMatches("SHOW STATEMENT") && switchPos("/ HTML")...) */
+    } /* if (cmdMatches("SHOW STATEMENT") && switchPos("HTML")...) */
 
     /* Write mnemosyne.txt */
-    if (cmdMatches("SHOW STATEMENT") && switchPos("/ MNEMONICS")) {
+    if (cmdMatches("SHOW STATEMENT") && switchPos("MNEMONICS")) {
       g_htmlFlag = 1;     /* Use HTML, not TeX section */
       g_altHtmlFlag = 1;  /* Use Unicode, not GIF */
       /* readTexDefs() rereads based on changes to g_htmlFlag, g_altHtmlFlag */
@@ -3020,31 +3020,31 @@ void command(int argc, char *argv[]) {
       free_vstring(str2);
 
       continue;
-    } /* if (cmdMatches("SHOW STATEMENT") && switchPos("/ MNEMONICS")) */
+    } /* if (cmdMatches("SHOW STATEMENT") && switchPos("MNEMONICS")) */
 
     /* If we get here, the user did not specify one of the qualifiers /HTML,
        /BRIEF_HTML, /ALT_HTML, or /BRIEF_ALT_HTML */
-    if (cmdMatches("SHOW STATEMENT") && !switchPos("/ HTML")) {
+    if (cmdMatches("SHOW STATEMENT") && !switchPos("HTML")) {
 
       texFlag = 0;
-      if (switchPos("/ TEX") || switchPos("/ OLD_TEX")
-          || switchPos("/ HTML"))
+      if (switchPos("TEX") || switchPos("OLD_TEX")
+          || switchPos("HTML"))
         texFlag = 1;
 
       briefFlag = 1;
       g_oldTexFlag = 0;
-      if (switchPos("/ TEX")) briefFlag = 0;
-      if (switchPos("/ OLD_TEX")) briefFlag = 0;
-      if (switchPos("/ OLD_TEX")) g_oldTexFlag = 1;
-      if (switchPos("/ FULL")) briefFlag = 0;
+      if (switchPos("TEX")) briefFlag = 0;
+      if (switchPos("OLD_TEX")) briefFlag = 0;
+      if (switchPos("OLD_TEX")) g_oldTexFlag = 1;
+      if (switchPos("FULL")) briefFlag = 0;
 
       commentOnlyFlag = 0;
-      if (switchPos("/ COMMENT")) {
+      if (switchPos("COMMENT")) {
         commentOnlyFlag = 1;
         briefFlag = 1;
       }
 
-      if (switchPos("/ FULL")) {
+      if (switchPos("FULL")) {
         briefFlag = 0;
         commentOnlyFlag = 0;
       }
@@ -3119,7 +3119,7 @@ void command(int argc, char *argv[]) {
         g_oldTexFlag = 0;
       }
       continue;
-    } /* (cmdMatches("SHOW STATEMENT") && !switchPos("/ HTML")) */
+    } /* (cmdMatches("SHOW STATEMENT") && !switchPos("HTML")) */
 
     if (cmdMatches("SHOW SETTINGS")) {
       print2("Metamath settings on %s at %s:\n",date(),time_());
@@ -3226,27 +3226,27 @@ void command(int argc, char *argv[]) {
       essentialFlag = 0;
       axiomFlag = 0;
       endIndent = 0;
-      i = switchPos("/ ESSENTIAL");
+      i = switchPos("ESSENTIAL");
       if (i) essentialFlag = 1; /* Limit trace to essential steps only */
-      i = switchPos("/ ALL");
+      i = switchPos("ALL");
       if (i) essentialFlag = 0;
-      i = switchPos("/ AXIOMS");
+      i = switchPos("AXIOMS");
       if (i) axiomFlag = 1; /* Limit trace printout to axioms */
-      i = switchPos("/ DEPTH"); /* Limit depth of printout */
+      i = switchPos("DEPTH"); /* Limit depth of printout */
       if (i) endIndent = (long)val(g_fullArg[i + 1]);
 
-      i = switchPos("/ COUNT_STEPS");
+      i = switchPos("COUNT_STEPS");
       countStepsFlag = (i != 0 ? 1 : 0);
-      i = switchPos("/ TREE");
+      i = switchPos("TREE");
       treeFlag = (i != 0 ? 1 : 0);
-      i = switchPos("/ MATCH");
+      i = switchPos("MATCH");
       matchFlag = (i != 0 ? 1 : 0);
       if (matchFlag) {
         let(&matchList, g_fullArg[i + 1]);
       } else {
         let(&matchList, "");
       }
-      i = switchPos("/ TO");
+      i = switchPos("TO");
       if (i != 0) {
         let(&traceToList, g_fullArg[i + 1]);
       } else {
@@ -3316,7 +3316,7 @@ void command(int argc, char *argv[]) {
 
     if (cmdMatches("SHOW USAGE")) {
 
-      if (switchPos("/ ALL")) {
+      if (switchPos("ALL")) {
         m = 1;  /* Always include $e, $f statements */
       } else {
         m = 0;  /* If wildcards are used, show $a, $p only */
@@ -3338,9 +3338,9 @@ void command(int argc, char *argv[]) {
 
         g_showStatement = i;
         recursiveFlag = 0;
-        j = switchPos("/ RECURSIVE");
+        j = switchPos("RECURSIVE");
         if (j) recursiveFlag = 1; /* Recursive (indirect) usage */
-        j = switchPos("/ DIRECT");
+        j = switchPos("DIRECT");
         if (j) recursiveFlag = 0; /* Direct references only */
 
         free_vstring(str1);
@@ -3425,14 +3425,14 @@ void command(int argc, char *argv[]) {
         || cmdMatches("SAVE PROOF")
         || cmdMatches("SAVE NEW_PROOF")
         || cmdMatches("MIDI")) {
-      if (switchPos("/ HTML")) {
+      if (switchPos("HTML")) {
         print2("?HTML qualifier is obsolete - use SHOW STATEMENT * / HTML\n");
         continue;
       }
 
       if (cmdMatches("SAVE NEW_PROOF")
           && getMarkupFlag(g_proveStatement, PROOF_DISCOURAGED)) {
-        if (switchPos("/ OVERRIDE") == 0 && g_globalDiscouragement == 1) {
+        if (switchPos("OVERRIDE") == 0 && g_globalDiscouragement == 1) {
           /* print2("\n"); */ /* Enable for more emphasis */
           print2(
 ">>> ?Error: Attempt to overwrite a proof whose modification is discouraged.\n");
@@ -3460,21 +3460,21 @@ void command(int argc, char *argv[]) {
       }
 
       printTime = 0;
-      if (switchPos("/ TIME") != 0) {  /* / TIME legal in SAVE mode only */
+      if (switchPos("TIME") != 0) {  /* / TIME legal in SAVE mode only */
         printTime = 1;
       }
 
-      i = switchPos("/ OLD_COMPRESSION");
+      i = switchPos("OLD_COMPRESSION");
       if (i) {
-        if (!switchPos("/ COMPRESSED")) {
+        if (!switchPos("COMPRESSED")) {
           print2("?/ OLD_COMPRESSION must be accompanied by / COMPRESSED.\n");
           continue;
         }
       }
 
-      i = switchPos("/ FAST");
+      i = switchPos("FAST");
       if (i) {
-        if (!switchPos("/ COMPRESSED") && !switchPos("/ PACKED")) {
+        if (!switchPos("COMPRESSED") && !switchPos("PACKED")) {
           print2("?/ FAST must be accompanied by / COMPRESSED or / PACKED.\n");
           continue;
         }
@@ -3483,17 +3483,17 @@ void command(int argc, char *argv[]) {
         fastFlag = 0;
       }
 
-      if (switchPos("/ EXPLICIT")) {
-        if (switchPos("/ COMPRESSED")) {
+      if (switchPos("EXPLICIT")) {
+        if (switchPos("COMPRESSED")) {
           print2("?/ COMPRESSED and / EXPLICIT may not be used together.\n");
           continue;
-        } else if (switchPos("/ NORMAL")) {
+        } else if (switchPos("NORMAL")) {
           print2("?/ NORMAL and / EXPLICIT may not be used together.\n");
           continue;
         }
       }
-      if (switchPos("/ NORMAL")) {
-        if (switchPos("/ COMPRESSED")) {
+      if (switchPos("NORMAL")) {
+        if (switchPos("COMPRESSED")) {
           print2("?/ NORMAL and / COMPRESSED may not be used together.\n");
           continue;
         }
@@ -3514,37 +3514,37 @@ void command(int argc, char *argv[]) {
       skipRepeatedSteps = 0;
       texFlag = 0;
 
-      i = switchPos("/ FROM_STEP");
+      i = switchPos("FROM_STEP");
       if (i) startStep = (long)val(g_fullArg[i + 1]);
-      i = switchPos("/ TO_STEP");
+      i = switchPos("TO_STEP");
       if (i) endStep = (long)val(g_fullArg[i + 1]);
-      i = switchPos("/ DEPTH");
+      i = switchPos("DEPTH");
       if (i) endIndent = (long)val(g_fullArg[i + 1]);
       /* ESSENTIAL is retained for downwards compatibility, but is
          now the default, so we ignore it. */
       /*
-      i = switchPos("/ ESSENTIAL");
+      i = switchPos("ESSENTIAL");
       if (i) essentialFlag = 1;
       */
-      i = switchPos("/ ALL");
+      i = switchPos("ALL");
       if (i) essentialFlag = 0;
-      if (i && switchPos("/ ESSENTIAL")) {
+      if (i && switchPos("ESSENTIAL")) {
         print2("?You may not specify both / ESSENTIAL and / ALL.\n");
         continue;
       }
-      i = switchPos("/ RENUMBER");
+      i = switchPos("RENUMBER");
       if (i) renumberFlag = 1;
-      i = switchPos("/ UNKNOWN");
+      i = switchPos("UNKNOWN");
       if (i) unknownFlag = 1;
-      i = switchPos("/ NOT_UNIFIED"); /* pip mode only */
+      i = switchPos("NOT_UNIFIED"); /* pip mode only */
       if (i) notUnifiedFlag = 1;
-      i = switchPos("/ REVERSE");
+      i = switchPos("REVERSE");
       if (i) reverseFlag = 1;
-      i = switchPos("/ LEMMON");
+      i = switchPos("LEMMON");
       if (i) noIndentFlag = 1;
-      i = switchPos("/ START_COLUMN");
+      i = switchPos("START_COLUMN");
       if (i) splitColumn = (long)val(g_fullArg[i + 1]);
-      i = switchPos("/ NO_REPEATED_STEPS");
+      i = switchPos("NO_REPEATED_STEPS");
       if (i) skipRepeatedSteps = 1;
 
       /* If NO_REPEATED_STEPS is specified, indentation (tree) mode will be
@@ -3555,19 +3555,19 @@ void command(int argc, char *argv[]) {
         continue;
       }
 
-      i = switchPos("/ TEX") || switchPos("/ HTML")
-          || switchPos("/ OLD_TEX");
+      i = switchPos("TEX") || switchPos("HTML")
+          || switchPos("OLD_TEX");
       if (i) texFlag = 1;
 
       g_oldTexFlag = 0;
-      if (switchPos("/ OLD_TEX")) g_oldTexFlag = 1;
+      if (switchPos("OLD_TEX")) g_oldTexFlag = 1;
 
       if (cmdMatches("MIDI")) {
         g_midiFlag = 1;
         pipFlag = 0;
         saveFlag = 0;
         let(&labelMatch, g_fullArg[1]);
-        i = switchPos("/ PARAMETER"); /* MIDI only */
+        i = switchPos("PARAMETER"); /* MIDI only */
         if (i) {
           let(&g_midiParam, g_fullArg[i + 1]);
         } else {
@@ -3588,7 +3588,7 @@ void command(int argc, char *argv[]) {
         }
       }
 
-      i = switchPos("/ DETAILED_STEP"); /* non-pip mode only */
+      i = switchPos("DETAILED_STEP"); /* non-pip mode only */
       if (i) {
         detailStep = (long)val(g_fullArg[i + 1]);
         if (!detailStep) detailStep = -1; /* To use as flag; error message
@@ -3598,7 +3598,7 @@ void command(int argc, char *argv[]) {
 /*??? Need better warnings for switch combinations that don't make sense */
 
       /* Print a single message for "/compressed/fast" */
-      if (switchPos("/ COMPRESSED") && fastFlag
+      if (switchPos("COMPRESSED") && fastFlag
           && !strcmp("*", labelMatch)) {
         print2(
             "Reformatting and saving (but not recompressing) all proofs...\n");
@@ -3625,13 +3625,13 @@ void command(int argc, char *argv[]) {
           continue;
         }
 
-        if (switchPos("/ STATEMENT_SUMMARY")) { /* non-pip mode only */
+        if (switchPos("STATEMENT_SUMMARY")) { /* non-pip mode only */
           /* Just summarize the statements used in the proof */
           proofStmtSumm(g_showStatement, essentialFlag, texFlag);
           continue;
         }
 
-        if (switchPos("/ SIZE")) { /* non-pip mode only */
+        if (switchPos("SIZE")) { /* non-pip mode only */
           /* Just print the size of the stored proof and continue */
           let(&str1, space(g_Statement[g_showStatement].proofSectionLen));
           memcpy(str1, g_Statement[g_showStatement].proofSectionPtr,
@@ -3650,8 +3650,8 @@ void command(int argc, char *argv[]) {
           continue;
         }
 
-        if (switchPos("/ PACKED") || switchPos("/ NORMAL") ||
-            switchPos("/ COMPRESSED") || switchPos("/ EXPLICIT") || saveFlag) {
+        if (switchPos("PACKED") || switchPos("NORMAL") ||
+            switchPos("COMPRESSED") || switchPos("EXPLICIT") || saveFlag) {
           /*??? Add error msg if other switches were specified. (Ignore them.)*/
 
           if (saveFlag) {
@@ -3666,7 +3666,7 @@ void command(int argc, char *argv[]) {
             outStatement = g_proveStatement;
           }
 
-          explicitTargets = (switchPos("/ EXPLICIT") != 0) ? 1 : 0;
+          explicitTargets = (switchPos("EXPLICIT") != 0) ? 1 : 0;
 
           /* Get the amount to indent the proof by */
           indentation = 2 + getSourceIndentation(outStatement);
@@ -3690,16 +3690,16 @@ void command(int argc, char *argv[]) {
           } else {
             nmbrLet(&nmbrSaveProof, g_ProofInProgress.proof);
           }
-          if (switchPos("/ PACKED")  || switchPos("/ COMPRESSED")) {
+          if (switchPos("PACKED")  || switchPos("COMPRESSED")) {
             if (!fastFlag) {
               nmbrLet(&nmbrSaveProof, nmbrSquishProof(nmbrSaveProof));
             }
           }
 
-          if (switchPos("/ COMPRESSED")) {
+          if (switchPos("COMPRESSED")) {
             let(&str1, compressProof(nmbrSaveProof,
                 outStatement, /* g_showStatement or g_proveStatement based on pipFlag */
-                (switchPos("/ OLD_COMPRESSION")) ? 1 : 0));
+                (switchPos("OLD_COMPRESSION")) ? 1 : 0));
           } else {
             let(&str1, nmbrCvtRToVString(nmbrSaveProof,
                 explicitTargets,
@@ -3720,7 +3720,7 @@ void command(int argc, char *argv[]) {
             print2(
 "---------Clip out the proof below this line to put it in the source file:\n");
           }
-          if (switchPos("/ COMPRESSED")) {
+          if (switchPos("COMPRESSED")) {
             printLongLine(cat(space(indentation), str1, " $.", NULL),
               space(indentation), "& "); /* "&" is special flag to break
                   compressed part of proof anywhere */
@@ -3873,8 +3873,8 @@ void command(int argc, char *argv[]) {
           free_nmbrString(nmbrSaveProof);
           if (pipFlag) break; /* Only one iteration for NEW_PROOF stuff */
           continue;  /* to next s iteration */
-        } /* end if (switchPos("/ PACKED") || switchPos("/ NORMAL") ||
-            switchPos("/ COMPRESSED") || switchPos("/ EXPLICIT") || saveFlag) */
+        } /* end if (switchPos("PACKED") || switchPos("NORMAL") ||
+            switchPos("COMPRESSED") || switchPos("EXPLICIT") || saveFlag) */
 
         if (saveFlag) bug(1112); /* Shouldn't get here */
 
@@ -4057,7 +4057,7 @@ void command(int argc, char *argv[]) {
       g_proveStatement = i;
 
       /* 1 means to override usage locks */
-      overrideFlag = ( (switchPos("/ OVERRIDE")) ? 1 : 0)
+      overrideFlag = ( (switchPos("OVERRIDE")) ? 1 : 0)
          || g_globalDiscouragement == 0;
       if (getMarkupFlag(g_proveStatement, PROOF_DISCOURAGED)) {
         if (overrideFlag == 0) {
@@ -4214,7 +4214,7 @@ void command(int argc, char *argv[]) {
       }
 
       /* "UNIFY ALL" */
-      if (!switchPos("/ INTERACTIVE")) {
+      if (!switchPos("INTERACTIVE")) {
         autoUnify(1);
         if (!g_proofChangedFlag) {
           print2("No new unifications were made.\n");
@@ -4278,7 +4278,7 @@ void command(int argc, char *argv[]) {
     if (cmdMatches("MATCH")) {
 
       maxEssential = -1; /* Default:  no maximum */
-      i = switchPos("/ MAX_ESSENTIAL_HYP");
+      i = switchPos("MAX_ESSENTIAL_HYP");
       if (i) maxEssential = (long)val(g_fullArg[i + 1]);
 
       if (cmdMatches("MATCH STEP")) {
@@ -4327,7 +4327,7 @@ void command(int argc, char *argv[]) {
         k = 0;
         g_proofChangedFlag = 0;
 
-        if (switchPos("/ ESSENTIAL")) {
+        if (switchPos("ESSENTIAL")) {
           nmbrLet(&nmbrTmp, nmbrGetEssential(g_ProofInProgress.proof));
         }
 
@@ -4335,7 +4335,7 @@ void command(int argc, char *argv[]) {
           /* Match only unknown steps */
           if ((g_ProofInProgress.proof)[s - 1] != -(long)'?') continue;
           /* Match only essential steps if specified */
-          if (switchPos("/ ESSENTIAL")) {
+          if (switchPos("ESSENTIAL")) {
             if (!nmbrTmp[s - 1]) continue;
           }
 
@@ -4437,7 +4437,7 @@ void command(int argc, char *argv[]) {
       if (s == -1) continue;  /* Error; message was provided already */
 
       /* 1 means to override usage locks */
-      overrideFlag = ( (switchPos("/ OVERRIDE")) ? 1 : 0)
+      overrideFlag = ( (switchPos("OVERRIDE")) ? 1 : 0)
          || g_globalDiscouragement == 0;
 
       /* Get the unique statement matching the g_fullArg[2] pattern */
@@ -4498,7 +4498,7 @@ void command(int argc, char *argv[]) {
          like it */
       /* Since ASSIGN LAST is often run from a command file, don't
          interact if / NO_UNIFY is specified, so response is predictable */
-      if (switchPos("/ NO_UNIFY") == 0) {
+      if (switchPos("NO_UNIFY") == 0) {
         interactiveUnifyStep(s - m + n - 1, 2); /* 2nd arg. means print msg if
                                                  already unified */
       } /* if NO_UNIFY flag not set */
@@ -4541,7 +4541,7 @@ void command(int argc, char *argv[]) {
 
     if (cmdMatches("REPLACE")) {
       /* 1 means to override usage locks */
-      overrideFlag = ( (switchPos("/ OVERRIDE")) ? 1 : 0)
+      overrideFlag = ( (switchPos("OVERRIDE")) ? 1 : 0)
          || g_globalDiscouragement == 0;
 
       step = getStepNum(g_fullArg[1], g_ProofInProgress.proof,
@@ -4703,18 +4703,18 @@ void command(int argc, char *argv[]) {
     if (cmdMatches("IMPROVE")) {
 
       improveDepth = 0; /* Depth */
-      i = switchPos("/ DEPTH");
+      i = switchPos("DEPTH");
       if (i) improveDepth = (long)val(g_fullArg[i + 1]);
-      if (switchPos("/ NO_DISTINCT")) p = 1; else p = 0;
+      if (switchPos("NO_DISTINCT")) p = 1; else p = 0;
                         /* p = 1 means don't try to use statements with $d's */
       searchAlg = 1; /* Default */
-      if (switchPos("/ 1")) searchAlg = 1;
-      if (switchPos("/ 2")) searchAlg = 2;
-      if (switchPos("/ 3")) searchAlg = 3;
+      if (switchPos("1")) searchAlg = 1;
+      if (switchPos("2")) searchAlg = 2;
+      if (switchPos("3")) searchAlg = 3;
       searchUnkSubproofs = 0;
-      if (switchPos("/ SUBPROOFS")) searchUnkSubproofs = 1;
+      if (switchPos("SUBPROOFS")) searchUnkSubproofs = 1;
 
-      mathboxFlag = (switchPos("/ INCLUDE_MATHBOXES") != 0);
+      mathboxFlag = (switchPos("INCLUDE_MATHBOXES") != 0);
       assignMathboxInfo(); /* In case it hasn't been assigned yet */
       if (g_proveStatement > g_mathboxStmt) {
         /* We're in a mathbox */
@@ -4726,7 +4726,7 @@ void command(int argc, char *argv[]) {
       }
 
       /* 1 means to override usage locks */
-      overrideFlag = ( (switchPos("/ OVERRIDE")) ? 1 : 0)
+      overrideFlag = ( (switchPos("OVERRIDE")) ? 1 : 0)
          || g_globalDiscouragement == 0;
 
       s = getStepNum(g_fullArg[1], g_ProofInProgress.proof,
@@ -5011,7 +5011,7 @@ void command(int argc, char *argv[]) {
     if (cmdMatches("MINIMIZE_WITH")) {
 
       printTime = 0;
-      if (switchPos("/ TIME") != 0) {
+      if (switchPos("TIME") != 0) {
         printTime = 1;
       }
       if (printTime == 1) {
@@ -5023,42 +5023,42 @@ void command(int argc, char *argv[]) {
                              error message if user typo in label field)
                          1 = a statement was matched but no shorter proof
                          2 = shorter proof found */
-      verboseMode = (switchPos("/ VERBOSE") != 0); /* Verbose mode */
+      verboseMode = (switchPos("VERBOSE") != 0); /* Verbose mode */
 
       /* If no wildcard was used, switch to non-verbose mode
         since there is no point to it and an annoying extra blank line
         results */
       if (!(instr(1, g_fullArg[1], "*") || instr(1, g_fullArg[1], "?"))) i = 1;
 
-      mayGrowFlag = (switchPos("/ MAY_GROW") != 0);
+      mayGrowFlag = (switchPos("MAY_GROW") != 0);
                   /* Mode to replace even if it doesn't reduce proof length */
-      exceptPos = switchPos("/ EXCEPT"); /* Statement match to skip */
+      exceptPos = switchPos("EXCEPT"); /* Statement match to skip */
 
-      allowNewAxiomsMatchPos = switchPos("/ ALLOW_NEW_AXIOMS");
+      allowNewAxiomsMatchPos = switchPos("ALLOW_NEW_AXIOMS");
       if (allowNewAxiomsMatchPos != 0) {
         let(&allowNewAxiomsMatchList, g_fullArg[allowNewAxiomsMatchPos + 1]);
       } else {
         let(&allowNewAxiomsMatchList, "");
       }
 
-      noNewAxiomsMatchPos = switchPos("/ NO_NEW_AXIOMS_FROM");
+      noNewAxiomsMatchPos = switchPos("NO_NEW_AXIOMS_FROM");
       if (noNewAxiomsMatchPos != 0) {
         let(&noNewAxiomsMatchList, g_fullArg[noNewAxiomsMatchPos + 1]);
       } else {
         let(&noNewAxiomsMatchList, "");
       }
 
-      forbidMatchPos = switchPos("/ FORBID");
+      forbidMatchPos = switchPos("FORBID");
       if (forbidMatchPos != 0) {
         let(&forbidMatchList, g_fullArg[forbidMatchPos + 1]);
       } else {
         let(&forbidMatchList, "");
       }
 
-      mathboxFlag = (switchPos("/ INCLUDE_MATHBOXES") != 0);
+      mathboxFlag = (switchPos("INCLUDE_MATHBOXES") != 0);
 
       /* Flag to override any "usage locks" placed in the comment markup */
-      overrideFlag = (switchPos("/ OVERRIDE") != 0)
+      overrideFlag = (switchPos("OVERRIDE") != 0)
            || g_globalDiscouragement == 0;
 
       /* If a single statement is specified, don't bother to do certain
@@ -5774,19 +5774,19 @@ void command(int argc, char *argv[]) {
     }
 
     if (cmdMatches("SEARCH")) {
-      if (switchPos("/ ALL")) {
+      if (switchPos("ALL")) {
         m = 1;  /* Include $e, $f statements */
       } else {
         m = 0;  /* Show $a, $p only */
       }
 
-      if (switchPos("/ JOIN")) {
+      if (switchPos("JOIN")) {
         joinFlag = 1;  /* Join $e's to $a,$p for matching */
       } else {
         joinFlag = 0;  /* Search $a,$p by themselves */
       }
 
-      if (switchPos("/ COMMENTS")) {
+      if (switchPos("COMMENTS")) {
         n = 1;  /* Search comments */
       } else {
         n = 0;  /* Search statement math symbols */
@@ -6168,13 +6168,13 @@ void command(int argc, char *argv[]) {
 
       /* Open a TeX file */
       let(&g_texFileName,g_fullArg[2]);
-      if (switchPos("/ NO_HEADER")) {
+      if (switchPos("NO_HEADER")) {
         texHeaderFlag = 0;
       } else {
         texHeaderFlag = 1;
       }
 
-      if (switchPos("/ OLD_TEX")) {
+      if (switchPos("OLD_TEX")) {
         g_oldTexFlag = 1;
       } else {
         g_oldTexFlag = 0;
@@ -6225,11 +6225,11 @@ void command(int argc, char *argv[]) {
       fromLine = 0;
       toLine = 0;
       searchWindow = 0;
-      i = switchPos("/ FROM_LINE");
+      i = switchPos("FROM_LINE");
       if (i) fromLine = (long)val(g_fullArg[i + 1]);
-      i = switchPos("/ TO_LINE");
+      i = switchPos("TO_LINE");
       if (i) toLine = (long)val(g_fullArg[i + 1]);
-      i = switchPos("/ WINDOW");
+      i = switchPos("WINDOW");
       if (i) searchWindow = (long)val(g_fullArg[i + 1]);
       /*??? Implement SEARCH /WINDOW */
       if (i) print2("Sorry, WINDOW has not been implemented yet.\n");
@@ -6337,7 +6337,7 @@ void command(int argc, char *argv[]) {
     }
 
     if (cmdMatches("VERIFY PROOF")) {
-      if (switchPos("/ SYNTAX_ONLY")) {
+      if (switchPos("SYNTAX_ONLY")) {
         verifyProofs(g_fullArg[2],0); /* Parse only */
       } else {
         verifyProofs(g_fullArg[2],1); /* Parse and verify */
@@ -6346,12 +6346,12 @@ void command(int argc, char *argv[]) {
     }
 
     if (cmdMatches("VERIFY MARKUP")) {
-      i = switchPos("/ DATE_SKIP") == 0;
-      j = switchPos("/ TOP_DATE_CHECK") != 0;
-      k = switchPos("/ FILE_CHECK") != 0;
-      l = switchPos("/ UNDERSCORE_SKIP") == 0;
-      m = switchPos("/ MATHBOX_SKIP") == 0;
-      n = switchPos("/ VERBOSE") != 0;
+      i = switchPos("DATE_SKIP") == 0;
+      j = switchPos("TOP_DATE_CHECK") != 0;
+      k = switchPos("FILE_CHECK") != 0;
+      l = switchPos("UNDERSCORE_SKIP") == 0;
+      m = switchPos("MATHBOX_SKIP") == 0;
+      n = switchPos("VERBOSE") != 0;
       verifyMarkup(g_fullArg[2],
           (flag)i, /* 1 = check date consistency */
           (flag)j, /* 1 = check top date */
@@ -6364,20 +6364,20 @@ void command(int argc, char *argv[]) {
 
     if (cmdMatches("MARKUP")) {
       g_htmlFlag = 1;
-      g_altHtmlFlag = (switchPos("/ ALT_HTML") != 0);
-      if ((switchPos("/ HTML") != 0) == (switchPos("/ ALT_HTML") != 0)) {
+      g_altHtmlFlag = (switchPos("ALT_HTML") != 0);
+      if ((switchPos("HTML") != 0) == (switchPos("ALT_HTML") != 0)) {
         print2("?Please specify exactly one of / HTML and / ALT_HTML.\n");
         continue;
       }
       i = 0;
-      i = ((switchPos("/ SYMBOLS") != 0) ? PROCESS_SYMBOLS : 0)
-          + ((switchPos("/ LABELS") != 0) ? PROCESS_LABELS : 0)
-          + ((switchPos("/ NUMBER_AFTER_LABEL") != 0) ? ADD_COLORED_LABEL_NUMBER : 0)
-          + ((switchPos("/ BIB_REFS") != 0) ? PROCESS_BIBREFS : 0)
-          + ((switchPos("/ UNDERSCORES") != 0) ? PROCESS_UNDERSCORES : 0);
+      i = ((switchPos("SYMBOLS") != 0) ? PROCESS_SYMBOLS : 0)
+          + ((switchPos("LABELS") != 0) ? PROCESS_LABELS : 0)
+          + ((switchPos("NUMBER_AFTER_LABEL") != 0) ? ADD_COLORED_LABEL_NUMBER : 0)
+          + ((switchPos("BIB_REFS") != 0) ? PROCESS_BIBREFS : 0)
+          + ((switchPos("UNDERSCORES") != 0) ? PROCESS_UNDERSCORES : 0);
       processMarkup(g_fullArg[1], /* Input file */
           g_fullArg[2],  /* Output file */
-          (switchPos("/ CSS") != 0),
+          (switchPos("CSS") != 0),
           i); /* Action bits */
       continue;
     }

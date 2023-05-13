@@ -1,0 +1,20 @@
+MM> Continuous scrolling is now in effect.
+MM> Reading source file "anatomy.mm"... 669 bytes
+669 bytes were read into the source buffer.
+The source has 8 statements; 1 are $a and 1 are $p.
+No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
+if you want to check them.
+MM> Entering the Proof Assistant.  HELP PROOF_ASSISTANT for help, EXIT to exit.
+You will be working on statement (from "SHOW STATEMENT wnew"):
+8 wnew $p wff ( s -> ( r -> p ) ) $= ... $.
+Note:  The proof you are starting with is already complete.
+MM-PA> Bytes refer to compressed proof size, steps to uncompressed length.
+Scanning forward through statements...
+No shorter proof was found.
+MM-PA> VERBOSE, MAY_GROW, EXCEPT, OVERRIDE, INCLUDE_MATHBOXES, ALLOW_NEW_AXIOMS,
+ NO_NEW_AXIOMS_FROM, FORBID, or TIME <VERBOSE>? What statement label match pattern? / or nothing <nothing>? VERBOSE, MAY_GROW, EXCEPT, OVERRIDE, INCLUDE_MATHBOXES, ALLOW_NEW_AXIOMS,
+ NO_NEW_AXIOMS_FROM, FORBID, or TIME <VERBOSE>? What statement label match pattern? / or nothing <nothing>? Bytes refer to compressed proof size, steps to uncompressed length.
+Scanning forward through statements...
+No shorter proof was found.
+MM-PA> EXIT
+Exiting the Proof Assistant.  Type EXIT again to exit Metamath.
