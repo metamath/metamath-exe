@@ -1339,7 +1339,7 @@ void printTexHeader(flag texHeaderFlag)
     print2("<STYLE TYPE=\"text/css\">\n");
     print2("<!--\n");
     // Optional information but takes unnecessary file space
-    //     (change @ to * if uncommenting)
+    // (change @ to * if uncommenting)
     // print2(
     //     "/@ Math symbol images will be shifted down 4 pixels to align with\n");
     // print2(
@@ -1392,7 +1392,7 @@ void printTexHeader(flag texHeaderFlag)
               &tinyHdr,
               &hugeHdrComment, &bigHdrComment, &smallHdrComment,
               &tinyHdrComment,
-              0, // fineResolution
+              0, /* fineResolution */
               0 /* fullComment */);
           if (bigHdr[0] != 0) break;
         }
@@ -2864,7 +2864,7 @@ void printTexLongMath(nmbrString *mathString,
         // Earlier we set the noIndentFlag (Lemmon
         // proof) in the SHOW PROOF.../TEX call in metamath.c, so the
         // hypothesis ref list will be available just like in the HTML
-        // output. */
+        // output.
         // We now consider "=" a bug since the call via typeProof() in
         // metamath.c now always has noIndentFlag = 1.
         if (!g_htmlFlag) {
@@ -2907,7 +2907,7 @@ void printTexLongMath(nmbrString *mathString,
         let(&htmHyp, "&nbsp;"); // Insert blank field for Lemmon ref w/out hyp
 
       // Put hyperlinks on hypothesis
-      // label references in SHOW STATEMENT * /HTML, ALT_HTML output
+      // label references in SHOW STATEMENT * /HTML, ALT_HTML output.
       // Use a separate tag to put into the math cell,
       // so it will link to the top of the math cell.
       let(&htmStepTag, cat("<A NAME=\"", htmStep, "\">","</A>", NULL));
@@ -4869,7 +4869,7 @@ vstring getTexLongMath(nmbrString *mathString, long statemNum)
           if (!(g_MathToken[mathString[pos]].tokenName[1])) {
 
             // Make sure previous token is a letter also, to prevent unneeded
-            // space in "ran ( A ..." (e.g. rncoeq, dfiun3g)
+            // space in "ran ( A ..." (e.g. rncoeq, dfiun3g).
             // Match a token starting with a letter
             if (isalpha((unsigned char)(g_MathToken[mathString[pos - 1]].tokenName[0]))) {
               // and make sure its length is 1
