@@ -19,7 +19,7 @@ flag processCommandLine(void);
 void parseCommandLine(vstring line);
 flag lastArgMatches(vstring argString);
 flag cmdMatches(vstring cmdString);
-long switchPos(vstring swString);
+long switchPos(const char *swString);
 void printCommandError(vstring line, long arg, vstring errorMsg);
 void freeCommandLine(void);
 

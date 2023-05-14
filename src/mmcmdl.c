@@ -2122,52 +2122,26 @@ flag cmdMatches(vstring cmdString) {
   }
 } /* cmdMatches */
 
-long switchPos(vstring swString) {
-  /* This function checks that fields i through j of g_fullArg match
-     swString (separated by spaces).  The first character of swString
-     should be "/" and must be separated from the first field
-     of swString with a space.  The position of the "/" in g_fullArg
-     is returned if swString is there, otherwise 0 is returned (the first
-     position in g_fullArg is considered 1, not 0). */
-  /* Example:  if g_fullArg (combined into one string) is
-     "DISPLAY PROOF / UNKNOWN / START_STEP = 10 / ESSENTIAL"
-     and swString is "/ START_STEP", switchPos will return 5. */
-  long i, j, k;
-  vstring_def(tmpStr);
-  vstring_def(swString1);
+// This function checks that field i of g_fullArg matches "/", and
+// field i+1 matches swString (which must not contain spaces).
+// The position of the "/" in g_fullArg is returned if swString is there,
+// otherwise 0 is returned (the first position in g_fullArg is considered 1, not 0).
+//
+// Example:  if g_fullArg (combined into one string) is
+// "DISPLAY PROOF / UNKNOWN / START_STEP = 10 / ESSENTIAL"
+// and swString is "START_STEP", switchPos will return 5.
+long switchPos(const char *swString) {
+  if (instr(1, swString, " ")) bug(1108);
 
-  if (swString[0] != '/') bug(1108);
-
-  /* Add a space after the "/" if there is none */
-  if (swString[1] != ' ') {
-    let(&swString1, cat("/ ", right(swString, 2), " ", NULL));
-  } else {
-    let(&swString1, swString);
+  long k = pntrLen(g_fullArg);
+  for (long i = 0; i < k; i++) {
+    if (strcmp(g_fullArg[i], "/") == 0) {
+      if (i+1 < k && strcmp(g_fullArg[i+1], swString) == 0) {
+        return i + 1;
+      }
+    }
   }
-
-  /* Build the complete command */
-  k = pntrLen(g_fullArg);
-  for (i = 0; i < k; i++) {
-    let(&tmpStr, cat(tmpStr, g_fullArg[i], " ", NULL));
-  }
-
-  k = instr(1, tmpStr, swString1);
-  if (!k) {
-    free_vstring(swString1);
-    free_vstring(tmpStr);
-    return 0;
-  }
-
-  let(&tmpStr, left(tmpStr, k));
-  /* Count the number of spaces - it will be the g_fullArg position */
-  k = len(tmpStr);
-  j = 0;
-  for (i = 0; i < k; i++) {
-    if (tmpStr[i] == ' ') j++;
-  }
-  free_vstring(tmpStr);
-  free_vstring(swString1);
-  return j + 1;
+  return 0;
 } /* switchPos */
 
 void printCommandError(vstring line1, long arg, vstring errorMsg)

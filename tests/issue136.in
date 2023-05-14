@@ -1,0 +1,10 @@
+r anatomy.mm
+pr wnew
+min * / allow "df-* w*" / forbid foo
+min */
+allow
+df-* w*
+/
+forbid
+foo
+
