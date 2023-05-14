@@ -3294,12 +3294,14 @@ void command(int argc, char *argv[]) {
           if (countStepsFlag) {
             countSteps(g_showStatement, essentialFlag);
           } else {
-            traceProof(g_showStatement,
+            if (traceProof(g_showStatement,
                 essentialFlag,
                 axiomFlag,
                 matchList,
                 traceToList,
-                0 /* testOnlyFlag */);
+                0 /* testOnlyFlag */,
+                1 /* allow early exit */) == -1)
+              break; // the user aborted
           }
         }
       } /* next i */
@@ -5202,7 +5204,8 @@ void command(int argc, char *argv[]) {
                     0, /*axiomFlag*/
                     forbidMatchList,
                     "", /*traceToList*/
-                    1 /* testOnlyFlag */)) {
+                    1 /* testOnlyFlag */,
+                    0 /* no early exit */)) {
                   /* Yes, a forbidden statement occurred in traceProof() */
                   /* Revert the proof to before minimization */
                   copyProofStruct(&g_ProofInProgress, saveProofForReverting);

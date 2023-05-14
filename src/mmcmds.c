@@ -2743,40 +2743,49 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
 
 /* Traces back the statements used by a proof, recursively. */
 /* Returns 1 if at least one label is printed (or would be printed in
-   case testOnlyFlag=1); otherwise, returns 0 */
+   case testOnlyFlag=1); otherwise, returns 0.
+   Returns -1 if the process was aborted */
 /* matchList suppresses all output except labels matching matchList */
 /* testOnlyFlag prevents any printout; it is used to determine whether
    there is an unwanted axiom for MINIMIZE_WITH /FORBID. */
-flag traceProof(long statemNum,
+/* abortOnQuit is set to 1 if we want to abort early if the user selects
+   'Q to quit' at the prompt, and if so we return -1 */
+char traceProof(long statemNum,
   flag essentialFlag,
   flag axiomFlag,
   vstring matchList,
   vstring traceToList,
-  flag testOnlyFlag)
+  flag testOnlyFlag,
+  flag abortOnQuit)
 {
 
   long stmt, pos;
   vstring_def(statementUsedFlags); /* y/n flags that statement is used */
   vstring_def(outputString);
   nmbrString_def(unprovedList);
-  flag foundFlag = 0;
+  char foundFlag = 0;
 
   /* Make sure we're calling this with $p statements only */
   if (g_Statement[statemNum].type != (char)p_) bug(249);
 
   if (!testOnlyFlag) {
+    flag notQuitPrint;
     if (axiomFlag) {
-      print2(
+      notQuitPrint = print2(
   "Statement \"%s\" assumes the following axioms ($a statements):\n",
           g_Statement[statemNum].labelName);
-    } else  if (traceToList[0] == 0) {
-      print2(
+    } else if (traceToList[0] == 0) {
+      notQuitPrint = print2(
   "The proof of statement \"%s\" uses the following earlier statements:\n",
           g_Statement[statemNum].labelName);
     } else {
-      print2(
+      notQuitPrint = print2(
   "The proof of statement \"%s\" traces back to \"%s\" via:\n",
           g_Statement[statemNum].labelName, traceToList);
+    }
+    if (abortOnQuit && !notQuitPrint) {
+      foundFlag = -1;
+      goto TRACE_RETURN;
     }
   }
 
