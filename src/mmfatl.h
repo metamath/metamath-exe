@@ -120,7 +120,7 @@ enum {
  * in this particular case.
  */
 enum fatalErrorPlaceholderType {
-   //! escape character marking a placeholder, followed by a type character
+  //! escape character marking a placeholder, followed by a type character
   MMFATL_PH_PREFIX = '%',
   //! type character marking a placeholder for a string
   MMFATL_PH_STRING = 's',

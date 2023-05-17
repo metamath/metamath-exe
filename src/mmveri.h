@@ -16,9 +16,9 @@ char verifyProof(long statemNum);
 /*! assignVar() finds an assignment to substScheme variables that match
    the assumptions specified in the reason string */
 nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
-  nmbrString *bigSubstInstAss, long substScheme,
-    /* For error messages: */
-  long statementNum, long step, flag unkHypFlag);
+nmbrString *bigSubstInstAss, long substScheme,
+// For error messages:
+long statementNum, long step, flag unkHypFlag);
 
 /*! Deallocate the math symbol strings assigned in g_WrkProof structure during
    proof verification.  This should be called after verifyProof() and after the
@@ -32,17 +32,17 @@ void cleanWrkProof(void);
   If getStep.stepNum is nonzero, we should get info about that step.
   \note This structure should be deallocated after use. */
 struct getStep_struct {
-  long stepNum; /* Step # to get info about */
-  long sourceStmt; /* Right side of = in proof display */
-  long targetStmt; /* Left side of = in proof display */
-  long targetParentStep; /* Step # of target's parent */
-  long targetParentStmt; /* Statement # of target's parent */
-  nmbrString *sourceHyps; /* List of step #'s */
-  nmbrString *sourceSubstsNmbr; /* List of vars w/ ptr to subst math tokens */
-  pntrString *sourceSubstsPntr; /* List of vars w/ ptr to subst math tokens */
-  nmbrString *targetSubstsNmbr; /* List of vars w/ ptr to subst math tokens */
-  pntrString *targetSubstsPntr; /* List of vars w/ ptr to subst math tokens */
+  long stepNum; // Step # to get info about
+  long sourceStmt; // Right side of = in proof display
+  long targetStmt; // Left side of = in proof display
+  long targetParentStep; // Step # of target's parent
+  long targetParentStmt; // Statement # of target's parent
+  nmbrString *sourceHyps; // List of step #'s
+  nmbrString *sourceSubstsNmbr; // List of vars w/ ptr to subst math tokens
+  pntrString *sourceSubstsPntr; // List of vars w/ ptr to subst math tokens
+  nmbrString *targetSubstsNmbr; // List of vars w/ ptr to subst math tokens
+  pntrString *targetSubstsPntr; // List of vars w/ ptr to subst math tokens
 };
 extern struct getStep_struct getStep;
 
-#endif /* METAMATH_MMVERI_H_ */
+#endif // METAMATH_MMVERI_H_

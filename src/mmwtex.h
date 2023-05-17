@@ -12,18 +12,18 @@
 #include "mmvstr.h"
 #include "mmdata.h"
 
-/* Colors for HTML pages. */
+// Colors for HTML pages.
 #define GREEN_TITLE_COLOR "\"#006633\""
 #define MINT_BACKGROUND_COLOR "\"#EEFFFA\""
+// =salmon; was FF6666
 #define PINK_NUMBER_COLOR "\"#FA8072\""
-   /* =salmon; was FF6666 */
 #define PURPLISH_BIBLIO_COLOR "\"#FAEEFF\""
 #define SANDBOX_COLOR "\"#FFFFD9\""
 
-/* TeX flags */
+// TeX flags
 extern flag g_oldTexFlag; /*!< Use macros in output; obsolete; take out someday */
 
-/* HTML flags */
+// HTML flags
 extern flag g_htmlFlag;  /*!< HTML flag: 0 = TeX, 1 = HTML */
 extern flag g_altHtmlFlag;  /*!< Use "althtmldef" instead of "htmldef".  This is
     intended to allow the generation of pages with the old Symbol font
@@ -47,7 +47,7 @@ extern vstring g_htmlFont; /*!< Optional; set by g_htmlFont command */
 /*! Undo readTexDefs() */
 void eraseTexDefs(void);
 
-/* TeX/HTML/ALT_HTML word-processor-specific routines */
+// TeX/HTML/ALT_HTML word-processor-specific routines
 /*!
   \param gifCheck The GIF check ensures that for every 'htmldef' definition containing
    `IMG SRC="bla.gif"`, `bla.gif` must exist.
@@ -73,7 +73,6 @@ int texSortCmp(const void *key1, const void *key2);
 /*! Token comparison for bsearch */
 int texSrchCmp(const void *key, const void *data);
 /*! Convert ascii to a string of \tt tex
-
   (The caller must surround it by {\tt }) */
 vstring asciiToTt(vstring s);
 temp_vstring asciiToTt_temp(vstring s);
@@ -94,24 +93,24 @@ void printTexHeader(flag texHeaderFlag);
    allocation.  htmlCenterFlag, if 1, means to center the HTML and add a
    "Description:" prefix
   \returns 1 if error/warning */
-/* void printTexComment(vstring commentPtr, char htmlCenterFlag); */
+// void printTexComment(vstring commentPtr, char htmlCenterFlag);
 flag printTexComment(vstring commentPtr,    /*!< Sends result to g_texFilePtr */
     flag htmlCenterFlag, /*!< 1 = htmlCenterFlag */
     long actionBits, /*!< see indicators below */
     flag fileCheck /*!< 1 = fileCheck */);
 
-/* Indicators for actionBits */
+// Indicators for actionBits
 #define ERRORS_ONLY 1
 #define PROCESS_SYMBOLS 2
 #define PROCESS_LABELS 4
 #define ADD_COLORED_LABEL_NUMBER 8
 #define PROCESS_BIBREFS 16
 #define PROCESS_UNDERSCORES 32
-/* CONVERT_TO_HTML means '<' to '&lt;'; unless <HTML> in comment (and strip it) */
+// CONVERT_TO_HTML means '<' to '&lt;'; unless <HTML> in comment (and strip it)
 #define CONVERT_TO_HTML 64
-/* METAMATH_COMMENT means $) (as well as end-of-string) terminates string. */
+// METAMATH_COMMENT means $) (as well as end-of-string) terminates string.
 #define METAMATH_COMMENT 128
-/* PROCESS_ALL is for convenience */
+// PROCESS_ALL is for convenience
 #define PROCESS_EVERYTHING PROCESS_SYMBOLS + PROCESS_LABELS \
      + ADD_COLORED_LABEL_NUMBER + PROCESS_BIBREFS \
      + PROCESS_UNDERSCORES + CONVERT_TO_HTML + METAMATH_COMMENT
@@ -141,7 +140,7 @@ flag getSectionHeadings(long stmt, vstring *hugeHdrTitle,
     flag fullComment /*!< 1 = put $( + header + comment + $) into xxxHdrTitle */
     );
 
-/* TeX normal output */
+// TeX normal output
 extern flag g_texFileOpenFlag;
 extern FILE *g_texFilePtr;
 
@@ -152,9 +151,9 @@ vstring pinkHTML(long statemNum);
 /*! Pink statement number range HTML code for HTML pages, separated by a "-"
   \warning caller must deallocate returned string */
 vstring pinkRangeHTML(long statemNum1, long statemNum2);
-
-#define PINK_NBSP "&nbsp;" /* Either "" or "&nbsp;" depending on taste, it is
-                  the separator between a statement href and its pink number */
+// Either "" or "&nbsp;" depending on taste, it is the separator between
+// a statement href and its pink number.
+#define PINK_NBSP "&nbsp;"
 
 /*! This function converts a "spectrum" color (1 to maxColor) to an
    RBG value in hex notation for HTML.  The caller must deallocate the
@@ -191,10 +190,9 @@ flag writeBibliography(vstring bibFile,
 /*! Globals to hold mathbox information.  They should be re-initialized
    by the ERASE command (eraseSource()).  g_mathboxStmt = 0 indicates
    it and the other variables haven't been initialized. */
-extern long g_mathboxStmt; /* stmt# of "mathbox" label; statements+1 if none */
-extern long g_mathboxes; /* # of mathboxes */
-/* The following 3 "strings" are 0-based e.g. g_mathboxStart[0] is for
-   mathbox #1 */
+extern long g_mathboxStmt; // stmt# of "mathbox" label; statements+1 if none
+extern long g_mathboxes; // # of mathboxes
+// The following 3 "strings" are 0-based e.g. g_mathboxStart[0] is for mathbox #1
 extern nmbrString *g_mathboxStart; /*!< Start stmt vs. mathbox # */
 extern nmbrString *g_mathboxEnd; /*!< End stmt vs. mathbox # */
 extern pntrString *g_mathboxUser; /*!< User name vs. mathbox # */
@@ -215,4 +213,4 @@ void assignMathboxInfo(void);
 long getMathboxLoc(nmbrString **mathboxStart, nmbrString **mathboxEnd,
     pntrString **mathboxUser);
 
-#endif /* METAMATH_MMWTEX_H_ */
+#endif // METAMATH_MMWTEX_H_
