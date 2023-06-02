@@ -3237,12 +3237,11 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
     print2("<STYLE TYPE=\"text/css\">\n");
     print2("<!--\n");
     // Optional information but takes unnecessary file space.
-    // (change @ to * if uncommenting)
-    // print2("/@ Math symbol GIFs will be shifted down 4 pixels to align with\n");
+    // print2("/* Math symbol GIFs will be shifted down 4 pixels to align with\n");
     // print2("   normal text for compatibility with various browsers.  The old\n");
     // print2("   ALIGN=TOP for math symbol images did not align in all browsers\n");
     // print2("   and should be deleted.  All other images must override this\n");
-    // print2("   shift with STYLE=\"margin-bottom:0px\". @/\n");
+    // print2("   shift with STYLE=\"margin-bottom:0px\". */\n");
     print2("img { margin-bottom: -4px }\n");
     print2("-->\n");
     print2("</STYLE>\n");
