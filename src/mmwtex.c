@@ -72,6 +72,7 @@ long numSymbs;
 // Substitute character for $ in converting to obsolete $l,$m,$n
 // comments - Use '$' instead of non-printable ASCII 2 for debugging.
 #define DOLLAR_SUBST 2
+
 // Variables set by the language in the set.mm etc. $t statement
 // Some of these are global; see mmwtex.h
 vstring_def(g_htmlCSS); // Set by g_htmlCSS commands
