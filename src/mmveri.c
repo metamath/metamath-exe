@@ -443,18 +443,18 @@ ambiguityCheck: // Re-entry point to see if unification is unique
           "The hypotheses of statement \"", g_Statement[substScheme].labelName,
           "\" at proof step ", str((double)step + 1),
           " cannot be unified.", tmpStr, NULL));
-      /* sourceError(g_WrkProof.stepSrcPtrPntr[step],
-          g_WrkProof.stepSrcPtrNmbr[step],
-          statementNum, cat(
-          "The hypotheses of the statement at proof step ",
-          str(step + 1),
-          " cannot be unified.  The statement \"",
-          g_Statement[substScheme].labelName,
-          "\" requires ",
-          str(g_Statement[substScheme].numReqHyp),
-          " hypotheses.  The ",tmpStr,
-          ".  Type \"SHOW PROOF ",g_Statement[statementNum].labelName,
-          "\" to see the proof attempt.",NULL)); */ // Old version
+          // sourceError(g_WrkProof.stepSrcPtrPntr[step],
+          // g_WrkProof.stepSrcPtrNmbr[step],
+          // statementNum, cat(
+          // "The hypotheses of the statement at proof step ",
+          // str(step + 1),
+          // " cannot be unified.  The statement \"",
+          // g_Statement[substScheme].labelName,
+          // "\" requires ",
+          // str(g_Statement[substScheme].numReqHyp),
+          // " hypotheses.  The ",tmpStr,
+          // ".  Type \"SHOW PROOF ",g_Statement[statementNum].labelName,
+          // "\" to see the proof attempt.",NULL)); // Old version
       free_vstring(tmpStr);
       free_vstring(tmpStr2);
     }
