@@ -178,9 +178,8 @@ long subproofLen(const nmbrString *proof, long endStep);
 char checkDummyVarIsolation(long testStep /*!< 0=1st step, 1=2nd, etc. */);
 
 /*! Given a starting step, find its parent (the step it is a hypothesis of)
-
-  If the starting step is the last proof step, just return it */
-long getParentStep(long startStep /*!< 0=1st step, 1=2nd, etc. */);
+   If the starting step is the last proof step, just return it */
+long getParentStep(long startStep /*! < 0=1st step, 1=2nd, etc. */);
 
 /*! Adds a dummy variable to end of mathToken array
   \note it now grows forever, but purging it might worsen fragmentation */
@@ -197,7 +196,7 @@ void initProofStruct(struct pip_struct *proofStruct, const nmbrString *proof,
 /*! Clears the Proof Assistant proof state */
 void deallocProofStruct(struct pip_struct *proofStruct);
 
-/* Actions for processUndoStack() */
+// Actions for processUndoStack()
 #define PUS_INIT 1
 #define PUS_PUSH 2
 #define PUS_UNDO 3
@@ -212,4 +211,4 @@ long processUndoStack(struct pip_struct *proofStruct,
     vstring info, /*!< Info to print upon UNDO or REDO */
     long newStackSize /*!< Used only by NEW_SIZE */);
 
-#endif /* METAMATH_MMPFAS_H_ */
+#endif // METAMATH_MMPFAS_H_

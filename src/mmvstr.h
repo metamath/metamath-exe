@@ -348,8 +348,8 @@ temp_vstring cat(const char * string1, ...);
  */
 int linput(FILE *stream, const char *ask, vstring *target);
 
-/* Emulation of BASIC string functions */
-/* Indices are 1-based */
+// Emulation of BASIC string functions
+// Indices are 1-based
 
 /*!
  * \fn temp_vstring seg(const char *sin, long start, long stop)
@@ -566,7 +566,7 @@ long ascii_(const char *c);
 
 double val(const char *s);
 
-/* Emulation of Progress 4GL string functions */
+// Emulation of Progress 4GL string functions
 
 temp_vstring entry(long element, const char *list);
 
@@ -576,11 +576,10 @@ long numEntries(const char *list);
 
 long entryPosition(long element, const char *list);
 
-/* Routines may/may not be written (lowest priority):
-vstring place$(vstring sout);
-vstring prod$(vstring sout);
-vstring quo$(vstring sout);
-*/
+// Routines may/may not be written (lowest priority):
+// vstring place$(vstring sout);
+// vstring prod$(vstring sout);
+// vstring quo$(vstring sout);
 
 /******* Special purpose routines for better
       memory allocation (use with caution) *******/
@@ -600,7 +599,7 @@ vstring quo$(vstring sout);
  * end the called nested function saves administrative stack data.  Upon finish
  * it restores those values.
  */
-extern long g_tempAllocStackTop;   /* Top of stack for tempAlloc function */
+extern long g_tempAllocStackTop; // Top of stack for tempAlloc function
 
 /*!
  * \var g_startTempAllocStack
@@ -621,8 +620,9 @@ extern long g_tempAllocStackTop;   /* Top of stack for tempAlloc function */
  * \invariant
  *   \ref g_startTempAllocStack <= \ref g_tempAllocStackTop.
  */
-extern long g_startTempAllocStack; /* Where to start freeing temporary allocation
-    when let() is called (normally 0, except for nested vstring functions) */
+// Where to start freeing temporary allocation when let() is called 
+// (normally 0, except for nested vstring functions).
+extern long g_startTempAllocStack; 
 
 /*! \brief Make string have temporary allocation to be released by next let().
 
@@ -634,4 +634,4 @@ extern long g_startTempAllocStack; /* Where to start freeing temporary allocatio
   assigned again with let(). */
 temp_vstring makeTempAlloc(vstring s);
 
-#endif /* METAMATH_MMVSTR_H_ */
+#endif // METAMATH_MMVSTR_H_

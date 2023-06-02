@@ -51,7 +51,7 @@ int hypAndLocSrchCmp(const void *key, const void *data);
    is returned.  If ptr points to a null character, 0 is returned. */
 long whiteSpaceLen(char *ptr);
 
-/* For .mm file splitting */
+// For .mm file splitting
 /*! Like whiteSpaceLen except comments are not whitespace */
 long rawWhiteSpaceLen(char *ptr);
 
@@ -93,7 +93,7 @@ extern long *g_allLabelKeyBase;
 extern long g_numAllLabelKeys;
 
 extern long g_wrkProofMaxSize; /*!< Maximum size so far - it may grow */
-struct sortHypAndLoc {  /* Used for sorting hypAndLocLabel field */
+struct sortHypAndLoc { // Used for sorting hypAndLocLabel field
   long labelTokenNum;
   void *labelName;
 };
@@ -110,9 +110,9 @@ struct wrkProof_struct {
   flag errorSeverity; /*!< 0 = OK, 1 = unknown step, 2 = error, 3 = severe error,
                           4 = not a $p statement */
 
-  /* The following pointers will always be allocated with g_wrkProofMaxSize
-     entries.  If a function needs more than g_wrkProofMaxSize, it must
-     reallocate all of these and increase g_wrkProofMaxSize. */
+  // The following pointers will always be allocated with g_wrkProofMaxSize
+  // entries.  If a function needs more than g_wrkProofMaxSize, it must
+  // reallocate all of these and increase g_wrkProofMaxSize.
   nmbrString *tokenSrcPtrNmbr; /*!< Source parsed into tokens vs. token number
                                     - token size */
   pntrString *tokenSrcPtrPntr; /*!< Source parsed into tokens vs. token number
@@ -131,7 +131,7 @@ struct wrkProof_struct {
   pntrString *mathStringPtrs;
   nmbrString *RPNStack; /*!< Stack for RPN parsing */
 
-  /* For compressed proof parsing */
+  // For compressed proof parsing
   nmbrString *compressedPfLabelMap; /*!< Map from compressed label to actual */
   long compressedPfNumLabels; /*!< Number of compressed labels */
 };
@@ -141,7 +141,7 @@ extern struct wrkProof_struct g_WrkProof;
    provides the context for the parse (to get correct active symbols) */
 nmbrString *parseMathTokens(vstring userText, long statemNum);
 
-vstring outputStatement(long stmt, /*flag cleanFlag,*/ flag reformatFlag);
+vstring outputStatement(long stmt, /* flag cleanFlag, */ flag reformatFlag);
 /*! Caller must deallocate return string */
 vstring rewrapComment(const char *comment);
 
@@ -149,7 +149,7 @@ vstring rewrapComment(const char *comment);
    Return -1 if not found. */
 long lookupLabel(const char *label);
 
-/* For file splitting */
+// For file splitting
 
 /*! Get the next real $[...$] or virtual $( Begin $[... inclusion */
 void getNextInclusion(char *fileBuf, long startOffset, /*!< inputs */
@@ -184,9 +184,9 @@ void deleteSplits(vstring *fileBuf, flag noVersioningFlag);
  * \note The user must deallocate the returned string (file name)
  * \note The globals includeCall structure and includeCalls are used
  */
-vstring getFileAndLineNum(const char *buffPtr/*start of read buffer*/,
-    const char *currentPtr/*place at which to get file name and line no*/,
-    long *lineNum/*return argument*/);
+vstring getFileAndLineNum(const char *buffPtr /* start of read buffer */,
+    const char *currentPtr /* place at which to get file name and line no */,
+    long *lineNum /* return argument */);
 
 /*! statement[stmtNum].fileName and .lineNum are initialized to "" and 0.
    To save CPU time, they aren't normally assigned until needed, but once
@@ -201,7 +201,7 @@ vstring readSourceAndIncludes(const char *inputFn, long *size);
 
 /*! Recursively expand the source of an included file */
 vstring readInclude(const char *fileBuf, long fileBufOffset,
-    /*vstring inclFileName,*/ const char *sourceFileName,
+    /* vstring inclFileName, */ const char *sourceFileName,
     long *size, long parentLineNum, flag *errorFlag);
 
-#endif /* METAMATH_MMPARS_H_ */
+#endif // METAMATH_MMPARS_H_

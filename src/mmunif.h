@@ -10,16 +10,18 @@
 /*! \file */
 
 #include "mmdata.h"
-
-extern long g_minSubstLen; /*!< User-settable value - 0 or 1 */
+/*!< User-settable value - 0 or 1 */
+extern long g_minSubstLen;
+/*!< User-defined upper limit (# backtracks) for unification trials */
 extern long g_userMaxUnifTrials;
-            /*!< User-defined upper limit (# backtracks) for unification trials */
+/*!< 0 means don't time out; 1 means start counting trials */
 extern long g_unifTrialCount;
-                     /*!< 0 means don't time out; 1 means start counting trials */
-extern long g_unifTimeouts; /*!< Number of timeouts so far for this command */
-extern flag g_hentyFilter; /*!< Turns Henty filter on or off */
+/*!< Number of timeouts so far for this command */
+extern long g_unifTimeouts;
+/*!< Turns Henty filter on or off */
+extern flag g_hentyFilter;
 
-/* Global so eraseSource() (mmcmds.c) can clear them */
+// Global so eraseSource() (mmcmds.c) can clear them
 extern flag g_bracketMatchInit;
 extern nmbrString *g_firstConst;
 extern nmbrString *g_lastConst;
@@ -53,7 +55,7 @@ nmbrString *makeSubstUnif(flag *newVarFlag,
 char unify(
     const nmbrString *schemeA,
     const nmbrString *schemeB,
-    /* nmbrString **unifiedScheme, */ /* stateVector[8] holds this */
+    // nmbrString **unifiedScheme, // stateVector[8] holds this
     pntrString **stateVector,
     long reEntryFlag);
 
@@ -96,4 +98,4 @@ void purgeStateVector(pntrString **stateVector);
 /*! Prints the substitutions determined by unify for debugging purposes */
 void printSubst(pntrString *stateVector);
 
-#endif /* METAMATH_MMUNIF_H_ */
+#endif // METAMATH_MMUNIF_H_

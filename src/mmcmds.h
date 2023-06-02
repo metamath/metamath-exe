@@ -70,14 +70,14 @@ void readInput(void);
 /*! WRITE SOURCE command */
 void writeSource(
   flag reformatFlag /* 1 = "/ FORMAT", 2 = "/REWRAP" */,
-  flag splitFlag,  /* /SPLIT - write out separate $[ $] includes */
-  flag noVersioningFlag, /* /NO_VERSIONING - no ~1 backup */
-  flag keepSplitsFlag, /* /KEEP_SPLITS - don't delete included files
-                        when /SPIT is not specified */
-  vstring extractLabels); /* "" means write everything */
+  flag splitFlag, // /SPLIT - write out separate $[ $] includes
+  flag noVersioningFlag, // /NO_VERSIONING - no ~1 backup
+  // /KEEP_SPLITS - don't delete included files when /SPIT is not specified
+  flag keepSplitsFlag, 
+  vstring extractLabels); // "" means write everything
 
 /*! Get info for WRITE SOURCE ... / EXTRACT */
-void writeExtractedSource(vstring extractLabels, /* EXTRACT argument provided by user */
+void writeExtractedSource(vstring extractLabels, // EXTRACT argument provided by user
   vstring fullOutput_fn, flag noVersioningFlag);
 
 void fixUndefinedLabels(vstring extractNeeded, vstring *buf);

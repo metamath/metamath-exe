@@ -19,7 +19,7 @@
 
 extern int g_errorCount;     /*!< Total error count */
 
-/* Global variables used by print2() */
+// Global variables used by print2()
 
 /*!
  * \var flag g_logFileOpenFlag
@@ -52,7 +52,7 @@ extern flag g_outputToString;
  */
 extern vstring g_printString;
 
-/* Global variables used by cmdInput() */
+// Global variables used by cmdInput()
 
 /*!
  * \def MAX_COMMAND_FILE_NESTING
@@ -95,7 +95,7 @@ extern flag g_commandFileSilent[MAX_COMMAND_FILE_NESTING + 1];
  * If set to 1, suppresses prompts on input.  Activated through
  * SUBMIT ... /SILENT commands.  Initialized to 0 on program start.
  */
-extern flag g_commandFileSilentFlag; /* For SUBMIT ... /SILENT */
+extern flag g_commandFileSilentFlag; // For SUBMIT ... /SILENT
 
 extern FILE *g_input_fp;  /*!< File pointers */
 extern vstring g_input_fn, g_output_fn;  /*!< File names */
@@ -750,4 +750,4 @@ double getRunTime(double *timeSinceLastCall);
 /*! Call before exiting to free memory allocated by this module */
 void freeInOu(void);
 
-#endif /* METAMATH_MMINOU_H_*/
+#endif // METAMATH_MMINOU_H_
