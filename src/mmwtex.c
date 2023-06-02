@@ -155,7 +155,7 @@ void eraseTexDefs(void) {
 // no errors, 0 if no errors or warnings.
 flag readTexDefs(
   flag errorsOnly, // 1 = suppress non-error messages
-  flag gifCheck /* 1 = check for missing GIFs */)
+  flag gifCheck) // 1 = check for missing GIFs
 {
 
   char *startPtr;
