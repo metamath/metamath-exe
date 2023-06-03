@@ -3217,8 +3217,8 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
     printLongLine(g_htmlCSS, "", " ");
 
     // print2("%s\n", cat("<TITLE>", htmlTitle, " - ",
-    // Strip off ".html"
-    // left(outputFileName, (long)strlen(outputFileName) - 5), "</TITLE>", NULL));
+    //   // Strip off ".html"
+    //   left(outputFileName, (long)strlen(outputFileName) - 5), "</TITLE>", NULL));
     // Put page name before "Metamath Proof Explorer" etc.
     printLongLine(cat("<TITLE>",
         ((page == 0)
