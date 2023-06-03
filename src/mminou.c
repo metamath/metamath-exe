@@ -490,7 +490,7 @@ flag print2(const char* fmt, ...) {
 // Special:  breakMatch begins with octal 1 means nested tree display (right
 //           justify continuation lines); 1 is changed to space for
 //           break matching.
-// Special:  if breakMatch is \, then put % at end of previous line for LaTeX*/
+// Special:  if breakMatch is \, then put % at end of previous line for LaTeX
 // Special:  if breakMatch is " (quote), treat as if space but don't break
 //           quotes, and also let lines grow long - use this call for all HTML
 //           code.
