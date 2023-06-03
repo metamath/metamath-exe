@@ -69,7 +69,7 @@ vstring htmlAllowedSubst(long showStmt);
 void readInput(void);
 /*! WRITE SOURCE command */
 void writeSource(
-  flag reformatFlag /* 1 = "/ FORMAT", 2 = "/REWRAP" */,
+  flag reformatFlag, // 1 = "/ FORMAT", 2 = "/REWRAP"
   flag splitFlag, // /SPLIT - write out separate $[ $] includes
   flag noVersioningFlag, // /NO_VERSIONING - no ~1 backup
   // /KEEP_SPLITS - don't delete included files when /SPIT is not specified

@@ -1393,8 +1393,8 @@ void printTexHeader(flag texHeaderFlag)
               &tinyHdr,
               &hugeHdrComment, &bigHdrComment, &smallHdrComment,
               &tinyHdrComment,
-              0, /* fineResolution */
-              0 /* fullComment */);
+              0, // fineResolution
+              0); // fullComment
           if (bigHdr[0] != 0) break;
         }
       } // next i
@@ -2824,9 +2824,9 @@ void printTexLongMath(nmbrString *mathString,
       //   "8   maj=ax-1  $a "
       //   "9 a1i=ax-mp $a "
 
-      let(&tex, edit(sPrefix, 8 /* no leading spaces */
-           + 16 /* reduce spaces and tabs */
-           + 128 /* no trailing spaces */));
+      let(&tex, edit(sPrefix, 8 // no leading spaces
+           + 16 // reduce spaces and tabs
+           + 128)); // no trailing spaces
 
       i = 0;
       pos = 1;
@@ -3414,8 +3414,8 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
                 &tinyHdr,
                 &hugeHdrComment, &bigHdrComment, &smallHdrComment,
                 &tinyHdrComment,
-                0, /* fineResolution */
-                0  /* fullComment */);
+                0, // fineResolution
+                0); // fullComment
             if (hugeHdr[0] || bigHdr[0] || smallHdr[0] || tinyHdr[0]) {
               // Write to the table of contents
               g_outputToString = 1;
@@ -3898,9 +3898,9 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
           g_texFilePtr = outputFilePtr; // For printTexComment
           printTexComment( // Sends result to g_texFilePtr
               (vstring)(pntrHugeHdrComment[s]),
-              0, /* 1 = htmlCenterFlag */
-              PROCESS_EVERYTHING, /* actionBits */
-              1 /* 1 = fileCheck */);
+              0, // 1 = htmlCenterFlag
+              PROCESS_EVERYTHING, // actionBits
+              1); // 1 = fileCheck
           g_texFilePtr = NULL;
           g_outputToString = 1; // Restore after printTexComment
         }
@@ -3952,9 +3952,9 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
           g_texFilePtr = outputFilePtr; // For printTexComment
           printTexComment( // Sends result to g_texFilePtr
               (vstring)(pntrBigHdrComment[s]),
-              0, /* 1 = htmlCenterFlag */
-              PROCESS_EVERYTHING, /* actionBits */
-              1  /* 1 = fileCheck */);
+              0, // 1 = htmlCenterFlag
+              PROCESS_EVERYTHING, // actionBits
+              1); // 1 = fileCheck
           g_texFilePtr = NULL;
           g_outputToString = 1; // Restore after printTexComment
         }
@@ -4006,9 +4006,9 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
           g_texFilePtr = outputFilePtr; // For printTexComment
           printTexComment( // Sends result to g_texFilePtr
               (vstring)(pntrSmallHdrComment[s]),
-              0, /* 1 = htmlCenterFlag */
-              PROCESS_EVERYTHING, /* actionBits */
-              1  /* 1 = fileCheck */);
+              0, // 1 = htmlCenterFlag
+              PROCESS_EVERYTHING, // actionBits
+              1); // 1 = fileCheck
           g_texFilePtr = NULL;
           g_outputToString = 1; // Restore after printTexComment
         }
@@ -4061,9 +4061,9 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
           g_texFilePtr = outputFilePtr; // For printTexComment
           printTexComment( // Sends result to g_texFilePtr
               (vstring)(pntrTinyHdrComment[s]),
-              0, /* 1 = htmlCenterFlag */
-              PROCESS_EVERYTHING, /* actionBits */
-              1  /* 1 = fileCheck */);
+              0, // 1 = htmlCenterFlag
+              PROCESS_EVERYTHING, // actionBits
+              1); // 1 = fileCheck
           g_texFilePtr = NULL;
           g_outputToString = 1; // Restore after printTexComment
         }
@@ -4109,9 +4109,9 @@ void writeTheoremList(long theoremsPerPage, flag showLemmas, flag noVersioning)
       g_texFilePtr = outputFilePtr; // For printTexComment
       printTexComment( // Sends result to g_texFilePtr
           str3,
-          0, /* 1 = htmlCenterFlag */
-          PROCESS_EVERYTHING, /* actionBits */
-          1  /* 1 = fileCheck */);
+          0, // 1 = htmlCenterFlag
+          PROCESS_EVERYTHING, // actionBits
+          1); // 1 = fileCheck
       g_texFilePtr = NULL;
       g_outputToString = 1; // Restore after printTexComment
 
@@ -4762,11 +4762,11 @@ vstring spectrumToRGB(long color, long maxColor) {
           fractionInPartition *
               (blueRef[partition + 1] - blueRef[partition])));
   // debug
-  /*
-  i=1;if (g_outputToString==0) {i=0;g_outputToString=1;}
-  print2("p%ldc%ld\n", partition, color); g_outputToString=i;
-  printf("red %ld green %ld blue %ld\n", red, green, blue);
-  */
+  
+  // i=1;if (g_outputToString==0) {i=0;g_outputToString=1;}
+  // print2("p%ldc%ld\n", partition, color); g_outputToString=i;
+  // printf("red %ld green %ld blue %ld\n", red, green, blue);
+
   if (red < 0 || green < 0 || blue < 0
       || red > 255 || green > 255 || blue > 255) {
     print2("%ld %ld %ld\n", red, green, blue);
