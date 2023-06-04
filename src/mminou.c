@@ -704,7 +704,7 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
       if (longLine[p - 1] == ' ' &&
           breakMatch1[0] /* But not "break anywhere" line */) {
         // (Note:  search for "p--" ~100 lines above for the place
-        // where the backward search for space happens.).
+        // where the backward search for space happens.)
         // Remove leading space for neatness.
         if (longLine[p] == ' ') {
           // There could be 2 spaces at the end of a sentence.
