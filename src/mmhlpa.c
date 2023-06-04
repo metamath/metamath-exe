@@ -4,12 +4,12 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-/* Part 1 of help file for Metamath */
-/* The content here was split into help0() and help1() because the original
-   help() overflowed the lcc compiler (at least before version 3.8; not
-   tested with 3.8 and above). */
-/* To add a new help entry, you must add the command syntax to mmcmdl.c
-   as well as adding it here. */
+// Part 1 of help file for Metamath.
+// The content here was split into help0() and help1() because the original
+// help() overflowed the lcc compiler (at least before version 3.8; not
+// tested with 3.8 and above).
+// To add a new help entry, you must add the command syntax to mmcmdl.c
+// as well as adding it here.
 
 #include <string.h>
 #include "mmvstr.h"
@@ -20,11 +20,11 @@
 void help0(vstring helpCmd) {
 
 vstring_def(saveHelpCmd);
-/* help0() may be called with a temporarily allocated argument (left(),
-   cat(), etc.), and the let()s in the eventual print2() calls will
-   deallocate and possibly corrupt helpCmd.  So, we grab a non-temporarily
-   allocated copy here.  (And after this let(), helpCmd will become invalid
-   for the same reason.)  */
+// help0() may be called with a temporarily allocated argument (left(),
+// cat(), etc.), and the let()s in the eventual print2() calls will
+// deallocate and possibly corrupt helpCmd.  So, we grab a non-temporarily
+// allocated copy here.  (And after this let(), helpCmd will become invalid
+// for the same reason.)
 let(&saveHelpCmd, helpCmd);
 
 if (!strcmp(saveHelpCmd, "HELP")) {
@@ -354,19 +354,19 @@ H("    Tools> 'ls | more");
 H("");
 }
 
-free_vstring(saveHelpCmd); /* Deallocate memory */
+free_vstring(saveHelpCmd); // Deallocate memory
 
 return;
-} /* help0 */
+} // help0
 
 void help1(vstring helpCmd) {
 
 vstring_def(saveHelpCmd);
-/* help1() may be called with a temporarily allocated argument (left(),
-   cat(), etc.), and the let()s in the eventual print2() calls will
-   deallocate and possibly corrupt helpCmd.  So, we grab a non-temporarily
-   allocated copy here.  (And after this let(), helpCmd will become invalid
-   for the same reason.)  */
+// help1() may be called with a temporarily allocated argument (left(),
+// cat(), etc.), and the let()s in the eventual print2() calls will
+// deallocate and possibly corrupt helpCmd.  So, we grab a non-temporarily
+// allocated copy here.  (And after this let(), helpCmd will become invalid
+// for the same reason.)
 let(&saveHelpCmd, helpCmd);
 
 if (!strcmp(saveHelpCmd, "HELP CLI")) {
