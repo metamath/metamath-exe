@@ -1178,11 +1178,9 @@ FILE *fSafeOpen(const char *fileName, const char *mode, flag noVersioningFlag) {
       let(&bakName, cat(prefix, str(1), postfix, NULL));
       rename(fileName, bakName);
 
-      //***
       // printLongLine(cat("The file \"", fileName,
       //     "\" already exists.  The old file is being renamed to \"",
       //     bakName, "\".", NULL), "  ", " ");
-      //***
     } // End if file already exists
    skip_backup:
 
