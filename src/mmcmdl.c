@@ -2145,7 +2145,7 @@ long switchPos(const char *swString) {
 
 void printCommandError(vstring line1, long arg, vstring errorMsg)
 {
-  // Warning: errorMsg should not a temporarily allocated string such
+  // Warning: errorMsg should not be a temporarily allocated string such
   // as the direct output of cat().
   vstring_def(errorPointer);
   vstring_def(line);
