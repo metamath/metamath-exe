@@ -23,7 +23,7 @@ nmbrString *getProof(long statemNum, flag printFlag);
 
 void rawSourceError(char *startFile, char *ptr, long tokenLen, vstring errMsg);
 void sourceError(char *ptr, long tokenLen, long stmtNum, vstring errMsg);
-void mathTokenError(long tokenNum /* 0 is 1st one */,
+void mathTokenError(long tokenNum, // 0 is 1st one
     nmbrString *tokenList, long stmtNum, vstring errMsg);
 vstring shortDumpRPNStack(void);
 
@@ -184,9 +184,9 @@ void deleteSplits(vstring *fileBuf, flag noVersioningFlag);
  * \note The user must deallocate the returned string (file name)
  * \note The globals includeCall structure and includeCalls are used
  */
-vstring getFileAndLineNum(const char *buffPtr /* start of read buffer */,
-    const char *currentPtr /* place at which to get file name and line no */,
-    long *lineNum /* return argument */);
+vstring getFileAndLineNum(const char *buffPtr, // start of read buffer
+    const char *currentPtr, // place at which to get file name and line no
+    long *lineNum); // return argument
 
 /*! statement[stmtNum].fileName and .lineNum are initialized to "" and 0.
    To save CPU time, they aren't normally assigned until needed, but once

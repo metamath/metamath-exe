@@ -530,19 +530,18 @@ temp_vstring edit(const char *sin, long control) {
     // FNUNTAB$=L$
     // FNEND
 
-    /***** old code (doesn't handle multiple lines)
-    k = (long)strlen(sout);
-    for (i = 1; i <= k; i++) {
-      if (sout[i - 1] != '\t') continue;
-      for (j = k; j >= i; j--) {
-        sout[j + 8 - ((i - 1) & 7) - 1] = sout[j];
-      }
-      for (j = i; j < i + 8 - ((i - 1) & 7); j++) {
-        sout[j - 1] = ' ';
-      }
-      k = k + 8 - ((i - 1) & 7);
-    }
-    *****/
+    //**** old code (doesn't handle multiple lines)
+    // k = (long)strlen(sout);
+    // for (i = 1; i <= k; i++) {
+    //   if (sout[i - 1] != '\t') continue;
+    //   for (j = k; j >= i; j--) {
+    //     sout[j + 8 - ((i - 1) & 7) - 1] = sout[j];
+    //   }
+    //   for (j = i; j < i + 8 - ((i - 1) & 7); j++) {
+    //     sout[j - 1] = ' ';
+    //   }
+    //   k = k + 8 - ((i - 1) & 7);
+    // }
 
     // Untab string containing multiple lines
     // (Currently this is needed by outputStatement() in mmpars.c)
@@ -959,23 +958,20 @@ long entryPosition(long element, const char *list) {
 }
 
 // For debugging
-/*
 
-int main(void)
-{
-  vstring_def(s);
-  vstring_def(t);
-
-  printf("Hello\n");
-  let(&t,edit(" x y z ",2));
-  let(&s,cat(right("abc",2),left("def",len(right("xxx",2))),"ghi",t,NULL));
-  printf("%s\n",s);
-  printf("num %s\n",num(5));
-  printf("str %s\n",str(5.02));
-  printf("num1 %s\n",num1(5.02));
-  printf("time_ %s\n",time_());
-  printf("date %s\n",date());
-  printf("val %f\n",val("6.77"));
-}
-
-*/
+// int main(void)
+// {
+//   vstring_def(s);
+//   vstring_def(t);
+//
+//   printf("Hello\n");
+//   let(&t,edit(" x y z ",2));
+//   let(&s,cat(right("abc",2),left("def",len(right("xxx",2))),"ghi",t,NULL));
+//   printf("%s\n",s);
+//   printf("num %s\n",num(5));
+//   printf("str %s\n",str(5.02));
+//   printf("num1 %s\n",num1(5.02));
+//   printf("time_ %s\n",time_());
+//   printf("date %s\n",date());
+//   printf("val %f\n",val("6.77"));
+// }
