@@ -4,7 +4,7 @@
 /*****************************************************************************/
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
-/* Command line syntax specification for Metamath */
+// Command line syntax specification for Metamath
 
 #include <string.h>
 #include "mmvstr.h"
@@ -12,30 +12,31 @@
 #include "mmcmdl.h"
 #include "mminou.h"
 #include "mmpfas.h"
-#include "mmunif.h" /* For g_hentyFilter, g_userMaxUnifTrials, g_minSubstLen */
+#include "mmunif.h" // For g_hentyFilter, g_userMaxUnifTrials, g_minSubstLen
 #include "mmwtex.h"
 #include "mmword.h"
 
-/* Global variables */
+// Global variables
 pntrString_def(g_rawArgPntr);
 nmbrString_def(g_rawArgNmbr);
 long g_rawArgs = 0;
 pntrString_def(g_fullArg);
-vstring_def(g_fullArgString); /* g_fullArg as one string */
+vstring_def(g_fullArgString); // g_fullArg as one string
 vstring_def(g_commandPrompt);
 vstring_def(g_commandLine);
 long g_showStatement = 0;
 vstring_def(g_logFileName);
 vstring_def(g_texFileName);
-flag g_PFASmode = 0; /* Proof assistant mode, invoked by PROVE command */
-flag g_queryMode = 0; /* If 1, explicit questions will be asked even if
-    a field in the input command line is optional */
-flag g_sourceChanged = 0; /* Flag that user made some change to the source file*/
-flag g_proofChanged = 0; /* Flag that user made some change to proof in progress*/
-flag g_commandEcho = 0; /* Echo full command */
-flag g_memoryStatus = 0; /* Always show memory */
-flag g_sourceHasBeenRead = 0; /* 1 if a source file has been read in */
-vstring_def(g_rootDirectory); /* Directory prefix to use for included files */
+flag g_PFASmode = 0; // Proof assistant mode, invoked by PROVE command
+// If 1, explicit questions will be asked even if a field in the input
+// command line is optional.
+flag g_queryMode = 0;
+flag g_sourceChanged = 0; // Flag that user made some change to the source file
+flag g_proofChanged = 0; // Flag that user made some change to proof in progress
+flag g_commandEcho = 0; // Echo full command
+flag g_memoryStatus = 0; // Always show memory
+flag g_sourceHasBeenRead = 0; // 1 if a source file has been read in
+vstring_def(g_rootDirectory); // Directory prefix to use for included files
 
 static flag getFullArg(long arg, const char *cmdList);
 
@@ -43,21 +44,21 @@ flag processCommandLine(void) {
   vstring_def(defaultArg);
   vstring_def(tmpStr);
   long i;
-  g_queryMode = 0; /* If 1, explicit questions will be asked even if
-    a field is optional */
+  // If 1, explicit questions will be asked even if a field is optional
+  g_queryMode = 0;
   free_pntrString(g_fullArg);
 
   if (!g_toolsMode) {
 
     if (!g_PFASmode) {
-      /* Normal mode */
+      // Normal mode
       let(&tmpStr, cat("DBG|",
           "HELP|READ|WRITE|PROVE|SHOW|SEARCH|SAVE|SUBMIT|OPEN|CLOSE|",
           "SET|FILE|BEEP|EXIT|QUIT|ERASE|VERIFY|MARKUP|MORE|TOOLS|",
           "MIDI|<HELP>",
           NULL));
     } else {
-      /* Proof assistant mode */
+      // Proof assistant mode
       let(&tmpStr, cat("DBG|",
           "HELP|WRITE|SHOW|SEARCH|SAVE|SUBMIT|OPEN|CLOSE|",
           "SET|FILE|BEEP|EXIT|_EXIT_PA|QUIT|VERIFY|INITIALIZE|ASSIGN|REPLACE|",
@@ -127,12 +128,12 @@ flag processCommandLine(void) {
         goto pclgood;
       }
       goto pclgood;
-    } /* cmdMatches("HELP") */
+    } // cmdMatches("HELP")
 
     if (cmdMatches("READ")) {
       if (!getFullArg(1, "& What is the name of the source input file? "))
           goto pclbad;
-      /* Get any switches */
+      // Get any switches
       i = 1;
       while (1) {
         i++;
@@ -143,8 +144,8 @@ flag processCommandLine(void) {
         } else {
           break;
         }
-        break; /* Break if only 1 switch is allowed */
-      } /* End while for switch loop */
+        break; // Break if only 1 switch is allowed
+      } // End while for switch loop
       goto pclgood;
     }
 
@@ -165,7 +166,7 @@ flag processCommandLine(void) {
           print2("The input file will be renamed %s~1.\n", g_input_fn);
         }
 
-        /* Get any switches */
+        // Get any switches
         i = 2;
         while (1) {
           i++;
@@ -185,8 +186,8 @@ flag processCommandLine(void) {
           } else {
             break;
           }
-          /* break; */ /* Break if only 1 switch is allowed */
-        } /* End while for switch loop */
+          // break; // Break if only 1 switch is allowed
+        } // End while for switch loop
 
         goto pclgood;
       }
@@ -195,7 +196,7 @@ flag processCommandLine(void) {
           print2("?No source file has been read in.  Use READ first.\n");
           goto pclbad;
         }
-        /* Get any switches */
+        // Get any switches
         i = 1;
         while (1) {
           i++;
@@ -214,7 +215,7 @@ flag processCommandLine(void) {
           } else {
             break;
           }
-          /* break; */ /* Break if only 1 switch is allowed */
+          // break; // Break if only 1 switch is allowed
         }
         goto pclgood;
       }
@@ -243,7 +244,7 @@ flag processCommandLine(void) {
         print2(
           "The old file will be renamed %s~1.\n", g_fullArg[2]);
 
-        /* Get any switches */
+        // Get any switches
         i = 2;
         while (1) {
           i++;
@@ -262,7 +263,7 @@ flag processCommandLine(void) {
           } else {
             break;
           }
-          /*break;*/ /* Break if only 1 switch is allowed */
+          // break; // Break if only 1 switch is allowed
         }
         goto pclgood;
       }
@@ -297,7 +298,7 @@ flag processCommandLine(void) {
         if (!getFullArg(2, "* What is the name of LaTeX output file? "))
           goto pclbad;
 
-        /* Get any switches */
+        // Get any switches
         i = 2;
         while (1) {
           i++;
@@ -310,8 +311,8 @@ flag processCommandLine(void) {
           } else {
             break;
           }
-          /* break; */ /* Break if only 1 switch is allowed */
-        } /* End while for switch loop */
+          // break; // Break if only 1 switch is allowed
+        } // End while for switch loop
       }
       goto pclgood;
     }
@@ -330,7 +331,7 @@ flag processCommandLine(void) {
         if (!getFullArg(3, "* What is the string to search for? "))
           goto pclbad;
 
-        /* Get any switches */
+        // Get any switches
         i = 3;
         while (1) {
           i++;
@@ -356,7 +357,7 @@ flag processCommandLine(void) {
               if (!getFullArg(i, "# To what line number <999999>? "))
                 goto pclbad;
             }
-            if (lastArgMatches("WINDOW")) { /* ???Not implemented yet */
+            if (lastArgMatches("WINDOW")) { // ???Not implemented yet
               i++;
               if (!getFullArg(i, "# How big a window around matched lines <0>? "))
                 goto pclbad;
@@ -364,11 +365,11 @@ flag processCommandLine(void) {
           } else {
             break;
           }
-          /* break; */ /* Break if only 1 switch is allowed */
-        } /* End while for switch loop */
+          // break; // Break if only 1 switch is allowed
+        } // End while for switch loop
 
         goto pclgood;
-      } /* End if (cmdMatches("FILE SEARCH")) */
+      } // End if (cmdMatches("FILE SEARCH"))
       goto pclgood;
     }
 
@@ -402,7 +403,7 @@ flag processCommandLine(void) {
             cat("* What is the statement label", defaultArg, "? ", NULL)))
           goto pclbad;
 
-        /* Get any switches */
+        // Get any switches
         i = 2;
         while (1) {
           i++;
@@ -431,11 +432,11 @@ flag processCommandLine(void) {
           } else {
             break;
           }
-          /* break; */ /* Break if only 1 switch is allowed */
+          // break; // Break if only 1 switch is allowed
         }
 
         goto pclgood;
-      } /* End if (cmdMatches("SHOW TRACE_BACK")) */
+      } // End if (cmdMatches("SHOW TRACE_BACK"))
 
       if (cmdMatches("SHOW USAGE")) {
         if (g_sourceHasBeenRead == 0) {
@@ -446,7 +447,7 @@ flag processCommandLine(void) {
             cat("* What is the statement label", defaultArg, "? ", NULL)))
           goto pclbad;
 
-        /* Get any switches */
+        // Get any switches
         i = 2;
         while (1) {
           i++;
@@ -460,11 +461,11 @@ flag processCommandLine(void) {
           } else {
             break;
           }
-          /* break; */  /* Break if only 1 switch is allowed */
+          // break; // Break if only 1 switch is allowed
         }
 
         goto pclgood;
-      } /* End if (cmdMatches("SHOW USAGE")) */
+      } // End if (cmdMatches("SHOW USAGE"))
 
       if (cmdMatches("SHOW LABELS")) {
         if (g_sourceHasBeenRead == 0) {
@@ -474,7 +475,7 @@ flag processCommandLine(void) {
         if (!getFullArg(2,
             "* What are the labels to match (* = wildcard) <*>?"))
           goto pclbad;
-        /* Get any switches */
+        // Get any switches
         i = 2;
         while (1) {
           i++;
@@ -486,7 +487,7 @@ flag processCommandLine(void) {
           } else {
             break;
           }
-          /*break;*/ /* Break if only 1 switch is allowed */
+          // break; // Break if only 1 switch is allowed
         }
         goto pclgood;
       }
@@ -498,7 +499,7 @@ flag processCommandLine(void) {
         if (!getFullArg(2,
             cat("* What is the statement label", defaultArg, "? ", NULL)))
           goto pclbad;
-        /* Get any switches */
+        // Get any switches
         i = 2;
         while (1) {
           i++;
@@ -512,7 +513,7 @@ flag processCommandLine(void) {
           } else {
             break;
           }
-          /* break; */ /* Break if only 1 switch is allowed */
+          // break; // Break if only 1 switch is allowed
         }
         goto pclgood;
       }
@@ -537,7 +538,7 @@ flag processCommandLine(void) {
             cat("* What is the statement label", defaultArg, "? ", NULL)))
           goto pclbad;
 
-        /* Get any switches */
+        // Get any switches
         i = 2;
         while (1) {
           i++;
@@ -582,10 +583,10 @@ flag processCommandLine(void) {
           } else {
             break;
           }
-          /* break; */ /* Break if only 1 switch is allowed */
+          // break; // Break if only 1 switch is allowed
         }
         goto pclgood;
-      } /* End if (cmdMatches("SHOW PROOF")) */
+      } // End if (cmdMatches("SHOW PROOF"))
 
       if (cmdMatches("SHOW NEW_PROOF")) {
         if (g_sourceHasBeenRead == 0) {
@@ -593,7 +594,7 @@ flag processCommandLine(void) {
           goto pclbad;
         }
 
-        /* Get any switches */
+        // Get any switches
         i = 1;
         while (1) {
           i++;
@@ -633,13 +634,13 @@ flag processCommandLine(void) {
           } else {
             break;
           }
-          /* break; */ /* Break if only 1 switch is allowed */
+          // break; // Break if only 1 switch is allowed
         }
         goto pclgood;
-      } /* End if (cmdMatches("SHOW NEW_PROOF")) */
+      } // End if (cmdMatches("SHOW NEW_PROOF"))
 
       goto pclgood;
-    } /* End of SHOW */
+    } // End of SHOW
 
     if (cmdMatches("SEARCH")) {
       if (g_sourceHasBeenRead == 0) {
@@ -651,7 +652,7 @@ flag processCommandLine(void) {
         goto pclbad;
       if (!getFullArg(2, "* Search for what math symbol string? "))
           goto pclbad;
-      /* Get any switches */
+      // Get any switches
       i = 2;
       while (1) {
         i++;
@@ -663,10 +664,10 @@ flag processCommandLine(void) {
         } else {
           break;
         }
-        /*break;*/ /* Break if only 1 switch is allowed */
+        // break; // Break if only 1 switch is allowed
       }
       goto pclgood;
-    } /* End of SEARCH */
+    } // End of SEARCH
 
     if (cmdMatches("SAVE")) {
       if (!g_PFASmode) {
@@ -695,7 +696,7 @@ flag processCommandLine(void) {
             cat("* What is the statement label", defaultArg, "? ", NULL)))
           goto pclbad;
 
-        /* Get any switches */
+        // Get any switches
         i = 2;
         while (1) {
           i++;
@@ -710,10 +711,10 @@ flag processCommandLine(void) {
           } else {
             break;
           }
-          /* break; */ /* Break if only 1 switch is allowed */
+          // break; // Break if only 1 switch is allowed
         }
         goto pclgood;
-      } /* End if (cmdMatches("SAVE PROOF")) */
+      } // End if (cmdMatches("SAVE PROOF"))
 
       if (cmdMatches("SAVE NEW_PROOF")) {
         if (g_sourceHasBeenRead == 0) {
@@ -721,7 +722,7 @@ flag processCommandLine(void) {
           goto pclbad;
         }
 
-        /* Get any switches */
+        // Get any switches
         i = 1;
         while (1) {
           i++;
@@ -736,13 +737,13 @@ flag processCommandLine(void) {
           } else {
             break;
           }
-          /*break;*/ /* Break if only 1 switch is allowed */
+          // break; // Break if only 1 switch is allowed
         }
         goto pclgood;
-      } /* End if (cmdMatches("SAVE NEW_PROOF")) */
+      } // End if (cmdMatches("SAVE NEW_PROOF"))
 
       goto pclgood;
-    } /* End of SAVE */
+    } // End of SAVE
 
     if (cmdMatches("PROVE")) {
       if (g_sourceHasBeenRead == 0) {
@@ -760,7 +761,7 @@ flag processCommandLine(void) {
           defaultArg, "? ", NULL)))
         goto pclbad;
 
-      /* Get any switches */
+      // Get any switches
       i = 1;
       while (1) {
         i++;
@@ -771,20 +772,20 @@ flag processCommandLine(void) {
         } else {
           break;
         }
-        break; /* Break if only 1 switch is allowed */
-      } /* End while for switch loop */
+        break; // Break if only 1 switch is allowed
+      } // End while for switch loop
 
       goto pclgood;
     }
 
-    /* Commands in Proof Assistant mode */
+    // Commands in Proof Assistant mode
 
     if (cmdMatches("MATCH")) {
       if (!getFullArg(1,
           "STEP|ALL|<ALL>")) goto pclbad;
       if (cmdMatches("MATCH STEP")) {
         if (!getFullArg(2, "# What step number? ")) goto pclbad;
-        /* Get any switches */
+        // Get any switches
         i = 2;
         while (1) {
           i++;
@@ -803,12 +804,12 @@ flag processCommandLine(void) {
           } else {
             break;
           }
-          break;  /* Break if only 1 switch is allowed */
+          break; // Break if only 1 switch is allowed
         }
         goto pclgood;
       }
       if (cmdMatches("MATCH ALL")) {
-        /* Get any switches */
+        // Get any switches
         i = 1;
         while (1) {
           i++;
@@ -827,10 +828,10 @@ flag processCommandLine(void) {
           } else {
             break;
           }
-          /*break;*/  /* Break if only 1 switch is allowed */
+          // break; // Break if only 1 switch is allowed
         }
         goto pclgood;
-      } /* End if (cmdMatches("MATCH ALL")) */
+      } // End if (cmdMatches("MATCH ALL"))
       goto pclgood;
     }
 
@@ -846,7 +847,7 @@ flag processCommandLine(void) {
     if (cmdMatches("IMPROVE")) {
       if (!getFullArg(1,
         "* What step number, or FIRST, or LAST, or ALL <ALL>? ")) goto pclbad;
-      /* Get any switches */
+      // Get any switches
       i = 1;
       while (1) {
         i++;
@@ -863,14 +864,14 @@ flag processCommandLine(void) {
         } else {
           break;
         }
-        /*break;*/ /* Do this if only 1 switch is allowed */
-      } /* end while */
+        // break; // Do this if only 1 switch is allowed
+      } // end while
       goto pclgood;
-    } /* end if IMPROVE */
+    } // end if IMPROVE
 
     if (cmdMatches("MINIMIZE_WITH")) {
       if (!getFullArg(1, "* What statement label? ")) goto pclbad;
-      /* Get any switches */
+      // Get any switches
       i = 1;
       while (1) {
         i++;
@@ -906,10 +907,10 @@ flag processCommandLine(void) {
         } else {
           break;
         }
-        /*break;*/  /* Break if only 1 switch is allowed */
+        // break; // Break if only 1 switch is allowed
       }
       goto pclgood;
-    } /* end of MINIMIZE_WITH */
+    } // end of MINIMIZE_WITH
 
     if (cmdMatches("EXPAND")) {
       if (!getFullArg(1, "* What statement label? ")) goto pclbad;
@@ -924,7 +925,7 @@ flag processCommandLine(void) {
         goto pclgood;
       }
       if (cmdMatches("UNIFY ALL")) {
-        /* Get any switches */
+        // Get any switches
         i = 1;
         while (1) {
           i++;
@@ -937,10 +938,10 @@ flag processCommandLine(void) {
           } else {
             break;
           }
-          break;  /* Break if only 1 switch is allowed */
+          break; // Break if only 1 switch is allowed
         }
         goto pclgood;
-      } /* End if (cmdMatches("UNIFY ALL")) */
+      } // End if (cmdMatches("UNIFY ALL"))
     }
 
     if (cmdMatches("DELETE")) {
@@ -953,18 +954,18 @@ flag processCommandLine(void) {
       goto pclgood;
     }
 
-    /*???OBSOLETE???*/
+    // ???OBSOLETE???
     if (cmdMatches("ADD")) {
       if (!getFullArg(1,
           "UNIVERSE|<UNIVERSE>")) goto pclbad;
-      /* Note:  further parsing below */
+      // Note:  further parsing below
     }
 
     if (cmdMatches("REPLACE")) {
       if (!getFullArg(1, "* What step number, or FIRST, or LAST <LAST>? "))
           goto pclbad;
       if (!getFullArg(2, "* With what statement label? ")) goto pclbad;
-      /* Get any switches */
+      // Get any switches
       i = 2;
 
       while (1) {
@@ -978,7 +979,7 @@ flag processCommandLine(void) {
         } else {
           break;
         }
-        break; /* Break if only 1 switch is allowed */
+        break; // Break if only 1 switch is allowed
       }
 
       goto pclgood;
@@ -1002,7 +1003,7 @@ flag processCommandLine(void) {
     if (cmdMatches("ASSIGN")) {
       if (!getFullArg(1, "* What step number, or FIRST, or LAST <LAST>? ")) goto pclbad;
       if (!getFullArg(2, "* With what statement label? ")) goto pclbad;
-      /* Get any switches */
+      // Get any switches
       i = 2;
       while (1) {
         i++;
@@ -1013,7 +1014,7 @@ flag processCommandLine(void) {
         } else {
           break;
         }
-        /*break;*/  /* Break if only 1 switch is allowed */
+        // break; // Break if only 1 switch is allowed
       }
       goto pclgood;
     }
@@ -1153,7 +1154,7 @@ flag processCommandLine(void) {
         }
         goto pclgood;
       }
-    } /* end if SET */
+    } // end if SET
 
     if (cmdMatches("ERASE")) {
       goto pclgood;
@@ -1183,7 +1184,7 @@ flag processCommandLine(void) {
             "* What are the labels to match (* = wildcard) <*>?"))
           goto pclbad;
 
-        /* Get any switches */
+        // Get any switches
         i = 2;
         while (1) {
           i++;
@@ -1197,7 +1198,7 @@ flag processCommandLine(void) {
           } else {
             break;
           }
-          break;  /* Break if only 1 switch is allowed */
+          break; // Break if only 1 switch is allowed
         }
 
         goto pclgood;
@@ -1212,7 +1213,7 @@ flag processCommandLine(void) {
             "* What are the labels to match (* = wildcard) <*>?"))
           goto pclbad;
 
-        /* Get any switches */
+        // Get any switches
         i = 2;
         while (1) {
           i++;
@@ -1227,7 +1228,7 @@ flag processCommandLine(void) {
           } else {
             break;
           }
-          /* break; */  /* Break if only 1 switch is allowed */
+          // break; // Break if only 1 switch is allowed
         }
 
         goto pclgood;
@@ -1235,8 +1236,8 @@ flag processCommandLine(void) {
     }
 
     if (cmdMatches("DBG")) {
-      /* The debug command fetches an arbitrary 2nd arg in quotes, to be handled
-         in whatever way is needed for debugging. */
+      // The debug command fetches an arbitrary 2nd arg in quotes, to be handled
+      // in whatever way is needed for debugging.
       if (!getFullArg(1, "* What is the debugging string? "))
         goto pclbad;
       goto pclgood;
@@ -1254,7 +1255,7 @@ flag processCommandLine(void) {
           "* What is the name of the HTML output file? "))
         goto pclbad;
 
-      /* Get any switches */
+      // Get any switches
       i = 2;
       while (1) {
         i++;
@@ -1268,7 +1269,7 @@ flag processCommandLine(void) {
         } else {
           break;
         }
-        /*break;*/ /* Break if only 1 switch is allowed */
+        // break; // Break if only 1 switch is allowed
       }
       goto pclgood;
     }
@@ -1281,7 +1282,7 @@ flag processCommandLine(void) {
       if (!getFullArg(1,
          "* Statement label to create MIDI for (* matches any substring) <*>?"))
         goto pclbad;
-      /* Get any switches */
+      // Get any switches
       i = 1;
       while (1) {
         i++;
@@ -1297,14 +1298,14 @@ flag processCommandLine(void) {
         } else {
           break;
         }
-        break; /* Break if only 1 switch is allowed */
+        break; // Break if only 1 switch is allowed
       }
       goto pclgood;
     }
 
     if (cmdMatches("EXIT") || cmdMatches("QUIT") || cmdMatches("_EXIT_PA")) {
 
-      /* Get any switches */
+      // Get any switches
       i = 0;
       while (1) {
         i++;
@@ -1317,13 +1318,13 @@ flag processCommandLine(void) {
         } else {
           break;
         }
-        break; /* Break if only 1 switch is allowed */
-      } /* End while for switch loop */
+        break; // Break if only 1 switch is allowed
+      } // End while for switch loop
 
       goto pclgood;
     }
-  } else { /* g_toolsMode */
-    /* Text tools mode */
+  } else { // g_toolsMode
+    // Text tools mode
     let(&tmpStr, cat(
           "HELP|SUBMIT|",
           "ADD|DELETE|SUBSTITUTE|S|SWAP|CLEAN|INSERT|BREAK|BUILD|MATCH|SORT|",
@@ -1524,11 +1525,11 @@ flag processCommandLine(void) {
       goto pclgood;
     }
 
-    /* g_toolsMode - no qualifiers for EXIT */
+    // g_toolsMode - no qualifiers for EXIT
     if (cmdMatches("EXIT") || cmdMatches("QUIT")) {
       goto pclgood;
     }
-  } /* if !g_toolsMode ... else ... */
+  } // if !g_toolsMode ... else ...
 
   if (cmdMatches("SUBMIT")) {
     if (g_toolsMode) {
@@ -1541,8 +1542,8 @@ flag processCommandLine(void) {
       goto pclbad;
     }
 
-    /* Get any switches */
-    i = 1; /* Number of command words before switch */
+    // Get any switches
+    i = 1; // Number of command words before switch
     while (1) {
       i++;
       if (!getFullArg(i, "/|$|<$>")) goto pclbad;
@@ -1555,8 +1556,8 @@ flag processCommandLine(void) {
       } else {
         break;
       }
-      break; /* Break if only 1 switch is allowed */
-    } /* End while for switch loop */
+      break; // Break if only 1 switch is allowed
+    } // End while for switch loop
 
     goto pclgood;
   }
@@ -1565,18 +1566,18 @@ flag processCommandLine(void) {
     goto pclgood;
   }
 
-  /* Command in master list but not intercepted -- really a bug */
+  // Command in master list but not intercepted -- really a bug
   print2("?This command has not been implemented yet.\n");
   print2("(This is really a bug--please report it.)\n");
   goto pclbad;
 
-  /* Should never get here */
+  // Should never get here
 
  pclgood:
-  /* Strip off the last g_fullArg if a null argument was added by getFullArg
-     in the case when "$" (nothing) is allowed */
+  // Strip off the last g_fullArg if a null argument was added by getFullArg
+  // in the case when "$" (nothing) is allowed.
   if (!strcmp(g_fullArg[pntrLen(g_fullArg) - 1], chr(3))) {
-    free_vstring(*(vstring *)(&g_fullArg[pntrLen(g_fullArg) - 1])); /* Deallocate */
+    free_vstring(*(vstring *)(&g_fullArg[pntrLen(g_fullArg) - 1])); // Deallocate
     pntrLet(&g_fullArg, pntrLeft(g_fullArg, pntrLen(g_fullArg) - 1));
   }
 
@@ -1589,36 +1590,36 @@ flag processCommandLine(void) {
     goto pclbad;
   }
 
-  /* Create a single string containing the g_fullArg tokens */
+  // Create a single string containing the g_fullArg tokens
   let(&g_fullArgString, "");
   for (i = 0; i < pntrLen(g_fullArg); i++) {
     let(&g_fullArgString, cat(g_fullArgString, " ", g_fullArg[i], NULL));
   }
-  let(&g_fullArgString, right(g_fullArgString, 2)); /* Strip leading space */
+  let(&g_fullArgString, right(g_fullArgString, 2)); // Strip leading space
 
-  /* Deallocate memory */
+  // Deallocate memory
   free_vstring(defaultArg);
   free_vstring(tmpStr);
   return 1;
 
  pclbad:
-  /* Deallocate memory */
+  // Deallocate memory
   free_vstring(defaultArg);
   free_vstring(tmpStr);
   return 0;
-} /* processCommandLine */
+} // processCommandLine
 
-/* This function converts the user's abbreviated keyword in
-   g_rawArgPntr[arg] to a full, upper-case keyword,
-   in g_fullArg[arg], matching
-   the available choices in cmdList. */
-/* Special cases:  cmdList = "# xxx <yyy>?" - get an integer */
-/*                 cmdList = "* xxx <yyy>?" - get any string;
-                     don't convert to upper case
-                   cmdList = "& xxx <yyy>?" - same as * except
-                     verify it is a file that exists */
-/* "$" means a null argument is acceptable; put it in as
-   special character chr(3) so it can be recognized */
+// This function converts the user's abbreviated keyword in
+// g_rawArgPntr[arg] to a full, upper-case keyword,
+// in g_fullArg[arg], matching
+// the available choices in cmdList.
+// Special cases:  cmdList = "# xxx <yyy>?" - get an integer.
+//                 cmdList = "* xxx <yyy>?" - get any string;
+//                   don't convert to upper case
+//                 cmdList = "& xxx <yyy>?" - same as * except
+//                   verify it is a file that exists.
+// "$" means a null argument is acceptable; put it in as
+// special character chr(3) so it can be recognized.
 static flag getFullArg(long arg, const char *cmdList1) {
   pntrString_def(possCmd);
   flag ret = 1;
@@ -1628,16 +1629,16 @@ static flag getFullArg(long arg, const char *cmdList1) {
   vstring_def(keyword);
 
   vstring_def(cmdList);
-  let(&cmdList, cmdList1); /* In case cmdList1 gets deallocated when it comes
-                             directly from a vstring function such as cat() */
-
+  // In case cmdList1 gets deallocated when it comes directly
+  // from a vstring function such as cat().
+  let(&cmdList, cmdList1);
   let(&errorLine, cat(g_commandPrompt, g_commandLine, NULL));
 
-  /* Handle special case - integer expected */
+  // Handle special case - integer expected
   if (cmdList[0] == '#') {
     let(&defaultCmd, seg(cmdList, instr(1, cmdList, "<"), instr(1, cmdList, ">")));
 
-    /* If the argument has not been entered, prompt the user for it */
+    // If the argument has not been entered, prompt the user for it
     if (g_rawArgs <= arg) {
       pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
       nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, 0));
@@ -1647,19 +1648,19 @@ static flag getFullArg(long arg, const char *cmdList1) {
       g_queryMode = 1;
       vstring argLine = cmdInput1(right(cmdList, 3));
       let(&errorLine, right(cmdList, 3));
-      if (argLine[0] == 0) { /* Use default argument */
+      if (argLine[0] == 0) { // Use default argument
         let(&argLine, seg(defaultCmd, 2, len(defaultCmd) - 1));
       }
       let((vstring *)(&g_rawArgPntr[arg]), argLine);
       free_vstring(argLine);
-      g_rawArgNmbr[arg] = len(cmdList) - 1;/* Line position for error msgs */
-    } /* End of asking user for additional argument */
+      g_rawArgNmbr[arg] = len(cmdList) - 1; // Line position for error msgs
+    } // End of asking user for additional argument
 
-    /* Make sure that the argument is a non-negative integer */
+    // Make sure that the argument is a non-negative integer
     vstring_def(tmpArg);
     let(&tmpArg, g_rawArgPntr[arg]);
-    if (tmpArg[0] == 0) { /* Use default argument */
-      /* (This code is needed in case of null string passed directly) */
+    if (tmpArg[0] == 0) { // Use default argument
+      // (This code is needed in case of null string passed directly)
       let(&tmpArg, seg(defaultCmd, 2, len(defaultCmd) - 1));
     }
     vstring_def(tmpStr);
@@ -1677,16 +1678,16 @@ static flag getFullArg(long arg, const char *cmdList1) {
     goto getFullArg_ret;
   }
 
-  /* Handle special case - any arbitrary string is OK */
-  /* '*' means any string, '&' means a file */
-  /* However, "|$<$>" also allows null string (no argument) */
+  // Handle special case - any arbitrary string is OK.
+  // '*' means any string, '&' means a file.
+  // However, "|$<$>" also allows null string (no argument).
   if (cmdList[0] == '*' || cmdList[0] == '&') {
     let(&defaultCmd, seg(cmdList,instr(1, cmdList, "<"), instr(1, cmdList, ">")));
 
-    /* If the argument has not been entered, prompt the user for it */
+    // If the argument has not been entered, prompt the user for it
     if (g_rawArgs <= arg) {
-      if (!strcmp(defaultCmd, "<$>")) { /* End of command acceptable */
-        /* Note:  in this case, user will never be prompted for anything. */
+      if (!strcmp(defaultCmd, "<$>")) { // End of command acceptable
+        // Note:  in this case, user will never be prompted for anything.
         let(&keyword, chr(3));
         goto getFullArg_ret;
       }
@@ -1697,33 +1698,32 @@ static flag getFullArg(long arg, const char *cmdList1) {
       g_queryMode = 1;
       vstring tmpArg = cmdInput1(right(cmdList,3));
 
-      /* Strip off any quotes around it
-         and tolerate lack of trailing quote */
-      /******* (This is no longer done - it is confusing to the user.)
-      if (tmpArg[0] == '\'' || tmpArg[0] == '\"') {
-        if (tmpArg[0] == tmpArg[len(tmpArg) - 1]) {
-          let(&tmpArg, right(left(tmpArg, len(tmpArg) - 1), 2));
-        } else {
-          let(&tmpArg, right(tmpArg, 2));
-        }
-      }
-      *******/
+      // Strip off any quotes around it and tolerate lack of trailing quote.
+      // ******* (This is no longer done - it is confusing to the user.)
+      // if (tmpArg[0] == '\'' || tmpArg[0] == '\"') {
+      //   if (tmpArg[0] == tmpArg[len(tmpArg) - 1]) {
+      //     let(&tmpArg, right(left(tmpArg, len(tmpArg) - 1), 2));
+      //   } else {
+      //     let(&tmpArg, right(tmpArg, 2));
+      //   }
+      // }
+      // *******
 
       let(&errorLine, right(cmdList,3));
-      if (tmpArg[0] == 0) { /* Use default argument */
+      if (tmpArg[0] == 0) { // Use default argument
         let(&tmpArg, seg(defaultCmd, 2, len(defaultCmd) - 1));
       }
       let((vstring *)(&g_rawArgPntr[arg]), tmpArg);
-      g_rawArgNmbr[arg] = len(cmdList) - 1; /* Line position for error msgs */
+      g_rawArgNmbr[arg] = len(cmdList) - 1; // Line position for error msgs
       free_vstring(tmpArg);
-    } /* End of asking user for additional argument */
+    } // End of asking user for additional argument
 
     let(&keyword, g_rawArgPntr[arg]);
 
-    /* Convert abbreviations of FIRST, LAST, ALL to
-       full keywords.  The rest of the program works fine without doing this,
-       but it provides better cosmetic appearance when the command is echoed
-       such as in during the UNDO command. */
+    // Convert abbreviations of FIRST, LAST, ALL to
+    // full keywords.  The rest of the program works fine without doing this,
+    // but it provides better cosmetic appearance when the command is echoed
+    // such as in during the UNDO command.
     if (cmdList[0] == '*') {
       if ((keyword[0] == 'f' || keyword[0] == 'F')
           && instr(1, cmdList, " FIRST") != 0)
@@ -1736,12 +1736,12 @@ static flag getFullArg(long arg, const char *cmdList1) {
         let(&keyword, "ALL");
     }
 
-    if (keyword[0] == 0) { /* Use default argument */
-      /* This case handles blank arguments on completely input command line */
+    if (keyword[0] == 0) { // Use default argument
+      // This case handles blank arguments on completely input command line
       let(&keyword, seg(defaultCmd,2,len(defaultCmd) - 1));
     }
     if (cmdList[0] == '&') {
-      /* See if file exists */
+      // See if file exists
       vstring_def(tmpStr);
       let(&tmpStr, cat(g_rootDirectory, keyword, NULL));
       FILE *tmpFp = fopen(tmpStr, "r");
@@ -1757,7 +1757,7 @@ static flag getFullArg(long arg, const char *cmdList1) {
     goto getFullArg_ret;
   }
 
-  /* Parse the choices available */
+  // Parse the choices available
   long possCmds = 0;
   long p = 0;
   long q = 0;
@@ -1771,8 +1771,8 @@ static flag getFullArg(long arg, const char *cmdList1) {
   }
   if (!strcmp(left(possCmd[possCmds - 1],1), "<")) {
     // free_vstring(defaultCmd); // Not needed because defaultCmd is already empty
-    /* Get default argument, if any */
-    defaultCmd = possCmd[possCmds - 1]; /* re-use old allocation */
+    // Get default argument, if any
+    defaultCmd = possCmd[possCmds - 1]; // re-use old allocation
 
     if (!strcmp(defaultCmd, "<$>")) {
       let(&defaultCmd, "<nothing>");
@@ -1781,11 +1781,11 @@ static flag getFullArg(long arg, const char *cmdList1) {
     possCmds--;
   }
   if (!strcmp(possCmd[possCmds - 1], "$")) {
-    /* Change "$" to "nothing" for printouts */
+    // Change "$" to "nothing" for printouts
     let((vstring *)(&possCmd[possCmds - 1]), "nothing");
   }
 
-  /* Create a string used for queries and error messages */
+  // Create a string used for queries and error messages
   if (possCmds < 1) {
     bug(1105);
     ret = 0;
@@ -1804,7 +1804,7 @@ static flag getFullArg(long arg, const char *cmdList1) {
     let(&infoStr, cat(infoStr, "or ", possCmd[possCmds - 1], NULL));
   }
 
-  /* If the argument has not been entered, prompt the user for it */
+  // If the argument has not been entered, prompt the user for it
   if (g_rawArgs <= arg && (strcmp(possCmd[possCmds - 1], "nothing")
       || g_queryMode == 1)) {
 
@@ -1819,8 +1819,8 @@ static flag getFullArg(long arg, const char *cmdList1) {
     if (possCmds != 1) {
       tmpArg = cmdInput1(tmpStr);
     } else {
-      /* There is only one possibility, so don't ask user */
-      /* Don't print the message when "end-of-list" is the only possibility. */
+      // There is only one possibility, so don't ask user.
+      // Don't print the message when "end-of-list" is the only possibility.
       if (!strcmp(cmdList, "$|<$>")) {
         let(&tmpArg, possCmd[0]);
         print2("The command so far is:  ");
@@ -1831,7 +1831,7 @@ static flag getFullArg(long arg, const char *cmdList1) {
       }
     }
     let(&errorLine, tmpStr);
-    if (tmpArg[0] == 0) { /* Use default argument */
+    if (tmpArg[0] == 0) { // Use default argument
       let(&tmpArg, seg(defaultCmd, 2, len(defaultCmd) - 1));
     }
 
@@ -1841,30 +1841,30 @@ static flag getFullArg(long arg, const char *cmdList1) {
       g_rawArgs++;
       if (g_rawArgs <= arg) bug(1106);
       let((vstring *)(&g_rawArgPntr[arg]), tmpArg);
-      g_rawArgNmbr[arg] = len(tmpStr) + 1; /* Line position for error msgs */
+      g_rawArgNmbr[arg] = len(tmpStr) + 1; // Line position for error msgs
     }
 
     free_vstring(tmpStr);
     free_vstring(tmpArg);
-  } /* End of asking user for additional argument */
+  } // End of asking user for additional argument
 
   if (g_rawArgs <= arg) {
-    /* No argument was specified, and "nothing" is a valid argument */
+    // No argument was specified, and "nothing" is a valid argument
     let(&keyword, chr(3));
     goto getFullArg_ret;
   }
 
   vstring_def(tmpArg);
-  let(&tmpArg, edit(g_rawArgPntr[arg], 32)); /* Convert to upper case */
+  let(&tmpArg, edit(g_rawArgPntr[arg], 32)); // Convert to upper case
   long j = 0;
   long k = 0;
   long m = len(tmpArg);
   vstring_def(tmpStr);
-  /* Scan the possible arguments for a match */
+  // Scan the possible arguments for a match
   for (long i = 0; i < possCmds; i++) {
     if (!strcmp(possCmd[i], tmpArg)) {
-      /* An exact match was found, so ignore any other matches
-         and use this one */
+      // An exact match was found, so ignore any other matches
+      // and use this one.
       k = 1;
       j = i;
       break;
@@ -1875,8 +1875,8 @@ static flag getFullArg(long arg, const char *cmdList1) {
       } else {
         let(&tmpStr, cat(tmpStr, ", ", possCmd[i], NULL));
       }
-      j = i; /* Save match position */
-      k++; /* Number of matches */
+      j = i; // Save match position
+      k++; // Number of matches
     }
   }
   free_vstring(tmpArg);
@@ -1907,19 +1907,19 @@ getFullArg_ret:
   if (ret) {
     if (keyword[0] == 0) {
       if (g_rawArgs > arg && strcmp(defaultCmd, "<>")) {
-        /* otherwise, "nothing" was specified */
+        // otherwise, "nothing" was specified
         printCommandError("", arg, "?No default answer is available - please be explicit.");
         ret = 0;
         goto getFullArg_ret;
       }
     }
-    /* Add new field to g_fullArg */
+    // Add new field to g_fullArg
     pntrLet(&g_fullArg, pntrAddElement(g_fullArg));
     if (pntrLen(g_fullArg) != arg + 1) bug(1107);
     else let((vstring *)(&g_fullArg[arg]), keyword);
   }
 
-  /* Deallocate memory */
+  // Deallocate memory
   long len = pntrLen(possCmd);
   for (long i = 0; i < len; i++) free_vstring(*(vstring *)(&possCmd[i]));
   free_pntrString(possCmd);
@@ -1929,34 +1929,33 @@ getFullArg_ret:
   free_vstring(keyword);
   free_vstring(cmdList);
   return ret;
-} /* getFullArg */
+} // getFullArg
 
-/* This function breaks up line into individual tokens
-   and puts them into g_rawArgPntr[].  g_rawArgs is the number of tokens.
-   g_rawArgPntr[] is the starting position of each token on the line;
-   the first character on the line has position 1, not 0.
-
-   Spaces, tabs, and newlines are considered white space.  Special
-   one-character
-   tokens don't have to be surrounded by white space.  Characters
-   inside quotes are considered to be one token, and the quotes are
-   removed.
-*/
+// This function breaks up line into individual tokens
+// and puts them into g_rawArgPntr[].  g_rawArgs is the number of tokens.
+// g_rawArgPntr[] is the starting position of each token on the line;
+// the first character on the line has position 1, not 0.
+//
+// Spaces, tabs, and newlines are considered white space.  Special
+// one-character
+// tokens don't have to be surrounded by white space.  Characters
+// inside quotes are considered to be one token, and the quotes are
+// removed.
 void parseCommandLine(vstring line) {
-  /*const char *specialOneCharTokens = "()/,=:";*/
+  // const char *specialOneCharTokens = "()/,=:";
   const char *tokenWhiteSpace = " \t\n";
   const char *tokenComment = "!";
 
-  /* Initialization to avoid compiler warning (should not be theoretically
-     necessary) */
+  // Initialization to avoid compiler warning (should not be theoretically
+  // necessary).
   long tokenStart = 0;
 
-  /* List of special one-char tokens */
+  // List of special one-char tokens
   const char* specialOneCharTokens = g_toolsMode ? "" : "/=";
 
   long lineLen = len(line);
-  /* only "!" at beginning of line acts as comment.
-     This is done because sometimes ! might be legal as part of a command */
+  // Only "!" at beginning of line acts as comment.
+  // This is done because sometimes ! might be legal as part of a command.
   enum mode_t {
     MODE_START, // look for start of token
     MODE_END, // look for end of token
@@ -1965,24 +1964,24 @@ void parseCommandLine(vstring line) {
   } mode = MODE_START;
   long p = 0;
   for (; p < lineLen; p++) {
-    freeTempAlloc(); /* Clean up temp alloc stack to prevent overflow */
+    freeTempAlloc(); // Clean up temp alloc stack to prevent overflow
     switch (mode) {
       case MODE_START: {
-        /* If character is white space, ignore it */
+        // If character is white space, ignore it
         if (instr(1, tokenWhiteSpace, chr(line[p]))) continue;
-        /* If character is comment, we're done */
+        // If character is comment, we're done
         if (p == 0 && instr(1, tokenComment, chr(line[p]))) goto parseCommandLine_ret;
 
-        /* If character is a special token, get it but don't change mode */
+        // If character is a special token, get it but don't change mode
         if (instr(1, specialOneCharTokens, chr(line[p]))) {
           pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
-          nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, p+1));
-                                                            /* Save token start */
+          // Save token start
+          nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, p+1));                                   
           let((vstring *)(&g_rawArgPntr[g_rawArgs]), chr(line[p]));
           g_rawArgs++;
           continue;
         }
-        /* If character is a quote, set start and change mode */
+        // If character is a quote, set start and change mode
         if (line[p] == '\'') {
           mode = MODE_SQUOTE;
           tokenStart = p + 2;
@@ -1993,44 +1992,44 @@ void parseCommandLine(vstring line) {
           tokenStart = p + 2;
           continue;
         }
-        /* Character must be start of a token */
+        // Character must be start of a token
         mode = MODE_END;
         tokenStart = p + 1;
       } break;
 
       case MODE_END: {
-        /* If character is white space, end token and change mode */
+        // If character is white space, end token and change mode
         if (instr(1, tokenWhiteSpace, chr(line[p]))) {
           pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
-          nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, tokenStart));
-                                                            /* Save token start */
+          // Save token start
+          nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, tokenStart));                                              
           let((vstring *)(&g_rawArgPntr[g_rawArgs]), seg(line, tokenStart, p));
           g_rawArgs++;
           mode = MODE_START;
           continue;
         }
 
-        /* If character is a special token, get it and change mode */
+        // If character is a special token, get it and change mode
         if (instr(1, specialOneCharTokens, chr(line[p]))) {
           pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
-          nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, tokenStart));
-                                                            /* Save token start */
+          // Save token start
+          nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, tokenStart));                             
           let((vstring *)(&g_rawArgPntr[g_rawArgs]),seg(line, tokenStart, p));
           g_rawArgs++;
           pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
-          nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, p + 1));
-                                                            /* Save token start */
+          // Save token start
+          nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, p + 1));                                
           let((vstring *)(&g_rawArgPntr[g_rawArgs]), chr(line[p]));
           g_rawArgs++;
           mode = MODE_START;
           continue;
         }
 
-        /* If character is a quote, set start and change mode */
+        // If character is a quote, set start and change mode
         if (line[p] == '\'') {
           pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
-          nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, tokenStart));
-                                                            /* Save token start */
+          // Save token start
+          nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, tokenStart));                                  
           let((vstring *)(&g_rawArgPntr[g_rawArgs]),seg(line, tokenStart, p));
           g_rawArgs++;
           mode = MODE_SQUOTE;
@@ -2039,65 +2038,65 @@ void parseCommandLine(vstring line) {
         }
         if (line[p] == '\"') {
           pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
-          nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, tokenStart));
-                                                            /* Save token start */
+          // Save token start
+          nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, tokenStart));                              
           let((vstring *)(&g_rawArgPntr[g_rawArgs]),seg(line, tokenStart, p));
           g_rawArgs++;
           mode = MODE_DQUOTE;
           tokenStart = p + 2;
           continue;
         }
-        /* Character must be continuation of the token */
+        // Character must be continuation of the token
       } break;
 
       case MODE_SQUOTE:
       case MODE_DQUOTE: {
-        /* If character is a quote, end quote and change mode */
+        // If character is a quote, end quote and change mode
         if (line[p] == (mode == MODE_SQUOTE ? '\'' : '\"')) {
           mode = MODE_START;
           pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
-          nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, tokenStart));
-                                                            /* Save token start */
+          // Save token start
+          nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, tokenStart));                                  
           let((vstring *)(&g_rawArgPntr[g_rawArgs]),seg(line, tokenStart, p));
           g_rawArgs++;
           continue;
         }
-        /* Character must be continuation of quoted token */
+        // Character must be continuation of quoted token
       } break;
     }
   }
 
-  /* Finished scanning the line.  Finish processing last token. */
+  // Finished scanning the line.  Finish processing last token.
   if (mode != MODE_START) {
     pntrLet(&g_rawArgPntr, pntrAddElement(g_rawArgPntr));
-    nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, tokenStart));
-                                                          /* Save token start */
+    // Save token start
+    nmbrLet(&g_rawArgNmbr, nmbrAddElement(g_rawArgNmbr, tokenStart));                                     
     let((vstring *)(&g_rawArgPntr[g_rawArgs]),seg(line, tokenStart, p));
     g_rawArgs++;
   }
 
 parseCommandLine_ret:
-  /* Add length of command line prompt to each argument, to
-     align the error message pointer */
+  // Add length of command line prompt to each argument, to
+  // align the error message pointer.
   for (long i = 0; i < g_rawArgs; i++) {
     g_rawArgNmbr[i] = g_rawArgNmbr[i] + len(g_commandPrompt);
   }
-} /* parseCommandLine */
+} // parseCommandLine
 
 flag lastArgMatches(vstring argString) {
-  /* This functions checks to see if the last field was argString */
+  // This functions checks to see if the last field was argString
   if (!strcmp(argString, g_fullArg[pntrLen(g_fullArg)-1])) {
     return (1);
   } else {
     return (0);
   }
-} /* lastArgMatches */
+} // lastArgMatches
 
 flag cmdMatches(vstring cmdString) {
-  /* This function checks that fields 0 through n of g_fullArg match
-     cmdString (separated by spaces). */
+  // This function checks that fields 0 through n of g_fullArg match
+  // cmdString (separated by spaces).
   long i, j, k;
-  /* Count the number of spaces */
+  // Count the number of spaces
   k = len(cmdString);
   j = 0;
   for (i = 0; i < k; i++) {
@@ -2107,7 +2106,7 @@ flag cmdMatches(vstring cmdString) {
   vstring_def(tmpStr);
   for (i = 0; i <= j; i++) {
     if (j >= k) {
-      /* Command to match is longer than the user's command; assume no match */
+      // Command to match is longer than the user's command; assume no match
       free_vstring(tmpStr);
       return 0;
     }
@@ -2120,7 +2119,7 @@ flag cmdMatches(vstring cmdString) {
     free_vstring(tmpStr);
     return 0;
   }
-} /* cmdMatches */
+} // cmdMatches
 
 // This function checks that field i of g_fullArg matches "/", and
 // field i+1 matches swString (which must not contain spaces).
@@ -2142,20 +2141,20 @@ long switchPos(const char *swString) {
     }
   }
   return 0;
-} /* switchPos */
+} // switchPos
 
 void printCommandError(vstring line1, long arg, vstring errorMsg)
 {
-  /* Warning: errorMsg should not a temporarily allocated string such
-     as the direct output of cat() */
+  // Warning: errorMsg should not be a temporarily allocated string such
+  // as the direct output of cat().
   vstring_def(errorPointer);
   vstring_def(line);
   long column, tokenLength, j;
-
-  let(&line,line1); /* Prevent deallocation in case line1 is
-                       direct return from string function such as cat() */
+  // Prevent deallocation in case line1 is direct return from string
+  // function such as cat().
+  let(&line,line1); 
   if (!line[0]) {
-    /* Empty line - don't print an error pointer */
+    // Empty line - don't print an error pointer
     print2("%s\n", errorMsg);
     free_vstring(line);
     return;
@@ -2163,8 +2162,8 @@ void printCommandError(vstring line1, long arg, vstring errorMsg)
   column = g_rawArgNmbr[arg];
   tokenLength = len(g_rawArgPntr[arg]);
   for (j = 0; j < column - 1; j++) {
-    /* Make sure that tabs on the line with the error are accounted for so
-       that the error pointer lines up correctly */
+    // Make sure that tabs on the line with the error are accounted for so
+    // that the error pointer lines up correctly.
     if (j >= len(line)) bug(1109);
     if (line[j] == '\t') {
       let(&errorPointer, cat(errorPointer, "\t", NULL));
@@ -2182,7 +2181,7 @@ void printCommandError(vstring line1, long arg, vstring errorMsg)
   printLongLine(errorMsg, "", " ");
   free_vstring(errorPointer);
   free_vstring(line);
-} /* printCommandError */
+} // printCommandError
 
 void freeCommandLine(void) {
   long i, j;
