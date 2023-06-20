@@ -373,6 +373,7 @@ char unify(
   // Initialize the usage of constants as the first, last,
   // only constant in a $a statement - for rejecting some simple impossible
   // substitutions - Speed-up: this is now done once and never deallocated.
+  //
   // g_firstConst is now cleared in eraseSource.c() (mmcmds.c)
   // to trigger this initialization after "erase".
   if (!nmbrLen(g_firstConst)) {
@@ -514,7 +515,7 @@ char unify(
     }
 
     // Set a flag that the "unknown" variables are not on the stack yet.
-    // (Otherwise this will be the position on the stack).
+    // (Otherwise this will be the position on the stack.)
     for (i = 0; i < unkVarsLen; i++) {
       g_MathToken[unkVars[i]].tmp = -1;
     }
@@ -602,11 +603,11 @@ char unify(
   if (schB[p] > g_mathTokens && schA[p] > g_mathTokens) {
     // Both scheme A and scheme B have variables in the match position.
     // Which one to use?
-    // If neither A nor B is on the stack, use A. Backtrack will put B
-    // on the stack when A's possibilities are exhausted.
-    // If A is on the stack, use A.
-    // If B is on the stack, use B.
-    // If A and B are on the stack, bug.
+    // * If neither A nor B is on the stack, use A. Backtrack will put B
+    //   on the stack when A's possibilities are exhausted.
+    // * If A is on the stack, use A.
+    // * If B is on the stack, use B.
+    // * If A and B are on the stack, bug.
     // In other words:  if B is not on the stack, use A.
     if (g_MathToken[schB[p]].tmp == -1) {
       // B is not on the stack
@@ -742,6 +743,7 @@ char unify(
     // are already one token beyond the end of a scheme, and backtrack
     // would therefore test one token beyond that, missing the fact that
     // the substitution has overflowed beyond the end of a scheme.
+
     // Set the flag that it's not on the stack and pop stack.
     g_MathToken[stackUnkVar[stackTop]].tmp = -1;
     stackTop--;
