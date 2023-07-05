@@ -755,7 +755,6 @@ void parseStatements(void) {
   // Starting value; could be as large as g_statements.
   long activeHypStackSize = 30; 
                                    
-
   struct activeDisjHypStack_struct { // Stack of disjoint variables in $d's
     long tokenNumA; // First variable in disjoint pair
     long tokenNumB; // Second variable in disjoint pair
@@ -5692,14 +5691,17 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
               + inclSize + (long)strlen(inclSuffix);
           newInclSize = (long)strlen(inclPrefix) + inclSize +
                 (long)strlen(inclSuffix); // Includes new prefix and suffix
+
           // Adjust starting position for next inclusion search (which will
           // be at the start of the included file continuing into the remaining
           // parent file).
           // -1 since startOffset is 0-based but cmdPos2 is 1-based
-          startOffset = cmdPos1 + newInclSize - 1; 
-              // + inclSize  // Use instead of strlen for speed
-              // + (long)strlen(inclSuffix);
-              // -1 since startOffset is 0-based but cmdPos1 is 1-based
+          startOffset = cmdPos1 + newInclSize - 1;
+          // // Use instead of strlen for speed
+          // startOffset += inclSize;
+          // // -1 since startOffset is 0-based but cmdPos1 is 1-based
+          // startOffset += (long)strlen(inclSuffix);
+
           // TODO: update line numbers for error msgs.
           break;
         case 'S':
