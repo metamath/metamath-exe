@@ -2201,8 +2201,7 @@ temp_vstring compressProof(const nmbrString *proof, long statemNum,
           explLabelLen, // array of sizes
           explWorth, // array of worths
           explWidth, // maxSize
-          explIncluded // itemIncluded return values
-          );
+          explIncluded); // itemIncluded return values
       // j=0 is legal when it can't fit any labels
       // on the rest of the line (such as if the line only has 1 space left
       // i.e. explWidth=1).
@@ -2328,7 +2327,7 @@ temp_vstring compressProof(const nmbrString *proof, long statemNum,
     }
     if (i != numchrs) bug(1374);
 
-    /***** Local labels ******/
+    // ***** Local labels ******
     // See if a local label is declared in this step
     if (!localLabelFlags[step]) continue;
     if (outputLen + 1 > outputAllocated) {
@@ -2351,8 +2350,7 @@ temp_vstring compressProof(const nmbrString *proof, long statemNum,
       nmbrRight(hypList, g_Statement[statemNum].numReqHyp + 1),
       assertionList, NULL),
                 0, // explicitTargets
-                0 // statemNum used only if explicitTargets
-                ),
+                0), // statemNum used only if explicitTargets
       " ) ", left(output, outputLen), NULL));
 
   free_nmbrString(saveProof);
@@ -2891,25 +2889,24 @@ long knapsack01(long items, // # of items available to populate knapsack
     long *size, // size of item 0,...,items-1
     long *worth, // worth (value) of item 0,...,items-1
     long maxSize, // size of knapsack (largest total size that will fit)
-    char *itemIncluded // output: 'y'/'n' if item 0..items-1 incl/excluded
-    )
-    {
+    char *itemIncluded) // output: 'y'/'n' if item 0..items-1 incl/excluded
+{
   long witem, wsize, a, b;
 
   // Maximum worth that can be attained for given #items and size
   long **maxWorth; // 2d matrix
   maxWorth = alloc2DMatrix((size_t)items + 1, (size_t)maxSize + 1);
 
-//  This may run faster for applications that have hard-coded limits
-// #define KS_MAX_ITEMS 100
-// #define KS_MAX_SIZE 200
-//   static long maxWorth[KS_MAX_ITEMS + 1][KS_MAX_SIZE + 1];
-//   if (items > KS_MAX_ITEMS) {
-//     printf("matrix item overflow\n"); exit(1);
-//   }
-//   if (maxSize > KS_MAX_SIZE) {
-//     printf("matrix size overflow\n"); exit(1);
-//   }
+  // // This may run faster for applications that have hard-coded limits
+  // #define KS_MAX_ITEMS 100
+  // #define KS_MAX_SIZE 200
+  //   static long maxWorth[KS_MAX_ITEMS + 1][KS_MAX_SIZE + 1];
+  //   if (items > KS_MAX_ITEMS) {
+  //     printf("matrix item overflow\n"); exit(1);
+  //   }
+  //   if (maxSize > KS_MAX_SIZE) {
+  //     printf("matrix size overflow\n"); exit(1);
+  //   }
 
   // Populate the maximum worth matrix
   for (wsize = 0; wsize <= maxSize; wsize++) {
@@ -3022,8 +3019,7 @@ vstring getDescription(long statemNum) {
     return description;
   }
   let(&description, edit(seg(description, p1 + 2, p2 - 1),
-      8 + 128 // discard leading and trailing blanks
-      ));
+      8 + 128)); // discard leading and trailing blanks
   return description;
 } // getDescription
 
@@ -3320,8 +3316,8 @@ vstring getContrib(long stmtNum, char mode) {
   if (stmtNum < 1 || stmtNum > g_statements) bug(1396);
 
   if (commentSearchedFlags[stmtNum] == 'N' // Not in cache
-      || errorCheckFlag == 1 // Needed to get sStart, rStart, cStart
-      ) {
+      || errorCheckFlag == 1) // Needed to get sStart, rStart, cStart
+  {
     // It wasn't cached, so we extract from the statement's comment
 
     free_vstring(description);
@@ -3330,8 +3326,7 @@ vstring getContrib(long stmtNum, char mode) {
         4 // ctrl 
         + 8 // leading 
         + 16 // reduce
-        + 128 // trailing
-        ));
+        + 128)); // trailing
     let(&description, cat(" ", description, " ", NULL)); // Add for matching
 
     cStart = instr(1, description, CONTRIB_MATCH);
