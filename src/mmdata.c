@@ -1087,16 +1087,14 @@ void nmbrLet(nmbrString **target, const nmbrString *source) {
         // Allocate new space -- We are replacing a smaller string with a larger one;
         // assume it is growing, and allocate twice as much as needed.
         *target=poolMalloc((sourceLength + 1) * (long)(sizeof(nmbrString)) * 2);
-                       
         nmbrCpy(*target,source);
-
         // Memory pool handling
         // Assign actual size of target string
         poolDiff = ((long *)(*target))[-1] - ((long *)source)[-1];
         ((long *)(*target))[-1] = ((long *)source)[-1];
         // If actual size of target string is less than allocated size, we
         // may have to add it to the used pool.
-        // (The 1st 'if' is redundant with target doubling above)
+        // (The 1st 'if' is redundant with target doubling above.)
         if (((long *)(*target))[-1] != ((long *)(*target))[-2]) {
           if (((long *)(*target))[-1] > ((long *)(*target))[-2]) bug(1326);
           if (((long *)(*target))[-3] == -1) {
@@ -1196,7 +1194,7 @@ long nmbrAllocLen(const nmbrString *s)
 // Note that the nmbrString will not be moved to the "used pool", even if
 // zapping its length results in free space; thus the free space will never
 // get recovered unless done by the caller or poolFree is called.  (This is
-// done on purpose so the caller can know what free space is left).
+// done on purpose so the caller can know what free space is left.)
 // ???Note that nmbrZapLen's not moving string to used pool wastes potential
 // space when called by the routines in this module.  Effect should be minor.
 void nmbrZapLen(nmbrString *s, long length) {
@@ -3555,10 +3553,9 @@ vstring getContrib(long stmtNum, char mode) {
   // if ((firstR != rStart) || (firstS != sStart)) {
   //   err = 1;
   //   if (mode == GC_ERROR_CHECK_PRINT) printLongLine(cat(
-  //       /* convenience prefix to assist massive revisions
-  //       g_Statement[stmtNum].labelName, " [",
-  //       @contributor, "/", @reviser, "/", @shortener, "] ",
-  //       */
+  //       // convenience prefix to assist massive revisions
+  //       // g_Statement[stmtNum].labelName, " [",
+  //       // @contributor, "/", @reviser, "/", @shortener, "] ",
   //       "?Warning: There are multiple \"",
   //       edit(REVISE_MATCH, 8+128) , "...)\" or \"",
   //       edit(SHORTEN_MATCH, 8+128) ,
