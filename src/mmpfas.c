@@ -1145,8 +1145,8 @@ void addSubProof(const nmbrString *subProof, long step) {
 nmbrString *expandProof(
     const nmbrString *rawTargetProof, // May be compressed or uncompressed
     long sourceStmtNum // The statement whose proof will be expanded
-    // , long targetStmtNum
-    ) { // The statement begin proved
+    // , long targetStmtNum // The statement being proved
+    ) {
   nmbrString_def(origTargetProof);
   nmbrString_def(targetProof);
   nmbrString_def(sourceProof);
