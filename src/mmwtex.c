@@ -860,7 +860,7 @@ long texDefWhiteSpaceLen(char *ptr)
 // ptr.  Comments are considered white space.  ptr should point to the first
 // character of the token.  If ptr points to a white space character, 0
 // is returned.  If ptr points to a null character, 0 is returned.  If ptr
-// points to a quoted string, the quoted string is returned.  A non-alphanumeric\
+// points to a quoted string, the quoted string is returned.  A non-alphanumeric
 // characters ends a token and is a single token.
 long texDefTokenLen(char *ptr)
 {
@@ -1655,18 +1655,18 @@ void printTexHeader(flag texHeaderFlag)
 flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
     long actionBits, // see below
         // Indicators for actionBits:
-        //  #define ERRORS_ONLY 1 - just report errors, don't print output
-        //  #define PROCESS_SYMBOLS 2
-        //  #define PROCESS_LABELS 4
-        //  #define ADD_COLORED_LABEL_NUMBER 8
-        //  #define PROCESS_BIBREFS 16
-        //  #define PROCESS_UNDERSCORES 32
-        //  #define CONVERT_TO_HTML 64 - convert '<' to '&gt;' unless
+        //   #define ERRORS_ONLY 1 - just report errors, don't print output
+        //   #define PROCESS_SYMBOLS 2
+        //   #define PROCESS_LABELS 4
+        //   #define ADD_COLORED_LABEL_NUMBER 8
+        //   #define PROCESS_BIBREFS 16
+        //   #define PROCESS_UNDERSCORES 32
+        //   #define CONVERT_TO_HTML 64 - convert '<' to '&gt;' unless
         //           <HTML>, </HTML> present
-        //  #define METAMATH_COMMENT 128 - $) terminates string
-        //  #define PROCESS_EVERYTHING PROCESS_SYMBOLS + PROCESS_LABELS \
-        //   + ADD_COLORED_LABEL_NUMBER + PROCESS_BIBREFS \
-        //   + PROCESS_UNDERSCORES + CONVERT_HTML + METAMATH_COMMENT \
+        //   #define METAMATH_COMMENT 128 - $) terminates string
+        //   #define PROCESS_EVERYTHING PROCESS_SYMBOLS + PROCESS_LABELS
+        //     + ADD_COLORED_LABEL_NUMBER + PROCESS_BIBREFS
+        //     + PROCESS_UNDERSCORES + CONVERT_HTML + METAMATH_COMMENT
 
         // 10-Dec-2018 nm - expanded meaning of errorsOnly for MARKUP command:
         //   2 = process as if in <HTML>...</HTML> preformatted mode but
