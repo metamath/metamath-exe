@@ -1629,7 +1629,7 @@ void parseStatements(void) {
                 activeDisjHypStack[i].statemNum;
             reqHyps++;
           } else {
-            // At least one variable is not required, so the disjoint hypothesis\
+            // At least one variable is not required, so the disjoint hypothesis
             // is not required.
             wrkDisjHPtr2A[optHyps] = m;
             wrkDisjHPtr2B[optHyps] = n;
@@ -5533,7 +5533,7 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
     
     // contLineNum = g_IncludeCall[g_includeCalls].current_line
     //   + countLines(newFileBuf, ((cmdType == 'B') ? endPos2 : cmdPos2)
-    //       - g_IncludeCall[g_includeCalls].current_offset);\
+    //       - g_IncludeCall[g_includeCalls].current_offset);
 
     // If we're here, cmdType is 'B', 'I', or 'S'
 
