@@ -41,15 +41,15 @@
 // 2. In the directory where these files are present, type:
 //       gcc m*.c -o metamath
 // 3. For full error checking, use:
-//       gcc m*.c -o metamath -O2 -Wall -Wextra -Wmissing-prototypes
-//           -Wmissing-declarations -Wshadow -Wpointer-arith -Wcast-align
-//           -Wredundant-decls -Wnested-externs -Winline -Wno-long-long
-//           -Wconversion -Wstrict-prototypes -std=c99 -pedantic -Wunused-result
+/*       gcc m*.c -o metamath -O2 -Wall -Wextra -Wmissing-prototypes \
+             -Wmissing-declarations -Wshadow -Wpointer-arith -Wcast-align \
+             -Wredundant-decls -Wnested-externs -Winline -Wno-long-long \
+             -Wconversion -Wstrict-prototypes -std=c99 -pedantic -Wunused-result */
 //    Note: gcc 4.9.2 (on Debian) fails with "unknown type name `ssize_t'" if
 //    -std=c99 is used, so omit -std=c99 to work around this problem.
 // 4. For faster runtime, use these gcc options:
-//       gcc m*.c -o metamath -O3 -funroll-loops -finline-functions
-//           -fomit-frame-pointer -Wall -std=c99 -pedantic -fno-strict-overflow
+/*       gcc m*.c -o metamath -O3 -funroll-loops -finline-functions \
+             -fomit-frame-pointer -Wall -std=c99 -pedantic -fno-strict-overflow */
 // 5. The Windows version in the download was compiled with lcc-win32 version 3.8:
 //       lc -O m*.c -o metamath.exe
 // 6. On Linux, if you have autoconf, automake, and a C compiler, you

@@ -1664,9 +1664,9 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
         //   #define CONVERT_TO_HTML 64 - convert '<' to '&gt;' unless
         //           <HTML>, </HTML> present
         //   #define METAMATH_COMMENT 128 - $) terminates string
-        //   #define PROCESS_EVERYTHING PROCESS_SYMBOLS + PROCESS_LABELS
-        //     + ADD_COLORED_LABEL_NUMBER + PROCESS_BIBREFS
-        //     + PROCESS_UNDERSCORES + CONVERT_HTML + METAMATH_COMMENT
+        /*   #define PROCESS_EVERYTHING PROCESS_SYMBOLS + PROCESS_LABELS \
+               + ADD_COLORED_LABEL_NUMBER + PROCESS_BIBREFS \
+               + PROCESS_UNDERSCORES + CONVERT_HTML + METAMATH_COMMENT */
 
         // 10-Dec-2018 nm - expanded meaning of errorsOnly for MARKUP command:
         //   2 = process as if in <HTML>...</HTML> preformatted mode but
