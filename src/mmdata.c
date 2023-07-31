@@ -59,8 +59,6 @@ struct nullNmbrStruct g_NmbrNull = {-1, sizeof(long), sizeof(long), -1};
 
 // Null pntrString
 struct nullPntrStruct g_PntrNull = {-1, sizeof(long), sizeof(long), NULL};
-// nmbrString memory allocation/deallocation
-temp_nmbrString *nmbrTempAlloc(long size); 
 void nmbrCpy(nmbrString *sout, const nmbrString *sin);
 void nmbrNCpy(nmbrString *s, const nmbrString *t, long n);
 
