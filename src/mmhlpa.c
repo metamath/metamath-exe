@@ -635,7 +635,9 @@ H("interpreted by / SYMBOLS, / LABELS, and / BIB_REFS respectively, escape");
 H("them with \"``\", \"~~\", and \"[[\" in the input file.  Literal \"`\"");
 H("must always be escaped even if / SYMBOLS is omitted, because the");
 H("algorithm will still use \"`...`\" to avoid interpreting special");
-H("characters in math symbols.");
+H("characters in math symbols.  Similarly, use a double underscore to");
+H("display one underscore \"_\" and not trigger an italic font or");
+H("subscripts.");
 H("");
 }
 
