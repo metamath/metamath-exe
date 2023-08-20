@@ -1972,17 +1972,19 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
               let(&cmt, cat(left(cmt, pos1 - 1),
                   "_",
                   seg(cmt, pos1 + 1, pos1 + 2), /* Skip (delete) "_" */
-                  "", right(cmt, pos1+2), NULL));
+                  "", right(cmt, pos1 + 2), NULL));
               let(&cmtMasked, cat(left(cmtMasked, pos1 - 1),
                   "_",
                   seg(cmtMasked, pos1 + 1, pos1 + 2), /* Skip (delete) "_" */
-                  "", right(cmtMasked, pos1+2), NULL));
+                  "", right(cmtMasked, pos1 + 2), NULL));
               pos1 ++; /* Adjust for 1 extra char '_' */
             } else {  /* LaTeX */
-              let(&cmt, cat(left(cmt, pos1 - 1), "\texttt{\_}",
+              let(&cmt, cat(left(cmt, pos1 - 1),
+                  "\texttt{\_}",
                   seg(cmt, pos1 + 1, pos1 + 2),  /* Skip (delete) "_" */
-                  "", right(cmt, pos2), NULL));
-              let(&cmtMasked, cat(left(cmtMasked, pos1 - 1), "$_{",
+                  "", right(cmt, pos1 + 2), NULL));
+              let(&cmtMasked, cat(left(cmtMasked, pos1 - 1),
+                  "\texttt{\_}",
                   seg(cmtMasked, pos1 + 1, pos1 + 2),  /* Skip (delete) "_" */
                   "", right(cmtMasked, pos1 + 2), NULL));
               pos1 = pos1 + 11; /* Adjust for 11 extra chars "\texttt{\_}" */
