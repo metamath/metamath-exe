@@ -1969,12 +1969,12 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
       underscore and do not modify italic or subscript. */
       if (cmt[pos1 + 1] == '_') {
             if (g_htmlFlag) {  /* HTML */
-              let(&cmt, cat(left(cmt, pos1 - 1),
-                  "_",
+              let(&cmt, cat(left(cmt, pos1),
+                  "",
                   seg(cmt, pos1 + 1, pos1 + 2), /* Skip (delete) "_" */
                   "", right(cmt, pos1 + 2), NULL));
-              let(&cmtMasked, cat(left(cmtMasked, pos1 - 1),
-                  "_",
+              let(&cmtMasked, cat(left(cmtMasked, pos1),
+                  "",
                   seg(cmtMasked, pos1 + 1, pos1 + 2), /* Skip (delete) "_" */
                   "", right(cmtMasked, pos1 + 2), NULL));
               pos1 ++; /* Adjust for 1 extra char '_' */
