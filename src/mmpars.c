@@ -3999,8 +3999,7 @@ vstring outputStatement(long stmt, flag reformatFlag) {
           let(&labelSection, cat(labelSection, space(indent), NULL));
           slen = slen + indent;
         }
-        if (g_Statement[stmt].type == d_) // $d 
-        {
+        if (g_Statement[stmt].type == d_ /* $d */) {
           // Try to put as many $d's on one line as will fit.
           // First we remove redundant spaces in mathSection.
           // Don't discard \n so that user can
