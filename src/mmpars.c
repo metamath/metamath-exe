@@ -4385,7 +4385,7 @@ vstring rewrapComment(const char *comment1) {
         && comment[pos + 1] != '\n')
       comment[pos] = ' ';
   }
-  let(&comment, edit(comment, 16)); // reduce spaces
+  let(&comment, edit(comment, 16 /* reduce spaces */));
 
   // Remove spaces and blank lines at end of comment
   while (1) {
