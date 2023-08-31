@@ -3845,15 +3845,21 @@ long countLines(const char *start, long length) {
 // white space and comments, from first token through all white space and
 // comments after last token.
 // This allows us to modify the input file with Metamath.
+//
 // Note: the text near end of file is obtained from g_Statement[g_statements + 1]
+//
 // ???This does not yet implement restoration of the various input files;
 // all included files are merged into one.
+//
 // Caller must deallocated returned string.
-// reformatFlag= 0: WRITE SOURCE, 1: WRITE SOURCE / FORMAT,
+//
+// reformatFlag = 0: WRITE SOURCE, 1: WRITE SOURCE / FORMAT,
 // 2: WRITE SOURCE / REWRAP.
+//
 // Note that the labelSection, mathSection, and proofSection do not
 // contain keywords ($a, $p,...; $=; $.).  The keywords are added
 // by this function when the statement is written.
+//
 // This must be called in sequence for all statements,
 // since the previous statement is needed to populate dollarDpos
 // and previousType.
