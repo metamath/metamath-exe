@@ -5614,7 +5614,7 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
               cmdPos2 - 1 - startOffset);
           g_IncludeCall[saveInclCalls - 1].current_line = befInclLineNum - 1;
           aftInclLineNum = befInclLineNum + countLines(newFileBuf
-              + cmdPos2, // start at (cmdPos2+1)th character
+              + cmdPos2 /* start at (cmdPos2+1)th character */,
               endPos2 - cmdPos2 - 1) + 1;
           g_IncludeCall[saveInclCalls].current_line = aftInclLineNum - 1;
           parentLineNum = aftInclLineNum;
