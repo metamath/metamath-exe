@@ -2692,8 +2692,7 @@ char parseProof(long statemNum)
                 bug(1738); // A local label shouldn't ref a local label
               } else if (j > step && j <= k - m) { // Steps shifted up by subproof insertion
                 j = j + m - 1; // Offset by size of subproof moved down -1
-              // Reference to inside the moved subproof
-              } else if (j > k - m && j <= k) {
+              } else if (j > k - m && j <= k) { // Reference to inside the moved subproof
                 j = j + step + m - 1 - k; // Shift down
               // Ref to after moved subproof
               } else if (j > k && j <= g_WrkProof.numSteps - 1) {
