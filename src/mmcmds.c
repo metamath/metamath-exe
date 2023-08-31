@@ -228,8 +228,7 @@ void typeStatement(long showStmt,
     nmbrTmpPtr1 = g_Statement[showStmt].reqDisjVarsA;
     nmbrTmpPtr2 = g_Statement[showStmt].reqDisjVarsB;
     i = nmbrLen(nmbrTmpPtr1);
-    if (i) // Number of mandatory $d pairs
-    {
+    if (i) { // Number of mandatory $d pairs
       nmbrLet(&nmbrDDList, NULL_NMBRSTRING);
       for (k = 0; k < i; k++) {
         // Is one of the variables in the current list?
