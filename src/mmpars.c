@@ -5995,9 +5995,9 @@ vstring readSourceAndIncludes(const char *inputFn /* input */, long *size /* out
   // 0 means start of included file, 1 means continuation of including file
   g_IncludeCall[g_includeCalls].pushOrPop = 1;
   g_IncludeCall[g_includeCalls].source_fn = "";
-  // let(&g_IncludeCall[g_includeCalls].source_fn, inputFn); // Leave empty;
-  // there is no "continuation" file for the main file, so no need to assign
-  // (it won't be used).
+  // Leave empty; there is no "continuation" file for the main file,
+  // so no need to assign (it won't be used).
+  // let(&g_IncludeCall[g_includeCalls].source_fn, inputFn); 
   g_IncludeCall[g_includeCalls].included_fn = "";
   // let(&g_IncludeCall[g_includeCalls].included_fn, inputFn); // $[ $], Begin,
   // of Skip file name for this inclusion.
