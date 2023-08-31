@@ -4266,7 +4266,7 @@ void writeExtractedSource(
           fprintf(fp, "%s", buf);
           if (g_Statement[stmt].type != p_) {
             fprintf(fp, "$.");
-// D // fprintf(fp, "#%ld#",stmt);
+/*D*/ // fprintf(fp, "#%ld#",stmt);
           } else {
             // $p
             fprintf(fp, "$=");
