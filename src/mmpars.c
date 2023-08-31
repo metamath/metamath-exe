@@ -3764,7 +3764,8 @@ long tokenLen(char *ptr)
 // ptr.  Comments are considered white space.  ptr should point to the first
 // character of the token.  If ptr points to a white space character, 0
 // is returned.  If ptr points to a null character, 0 is returned.
-// Unlike tokenLen(), keywords are not treated as special.  In particular:
+//
+// Unlike tokenLen(), keywords are not treated as special. In particular:
 // if ptr points to a keyword, 0 is NOT returned (instead, 2 is returned),
 // and a keyword does NOT end a token (which is a relic of days before
 // whitespace surrounding a token was part of the spec, but still serves
