@@ -5112,6 +5112,86 @@ void command(int argc, char *argv[]) {
       print2("Bytes refer to compressed proof size, "
         "steps to uncompressed length.\n");
 
+      /* Clear tmp for all math tokens */
+      for (k = 0; k < g_mathTokens; k++)
+        g_MathToken[k].tmp = 0;
+
+      long step, mlen;
+      nmbrString *mString;
+
+      /* Set tmp to 1 for math tokens present in the proof */
+      m = nmbrLen(g_ProofInProgress.proof);
+      for (step = 0; step < m; step++) {
+        mString = (g_ProofInProgress.target)[step];
+        mlen = nmbrLen(mString);
+
+        for (i = 0; i < mlen; i++) {
+          g_MathToken[mString[i]].tmp = 1;
+        }
+      }
+
+      /* usefulStatements is a boolean array, where usefulStatements[k] == 1
+         iff statement k might be useful in minimization */
+      char *usefulStatements;
+      usefulStatements = poolMalloc(g_proveStatement*sizeof(char));
+      long usefulCount = 0;
+
+      /* Fill the usefulStatements array */
+      for (k = 1; k < g_proveStatement; k++) {
+        usefulStatements[k] = 0;
+
+        if (!mathboxFlag && k >= g_mathboxStmt && k < thisMathboxStartStmt)
+          continue;
+
+        if (g_Statement[k].type != (char)p_ && g_Statement[k].type != (char)a_)
+          continue;
+
+        if (!matchesList(g_Statement[k].labelName, g_fullArg[1], '*', '?'))
+          continue;
+
+        if (exceptPos != 0) {
+          /* Skip any match to the EXCEPT argument */
+          if (matchesList(g_Statement[k].labelName, g_fullArg[exceptPos + 1],
+                '*', '?'))
+            continue;
+        }
+
+        if (forbidMatchList[0]) { /* User provided a /FORBID list */
+          /* First, we check to make sure we're not trying a statement
+             in the forbidMatchList directly (traceProof() won't find
+             this) */
+          if (matchesList(g_Statement[k].labelName, forbidMatchList, '*', '?'))
+            continue;
+        }
+
+        /* Check to see if statement comment specified a usage
+           restriction */
+        if (!overrideFlag) {
+          if (getMarkupFlag(k, USAGE_DISCOURAGED))
+            continue;
+        }
+
+        /* Check if all math constants used in statement k are present
+           in the minimized proof. Hypotheses are not checked. */
+        mString = g_Statement[k].mathString;
+        mlen = nmbrLen(mString);
+
+        usefulStatements[k] = 1;
+        for (i = 0; i < mlen; i++) {
+          if (g_MathToken[mString[i]].tokenType == (char)con_) {
+            if (!g_MathToken[mString[i]].tmp)
+            {
+              usefulStatements[k] = 0;
+              break;
+            }
+          }
+        }
+
+        usefulCount += usefulStatements[k];
+      }
+      if (verboseMode)
+        print2("Found %ld potentially useful theorems.\n", usefulCount);
+
       /* Scan forward, then reverse, then pick best result */
       for (forwRevPass = 1; forwRevPass <= 2; forwRevPass++) {
 
@@ -5144,37 +5224,8 @@ void command(int argc, char *argv[]) {
         for (k = forwFlag ? 1 : (g_proveStatement - 1);
              k * (forwFlag ? 1 : -1) < (forwFlag ? g_proveStatement : 0);
              k = k + (forwFlag ? 1 : -1)) {
-          if (!mathboxFlag && k >= g_mathboxStmt && k < thisMathboxStartStmt) {
+          if(!usefulStatements[k])
             continue;
-          }
-
-          if (g_Statement[k].type != (char)p_ && g_Statement[k].type != (char)a_)
-            continue;
-          if (!matchesList(g_Statement[k].labelName, g_fullArg[1], '*', '?'))
-            continue;
-
-          if (exceptPos != 0) {
-            /* Skip any match to the EXCEPT argument */
-            if (matchesList(g_Statement[k].labelName, g_fullArg[exceptPos + 1],
-                '*', '?'))
-              continue;
-          }
-
-          if (forbidMatchList[0]) { /* User provided a /FORBID list */
-            /* First, we check to make sure we're not trying a statement
-               in the forbidMatchList directly (traceProof() won't find
-               this) */
-            if (matchesList(g_Statement[k].labelName, forbidMatchList, '*', '?'))
-              continue;
-          }
-
-          /* Check to see if statement comment specified a usage
-             restriction */
-          if (!overrideFlag) {
-            if (getMarkupFlag(k, USAGE_DISCOURAGED)) {
-              continue;
-            }
-          }
 
           /* Print individual labels */
           if (prntStatus == 0) prntStatus = 1; /* Matched at least one */
@@ -5522,6 +5573,8 @@ void command(int argc, char *argv[]) {
         print2("MINIMIZE_WITH run time = %7.2f sec for \"%s\"\n", timeIncr,
             g_Statement[g_proveStatement].labelName);
       }
+
+      poolFree(usefulStatements); /* Deallocate memory */
 
       free_vstring(str1); /* Deallocate memory */
       free_nmbrString(nmbrSaveProof); /* Deallocate memory */
