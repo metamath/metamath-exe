@@ -5429,7 +5429,7 @@ vstring getFileAndLineNum(const char *buffPtr, // start of read buffer
           smallestOffset);
   // Assign to new string to prevent original from being deallocated
   let(&fileName, g_IncludeCall[smallestNdx].source_fn);
-  // D // printf("smallestNdx=%ld smallestOffset=%ld i[].co=%ld\n",smallestNdx,smallestOffset,g_IncludeCall[smallestNdx].current_offset);
+/*D*/ // printf("smallestNdx=%ld smallestOffset=%ld i[].co=%ld\n",smallestNdx,smallestOffset,g_IncludeCall[smallestNdx].current_offset);
   return fileName;
 } // getFileAndLineNo
 
