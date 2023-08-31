@@ -100,7 +100,7 @@ char *readRawSource(vstring fileBuf, long *size) {
     if (fbPtr[0]) {       
       if (isgraph((unsigned char)(fbPtr[1]))) {
         // The character after the character after the '$' is not white
-        // space (nor end of file).
+        // space (nor end of file)
         if (!insideComment || fbPtr[0] == ')') {
           // Inside comments, we only care about the "$)" keyword
           rawSourceError(fileBuf, fbPtr + 1, 1,
