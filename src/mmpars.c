@@ -18,9 +18,9 @@
 // Potential statements in source file (upper limit) for 
 // memory allocation purposes.
 long potentialStatements;
-// Illegal characters for labels -- initialized
-// by parseLabels()
+// Illegal characters for labels -- initialized by parseLabels()
 flag illegalLabelChar[256];
+
 // (Next 2 are global in mmpars.c only)
 long *g_labelKeyBase; // Start of assertion ($a, $p) labels
 long g_numLabelKeys; // Number of assertion labels
