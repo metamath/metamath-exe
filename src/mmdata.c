@@ -3020,7 +3020,7 @@ vstring getDescription(long statemNum) {
     return description;
   }
   let(&description, edit(seg(description, p1 + 2, p2 - 1),
-      8 + 128)); // discard leading and trailing blanks
+      8 + 128 /* discard leading and trailing blanks */));
   return description;
 } // getDescription
 
