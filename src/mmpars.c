@@ -4159,7 +4159,7 @@ vstring outputStatement(long stmt, flag reformatFlag) {
         pos = rinstr(labelSection, "\n");
         // If there is none, insert it (unless first line in file)
         if (pos == 0 && stmt > 1) {
-          let(&labelSection, cat(edit(labelSection, 128), // trailing spaces
+          let(&labelSection, cat(edit(labelSection, 128 /* trailing spaces */),
               "\n", NULL));
           pos = (long)strlen(labelSection) + 1;
         }
