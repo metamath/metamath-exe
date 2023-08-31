@@ -3954,8 +3954,8 @@ vstring outputStatement(long stmt, flag reformatFlag) {
       case v_: // $v
       case c_: // $c
       case d_: // $d
-      // These 5 cases are for keywords that don't have labels, so that
-      // labelSection is simply the text before the keyword.
+        // These 5 cases are for keywords that don't have labels, so that
+        // labelSection is simply the text before the keyword.
 
         // Strip any trailing spaces
         let(&labelSection, edit(labelSection, 128)); // trailing spaces
