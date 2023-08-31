@@ -6036,11 +6036,11 @@ vstring readSourceAndIncludes(const char *inputFn /* input */, long *size /* out
     }
     return NULL;
   } else {
-// D // for (i=0; i<=g_includeCalls;i++)
-// D // printf("i=%ld p=%ld f=%s,%s l=%ld o=%ld s=%ld\n",
-// D // i,(long)g_IncludeCall[i].pushOrPop,g_IncludeCall[i].source_fn,
-// D // g_IncludeCall[i].included_fn,g_IncludeCall[i].current_line,
-// D // g_IncludeCall[i].current_offset,g_IncludeCall[i].current_includeLength);
+/*D*/ // for (i=0; i<=g_includeCalls;i++)
+/*D*/ // printf("i=%ld p=%ld f=%s,%s l=%ld o=%ld s=%ld\n",
+/*D*/ // i,(long)g_IncludeCall[i].pushOrPop,g_IncludeCall[i].source_fn,
+/*D*/ // g_IncludeCall[i].included_fn,g_IncludeCall[i].current_line,
+/*D*/ // g_IncludeCall[i].current_offset,g_IncludeCall[i].current_includeLength);
     return newFileBuf;
   }
 } // readSourceAndIncludes
