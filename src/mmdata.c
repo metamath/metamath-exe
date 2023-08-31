@@ -1030,7 +1030,7 @@ temp_nmbrString *nmbrMakeTempAlloc(nmbrString *s)
 }
 
 // nmbrString assignment.
-// This function must ALWAYS be called to make assignment to.
+// This function must ALWAYS be called to make assignment to
 // a nmbrString in order for the memory cleanup routines, etc.
 // to work properly.  If a nmbrString has never been assigned before,
 // it is the user's responsibility to initialize it to NULL_NMBRSTRING (the
