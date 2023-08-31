@@ -5999,8 +5999,9 @@ vstring readSourceAndIncludes(const char *inputFn /* input */, long *size /* out
   // so no need to assign (it won't be used).
   // let(&g_IncludeCall[g_includeCalls].source_fn, inputFn); 
   g_IncludeCall[g_includeCalls].included_fn = "";
-  // let(&g_IncludeCall[g_includeCalls].included_fn, inputFn); // $[ $], Begin,
-  // of Skip file name for this inclusion.
+  // $[ $], Begin, of Skip file name for this inclusion.
+  // let(&g_IncludeCall[g_includeCalls].included_fn, inputFn);
+
   // Ideally this should be countLines(fileBuf), but since it's never used we don't
   // bother to call countLines(fileBuf) to save CPU time.
   g_IncludeCall[g_includeCalls].current_line = -1;
