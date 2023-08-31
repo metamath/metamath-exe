@@ -3923,7 +3923,7 @@ vstring outputStatement(long stmt, flag reformatFlag) {
     }
     // Untab the math section
     if (strchr(mathSection, '\t') != NULL) { // Only if has tab (speedup)
-      let(&mathSection, edit(mathSection, 2048)); // untab
+      let(&mathSection, edit(mathSection, 2048 /* untab */));
     }
 
     // Reformat the label section
