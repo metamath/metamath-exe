@@ -2690,8 +2690,7 @@ char parseProof(long statemNum)
                 // j = j; // Same as orig proof
               } else if (j == step) { // The original local label ref
                 bug(1738); // A local label shouldn't ref a local label
-              // Steps shifted up by subproof insertion
-              } else if (j > step && j <= k - m) {          
+              } else if (j > step && j <= k - m) { // Steps shifted up by subproof insertion
                 j = j + m - 1; // Offset by size of subproof moved down -1
               // Reference to inside the moved subproof
               } else if (j > k - m && j <= k) {
