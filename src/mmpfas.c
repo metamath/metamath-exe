@@ -698,6 +698,7 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
               // there could be, say 50 more matches for "var x",
               // so we might need a factor of 50 greater runtime for each
               // replacement hypothesis having this situation.)
+
               // trialStep = prfStep - 1;  old version
               // Make this the last loop pass
               trialStep = scanUpperBound - 1;
