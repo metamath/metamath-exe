@@ -96,7 +96,7 @@ char *readRawSource(vstring fileBuf, long *size) {
     }
     fbPtr++;
     // If the character after '$' is not end of file (which
-    // would be an error anyway, but detected elsewhere).
+    // would be an error anyway, but detected elsewhere)
     if (fbPtr[0]) {       
       if (isgraph((unsigned char)(fbPtr[1]))) {
         // The character after the character after the '$' is not white
