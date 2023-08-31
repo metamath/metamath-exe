@@ -3697,7 +3697,7 @@ void writeSource(
   flag reformatFlag, // 1 = "/ FORMAT", 2 = "/REWRAP"
   flag splitFlag, // /SPLIT - write out separate $[ $] includes
   flag noVersioningFlag, // /NO_VERSIONING - no ~1 backup
-  // /KEEP_INCLUDES - don't delete included files when /SPIT is not specified
+  // /KEEP_INCLUDES - don't delete included files when /SPLIT is not specified
   flag keepSplitsFlag,
   vstring extractLabelList // "" means /EXTRACT wasn't specified
   )
