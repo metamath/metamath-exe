@@ -163,8 +163,7 @@ void typeStatement(long showStmt,
   if (!briefFlag || commentOnlyFlag) {
     free_vstring(str1);
     str1 = getDescription(showStmt);
-    if (!str1[0]) // No comment
-    {
+    if (!str1[0]) { // No comment
       print2("?Warning: Statement \"%s\" has no comment\n",
           g_Statement[showStmt].labelName);
       // We must print a blank comment to have \begin{lemma}
