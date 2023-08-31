@@ -2740,11 +2740,11 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
 // Returns 1 if at least one label is printed (or would be printed in
 // case testOnlyFlag=1); otherwise, returns 0.
 // Returns -1 if the process was aborted.
-// matchList suppresses all output except labels matching matchList.
-// testOnlyFlag prevents any printout; it is used to determine whether
-// there is an unwanted axiom for MINIMIZE_WITH /FORBID.
-// abortOnQuit is set to 1 if we want to abort early if the user selects
-// 'Q to quit' at the prompt, and if so we return -1.
+// * matchList suppresses all output except labels matching matchList.
+// * testOnlyFlag prevents any printout; it is used to determine whether
+//   there is an unwanted axiom for MINIMIZE_WITH /FORBID.
+// * abortOnQuit is set to 1 if we want to abort early if the user selects
+//   'Q to quit' at the prompt, and if so we return -1.
 char traceProof(long statemNum,
   flag essentialFlag,
   flag axiomFlag,
