@@ -6020,11 +6020,11 @@ vstring readSourceAndIncludes(const char *inputFn /* input */, long *size /* out
   // Note that readInclude() may change g_includeCalls, so use 1 explicitly.
   g_IncludeCall[1].current_offset = *size;
   free_vstring(fileBuf); // Deallocate
-// D // printf("*size=%ld\n",*size);
-// D // for(i=0;i<*size;i++){
-// D // free_vstring(s);
-// D // s=getFileAndLineNum(newFileBuf,newFileBuf+i,&j);
-// D // printf("i=%ld ln=%ld fn=%s ch=%c\n",i,j,s,(newFileBuf+i)[0]);  }
+/*D*/ // printf("*size=%ld\n",*size);
+/*D*/ // for(i=0;i<*size;i++){
+/*D*/ // free_vstring(s);
+/*D*/ // s=getFileAndLineNum(newFileBuf,newFileBuf+i,&j);
+/*D*/ // printf("i=%ld ln=%ld fn=%s ch=%c\n",i,j,s,(newFileBuf+i)[0]);  }
   if (errorFlag == 1) {
     // The read should be aborted by the caller.
     // Deallocate the strings in the g_IncludeCall[] structure.
