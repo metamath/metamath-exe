@@ -1270,7 +1270,7 @@ void typeProof(long statemNum,
     flag pipFlag, // Means use g_ProofInProgress; statemNum must be proveStatement
     long startStep, long endStep,
     long endIndent,
-    // <- also used as definition/axiom flag for HTML syntax breakdown when called
+    // v- also used as definition/axiom flag for HTML syntax breakdown when called
     // from typeStatement().
     flag essentialFlag,
     flag renumberFlag,
