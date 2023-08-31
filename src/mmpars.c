@@ -5942,8 +5942,8 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
 // and reading should be aborted.
 vstring readSourceAndIncludes(const char *inputFn /* input */, long *size /* output */) {
   long i;
-// D // long j;
-// D // vstring_def(s);
+/*D*/ // long j;
+/*D*/ // vstring_def(s);
   vstring_def(fileBuf);
   vstring_def(newFileBuf);
 
