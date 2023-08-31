@@ -59,6 +59,7 @@ struct nullNmbrStruct g_NmbrNull = {-1, sizeof(long), sizeof(long), -1};
 
 // Null pntrString
 struct nullPntrStruct g_PntrNull = {-1, sizeof(long), sizeof(long), NULL};
+
 void nmbrCpy(nmbrString *sout, const nmbrString *sin);
 void nmbrNCpy(nmbrString *s, const nmbrString *t, long n);
 
@@ -2173,9 +2174,9 @@ temp_vstring compressProof(const nmbrString *proof, long statemNum,
     for (j = 0; j < explLabels; j++) {
       if (explComprLen[j] == i) {
         if (explUsedFlag[j] == 'y') bug(1382);
-         // Make worth=size so that label length does not affect whether the
-         // label is chosen by knapsack01(), so the only influence is whether
-         // it fits. 
+        // Make worth=size so that label length does not affect whether the
+        // label is chosen by knapsack01(), so the only influence is whether
+        // it fits. 
         explWorth[j] = explLabelLen[j];
         explUnassignedCount++;
       } else { // Not the current compressed label size
