@@ -5793,12 +5793,12 @@ void outputMidi(long plen, nmbrString *indentationLevels,
   // read-only input parameters and should not modify the contents of the
   // arrays or strings they point to.
   //
-  // plen = length of proof
-  // indentationLevels[step] = indentation level in "show proof xxx /full"
-  // where step varies from 0 to plen-1.
-  // logicalFlags[step] = 0 for formula-building step, 1 for logical step
-  // g_midiParameter = string passed by user in "midi xxx /parameter <g_midiParameter>"
-  // statementLabel = label of statement whose proof is being scanned.
+  // * plen = length of proof
+  // * indentationLevels[step] = indentation level in "show proof xxx /full"
+  //   where step varies from 0 to plen-1
+  // * logicalFlags[step] = 0 for formula-building step, 1 for logical step
+  // * g_midiParameter = string passed by user in "midi xxx /parameter <g_midiParameter>"
+  // * statementLabel = label of statement whose proof is being scanned
 
   // This function is called when the user types "midi xxx /parameter
   // <g_midiParameter>".  The proof steps of theorem xxx are numbered successively
