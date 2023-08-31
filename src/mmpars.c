@@ -3910,7 +3910,7 @@ vstring outputStatement(long stmt, flag reformatFlag) {
 
   // Reformat statements to match the current set.mm convention
   if (reformatFlag > 0) { // 1 = WRITE SOURCE / FORMAT or 2 = / REWRAP
-// Put standard indentation before the ${, etc.
+    // Put standard indentation before the ${, etc.
 #define INDENT_FIRST 2
 #define INDENT_INCR 2
     indent = INDENT_FIRST + (INDENT_INCR * g_Statement[stmt].scope);
