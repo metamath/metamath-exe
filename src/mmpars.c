@@ -4548,13 +4548,16 @@ vstring rewrapComment(const char *comment1) {
 // needed to provide a context to determine which symbols are active.
 // Lack of whitespace is tolerated according to standard rules.
 // g_mathTokens must be set to the proper value.
+//
 // The code in this section is complex because it uses the fast parsing
 // method borrowed from parseStatements().  On the other hand, it must set
 // up some initial tables by scanning the entire g_MathToken array; this may
 // slow it down in some applications.
+//
 // Warning:  g_mathTokens must be the correct value (some procedures might
 // artificially adjust g_mathTokens to add dummy tokens [schemes] to the
 // g_MathToken array).
+//
 // The user text may include existing or new dummy variables of the
 // form "?nnn".
 nmbrString *parseMathTokens(vstring userText, long statemNum)
