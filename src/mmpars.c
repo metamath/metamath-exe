@@ -3729,6 +3729,7 @@ long rawWhiteSpaceLen(char *ptr) {
 // character of the token.  If ptr points to a white space character, 0
 // is returned.  If ptr points to a null character, 0 is returned.  If ptr
 // points to a keyword, 0 is returned.  A keyword ends a token.
+//
 // Tokens may be of the form "$nn"; this is tolerated (used in parsing
 // user math strings in parseMathTokens()).  An (illegal) token of this form
 // in the source will be detected earlier, so this won't cause
