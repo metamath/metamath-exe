@@ -3559,7 +3559,7 @@ vstring bigSub(vstring bignum1, vstring bignum2) {
 vstring traceUsage(long statemNum,
   flag recursiveFlag,
   long cutoffStmt) // for speedup
-  {
+{
   long lastPos, stmt, slen, pos;
   flag tmpFlag;
   vstring_def(statementUsedFlags); // 'Y'/'N' flag that statement is used
