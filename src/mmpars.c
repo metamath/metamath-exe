@@ -5958,10 +5958,11 @@ vstring readSourceAndIncludes(const char *inputFn /* input */, long *size /* out
     fileBuf = "";
     *size = 0;
     errorFlag = 1;
-    // goto RETURN_POINT; // Don't go now so that g_IncludeCall[]
+    // Don't go now so that g_IncludeCall[]
     // strings will be initialized.  If error, then blank fileBuf will
     // cause main while loop to break immediately after first
     // getNextInclusion() call.
+    // goto RETURN_POINT; 
   }
   print2("Reading source file \"%s\"... %ld bytes\n", fullInputFn, *size);
   free_vstring(fullInputFn);
