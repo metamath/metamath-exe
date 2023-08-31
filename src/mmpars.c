@@ -2694,8 +2694,7 @@ char parseProof(long statemNum)
                 j = j + m - 1; // Offset by size of subproof moved down -1
               } else if (j > k - m && j <= k) { // Reference to inside the moved subproof
                 j = j + step + m - 1 - k; // Shift down
-              // Ref to after moved subproof
-              } else if (j > k && j <= g_WrkProof.numSteps - 1) {
+              } else if (j > k && j <= g_WrkProof.numSteps - 1) { // Ref to after moved subproof
                 // j = j; // Same as orig proof
               } else {
                 bug(1739); // Cases not exhausted or j is out of range
