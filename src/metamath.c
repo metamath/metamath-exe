@@ -1558,10 +1558,10 @@ void command(int argc, char *argv[]) {
                   let(&str2, cat(left(str2, p - 1), " ",
                       mid(str2, p, 1),
                       " ", right(str2, p + 1), NULL));
-                  // p++;
                   // Even though space is always a separator, it can be used
                   // to suppress all default tokens.  Go past 2nd space to prevent
                   // infinite loop in that case.
+                  // p++;
                   p += 2;
                 }
               }
