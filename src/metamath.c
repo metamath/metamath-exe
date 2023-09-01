@@ -3964,7 +3964,7 @@ void command(int argc, char *argv[]) {
           nmbrLet(&nmbrSaveProof, nmbrSquishProof(g_WrkProof.proofString));
           printLongLine(nmbrCvtRToVString(nmbrSaveProof,
                 0, // explicitTargets
-                0)," "," "); // statemNum, used only if explicitTargets
+                0 /* statemNum, used only if explicitTargets */)," "," ");
           print2("\n");
 
           nmbrLet(&nmbrTmp, nmbrUnsquishProof(nmbrSaveProof));
