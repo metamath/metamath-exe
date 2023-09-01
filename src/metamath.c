@@ -782,7 +782,7 @@ void command(int argc, char *argv[]) {
   // Number of argv initial command-line arguments processed so far.
   long argsProcessed = 0;  
 
-  long /* c, */ i, j, k, m, l, n, p, q, r, s; // , tokenNum
+  long /* c, */ i, j, k, m, l, n, p, q, r, s /*, tokenNum */;
   long stmt, step;
   int subType = 0;
 #define SYNTAX 4
