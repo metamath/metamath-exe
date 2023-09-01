@@ -2855,6 +2855,7 @@ void command(int argc, char *argv[]) {
                   // The below has been replaced by
                   // getTexOrHtmlHypAndAssertion(i) above.
                   // printTexLongMath(g_Statement[i].mathString, "", "", 0, 0);
+
                   // g_outputToString = 1; // Is reset by printTexLongMath
                 } else {
                   // Theorems are listed w/ description; otherwise file is too
