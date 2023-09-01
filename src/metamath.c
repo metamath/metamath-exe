@@ -3970,7 +3970,7 @@ void command(int argc, char *argv[]) {
           nmbrLet(&nmbrTmp, nmbrUnsquishProof(nmbrSaveProof));
           printLongLine(nmbrCvtRToVString(nmbrTmp,
                 0, // explicitTargets
-                0)," "," "); // statemNum, used only if explicitTargets
+                0 /* statemNum, used only if explicitTargets */)," "," ");
 
           nmbrLet(&nmbrTmp, nmbrGetTargetHyp(nmbrSaveProof,g_showStatement));
           printLongLine(nmbrCvtAnyToVString(nmbrTmp)," "," "); print2("\n");
