@@ -6052,7 +6052,7 @@ void command(int argc, char *argv[]) {
 
     if (cmdMatches("SET ROOT_DIRECTORY")) {
       let(&str1, g_rootDirectory); // Save previous one
-      let(&g_rootDirectory, edit(g_fullArg[2], 2)); // discard spaces, tabs
+      let(&g_rootDirectory, edit(g_fullArg[2], 2 /* discard spaces, tabs */));
       if (g_rootDirectory[0] != 0) { // Not an empty directory path
         // Add trailing "/" to g_rootDirectory if missing
         if (instr(1, g_rootDirectory, "\\") != 0
