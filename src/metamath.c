@@ -4214,6 +4214,7 @@ void command(int argc, char *argv[]) {
           // Repeat the unifications over and over until done, since
           // a later unification may improve the ability of an aborted earlier
           // one to be done without timeout.
+
           // This flag is set by autoUnify() and interactiveUnifyStep()
           g_proofChangedFlag = 0;
           autoUnify(0);
