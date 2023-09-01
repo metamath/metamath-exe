@@ -2974,7 +2974,7 @@ void command(int argc, char *argv[]) {
           // getTexLongMath does not return a temporary allocation; must
           // assign str1 directly, not with let().  It will be deallocated
           // with the next let(&str1,...).
-          str1 = getTexLongMath(g_Statement[k].mathString, k); // stmt# for err msgs
+          str1 = getTexLongMath(g_Statement[k].mathString, k /* stmt# for err msgs */);
           fprintf(g_texFilePtr, "%s</FONT></TD>", str1);
         }
 
