@@ -4744,7 +4744,7 @@ void command(int argc, char *argv[]) {
         if (dummyVarIsoFlag == 0) { // No dummy vars
           // Only use proveFloating if no dummy vars
           nmbrTmpPtr = proveFloating((g_ProofInProgress.target)[s - 1],
-              g_proveStatement, improveDepth, s - 1, (char)p, // NO_DISTINCT
+              g_proveStatement, improveDepth, s - 1, (char)p /* NO_DISTINCT */,
               overrideFlag,
               mathboxFlag);
         } else {
