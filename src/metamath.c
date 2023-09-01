@@ -3705,8 +3705,8 @@ void command(int argc, char *argv[]) {
 "---------Clip out the proof below this line to put it in the source file:\n");
           }
           if (switchPos("COMPRESSED")) {
+            // "&" is special flag to break compressed part of proof anywhere.
             printLongLine(cat(space(indentation), str1, " $.", NULL),
-              // "&" is special flag to break compressed part of proof anywhere.
               space(indentation), "& ");
           } else {
             printLongLine(cat(space(indentation), str1," $.", NULL),
