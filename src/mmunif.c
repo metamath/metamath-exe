@@ -21,34 +21,34 @@
 // 11[0] is the total number of variables ($1, $2, etc.) in schemeA and schemeB,
 // i.e. the two schemes being unified.
 //
-// unkVarsLen = ((nmbrString *)((*stateVector)[11]))[0];
+//   unkVarsLen = ((nmbrString *)((*stateVector)[11]))[0];
 //
 // 11[1] or stackTop is the number of variables (minus 1) that will require
 // substitutions in order to perform the unification.  Warning:  stackTop may be
 // -1, which could be confused with "end of nmbrString" by some nmbrString
 // functions.
 //
-//  stackTop = ((nmbrString *)((*stateVector)[11]))[1];
+//   stackTop = ((nmbrString *)((*stateVector)[11]))[1];
 //
 // 11[2] is the number of variables in schemeA, used by oneDirUnif() (only).
 //
-//  schemeAUnkVarsLen = ((nmbrString *)((*stateVector)[11]))[2];
+//   schemeAUnkVarsLen = ((nmbrString *)((*stateVector)[11]))[2];
 //
 // 11[3] is the number of entries in the "Henty filter", used by unifyH() (only).
 //
-//  g_hentyFilterSize = ((nmbrString *)((*stateVector)[11]))[3];
+//   g_hentyFilterSize = ((nmbrString *)((*stateVector)[11]))[3];
 //
 // Entry 8 is the result of unifying schemeA and schemeB, which are the two
 // schemes being unified.
 //
-//  unifiedScheme = (nmbrString *)((*stateVector)[8]);
+//   unifiedScheme = (nmbrString *)((*stateVector)[8]);
 //
 // Entries 0 through 3 each have length unkVarsLen.  Entry 1 is a list of token
 // numbers for the temporary variables substituted in the unification.
 //
 // Entry 0 has all variables ($1, $2, etc.) in schemeA and schemeB.
 //
-//  unkVars = (nmbrString *)((*stateVector)[0]);
+//   unkVars = (nmbrString *)((*stateVector)[0]);
 //
 // In entries 1 through 3, only variables 0 through stackTop (inclusive) have
 // meaning.  These entries, along with unifiedScheme, determine what variables
@@ -59,9 +59,9 @@
 // in entry 1.
 // Entry 3 is the length of the substitution for each variable in entry 1.
 //
-//  stackUnkVar = (nmbrString *)((*stateVector)[1]);
-//  stackUnkVarStart = (nmbrString *)((*stateVector)[2]);
-//  stackUnkVarLen = (nmbrString *)((*stateVector)[3]);
+//   stackUnkVar = (nmbrString *)((*stateVector)[1]);
+//   stackUnkVarStart = (nmbrString *)((*stateVector)[2]);
+//   stackUnkVarLen = (nmbrString *)((*stateVector)[3]);
 //
 // Entries 4 thru 7 each point to unkVarsLen nmbrString's.  These entries save the
 // data needed to resume unification at any point.  Entries 4 and 5 are
@@ -69,17 +69,17 @@
 // Only the first stackTop+1 nmbrString's have meaning.  Note that stackTop may be
 // -1.
 //
-//  stackSaveUnkVarStart = (pntrString *)((*stateVector)[4]);
-//  stackSaveUnkVarLen = (pntrString *)((*stateVector)[5]);
-//  stackSaveSchemeA = (pntrString *)((*stateVector)[6]);
-//  stackSaveSchemeB = (pntrString *)((*stateVector)[7]);
+//   stackSaveUnkVarStart = (pntrString *)((*stateVector)[4]);
+//   stackSaveUnkVarLen = (pntrString *)((*stateVector)[5]);
+//   stackSaveSchemeA = (pntrString *)((*stateVector)[6]);
+//   stackSaveSchemeB = (pntrString *)((*stateVector)[7]);
 //
 // Entries 9 and 10 save the contents of 2 and 3 in oneDirUnif (only)
 //
-//  nmbrLet((nmbrString **)(&(*stateVector)[9]),
-//      (nmbrString *)((*stateVector)[2]));
-//  nmbrLet((nmbrString **)(&(*stateVector)[10]),
-//      (nmbrString *)((*stateVector)[3]));
+//   nmbrLet((nmbrString **)(&(*stateVector)[9]),
+//       (nmbrString *)((*stateVector)[2]));
+//   nmbrLet((nmbrString **)(&(*stateVector)[10]),
+//       (nmbrString *)((*stateVector)[3]));
 //
 // Entries 12 through 15 hold the "Henty filter", i.e. a list of all "normalized"
 // unifications so far.  Used by unifyH() (only).  Each entry 12 through 15 is a
@@ -92,10 +92,10 @@
 // Entry 15[i] is the unified scheme that resulted from the particular unification.
 // Note:  i = 0 through g_hentyFilterSize-1 below.
 //
-//  hentyVars = (nmbrString *)(((pntrString *)((*stateVector)[12]))[i]);
-//  hentyVarStart = (nmbrString *)(((pntrString *)((*stateVector)[13]))[i]);
-//  hentyVarLen = (nmbrString *)(((pntrString *)((*stateVector)[14]))[i]);
-//  hentySubstList = (nmbrString *)(((pntrString *)((*stateVector)[15]))[i]);
+//   hentyVars = (nmbrString *)(((pntrString *)((*stateVector)[12]))[i]);
+//   hentyVarStart = (nmbrString *)(((pntrString *)((*stateVector)[13]))[i]);
+//   hentyVarLen = (nmbrString *)(((pntrString *)((*stateVector)[14]))[i]);
+//   hentySubstList = (nmbrString *)(((pntrString *)((*stateVector)[15]))[i]);
 
 #include "mmvstr.h"
 #include "mmdata.h"
