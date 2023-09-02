@@ -16,21 +16,24 @@
 #include "mmwtex.h"
 #include "mmcmdl.h" // For g_texFileName
 
-// All LaTeX and HTML definitions are taken from the source
-// file (read in the by READ... command).  In the source file, there should
-// be a single comment $( ... $) containing the keyword $t.  The definitions
-// start after the $t and end at the $).  Between $t and $), the definition
-// source should exist.  See the file set.mm for an example.
+// All LaTeX and HTML definitions are taken from the source file (read in by
+// the READ command).  In the source file, there should be a single comment
+// $( ... $) containing the keyword $t.  The definitions start after the $t and
+// end at the $).  Between $t and $), the definition source should exist.  See
+// the file set.mm for an example.
 
 flag g_oldTexFlag = 0; // Use TeX macros in output (obsolete)
 
 flag g_htmlFlag = 0; // HTML flag: 0 = TeX, 1 = HTML
+
 // Use "althtmldef" instead of "htmldef".  This is intended to allow the
 // generation of pages with the Unicode font instead of the individual GIF files.
 flag g_altHtmlFlag = 0;
+
 // Output statement lists only, for statement display in other HTML pages,
 // such as the Proof Explorer home page.
-flag g_briefHtmlFlag = 0;
+flag g_briefHtmlFlag = 0; // TODO: unused
+
 // At this statement and above, use the exthtmlxxx
 // variables for title, links, etc.  This was put in to allow proper
 // generation of the Hilbert Space Explorer extension to the set.mm
@@ -45,12 +48,12 @@ long g_extHtmlStmt = 0;
 // 0 means it hasn't been looked up yet; g_statements + 1 means there is
 // no mathbox.
 long g_mathboxStmt = 0;
-long g_mathboxes = 0; // # of mathboxes
+long g_mathboxes = 0; // number of mathboxes
 // The following 3 strings are 0-based e.g. g_mathboxStart[0] is for
-// mathbox #1.
-nmbrString_def(g_mathboxStart); // Start stmt vs. mathbox #
-nmbrString_def(g_mathboxEnd); // End stmt vs. mathbox #
-pntrString_def(g_mathboxUser); // User name vs. mathbox #
+// mathbox number 1.
+nmbrString_def(g_mathboxStart); // Start stmt vs. mathbox number
+nmbrString_def(g_mathboxEnd); // End stmt vs. mathbox number
+pntrString_def(g_mathboxUser); // User name vs. mathbox number
 
 // This is the list of characters causing the space before the opening "`"
 // in a math string in a comment to be removed for HTML output.
@@ -188,7 +191,7 @@ flag readTexDefs(
     eraseTexDefs();
     saveHtmlFlag = g_htmlFlag; // Save for next call to readTexDefs()
     saveAltHtmlFlag = g_altHtmlFlag; // Save for next call to readTexDefs()
-    if (g_htmlFlag == 0 /* Tex */ && g_altHtmlFlag == 1) {
+    if (!g_htmlFlag /* Tex */ && g_altHtmlFlag) {
       bug(2301); // Nonsensical combination
     }
   } else {
@@ -1065,8 +1068,9 @@ vstring tokenToTex(vstring mtoken, long statemNum /* for error msgs */)
     for (i = 0; i < j; i++) {
       if (ispunct((unsigned char)(tex[i]))) {
         tmpStr = asciiToTt(chr(tex[i]));
-        if (!g_htmlFlag)
+        if (!g_htmlFlag) {  // LaTeX
           let(&tmpStr, cat("{\\tt ", tmpStr, "}", NULL));
+        }
         k = (long)strlen(tmpStr);
         let(&tex,
             cat(left(tex, i), tmpStr, right(tex, i + 2), NULL));
@@ -1077,9 +1081,10 @@ vstring tokenToTex(vstring mtoken, long statemNum /* for error msgs */)
     } // Next i
 
     // Make all letters Roman in math mode
-    if (!g_htmlFlag)
+    if (!g_htmlFlag) {  // LaTeX
       let(&tex, cat("\\mathrm{", tex, "}", NULL));
-  } // End if
+    }
+  } // End if (texDefsPtr)
 
   return tex;
 } // tokenToTex
@@ -1113,7 +1118,7 @@ vstring asciiMathToTex(vstring mathComment, long statemNum)
     // tokenToTex allocates tex; we must deallocate it
     tex = tokenToTex(token, statemNum);
 
-    if (!g_htmlFlag) {
+    if (!g_htmlFlag) {  // LaTeX
       // If this token and previous token begin with letter, add a thin
       // space between them.
       // Also, anything not in table will have space added.
@@ -1221,13 +1226,14 @@ vstring getCommentModeSection(vstring *srcptr, char *mode)
     }
     ptr++;
   } // End while
+  assert(0);
   return NULL; // Dummy return - never executes
 } // getCommentModeSection
 
 // The texHeaderFlag means this:
-// If !g_htmlFlag (i.e. TeX mode), then 1 means print header
-// If g_htmlFlag, then 1 means include "Previous Next" links on page,
-// based on the global g_showStatement variable.
+// if !g_htmlFlag (i.e., TeX mode), then 1 means print header;
+// if g_htmlFlag (i.e., HTML mode), then 1 means include "Previous Next" links
+// on page, based on the global g_showStatement variable.
 void printTexHeader(flag texHeaderFlag)
 {
 
@@ -1253,7 +1259,7 @@ void printTexHeader(flag texHeaderFlag)
   // }
 
   g_outputToString = 1; // Redirect print2 and printLongLine to g_printString
-  if (!g_htmlFlag) {
+  if (!g_htmlFlag) {  // LaTeX
     print2("%s This LaTeX file was created by Metamath on %s %s.\n",
        "%", date(), time_());
 
@@ -1326,7 +1332,7 @@ void printTexHeader(flag texHeaderFlag)
       print2("  \\box\\mlinebox\n");
       print2("}\n");
     }
-  } else { // g_htmlFlag
+  } else { // g_htmlFlag  // HTML
 
     print2("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\"\n");
     print2(     "    \"http://www.w3.org/TR/html4/loose.dtd\">\n");
@@ -1745,7 +1751,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
   // Convert line to the old $m..$n and $l..$n formats (using DOLLAR_SUBST
   // instead of "$") - the old syntax is obsolete but we do this conversion
   // to re-use some old code.
-  if (metamathComment != 0) {
+  if (metamathComment) {
     i = instr(1, cmtptr, "$)"); // If it points to source buffer
     if (!i) i = (long)strlen(cmtptr) + 1; // If it's a stand-alone string
   } else {
@@ -1758,12 +1764,12 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
   let(&cmtMasked, cmt);
 
   // This section is independent and can be removed without side effects
-  if (g_htmlFlag) {
+  if (g_htmlFlag) {  // HTML
     // Convert special characters <, &, etc. to HTML entities.
     // But skip converting math symbols inside ` `.
     // Detect preformatted HTML (this is crude, since it
     // will apply to whole comment - perhaps fine-tune this later).
-    if (convertToHtml != 0) {
+    if (convertToHtml) {
       if (instr(1, cmt, "<HTML>") != 0) preformattedMode = 1;
     } else {
       preformattedMode = 1; // For MARKUP command - don't convert HTML
@@ -1810,11 +1816,9 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
     let(&cmtMasked, tmpMasked);
     free_vstring(tmpStr); // Deallocate
     free_vstring(tmpStrMasked);
-  }
 
-  // Add leading and trailing HTML markup to comment here
-  // (instead of in caller).  Also convert special characters.
-  if (g_htmlFlag) {
+    // Add leading and trailing HTML markup to comment here
+    // (instead of in caller).  Also convert special characters.
     // This used to be done in mmcmds.c
     if (htmlCenterFlag) { // Note:  this should be 0 in MARKUP command
       let(&cmt, cat("<CENTER><TABLE><TR><TD ALIGN=LEFT><B>Description: </B>",
@@ -1823,12 +1827,9 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
           cat("<CENTER><TABLE><TR><TD ALIGN=LEFT><B>Description: </B>",
           cmtMasked, "</TD></TR></TABLE></CENTER>", NULL));
     }
-  }
 
-  // Mask out _ (underscore) in labels so they won't become subscripts
-  // (reported by Benoit Jubin).
-  // This section is independent and can be removed without side effects.
-  if (g_htmlFlag != 0) {
+    // Mask out _ (underscore) in labels so they won't become subscripts.
+    // This section is independent and can be removed without side effects.
     pos1 = 0;
     while (1) { // Look for label start
       pos1 = instr(pos1 + 1, cmtMasked, "~");
@@ -1888,7 +1889,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
   // below, so that "{\em...}" won't be converted to "\}\em...\}".
   // Convert any remaining special characters for LaTeX.
   // This section is independent and can be removed without side effects.
-  if (!g_htmlFlag) { // i.e. LaTeX mode.
+  if (!g_htmlFlag) { // LaTeX
     // At this point, the comment begins e.g "\begin{lemma}\label{lem:abc}".
     pos1 = instr(1, cmt, "} ");
     if (pos1) {
@@ -1938,7 +1939,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
   // to <I>abc</I> for book titles, etc.; convert a_n to a<SUB>n</SUB> for
   // subscripts.
   // This section is independent and can be removed without side effects
-  if (g_htmlFlag != 0 && processUnderscores != 0) {
+  if (g_htmlFlag && processUnderscores) {
     pos1 = 0;
     while (1) {
       // Only look at non-math part of comment
@@ -1967,13 +1968,13 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
       // underscores", so replace a double-underscore with a single
       // underscore and do not modify italic or subscript.
       if (cmt[pos1] == '_') {
-            if (g_htmlFlag) {  // HTML
+            if (g_htmlFlag) {  // HTML; TODO: extraneous since in a "if (g_htmlFlag && processUnderscores)"
               let(&cmt, cat(left(cmt, pos1), // Skip (delete) "_"
                   right(cmt, pos1 + 2), NULL));
               let(&cmtMasked, cat(left(cmtMasked, pos1), // Skip (delete) "_"
                   right(cmtMasked, pos1 + 2), NULL));
               pos1 ++; // Adjust for 1 extra char '_'
-            } else {  // LaTeX
+            } else {  // LaTeX; TODO: unreachable since in a "if (g_htmlFlag && processUnderscores)"
               let(&cmt, cat(left(cmt, pos1 - 1),  // Skip (delete) "_"
                   "\\texttt{\\_}",
                   right(cmt, pos1 + 2), NULL));
@@ -2010,7 +2011,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
               pos2++; // Move forward through subscript
             }
             pos2++; // Adjust for left, seg, etc. that start at 1 not 0
-            if (g_htmlFlag) { // HTML
+            if (g_htmlFlag) { // HTML; TODO: extraneous since in a "if (g_htmlFlag && processUnderscores)"
               // Put <SUB>...</SUB> around subscript
               let(&cmt, cat(left(cmt, pos1 - 1),
                   "<SUB><FONT SIZE=\"-1\">",
@@ -2021,7 +2022,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
                   seg(cmtMasked, pos1 + 1, pos2 - 1), // Skip (delete) "_"
                   "</FONT></SUB>", right(cmtMasked, pos2), NULL));
               pos1 = pos2 + 33; // Adjust for 34-1 extra chars in "let" above
-            } else { // LaTeX
+            } else { // LaTeX; TODO: unreachable since in a "if (g_htmlFlag && processUnderscores)"
               // Put _{...} around subscript
               let(&cmt, cat(left(cmt, pos1 - 1), "$_{",
                   seg(cmt, pos1 + 1, pos2 - 1), // Skip (delete) "_"
@@ -2046,7 +2047,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
       // Closing "_" must be <alphanum>_<nonalphanum>
       if (!isalnum((unsigned char)(cmt[pos2 - 2]))) continue;
       if (isalnum((unsigned char)(cmt[pos2]))) continue;
-      if (g_htmlFlag) { // HTML
+      if (g_htmlFlag) { // HTML; TODO: extraneous since in a "if (g_htmlFlag && processUnderscores)"
         let(&cmt, cat(left(cmt, pos1 - 1), "<I>",
             seg(cmt, pos1 + 1, pos2 - 1),
             "</I>", right(cmt, pos2 + 1), NULL));
@@ -2054,7 +2055,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
             seg(cmtMasked, pos1 + 1, pos2 - 1),
             "</I>", right(cmtMasked, pos2 + 1), NULL));
         pos1 = pos2 + 5; // Adjust for 7-2 extra chars in "let" above
-      } else { // LaTeX
+      } else { // LaTeX; TODO: unreachable since in a "if (g_htmlFlag && processUnderscores)"
         let(&cmt, cat(left(cmt, pos1 - 1), "{\\em ",
             seg(cmt, pos1 + 1, pos2 - 1),
             "}", right(cmt, pos2 + 1), NULL));
@@ -2064,11 +2065,11 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
         pos1 = pos2 + 4; // Adjust for 6-2 extra chars in "let" above
       }
     }
-  }
+  }  // End if (g_htmlFlag && processUnderscores)
 
   // Convert opening double quote to `` for LaTeX.
   // This section is independent and can be removed without side effects
-  if (!g_htmlFlag) { // If LaTeX mode
+  if (!g_htmlFlag) {  // LaTeX
     i = 1; // Even/odd counter: 1 = left quote, 0 = right quote
     pos1 = 0;
     while (1) {
@@ -2091,7 +2092,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
   // Put bibliography hyperlinks in comments converted to HTML:
   // [Monk2] becomes <A HREF="mmset.html#monk2>[Monk2]</A> etc.
   // This section is independent and can be removed without side effects
-  if (g_htmlFlag && processBibrefs != 0) {
+  if (g_htmlFlag && processBibrefs) {
     // Assign local tag list and local HTML file name
     if (g_showStatement < g_extHtmlStmt) {
       let(&bibTags, g_htmlBibliographyTags);
@@ -2244,7 +2245,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
         pos1 = pos1 + (long)strlen(tmp) - (long)strlen(bibTag); // Adjust comment position
       } // end while(1)
     } // end if (bibFileName[0])
-  } // end of if (g_htmlFlag)
+  } // end if (g_htmlFlag)
 
   // All actions on cmt should be mirrored on cmdMasked, except that
   // math symbols are replaced with blanks in cmdMasked.
@@ -4802,7 +4803,7 @@ vstring spectrumToRGB(long color, long maxColor) {
   return str1;
 } // spectrumToRGB
 
-// Returns the HTML code for GIFs (!g_altHtmlFlag) or Unicode (g_altHtmlFlag),
+// Return the HTML code for GIFs (!g_altHtmlFlag) or Unicode (g_altHtmlFlag),
 // or LaTeX when !g_htmlFlag, for the math string (hypothesis or conclusion) that
 // is passed in.
 // Warning: The caller must deallocate the returned vstring.
