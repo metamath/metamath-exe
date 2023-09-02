@@ -1,6 +1,6 @@
 MM> READ "underscores.mm"
-Reading source file "underscores.mm"... 171 bytes
-171 bytes were read into the source buffer.
+Reading source file "underscores.mm"... 193 bytes
+193 bytes were read into the source buffer.
 The source has 2 statements; 1 are $a and 0 are $p.
 SET EMPTY_SUBSTITUTION was turned ON (allowed) for this database.
 No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
@@ -76,7 +76,8 @@ Metamath Test Page
 COLOR="#006633">b</FONT></FONT></B>&nbsp;<SPAN CLASS=r
 STYLE="color:#FB0000">1</SPAN></CENTER>
 <CENTER><TABLE><TR><TD ALIGN=LEFT><B>Description: </B>This is <I>italic</I> and
-the command &quot;MM-PA&gt; MINIMIZE_WITH *&quot;.</TD></TR></TABLE></CENTER>
+the command &quot;MM-PA&gt; MINIMIZE_WITH *&quot; and a
+     sub<SUB><FONT SIZE="-1">script</FONT></SUB>.</TD></TR></TABLE></CENTER>
 
 <CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR="#EEFFFA"
 SUMMARY="Assertion">

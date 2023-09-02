@@ -1,6 +1,7 @@
   $c a $.
 
-  $( This is _italic_ and the command "MM-PA> MINIMIZE__WITH *". $)
+  $( This is _italic_ and the command "MM-PA> MINIMIZE__WITH *" and a
+     sub_script. $)
   b $a a $.
 
 $( $t
