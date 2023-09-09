@@ -1,12 +1,12 @@
 MM> READ "underscores.mm"
-Reading source file "underscores.mm"... 193 bytes
-193 bytes were read into the source buffer.
+Reading source file "underscores.mm"... 203 bytes
+203 bytes were read into the source buffer.
 The source has 2 statements; 1 are $a and 0 are $p.
 SET EMPTY_SUBSTITUTION was turned ON (allowed) for this database.
 No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
 if you want to check them.
 MM> Continuous scrolling is now in effect.
-MM> Creating HTML file "b.html"...
+MM> Creating HTML file "underscores.html"...
 Reading definitions from $t statement of underscores.mm...
 1 typesetting statements were read from "underscores.mm".
 MM> <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
@@ -28,7 +28,7 @@ img { margin-bottom: -4px }
 -->
 </STYLE>
 
-<TITLE>b - Metamath Test Page</TITLE>
+<TITLE>underscores - Metamath Test Page</TITLE>
 <LINK REL="shortcut icon" HREF="favicon.ico" TYPE="image/x-icon">
 </HEAD>
 <BODY BGCOLOR="#FFFFFF">
@@ -46,11 +46,11 @@ Metamath Test Page
       </B></FONT></TD>
     <TD ALIGN=RIGHT VALIGN=TOP WIDTH="25%">
       <FONT SIZE=-1 FACE=sans-serif>
-      <A HREF="b.html">
+      <A HREF="underscores.html">
       &lt; Wrap</A>&nbsp;&nbsp;
-      <A HREF="b.html">Wrap &gt;</A>
+      <A HREF="underscores.html">Wrap &gt;</A>
       </FONT><FONT FACE=sans-serif SIZE=-2>
-      <BR><A HREF="mmtheorems1.html#b">Nearby theorems</A>
+      <BR><A HREF="mmtheorems1.html#underscores">Nearby theorems</A>
       </FONT>
     </TD>
   </TR>
@@ -61,7 +61,7 @@ Metamath Test Page
       &nbsp;<A HREF="../index.html">Home</A>&nbsp; &gt;
       &nbsp;<A HREF="mmset.html">MTP Home</A>&nbsp; &gt;
       &nbsp;<A HREF="mmtheorems.html">Th. List</A>&nbsp; &gt;
-      &nbsp;b
+      &nbsp;underscores
       </FONT>
     </TD>
     <TD COLSPAN=2 ALIGN=RIGHT VALIGN=TOP>
@@ -73,7 +73,7 @@ Metamath Test Page
 </TABLE>
 <HR NOSHADE SIZE=1>
 <CENTER><B><FONT SIZE="+1">Syntax Definition <FONT
-COLOR="#006633">b</FONT></FONT></B>&nbsp;<SPAN CLASS=r
+COLOR="#006633">underscores</FONT></FONT></B>&nbsp;<SPAN CLASS=r
 STYLE="color:#FB0000">1</SPAN></CENTER>
 <CENTER><TABLE><TR><TD ALIGN=LEFT><B>Description: </B>This is <I>italic</I> and
 the command &quot;MM-PA&gt; MINIMIZE_WITH *&quot; and a
@@ -84,7 +84,7 @@ SUMMARY="Assertion">
 <CAPTION><B>Assertion</B></CAPTION>
 <TR><TH>Ref
 </TH><TH>Expression</TH></TR>
-<TR ALIGN=LEFT><TD><FONT COLOR="#006633"><B>b</B></FONT></TD><TD>
+<TR ALIGN=LEFT><TD><FONT COLOR="#006633"><B>underscores</B></FONT></TD><TD>
 <SPAN >a</SPAN></TD></TR>
 </TABLE></CENTER>
 
