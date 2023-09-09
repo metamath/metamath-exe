@@ -2,7 +2,7 @@
 
   $( This is _italic_ and the command "MM-PA> MINIMIZE__WITH *" and a
      sub_script. $)
-  b $a a $.
+  underscores $a a $.
 
 $( $t
  htmldef "a" as "a";
