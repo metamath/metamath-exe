@@ -1963,6 +1963,27 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
       if (!strcmp(mid(cmt, pos2 + 2, 2), "mm")) {
         continue;
       }
+      // Double-underscore handling: double-underscores are "escaped
+      // underscores", so replace a double-underscore with a single
+      // underscore and do not modify italic or subscript.
+      if (cmt[pos1] == '_') {
+            if (g_htmlFlag) {  // HTML
+              let(&cmt, cat(left(cmt, pos1), // Skip (delete) "_"
+                  right(cmt, pos1 + 2), NULL));
+              let(&cmtMasked, cat(left(cmtMasked, pos1), // Skip (delete) "_"
+                  right(cmtMasked, pos1 + 2), NULL));
+              pos1 ++; // Adjust for 1 extra char '_'
+            } else {  // LaTeX
+              let(&cmt, cat(left(cmt, pos1 - 1),  // Skip (delete) "_"
+                  "\\texttt{\\_}",
+                  right(cmt, pos1 + 2), NULL));
+              let(&cmtMasked, cat(left(cmtMasked, pos1 - 1),  // Skip (delete) "_"
+                  "\\texttt{\\_}",
+                  right(cmtMasked, pos1 + 2), NULL));
+              pos1 = pos1 + 11; // Adjust for 11 extra chars "\texttt{\_}"
+            }
+        continue;
+      } // End of double-underscore handling
 
       // Opening "_" must be <whitespace>_<alphanum> for <I> tag
       if (pos1 > 1) {
