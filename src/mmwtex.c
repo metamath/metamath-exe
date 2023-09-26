@@ -205,7 +205,7 @@ flag readTexDefs(
     "<IMG SRC=\"mm.gif\" BORDER=0 ALT=",
     "\"Home\" HEIGHT=32 WIDTH=32 ALIGN=MIDDLE STYLE=\"margin-bottom:0px\">",
     "Home</FONT></A>", NULL));
-    
+
   if (errorsOnly == 0) {
     print2("Reading definitions from $t statement of %s...\n", g_input_fn);
   }
@@ -214,7 +214,7 @@ flag readTexDefs(
   // This used to point to the input file buffer of an external
   // latex.def file; now it's from the xxx.mm $t comment, so we
   // make it a normal string.
-  vstring_def(fileBuf); 
+  vstring_def(fileBuf);
 
   // Note that g_Statement[g_statements + 1] is a special (empty) statement whose
   // labelSection holds any comment after the last statement.
@@ -407,7 +407,7 @@ flag readTexDefs(
           zapChar = fbPtr[tokenLength - 1]; // Chr to restore after zapping src
           fbPtr[tokenLength - 1] = 0; // Create end of string
           // Get ASCII token; note that leading and trailing quotes are omitted.
-          let(&token, fbPtr + 1); 
+          let(&token, fbPtr + 1);
           fbPtr[tokenLength - 1] = zapChar;
 
           // Change double internal quotes to single quotes.
@@ -495,8 +495,8 @@ flag readTexDefs(
         if (parsePass == 2) {
           zapChar = fbPtr[tokenLength - 1]; // Chr to restore after zapping src
           fbPtr[tokenLength - 1] = 0; // Create end of string
-          // Get ASCII token; note that leading and trailing quotes are omitted. 
-          let(&partialToken, fbPtr + 1); 
+          // Get ASCII token; note that leading and trailing quotes are omitted.
+          let(&partialToken, fbPtr + 1);
           fbPtr[tokenLength - 1] = zapChar;
 
           // Change double internal quotes to single quotes.
@@ -696,13 +696,13 @@ flag readTexDefs(
         j = instr(k + 1, tmpPtr, "IMG SRC=");
         if (j == 0) break;
         // Get position of trailing quote
-        // Future:  use strchr instead of mid() for efficiency? 
+        // Future:  use strchr instead of mid() for efficiency?
         k = instr(j + 9, g_TexDefs[i].texEquiv, mid(tmpPtr, j + 8, 1));
         let(&token, seg(tmpPtr, j + 9, k - 1)); // Get name of .gif (.png)
         // Future: we may want to issue "missing trailing quote" warning.
         // (We test k after the let() so that the temporary string stack
         // entry created by mid() is emptied and won't overflow.)
-        if (k == 0) break; 
+        if (k == 0) break;
         if (gifCheck) {
           tmpFp = fopen(token, "r"); // See if it exists
           if (!tmpFp) {
@@ -815,7 +815,7 @@ flag readTexDefs(
   free_vstring(fileBuf);
   g_texDefsRead = 1; // Set global flag that it's been read in
   // Return indicator that parsing passed (0) or had warning(s) (1)
-  return warningFound; 
+  return warningFound;
 } // readTexDefs
 
 // This function returns the length of the white space starting at ptr.
@@ -831,7 +831,7 @@ long texDefWhiteSpaceLen(char *ptr)
     tmpchr = ptr[i];
     if (!tmpchr) return i; // End of string
     if (isalnum((unsigned char)(tmpchr))) return i; // Alphanumeric string
-    // Embedded c-style comment - used to ignore comments inside of Metamath 
+    // Embedded c-style comment - used to ignore comments inside of Metamath
     // comment for LaTeX/HTML definitions.
     if (tmpchr == '/') {
       if (ptr[i + 1] == '*') {
@@ -2105,51 +2105,53 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
       let(&bibFileName, g_htmlBibliography);
     }
 
-    if (bibFileName[0]) {
-      // The user specified a bibliography file in the xxx.mm $t comment
-      // (otherwise we don't do anything).
-      pos1 = 0;
-      while (1) {
-        // Look for any bibliography tags to convert to hyperlinks.
-        // The biblio tag should be in brackets e.g. "[Monk2]".
-        // Only look at non-math part of comment
-        pos1 = instr(pos1 + 1, cmtMasked, "[");
-        if (!pos1) break;
+    pos1 = 0;
+    while (1) {
+      // Look for any bibliography tags to convert to hyperlinks.
+      // The biblio tag should be in brackets e.g. "[Monk2]".
+      // Only look at non-math part of comment
+      pos1 = instr(pos1 + 1, cmtMasked, "[");
+      if (!pos1) break;
 
-        // Escape a double [[
-        if (cmtMasked[pos1] == '[') { // This is the char after "[" above
-          // Remove the first "["
-          let(&cmt, cat(left(cmt, pos1 - 1),
-              right(cmt, pos1 + 1), NULL));
-          let(&cmtMasked, cat(left(cmtMasked, pos1 - 1),
-              right(cmtMasked, pos1 + 1), NULL));
-          // The pos1-th position (starting at 1) is now the "[" that remains
-          continue;
-        }
+      // Escape a double [[
+      if (cmtMasked[pos1] == '[') { // This is the char after "[" above
+        // Remove the first "["
+        let(&cmt, cat(left(cmt, pos1 - 1),
+            right(cmt, pos1 + 1), NULL));
+        let(&cmtMasked, cat(left(cmtMasked, pos1 - 1),
+            right(cmtMasked, pos1 + 1), NULL));
+        // The pos1-th position (starting at 1) is now the "[" that remains
+        continue;
+      }
 
-        // Only look at non-math part of comment
-        pos2 = instr(pos1 + 1, cmtMasked, "]");
-        if (!pos2) break;
+      // Only look at non-math part of comment
+      pos2 = instr(pos1 + 1, cmtMasked, "]");
+      if (!pos2) break;
 
-        // Get bibTag from cmtMasked as extra precaution
-        let(&bibTag, seg(cmtMasked, pos1, pos2));
-        // There should be no white space in the tag
-        if ((signed)(strcspn(bibTag, " \n\r\t\f")) < pos2 - pos1 + 1) continue;
-        // OK, we have a good tag.  If the file with bibliography has not been
-        // read in yet, let's do so here for error-checking.
+      // Get bibTag from cmtMasked as extra precaution
+      let(&bibTag, seg(cmtMasked, pos1, pos2));
+      // There should be no white space in the tag
+      if ((signed)(strcspn(bibTag, " \n\r\t\f")) < pos2 - pos1 + 1) continue;
+      // OK, we have a good tag.  If the file with bibliography has not been
+      // read in yet, let's do so here for error-checking.
 
-        // Start of error-checking
-        if (fileCheck) {
-          if (!bibTags[0]) {
-            // The bibliography file has not been read in yet.
-            free_vstring(bibFileContents);
+      // Start of error-checking
+      if (fileCheck) {
+        if (!bibTags[0]) {
+          // The bibliography file has not been read in yet.
+          free_vstring(bibFileContents);
+          if (bibFileName[0]) {
+            // The user specified a bibliography file in the xxx.mm $t comment
+            // (otherwise we don't do anything).
             if (errorsOnly == 0) {
               print2("Reading HTML bibliographic tags from file \"%s\"...\n",
                   bibFileName);
             }
             bibFileContents = readFileToString(bibFileName, 0,
                 &i /* charCount; not used here */);
-            if (!bibFileContents) {
+          }
+          if (!bibFileContents) {
+            if (bibFileName[0]) {
               // The file was not found or had some problem (use verbose mode = 1
               // in 2nd argument of readFileToString for debugging).
               printLongLine(cat("?Warning: Couldn't open or read the file \"",
@@ -2159,91 +2161,100 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
                   "\" in the comment for statement \"",
                   g_Statement[g_showStatement].labelName, "\".",
                   NULL), "", " ");
-              returnVal = 1; // Error/warning printed
-              bibFileContents = ""; // Restore to normal string
-              // Assign to a nonsense tag that won't match
-              // but tells us an attempt was already made to read the file.
-              let(&bibTags, "?"); 
             } else {
-              // Note: In an <A NAME=...> tag, HTML is case-insensitive for A and
-              // NAME but case-sensitive for the token after the =
-              // Strip all whitespace
-              let(&bibFileContents, edit(bibFileContents, 2));
-              // Uppercase version for HTML tag search
-              let(&bibFileContentsUpper, edit(bibFileContents, 32));
-              htmlpos1 = 0;
-              while (1) { // Look for all <A NAME=...></A> HTML tags
-                htmlpos1 = instr(htmlpos1 + 1, bibFileContentsUpper, "<ANAME=");
-                // Note stripped space after <A... - not perfectly robust but
-                // good enough if HTML file is legal since <ANAME is not an HTML
-                // tag (let's not get into a regex discussion though...).
-                if (!htmlpos1) break;
-                htmlpos1 = htmlpos1 + 7; // Point to beginning of tag name
-                // Extract tag, ignoring any surrounding quotes
-                if (bibFileContents[htmlpos1 - 1] == '\''
-                    || bibFileContents[htmlpos1 - 1] == '"') htmlpos1++;
-                htmlpos2 = instr(htmlpos1, bibFileContents, ">");
-                if (!htmlpos2) break;
-                htmlpos2--; // Move to character before ">"
-                if (bibFileContents[htmlpos2 - 1] == '\''
-                    || bibFileContents[htmlpos2 - 1] == '"') htmlpos2--;
-                if (htmlpos2 <= htmlpos1) continue; // Ignore bad HTML syntax
-                let(&tmp, cat("[",
-                    seg(bibFileContents, htmlpos1, htmlpos2), "]", NULL));
-                // Check if tag is already in list
-                if (instr(1, bibTags, tmp)) {
-                  printLongLine(cat("?Error: There two occurrences of",
-                      " bibliographic reference \"",
-                      seg(bibFileContents, htmlpos1, htmlpos2),
-                      "\" in the file \"", bibFileName, "\".", NULL), "", " ");
-                  returnVal = 1; // Error/warning printed
-                }
-                // Add tag to tag list
-                let(&bibTags, cat(bibTags, tmp, NULL));
-              } // end while
-              if (!bibTags[0]) {
-                // No tags found; put dummy partial tag meaning "file read"
-                let(&bibTags, "[");
-              }
-            } // end if (!bibFileContents)
-          } // end if (noFileCheck == 0)
-          // Assign to permanent tag list for next time
-          if (g_showStatement < g_extHtmlStmt) {
-            let(&g_htmlBibliographyTags, bibTags);
-          // } else {
-          } else if (g_showStatement < g_mathboxStmt) {
-            let(&extHtmlBibliographyTags, bibTags);
-          } else {
-            let(&g_htmlBibliographyTags, bibTags);
-          }
-          // Done reading in HTML file with bibliography
-        } // end if (!bibTags[0])
-        // See if the tag we found is in the bibliography file
-        if (bibTags[0] == '[') {
-          // We have a tag list from the bibliography file
-          if (!instr(1, bibTags, bibTag)) {
-            printLongLine(cat("?Error: The bibliographic reference \"", bibTag,
-                "\" in statement \"", g_Statement[g_showStatement].labelName,
-                "\" was not found as an <A NAME=\"",
-                seg(bibTag, 2, pos2 - pos1),
-                "\"></A> anchor in the file \"", bibFileName, "\".", NULL),
-                "", " ");
+              // The file was not found or had some problem (use verbose mode = 1
+              // in 2nd argument of readFileToString for debugging).
+              printLongLine(cat("?Warning: There is no bibliography, so",
+                  " bibliographic hyperlinks will not be checked for",
+                  " correctness.  The first one is \"", bibTag,
+                  "\" in the comment for statement \"",
+                  g_Statement[g_showStatement].labelName, "\".",
+                  NULL), "", " ");
+            }
             returnVal = 1; // Error/warning printed
-          }
+            bibFileContents = ""; // Restore to normal string
+            // Assign to a nonsense tag that won't match
+            // but tells us an attempt was already made to read the file.
+            let(&bibTags, "?");
+          } else {
+            // Note: In an <A NAME=...> tag, HTML is case-insensitive for A and
+            // NAME but case-sensitive for the token after the =
+            // Strip all whitespace
+            let(&bibFileContents, edit(bibFileContents, 2));
+            // Uppercase version for HTML tag search
+            let(&bibFileContentsUpper, edit(bibFileContents, 32));
+            htmlpos1 = 0;
+            while (1) { // Look for all <A NAME=...></A> HTML tags
+              htmlpos1 = instr(htmlpos1 + 1, bibFileContentsUpper, "<ANAME=");
+              // Note stripped space after <A... - not perfectly robust but
+              // good enough if HTML file is legal since <ANAME is not an HTML
+              // tag (let's not get into a regex discussion though...).
+              if (!htmlpos1) break;
+              htmlpos1 = htmlpos1 + 7; // Point to beginning of tag name
+              // Extract tag, ignoring any surrounding quotes
+              if (bibFileContents[htmlpos1 - 1] == '\''
+                  || bibFileContents[htmlpos1 - 1] == '"') htmlpos1++;
+              htmlpos2 = instr(htmlpos1, bibFileContents, ">");
+              if (!htmlpos2) break;
+              htmlpos2--; // Move to character before ">"
+              if (bibFileContents[htmlpos2 - 1] == '\''
+                  || bibFileContents[htmlpos2 - 1] == '"') htmlpos2--;
+              if (htmlpos2 <= htmlpos1) continue; // Ignore bad HTML syntax
+              let(&tmp, cat("[",
+                  seg(bibFileContents, htmlpos1, htmlpos2), "]", NULL));
+              // Check if tag is already in list
+              if (instr(1, bibTags, tmp)) {
+                printLongLine(cat("?Error: There two occurrences of",
+                    " bibliographic reference \"",
+                    seg(bibFileContents, htmlpos1, htmlpos2),
+                    "\" in the file \"", bibFileName, "\".", NULL), "", " ");
+                returnVal = 1; // Error/warning printed
+              }
+              // Add tag to tag list
+              let(&bibTags, cat(bibTags, tmp, NULL));
+            } // end while
+            if (!bibTags[0]) {
+              // No tags found; put dummy partial tag meaning "file read"
+              let(&bibTags, "[");
+            }
+          } // end if (!bibFileContents)
+        } // end if (noFileCheck == 0)
+        // Assign to permanent tag list for next time
+        if (g_showStatement < g_extHtmlStmt) {
+          let(&g_htmlBibliographyTags, bibTags);
+        // } else {
+        } else if (g_showStatement < g_mathboxStmt) {
+          let(&extHtmlBibliographyTags, bibTags);
+        } else {
+          let(&g_htmlBibliographyTags, bibTags);
         }
-        // End of error-checking
+        // Done reading in HTML file with bibliography
+      } // end if (!bibTags[0])
+      // See if the tag we found is in the bibliography file
+      if (bibTags[0] == '[') {
+        // We have a tag list from the bibliography file
+        if (!instr(1, bibTags, bibTag)) {
+          printLongLine(cat("?Error: The bibliographic reference \"", bibTag,
+              "\" in statement \"", g_Statement[g_showStatement].labelName,
+              "\" was not found as an <A NAME=\"",
+              seg(bibTag, 2, pos2 - pos1),
+              "\"></A> anchor in the file \"", bibFileName, "\".", NULL),
+              "", " ");
+          returnVal = 1; // Error/warning printed
+        }
+      }
+      // End of error-checking
 
-        // Make an HTML reference for the tag
-        let(&tmp, cat("[<A HREF=\"",
-            bibFileName, "#", seg(bibTag, 2, pos2 - pos1), "\">",
-            seg(bibTag, 2, pos2 - pos1), "</A>]", NULL));
-        let(&cmt, cat(left(cmt, pos1 - 1), tmp, right(cmt,
-            pos2 + 1), NULL));
-        let(&cmtMasked, cat(left(cmtMasked, pos1 - 1), tmp, right(cmtMasked,
-            pos2 + 1), NULL));
-        pos1 = pos1 + (long)strlen(tmp) - (long)strlen(bibTag); // Adjust comment position
-      } // end while(1)
-    } // end if (bibFileName[0])
+      // Make an HTML reference for the tag
+      let(&tmp, cat("[<A HREF=\"",
+          bibFileName, "#", seg(bibTag, 2, pos2 - pos1), "\">",
+          seg(bibTag, 2, pos2 - pos1), "</A>]", NULL));
+      let(&cmt, cat(left(cmt, pos1 - 1), tmp, right(cmt,
+          pos2 + 1), NULL));
+      let(&cmtMasked, cat(left(cmtMasked, pos1 - 1), tmp, right(cmtMasked,
+          pos2 + 1), NULL));
+      pos1 = pos1 + (long)strlen(tmp) - (long)strlen(bibTag); // Adjust comment position
+    } // end while(1)
   } // end of if (g_htmlFlag)
 
   // All actions on cmt should be mirrored on cmdMasked, except that
@@ -2384,7 +2395,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
     if ((isspace((unsigned char)(cmt[i]))
             // If the label ends the comment,
             // "</TD>" with no space will be appended before this section.
-            || cmt[i] == '<') 
+            || cmt[i] == '<')
         && mode == 'l') {
       // Whitespace exits label mode
       mode = 'n';
@@ -2517,7 +2528,7 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
             bug(2345);
           }
           // Discard leading and trailing blanks; reduce spaces to one space
-          let(&modeSection, edit(modeSection, 8 + 128 + 16));  
+          let(&modeSection, edit(modeSection, 8 + 128 + 16));
           free_vstring(tmpStr);
           tmpStr = asciiToTt(modeSection);
           if (!tmpStr[0]) {
@@ -2782,17 +2793,17 @@ void printTexLongMath(nmbrString *mathString,
     // Start prefix in "screen display" mode e.g.
     // "abc $p"; it is converted to the appropriate format.  Non-zero
     // length means proof step in HTML mode, as opposed to assertion etc.
-    vstring startPrefix, 
+    vstring startPrefix,
     // Prefix for continuation lines.  Not used in
     // HTML mode.  Warning:  contPrefix must not be temporarily allocated
-    // (as a cat, left, etc. argument) by caller. 
-    vstring contPrefix, 
+    // (as a cat, left, etc. argument) by caller.
+    vstring contPrefix,
     // hypStmt, if non-zero, is the statement number to be
     // referenced next to the hypothesis link in html.
     long hypStmt,
     // Indentation amount of proof step -
     // note that this is 0 for last step of proof.
-    long indentationLevel) 
+    long indentationLevel)
 {
 #define INDENTATION_OFFSET 1
   long i;
@@ -2821,7 +2832,7 @@ void printTexLongMath(nmbrString *mathString,
   // Example: sPrefix = " 4 2,3 ax-mp  $a "
   //          tex = "\ 4\ 2,3\ ax-mp\ \ \$a\ " in !g_htmlFlag mode
   //          tex = " 4 2,3 ax-mp  $a " in g_htmlFlag mode
-  tex = asciiToTt(sPrefix); 
+  tex = asciiToTt(sPrefix);
   let(&texLine, "");
 
   // Get statement type of proof step reference
@@ -4432,7 +4443,7 @@ flag getSectionHeadings(long stmt,
     if (fullComment == 0) {
       let(&(*hugeHdrTitle), seg(labelStr, pos + 1, pos2 - 1));
       // Trim leading, trailing sp
-      let(&(*hugeHdrTitle), edit((*hugeHdrTitle), 8 + 128));                                 
+      let(&(*hugeHdrTitle), edit((*hugeHdrTitle), 8 + 128));
       let(&(*hugeHdrComment), seg(labelStr, pos3 + 1, pos4 - 2));
       // Trim leading sp, trailing sp & lf
       let(&(*hugeHdrComment), edit((*hugeHdrComment), 8 + 16384));
@@ -4536,7 +4547,7 @@ flag getSectionHeadings(long stmt,
     if (fullComment == 0) {
       let(&(*smallHdrTitle), seg(labelStr, pos + 1, pos2 - 1));
       // Trim leading, trailing sp
-      let(&(*smallHdrTitle), edit((*smallHdrTitle), 8 + 128));                  
+      let(&(*smallHdrTitle), edit((*smallHdrTitle), 8 + 128));
       let(&(*smallHdrComment), seg(labelStr, pos3 + 1, pos4 - 2));
       // Trim leading sp, trailing sp & lf
       let(&(*smallHdrComment), edit((*smallHdrComment), 8 + 16384));
@@ -4589,7 +4600,7 @@ flag getSectionHeadings(long stmt,
     if (fullComment == 0) {
       let(&(*tinyHdrTitle), seg(labelStr, pos + 1, pos2 - 1));
       // Trim leading, trailing sp
-      let(&(*tinyHdrTitle), edit((*tinyHdrTitle), 8 + 128));                
+      let(&(*tinyHdrTitle), edit((*tinyHdrTitle), 8 + 128));
       let(&(*tinyHdrComment), seg(labelStr, pos3 + 1, pos4 - 2));
       // Trim leading sp, trailing sp & lf
       let(&(*tinyHdrComment), edit((*tinyHdrComment), 8 + 16384));
@@ -4760,7 +4771,7 @@ vstring spectrumToRGB(long color, long maxColor) {
  SKIP_INIT:
   if (color == -1) {
     // Return black for "(future)" color for labels with missing theorems in comments
-    let(&str1, "000000"); 
+    let(&str1, "000000");
     return str1;
   }
 
@@ -4783,7 +4794,7 @@ vstring spectrumToRGB(long color, long maxColor) {
           fractionInPartition *
               (blueRef[partition + 1] - blueRef[partition])));
   // debug
-  
+
   // i=1;if (g_outputToString==0) {i=0;g_outputToString=1;}
   // print2("p%ldc%ld\n", partition, color); g_outputToString=i;
   // printf("red %ld green %ld blue %ld\n", red, green, blue);
