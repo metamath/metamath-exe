@@ -1,7 +1,7 @@
   $c a $.
 
   $( This is _italic_ and the command "MM-PA> MINIMIZE__WITH *" and a
-     sub_script. $)
+     sub_script, a label ~ lab__1_2 , and a url: ~ http://a_b__c.com. $)
   underscores $a a $.
 
 $( $t

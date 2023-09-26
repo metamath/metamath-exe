@@ -1,6 +1,6 @@
 MM> READ "underscores.mm"
-Reading source file "underscores.mm"... 203 bytes
-203 bytes were read into the source buffer.
+Reading source file "underscores.mm"... 256 bytes
+256 bytes were read into the source buffer.
 The source has 2 statements; 1 are $a and 0 are $p.
 SET EMPTY_SUBSTITUTION was turned ON (allowed) for this database.
 No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
@@ -9,6 +9,8 @@ MM> Continuous scrolling is now in effect.
 MM> Creating HTML file "underscores.html"...
 Reading definitions from $t statement of underscores.mm...
 1 typesetting statements were read from "underscores.mm".
+?Warning: The label token "lab__1_2" (referenced in comment of statement
+"underscores") is not a $a or $p statement label.
 MM> <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN"
     "http://www.w3.org/TR/html4/loose.dtd">
 <HTML LANG="EN-US">
@@ -77,7 +79,10 @@ COLOR="#006633">underscores</FONT></FONT></B>&nbsp;<SPAN CLASS=r
 STYLE="color:#FB0000">1</SPAN></CENTER>
 <CENTER><TABLE><TR><TD ALIGN=LEFT><B>Description: </B>This is <I>italic</I> and
 the command &quot;MM-PA&gt; MINIMIZE_WITH *&quot; and a
-     sub<SUB><FONT SIZE="-1">script</FONT></SUB>.</TD></TR></TABLE></CENTER>
+     sub<SUB><FONT SIZE="-1">script</FONT></SUB>, a label <FONT COLOR=blue
+>lab__1_2</FONT>&nbsp;<SPAN CLASS=r STYLE="color:#000000">(future)</SPAN>, and
+a url: <A HREF="http://a_b__c.com.">http://a_b__c.com.</A>&nbsp;<SPAN CLASS=r
+STYLE="color:#000000">(future)</SPAN></TD></TR></TABLE></CENTER>
 
 <CENTER><TABLE BORDER CELLSPACING=0 BGCOLOR="#EEFFFA"
 SUMMARY="Assertion">
