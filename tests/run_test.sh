@@ -109,7 +109,10 @@ for test in "$@"; do
   # which is problematic because we would have to fix all the tests every time
   # a new version comes out.
   # The last line is always 'MM> EXIT' which is not relevant.
-  echo "$result" | head -n -1 | tail -n +2 > "$outfile"
+  # The sed is to redact timings, which are nondeterministic
+  echo "$result" | head -n -1 | tail -n +2 \
+    | sed -e 's/ \+[0-9]\+\.[0-9]\+ s/ x.xx s/g' \
+    > "$outfile"
 
   if [ "$outfile" = "/dev/null" ]; then
     # If this is a run_test then we're done

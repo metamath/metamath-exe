@@ -16,4 +16,4 @@ requires that variables "x" and "y" be disjoint.  But "x" was substituted with
 "x" and "y" was substituted with "x".  These substitutions have variable "x" in
 common.
 
-All proofs in the database were verified.
+All proofs in the database were verified in x.xx s.

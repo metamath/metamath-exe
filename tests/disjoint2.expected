@@ -135,4 +135,4 @@ requires that variables "x" and "y" be disjoint.  But "x" was substituted with
 Variables "w" and "y" do not have a disjoint variable requirement in the
 assertion being proved, "almostgood".
 ...................
-All proofs in the database were verified.
+All proofs in the database were verified in x.xx s.
