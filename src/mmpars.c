@@ -15,7 +15,7 @@
 #include "mmpfas.h" // Needed for g_pipDummyVars, subproofLen()
 #include "mmunif.h" // Needed for g_minSubstLen
 #include "mmcmdl.h" // Needed for g_rootDirectory
-// Potential statements in source file (upper limit) for 
+// Potential statements in source file (upper limit) for
 // memory allocation purposes.
 long potentialStatements;
 // Illegal characters for labels -- initialized by parseLabels()
@@ -97,7 +97,7 @@ char *readRawSource(vstring fileBuf, long *size) {
     fbPtr++;
     // If the character after '$' is not end of file (which
     // would be an error anyway, but detected elsewhere)
-    if (fbPtr[0]) {       
+    if (fbPtr[0]) {
       if (isgraph((unsigned char)(fbPtr[1]))) {
         // The character after the character after the '$' is not white
         // space (nor end of file)
@@ -159,8 +159,8 @@ char *readRawSource(vstring fileBuf, long *size) {
 
   if (fbPtr != fileBuf + charCount) {
     // To help debugging:
-    printf("fbPtr=%ld fileBuf=%ld charCount=%ld diff=%ld\n",
-        (long)fbPtr, (long)fileBuf, charCount, fbPtr - fileBuf - charCount);
+    printf("fbPtr=%p fileBuf=%p charCount=%ld diff=%ld\n",
+        (void*)fbPtr, (void*)fileBuf, charCount, (long)(fbPtr - (fileBuf + charCount)));
     bug(1704);
   }
 
@@ -753,8 +753,8 @@ void parseStatements(void) {
   nmbrString *wrkHypPtr2;
   nmbrString *wrkHypPtr3;
   // Starting value; could be as large as g_statements.
-  long activeHypStackSize = 30; 
-                                   
+  long activeHypStackSize = 30;
+
   struct activeDisjHypStack_struct { // Stack of disjoint variables in $d's
     long tokenNumA; // First variable in disjoint pair
     long tokenNumB; // Second variable in disjoint pair
@@ -941,7 +941,7 @@ void parseStatements(void) {
               break;
           activeEHypStackPtr--;
           // Make the label inactive
-          labelActiveFlag[activeEHypStack[activeEHypStackPtr].statemNum] = 0;                              
+          labelActiveFlag[activeEHypStack[activeEHypStackPtr].statemNum] = 0;
           free(activeEHypStack[activeEHypStackPtr].varList);
         }
         while (activeFHypStackPtr) {
@@ -949,7 +949,7 @@ void parseStatements(void) {
               break;
           activeFHypStackPtr--;
           // Make the label inactive
-          labelActiveFlag[activeFHypStack[activeFHypStackPtr].statemNum] = 0;                               
+          labelActiveFlag[activeFHypStack[activeFHypStackPtr].statemNum] = 0;
           free(activeFHypStack[activeFHypStackPtr].varList);
         }
         while (activeDisjHypStackPtr) {
@@ -1141,7 +1141,7 @@ void parseStatements(void) {
               }
             } else { // The symbol was declared only once.
               // Same as: tokenNum = g_mathKey[g_mathKeyNum]; but faster
-              tokenNum = *((long *)g_mathKeyPtr);  
+              tokenNum = *((long *)g_mathKeyPtr);
               if (!g_MathToken[tokenNum].active) {
                 sourceError(fbPtr, symbolLen, stmt,
        "This math symbol is not active (i.e. was not declared in this scope).");
@@ -1464,7 +1464,7 @@ void parseStatements(void) {
               reqVars++;
             }
             // Could have been 0 or 2; 1 = in some hypothesis
-            activeVarStack[g_MathToken[k].tmp].tmpFlag = 1;         
+            activeVarStack[g_MathToken[k].tmp].tmpFlag = 1;
             j++;
             k = nmbrTmpPtr[j];
           }
@@ -1501,7 +1501,7 @@ void parseStatements(void) {
             reqHyps++;
             reqFlag = 1;
             // Could have been 2; 1 = in some hypothesis
-            activeVarStack[g_MathToken[tokenNum].tmp].tmpFlag = 1;               
+            activeVarStack[g_MathToken[tokenNum].tmp].tmpFlag = 1;
           } else {
             // Add it to list of optional hypotheses
             wrkHypPtr2[optHyps] = activeFHypStack[i].statemNum;
@@ -1788,15 +1788,15 @@ void parseStatements(void) {
 
           // This was already verified earlier; but if there was an error, don't
           // cause memory violation by going out of bounds.
-          if (g_Statement[m].mathStringLen != 2) continue; 
+          if (g_Statement[m].mathStringLen != 2) continue;
           tokenNum = (g_Statement[m].mathString)[1];
           // Scan all the mandatory $f's before this $f
           for (k = 0; k < i; k++) {
             n = (g_Statement[stmt].reqHypList)[k];
             if (g_Statement[n].type != f_) continue; // Only check $f
-            // This was already verified earlier; but if there was an error, don't     
+            // This was already verified earlier; but if there was an error, don't
             // cause memory violation by going out of bounds.
-            if (g_Statement[n].mathStringLen != 2) continue; 
+            if (g_Statement[n].mathStringLen != 2) continue;
             if ((g_Statement[n].mathString)[1] == tokenNum) {
               // We found 2 $f's with the same variable
               assignStmtFileAndLineNum(n);
@@ -1913,7 +1913,7 @@ char parseProof(long statemNum)
   nmbrString_def(oldStepNums); // Just numbers 0 to numSteps-1
   pntrString_def(reqHypSubProof); // Subproofs of hypotheses
   // Local label flag for subproofs of hypotheses
-  pntrString_def(reqHypOldStepNums); 
+  pntrString_def(reqHypOldStepNums);
   nmbrString_def(rearrangedSubProofs);
   nmbrString_def(rearrangedOldStepNums);
   flag subProofMoved; // Flag to restart scan after moving subproof
@@ -1926,7 +1926,7 @@ char parseProof(long statemNum)
   fbPtr = g_Statement[statemNum].proofSectionPtr; // Start of proof section
   // The proof was never assigned (could be a $p statement
   // with no $=; this would have been detected earlier).
-  if (fbPtr[0] == 0) { 
+  if (fbPtr[0] == 0) {
     g_WrkProof.errorSeverity = 4;
     return 4; // Pretend it's an empty proof
   }
@@ -2469,14 +2469,14 @@ char parseProof(long statemNum)
       // nmbrString to rearrange proof then when done reassign to
       // g_WrkProof.proofString structure component.
       nmbrLet(&wrkProofString, g_WrkProof.proofString);
-            
+
       nmbrTmpPtr = g_Statement[j].reqHypList;
       numReqHyp = g_Statement[j].numReqHyp;
       conclSubProofLen = subproofLen(wrkProofString, step);
       // Initialize to NULL_NMBRSTRINGs
       pntrLet(&reqHypSubProof, pntrNSpace(numReqHyp));
       // Initialize to NULL_NMBRSTRINGs
-      pntrLet(&reqHypOldStepNums, pntrNSpace(numReqHyp));   
+      pntrLet(&reqHypOldStepNums, pntrNSpace(numReqHyp));
       k = 0; // Total hypothesis subproof lengths for error checking
       for (i = 0; i < numReqHyp; i++) {
         m = g_WrkProof.RPNStackPtr - numReqHyp + i; // Stack position of hyp
@@ -2817,7 +2817,7 @@ char parseCompressedProof(long statemNum)
   fbPtr = g_Statement[statemNum].proofSectionPtr; // Start of proof section
   // The proof was never assigned (could be a $p statement
   // with no $=; this would have been detected earlier).
-  if (fbPtr[0] == 0) { 
+  if (fbPtr[0] == 0) {
     bug(1711);
   }
   fbPtr = fbPtr + whiteSpaceLen(fbPtr);
@@ -2862,7 +2862,7 @@ char parseCompressedProof(long statemNum)
     g_WrkProof.localLabelPool = malloc((size_t)g_wrkProofMaxSize);
     // Use poolFixedMalloc instead of poolMalloc so that it won't get trimmed by
     // memUsedPoolPurge.
-    g_WrkProof.proofString = 
+    g_WrkProof.proofString =
         poolFixedMalloc(g_wrkProofMaxSize * (long)(sizeof(nmbrString)));
     g_WrkProof.mathStringPtrs =
         malloc((size_t)g_wrkProofMaxSize * sizeof(nmbrString));
@@ -3458,7 +3458,7 @@ void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
   locSourcePtr = g_sourcePtr;
   // errMsg may become deallocated if this function is
   // called with a string function argument (cat, etc.).
-  let(&errorMsg, errMsg); 
+  let(&errorMsg, errMsg);
 
   if (!stmtNum) {
     lineNum = 0;
@@ -4007,7 +4007,7 @@ vstring outputStatement(long stmt, flag reformatFlag) {
           // which itself can exceed line length.
           let(&mathSection, edit(mathSection,
               /* 4 */ /* discard \n */ + 16 /* reduce spaces */));
-          // This and previous $d are separated by spaces and newlines only 
+          // This and previous $d are separated by spaces and newlines only
           if (strlen(edit(labelSection, 4 /* discard \n */ + 2 /* discard spaces */)) == 0)
               {
             if (previousType == d_) { // The previous statement was a $d
@@ -4353,9 +4353,9 @@ vstring rewrapComment(const char *comment1) {
   }
 
   // Make sure "~" for labels are surrounded by space.
-  // For now, just process comments not containing math symbols. 
+  // For now, just process comments not containing math symbols.
   // More complicated code is needed to ignore ~ in math symbols; maybe add it someday.
-  if (instr(2, comment, "`") == 0) {  
+  if (instr(2, comment, "`") == 0) {
     pos = 2;
     while (1) {
       pos = instr(pos + 1, comment, "~");
@@ -4502,7 +4502,7 @@ vstring rewrapComment(const char *comment1) {
       } else if ((comment[pos + 2] == ' '
             || comment[pos + 2] == '\n' // Period etc. before line break
             // 2-space sentence break done above where 1st space is ASCII_4
-            || comment[pos + 2] == ASCII_4 
+            || comment[pos + 2] == ASCII_4
             || strchr(CLOSING_PUNCTUATION, comment[pos + 2]) != NULL)
           && strchr(CLOSING_PUNCTUATION, comment[pos + 1]) != NULL) {
         // Don't break space before closing punctuation
@@ -5049,7 +5049,7 @@ void getNextInclusion(char *fileBuf, long startOffset, // inputs
       i = (long)strlen(fileBuf); // Slow, but this is a rare error
       fbPtr = fileBuf + i; // Points to null at end of fileBuf
     } else {
-      // Skip the "$)" - skip 2 characters, then back up 1 since 
+      // Skip the "$)" - skip 2 characters, then back up 1 since
       // the instr result starts at 1.
       fbPtr = fbPtr + i + 2 - 1;
     }
@@ -5537,7 +5537,7 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
     // the inclusion, before the newFileBuf is modified.
 
     if (g_IncludeCall[g_includeCalls].pushOrPop != 1) bug(1764);
-    
+
     // contLineNum = g_IncludeCall[g_includeCalls].current_line
     //   + countLines(newFileBuf, ((cmdType == 'B') ? endPos2 : cmdPos2)
     //       - g_IncludeCall[g_includeCalls].current_offset);
@@ -5591,7 +5591,7 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
         //     " in \"",
         //     g_IncludeCall[g_includeCalls].calledBy_fn,
         //     "\", has already been included.)\n",NULL));
-        
+
         alreadyInclBy = i;
         break;
       }
@@ -5662,7 +5662,7 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
           // will always end with whitespace i.e. \n as enforced by
           // readFileToString().
           let(&inclPrefix, cat("$( Begin $[ ", includeFn, " $] $)\n", NULL));
-               
+
           let(&inclSuffix, cat("$( End $[ ", includeFn, " $] $)", NULL));
 
           // Get the parent line number up to the inclusion.
@@ -5818,7 +5818,7 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
           // occur inside the source we just included, so don't skip passed
           // that source).
           // -1 since startOffset is 0-based but cmdPos2 is 1-based
-          startOffset = cmdPos1 + newInclSize - 1; 
+          startOffset = cmdPos1 + newInclSize - 1;
           break;
         case 'I':
           // Change inclusion command to Skip comment
@@ -5880,7 +5880,7 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
     } // if alreadyInclBy == -1
 
     // Assign structure with information for subsequent passes and (later) error messages.
-    // Name of the file where the inclusion source is located 
+    // Name of the file where the inclusion source is located
     // (= parent file for $( Begin $[... etc.)
     g_IncludeCall[saveInclCalls - 1].source_fn = "";
     g_IncludeCall[saveInclCalls - 1].current_offset = fileBufOffset + cmdPos1 - 1
@@ -5904,7 +5904,7 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
     // Detach from g_IncludeCall[saveInclCalls - 1].current_includeSource for later reuse
     inclSource = "";
     let(&g_IncludeCall[saveInclCalls - 1].current_includeSource, "");
-    // Length of the file to be included (0 if the file was previously included) 
+    // Length of the file to be included (0 if the file was previously included)
     g_IncludeCall[saveInclCalls - 1].current_includeLength = inclSize;
     // Initialize a new include call for the continuation of the parent.
     // This entry is identified by pushOrPop = 1
@@ -5962,7 +5962,7 @@ vstring readSourceAndIncludes(const char *inputFn /* input */, long *size /* out
     // strings will be initialized.  If error, then blank fileBuf will
     // cause main while loop to break immediately after first
     // getNextInclusion() call.
-    // goto RETURN_POINT; 
+    // goto RETURN_POINT;
   }
   print2("Reading source file \"%s\"... %ld bytes\n", fullInputFn, *size);
   free_vstring(fullInputFn);
@@ -5979,7 +5979,7 @@ vstring readSourceAndIncludes(const char *inputFn /* input */, long *size /* out
   g_IncludeCall[g_includeCalls].included_fn = "";
   // $[ $], Begin, of Skip file name for this inclusion
   let(&g_IncludeCall[g_includeCalls].included_fn, inputFn);
-  // This is the starting character position of the included file w.r.t entire source buffer 
+  // This is the starting character position of the included file w.r.t entire source buffer
   g_IncludeCall[g_includeCalls].current_offset = 0;
   // The line number of the start of the included file (=1) or the
   // continuation line of the parent file.
@@ -5997,7 +5997,7 @@ vstring readSourceAndIncludes(const char *inputFn /* input */, long *size /* out
   g_IncludeCall[g_includeCalls].source_fn = "";
   // Leave empty; there is no "continuation" file for the main file,
   // so no need to assign (it won't be used).
-  // let(&g_IncludeCall[g_includeCalls].source_fn, inputFn); 
+  // let(&g_IncludeCall[g_includeCalls].source_fn, inputFn);
   g_IncludeCall[g_includeCalls].included_fn = "";
   // $[ $], Begin, of Skip file name for this inclusion.
   // let(&g_IncludeCall[g_includeCalls].included_fn, inputFn);
