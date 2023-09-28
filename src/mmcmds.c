@@ -8,6 +8,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <time.h>
 #include "mmvstr.h"
 #include "mmdata.h"
 #include "mmcmdl.h" // For g_texFileName
@@ -72,7 +73,7 @@ void typeStatement(long showStmt,
 
   // For syntax breakdown of definitions in HTML page
   long zapStatement1stToken;
-  // Array index of the hard-coded token "wff" - static so we only 
+  // Array index of the hard-coded token "wff" - static so we only
   // have to look it up once - set to -2 if not found.
   static long wffToken = -1;
   subType = 0; // Assign to prevent compiler warnings - not theoretically necessary
@@ -103,7 +104,7 @@ void typeStatement(long showStmt,
         NULL), "", " ");
     } else {
       if (!htmlFlag) let(&g_printString, "");
-      // Flag for print2 to add to g_printString. 
+      // Flag for print2 to add to g_printString.
       // Note that printTexLongMathString resets it
       g_outputToString = 1;
       if (!(htmlFlag && texFlag)) {
@@ -1175,7 +1176,7 @@ vstring htmlAllowedSubst(long showStmt)
     // Look for a "wff" and "class" variable
     if (g_Statement[reqHyp[i]].type == (char)e_) continue;
     strptr = g_MathToken[(g_Statement[reqHyp[i]].mathString)[0]].tokenName;
-    // Not a wff or class variable 
+    // Not a wff or class variable
     if (strcmp("wff", strptr) && strcmp("class", strptr)) continue;
     wffOrClassVar = (g_Statement[reqHyp[i]].mathString)[1];
     let(&setVarDVFlag, string(setVars, 'N')); // No $d yet
@@ -1947,7 +1948,7 @@ void typeProof(long statemNum,
         NULL), "", "\"");
     // Means this is not a syntax breakdown of a
     // definition which is called from typeStatement().
-    if (essentialFlag) {  
+    if (essentialFlag) {
 
       // Create list of syntax statements used
       vstring_def(statementUsedFlags);
@@ -1972,12 +1973,12 @@ void typeProof(long statemNum,
 
       // Array index of the hard-coded token "wff" - static so we only have
       // to look it up once - set to -2 if not found.
-      static long wffToken = -1; 
+      static long wffToken = -1;
       // Look up the token "wff" (hard-coded) if we haven't found it before
       if (wffToken == -1) { // First time
         // In case it's not found because the user's source used a convention
         // different for "wff" for wffs.
-        wffToken = -2; 
+        wffToken = -2;
         for (i = 0; i < g_mathTokens; i++) {
           if (!strcmp("wff", g_MathToken[i].tokenName)) {
             wffToken = i;
@@ -2892,7 +2893,7 @@ void traceProofWork(long statemNum,
           statemNum // cutoffStmt
           );
       // Include the statement we're showing usage of
-      traceToFilter[stmt] = 'Y'; 
+      traceToFilter[stmt] = 'Y';
       if (str1[0] == 'Y') { // There is some usage
         for (j = stmt + 1; j <= g_statements; j++) {
           // OR in the usage to the filter
@@ -3080,7 +3081,7 @@ void traceProofTreeRec(long statemNum,
   for (step = 0; step < plen; step++) {
     if (essentialFlag) {
       // Ignore floating hypotheses
-      if (!essentialFlags[step]) continue;                                      
+      if (!essentialFlags[step]) continue;
     }
     stmt = proof[step];
     if (stmt < 0) {
@@ -4031,7 +4032,7 @@ void writeExtractedSource(
           // found, so header is not needed; abort the scan.
           // Ignore starting point of scan since we are looking for a later
           // header to end the scope.
-          if (stmtj > stmt) break; 
+          if (stmtj > stmt) break;
         }
         if (extractNeeded[stmtj] == 'Y') {
           hdrNeeded = 1;
@@ -4254,7 +4255,7 @@ void writeExtractedSource(
 
       fprintf(fp, "%s", buf);
       // Text below last statement isn't (currently) used - do we need it?
-      if (stmt == g_statements + 1) bug(272); 
+      if (stmt == g_statements + 1) bug(272);
       if (stmt != g_statements + 1) {
         extractedStmts++; // For final message
         fprintf(fp, "$%c", g_Statement[stmt].type);
@@ -5689,7 +5690,7 @@ long getStatementNum(vstring stmtName, // Possibly with wildcards.
     }
 
     if (efOnlyForMaxStmt) {
-      // Don't set efOnlyForMaxStmt in case of PROVE call 
+      // Don't set efOnlyForMaxStmt in case of PROVE call
       if (maxStmt > g_statements) bug(247);
       // If a $e or $f, it must be a hypothesis of the statement being proved.
       if (typ == (char)e_ || typ == (char)f_){

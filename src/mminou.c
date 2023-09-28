@@ -12,6 +12,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdarg.h>
+#include <time.h>
 #include "mmvstr.h"
 #include "mmdata.h"
 #include "mminou.h"
@@ -22,7 +23,7 @@
   // 1. #include <conio.h> has compile errors
   // 2. Two consecutive calls to vprintf after va_start causes register dump
   // or corrupts 2nd arg.
-  
+
 // From <conio.h>:
 #ifndef _CONIO_H_INCLUDED
 extern int cprintf(const char *f__mt,...);
@@ -333,7 +334,7 @@ flag print2(const char* fmt, ...) {
   // in an attempt to fix crash with some compilers (e.g. gcc 4.9.2).
   va_start(ap, fmt);
   // Put formatted string into buffer.
-  charsPrinted = vsprintf(printBuffer, fmt, ap); 
+  charsPrinted = vsprintf(printBuffer, fmt, ap);
   va_end(ap);
   if (charsPrinted != bufsiz) {
     // Give some info with printf in case print2 crashes during bug() call
@@ -829,7 +830,7 @@ vstring cmdInput(FILE *stream, const char *ask) {
     // let the user scroll through it.
     if ((!strcmp(g, "B") || !strcmp(g, "b")) // User typed "B"
         // The back-buffer still exists and there was a previous page.
-        && pntrLen(backBuffer) > 1    
+        && pntrLen(backBuffer) > 1
         && g_commandFileNestingLevel == 0
         && (g_scrollMode == 1 && localScrollMode == 1)
         && !g_outputToString) {
@@ -880,7 +881,7 @@ vstring cmdInput1(const char *ask) {
   long p, i;
   // In case ask is temporarily allocated (i.e in case it will
   // become deallocated at next let().
-  let(&ask1, ask); 
+  let(&ask1, ask);
   // Look for lines too long
   while ((signed)(strlen(ask1)) > g_screenWidth) {
     p = g_screenWidth - 1;
@@ -948,14 +949,14 @@ vstring cmdInput1(const char *ask) {
         print2("%s[End of command file \"%s\".]\n", ask1,
             g_commandFileName[g_commandFileNestingLevel]);
         // Deallocate string
-        free_vstring(g_commandFileName[g_commandFileNestingLevel]);                                            
+        free_vstring(g_commandFileName[g_commandFileNestingLevel]);
         g_commandFileNestingLevel--;
         commandLn = "";
         if (g_commandFileNestingLevel == 0) {
           g_commandFileSilentFlag = 0;
         } else {
           // Revert to previous nesting level's silent flag
-          g_commandFileSilentFlag = g_commandFileSilent[g_commandFileNestingLevel];   
+          g_commandFileSilentFlag = g_commandFileSilent[g_commandFileNestingLevel];
         }
         break; // continue;
       }
@@ -1069,7 +1070,7 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
 
   // Restore output to g_printString if it was enabled before
   // 9-Jun-2016 nm Reverted
-  
+
   // g_outputToString = saveOutputToString;
 
   if (severity == 3) {
@@ -1328,7 +1329,7 @@ vstring readFileToString(const char *fileName, char verbose, long *charCount) {
   // Allocate space for the entire input file
   // Add a factor for unknown text formats (just a guess)
   fileBufSize = fileBufSize + 10;
-            
+
   fileBuf = malloc((size_t)fileBufSize);
   if (!fileBuf) {
     if (verbose) print2(
