@@ -59,6 +59,15 @@ pntrString_def(g_mathboxUser); // User name vs. mathbox #
 // in a math string in a comment to be removed for HTML output.
 #define CLOSING_PUNCTUATION ".,;)?!:]'\"_-"
 
+/*!
+ * \def QUOTED_SPACE
+ * The general line wrapping algorithm looks out for spaces as break positions.
+ * To prevent a quote delimited by __"__ be broken down, spaces are temporarily
+ * replaced with 0x03 (ETX, end of transmission), hopefully never used in
+ * text in this application.
+ */
+#define QUOTED_SPACE 3 // ASCII 3 that temporarily zaps a space
+
 // Tex output file
 FILE *g_texFilePtr = NULL;
 flag g_texFileOpenFlag = 0;
@@ -2806,10 +2815,11 @@ void printTexLongMath(nmbrString *mathString,
     long indentationLevel)
 {
 #define INDENTATION_OFFSET 1
-  long i;
+  long i, j, k, n;
   long pos;
   vstring_def(tex);
   vstring_def(texLine);
+  vstring_def(texFull);
   vstring_def(sPrefix);
   vstring_def(htmStep);
   vstring_def(htmStepTag);
@@ -3047,55 +3057,94 @@ void printTexLongMath(nmbrString *mathString,
     if (!g_oldTexFlag) {
       if (refType == 'e' || refType == 'f') {
         // A hypothesis - don't include \ref{}
-        printLongLine(cat("  ",
-            // If not first step, so print "\\" LaTeX line break
-            !strcmp(htmStep, "1") ? "" : "\\\\ ",
-            htmStep, // Step number
-            " && ",
-            " & ",
-            texLine,
-            // Don't put space to help prevent bad line break
-            "&\\text{Hyp~",
-            // The following puts a hypothesis number such as "2" if
-            // $e label is "abc.2"; if no ".", will be whole label.
-            right(htmRef, instr(1, htmRef, ".") + 1),
-            "}\\notag%",
-            // Add full label as LaTeX comment - note lack of space after
-            // "%" above to prevent bad line break.
-            htmRef, NULL),
-            "    \\notag \\\\ && & \\qquad ", // Continuation line prefix
-            " ");
+        texFull = cat("  ", // texFull[0] should not be a "{" character.
+          // If not first step, so print "\\" LaTeX line break
+          !strcmp(htmStep, "1") ? "" : "\\\\ ",
+          htmStep, // Step number
+          " && ",
+          " & ",
+          texLine,
+          // Don't put space to help prevent bad line break
+          "&\\text{Hyp~",
+          // The following puts a hypothesis number such as "2" if
+          // $e label is "abc.2"; if no ".", will be whole label.
+          right(htmRef, instr(1, htmRef, ".") + 1),
+          "}\\notag%",
+          // Add full label as LaTeX comment - note lack of space after
+          // "%" above to prevent bad line break.
+          htmRef, NULL),
+
+        // To avoid generating incorrect TeX, line breaking is forbidden inside
+        // scopes of curly braces.  However breaking between '\{' and '\}' is
+        // allowed.
+        // The spaces that should not be matched with 'breakMatch' are
+        // temporarily changed to ASCII 3 before the 'printLongLine' procedure
+        // is called.  The procedure rewraps the 'line' argument matching the
+        // unchanged spaces only, thus ensuring bad breaks will be avoided.
+        // The reverse is done in the 'print2()' function, where all ASCII 3's
+        // are converted back to spaces.
+        // k counts the scope level we are in.
+        k = 0;
+        n = (long)strlen(texFull);
+        for (j = 1; j < n; j++) { // We don't need to check texFull[0].
+          // We enter a non "\{" scope.
+          if (texFull[j] == '{' && texFull[j - 1] != '\\') k++;
+          // We escape a non "\}" scope.
+          if (texFull[j] == '}' && texFull[j - 1] != '\\') k--;
+          // If k > 0 then we are inside a scope.
+          if (texFull[j] == ' ' && k > 0) texFull[j] = QUOTED_SPACE;
+        }
+        printLongLine(texFull, "    \\notag \\\\ && & \\qquad ", /* Continuation line prefix */ " ");
       } else {
-        printLongLine(cat("  ",
-            // If not first step, so print "\\" LaTeX line break
-            !strcmp(htmStep, "1") ? "" : "\\\\ ",
-            htmStep, // Step number
-            " && ",
+        texFull = cat("  ", // texFull[0] should not be a "{" character.
+          // If not first step, so print "\\" LaTeX line break
+          !strcmp(htmStep, "1") ? "" : "\\\\ ",
+          htmStep, // Step number
+          " && ",
 
-            // Local label if any e.g. "@2:"
-            (htmLocLab[0] != 0) ? cat(htmLocLab, "\\ ", NULL) : "",
+          // Local label if any e.g. "@2:"
+          (htmLocLab[0] != 0) ? cat(htmLocLab, "\\ ", NULL) : "",
 
-            " & ",
-            texLine,
-            // Don't put space to help prevent bad line break
+          " & ",
+          texLine,
+          // Don't put space to help prevent bad line break
 
-            // Surround \ref with \mbox for non-math-mode
-            // symbolic labels (due to \tag{..} in mmcmds.c).  Also,
-            // move hypotheses to after referenced label.
-            "&",
-            "(",
+          // Surround \ref with \mbox for non-math-mode
+          // symbolic labels (due to \tag{..} in mmcmds.c).  Also,
+          // move hypotheses to after referenced label.
+          "&",
+          "(",
 
-            // Don't make local label a \ref
-            (htmRef[0] != '@') ?
-                cat("\\mbox{\\ref{eq:", htmRef, "}}", NULL)
-                : htmRef,
+          // Don't make local label a \ref
+          (htmRef[0] != '@') ?
+              cat("\\mbox{\\ref{eq:", htmRef, "}}", NULL)
+              : htmRef,
 
-            htmHyp[0] ? "," : "",
-            htmHyp,
-            ")\\notag", NULL),
+          htmHyp[0] ? "," : "",
+          htmHyp,
+          ")\\notag", NULL),
 
-            "    \\notag \\\\ && & \\qquad ", // Continuation line prefix
-            " ");
+        // To avoid generating incorrect TeX, line breaking is forbidden inside
+        // scopes of curly braces.  However breaking between '\{' and '\}' is
+        // allowed.
+        // The spaces that should not be matched with 'breakMatch' are
+        // temporarily changed to ASCII 3 before the 'printLongLine' procedure
+        // is called.  The procedure rewraps the 'line' argument matching the
+        // unchanged spaces only, thus ensuring bad breaks will be avoided.
+        // The reverse is done in the 'print2()' function, where all ASCII 3's
+        // are converted back to spaces.
+        // k counts the scope level we are in.
+        k = 0;
+        n = (long)strlen(texFull);
+        for (j = 1; j < n; j++) { // We don't need to check texFull[0].
+          // We enter a non "\{" scope.
+          if (texFull[j] == '{' && texFull[j - 1] != '\\') k++;
+          // We escape a non "\}" scope.
+          if (texFull[j] == '}' && texFull[j - 1] != '\\') k--;
+          // If k > 0 then we are inside a scope.
+          if (texFull[j] == ' ' && k > 0) texFull[j] = QUOTED_SPACE;
+        }
+        printLongLine(texFull, "    \\notag \\\\ && & \\qquad ", /* Continuation line prefix */ " ");
       }
     } else {
       printLongLine(texLine, "", "\\");

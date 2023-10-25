@@ -501,7 +501,7 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
   vstring_def(prefix);
   vstring_def(startNextLine1);
   vstring_def(breakMatch1);
-  long i, j, p, k;
+  long i, p;
   long startNextLineLen;
   flag firstLine;
   flag tildeFlag = 0;
@@ -546,12 +546,6 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
     breakMatch1[0] = ' '; // Change to a space (the real break character)
   }
 
-  // Do a bug check to make sure no real ASCII 3's are ever printed
-  j = (long)strlen(multiLine);
-  for (i = 0; i < j; i++) {
-    if (multiLine[i] == QUOTED_SPACE) bug(1514); // Should never be the case
-  }
-
   // HTML mode
   // The HTML mode is intended not to break inside quoted HTML tag
   // strings.  All HTML output should be called with this mode.
@@ -587,26 +581,6 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
       i++;
     }
   } // if (breakMatch1[0] == '\"')
-
-  // TeX mode
-  // The TeX mode is intended not to break inside curly brace scopes.
-  // Whenever we are inside a scope of curly braces, we change a space to
-  // ASCII 3 to prevent matching it.  The reverse is done in the print2()
-  // function, where all ASCII 3's are converted back to space.
-  if (breakMatch1[0] == ' ') {
-    i = 0;
-    // k counts the scope level we are in.
-    k = 0;
-    while (multiLine[i]) {
-      // We enter a non "\{" scope.
-      if (multiLine[i] == '{' && multiLine[i - 1] != '\\') k++;
-      // We escape a non "\}" scope.
-      if (multiLine[i] == '}' && multiLine[i - 1] != '\\') k--;
-      // If k > 0 then we are inside a scope.
-      if (multiLine[i] == ' ' && k > 0) multiLine[i] = QUOTED_SPACE;
-      i++;
-    }
-  }
 
   // The tilde is a special flag for printLongLine to print a
   // tilde before the carriage return in a split line, not after.
