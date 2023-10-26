@@ -3072,29 +3072,7 @@ void printTexLongMath(nmbrString *mathString,
           "}\\notag%",
           // Add full label as LaTeX comment - note lack of space after
           // "%" above to prevent bad line break.
-          htmRef, NULL),
-
-        // To avoid generating incorrect TeX, line breaking is forbidden inside
-        // scopes of curly braces.  However breaking between '\{' and '\}' is
-        // allowed.
-        // The spaces that should not be matched with 'breakMatch' are
-        // temporarily changed to ASCII 3 before the 'printLongLine' procedure
-        // is called.  The procedure rewraps the 'line' argument matching the
-        // unchanged spaces only, thus ensuring bad breaks will be avoided.
-        // The reverse is done in the 'print2()' function, where all ASCII 3's
-        // are converted back to spaces.
-        // k counts the scope level we are in.
-        k = 0;
-        n = (long)strlen(texFull);
-        for (j = 1; j < n; j++) { // We don't need to check texFull[0].
-          // We enter a non "\{" scope.
-          if (texFull[j] == '{' && texFull[j - 1] != '\\') k++;
-          // We escape a non "\}" scope.
-          if (texFull[j] == '}' && texFull[j - 1] != '\\') k--;
-          // If k > 0 then we are inside a scope.
-          if (texFull[j] == ' ' && k > 0) texFull[j] = QUOTED_SPACE;
-        }
-        printLongLine(texFull, "    \\notag \\\\ && & \\qquad ", /* Continuation line prefix */ " ");
+          htmRef, NULL);
       } else {
         texFull = cat("  ", // texFull[0] should not be a "{" character.
           // If not first step, so print "\\" LaTeX line break
@@ -3122,30 +3100,29 @@ void printTexLongMath(nmbrString *mathString,
 
           htmHyp[0] ? "," : "",
           htmHyp,
-          ")\\notag", NULL),
-
-        // To avoid generating incorrect TeX, line breaking is forbidden inside
-        // scopes of curly braces.  However breaking between '\{' and '\}' is
-        // allowed.
-        // The spaces that should not be matched with 'breakMatch' are
-        // temporarily changed to ASCII 3 before the 'printLongLine' procedure
-        // is called.  The procedure rewraps the 'line' argument matching the
-        // unchanged spaces only, thus ensuring bad breaks will be avoided.
-        // The reverse is done in the 'print2()' function, where all ASCII 3's
-        // are converted back to spaces.
-        // k counts the scope level we are in.
-        k = 0;
-        n = (long)strlen(texFull);
-        for (j = 1; j < n; j++) { // We don't need to check texFull[0].
-          // We enter a non "\{" scope.
-          if (texFull[j] == '{' && texFull[j - 1] != '\\') k++;
-          // We escape a non "\}" scope.
-          if (texFull[j] == '}' && texFull[j - 1] != '\\') k--;
-          // If k > 0 then we are inside a scope.
-          if (texFull[j] == ' ' && k > 0) texFull[j] = QUOTED_SPACE;
-        }
-        printLongLine(texFull, "    \\notag \\\\ && & \\qquad ", /* Continuation line prefix */ " ");
+          ")\\notag", NULL);
       }
+      // To avoid generating incorrect TeX, line breaking is forbidden inside
+      // scopes of curly braces.  However breaking between '\{' and '\}' is
+      // allowed.
+      // The spaces that should not be matched with 'breakMatch' are
+      // temporarily changed to ASCII 3 before the 'printLongLine' procedure
+      // is called.  The procedure rewraps the 'line' argument matching the
+      // unchanged spaces only, thus ensuring bad breaks will be avoided.
+      // The reverse is done in the 'print2()' function, where all ASCII 3's
+      // are converted back to spaces.
+      // k counts the scope level we are in.
+      k = 0;
+      n = (long)strlen(texFull);
+      for (j = 1; j < n; j++) { // We don't need to check texFull[0].
+        // We enter a non "\{" scope.
+        if (texFull[j] == '{' && texFull[j - 1] != '\\') k++;
+        // We escape a non "\}" scope.
+        if (texFull[j] == '}' && texFull[j - 1] != '\\') k--;
+        // If k > 0 then we are inside a scope.
+        if (texFull[j] == ' ' && k > 0) texFull[j] = QUOTED_SPACE;
+      }
+      printLongLine(texFull, "    \\notag \\\\ && & \\qquad ", /* Continuation line prefix */ " ");
     } else {
       printLongLine(texLine, "", "\\");
       print2("\\endm\n");
