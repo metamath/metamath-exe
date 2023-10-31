@@ -1,0 +1,3 @@
+open tex issue129.tex
+show proof th1 /tex
+close tex

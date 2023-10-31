@@ -1,0 +1,13 @@
+MM> READ "issue129.mm"
+Reading source file "issue129.mm"... 121 bytes
+121 bytes were read into the source buffer.
+The source has 3 statements; 1 are $a and 1 are $p.
+No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
+if you want to check them.
+MM> Continuous scrolling is now in effect.
+MM> Created LaTeX output file "issue129.tex".
+Reading definitions from $t statement of issue129.mm...
+1 typesetting statements were read from "issue129.mm".
+MM> Outputting proof of "th1"...
+The LaTeX source was written to "issue129.tex".
+MM> The LaTeX output file "issue129.tex" has been closed.
