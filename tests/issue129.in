@@ -4,4 +4,4 @@ close tex
 tools
 match issue129.tex "% This LaTeX file was created by Metamath on " N
 exit
-more issue129.tex
+"cat issue129.tex"
