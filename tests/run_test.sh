@@ -130,7 +130,7 @@ for test in "$@"; do
       echo "$test.expected missing, $test.produced:"
     fi
     echo -n "---------------------------------------\n${green}"
-    cat "$test.produced"
+    printf '%s' "$test.produced"
     echo "${off}---------------------------------------\n"
   # call diff and put the diff output in $diff_result
   elif diff_result=$(diff "$test.expected" "$outfile" --color=always); then
