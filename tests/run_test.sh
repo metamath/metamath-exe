@@ -97,7 +97,7 @@ for test in "$@"; do
     echo "${red}failed${off} (exit code = $result_code)"; exit_code=1
     if [ "$outfile" != "/dev/null" ]; then
       echo "---------------------------------------"
-      cat "$test.produced"
+      printf '%s' "$test.produced"
       echo "---------------------------------------\n"
     fi
     continue
