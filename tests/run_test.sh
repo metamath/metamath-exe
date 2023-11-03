@@ -97,7 +97,7 @@ for test in "$@"; do
     echo "${red}failed${off} (exit code = $result_code)"; exit_code=1
     if [ "$outfile" != "/dev/null" ]; then
       echo "---------------------------------------"
-      printf '%s' "$test.produced"
+      cat "$test.produced"
       echo "---------------------------------------\n"
     fi
     continue
@@ -130,7 +130,7 @@ for test in "$@"; do
       echo "$test.expected missing, $test.produced:"
     fi
     echo -n "---------------------------------------\n${green}"
-    printf '%s' "$test.produced"
+    cat "$test.produced"
     echo "${off}---------------------------------------\n"
   # call diff and put the diff output in $diff_result
   elif diff_result=$(diff "$test.expected" "$outfile" --color=always); then
