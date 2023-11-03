@@ -13,32 +13,32 @@ The LaTeX source was written to "issue129.tex".
 MM> The LaTeX output file "issue129.tex" has been closed.
 MM> Entering the Text Tools utilities.  Type HELP for help, EXIT to exit.
 TOOLS> The input had 28 lines, the output has 27 lines. First output line:
-\documentclass{article}
+\\documentclass{article}
 TOOLS> Exiting the Text Tools.  Type EXIT again to exit Metamath.
-MM> \documentclass{article}
-\usepackage{amssymb} % amssymb must be loaded before phonetic
-\usepackage{phonetic} % for \riota
-\usepackage{mathrsfs} % for \mathscr
-\usepackage{mathtools} % loads package amsmath
-\usepackage{amsthm} % amsthm must be loaded after amsmath
-\usepackage{accents} % accents should be loaded after mathtools
-\theoremstyle{plain}
-\newtheorem{theorem}{Theorem}[section]
-\newtheorem{definition}[theorem]{Definition}
-\newtheorem{lemma}[theorem]{Lemma}
-\newtheorem{axiom}{Axiom}
-\allowdisplaybreaks[1] % Allow page breaks in {align}
-\usepackage[plainpages=false,pdfpagelabels]{hyperref}
-\hypersetup{colorlinks} % Get rid of boxes around links
-\begin{document}
+MM> \\documentclass{article}
+\\usepackage{amssymb} % amssymb must be loaded before phonetic
+\\usepackage{phonetic} % for \\riota
+\\usepackage{mathrsfs} % for \\mathscr
+\\usepackage{mathtools} % loads package amsmath
+\\usepackage{amsthm} % amsthm must be loaded after amsmath
+\\usepackage{accents} % accents should be loaded after mathtools
+\\theoremstyle{plain}
+\\newtheorem{theorem}{Theorem}[section]
+\\newtheorem{definition}[theorem]{Definition}
+\\newtheorem{lemma}[theorem]{Lemma}
+\\newtheorem{axiom}{Axiom}
+\\allowdisplaybreaks[1] % Allow page breaks in {align}
+\\usepackage[plainpages=false,pdfpagelabels]{hyperref}
+\\hypersetup{colorlinks} % Get rid of boxes around links
+\\begin{document}
 
-\begin{proof}
-\begin{align}
-  1 &&  & \text{ A A A A A A A A A A } \text{ A A A A A A A A A A }
-    \notag \\ && & \qquad \text{ A A A A A A A A A A }
-    \notag \\ && & \qquad \text{ A A A A A A A A A A }
-\text{ A A A A A A A A A A }&(\mbox{\ref{eq:ax-1}})\notag
-\end{align}
-\end{proof}
+\\begin{proof}
+\\begin{align}
+  1 &&  & \\text{ A A A A A A A A A A } \\text{ A A A A A A A A A A }
+    \\notag \\\\ && & \qquad \\text{ A A A A A A A A A A }
+    \\notag \\\\ && & \qquad \\text{ A A A A A A A A A A }
+\\text{ A A A A A A A A A A }&(\\mbox{\\ref{eq:ax-1}})\\notag
+\\end{align}
+\\end{proof}
 
-\end{document}
+\\end{document}
