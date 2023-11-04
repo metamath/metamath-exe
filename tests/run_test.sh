@@ -110,7 +110,7 @@ for test in "$@"; do
   # a new version comes out.
   # The last line is always 'MM> EXIT' which is not relevant.
   # The sed is to redact timings, which are nondeterministic
-  echo "$result" | head -n -1 | tail -n +2 \
+  printf "%s" "$result" | head -n -1 | tail -n +2 \
     | sed -e 's/ \+[0-9]\+\.[0-9]\+ s/ x.xx s/g' \
     > "$outfile"
 
