@@ -1,0 +1,7 @@
+open tex issue129.tex
+show proof th1 /tex
+close tex
+tools
+match issue129.tex "% This LaTeX file was created by Metamath on " N
+exit
+"cat issue129.tex"
