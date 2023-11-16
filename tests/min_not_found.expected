@@ -1,0 +1,24 @@
+MM> READ "min_not_found.mm"
+Reading source file "min_not_found.mm"... 762 bytes
+762 bytes were read into the source buffer.
+The source has 18 statements; 5 are $a and 2 are $p.
+SET EMPTY_SUBSTITUTION was turned ON (allowed) for this database.
+No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
+if you want to check them.
+MM> Continuous scrolling is now in effect.
+MM> 0 10%  20%  30%  40%  50%  60%  70%  80%  90% 100%
+..................................................
+All proofs in the database were verified in x.xx s.
+MM> Entering the Proof Assistant.  HELP PROOF_ASSISTANT for help, EXIT to exit.
+You will be working on statement (from "SHOW STATEMENT th2"):
+18 th2 $p D $= ... $.
+Note:  The proof you are starting with is already complete.
+MM-PA> Bytes refer to compressed proof size, steps to uncompressed length.
+Scanning forward through statements...
+No shorter proof was found.
+MM-PA> Proof of "th2":
+---------Clip out the proof below this line to put it in the source file:
+    ( ax-2 ax-3 in2 ) ABAAAC $.
+---------The proof of "th2" (24 bytes) ends above this line.
+MM-PA> EXIT
+Exiting the Proof Assistant.  Type EXIT again to exit Metamath.
