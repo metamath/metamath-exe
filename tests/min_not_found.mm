@@ -24,7 +24,7 @@ $( A shortening not found by the minimizer.  The comparison with min_found.mm
     in2 $a D $.
   $}
 
-  $( Minimized proof, not found automatically. (New usage is discouraged.) $)
+  $( Minimized proof, not found automatically.  (New usage is discouraged.) $)
   th1 $p D $= ( ax-1 in1 ) AB $.
 
   $( Non-minimized proof. $)
