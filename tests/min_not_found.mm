@@ -1,8 +1,8 @@
-$( A shortening not found by the minimizer.  The comparison with min-found.mm
+$( A shortening not found by the minimizer.  The comparison with min_found.mm
    suggests that the minimizer's inability to detect it is due to the absence
    of statement "C" in any of the steps of the minimized proof.  The
-   shortening is detected if proveFloating is set to 1 in minimizeProof,
-   which allows absent "$e" statements to be found. $)
+   shortening is detected if proveFloating is set to 1 in replaceStatement
+   called by minimizeProof, which allows absent $e statements to be found. $)
 
   $c A B C D $.
 

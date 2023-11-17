@@ -1,8 +1,8 @@
-$( A shortening found by the minimizer.  The comparison with min-not-found.mm
-   suggests that the minimizer's ability to detect this one depends on the
-   presence of statement "A" in at least one of the steps of the minimized
-   proof.  Axiom ax-3 and costant C are not used here, but they are kept
-   anyway to lessen the amount of differences with min-found.mm. $)
+$( A shortening found by the minimizer.  The comparison with min_not_found.mm
+   suggests that the minimizer's ability to detect it depends on the presence
+   of statement "A" in the steps of the minimized proof.  The costant C and
+   axiom ax-3 are not used here, but they are kept anyway to lessen the amount
+   of differences with min_not_found.mm. $)
 
   $c A B C D $.
 

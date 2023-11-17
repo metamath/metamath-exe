@@ -1,6 +1,6 @@
 MM> READ "min_found.mm"
-Reading source file "min_found.mm"... 775 bytes
-775 bytes were read into the source buffer.
+Reading source file "min_found.mm"... 761 bytes
+761 bytes were read into the source buffer.
 The source has 18 statements; 5 are $a and 2 are $p.
 SET EMPTY_SUBSTITUTION was turned ON (allowed) for this database.
 No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
