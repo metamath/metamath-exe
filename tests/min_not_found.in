@@ -1,0 +1,4 @@
+verify proof *
+prove th2
+minimize * /allow *
+show new /compressed

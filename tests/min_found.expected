@@ -1,0 +1,29 @@
+MM> READ "min_found.mm"
+Reading source file "min_found.mm"... 761 bytes
+761 bytes were read into the source buffer.
+The source has 18 statements; 5 are $a and 2 are $p.
+SET EMPTY_SUBSTITUTION was turned ON (allowed) for this database.
+No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
+if you want to check them.
+MM> Continuous scrolling is now in effect.
+MM> 0 10%  20%  30%  40%  50%  60%  70%  80%  90% 100%
+..................................................
+All proofs in the database were verified in x.xx s.
+MM> Entering the Proof Assistant.  HELP PROOF_ASSISTANT for help, EXIT to exit.
+You will be working on statement (from "SHOW STATEMENT th2"):
+18 th2 $p D $= ... $.
+Note:  The proof you are starting with is already complete.
+MM-PA> Bytes refer to compressed proof size, steps to uncompressed length.
+Scanning forward through statements...
+Proof of "th2" decreased from 24 to 15 bytes using "in1".
+Scanning backward through statements...
+Proof of "th2" decreased from 24 to 15 bytes using "in1".
+The forward scan results were used.
+MM-PA> Proof of "th2":
+---------Clip out the proof below this line to put it in the source file:
+    ( ax-1 in1 ) AB $.
+---------The proof of "th2" (15 bytes) ends above this line.
+MM-PA> EXIT
+Warning:  You have not saved changes to the proof of "th2".
+Do you want to EXIT anyway (Y, N) <N>? Y
+Exiting the Proof Assistant.  Type EXIT again to exit Metamath.
