@@ -1819,7 +1819,6 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
     let(&cmtMasked, tmpMasked);
     free_vstring(tmpStr); // Deallocate
     free_vstring(tmpStrMasked);
-  }
 
     // Add leading and trailing HTML markup to comment here
     // (instead of in caller).  Also convert special characters.
