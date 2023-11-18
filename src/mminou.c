@@ -501,7 +501,7 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
   vstring_def(prefix);
   vstring_def(startNextLine1);
   vstring_def(breakMatch1);
-  long i, j, p;
+  long i, p;
   long startNextLineLen;
   flag firstLine;
   flag tildeFlag = 0;
@@ -559,11 +559,6 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
   // where all ASCII 3's are converted back to space.
   // Note added 20-Oct-02: tidy.exe breaks HREF quotes with new line.
   // Check HTML spec - do we really need this code?
-  j = (long)strlen(multiLine);
-  // Do a bug check to make sure no real ASCII 3's are ever printed
-  for (i = 0; i < j; i++) {
-    if (multiLine[i] == QUOTED_SPACE) bug(1514); // Should never be the case
-  }
   if (breakMatch1[0] == '\"') {
     breakMatch1[0] = ' '; // Change to a space (the real break character)
     // Scan string for quoted strings
