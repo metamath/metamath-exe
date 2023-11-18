@@ -852,7 +852,7 @@ long texDefWhiteSpaceLen(char *ptr)
     i++;
   }
   bug(2307);
-  assert(0);
+  return 0;
 } // texDefWhiteSpaceLen
 
 // This function returns the length of the token (non-whitespace) starting at
@@ -894,7 +894,7 @@ long texDefTokenLen(char *ptr)
     i++;
   }
   bug(2308);
-  assert(0);
+  return 0;
 } // texDefTokenLen
 
 // Token comparison for qsort
@@ -1222,7 +1222,6 @@ vstring getCommentModeSection(vstring *srcptr, char *mode)
     }
     ptr++;
   } // while (1)
-  assert(0);
 } // getCommentModeSection
 
 // The texHeaderFlag means this:
