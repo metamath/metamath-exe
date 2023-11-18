@@ -22,7 +22,7 @@
 // end at the $).  Between $t and $), the definition source should exist.  See
 // the file set.mm for an example.
 
-flag g_oldTexFlag = 0; // Use TeX macros in output (obsolete)
+flag g_oldTexFlag = 0; // Use LaTeX macros in output (obsolete)
 
 flag g_htmlFlag = 0; // HTML flag: 0 = TeX, 1 = HTML
 
@@ -196,7 +196,7 @@ flag readTexDefs(
     eraseTexDefs();
     saveHtmlFlag = g_htmlFlag; // Save for next call to readTexDefs()
     saveAltHtmlFlag = g_altHtmlFlag; // Save for next call to readTexDefs()
-    if (!g_htmlFlag /* Tex */ && g_altHtmlFlag) {
+    if (!g_htmlFlag /* LaTex */ && g_altHtmlFlag) {
       bug(2301); // Nonsensical combination
     }
   } else {
@@ -934,12 +934,12 @@ vstring asciiToTt(vstring s) {
   let(&ttstr, s); // In case the input s is temporarily allocated
   j = (long)strlen(ttstr);
 
-  // Put special \tt font characters in a form that TeX can understand
+  // Put special \tt font characters in a form that LaTeX can understand
   for (i = 0; i < j; i++) {
     k = 1;
     if (!g_htmlFlag) {
       switch (ttstr[i]) {
-        // For all unspecified cases, TeX will accept the character 'as is'
+        // For all unspecified cases, LaTeX will accept the character 'as is'
         case ' ':
         case '$':
         case '%':
@@ -962,7 +962,7 @@ vstring asciiToTt(vstring s) {
         case '~':
         case '_':
           // Note:  this conversion will work for any character, but
-          // results in the most TeX source code.
+          // results in the most LaTeX source code.
           let(&ttstr,cat(left(ttstr,i),"\\char`\\",right(ttstr,i+1),NULL));
           k = 8;
           break;
@@ -1014,9 +1014,9 @@ temp_vstring asciiToTt_temp(vstring s) {
   return makeTempAlloc(asciiToTt(s));
 }
 
-// Convert ascii token to TeX equivalent
+// Convert ascii token to LaTeX equivalent.
 // The "$" math delimiter is not placed around the returned arg. here
-// *** Note: The caller must deallocate the returned string
+// *** Note: The caller must deallocate the returned string.
 vstring tokenToTex(vstring mtoken, long statemNum /* for error msgs */)
 {
   vstring_def(tex);
@@ -2501,9 +2501,9 @@ flag printTexComment(vstring commentPtr, flag htmlCenterFlag,
     }
     let(&sourceLine, space(cmtptr - lineStart));
     memcpy(sourceLine, lineStart, (size_t)(cmtptr - lineStart));
-    cmtptr++; // Get past new-line to prepare for next line's scan
+    cmtptr++; // Get past new-line to prepare for next line's scan.
 
-    // If the line contains only math mode text, use TeX display mode.
+    // If the line contains only math mode text, use LaTeX display mode.
     displayMode = 0;
     let(&tmpStr, edit(sourceLine, 8 + 128)); // Trim spaces
     if (!strcmp(right(tmpStr, (long)strlen(tmpStr) - 1), cat(chr(DOLLAR_SUBST), "n",
@@ -3100,7 +3100,7 @@ void printTexLongMath(nmbrString *mathString,
           htmHyp,
           ")\\notag", NULL);
       }
-      // To avoid generating incorrect TeX, line breaking is forbidden inside
+      // To avoid generating incorrect LaTeX, line breaking is forbidden inside
       // scopes of curly braces.  However breaking between '\{' and '\}' is
       // allowed.
       // The spaces that should not be matched with 'breakMatch' are
@@ -5087,7 +5087,7 @@ vstring getTexOrHtmlHypAndAssertion(long statemNum) {
       }
     }
   }
-  // Construct TeX or HTML assertion
+  // Construct LaTeX or HTML assertion
   nmbrTmpPtr = g_Statement[statemNum].mathString;
   free_vstring(str2);
   str2 = getTexLongMath(nmbrTmpPtr, statemNum);
