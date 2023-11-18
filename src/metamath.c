@@ -2575,6 +2575,10 @@ void command(int argc, char *argv[]) {
 
       g_htmlFlag = 1;
 
+      // Declare flag to output statement lists only, for statement display in
+      // other HTML pages, such as the Proof Explorer home page.
+      flag g_briefHtmlFlag;
+
       if (switchPos("BRIEF_HTML") || switchPos("BRIEF_ALT_HTML")) {
         if (strcmp(g_fullArg[2], "*")) {
           print2(

@@ -25,16 +25,15 @@
 flag g_oldTexFlag = 0; // Use TeX macros in output (obsolete)
 
 flag g_htmlFlag = 0; // HTML flag: 0 = TeX, 1 = HTML
+
 // Use "althtmldef" instead of "htmldef".  This is intended to allow the
-// generation of pages with the Unicode font instead of the individual GIF files.
+// generation of pages with the Unicode font instead of the individual GIF
+// files.
 flag g_altHtmlFlag = 0;
-// Output statement lists only, for statement display in other HTML pages,
-// such as the Proof Explorer home page.
-flag g_briefHtmlFlag = 0; // TODO: unused
-// At this statement and above, use the exthtmlxxx
-// variables for title, links, etc.  This was put in to allow proper
-// generation of the Hilbert Space Explorer extension to the set.mm
-// database.
+
+// At this statement and above, use the exthtmlxxx variables for title, links,
+// etc.  This was put in to allow proper generation of the Hilbert Space
+// Explorer extension to the set.mm
 long g_extHtmlStmt = 0;
 
 // Globals to hold mathbox information.  They should be re-initialized
