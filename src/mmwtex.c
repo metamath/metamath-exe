@@ -1191,7 +1191,6 @@ vstring getCommentModeSection(vstring *srcptr, char *mode)
         // Leave old code in case user continues through the bug
         *mode = 0; // End of comment
         return "";
-        break;
       default:
         *mode = 'n';
         break;
@@ -1215,7 +1214,6 @@ vstring getCommentModeSection(vstring *srcptr, char *mode)
           }
           *srcptr = ptr;
           return modeSection;
-          break;
       }
     } else {
       if (ptr[0] == 0) {
