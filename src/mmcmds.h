@@ -84,7 +84,18 @@ void fixUndefinedLabels(vstring extractNeeded, vstring *buf);
 
 void writeDict(void);
 void eraseSource(void);
-void verifyProofs(vstring labelMatch, flag verifyFlag);
+
+/*! Verify proofs.
+ * \param labelMatch pattern matching names to verify
+ * \param verifyFlag 0 to parse the proofs only for gross error checking,
+ *        1 to do the full verification
+ * \param unusedFlag bitwise OR of \c UNUSED_* flags.  If \c verifyFlag
+ *   includes:
+ *   - \c UNUSED_DVS: check for unused \c $d conditions on nondummy variables
+ *   - \c VERIFY_DUMMY_DVS: check for all unused \c $d conditions
+ *   - \c VERIFY_ESSENTIAL: check for unused \c $e statements
+ */
+void verifyProofs(vstring labelMatch, flag verifyFlag, flag unusedFlag);
 
 /*! If checkFiles = 0, do not open external files.
    If checkFiles = 1, check for presence of gifs and biblio file */
