@@ -4653,7 +4653,7 @@ flag getSectionHeadings(long stmt,
   return errorFound;
 } // getSectionHeadings
 
-// Return HTML for the pink number to print after the statement labels
+// Returns HTML for the pink number to print after the statement labels
 // in HTML output.  (Note that "pink" means "rainbow colored" number now.)
 // Warning: The caller must deallocate the returned vstring (i.e. this
 // function cannot be used in let statements but must be assigned to
