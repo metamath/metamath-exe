@@ -67,7 +67,7 @@ pntrString_def(g_mathboxUser); // User name vs. mathbox number
  */
 #define QUOTED_SPACE 3 // ASCII 3 that temporarily zaps a space
 
-// LaTex output file
+// LaTeX output file
 FILE *g_texFilePtr = NULL;
 flag g_texFileOpenFlag = 0;
 
