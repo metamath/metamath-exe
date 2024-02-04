@@ -1094,7 +1094,7 @@ vstring tokenToTex(vstring mtoken, long statemNum /* for error msgs */)
   return tex;
 } // tokenToTex
 
-// Convert a comment section in math mode to LaTeX.  Each math token
+// Converts a comment section in math mode to LaTeX.  Each math token
 // MUST be separated by white space.  LaTeX "$" does not surround the output.
 vstring asciiMathToTex(vstring mathComment, long statemNum)
 {
