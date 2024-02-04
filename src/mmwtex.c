@@ -576,7 +576,7 @@ flag readTexDefs(
           let(&(g_TexDefs[numSymbs].texEquiv), token);
         }
         if (cmd == HTMLVARCOLOR) {
-          let(&g_htmlVarColor, cat(g_htmlVarColor, " ", token, NULL));
+          let(&g_htmlVarColor, cat(g_htmlVarColor, " &nbsp;", token, NULL));
         }
         if (cmd == HTMLTITLE) {
           let(&htmlTitle, token);
