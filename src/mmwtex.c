@@ -4834,7 +4834,7 @@ vstring spectrumToRGB(long color, long maxColor) {
   return str1;
 } // spectrumToRGB
 
-// Return the HTML code for GIFs (!g_altHtmlFlag) or Unicode (g_altHtmlFlag),
+// Returns the HTML code for GIFs (!g_altHtmlFlag) or Unicode (g_altHtmlFlag),
 // or LaTeX when !g_htmlFlag, for the math string (hypothesis or conclusion) that
 // is passed in.
 // Warning: The caller must deallocate the returned vstring.
