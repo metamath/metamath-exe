@@ -196,7 +196,7 @@ flag readTexDefs(
     eraseTexDefs();
     saveHtmlFlag = g_htmlFlag; // Save for next call to readTexDefs()
     saveAltHtmlFlag = g_altHtmlFlag; // Save for next call to readTexDefs()
-    if (!g_htmlFlag /* LaTex */ && g_altHtmlFlag) {
+    if (!g_htmlFlag /* LaTeX */ && g_altHtmlFlag) {
       bug(2301); // Nonsensical combination
     }
   } else {
