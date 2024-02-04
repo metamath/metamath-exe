@@ -1649,7 +1649,7 @@ void printTexHeader(flag texHeaderFlag)
   free_vstring(tmpStr);
 } // printTexHeader
 
-// Print an embedded comment in LaTeX or HTML.  The commentPtr must point to the first
+// Prints an embedded comment in LaTeX or HTML.  The commentPtr must point to the first
 // character after the "$(" in the comment.  The printout ends when the first
 // "$)" or null character is encountered.  commentPtr must not be a temporary
 // allocation.  htmlCenterFlag, if 1, means to center the HTML and add a
