@@ -33,7 +33,7 @@ flag g_altHtmlFlag = 0;
 
 // At this statement and above, use the exthtmlxxx variables for title, links,
 // etc.  This was put in to allow proper generation of the Hilbert Space
-// Explorer extension to the set.mm
+// Explorer extension to the set.mm database.
 long g_extHtmlStmt = 0;
 
 // Globals to hold mathbox information.  They should be re-initialized
