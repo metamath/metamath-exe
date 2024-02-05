@@ -18,7 +18,7 @@
  *
  * This should not produce an error or a warning.
  *
- * The regession tests are run by
+ * The regression tests are run by
  * build.sh -ct
  */
 

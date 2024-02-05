@@ -216,7 +216,6 @@ void let(vstring *target, const char *source) {
 // String concatenation
 temp_vstring cat(const char *string1, ...) {
 #define MAX_CAT_ARGS 50
-  va_list ap; // Declare list incrementer
   const char *arg[MAX_CAT_ARGS]; // Array to store arguments
   size_t argPos[MAX_CAT_ARGS]; // Array of argument positions in result
   int i;
@@ -225,7 +224,8 @@ temp_vstring cat(const char *string1, ...) {
   size_t pos = 0;
   const char* curArg = string1;
 
-  va_start(ap, string1); // Begin the session
+  va_list ap; // Declare list incrementer
+  va_start(ap, string1); // Begin varargs session
   do {
     // User-provided argument list must terminate with 0
     if (numArgs >= MAX_CAT_ARGS) {
