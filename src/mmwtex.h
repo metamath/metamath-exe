@@ -28,8 +28,6 @@ extern flag g_htmlFlag;  /*!< HTML flag: 0 = TeX, 1 = HTML */
 extern flag g_altHtmlFlag;  /*!< Use "althtmldef" instead of "htmldef".  This is
     intended to allow the generation of pages with the old Symbol font
     instead of the individual GIF files. */
-extern flag g_briefHtmlFlag;  /*!< Output statement only, for statement display
-                in other HTML pages, such as the Proof Explorer home page */
 extern long g_extHtmlStmt; /*!< At this statement and above, use the exthtmlxxx
     variables for title, links, etc.  This was put in to allow proper
     generation of the Hilbert Space Explorer extension to the set.mm
