@@ -1192,7 +1192,7 @@ flag processCommandLine(void) {
           if (lastArgMatches("/")) {
             i++;
             if (!getFullArg(i, cat(
-                "SYNTAX_ONLY",
+                "SYNTAX_ONLY|DISJOINT_VARS|ALL_DISJOINT_VARS|ESSENTIAL",
                 "|<SYNTAX_ONLY>", NULL)))
               goto pclbad;
           } else {

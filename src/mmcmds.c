@@ -1408,7 +1408,7 @@ void typeProof(long statemNum,
       }
       return; // verifyProof() could crash
     }
-    verifyProof(g_showStatement);
+    verifyProof(g_showStatement, 0);
   }
 
   nmbrString_def(proof);
@@ -2287,7 +2287,7 @@ void showDetailStep(long statemNum, long detailStep) {
   // Structure getStep is declared in mmveri.h.
   getStep.stepNum = detailStep; // Non-zero is flag for verifyProof
   parseProof(statemNum); // ???Do we need to do this again?
-  verifyProof(statemNum);
+  verifyProof(statemNum, 0);
 
   nmbrLet(&proof, g_WrkProof.proofString); // The proof
   plen = nmbrLen(proof);
@@ -4588,7 +4588,7 @@ void eraseSource(void) // ERASE command
 
 // If verify = 0, parse the proofs only for gross error checking.
 // If verify = 1, do the full verification.
-void verifyProofs(vstring labelMatch, flag verifyFlag) {
+void verifyProofs(vstring labelMatch, flag verifyFlag, flag unusedFlag) {
   vstring_def(emptyProofList);
   long i, k;
   long lineLen = 0;
@@ -4637,7 +4637,7 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
     if (k >= 2) errorFound = 1;
     if (k < 2) { // $p with no error
       if (verifyFlag) {
-        if (verifyProof(i) >= 2) errorFound = 1;
+        if (verifyProof(i, unusedFlag) >= 2) errorFound = 1;
         cleanWrkProof(); // Deallocate verifyProof storage
       }
     }
