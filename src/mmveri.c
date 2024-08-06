@@ -20,9 +20,9 @@ struct getStep_struct getStep = {0, 0, 0, 0, 0,
 // Verify proof of one statement in source file.  Uses wrkProof structure.
 // Assumes that parseProof() has just been called for this statement.
 // Returns 0 if proof is OK; 1 if proof is incomplete (has '?' tokens);
-// returns 2 if error found; returns 3 if not severe error
-// found; returns 4 if not a $p statement.
-char verifyProof(long statemNum) {
+// returns 2 if error found; returns 3 if severe error found;
+// returns 4 if not a $p statement.
+char verifyProof(long statemNum, flag unusedFlag) {
   if (g_Statement[statemNum].type != p_) return 4; // Do nothing if not $p
 
   // Initialize pointers to math strings in RPN stack and vs. statement.
@@ -39,6 +39,30 @@ char verifyProof(long statemNum) {
 
   nmbrString_def(bigSubstSchemeHyp);
   nmbrString_def(bigSubstInstHyp);
+  // The following 3 number strings contain only 0 or 1, where 0 indicates an
+  // unused element, and 1 a used element.
+  nmbrString_def(djRVar);  /* Used when checking required $d conditions */
+  nmbrString_def(djOVar);  /* Used when checking optional $d conditions */
+  nmbrString_def(essVar);  /* Used when checking $e or $f statements */
+
+  if (unusedFlag & UNUSED_DVS) {
+    nmbrLet(&djRVar, nmbrSpace(nmbrLen(g_Statement[statemNum].reqDisjVarsA)));
+    if (unusedFlag & UNUSED_DUMMY_DVS) {
+      nmbrLet(&djOVar, nmbrSpace(nmbrLen(g_Statement[statemNum].optDisjVarsA)));
+    }
+  }
+
+  // If checking for unused essential hypotheses, mark all floating hypotheses
+  // as used.
+  if (unusedFlag & UNUSED_ESSENTIAL) {
+    nmbrLet(&essVar, nmbrSpace(g_Statement[statemNum].numReqHyp));
+    for (long i = 0; i < g_Statement[statemNum].numReqHyp; i++) {
+      if (g_Statement[g_Statement[statemNum].reqHypList[i]].type == f_) {
+        essVar[i] = 1;
+      }
+    }
+  }
+
   char returnFlag = 0;
   for (long step = 0; step < g_WrkProof.numSteps; step++) {
     long stmt = g_WrkProof.proofString[step]; // Contents of proof string location
@@ -87,6 +111,14 @@ char verifyProof(long statemNum) {
       // cleanWrkProof()!)
       g_WrkProof.mathStringPtrs[step] =
           g_Statement[stmt].mathString;
+
+      if (unusedFlag & UNUSED_ESSENTIAL) {
+        for (long i = 0; i < g_Statement[statemNum].numReqHyp; i++) {
+          if (stmt == g_Statement[statemNum].reqHypList[i]) {
+            essVar[i] = 1;
+          }
+        }
+      }
 
       continue;
     }
@@ -152,7 +184,8 @@ char verifyProof(long statemNum) {
     // (due to proof being debugged or previous error) we will try to unify
     // anyway; if the result is unique, we will use it.
     nmbrString *nmbrTmpPtr = assignVar(bigSubstSchemeHyp,
-        bigSubstInstHyp, stmt, statemNum, step, unkHypFlag);
+        bigSubstInstHyp, stmt, statemNum, step, unkHypFlag,
+        unusedFlag, djRVar, djOVar);
 /*E*/if(db7)printLongLine(cat("step ", str((double)step+1), " res ",
 /*E*/    nmbrCvtMToVString(nmbrTmpPtr), NULL), "", " ");
 
@@ -196,8 +229,68 @@ char verifyProof(long statemNum) {
       }
       g_WrkProof.errorCount++;
     }
+
+    /* Check whether all of the $d conditions were used. */
+    if (unusedFlag & UNUSED_DVS) {
+      flag warningPrinted = 0;
+      nmbrString *nmbrTmpPtrAS = g_Statement[statemNum].reqDisjVarsA;
+      nmbrString *nmbrTmpPtrBS = g_Statement[statemNum].reqDisjVarsB;
+      long dLen = nmbrLen(nmbrTmpPtrAS);
+      for (long i = 0; i < dLen; i++) {
+        if (djRVar[i] == 0) {
+          if (warningPrinted == 0) {
+            warningPrinted = 1;
+            printLongLine(cat("Statement ", g_Statement[statemNum].labelName,
+                " has unused $d conditions: ", NULL), "", " ");
+          }
+          printLongLine(cat("$d ",
+              g_MathToken[nmbrTmpPtrAS[i]].tokenName,
+              " ",
+              g_MathToken[nmbrTmpPtrBS[i]].tokenName,
+              " $. ", NULL), "", " ");
+        }
+      }
+      if (unusedFlag & UNUSED_DUMMY_DVS) {
+        nmbrTmpPtrAS = g_Statement[statemNum].optDisjVarsA;
+        nmbrTmpPtrBS = g_Statement[statemNum].optDisjVarsB;
+        dLen = nmbrLen(nmbrTmpPtrAS);
+        for (long i = 0; i < dLen; i++) {
+          if (djOVar[i] == 0) {
+            if (warningPrinted == 0) {
+              warningPrinted = 1;
+              printLongLine(cat("Statement ", g_Statement[statemNum].labelName,
+                  " has unused $d conditions: ", NULL), "", " ");
+            }
+            printLongLine(cat("$d ",
+                g_MathToken[nmbrTmpPtrAS[i]].tokenName,
+                " ",
+                g_MathToken[nmbrTmpPtrBS[i]].tokenName,
+                " $. ", NULL), "", " ");
+          }
+        }
+      }
+    }
+
+    /* Check whether all of the $e statements were used. */
+    if (unusedFlag & UNUSED_ESSENTIAL) {
+      flag warningPrinted = 0;
+      for (long i = 0; i < g_Statement[statemNum].numReqHyp; i++) {
+        if (essVar[i] == 0) {
+          if (warningPrinted == 0) {
+            warningPrinted = 1;
+            printLongLine(cat("Statement ", g_Statement[statemNum].labelName,
+                " has unused essential hypotheses: ", NULL), "", " ");
+          }
+          printLongLine(g_Statement[g_Statement[statemNum].reqHypList[i]].labelName,
+                        "", " ");
+        }
+      }
+    }
   }
 
+  free_nmbrString(essVar);
+  free_nmbrString(djRVar);
+  free_nmbrString(djOVar);
   free_nmbrString(bigSubstSchemeHyp);
   free_nmbrString(bigSubstInstHyp);
 
@@ -209,7 +302,9 @@ char verifyProof(long statemNum) {
 nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
   nmbrString *bigSubstInstAss, long substScheme,
   // For error messages:
-  long statementNum, long step, flag unkHypFlag)
+  long statementNum, long step, flag unkHypFlag,
+  /* For unused distinct variable checking: */
+  flag unusedFlag, nmbrString *djRVar, nmbrString *djOVar)
 {
   nmbrString_def(result); // value returned
   nmbrString_def(bigSubstSchemeVars);
@@ -635,6 +730,8 @@ ambiguityCheck: // Re-entry point to see if unification is unique
                 if (nmbrTmpPtrAIR[i] == aToken2) {
                   if (nmbrTmpPtrBIR[i] == bToken2) {
                     foundFlag = 1;
+                    if (unusedFlag & UNUSED_DVS)
+                      djRVar[i] = 1;
                     break;
                   }
                 }
@@ -646,6 +743,8 @@ ambiguityCheck: // Re-entry point to see if unification is unique
                   if (nmbrTmpPtrAIO[i] == aToken2) {
                     if (nmbrTmpPtrBIO[i] == bToken2) {
                       foundFlag = 1;
+                      if (unusedFlag & UNUSED_DUMMY_DVS)
+                        djOVar[i] = 1;
                       break;
                     }
                   }

@@ -2063,9 +2063,9 @@ void command(int argc, char *argv[]) {
       readInput();
 
       if (switchPos("VERIFY")) {
-        verifyProofs("*",1); // Parse and verify
+        verifyProofs("*",1,0); // Parse and verify
       } else {
-        // verifyProofs("*",0); // Parse only (for gross error checking)
+        // verifyProofs("*",0,0); // Parse only (for gross error checking)
       }
 
       if (g_sourceHasBeenRead == 1) {
@@ -4068,7 +4068,7 @@ void command(int argc, char *argv[]) {
 
       parseProof(g_proveStatement);
       // Necessary to set RPN stack ptrs before calling cleanWrkProof().
-      verifyProof(g_proveStatement);
+      verifyProof(g_proveStatement, 0);
       if (g_WrkProof.errorSeverity > 1) {
         print2(
              "The starting proof has a severe error.  It will not be used.\n");
@@ -5358,7 +5358,7 @@ void command(int argc, char *argv[]) {
               parseProof(g_proveStatement);
               // Must be called even if error occurred in parseProof,
               // to init RPN stack for cleanWrkProof().
-              verifyProof(g_proveStatement);
+              verifyProof(g_proveStatement, 0);
               // don't change proof if there is an error
               // (which could be pre-existing).
               i = (g_WrkProof.errorSeverity > 1);
@@ -6317,11 +6317,15 @@ void command(int argc, char *argv[]) {
     }
 
     if (cmdMatches("VERIFY PROOF")) {
-      if (switchPos("SYNTAX_ONLY")) {
-        verifyProofs(g_fullArg[2],0); // Parse only
-      } else {
-        verifyProofs(g_fullArg[2],1); // Parse and verify
-      }
+      i = !switchPos("SYNTAX_ONLY");
+      j = 0;
+      if (switchPos("DISJOINT_VARS"))
+        j |= UNUSED_DVS;
+      if (switchPos("ALL_DISJOINT_VARS"))
+        j |= UNUSED_DVS | UNUSED_DUMMY_DVS;
+      if (switchPos("ESSENTIAL"))
+        j |= UNUSED_ESSENTIAL;
+      verifyProofs(g_fullArg[2], (flag)i, (flag)j);
       continue;
     }
 
