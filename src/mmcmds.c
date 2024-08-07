@@ -25,7 +25,7 @@ vstring bigAdd(vstring bignum1, vstring bignum2);
 vstring bigSub(vstring bignum1, vstring bignum2);
 
 // For HTML output
-vstring_def(g_printStringForReferencedBy);
+vstring_def(g_printStringForUsedBy);
 
 // For MIDI
 flag g_midiFlag = 0;
@@ -556,7 +556,7 @@ void typeStatement(long showStmt,
         if (!texFlag)
           printLongLine(cat(
               "Its mandatory disjoint variable pairs are:  ",
-              right(str1,3),NULL),"  "," ");
+              right(str1,3), NULL), "  ", " ");
       }
       if (type == p_ &&
           nmbrLen(g_Statement[showStmt].optHypList)
@@ -568,7 +568,7 @@ void typeStatement(long showStmt,
                 0, // explicitTargets
                 0 // statemNum, used only if explicitTargets
                 ), NULL),
-            "      "," ");
+            "      ", " ");
       }
       nmbrTmpPtr1 = g_Statement[showStmt].optDisjVarsA;
       nmbrTmpPtr2 = g_Statement[showStmt].optDisjVarsB;
@@ -646,8 +646,7 @@ void typeStatement(long showStmt,
         printLongLine(cat(
             "These additional variables are allowed in its proof:  "
             ,nmbrCvtMToVString(
-            g_Statement[showStmt].optVarList),NULL),"      ",
-            " ");
+            g_Statement[showStmt].optVarList), NULL), "      ", " ");
         // ??? Add variables required by proof
       }
       // Note:  g_Statement[].reqVarList is only stored for $a and $p
@@ -720,7 +719,7 @@ void typeStatement(long showStmt,
 
               printLongLine(cat(
                   "<CENTER><TABLE CELLSPACING=7><TR><TD ALIGN=LEFT><FONT SIZE=-1>",
-                  "<B>Colors of variables:</B> ",
+                  "<B>Colors of variables:</B> &nbsp;",
                   g_htmlVarColor, "</FONT></TD></TR>",
                   NULL), "", "\"");
               g_outputToString = 0;
@@ -840,7 +839,7 @@ void typeStatement(long showStmt,
   // Start of creating used-by list for html page
   if (htmlFlag && texFlag) {
     // Clear out any previous g_printString accumulation
-    // for g_printStringForReferencedBy case below.
+    // for g_printStringForUsedBy case below.
     fprintf(g_texFilePtr, "%s", g_printString);
     let(&g_printString, "");
     // Start outputting to g_printString
@@ -866,7 +865,7 @@ void typeStatement(long showStmt,
         default: bug(233);
       }
       let(&str2, cat("<TR><TD ALIGN=LEFT><FONT SIZE=-1><B>This ", str3,
-          " is referenced by:</B>", NULL));
+          " is used by:</B>", NULL));
 
       if (str1[0] == 'Y') { // Used by at least one
         let(&str5, ""); // Buffer for very long strings
@@ -889,7 +888,7 @@ void typeStatement(long showStmt,
           // 8-Aug-2008 nm If line is very long, print it out and reset
           //   it to speed up program (SHOW STATEMENT syl/HTML is very slow).
           // 8-Aug-2008 nm This doesn't solve problem, because the bottleneck
-          //   is printing g_printStringForReferencedBy below.  This whole
+          //   is printing g_printStringForUsedBy below.  This whole
           //   code section needs to be redesigned to solve the speed problem.
           // 19-Sep-2012 nm Try again to fix SHOW STATEMENT syl/HTML speed
           //   without a major rewrite.  Unfortunately, made little difference.
@@ -915,7 +914,7 @@ void typeStatement(long showStmt,
       let(&g_printString, str2);
     } // if (subType != SYNTAX)
     if (subType == THEOREM) {
-      // The "referenced by" does not show up after the proof
+      // The "used by" line does not show up after the proof
       // because we moved the typeProof() to below.  Therefore, we save
       // g_printString into a temporary global holding variable to print
       // at the proper place inside of typeProof().  Ugly but necessary
@@ -923,7 +922,7 @@ void typeStatement(long showStmt,
       // In the case of THEOREM, we save and reset the g_printString.  In the
       // case of != THEOREM (i.e. AXIOM and DEFINITION), g_printString will
       // be printed and cleared below.
-      let(&g_printStringForReferencedBy, g_printString);
+      let(&g_printStringForUsedBy, g_printString);
       let(&g_printString, "");
     }
 
@@ -960,7 +959,7 @@ void typeStatement(long showStmt,
   // End of html proof for $p statements
 
   // typeProof should have cleared this out
-  if (g_printStringForReferencedBy[0]) bug(243);
+  if (g_printStringForUsedBy[0]) bug(243);
 
  returnPoint:
   // Deallocate strings
@@ -1225,7 +1224,7 @@ vstring htmlAllowedSubst(long showStmt)
       if (setVarDVFlag[j] == 'N') {
         free_vstring(str1);
         str1 = tokenToTex(g_MathToken[setVar[j]].tokenName, showStmt);
-        let(&htmlAllowedList, cat(htmlAllowedList, (first == 0) ? "," : "", str1, NULL));
+        let(&htmlAllowedList, cat(htmlAllowedList, (first == 0) ? ", " : "", str1, NULL));
         if (first == 0) countInfo++;
         first = 0;
       }
@@ -1403,8 +1402,8 @@ void typeProof(long statemNum,
       "<TD COLSPAN=4><B><FONT COLOR=RED>WARNING: Proof has a severe error.\n");
         print2("</FONT></B></TD></TR>\n");
         g_outputToString = 0;
-        // Clear out g_printStringForReferencedBy to prevent bug 243 above
-        let(&g_printStringForReferencedBy, "");
+        // Clear out g_printStringForUsedBy to prevent bug 243 above
+        let(&g_printStringForUsedBy, "");
       }
       return; // verifyProof() could crash
     }
@@ -1850,7 +1849,7 @@ void typeProof(long statemNum,
 
         if (!texFlag) {
           if (!g_midiFlag) {
-            printLongLine(cat(startPrefix," $", chr(type), " ",
+            printLongLine(cat(startPrefix, " $", chr(type), " ",
                 nmbrCvtMToVString(g_WrkProof.mathStringPtrs[step]),
                 NULL),
                 contPrefix,
@@ -1878,7 +1877,7 @@ void typeProof(long statemNum,
                 NULL),
                 contPrefix,
                 chr(1)); // chr(1) is right-justify flag for printLongLine
-            printLongLine(cat(srcPrefix,"  = ",
+            printLongLine(cat(srcPrefix, "  = ",
                 nmbrCvtMToVString(g_ProofInProgress.source[step]),
                 NULL),
                 contPrefix,
@@ -1943,7 +1942,7 @@ void typeProof(long statemNum,
 
     printLongLine(cat(
         "<CENTER><TABLE CELLSPACING=5><TR><TD ALIGN=LEFT><FONT SIZE=-1>",
-        "<B>Colors of variables:</B> ",
+        "<B>Colors of variables:</B> &nbsp;",
         g_htmlVarColor, "</FONT></TD></TR>",
         NULL), "", "\"");
     // Means this is not a syntax breakdown of a
@@ -2071,8 +2070,8 @@ void typeProof(long statemNum,
       for (long stmt = 1; stmt <= g_statements; stmt++) {
         if (statementUsedFlags[stmt] == 'Y') {
           if (!tmpStr[0]) {
-            let(&tmpStr,
-               "<TR><TD ALIGN=LEFT><FONT SIZE=-1><B>Syntax hints:</B> ");
+            let(&tmpStr, "<TR><TD ALIGN=LEFT><FONT SIZE=-1>"
+              "<B>This proof depends on syntax axioms:</B> ");
           }
 
           // Get the main symbol in the syntax.
@@ -2154,8 +2153,8 @@ void typeProof(long statemNum,
           let(&tmpStr1, left(g_Statement[stmt].labelName, 3));
           if (!strcmp(tmpStr1, "ax-")) {
             if (!tmpStr[0]) {
-              let(&tmpStr, "<TR><TD ALIGN=LEFT><FONT SIZE=-1><B>"
-                "This theorem was proved from axioms:</B>");
+              let(&tmpStr, "<TR><TD ALIGN=LEFT><FONT SIZE=-1>"
+                "<B>This proof depends on axioms:</B>");
             }
             free_vstring(tmpStr1);
             tmpStr1 = pinkHTML(stmt);
@@ -2179,8 +2178,8 @@ void typeProof(long statemNum,
           let(&tmpStr1, left(g_Statement[stmt].labelName, 3));
           if (!strcmp(tmpStr1, "df-")) {
             if (!tmpStr[0]) {
-              let(&tmpStr,
- "<TR><TD ALIGN=LEFT><FONT SIZE=-1><B>This theorem depends on definitions:</B>");
+              let(&tmpStr, "<TR><TD ALIGN=LEFT><FONT SIZE=-1>"
+                "<B>This proof depends on definitions:</B>");
             }
             free_vstring(tmpStr1);
             tmpStr1 = pinkHTML(stmt);
@@ -2230,14 +2229,14 @@ void typeProof(long statemNum,
 
       // End of axiom list
 
-      // Put referenced by list last
-      if (g_printStringForReferencedBy[0]) {
+      // Put "used by" list last
+      if (g_printStringForUsedBy[0]) {
         if (g_outputToString != 1) bug(257);
-        printLongLine(g_printStringForReferencedBy, "", "\"");
-        free_vstring(g_printStringForReferencedBy);
+        printLongLine(g_printStringForUsedBy, "", "\"");
+        free_vstring(g_printStringForUsedBy);
       } else {
         // Since we always print ref-by list even if "(None)",
-        // g_printStringForReferencedBy should never be empty.
+        // g_printStringForUsedBy should never be empty.
         bug(263);
       }
     }  // if essentialFlag
@@ -2341,11 +2340,11 @@ void showDetailStep(long statemNum, long detailStep) {
     if (stmt <= -1000) {
       stmt = -1000 - stmt;
       // stmt is now the step number a local label refers to
-      let(&tmpStr, cat(tmpStr,"=", str((double)(localLabelNames[stmt])), NULL));
+      let(&tmpStr, cat(tmpStr, "=", str((double)(localLabelNames[stmt])), NULL));
       type = g_Statement[proof[stmt]].type;
     } else {
       if (stmt != -(long)'?') bug(207);
-      let(&tmpStr, cat(tmpStr,"=",chr(-stmt), NULL)); // '?'
+      let(&tmpStr, cat(tmpStr, "=", chr(-stmt), NULL)); // '?'
       type = '?';
     }
   } else {
@@ -2450,7 +2449,7 @@ void showDetailStep(long statemNum, long detailStep) {
     let(&tmpStr, cat(tmpStr,
          "  The parent assertion of the target hypothesis is \"",
         g_Statement[getStep.targetParentStmt].labelName, "\" ($",
-        chr(g_Statement[getStep.targetParentStmt].type),", step ",
+        chr(g_Statement[getStep.targetParentStmt].type), ", step ",
         str((double)(getStep.targetParentStep)), ").", NULL));
   } else {
     let(&tmpStr, cat(tmpStr,
@@ -2472,11 +2471,11 @@ void showDetailStep(long statemNum, long detailStep) {
       if (j == 1) {
         printLongLine(cat(
             "The following substitution was made to the source assertion:",
-            NULL),""," ");
+            NULL), "", " ");
       } else {
         printLongLine(cat(
             "The following substitutions were made to the source assertion:",
-            NULL),""," ");
+            NULL), "", " ");
       }
       if (!j) {
         print2("    (None)\n");
@@ -2484,7 +2483,7 @@ void showDetailStep(long statemNum, long detailStep) {
         print2("    Variable  Substituted with\n");
         for (i = 0; i < j; i++) {
           printLongLine(cat("     ",
-              g_MathToken[getStep.sourceSubstsNmbr[i]].tokenName," ",
+              g_MathToken[getStep.sourceSubstsNmbr[i]].tokenName, " ",
               space(9 - (long)strlen(
                 g_MathToken[getStep.sourceSubstsNmbr[i]].tokenName)),
               nmbrCvtMToVString(getStep.sourceSubstsPntr[i]), NULL),
@@ -2504,11 +2503,11 @@ void showDetailStep(long statemNum, long detailStep) {
     if (j == 1) {
       printLongLine(cat(
           "The following substitution was made to the target hypothesis:",
-          NULL),""," ");
+          NULL), "", " ");
     } else {
       printLongLine(cat(
           "The following substitutions were made to the target hypothesis:",
-          NULL),""," ");
+          NULL), "", " ");
     }
     if (!j) {
       print2("    (None)\n");
@@ -2654,7 +2653,7 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
         print2("\n");
         printLongLine(cat("Statement ", g_Statement[stmt].labelName, str1,
           "\"", g_Statement[stmt].fileName,
-          "\".",NULL), "", " ");
+          "\".", NULL), "", " ");
       } else {
         g_outputToString = 1; // Flag for print2 to add to g_printString
         if (!g_htmlFlag) {
@@ -2702,7 +2701,7 @@ void proofStmtSumm(long statemNum, flag essentialFlag, flag texFlag) {
           if (!texFlag) {
             printLongLine(cat(str2,
                 nmbrCvtMToVString(g_Statement[k].mathString), " $.", NULL),
-                "      "," ");
+                "      ", " ");
           } else {
             let(&str3, space((long)strlen(str2)));
             printTexLongMath(g_Statement[k].mathString,
@@ -2987,8 +2986,8 @@ void traceProofTree(long statemNum,
 
   printLongLine(cat("The proof tree traceback for statement \"",
       g_Statement[statemNum].labelName,
-      "\" follows.  The statements used by each proof are indented one level in,",
-      " below the statement being proved.  Hypotheses are not included.",
+      "\" follows.  The statements used by each proof are indented one level in, ",
+      "below the statement being proved.  Hypotheses are not included.",
       NULL),
       "", " ");
   print2("\n");
@@ -3354,8 +3353,8 @@ double countSteps(long statemNum, flag essentialFlag)
            " different subtheorems are used.  ",
        "The statement and subtheorems have a total of ",
            str((double)actualSteps), " actual steps.  ",
-       "If subtheorems used only once were eliminated,",
-           " there would be a total of ",
+       "If subtheorems used only once were eliminated, ",
+           "there would be a total of ",
            str((double)actualSubTheorems2), " subtheorems, and ",
        "the statement and subtheorems would have a total of ",
            str((double)actualSteps2), " steps.  ",
@@ -4653,7 +4652,7 @@ void verifyProofs(vstring labelMatch, flag verifyFlag) {
   if (emptyProofList[0]) {
     printLongLine(cat(
         "Warning: The following $p statement(s) were not proved:  ",
-        right(emptyProofList,3), NULL)," ","  ");
+        right(emptyProofList,3), NULL), " ", "  ");
   }
   if (!emptyProofList[0] && !errorFound && !strcmp("*", labelMatch)) {
     if (verifyFlag) {
@@ -5219,11 +5218,11 @@ void verifyMarkup(vstring labelMatch,
           fileCheck); // 1 = check external files (gifs and bib)
   if (f != 0) errFound = 1;
 
-  // Check mathboxes for cross-references
+  // Check mathboxes for cross-uses
   if (mathboxCheck) {
     print2("Checking mathbox independence...\n");
     assignMathboxInfo(); // Populate global mathbox variables
-    // Scan proofs in mathboxes to see if earlier mathbox is referenced
+    // Scan proofs in mathboxes to see if earlier mathbox is used
     for (pmbox = 2; pmbox <= g_mathboxes; pmbox++) {
       // Note g_mathboxStart, etc. are 0-based
       for (pstmt = g_mathboxStart[pmbox - 1]; pstmt <= g_mathboxEnd[pmbox - 1];
@@ -5243,7 +5242,7 @@ void verifyMarkup(vstring labelMatch,
           if (stmt < 0) continue; // Local step or '?' step
           if (stmt == 0) bug(266);
           if (stmt > g_mathboxStmt && stmt < g_mathboxStart[pmbox - 1]) {
-            // A statement in another mathbox is referenced
+            // A statement in another mathbox is used
 
             // Eliminate duplicate error messages:
             let(&str1, cat(str((double)pstmt), "-", str((double)stmt), NULL));
