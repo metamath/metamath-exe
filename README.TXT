@@ -23,8 +23,8 @@ For Unix/Linux/Cygwin/MacOSX using the gcc compiler, compile with the command
 "cd src && gcc m*.c -o metamath", then type "./metamath set.mm" to run.
 
 As an alternative, if you have autoconf, automake, and a C compiler, you can
-compile with the command "cd src && autoreconf -i && ./configure && make".
-This "autoconf" approach automatically finds your compiler and its options, and
+compile with the command "autoreconf -i && ./configure && make".  This
+"autoconf" approach automatically finds your compiler and its options, and
 configure takes the usual options (e.g., "--prefix=/usr").  The resulting
 executable will typically be faster because it will check for and enable
 available optimizations; tests found that the "improve" command ran 28% faster
@@ -61,7 +61,7 @@ your ~/.bash_profile file:
 
   stty echoe echok echoctl echoke
 
-Using rlwrap as described above will also solve this problem.
+Using rlwrap as described below will also solve this problem.
 
 
 Additional MacOSX information
@@ -82,7 +82,7 @@ Optional rlwrap user interface enhancement
 On Linux/MacOSX/Unix, the Metamath program will be more pleasant to use if you
 run it inside of rlwrap:
 
-  http://utopia.knoware.nl/~hlub/uck/rlwrap/ (checked 15-Feb-2014)
+  https://github.com/hanslub42/rlwrap (checked 18-Sep-2024)
 
 which provides up-arrow command history and other command-line editing
 features.  After you install rlwrap per its instructions, invoke the Metamath
