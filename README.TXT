@@ -23,8 +23,8 @@ For Unix/Linux/Cygwin/MacOSX using the gcc compiler, compile with the command
 "cd src && gcc m*.c -o metamath", then type "./metamath set.mm" to run.
 
 As an alternative, if you have autoconf, automake, and a C compiler, you can
-compile with the command "cd src && autoreconf -i && ./configure && make".
-This "autoconf" approach automatically finds your compiler and its options, and
+compile with the command "autoreconf -i && ./configure && make".  This
+"autoconf" approach automatically finds your compiler and its options, and
 configure takes the usual options (e.g., "--prefix=/usr").  The resulting
 executable will typically be faster because it will check for and enable
 available optimizations; tests found that the "improve" command ran 28% faster
@@ -36,6 +36,12 @@ way, you can then run metamath as "metamath /usr/share/metamath/set.mm", copy
 set.mm locally (cp /usr/share/metamath/set.mm . ; metamath set.mm), or run
 metamath and type:  read "/usr/share/metamath/set.mm" (note that inside
 metamath, filenames containing "/" must be quoted).
+
+Known issues with the autoconf approach:  On Intel type processors x86 the
+configure script might want you to support 32-bit code, even if your system
+is natively 64-bit.  This is known as cross-compiling and on Debian you need
+the package gcc-multilib installed.  For other Linux OS a similar extension
+might be in order.
 
 
 Optional enhancements
@@ -50,10 +56,10 @@ If your compiler supports it, you can also add the option -DINLINE=inline to
 achieve the 28% performance increase described above.
 
 On Linux/MacOSX/Unix, the Metamath program will be more pleasant to use if you
-run it inside of rlwrap http://utopia.knoware.nl/~hlub/rlwrap/ (checked
-3-Jun-2015) which provides up-arrow command history and other command-line
-editing features.  After you install rlwrap per its instructions, invoke the
-Metamath program with "rlwrap ./metamath set.mm".
+run it inside of https://github.com/hanslub42/rlwrap (checked 18-Sep-2024)
+which provides up-arrow command history and other command-line editing
+features.  After you install rlwrap per its instructions (see below), invoke
+the Metamath program with "rlwrap ./metamath set.mm".
 
 In some Linux distributions (such as Debian Woody), if the Backspace key does
 not delete characters typed after the "MM>" prompt, try adding this line to
@@ -61,7 +67,7 @@ your ~/.bash_profile file:
 
   stty echoe echok echoctl echoke
 
-Using rlwrap as described above will also solve this problem.
+Using rlwrap as described below will also solve this problem.
 
 
 Additional MacOSX information
@@ -82,11 +88,18 @@ Optional rlwrap user interface enhancement
 On Linux/MacOSX/Unix, the Metamath program will be more pleasant to use if you
 run it inside of rlwrap:
 
-  http://utopia.knoware.nl/~hlub/uck/rlwrap/ (checked 15-Feb-2014)
+  https://github.com/hanslub42/rlwrap (checked 18-Sep-2024)
 
 which provides up-arrow command history and other command-line editing
 features.  After you install rlwrap per its instructions, invoke the Metamath
 program with "rlwrap ./metamath set.mm".
+
+On Debian flavoured Linux you can use:
+
+sudo apt-get install rlwrap
+
+Other Linux OS might require you to build this program from sources.  Be
+prepared to have a curses and readline library ready then.
 
 The Windows version of the Metamath program was compiled with lcc, which has
 similar features built-in.)
