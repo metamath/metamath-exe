@@ -37,6 +37,12 @@ set.mm locally (cp /usr/share/metamath/set.mm . ; metamath set.mm), or run
 metamath and type:  read "/usr/share/metamath/set.mm" (note that inside
 metamath, filenames containing "/" must be quoted).
 
+Known issues with the autoconf approach:  On Intel type processors x86 the
+configure script might want you to support 32-bit code, even if your system
+is natively 64-bit.  This is known as cross-compiling and on Debian you need
+the package gcc-multilib installed.  For other Linux OS a similar extension
+might be in order.
+
 
 Optional enhancements
 ---------------------
@@ -50,10 +56,10 @@ If your compiler supports it, you can also add the option -DINLINE=inline to
 achieve the 28% performance increase described above.
 
 On Linux/MacOSX/Unix, the Metamath program will be more pleasant to use if you
-run it inside of rlwrap http://utopia.knoware.nl/~hlub/rlwrap/ (checked
-3-Jun-2015) which provides up-arrow command history and other command-line
-editing features.  After you install rlwrap per its instructions, invoke the
-Metamath program with "rlwrap ./metamath set.mm".
+run it inside of https://github.com/hanslub42/rlwrap (checked 18-Sep-2024)
+which provides up-arrow command history and other command-line editing
+features.  After you install rlwrap per its instructions (see below), invoke
+the Metamath program with "rlwrap ./metamath set.mm".
 
 In some Linux distributions (such as Debian Woody), if the Backspace key does
 not delete characters typed after the "MM>" prompt, try adding this line to
@@ -87,6 +93,13 @@ run it inside of rlwrap:
 which provides up-arrow command history and other command-line editing
 features.  After you install rlwrap per its instructions, invoke the Metamath
 program with "rlwrap ./metamath set.mm".
+
+On Debian flavoured Linux you can use:
+
+sudo apt-get install rlwrap
+
+Other Linux OS might require you to build this program from sources.  Be
+prepared to have a curses and readline library ready then.
 
 The Windows version of the Metamath program was compiled with lcc, which has
 similar features built-in.)
