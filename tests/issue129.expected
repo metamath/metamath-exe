@@ -12,7 +12,7 @@ MM> Outputting proof of "th1"...
 The LaTeX source was written to "issue129.tex".
 MM> The LaTeX output file "issue129.tex" has been closed.
 MM> Entering the Text Tools utilities.  Type HELP for help, EXIT to exit.
-TOOLS> The input had 28 lines, the output has 27 lines. First output line:
+TOOLS> The input had 27 lines, the output has 26 lines. First output line:
 \documentclass{article}
 TOOLS> Exiting the Text Tools.  Type EXIT again to exit Metamath.
 MM> \documentclass{article}
