@@ -21,7 +21,6 @@ MM> \documentclass{article}
 \usepackage{mathrsfs} % for \mathscr
 \usepackage{mathtools} % loads package amsmath
 \usepackage{amsthm} % amsthm must be loaded after amsmath
-\usepackage{accents} % accents should be loaded after mathtools
 \theoremstyle{plain}
 \newtheorem{theorem}{Theorem}[section]
 \newtheorem{definition}[theorem]{Definition}
