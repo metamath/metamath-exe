@@ -627,7 +627,8 @@ H("");
 }
 
 if (!strcmp(saveHelpCmd, "HELP VERIFY PROOF")) {
-H("Syntax:  VERIFY PROOF <label-match> [/ SYNTAX_ONLY]");
+H("Syntax:  VERIFY PROOF <label-match> [/ SYNTAX_ONLY] [/DISJOINT_VARS]");
+H("            [/ALL_DISJOINT_VARS] [/ESSENTIAL]");
 H("");
 H("This command verifies the proofs of the specified statements.");
 H("<label-match> may contain * and ? wildcard characters to verify more than");
@@ -636,10 +637,15 @@ H("\"abc\" followed by any single character followed by \"def\".");
 H("VERIFY PROOF * will verify all proofs in the database.");
 H("See HELP SEARCH for complete wildcard matching rules.");
 H("");
-H("Optional qualifier:");
+H("Optional qualifiers:");
 H("    / SYNTAX_ONLY - This qualifier will perform a check of syntax and RPN");
 H("        stack violations only.  It will not verify that the proof is");
 H("        correct.");
+H("    / DISJOINT_VARS - List disjoint variable conditions for non-dummy");
+H("        variables not used by the verifier.");
+H("    / ALL_DISJOINT_VARS - List all disjoint variable conditions not used");
+H("        by the verifier.");
+H("    / ESSENTIAL - List essential hypotheses not used by the verifier.");
 H("");
 H("Note: READ, followed by VERIFY PROOF *, will ensure the database is free");
 H("from errors in Metamath language but will not check the markup language");
