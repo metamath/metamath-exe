@@ -1278,8 +1278,6 @@ void printTexHeader(flag texHeaderFlag)
       // see https://www.ctan.org/pkg/amsmath
       print2("\\usepackage{amsthm} %% amsthm must be loaded after amsmath\n");
       // see https://www.ctan.org/pkg/amsthm
-      print2("\\usepackage{accents} %% accents should be loaded after mathtools\n");
-      // see https://www.ctan.org/pkg/accents
       print2("\\theoremstyle{plain}\n");
       print2("\\newtheorem{theorem}{Theorem}[section]\n");
       print2("\\newtheorem{definition}[theorem]{Definition}\n");
@@ -1305,8 +1303,6 @@ void printTexHeader(flag texHeaderFlag)
       print2("\\usepackage{mathtools} %% loads package amsmath\n");
       // see https://www.ctan.org/pkg/mathtools
       // see https://www.ctan.org/pkg/amsmath
-      print2("\\usepackage{accents} %% accents should be loaded after mathtools\n");
-      // see https://www.ctan.org/pkg/accents
       print2("\\raggedbottom\n");
       print2("\\raggedright\n");
       print2("%%\\title{Your title here}\n");
