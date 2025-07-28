@@ -2731,12 +2731,15 @@ char parseProof(long statemNum)
   return returnFlag;
 } // parseProof()
 
+// Returns x * y + z, checking for (positive) overflow.
+// Assumes x >= 0, y > 0, and z >= 0.
 long saturatingMulAdd(long x, long y, long z) {
   if (x > LONG_MAX / y) return LONG_MAX;
   x *= y;
   if (x > LONG_MAX - z) return LONG_MAX;
   return x + z;
 }
+
 // Parse proof in compressed format.
 // Parse proof of one statement in source file.  Uses wrkProof structure.
 // Returns 0 if OK; returns 1 if proof is incomplete (is empty or has '?'
