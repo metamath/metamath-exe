@@ -1,0 +1,17 @@
+MM> READ "issue184.mm"
+Reading source file "issue184.mm"... 224 bytes
+224 bytes were read into the source buffer.
+The source has 6 statements; 0 are $a and 2 are $p.
+No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
+if you want to check them.
+MM> Continuous scrolling is now in effect.
+MM> 0 10%  20%  30%  40%  50%  60%  70%  80%  90% 100%
+..................................................
+?Error on line 12 of file "issue184.mm" at statement 6, label "evil", type
+"$p":
+    ( ww ) ABBBBBBVYVUXUUXYWYVVUUVUXWYVWYVYWG $.
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This compressed label reference is outside the range of the label list.  The
+compressed label value is 9223372036854775808 but the largest label defined is
+1.
+
