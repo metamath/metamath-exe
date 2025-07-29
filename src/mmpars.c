@@ -7,6 +7,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
+#include <limits.h>
 #include "mmvstr.h"
 #include "mmdata.h"
 #include "mminou.h"
@@ -2730,6 +2731,15 @@ char parseProof(long statemNum)
   return returnFlag;
 } // parseProof()
 
+// Returns x * y + z, checking for (positive) overflow.
+// Assumes x >= 0, y > 0, and z >= 0.
+long saturatingMulAdd(long x, long y, long z) {
+  if (x > LONG_MAX / y) return LONG_MAX;
+  x *= y;
+  if (x > LONG_MAX - z) return LONG_MAX;
+  return x + z;
+}
+
 // Parse proof in compressed format.
 // Parse proof of one statement in source file.  Uses wrkProof structure.
 // Returns 0 if OK; returns 1 if proof is incomplete (is empty or has '?'
@@ -3099,8 +3109,8 @@ char parseCompressedProof(long statemNum)
         //   * for each character c:
         //      * if c in ['U'..'Y']: n := n * 5 + (c - 'U' + 1)
         //      * if c in ['A'..'T']: n := n * 20 + (c - 'A' + 1)
-        labelMapIndex = labelMapIndex * lettersLen +
-            chrWeight[(long)(fbPtr[0])];
+        labelMapIndex = saturatingMulAdd(
+          labelMapIndex, lettersLen, chrWeight[(long)(fbPtr[0])]);
         if (labelMapIndex >= g_WrkProof.compressedPfNumLabels) {
           if (!g_WrkProof.errorCount) {
             sourceError(labelStart, tokLength, statemNum, cat(
@@ -3184,8 +3194,8 @@ char parseCompressedProof(long statemNum)
           labelMapIndex = chrWeight[(long)(fbPtr[0])] + 1;
           labelStart = fbPtr; // Save label start for error msg
         } else {
-          labelMapIndex = labelMapIndex * digitsLen +
-              chrWeight[(long)(fbPtr[0])] + 1;
+          labelMapIndex = saturatingMulAdd(
+            labelMapIndex, digitsLen, chrWeight[(long)(fbPtr[0])] + 1);
           if (bggyAlgo) labelMapIndex--; // Adjust for buggy algorithm
         }
         break;
