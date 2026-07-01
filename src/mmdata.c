@@ -1224,14 +1224,14 @@ void nmbrCpy(nmbrString *s, const nmbrString *t) {
 // Like strncpy, only the 1st n characters are copied.
 // Dangerous for general purpose use.
 void nmbrNCpy(nmbrString *s, const nmbrString *t, long n) {
-  long i;
-  i = 0;
-  while (t[i] != -1) { // End of string -- nmbrSeg, nmbrMid depend on it!!
-    if (i >= n) break;
+  long i = 0;
+  // Check i < n before reading t[i] so we never access t[n]; all callers
+  // set sout[n] = NULL_NMBRSTRING afterwards, so that value is never used.
+  while (i < n && t[i] != -1) { // End of string -- nmbrSeg, nmbrMid depend on it!!
     s[i] = t[i];
     i++;
   }
-  s[i] = t[i]; // End of string
+  s[i] = *NULL_NMBRSTRING; // End of string (NULL-terminate at actual end)
 }
 
 // Compare two strings.
