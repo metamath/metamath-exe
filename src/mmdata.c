@@ -2708,14 +2708,15 @@ void pntrCpy(pntrString *s, const pntrString *t) {
 // Like strncpy, only the 1st n characters are copied.
 // Dangerous for general purpose use
 void pntrNCpy(pntrString *s, const pntrString *t, long n) {
-  long i;
-  i = 0;
-  while (t[i] != NULL) { // End of string -- pntrSeg, pntrMid depend on it!!
-    if (i >= n) break;
+  long i = 0;
+  // Check i < n before reading t[i] so we never access t[n] (which may be
+  // a dangling pointer when callers free the element at position n before
+  // calling this function).  All callers set sout[n] = NULL afterwards.
+  while (i < n && t[i] != NULL) { // End of string -- pntrSeg, pntrMid depend on it!!
     s[i] = t[i];
     i++;
   }
-  s[i] = t[i]; // End of string
+  s[i] = *NULL_PNTRSTRING; // End of string (NULL-terminate at actual end)
 }
 
 // Compare two strings.
