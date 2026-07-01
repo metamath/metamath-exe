@@ -1772,11 +1772,12 @@ static flag getFullArg(long arg, const char *cmdList1) {
   if (!strcmp(left(possCmd[possCmds - 1],1), "<")) {
     // free_vstring(defaultCmd); // Not needed because defaultCmd is already empty
     // Get default argument, if any
-    defaultCmd = possCmd[possCmds - 1]; // re-use old allocation
-
-    if (!strcmp(defaultCmd, "<$>")) {
+    if (!strcmp(possCmd[possCmds - 1], "<$>")) {
       let(&defaultCmd, "<nothing>");
+    } else {
+      let(&defaultCmd, possCmd[possCmds - 1]);
     }
+    free_vstring(*(vstring *)(&possCmd[possCmds - 1]));
     pntrLet(&possCmd, pntrLeft(possCmd, possCmds - 1));
     possCmds--;
   }
