@@ -1256,7 +1256,6 @@ temp_nmbrString *nmbrSeg(const nmbrString *sin, long start, long stop) {
   if (length < 0) length = 0;
   temp_nmbrString *sout = nmbrTempAlloc(length + 1);
   nmbrNCpy(sout, sin + start - 1, length);
-  sout[length] = *NULL_NMBRSTRING;
   return sout;
 }
 
@@ -1266,7 +1265,6 @@ temp_nmbrString *nmbrMid(const nmbrString *sin, long start, long length) {
   if (length < 0) length = 0;
   temp_nmbrString *sout = nmbrTempAlloc(length + 1);
   nmbrNCpy(sout, sin + start - 1, length);
-  sout[length] = *NULL_NMBRSTRING;
   return sout;
 }
 
@@ -1275,7 +1273,6 @@ temp_nmbrString *nmbrLeft(const nmbrString *sin, long n) {
   if (n < 0) n = 0;
   temp_nmbrString *sout = nmbrTempAlloc(n + 1);
   nmbrNCpy(sout, sin, n);
-  sout[n] = *NULL_NMBRSTRING;
   return sout;
 }
 
@@ -2740,7 +2737,6 @@ temp_pntrString *pntrSeg(const pntrString *sin, long start, long stop) {
   if (length < 0) length = 0;
   temp_pntrString *sout = pntrTempAlloc(length + 1);
   pntrNCpy(sout, sin + start - 1, length);
-  sout[length] = *NULL_PNTRSTRING;
   return sout;
 }
 
@@ -2750,7 +2746,6 @@ temp_pntrString *pntrMid(const pntrString *sin, long start, long length) {
   if (length < 0) length = 0;
   temp_pntrString *sout = pntrTempAlloc(length + 1);
   pntrNCpy(sout, sin + start-1, length);
-  sout[length] = *NULL_PNTRSTRING;
   return sout;
 }
 
@@ -2759,7 +2754,6 @@ temp_pntrString *pntrLeft(const pntrString *sin, long n) {
   if (n < 0) n = 0;
   temp_pntrString *sout = pntrTempAlloc(n+1);
   pntrNCpy(sout,sin,n);
-  sout[n] = *NULL_PNTRSTRING;
   return sout;
 }
 
