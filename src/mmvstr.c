@@ -313,7 +313,10 @@ temp_vstring mid(const char *sin, long start, long length) {
   if (start < 1) start = 1;
   if (length < 0) length = 0;
   temp_vstring sout = tempAlloc(length + 1);
-  strncpy(sout, sin + start - 1, (size_t)length);
+  /* parentheses in next line ensure integer subtraction is evaluated before
+     pointer arithmetic to avoid 'pointer arithmetic out of object bounds' UB.
+  */
+  strncpy(sout, sin + (start - 1), (size_t)length);
 /*E*/ // ??? Should db be subtracted from if length > end of string?
   sout[length] = 0;
   return sout;
@@ -865,7 +868,11 @@ temp_vstring entry(long element, const char *list)
   length = i - lastComma - 1;
   if (length < 1) return ("");
   temp_vstring sout = tempAlloc(length + 1);
-  strncpy(sout, list + lastComma + 1, (size_t)length);
+  /* lastComma == -1 when element == 1 (no preceding comma);
+     parentheses in next line ensure integer addition is evaluated before
+     pointer arithmetic to avoid 'pointer arithmetic out of object bounds' UB.
+  */
+  strncpy(sout, list + (lastComma + 1), (size_t)length);
   sout[length] = 0;
   return sout;
 }
