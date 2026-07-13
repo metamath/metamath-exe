@@ -5005,7 +5005,7 @@ void getNextInclusion(char *fileBuf, long startOffset, // inputs
         }
         continue; // We're past Begin; start search for End
       } // Begin, End, or Skip
-    } else if (i != i + 1) { // Suppress "unreachable code" warning for bug trap below
+    } else if (1) { // Suppress "unreachable code" warning for bug trap below
       // It's '$' not followed by '[' or '('; j is token length
       fbPtr = fbPtr + j;
       continue;
