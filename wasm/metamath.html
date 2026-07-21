@@ -75,7 +75,7 @@
 </header>
 
 <dialog id="done-dlg">
-  <h2>Download complete</h2>
+  <h2 id="done-title">Download complete</h2>
   <p id="done-msg"></p>
   <div class="row">
     <button id="done-run" autofocus title="Read the database from the virtual filesystem into metamath now.">Read it now</button>
@@ -244,7 +244,7 @@
       // so say so in a dialog as well as in the transcript.
       echo('\n[' + name + ' downloaded into the virtual filesystem.' +
            '\n Now type:  read "' + name + '"  ]\n');
-      showDone(name);
+      offerRead(name, "Download complete", "Downloading");
     } catch (err) {
       setStatus("download failed");
       echo("\n[could not download " + name + ": " + err.message +
@@ -252,16 +252,22 @@
     }
   }
 
-  // ---- "download complete" dialog -------------------------------------
+  // ---- offer to read a file that just arrived --------------------------
+  // Putting a file in the virtual filesystem is not the same as metamath
+  // reading it, which is easy to miss, so offer the read straight away.  Both
+  // ways of getting a file, downloading it and adding it from your computer,
+  // use this.
   var doneDlg = document.getElementById("done-dlg");
+  var doneTitle = document.getElementById("done-title");
   var doneMsg = document.getElementById("done-msg");
   var pendingRead = "";
 
-  function showDone(name) {
+  function offerRead(name, heading, action) {
     pendingRead = 'read "' + name + '"';
+    doneTitle.textContent = heading;
     doneMsg.innerHTML =
       "<strong>" + name + "</strong> is now in the virtual filesystem. " +
-      "Downloading does not read it into metamath, so run " +
+      action + " does not read it into metamath, so run " +
       "<code>" + pendingRead + "</code> to do that.";
     // Name the command on the button, so that it is clear what will be run.
     doneRun.textContent = 'Run ' + pendingRead;
@@ -297,6 +303,13 @@
     echo('\n[' + f.name + ' added to the virtual filesystem.' +
          ' It was not sent anywhere.' +
          '\n Now type:  read "' + f.name + '"  ]\n');
+    // Only a database is worth offering to read; a file added for some other
+    // purpose, such as a command file for SUBMIT, is not.
+    if (/\.mm$/i.test(f.name)) {
+      offerRead(f.name, "File added", "Adding it");
+    }
+    // Let the same file be chosen again later.
+    e.target.value = "";
   };
 
   // ---- download files the program wrote -------------------------------
