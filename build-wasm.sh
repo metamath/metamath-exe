@@ -7,6 +7,7 @@
 # Usage:
 #   ./build-wasm.sh          # build into ./build-wasm
 #   ./build-wasm.sh -s       # build, then serve it on http://localhost:8765
+#   ./build-wasm.sh -t       # build, then run the test suite against it
 #
 # Output (in ./build-wasm):
 #   index.html             the page, copied from wasm/metamath.html
@@ -22,7 +23,9 @@ top_dir="$(pwd)"
 out_dir="$top_dir/build-wasm"
 
 serve=0
+runtests=0
 [ "${1:-}" = "-s" ] && serve=1
+[ "${1:-}" = "-t" ] && runtests=1
 
 if [ ! -f emsdk/emsdk_env.sh ]; then
   echo >&2 "Emscripten SDK not found.  Run ./get-emsdk.sh first."
@@ -50,18 +53,22 @@ mkdir -p "$out_dir"
 #   EXIT_RUNTIME=1        so EXIT reports cleanly to the page.
 #   FORCE_FILESYSTEM      the in-memory filesystem holds uploaded .mm files.
 #   ALLOW_MEMORY_GROWTH   set.mm is about 50 MB, and grows over time.
-echo "Compiling ..."
+# Options shared by both builds below.
+common_opts="-O2 -DINLINE=inline
+  -sASYNCIFY
+  -sALLOW_MEMORY_GROWTH=1
+  -sMODULARIZE=1
+  -sEXPORT_NAME=createMetamath
+  -sEXPORTED_RUNTIME_METHODS=callMain,FS
+  -sINVOKE_RUN=0
+  -sEXIT_RUNTIME=1"
+
+echo "Compiling the browser build ..."
+# shellcheck disable=SC2086
 emcc "$top_dir"/src/*.c \
   -o "$out_dir/metamath-browser.js" \
-  -O2 -DINLINE=inline \
-  -sASYNCIFY \
-  -sALLOW_MEMORY_GROWTH=1 \
+  $common_opts \
   -sINITIAL_MEMORY=64MB \
-  -sMODULARIZE=1 \
-  -sEXPORT_NAME=createMetamath \
-  -sEXPORTED_RUNTIME_METHODS=callMain,FS \
-  -sINVOKE_RUN=0 \
-  -sEXIT_RUNTIME=1 \
   -sFORCE_FILESYSTEM=1 \
   --js-library "$top_dir/wasm/mmemscripten.js"
 
@@ -69,6 +76,32 @@ cp "$top_dir/wasm/metamath.html" "$out_dir/index.html"
 
 echo "Built in $out_dir"
 ls -l "$out_dir/metamath-browser.wasm" | awk '{printf "  metamath-browser.wasm  %.0f KB\n", $5/1024}'
+
+# The test suite needs a build that can reach real files and be driven from a
+# terminal, which the browser build deliberately cannot do.
+if [ "$runtests" -eq 1 ]; then
+  echo "Compiling the command line build used for testing ..."
+  # shellcheck disable=SC2086
+  emcc "$top_dir"/src/*.c \
+    -o "$out_dir/metamath-node.js" \
+    $common_opts \
+    -sNODERAWFS=1 \
+    --js-library "$top_dir/wasm/mmemscripten.js"
+
+  # run_test.sh runs the command as a single word, so wrap it in a script.
+  cat > "$out_dir/metamath-wasm" <<WRAPPER
+#!/bin/sh
+exec node "$top_dir/wasm/run-node.js" "\$@"
+WRAPPER
+  chmod +x "$out_dir/metamath-wasm"
+
+  echo "Running the test suite against the WebAssembly build ..."
+  # Tests that hand a command to the operating system are skipped, because a
+  # web browser has no shell to hand it to.
+  ( cd "$top_dir/tests" &&
+    env METAMATH="$out_dir/metamath-wasm" ./run_test.sh --no-shell ./*.in )
+  echo "Tests passed."
+fi
 
 if [ "$serve" -eq 1 ]; then
   echo "Serving http://localhost:8765/  (press Control-C to stop)"

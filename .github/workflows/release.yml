@@ -149,8 +149,12 @@ jobs:
         if: steps.cache-emsdk.outputs.cache-hit != 'true'
         run: ./get-emsdk.sh
 
-      - name: Build the browser version
-        run: ./build-wasm.sh
+      # -t also runs the test suite against the WebAssembly build, so a
+      # regression stops the page from being published. Tests that hand a
+      # command to the operating system are skipped, because a web browser has
+      # no shell to hand it to.
+      - name: Build the browser version and test it
+        run: ./build-wasm.sh -t
 
       - name: Publish to the gh-pages branch
         env:
