@@ -67,10 +67,11 @@ repository, and place them next to the executable (or give a full path).
 To compile it yourself instead, see the source-build instructions below.
 
 
-Running metamath in a web browser
----------------------------------
+Running metamath-exe in a web browser
+-------------------------------------
 
-Metamath can also be run inside a web browser, with nothing installed at all:
+Metamath-exe can also be run inside a web browser, with nothing installed at
+all:
 
   https://metamath.github.io/metamath-exe/
 
@@ -80,13 +81,14 @@ with a particular version stays reproducible:
   https://metamath.github.io/metamath-exe/v0.199/
 
 The page provides a terminal (with up and down arrow command history), buttons
-to download set.mm or iset.mm into the page's virtual filesystem, a way to
+to download set.mm or iset.mm into the virtual filesystem, a way to
 add your own .mm file from your computer, a listing of that filesystem, and a
 way to save files the program produced back to your computer.  A file added
 this way stays in your browser; it is not sent anywhere.
 
-Note that the databases live only in the browser's virtual filesystem.
-Downloading set.mm does not load it into metamath; you still have to type
+Note that the databases live only in the virtual filesystem, which is this
+page's own storage.  Downloading set.mm does not read it into metamath; you
+still have to type
 
   read "set.mm"
 

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Metamath in your web browser</title>
+<title>Metamath-exe in your web browser</title>
 <style>
   :root { color-scheme: light dark; }
   body {
@@ -62,14 +62,14 @@
 <body>
 
 <header>
-  <h1>Metamath in your web browser</h1>
+  <h1>Metamath-exe in your web browser</h1>
   <div class="controls">
-    <button id="load-set">Download set.mm</button>
-    <button id="load-iset">Download iset.mm</button>
-    <button id="add-btn">Add from computer</button>
+    <button id="load-set" title="Copy the current set.mm from the Metamath website (us.metamath.org) into the virtual filesystem. It is not read into metamath until you run: read &quot;set.mm&quot;">Download set.mm</button>
+    <button id="load-iset" title="Copy the current iset.mm from the Metamath website (us.metamath.org) into the virtual filesystem. It is not read into metamath until you run: read &quot;iset.mm&quot;">Download iset.mm</button>
+    <button id="add-btn" title="Copy a file from your own computer into the virtual filesystem. The file stays in your browser and is not sent anywhere. It is not read into metamath until you run: read &quot;yourfile.mm&quot;">Add from computer</button>
     <input type="file" id="addfile" accept=".mm,.txt" hidden>
-    <button id="listfiles">List files</button>
-    <button id="download">Save to computer</button>
+    <button id="listfiles" title="List what is currently in the virtual filesystem. Metamath-exe itself has no command that lists files.">List files</button>
+    <button id="download" title="Copy a file from the virtual filesystem to your own computer, such as a proof or the web pages that metamath wrote.">Save to computer</button>
     <span id="status">starting...</span>
   </div>
 </header>
@@ -78,8 +78,8 @@
   <h2>Download complete</h2>
   <p id="done-msg"></p>
   <div class="row">
-    <button id="done-run" autofocus>Run it for me</button>
-    <button id="done-close">Close</button>
+    <button id="done-run" autofocus title="Read the database from the virtual filesystem into metamath now.">Read it now</button>
+    <button id="done-close" title="Leave the file in the virtual filesystem without reading it into metamath.">Not yet</button>
   </div>
 </dialog>
 
@@ -88,7 +88,7 @@
   <p id="save-msg"></p>
   <div id="save-list"></div>
   <div class="row">
-    <button id="save-close">Close</button>
+    <button id="save-close" title="Close without saving anything.">Close</button>
   </div>
 </dialog>
 
@@ -97,7 +97,7 @@
 <div id="inputrow">
   <span id="prompt" aria-hidden="true">MM&gt;</span>
   <input id="cmd" autocomplete="off" autocapitalize="off" spellcheck="false"
-         aria-label="Metamath command"
+         aria-label="Metamath-exe command"
          placeholder="Type commands here, for example: help" disabled>
 </div>
 
@@ -111,7 +111,7 @@
   var statusEl = document.getElementById("status");
 
   // ---- terminal output ------------------------------------------------
-  // Metamath writes prompts such as "MM> " with no trailing new-line, so the
+  // Metamath-exe writes prompts such as "MM> " with no trailing new-line, so the
   // output is collected character by character (see FS.init below) and flushed
   // on an animation frame.  Line-buffered output would hide the prompts.
   var pending = "";
@@ -239,10 +239,10 @@
       chunks.forEach(function (c) { buf.set(c, off); off += c.length; });
       Mod.FS.writeFile(name, buf);
       setStatus("downloaded: " + name + " (" + Math.round(got / 1048576) + " MB)");
-      // Downloading only puts the file in the browser's virtual filesystem.
+      // Downloading only puts the file in the virtual filesystem.
       // The user still has to tell metamath to read it, which is easy to miss,
       // so say so in a dialog as well as in the transcript.
-      echo('\n[' + name + ' downloaded into this page\'s virtual filesystem.' +
+      echo('\n[' + name + ' downloaded into the virtual filesystem.' +
            '\n Now type:  read "' + name + '"  ]\n');
       showDone(name);
     } catch (err) {
@@ -260,14 +260,17 @@
   function showDone(name) {
     pendingRead = 'read "' + name + '"';
     doneMsg.innerHTML =
-      "<strong>" + name + "</strong> is now in this page's virtual filesystem. " +
-      "Downloading does not load it into metamath, so run " +
+      "<strong>" + name + "</strong> is now in the virtual filesystem. " +
+      "Downloading does not read it into metamath, so run " +
       "<code>" + pendingRead + "</code> to do that.";
+    // Name the command on the button, so that it is clear what will be run.
+    doneRun.textContent = 'Run ' + pendingRead;
     if (typeof doneDlg.showModal === "function") doneDlg.showModal();
   }
 
+  var doneRun = document.getElementById("done-run");
   document.getElementById("done-close").onclick = function () { doneDlg.close(); };
-  document.getElementById("done-run").onclick = function () {
+  doneRun.onclick = function () {
     doneDlg.close();
     cmdEl.value = pendingRead;
     sendCurrentLine();
@@ -289,9 +292,9 @@
     if (!f || !Mod) return;
     var buf = new Uint8Array(await f.arrayBuffer());
     Mod.FS.writeFile(f.name, buf);
-    // "Added", not "uploaded": the file is copied into this page's own
+    // "Added", not "uploaded": the file is copied into the virtual
     // filesystem and is not sent anywhere.
-    echo('\n[' + f.name + ' added to this page\'s virtual filesystem.' +
+    echo('\n[' + f.name + ' added to the virtual filesystem.' +
          ' It was not sent anywhere.' +
          '\n Now type:  read "' + f.name + '"  ]\n');
   };
@@ -322,7 +325,7 @@
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
   }
 
-  // Metamath itself has no command to list files (SHOW SETTINGS only reports
+  // Metamath-exe itself has no command to list files (SHOW SETTINGS only reports
   // the root directory setting), so the page provides the listing.
   document.getElementById("listfiles").onclick = function () {
     if (!Mod) return;
@@ -387,7 +390,12 @@
     setStatus("ready");
     echo("[Type commands in the highlighted box at the bottom of the page." +
          "  Try:  help\n" +
-         " Use \"Download set.mm\" to fetch a database, then:  read \"set.mm\"]\n\n");
+         "\n Files live in three places:\n" +
+         "   the Metamath website   - use \"Download set.mm\" to copy a database here\n" +
+         "   your own computer      - use \"Add from computer\" and \"Save to computer\"\n" +
+         "   the virtual filesystem - this page's own storage, holding the files above\n" +
+         "\n A file in the virtual filesystem is not read into metamath until you" +
+         " run, for example:  read \"set.mm\"]\n\n");
     Module.callMain([]);
   }).catch(function (err) {
     setStatus("failed to start");
