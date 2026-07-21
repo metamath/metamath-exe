@@ -68,7 +68,18 @@ jobs:
       # VERSIONINFO resource, so filename versioning is the lever we have).
       # The .exe extension lets Windows run it directly; the same file also runs
       # on Linux/macOS/BSD.
-      - name: Name artifact with version
+      # Two copies of the same binary are published:
+      #
+      #   metamath-<tag>.exe  the version is visible in the file name, which is
+      #                       what Cosmopolitan recommends for avoiding Windows
+      #                       Defender false positives.
+      #   metamath.exe        a fixed name, so that this permanent URL works:
+      #                         .../releases/latest/download/metamath.exe
+      #                       That is a real HTTP redirect, so one URL behaves
+      #                       the same in a browser, curl, wget, and CI.  Having
+      #                       a single documented URL avoids the trap of two
+      #                       URLs where only one works in a given situation.
+      - name: Name artifacts with version
         run: |
           if [ "$GITHUB_REF_TYPE" = tag ]; then
             ver="$GITHUB_REF_NAME"
@@ -77,8 +88,9 @@ jobs:
           fi
           name="metamath-${ver}.exe"
           cp metamath "$name"
+          cp metamath "metamath.exe"
           echo "ARTIFACT=$name" >> "$GITHUB_ENV"
-          echo "Artifact: $name"
+          echo "Artifacts: $name and metamath.exe"
 
       # Always available (useful for workflow_dispatch test runs).
       - name: Upload workflow artifact
@@ -96,8 +108,9 @@ jobs:
         run: |
           tag="$GITHUB_REF_NAME"
           if gh release view "$tag" >/dev/null 2>&1; then
-            gh release upload "$tag" "$ARTIFACT" --clobber
+            gh release upload "$tag" "$ARTIFACT" metamath.exe --clobber
           else
-            gh release create "$tag" "$ARTIFACT" \
+            gh release create "$tag" "$ARTIFACT" metamath.exe \
               --title "metamath $tag" --generate-notes
           fi
+

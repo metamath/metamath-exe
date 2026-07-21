@@ -24,10 +24,19 @@ Each release provides a single "portable executable" that runs on Windows,
 macOS, Linux, and the BSDs (both x86-64 and Arm64) without installation.  It is
 built with the Cosmopolitan toolchain as an "Actually Portable Executable".
 
-Download the file named like "metamath-vX.Y.Z.exe" from the project's GitHub
-Releases page:
+This one URL always downloads the newest release, and works the same in a web
+browser, in curl, in wget, and in scripts:
+
+  https://github.com/metamath/metamath-exe/releases/latest/download/metamath.exe
+
+Each release also contains the identical program under a name that includes the
+version, such as "metamath-v0.199.exe", for people who prefer to keep the
+version in the file name.  Both are on the Releases page:
 
   https://github.com/metamath/metamath-exe/releases
+
+The program always reports its own version when it starts, so a copy named just
+"metamath.exe" is never ambiguous.
 
 Then run it and type "read set.mm" (or point it at a database, see below):
 
