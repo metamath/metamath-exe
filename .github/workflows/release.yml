@@ -22,6 +22,8 @@ env:
   # Pinned for reproducible releases. Bump deliberately (also bump the cache
   # key suffix below when you do). 4.0.2 ships GCC 14.1.0.
   COSMOCC_VERSION: 4.0.2
+  # Keep in sync with the default in get-emsdk.sh.
+  EMSDK_VERSION: 6.0.3
 
 jobs:
   portable-binary:
@@ -114,3 +116,80 @@ jobs:
               --title "metamath $tag" --generate-notes
           fi
 
+  # Publishes the WebAssembly version so it can be run in a browser with
+  # nothing installed.
+  #
+  # The site is published to a gh-pages branch rather than with
+  # actions/deploy-pages, because that action replaces the whole site on every
+  # deployment, which would delete the pinned per-version directories.  A
+  # branch accumulates instead, so old versions keep working.
+  #
+  # Layout:
+  #   /            the newest release
+  #   /v0.199/     that exact release, kept forever, so a proof recorded
+  #                against a given version stays reproducible
+  #
+  # One-time setup: in the repository Settings -> Pages, set the source to
+  # "Deploy from a branch" and choose the gh-pages branch.
+  browser-page:
+    name: Build browser version and publish to GitHub Pages
+    runs-on: ubuntu-latest
+    if: github.ref_type == 'tag'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Emscripten SDK
+        id: cache-emsdk
+        uses: actions/cache@v4
+        with:
+          path: emsdk
+          key: emsdk-${{ env.EMSDK_VERSION }}
+
+      - name: Install Emscripten SDK
+        if: steps.cache-emsdk.outputs.cache-hit != 'true'
+        run: ./get-emsdk.sh
+
+      - name: Build the browser version
+        run: ./build-wasm.sh
+
+      - name: Publish to the gh-pages branch
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -eu
+          tag="$GITHUB_REF_NAME"
+          repo_url="https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          site="$(mktemp -d)"
+
+          # Reuse the existing site if there is one, so earlier pinned
+          # versions are preserved; otherwise start an empty orphan branch.
+          if git clone --depth 1 --branch gh-pages --single-branch "$repo_url" "$site" 2>/dev/null; then
+            echo "Updating the existing gh-pages branch."
+          else
+            echo "Creating the gh-pages branch."
+            git clone --depth 1 "$repo_url" "$site"
+            git -C "$site" checkout --orphan gh-pages
+            git -C "$site" rm -rq --cached . || true
+            find "$site" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          fi
+
+          # Tell GitHub Pages to serve the files as they are.
+          touch "$site/.nojekyll"
+
+          # The pinned copy, and the copy served as the newest release.
+          mkdir -p "$site/$tag"
+          for f in index.html metamath-browser.js metamath-browser.wasm; do
+            cp "build-wasm/$f" "$site/$tag/$f"
+            cp "build-wasm/$f" "$site/$f"
+          done
+
+          cd "$site"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Nothing changed."
+          else
+            git -c user.name="github-actions[bot]" \
+                -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \
+                commit -m "Publish metamath $tag browser version"
+            git push origin gh-pages
+          fi

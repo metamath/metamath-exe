@@ -70,8 +70,14 @@ To compile it yourself instead, see the source-build instructions below.
 Running metamath in a web browser
 ---------------------------------
 
-Metamath can also be compiled to WebAssembly and run inside a web browser,
-with nothing installed at all.
+Metamath can also be run inside a web browser, with nothing installed at all:
+
+  https://metamath.github.io/metamath-exe/
+
+Every release is also kept permanently at its own address, so that work done
+with a particular version stays reproducible:
+
+  https://metamath.github.io/metamath-exe/v0.199/
 
 The page provides a terminal (with up and down arrow command history), buttons
 to download set.mm or iset.mm into the page's virtual filesystem, a way to
