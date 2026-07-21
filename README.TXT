@@ -67,6 +67,38 @@ repository, and place them next to the executable (or give a full path).
 To compile it yourself instead, see the source-build instructions below.
 
 
+Running metamath in a web browser
+---------------------------------
+
+Metamath can also be compiled to WebAssembly and run inside a web browser,
+with nothing installed at all.
+
+The page provides a terminal (with up and down arrow command history), buttons
+to download set.mm or iset.mm into the page's virtual filesystem, a way to
+add your own .mm file from your computer, a listing of that filesystem, and a
+way to save files the program produced back to your computer.  A file added
+this way stays in your browser; it is not sent anywhere.
+
+Note that the databases live only in the browser's virtual filesystem.
+Downloading set.mm does not load it into metamath; you still have to type
+
+  read "set.mm"
+
+To build it yourself you need the Emscripten SDK.  From the top folder:
+
+  ./get-emsdk.sh       # installs a pinned Emscripten SDK into ./emsdk
+  ./build-wasm.sh -s   # builds into ./build-wasm and serves it
+
+then open http://localhost:8765/ in a browser.  Omit the -s option to build
+without starting a web server.  Neither the SDK nor the build output is checked
+in.
+
+The browser version behaves slightly differently from the command line version:
+operating system commands (a command line in quotes) are not available, since a
+browser has no shell, and output scrolls continuously because the browser
+supplies its own scrollback.
+
+
 Building from source
 --------------------
 

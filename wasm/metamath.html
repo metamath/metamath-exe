@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Metamath in your web browser</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    margin: 0; font-family: system-ui, sans-serif;
+    display: flex; flex-direction: column; height: 100vh;
+  }
+  header { padding: .5rem .75rem; border-bottom: 1px solid #8888; }
+  header h1 { font-size: 1rem; margin: 0 0 .4rem 0; }
+  .controls { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+  button, select { font: inherit; padding: .25rem .5rem; }
+  #status { font-size: .85rem; opacity: .8; margin-left: .3rem; }
+  #term {
+    flex: 1; overflow-y: auto; margin: 0; padding: .5rem .75rem;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: .9rem; line-height: 1.35; white-space: pre-wrap;
+    word-break: break-word; background: Canvas;
+  }
+  /* The command line is tinted and labelled so it is obvious that this, and
+     not the transcript above, is where you type. */
+  #inputrow {
+    display: flex; align-items: center; gap: .5rem;
+    padding-left: .75rem;
+    border-top: 2px solid rgba(110, 140, 255, .55);
+    background: rgba(110, 140, 255, .14);
+  }
+  #prompt {
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: .9rem; font-weight: 700; opacity: .85; user-select: none;
+  }
+  #cmd {
+    flex: 1; font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: .9rem; padding: .5rem .75rem .5rem 0; border: 0;
+    background: transparent; color: inherit;
+  }
+  #cmd:focus { outline: none; }
+  #inputrow:focus-within { background: rgba(110, 140, 255, .22); }
+  #term { cursor: text; }
+  dialog {
+    border: 1px solid #8888; border-radius: 8px; padding: 1rem 1.25rem;
+    max-width: 30rem; color: inherit; background: Canvas;
+  }
+  dialog::backdrop { background: rgba(0, 0, 0, .45); }
+  dialog h2 { margin: 0 0 .5rem 0; font-size: 1.05rem; }
+  dialog code {
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    background: rgba(110, 140, 255, .18); padding: .1rem .3rem; border-radius: 3px;
+  }
+  dialog .row { margin-top: 1rem; display: flex; gap: .5rem; justify-content: flex-end; }
+  #save-list { display: flex; flex-direction: column; gap: .35rem; max-height: 50vh; overflow-y: auto; }
+  .filebtn {
+    text-align: left; font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: .85rem; padding: .4rem .6rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Metamath in your web browser</h1>
+  <div class="controls">
+    <button id="load-set">Download set.mm</button>
+    <button id="load-iset">Download iset.mm</button>
+    <button id="add-btn">Add from computer</button>
+    <input type="file" id="addfile" accept=".mm,.txt" hidden>
+    <button id="listfiles">List files</button>
+    <button id="download">Save to computer</button>
+    <span id="status">starting...</span>
+  </div>
+</header>
+
+<dialog id="done-dlg">
+  <h2>Download complete</h2>
+  <p id="done-msg"></p>
+  <div class="row">
+    <button id="done-run" autofocus>Run it for me</button>
+    <button id="done-close">Close</button>
+  </div>
+</dialog>
+
+<dialog id="save-dlg">
+  <h2>Save a file to your computer</h2>
+  <p id="save-msg"></p>
+  <div id="save-list"></div>
+  <div class="row">
+    <button id="save-close">Close</button>
+  </div>
+</dialog>
+
+<pre id="term" aria-live="polite" role="log"></pre>
+
+<div id="inputrow">
+  <span id="prompt" aria-hidden="true">MM&gt;</span>
+  <input id="cmd" autocomplete="off" autocapitalize="off" spellcheck="false"
+         aria-label="Metamath command"
+         placeholder="Type commands here, for example: help" disabled>
+</div>
+
+<script src="./metamath-browser.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var termEl = document.getElementById("term");
+  var cmdEl = document.getElementById("cmd");
+  var statusEl = document.getElementById("status");
+
+  // ---- terminal output ------------------------------------------------
+  // Metamath writes prompts such as "MM> " with no trailing new-line, so the
+  // output is collected character by character (see FS.init below) and flushed
+  // on an animation frame.  Line-buffered output would hide the prompts.
+  var pending = "";
+  var flushQueued = false;
+  function flush() {
+    flushQueued = false;
+    if (!pending) return;
+    var atBottom =
+      termEl.scrollHeight - termEl.scrollTop - termEl.clientHeight < 40;
+    termEl.appendChild(document.createTextNode(pending));
+    pending = "";
+    if (atBottom) termEl.scrollTop = termEl.scrollHeight;
+  }
+  var decoder = new TextDecoder("utf-8");
+  var utf8buf = [];
+  function outByte(b) {
+    if (b === null) return;
+    utf8buf.push(b);
+    // Decode once a character looks complete (ASCII fast path, else on 0x80<).
+    if (b < 0x80 || utf8buf.length >= 4) {
+      pending += decoder.decode(new Uint8Array(utf8buf), { stream: true });
+      utf8buf.length = 0;
+    }
+    if (!flushQueued) { flushQueued = true; requestAnimationFrame(flush); }
+  }
+  function echo(text) { pending += text; if (!flushQueued) { flushQueued = true; requestAnimationFrame(flush); } }
+
+  // ---- keyboard input, with command history ---------------------------
+  var waiting = null;   // resolver for a pending mmReadLine()
+  var queued = [];      // lines typed before metamath asked for them
+  var history = [];
+  var histPos = 0;
+
+  function submit(line) {
+    if (waiting) { var r = waiting; waiting = null; r(line); }
+    else queued.push(line);
+  }
+
+  function mmReadLine() {
+    return new Promise(function (resolve) {
+      if (queued.length) resolve(queued.shift());
+      else waiting = resolve;
+    });
+  }
+
+  function sendCurrentLine() {
+    var line = cmdEl.value;
+    cmdEl.value = "";
+    if (line.trim() !== "") {
+      history.push(line);
+      if (history.length > 500) history.shift();
+    }
+    histPos = history.length;
+    echo(line + "\n");   // local echo, since the program does not echo input
+    submit(line);
+  }
+
+  // The handler is on the document, not just the input box, so that typing
+  // anywhere on the page goes to the command line.  Users should not have to
+  // find the one text field first.
+  document.addEventListener("keydown", function (e) {
+    var tag = e.target.tagName;
+    // Leave the other controls (buttons, the file chooser) alone.
+    if (e.target !== cmdEl &&
+        (tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA" ||
+         tag === "BUTTON")) return;
+    if (e.ctrlKey || e.metaKey || e.altKey) return;  // let shortcuts through
+    if (cmdEl.disabled) return;
+
+    if (e.key === "Enter") {
+      sendCurrentLine();
+      e.preventDefault();
+    } else if (e.key === "ArrowUp") {
+      cmdEl.focus();
+      if (histPos > 0) { histPos--; cmdEl.value = history[histPos] || ""; }
+      e.preventDefault();
+    } else if (e.key === "ArrowDown") {
+      cmdEl.focus();
+      if (histPos < history.length) {
+        histPos++;
+        cmdEl.value = histPos === history.length ? "" : (history[histPos] || "");
+      }
+      e.preventDefault();
+    } else if (e.target !== cmdEl && e.key.length === 1) {
+      // A printable character typed while the transcript had focus: move it
+      // to the command line rather than dropping it.
+      cmdEl.focus();
+      cmdEl.value += e.key;
+      e.preventDefault();
+    } else if (e.target !== cmdEl && e.key === "Backspace") {
+      cmdEl.focus();
+      cmdEl.value = cmdEl.value.slice(0, -1);
+      e.preventDefault();
+    }
+  });
+
+  // Clicking the transcript focuses the command line, unless text is being
+  // selected for copying.
+  termEl.addEventListener("mouseup", function () {
+    if (String(window.getSelection()) === "") cmdEl.focus();
+  });
+
+  // ---- databases ------------------------------------------------------
+  var Mod = null;
+
+  function setStatus(t) { statusEl.textContent = t; }
+
+  async function fetchDb(url, name) {
+    if (!Mod) return;
+    setStatus("downloading " + name + " ...");
+    try {
+      var resp = await fetch(url);            // plain GET: avoids a preflight
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+      var total = +resp.headers.get("content-length") || 0;
+      var reader = resp.body.getReader();
+      var chunks = [], got = 0;
+      for (;;) {
+        var r = await reader.read();
+        if (r.done) break;
+        chunks.push(r.value); got += r.value.length;
+        setStatus("downloading " + name + ": " +
+          (total ? Math.round(got * 100 / total) + "%" : Math.round(got / 1048576) + " MB"));
+      }
+      var buf = new Uint8Array(got), off = 0;
+      chunks.forEach(function (c) { buf.set(c, off); off += c.length; });
+      Mod.FS.writeFile(name, buf);
+      setStatus("downloaded: " + name + " (" + Math.round(got / 1048576) + " MB)");
+      // Downloading only puts the file in the browser's virtual filesystem.
+      // The user still has to tell metamath to read it, which is easy to miss,
+      // so say so in a dialog as well as in the transcript.
+      echo('\n[' + name + ' downloaded into this page\'s virtual filesystem.' +
+           '\n Now type:  read "' + name + '"  ]\n');
+      showDone(name);
+    } catch (err) {
+      setStatus("download failed");
+      echo("\n[could not download " + name + ": " + err.message +
+           ". You can use \"Add from computer\" instead.]\n");
+    }
+  }
+
+  // ---- "download complete" dialog -------------------------------------
+  var doneDlg = document.getElementById("done-dlg");
+  var doneMsg = document.getElementById("done-msg");
+  var pendingRead = "";
+
+  function showDone(name) {
+    pendingRead = 'read "' + name + '"';
+    doneMsg.innerHTML =
+      "<strong>" + name + "</strong> is now in this page's virtual filesystem. " +
+      "Downloading does not load it into metamath, so run " +
+      "<code>" + pendingRead + "</code> to do that.";
+    if (typeof doneDlg.showModal === "function") doneDlg.showModal();
+  }
+
+  document.getElementById("done-close").onclick = function () { doneDlg.close(); };
+  document.getElementById("done-run").onclick = function () {
+    doneDlg.close();
+    cmdEl.value = pendingRead;
+    sendCurrentLine();
+    cmdEl.focus();
+  };
+
+  document.getElementById("load-set").onclick = function () {
+    fetchDb("https://us.metamath.org/metamath/set.mm", "set.mm");
+  };
+  document.getElementById("load-iset").onclick = function () {
+    fetchDb("https://us.metamath.org/metamath/iset.mm", "iset.mm");
+  };
+
+  document.getElementById("add-btn").onclick = function () {
+    document.getElementById("addfile").click();
+  };
+  document.getElementById("addfile").onchange = async function (e) {
+    var f = e.target.files[0];
+    if (!f || !Mod) return;
+    var buf = new Uint8Array(await f.arrayBuffer());
+    Mod.FS.writeFile(f.name, buf);
+    // "Added", not "uploaded": the file is copied into this page's own
+    // filesystem and is not sent anywhere.
+    echo('\n[' + f.name + ' added to this page\'s virtual filesystem.' +
+         ' It was not sent anywhere.' +
+         '\n Now type:  read "' + f.name + '"  ]\n');
+  };
+
+  // ---- download files the program wrote -------------------------------
+  // The files metamath can see, which is what a listing or a save offers.
+  function listWorkFiles() {
+    if (!Mod) return [];
+    var names;
+    try {
+      names = Mod.FS.readdir("/work")
+        .filter(function (n) { return n !== "." && n !== ".."; });
+    } catch (e) { return []; }
+    return names.sort().map(function (n) {
+      var size = "?";
+      try { size = Mod.FS.stat("/work/" + n).size; } catch (e) { /* keep "?" */ }
+      return { name: n, size: size };
+    });
+  }
+
+  function saveToComputer(name) {
+    var data = Mod.FS.readFile("/work/" + name);
+    var url = URL.createObjectURL(new Blob([data]));
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  // Metamath itself has no command to list files (SHOW SETTINGS only reports
+  // the root directory setting), so the page provides the listing.
+  document.getElementById("listfiles").onclick = function () {
+    if (!Mod) return;
+    var files = listWorkFiles();
+    var body = files.length
+      ? files.map(function (f) {
+          return "  " + f.name + "  (" + f.size + " bytes)";
+        }).join("\n")
+      : "  (none yet)";
+    echo("\n[files in the virtual filesystem, directory /work:\n" + body + "\n]\n");
+  };
+
+  // Asking which file to save only when the button is pressed keeps the
+  // button bar narrow, and avoids making the user pick a file from a list
+  // before it is clear what the list is for.
+  var saveDlg = document.getElementById("save-dlg");
+  var saveMsg = document.getElementById("save-msg");
+  var saveList = document.getElementById("save-list");
+
+  document.getElementById("save-close").onclick = function () { saveDlg.close(); };
+
+  document.getElementById("download").onclick = function () {
+    if (!Mod) return;
+    var files = listWorkFiles();
+    saveList.innerHTML = "";
+    if (files.length === 0) {
+      saveMsg.textContent =
+        "There are no files to save yet. Files appear here once a database " +
+        "has been downloaded or added, or once metamath has written one.";
+    } else {
+      saveMsg.textContent = "Choose a file to save to your computer.";
+      files.forEach(function (f) {
+        var b = document.createElement("button");
+        b.className = "filebtn";
+        b.textContent = f.name + "  (" + f.size + " bytes)";
+        b.onclick = function () { saveToComputer(f.name); saveDlg.close(); };
+        saveList.appendChild(b);
+      });
+    }
+    if (typeof saveDlg.showModal === "function") saveDlg.showModal();
+  };
+
+  // ---- start ----------------------------------------------------------
+  createMetamath({
+    mmReadLine: mmReadLine,
+    preRun: [function (Module) {
+      // Work inside /work so added files and outputs are easy to enumerate.
+      Module.FS.mkdir("/work");
+      Module.FS.chdir("/work");
+      // Character-level stdout/stderr so prompts appear immediately.
+      Module.FS.init(null, outByte, outByte);
+    }],
+    onExit: function () {
+      echo("\n[metamath exited. Reload the page to start again.]\n");
+      cmdEl.disabled = true;
+      setStatus("exited");
+    },
+  }).then(function (Module) {
+    Mod = Module;
+    cmdEl.disabled = false;
+    cmdEl.focus();
+    setStatus("ready");
+    echo("[Type commands in the highlighted box at the bottom of the page." +
+         "  Try:  help\n" +
+         " Use \"Download set.mm\" to fetch a database, then:  read \"set.mm\"]\n\n");
+    Module.callMain([]);
+  }).catch(function (err) {
+    setStatus("failed to start");
+    echo("Failed to start metamath: " + err + "\n");
+  });
+})();
+</script>
+</body>
+</html>
