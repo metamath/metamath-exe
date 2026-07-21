@@ -17,6 +17,50 @@ information that applies to the content of this package.
 Instructions
 ------------
 
+Prebuilt portable executable (easiest, no compiler needed)
+----------------------------------------------------------
+
+Each release provides a single "portable executable" that runs on Windows,
+macOS, Linux, and the BSDs (both x86-64 and Arm64) without installation.  It is
+built with the Cosmopolitan toolchain as an "Actually Portable Executable".
+
+Download the file named like "metamath-vX.Y.Z.exe" from the project's GitHub
+Releases page:
+
+  https://github.com/metamath/metamath-exe/releases
+
+Then run it and type "read set.mm" (or point it at a database, see below):
+
+  Windows:  double-click metamath-vX.Y.Z.exe, or from a command prompt run
+            "metamath-vX.Y.Z.exe".  Because the file is not code-signed, you
+            may see a Microsoft Defender SmartScreen "Windows protected your
+            PC" prompt; click "More info" then "Run anyway".  (Downloading the
+            version-numbered filename, rather than a plain "metamath.exe",
+            reduces the chance of a false-positive antivirus warning.)
+
+  macOS:    the file is not notarized, so Gatekeeper quarantines downloads.
+            Clear the quarantine flag once, then run it from Terminal:
+
+              xattr -d com.apple.quarantine metamath-vX.Y.Z.exe
+              ./metamath-vX.Y.Z.exe set.mm
+
+  Linux/BSD: make it executable, then run it:
+
+              chmod +x metamath-vX.Y.Z.exe
+              ./metamath-vX.Y.Z.exe set.mm
+
+The same file runs on every platform regardless of the ".exe" name.  Database
+(.mm) files are not bundled with this executable; download the current ones,
+e.g. set.mm and iset.mm, from https://us.metamath.org/metamath/set.mm and
+https://us.metamath.org/metamath/iset.mm, or from the metamath/set.mm
+repository, and place them next to the executable (or give a full path).
+
+To compile it yourself instead, see the source-build instructions below.
+
+
+Building from source
+--------------------
+
 For Windows, click on "metamath.exe" and type "read set.mm".
 
 For Unix/Linux/Cygwin/MacOSX using the gcc compiler, compile with the command

@@ -1,0 +1,103 @@
+# Builds a single Cosmopolitan "Actually Portable Executable" (APE) that runs on
+# Linux, macOS, Windows, and the BSDs (x86-64 and aarch64) from one file, then
+# attaches it to the GitHub Release for the pushed tag.
+#
+# Trigger:
+#   - push a tag like v0.199  -> builds, tests, and uploads to that release
+#   - manual "Run workflow"   -> builds + tests and uploads a workflow artifact
+#                                (no Release is created unless run on a tag)
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+# Needed so the built-in GITHUB_TOKEN may create/upload Release assets.
+permissions:
+  contents: write
+
+env:
+  # Pinned for reproducible releases. Bump deliberately (also bump the cache
+  # key suffix below when you do). 4.0.2 ships GCC 14.1.0.
+  COSMOCC_VERSION: 4.0.2
+
+jobs:
+  portable-binary:
+    name: Build portable APE, test, and publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Cache the (large) toolchain so only the first run pays the download.
+      - name: Cache cosmocc toolchain
+        id: cache-cosmocc
+        uses: actions/cache@v4
+        with:
+          path: cosmocc
+          key: cosmocc-${{ env.COSMOCC_VERSION }}
+
+      - name: Install cosmocc
+        if: steps.cache-cosmocc.outputs.cache-hit != 'true'
+        run: ./get-cosmocc.sh   # honors $COSMOCC_VERSION from the env above
+
+      # Build the fat APE. A single build already targets every supported OS and
+      # architecture, so there is no per-platform build matrix to fan out.
+      # Start from a clean build dir: a stale one makes `make` reuse old objects
+      # and silently emit a non-portable ELF instead of an APE.
+      - name: Build (Cosmopolitan fat APE)
+        run: |
+          export PATH="$PWD/cosmocc/bin:$PATH"
+          rm -rf build
+          CC=cosmocc ./build.sh
+          file metamath   # sanity: should report an MZ/DOS (APE) header, not ELF
+
+      # Test BEFORE packaging/publishing, so a regression blocks the release.
+      # Test a *copy* (and set APE_NO_MODIFY_SELF) to guarantee the artifact we
+      # ship stays byte-for-byte as built.
+      - name: Test (run suite against the APE)
+        working-directory: tests
+        run: |
+          cp ../metamath ../metamath-testcopy
+          env APE_NO_MODIFY_SELF=1 METAMATH=../metamath-testcopy ./run_test.sh *.in
+
+      # Put the version in the filename. This is the primary, officially
+      # recommended mitigation for Windows Defender/SmartScreen false positives
+      # on APE binaries (the cosmocc toolchain has no way to embed a PE
+      # VERSIONINFO resource, so filename versioning is the lever we have).
+      # The .exe extension lets Windows run it directly; the same file also runs
+      # on Linux/macOS/BSD.
+      - name: Name artifact with version
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ]; then
+            ver="$GITHUB_REF_NAME"
+          else
+            ver="$(./build.sh -va)"
+          fi
+          name="metamath-${ver}.exe"
+          cp metamath "$name"
+          echo "ARTIFACT=$name" >> "$GITHUB_ENV"
+          echo "Artifact: $name"
+
+      # Always available (useful for workflow_dispatch test runs).
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT }}
+          path: ${{ env.ARTIFACT }}
+
+      # Only on a tag: attach to (or create) that tag's GitHub Release.
+      # Uses the gh CLI + built-in token — no third-party action dependency.
+      - name: Publish to GitHub Release
+        if: github.ref_type == 'tag'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          tag="$GITHUB_REF_NAME"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" "$ARTIFACT" --clobber
+          else
+            gh release create "$tag" "$ARTIFACT" \
+              --title "metamath $tag" --generate-notes
+          fi
