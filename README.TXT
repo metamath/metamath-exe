@@ -24,6 +24,13 @@ Each release provides a single "portable executable" that runs on Windows,
 macOS, Linux, and the BSDs (both x86-64 and Arm64) without installation.  It is
 built with the Cosmopolitan toolchain as an "Actually Portable Executable".
 
+The one file contains native machine code for both x86-64 and Arm64; it is not
+an emulator.  The Cosmopolitan toolchain compiles the program twice (once per
+architecture) and bundles both into the single file, and the loader runs the
+slice that matches the host CPU.  So Arm64 machines (for example Apple Silicon
+and Arm Linux) run native Arm64 code at full speed, with no emulation penalty.
+The trade-off is that the file is roughly twice the size of a single-CPU build.
+
 This one URL always downloads the newest release, and works the same in a web
 browser, in curl, in wget, and in scripts:
 
@@ -92,7 +99,8 @@ still have to type
 
   read "set.mm"
 
-To build it yourself you need the Emscripten SDK.  From the top folder:
+To build this browser version yourself you need the Emscripten SDK.  From the
+top folder:
 
   ./get-emsdk.sh       # installs a pinned Emscripten SDK into ./emsdk
   ./build-wasm.sh -s   # builds into ./build-wasm and serves it
@@ -135,6 +143,19 @@ configure script might want you to support 32-bit code, even if your system
 is natively 64-bit.  This is known as cross-compiling and on Debian you need
 the package gcc-multilib installed.  For other Linux OS a similar extension
 might be in order.
+
+Building the portable executable yourself:  the single "Actually Portable
+Executable" described near the top of this file is built with the Cosmopolitan
+toolchain (cosmocc).  You do not need it installed on your system; a helper
+script downloads a pinned copy into ./cosmocc.  From the top folder:
+
+  ./get-cosmocc.sh                              # installs cosmocc into ./cosmocc
+  PATH="$PWD/cosmocc/bin:$PATH" CC=cosmocc ./build.sh
+
+The single build produces a "fat" binary that contains native x86-64 and Arm64
+code and runs on Windows, macOS, Linux, and the BSDs; there is no separate ARM
+build step and no emulation.  Neither the toolchain nor the build output is
+checked in.  See the comments in get-cosmocc.sh for details.
 
 
 Optional enhancements
