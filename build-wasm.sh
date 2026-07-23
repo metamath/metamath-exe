@@ -53,8 +53,27 @@ mkdir -p "$out_dir"
 #   EXIT_RUNTIME=1        so EXIT reports cleanly to the page.
 #   FORCE_FILESYSTEM      the in-memory filesystem holds uploaded .mm files.
 #   ALLOW_MEMORY_GROWTH   set.mm is about 50 MB, and grows over time.
+#
+# Performance options we have deliberately NOT taken (speed matters here, so
+# these are documented in case a future maintainer wants to revisit them):
+#   -flto      Link-time optimization would let the optimizer see across all
+#              translation units.  We avoid it: the code has some undefined
+#              behavior, and LTO's whole-program view lets the compiler exploit
+#              UB more aggressively (and drop code it "proves" unreachable),
+#              which risks miscompiles.  Revisit once the UB is cleaned up.
+#   -sASYNCIFY_ONLY / -sJSPI
+#              Plain -sASYNCIFY (used below) instruments EVERY function that
+#              could be on the stack at a yield, which slows all hot code
+#              (e.g. the proof verifier), not just the I/O that actually yields.
+#              -sASYNCIFY_ONLY=[...] restricts instrumentation to the functions
+#              on the yield path (cmdInput()/print2() and their callers), which
+#              reclaims most of the overhead -- but it requires hand-maintaining
+#              that whitelist, and omitting a function is a runtime error.
+#              -sJSPI replaces ASYNCIFY with the browser's native stack
+#              switching (no instrumentation overhead) but is not yet supported
+#              across all browsers.  Both are deferred as additional work.
 # Options shared by both builds below.
-common_opts="-O2 -DINLINE=inline
+common_opts="-O3 -DINLINE=inline
   -sASYNCIFY
   -sALLOW_MEMORY_GROWTH=1
   -sMODULARIZE=1
