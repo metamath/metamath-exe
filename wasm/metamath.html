@@ -52,10 +52,38 @@
     background: rgba(110, 140, 255, .18); padding: .1rem .3rem; border-radius: 3px;
   }
   dialog .row { margin-top: 1rem; display: flex; gap: .5rem; justify-content: flex-end; }
-  #save-list { display: flex; flex-direction: column; gap: .35rem; max-height: 50vh; overflow-y: auto; }
+  /* A framed panel, so the list of files reads as a list even when it holds
+     just one file or none (in which case it shows a placeholder row). */
+  #save-list {
+    display: flex; flex-direction: column; gap: .4rem;
+    margin: .4rem 0; padding: .5rem; min-height: 2.75rem; max-height: 50vh;
+    overflow-y: auto; border: 1px solid #8884; border-radius: 8px;
+    background: rgba(128, 128, 128, .08);
+  }
+  .filenone {
+    font-family: system-ui, sans-serif; font-style: italic;
+    opacity: .65; font-size: .85rem; padding: .35rem .4rem;
+  }
+  /* Each file is a button styled as a distinct row, so it clearly reads as a
+     choice that does something when clicked; the "Save" tag on every row names
+     the action, so it is obvious a click saves that file rather than selecting
+     it for some later step. */
   .filebtn {
-    text-align: left; font-family: ui-monospace, Menlo, Consolas, monospace;
-    font-size: .85rem; padding: .4rem .6rem;
+    display: flex; align-items: center; gap: .6rem; width: 100%;
+    text-align: left; cursor: pointer; color: inherit;
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .85rem;
+    padding: .45rem .6rem; border: 1px solid #8886; border-radius: 6px;
+    background: rgba(110, 140, 255, .10);
+  }
+  .filebtn:hover, .filebtn:focus-visible {
+    background: rgba(110, 140, 255, .22); border-color: rgba(110, 140, 255, .7);
+  }
+  .filebtn .fn { flex: 1; font-weight: 600; word-break: break-all; }
+  .filebtn .sz { opacity: .7; white-space: nowrap; }
+  .filebtn .tag {
+    font-family: system-ui, sans-serif; font-size: .75rem; font-weight: 600;
+    padding: .1rem .45rem; border-radius: 999px;
+    background: rgba(110, 140, 255, .30);
   }
 
   /* ---- activity + state feedback -------------------------------------
@@ -152,7 +180,7 @@
   <p id="save-msg"></p>
   <div id="save-list"></div>
   <div class="row">
-    <button id="save-close" title="Close without saving anything.">Close</button>
+    <button id="save-close" title="Cancel without saving anything.">Cancel</button>
   </div>
 </dialog>
 
@@ -485,15 +513,27 @@
     var files = listWorkFiles();
     saveList.innerHTML = "";
     if (files.length === 0) {
-      saveMsg.textContent =
-        "There are no files to save yet. Files appear here once a database " +
-        "has been downloaded or added, or once metamath has written one.";
+      saveMsg.textContent = "Files you can save to your computer (none yet):";
+      var none = document.createElement("div");
+      none.className = "filenone";
+      none.textContent =
+        "(no files yet; they appear here once a database has been downloaded " +
+        "or added, or once metamath has written one)";
+      saveList.appendChild(none);
     } else {
-      saveMsg.textContent = "Choose a file to save to your computer.";
+      saveMsg.textContent =
+        "Click a file to save it to your computer (" + files.length + "):";
       files.forEach(function (f) {
         var b = document.createElement("button");
         b.className = "filebtn";
-        b.textContent = f.name + "  (" + f.size + " bytes)";
+        b.title = "Save " + f.name + " to your computer";
+        var fn = document.createElement("span");
+        fn.className = "fn"; fn.textContent = f.name;
+        var sz = document.createElement("span");
+        sz.className = "sz"; sz.textContent = f.size + " bytes";
+        var tag = document.createElement("span");
+        tag.className = "tag"; tag.textContent = "Save";
+        b.appendChild(fn); b.appendChild(sz); b.appendChild(tag);
         b.onclick = function () { saveToComputer(f.name); saveDlg.close(); };
         saveList.appendChild(b);
       });
