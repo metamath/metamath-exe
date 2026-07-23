@@ -14,7 +14,7 @@
 # A single build already produces a "fat" APE: cosmocc compiles the program
 # twice (x86-64 and aarch64) and bundles both native code images into the one
 # file, and the loader picks the slice matching the host CPU.  Arm64 machines
-# therefore run native Arm64 code at full speed -- there is no emulation and no
+# therefore run native Arm64 code at full speed, there is no emulation and no
 # separate ARM build step.  (The cost is that the file is about twice the size
 # of a single-architecture build.)
 #

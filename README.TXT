@@ -20,16 +20,19 @@ Instructions
 Prebuilt portable executable (easiest, no compiler needed)
 ----------------------------------------------------------
 
-Each release provides a single "portable executable" that runs on Windows,
-macOS, Linux, and the BSDs (both x86-64 and Arm64) without installation.  It is
-built with the Cosmopolitan toolchain as an "Actually Portable Executable".
+Each release provides a single "actually portable executable" (APE)
+that runs on Windows, macOS, Linux, and the BSDs (both x86-64 and Arm64)
+without installation. It is built with the Cosmopolitan toolchain as an
+"Actually Portable Executable".
 
-The one file contains native machine code for both x86-64 and Arm64; it is not
-an emulator.  The Cosmopolitan toolchain compiles the program twice (once per
-architecture) and bundles both into the single file, and the loader runs the
-slice that matches the host CPU.  So Arm64 machines (for example Apple Silicon
-and Arm Linux) run native Arm64 code at full speed, with no emulation penalty.
-The trade-off is that the file is roughly twice the size of a single-CPU build.
+The one file contains native machine code for both x86-64 and Arm64; it is
+not an emulator.  The Cosmopolitan toolchain compiles the program twice
+(once per CPU architecture) and bundles both into the single file, and
+the loader runs the slice that matches the host CPU.  So Arm64 machines
+(for example Apple Silicon and Arm Linux) run native Arm64 code at full
+speed, with no emulation penalty.  Similarly for x86_64.  The trade-off
+is that the file is more than twice the size of a single-CPU build, since
+it includes two CPU builds, along with shims for various operating systems.
 
 This one URL always downloads the newest release, and works the same in a web
 browser, in curl, in wget, and in scripts:
