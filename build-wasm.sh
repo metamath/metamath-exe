@@ -61,17 +61,64 @@ mkdir -p "$out_dir"
 #              behavior, and LTO's whole-program view lets the compiler exploit
 #              UB more aggressively (and drop code it "proves" unreachable),
 #              which risks miscompiles.  Revisit once the UB is cleaned up.
-#   -sASYNCIFY_ONLY / -sJSPI
-#              Plain -sASYNCIFY (used below) instruments EVERY function that
-#              could be on the stack at a yield, which slows all hot code
-#              (e.g. the proof verifier), not just the I/O that actually yields.
-#              -sASYNCIFY_ONLY=[...] restricts instrumentation to the functions
-#              on the yield path (cmdInput()/print2() and their callers), which
-#              reclaims most of the overhead -- but it requires hand-maintaining
-#              that whitelist, and omitting a function is a runtime error.
-#              -sJSPI replaces ASYNCIFY with the browser's native stack
-#              switching (no instrumentation overhead) but is not yet supported
-#              across all browsers.  Both are deferred as additional work.
+#   -sASYNCIFY_ONLY=[...]
+#              In principle this restricts ASYNCIFY's instrumentation to just
+#              the functions that can be on the stack at a yield, leaving hot
+#              code uninstrumented.  In THIS program it buys little: print2()
+#              yields (see mm_browser_yield() in src/mminou.c), and bug() (the
+#              assertion used throughout the code) calls print2(), so nearly
+#              every function can transitively reach a yield, including the hot
+#              proof verifier.  The whitelist would therefore be almost the
+#              whole program.  It need not be written by hand (build once with
+#              -sASYNCIFY_ADVISE and Emscripten prints the list), but any new
+#              code path that reaches print2() then silently TRAPS at run time
+#              until the list is regenerated; an omission is not a compile
+#              error.  Low payoff, real maintenance risk; deferred.
+#   -sJSPI     Replaces ASYNCIFY with the browser's native stack switching:
+#              zero instrumentation, no whitelist, hot code runs as plain wasm.
+#              This is the better long-term target.  Browser support (2026-07):
+#                - Chrome:  on by default since 137 (mid-2025).
+#                - Firefox: enabled in 153 (2026-07-21).  New; the installed
+#                  base needs time to update before we can rely on it.
+#                - Safari:  not yet (objection dropped late 2025, not shipped).
+#              IMPORTANT: a -sJSPI build contains NO ASYNCIFY fallback.  On a
+#              browser without JSPI it does not run slower; it TRAPS the first
+#              time it tries to suspend (i.e. as soon as the user is prompted
+#              for input).  A JSPI-only build would simply break on older
+#              Firefox, all Safari, and older Chrome, which is why we do not
+#              just switch the flag.
+#
+# Long-term plan (OPTION 2): ship BOTH builds and feature-detect on the page,
+# so JSPI-capable browsers get the fast, uninstrumented build while everyone
+# else falls back to the ASYNCIFY build.  NOT implemented yet; recorded here so
+# the switch is mechanical once JSPI's installed base is wide enough:
+#
+#   1. Build twice from $common_opts below.  Keep the current ASYNCIFY build
+#      (-> metamath-browser.js / .wasm) and add a second build that swaps
+#      -sASYNCIFY for -sJSPI, written to distinct names, e.g.
+#      metamath-browser-jspi.js / .wasm.  Keep -sEXPORT_NAME=createMetamath and
+#      -sEXPORTED_RUNTIME_METHODS identical in both, so the page's code after
+#      the module loads is the same no matter which build it picked.
+#
+#   2. The suspend shim in wasm/mmemscripten.js needs a JSPI-compatible form.
+#      mm_read_line() currently calls Asyncify.handleAsync(), which is ASYNCIFY-
+#      only API.  Under JSPI an async import is expressed by marking it
+#      mm_read_line__async = true (already set) and returning a Promise directly
+#      (no Asyncify.handleAsync wrapper).  Confirm the exact form against the
+#      pinned Emscripten SDK's docs at implementation time; the two builds may
+#      need slightly different --js-library shims, or one shim written to work
+#      for both.  print2()'s yield needs no change: emscripten_sleep() is
+#      supported under both ASYNCIFY and JSPI.
+#
+#   3. In wasm/metamath.html, feature-detect and load exactly one script:
+#          const jspi = typeof WebAssembly.Suspending === "function";
+#          // load metamath-browser-jspi.js if jspi, else metamath-browser.js
+#      Only one .wasm is downloaded per visitor.  There is no single binary that
+#      auto-falls-back; this page-level choice IS the fallback.
+#
+#   4. Cost: doubles build time and stores two .wasm files on the server (each
+#      visitor still downloads only one).  Once JSPI is universal (Safari ships
+#      and the update tail passes), drop the ASYNCIFY build and this note.
 # Options shared by both builds below.
 common_opts="-O3 -DINLINE=inline
   -sASYNCIFY
