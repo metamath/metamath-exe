@@ -1,0 +1,35 @@
+#!/usr/bin/env python3
+"""Serve the WebAssembly build on http://localhost:8000/ for local UI testing.
+
+This is the checked-in source; the build stages it into build-wasm/ (as a
+symlink where possible), so run it from there, next to the built files:
+
+    ./build-wasm/serve
+
+Then reload the page after each change to see it.  Works on Linux/BSD/macOS
+(run ./serve, via the shebang above) and on Windows (run: py serve).
+"""
+
+import http.server
+import os
+import socketserver
+
+PORT = 8000
+
+# Serve the directory this script lives in, whatever the current directory is
+# (so double-clicking it on Windows, or running it from elsewhere, still works).
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+
+class Server(socketserver.TCPServer):
+    # Let the port be reused immediately, so restarting after Ctrl-C during
+    # rapid iteration does not fail with "address already in use".
+    allow_reuse_address = True
+
+
+with Server(("", PORT), http.server.SimpleHTTPRequestHandler) as httpd:
+    print(f"Serving http://localhost:{PORT}/  (press Ctrl-C to stop)")
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        pass

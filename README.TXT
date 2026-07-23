@@ -108,9 +108,13 @@ top folder:
   ./get-emsdk.sh       # installs a pinned Emscripten SDK into ./emsdk
   ./build-wasm.sh -s   # builds into ./build-wasm and serves it
 
-then open http://localhost:8765/ in a browser.  Omit the -s option to build
+then open http://localhost:8000/ in a browser.  Omit the -s option to build
 without starting a web server.  Neither the SDK nor the build output is checked
 in.
+
+The wasm/ directory holds the browser build's source; wasm/README.md explains
+that directory, the generated build-wasm/ directory, and the edit/reload loop
+for working on the browser version.
 
 The browser version behaves slightly differently from the command line version:
 operating system commands (a command line in quotes) are not available, since a

@@ -6,15 +6,21 @@
 #
 # Usage:
 #   ./build-wasm.sh          # build into ./build-wasm
-#   ./build-wasm.sh -s       # build, then serve it on http://localhost:8765
+#   ./build-wasm.sh -s       # build, then serve it on http://localhost:8000
 #   ./build-wasm.sh -t       # build, then run the test suite against it
 #
 # Output (in ./build-wasm):
-#   index.html             the page, copied from wasm/metamath.html
-#   metamath-browser.js    Emscripten loader
-#   metamath-browser.wasm  the compiled program
+#   metamath-browser.js    Emscripten loader        (generated here by emcc)
+#   metamath-browser.wasm  the compiled program     (generated here by emcc)
+#   index.html             the page                 (staged from wasm/metamath.html)
+#   serve                  local test web server    (staged from wasm/serve)
 #
-# The build directory is intentionally NOT checked in (see .gitignore).
+# Source of truth lives in wasm/ (checked in).  The two staged files are linked
+# in from there with a symlink when the filesystem supports one, so editing
+# wasm/metamath.html shows up on the next browser reload with no rebuild; on
+# other filesystems they are copied instead.  Either way ./build-wasm holds
+# nothing irreplaceable: it is intentionally NOT checked in (see .gitignore),
+# so "rm -rf build-wasm" is always a safe clean.
 
 set -eu
 
@@ -42,6 +48,17 @@ if ! command -v emcc >/dev/null 2>&1; then
 fi
 
 mkdir -p "$out_dir"
+
+# Stage a checked-in source file from wasm/ into the (disposable) build
+# directory.  Prefer a relative symlink, so that editing the source is reflected
+# on the next browser reload with no rebuild and the source stays the single
+# copy; fall back to a plain copy on filesystems without symlink support.
+#   $1  file name in wasm/
+#   $2  name to create in build-wasm/ (the page must be served as index.html)
+stage_from_wasm() {
+  rm -f "$out_dir/$2"
+  ln -s "../wasm/$1" "$out_dir/$2" 2>/dev/null || cp "$top_dir/wasm/$1" "$out_dir/$2"
+}
 
 # Notes on the options below:
 #   ASYNCIFY              lets cmdInput() wait for the user without blocking the
@@ -138,7 +155,9 @@ emcc "$top_dir"/src/*.c \
   -sFORCE_FILESYSTEM=1 \
   --js-library "$top_dir/wasm/mmemscripten.js"
 
-cp "$top_dir/wasm/metamath.html" "$out_dir/index.html"
+stage_from_wasm metamath.html index.html
+stage_from_wasm serve serve
+chmod +x "$out_dir/serve" 2>/dev/null || true
 
 echo "Built in $out_dir"
 ls -l "$out_dir/metamath-browser.wasm" | awk '{printf "  metamath-browser.wasm  %.0f KB\n", $5/1024}'
@@ -170,9 +189,11 @@ WRAPPER
 fi
 
 if [ "$serve" -eq 1 ]; then
-  echo "Serving http://localhost:8765/  (press Control-C to stop)"
+  echo "Serving http://localhost:8000/  (press Control-C to stop)"
   cd "$out_dir"
-  exec python3 -m http.server 8765
+  exec python3 -m http.server 8000
 else
-  echo "To try it:  ./build-wasm.sh -s   then open http://localhost:8765/"
+  echo "To try it:  ./build-wasm.sh -s   then open http://localhost:8000/"
+  echo "To iterate: run ./build-wasm/serve in another terminal (http://localhost:8000/),"
+  echo "            edit wasm/metamath.html, and reload (no rebuild needed)."
 fi
