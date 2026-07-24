@@ -51,7 +51,7 @@
     font-family: ui-monospace, Menlo, Consolas, monospace;
     background: rgba(110, 140, 255, .18); padding: .1rem .3rem; border-radius: 3px;
   }
-  dialog .row { margin-top: 1rem; display: flex; gap: .5rem; justify-content: flex-end; }
+  dialog .row { margin-top: 1rem; display: flex; flex-wrap: wrap; gap: .5rem; justify-content: flex-end; }
   /* Placeholder row shown when a file list is empty (used by the explorer). */
   .filenone {
     font-family: system-ui, sans-serif; font-style: italic;
@@ -79,6 +79,29 @@
   .filerow .fn { flex: 1; font-weight: 600; word-break: break-all; }
   .filerow .sz { opacity: .75; white-space: nowrap; }
   .filerow .mt { opacity: .6; white-space: nowrap; font-size: .78rem; }
+  /* Text editor: a paged textarea, a find/replace bar, and a nav/status bar. */
+  #editor-dlg { max-width: min(56rem, 96vw); width: 56rem; }
+  #editor-area {
+    width: 100%; box-sizing: border-box; height: 50vh; resize: vertical;
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .85rem;
+    line-height: 1.4; color: inherit; background: Canvas;
+    border: 1px solid #8886; border-radius: 6px; padding: .5rem;
+  }
+  .editor-find {
+    display: flex; flex-wrap: wrap; gap: .4rem; align-items: center;
+    margin: .2rem 0 .5rem;
+  }
+  .editor-find input[type="text"] { font: inherit; padding: .25rem .4rem; flex: 1; min-width: 7rem; }
+  #editor-findinfo { font-size: .8rem; opacity: .75; flex-basis: 100%; min-height: 1em; }
+  .editor-nav {
+    display: flex; flex-wrap: wrap; gap: .5rem; align-items: center;
+    margin: .4rem 0 .2rem; font-size: .82rem;
+  }
+  .editor-nav .nav-spacer { flex: 1 1 1rem; }
+  #editor-pos { font-variant-numeric: tabular-nums; font-weight: 600; }
+  #editor-pageinfo { opacity: .65; font-variant-numeric: tabular-nums; }
+  .editor-nav .gotobox { opacity: .85; }
+  .editor-nav input[type="number"] { font: inherit; width: 7em; padding: .2rem .3rem; }
 
   /* ---- activity + state feedback -------------------------------------
      The state is shown with small icons rather than words, to spend as
@@ -183,11 +206,39 @@
   <p id="explore-msg">Select a file, then choose an action.</p>
   <div id="explore-list"></div>
   <div class="row">
+    <button id="explore-edit" disabled title="Edit the selected file as text.">Edit</button>
     <button id="explore-rename" disabled title="Rename the selected file.">Rename</button>
     <button id="explore-copy" disabled title="Copy the selected file to a new name.">Copy</button>
     <button id="explore-save" disabled title="Save the selected file to your computer.">Save</button>
     <button id="explore-delete" disabled title="Delete the selected file.">Delete</button>
     <button id="explore-close" autofocus title="Close the explorer.">Close</button>
+  </div>
+</dialog>
+
+<dialog id="editor-dlg">
+  <h2 id="editor-title">Edit file</h2>
+  <div class="editor-find">
+    <input type="text" id="editor-findtext" placeholder="Find" autocomplete="off" spellcheck="false" aria-label="Find text">
+    <input type="text" id="editor-repltext" placeholder="Replace with" autocomplete="off" spellcheck="false" aria-label="Replace with">
+    <button id="editor-findprev" title="Find previous (Shift-Enter)" aria-label="Find previous">&#8593;</button>
+    <button id="editor-findnext" title="Find next (Enter, or Ctrl-F to focus)" aria-label="Find next">&#8595;</button>
+    <button id="editor-replace" title="Replace the current match, then find the next.">Replace</button>
+    <button id="editor-replaceall" title="Replace every match in the whole file.">Replace all</button>
+    <span id="editor-findinfo"></span>
+  </div>
+  <textarea id="editor-area" wrap="off" spellcheck="false" autocomplete="off" aria-label="File contents"></textarea>
+  <div class="editor-nav">
+    <span id="editor-pos" title="line:column">1:1</span>
+    <span id="editor-pageinfo"></span>
+    <span class="nav-spacer"></span>
+    <button id="editor-prev" title="Previous page (Ctrl-PageUp).">Prev</button>
+    <button id="editor-next" title="Next page (Ctrl-PageDown).">Next</button>
+    <label class="gotobox">Go to line <input type="number" id="editor-gotoline" min="1"></label>
+    <button id="editor-goto" title="Jump to that line.">Go</button>
+  </div>
+  <div class="row">
+    <button id="editor-save" title="Write the changes back to the file (Ctrl-S).">Save</button>
+    <button id="editor-close" autofocus title="Close the editor.">Close</button>
   </div>
 </dialog>
 
@@ -590,6 +641,7 @@
   var exploreMsg = document.getElementById("explore-msg");
   var exploreSel = null;   // name of the selected file, or null
   var exBtn = {
+    edit:   document.getElementById("explore-edit"),
     rename: document.getElementById("explore-rename"),
     copy:   document.getElementById("explore-copy"),
     save:   document.getElementById("explore-save"),
@@ -612,6 +664,7 @@
       rows[i].classList.toggle("sel", rows[i].dataset.name === name);
     }
     var on = !!name;
+    exBtn.edit.disabled = !on;
     exBtn.rename.disabled = !on;
     exBtn.copy.disabled = !on;
     exBtn.save.disabled = !on;
@@ -706,6 +759,317 @@
     flushPersist();
     renderExplore();
   };
+  exBtn.edit.onclick = function () {
+    if (exploreSel && requireIdle()) openEditor(exploreSel);
+  };
+
+  // ---- text editor (paged) -------------------------------------------
+  // A textarea cannot hold a large file (set.mm is ~50 MB), so the editor keeps
+  // the whole file in memory as an array of lines and shows only one PAGE of
+  // them at a time.  Editing a page is committed back into that array when you
+  // navigate or save; the readout shows the caret's line and column within the
+  // WHOLE file, reflecting edits made so far.  Text is UTF-8 in and out.  Cut,
+  // copy, and paste are the textarea's own shortcuts (Ctrl/Cmd-X/C/V).
+  var editorDlg = document.getElementById("editor-dlg");
+  var editorArea = document.getElementById("editor-area");
+  var editorTitle = document.getElementById("editor-title");
+  var findText = document.getElementById("editor-findtext");
+  var replText = document.getElementById("editor-repltext");
+  var findInfo = document.getElementById("editor-findinfo");
+  var posEl = document.getElementById("editor-pos");
+  var pageInfoEl = document.getElementById("editor-pageinfo");
+  var prevBtn = document.getElementById("editor-prev");
+  var nextBtn = document.getElementById("editor-next");
+  var gotoInput = document.getElementById("editor-gotoline");
+  var saveBtn = document.getElementById("editor-save");
+
+  var PAGE = 2000;         // lines shown at once
+  var docLines = null;     // the whole file, split into lines
+  var editorName = null;   // file being edited, or null
+  var editorDirty = false; // unsaved changes since the file was last written
+  var pageStart = 0;       // index in docLines of the first line on the page
+  var pageLines = 0;       // how many docLines the current page covers
+
+  function setEditorInfo(t) { findInfo.textContent = t || ""; }
+  function updateEditorTitle() {
+    editorTitle.textContent = "Edit: " + editorName + (editorDirty ? "  *" : "");
+    saveBtn.disabled = !editorDirty;   // nothing to save when not dirty
+  }
+
+  // Count of "\n" in text[0..pos); and the 1-based column at pos.
+  function newlinesBefore(text, pos) {
+    var n = 0, p = text.indexOf("\n");
+    while (p !== -1 && p < pos) { n++; p = text.indexOf("\n", p + 1); }
+    return n;
+  }
+  function columnAt(text, pos) {
+    return pos - text.lastIndexOf("\n", pos - 1);   // lastIndexOf is -1 on line 1
+  }
+  // Char offset of the start of line `line` (0-based, within the page text).
+  function offsetOfLine(text, line) {
+    var off = 0;
+    for (var i = 0; i < line; i++) {
+      var nl = text.indexOf("\n", off);
+      if (nl === -1) return text.length;
+      off = nl + 1;
+    }
+    return off;
+  }
+
+  function updateCaret() {
+    var text = editorArea.value, pos = editorArea.selectionStart;
+    var gLine = pageStart + newlinesBefore(text, pos) + 1;   // whole-file line
+    posEl.textContent = gLine + ":" + columnAt(text, pos);   // line:column, no commas
+  }
+  function updatePageInfo() {
+    var total = docLines ? docLines.length : 0;
+    pageInfoEl.textContent = "(lines " + (total ? pageStart + 1 : 0).toLocaleString() +
+      "-" + (pageStart + pageLines).toLocaleString() + " of " + total.toLocaleString() + ")";
+    prevBtn.disabled = pageStart <= 0;
+    nextBtn.disabled = pageStart + pageLines >= total;
+  }
+
+  // Put the edited page back into docLines.
+  function commitPage() {
+    if (docLines == null) return;
+    var lines = editorArea.value.split("\n");
+    if (lines.length === pageLines) {
+      for (var i = 0; i < lines.length; i++) docLines[pageStart + i] = lines[i];
+    } else {
+      // Line count changed: rebuild around the page (avoids huge argument spreads).
+      docLines = docLines.slice(0, pageStart).concat(lines, docLines.slice(pageStart + pageLines));
+    }
+    pageLines = lines.length;
+  }
+
+  function scrollCaretIntoView() {
+    var line = newlinesBefore(editorArea.value, editorArea.selectionStart);
+    var lh = parseFloat(getComputedStyle(editorArea).lineHeight) || 16;
+    editorArea.scrollTop = Math.max(0, line * lh - editorArea.clientHeight / 2);
+  }
+  // Show the page starting at docLines[start]; optionally place the caret at a
+  // whole-file line/column.
+  function loadPage(start, caretLine, caretCol) {
+    if (start < 0) start = 0;
+    if (start > docLines.length - 1) start = Math.max(0, docLines.length - 1);
+    pageStart = start;
+    pageLines = Math.min(PAGE, docLines.length - pageStart);
+    editorArea.value = docLines.slice(pageStart, pageStart + pageLines).join("\n");
+    editorArea.focus();
+    var off = 0;
+    if (caretLine != null && caretLine >= pageStart && caretLine < pageStart + pageLines) {
+      var ls = offsetOfLine(editorArea.value, caretLine - pageStart);
+      var le = editorArea.value.indexOf("\n", ls);
+      if (le === -1) le = editorArea.value.length;
+      off = Math.min(ls + (caretCol || 0), le);   // clamp the caret within the line
+    }
+    editorArea.setSelectionRange(off, off);
+    scrollCaretIntoView();
+    updatePageInfo();
+    updateCaret();
+  }
+
+  function prevPage() {
+    if (pageStart <= 0) return;
+    commitPage();
+    loadPage(Math.max(0, pageStart - PAGE));
+  }
+  function nextPage() {
+    if (pageStart + pageLines >= docLines.length) return;
+    commitPage();
+    loadPage(pageStart + pageLines);
+  }
+  function gotoLine(line1) {                       // 1-based whole-file line
+    commitPage();
+    loadPage(Math.max(0, (line1 - 1) - 5), line1 - 1, 0);   // a little context above
+  }
+
+  function hasNext() { return docLines && pageStart + pageLines < docLines.length; }
+  function hasPrev() { return docLines && pageStart > 0; }
+  function caretLineInPage() { return newlinesBefore(editorArea.value, editorArea.selectionStart); }
+  function caretColInLine() { return columnAt(editorArea.value, editorArea.selectionStart) - 1; }
+  // Turn to the adjacent page, placing the caret on the first (or last) line so
+  // that Arrow/Page keys glide across the boundary with only slight resistance.
+  function turnToNext(col) {
+    if (!hasNext()) return;
+    commitPage();
+    var start = pageStart + pageLines;
+    loadPage(start, start, col || 0);
+  }
+  function turnToPrev(col, toBottom) {
+    if (!hasPrev()) return;
+    commitPage();
+    var start = Math.max(0, pageStart - PAGE);
+    var span = Math.min(PAGE, docLines.length - start);
+    loadPage(start, toBottom ? start + span - 1 : start, col || 0);
+  }
+
+  function openEditor(name) {
+    var bytes;
+    try { bytes = Mod.FS.readFile("/work/" + name); }
+    catch (e) { exploreMsg.textContent = "Could not open " + name + ": " + e.message; return; }
+    editorName = name;
+    docLines = new TextDecoder("utf-8").decode(bytes).split("\n");
+    editorDirty = false;
+    setEditorInfo(bytes.indexOf(0) !== -1
+      ? "warning: this file contains NUL bytes and may be binary" : "");
+    editorDlg.showModal();
+    loadPage(0);
+    updateEditorTitle();
+  }
+
+  function editorSave() {
+    if (!editorName || !editorDirty) return;   // nothing to save
+    if (!metamathIdle()) { setEditorInfo("Wait until metamath is idle to save."); return; }
+    commitPage();
+    var bytes = new TextEncoder().encode(docLines.join("\n"));   // whole file, UTF-8
+    try { Mod.FS.writeFile("/work/" + editorName, bytes); }
+    catch (e) { setEditorInfo("Could not save: " + e.message); return; }
+    editorDirty = false;
+    updateEditorTitle();
+    setEditorInfo("saved (" + bytes.length + " bytes)");
+    echo("\n[saved " + editorName + " (" + bytes.length + " bytes)]\n");
+    flushPersist();
+  }
+
+  function editorClose() {
+    if (editorDirty && !window.confirm("Discard unsaved changes to " + editorName + "?")) return;
+    editorDlg.close();
+    editorName = null; docLines = null;
+    renderExplore();   // reflect any new size/time in the explorer beneath
+  }
+
+  function markEdited() {
+    if (!editorDirty) { editorDirty = true; updateEditorTitle(); }
+    updateCaret();
+  }
+  editorArea.addEventListener("input", markEdited);
+  editorArea.addEventListener("keyup", updateCaret);
+  editorArea.addEventListener("mouseup", updateCaret);
+  editorArea.addEventListener("focus", updateCaret);
+
+  // Glide across page boundaries: Down on the last line moves to the next page,
+  // Up on the first line to the previous, and Page Down/Up turn the page once
+  // the current one is scrolled to its end.
+  editorArea.addEventListener("keydown", function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;   // Ctrl-nav handled on the dialog
+    if (e.key === "ArrowDown" && !e.shiftKey && caretLineInPage() === pageLines - 1 && hasNext()) {
+      e.preventDefault(); turnToNext(caretColInLine());
+    } else if (e.key === "ArrowUp" && !e.shiftKey && caretLineInPage() === 0 && hasPrev()) {
+      e.preventDefault(); turnToPrev(caretColInLine(), true);
+    } else if (e.key === "PageDown" && hasNext() &&
+               editorArea.scrollTop + editorArea.clientHeight >= editorArea.scrollHeight - 2) {
+      e.preventDefault(); turnToNext(0);
+    } else if (e.key === "PageUp" && hasPrev() && editorArea.scrollTop <= 0) {
+      e.preventDefault(); turnToPrev(0, true);
+    }
+  });
+
+  document.getElementById("editor-save").onclick = editorSave;
+  document.getElementById("editor-close").onclick = editorClose;
+  prevBtn.onclick = prevPage;
+  nextBtn.onclick = nextPage;
+  function doGoto() { var n = parseInt(gotoInput.value, 10); if (n >= 1) gotoLine(n); }
+  document.getElementById("editor-goto").onclick = doGoto;
+  gotoInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); doGoto(); }
+  });
+
+  // Escape runs the same unsaved-changes guard as Close.
+  editorDlg.addEventListener("cancel", function (e) { e.preventDefault(); editorClose(); });
+  // Keyboard shortcuts within the editor.
+  editorDlg.addEventListener("keydown", function (e) {
+    var mod = e.ctrlKey || e.metaKey;
+    if (mod && (e.key === "s" || e.key === "S")) { e.preventDefault(); editorSave(); }
+    else if (mod && (e.key === "f" || e.key === "F")) { e.preventDefault(); findText.focus(); findText.select(); }
+    else if (mod && e.key === "PageDown") { e.preventDefault(); nextPage(); }
+    else if (mod && e.key === "PageUp") { e.preventDefault(); prevPage(); }
+  });
+
+  // ---- find and replace across the whole file ----
+  // Literal (not regex), case-sensitive; a match lies within a single line.
+  function docFind(q, fromLine, fromCol) {          // forwards, incl. fromCol
+    for (var i = fromLine; i < docLines.length; i++) {
+      var col = docLines[i].indexOf(q, i === fromLine ? fromCol : 0);
+      if (col !== -1) return { line: i, col: col };
+    }
+    return null;
+  }
+  function docFindPrev(q, fromLine, fromCol) {       // backwards, before fromCol
+    for (var i = fromLine; i >= 0; i--) {
+      var hay = (i === fromLine) ? docLines[i].slice(0, fromCol) : docLines[i];
+      var col = hay.lastIndexOf(q);
+      if (col !== -1) return { line: i, col: col };
+    }
+    return null;
+  }
+  function showMatch(hit, len) {
+    if (hit.line < pageStart || hit.line >= pageStart + pageLines) {
+      loadPage(Math.max(0, hit.line - 5));
+    }
+    var off = offsetOfLine(editorArea.value, hit.line - pageStart) + hit.col;
+    editorArea.focus();
+    editorArea.setSelectionRange(off, off + len);
+    scrollCaretIntoView();
+    updateCaret();
+    setEditorInfo("");
+  }
+  function editorFindNext() {
+    var q = findText.value;
+    if (!q) { setEditorInfo(""); return; }
+    commitPage();
+    var text = editorArea.value, pos = editorArea.selectionEnd;
+    var fromLine = pageStart + newlinesBefore(text, pos);
+    var hit = docFind(q, fromLine, columnAt(text, pos) - 1) || docFind(q, 0, 0);  // then wrap
+    if (hit) showMatch(hit, q.length); else setEditorInfo("no matches");
+  }
+  function editorFindPrev() {
+    var q = findText.value;
+    if (!q) { setEditorInfo(""); return; }
+    commitPage();
+    var text = editorArea.value, pos = editorArea.selectionStart;
+    var fromLine = pageStart + newlinesBefore(text, pos);
+    var last = docLines.length - 1;
+    var hit = docFindPrev(q, fromLine, columnAt(text, pos) - 1) ||
+              docFindPrev(q, last, docLines[last].length);                        // then wrap
+    if (hit) showMatch(hit, q.length); else setEditorInfo("no matches");
+  }
+  function editorReplaceOne() {
+    var q = findText.value;
+    if (!q) return;
+    var sel = editorArea.value.substring(editorArea.selectionStart, editorArea.selectionEnd);
+    if (sel === q) {
+      editorArea.setRangeText(replText.value, editorArea.selectionStart, editorArea.selectionEnd, "end");
+      markEdited();
+    }
+    editorFindNext();
+  }
+  function editorReplaceAll() {
+    var q = findText.value;
+    if (!q) return;
+    commitPage();
+    var count = 0;
+    for (var i = 0; i < docLines.length; i++) {
+      if (docLines[i].indexOf(q) === -1) continue;
+      var parts = docLines[i].split(q);
+      count += parts.length - 1;
+      docLines[i] = parts.join(replText.value);
+    }
+    // If the replacement introduced newlines, re-split so each array element is
+    // one line again (keeps line numbering correct).
+    if (count && replText.value.indexOf("\n") !== -1) {
+      docLines = docLines.join("\n").split("\n");
+    }
+    if (count) { editorDirty = true; updateEditorTitle(); loadPage(pageStart); }
+    setEditorInfo(count ? (count + (count === 1 ? " replacement" : " replacements")) : "no matches");
+  }
+  document.getElementById("editor-findnext").onclick = editorFindNext;
+  document.getElementById("editor-findprev").onclick = editorFindPrev;
+  document.getElementById("editor-replace").onclick = editorReplaceOne;
+  document.getElementById("editor-replaceall").onclick = editorReplaceAll;
+  findText.addEventListener("keydown", function (e) {
+    if (e.key === "Enter") { e.preventDefault(); if (e.shiftKey) editorFindPrev(); else editorFindNext(); }
+  });
 
   // ---- persistence (IndexedDB via IDBFS) ------------------------------
   // /work is backed by IDBFS so its files survive a reload, tab close, or
