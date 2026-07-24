@@ -153,6 +153,7 @@ emcc "$top_dir"/src/*.c \
   $common_opts \
   -sINITIAL_MEMORY=64MB \
   -sFORCE_FILESYSTEM=1 \
+  -lidbfs.js \
   --js-library "$top_dir/wasm/mmemscripten.js"
 
 stage_from_wasm metamath.html index.html

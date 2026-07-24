@@ -184,6 +184,16 @@
   </div>
 </dialog>
 
+<dialog id="conflict-dlg">
+  <h2 id="conflict-title">File already exists</h2>
+  <p id="conflict-msg"></p>
+  <div class="row">
+    <button id="conflict-rename" autofocus title="Keep the existing file under a new name, then download a fresh copy.">Rename old</button>
+    <button id="conflict-overwrite" title="Replace the existing file with the freshly downloaded copy, discarding the current one.">Overwrite</button>
+    <button id="conflict-cancel" title="Do nothing; do not download.">Cancel</button>
+  </div>
+</dialog>
+
 <pre id="term" aria-live="polite" role="log"></pre>
 
 <div id="inputrow">
@@ -252,7 +262,7 @@
     document.body.classList.toggle("busy", computing);
   }
   function goBusy() { setState("busy"); }
-  function goReady() { setState("ready"); }
+  function goReady() { setState("ready"); flushPersist(); }
   setState("starting");
 
   // ---- terminal output ------------------------------------------------
@@ -381,7 +391,12 @@
       }
       var buf = new Uint8Array(got), off = 0;
       chunks.forEach(function (c) { buf.set(c, off); off += c.length; });
-      Mod.FS.writeFile(name, buf);
+      // Keep a pristine baseline as name.orig, then copy it to the working
+      // file.  The baseline lets the user diff against or reset to the original.
+      var orig = name + ".orig";
+      Mod.FS.writeFile(orig, buf);
+      Mod.FS.writeFile(name, buf);   // working copy of the pristine .orig
+      flushPersist();   // UI write while metamath is idle: persist it now
       // The download is done; metamath itself was idle at its prompt.
       setState(waiting ? "ready" : "busy");
       // Downloading only puts the file in the virtual filesystem.
@@ -389,6 +404,7 @@
       // so say so in a dialog as well as in the transcript.
       echo('\n[' + name + ' downloaded into the virtual filesystem' +
            ' (' + Math.round(got / 1048576) + ' MB).' +
+           '\n A pristine copy was kept as ' + orig + '.' +
            '\n Now type:  read "' + name + '"  ]\n');
       offerRead(name, "Download complete", "Downloading");
     } catch (err) {
@@ -431,11 +447,79 @@
     cmdEl.focus();
   };
 
+  // Before downloading, guard against clobbering an existing file that may hold
+  // the user's work.  The check happens FIRST, so a download is never started
+  // if the user is only going to cancel it.
+  function fileExists(name) {
+    if (!Mod) return false;
+    try { Mod.FS.stat("/work/" + name); return true; }
+    catch (e) { return false; }
+  }
+  // A non-colliding backup name: name.bak, then name.bak.2, name.bak.3, ...
+  function backupName(name) {
+    var base = name + ".bak";
+    if (!fileExists(base)) return base;
+    for (var i = 2; ; i++) { if (!fileExists(base + "." + i)) return base + "." + i; }
+  }
+
+  var conflictDlg = document.getElementById("conflict-dlg");
+  var conflictMsg = document.getElementById("conflict-msg");
+  var pendingDownload = null;   // {url, name} awaiting a conflict choice
+
+  // The files a download will write: the pristine baseline and the working copy.
+  function downloadTargets(name) { return [name + ".orig", name]; }
+
+  function startDownload(url, name) {
+    if (!Mod) return;
+    var existing = downloadTargets(name).filter(fileExists);
+    if (existing.length === 0) { fetchDb(url, name); return; }  // nothing to clobber
+    // One or more target files already exist and may hold the user's work.
+    // Overwriting name.orig would also destroy the baseline used for diffs, so
+    // ask about ANY existing target before touching the network.
+    pendingDownload = { url: url, name: name, existing: existing };
+    document.getElementById("conflict-title").textContent =
+      existing.length > 1 ? "Replace existing files?" : "Replace existing file?";
+    conflictMsg.innerHTML =
+      "Downloading a fresh copy would replace " +
+      existing.map(function (n) { return "<strong>" + n + "</strong>"; }).join(" and ") +
+      ", which may contain your work.";
+    if (typeof conflictDlg.showModal === "function") conflictDlg.showModal();
+    else fetchDb(url, name);   // no <dialog> support: fall back to downloading
+  }
+
+  document.getElementById("conflict-cancel").onclick = function () {
+    conflictDlg.close(); pendingDownload = null;
+  };
+  document.getElementById("conflict-overwrite").onclick = function () {
+    conflictDlg.close();
+    var d = pendingDownload; pendingDownload = null;
+    if (d) fetchDb(d.url, d.name);
+  };
+  document.getElementById("conflict-rename").onclick = function () {
+    conflictDlg.close();
+    var d = pendingDownload; pendingDownload = null;
+    if (!d) return;
+    // Preserve every existing target under a new name, so nothing is lost.
+    try {
+      d.existing.forEach(function (n) {
+        var bak = backupName(n);
+        Mod.FS.rename("/work/" + n, "/work/" + bak);
+        echo("\n[renamed existing " + n + " to " + bak + "]");
+      });
+      echo("\n");
+    } catch (e) {
+      echo("\n[could not rename: " + e.message + "]\n");
+      return;
+    }
+    flushPersist();
+    fetchDb(d.url, d.name);
+  };
+
   document.getElementById("load-set").onclick = function () {
-    fetchDb("https://us.metamath.org/metamath/set.mm", "set.mm");
+    startDownload("https://us.metamath.org/metamath/set.mm", "set.mm");
   };
   document.getElementById("load-iset").onclick = function () {
-    fetchDb("https://us.metamath.org/metamath/iset.mm", "iset.mm");
+    startDownload("https://us.metamath.org/metamath/iset.mm", "iset.mm");
   };
 
   document.getElementById("add-btn").onclick = function () {
@@ -446,6 +530,7 @@
     if (!f || !Mod) return;
     var buf = new Uint8Array(await f.arrayBuffer());
     Mod.FS.writeFile(f.name, buf);
+    flushPersist();   // UI write while metamath is idle: persist it now
     // "Added", not "uploaded": the file is copied into the virtual
     // filesystem and is not sent anywhere.
     echo('\n[' + f.name + ' added to the virtual filesystem.' +
@@ -541,12 +626,42 @@
     if (typeof saveDlg.showModal === "function") saveDlg.showModal();
   };
 
+  // ---- persistence (IndexedDB via IDBFS) ------------------------------
+  // /work is backed by IDBFS so its files survive a reload, tab close, or
+  // crash.  metamath still works against a normal synchronous in-memory copy;
+  // we copy changes to IndexedDB with FS.syncfs (restore once at boot, then
+  // flush at each idle when metamath returns to its prompt, and on unload).
+  // This works in every browser that has IndexedDB (effectively all of them),
+  // which OPFS does not yet.
+  var persistAvailable = false;
+  try { persistAvailable = (typeof indexedDB !== "undefined" && indexedDB !== null); }
+  catch (e) { persistAvailable = false; }  // some locked-down modes throw here
+
+  var syncing = false, syncAgain = false;
+  function flushPersist() {
+    if (!persistAvailable || !Mod) return;
+    if (syncing) { syncAgain = true; return; }  // coalesce overlapping flushes
+    syncing = true;
+    Mod.FS.syncfs(false, function () {
+      syncing = false;
+      if (syncAgain) { syncAgain = false; flushPersist(); }
+    });
+  }
+  // Best-effort final flush; async writes may not finish during unload, which
+  // is why the idle flush is the real guarantee.
+  window.addEventListener("beforeunload", function () { flushPersist(); });
+
   // ---- start ----------------------------------------------------------
   createMetamath({
     mmReadLine: mmReadLine,
     preRun: [function (Module) {
       // Work inside /work so added files and outputs are easy to enumerate.
       Module.FS.mkdir("/work");
+      // Back /work with IndexedDB (IDBFS) so its files persist across reloads;
+      // metamath still sees a normal synchronous filesystem.
+      if (persistAvailable) {
+        Module.FS.mount(Module.FS.filesystems.IDBFS, {}, "/work");
+      }
       Module.FS.chdir("/work");
       // Character-level stdout/stderr so prompts appear immediately.
       Module.FS.init(null, outByte, outByte);
@@ -558,19 +673,33 @@
     },
   }).then(function (Module) {
     Mod = Module;
-    cmdEl.disabled = false;
-    cmdEl.focus();
-    // The state becomes "ready" on its own once metamath prints its first
-    // prompt and asks for input (see mmReadLine).
-    echo("[Type commands in the highlighted box at the bottom of the page." +
-         "  Try:  help\n" +
-         "\n Files live in three places:\n" +
-         "   the Metamath website   - use \"Download set.mm\" to copy a database here\n" +
-         "   your own computer      - use \"Add from computer\" and \"Save to computer\"\n" +
-         "   the virtual filesystem - this page's own storage, holding the files above\n" +
-         "\n A file in the virtual filesystem is not read into metamath until you" +
-         " run, for example:  read \"set.mm\"]\n\n");
-    Module.callMain([]);
+    // Restore any previously persisted files from IndexedDB before starting.
+    var restored = persistAvailable
+      ? new Promise(function (res) { Module.FS.syncfs(true, function () { res(); }); })
+      : Promise.resolve();
+    return restored.then(function () {
+      // Ask the browser to keep our storage (reduces eviction; may prompt).
+      if (persistAvailable && navigator.storage && navigator.storage.persist) {
+        navigator.storage.persist();
+      }
+      cmdEl.disabled = false;
+      cmdEl.focus();
+      // The state becomes "ready" on its own once metamath prints its first
+      // prompt and asks for input (see mmReadLine).
+      echo("[Type commands in the highlighted box at the bottom of the page." +
+           "  Try:  help\n" +
+           "\n Files live in three places:\n" +
+           "   the Metamath website   - use \"Download set.mm\" to copy a database here\n" +
+           "   your own computer      - use \"Add from computer\" and \"Save to computer\"\n" +
+           "   the virtual filesystem - this page's own storage, kept across reloads\n" +
+           "\n A file in the virtual filesystem is not read into metamath until you" +
+           " run, for example:  read \"set.mm\"]\n\n");
+      if (!persistAvailable) {
+        echo("[Note: this browser is not storing files persistently" +
+             " (private mode?).  Use \"Save to computer\" to keep your work.]\n\n");
+      }
+      Module.callMain([]);
+    });
   }).catch(function (err) {
     setState("error");
     echo("Failed to start metamath: " + err + "\n");
