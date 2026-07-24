@@ -92,6 +92,16 @@
   }
   .dbrow .dbname { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 600; }
   .dbrow .dbdesc { font-size: .8rem; opacity: .75; }
+  /* Diff dialog: three editable file-name fields. */
+  #diff-dlg { max-width: min(34rem, 94vw); }
+  .diff-fields { display: flex; flex-direction: column; gap: .5rem; margin: .6rem 0; }
+  .diff-fields label { display: flex; align-items: center; gap: .5rem; }
+  .diff-fields label span { flex: 0 0 8.5rem; }
+  .diff-fields input {
+    flex: 1; min-width: 0;
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .85rem;
+    padding: .3rem .4rem;
+  }
   /* Text editor: a segmented textarea, a find/replace bar, and a nav/status bar. */
   #editor-dlg { max-width: min(56rem, 96vw); width: 56rem; }
   #editor-area {
@@ -230,6 +240,7 @@
   <div class="row">
     <button id="explore-new" title="Create a new empty file.">New</button>
     <button id="explore-edit" disabled title="Edit the selected file as text.">Edit</button>
+    <button id="explore-diff" disabled title="Diff the selected file against another (default: its .orig).">Diff</button>
     <button id="explore-rename" disabled title="Rename the selected file.">Rename</button>
     <button id="explore-copy" disabled title="Copy the selected file to a new name.">Copy</button>
     <button id="explore-save" disabled title="Save the selected file to your computer.">Save</button>
@@ -262,6 +273,21 @@
   <div class="row">
     <button id="editor-save" title="Write the changes back to the file (Ctrl-S).">Save</button>
     <button id="editor-close" autofocus title="Close the editor.">Close</button>
+  </div>
+</dialog>
+
+<dialog id="diff-dlg">
+  <h2>Create a diff</h2>
+  <p id="diff-msg">Write a unified diff of two files. The defaults compare a file with its .orig baseline.</p>
+  <div class="diff-fields">
+    <label><span>Original (old)</span><input id="diff-old" autocomplete="off" spellcheck="false"></label>
+    <label><span>Changed (new)</span><input id="diff-new" autocomplete="off" spellcheck="false"></label>
+    <label><span>Save diff to</span><input id="diff-out" autocomplete="off" spellcheck="false"></label>
+  </div>
+  <div class="row">
+    <button id="diff-swap" title="Swap the two files.">Swap</button>
+    <button id="diff-run" title="Create the diff.">Create diff</button>
+    <button id="diff-close" autofocus title="Do not create a diff.">Cancel</button>
   </div>
 </dialog>
 
@@ -695,6 +721,7 @@
   var exploreSel = null;   // name of the selected file, or null
   var exBtn = {
     edit:   document.getElementById("explore-edit"),
+    diff:   document.getElementById("explore-diff"),
     rename: document.getElementById("explore-rename"),
     copy:   document.getElementById("explore-copy"),
     save:   document.getElementById("explore-save"),
@@ -718,6 +745,7 @@
     }
     var on = !!name;
     exBtn.edit.disabled = !on;
+    exBtn.diff.disabled = !on;
     exBtn.rename.disabled = !on;
     exBtn.copy.disabled = !on;
     exBtn.save.disabled = !on;
@@ -1194,6 +1222,152 @@
   findText.addEventListener("keydown", function (e) {
     if (e.key === "Enter") { e.preventDefault(); if (e.shiftKey) editorFindPrev(); else editorFindNext(); }
   });
+
+  // ---- diff -----------------------------------------------------------
+  // Write a unified (patch-compatible) diff of two files in /work.  By default
+  // it compares a file with its .orig baseline and saves to name.diff, but any
+  // of the three names can be changed, so any two files can be diffed.
+
+  // Myers greedy line diff of arrays a,b -> ops [type,text], ' '|'-'|'+'.  The
+  // number of edit steps is bounded so a pathological input cannot hang the tab.
+  function myersDiff(a, b) {
+    var n = a.length, m = b.length;
+    if (n === 0 && m === 0) return [];
+    if (n === 0) return b.map(function (l) { return ["+", l]; });
+    if (m === 0) return a.map(function (l) { return ["-", l]; });
+    var max = n + m;
+    var dmax = Math.max(2000, Math.floor(200000000 / max));
+    if (dmax > max) dmax = max;
+    var v = {}; v[1] = 0;
+    var trace = [], found = false, dEnd = -1;
+    for (var d = 0; d <= dmax && !found; d++) {
+      trace.push(Object.assign({}, v));
+      for (var k = -d; k <= d; k += 2) {
+        var x;
+        if (k === -d || (k !== d && (v[k - 1] || 0) < (v[k + 1] || 0))) x = (v[k + 1] || 0);
+        else x = (v[k - 1] || 0) + 1;
+        var y = x - k;
+        while (x < n && y < m && a[x] === b[y]) { x++; y++; }
+        v[k] = x;
+        if (x >= n && y >= m) { found = true; dEnd = d; break; }
+      }
+    }
+    if (!found) throw new Error("the two files differ too much to diff here");
+    var ops = [], px = n, py = m;
+    for (var dd = dEnd; dd > 0; dd--) {
+      var vv = trace[dd];
+      var kk = px - py;
+      var prevK = (kk === -dd || (kk !== dd && (vv[kk - 1] || 0) < (vv[kk + 1] || 0))) ? kk + 1 : kk - 1;
+      var prevX = vv[prevK] || 0, prevY = prevX - prevK;
+      while (px > prevX && py > prevY) { ops.push([" ", a[px - 1]]); px--; py--; }
+      if (px === prevX) ops.push(["+", b[py - 1]]); else ops.push(["-", a[px - 1]]);
+      px = prevX; py = prevY;
+    }
+    while (px > 0) { ops.push([" ", a[px - 1]]); px--; py--; }
+    ops.reverse();
+    return ops;
+  }
+
+  // Trim the common prefix and suffix (so a localized edit stays cheap), and
+  // shortcut a pure insertion or deletion, then Myers on what is left.
+  function diffOps(a, b) {
+    var n = a.length, m = b.length, s = 0;
+    while (s < n && s < m && a[s] === b[s]) s++;
+    var ea = n, eb = m;
+    while (ea > s && eb > s && a[ea - 1] === b[eb - 1]) { ea--; eb--; }
+    var midA = a.slice(s, ea), midB = b.slice(s, eb), mid;
+    if (midA.length === 0) mid = midB.map(function (l) { return ["+", l]; });
+    else if (midB.length === 0) mid = midA.map(function (l) { return ["-", l]; });
+    else mid = myersDiff(midA, midB);
+    var ops = [], i;
+    for (i = 0; i < s; i++) ops.push([" ", a[i]]);
+    for (i = 0; i < mid.length; i++) ops.push(mid[i]);
+    for (i = ea; i < n; i++) ops.push([" ", a[i]]);
+    return ops;
+  }
+
+  // Format the ops as a unified diff, grouped into hunks with `context` lines.
+  function unifiedDiff(aLines, bLines, oldName, newName, context) {
+    context = context == null ? 3 : context;
+    var ops = diffOps(aLines, bLines), items = [], ai = 0, bi = 0, i;
+    for (i = 0; i < ops.length; i++) {
+      items.push({ t: ops[i][0], text: ops[i][1], a: ai, b: bi });
+      if (ops[i][0] === " ") { ai++; bi++; } else if (ops[i][0] === "-") ai++; else bi++;
+    }
+    var changed = [];
+    for (i = 0; i < items.length; i++) if (items[i].t !== " ") changed.push(i);
+    if (!changed.length) return { text: "", adds: 0, dels: 0 };
+    var groups = [], gs = changed[0], ge = changed[0];
+    for (i = 1; i < changed.length; i++) {
+      if (changed[i] - ge <= context * 2) ge = changed[i];
+      else { groups.push([gs, ge]); gs = changed[i]; ge = changed[i]; }
+    }
+    groups.push([gs, ge]);
+    var out = ["--- " + oldName, "+++ " + newName], adds = 0, dels = 0;
+    groups.forEach(function (g) {
+      var lo = Math.max(0, g[0] - context), hi = Math.min(items.length - 1, g[1] + context);
+      var aStart = items[lo].a, bStart = items[lo].b, aCount = 0, bCount = 0, body = [], j;
+      for (j = lo; j <= hi; j++) {
+        var it = items[j];
+        if (it.t === " ") { aCount++; bCount++; body.push(" " + it.text); }
+        else if (it.t === "-") { aCount++; dels++; body.push("-" + it.text); }
+        else { bCount++; adds++; body.push("+" + it.text); }
+      }
+      out.push("@@ -" + (aCount ? aStart + 1 : aStart) + "," + aCount +
+               " +" + (bCount ? bStart + 1 : bStart) + "," + bCount + " @@");
+      for (j = 0; j < body.length; j++) out.push(body[j]);
+    });
+    return { text: out.join("\n") + "\n", adds: adds, dels: dels };
+  }
+
+  var diffDlg = document.getElementById("diff-dlg");
+  var diffMsg = document.getElementById("diff-msg");
+  var diffOld = document.getElementById("diff-old");
+  var diffNew = document.getElementById("diff-new");
+  var diffOut = document.getElementById("diff-out");
+
+  function openDiff(name) {
+    var base = (name.slice(-5) === ".orig") ? name.slice(0, -5) : name;
+    diffOld.value = base + ".orig";
+    diffNew.value = base;
+    diffOut.value = base + ".diff";
+    diffMsg.textContent =
+      "Write a unified diff of two files. The defaults compare a file with its .orig baseline.";
+    if (typeof diffDlg.showModal === "function") diffDlg.showModal();
+  }
+  exBtn.diff.onclick = function () { if (exploreSel) openDiff(exploreSel); };
+  document.getElementById("diff-close").onclick = function () { diffDlg.close(); };
+  document.getElementById("diff-swap").onclick = function () {
+    var t = diffOld.value; diffOld.value = diffNew.value; diffNew.value = t;
+  };
+  document.getElementById("diff-run").onclick = function () {
+    var oldName = diffOld.value.trim(), newName = diffNew.value.trim(), outName = diffOut.value.trim();
+    if (!oldName || !newName || !outName) { diffMsg.textContent = "Fill in all three names."; return; }
+    if (outName.indexOf("/") !== -1) { diffMsg.textContent = "Output name cannot contain '/'."; return; }
+    if (!metamathIdle()) { diffMsg.textContent = "Wait until metamath is idle."; return; }
+    if (!fileExists(oldName)) { diffMsg.textContent = oldName + " does not exist."; return; }
+    if (!fileExists(newName)) { diffMsg.textContent = newName + " does not exist."; return; }
+    var oldText, newText;
+    try {
+      oldText = new TextDecoder("utf-8").decode(Mod.FS.readFile("/work/" + oldName));
+      newText = new TextDecoder("utf-8").decode(Mod.FS.readFile("/work/" + newName));
+    } catch (e) { diffMsg.textContent = "Could not read: " + e.message; return; }
+    var result;
+    try { result = unifiedDiff(oldText.split("\n"), newText.split("\n"), oldName, newName); }
+    catch (e) { diffMsg.textContent = e.message; return; }
+    if (!result.text) {
+      diffMsg.textContent = oldName + " and " + newName + " are identical; nothing written.";
+      return;
+    }
+    if (fileExists(outName) && !window.confirm(outName + " exists.  Overwrite it?")) return;
+    try { Mod.FS.writeFile("/work/" + outName, new TextEncoder().encode(result.text)); }
+    catch (e) { diffMsg.textContent = "Could not write " + outName + ": " + e.message; return; }
+    flushPersist();
+    echo("\n[diff " + oldName + " vs " + newName + ": +" + result.adds + " -" + result.dels +
+         " lines, written to " + outName + "]\n");
+    diffDlg.close();
+    renderExplore();
+  };
 
   // ---- persistence (IndexedDB via IDBFS) ------------------------------
   // /work is backed by IDBFS so its files survive a reload, tab close, or
