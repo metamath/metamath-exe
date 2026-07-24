@@ -1033,6 +1033,38 @@
     }
   });
 
+  // Scroll-wheel past the page edge: when the textarea is pinned at its top or
+  // bottom the wheel cannot scroll it, so watch that wasted scrolling and turn
+  // the page after about one extra wheel notch in the same direction (within a
+  // short window).  A sub-notch dribble does nothing; one deliberate extra notch
+  // turns the page.
+  var WHEEL_TURN_PX = 40;   // ~one wheel notch of past-edge scroll turns a page
+  var overscroll = 0, overscrollDir = 0, overscrollTimer = null;
+  function wheelPixels(e) {
+    var d = e.deltaY;
+    if (e.deltaMode === 1) d *= 16;                            // lines -> px
+    else if (e.deltaMode === 2) d *= editorArea.clientHeight;  // pages -> px
+    return d;
+  }
+  editorArea.addEventListener("wheel", function (e) {
+    var d = wheelPixels(e);
+    if (!d) return;
+    var atBottom = editorArea.scrollTop + editorArea.clientHeight >= editorArea.scrollHeight - 1;
+    var atTop = editorArea.scrollTop <= 0;
+    var pastEdge = (d > 0 && atBottom && hasNext()) || (d < 0 && atTop && hasPrev());
+    if (!pastEdge) { overscroll = 0; overscrollDir = 0; return; }   // normal scrolling
+    e.preventDefault();                          // own the gesture at the edge
+    var dir = d > 0 ? 1 : -1;
+    if (dir !== overscrollDir) { overscroll = 0; overscrollDir = dir; }
+    overscroll += Math.abs(d);
+    clearTimeout(overscrollTimer);
+    overscrollTimer = setTimeout(function () { overscroll = 0; overscrollDir = 0; }, 500);
+    if (overscroll >= WHEEL_TURN_PX) {   // about one extra notch past the edge
+      overscroll = 0; overscrollDir = 0;
+      if (dir > 0) turnToNext(0); else turnToPrev(0, true);
+    }
+  }, { passive: false });
+
   document.getElementById("editor-save").onclick = editorSave;
   document.getElementById("editor-close").onclick = editorClose;
   prevBtn.onclick = prevPage;
