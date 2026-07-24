@@ -1341,7 +1341,7 @@
     if (!changed.length) return { text: "", adds: 0, dels: 0 };
     var groups = [], gs = changed[0], ge = changed[0];
     for (i = 1; i < changed.length; i++) {
-      if (changed[i] - ge <= context * 2) ge = changed[i];
+      if (changed[i] - ge <= context * 2 + 1) ge = changed[i];   // merge like GNU diff
       else { groups.push([gs, ge]); gs = changed[i]; ge = changed[i]; }
     }
     groups.push([gs, ge]);
