@@ -546,6 +546,14 @@
   };
 
   // ---- download files the program wrote -------------------------------
+  // FS.stat reports mtime as a Date in some builds and a number in others;
+  // normalise it to milliseconds.
+  function mtimeMs(st) {
+    var m = st && st.mtime;
+    if (m == null) return 0;
+    if (typeof m === "number") return m;
+    return m.getTime ? m.getTime() : (+m || 0);
+  }
   // The files metamath can see, which is what a listing or a save offers.
   function listWorkFiles() {
     if (!Mod) return [];
@@ -555,9 +563,12 @@
         .filter(function (n) { return n !== "." && n !== ".."; });
     } catch (e) { return []; }
     return names.sort().map(function (n) {
-      var size = "?";
-      try { size = Mod.FS.stat("/work/" + n).size; } catch (e) { /* keep "?" */ }
-      return { name: n, size: size };
+      var size = "?", mtime = 0;
+      try {
+        var st = Mod.FS.stat("/work/" + n);
+        size = st.size; mtime = mtimeMs(st);
+      } catch (e) { /* keep defaults */ }
+      return { name: n, size: size, mtime: mtime };
     });
   }
 
@@ -576,11 +587,19 @@
   document.getElementById("listfiles").onclick = function () {
     if (!Mod) return;
     var files = listWorkFiles();
-    var body = files.length
-      ? files.map(function (f) {
-          return "  " + f.name + "  (" + f.size + " bytes)";
-        }).join("\n")
-      : "  (none yet)";
+    if (!files.length) {
+      echo("\n[files in the virtual filesystem, directory /work:  (none yet)]\n");
+      return;
+    }
+    // Show size and modified time, aligned, so a change is easy to spot (this
+    // is also the stat data the coming file explorer will show).
+    var w = files.reduce(function (m, f) { return Math.max(m, f.name.length); }, 4);
+    var body = files.map(function (f) {
+      var name = f.name + new Array(w - f.name.length + 1).join(" ");
+      var size = ("        " + f.size).slice(-9);
+      var when = f.mtime ? new Date(f.mtime).toLocaleString() : "?";
+      return "  " + name + "  " + size + " bytes   " + when;
+    }).join("\n");
     echo("\n[files in the virtual filesystem, directory /work:\n" + body + "\n]\n");
   };
 
