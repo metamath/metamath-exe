@@ -92,7 +92,7 @@
   }
   .dbrow .dbname { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 600; }
   .dbrow .dbdesc { font-size: .8rem; opacity: .75; }
-  /* Text editor: a paged textarea, a find/replace bar, and a nav/status bar. */
+  /* Text editor: a segmented textarea, a find/replace bar, and a nav/status bar. */
   #editor-dlg { max-width: min(56rem, 96vw); width: 56rem; }
   #editor-area {
     width: 100%; box-sizing: border-box; height: 50vh; resize: vertical;
@@ -112,7 +112,7 @@
   }
   .editor-nav .nav-spacer { flex: 1 1 1rem; }
   #editor-pos { font-variant-numeric: tabular-nums; font-weight: 600; }
-  #editor-pageinfo { opacity: .65; font-variant-numeric: tabular-nums; }
+  #editor-seginfo { opacity: .65; font-variant-numeric: tabular-nums; }
   .editor-nav .gotobox { opacity: .85; }
   .editor-nav input[type="number"] { font: inherit; width: 7em; padding: .2rem .3rem; }
 
@@ -252,10 +252,10 @@
   <textarea id="editor-area" wrap="off" spellcheck="false" autocomplete="off" aria-label="File contents"></textarea>
   <div class="editor-nav">
     <span id="editor-pos" title="line:column">1:1</span>
-    <span id="editor-pageinfo"></span>
+    <span id="editor-seginfo"></span>
     <span class="nav-spacer"></span>
-    <button id="editor-prev" title="Previous page (Ctrl-PageUp).">Prev</button>
-    <button id="editor-next" title="Next page (Ctrl-PageDown).">Next</button>
+    <button id="editor-prev" title="Previous segment (Ctrl-PageUp).">Prev</button>
+    <button id="editor-next" title="Next segment (Ctrl-PageDown).">Next</button>
     <label class="gotobox">Go to line <input type="number" id="editor-gotoline" min="1"></label>
     <button id="editor-goto" title="Jump to that line.">Go</button>
   </div>
@@ -831,10 +831,10 @@
     if (exploreSel && requireIdle()) openEditor(exploreSel);
   };
 
-  // ---- text editor (paged) -------------------------------------------
+  // ---- text editor (segmented) -------------------------------------------
   // A textarea cannot hold a large file (set.mm is ~50 MB), so the editor keeps
-  // the whole file in memory as an array of lines and shows only one PAGE of
-  // them at a time.  Editing a page is committed back into that array when you
+  // the whole file in memory as an array of lines and shows only one SEGMENT of
+  // them at a time.  Editing a segment is committed back into that array when you
   // navigate or save; the readout shows the caret's line and column within the
   // WHOLE file, reflecting edits made so far.  Text is UTF-8 in and out.  Cut,
   // copy, and paste are the textarea's own shortcuts (Ctrl/Cmd-X/C/V).
@@ -845,18 +845,18 @@
   var replText = document.getElementById("editor-repltext");
   var findInfo = document.getElementById("editor-findinfo");
   var posEl = document.getElementById("editor-pos");
-  var pageInfoEl = document.getElementById("editor-pageinfo");
+  var segInfoEl = document.getElementById("editor-seginfo");
   var prevBtn = document.getElementById("editor-prev");
   var nextBtn = document.getElementById("editor-next");
   var gotoInput = document.getElementById("editor-gotoline");
   var saveBtn = document.getElementById("editor-save");
 
-  var PAGE = 2000;         // lines shown at once
+  var SEGMENT = 2000;      // lines shown in one segment
   var docLines = null;     // the whole file, split into lines
   var editorName = null;   // file being edited, or null
   var editorDirty = false; // unsaved changes since the file was last written
-  var pageStart = 0;       // index in docLines of the first line on the page
-  var pageLines = 0;       // how many docLines the current page covers
+  var segStart = 0;       // index in docLines of the first line of the segment
+  var segLines = 0;       // how many docLines the current segment covers
 
   function setEditorInfo(t) { findInfo.textContent = t || ""; }
   function updateEditorTitle() {
@@ -873,7 +873,7 @@
   function columnAt(text, pos) {
     return pos - text.lastIndexOf("\n", pos - 1);   // lastIndexOf is -1 on line 1
   }
-  // Char offset of the start of line `line` (0-based, within the page text).
+  // Char offset of the start of line `line` (0-based, within the segment text).
   function offsetOfLine(text, line) {
     var off = 0;
     for (var i = 0; i < line; i++) {
@@ -886,28 +886,28 @@
 
   function updateCaret() {
     var text = editorArea.value, pos = editorArea.selectionStart;
-    var gLine = pageStart + newlinesBefore(text, pos) + 1;   // whole-file line
+    var gLine = segStart + newlinesBefore(text, pos) + 1;   // whole-file line
     posEl.textContent = gLine + ":" + columnAt(text, pos);   // line:column, no commas
   }
-  function updatePageInfo() {
+  function updateSegmentInfo() {
     var total = docLines ? docLines.length : 0;
-    pageInfoEl.textContent = "(lines " + (total ? pageStart + 1 : 0).toLocaleString() +
-      "-" + (pageStart + pageLines).toLocaleString() + " of " + total.toLocaleString() + ")";
-    prevBtn.disabled = pageStart <= 0;
-    nextBtn.disabled = pageStart + pageLines >= total;
+    segInfoEl.textContent = "(lines " + (total ? segStart + 1 : 0).toLocaleString() +
+      "-" + (segStart + segLines).toLocaleString() + " of " + total.toLocaleString() + ")";
+    prevBtn.disabled = segStart <= 0;
+    nextBtn.disabled = segStart + segLines >= total;
   }
 
-  // Put the edited page back into docLines.
-  function commitPage() {
+  // Put the edited segment back into docLines.
+  function commitSegment() {
     if (docLines == null) return;
     var lines = editorArea.value.split("\n");
-    if (lines.length === pageLines) {
-      for (var i = 0; i < lines.length; i++) docLines[pageStart + i] = lines[i];
+    if (lines.length === segLines) {
+      for (var i = 0; i < lines.length; i++) docLines[segStart + i] = lines[i];
     } else {
-      // Line count changed: rebuild around the page (avoids huge argument spreads).
-      docLines = docLines.slice(0, pageStart).concat(lines, docLines.slice(pageStart + pageLines));
+      // Line count changed: rebuild around the segment (avoids huge argument spreads).
+      docLines = docLines.slice(0, segStart).concat(lines, docLines.slice(segStart + segLines));
     }
-    pageLines = lines.length;
+    segLines = lines.length;
   }
 
   function scrollCaretIntoView() {
@@ -915,61 +915,62 @@
     var lh = parseFloat(getComputedStyle(editorArea).lineHeight) || 16;
     editorArea.scrollTop = Math.max(0, line * lh - editorArea.clientHeight / 2);
   }
-  // Show the page starting at docLines[start]; optionally place the caret at a
+  // Show the segment starting at docLines[start]; optionally place the caret at a
   // whole-file line/column.
-  function loadPage(start, caretLine, caretCol) {
+  function loadSegment(start, caretLine, caretCol) {
     if (start < 0) start = 0;
     if (start > docLines.length - 1) start = Math.max(0, docLines.length - 1);
-    pageStart = start;
-    pageLines = Math.min(PAGE, docLines.length - pageStart);
-    editorArea.value = docLines.slice(pageStart, pageStart + pageLines).join("\n");
+    segStart = start;
+    segLines = Math.min(SEGMENT, docLines.length - segStart);
+    editorArea.value = docLines.slice(segStart, segStart + segLines).join("\n");
     editorArea.focus();
     var off = 0;
-    if (caretLine != null && caretLine >= pageStart && caretLine < pageStart + pageLines) {
-      var ls = offsetOfLine(editorArea.value, caretLine - pageStart);
+    if (caretLine != null && caretLine >= segStart && caretLine < segStart + segLines) {
+      var ls = offsetOfLine(editorArea.value, caretLine - segStart);
       var le = editorArea.value.indexOf("\n", ls);
       if (le === -1) le = editorArea.value.length;
       off = Math.min(ls + (caretCol || 0), le);   // clamp the caret within the line
     }
     editorArea.setSelectionRange(off, off);
     scrollCaretIntoView();
-    updatePageInfo();
+    updateSegmentInfo();
     updateCaret();
   }
 
-  function prevPage() {
-    if (pageStart <= 0) return;
-    commitPage();
-    loadPage(Math.max(0, pageStart - PAGE));
+  function prevSegment() {
+    if (segStart <= 0) return;
+    commitSegment();
+    loadSegment(Math.max(0, segStart - SEGMENT));
   }
-  function nextPage() {
-    if (pageStart + pageLines >= docLines.length) return;
-    commitPage();
-    loadPage(pageStart + pageLines);
+  function nextSegment() {
+    if (segStart + segLines >= docLines.length) return;
+    commitSegment();
+    loadSegment(segStart + segLines);
   }
   function gotoLine(line1) {                       // 1-based whole-file line
-    commitPage();
-    loadPage(Math.max(0, (line1 - 1) - 5), line1 - 1, 0);   // a little context above
+    commitSegment();
+    loadSegment(Math.max(0, (line1 - 1) - 5), line1 - 1, 0);   // a little context above
   }
 
-  function hasNext() { return docLines && pageStart + pageLines < docLines.length; }
-  function hasPrev() { return docLines && pageStart > 0; }
-  function caretLineInPage() { return newlinesBefore(editorArea.value, editorArea.selectionStart); }
+  function hasNext() { return docLines && segStart + segLines < docLines.length; }
+  function hasPrev() { return docLines && segStart > 0; }
+  function caretLineInSegment() { return newlinesBefore(editorArea.value, editorArea.selectionStart); }
   function caretColInLine() { return columnAt(editorArea.value, editorArea.selectionStart) - 1; }
-  // Turn to the adjacent page, placing the caret on the first (or last) line so
-  // that Arrow/Page keys glide across the boundary with only slight resistance.
+  // Turn to the adjacent segment, placing the caret on the first (or last) line
+  // so that Arrow/Page keys glide across the segment boundary with only slight
+  // resistance.
   function turnToNext(col) {
     if (!hasNext()) return;
-    commitPage();
-    var start = pageStart + pageLines;
-    loadPage(start, start, col || 0);
+    commitSegment();
+    var start = segStart + segLines;
+    loadSegment(start, start, col || 0);
   }
   function turnToPrev(col, toBottom) {
     if (!hasPrev()) return;
-    commitPage();
-    var start = Math.max(0, pageStart - PAGE);
-    var span = Math.min(PAGE, docLines.length - start);
-    loadPage(start, toBottom ? start + span - 1 : start, col || 0);
+    commitSegment();
+    var start = Math.max(0, segStart - SEGMENT);
+    var span = Math.min(SEGMENT, docLines.length - start);
+    loadSegment(start, toBottom ? start + span - 1 : start, col || 0);
   }
 
   function openEditor(name) {
@@ -982,14 +983,14 @@
     setEditorInfo(bytes.indexOf(0) !== -1
       ? "warning: this file contains NUL bytes and may be binary" : "");
     editorDlg.showModal();
-    loadPage(0);
+    loadSegment(0);
     updateEditorTitle();
   }
 
   function editorSave() {
     if (!editorName || !editorDirty) return;   // nothing to save
     if (!metamathIdle()) { setEditorInfo("Wait until metamath is idle to save."); return; }
-    commitPage();
+    commitSegment();
     var bytes = new TextEncoder().encode(docLines.join("\n"));   // whole file, UTF-8
     try { Mod.FS.writeFile("/work/" + editorName, bytes); }
     catch (e) { setEditorInfo("Could not save: " + e.message); return; }
@@ -1016,14 +1017,14 @@
   editorArea.addEventListener("mouseup", updateCaret);
   editorArea.addEventListener("focus", updateCaret);
 
-  // Glide across page boundaries: Down on the last line moves to the next page,
-  // Up on the first line to the previous, and Page Down/Up turn the page once
-  // the current one is scrolled to its end.
+  // Glide across segment boundaries: Down on the last line moves to the next
+  // segment, Up on the first line to the previous, and Page Down/Up turn the
+  // segment once the current one is scrolled to its end.
   editorArea.addEventListener("keydown", function (e) {
     if (e.ctrlKey || e.metaKey || e.altKey) return;   // Ctrl-nav handled on the dialog
-    if (e.key === "ArrowDown" && !e.shiftKey && caretLineInPage() === pageLines - 1 && hasNext()) {
+    if (e.key === "ArrowDown" && !e.shiftKey && caretLineInSegment() === segLines - 1 && hasNext()) {
       e.preventDefault(); turnToNext(caretColInLine());
-    } else if (e.key === "ArrowUp" && !e.shiftKey && caretLineInPage() === 0 && hasPrev()) {
+    } else if (e.key === "ArrowUp" && !e.shiftKey && caretLineInSegment() === 0 && hasPrev()) {
       e.preventDefault(); turnToPrev(caretColInLine(), true);
     } else if (e.key === "PageDown" && hasNext() &&
                editorArea.scrollTop + editorArea.clientHeight >= editorArea.scrollHeight - 2) {
@@ -1033,12 +1034,12 @@
     }
   });
 
-  // Scroll-wheel past the page edge: when the textarea is pinned at its top or
-  // bottom the wheel cannot scroll it, so watch that wasted scrolling and turn
-  // the page after about one extra wheel notch in the same direction (within a
-  // short window).  A sub-notch dribble does nothing; one deliberate extra notch
-  // turns the page.
-  var WHEEL_TURN_PX = 40;   // ~one wheel notch of past-edge scroll turns a page
+  // Scroll-wheel past the segment edge: when the textarea is pinned at its top
+  // or bottom the wheel cannot scroll it, so watch that wasted scrolling and
+  // turn the segment after about one extra wheel notch in the same direction
+  // (within a short window).  A sub-notch dribble does nothing; one deliberate
+  // extra notch turns the segment.
+  var WHEEL_TURN_PX = 40;   // ~one wheel notch of past-edge scroll turns a segment
   var overscroll = 0, overscrollDir = 0, overscrollTimer = null;
   function wheelPixels(e) {
     var d = e.deltaY;
@@ -1067,8 +1068,8 @@
 
   document.getElementById("editor-save").onclick = editorSave;
   document.getElementById("editor-close").onclick = editorClose;
-  prevBtn.onclick = prevPage;
-  nextBtn.onclick = nextPage;
+  prevBtn.onclick = prevSegment;
+  nextBtn.onclick = nextSegment;
   function doGoto() { var n = parseInt(gotoInput.value, 10); if (n >= 1) gotoLine(n); }
   document.getElementById("editor-goto").onclick = doGoto;
   gotoInput.addEventListener("keydown", function (e) {
@@ -1082,8 +1083,8 @@
     var mod = e.ctrlKey || e.metaKey;
     if (mod && (e.key === "s" || e.key === "S")) { e.preventDefault(); editorSave(); }
     else if (mod && (e.key === "f" || e.key === "F")) { e.preventDefault(); findText.focus(); findText.select(); }
-    else if (mod && e.key === "PageDown") { e.preventDefault(); nextPage(); }
-    else if (mod && e.key === "PageUp") { e.preventDefault(); prevPage(); }
+    else if (mod && e.key === "PageDown") { e.preventDefault(); nextSegment(); }
+    else if (mod && e.key === "PageUp") { e.preventDefault(); prevSegment(); }
   });
 
   // ---- find and replace across the whole file ----
@@ -1104,10 +1105,10 @@
     return null;
   }
   function showMatch(hit, len) {
-    if (hit.line < pageStart || hit.line >= pageStart + pageLines) {
-      loadPage(Math.max(0, hit.line - 5));
+    if (hit.line < segStart || hit.line >= segStart + segLines) {
+      loadSegment(Math.max(0, hit.line - 5));
     }
-    var off = offsetOfLine(editorArea.value, hit.line - pageStart) + hit.col;
+    var off = offsetOfLine(editorArea.value, hit.line - segStart) + hit.col;
     editorArea.focus();
     editorArea.setSelectionRange(off, off + len);
     scrollCaretIntoView();
@@ -1117,18 +1118,18 @@
   function editorFindNext() {
     var q = findText.value;
     if (!q) { setEditorInfo(""); return; }
-    commitPage();
+    commitSegment();
     var text = editorArea.value, pos = editorArea.selectionEnd;
-    var fromLine = pageStart + newlinesBefore(text, pos);
+    var fromLine = segStart + newlinesBefore(text, pos);
     var hit = docFind(q, fromLine, columnAt(text, pos) - 1) || docFind(q, 0, 0);  // then wrap
     if (hit) showMatch(hit, q.length); else setEditorInfo("no matches");
   }
   function editorFindPrev() {
     var q = findText.value;
     if (!q) { setEditorInfo(""); return; }
-    commitPage();
+    commitSegment();
     var text = editorArea.value, pos = editorArea.selectionStart;
-    var fromLine = pageStart + newlinesBefore(text, pos);
+    var fromLine = segStart + newlinesBefore(text, pos);
     var last = docLines.length - 1;
     var hit = docFindPrev(q, fromLine, columnAt(text, pos) - 1) ||
               docFindPrev(q, last, docLines[last].length);                        // then wrap
@@ -1147,7 +1148,7 @@
   function editorReplaceAll() {
     var q = findText.value;
     if (!q) return;
-    commitPage();
+    commitSegment();
     var count = 0;
     for (var i = 0; i < docLines.length; i++) {
       if (docLines[i].indexOf(q) === -1) continue;
@@ -1160,7 +1161,7 @@
     if (count && replText.value.indexOf("\n") !== -1) {
       docLines = docLines.join("\n").split("\n");
     }
-    if (count) { editorDirty = true; updateEditorTitle(); loadPage(pageStart); }
+    if (count) { editorDirty = true; updateEditorTitle(); loadSegment(segStart); }
     setEditorInfo(count ? (count + (count === 1 ? " replacement" : " replacements")) : "no matches");
   }
   document.getElementById("editor-findnext").onclick = editorFindNext;
