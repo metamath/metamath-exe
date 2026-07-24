@@ -52,39 +52,33 @@
     background: rgba(110, 140, 255, .18); padding: .1rem .3rem; border-radius: 3px;
   }
   dialog .row { margin-top: 1rem; display: flex; gap: .5rem; justify-content: flex-end; }
-  /* A framed panel, so the list of files reads as a list even when it holds
-     just one file or none (in which case it shows a placeholder row). */
-  #save-list {
-    display: flex; flex-direction: column; gap: .4rem;
-    margin: .4rem 0; padding: .5rem; min-height: 2.75rem; max-height: 50vh;
-    overflow-y: auto; border: 1px solid #8884; border-radius: 8px;
-    background: rgba(128, 128, 128, .08);
-  }
+  /* Placeholder row shown when a file list is empty (used by the explorer). */
   .filenone {
     font-family: system-ui, sans-serif; font-style: italic;
     opacity: .65; font-size: .85rem; padding: .35rem .4rem;
   }
-  /* Each file is a button styled as a distinct row, so it clearly reads as a
-     choice that does something when clicked; the "Save" tag on every row names
-     the action, so it is obvious a click saves that file rather than selecting
-     it for some later step. */
-  .filebtn {
-    display: flex; align-items: center; gap: .6rem; width: 100%;
+  /* File explorer: a selectable list of files plus a row of actions. */
+  #explore-dlg { max-width: min(42rem, 94vw); }
+  #explore-list {
+    display: flex; flex-direction: column; gap: .25rem;
+    margin: .4rem 0; padding: .5rem; min-height: 3rem; max-height: 55vh;
+    overflow-y: auto; border: 1px solid #8884; border-radius: 8px;
+    background: rgba(128, 128, 128, .08);
+  }
+  .filerow {
+    display: flex; align-items: baseline; gap: .75rem; width: 100%;
     text-align: left; cursor: pointer; color: inherit;
     font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .85rem;
-    padding: .45rem .6rem; border: 1px solid #8886; border-radius: 6px;
-    background: rgba(110, 140, 255, .10);
+    padding: .35rem .5rem; border: 1px solid transparent; border-radius: 5px;
+    background: none;
   }
-  .filebtn:hover, .filebtn:focus-visible {
-    background: rgba(110, 140, 255, .22); border-color: rgba(110, 140, 255, .7);
+  .filerow:hover { background: rgba(110, 140, 255, .12); }
+  .filerow.sel {
+    background: rgba(110, 140, 255, .25); border-color: rgba(110, 140, 255, .6);
   }
-  .filebtn .fn { flex: 1; font-weight: 600; word-break: break-all; }
-  .filebtn .sz { opacity: .7; white-space: nowrap; }
-  .filebtn .tag {
-    font-family: system-ui, sans-serif; font-size: .75rem; font-weight: 600;
-    padding: .1rem .45rem; border-radius: 999px;
-    background: rgba(110, 140, 255, .30);
-  }
+  .filerow .fn { flex: 1; font-weight: 600; word-break: break-all; }
+  .filerow .sz { opacity: .75; white-space: nowrap; }
+  .filerow .mt { opacity: .6; white-space: nowrap; font-size: .78rem; }
 
   /* ---- activity + state feedback -------------------------------------
      The state is shown with small icons rather than words, to spend as
@@ -159,8 +153,7 @@
     <button id="load-iset" title="Copy the current iset.mm from the Metamath website (us.metamath.org) into the virtual filesystem. It is not read into metamath until you run: read &quot;iset.mm&quot;">Download iset.mm</button>
     <button id="add-btn" title="Copy a file from your own computer into the virtual filesystem. The file stays in your browser and is not sent anywhere. It is not read into metamath until you run: read &quot;yourfile.mm&quot;">Add from computer</button>
     <input type="file" id="addfile" accept=".mm,.txt" hidden>
-    <button id="listfiles" title="List what is currently in the virtual filesystem. Metamath-exe itself has no command that lists files.">List files</button>
-    <button id="download" title="Copy a file from the virtual filesystem to your own computer, such as a proof or the web pages that metamath wrote.">Save to computer</button>
+    <button id="explore" title="Explore the virtual filesystem: list, rename, copy, delete, and save files.">Explore</button>
     <span id="status" role="status" data-state="starting"
           title="Starting metamath…" aria-label="Starting metamath…"><span class="ind" aria-hidden="true"></span><span id="statustext"></span></span>
   </div>
@@ -175,15 +168,6 @@
   </div>
 </dialog>
 
-<dialog id="save-dlg">
-  <h2>Save a file to your computer</h2>
-  <p id="save-msg"></p>
-  <div id="save-list"></div>
-  <div class="row">
-    <button id="save-close" title="Cancel without saving anything.">Cancel</button>
-  </div>
-</dialog>
-
 <dialog id="conflict-dlg">
   <h2 id="conflict-title">File already exists</h2>
   <p id="conflict-msg"></p>
@@ -191,6 +175,19 @@
     <button id="conflict-rename" autofocus title="Keep the existing file under a new name, then download a fresh copy.">Rename old</button>
     <button id="conflict-overwrite" title="Replace the existing file with the freshly downloaded copy, discarding the current one.">Overwrite</button>
     <button id="conflict-cancel" title="Do nothing; do not download.">Cancel</button>
+  </div>
+</dialog>
+
+<dialog id="explore-dlg">
+  <h2>Virtual filesystem</h2>
+  <p id="explore-msg">Select a file, then choose an action.</p>
+  <div id="explore-list"></div>
+  <div class="row">
+    <button id="explore-rename" disabled title="Rename the selected file.">Rename</button>
+    <button id="explore-copy" disabled title="Copy the selected file to a new name.">Copy</button>
+    <button id="explore-save" disabled title="Save the selected file to your computer.">Save</button>
+    <button id="explore-delete" disabled title="Delete the selected file.">Delete</button>
+    <button id="explore-close" autofocus title="Close the explorer.">Close</button>
   </div>
 </dialog>
 
@@ -582,67 +579,132 @@
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
   }
 
-  // Metamath-exe itself has no command to list files (SHOW SETTINGS only reports
-  // the root directory setting), so the page provides the listing.
-  document.getElementById("listfiles").onclick = function () {
-    if (!Mod) return;
-    var files = listWorkFiles();
-    if (!files.length) {
-      echo("\n[files in the virtual filesystem, directory /work:  (none yet)]\n");
-      return;
-    }
-    // Show size and modified time, aligned, so a change is easy to spot (this
-    // is also the stat data the coming file explorer will show).
-    var w = files.reduce(function (m, f) { return Math.max(m, f.name.length); }, 4);
-    var body = files.map(function (f) {
-      var name = f.name + new Array(w - f.name.length + 1).join(" ");
-      var size = ("        " + f.size).slice(-9);
-      var when = f.mtime ? new Date(f.mtime).toLocaleString() : "?";
-      return "  " + name + "  " + size + " bytes   " + when;
-    }).join("\n");
-    echo("\n[files in the virtual filesystem, directory /work:\n" + body + "\n]\n");
+  // ---- virtual file explorer ------------------------------------------
+  // A small file manager standing in for the missing OS shell: list the files
+  // in /work with their size and modified time, and rename / copy / delete /
+  // save the selected one.  (The text editor and diff/patch will add buttons
+  // to the same action row.)  Metamath-exe itself has no command that lists or
+  // manages files, so the page provides this.
+  var exploreDlg = document.getElementById("explore-dlg");
+  var exploreList = document.getElementById("explore-list");
+  var exploreMsg = document.getElementById("explore-msg");
+  var exploreSel = null;   // name of the selected file, or null
+  var exBtn = {
+    rename: document.getElementById("explore-rename"),
+    copy:   document.getElementById("explore-copy"),
+    save:   document.getElementById("explore-save"),
+    del:    document.getElementById("explore-delete")
   };
 
-  // Asking which file to save only when the button is pressed keeps the
-  // button bar narrow, and avoids making the user pick a file from a list
-  // before it is clear what the list is for.
-  var saveDlg = document.getElementById("save-dlg");
-  var saveMsg = document.getElementById("save-msg");
-  var saveList = document.getElementById("save-list");
+  // Only touch /work while metamath is parked at its prompt, so a file
+  // operation never races a running command.
+  function metamathIdle() { return statusEl.dataset.state === "ready"; }
+  function requireIdle() {
+    if (metamathIdle()) return true;
+    exploreMsg.textContent = "Wait until metamath is idle (ready) before changing files.";
+    return false;
+  }
 
-  document.getElementById("save-close").onclick = function () { saveDlg.close(); };
+  function exploreSelect(name) {
+    exploreSel = name;
+    var rows = exploreList.querySelectorAll(".filerow");
+    for (var i = 0; i < rows.length; i++) {
+      rows[i].classList.toggle("sel", rows[i].dataset.name === name);
+    }
+    var on = !!name;
+    exBtn.rename.disabled = !on;
+    exBtn.copy.disabled = !on;
+    exBtn.save.disabled = !on;
+    exBtn.del.disabled = !on;
+  }
 
-  document.getElementById("download").onclick = function () {
-    if (!Mod) return;
+  function renderExplore() {
     var files = listWorkFiles();
-    saveList.innerHTML = "";
-    if (files.length === 0) {
-      saveMsg.textContent = "Files you can save to your computer (none yet):";
+    exploreList.innerHTML = "";
+    if (!files.length) {
       var none = document.createElement("div");
       none.className = "filenone";
-      none.textContent =
-        "(no files yet; they appear here once a database has been downloaded " +
-        "or added, or once metamath has written one)";
-      saveList.appendChild(none);
-    } else {
-      saveMsg.textContent =
-        "Click a file to save it to your computer (" + files.length + "):";
-      files.forEach(function (f) {
-        var b = document.createElement("button");
-        b.className = "filebtn";
-        b.title = "Save " + f.name + " to your computer";
-        var fn = document.createElement("span");
-        fn.className = "fn"; fn.textContent = f.name;
-        var sz = document.createElement("span");
-        sz.className = "sz"; sz.textContent = f.size + " bytes";
-        var tag = document.createElement("span");
-        tag.className = "tag"; tag.textContent = "Save";
-        b.appendChild(fn); b.appendChild(sz); b.appendChild(tag);
-        b.onclick = function () { saveToComputer(f.name); saveDlg.close(); };
-        saveList.appendChild(b);
-      });
+      none.textContent = "(no files yet; download set.mm or add a file to begin)";
+      exploreList.appendChild(none);
+      exploreSelect(null);
+      return;
     }
-    if (typeof saveDlg.showModal === "function") saveDlg.showModal();
+    files.forEach(function (f) {
+      var row = document.createElement("button");
+      row.className = "filerow";
+      row.dataset.name = f.name;
+      var fn = document.createElement("span"); fn.className = "fn"; fn.textContent = f.name;
+      var sz = document.createElement("span"); sz.className = "sz"; sz.textContent = f.size + " B";
+      var mt = document.createElement("span"); mt.className = "mt";
+      mt.textContent = f.mtime ? new Date(f.mtime).toLocaleString() : "";
+      row.appendChild(fn); row.appendChild(sz); row.appendChild(mt);
+      row.onclick = function () { exploreSelect(f.name); };
+      exploreList.appendChild(row);
+    });
+    // Keep the previous selection if that file still exists.
+    if (exploreSel && files.some(function (f) { return f.name === exploreSel; })) {
+      exploreSelect(exploreSel);
+    } else {
+      exploreSelect(null);
+    }
+  }
+
+  function openExplore() {
+    if (!Mod) return;
+    exploreMsg.textContent = "Select a file, then choose an action.";
+    renderExplore();
+    if (typeof exploreDlg.showModal === "function") exploreDlg.showModal();
+  }
+
+  document.getElementById("explore").onclick = openExplore;
+  document.getElementById("explore-close").onclick = function () { exploreDlg.close(); };
+
+  exBtn.save.onclick = function () {
+    if (exploreSel) saveToComputer(exploreSel);   // read-only: no idle guard needed
+  };
+  exBtn.del.onclick = function () {
+    if (!exploreSel || !requireIdle()) return;
+    var name = exploreSel;
+    if (!window.confirm("Delete " + name + "?  This cannot be undone.")) return;
+    try { Mod.FS.unlink("/work/" + name); }
+    catch (e) { exploreMsg.textContent = "Could not delete " + name + ": " + e.message; return; }
+    echo("\n[deleted " + name + "]\n");
+    flushPersist();
+    renderExplore();
+  };
+  exBtn.rename.onclick = function () {
+    if (!exploreSel || !requireIdle()) return;
+    var name = exploreSel;
+    var to = window.prompt("Rename " + name + " to:", name);
+    if (to == null) return;                 // cancelled
+    to = to.trim();
+    if (!to || to === name) return;
+    if (to.indexOf("/") !== -1) { exploreMsg.textContent = "Name cannot contain '/'."; return; }
+    if (fileExists(to)) { exploreMsg.textContent = to + " already exists."; return; }
+    try { Mod.FS.rename("/work/" + name, "/work/" + to); }
+    catch (e) { exploreMsg.textContent = "Could not rename: " + e.message; return; }
+    echo("\n[renamed " + name + " to " + to + "]\n");
+    exploreSel = to;
+    flushPersist();
+    renderExplore();
+  };
+  exBtn.copy.onclick = function () {
+    if (!exploreSel || !requireIdle()) return;
+    var name = exploreSel;
+    var to = window.prompt("Copy " + name + " to:", name + ".copy");
+    if (to == null) return;
+    to = to.trim();
+    if (!to || to === name) return;
+    if (to.indexOf("/") !== -1) { exploreMsg.textContent = "Name cannot contain '/'."; return; }
+    if (fileExists(to)) { exploreMsg.textContent = to + " already exists."; return; }
+    try {
+      var data = Mod.FS.readFile("/work/" + name);
+      Mod.FS.writeFile("/work/" + to, data);
+    } catch (e) { exploreMsg.textContent = "Could not copy: " + e.message; return; }
+    echo("\n[copied " + name + " to " + to + "]\n");
+    exploreSel = to;
+    flushPersist();
+    renderExplore();
   };
 
   // ---- persistence (IndexedDB via IDBFS) ------------------------------
