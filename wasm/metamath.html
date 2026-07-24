@@ -77,8 +77,8 @@
     background: rgba(110, 140, 255, .25); border-color: rgba(110, 140, 255, .6);
   }
   .filerow .fn { flex: 1; font-weight: 600; word-break: break-all; }
-  .filerow .sz { opacity: .75; white-space: nowrap; }
-  .filerow .mt { opacity: .6; white-space: nowrap; font-size: .78rem; }
+  .filerow .sz { opacity: .75; white-space: nowrap; text-align: right; min-width: 10ch; }
+  .filerow .mt { opacity: .6; white-space: nowrap; }
   /* Text editor: a paged textarea, a find/replace bar, and a nav/status bar. */
   #editor-dlg { max-width: min(56rem, 96vw); width: 56rem; }
   #editor-area {
@@ -603,6 +603,14 @@
     if (typeof m === "number") return m;
     return m.getTime ? m.getTime() : (+m || 0);
   }
+  // Local time as a fixed-width "YYYY-MM-DD HH:mm:ss": 24-hour, sorts visually,
+  // understood everywhere, and the fixed width keeps the columns aligned.
+  function fmtTime(ms) {
+    if (!ms) return "";
+    var d = new Date(ms), p = function (n) { return (n < 10 ? "0" : "") + n; };
+    return d.getFullYear() + "-" + p(d.getMonth() + 1) + "-" + p(d.getDate()) +
+      " " + p(d.getHours()) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
+  }
   // The files metamath can see, which is what a listing or a save offers.
   function listWorkFiles() {
     if (!Mod) return [];
@@ -690,7 +698,7 @@
       var fn = document.createElement("span"); fn.className = "fn"; fn.textContent = f.name;
       var sz = document.createElement("span"); sz.className = "sz"; sz.textContent = f.size + " B";
       var mt = document.createElement("span"); mt.className = "mt";
-      mt.textContent = f.mtime ? new Date(f.mtime).toLocaleString() : "";
+      mt.textContent = fmtTime(f.mtime);
       row.appendChild(fn); row.appendChild(sz); row.appendChild(mt);
       row.onclick = function () { exploreSelect(f.name); };
       exploreList.appendChild(row);
