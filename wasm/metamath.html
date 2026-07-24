@@ -1268,6 +1268,47 @@
     return ops;
   }
 
+  // Boundary sliding: a run of inserted/deleted lines can be shifted across
+  // identical neighbouring lines without changing the result (only which
+  // identical line is labelled "changed" vs "context").  Among the equivalent
+  // positions, pick the one whose surrounding lines are the best block
+  // boundaries, so edits land on blank lines and metamath delimiters ($}, ${,
+  // $(, ...) rather than tearing blocks apart.
+  function boundaryStrength(text) {
+    if (text === undefined) return 2;            // start/end of file
+    var t = text.replace(/^\s+/, "");            // ignore indentation
+    if (t === "") return 2;                       // blank line
+    if (t.charAt(0) === "$") return 1;            // metamath delimiter / keyword
+    return 0;
+  }
+  function runScore(ops, i, j) {
+    return boundaryStrength(i > 0 ? ops[i - 1][1] : undefined) +
+           boundaryStrength(j + 1 < ops.length ? ops[j + 1][1] : undefined);
+  }
+  function slideRuns(ops) {
+    var i = 0;
+    while (i < ops.length) {
+      var t = ops[i][0];
+      if (t === " ") { i++; continue; }
+      var j = i;
+      while (j + 1 < ops.length && ops[j + 1][0] === t) j++;   // maximal run of type t
+      var s = i, e = j;
+      while (s > 0 && ops[s - 1][0] === " " && ops[s - 1][1] === ops[e][1]) {
+        ops[s - 1][0] = t; ops[e][0] = " "; s--; e--;          // slide up as far as possible
+      }
+      var bestStart = s, bestScore = runScore(ops, s, e);
+      while (e + 1 < ops.length && ops[e + 1][0] === " " && ops[e + 1][1] === ops[s][1]) {
+        ops[s][0] = " "; ops[e + 1][0] = t; s++; e++;          // scan down, scoring each spot
+        var sc = runScore(ops, s, e);
+        if (sc > bestScore) { bestScore = sc; bestStart = s; }
+      }
+      while (s > bestStart) {
+        ops[s - 1][0] = t; ops[e][0] = " "; s--; e--;          // settle at the best spot
+      }
+      i = e + 1;
+    }
+  }
+
   // Trim the common prefix and suffix (so a localized edit stays cheap), and
   // shortcut a pure insertion or deletion, then Myers on what is left.
   function diffOps(a, b) {
@@ -1283,6 +1324,7 @@
     for (i = 0; i < s; i++) ops.push([" ", a[i]]);
     for (i = 0; i < mid.length; i++) ops.push(mid[i]);
     for (i = ea; i < n; i++) ops.push([" ", a[i]]);
+    slideRuns(ops);
     return ops;
   }
 
