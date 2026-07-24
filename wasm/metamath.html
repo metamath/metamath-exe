@@ -206,6 +206,7 @@
   <p id="explore-msg">Select a file, then choose an action.</p>
   <div id="explore-list"></div>
   <div class="row">
+    <button id="explore-new" title="Create a new empty file.">New</button>
     <button id="explore-edit" disabled title="Edit the selected file as text.">Edit</button>
     <button id="explore-rename" disabled title="Rename the selected file.">Rename</button>
     <button id="explore-copy" disabled title="Copy the selected file to a new name.">Copy</button>
@@ -711,6 +712,21 @@
 
   document.getElementById("explore").onclick = openExplore;
   document.getElementById("explore-close").onclick = function () { exploreDlg.close(); };
+  document.getElementById("explore-new").onclick = function () {
+    if (!requireIdle()) return;
+    var name = window.prompt("New file name:", "");
+    if (name == null) return;
+    name = name.trim();
+    if (!name) return;
+    if (name.indexOf("/") !== -1) { exploreMsg.textContent = "Name cannot contain '/'."; return; }
+    if (fileExists(name)) { exploreMsg.textContent = name + " already exists."; return; }
+    try { Mod.FS.writeFile("/work/" + name, ""); }
+    catch (e) { exploreMsg.textContent = "Could not create " + name + ": " + e.message; return; }
+    echo("\n[created " + name + "]\n");
+    exploreSel = name;   // select it so Edit and the rest act on it
+    flushPersist();
+    renderExplore();
+  };
 
   exBtn.save.onclick = function () {
     if (exploreSel) saveToComputer(exploreSel);   // read-only: no idle guard needed
