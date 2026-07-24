@@ -884,10 +884,32 @@
     return off;
   }
 
+  // Cached caret position (whole-file line/column, and 0-based line within the
+  // segment), refreshed only when the caret actually moves.
+  var caretGLine = 1, caretCol = 1, caretSLine = 0;
+  var lineHeightPx = 0;
+  function lineHeight() {
+    if (!lineHeightPx) lineHeightPx = parseFloat(getComputedStyle(editorArea).lineHeight) || 16;
+    return lineHeightPx;
+  }
   function updateCaret() {
     var text = editorArea.value, pos = editorArea.selectionStart;
-    var gLine = segStart + newlinesBefore(text, pos) + 1;   // whole-file line
-    posEl.textContent = gLine + ":" + columnAt(text, pos);   // line:column, no commas
+    caretSLine = newlinesBefore(text, pos);     // 0-based line within the segment
+    caretGLine = segStart + caretSLine + 1;     // whole-file line
+    caretCol = columnAt(text, pos);
+    refreshReadout();
+  }
+  // Keep the readout current: the caret's line:column when the caret is on
+  // screen, or the file line at the top of the view when the caret is scrolled
+  // out of sight (restored as soon as the caret moves back into view).
+  function refreshReadout() {
+    var lh = lineHeight(), top = editorArea.scrollTop;
+    var caretY = caretSLine * lh;
+    if (caretY >= top - 1 && caretY < top + editorArea.clientHeight) {
+      posEl.textContent = caretGLine + ":" + caretCol;                  // caret on screen
+    } else {
+      posEl.textContent = String(segStart + Math.floor(top / lh) + 1);  // top of view
+    }
   }
   function updateSegmentInfo() {
     var total = docLines ? docLines.length : 0;
@@ -912,14 +934,14 @@
 
   function scrollCaretIntoView() {
     var line = newlinesBefore(editorArea.value, editorArea.selectionStart);
-    var lh = parseFloat(getComputedStyle(editorArea).lineHeight) || 16;
-    editorArea.scrollTop = Math.max(0, line * lh - editorArea.clientHeight / 2);
+    editorArea.scrollTop = Math.max(0, line * lineHeight() - editorArea.clientHeight / 2);
   }
   // Show the segment starting at docLines[start]; optionally place the caret at a
   // whole-file line/column.
   function loadSegment(start, caretLine, caretCol) {
     if (start < 0) start = 0;
     if (start > docLines.length - 1) start = Math.max(0, docLines.length - 1);
+    lineHeightPx = 0;   // recompute the line height (handles a zoom change)
     segStart = start;
     segLines = Math.min(SEGMENT, docLines.length - segStart);
     editorArea.value = docLines.slice(segStart, segStart + segLines).join("\n");
@@ -1016,6 +1038,7 @@
   editorArea.addEventListener("keyup", updateCaret);
   editorArea.addEventListener("mouseup", updateCaret);
   editorArea.addEventListener("focus", updateCaret);
+  editorArea.addEventListener("scroll", refreshReadout);
 
   // Glide across segment boundaries: Down on the last line moves to the next
   // segment, Up on the first line to the previous, and Page Down/Up turn the
