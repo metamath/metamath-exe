@@ -656,13 +656,47 @@
   try { persistAvailable = (typeof indexedDB !== "undefined" && indexedDB !== null); }
   catch (e) { persistAvailable = false; }  // some locked-down modes throw here
 
+  // Most metamath commands (verify, search, show, ...) never touch /work, so we
+  // must not write to IndexedDB after every command.  flushPersist() first
+  // takes a cheap in-memory snapshot of /work (names + mtime + size) and only
+  // calls FS.syncfs when that snapshot differs from what we last persisted.
+  // This catches both metamath's own writes and the page's writes, yet touches
+  // IndexedDB only when a file actually changed.
+  var lastSnapshot = null;   // snapshot of what is currently persisted
   var syncing = false, syncAgain = false;
+
+  function workSnapshot() {
+    var snap = {};
+    if (!Mod) return snap;
+    var names;
+    try { names = Mod.FS.readdir("/work"); } catch (e) { return snap; }
+    for (var i = 0; i < names.length; i++) {
+      var n = names[i];
+      if (n === "." || n === "..") continue;
+      try {
+        var st = Mod.FS.stat("/work/" + n);
+        snap[n] = mtimeMs(st) + ":" + st.size;   // changes if content changes
+      } catch (e) { /* skip an unreadable entry */ }
+    }
+    return snap;
+  }
+  function sameSnapshot(a, b) {
+    if (!a || !b) return false;
+    var ka = Object.keys(a), kb = Object.keys(b);
+    if (ka.length !== kb.length) return false;
+    for (var i = 0; i < ka.length; i++) { if (a[ka[i]] !== b[ka[i]]) return false; }
+    return true;
+  }
+
   function flushPersist() {
     if (!persistAvailable || !Mod) return;
-    if (syncing) { syncAgain = true; return; }  // coalesce overlapping flushes
+    var snap = workSnapshot();
+    if (sameSnapshot(snap, lastSnapshot)) return;   // nothing changed: no write
+    if (syncing) { syncAgain = true; return; }       // coalesce overlapping flushes
     syncing = true;
-    Mod.FS.syncfs(false, function () {
+    Mod.FS.syncfs(false, function (err) {
       syncing = false;
+      if (!err) lastSnapshot = snap;                 // remember what we persisted
       if (syncAgain) { syncAgain = false; flushPersist(); }
     });
   }
@@ -697,6 +731,9 @@
       ? new Promise(function (res) { Module.FS.syncfs(true, function () { res(); }); })
       : Promise.resolve();
     return restored.then(function () {
+      // The just-restored files are already what is persisted, so record them
+      // as the baseline; the first idle then flushes nothing.
+      lastSnapshot = workSnapshot();
       // Ask the browser to keep our storage (reduces eviction; may prompt).
       if (persistAvailable && navigator.storage && navigator.storage.persist) {
         navigator.storage.persist();
