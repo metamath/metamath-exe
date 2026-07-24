@@ -79,6 +79,19 @@
   .filerow .fn { flex: 1; font-weight: 600; word-break: break-all; }
   .filerow .sz { opacity: .75; white-space: nowrap; text-align: right; min-width: 10ch; }
   .filerow .mt { opacity: .6; white-space: nowrap; }
+  /* Database picker: one action row per downloadable database. */
+  #db-list { display: flex; flex-direction: column; gap: .4rem; margin: .5rem 0; }
+  .dbrow {
+    display: flex; flex-direction: column; align-items: flex-start; gap: .15rem;
+    width: 100%; text-align: left; cursor: pointer; color: inherit;
+    padding: .5rem .6rem; border: 1px solid #8886; border-radius: 6px;
+    background: rgba(110, 140, 255, .10);
+  }
+  .dbrow:hover, .dbrow:focus-visible {
+    background: rgba(110, 140, 255, .22); border-color: rgba(110, 140, 255, .7);
+  }
+  .dbrow .dbname { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 600; }
+  .dbrow .dbdesc { font-size: .8rem; opacity: .75; }
   /* Text editor: a paged textarea, a find/replace bar, and a nav/status bar. */
   #editor-dlg { max-width: min(56rem, 96vw); width: 56rem; }
   #editor-area {
@@ -172,8 +185,7 @@
 <header>
   <h1>Metamath-exe in your web browser</h1>
   <div class="controls">
-    <button id="load-set" title="Copy the current set.mm from the Metamath website (us.metamath.org) into the virtual filesystem. It is not read into metamath until you run: read &quot;set.mm&quot;">Download set.mm</button>
-    <button id="load-iset" title="Copy the current iset.mm from the Metamath website (us.metamath.org) into the virtual filesystem. It is not read into metamath until you run: read &quot;iset.mm&quot;">Download iset.mm</button>
+    <button id="load-db" title="Download a Metamath database (set.mm, iset.mm, ...) from us.metamath.org into the virtual filesystem.">Download database&#8230;</button>
     <button id="add-btn" title="Copy a file from your own computer into the virtual filesystem. The file stays in your browser and is not sent anywhere. It is not read into metamath until you run: read &quot;yourfile.mm&quot;">Add from computer</button>
     <input type="file" id="addfile" accept=".mm,.txt" hidden>
     <button id="explore" title="Explore the virtual filesystem: list, rename, copy, delete, and save files.">Explore</button>
@@ -198,6 +210,16 @@
     <button id="conflict-rename" autofocus title="Keep the existing file under a new name, then download a fresh copy.">Rename old</button>
     <button id="conflict-overwrite" title="Replace the existing file with the freshly downloaded copy, discarding the current one.">Overwrite</button>
     <button id="conflict-cancel" title="Do nothing; do not download.">Cancel</button>
+  </div>
+</dialog>
+
+<dialog id="db-dlg">
+  <h2>Download a database</h2>
+  <p>Choose a database to copy into the virtual filesystem. It is not read into
+     metamath until you run, for example, <code>read "set.mm"</code>.</p>
+  <div id="db-list"></div>
+  <div class="row">
+    <button id="db-close" autofocus title="Do not download anything.">Cancel</button>
   </div>
 </dialog>
 
@@ -564,12 +586,34 @@
     fetchDb(d.url, d.name);
   };
 
-  document.getElementById("load-set").onclick = function () {
-    startDownload("https://us.metamath.org/metamath/set.mm", "set.mm");
-  };
-  document.getElementById("load-iset").onclick = function () {
-    startDownload("https://us.metamath.org/metamath/iset.mm", "iset.mm");
-  };
+  // Databases offered by the "Download database" picker.  Add entries here to
+  // list more; the picker and the download flow need no other change.
+  var DATABASES = [
+    { name: "set.mm",  url: "https://us.metamath.org/metamath/set.mm",
+      desc: "Logic and ZFC set theory (the Metamath Proof Explorer)" },
+    { name: "iset.mm", url: "https://us.metamath.org/metamath/iset.mm",
+      desc: "Intuitionistic logic and set theory" }
+  ];
+  var dbDlg = document.getElementById("db-dlg");
+  var dbList = document.getElementById("db-list");
+
+  function openDbPicker() {
+    if (!Mod) return;
+    dbList.innerHTML = "";
+    DATABASES.forEach(function (db) {
+      var b = document.createElement("button");
+      b.className = "dbrow";
+      b.title = "Download " + db.name;
+      var n = document.createElement("span"); n.className = "dbname"; n.textContent = db.name;
+      var d = document.createElement("span"); d.className = "dbdesc"; d.textContent = db.desc;
+      b.appendChild(n); b.appendChild(d);
+      b.onclick = function () { dbDlg.close(); startDownload(db.url, db.name); };
+      dbList.appendChild(b);
+    });
+    if (typeof dbDlg.showModal === "function") dbDlg.showModal();
+  }
+  document.getElementById("load-db").onclick = openDbPicker;
+  document.getElementById("db-close").onclick = function () { dbDlg.close(); };
 
   document.getElementById("add-btn").onclick = function () {
     document.getElementById("addfile").click();
