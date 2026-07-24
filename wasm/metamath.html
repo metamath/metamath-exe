@@ -93,7 +93,7 @@
   .dbrow .dbname { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 600; }
   .dbrow .dbdesc { font-size: .8rem; opacity: .75; }
   /* Diff dialog: three editable file-name fields. */
-  #diff-dlg { max-width: min(34rem, 94vw); }
+  #diff-dlg, #patch-dlg { max-width: min(34rem, 94vw); }
   .diff-fields { display: flex; flex-direction: column; gap: .5rem; margin: .6rem 0; }
   .diff-fields label { display: flex; align-items: center; gap: .5rem; }
   .diff-fields label span { flex: 0 0 8.5rem; }
@@ -241,6 +241,7 @@
     <button id="explore-new" title="Create a new empty file.">New</button>
     <button id="explore-edit" disabled title="Edit the selected file as text.">Edit</button>
     <button id="explore-diff" disabled title="Diff the selected file against another (default: its .orig).">Diff</button>
+    <button id="explore-patch" disabled title="Apply a diff (patch) to a file.">Patch</button>
     <button id="explore-rename" disabled title="Rename the selected file.">Rename</button>
     <button id="explore-copy" disabled title="Copy the selected file to a new name.">Copy</button>
     <button id="explore-save" disabled title="Save the selected file to your computer.">Save</button>
@@ -288,6 +289,20 @@
     <button id="diff-swap" title="Swap the two files.">Swap</button>
     <button id="diff-run" title="Create the diff.">Create diff</button>
     <button id="diff-close" autofocus title="Do not create a diff.">Cancel</button>
+  </div>
+</dialog>
+
+<dialog id="patch-dlg">
+  <h2>Apply a patch</h2>
+  <p id="patch-msg">Apply a unified diff to a file. Target and output default to the diff's own --- and +++ names.</p>
+  <div class="diff-fields">
+    <label><span>Patch (.diff)</span><input id="patch-file" autocomplete="off" spellcheck="false"></label>
+    <label><span>Apply to</span><input id="patch-target" autocomplete="off" spellcheck="false"></label>
+    <label><span>Save result to</span><input id="patch-out" autocomplete="off" spellcheck="false"></label>
+  </div>
+  <div class="row">
+    <button id="patch-run" title="Apply the patch.">Apply patch</button>
+    <button id="patch-close" autofocus title="Do not apply a patch.">Cancel</button>
   </div>
 </dialog>
 
@@ -722,6 +737,7 @@
   var exBtn = {
     edit:   document.getElementById("explore-edit"),
     diff:   document.getElementById("explore-diff"),
+    patch:  document.getElementById("explore-patch"),
     rename: document.getElementById("explore-rename"),
     copy:   document.getElementById("explore-copy"),
     save:   document.getElementById("explore-save"),
@@ -746,6 +762,7 @@
     var on = !!name;
     exBtn.edit.disabled = !on;
     exBtn.diff.disabled = !on;
+    exBtn.patch.disabled = !on;
     exBtn.rename.disabled = !on;
     exBtn.copy.disabled = !on;
     exBtn.save.disabled = !on;
@@ -1408,6 +1425,103 @@
     echo("\n[diff " + oldName + " vs " + newName + ": +" + result.adds + " -" + result.dels +
          " lines, written to " + outName + "]\n");
     diffDlg.close();
+    renderExplore();
+  };
+
+  // ---- patch ----------------------------------------------------------
+  // Apply a unified diff to a file.  Each hunk's context and deleted lines must
+  // match the target exactly, or the patch is refused (never applied wrong).
+  // This reads the same format the Diff action writes.
+  function parseHunks(diffText) {
+    var lines = diffText.split("\n");
+    if (lines.length && lines[lines.length - 1] === "") lines.pop();
+    var hunks = [], i = 0;
+    while (i < lines.length && lines[i].slice(0, 2) !== "@@") i++;
+    while (i < lines.length) {
+      var mo = /^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/.exec(lines[i]);
+      if (!mo) throw new Error("malformed hunk header: " + lines[i]);
+      var h = { oldStart: parseInt(mo[1], 10),
+                oldCount: mo[2] === undefined ? 1 : parseInt(mo[2], 10), body: [] };
+      i++;
+      while (i < lines.length && lines[i].slice(0, 2) !== "@@") {
+        var ln = lines[i], tag = ln.charAt(0);
+        if (tag === " " || tag === "+" || tag === "-") h.body.push([tag, ln.slice(1)]);
+        else if (ln === "") h.body.push([" ", ""]);   // whitespace-stripped empty context line
+        i++;
+      }
+      hunks.push(h);
+    }
+    return hunks;
+  }
+  function applyPatch(targetLines, diffText) {
+    var hunks = parseHunks(diffText), out = [], pos = 0;
+    for (var hi = 0; hi < hunks.length; hi++) {
+      var h = hunks[hi];
+      var start = h.oldCount === 0 ? h.oldStart : h.oldStart - 1;
+      if (start < pos) throw new Error("hunk #" + (hi + 1) + " is out of order");
+      while (pos < start) { out.push(targetLines[pos]); pos++; }
+      for (var bi = 0; bi < h.body.length; bi++) {
+        var tag = h.body[bi][0], text = h.body[bi][1];
+        if (tag === "+") { out.push(text); continue; }
+        if (pos >= targetLines.length || targetLines[pos] !== text)
+          throw new Error("hunk #" + (hi + 1) + " does not match the target at line " + (pos + 1));
+        if (tag === " ") out.push(targetLines[pos]);
+        pos++;
+      }
+    }
+    while (pos < targetLines.length) { out.push(targetLines[pos]); pos++; }
+    return out;
+  }
+
+  var patchDlg = document.getElementById("patch-dlg");
+  var patchMsg = document.getElementById("patch-msg");
+  var patchFile = document.getElementById("patch-file");
+  var patchTarget = document.getElementById("patch-target");
+  var patchOut = document.getElementById("patch-out");
+
+  function openPatch(name) {
+    var patchName = (name.slice(-5) === ".diff") ? name : name + ".diff";
+    var base = (patchName.slice(-5) === ".diff") ? patchName.slice(0, -5) : patchName;
+    var target = base + ".orig", out = base;
+    if (fileExists(patchName)) {
+      try {
+        var lines = new TextDecoder("utf-8").decode(Mod.FS.readFile("/work/" + patchName)).split("\n");
+        if (lines[0] && lines[0].slice(0, 4) === "--- " && lines[1] && lines[1].slice(0, 4) === "+++ ") {
+          target = lines[0].slice(4).trim();   // the diff's own old-file name
+          out = lines[1].slice(4).trim();      // the diff's own new-file name
+        }
+      } catch (e) { /* keep the fallback defaults */ }
+    }
+    patchFile.value = patchName;
+    patchTarget.value = target;
+    patchOut.value = out;
+    patchMsg.textContent =
+      "Apply a unified diff to a file. Target and output default to the diff's own --- and +++ names.";
+    if (typeof patchDlg.showModal === "function") patchDlg.showModal();
+  }
+  exBtn.patch.onclick = function () { if (exploreSel) openPatch(exploreSel); };
+  document.getElementById("patch-close").onclick = function () { patchDlg.close(); };
+  document.getElementById("patch-run").onclick = function () {
+    var pName = patchFile.value.trim(), tName = patchTarget.value.trim(), oName = patchOut.value.trim();
+    if (!pName || !tName || !oName) { patchMsg.textContent = "Fill in all three names."; return; }
+    if (oName.indexOf("/") !== -1) { patchMsg.textContent = "Output name cannot contain '/'."; return; }
+    if (!metamathIdle()) { patchMsg.textContent = "Wait until metamath is idle."; return; }
+    if (!fileExists(pName)) { patchMsg.textContent = pName + " does not exist."; return; }
+    if (!fileExists(tName)) { patchMsg.textContent = tName + " does not exist."; return; }
+    var diffText, targetText;
+    try {
+      diffText = new TextDecoder("utf-8").decode(Mod.FS.readFile("/work/" + pName));
+      targetText = new TextDecoder("utf-8").decode(Mod.FS.readFile("/work/" + tName));
+    } catch (e) { patchMsg.textContent = "Could not read: " + e.message; return; }
+    var result;
+    try { result = applyPatch(targetText.split("\n"), diffText).join("\n"); }
+    catch (e) { patchMsg.textContent = e.message; return; }   // e.g. "hunk #2 does not match..."
+    if (fileExists(oName) && !window.confirm(oName + " exists.  Overwrite it?")) return;
+    try { Mod.FS.writeFile("/work/" + oName, new TextEncoder().encode(result)); }
+    catch (e) { patchMsg.textContent = "Could not write " + oName + ": " + e.message; return; }
+    flushPersist();
+    echo("\n[patched " + tName + " with " + pName + " -> " + oName + "]\n");
+    patchDlg.close();
     renderExplore();
   };
 
