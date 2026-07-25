@@ -180,11 +180,19 @@ jobs:
           # Tell GitHub Pages to serve the files as they are.
           touch "$site/.nojekyll"
 
-          # The pinned copy, and the copy served as the newest release.
+          # Publish the whole browser build, so a newly added page asset (a
+          # script, a stylesheet, the JSPI build, ...) can never be forgotten
+          # and silently 404 on the live site.  Skip the command-line test build
+          # (metamath-node.*) and the local dev server (serve): they are not part
+          # of the site, and metamath-wasm would even leak the build path.
+          # One pinned copy under $tag, and one served as the newest release.
           mkdir -p "$site/$tag"
-          for f in index.html metamath-browser.js metamath-browser.wasm; do
-            cp "wasm-dist/$f" "$site/$tag/$f"
-            cp "wasm-dist/$f" "$site/$f"
+          for f in wasm-dist/*; do
+            case "$(basename "$f")" in
+              serve|metamath-node.*|metamath-wasm) continue ;;
+            esac
+            cp "$f" "$site/$tag/"
+            cp "$f" "$site/"
           done
 
           cd "$site"
