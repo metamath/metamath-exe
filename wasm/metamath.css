@@ -35,11 +35,20 @@
   #inputrow:focus-within { background: rgba(110, 140, 255, .22); }
   #term { cursor: text; }
   dialog {
+    position: relative;
     border: 1px solid #8888; border-radius: 8px; padding: 1rem 1.25rem;
     max-width: 30rem; color: inherit; background: Canvas;
   }
   dialog::backdrop { background: rgba(0, 0, 0, .45); }
-  dialog h2 { margin: 0 0 .5rem 0; font-size: 1.05rem; }
+  dialog h2 { margin: 0 0 .5rem 0; font-size: 1.05rem; padding-right: 1.5rem; }
+  /* Small "x" close button pinned to a dialog's top-right corner. */
+  .dlg-x {
+    position: absolute; top: .5rem; right: .55rem;
+    width: 1.6rem; height: 1.6rem; padding: 0; line-height: 1;
+    font-size: 1.2rem; border: 1px solid #8888; border-radius: 4px;
+    background: transparent; color: inherit; cursor: pointer;
+  }
+  .dlg-x:hover { background: rgba(128, 128, 128, .22); }
   dialog code {
     font-family: ui-monospace, Menlo, Consolas, monospace;
     background: rgba(110, 140, 255, .18); padding: .1rem .3rem; border-radius: 3px;

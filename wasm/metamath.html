@@ -42,6 +42,7 @@
 </dialog>
 
 <dialog id="db-dlg">
+  <button type="button" id="db-x" class="dlg-x" title="Do not download anything." aria-label="Cancel">&times;</button>
   <h2>Download a database</h2>
   <p>Choose a database to copy into the virtual filesystem. It is not read into
      metamath until you run, for example, <code>read "set.mm"</code>.</p>
@@ -52,6 +53,7 @@
 </dialog>
 
 <dialog id="explore-dlg">
+  <button type="button" id="explore-x" class="dlg-x" title="Close the explorer." aria-label="Close">&times;</button>
   <h2>Virtual filesystem</h2>
   <p id="explore-msg">Select a file, then choose an action.</p>
   <div id="explore-list"></div>
@@ -69,6 +71,7 @@
 </dialog>
 
 <dialog id="editor-dlg">
+  <button type="button" id="editor-x" class="dlg-x" title="Close the editor (asks to confirm if there are unsaved changes)." aria-label="Close">&times;</button>
   <h2 id="editor-title">Edit file</h2>
   <div class="editor-find">
     <input type="text" id="editor-findtext" placeholder="Find" autocomplete="off" spellcheck="false" aria-label="Find text">

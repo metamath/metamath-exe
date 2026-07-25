@@ -335,6 +335,7 @@
   }
   document.getElementById("load-db").onclick = openDbPicker;
   document.getElementById("db-close").onclick = function () { dbDlg.close(); };
+  document.getElementById("db-x").onclick = function () { dbDlg.close(); };
 
   document.getElementById("add-btn").onclick = function () {
     document.getElementById("addfile").click();
@@ -490,6 +491,7 @@
 
   document.getElementById("explore").onclick = openExplore;
   document.getElementById("explore-close").onclick = function () { exploreDlg.close(); };
+  document.getElementById("explore-x").onclick = function () { exploreDlg.close(); };
   document.getElementById("explore-new").onclick = function () {
     if (!requireIdle()) return;
     var name = window.prompt("New file name:", "");
@@ -826,6 +828,10 @@
 
   document.getElementById("editor-save").onclick = editorSave;
   document.getElementById("editor-close").onclick = editorClose;
+  document.getElementById("editor-x").onclick = editorClose;
+  // Escape fires the dialog's native "cancel" and would close without asking;
+  // route it through editorClose so unsaved changes still prompt.
+  editorDlg.addEventListener("cancel", function (e) { e.preventDefault(); editorClose(); });
   prevBtn.onclick = prevSegment;
   nextBtn.onclick = nextSegment;
   function doGoto() { var n = parseInt(gotoInput.value, 10); if (n >= 1) gotoLine(n); }
