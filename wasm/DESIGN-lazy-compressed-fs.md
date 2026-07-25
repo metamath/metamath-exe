@@ -315,8 +315,12 @@ end-to-end in Chrome under a strict CSP: a compressible >1 KiB file is stored
 gzip-compressed (3200 -> 79 B) and restored byte-identical; a sub-threshold file
 is stored raw.  Also: the page's CSS/JS were moved into their own files
 (metamath.css / loader.js / metamath.js) so it serves under a strict CSP.
-Next: step 5 (`__wrap_fopen` + `mm_materialize`, still eager) then step 6 (lazy
-nodes + evict-at-idle).
+Step 5: `-Wl,--wrap=fopen` routes every read through `__wrap_fopen`
+(wasm/mmwasm_fs.c, wasm-only) which calls the `mm_materialize` JS import -- a
+suspending no-op for now.  No existing C changed.  Verified: node suite 31/31
+and JSPI anatomy PASS with suspend-on-every-read active; the live
+`mm_materialize` import proves the wrap took effect.  Next: step 6 (lazy nodes +
+`getattr` + evict-at-idle, and make `mm_materialize` actually page in).
 
 1. **Confirm `mm_read_line` is already dual-mode** (it uses
    `Asyncify.handleAsync` + `__async: true`, the verified portable form) and fix

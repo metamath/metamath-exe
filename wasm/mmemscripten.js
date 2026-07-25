@@ -1,10 +1,18 @@
 // JavaScript support library for the WebAssembly build of metamath.
 //
-// Linked in with emcc's --js-library option.  It implements mm_read_line(),
-// declared in src/mminou.c, which is the one place the program suspends while
-// it waits for the user to type a command.  Everything else (parsing, proof
-// verification) runs straight through, so Asyncify only has to instrument the
-// short path from main() down to cmdInput().
+// Linked in with emcc's --js-library option.  It implements the program's two
+// suspension points:
+//   mm_read_line()   -- declared in src/mminou.c; waits for the user to type a
+//                        command line.
+//   mm_materialize() -- called from __wrap_fopen() (wasm/mmwasm_fs.c) before
+//                        every file read, so the page can page a file into the
+//                        in-memory filesystem (and decompress it) on demand.
+// Both use Emscripten's dual-mode async-import form -- an explicit
+// Asyncify.handleAsync(async () => {...}) body plus __async: true -- which the
+// SDK compiles to Asyncify glue under -sASYNCIFY and to JSPI stack switching
+// under -sJSPI, from the same source.  (A plain async body without handleAsync
+// silently breaks -sASYNCIFY: it returns a bare Promise the wasm reads as an
+// integer.)
 
 addToLibrary({
   // int mm_read_line(char *buf, int maxLen)
@@ -38,4 +46,19 @@ addToLibrary({
   // tries to unwind.
   mm_read_line__async: true,
   mm_read_line__deps: ["$stringToUTF8"],
+
+  // void mm_materialize(const char *path)
+  //
+  // Called from __wrap_fopen() before every file read.  It must guarantee the
+  // file's contents are present before the synchronous read that follows.  For
+  // now files are restored eagerly at startup, so this is a no-op -- but it
+  // still suspends and resumes, which exercises suspend-on-every-read and keeps
+  // the plumbing honest.  A later change makes it page in and decompress the
+  // file on demand; pathPtr is ignored until then.
+  mm_materialize: function (pathPtr) {
+    return Asyncify.handleAsync(async function () {
+      // no-op for now
+    });
+  },
+  mm_materialize__async: true,
 });

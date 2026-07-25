@@ -138,15 +138,26 @@ stage_from_wasm() {
 #   4. Cost: doubles build time and stores two .wasm files (each visitor still
 #      downloads only one).  Once JSPI is universal (Safari ships and the update
 #      tail passes), drop the ASYNCIFY build and collapse this back to one.
+# The source files: all of src/, plus the wasm-only fopen wrapper.  The wrapper
+# lives in wasm/ (not src/) on purpose, so native builds -- which compile the
+# explicit list in src/Makefile.am, and any that just build src/*.c -- never see
+# it.  It is also guarded by #ifdef __EMSCRIPTEN__, so it is inert anywhere but here.
+sources="$top_dir/src/*.c $top_dir/wasm/mmwasm_fs.c"
+
 # Options shared by every build.  The suspension mechanism (-sASYNCIFY or -sJSPI)
 # is NOT here: it is added per build so we can produce both browser variants.
+#   -Wl,--wrap=fopen  routes every fopen() through __wrap_fopen (in mmwasm_fs.c),
+#                     which lets the page page a file into the filesystem before
+#                     metamath reads it.  Covers all reads: metamath opens every
+#                     file with fopen (there is no freopen/open/fdopen).
 common_opts="-O3 -DINLINE=inline
   -sALLOW_MEMORY_GROWTH=1
   -sMODULARIZE=1
   -sEXPORT_NAME=createMetamath
   -sEXPORTED_RUNTIME_METHODS=callMain,FS
   -sINVOKE_RUN=0
-  -sEXIT_RUNTIME=1"
+  -sEXIT_RUNTIME=1
+  -Wl,--wrap=fopen"
 
 # Browser-only options: a browser has no real files, so force the (in-memory)
 # filesystem.  /work is persisted to IndexedDB by the page itself (see
@@ -160,7 +171,7 @@ browser_opts="-sINITIAL_MEMORY=64MB -sFORCE_FILESYSTEM=1"
 build_browser() {
   echo "Compiling the browser build ($1) ..."
   # shellcheck disable=SC2086
-  emcc "$top_dir"/src/*.c \
+  emcc $sources \
     -o "$out_dir/$2.js" \
     $common_opts $1 $browser_opts \
     --js-library "$top_dir/wasm/mmemscripten.js"
@@ -196,7 +207,7 @@ if [ "$runtests" -eq 1 ]; then
   # JSPI variant is verified in a browser instead.  The suspend shim in
   # wasm/mmemscripten.js is identical for both modes.
   # shellcheck disable=SC2086
-  emcc "$top_dir"/src/*.c \
+  emcc $sources \
     -o "$out_dir/metamath-node.js" \
     $common_opts \
     -sASYNCIFY \
