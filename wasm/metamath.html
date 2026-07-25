@@ -316,7 +316,23 @@
          placeholder="Type commands here, for example: help" disabled>
 </div>
 
-<script src="./metamath-browser.js"></script>
+<script>
+  // Load the WebAssembly stack-switching (JSPI) build when the browser supports
+  // it -- it runs uninstrumented and noticeably faster -- otherwise the ASYNCIFY
+  // build, which works everywhere.  Both export createMetamath() with identical
+  // runtime methods, so every line of the inline script below is the same no
+  // matter which one loads.  document.write keeps the load synchronous during
+  // parsing, exactly like a static <script src>, so createMetamath is defined by
+  // the time the inline script calls it.  Detect the newer JSPI API that
+  // Emscripten emits (WebAssembly.Suspending / .promising), not the legacy
+  // Suspender, so a browser with only the old API correctly uses ASYNCIFY.
+  (function () {
+    var jspi = (typeof WebAssembly !== "undefined") &&
+               ("Suspending" in WebAssembly) && ("promising" in WebAssembly);
+    var src = jspi ? "./metamath-browser-jspi.js" : "./metamath-browser.js";
+    document.write('<script src="' + src + '"><\/script>');
+  })();
+</script>
 <script>
 (function () {
   "use strict";
