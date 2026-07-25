@@ -1541,21 +1541,45 @@
     renderExplore();
   };
 
-  // ---- persistence (IndexedDB via IDBFS) ------------------------------
-  // /work is backed by IDBFS so its files survive a reload, tab close, or
-  // crash.  metamath still works against a normal synchronous in-memory copy;
-  // we copy changes to IndexedDB with FS.syncfs (restore once at boot, then
-  // flush at each idle when metamath returns to its prompt, and on unload).
-  // This works in every browser that has IndexedDB (effectively all of them),
-  // which OPFS does not yet.
+  // ---- persistence (our own IndexedDB store) --------------------------
+  // /work is a normal in-memory filesystem; we persist it to IndexedDB
+  // ourselves so its files survive a reload, tab close, or crash.  We keep our
+  // own object store rather than Emscripten's IDBFS so that a later change can
+  // compress each file on the way out and decompress it on the way in; for now
+  // the bytes are stored verbatim.  Restore once at boot, then flush at each
+  // idle when metamath returns to its prompt, and on unload.  Works in every
+  // browser that has IndexedDB (effectively all of them), which OPFS does not.
   var persistAvailable = false;
   try { persistAvailable = (typeof indexedDB !== "undefined" && indexedDB !== null); }
   catch (e) { persistAvailable = false; }  // some locked-down modes throw here
 
+  // One object store, keyed by file name; each record is
+  //   { name, data: Uint8Array, mtime: ms, mode }.
+  var DB_NAME = "metamath-work", DB_STORE = "files", dbPromise = null;
+  function openWorkDB() {
+    if (dbPromise) return dbPromise;
+    dbPromise = new Promise(function (resolve, reject) {
+      var req = indexedDB.open(DB_NAME, 1);
+      req.onupgradeneeded = function () {
+        req.result.createObjectStore(DB_STORE, { keyPath: "name" });
+      };
+      req.onsuccess = function () { resolve(req.result); };
+      req.onerror = function () { reject(req.error); };
+    });
+    return dbPromise;
+  }
+  function txDone(tx) {
+    return new Promise(function (resolve, reject) {
+      tx.oncomplete = function () { resolve(); };
+      tx.onerror = function () { reject(tx.error); };
+      tx.onabort = function () { reject(tx.error); };
+    });
+  }
+
   // Most metamath commands (verify, search, show, ...) never touch /work, so we
   // must not write to IndexedDB after every command.  flushPersist() first
   // takes a cheap in-memory snapshot of /work (names + mtime + size) and only
-  // calls FS.syncfs when that snapshot differs from what we last persisted.
+  // writes the files whose snapshot changed (and deletes those that vanished).
   // This catches both metamath's own writes and the page's writes, yet touches
   // IndexedDB only when a file actually changed.
   var lastSnapshot = null;   // snapshot of what is currently persisted
@@ -1584,18 +1608,62 @@
     return true;
   }
 
+  // Write the files that changed since oldSnap; delete those that vanished.
+  // All in one transaction so a crash mid-flush leaves a consistent store.
+  function persistChanges(oldSnap, newSnap) {
+    return openWorkDB().then(function (db) {
+      var tx = db.transaction(DB_STORE, "readwrite");
+      var os = tx.objectStore(DB_STORE), name;
+      for (name in newSnap) {
+        if (!oldSnap || oldSnap[name] !== newSnap[name]) {
+          var path = "/work/" + name, st = Mod.FS.stat(path);
+          os.put({ name: name, data: Mod.FS.readFile(path),
+                   mtime: mtimeMs(st), mode: st.mode });
+        }
+      }
+      if (oldSnap) {
+        for (name in oldSnap) { if (!(name in newSnap)) os.delete(name); }
+      }
+      return txDone(tx);
+    });
+  }
+
   function flushPersist() {
     if (!persistAvailable || !Mod) return;
     var snap = workSnapshot();
     if (sameSnapshot(snap, lastSnapshot)) return;   // nothing changed: no write
     if (syncing) { syncAgain = true; return; }       // coalesce overlapping flushes
     syncing = true;
-    Mod.FS.syncfs(false, function (err) {
+    persistChanges(lastSnapshot, snap).then(function () {
+      lastSnapshot = snap;                           // remember what we persisted
+    }, function (err) {
+      if (window.console) console.warn("metamath: persist failed", err);
+    }).then(function () {
       syncing = false;
-      if (!err) lastSnapshot = snap;                 // remember what we persisted
       if (syncAgain) { syncAgain = false; flushPersist(); }
     });
   }
+
+  // Restore the persisted files into /work before metamath starts.
+  function restoreWork() {
+    return openWorkDB().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var tx = db.transaction(DB_STORE, "readonly");
+        var rq = tx.objectStore(DB_STORE).getAll();
+        rq.onsuccess = function () { resolve(rq.result); };
+        rq.onerror = function () { reject(rq.error); };
+      });
+    }).then(function (recs) {
+      for (var i = 0; i < recs.length; i++) {
+        var rec = recs[i], path = "/work/" + rec.name;
+        try {
+          Mod.FS.writeFile(path, rec.data);
+          if (rec.mtime) Mod.FS.utime(path, rec.mtime, rec.mtime);
+        } catch (e) { /* skip a bad record */ }
+      }
+    });
+  }
+
   // Best-effort final flush; async writes may not finish during unload, which
   // is why the idle flush is the real guarantee.
   window.addEventListener("beforeunload", function () { flushPersist(); });
@@ -1605,12 +1673,9 @@
     mmReadLine: mmReadLine,
     preRun: [function (Module) {
       // Work inside /work so added files and outputs are easy to enumerate.
+      // /work is a plain in-memory filesystem; we persist it to IndexedDB
+      // ourselves (see restoreWork / flushPersist), not via IDBFS.
       Module.FS.mkdir("/work");
-      // Back /work with IndexedDB (IDBFS) so its files persist across reloads;
-      // metamath still sees a normal synchronous filesystem.
-      if (persistAvailable) {
-        Module.FS.mount(Module.FS.filesystems.IDBFS, {}, "/work");
-      }
       Module.FS.chdir("/work");
       // Character-level stdout/stderr so prompts appear immediately.
       Module.FS.init(null, outByte, outByte);
@@ -1624,7 +1689,9 @@
     Mod = Module;
     // Restore any previously persisted files from IndexedDB before starting.
     var restored = persistAvailable
-      ? new Promise(function (res) { Module.FS.syncfs(true, function () { res(); }); })
+      ? restoreWork().catch(function (err) {
+          if (window.console) console.warn("metamath: restore failed", err);
+        })
       : Promise.resolve();
     return restored.then(function () {
       // The just-restored files are already what is persisted, so record them

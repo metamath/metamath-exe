@@ -149,8 +149,10 @@ common_opts="-O3 -DINLINE=inline
   -sEXIT_RUNTIME=1"
 
 # Browser-only options: a browser has no real files, so force the (in-memory)
-# filesystem and back it with IndexedDB for persistence.
-browser_opts="-sINITIAL_MEMORY=64MB -sFORCE_FILESYSTEM=1 -lidbfs.js"
+# filesystem.  /work is persisted to IndexedDB by the page itself (see
+# restoreWork/flushPersist in wasm/metamath.html), not via IDBFS, so we do not
+# link -lidbfs.js.
+browser_opts="-sINITIAL_MEMORY=64MB -sFORCE_FILESYSTEM=1"
 
 # Compile one browser variant.  $1 = suspension flag, $2 = output basename.
 # Both variants export createMetamath() with identical runtime methods, so the

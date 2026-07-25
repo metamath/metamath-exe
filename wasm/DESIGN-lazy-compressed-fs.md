@@ -307,9 +307,12 @@ step 2.)
 
 ## Suggested implementation order (each step shippable)
 
-Status: steps 1-2 DONE (2026-07-25).  ASYNCIFY node suite 31/31; JSPI build
+Status: steps 1-3 DONE (2026-07-25).  ASYNCIFY node suite 31/31; JSPI build
 runtime-verified in Chrome 150 (anatomy `verify proof *` PASS); page
-feature-detects and loads the JSPI build when available.  Next: step 3.
+feature-detects and loads the JSPI build when available.  Step 3: IDBFS replaced
+by our own IndexedDB store (uncompressed, eager restore); verified end-to-end in
+Chrome (create file -> persists -> reload -> restored into /work).  Next: step 4
+(gzip-at-rest + `raw`/`COMPRESS_MIN`).
 
 1. **Confirm `mm_read_line` is already dual-mode** (it uses
    `Asyncify.handleAsync` + `__async: true`, the verified portable form) and fix
