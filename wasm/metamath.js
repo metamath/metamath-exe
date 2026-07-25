@@ -544,9 +544,16 @@
     if (!to || to === name) return;
     if (to.indexOf("/") !== -1) { exploreMsg.textContent = "Name cannot contain '/'."; return; }
     if (fileExists(to)) { exploreMsg.textContent = to + " already exists."; return; }
+    var srcMtime;
+    try { srcMtime = mtimeMs(Mod.FS.stat("/work/" + name)); }
+    catch (e) { exploreMsg.textContent = "Could not copy: " + e.message; return; }
     readWorkFile(name).then(function (data) {
-      try { Mod.FS.writeFile("/work/" + to, data); }
-      catch (e) { exploreMsg.textContent = "Could not copy: " + e.message; return; }
+      try {
+        Mod.FS.writeFile("/work/" + to, data);
+        // Keep the source's modified time: the copy holds that same content, so
+        // its timestamp should say when that content was made, not "now".
+        Mod.FS.utime("/work/" + to, srcMtime, srcMtime);
+      } catch (e) { exploreMsg.textContent = "Could not copy: " + e.message; return; }
       echo("\n[copied " + name + " to " + to + "]\n");
       exploreSel = to;
       flushPersist();
