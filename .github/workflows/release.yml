@@ -183,8 +183,8 @@ jobs:
           # The pinned copy, and the copy served as the newest release.
           mkdir -p "$site/$tag"
           for f in index.html metamath-browser.js metamath-browser.wasm; do
-            cp "build-wasm/$f" "$site/$tag/$f"
-            cp "build-wasm/$f" "$site/$f"
+            cp "wasm-dist/$f" "$site/$tag/$f"
+            cp "wasm-dist/$f" "$site/$f"
           done
 
           cd "$site"

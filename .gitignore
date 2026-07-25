@@ -30,7 +30,7 @@ build/
 cosmocc/
 # Emscripten SDK and WebAssembly build output (not checked in)
 emsdk/
-build-wasm/
+wasm-dist/
 # Doxygen related: configuration file and destination folderbuild/
 
 Doxyfile

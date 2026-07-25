@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """Serve the WebAssembly build on http://localhost:8000/ for local UI testing.
 
-This is the checked-in source; the build stages it into build-wasm/ (as a
+This is the checked-in source; the build stages it into wasm-dist/ (as a
 symlink where possible), so run it from there, next to the built files:
 
-    ./build-wasm/serve
+    ./wasm-dist/serve
 
 Then reload the page after each change to see it.  Works on Linux/BSD/macOS
 (run ./serve, via the shebang above) and on Windows (run: py serve).
 
-Set PORT to serve on a different port, e.g.  PORT=9000 ./build-wasm/serve
+Set PORT to serve on a different port, e.g.  PORT=9000 ./wasm-dist/serve
 """
 
 import http.server

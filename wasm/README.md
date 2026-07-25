@@ -10,16 +10,16 @@ extra browser-specific pieces plus the helper scripts that build and serve them.
 Three directories are involved, and only this one is checked in:
 
 - **`wasm/`** (this directory, checked in): the browser build's own source.
-- **`build-wasm/`** (generated, gitignored): the build output, containing
+- **`wasm-dist/`** (generated, gitignored): the build output, containing
   everything the browser actually loads. It is created by
   [`../build-wasm.sh`](../build-wasm.sh) and holds nothing irreplaceable, so it
-  is safe to delete at any time (`rm -rf build-wasm`); the next build recreates
+  is safe to delete at any time (`rm -rf wasm-dist`); the next build recreates
   it.
 - **`emsdk/`** (installed, gitignored): the pinned Emscripten SDK, placed at the
   repository top level by [`../get-emsdk.sh`](../get-emsdk.sh).
 
 Keeping generated files out of this source directory is deliberate: a clean is
-just `rm -rf build-wasm`, no generated `.wasm` can be committed by accident, and
+just `rm -rf wasm-dist`, no generated `.wasm` can be committed by accident, and
 `git status` stays quiet. (An earlier note about `-sASYNCIFY_ONLY`, `-sJSPI`,
 and the future two-build plan lives in the comments of `build-wasm.sh`.)
 
@@ -41,13 +41,13 @@ and the future two-build plan lives in the comments of `build-wasm.sh`.)
 From the repository top level:
 
     ./get-emsdk.sh       # install the pinned Emscripten SDK into ./emsdk (once)
-    ./build-wasm.sh      # build into ./build-wasm
+    ./build-wasm.sh      # build into ./wasm-dist
     ./build-wasm.sh -s   # build, then serve on http://localhost:8000/
     ./build-wasm.sh -t   # build, then run the test suite against the build
 
 `build-wasm.sh` compiles `../src/*.c`, writes `metamath-browser.js` and
-`metamath-browser.wasm` into `build-wasm/`, and stages `index.html` and `serve`
-into `build-wasm/` from here: as symlinks where the filesystem allows (so edits
+`metamath-browser.wasm` into `wasm-dist/`, and stages `index.html` and `serve`
+into `wasm-dist/` from here: as symlinks where the filesystem allows (so edits
 to the source appear without another build), or as copies otherwise.
 
 ## Updating the pinned Emscripten version
@@ -81,11 +81,11 @@ For UI work (HTML, CSS, JavaScript) you do not need to rebuild:
 
 1. Start the server once, in its own terminal:
 
-       ./build-wasm/serve            # http://localhost:8000/
+       ./wasm-dist/serve            # http://localhost:8000/
 
 2. Edit `metamath.html` here, then reload the page.
 
-Because `build-wasm/index.html` links back to this file, the reload shows your
+Because `wasm-dist/index.html` links back to this file, the reload shows your
 edit immediately. Rebuild with `./build-wasm.sh` only when you change the C
 source in `../src`; after a rebuild, a hard reload (Ctrl-Shift-R) avoids a stale
 cached `.wasm`.

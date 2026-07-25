@@ -15,7 +15,7 @@ const fs = require('fs');
 const path = require('path');
 
 const modulePath = process.env.MM_WASM_MODULE ||
-  path.resolve(__dirname, '..', 'build-wasm', 'metamath-node.js');
+  path.resolve(__dirname, '..', 'wasm-dist', 'metamath-node.js');
 const createMetamath = require(modulePath);
 
 let input = '';
