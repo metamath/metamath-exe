@@ -178,7 +178,7 @@ inflate a file into the FS.
 - **Editor open** (`openEditor` :1043): make `async`; `bytes = await
   readWorkFile(name)`; decode to `docLines`; **that is the only uncompressed
   copy** — the store stays compressed and no FS node is created, exactly the
-  "flush the uncompressed RAM once we have the array" behaviour requested.
+  "flush the uncompressed RAM once we have the array" behavior requested.
 - **Editor segments**: unchanged — pure `docLines` manipulation, no storage
   access, no page-in/evict between segments.
 - **Editor save** (`editorSave` :1057): `await writeWorkFile(name,
@@ -266,7 +266,7 @@ points must use the `handleAsync` form:
 Then the ASYNCIFY vs JSPI choice is purely the compile flag: build twice
 (current ASYNCIFY output + a second `-sJSPI` output under distinct names) and
 feature-detect on the page.  All JS above (store, backend, Explorer API,
-DecompressionStream) is identical for both builds.  (Runtime JSPI behaviour
+DecompressionStream) is identical for both builds.  (Runtime JSPI behavior
 still needs confirming by actually building `-sJSPI` and running it -- that is
 step 2.)
 
@@ -307,12 +307,16 @@ step 2.)
 
 ## Suggested implementation order (each step shippable)
 
-Status: steps 1-3 DONE (2026-07-25).  ASYNCIFY node suite 31/31; JSPI build
-runtime-verified in Chrome 150 (anatomy `verify proof *` PASS); page
-feature-detects and loads the JSPI build when available.  Step 3: IDBFS replaced
-by our own IndexedDB store (uncompressed, eager restore); verified end-to-end in
-Chrome (create file -> persists -> reload -> restored into /work).  Next: step 4
-(gzip-at-rest + `raw`/`COMPRESS_MIN`).
+Status: steps 1-4 DONE (2026-07-25).  ASYNCIFY node suite 31/31; JSPI build
+runtime-verified in Chrome 150.  Step 3: IDBFS replaced by our own IndexedDB
+store.  Step 4: gzip-at-rest via CompressionStream with `raw`/`COMPRESS_MIN`
+(1 KiB); DB version bumped to 2 (clears old records, no migration).  Verified
+end-to-end in Chrome under a strict CSP: a compressible >1 KiB file is stored
+gzip-compressed (3200 -> 79 B) and restored byte-identical; a sub-threshold file
+is stored raw.  Also: the page's CSS/JS were moved into their own files
+(metamath.css / loader.js / metamath.js) so it serves under a strict CSP.
+Next: step 5 (`__wrap_fopen` + `mm_materialize`, still eager) then step 6 (lazy
+nodes + evict-at-idle).
 
 1. **Confirm `mm_read_line` is already dual-mode** (it uses
    `Asyncify.handleAsync` + `__async: true`, the verified portable form) and fix
@@ -322,7 +326,7 @@ Chrome (create file -> persists -> reload -> restored into /work).  Next: step 4
 2. **Add the second `-sJSPI` build** + page feature-detect.  Proves parity at
    runtime before building on it.
 3. **Replace IDBFS with the own-IndexedDB store, still storing uncompressed and
-   resident.**  Pure persistence refactor; behaviour identical.
+   resident.**  Pure persistence refactor; behavior identical.
 4. **Add gzip-at-rest with the `raw`/`COMPRESS_MIN` policy** (compress the store
    + IndexedDB records, still materialize eagerly at boot).  Shrinks IndexedDB.
 5. **Add `__wrap_fopen` + the `mm_materialize` import** (`-Wl,--wrap=fopen`), with

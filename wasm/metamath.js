@@ -1208,24 +1208,31 @@
   // ---- persistence (our own IndexedDB store) --------------------------
   // /work is a normal in-memory filesystem; we persist it to IndexedDB
   // ourselves so its files survive a reload, tab close, or crash.  We keep our
-  // own object store rather than Emscripten's IDBFS so that a later change can
-  // compress each file on the way out and decompress it on the way in; for now
-  // the bytes are stored verbatim.  Restore once at boot, then flush at each
-  // idle when metamath returns to its prompt, and on unload.  Works in every
-  // browser that has IndexedDB (effectively all of them), which OPFS does not.
+  // own object store rather than Emscripten's IDBFS so we can gzip each file on
+  // the way out and gunzip it on the way in (see encodeFor / gunzip), which
+  // shrinks storage and lowers the chance the browser evicts it.  Restore once
+  // at boot, then flush at each idle when metamath returns to its prompt, and on
+  // unload.  Works in every browser that has IndexedDB (effectively all of them).
   var persistAvailable = false;
   try { persistAvailable = (typeof indexedDB !== "undefined" && indexedDB !== null); }
   catch (e) { persistAvailable = false; }  // some locked-down modes throw here
 
-  // One object store, keyed by file name; each record is
-  //   { name, data: Uint8Array, mtime: ms, mode }.
-  var DB_NAME = "metamath-work", DB_STORE = "files", dbPromise = null;
+  // One object store, keyed by file name.  Each record is
+  //   { name, data: Uint8Array, raw: bool, size: uncompressed length, mtime, mode }.
+  // data is gzip-compressed unless raw is true (a small or incompressible file,
+  // or a browser without CompressionStream), in which case it is the verbatim
+  // bytes.  size is always the uncompressed length.
+  var DB_NAME = "metamath-work", DB_STORE = "files", DB_VERSION = 2, dbPromise = null;
   function openWorkDB() {
     if (dbPromise) return dbPromise;
     dbPromise = new Promise(function (resolve, reject) {
-      var req = indexedDB.open(DB_NAME, 1);
+      var req = indexedDB.open(DB_NAME, DB_VERSION);
       req.onupgradeneeded = function () {
-        req.result.createObjectStore(DB_STORE, { keyPath: "name" });
+        // The record shape changed when compression was added; nothing is
+        // shipped, so start the store fresh rather than migrate old records.
+        var db = req.result;
+        if (db.objectStoreNames.contains(DB_STORE)) db.deleteObjectStore(DB_STORE);
+        db.createObjectStore(DB_STORE, { keyPath: "name" });
       };
       req.onsuccess = function () { resolve(req.result); };
       req.onerror = function () { reject(req.error); };
@@ -1237,6 +1244,35 @@
       tx.oncomplete = function () { resolve(); };
       tx.onerror = function () { reject(tx.error); };
       tx.onabort = function () { reject(tx.error); };
+    });
+  }
+
+  // Files are stored gzip-compressed, using the browser-native Compression
+  // Streams API (real gzip, no library).  Below COMPRESS_MIN, or when gzip would
+  // not actually shrink the file, or when the API is absent, they are stored
+  // verbatim (raw: true).  Compression happens only here, at the persistence
+  // boundary; /work itself always holds the uncompressed bytes.
+  var COMPRESS_MIN = 1024;
+  var compressAvailable = (typeof CompressionStream !== "undefined" &&
+                           typeof DecompressionStream !== "undefined");
+  function streamBytes(bytes, transform) {  // Uint8Array -> stream -> Uint8Array
+    var out = new Response(bytes).body.pipeThrough(transform);
+    return new Response(out).arrayBuffer().then(function (buf) {
+      return new Uint8Array(buf);
+    });
+  }
+  function gzip(bytes)   { return streamBytes(bytes, new CompressionStream("gzip")); }
+  function gunzip(bytes) { return streamBytes(bytes, new DecompressionStream("gzip")); }
+  // Encode a file for storage; resolves to { data, raw, size }, keeping gzip
+  // only when it is actually smaller than the original.
+  function encodeFor(bytes) {
+    if (!compressAvailable || bytes.length < COMPRESS_MIN) {
+      return Promise.resolve({ data: bytes, raw: true, size: bytes.length });
+    }
+    return gzip(bytes).then(function (gz) {
+      return gz.length < bytes.length
+        ? { data: gz, raw: false, size: bytes.length }
+        : { data: bytes, raw: true, size: bytes.length };
     });
   }
 
@@ -1273,22 +1309,32 @@
   }
 
   // Write the files that changed since oldSnap; delete those that vanished.
-  // All in one transaction so a crash mid-flush leaves a consistent store.
+  // Compression is async and an IndexedDB transaction cannot span an await, so
+  // we read + encode every changed file first (reads happen synchronously here,
+  // capturing a consistent snapshot), then do all puts/deletes in one
+  // transaction so a crash mid-flush leaves a consistent store.
   function persistChanges(oldSnap, newSnap) {
-    return openWorkDB().then(function (db) {
-      var tx = db.transaction(DB_STORE, "readwrite");
-      var os = tx.objectStore(DB_STORE), name;
-      for (name in newSnap) {
-        if (!oldSnap || oldSnap[name] !== newSnap[name]) {
-          var path = "/work/" + name, st = Mod.FS.stat(path);
-          os.put({ name: name, data: Mod.FS.readFile(path),
-                   mtime: mtimeMs(st), mode: st.mode });
-        }
+    var jobs = [], dels = [], name;
+    for (name in newSnap) {
+      if (!oldSnap || oldSnap[name] !== newSnap[name]) {
+        jobs.push((function (nm) {
+          var path = "/work/" + nm, st = Mod.FS.stat(path), bytes = Mod.FS.readFile(path);
+          return encodeFor(bytes).then(function (enc) {
+            return { name: nm, data: enc.data, raw: enc.raw,
+                     size: enc.size, mtime: mtimeMs(st), mode: st.mode };
+          });
+        })(name));
       }
-      if (oldSnap) {
-        for (name in oldSnap) { if (!(name in newSnap)) os.delete(name); }
-      }
-      return txDone(tx);
+    }
+    if (oldSnap) { for (name in oldSnap) { if (!(name in newSnap)) dels.push(name); } }
+    return Promise.all(jobs).then(function (recs) {
+      return openWorkDB().then(function (db) {
+        var tx = db.transaction(DB_STORE, "readwrite");
+        var os = tx.objectStore(DB_STORE);
+        recs.forEach(function (r) { os.put(r); });
+        dels.forEach(function (n) { os.delete(n); });
+        return txDone(tx);
+      });
     });
   }
 
@@ -1318,13 +1364,15 @@
         rq.onerror = function () { reject(rq.error); };
       });
     }).then(function (recs) {
-      for (var i = 0; i < recs.length; i++) {
-        var rec = recs[i], path = "/work/" + rec.name;
-        try {
-          Mod.FS.writeFile(path, rec.data);
+      // Each record may need an async gunzip; the files are independent.
+      return Promise.all(recs.map(function (rec) {
+        var path = "/work/" + rec.name;
+        var bytesP = rec.raw ? Promise.resolve(rec.data) : gunzip(rec.data);
+        return bytesP.then(function (bytes) {
+          Mod.FS.writeFile(path, bytes);
           if (rec.mtime) Mod.FS.utime(path, rec.mtime, rec.mtime);
-        } catch (e) { /* skip a bad record */ }
-      }
+        }).catch(function () { /* skip a bad record */ });
+      }));
     });
   }
 
