@@ -176,6 +176,11 @@ build_browser "-sASYNCIFY" metamath-browser
 build_browser "-sJSPI"     metamath-browser-jspi
 
 stage_from_wasm metamath.html index.html
+# The page's CSS and JavaScript live in their own files (no inline <style>/<script>)
+# so the page can be served under a strict Content-Security-Policy.
+stage_from_wasm metamath.css metamath.css
+stage_from_wasm loader.js loader.js
+stage_from_wasm metamath.js metamath.js
 stage_from_wasm serve serve
 chmod +x "$out_dir/serve" 2>/dev/null || true
 
