@@ -395,13 +395,15 @@
   }
 
   function saveToComputer(name) {
-    var data = Mod.FS.readFile("/work/" + name);
-    var url = URL.createObjectURL(new Blob([data]));
-    var a = document.createElement("a");
-    a.href = url;
-    a.download = name;
-    a.click();
-    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    ensureLoaded([name]).then(function () {
+      var data = Mod.FS.readFile("/work/" + name);
+      var url = URL.createObjectURL(new Blob([data]));
+      var a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      a.click();
+      setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    });
   }
 
   // ---- virtual file explorer ------------------------------------------
@@ -543,14 +545,16 @@
     if (!to || to === name) return;
     if (to.indexOf("/") !== -1) { exploreMsg.textContent = "Name cannot contain '/'."; return; }
     if (fileExists(to)) { exploreMsg.textContent = to + " already exists."; return; }
-    try {
-      var data = Mod.FS.readFile("/work/" + name);
-      Mod.FS.writeFile("/work/" + to, data);
-    } catch (e) { exploreMsg.textContent = "Could not copy: " + e.message; return; }
-    echo("\n[copied " + name + " to " + to + "]\n");
-    exploreSel = to;
-    flushPersist();
-    renderExplore();
+    ensureLoaded([name]).then(function () {
+      try {
+        var data = Mod.FS.readFile("/work/" + name);
+        Mod.FS.writeFile("/work/" + to, data);
+      } catch (e) { exploreMsg.textContent = "Could not copy: " + e.message; return; }
+      echo("\n[copied " + name + " to " + to + "]\n");
+      exploreSel = to;
+      flushPersist();
+      renderExplore();
+    });
   };
   exBtn.edit.onclick = function () {
     if (exploreSel && requireIdle()) openEditor(exploreSel);
@@ -721,17 +725,21 @@
   }
 
   function openEditor(name) {
-    var bytes;
-    try { bytes = Mod.FS.readFile("/work/" + name); }
-    catch (e) { exploreMsg.textContent = "Could not open " + name + ": " + e.message; return; }
-    editorName = name;
-    docLines = new TextDecoder("utf-8").decode(bytes).split("\n");
-    editorDirty = false;
-    setEditorInfo(bytes.indexOf(0) !== -1
-      ? "warning: this file contains NUL bytes and may be binary" : "");
-    editorDlg.showModal();
-    loadSegment(0);
-    updateEditorTitle();
+    ensureLoaded([name]).then(function () {
+      var bytes;
+      try { bytes = Mod.FS.readFile("/work/" + name); }
+      catch (e) { exploreMsg.textContent = "Could not open " + name + ": " + e.message; return; }
+      // docLines is now the working copy; drop the file's bytes from /work again.
+      unloadFile(name);
+      editorName = name;
+      docLines = new TextDecoder("utf-8").decode(bytes).split("\n");
+      editorDirty = false;
+      setEditorInfo(bytes.indexOf(0) !== -1
+        ? "warning: this file contains NUL bytes and may be binary" : "");
+      editorDlg.showModal();
+      loadSegment(0);
+      updateEditorTitle();
+    });
   }
 
   function editorSave() {
@@ -1086,26 +1094,28 @@
     if (!metamathIdle()) { diffMsg.textContent = "Wait until metamath is idle."; return; }
     if (!fileExists(oldName)) { diffMsg.textContent = oldName + " does not exist."; return; }
     if (!fileExists(newName)) { diffMsg.textContent = newName + " does not exist."; return; }
-    var oldText, newText;
-    try {
-      oldText = new TextDecoder("utf-8").decode(Mod.FS.readFile("/work/" + oldName));
-      newText = new TextDecoder("utf-8").decode(Mod.FS.readFile("/work/" + newName));
-    } catch (e) { diffMsg.textContent = "Could not read: " + e.message; return; }
-    var result;
-    try { result = unifiedDiff(oldText.split("\n"), newText.split("\n"), oldName, newName); }
-    catch (e) { diffMsg.textContent = e.message; return; }
-    if (!result.text) {
-      diffMsg.textContent = oldName + " and " + newName + " are identical; nothing written.";
-      return;
-    }
-    if (fileExists(outName) && !window.confirm(outName + " exists.  Overwrite it?")) return;
-    try { Mod.FS.writeFile("/work/" + outName, new TextEncoder().encode(result.text)); }
-    catch (e) { diffMsg.textContent = "Could not write " + outName + ": " + e.message; return; }
-    flushPersist();
-    echo("\n[diff " + oldName + " vs " + newName + ": +" + result.adds + " -" + result.dels +
-         " lines, written to " + outName + "]\n");
-    diffDlg.close();
-    renderExplore();
+    ensureLoaded([oldName, newName]).then(function () {
+      var oldText, newText;
+      try {
+        oldText = new TextDecoder("utf-8").decode(Mod.FS.readFile("/work/" + oldName));
+        newText = new TextDecoder("utf-8").decode(Mod.FS.readFile("/work/" + newName));
+      } catch (e) { diffMsg.textContent = "Could not read: " + e.message; return; }
+      var result;
+      try { result = unifiedDiff(oldText.split("\n"), newText.split("\n"), oldName, newName); }
+      catch (e) { diffMsg.textContent = e.message; return; }
+      if (!result.text) {
+        diffMsg.textContent = oldName + " and " + newName + " are identical; nothing written.";
+        return;
+      }
+      if (fileExists(outName) && !window.confirm(outName + " exists.  Overwrite it?")) return;
+      try { Mod.FS.writeFile("/work/" + outName, new TextEncoder().encode(result.text)); }
+      catch (e) { diffMsg.textContent = "Could not write " + outName + ": " + e.message; return; }
+      flushPersist();
+      echo("\n[diff " + oldName + " vs " + newName + ": +" + result.adds + " -" + result.dels +
+           " lines, written to " + outName + "]\n");
+      diffDlg.close();
+      renderExplore();
+    });
   };
 
   // ---- patch ----------------------------------------------------------
@@ -1161,23 +1171,25 @@
 
   function openPatch(name) {
     var patchName = (name.slice(-5) === ".diff") ? name : name + ".diff";
-    var base = (patchName.slice(-5) === ".diff") ? patchName.slice(0, -5) : patchName;
-    var target = base + ".orig", out = base;
-    if (fileExists(patchName)) {
-      try {
-        var lines = new TextDecoder("utf-8").decode(Mod.FS.readFile("/work/" + patchName)).split("\n");
-        if (lines[0] && lines[0].slice(0, 4) === "--- " && lines[1] && lines[1].slice(0, 4) === "+++ ") {
-          target = lines[0].slice(4).trim();   // the diff's own old-file name
-          out = lines[1].slice(4).trim();      // the diff's own new-file name
-        }
-      } catch (e) { /* keep the fallback defaults */ }
-    }
-    patchFile.value = patchName;
-    patchTarget.value = target;
-    patchOut.value = out;
-    patchMsg.textContent =
-      "Apply a unified diff to a file. Target and output default to the diff's own --- and +++ names.";
-    if (typeof patchDlg.showModal === "function") patchDlg.showModal();
+    ensureLoaded([patchName]).then(function () {
+      var base = (patchName.slice(-5) === ".diff") ? patchName.slice(0, -5) : patchName;
+      var target = base + ".orig", out = base;
+      if (fileExists(patchName)) {
+        try {
+          var lines = new TextDecoder("utf-8").decode(Mod.FS.readFile("/work/" + patchName)).split("\n");
+          if (lines[0] && lines[0].slice(0, 4) === "--- " && lines[1] && lines[1].slice(0, 4) === "+++ ") {
+            target = lines[0].slice(4).trim();   // the diff's own old-file name
+            out = lines[1].slice(4).trim();      // the diff's own new-file name
+          }
+        } catch (e) { /* keep the fallback defaults */ }
+      }
+      patchFile.value = patchName;
+      patchTarget.value = target;
+      patchOut.value = out;
+      patchMsg.textContent =
+        "Apply a unified diff to a file. Target and output default to the diff's own --- and +++ names.";
+      if (typeof patchDlg.showModal === "function") patchDlg.showModal();
+    });
   }
   exBtn.patch.onclick = function () { if (exploreSel) openPatch(exploreSel); };
   document.getElementById("patch-close").onclick = function () { patchDlg.close(); };
@@ -1188,21 +1200,23 @@
     if (!metamathIdle()) { patchMsg.textContent = "Wait until metamath is idle."; return; }
     if (!fileExists(pName)) { patchMsg.textContent = pName + " does not exist."; return; }
     if (!fileExists(tName)) { patchMsg.textContent = tName + " does not exist."; return; }
-    var diffText, targetText;
-    try {
-      diffText = new TextDecoder("utf-8").decode(Mod.FS.readFile("/work/" + pName));
-      targetText = new TextDecoder("utf-8").decode(Mod.FS.readFile("/work/" + tName));
-    } catch (e) { patchMsg.textContent = "Could not read: " + e.message; return; }
-    var result;
-    try { result = applyPatch(targetText.split("\n"), diffText).join("\n"); }
-    catch (e) { patchMsg.textContent = e.message; return; }   // e.g. "hunk #2 does not match..."
-    if (fileExists(oName) && !window.confirm(oName + " exists.  Overwrite it?")) return;
-    try { Mod.FS.writeFile("/work/" + oName, new TextEncoder().encode(result)); }
-    catch (e) { patchMsg.textContent = "Could not write " + oName + ": " + e.message; return; }
-    flushPersist();
-    echo("\n[patched " + tName + " with " + pName + " -> " + oName + "]\n");
-    patchDlg.close();
-    renderExplore();
+    ensureLoaded([pName, tName]).then(function () {
+      var diffText, targetText;
+      try {
+        diffText = new TextDecoder("utf-8").decode(Mod.FS.readFile("/work/" + pName));
+        targetText = new TextDecoder("utf-8").decode(Mod.FS.readFile("/work/" + tName));
+      } catch (e) { patchMsg.textContent = "Could not read: " + e.message; return; }
+      var result;
+      try { result = applyPatch(targetText.split("\n"), diffText).join("\n"); }
+      catch (e) { patchMsg.textContent = e.message; return; }   // e.g. "hunk #2 does not match..."
+      if (fileExists(oName) && !window.confirm(oName + " exists.  Overwrite it?")) return;
+      try { Mod.FS.writeFile("/work/" + oName, new TextEncoder().encode(result)); }
+      catch (e) { patchMsg.textContent = "Could not write " + oName + ": " + e.message; return; }
+      flushPersist();
+      echo("\n[patched " + tName + " with " + pName + " -> " + oName + "]\n");
+      patchDlg.close();
+      renderExplore();
+    });
   };
 
   // ---- persistence (our own IndexedDB store) --------------------------
@@ -1276,6 +1290,86 @@
     });
   }
 
+  // ---- load / unload a file's contents --------------------------------
+  // `store` holds every saved file's compressed bytes + metadata in RAM
+  // (mirroring IndexedDB).  A file's uncompressed bytes live in its /work node
+  // only while "loaded"; at idle we unload them, so idle RAM is just the
+  // compressed sizes.  An unloaded node keeps node.usedBytes = size -- so stat,
+  // readdir, the persistence snapshot and the Explorer listing all still see the
+  // real size -- but has no contents.  INVARIANT: never read a node's bytes
+  // while unloaded; load it first.  metamath does (fopen -> mm_materialize ->
+  // loadFile); the page's own reads call ensureLoaded first.
+  var store = new Map();   // name -> { comp, raw, size, mtime, mode }
+
+  function workNode(name) {
+    try { return Mod.FS.lookupPath("/work/" + name).node; } catch (e) { return null; }
+  }
+
+  // Create the /work node for a saved file with its real size and mtime but no
+  // contents; node.mmLoaded stays false until something reads it.
+  function makeUnloadedNode(name) {
+    var rec = store.get(name), path = "/work/" + name;
+    Mod.FS.writeFile(path, new Uint8Array(0));
+    var node = workNode(name);
+    if (rec.mode) node.mode = rec.mode;
+    node.usedBytes = rec.size;      // report the true, uncompressed size
+    node.mmLoaded = false;          // ...but the bytes are not in RAM yet
+    if (rec.mtime) Mod.FS.utime(path, rec.mtime, rec.mtime);
+  }
+
+  // Bring a file's bytes into its node (gunzip from the store).  A no-op if the
+  // file is already loaded, or is not one of ours.
+  function loadFile(name) {
+    var node = workNode(name);
+    if (!node || node.mmLoaded !== false) return Promise.resolve();  // already loaded
+    var rec = store.get(name);
+    if (!rec) return Promise.resolve();
+    var bytesP = rec.raw ? Promise.resolve(rec.comp) : gunzip(rec.comp);
+    return bytesP.then(function (bytes) {
+      var path = "/work/" + name;
+      Mod.FS.writeFile(path, bytes);
+      Mod.FS.utime(path, rec.mtime, rec.mtime);   // a read must not look like a change
+      workNode(name).mmLoaded = true;
+    });
+  }
+
+  // Free a loaded file's bytes but keep its reported size.  Only at idle, and
+  // only for files already saved in the store.
+  function unloadFile(name) {
+    var node = workNode(name);
+    if (!node || node.mmLoaded === false) return;   // absent or already unloaded
+    var size = node.usedBytes;
+    node.contents = new Uint8Array(0);
+    node.usedBytes = size;
+    node.mmLoaded = false;
+  }
+  function unloadAll() {
+    var names;
+    try { names = Mod.FS.readdir("/work"); } catch (e) { return; }
+    names.forEach(function (n) {
+      if (n !== "." && n !== ".." && store.has(n)) unloadFile(n);
+    });
+  }
+
+  // Ensure the named files' bytes are in /work before the page reads them.
+  function ensureLoaded(names) {
+    return Promise.all(names.map(function (n) { return loadFile(n); }));
+  }
+
+  // Map a C fopen path to a store key.  metamath's cwd is /work, so a path is a
+  // bare name ("set.mm") or "/work/set.mm"; anything else is not one of ours.
+  function nameFromWorkPath(path) {
+    if (path.indexOf("/") === -1) return path;
+    if (path.lastIndexOf("/work/", 0) === 0) return path.slice(6);
+    return null;
+  }
+  // Called (via the mm_materialize import / __wrap_fopen) before metamath reads
+  // a file, so its bytes are present for the synchronous read that follows.
+  function mmMaterialize(path) {
+    var name = nameFromWorkPath(path);
+    return name ? loadFile(name) : Promise.resolve();
+  }
+
   // Most metamath commands (verify, search, show, ...) never touch /work, so we
   // must not write to IndexedDB after every command.  flushPersist() first
   // takes a cheap in-memory snapshot of /work (names + mtime + size) and only
@@ -1331,8 +1425,12 @@
       return openWorkDB().then(function (db) {
         var tx = db.transaction(DB_STORE, "readwrite");
         var os = tx.objectStore(DB_STORE);
-        recs.forEach(function (r) { os.put(r); });
-        dels.forEach(function (n) { os.delete(n); });
+        recs.forEach(function (r) {
+          os.put(r);
+          store.set(r.name, { comp: r.data, raw: r.raw, size: r.size,
+                              mtime: r.mtime, mode: r.mode });
+        });
+        dels.forEach(function (n) { os.delete(n); store.delete(n); });
         return txDone(tx);
       });
     });
@@ -1341,7 +1439,10 @@
   function flushPersist() {
     if (!persistAvailable || !Mod) return;
     var snap = workSnapshot();
-    if (sameSnapshot(snap, lastSnapshot)) return;   // nothing changed: no write
+    if (sameSnapshot(snap, lastSnapshot)) {
+      unloadAll();   // nothing to persist, but free the bytes of any file just read
+      return;
+    }
     if (syncing) { syncAgain = true; return; }       // coalesce overlapping flushes
     syncing = true;
     persistChanges(lastSnapshot, snap).then(function () {
@@ -1349,12 +1450,15 @@
     }, function (err) {
       if (window.console) console.warn("metamath: persist failed", err);
     }).then(function () {
+      unloadAll();                                   // free bytes once safely saved
       syncing = false;
       if (syncAgain) { syncAgain = false; flushPersist(); }
     });
   }
 
-  // Restore the persisted files into /work before metamath starts.
+  // Load the saved index into `store` and create one unloaded /work node per
+  // file (real size + mtime, no contents).  Contents are paged in on demand, so
+  // boot uses no uncompressed RAM and does not gunzip anything.
   function restoreWork() {
     return openWorkDB().then(function (db) {
       return new Promise(function (resolve, reject) {
@@ -1364,15 +1468,12 @@
         rq.onerror = function () { reject(rq.error); };
       });
     }).then(function (recs) {
-      // Each record may need an async gunzip; the files are independent.
-      return Promise.all(recs.map(function (rec) {
-        var path = "/work/" + rec.name;
-        var bytesP = rec.raw ? Promise.resolve(rec.data) : gunzip(rec.data);
-        return bytesP.then(function (bytes) {
-          Mod.FS.writeFile(path, bytes);
-          if (rec.mtime) Mod.FS.utime(path, rec.mtime, rec.mtime);
-        }).catch(function () { /* skip a bad record */ });
-      }));
+      recs.forEach(function (rec) {
+        store.set(rec.name, { comp: rec.data, raw: rec.raw, size: rec.size,
+                              mtime: rec.mtime, mode: rec.mode });
+        try { makeUnloadedNode(rec.name); }
+        catch (e) { store.delete(rec.name); /* skip a bad record */ }
+      });
     });
   }
 
@@ -1383,6 +1484,7 @@
   // ---- start ----------------------------------------------------------
   createMetamath({
     mmReadLine: mmReadLine,
+    mmMaterialize: mmMaterialize,   // page a file in before metamath reads it
     preRun: [function (Module) {
       // Work inside /work so added files and outputs are easy to enumerate.
       // /work is a plain in-memory filesystem; we persist it to IndexedDB

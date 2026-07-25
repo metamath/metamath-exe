@@ -307,7 +307,16 @@ step 2.)
 
 ## Suggested implementation order (each step shippable)
 
-Status: steps 1-4 DONE (2026-07-25).  ASYNCIFY node suite 31/31; JSPI build
+Status: steps 1-6 DONE (2026-07-25).  Step 6: load-on-read / unload-at-idle with
+an in-RAM `store` of compressed bytes; unloaded /work nodes keep
+`node.usedBytes = size` so stat/readdir/snapshot/listing are unchanged; no custom
+filesystem, no getattr override.  Verified end-to-end in Chrome under a strict
+CSP, under BOTH JSPI and ASYNCIFY: create a >1 KiB .mm in the editor -> it is
+stored gzip (21978 -> 2322 B) and evicted -> reload (file unloaded) -> metamath
+READ pages it back in and reads all 21978 bytes; the editor also reads an
+unloaded file back byte-identical.  Node suite 31/31.  (The deferred "step 7" is
+optional; see the Step 6 section.)  Earlier notes:
+Steps 1-4 DONE (2026-07-25).  ASYNCIFY node suite 31/31; JSPI build
 runtime-verified in Chrome 150.  Step 3: IDBFS replaced by our own IndexedDB
 store.  Step 4: gzip-at-rest via CompressionStream with `raw`/`COMPRESS_MIN`
 (1 KiB); DB version bumped to 2 (clears old records, no migration).  Verified
@@ -319,8 +328,51 @@ Step 5: `-Wl,--wrap=fopen` routes every read through `__wrap_fopen`
 (wasm/mmwasm_fs.c, wasm-only) which calls the `mm_materialize` JS import -- a
 suspending no-op for now.  No existing C changed.  Verified: node suite 31/31
 and JSPI anatomy PASS with suspend-on-every-read active; the live
-`mm_materialize` import proves the wrap took effect.  Next: step 6 (lazy nodes +
-`getattr` + evict-at-idle, and make `mm_materialize` actually page in).
+`mm_materialize` import proves the wrap took effect.
+
+## Step 6: load-on-read, unload-at-idle (as built)
+
+metamath reaches every file through `fopen` -- verified: the C has no
+`readdir`/`opendir`/`scandir`/`glob` and no `stat`/`access`/`fstat` -- and step 5
+made every read `fopen` call `mm_materialize` first.  So we can keep a file's
+*contents* out of RAM until something reads them, and drop them again at idle,
+with **no custom filesystem and no getattr override** (the original sketch below
+is superseded by this).
+
+State:
+- `store`: `Map<name, {comp, raw, size, mtime, mode}>` -- the compressed bytes
+  and metadata of every saved file, in RAM (mirrors IndexedDB).  Loaded at boot.
+- Every saved file also has a node in `/work` (MEMFS).  A node is **loaded** (its
+  bytes are in RAM) or **unloaded** (bytes freed, but `node.usedBytes` still
+  reports the true size).
+
+The one trick: an unloaded node keeps `node.usedBytes = size` with no contents.
+MEMFS `getattr` already reports size from `usedBytes`, so `stat`, `readdir`, the
+persistence snapshot, the deletion diff, and the Explorer's listing all keep
+working **unchanged**.  The only invariant: never read a node's bytes without
+loading first.  metamath can't (`fopen` -> materialize -> load); the Explorer's
+content reads all go through `readWorkFile` (load, then read); and `flushPersist`
+only reads files whose snapshot changed, which are always loaded -- so it never
+reads freed contents.
+
+Operations (clear names):
+- `loadFile(name)` (async): if unloaded, gunzip `store[name].comp` into the node
+  and restore its stored mtime (so a pure read is not seen as a change).
+  Idempotent.
+- `unloadFile(name)`: free the node's contents but keep `node.usedBytes = size`.
+- `mm_materialize(path)` (the C read hook) -> `loadFile`, wired through
+  `Module.mmMaterialize` (like `Module.mmReadLine`).  Absent in the node build,
+  so that build is unaffected.
+- Boot: read IndexedDB into `store`; create one unloaded node per file.  Zero
+  uncompressed RAM at start.
+- Idle flush: encode changed (loaded) files into `store` + IndexedDB as before,
+  then `unloadFile` every loaded file.  Idle RAM falls to the compressed sizes.
+- Explorer editor/diff/patch: read through `readWorkFile`; the editor unloads the
+  node again once it has the text in `docLines`.
+
+Deferred (the old "step 7"): reading a file wholly in JS without briefly
+inflating it into `/work`.  With this design that is only a small extra saving on
+rare editor/diff reads, so it is not needed for the main win.
 
 1. **Confirm `mm_read_line` is already dual-mode** (it uses
    `Asyncify.handleAsync` + `__async: true`, the verified portable form) and fix

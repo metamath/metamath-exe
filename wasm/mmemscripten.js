@@ -49,16 +49,17 @@ addToLibrary({
 
   // void mm_materialize(const char *path)
   //
-  // Called from __wrap_fopen() before every file read.  It must guarantee the
-  // file's contents are present before the synchronous read that follows.  For
-  // now files are restored eagerly at startup, so this is a no-op -- but it
-  // still suspends and resumes, which exercises suspend-on-every-read and keeps
-  // the plumbing honest.  A later change makes it page in and decompress the
-  // file on demand; pathPtr is ignored until then.
+  // Called from __wrap_fopen() before every file read.  It guarantees the file's
+  // contents are present before the synchronous read that follows, by asking the
+  // hosting page (Module.mmMaterialize) to page the file into the in-memory
+  // filesystem and decompress it.  The page returns a promise; we suspend until
+  // it resolves.  The command-line test build supplies no mmMaterialize, so
+  // there it is simply a no-op.
   mm_materialize: function (pathPtr) {
     return Asyncify.handleAsync(async function () {
-      // no-op for now
+      if (Module.mmMaterialize) await Module.mmMaterialize(UTF8ToString(pathPtr));
     });
   },
   mm_materialize__async: true,
+  mm_materialize__deps: ["$UTF8ToString"],
 });
