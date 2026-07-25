@@ -1113,7 +1113,10 @@
       echo("\n[diff " + oldName + " vs " + newName + ": +" + result.adds + " -" + result.dels +
            " lines, written to " + outName + "]\n");
       diffDlg.close();
+      // Refresh the explorer list, which sits behind the editor, so the new
+      // diff file is there when the user closes the editor and returns to it.
       renderExplore();
+      openEditor(outName);   // people usually want to review the diff they just made
     }, function (e) { diffMsg.textContent = "Could not read: " + e.message; });
   };
 
