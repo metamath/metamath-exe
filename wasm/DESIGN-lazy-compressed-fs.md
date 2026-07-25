@@ -307,7 +307,11 @@ step 2.)
 
 ## Suggested implementation order (each step shippable)
 
-Status: steps 1-6 DONE (2026-07-25).  Step 6: load-on-read / unload-at-idle with
+Status: steps 1-7 DONE (2026-07-25); the feature is complete.  Step 7: the
+page's editor/diff/patch/copy/save reads go through `readWorkFile`, which
+decompresses an unloaded file straight from the store instead of inflating it
+into /work.  Earlier:
+Steps 1-6 DONE (2026-07-25).  Step 6: load-on-read / unload-at-idle with
 an in-RAM `store` of compressed bytes; unloaded /work nodes keep
 `node.usedBytes = size` so stat/readdir/snapshot/listing are unchanged; no custom
 filesystem, no getattr override.  Verified end-to-end in Chrome under a strict
@@ -370,9 +374,11 @@ Operations (clear names):
 - Explorer editor/diff/patch: read through `readWorkFile`; the editor unloads the
   node again once it has the text in `docLines`.
 
-Deferred (the old "step 7"): reading a file wholly in JS without briefly
-inflating it into `/work`.  With this design that is only a small extra saving on
-rare editor/diff reads, so it is not needed for the main win.
+Step 7 (done): the page's own reads (editor, diff, patch, copy, save) go through
+`readWorkFile`, which reads a resident node directly but decompresses an unloaded
+file **straight from the store** -- so a JS read never inflates an unloaded file
+into `/work`.  Verified in Chrome (strict CSP): the editor reads an unloaded file
+back byte-identical, and metamath paging is unaffected.
 
 1. **Confirm `mm_read_line` is already dual-mode** (it uses
    `Asyncify.handleAsync` + `__async: true`, the verified portable form) and fix

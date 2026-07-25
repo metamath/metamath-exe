@@ -395,8 +395,7 @@
   }
 
   function saveToComputer(name) {
-    ensureLoaded([name]).then(function () {
-      var data = Mod.FS.readFile("/work/" + name);
+    readWorkFile(name).then(function (data) {
       var url = URL.createObjectURL(new Blob([data]));
       var a = document.createElement("a");
       a.href = url;
@@ -545,16 +544,14 @@
     if (!to || to === name) return;
     if (to.indexOf("/") !== -1) { exploreMsg.textContent = "Name cannot contain '/'."; return; }
     if (fileExists(to)) { exploreMsg.textContent = to + " already exists."; return; }
-    ensureLoaded([name]).then(function () {
-      try {
-        var data = Mod.FS.readFile("/work/" + name);
-        Mod.FS.writeFile("/work/" + to, data);
-      } catch (e) { exploreMsg.textContent = "Could not copy: " + e.message; return; }
+    readWorkFile(name).then(function (data) {
+      try { Mod.FS.writeFile("/work/" + to, data); }
+      catch (e) { exploreMsg.textContent = "Could not copy: " + e.message; return; }
       echo("\n[copied " + name + " to " + to + "]\n");
       exploreSel = to;
       flushPersist();
       renderExplore();
-    });
+    }, function (e) { exploreMsg.textContent = "Could not copy: " + e.message; });
   };
   exBtn.edit.onclick = function () {
     if (exploreSel && requireIdle()) openEditor(exploreSel);
@@ -725,12 +722,8 @@
   }
 
   function openEditor(name) {
-    ensureLoaded([name]).then(function () {
-      var bytes;
-      try { bytes = Mod.FS.readFile("/work/" + name); }
-      catch (e) { exploreMsg.textContent = "Could not open " + name + ": " + e.message; return; }
-      // docLines is now the working copy; drop the file's bytes from /work again.
-      unloadFile(name);
+    readWorkFile(name).then(function (bytes) {
+      // docLines is the working copy; the file is never inflated into /work.
       editorName = name;
       docLines = new TextDecoder("utf-8").decode(bytes).split("\n");
       editorDirty = false;
@@ -739,6 +732,8 @@
       editorDlg.showModal();
       loadSegment(0);
       updateEditorTitle();
+    }, function (e) {
+      exploreMsg.textContent = "Could not open " + name + ": " + e.message;
     });
   }
 
@@ -1094,12 +1089,9 @@
     if (!metamathIdle()) { diffMsg.textContent = "Wait until metamath is idle."; return; }
     if (!fileExists(oldName)) { diffMsg.textContent = oldName + " does not exist."; return; }
     if (!fileExists(newName)) { diffMsg.textContent = newName + " does not exist."; return; }
-    ensureLoaded([oldName, newName]).then(function () {
-      var oldText, newText;
-      try {
-        oldText = new TextDecoder("utf-8").decode(Mod.FS.readFile("/work/" + oldName));
-        newText = new TextDecoder("utf-8").decode(Mod.FS.readFile("/work/" + newName));
-      } catch (e) { diffMsg.textContent = "Could not read: " + e.message; return; }
+    Promise.all([readWorkFile(oldName), readWorkFile(newName)]).then(function (r) {
+      var oldText = new TextDecoder("utf-8").decode(r[0]);
+      var newText = new TextDecoder("utf-8").decode(r[1]);
       var result;
       try { result = unifiedDiff(oldText.split("\n"), newText.split("\n"), oldName, newName); }
       catch (e) { diffMsg.textContent = e.message; return; }
@@ -1115,7 +1107,7 @@
            " lines, written to " + outName + "]\n");
       diffDlg.close();
       renderExplore();
-    });
+    }, function (e) { diffMsg.textContent = "Could not read: " + e.message; });
   };
 
   // ---- patch ----------------------------------------------------------
@@ -1171,25 +1163,26 @@
 
   function openPatch(name) {
     var patchName = (name.slice(-5) === ".diff") ? name : name + ".diff";
-    ensureLoaded([patchName]).then(function () {
-      var base = (patchName.slice(-5) === ".diff") ? patchName.slice(0, -5) : patchName;
-      var target = base + ".orig", out = base;
-      if (fileExists(patchName)) {
-        try {
-          var lines = new TextDecoder("utf-8").decode(Mod.FS.readFile("/work/" + patchName)).split("\n");
-          if (lines[0] && lines[0].slice(0, 4) === "--- " && lines[1] && lines[1].slice(0, 4) === "+++ ") {
-            target = lines[0].slice(4).trim();   // the diff's own old-file name
-            out = lines[1].slice(4).trim();      // the diff's own new-file name
-          }
-        } catch (e) { /* keep the fallback defaults */ }
-      }
+    var base = (patchName.slice(-5) === ".diff") ? patchName.slice(0, -5) : patchName;
+    var target = base + ".orig", out = base;
+    function show() {
       patchFile.value = patchName;
       patchTarget.value = target;
       patchOut.value = out;
       patchMsg.textContent =
         "Apply a unified diff to a file. Target and output default to the diff's own --- and +++ names.";
       if (typeof patchDlg.showModal === "function") patchDlg.showModal();
-    });
+    }
+    // Peek at the diff's --- / +++ names to default target and output; if the
+    // patch file is missing or unreadable, just show the dialog with defaults.
+    readWorkFile(patchName).then(function (bytes) {
+      var lines = new TextDecoder("utf-8").decode(bytes).split("\n");
+      if (lines[0] && lines[0].slice(0, 4) === "--- " && lines[1] && lines[1].slice(0, 4) === "+++ ") {
+        target = lines[0].slice(4).trim();   // the diff's own old-file name
+        out = lines[1].slice(4).trim();      // the diff's own new-file name
+      }
+      show();
+    }, function () { show(); });
   }
   exBtn.patch.onclick = function () { if (exploreSel) openPatch(exploreSel); };
   document.getElementById("patch-close").onclick = function () { patchDlg.close(); };
@@ -1200,12 +1193,9 @@
     if (!metamathIdle()) { patchMsg.textContent = "Wait until metamath is idle."; return; }
     if (!fileExists(pName)) { patchMsg.textContent = pName + " does not exist."; return; }
     if (!fileExists(tName)) { patchMsg.textContent = tName + " does not exist."; return; }
-    ensureLoaded([pName, tName]).then(function () {
-      var diffText, targetText;
-      try {
-        diffText = new TextDecoder("utf-8").decode(Mod.FS.readFile("/work/" + pName));
-        targetText = new TextDecoder("utf-8").decode(Mod.FS.readFile("/work/" + tName));
-      } catch (e) { patchMsg.textContent = "Could not read: " + e.message; return; }
+    Promise.all([readWorkFile(pName), readWorkFile(tName)]).then(function (r) {
+      var diffText = new TextDecoder("utf-8").decode(r[0]);
+      var targetText = new TextDecoder("utf-8").decode(r[1]);
       var result;
       try { result = applyPatch(targetText.split("\n"), diffText).join("\n"); }
       catch (e) { patchMsg.textContent = e.message; return; }   // e.g. "hunk #2 does not match..."
@@ -1216,7 +1206,7 @@
       echo("\n[patched " + tName + " with " + pName + " -> " + oName + "]\n");
       patchDlg.close();
       renderExplore();
-    });
+    }, function (e) { patchMsg.textContent = "Could not read: " + e.message; });
   };
 
   // ---- persistence (our own IndexedDB store) --------------------------
@@ -1297,8 +1287,9 @@
   // compressed sizes.  An unloaded node keeps node.usedBytes = size -- so stat,
   // readdir, the persistence snapshot and the Explorer listing all still see the
   // real size -- but has no contents.  INVARIANT: never read a node's bytes
-  // while unloaded; load it first.  metamath does (fopen -> mm_materialize ->
-  // loadFile); the page's own reads call ensureLoaded first.
+  // while unloaded.  metamath loads first (fopen -> mm_materialize -> loadFile);
+  // the page's own reads use readWorkFile, which decompresses straight from the
+  // store and so never inflates an unloaded file into /work.
   var store = new Map();   // name -> { comp, raw, size, mtime, mode }
 
   function workNode(name) {
@@ -1351,9 +1342,19 @@
     });
   }
 
-  // Ensure the named files' bytes are in /work before the page reads them.
-  function ensureLoaded(names) {
-    return Promise.all(names.map(function (n) { return loadFile(n); }));
+  // Read a /work file's bytes for the page's own use (editor, diff, patch, copy,
+  // save) WITHOUT inflating an unloaded file into /work: a resident node is read
+  // directly (it is the freshest copy, e.g. just written by metamath), while an
+  // unloaded file is decompressed straight from the store.  Returns a promise
+  // for a Uint8Array.
+  function readWorkFile(name) {
+    var node = workNode(name);
+    if (node && node.mmLoaded !== false) {          // resident: read the node
+      return Promise.resolve(Mod.FS.readFile("/work/" + name));
+    }
+    var rec = store.get(name);
+    if (!rec) return Promise.reject(new Error("no such file: " + name));
+    return rec.raw ? Promise.resolve(rec.comp) : gunzip(rec.comp);
   }
 
   // Map a C fopen path to a store key.  metamath's cwd is /work, so a path is a
