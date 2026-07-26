@@ -5005,12 +5005,11 @@ void getNextInclusion(char *fileBuf, long startOffset, // inputs
         }
         continue; // We're past Begin; start search for End
       } // Begin, End, or Skip
-    } else if (1) { // Suppress "unreachable code" warning for bug trap below
+    } else {
       // It's '$' not followed by '[' or '('; j is token length
       fbPtr = fbPtr + j;
       continue;
     }
-    bug(1746); // Should never get here
    GET_PASSED_END_OF_COMMENT:
     // Note that fbPtr should be at beginning of last token found, which
     // may be "$)" (in which case i will be 1 from the instr).

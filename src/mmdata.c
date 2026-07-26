@@ -1225,8 +1225,9 @@ void nmbrCpy(nmbrString *s, const nmbrString *t) {
 // Dangerous for general purpose use.
 void nmbrNCpy(nmbrString *s, const nmbrString *t, long n) {
   long i = 0;
-  // Check i < n before reading t[i] so we never access t[n]; all callers
-  // set sout[n] = NULL_NMBRSTRING afterwards, so that value is never used.
+  // Only t[0..n-1] are guaranteed to be valid elements, so check i < n before
+  // reading t[i]. The result is terminated below, so callers do not have to
+  // terminate it.
   while (i < n && t[i] != -1) { // End of string -- nmbrSeg, nmbrMid depend on it!!
     s[i] = t[i];
     i++;
@@ -2706,9 +2707,9 @@ void pntrCpy(pntrString *s, const pntrString *t) {
 // Dangerous for general purpose use
 void pntrNCpy(pntrString *s, const pntrString *t, long n) {
   long i = 0;
-  // Check i < n before reading t[i] so we never access t[n] (which may be
-  // a dangling pointer when callers free the element at position n before
-  // calling this function).  All callers set sout[n] = NULL afterwards.
+  // Only t[0..n-1] are guaranteed to be valid elements, so check i < n
+  // before reading t[i]. The result is terminated below, so callers do not
+  // have to terminate it.
   while (i < n && t[i] != NULL) { // End of string -- pntrSeg, pntrMid depend on it!!
     s[i] = t[i];
     i++;
