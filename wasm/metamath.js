@@ -1539,9 +1539,9 @@
       echo("[Type commands in the highlighted box at the bottom of the page." +
            "  Try:  help\n" +
            "\n Files live in three places:\n" +
-           "   the Metamath website   - use \"Download set.mm\" to copy a database here\n" +
-           "   your own computer      - use \"Add from computer\" and \"Save to computer\"\n" +
-           "   the virtual filesystem - this page's own storage, kept across reloads\n" +
+           "   virtual filesystem: this page's own compressed storage, kept across reloads\n" +
+           "   Metamath website: use \"Download\" to copy a database from here\n" +
+           "   your computer: use \"Add\" and \"Save\" to copy file from/to here\n" +
            "\n A file in the virtual filesystem is not read into metamath until you" +
            " run, for example:  read \"set.mm\"]\n\n");
       if (!persistAvailable) {
