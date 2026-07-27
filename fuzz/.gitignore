@@ -1,0 +1,7 @@
+# Build products and fuzzing output; nothing here belongs in the repo.
+metamath-san
+metamath-san*
+findings/
+findings*/
+*.min.mm
+out.mm
