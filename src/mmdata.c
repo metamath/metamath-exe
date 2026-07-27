@@ -1224,14 +1224,15 @@ void nmbrCpy(nmbrString *s, const nmbrString *t) {
 // Like strncpy, only the 1st n characters are copied.
 // Dangerous for general purpose use.
 void nmbrNCpy(nmbrString *s, const nmbrString *t, long n) {
-  long i;
-  i = 0;
-  while (t[i] != -1) { // End of string -- nmbrSeg, nmbrMid depend on it!!
-    if (i >= n) break;
+  long i = 0;
+  // Only t[0..n-1] are guaranteed to be valid elements, so check i < n before
+  // reading t[i]. The result is terminated below, so callers do not have to
+  // terminate it.
+  while (i < n && t[i] != -1) { // End of string -- nmbrSeg, nmbrMid depend on it!!
     s[i] = t[i];
     i++;
   }
-  s[i] = t[i]; // End of string
+  s[i] = *NULL_NMBRSTRING; // End of string (NULL-terminate at actual end)
 }
 
 // Compare two strings.
@@ -1256,7 +1257,6 @@ temp_nmbrString *nmbrSeg(const nmbrString *sin, long start, long stop) {
   if (length < 0) length = 0;
   temp_nmbrString *sout = nmbrTempAlloc(length + 1);
   nmbrNCpy(sout, sin + start - 1, length);
-  sout[length] = *NULL_NMBRSTRING;
   return sout;
 }
 
@@ -1266,7 +1266,6 @@ temp_nmbrString *nmbrMid(const nmbrString *sin, long start, long length) {
   if (length < 0) length = 0;
   temp_nmbrString *sout = nmbrTempAlloc(length + 1);
   nmbrNCpy(sout, sin + start - 1, length);
-  sout[length] = *NULL_NMBRSTRING;
   return sout;
 }
 
@@ -1275,7 +1274,6 @@ temp_nmbrString *nmbrLeft(const nmbrString *sin, long n) {
   if (n < 0) n = 0;
   temp_nmbrString *sout = nmbrTempAlloc(n + 1);
   nmbrNCpy(sout, sin, n);
-  sout[n] = *NULL_NMBRSTRING;
   return sout;
 }
 
@@ -2708,14 +2706,15 @@ void pntrCpy(pntrString *s, const pntrString *t) {
 // Like strncpy, only the 1st n characters are copied.
 // Dangerous for general purpose use
 void pntrNCpy(pntrString *s, const pntrString *t, long n) {
-  long i;
-  i = 0;
-  while (t[i] != NULL) { // End of string -- pntrSeg, pntrMid depend on it!!
-    if (i >= n) break;
+  long i = 0;
+  // Only t[0..n-1] are guaranteed to be valid elements, so check i < n
+  // before reading t[i]. The result is terminated below, so callers do not
+  // have to terminate it.
+  while (i < n && t[i] != NULL) { // End of string -- pntrSeg, pntrMid depend on it!!
     s[i] = t[i];
     i++;
   }
-  s[i] = t[i]; // End of string
+  s[i] = *NULL_PNTRSTRING; // End of string (NULL-terminate at actual end)
 }
 
 // Compare two strings.
@@ -2739,7 +2738,6 @@ temp_pntrString *pntrSeg(const pntrString *sin, long start, long stop) {
   if (length < 0) length = 0;
   temp_pntrString *sout = pntrTempAlloc(length + 1);
   pntrNCpy(sout, sin + start - 1, length);
-  sout[length] = *NULL_PNTRSTRING;
   return sout;
 }
 
@@ -2749,7 +2747,6 @@ temp_pntrString *pntrMid(const pntrString *sin, long start, long length) {
   if (length < 0) length = 0;
   temp_pntrString *sout = pntrTempAlloc(length + 1);
   pntrNCpy(sout, sin + start-1, length);
-  sout[length] = *NULL_PNTRSTRING;
   return sout;
 }
 
@@ -2758,7 +2755,6 @@ temp_pntrString *pntrLeft(const pntrString *sin, long n) {
   if (n < 0) n = 0;
   temp_pntrString *sout = pntrTempAlloc(n+1);
   pntrNCpy(sout,sin,n);
-  sout[n] = *NULL_PNTRSTRING;
   return sout;
 }
 
