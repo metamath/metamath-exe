@@ -274,9 +274,17 @@ void parseKeywords(void)
     }
     fbPtr++;
     switch (fbPtr[0]) {
-      case '$': // "$$" means literal "$"
-        fbPtr++;
-        continue;
+      // Note there is deliberately no "$$" case here.  This function used to
+      // treat "$$" as an escaped literal "$" and skip both characters, but it
+      // was the only scanner in the program that did: readRawSource(), which
+      // counts statements to size g_Statement[], did not, and neither does
+      // getNextInclusion() or parseMathDecl().  The Metamath language has no
+      // such escape either.  The disagreement meant that on "$$(" this
+      // function stayed outside a comment while readRawSource() entered one,
+      // after which the two disagreed about the rest of the file, the count
+      // came up short, and the statement loop below wrote past the end of
+      // g_Statement[].  A stray "$" now falls to the default arm below and is
+      // reported like any other invalid keyword.
       case '(': // Start of comment
         insideComment = 1;
         continue;
@@ -318,6 +326,13 @@ void parseKeywords(void)
         }
         // Initialize a new statement
         g_statements++;
+        // g_Statement[] was sized from readRawSource()'s count, and a dummy
+        // statement is written at g_statements + 1 after this loop, so both
+        // indexes have to stay inside the array.  This should always hold:
+        // this function creates a statement only where readRawSource()
+        // counted one.  Trap it rather than corrupt the heap if the two ever
+        // drift apart again, the way they did over "$$".
+        if (g_statements + 1 >= potentialStatements) bug(1774);
         g_Statement[g_statements].type = type;
         g_Statement[g_statements].labelSectionPtr = startSection;
         g_Statement[g_statements].labelSectionLen = fbPtr - startSection - 1;
