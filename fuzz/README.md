@@ -110,14 +110,16 @@ if an `open-` one starts passing.
 | `extract-dollar-t` | `dollarTCmt[-2]` when `rinstr()` returns 0, `writeExtractedSource()` | fixed |
 | `empty-math-string` | `g_MathToken[-1]` from `mathString[0]` on a symbol-less `$a` | fixed |
 | `edit-tab-clean` | `sout[-1]` in the tab path, `edit()`, via `TOOLS` `CLEAN f "T"` | fixed |
+| `edit-untab-overflow` | heap overflow write in `edit()`, tab flag with no enlarged buffer | fixed |
+| `edit-untab-many-tabs` | heap overflow write in `edit()`, 7x buffer too small for many tabs | fixed |
 | `open-statement-array-overflow` | `g_Statement[]` heap overflow from the `$$` miscount, `parseKeywords()` | open |
 | `open-prove-floating` | `g_MathToken[-1]` from a stale `.tmp`, `proveFloating()`/`makeSubstUnif()` | open |
 | `open-wrkproof-null` | null writes when the first proof needs zero space, `parseProof()` | open |
 | `open-uninit-token-statement` | `extractNeeded[]` indexed by an uninitialized `.statement`, `writeExtractedSource()` | open |
-| `open-edit-untab-overflow` | heap overflow write in `edit()`'s tab-expansion loop | open |
 
 The open ones are analyzed in `,fixes.txt` at the top of the repo,
-except the two described below, which were found later.
+except `open-uninit-token-statement`, which was found later and is
+described below.
 
 ### open-uninit-token-statement
 
@@ -146,22 +148,6 @@ bad $p |- x x $=
 This is a cousin of the `open-prove-floating` bug: both come from the
 spare `g_MathToken[]` slots used for error recovery not being set up as
 carefully as real tokens.
-
-### open-edit-untab-overflow
-
-`edit()` sizes its output buffer as `strlen(sin) + 1`, multiplied by 7
-**only when the untab flag (2048) is set** (mmvstr.c, near line 403).
-But the tab-expansion loop that grows the string runs whenever
-`untab_flag || tab_flag` (near line 535). So two ways to overflow it,
-both heap-buffer-overflow *writes*:
-
-- `CLEAN <file> "T"` sets 1024 without 2048, so the loop runs on a
-  buffer that was never enlarged. A single tab in the input is enough.
-- `CLEAN <file> "U"` does get the 7x buffer, but a tab expands to as
-  many as 8 characters, so a line of 8 or more tabs still overruns it.
-
-Found while reviewing the `edit()` sout[-1] fix, which is a different
-bug in the same function.
 
 ## Limitations
 

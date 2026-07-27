@@ -401,7 +401,19 @@ temp_vstring edit(const char *sin, long control) {
 
   // Copy string
   i = (long)strlen(sin) + 1;
-  if (untab_flag) i = i * 7; // Allow for max possible length
+  if (untab_flag || tab_flag) {
+    // Allow for max possible length.  The tab-expansion loop further below
+    // runs for either flag, not just for untab_flag, and it replaces each
+    // tab with as many as 8 spaces.  That loop's length counter also ends
+    // up one position further ahead per tab, so allow 8 extra characters
+    // per tab (7 for the expansion, 1 for the counter) plus a little slack.
+    long tabCount = 0;
+    const char *tabScan;
+    for (tabScan = sin; *tabScan != 0; tabScan++) {
+      if (*tabScan == '\t') tabCount++;
+    }
+    i = i + 8 * tabCount + 8;
+  }
   temp_vstring sout = tempAlloc(i);
   strcpy(sout, sin);
 
