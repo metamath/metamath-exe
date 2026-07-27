@@ -112,15 +112,15 @@ if an `open-` one starts passing.
 | `edit-tab-clean` | `sout[-1]` in the tab path, `edit()`, via `TOOLS` `CLEAN f "T"` | fixed |
 | `edit-untab-overflow` | heap overflow write in `edit()`, tab flag with no enlarged buffer | fixed |
 | `edit-untab-many-tabs` | heap overflow write in `edit()`, 7x buffer too small for many tabs | fixed |
+| `let-self-assign` | `strcpy` with source == destination in `let()`, from `asciiToTt()` | fixed |
 | `open-statement-array-overflow` | `g_Statement[]` heap overflow from the `$$` miscount, `parseKeywords()` | open |
 | `open-prove-floating` | `g_MathToken[-1]` from a stale `.tmp`, `proveFloating()`/`makeSubstUnif()` | open |
 | `open-wrkproof-null` | null writes when the first proof needs zero space, `parseProof()` | open |
 | `open-uninit-token-statement` | `extractNeeded[]` indexed by an uninitialized `.statement`, `writeExtractedSource()` | open |
-| `open-let-self-assign` | `strcpy` with source == destination in `let()`, from `asciiToTt()` | open |
 | `open-unify-oob` | heap overflow read in `unify()` | open |
 
 The open ones are analyzed in `,fixes.txt` at the top of the repo,
-except the three found later, described below.  **All of the `open-*`
+except the two found later, described below.  **All of the `open-*`
 bugs reproduce on master**; none was introduced by the fixes.
 
 ### open-uninit-token-statement
@@ -150,14 +150,6 @@ bad $p |- x x $=
 This is a cousin of the `open-prove-floating` bug: both come from the
 spare `g_MathToken[]` slots used for error recovery not being set up as
 carefully as real tokens.
-
-### open-let-self-assign
-
-`asciiToTt()` in mmwtex.c deliberately writes `let(&ttstr, ttstr);`
-twice (near lines 980 and 985), commented "Purge stack to prevent
-overflow by 'mid'".  `let()` then reaches `strcpy(*target, source)`
-with both arguments the same pointer, and `strcpy` with overlapping
-source and destination is undefined.  Reproduces on master directly.
 
 ### open-unify-oob
 

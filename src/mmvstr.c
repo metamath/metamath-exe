@@ -201,7 +201,14 @@ void let(vstring *target, const char *source) {
     }
   }
   if (sourceLength) {
-    strcpy(*target, source);
+    // A few callers deliberately write let(&x, x), only to trigger the
+    // freeTempAlloc() below.  strcpy() is undefined when its arguments
+    // overlap (both are restrict-qualified), and here there is nothing to
+    // copy anyway, so skip just the copy.
+    // This test has to stay nested inside "if (sourceLength)": folding it
+    // into that condition would send a self-assignment to the else branch,
+    // which would wrongly replace the string with "".
+    if (*target != source) strcpy(*target, source);
   } else {
     // Empty strings could still be temporaries, so always assign a constant
     if (targetLength) {
