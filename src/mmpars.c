@@ -723,6 +723,14 @@ void parseStatements(void) {
   long reqHyps, optHyps, reqVars, optVars;
   flag reqFlag;
   int undeclErrorCount = 0;
+  // g_dummyVarBase is the index of the "$|$" boundary token that sits
+  // directly below the proof assistant's dummy variables, so that the
+  // parser's placeholders below it and the dummy variables above it can
+  // never land on the same slot.  With no placeholders that is the boundary
+  // token parseMathDecl() already made; otherwise a second one is added
+  // after the placeholders at the end of this function.  Track the top as we
+  // go so it stays right even if parsing stops early.
+  g_dummyVarBase = g_mathTokens;
   vstring_def(tmpStr);
 
   nmbrString *nmbrTmpPtr;
@@ -1186,7 +1194,9 @@ void parseStatements(void) {
             // stray pointer to active variable stack.
             undeclErrorCount++;
             tokenNum = g_mathTokens + undeclErrorCount;
-            if (tokenNum >= g_MAX_MATHTOKENS) {
+            g_dummyVarBase = tokenNum;
+            // "- 1" leaves room for the boundary token added after these
+            if (tokenNum >= g_MAX_MATHTOKENS - 1) {
               // There are current 100 places for bad tokens
               print2(
 "?Error: The temporary space for holding bad tokens has run out, because\n");
@@ -1926,6 +1936,24 @@ void parseStatements(void) {
   free(wrkStrPtr);
   free(symbolLenExists);
   free_vstring(tmpStr);
+
+  // If any placeholders were created above, put another "$|$" boundary token
+  // just past them, so dummy variables start above it.  Without this,
+  // declareDummyVars() would reuse the slots the placeholders are in, and a
+  // math string still referring to a placeholder would silently start naming
+  // a dummy variable instead.
+  if (undeclErrorCount) {
+    g_dummyVarBase++;
+    g_MathToken[g_dummyVarBase].tokenName = "";
+    let(&g_MathToken[g_dummyVarBase].tokenName, "$|$");
+    g_MathToken[g_dummyVarBase].length = 2; // Never used
+    g_MathToken[g_dummyVarBase].tokenType = (char)con_;
+    g_MathToken[g_dummyVarBase].active = 0; // Never used
+    g_MathToken[g_dummyVarBase].scope = 0; // Never used
+    g_MathToken[g_dummyVarBase].tmp = 0; // Never used
+    g_MathToken[g_dummyVarBase].statement = 0; // Never used
+    g_MathToken[g_dummyVarBase].endStatement = g_statements; // Never used
+  }
 }
 
 // Parse proof of one statement in source file.  Uses g_WrkProof structure.
@@ -4834,10 +4862,10 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
               } else {
                 memcpy(wrkStrPtr, fbPtr + 1, (size_t)i - 1);
                 wrkStrPtr[i - 1] = 0; // End of string
-                tokenNum = (long)(val(wrkStrPtr)) + g_mathTokens;
+                tokenNum = (long)(val(wrkStrPtr)) + g_dummyVarBase;
                 // See if dummy var has been declared; if not, declare it
-                if (tokenNum > g_pipDummyVars + g_mathTokens) {
-                  declareDummyVars(tokenNum - g_pipDummyVars - g_mathTokens);
+                if (tokenNum > g_pipDummyVars + g_dummyVarBase) {
+                  declareDummyVars(tokenNum - g_pipDummyVars - g_dummyVarBase);
                 }
               }
             } // End if fbPtr == '$'

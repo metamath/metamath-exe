@@ -47,6 +47,12 @@ long *g_labelKey = NULL;
 struct mathToken_struct *g_MathToken;
 long *g_mathKey = NULL;
 long g_statements = 0, labels = 0, g_mathTokens = 0;
+/*!
+ * Index of the last g_MathToken[] entry the parser owns: the "$|$" boundary
+ * token plus one slot per undeclared-symbol placeholder.  Proof assistant
+ * dummy variables start immediately above it, so the two never share a slot.
+ */
+long g_dummyVarBase = 0;
 
 struct includeCall_struct *g_IncludeCall = NULL;
 long g_includeCalls = -1; // For eraseSource() in mmcmds.c

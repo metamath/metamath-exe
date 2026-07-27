@@ -293,6 +293,9 @@ extern struct statement_struct *g_Statement;
 /*! \warning `mathToken[i]` is 0-based, not 1-based! */
 extern struct mathToken_struct *g_MathToken;
 extern long g_statements, /*labels,*/ g_mathTokens;
+/*! Highest g_MathToken[] index owned by the parser; proof assistant dummy
+    variables are numbered above this.  See mmdata.c. */
+extern long g_dummyVarBase;
 
 extern long g_MAX_INCLUDECALLS;
 extern struct includeCall_struct *g_IncludeCall;

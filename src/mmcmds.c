@@ -4531,9 +4531,14 @@ void eraseSource(void) // ERASE command
   } // Next i (statement)
 
   // g_MathToken[g_mathTokens].tokenName is assigned in
-  // parseMathDecl() by let().  eraseSource() should free every g_MathToken and
-  // there are (g_mathTokens + g_dummyVars) tokens.
-  for (i = 0; i <= g_mathTokens + g_dummyVars; i++) {
+  // parseMathDecl() by let().  eraseSource() should free every g_MathToken.
+  // The entries run contiguously: the declared symbols, the "$|$" boundary
+  // token, any placeholders the parser made for undeclared symbols, a second
+  // boundary token if there were placeholders, then the dummy variables.
+  // g_dummyVarBase indexes that last boundary token, so the highest entry in
+  // use is g_dummyVarBase + g_dummyVars.  (Using g_mathTokens here instead
+  // used to leave any placeholder above g_dummyVars unfreed.)
+  for (i = 0; i <= g_dummyVarBase + g_dummyVars; i++) {
     free_vstring(g_MathToken[i].tokenName);
   }
 
@@ -4544,6 +4549,7 @@ void eraseSource(void) // ERASE command
   free(g_IncludeCall); // Will be initialized in initBigArrays
   free(g_MathToken);
   g_dummyVars = 0; // For Proof Assistant
+  g_dummyVarBase = 0; // Reset with g_mathTokens; set again by parseStatements
   free(g_sourcePtr);
   free(g_labelKey);
   free(g_mathKey);

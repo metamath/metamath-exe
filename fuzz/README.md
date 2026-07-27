@@ -117,23 +117,12 @@ if an `open-` one starts passing.
 | `explicit-target-shortage` | write into the `""` literal in `parseProof()`, `/EXPLICIT` proof with too few targets | fixed |
 | `statement-array-overflow` | `g_Statement[]` heap overflow from the `$$` miscount, `parseKeywords()` | fixed |
 | `uninit-token-statement` | `extractNeeded[]` indexed by an uninitialized `.statement`, `writeExtractedSource()` | fixed |
-| `open-prove-floating` | `g_MathToken[-1]` from a stale `.tmp`, `proveFloating()`/`makeSubstUnif()` | open |
-| `open-unify-oob` | heap overflow read in `unify()` | open |
+| `prove-floating` | `g_MathToken[-1]` from a stale `.tmp`, `proveFloating()`/`makeSubstUnif()` | fixed |
+| `unify-oob` | heap overflow read in `unify()` | fixed |
 
-The open ones are analyzed in `,fixes.txt` at the top of the repo,
-except `open-unify-oob`, described below.  **All of the `open-*`
-bugs reproduce on master**; none was introduced by the fixes.
-
-### open-unify-oob
-
-Heap overflow read in `unify()` at mmunif.c:795, reached through
-`unifyH()` from `uniqueUnif()` during PROVE.
-
-This one is only *reachable* after the `symbolLenExists` fix: on
-master the same input dies earlier in `parseStatements()`, so the
-READ never completes and unification never runs.  Applying only that
-one-line fix to master reproduces this bug exactly, which is how it
-was confirmed to be pre-existing rather than newly introduced.
+Every case here currently passes, so there is no `open-*` entry at the
+moment.  When one is added, it means a bug that is known and not yet
+fixed, and `run-cases.sh` expects it to keep failing until it is.
 
 ## Limitations
 

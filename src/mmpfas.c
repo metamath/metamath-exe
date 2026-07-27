@@ -426,7 +426,7 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
   for (var = 0; var < schemeVars; var++) {
     // Put dummy var mapping into g_MathToken[].tmp field
     g_MathToken[g_Statement[replStatemNum].reqVarList[var]].tmp
-        = g_mathTokens /* global */ + 1 + g_pipDummyVars /* global */ + var;
+        = g_dummyVarBase /* global */ + 1 + g_pipDummyVars /* global */ + var;
   }
   for (sym = 0; sym < replStmtSchemeLen; sym++) {
     if (g_MathToken[replStmtSchemePtr[sym]].tokenType != (char)var_) continue;
@@ -1461,7 +1461,7 @@ char checkStmtMatch(long statemNum, long step)
   }
   for (var = 0; var < reqVars; var++) {
     // Put dummy var mapping into g_MathToken[].tmp field
-    g_MathToken[g_Statement[statemNum].reqVarList[var]].tmp = g_mathTokens + 1 +
+    g_MathToken[g_Statement[statemNum].reqVarList[var]].tmp = g_dummyVarBase + 1 +
         g_pipDummyVars + var;
   }
   for (sym = 0; sym < mStringLen; sym++) {
@@ -1736,7 +1736,7 @@ nmbrString *proveFloating(const nmbrString *mString, long statemNum, long maxEDe
     }
     for (var = 0; var < schemeVars; var++) {
       // Put dummy var mapping into g_MathToken[].tmp field
-      g_MathToken[g_Statement[stmt].reqVarList[var]].tmp = g_mathTokens + 1 +
+      g_MathToken[g_Statement[stmt].reqVarList[var]].tmp = g_dummyVarBase + 1 +
           g_pipDummyVars + var;
     }
     for (sym = 0; sym < schemeLen; sym++) {
@@ -2177,7 +2177,7 @@ void initStep(long step)
   }
   for (var = 0; var < reqVars; var++) {
     // Put dummy var mapping into g_MathToken[].tmp field
-    g_MathToken[g_Statement[stmt].reqVarList[var]].tmp = g_mathTokens + 1 +
+    g_MathToken[g_Statement[stmt].reqVarList[var]].tmp = g_dummyVarBase + 1 +
       g_pipDummyVars + var;
   }
   // Change vars in assertion
@@ -2335,7 +2335,7 @@ void assignKnownSteps(long startStep, long sbProofLen)
       }
       for (var = 0; var < reqVars; var++) {
         // Put dummy var mapping into g_MathToken[].tmp field
-        g_MathToken[g_Statement[stmt].reqVarList[var]].tmp = g_mathTokens + 1 +
+        g_MathToken[g_Statement[stmt].reqVarList[var]].tmp = g_dummyVarBase + 1 +
           g_pipDummyVars + var;
       }
       for (schemePos = 0; schemePos < schemeLen; schemePos++) {
@@ -2828,7 +2828,7 @@ void replaceDummyVar(long dummyVar, const nmbrString *mString)
     nmbrTmpPtr = (g_ProofInProgress.target)[step];
     slen = nmbrLen(nmbrTmpPtr);
     for (sym = slen - 1; sym >= 0; sym--) {
-      if (nmbrTmpPtr[sym] == dummyVar + g_mathTokens) {
+      if (nmbrTmpPtr[sym] == dummyVar + g_dummyVarBase) {
         nmbrLet((nmbrString **)(&((g_ProofInProgress.target)[step])),
             nmbrCat(nmbrLeft(nmbrTmpPtr, sym), mString,
             nmbrRight(nmbrTmpPtr, sym + 2), NULL));
@@ -2841,7 +2841,7 @@ void replaceDummyVar(long dummyVar, const nmbrString *mString)
     nmbrTmpPtr = (g_ProofInProgress.source)[step];
     slen = nmbrLen(nmbrTmpPtr);
     for (sym = slen - 1; sym >= 0; sym--) {
-      if (nmbrTmpPtr[sym] == dummyVar + g_mathTokens) {
+      if (nmbrTmpPtr[sym] == dummyVar + g_dummyVarBase) {
         nmbrLet((nmbrString **)(&((g_ProofInProgress.source)[step])),
             nmbrCat(nmbrLeft(nmbrTmpPtr, sym), mString,
             nmbrRight(nmbrTmpPtr, sym + 2), NULL));
@@ -2854,7 +2854,7 @@ void replaceDummyVar(long dummyVar, const nmbrString *mString)
     nmbrTmpPtr = (g_ProofInProgress.user)[step];
     slen = nmbrLen(nmbrTmpPtr);
     for (sym = slen - 1; sym >= 0; sym--) {
-      if (nmbrTmpPtr[sym] == dummyVar + g_mathTokens) {
+      if (nmbrTmpPtr[sym] == dummyVar + g_dummyVarBase) {
         nmbrLet((nmbrString **)(&((g_ProofInProgress.user)[step])),
             nmbrCat(nmbrLeft(nmbrTmpPtr, sym), mString,
             nmbrRight(nmbrTmpPtr, sym + 2), NULL));
@@ -3047,7 +3047,7 @@ void declareDummyVars(long numNewVars)
 
     g_dummyVars++;
     // First, check to see if we need to allocate more g_MathToken memory
-    if (g_mathTokens + 1 + g_dummyVars >= g_MAX_MATHTOKENS) {
+    if (g_dummyVarBase + 1 + g_dummyVars >= g_MAX_MATHTOKENS) {
       // The +1 above accounts for the dummy "$|$" boundary token
       // Reallocate
       // Add 1000 so we won't have to do this very often
@@ -3056,23 +3056,26 @@ void declareDummyVars(long numNewVars)
         sizeof(struct mathToken_struct));
       if (!g_MathToken) outOfMemory("#10 (mathToken)");
     }
+    // Dummy variables live above the boundary token the parser leaves at
+    // g_dummyVarBase, so they never reuse a placeholder's slot.
+    long dvIdx = g_dummyVarBase + g_dummyVars;
     // Initialize vstring before let()
-    g_MathToken[g_mathTokens + g_dummyVars].tokenName = "";                         
-    let(&g_MathToken[g_mathTokens + g_dummyVars].tokenName,
+    g_MathToken[dvIdx].tokenName = "";
+    let(&g_MathToken[dvIdx].tokenName,
         cat("$", str((double)g_dummyVars), NULL));
-    g_MathToken[g_mathTokens + g_dummyVars].length =
-        (long)strlen(g_MathToken[g_mathTokens + g_dummyVars].tokenName);
-    g_MathToken[g_mathTokens + g_dummyVars].scope = g_currentScope;
-    g_MathToken[g_mathTokens + g_dummyVars].active = 1;
-    g_MathToken[g_mathTokens + g_dummyVars].tokenType = (char)var_;
-    g_MathToken[g_mathTokens + g_dummyVars].tmp = 0;
+    g_MathToken[dvIdx].length =
+        (long)strlen(g_MathToken[dvIdx].tokenName);
+    g_MathToken[dvIdx].scope = g_currentScope;
+    g_MathToken[dvIdx].active = 1;
+    g_MathToken[dvIdx].tokenType = (char)var_;
+    g_MathToken[dvIdx].tmp = 0;
     // These two were left holding whatever realloc() left behind, and a
     // dummy variable can reach writeExtractedSource(), which uses
     // .statement as an array index.  A dummy variable is not declared in
     // any statement, which is what 0 means here (the "$|$" token in
     // parseMathDecl() uses it the same way).
-    g_MathToken[g_mathTokens + g_dummyVars].statement = 0;
-    g_MathToken[g_mathTokens + g_dummyVars].endStatement = g_statements;
+    g_MathToken[dvIdx].statement = 0;
+    g_MathToken[dvIdx].endStatement = g_statements;
   }
 
   g_startTempAllocStack = saveTempAllocStack;
