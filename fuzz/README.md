@@ -116,10 +116,12 @@ if an `open-` one starts passing.
 | `open-prove-floating` | `g_MathToken[-1]` from a stale `.tmp`, `proveFloating()`/`makeSubstUnif()` | open |
 | `open-wrkproof-null` | null writes when the first proof needs zero space, `parseProof()` | open |
 | `open-uninit-token-statement` | `extractNeeded[]` indexed by an uninitialized `.statement`, `writeExtractedSource()` | open |
+| `open-let-self-assign` | `strcpy` with source == destination in `let()`, from `asciiToTt()` | open |
+| `open-unify-oob` | heap overflow read in `unify()` | open |
 
 The open ones are analyzed in `,fixes.txt` at the top of the repo,
-except `open-uninit-token-statement`, which was found later and is
-described below.
+except the three found later, described below.  **All of the `open-*`
+bugs reproduce on master**; none was introduced by the fixes.
 
 ### open-uninit-token-statement
 
@@ -148,6 +150,25 @@ bad $p |- x x $=
 This is a cousin of the `open-prove-floating` bug: both come from the
 spare `g_MathToken[]` slots used for error recovery not being set up as
 carefully as real tokens.
+
+### open-let-self-assign
+
+`asciiToTt()` in mmwtex.c deliberately writes `let(&ttstr, ttstr);`
+twice (near lines 980 and 985), commented "Purge stack to prevent
+overflow by 'mid'".  `let()` then reaches `strcpy(*target, source)`
+with both arguments the same pointer, and `strcpy` with overlapping
+source and destination is undefined.  Reproduces on master directly.
+
+### open-unify-oob
+
+Heap overflow read in `unify()` at mmunif.c:795, reached through
+`unifyH()` from `uniqueUnif()` during PROVE.
+
+This one is only *reachable* after the `symbolLenExists` fix: on
+master the same input dies earlier in `parseStatements()`, so the
+READ never completes and unification never runs.  Applying only that
+one-line fix to master reproduces this bug exactly, which is how it
+was confirmed to be pre-existing rather than newly introduced.
 
 ## Limitations
 
