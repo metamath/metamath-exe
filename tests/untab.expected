@@ -1,0 +1,25 @@
+MM> READ "untab.mm"
+Reading source file "untab.mm"... 352 bytes
+352 bytes were read into the source buffer.
+The source has 5 statements; 1 are $a and 1 are $p.
+No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
+if you want to check them.
+MM> Continuous scrolling is now in effect.
+MM> MM> MM> MM> MM> 0 10%  20%  30%  40%  50%  60%  70%  80%  90% 100%
+..................................................
+All proofs in the database were verified in x.xx s.
+MM> Writing "untab-rewrapped.mm"...
+5 source statement(s) were written.
+MM> Entering the Text Tools utilities.  Type HELP for help, EXIT to exit.
+TOOLS> $( Test database containing tab characters.  outputStatement() runs the
+   label and math sections through edit(...,2048) to expand tabs, a code
+   path that no other test reaches: no other test .mm file, and no part
+   of set.mm, contains a tab. $)
+
+  $c        wff |- $.
+  $v        x $.
+  vx $f        wff x $.
+  $( A comment with tabs. $)
+  ax1 $a        |- x $.
+TOOLS> Exiting the Text Tools.  Type EXIT again to exit Metamath.
+MM> 4 ax1 $a |- x $.
