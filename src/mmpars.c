@@ -1923,7 +1923,10 @@ char parseProof(long statemNum)
   void *voidPtr; // bsearch returned value
   vstring tmpStrPtr;
 
+  long wrkProofNeeded; // Working space this proof needs
   flag explicitTargets = 0; // Proof is of form <target>=<source>
+  // 1 only if targetPntr[] below was filled in for every proof step
+  flag targetsComplete = 0;
   // Source file pointers and token sizes for targets in a /EXPLICIT proof
   pntrString_def(targetPntr); // Pointers to target tokens
   nmbrString_def(targetNmbr); // Size of target tokens
@@ -1962,8 +1965,17 @@ char parseProof(long statemNum)
   // plus the number of active hypotheses.
 
   numOptHyp = nmbrLen(g_Statement[statemNum].optHypList);
-  if (g_Statement[statemNum].proofSectionLen + g_Statement[statemNum].numReqHyp
-      + numOptHyp > g_wrkProofMaxSize) {
+  // Work out the size needed once, including the "+ 2" floor, and test that
+  // same value below.  Applying the floor only when growing (which is what
+  // this used to do) meant the test could pass with nothing allocated at
+  // all: g_wrkProofMaxSize starts at 0, so the first proof to need 0 gave
+  // "0 > 0", which is false, and every g_WrkProof pointer stayed null.
+  // It also allowed the buffers to be up to 2 entries short of the floor.
+  wrkProofNeeded = g_Statement[statemNum].proofSectionLen
+      + g_Statement[statemNum].numReqHyp + numOptHyp
+      // 2 is minimum for 1-step proof; the other terms could all be 0
+      + 2;
+  if (wrkProofNeeded > g_wrkProofMaxSize) {
     if (g_wrkProofMaxSize) { // Not the first allocation
       free(g_WrkProof.tokenSrcPtrNmbr);
       free(g_WrkProof.tokenSrcPtrPntr);
@@ -1977,10 +1989,7 @@ char parseProof(long statemNum)
       free(g_WrkProof.RPNStack);
       free(g_WrkProof.compressedPfLabelMap);
     }
-    g_wrkProofMaxSize = g_Statement[statemNum].proofSectionLen
-        + g_Statement[statemNum].numReqHyp + numOptHyp
-        // 2 is minimum for 1-step proof; the other terms could all be 0
-        + 2;
+    g_wrkProofMaxSize = wrkProofNeeded;
     g_WrkProof.tokenSrcPtrNmbr = malloc((size_t)g_wrkProofMaxSize
         * sizeof(nmbrString));
     g_WrkProof.tokenSrcPtrPntr = malloc((size_t)g_wrkProofMaxSize
@@ -2225,6 +2234,9 @@ char parseProof(long statemNum)
   if (explicitTargets == 1) {
     pntrLet(&targetPntr, pntrSpace(g_WrkProof.numSteps));
     nmbrLet(&targetNmbr, nmbrSpace(g_WrkProof.numSteps));
+    // Cleared below if the scan does not reach every step, which leaves
+    // the rest of targetPntr[] holding the "" that pntrSpace() put there.
+    targetsComplete = 1;
     step = 0;
     for (tok = 0; tok < g_WrkProof.numTokens - 2; tok++) {
       // If next token is = then this token is a target for /EXPLICIT format,
@@ -2267,6 +2279,13 @@ char parseProof(long statemNum)
       }
       g_WrkProof.errorCount++;
       if (returnFlag < 2) returnFlag = 2;
+      // targetPntr[step] onwards were never assigned a source pointer, so
+      // they still hold the "" string literal.  The hypothesis rearranging
+      // further below writes a temporary null into whatever they point at,
+      // which for "" is a write to read-only memory.  Skip that step
+      // instead; this proof has just been marked severity 2, so every
+      // caller discards it anyway.
+      targetsComplete = 0;
     }
   } // if explicitTargets == 1
 
@@ -2486,7 +2505,7 @@ char parseProof(long statemNum)
     // For proofs saved with /EXPLICIT, the user may have changed the order
     // of hypotheses.  First, get the subproofs for the hypotheses.  Then
     // reassemble them in the right order.
-    if (explicitTargets == 1) {
+    if (explicitTargets == 1 && targetsComplete) {
       // nmbrString to rearrange proof then when done reassign to
       // g_WrkProof.proofString structure component.
       nmbrLet(&wrkProofString, g_WrkProof.proofString);

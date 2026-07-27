@@ -113,9 +113,10 @@ if an `open-` one starts passing.
 | `edit-untab-overflow` | heap overflow write in `edit()`, tab flag with no enlarged buffer | fixed |
 | `edit-untab-many-tabs` | heap overflow write in `edit()`, 7x buffer too small for many tabs | fixed |
 | `let-self-assign` | `strcpy` with source == destination in `let()`, from `asciiToTt()` | fixed |
+| `wrkproof-null` | null writes when the first proof needs zero space, `parseProof()` | fixed |
+| `explicit-target-shortage` | write into the `""` literal in `parseProof()`, `/EXPLICIT` proof with too few targets | fixed |
 | `open-statement-array-overflow` | `g_Statement[]` heap overflow from the `$$` miscount, `parseKeywords()` | open |
 | `open-prove-floating` | `g_MathToken[-1]` from a stale `.tmp`, `proveFloating()`/`makeSubstUnif()` | open |
-| `open-wrkproof-null` | null writes when the first proof needs zero space, `parseProof()` | open |
 | `open-uninit-token-statement` | `extractNeeded[]` indexed by an uninitialized `.statement`, `writeExtractedSource()` | open |
 | `open-unify-oob` | heap overflow read in `unify()` | open |
 
