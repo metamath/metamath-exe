@@ -116,41 +116,13 @@ if an `open-` one starts passing.
 | `wrkproof-null` | null writes when the first proof needs zero space, `parseProof()` | fixed |
 | `explicit-target-shortage` | write into the `""` literal in `parseProof()`, `/EXPLICIT` proof with too few targets | fixed |
 | `statement-array-overflow` | `g_Statement[]` heap overflow from the `$$` miscount, `parseKeywords()` | fixed |
+| `uninit-token-statement` | `extractNeeded[]` indexed by an uninitialized `.statement`, `writeExtractedSource()` | fixed |
 | `open-prove-floating` | `g_MathToken[-1]` from a stale `.tmp`, `proveFloating()`/`makeSubstUnif()` | open |
-| `open-uninit-token-statement` | `extractNeeded[]` indexed by an uninitialized `.statement`, `writeExtractedSource()` | open |
 | `open-unify-oob` | heap overflow read in `unify()` | open |
 
 The open ones are analyzed in `,fixes.txt` at the top of the repo,
-except the two found later, described below.  **All of the `open-*`
+except `open-unify-oob`, described below.  **All of the `open-*`
 bugs reproduce on master**; none was introduced by the fixes.
-
-### open-uninit-token-statement
-
-Found by this fuzzer immediately after it was checked in, so it has not
-been through the same analysis as the others.
-
-When `parseStatements()` meets an undeclared math symbol it invents a
-placeholder token (mmpars.c, near line 1183) and sets `tokenName`,
-`length`, `tokenType` and `tmp` -- but leaves `active`, `scope`,
-`statement` and `endStatement` holding whatever `realloc()` left there.
-`writeExtractedSource()` later does
-
-```c
-extractNeeded[g_MathToken[...].statement] = 'Y';   // mmcmds.c:3910
-```
-
-so an uninitialized `.statement` becomes a wild array index, written to
-and then read back. Two lines are enough, because with no `$c` or `$v`
-every symbol becomes a placeholder:
-
-```
-bad $p |- x x $=
-  xf x? ax-1 $.
-```
-
-This is a cousin of the `open-prove-floating` bug: both come from the
-spare `g_MathToken[]` slots used for error recovery not being set up as
-carefully as real tokens.
 
 ### open-unify-oob
 

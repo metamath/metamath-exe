@@ -3066,6 +3066,13 @@ void declareDummyVars(long numNewVars)
     g_MathToken[g_mathTokens + g_dummyVars].active = 1;
     g_MathToken[g_mathTokens + g_dummyVars].tokenType = (char)var_;
     g_MathToken[g_mathTokens + g_dummyVars].tmp = 0;
+    // These two were left holding whatever realloc() left behind, and a
+    // dummy variable can reach writeExtractedSource(), which uses
+    // .statement as an array index.  A dummy variable is not declared in
+    // any statement, which is what 0 means here (the "$|$" token in
+    // parseMathDecl() uses it the same way).
+    g_MathToken[g_mathTokens + g_dummyVars].statement = 0;
+    g_MathToken[g_mathTokens + g_dummyVars].endStatement = g_statements;
   }
 
   g_startTempAllocStack = saveTempAllocStack;

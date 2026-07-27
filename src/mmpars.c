@@ -1201,6 +1201,16 @@ void parseStatements(void) {
             g_MathToken[tokenNum].tokenType = (char)var_;
             // Prevent stray pointers later
             g_MathToken[tokenNum].tmp = 0; // Location in active variable stack
+            // Fill in the rest of the fields too.  Everything else that
+            // creates a g_MathToken[] entry sets all eight; leaving these
+            // holding whatever realloc() left behind meant
+            // writeExtractedSource() used .statement as an array index.
+            // 0 is what the "$|$" token uses to mean "not declared in any
+            // statement", which is exactly the case here.
+            g_MathToken[tokenNum].active = 0;
+            g_MathToken[tokenNum].scope = 0;
+            g_MathToken[tokenNum].statement = 0;
+            g_MathToken[tokenNum].endStatement = g_statements;
             if (!activeVarStackPtr) { // Make a fictitious entry
               activeVarStack[activeVarStackPtr].tokenNum = tokenNum;
               activeVarStack[activeVarStackPtr].scope = g_currentScope;
