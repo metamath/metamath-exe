@@ -1093,8 +1093,12 @@ void parseStatements(void) {
           // ???Speed-up is possible by rewriting this now unnecessary code
           for (; symbolLen > 0; symbolLen = 0) {
 
-            // symbolLenExists means a symbol of this length was declared
-            if (!symbolLenExists[symbolLen]) continue;
+            // symbolLenExists means a symbol of this length was declared.
+            // symbolLenExists[] only has entries 0 through maxSymbolLen, and
+            // a token longer than the longest declared symbol cannot match
+            // one, so reject it before indexing the array.
+            if (symbolLen > maxSymbolLen || !symbolLenExists[symbolLen])
+              continue;
             wrkStrPtr[symbolLen] = 0; // Define end of trial token to look up
             g_mathKeyPtr = (void *)bsearch(wrkStrPtr, g_mathKey, (size_t)g_mathTokens,
                 sizeof(long), mathSrchCmp);
@@ -1241,6 +1245,17 @@ void parseStatements(void) {
           if (!mathStringLen) {
             sourceError(fbPtr, 2, stmt,
                 "This statement type requires at least one math symbol.");
+            // Much of the code elsewhere assumes a $f, $e, $a or $p has at
+            // least one math symbol, and uses mathString[0] to index
+            // g_MathToken[].  Without a symbol here, mathString[0] would be
+            // the -1 terminator and those accesses would be out of bounds.
+            // So give the statement one placeholder symbol: the "$|$"
+            // boundary token, which parseMathDecl() always creates just past
+            // the declared symbols.  The statement is already reported as an
+            // error, and a length of 1 is a case the rest of the code
+            // handles anyway (e.g. a "$f" with only one symbol).
+            wrkNmbrPtr[0] = g_mathTokens;
+            mathStringLen = 1;
           } else {
             if (type == f_ && mathStringLen < 2) {
               sourceError(fbPtr, 2, stmt,
@@ -1723,7 +1738,12 @@ void parseStatements(void) {
     type = g_Statement[stmt].type;
     if (type == a_) {
       if (g_minSubstLen) {
-        if (g_Statement[stmt].mathStringLen == 1) {
+        // Do not count the "$|$" placeholder given above to a $a that had
+        // no math symbols at all: that is an error statement, not a
+        // deliberate "$a wff $.", and it must not silently change how
+        // unification behaves for the whole database.
+        if (g_Statement[stmt].mathStringLen == 1
+            && (g_Statement[stmt].mathString)[0] != g_mathTokens) {
           g_minSubstLen = 0;
           printLongLine(cat("SET EMPTY_SUBSTITUTION was",
              " turned ON (allowed) for this database.", NULL),
@@ -3436,10 +3456,13 @@ void rawSourceError(char *startFile, char *ptr, long tokLen, vstring errMsg) {
   while (endLine[0] != '\n' && endLine[0] != 0) {
     endLine++;
   }
-  endLine--;
-  let(&errLine, space(endLine - startLine + 1));
-  if (endLine - startLine + 1 < 0) bug(1721);
-  memcpy(errLine, startLine, (size_t)(endLine - startLine) + 1);
+  // endLine now points just past the last character of the line, so the line
+  // length is endLine - startLine.  Do not decrement endLine to make it point
+  // at the last character: for a 0-length line that would compute a pointer
+  // before the start of the buffer, which is undefined behavior.
+  if (endLine - startLine < 0) bug(1721);
+  let(&errLine, space(endLine - startLine));
+  memcpy(errLine, startLine, (size_t)(endLine - startLine));
   errorMessage(errLine, lineNum, ptr - startLine + 1, tokLen, errorMsg,
       fileName, 0, (char)error_);
   print2("\n");
@@ -3526,11 +3549,14 @@ void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
   while (endLine[0] != '\n' && endLine[0] != 0) {
     endLine++;
   }
-  endLine--;
+  // endLine now points just past the last character of the line, so the line
+  // length is endLine - startLine.  Do not decrement endLine to make it point
+  // at the last character: for a 0-length line that would compute a pointer
+  // before the start of the buffer, which is undefined behavior.
 
   // Save line with error (with no newline on it)
-  let(&errLine, space(endLine - startLine + 1));
-  memcpy(errLine, startLine, (size_t)(endLine - startLine) + 1);
+  let(&errLine, space(endLine - startLine));
+  memcpy(errLine, startLine, (size_t)(endLine - startLine));
 
   if (!lineNum) {
     // Not a source file parse

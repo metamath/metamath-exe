@@ -3978,9 +3978,12 @@ void writeExtractedSource(
       let(&dollarTCmt, left(tmpPtr, p2 + 1));
       // We need the above because rinstr doesn't have starting arg
       p1 = rinstr(dollarTCmt, "$(");
-      // Search backwards for non-space or beginning of string
+      // Search backwards for non-space or beginning of string.
+      // rinstr() returns 0 if "$(" was not found (which happens when the
+      // comment is unterminated), making p1 negative below, so stop at
+      // p1 <= 0 rather than only at p1 == 0.
       p1--;
-      while (p1 != 0) {
+      while (p1 > 0) {
         if (dollarTCmt[p1 - 1] != ' ') break;
         p1--;
       }

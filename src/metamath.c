@@ -2541,7 +2541,9 @@ void command(int argc, char *argv[]) {
       str1 = outputStatement(g_showStatement, // cleanFlag
           0); // reformatFlag
       let(&str1,edit(str1,128)); // Trim trailing spaces
-      if (str1[strlen(str1)-1] == '\n') let(&str1, left(str1,
+      // Test for an empty string first so that strlen(str1) - 1 (which is
+      // unsigned) never underflows.
+      if (str1[0] != 0 && str1[strlen(str1)-1] == '\n') let(&str1, left(str1,
           (long)strlen(str1) - 1));
       printLongLine(str1, "", "");
       free_vstring(str1); // Deallocate vstring

@@ -798,7 +798,9 @@ vstring cmdInput(FILE *stream, const char *ask) {
       }
     }
 
-    if (g[1]) {
+    // i is 0 if the line started with a null character, in which case there
+    // is no new-line to zap and g[i - 1] would be out of bounds.
+    if (i > 0 && g[1]) {
       i--;
       if (g[i] != '\n') {
         printf("***BUG #1519\n");
@@ -997,7 +999,9 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
 
   // Add a newline to line1 if there is none
   if (line) {
-    if (line[strlen(line) - 1] != '\n') {
+    // An empty line has no trailing new-line; test it first so that
+    // strlen(line) - 1 never underflows.
+    if (line[0] == 0 || line[strlen(line) - 1] != '\n') {
       let(&line1, line);
     } else {
       bug(1509);
@@ -1415,8 +1419,10 @@ vstring readFileToString(const char *fileName, char verbose, long *charCount) {
     (*charCount) = i - 1;
   }
 
-  // Make sure the last line is not a partial line
-  if (fileBuf[(*charCount) - 1] != '\n') {
+  // Make sure the last line is not a partial line.
+  // An empty file has no last line; test it first so that fileBuf[-1]
+  // is never read.
+  if ((*charCount) == 0 || fileBuf[(*charCount) - 1] != '\n') {
     if (verbose) print2(
         "?Warning: the last line in file \"%s\" is incomplete.\n",
         fileName);

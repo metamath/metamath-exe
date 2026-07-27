@@ -277,12 +277,14 @@ int linput(FILE *stream, const char* ask, vstring *target) {
   if (stream == NULL) stream = stdin;
   while (!eol_found && fgets(f, sizeof(f), stream))
   {
-    size_t endpos = strlen(f) - 1;
-    eol_found = (f[endpos] == '\n');
+    // len is 0 if the line started with a null character; testing it first
+    // keeps len - 1 from underflowing (size_t is unsigned).
+    size_t len = strlen(f);
+    eol_found = (len > 0 && f[len - 1] == '\n');
     // If the last line in the file has no newline, eol_found will be 0 here.
     // The fgets() above will return 0 and prevent another loop iteration.
     if (eol_found)
-      f[endpos] = 0; // The return string will have any newline stripped.
+      f[len - 1] = 0; // The return string will have any newline stripped.
     if (result)
       // Append additional parts of the line to *target.
       // The let() reallocates *target and copies the concatenation of the
@@ -312,6 +314,15 @@ temp_vstring seg(const char *sin, long start, long stop) {
 temp_vstring mid(const char *sin, long start, long length) {
   if (start < 1) start = 1;
   if (length < 0) length = 0;
+  if (start > 1) {
+    /* Keep sin + (start - 1) below from pointing past the end of sin[],
+       which would be 'pointer arithmetic out of object bounds' UB.  Starting
+       at the terminating null yields the empty string the caller expects,
+       instead of copying unspecified bytes from beyond it.
+    */
+    long sinLen = (long)strlen(sin);
+    if (start > sinLen + 1) start = sinLen + 1;
+  }
   temp_vstring sout = tempAlloc(length + 1);
   /* parentheses in next line ensure integer subtraction is evaluated before
      pointer arithmetic to avoid 'pointer arithmetic out of object bounds' UB.
@@ -597,7 +608,9 @@ temp_vstring edit(const char *sin, long control) {
       // error message returns.
       m = i - 2;
 
-      while (sout[j - 1] == ' ' && j > i - 8) j--;
+      // Test j > i - 8 first: when i is 8, j can reach 0, and evaluating
+      // sout[j - 1] then would read before the start of the string.
+      while (j > i - 8 && sout[j - 1] == ' ') j--;
       if (j <= m) {
         sout[j] = '\t';
         j = i;
