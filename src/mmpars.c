@@ -3334,8 +3334,20 @@ char parseCompressedProof(long statemNum)
         }
 
         // Put local label in label map
-        g_WrkProof.compressedPfLabelMap[g_WrkProof.compressedPfNumLabels] =
-          -1000 - (g_WrkProof.numSteps - 1);
+        if (g_WrkProof.numSteps == 0) {
+          // A "Z" here has no proof step to name, and the formula below
+          // would store -1000 - (0 - 1), that is -999.  A local label
+          // reference is <= -1000, so -999 is not one, and a later label
+          // resolving to it made verifyProof() abort with bug(2101).
+          // Store an unknown step instead, which is a legal proof string
+          // value.  Keeping the slot leaves any later local label at the
+          // index the source gives it.  The error is reported just below.
+          g_WrkProof.compressedPfLabelMap[g_WrkProof.compressedPfNumLabels] =
+            -(long)'?';
+        } else {
+          g_WrkProof.compressedPfLabelMap[g_WrkProof.compressedPfNumLabels] =
+            -1000 - (g_WrkProof.numSteps - 1);
+        }
         g_WrkProof.compressedPfNumLabels++;
 
         hypLocUnkFlag = 0;
