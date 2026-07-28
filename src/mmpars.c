@@ -718,6 +718,7 @@ void parseStatements(void) {
   long tokenNum;
   long lowerKey, upperKey;
   long symbolLen, origSymbolLen, mathSectionLen, g_mathKeyNum;
+  char *mathSectionEnd; // Just past the last character of the math section
   void *g_mathKeyPtr; // bsearch returned value
   int maxScope;
   long reqHyps, optHyps, reqVars, optVars;
@@ -1101,10 +1102,26 @@ void parseStatements(void) {
         // Scan the math section for tokens
         mathStringLen = 0;
         fbPtr = g_Statement[stmt].mathSectionPtr;
+        // Stop at the recorded end of the math section rather than relying on
+        // tokenLen() to stop at the "$" that ends it.  tokenLen() deliberately
+        // does not stop at a "$" followed by a digit, that being the "$1"
+        // dummy variable form, so on a statement like "$p$6 ..." -- where the
+        // section is empty and starts at that very "$" -- the scan used to run
+        // past the section and tokenize the text after it.  wrkStrPtr is sized
+        // from mathSectionLen, so a token found out there overran it.  The two
+        // agree on every well-formed statement: over all of set.mm no token
+        // ends past the recorded section, so this bound never fires there.
+        mathSectionEnd = fbPtr + (mathSectionLen > 0 ? mathSectionLen : 0);
         while (1) {
           fbPtr = fbPtr + whiteSpaceLen(fbPtr);
+          if (fbPtr >= mathSectionEnd) break; // Reached end of math section
           origSymbolLen = tokenLen(fbPtr);
           if (!origSymbolLen) break; // Done scanning source line
+          if (origSymbolLen > mathSectionEnd - fbPtr) {
+            // A token running past the end of the section, which takes a
+            // malformed statement; keep only the part inside the section
+            origSymbolLen = mathSectionEnd - fbPtr;
+          }
 
           // Scan for largest matching token from the left
           nextAdjToken:

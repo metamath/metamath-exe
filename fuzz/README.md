@@ -117,20 +117,13 @@ if an `open-` one starts passing.
 | `explicit-target-shortage` | write into the `""` literal in `parseProof()`, `/EXPLICIT` proof with too few targets | fixed |
 | `statement-array-overflow` | `g_Statement[]` heap overflow from the `$$` miscount, `parseKeywords()` | fixed |
 | `uninit-token-statement` | `extractNeeded[]` indexed by an uninitialized `.statement`, `writeExtractedSource()` | fixed |
+| `parsestatements-memcpy` | `memcpy` past the end of `wrkStrPtr` in `parseStatements()` | fixed |
 | `prove-floating` | `g_MathToken[-1]` from a stale `.tmp`, `proveFloating()`/`makeSubstUnif()` | fixed |
 | `unify-oob` | heap overflow read in `unify()` | fixed |
 | `open-verifyproof-mathstringptrs` | SEGV in `verifyProof()` assigning `mathStringPtrs[step]` | open |
-| `open-parsestatements-memcpy` | `memcpy` past the end of `wrkStrPtr` in `parseStatements()` | open |
 
 The one open case is described below.  **Every `open-*` bug reproduces
 on master**; none was introduced by the fixes here.
-
-### open-parsestatements-memcpy
-
-`memcpy(wrkStrPtr, fbPtr, symbolLen)` in `parseStatements()` overruns
-`wrkStrPtr`, which is sized from the statement's math section.  Also
-reproduces on master, where the same input instead dies earlier at the
-`symbolLenExists[]` overrun; fixing that one made this reachable.
 
 ### open-verifyproof-mathstringptrs
 
