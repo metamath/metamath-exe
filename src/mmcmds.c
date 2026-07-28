@@ -4535,10 +4535,9 @@ void eraseSource(void) // ERASE command
   // The entries run contiguously: the declared symbols, the "$|$" boundary
   // token, any placeholders the parser made for undeclared symbols, a second
   // boundary token if there were placeholders, then the dummy variables.
-  // g_dummyVarBase indexes that last boundary token, so the highest entry in
-  // use is g_dummyVarBase + g_dummyVars.  (Using g_mathTokens here instead
-  // used to leave any placeholder above g_dummyVars unfreed.)
-  for (i = 0; i <= g_dummyVarBase + g_dummyVars; i++) {
+  // HIGHEST_MATH_TOKEN is that highest entry.  (Using g_mathTokens here
+  // instead used to leave any placeholder above g_dummyVars unfreed.)
+  for (i = 0; i <= HIGHEST_MATH_TOKEN; i++) {
     free_vstring(g_MathToken[i].tokenName);
   }
 

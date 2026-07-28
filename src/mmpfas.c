@@ -324,6 +324,36 @@ nmbrString *proveByReplacement(long prfStmt,
   return trialPrf; // Proof not found - return empty proof
 }
 
+/*!
+ * \brief point a statement's required variables at the dummy variables that
+ *   will stand in for them during unification
+ *
+ * Declares more dummy variables if there are not enough yet, then records in
+ * each required variable's .tmp field the dummy variable that replaces it.
+ *
+ * Five callers used to spell this out.  Keeping it in one place matters
+ * because of the index arithmetic: dummy variables sit just above
+ * g_dummyVarBase, and the parser's placeholder tokens sit just below it.
+ * Getting that right in one copy and wrong in another is exactly how the two
+ * came to overlap.
+ *
+ * \param[in] stmtNum the statement whose reqVarList is to be mapped
+ * \param[in] numVars how many of its required variables to map
+ */
+static void mapReqVarsToDummyVars(long stmtNum, long numVars) {
+  long var;
+  if (numVars + g_pipDummyVars > g_dummyVars) {
+    // Declare more dummy vars if necessary
+    declareDummyVars(numVars + g_pipDummyVars - g_dummyVars);
+  }
+  for (var = 0; var < numVars; var++) {
+    // Put dummy var mapping into g_MathToken[].tmp field
+    g_MathToken[g_Statement[stmtNum].reqVarList[var]].tmp
+        = g_dummyVarBase + 1 + g_pipDummyVars + var;
+  }
+}
+
+
 nmbrString *replaceStatement(long replStatemNum, long prfStep,
     long provStmtNum,
     // If 1, then scan only subproof at prfStep to look for matches,
@@ -337,7 +367,7 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
     ) {
   nmbrString *prfMath; // Pointer only
   long reqHyps;
-  long hyp, sym, var, i, j, k, trialStep;
+  long hyp, sym, i, j, k, trialStep;
   nmbrString_def(proof);
   nmbrString_def(scheme);
   pntrString_def(hypList);
@@ -419,15 +449,7 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
   // Change all variables in the statement to dummy vars for unification
   nmbrLet(&scheme, replStmtSchemePtr);
   schemeVars = reqVars;
-  if (schemeVars + g_pipDummyVars /* global */ > g_dummyVars /* global */) {
-    // Declare more dummy vars if necessary
-    declareDummyVars(schemeVars + g_pipDummyVars - g_dummyVars);
-  }
-  for (var = 0; var < schemeVars; var++) {
-    // Put dummy var mapping into g_MathToken[].tmp field
-    g_MathToken[g_Statement[replStatemNum].reqVarList[var]].tmp
-        = g_dummyVarBase /* global */ + 1 + g_pipDummyVars /* global */ + var;
-  }
+  mapReqVarsToDummyVars(replStatemNum, schemeVars);
   for (sym = 0; sym < replStmtSchemeLen; sym++) {
     if (g_MathToken[replStmtSchemePtr[sym]].tokenType != (char)var_) continue;
     // Use dummy var mapping from g_MathToken[].tmp field
@@ -1364,7 +1386,7 @@ char checkStmtMatch(long statemNum, long step)
   pntrString_def(stateVector);
   nmbrString *mString; // Pointer only; not allocated
   nmbrString_def(scheme);
-  long targetLen, mStringLen, reqVars, stsym, tasym, sym, var, hyp, numHyps;
+  long targetLen, mStringLen, reqVars, stsym, tasym, sym, hyp, numHyps;
   flag breakFlag;
   flag firstSymbsAreConstsFlag;
 
@@ -1455,15 +1477,7 @@ char checkStmtMatch(long statemNum, long step)
   // Change variables in statement to dummy variables for unification
   nmbrLet(&scheme, mString);
   reqVars = nmbrLen(g_Statement[statemNum].reqVarList);
-  if (reqVars + g_pipDummyVars > g_dummyVars) {
-    // Declare more dummy vars if necessary
-    declareDummyVars(reqVars + g_pipDummyVars - g_dummyVars);
-  }
-  for (var = 0; var < reqVars; var++) {
-    // Put dummy var mapping into g_MathToken[].tmp field
-    g_MathToken[g_Statement[statemNum].reqVarList[var]].tmp = g_dummyVarBase + 1 +
-        g_pipDummyVars + var;
-  }
+  mapReqVarsToDummyVars(statemNum, reqVars);
   for (sym = 0; sym < mStringLen; sym++) {
     if (g_MathToken[scheme[sym]].tokenType != (char)var_)
         continue;
@@ -1730,15 +1744,7 @@ nmbrString *proveFloating(const nmbrString *mString, long statemNum, long maxEDe
     // Change all variables in the statement to dummy vars for unification
     nmbrLet(&scheme, stmtMathPtr);
     schemeVars = reqVars; // S.b. same after eliminated new $e vars above
-    if (schemeVars + g_pipDummyVars > g_dummyVars) {
-      // Declare more dummy vars if necessary
-      declareDummyVars(schemeVars + g_pipDummyVars - g_dummyVars);
-    }
-    for (var = 0; var < schemeVars; var++) {
-      // Put dummy var mapping into g_MathToken[].tmp field
-      g_MathToken[g_Statement[stmt].reqVarList[var]].tmp = g_dummyVarBase + 1 +
-          g_pipDummyVars + var;
-    }
+    mapReqVarsToDummyVars(stmt, schemeVars);
     for (sym = 0; sym < schemeLen; sym++) {
       if (g_MathToken[stmtMathPtr[sym]].tokenType != (char)var_) continue;
       // Use dummy var mapping from g_MathToken[].tmp field
@@ -2125,7 +2131,7 @@ void minimizeProof(long repStatemNum, long prvStatemNum,
 // hypotheses, to schemes using new dummy variables.
 void initStep(long step)
 {
-  long stmt, reqHyps, pos, hyp, sym, reqVars, var, mlen;
+  long stmt, reqHyps, pos, hyp, sym, reqVars, mlen;
   nmbrString_def(reqHypPos);
   nmbrString *nmbrTmpPtr; // Pointer only; not allocated
 
@@ -2171,15 +2177,7 @@ void initStep(long step)
 
   // Change the variables in the assertion and hypotheses to dummy variables
   reqVars = nmbrLen(g_Statement[stmt].reqVarList);
-  if (g_pipDummyVars + reqVars > g_dummyVars) {
-    // Declare more dummy vars if necessary
-    declareDummyVars(g_pipDummyVars + reqVars - g_dummyVars);
-  }
-  for (var = 0; var < reqVars; var++) {
-    // Put dummy var mapping into g_MathToken[].tmp field
-    g_MathToken[g_Statement[stmt].reqVarList[var]].tmp = g_dummyVarBase + 1 +
-      g_pipDummyVars + var;
-  }
+  mapReqVarsToDummyVars(stmt, reqVars);
   // Change vars in assertion
   nmbrTmpPtr = (g_ProofInProgress.source)[step];
   mlen = nmbrLen(nmbrTmpPtr);
@@ -2253,7 +2251,7 @@ void assignKnownSteps(long startStep, long sbProofLen)
   nmbrString_def(scheme);
   nmbrString_def(assertion);
   long pos, stmt, reqHyps, instLen, instPos, schemeLen, schemePos, hypLen,
-      hypPos, hyp, reqVars, var, assLen, assPos;
+      hypPos, hyp, reqVars, assLen, assPos;
   flag tmpFlag;
   pntrString_def(stateVector);
 
@@ -2329,15 +2327,7 @@ void assignKnownSteps(long startStep, long sbProofLen)
 
       // Change variables in scheme to dummy variables for unification
       reqVars = nmbrLen(g_Statement[stmt].reqVarList);
-      if (reqVars + g_pipDummyVars > g_dummyVars) {
-        // Declare more dummy vars if necessary
-        declareDummyVars(reqVars + g_pipDummyVars - g_dummyVars);
-      }
-      for (var = 0; var < reqVars; var++) {
-        // Put dummy var mapping into g_MathToken[].tmp field
-        g_MathToken[g_Statement[stmt].reqVarList[var]].tmp = g_dummyVarBase + 1 +
-          g_pipDummyVars + var;
-      }
+      mapReqVarsToDummyVars(stmt, reqVars);
       for (schemePos = 0; schemePos < schemeLen; schemePos++) {
         if (g_MathToken[scheme[schemePos]].tokenType
             != (char)var_) continue;
@@ -3047,7 +3037,7 @@ void declareDummyVars(long numNewVars)
 
     g_dummyVars++;
     // First, check to see if we need to allocate more g_MathToken memory
-    if (g_dummyVarBase + 1 + g_dummyVars >= g_MAX_MATHTOKENS) {
+    if (HIGHEST_MATH_TOKEN + 1 >= g_MAX_MATHTOKENS) {
       // The +1 above accounts for the dummy "$|$" boundary token
       // Reallocate
       // Add 1000 so we won't have to do this very often
@@ -3058,7 +3048,7 @@ void declareDummyVars(long numNewVars)
     }
     // Dummy variables live above the boundary token the parser leaves at
     // g_dummyVarBase, so they never reuse a placeholder's slot.
-    long dvIdx = g_dummyVarBase + g_dummyVars;
+    long dvIdx = HIGHEST_MATH_TOKEN;
     // Initialize vstring before let()
     g_MathToken[dvIdx].tokenName = "";
     let(&g_MathToken[dvIdx].tokenName,
