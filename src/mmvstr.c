@@ -840,7 +840,15 @@ temp_vstring str(double f) {
   // instead of 7.000000000000000.
   long i;
   temp_vstring s = tempAlloc(50);
-  sprintf(s,"%f", f);
+  // Bound the write by the size just allocated.  "%f" prints every digit
+  // before the point, so a large enough f needs far more than 50 bytes:
+  // 1e300 expands to over 300 characters.  No caller passes anything like
+  // that today -- the largest is a long, which fits in 26 -- so this only
+  // changes what happens if one ever does, from overrunning the buffer to
+  // truncating.  It also silences a bogus "null destination pointer"
+  // warning from the fortified sprintf() under -fsanitize; that warning
+  // fires even for a plain local array, so it is not about s being null.
+  snprintf(s, 50, "%f", f);
   if (strchr(s, '.') != 0) { // The string has a period in it
     for (i = (long)strlen(s) - 1; i > 0; i--) { // Scan string backwards
       if (s[i] != '0') break; // 1st non-zero digit
