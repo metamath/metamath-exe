@@ -23,7 +23,7 @@ This is an emulation of the string functions available in VMS BASIC.
 // independent of the other programs, for use with another project, do the
 // following:
 //   (1) Remove all lines beginning with the "/ *E* /" comment.
-//   (2) Remove all calls to the bug() function (4 places).
+//   (2) Remove all calls to the bug() function (3 places).
 // To see an example of stand-alone usage of the mmvstr.c functions, see
 // the program lattice.c and several others included in
 //   http://us.metamath.org/downloads/quantum-logic.tar.gz
@@ -96,7 +96,7 @@ void freeTempAlloc(void) {
  * \fn pushTempAlloc(void *mem)
  * \brief pushes a pointer onto the \ref tempAllocStack.
  *
- * In case of a stack overflow \ref bugfn "bug" is called.  This function is low level
+ * In case of a stack overflow the program is terminated.  This function is low level
  * that does not ensure that invariants of \ref tempAllocStack are kept.
  *
  * \param mem (not null) points to either a non-mutable empty string, or
@@ -109,18 +109,23 @@ void freeTempAlloc(void) {
  *   \ref g_tempAllocStackTop is increased.  This function
  *   does not ensure a NULL pointer follows the pushed pointer.  Statistics in
  *   \ref db1 is not updated.
- * \warning
- *   In case of stack overflow, the caller is not notified and a memory leak
- *   is likely.
+ * \post
+ *   [noreturn] If full, the program terminates with error code EXIT_FAILURE.
  */
 static void pushTempAlloc(void *mem)
 {
   if (g_tempAllocStackTop >= (MAX_ALLOC_STACK-1)) {
+    // Report this one directly rather than through bug().  bug() builds
+    // its messages with let() and print2(), which allocate temporaries of
+    // their own, so with this stack already full it re-enters
+    // pushTempAlloc(), reports the same overflow again, and recurses
+    // until the C stack runs out.
     printf("*** FATAL ERROR ***  Temporary string stack overflow\n");
+    printf("?BUG CHECK:  *** DETECTED BUG 2201\n");
 #if __STDC__
     fflush(stdout);
 #endif
-    bug(2201);
+    exit(EXIT_FAILURE);
   }
   tempAllocStack[g_tempAllocStackTop++] = mem;
 } // pushTempAlloc
@@ -132,8 +137,8 @@ static void pushTempAlloc(void *mem)
  *   \ref tempAllocStack
  *
  * This low level function does NOT initialize the allocated memory.  If the
- * allocation on the heap fails, \ref bugfn "bug" is called.  The statistic
- * value \ref db1 is updated.
+ * allocation on the heap fails, \ref bugfn "bug" is called and the program
+ * is then terminated.  The statistic value \ref db1 is updated.
  *
  * \param size (> 0) number of bytes to allocate on the heap.  If the memory is
  *   intended to hold NUL terminated text, then size must account for the final
@@ -142,10 +147,10 @@ static void pushTempAlloc(void *mem)
  *   The \ref tempAllocStack must not be full.
  * \post
  *   The top of \ref tempAllocStack addresses memory at least the size of the
- *   submitted parameter.
- * \warning
- *   In case of stack overflow, the caller is not notified and a memory leak
- *   is likely.
+ *   submitted parameter.  The result is never null.
+ * \post
+ *   [noreturn] If the allocation fails, or the \ref tempAllocStack is full,
+ *   the program terminates with error code EXIT_FAILURE.
  */
 static void* tempAlloc(long size) // String memory allocation/deallocation
 {
@@ -156,6 +161,12 @@ static void* tempAlloc(long size) // String memory allocation/deallocation
     fflush(stdout);
 #endif
     bug(2202);
+    // bug() returns if the user answers "I" or "S" to its prompt, so a
+    // fatal condition has to stop the program itself.  Returning here
+    // would hand back a null pointer that every caller writes through at
+    // once.  The two other fatal sites below do the same for the same
+    // reason.
+    exit(EXIT_FAILURE);
   }
   pushTempAlloc(memptr);
 /*E*/INCDB1(size);
@@ -198,6 +209,9 @@ void let(vstring *target, const char *source) {
       fflush(stdout);
 #endif
       bug(2204);
+      // Returning would leave *target null for the strcpy() below.
+      // See the comment at bug(2202).
+      exit(EXIT_FAILURE);
     }
   }
   if (sourceLength) {
@@ -241,6 +255,9 @@ temp_vstring cat(const char *string1, ...) {
       fflush(stdout);
 #endif
       bug(2206);
+      // Returning would write arg[] and argPos[] past their end.
+      // See the comment at bug(2202).
+      exit(EXIT_FAILURE);
     }
     arg[numArgs] = curArg;
     argPos[numArgs] = pos;
