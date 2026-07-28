@@ -5,3 +5,9 @@ findings/
 findings*/
 *.min.mm
 out.mm
+
+# HTML and other files written by running the cases
+cases/*.html
+cases/out.mm
+cases/o.mm
+cases/e.mm

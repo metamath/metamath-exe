@@ -119,10 +119,27 @@ if an `open-` one starts passing.
 | `uninit-token-statement` | `extractNeeded[]` indexed by an uninitialized `.statement`, `writeExtractedSource()` | fixed |
 | `prove-floating` | `g_MathToken[-1]` from a stale `.tmp`, `proveFloating()`/`makeSubstUnif()` | fixed |
 | `unify-oob` | heap overflow read in `unify()` | fixed |
+| `open-verifyproof-mathstringptrs` | SEGV in `verifyProof()` assigning `mathStringPtrs[step]` | open |
+| `open-parsestatements-memcpy` | `memcpy` past the end of `wrkStrPtr` in `parseStatements()` | open |
 
-Every case here currently passes, so there is no `open-*` entry at the
-moment.  When one is added, it means a bug that is known and not yet
-fixed, and `run-cases.sh` expects it to keep failing until it is.
+The one open case is described below.  **Every `open-*` bug reproduces
+on master**; none was introduced by the fixes here.
+
+### open-parsestatements-memcpy
+
+`memcpy(wrkStrPtr, fbPtr, symbolLen)` in `parseStatements()` overruns
+`wrkStrPtr`, which is sized from the statement's math section.  Also
+reproduces on master, where the same input instead dies earlier at the
+`symbolLenExists[]` overrun; fixing that one made this reachable.
+
+### open-verifyproof-mathstringptrs
+
+SEGV in `verifyProof()` at mmveri.c:71, assigning
+`g_WrkProof.mathStringPtrs[step] = g_WrkProof.mathStringPtrs[i]`,
+reached from PROVE.  Reproduces identically on master.
+
+Found only after the `.tmp` token-collision fix: before that, every
+fuzz finding was the collision bug, which masked this one.
 
 ## Limitations
 
