@@ -357,6 +357,17 @@ void parseKeywords(void)
                 "Expected \"$=\" here.");
             if (fbPtr[0] == '.') {
               mode = 2; // If $. switch mode to help reduce error msgs
+            } else {
+              // Give up on this keyword rather than opening a proof
+              // section at it, the way the "$." case just below does for
+              // every other statement type.  Falling through would set
+              // startSection past this keyword and switch to mode 2, so
+              // the next "$" -- which on "$p ... $$." is the very next
+              // character -- closed a proof section that starts after it,
+              // recording a length of -1.  Consumers then do space(-1),
+              // which clamps to an empty string, followed by memcpy() of
+              // (size_t)-1 bytes into it.
+              continue;
             }
           }
           if (type != p_ && fbPtr[0] != '.') {

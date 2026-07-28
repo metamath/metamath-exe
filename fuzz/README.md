@@ -121,6 +121,7 @@ if an `open-` one starts passing.
 | `prove-floating` | `g_MathToken[-1]` from a stale `.tmp`, `proveFloating()`/`makeSubstUnif()` | fixed |
 | `unify-oob` | heap overflow read in `unify()` | fixed |
 | `verifyproof-mathstringptrs` | uninitialized `compressedPfLabelMap[0]` read into the proof, `parseCompressedProof()` | fixed |
+| `proof-section-negative-len` | `proofSectionLen` of -1 from `$p ... $$.`, `parseKeywords()` | fixed |
 
 No case is open at the moment.  Every bug found so far reproduced on
 master; none was introduced by the fixes here.
