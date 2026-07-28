@@ -3233,7 +3233,20 @@ char parseCompressedProof(long statemNum)
           labelMapIndex = 0; // Make it something legal to avoid side effects
         }
 
-        stmt = g_WrkProof.compressedPfLabelMap[labelMapIndex];
+        if (g_WrkProof.compressedPfNumLabels <= 0) {
+          // The label map is empty: the statement has no required
+          // hypotheses and its "( )" list is empty, and no local label has
+          // been seen yet.  Then index 0 is out of range as well, so the
+          // clamp above has nothing legal to clamp to and reading the map
+          // would put uninitialized heap into the proof.  Treat the
+          // reference as an unknown step, which is what the other
+          // unusable-token paths here do.  The proof is already flagged:
+          // labelMapIndex cannot be negative, so with an empty map the
+          // range test just above rejects every reference.
+          stmt = -(long)'?';
+        } else {
+          stmt = g_WrkProof.compressedPfLabelMap[labelMapIndex];
+        }
         g_WrkProof.proofString[g_WrkProof.numSteps] = stmt;
 
         // Update stack

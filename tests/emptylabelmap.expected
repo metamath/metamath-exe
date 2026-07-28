@@ -1,0 +1,69 @@
+MM> READ "emptylabelmap.mm"
+Reading source file "emptylabelmap.mm"... 1010 bytes
+1010 bytes were read into the source buffer.
+The source has 4 statements; 1 are $a and 2 are $p.
+No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
+if you want to check them.
+MM> Continuous scrolling is now in effect.
+MM> MM> MM> MM> MM> MM> MM> MM> MM> 0 10%  20%  30%  40%  50%  60%  70%  80%  90% 100%
+.....................................
+?Error on line 20 of file "emptylabelmap.mm" at statement 3, label "th1", type
+"$p":
+th1 $p |- T $= ( ) A $.
+                   ^
+This compressed label reference is outside the range of the label list.  The
+compressed label value is 0 but the largest label defined is -1.
+.............
+?Error on line 25 of file "emptylabelmap.mm" at statement 4, label "th2", type
+"$p":
+th2 $p |- T $= ( ax ) B $.
+                      ^
+This compressed label reference is outside the range of the label list.  The
+compressed label value is 1 but the largest label defined is 0.
+
+MM> 
+?Error on line 20 of file "emptylabelmap.mm" at statement 3, label "th1", type
+"$p":
+th1 $p |- T $= ( ) A $.
+                   ^
+This compressed label reference is outside the range of the label list.  The
+compressed label value is 0 but the largest label defined is -1.
+?The proof has a severe error and cannot be displayed or saved.
+MM> 
+?Error on line 25 of file "emptylabelmap.mm" at statement 4, label "th2", type
+"$p":
+th2 $p |- T $= ( ax ) B $.
+                      ^
+This compressed label reference is outside the range of the label list.  The
+compressed label value is 1 but the largest label defined is 0.
+?The proof has a severe error and cannot be displayed or saved.
+MM> Entering the Proof Assistant.  HELP PROOF_ASSISTANT for help, EXIT to exit.
+
+?Error on line 20 of file "emptylabelmap.mm" at statement 3, label "th1", type
+"$p":
+th1 $p |- T $= ( ) A $.
+                   ^
+This compressed label reference is outside the range of the label list.  The
+compressed label value is 0 but the largest label defined is -1.
+The starting proof has a severe error.  It will not be used.
+You will be working on statement (from "SHOW STATEMENT th1"):
+3 th1 $p |- T $= ... $.
+Unknown step summary (from "SHOW NEW_PROOF / UNKNOWN"):
+1    th1=? $? |- T
+MM-PA> 1    th1=? $? |- T
+MM-PA> Exiting the Proof Assistant.  Type EXIT again to exit Metamath.
+MM> Entering the Proof Assistant.  HELP PROOF_ASSISTANT for help, EXIT to exit.
+
+?Error on line 25 of file "emptylabelmap.mm" at statement 4, label "th2", type
+"$p":
+th2 $p |- T $= ( ax ) B $.
+                      ^
+This compressed label reference is outside the range of the label list.  The
+compressed label value is 1 but the largest label defined is 0.
+The starting proof has a severe error.  It will not be used.
+You will be working on statement (from "SHOW STATEMENT th2"):
+4 th2 $p |- T $= ... $.
+Unknown step summary (from "SHOW NEW_PROOF / UNKNOWN"):
+1    th2=? $? |- T
+MM-PA> 1    th2=? $? |- T
+MM-PA> Exiting the Proof Assistant.  Type EXIT again to exit Metamath.

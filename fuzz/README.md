@@ -120,19 +120,10 @@ if an `open-` one starts passing.
 | `parsestatements-memcpy` | `memcpy` past the end of `wrkStrPtr` in `parseStatements()` | fixed |
 | `prove-floating` | `g_MathToken[-1]` from a stale `.tmp`, `proveFloating()`/`makeSubstUnif()` | fixed |
 | `unify-oob` | heap overflow read in `unify()` | fixed |
-| `open-verifyproof-mathstringptrs` | SEGV in `verifyProof()` assigning `mathStringPtrs[step]` | open |
+| `verifyproof-mathstringptrs` | uninitialized `compressedPfLabelMap[0]` read into the proof, `parseCompressedProof()` | fixed |
 
-The one open case is described below.  **Every `open-*` bug reproduces
-on master**; none was introduced by the fixes here.
-
-### open-verifyproof-mathstringptrs
-
-SEGV in `verifyProof()` at mmveri.c:71, assigning
-`g_WrkProof.mathStringPtrs[step] = g_WrkProof.mathStringPtrs[i]`,
-reached from PROVE.  Reproduces identically on master.
-
-Found only after the `.tmp` token-collision fix: before that, every
-fuzz finding was the collision bug, which masked this one.
+No case is open at the moment.  Every bug found so far reproduced on
+master; none was introduced by the fixes here.
 
 ## Limitations
 
@@ -165,9 +156,9 @@ them to a clean state between iterations or the runs contaminate each
 other. `eraseSource()` in mmcmds.c is the closest thing to a reset and
 is the place to start, but it has not been audited for completeness --
 in particular `g_wrkProofMaxSize`, `g_dummyVars`, and the free/used
-pools would all need checking. Note that `open-wrkproof-null` is
-already a bug about exactly one of those globals starting at zero, so
-this is not hypothetical.
+pools would all need checking. Note that `wrkproof-null` is already a
+bug about exactly one of those globals starting at zero, so this is not
+hypothetical.
 
 Until that exists, the cases in `cases/` are useful as an afl++ input
 corpus: they are small, they parse far enough to reach interesting
