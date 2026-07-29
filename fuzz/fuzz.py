@@ -22,6 +22,7 @@ Example:
 
 import argparse
 import os
+import re
 import random
 import shutil
 import subprocess
@@ -69,6 +70,42 @@ COMMANDS = [
     "prove *\nshow new_proof /unknown\nexit\n",
 ]
 
+# Proof Assistant sessions, generated per input rather than listed above.
+#
+# "PROVE *" needs a label matching exactly one statement, so on a database
+# with several $p statements, or none, it fails and the rest of the session
+# goes nowhere: measured over mutated inputs it entered the Proof Assistant
+# only 37% of the time.  Pulling a label out of the file being tested raises
+# that to 83%, which matters because the Proof Assistant is where a good
+# share of the bugs in cases/ were found.
+RE_P_LABEL = re.compile(rb'(?m)^\s*([!-#%-~]+)\s+\$p')
+RE_ANY_LABEL = re.compile(rb'(?m)^\s*([!-#%-~]+)\s+\$[apef]')
+
+# Fraction of iterations spent in the Proof Assistant.  These runs are
+# slower than a single command, so this trades throughput for reaching code
+# nothing else here touches; against master it found three distinct bugs
+# that the command list alone did not.
+PA_SESSION_SHARE = 0.5
+
+# Operations that do something once inside the Proof Assistant.  "{L}" is
+# replaced by a label from the file and "{N}" by a small step number.  Every
+# one was checked against the command grammar; note that metamath prompts for
+# a missing optional argument and consumes the next line of the script when
+# it does, which is why each operation below is followed by a blank line.
+PA_OPS = [
+    "improve all", "improve all /depth {N}", "improve {N}", "improve first",
+    "improve last", "unify all", "match all", "match step {N}",
+    "expand {L}", "assign {N} {L}", "replace {N} {L}",
+    "minimize_with {L}", "minimize_with *",
+    "initialize all", "initialize step {N}", "initialize user",
+    "delete step {N}", "delete all", "delete floating_hypotheses",
+    "undo", "redo", "let variable $1 = {L}",
+    "show new_proof /all", "show new_proof /unknown",
+    "show new_proof /lemmon /renumber",
+    "save new_proof /normal", "save new_proof /compressed",
+    "save new_proof /packed", "save new_proof /explicit",
+]
+
 # A seed that always parses, used if a mutation deletes everything.
 FALLBACK = b'$c a $.\n'
 
@@ -93,6 +130,31 @@ def parse_duration(text):
     if value <= 0:
         raise argparse.ArgumentTypeError("duration must be positive")
     return value * scale
+
+
+def pa_session(rng, mm_bytes):
+    """A PROVE session for this input, or None if it has nothing to prove."""
+    labels = RE_P_LABEL.findall(mm_bytes)
+    if not labels:
+        return None
+    lines = ["prove " + rng.choice(labels).decode('ascii')]
+    # Deleting the proof first leaves it unknown, so IMPROVE and UNIFY have
+    # something to work on.  Against a proof that is already complete they
+    # just say so and return, which reaches very little.
+    if rng.random() < 0.5:
+        lines += ["delete all", ""]
+    args = RE_ANY_LABEL.findall(mm_bytes)
+    for _ in range(rng.randint(1, 3)):
+        op = rng.choice(PA_OPS).replace("{N}", str(rng.randint(1, 12)))
+        if "{L}" in op:
+            if not args:
+                continue
+            op = op.replace("{L}", rng.choice(args).decode('ascii'))
+        lines += [op, ""]  # the blank line answers any optional-argument prompt
+    # EXIT from a changed proof asks for confirmation and would eat the next
+    # line; _EXIT_PA leaves the Proof Assistant without prompting.
+    lines.append("_exit_pa")
+    return "\n".join(lines) + "\n"
 
 
 def load_seeds(seed_dir):
@@ -175,7 +237,11 @@ def worker(args, worker_id):
         if deadline is not None and time.monotonic() >= deadline:
             break
         mm_bytes = mutate(rng, rng.choice(seeds))
-        command = rng.choice(COMMANDS)
+        command = None
+        if rng.random() < PA_SESSION_SHARE:
+            command = pa_session(rng, mm_bytes)
+        if command is None:  # no $p to prove, or not this iteration's turn
+            command = rng.choice(COMMANDS)
         output = run_once(args.binary, workdir, mm_bytes, command,
                           args.timeout)
         tag = 'crash_%d_%d' % (worker_id, done)

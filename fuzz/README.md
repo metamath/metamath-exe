@@ -30,6 +30,33 @@ whichever comes first. `--duration` is checked between runs, so the last
 one can overshoot it by up to `--timeout`. With only `--duration` the
 iteration count is unlimited.
 
+### The Proof Assistant
+
+Half of all iterations run a generated `PROVE` session instead of one of
+the commands above. This is worth calling out because the obvious way to
+write it does not work: `PROVE *` needs a label matching exactly one
+statement, so on a database with several `$p` statements, or none, it
+fails and the rest of the session goes nowhere. Measured over mutated
+inputs it entered the Proof Assistant only **37%** of the time. Taking a
+real `$p` label out of the file under test raises that to **83%**.
+
+Two more things were needed before the sessions did anything useful:
+
+- **Delete the proof first.** Against a proof that is already complete,
+  `IMPROVE` and `UNIFY` print "already complete" and return. Issuing
+  `DELETE ALL` leaves the proof unknown so they have work to do, which is
+  what reaches `proveFloating()` and `makeSubstUnif()`.
+- **Blank lines and `_EXIT_PA`.** metamath prompts for a missing optional
+  argument and consumes the next line of the script when it does, so each
+  operation is followed by a blank line. And `EXIT` from a changed proof
+  asks for confirmation, which would eat a line too; `_EXIT_PA` leaves
+  without prompting.
+
+The sessions cost throughput, roughly 25% fewer iterations per second,
+and are worth it: against `master` they found three distinct bugs the
+command list alone did not, two of them inside `mmpfas.c`. Extend
+`PA_OPS` to reach more of it.
+
 ### Seeds and repeatability
 
 Every run picks a random base seed and prints it, and worker N draws from
