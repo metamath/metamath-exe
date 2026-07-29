@@ -5587,13 +5587,17 @@ void command(int argc, char *argv[]) {
       } else {
         s = nmbrLen(g_ProofInProgress.proof);
       }
-      if ((g_ProofInProgress.proof)[s - 1] == -(long)'?') {
-        print2("?Step %ld is unknown and cannot be deleted.\n", s);
-        continue;
-      }
+      // Check the range before using the step number as an index.  The two
+      // tests used to be the other way around, so "DELETE STEP" with a step
+      // number past the end of the proof read past the end of the array
+      // before anything established that the step existed.
       m = nmbrLen(g_ProofInProgress.proof); // Original proof length
       if (s > m || s < 1) {
         print2("?The step must be in the range from 1 to %ld.\n", m);
+        continue;
+      }
+      if ((g_ProofInProgress.proof)[s - 1] == -(long)'?') {
+        print2("?Step %ld is unknown and cannot be deleted.\n", s);
         continue;
       }
 

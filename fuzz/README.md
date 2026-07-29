@@ -151,6 +151,7 @@ if an `open-` one starts passing.
 | `verifyproof-mathstringptrs` | uninitialized `compressedPfLabelMap[0]` read into the proof, `parseCompressedProof()` | fixed |
 | `proof-section-negative-len` | `proofSectionLen` of -1 from `$p ... $$.`, `parseKeywords()` | fixed |
 | `assignvar-undeclared-var` | `varAssLen[]` indexed by a stale `.tmp`, `assignVar()`, for a variable of the assertion that no hypothesis can substitute for | fixed |
+| `delete-step-out-of-range` | `proof[s - 1]` read before the range check on `s`, `DELETE STEP` in `command()` | fixed |
 
 No case is open at the moment.  Every bug found so far reproduced on
 master; none was introduced by the fixes here.
