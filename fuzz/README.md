@@ -18,11 +18,39 @@ cd fuzz
 ./build-sanitizer.sh          # builds ./metamath-san from ../src
 ./run-cases.sh                # re-check the known bugs
 ./fuzz.py --iterations 2000 --workers 6
+./fuzz.py --duration 2h --workers 6    # or just run until you want the CPU back
 ```
 
 Findings land in `findings/<crash_worker_iteration>/`, each holding the
 mutated `crash.mm`, the `crash.cmd` command script that triggered it,
 and the sanitizer `output.txt`.
+
+Stop with `--iterations`, `--duration` (`90s`, `15m`, `2h`), or both,
+whichever comes first. `--duration` is checked between runs, so the last
+one can overshoot it by up to `--timeout`. With only `--duration` the
+iteration count is unlimited.
+
+### Seeds and repeatability
+
+Every run picks a random base seed and prints it, and worker N draws from
+`seed+N`:
+
+```
+base seed 819273465 (pass --seed 819273465 to replay this run)
+worker 0: seed 819273465
+```
+
+So running the same command twice covers new ground, which is what you
+want from a fuzzer. To go back to a run instead of past it, pass its
+base seed to `--seed`: with the same binary, the same seed corpus and at
+least as many iterations, every worker regenerates exactly the same
+inputs in the same order. Raising `--iterations` keeps that prefix and
+extends it, so a longer replay is a superset of the shorter one.
+
+Two things sit outside that guarantee. The corpus is `../tests` by
+default, so editing those files reshuffles everything; and a run that
+exceeds `--timeout` is skipped, which under heavy load can quietly drop
+a finding that a quieter replay would report.
 
 ## How it works
 

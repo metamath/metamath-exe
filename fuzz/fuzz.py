@@ -10,9 +10,14 @@ UndefinedBehaviorSanitizer -- they are the oracle.  Without them a
 malformed .mm just produces an error message, which is correct
 behavior, and this script will never find anything.
 
+Each run picks a random base seed and prints it, so repeat runs explore
+new ground by default.  Pass that seed back with --seed to replay a run
+exactly.
+
 Example:
     ./build-sanitizer.sh
-    ./fuzz.py --iterations 2000 --workers 6
+    ./fuzz.py --workers 6 --duration 2h
+    ./fuzz.py --workers 6 --duration 2h --seed 819273465   # replay it
 """
 
 import argparse
@@ -21,6 +26,7 @@ import random
 import shutil
 import subprocess
 import sys
+import time
 
 # Bytes worth substituting.  Biasing toward characters that mean
 # something to metamath is what makes a fuzzer this simple productive;
@@ -68,6 +74,25 @@ FALLBACK = b'$c a $.\n'
 
 # Strings in the output that mean we found something.
 MARKERS = (b'runtime error', b'AddressSanitizer', b'SEGV', b'LeakSanitizer')
+
+
+def parse_duration(text):
+    """Accepts 90, 90s, 15m, 2h, 1.5h.  Returns seconds."""
+    units = {'s': 1, 'm': 60, 'h': 3600}
+    given = text  # keep the original for the error message
+    scale = 1
+    if text and text[-1].lower() in units:
+        scale = units[text[-1].lower()]
+        text = text[:-1]
+    try:
+        value = float(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(
+            "expected something like 90s, 15m or 2h, or a plain number"
+            " of seconds, not %r" % given)
+    if value <= 0:
+        raise argparse.ArgumentTypeError("duration must be positive")
+    return value * scale
 
 
 def load_seeds(seed_dir):
@@ -130,27 +155,41 @@ def save_finding(outdir, tag, mm_bytes, command, output):
 
 
 def worker(args, worker_id):
-    rng = random.Random(args.seed + worker_id)
+    # Worker N draws from seed+N, so reporting the base seed is enough to
+    # replay every worker.  Print this one too, so a finding can be traced
+    # to the exact stream that produced it.
+    seed = args.seed + worker_id
+    print('worker %d: seed %d' % (worker_id, seed), flush=True)
+    rng = random.Random(seed)
     seeds = load_seeds(args.seeds)
     workdir = os.path.join(args.output, 'work%d' % worker_id)
     os.makedirs(workdir, exist_ok=True)
+    # The deadline is only checked between runs, so a run already under way
+    # can overshoot it by up to --timeout.
+    deadline = None if args.duration is None else time.monotonic() + args.duration
     found = 0
-    for i in range(args.iterations):
+    done = 0
+    while True:
+        if args.iterations is not None and done >= args.iterations:
+            break
+        if deadline is not None and time.monotonic() >= deadline:
+            break
         mm_bytes = mutate(rng, rng.choice(seeds))
         command = rng.choice(COMMANDS)
         output = run_once(args.binary, workdir, mm_bytes, command,
                           args.timeout)
+        tag = 'crash_%d_%d' % (worker_id, done)
+        done += 1
         if output is None:
             continue  # timeout; not interesting by itself
         if any(m in output for m in MARKERS):
             found += 1
-            tag = 'crash_%d_%d' % (worker_id, i)
             where = save_finding(args.output, tag, mm_bytes, command, output)
             print('FOUND %s' % where, flush=True)
             if found >= args.max_findings:
                 break
-    print('worker %d done: %d iterations, %d findings'
-          % (worker_id, i + 1, found), flush=True)
+    print('worker %d done: %d iterations, %d findings, seed %d'
+          % (worker_id, done, found, seed), flush=True)
     return found
 
 
@@ -165,12 +204,20 @@ def main():
                         help='directory of .mm seed files (default: ../tests)')
     parser.add_argument('--output', default=os.path.join(here, 'findings'),
                         help='where to write findings (default: ./findings)')
-    parser.add_argument('--iterations', type=int, default=1000,
-                        help='iterations per worker (default: 1000)')
+    parser.add_argument('--iterations', type=int, default=None,
+                        help='iterations per worker (default: 1000, or'
+                             ' unlimited if --duration is given)')
+    parser.add_argument('--duration', type=parse_duration, default=None,
+                        help='wall-clock limit per worker, e.g. 90s, 15m, 2h;'
+                             ' checked between runs, so the last run can'
+                             ' overshoot by up to --timeout')
     parser.add_argument('--workers', type=int, default=1,
                         help='parallel workers (default: 1)')
-    parser.add_argument('--seed', type=int, default=0,
-                        help='base RNG seed; workers use seed+N (default: 0)')
+    parser.add_argument('--seed', type=int, default=None,
+                        help='base RNG seed; workers use seed+N.  Default is'
+                             ' a fresh random seed each run, reported on'
+                             ' startup so it can be passed back here to'
+                             ' replay that run exactly')
     parser.add_argument('--timeout', type=int, default=25,
                         help='seconds per run (default: 25)')
     parser.add_argument('--max-findings', type=int, default=40,
@@ -184,6 +231,19 @@ def main():
                  % args.binary)
     os.makedirs(args.output, exist_ok=True)
 
+    # Neither limit given: keep the historical iteration count.  With only
+    # --duration, run until the clock says stop rather than capping at it.
+    if args.iterations is None and args.duration is None:
+        args.iterations = 1000
+
+    # A fixed default seed would make every repeat run re-test exactly what
+    # the last one did.  Pick a fresh one and say what it was, so repeating
+    # explores new ground and replaying stays one flag away.
+    if args.seed is None:
+        args.seed = random.SystemRandom().randrange(1 << 30)
+        print('base seed %d (pass --seed %d to replay this run)'
+              % (args.seed, args.seed), flush=True)
+
     if args.worker_id is not None:
         sys.exit(0 if worker(args, args.worker_id) == 0 else 1)
 
@@ -191,14 +251,20 @@ def main():
         worker(args, 0)
         return
 
-    # Re-exec ourselves once per worker so they run in parallel.
+    # Re-exec ourselves once per worker so they run in parallel.  The seed
+    # and both limits are passed down already resolved, so every worker
+    # agrees with what was reported above.
     procs = []
     for n in range(args.workers):
         cmd = [sys.executable, os.path.abspath(__file__),
                '--binary', args.binary, '--seeds', args.seeds,
-               '--output', args.output, '--iterations', str(args.iterations),
+               '--output', args.output,
                '--seed', str(args.seed), '--timeout', str(args.timeout),
                '--max-findings', str(args.max_findings), '--worker-id', str(n)]
+        if args.iterations is not None:
+            cmd += ['--iterations', str(args.iterations)]
+        if args.duration is not None:
+            cmd += ['--duration', str(args.duration)]
         procs.append(subprocess.Popen(cmd))
     for p in procs:
         p.wait()
