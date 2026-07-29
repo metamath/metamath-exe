@@ -243,6 +243,14 @@ nmbrString *assignVar(nmbrString *bigSubstSchemeAss,
   nmbrLet(&varAssLen,substSchemeFrstVarOcc);
   nmbrLet(&substInstFrstVarOcc,substSchemeFrstVarOcc);
 
+  // A variable of this assertion was never declared, or is out of scope, and
+  // was reported when the database was read.  Nothing can be substituted for
+  // it, so no result assembled here would mean anything.  The required
+  // variable list, which the test below relies on, cannot be right either.
+  // Give up on this step instead of working with any of it.  (This has to
+  // come after the three allocations above, which returnPoint clears.)
+  if (g_Statement[substScheme].hasVarWithoutHyp) goto returnPoint;
+
   if (bigSubstSchemeVarLen != nmbrLen(g_Statement[substScheme].reqVarList)) {
     if (unkHypFlag) {
       // If there are unknown hypotheses and all variables aren't present,

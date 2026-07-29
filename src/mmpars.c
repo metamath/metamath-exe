@@ -237,6 +237,7 @@ void parseKeywords(void)
   g_Statement[i].optDisjVarsStmt = NULL_NMBRSTRING;
   g_Statement[i].pinkNumber = 0;
   g_Statement[i].headerStartStmt = 0;
+  g_Statement[i].hasVarWithoutHyp = 0;
   for (i = 1; i < potentialStatements; i++) {
     g_Statement[i] = g_Statement[0];
   }
@@ -1257,6 +1258,20 @@ void parseStatements(void) {
             }
           }
 
+          // Every path above has resolved the symbol to a tokenNum, and each
+          // one that failed to find an active declaration has reported it and
+          // pointed .tmp at activeVarStack[] entry 0 just to keep it in range
+          // (an entry another variable usually owns).  Nothing downstream can
+          // make sense of such a variable: it has no hypothesis to be
+          // substituted from, and the bookkeeping hung off that borrowed entry
+          // is not its own.  Record it once here, and let the users of the
+          // statement decline to work with it rather than each of them trying
+          // to detect the damage afterwards.
+          if (g_MathToken[tokenNum].tokenType == (char)var_
+              && !g_MathToken[tokenNum].active) {
+            g_Statement[stmt].hasVarWithoutHyp = 1;
+          }
+
           if (type == d_) {
             if (g_MathToken[tokenNum].tokenType == (char)con_) {
               sourceError(fbPtr, symbolLen, stmt,
@@ -1640,6 +1655,7 @@ void parseStatements(void) {
                     " \"$p\" statements must appear in at least one such",
                     " hypothesis.",NULL));
               activeVarStack[g_MathToken[k].tmp].tmpFlag = 1; // One msg per var
+              g_Statement[stmt].hasVarWithoutHyp = 1;
             }
           }
           j++;

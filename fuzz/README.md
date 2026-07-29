@@ -122,6 +122,7 @@ if an `open-` one starts passing.
 | `unify-oob` | heap overflow read in `unify()` | fixed |
 | `verifyproof-mathstringptrs` | uninitialized `compressedPfLabelMap[0]` read into the proof, `parseCompressedProof()` | fixed |
 | `proof-section-negative-len` | `proofSectionLen` of -1 from `$p ... $$.`, `parseKeywords()` | fixed |
+| `assignvar-undeclared-var` | `varAssLen[]` indexed by a stale `.tmp`, `assignVar()`, for a variable of the assertion that no hypothesis can substitute for | fixed |
 
 No case is open at the moment.  Every bug found so far reproduced on
 master; none was introduced by the fixes here.
