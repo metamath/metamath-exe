@@ -3864,6 +3864,22 @@ long whiteSpaceLen(char *ptr) {
             return i + (long)strlen(&ptr[i]); // Unterminated comment - goto EOF
           }
           if (ptr1[1] == ')') break;
+          // A "$" at the very end of the string cannot open the "$)" that
+          // would close the comment, so the comment is unterminated, the
+          // same conclusion the "!ptr1" test above reaches.  Say so here
+          // rather than fall into the rescan below, which resumes two
+          // characters on from this "$" and would start past the
+          // terminating null.
+          //
+          // readFileToString() leaves a file ending in a new-line, so no
+          // buffer read from one ends in a "$" and this does not trigger.
+          // It is here because the loop should not depend on that: the
+          // rescan is only in bounds when something has established that
+          // the character after the "$" is not the terminator, and until
+          // now nothing had.
+          if (ptr1[1] == 0) {
+            return i + (long)strlen(&ptr[i]); // Unterminated comment - goto EOF
+          }
           i = ptr1 - ptr;
         }
         i = ptr1 - ptr + 2;

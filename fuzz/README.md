@@ -180,6 +180,7 @@ if an `open-` one starts passing.
 | `assignvar-undeclared-var` | `varAssLen[]` indexed by a stale `.tmp`, `assignVar()`, for a variable of the assertion that no hypothesis can substitute for | fixed |
 | `delete-step-out-of-range` | `proof[s - 1]` read before the range check on `s`, `DELETE STEP` in `command()` | fixed |
 | `dummyvar-map-incomplete` | `g_MathToken[-1]` in `makeSubstUnif()`, from a math string rewritten through a `.tmp` that `mapReqVarsToDummyVars()` never filled in | fixed |
+| `whitespacelen-trailing-dollar` | read past the terminator in `whiteSpaceLen()`, rescanning an unterminated comment whose last character is `$` | fixed |
 
 No case is open at the moment.  Every bug found so far reproduced on
 master; none was introduced by the fixes here.
