@@ -191,8 +191,11 @@ master; none was introduced by the fixes here.
 Worth being honest about, especially if you are weighing afl++:
 
 - **Not coverage-guided.** It cannot find inputs that need several
-  coordinated mutations, so it plateaus. The wins so far came from
-  breadth of *commands*, not depth of mutation.
+  coordinated mutations. Every fuzzer plateaus, coverage-guided ones
+  included; the question is where. This one plateaus early, and the
+  wins so far came from moving that point rather than from waiting:
+  breadth of *commands*, and reaching subsystems that were not being
+  entered at all, not depth of mutation.
 - **Process per iteration.** Roughly 40 executions/second/worker, most
   of it process startup and re-reading the database. A persistent-mode
   harness would be orders of magnitude faster.
