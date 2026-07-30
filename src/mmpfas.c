@@ -353,6 +353,39 @@ static void mapReqVarsToDummyVars(long stmtNum, long numVars) {
   }
 }
 
+/*!
+ * \brief is this statement one that mapReqVarsToDummyVars() cannot serve?
+ *
+ * mapReqVarsToDummyVars() fills in .tmp for the statement's required
+ * variables only, and every caller then rewrites the statement, or its
+ * hypotheses, through that field.  That holds together as long as every
+ * variable in them is a required variable, which parsing guarantees for a
+ * database without errors.  Where it does not hold, parsing says so and sets
+ * hasVarWithoutHyp, and rewriting anyway would store whatever .tmp was last
+ * used for, which is not a token number.
+ *
+ * The flag has to be checked on the required hypotheses as well as on the
+ * statement: hypotheses are shared, so one bad "$f" is reached through every
+ * assertion that requires it, and those assertions are clean themselves.
+ *
+ * \param[in] stmtNum the statement about to be mapped
+ * \returns 1 if the statement, or one of its required hypotheses, has a
+ *   variable that no hypothesis can substitute for; 0 otherwise.
+ *
+ * Parsing sets hasVarWithoutHyp only on a statement it has reported an error
+ * for, so in a database that parsed without errors this returns 0 for every
+ * statement, and the give-up paths that the callers guard with it never run.
+ */
+static flag lacksDummyVarMapping(long stmtNum) {
+  long hyp;
+  if (g_Statement[stmtNum].hasVarWithoutHyp) return 1;
+  for (hyp = 0; hyp < g_Statement[stmtNum].numReqHyp; hyp++) {
+    if (g_Statement[g_Statement[stmtNum].reqHypList[hyp]].hasVarWithoutHyp)
+      return 1;
+  }
+  return 0;
+}
+
 
 nmbrString *replaceStatement(long replStatemNum, long prfStep,
     long provStmtNum,
@@ -436,6 +469,14 @@ nmbrString *replaceStatement(long replStatemNum, long prfStep,
   if (g_Statement[replStatemNum].type != (char)a_ &&
       g_Statement[replStatemNum].type != (char)p_)
     bug(1822); // Not $a or $p
+
+  // Not every variable in this statement can be given a dummy variable, so it
+  // cannot be used as a replacement.  Return the empty proof, which is what
+  // this function already returns when no replacement is found.  This has to
+  // be a plain return rather than a jump to returnPoint: nothing is allocated
+  // yet, and returnPoint walks hypList[] and its companions up to schReqHyps,
+  // which is neither set nor allocated for until further down.
+  if (lacksDummyVarMapping(replStatemNum)) return proof;
 
   schReqHyps = g_Statement[replStatemNum].numReqHyp;
   reqVars = nmbrLen(g_Statement[replStatemNum].reqVarList);
@@ -1477,6 +1518,12 @@ char checkStmtMatch(long statemNum, long step)
   // Change variables in statement to dummy variables for unification
   nmbrLet(&scheme, mString);
   reqVars = nmbrLen(g_Statement[statemNum].reqVarList);
+  // Not every variable here can be given a dummy variable, so this statement
+  // cannot be matched against the step.  Report it as not matching.
+  if (lacksDummyVarMapping(statemNum)) {
+    targetFlag = 0;
+    goto returnPoint;
+  }
   mapReqVarsToDummyVars(statemNum, reqVars);
   for (sym = 0; sym < mStringLen; sym++) {
     if (g_MathToken[scheme[sym]].tokenType != (char)var_)
@@ -1740,6 +1787,10 @@ nmbrString *proveFloating(const nmbrString *mString, long statemNum, long maxEDe
       } // End if $e
     } // Next hyp
     if (breakFlag) continue; // To next stmt
+
+    // Not every variable in this candidate can be given a dummy variable, so
+    // it cannot be unified with the step.  Move on to the next candidate.
+    if (lacksDummyVarMapping(stmt)) continue;
 
     // Change all variables in the statement to dummy vars for unification
     nmbrLet(&scheme, stmtMathPtr);
@@ -2175,6 +2226,11 @@ void initStep(long step)
     }
   }
 
+  // Not every variable here can be given a dummy variable.  Leave the step
+  // holding the real ones: .source and all the .target entries are already
+  // assigned above, so the step is fully set up either way.
+  if (lacksDummyVarMapping(stmt)) goto skipDummyVars;
+
   // Change the variables in the assertion and hypotheses to dummy variables
   reqVars = nmbrLen(g_Statement[stmt].reqVarList);
   mapReqVarsToDummyVars(stmt, reqVars);
@@ -2202,6 +2258,7 @@ void initStep(long step)
   // Update the number of dummy vars used so far
   g_pipDummyVars = g_pipDummyVars + reqVars;
 
+ skipDummyVars:
   free_nmbrString(reqHypPos); // Deallocate
 
   return;
@@ -2324,6 +2381,15 @@ void assignKnownSteps(long startStep, long sbProofLen)
         schemePos++;
       }
       if (schemeLen != schemePos) bug(1812); // ???Delete after debugging
+
+      // Not every variable here can be given a dummy variable, so the
+      // unification below cannot be set up.  Take the same way out as a
+      // failed unification does, which assigns the targets from the sources
+      // and leaves the rest of the proof alone.
+      if (lacksDummyVarMapping(stmt)) {
+        purgeStateVector(&stateVector);
+        goto returnPoint;
+      }
 
       // Change variables in scheme to dummy variables for unification
       reqVars = nmbrLen(g_Statement[stmt].reqVarList);
