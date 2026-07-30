@@ -2924,6 +2924,7 @@ char parseCompressedProof(long statemNum)
 
   long i, j, k, step, stmt;
   char *fbPtr;
+  char *proofSectionEnd; // Just past the last character of the proof section
   char *fbStartProof;
   char *labelStart;
   long tokLength;
@@ -3082,9 +3083,36 @@ char parseCompressedProof(long statemNum)
   // ****** in order to easily parse the label section.
 
   // First break up the label section of proof into tokens
+  //
+  // Bounded by the recorded end of the proof section for the same reason as
+  // the scan in parseProof(): proofTokenLen() runs through "$$" and through a
+  // "$" followed by a digit, so a token can swallow the "$." that ends the
+  // statement and the scan carry on into the next one.  This loop has a
+  // second way out, the ")" that ends the label list, but a run-away scan
+  // does not reach that either.  stepSrcPtrPntr[] is sized from
+  // proofSectionLen, so tokens found past the section overran it.
+  proofSectionEnd = g_Statement[statemNum].proofSectionPtr
+      + (g_Statement[statemNum].proofSectionLen > 0
+          ? g_Statement[statemNum].proofSectionLen : 0);
   while (1) {
     fbPtr = fbPtr + whiteSpaceLen(fbPtr);
+    if (fbPtr >= proofSectionEnd) {
+      // Ran off the end of the section without finding the ")", which is the
+      // same failure the "not present" report below describes
+      if (!g_WrkProof.errorCount) {
+        sourceError(fbPtr, 2, statemNum,
+            "A \")\" which ends the label list is not present.");
+      }
+      g_WrkProof.errorCount++;
+      if (returnFlag < 3) returnFlag = 3;
+      break;
+    }
     tokLength = proofTokenLen(fbPtr);
+    if (tokLength > proofSectionEnd - fbPtr) {
+      // A token running past the end of the section, which takes a malformed
+      // statement; keep only the part inside the section
+      tokLength = proofSectionEnd - fbPtr;
+    }
     if (!tokLength) {
       if (!g_WrkProof.errorCount) {
         sourceError(fbPtr, 2, statemNum,

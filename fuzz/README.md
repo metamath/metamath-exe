@@ -184,6 +184,7 @@ if an `open-` one starts passing.
 | `nul-in-source` | a NUL in a source file truncated it silently, leaving a buffer that ends mid-file for every later scanner | fixed |
 | `mathdecl-token-past-section` | `g_MathToken[]` heap write overflow, `parseMathDecl()`, token running past the recorded math section | fixed |
 | `parseproof-token-past-section` | `tokenSrcPtrPntr[]` heap write overflow, `parseProof()`, token running past the recorded proof section | fixed |
+| `compressedproof-token-past-section` | `stepSrcPtrPntr[]` heap write overflow, `parseCompressedProof()`, label-list token running past the recorded proof section | fixed |
 
 No case is open at the moment.  Every bug found so far reproduced on
 master; none was introduced by the fixes here.
