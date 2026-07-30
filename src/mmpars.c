@@ -3869,7 +3869,7 @@ long whiteSpaceLen(char *ptr) {
           // same conclusion the "!ptr1" test above reaches.  Say so here
           // rather than fall into the rescan below, which resumes two
           // characters on from this "$" and would start past the
-          // terminating null.
+          // terminating NUL.
           //
           // readFileToString() leaves a file ending in a new-line, so no
           // buffer read from one ends in a "$" and this does not trigger.

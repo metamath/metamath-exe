@@ -181,6 +181,7 @@ if an `open-` one starts passing.
 | `delete-step-out-of-range` | `proof[s - 1]` read before the range check on `s`, `DELETE STEP` in `command()` | fixed |
 | `dummyvar-map-incomplete` | `g_MathToken[-1]` in `makeSubstUnif()`, from a math string rewritten through a `.tmp` that `mapReqVarsToDummyVars()` never filled in | fixed |
 | `whitespacelen-trailing-dollar` | read past the terminator in `whiteSpaceLen()`, rescanning an unterminated comment whose last character is `$` | fixed |
+| `nul-in-source` | a NUL in a source file truncated it silently, leaving a buffer that ends mid-file for every later scanner | fixed |
 
 No case is open at the moment.  Every bug found so far reproduced on
 master; none was introduced by the fixes here.
