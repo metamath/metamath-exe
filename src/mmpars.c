@@ -578,6 +578,51 @@ void parseLabels(void) {
   }
 }
 
+/*!
+ * \brief tokenLen() bounded by the end of the section being scanned
+ *
+ * The token length functions cannot be relied on to stop where a statement
+ * does.  tokenLen() runs through a "$" followed by a digit, that being the
+ * "$1" dummy variable form, so a token can reach past the "$." that ends the
+ * statement and the scan carry on into the next one.  Every caller that walks
+ * a section sizes an array from that section's length, so a token found out
+ * there overruns it.
+ *
+ * Callers already stop on a zero length, so report the end of the section
+ * that way and there is nothing else for them to check.
+ *
+ * \param[in] ptr where the token would start
+ * \param[in] sectionEnd just past the last character of the section
+ * \returns the token length, trimmed to what lies inside the section, or 0 at
+ *   or past its end
+ */
+static long tokenLenInSection(char *ptr, const char *sectionEnd) {
+  long len;
+  if (ptr >= sectionEnd) return 0; // At or past the end of the section
+  len = tokenLen(ptr);
+  if (len > sectionEnd - ptr) len = sectionEnd - ptr; // Trim to the section
+  return len;
+}
+
+/*!
+ * \brief proofTokenLen() bounded by the end of the section being scanned
+ *
+ * The proof counterpart of tokenLenInSection(); see it for why this is
+ * needed.
+ *
+ * \param[in] ptr where the token would start
+ * \param[in] sectionEnd just past the last character of the section
+ * \returns the token length, trimmed to what lies inside the section, or 0 at
+ *   or past its end
+ */
+static long proofTokenLenInSection(char *ptr, const char *sectionEnd) {
+  long len;
+  if (ptr >= sectionEnd) return 0; // At or past the end of the section
+  len = proofTokenLen(ptr);
+  if (len > sectionEnd - ptr) len = sectionEnd - ptr; // Trim to the section
+  return len;
+}
+
 // This functions retrieves all possible math symbols from $c and $v
 // statements.
 void parseMathDecl(void) {
@@ -630,14 +675,8 @@ void parseMathDecl(void) {
             ? g_Statement[stmt].mathSectionLen : 0);
         while (1) {
           i = whiteSpaceLen(fbPtr);
-          if (fbPtr + i >= mathSectionEnd) break; // Reached end of section
-          j = tokenLen(fbPtr + i);
-          if (!j) break;
-          if (j > mathSectionEnd - (fbPtr + i)) {
-            // A token running past the end of the section, which takes a
-            // malformed statement; keep only the part inside the section
-            j = mathSectionEnd - (fbPtr + i);
-          }
+          j = tokenLenInSection(fbPtr + i, mathSectionEnd);
+          if (!j) break; // End of the section, or nothing left to tokenize
           tmpPtr = malloc((size_t)j + 1); // Math symbol name
           if (!tmpPtr) outOfMemory("#8 (symbol name)");
           tmpPtr[j] = 0; // End of string
@@ -1145,14 +1184,8 @@ void parseStatements(void) {
         mathSectionEnd = fbPtr + (mathSectionLen > 0 ? mathSectionLen : 0);
         while (1) {
           fbPtr = fbPtr + whiteSpaceLen(fbPtr);
-          if (fbPtr >= mathSectionEnd) break; // Reached end of math section
-          origSymbolLen = tokenLen(fbPtr);
-          if (!origSymbolLen) break; // Done scanning source line
-          if (origSymbolLen > mathSectionEnd - fbPtr) {
-            // A token running past the end of the section, which takes a
-            // malformed statement; keep only the part inside the section
-            origSymbolLen = mathSectionEnd - fbPtr;
-          }
+          origSymbolLen = tokenLenInSection(fbPtr, mathSectionEnd);
+          if (!origSymbolLen) break; // End of the section, or nothing left
 
           // Scan for largest matching token from the left
           nextAdjToken:
@@ -2166,14 +2199,8 @@ char parseProof(long statemNum)
       + (g_Statement[statemNum].proofSectionLen > 0
           ? g_Statement[statemNum].proofSectionLen : 0);
   while (1) {
-    if (fbPtr >= proofSectionEnd) break; // Reached end of proof section
-    tokLength = proofTokenLen(fbPtr);
-    if (!tokLength) break;
-    if (tokLength > proofSectionEnd - fbPtr) {
-      // A token running past the end of the section, which takes a malformed
-      // statement; keep only the part inside the section
-      tokLength = proofSectionEnd - fbPtr;
-    }
+    tokLength = proofTokenLenInSection(fbPtr, proofSectionEnd);
+    if (!tokLength) break; // End of the section, or nothing left to tokenize
     g_WrkProof.tokenSrcPtrPntr[g_WrkProof.numTokens] = fbPtr;
     g_WrkProof.tokenSrcPtrNmbr[g_WrkProof.numTokens] = tokLength;
     g_WrkProof.numTokens++;
@@ -3096,23 +3123,9 @@ char parseCompressedProof(long statemNum)
           ? g_Statement[statemNum].proofSectionLen : 0);
   while (1) {
     fbPtr = fbPtr + whiteSpaceLen(fbPtr);
-    if (fbPtr >= proofSectionEnd) {
-      // Ran off the end of the section without finding the ")", which is the
-      // same failure the "not present" report below describes
-      if (!g_WrkProof.errorCount) {
-        sourceError(fbPtr, 2, statemNum,
-            "A \")\" which ends the label list is not present.");
-      }
-      g_WrkProof.errorCount++;
-      if (returnFlag < 3) returnFlag = 3;
-      break;
-    }
-    tokLength = proofTokenLen(fbPtr);
-    if (tokLength > proofSectionEnd - fbPtr) {
-      // A token running past the end of the section, which takes a malformed
-      // statement; keep only the part inside the section
-      tokLength = proofSectionEnd - fbPtr;
-    }
+    // Running off the end of the section arrives here as a zero length, and
+    // so is reported as the missing ")" that it is
+    tokLength = proofTokenLenInSection(fbPtr, proofSectionEnd);
     if (!tokLength) {
       if (!g_WrkProof.errorCount) {
         sourceError(fbPtr, 2, statemNum,
@@ -4000,10 +4013,7 @@ long tokenLen(char *ptr)
   while (1) {
     tmpchr = ptr[i];
     if (tmpchr == '$') {
-      if (ptr[i + 1] == '$') { // '$$' character
-        i = i + 2;
-        continue;
-      } else {
+      {
         // Tolerate digit after "$"
         if (ptr[i + 1] >= '0' && ptr[i + 1] <= '9') {
           i = i + 2;
@@ -4059,12 +4069,7 @@ long proofTokenLen(char *ptr)
   while (1) {
     tmpchr = ptr[i];
     if (tmpchr == '$') {
-      if (ptr[i + 1] == '$') { // '$$' character
-        i = i + 2;
-        continue;
-      } else {
-        return i; // Keyword or comment
-      }
+      return i; // Keyword or comment
     }
     if (!isgraph((unsigned char)tmpchr)) return i; // White space or null
     if (tmpchr == ':') return i; // Colon ends a token

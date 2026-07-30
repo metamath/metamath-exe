@@ -25,26 +25,7 @@ z2 $p |- T $$.
 Expected "$=" here.
 The source has 4 statements; 1 are $a and 2 are $p.
 
-?Error on line 23 of file "proof-section.mm" at statement 3, label "z2", type
-"$p":
-z2 $p |- T $$.
-           ^^^
-This math symbol was not declared (with a "$c" or "$v" statement).
-
-?Error on line 23 of file "proof-section.mm" at statement 3, label "z2", type
-"$p":
-z2 $p |- T $$.
-           ^^^
-This variable does not occur in any active "$e" or "$f" hypothesis.  All
-variables in "$a" and "$p" statements must appear in at least one such
-hypothesis.
-
-?Error on line 23 of file "proof-section.mm" at statement 3, label "z2", type
-"$p":
-z2 $p |- T $$.
-The variable "$$." does not appear in an active "$f" statement.
-
-7 errors were found.
+4 errors were found.
 MM> Continuous scrolling is now in effect.
 MM> MM> MM> MM> MM> MM> 0 10%  20%  30%  40%  50%  60%  70%  80%  90% 100%
 ..................................................
@@ -52,11 +33,11 @@ MM> Statement 3 is located on line 23 of the file "proof-section.mm".  Its
 statement number for HTML pages is 2.
 ""z2" has no "$=" at all, so no proof section should be recorded for
    it and its length must stay 0."
-3 z2 $p |- T $$. $= ... $.
+3 z2 $p |- T $= ... $.
 Its mandatory hypotheses in RPN order are:
   (None)
-The statement and its hypotheses require the variables:  $$.
-The variables it contains are:  $$.
+The statement and its hypotheses require the variables:  (None)
+The variables it contains are:  (None)
 MM> MM> ?The proof has a severe error and cannot be displayed or saved.
 Remember to use WRITE SOURCE to save changes permanently.
 MM> Writing "proof-section-plain.mm"...
