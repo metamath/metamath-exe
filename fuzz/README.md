@@ -182,6 +182,8 @@ if an `open-` one starts passing.
 | `dummyvar-map-incomplete` | `g_MathToken[-1]` in `makeSubstUnif()`, from a math string rewritten through a `.tmp` that `mapReqVarsToDummyVars()` never filled in | fixed |
 | `whitespacelen-trailing-dollar` | read past the terminator in `whiteSpaceLen()`, rescanning an unterminated comment whose last character is `$` | fixed |
 | `nul-in-source` | a NUL in a source file truncated it silently, leaving a buffer that ends mid-file for every later scanner | fixed |
+| `mathdecl-token-past-section` | `g_MathToken[]` heap write overflow, `parseMathDecl()`, token running past the recorded math section | fixed |
+| `parseproof-token-past-section` | `tokenSrcPtrPntr[]` heap write overflow, `parseProof()`, token running past the recorded proof section | fixed |
 
 No case is open at the moment.  Every bug found so far reproduced on
 master; none was introduced by the fixes here.

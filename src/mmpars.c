@@ -584,6 +584,7 @@ void parseMathDecl(void) {
   long potentialSymbols;
   long stmt;
   char *fbPtr;
+  char *mathSectionEnd; // Just past the last character of the math section
   long i, j, k;
   char *tmpPtr;
   nmbrString *nmbrTmpPtr;
@@ -615,10 +616,28 @@ void parseMathDecl(void) {
       case v_:
         oldG_mathTokens = g_mathTokens;
         fbPtr = g_Statement[stmt].mathSectionPtr;
+        // Stop at the recorded end of the math section rather than relying on
+        // tokenLen() to stop at the "$" that ends it.  tokenLen() deliberately
+        // runs through a "$" followed by a digit, that being the "$1" dummy
+        // variable form, and through a "$$" as well, so on a statement like
+        // "$c A ]$$.$" the token "]$$." swallows the "$." that should have
+        // ended the statement and the scan carries on into the next one.
+        // g_MathToken was sized from the math section lengths totalled above,
+        // so symbols found out there overran it.  The two agree on every
+        // well-formed statement: over all of set.mm no token ends past the
+        // recorded section, so this bound never fires there.
+        mathSectionEnd = fbPtr + (g_Statement[stmt].mathSectionLen > 0
+            ? g_Statement[stmt].mathSectionLen : 0);
         while (1) {
           i = whiteSpaceLen(fbPtr);
+          if (fbPtr + i >= mathSectionEnd) break; // Reached end of section
           j = tokenLen(fbPtr + i);
           if (!j) break;
+          if (j > mathSectionEnd - (fbPtr + i)) {
+            // A token running past the end of the section, which takes a
+            // malformed statement; keep only the part inside the section
+            j = mathSectionEnd - (fbPtr + i);
+          }
           tmpPtr = malloc((size_t)j + 1); // Math symbol name
           if (!tmpPtr) outOfMemory("#8 (symbol name)");
           tmpPtr[j] = 0; // End of string
@@ -2009,6 +2028,7 @@ char parseProof(long statemNum)
 
   long i, j, k, m, tok, step;
   char *fbPtr;
+  char *proofSectionEnd; // Just past the last character of the proof section
   long tokLength;
   long numReqHyp;
   long numOptHyp;
@@ -2133,9 +2153,27 @@ char parseProof(long statemNum)
   // fbPtr points to the first token now.
 
   // First break up proof section of source into tokens
+  //
+  // Stop at the recorded end of the proof section rather than relying on
+  // proofTokenLen() to stop at the "$." that ends it.  It runs through a "$"
+  // followed by a digit, that being the "$1" dummy variable form, and through
+  // a "$$" as well, so a token can swallow the "$." and the scan carry on into
+  // the next statement.  The arrays written below are sized from
+  // proofSectionLen, so tokens found out there overran them.  The two agree on
+  // every well-formed statement: over all of set.mm no token ends past the
+  // recorded section, so this bound never fires there.
+  proofSectionEnd = g_Statement[statemNum].proofSectionPtr
+      + (g_Statement[statemNum].proofSectionLen > 0
+          ? g_Statement[statemNum].proofSectionLen : 0);
   while (1) {
+    if (fbPtr >= proofSectionEnd) break; // Reached end of proof section
     tokLength = proofTokenLen(fbPtr);
     if (!tokLength) break;
+    if (tokLength > proofSectionEnd - fbPtr) {
+      // A token running past the end of the section, which takes a malformed
+      // statement; keep only the part inside the section
+      tokLength = proofSectionEnd - fbPtr;
+    }
     g_WrkProof.tokenSrcPtrPntr[g_WrkProof.numTokens] = fbPtr;
     g_WrkProof.tokenSrcPtrNmbr[g_WrkProof.numTokens] = tokLength;
     g_WrkProof.numTokens++;
