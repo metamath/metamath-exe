@@ -333,7 +333,13 @@ void parseKeywords(void)
         // this function creates a statement only where readRawSource()
         // counted one.  Trap it rather than corrupt the heap if the two ever
         // drift apart again, the way they did over "$$".
-        if (g_statements + 1 >= potentialStatements) bug(1774);
+        if (g_statements + 1 >= potentialStatements) {
+          bug(1774);
+          // Returning would write g_Statement[] past its end, which is what
+          // the trap is here to prevent.  bug() returns if the user answers
+          // "I" or "S"; see the comment at bug(2202) in mmvstr.c.
+          exit(EXIT_FAILURE);
+        }
         g_Statement[g_statements].type = type;
         g_Statement[g_statements].labelSectionPtr = startSection;
         g_Statement[g_statements].labelSectionLen = fbPtr - startSection - 1;
@@ -3680,7 +3686,14 @@ void rawSourceError(char *startFile, char *ptr, long tokLen, vstring errMsg) {
   // length is endLine - startLine.  Do not decrement endLine to make it point
   // at the last character: for a 0-length line that would compute a pointer
   // before the start of the buffer, which is undefined behavior.
-  if (endLine - startLine < 0) bug(1721);
+  if (endLine - startLine < 0) {
+    bug(1721);
+    // Returning would hand the negative length to the memcpy() below, which
+    // reads it as a huge size_t.  space() clamps it to 0 first, so errLine
+    // would be the "" literal by then, and the copy would be into read-only
+    // memory.  See the comment at bug(2202) in mmvstr.c.
+    exit(EXIT_FAILURE);
+  }
   let(&errLine, space(endLine - startLine));
   memcpy(errLine, startLine, (size_t)(endLine - startLine));
   errorMessage(errLine, lineNum, ptr - startLine + 1, tokLen, errorMsg,
