@@ -587,12 +587,19 @@ void parseLabels(void) {
 /*!
  * \brief tokenLen() bounded by the end of the section being scanned
  *
- * The token length functions cannot be relied on to stop where a statement
- * does.  tokenLen() runs through a "$" followed by a digit, that being the
- * "$1" dummy variable form, so a token can reach past the "$." that ends the
- * statement and the scan carry on into the next one.  Every caller that walks
- * a section sizes an array from that section's length, so a token found out
- * there overruns it.
+ * A caller that walks a section sizes an array from that section's length,
+ * then fills it one token at a time.  A token running past the end of the
+ * section would overrun that array.
+ *
+ * A token can do that.  The token length functions know nothing about where
+ * the section was recorded to end, so on malformed input the two disagree.
+ * tokenLen() is one way in: it stops at any "$" unless a digit follows it,
+ * that being the "$1" dummy variable form, so the "$" that ends a section
+ * does not always end the token.  A section can even be empty and start at
+ * such a "$", as in "$p$6".
+ *
+ * Trimming here keeps the scan inside the array the caller sized.  It takes
+ * malformed input to get there: over all of set.mm nothing is ever trimmed.
  *
  * Callers already stop on a zero length, so report the end of the section
  * that way and there is nothing else for them to check.
@@ -1178,15 +1185,12 @@ void parseStatements(void) {
         // Scan the math section for tokens
         mathStringLen = 0;
         fbPtr = g_Statement[stmt].mathSectionPtr;
-        // Stop at the recorded end of the math section rather than relying on
-        // tokenLen() to stop at the "$" that ends it.  tokenLen() deliberately
-        // does not stop at a "$" followed by a digit, that being the "$1"
-        // dummy variable form, so on a statement like "$p$6 ..." -- where the
-        // section is empty and starts at that very "$" -- the scan used to run
-        // past the section and tokenize the text after it.  wrkStrPtr is sized
-        // from mathSectionLen, so a token found out there overran it.  The two
-        // agree on every well-formed statement: over all of set.mm no token
-        // ends past the recorded section, so this bound never fires there.
+        // Stop at the end of the math section instead of trusting tokenLen()
+        // to stop at the "$" that ends it.  wrkStrPtr is sized from
+        // mathSectionLen, so a token past the end of the section would
+        // overrun it.  "$p$6 ..." is the case to picture: the section is
+        // empty and starts at that very "$", and tokenLen() runs through a
+        // "$" followed by a digit.  See tokenLenInSection().
         mathSectionEnd = fbPtr + (mathSectionLen > 0 ? mathSectionLen : 0);
         while (1) {
           fbPtr = fbPtr + whiteSpaceLen(fbPtr);
@@ -2193,14 +2197,10 @@ char parseProof(long statemNum)
 
   // First break up proof section of source into tokens
   //
-  // Stop at the recorded end of the proof section rather than relying on
-  // proofTokenLen() to stop at the "$." that ends it.  It runs through a "$"
-  // followed by a digit, that being the "$1" dummy variable form, and through
-  // a "$$" as well, so a token can swallow the "$." and the scan carry on into
-  // the next statement.  The arrays written below are sized from
-  // proofSectionLen, so tokens found out there overran them.  The two agree on
-  // every well-formed statement: over all of set.mm no token ends past the
-  // recorded section, so this bound never fires there.
+  // Stop at the end of the proof section instead of trusting proofTokenLen()
+  // to stop at the "$." that ends it.  The arrays filled below are sized from
+  // proofSectionLen, so a token past the end of the section would overrun
+  // them.  See tokenLenInSection() for how the two come to disagree.
   proofSectionEnd = g_Statement[statemNum].proofSectionPtr
       + (g_Statement[statemNum].proofSectionLen > 0
           ? g_Statement[statemNum].proofSectionLen : 0);
@@ -3117,13 +3117,12 @@ char parseCompressedProof(long statemNum)
 
   // First break up the label section of proof into tokens
   //
-  // Bounded by the recorded end of the proof section for the same reason as
-  // the scan in parseProof(): proofTokenLen() runs through "$$" and through a
-  // "$" followed by a digit, so a token can swallow the "$." that ends the
-  // statement and the scan carry on into the next one.  This loop has a
-  // second way out, the ")" that ends the label list, but a run-away scan
-  // does not reach that either.  stepSrcPtrPntr[] is sized from
-  // proofSectionLen, so tokens found past the section overran it.
+  // Bounded at the end of the proof section for the same reason as the scan
+  // in parseProof(): stepSrcPtrPntr[] is sized from proofSectionLen, so a
+  // token past the end would overrun it.  This loop also stops at the ")"
+  // that ends the label list, but that is no help here -- a scan that ran
+  // past the section would miss the ")" too.  This is the scan that trims on
+  // the assignvar-undeclared-var case in fuzz/cases/.
   proofSectionEnd = g_Statement[statemNum].proofSectionPtr
       + (g_Statement[statemNum].proofSectionLen > 0
           ? g_Statement[statemNum].proofSectionLen : 0);
