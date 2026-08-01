@@ -167,6 +167,7 @@ if an `open-` one starts passing.
 | `edit-tab-clean` | `sout[-1]` in the tab path, `edit()`, via `TOOLS` `CLEAN f "T"` | fixed |
 | `edit-untab-overflow` | heap overflow write in `edit()`, tab flag with no enlarged buffer | fixed |
 | `edit-untab-many-tabs` | heap overflow write in `edit()`, 7x buffer too small for many tabs | fixed |
+| `edit-parity-untab` | heap overflow write in `edit()`, `CLEAN f "P,U"` where clearing the parity bit turns `'\211'` into a tab the buffer was not sized for | fixed |
 | `let-self-assign` | `strcpy` with source == destination in `let()`, from `asciiToTt()` | fixed |
 | `wrkproof-null` | null writes when the first proof needs zero space, `parseProof()` | fixed |
 | `explicit-target-shortage` | write into the `""` literal in `parseProof()`, `/EXPLICIT` proof with too few targets | fixed |

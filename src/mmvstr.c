@@ -426,17 +426,17 @@ temp_vstring edit(const char *sin, long control) {
   // Copy string
   i = (long)strlen(sin) + 1;
   if (untab_flag || tab_flag) {
-    // Allow for max possible length.  The tab-expansion loop further below
-    // runs for either flag, not just for untab_flag, and it replaces each
-    // tab with as many as 8 spaces.  That loop's length counter also ends
-    // up one position further ahead per tab, so allow 8 extra characters
-    // per tab (7 for the expansion, 1 for the counter) plus a little slack.
-    long tabCount = 0;
-    const char *tabScan;
-    for (tabScan = sin; *tabScan != 0; tabScan++) {
-      if (*tabScan == '\t') tabCount++;
-    }
-    i = i + 8 * tabCount + 8;
+    // Allow for the maximum possible length.  The tab-expansion loop further
+    // below runs for either flag, not just for untab_flag, and it replaces
+    // each tab with as many as 8 spaces.  Every other character keeps its
+    // one position, and nothing between here and that loop makes the string
+    // longer, so 8 times the input length always covers the result.
+    //
+    // Do not narrow this by counting the tabs in sin.  The clear-parity step
+    // in the main loop below turns '\211' into a tab, so a count taken here
+    // can be too low by the time the expansion runs.  A bound that does not
+    // depend on which characters are tabs cannot go stale that way.
+    i = i * 8;
   }
   temp_vstring sout = tempAlloc(i);
   strcpy(sout, sin);
@@ -610,7 +610,13 @@ temp_vstring edit(const char *sin, long control) {
       for (j = i; j < i + 8 - ((m - 1) & 7); j++) {
         sout[j - 1] = ' ';
       }
-      k = k + 8 - ((m - 1) & 7);
+      // The tab is replaced by 8 - ((m - 1) & 7) spaces, so the string grows
+      // by one less than that -- which is just what the shift loop above
+      // moves each character by.  Adding the full count would put k a
+      // position past the terminator per tab, and this scan would then run
+      // into the bytes tempAlloc() never wrote and expand any tab among
+      // them, pushing k further still.
+      k = k + 7 - ((m - 1) & 7);
     }
   }
 
