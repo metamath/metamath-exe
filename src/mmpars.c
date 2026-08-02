@@ -332,7 +332,7 @@ void parseKeywords(void)
         // indexes have to stay inside the array.  This should always hold:
         // this function creates a statement only where readRawSource()
         // counted one.  Trap it rather than corrupt the heap if the two ever
-        // drift apart again, the way they did over "$$".
+        // disagree, which they have before.
         if (g_statements + 1 >= potentialStatements) {
           bug(1774);
           // Returning would write g_Statement[] past its end, which is what

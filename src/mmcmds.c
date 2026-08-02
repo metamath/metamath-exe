@@ -4530,13 +4530,10 @@ void eraseSource(void) // ERASE command
     }
   } // Next i (statement)
 
-  // g_MathToken[g_mathTokens].tokenName is assigned in
-  // parseMathDecl() by let().  eraseSource() should free every g_MathToken.
-  // The entries run contiguously: the declared symbols, the "$|$" boundary
-  // token, any placeholders the parser made for undeclared symbols, a second
-  // boundary token if there were placeholders, then the dummy variables.
-  // HIGHEST_MATH_TOKEN is that highest entry.  (Using g_mathTokens here
-  // instead used to leave any placeholder above g_dummyVars unfreed.)
+  // Free the name of every g_MathToken[] entry.  parseMathDecl() gives the
+  // "$|$" boundary token at g_mathTokens a name with let(), just like a real
+  // symbol, so the loop has to reach that one too.  HIGHEST_MATH_TOKEN is the
+  // highest index in use; see its definition in mmpfas.h for what lies below.
   for (i = 0; i <= HIGHEST_MATH_TOKEN; i++) {
     free_vstring(g_MathToken[i].tokenName);
   }
