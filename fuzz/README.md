@@ -150,10 +150,30 @@ not more of the same.
 `.mm` file (where one is needed) plus a `.cmd` script of the commands
 to run after startup. `./run-cases.sh` runs them all.
 
-Cases named `open-*` are known-unfixed and are **expected** to trip the
-sanitizers; everything else is fixed and expected to be clean. The
+Cases named `open-*` are known-unfixed and are **expected** to be
+detected; everything else is fixed and expected to be clean. The
 script fails if a fixed case regresses, and tells you to rename a case
-if an `open-` one starts passing.
+if an `open-` one starts passing. Nothing runs it for you: CI builds and
+runs `tests/`, not this, so it is on you to run it.
+
+A detection is a sanitizer report or a `?BUG CHECK` line. Counting the
+latter matters, and not only in theory. `bug()` is the program catching
+itself in a state it thought impossible; nothing has been misused in
+memory, so the sanitizers stay quiet and the case looks clean. Delete
+the `hasVarWithoutHyp` guard that e6bea50 added to `mmveri.c`, and
+`parsestatements-memcpy` trips `bug(2103)` with no sanitizer output at
+all: before `?BUG CHECK` was grepped for, that suite run came back all
+`ok`.
+
+Bear in mind that an `open-` case guards nothing, since it is expected to
+fail either way. The script records only *whether* something was
+detected, never *what*, so a second bug arriving in the same case leaves
+the verdict unchanged.
+
+`open-assignvar-undeclared-var` is named for the `assignVar()` overflow
+it was first written for, fixed in e6bea50. It no longer shows that
+overflow — remove the guard and the case still reports only `bug(1741)` —
+so read the name as where it came from, not as what it now catches.
 
 | Case | Bug | Status |
 | --- | --- | --- |
@@ -178,7 +198,7 @@ if an `open-` one starts passing.
 | `unify-oob` | heap overflow read in `unify()` | fixed |
 | `verifyproof-mathstringptrs` | uninitialized `compressedPfLabelMap[0]` read into the proof, `parseCompressedProof()` | fixed |
 | `proof-section-negative-len` | `proofSectionLen` of -1 from `$p ... $$.`, `parseKeywords()` | fixed |
-| `assignvar-undeclared-var` | `varAssLen[]` indexed by a stale `.tmp`, `assignVar()`, for a variable of the assertion that no hypothesis can substitute for | fixed |
+| `open-assignvar-undeclared-var` | `bug(1741)` in `sourceError()`, reporting an error against a statement whose section pointers it cannot place | **open** |
 | `delete-step-out-of-range` | `proof[s - 1]` read before the range check on `s`, `DELETE STEP` in `command()` | fixed |
 | `dummyvar-map-incomplete` | `g_MathToken[-1]` in `makeSubstUnif()`, from a math string rewritten through a `.tmp` that `mapReqVarsToDummyVars()` never filled in | fixed |
 | `whitespacelen-trailing-dollar` | read past the terminator in `whiteSpaceLen()`, rescanning an unterminated comment whose last character is `$` | fixed |

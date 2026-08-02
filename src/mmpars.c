@@ -3122,7 +3122,7 @@ char parseCompressedProof(long statemNum)
   // token past the end would overrun it.  This loop also stops at the ")"
   // that ends the label list, but that is no help here -- a scan that ran
   // past the section would miss the ")" too.  This is the scan that trims on
-  // the assignvar-undeclared-var case in fuzz/cases/.
+  // the open-assignvar-undeclared-var case in fuzz/cases/.
   proofSectionEnd = g_Statement[statemNum].proofSectionPtr
       + (g_Statement[statemNum].proofSectionLen > 0
           ? g_Statement[statemNum].proofSectionLen : 0);

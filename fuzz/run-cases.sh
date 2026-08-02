@@ -36,8 +36,13 @@ for cmd in "$here"/cases/*.cmd; do
   out=$( { printf 'set scroll continuous\n'; cat "$cmd"; printf 'exit\n'; } \
          | (cd "$workdir" && timeout 60 "$binary" 2>&1) )
 
+  # "?BUG CHECK" counts too.  bug() is the program catching itself in a
+  # state it thought impossible.  Nothing has been misused in memory, so
+  # the sanitizers stay quiet, and this judges by output alone: without
+  # this a case that trips bug() and nothing else was reported passing,
+  # whatever the program then did.
   if printf '%s' "$out" \
-       | grep -qE 'runtime error|AddressSanitizer|SEGV'; then
+       | grep -qE 'runtime error|AddressSanitizer|SEGV|\?BUG CHECK'; then
     result=DETECTED
   else
     result=clean
