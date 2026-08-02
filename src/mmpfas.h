@@ -17,23 +17,9 @@ extern flag g_proofChangedFlag; /*!< Flag to push 'undo' stack */
 
 extern long g_userMaxProveFloat; /*!< Upper limit for proveFloating */
 
-// g_dummyVars is declared in mmdata.h, with g_dummyVarBase, since the two
-// together say how far g_MathToken[] extends.
+// g_dummyVars and HIGHEST_MATH_TOKEN are in mmdata.h, with g_dummyVarBase,
+// since between them they say how far g_MathToken[] extends.
 
-/*!
- * \brief highest g_MathToken[] index currently in use
- *
- * The entries run contiguously: the declared symbols, the "$|$" boundary
- * token, any placeholders the parser made for undeclared symbols, a second
- * boundary token if there were placeholders, then the dummy variables.
- * \ref g_dummyVarBase indexes that last boundary token, so the dummy
- * variables occupy g_dummyVarBase + 1 through g_dummyVarBase +
- * \ref g_dummyVars.
- *
- * Both the place that grows the array and the place that frees it need this
- * number; computing it in one place keeps them from disagreeing.
- */
-#define HIGHEST_MATH_TOKEN (g_dummyVarBase + g_dummyVars)
 extern long g_pipDummyVars; /*!< Number of dummy vars used by proof in progress */
 
 /*!< Structure for holding a proof in progress.
