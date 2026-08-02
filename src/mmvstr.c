@@ -24,6 +24,8 @@ This is an emulation of the string functions available in VMS BASIC.
 // following:
 //   (1) Remove all lines beginning with the "/ *E* /" comment.
 //   (2) Remove all calls to the bug() function (3 places).
+//   (3) Replace BUG_CHECK_FORMAT in pushTempAlloc() with its text from
+//       mmdata.h, or with a message of your own.
 // To see an example of stand-alone usage of the mmvstr.c functions, see
 // the program lattice.c and several others included in
 //   http://us.metamath.org/downloads/quantum-logic.tar.gz
@@ -121,7 +123,7 @@ static void pushTempAlloc(void *mem)
     // pushTempAlloc(), reports the same overflow again, and recurses
     // until the C stack runs out.
     printf("*** FATAL ERROR ***  Temporary string stack overflow\n");
-    printf("?BUG CHECK:  *** DETECTED BUG 2201\n");
+    printf(BUG_CHECK_FORMAT, 2201L);
 #if __STDC__
     fflush(stdout);
 #endif

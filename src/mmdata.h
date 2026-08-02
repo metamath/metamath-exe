@@ -471,6 +471,11 @@ void outOfMemory(const char *msg);
  */
 void bug(int bugNum);
 
+/*! Format of the line bug() prints when it detects a bug.  pushTempAlloc() in
+    mmvstr.c prints this line itself instead of calling bug() -- see the
+    comment there for why -- so the two are kept in step through this. */
+#define BUG_CHECK_FORMAT "?BUG CHECK:  *** DETECTED BUG %ld\n"
+
 /*! Null nmbrString -- -1 flags the end of a nmbrString */
 struct nullNmbrStruct {
     long poolLoc;

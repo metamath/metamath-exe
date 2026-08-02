@@ -757,7 +757,7 @@ void bug(int bugNum)
     return;
   }
 
-  print2("?BUG CHECK:  *** DETECTED BUG %ld\n", (long)bugNum);
+  print2(BUG_CHECK_FORMAT, (long)bugNum);
   if (mode == 0) { // Print detailed info for first bug
     print2("\n");
     print2("To get technical support, please open an issue \n");
