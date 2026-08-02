@@ -862,23 +862,24 @@ temp_vstring str(double f) {
   // the one after the decimal point are stripped; e.g., it returns 7.
   // instead of 7.000000000000000.
   long i;
-  temp_vstring s = tempAlloc(50);
+  const long size = 50; // How much is allocated, and how much may be written
+  temp_vstring s = tempAlloc(size);
   // Bound the write by the size just allocated.  "%f" prints every digit
-  // before the point, so a large enough f needs far more than 50 bytes:
+  // before the point, so a large enough f needs far more room than that:
   // 1e300 expands to over 300 characters.  No caller passes anything like
   // that today -- the largest is a long, which fits in 26 -- so this only
   // changes what happens if one ever does, from overrunning the buffer to
   // truncating.  It also silences a bogus "null destination pointer"
   // warning from the fortified sprintf() under -fsanitize; that warning
   // fires even for a plain local array, so it is not about s being null.
-  snprintf(s, 50, "%f", f);
+  snprintf(s, (size_t)size, "%f", f);
   if (strchr(s, '.') != 0) { // The string has a period in it
     for (i = (long)strlen(s) - 1; i > 0; i--) { // Scan string backwards
       if (s[i] != '0') break; // 1st non-zero digit
       s[i] = 0; // Delete the trailing 0
     }
     if (s[i] == '.') s[i] = 0; // Delete trailing period
-/*E*/INCDB1(-(49 - (long)strlen(s)));
+/*E*/INCDB1(-(size - 1 - (long)strlen(s)));
   }
   return s;
 } // str
