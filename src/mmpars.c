@@ -4025,15 +4025,12 @@ long tokenLen(char *ptr)
   while (1) {
     tmpchr = ptr[i];
     if (tmpchr == '$') {
-      {
-        // Tolerate digit after "$"
-        if (ptr[i + 1] >= '0' && ptr[i + 1] <= '9') {
-          i = i + 2;
-          continue;
-        } else {
-          return i; // Keyword or comment
-        }
+      // Tolerate digit after "$"
+      if (ptr[i + 1] >= '0' && ptr[i + 1] <= '9') {
+        i = i + 2;
+        continue;
       }
+      return i; // Keyword or comment
     }
     if (!isgraph((unsigned char)tmpchr)) return i; // White space or null
     i++;
