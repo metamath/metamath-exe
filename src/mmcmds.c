@@ -4532,9 +4532,9 @@ void eraseSource(void) // ERASE command
 
   // Free the name of every g_MathToken[] entry.  parseMathDecl() gives the
   // "$|$" boundary token at g_mathTokens a name with let(), just like a real
-  // symbol, so the loop has to reach that one too.  HIGHEST_MATH_TOKEN is the
+  // symbol, so the loop has to reach that one too.  highestMathToken() is the
   // highest index in use; see its definition in mmdata.h for what lies below.
-  for (i = 0; i <= HIGHEST_MATH_TOKEN; i++) {
+  for (i = 0; i <= highestMathToken(); i++) {
     free_vstring(g_MathToken[i].tokenName);
   }
 

@@ -324,8 +324,12 @@ extern long g_dummyVars;
  *
  * Both the place that grows the array and the place that frees it need this
  * number; computing it in one place keeps them from disagreeing.
+ *
+ * \returns the index of the last g_MathToken[] entry in use
  */
-#define HIGHEST_MATH_TOKEN (g_dummyVarBase + g_dummyVars)
+static inline long highestMathToken(void) {
+  return g_dummyVarBase + g_dummyVars;
+}
 
 extern long g_MAX_INCLUDECALLS;
 extern struct includeCall_struct *g_IncludeCall;

@@ -3103,7 +3103,7 @@ void declareDummyVars(long numNewVars)
 
     g_dummyVars++;
     // First, check to see if we need to allocate more g_MathToken memory
-    if (HIGHEST_MATH_TOKEN + 1 >= g_MAX_MATHTOKENS) {
+    if (highestMathToken() + 1 >= g_MAX_MATHTOKENS) {
       // The +1 above accounts for the dummy "$|$" boundary token
       // Reallocate
       // Add 1000 so we won't have to do this very often
@@ -3114,7 +3114,7 @@ void declareDummyVars(long numNewVars)
     }
     // Dummy variables live above the boundary token the parser leaves at
     // g_dummyVarBase, so they never reuse a placeholder's slot.
-    long dvIdx = HIGHEST_MATH_TOKEN;
+    long dvIdx = highestMathToken();
     // Initialize vstring before let()
     g_MathToken[dvIdx].tokenName = "";
     let(&g_MathToken[dvIdx].tokenName,
