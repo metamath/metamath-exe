@@ -23,6 +23,19 @@
 #include "mmwtex.h" // Needed for SMALL_DECORATION etc.
 #include "mmfatl.h"
 
+/* statement_struct is exactly four 64-byte cache lines, and hasVarWithoutHyp
+   was put in padding that already existed so as to keep it that way.  The
+   reasoning, and what it cost when the struct grew instead, is at that field
+   in mmdata.h.  This is a speed property rather than a correctness one, so
+   check it only where it was measured: the size is legitimately different on
+   ILP32 and on LLP64.  */
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+#if defined(__LP64__) || defined(_LP64)
+_Static_assert(sizeof(struct statement_struct) == 256,
+    "statement_struct grew; see hasVarWithoutHyp in mmdata.h");
+#endif
+#endif
+
 /*E*/long db=0,db0=0,db2=0,db3=0,db4=0,db5=0,db6=0,db7=0,db8=0,db9=0;
 flag g_listMode = 0; // 0 = metamath, 1 = list utility
 flag g_toolsMode = 0; // In metamath: 0 = metamath, 1 = text tools utility
