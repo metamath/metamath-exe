@@ -1309,9 +1309,12 @@ vstring fGetTmpName(const char *filePrefix) {
  * position is wanted in that case too, so fall back to strlen() for it.  That
  * is a second scan, but only for a file that is about to be rejected.
  *
- * \param[in,out] s the string to scan.  s[len] is written and restored, so it
- *   must be writable; it is the terminating NUL the caller just wrote.
- * \param[in] len the offset of s's terminating NUL
+ * \param[in,out] s the string to scan.  Must be writable at s[len]: the
+ *   sentinel is written there and restored before this returns.
+ * \param[in] len the offset of s's terminating NUL.  This is a requirement,
+ *   not a description.  Too large and the sentinel is written outside the
+ *   string; too small and the scan stops at the sentinel and reports a
+ *   position that is neither a c nor the end.  Nothing reports either one.
  * \param[in] c the character to look for
  * \returns a pointer into s, never NULL
  */
@@ -1447,12 +1450,15 @@ vstring readFileToString(const char *fileName, char verbose, long *charCount) {
   // all of them out of that state at once, and the Unicode branch above
   // already refuses a file for the same reason.
   //
-  // Both answers come out of the one scan this function already made.
-  // scanToCharOrEnd() is the scan for carriage-returns that was here before,
-  // keeping the position it used to discard, and that position is what says
-  // whether the scan ended at the terminator or at a NUL of the file's own.
-  // When it ends at a carriage-return instead, the clean-up loop below walks
-  // every remaining byte anyway, so it carries the rest of the check.
+  // Both answers come out of one scan.  scanToCharOrEnd() looks for the
+  // carriage-return and reports where it stopped, and that position is what
+  // says whether the scan ended at the terminator or at a NUL of the file's
+  // own.  When it ends at a carriage-return instead, the clean-up loop below
+  // walks every remaining byte anyway, so it carries the rest of the check.
+  //
+  // fileBuf[*charCount] is the terminating NUL written above -- and rewritten
+  // by the Unicode branch, which resets *charCount along with it -- which is
+  // what scanToCharOrEnd() requires of its len.
   nulPos = -1; // Offset of a NUL belonging to the file; -1 if there is none
   scanStop = scanToCharOrEnd(fileBuf, *charCount, '\r');
   if (*scanStop != '\r') {
