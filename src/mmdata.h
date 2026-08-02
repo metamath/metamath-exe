@@ -306,6 +306,11 @@ extern long g_statements, /*labels,*/ g_mathTokens;
 /*! Highest g_MathToken[] index owned by the parser; proof assistant dummy
     variables are numbered above this.  See mmdata.c. */
 extern long g_dummyVarBase;
+/*! The number of dummy variables currently declared.  They occupy the
+    g_MathToken[] entries just above \ref g_dummyVarBase, so this and that
+    together give the extent of the array.  Defined in mmpfas.c, which is what
+    declares them. */
+extern long g_dummyVars;
 
 extern long g_MAX_INCLUDECALLS;
 extern struct includeCall_struct *g_IncludeCall;
