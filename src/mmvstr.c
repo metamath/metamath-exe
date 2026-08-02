@@ -217,14 +217,17 @@ void let(vstring *target, const char *source) {
     }
   }
   if (sourceLength) {
-    // A few callers deliberately write let(&x, x), only to trigger the
-    // freeTempAlloc() below.  strcpy() is undefined when its arguments
-    // overlap (both are restrict-qualified), and here there is nothing to
-    // copy anyway, so skip just the copy.
-    // This test has to stay nested inside "if (sourceLength)": folding it
+    // memmove() is defined when its arguments overlap, unlike strcpy(),
+    // whose parameters are restrict-qualified.  That covers the callers who
+    // write let(&x, x) purely to trigger the freeTempAlloc() below (mmunif.c
+    // and mmwtex.c), and any future caller handing over a pointer into
+    // *target.  The length is known already, so this is no slower.
+    // The test is only there to skip the copy in the let(&x, x) case;
+    // memmove() would do the right thing without it.
+    // The test has to stay nested inside "if (sourceLength)": folding it
     // into that condition would send a self-assignment to the else branch,
     // which would wrongly replace the string with "".
-    if (*target != source) strcpy(*target, source);
+    if (*target != source) memmove(*target, source, sourceLength + 1);
   } else {
     // Empty strings could still be temporaries, so always assign a constant
     if (targetLength) {
