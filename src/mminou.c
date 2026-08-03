@@ -1516,19 +1516,13 @@ vstring readFileToString(const char *fileName, char verbose, long *charCount) {
     bug(1522); // Keeping track of charCount went wrong somewhere
   }
 
-  // Make sure there aren't NUL characters
-  i = (long)strlen(fileBuf);
-  if ((*charCount) != i) {
-    if (verbose) {
-      print2(
-          "?Warning: the file \"%s\" is not an ASCII file.\n",
-          fileName);
-      print2(
-          "Its size is %ld characters with null at character %ld.\n",
-          (*charCount), strlen(fileBuf));
-    }
-  }
-/*E*/db = db + i; // For memory usage tracking (ignore stuff after null)
+  // Nothing here looks for a NUL inside the file any more.  There cannot be
+  // one: the scan further up returns NULL for any file that has one.  So
+  // strlen(fileBuf) is *charCount, unless bug(1522) just above has fired, in
+  // which case the count is already wrong in ways this line cannot mend.
+  // What stood here warned about a NUL and then handed the truncated buffer
+  // back regardless, which is the behavior that scan replaced.
+/*E*/db = db + (*charCount); // For memory usage tracking
 
   //******* For debugging
   // print2("In binary mode the file has %ld bytes.\n", fileBufSize - 10);
