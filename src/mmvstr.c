@@ -661,7 +661,10 @@ temp_vstring edit(const char *sin, long control) {
       if (j <= m) {
         sout[j] = '\t';
         j = i;
-        while (sout[j - 1] == ' ' && j > i - 8 + 1) {
+        // Bound first, as in the loop above.  Here the bound holds j - 1 at
+        // 1 or more whichever way round it is tested, so this is for
+        // consistency rather than to fix a read out of range.
+        while (j - 1 > i - 8 && sout[j - 1] == ' ') {
           sout[j - 1] = 0;
           j--;
         }
