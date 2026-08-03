@@ -5915,10 +5915,12 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
           free_vstring(tmpSource);
           tmpSource = readFileToString(fullIncludeFn, 0 /* verbose */, &inclSize);
           if (tmpSource == NULL) {
-            // TODO: print better error msg?
+            // This one reads quietly, so it is the only message the user
+            // gets; it cannot say which of readFileToString()'s four
+            // reasons applied.
             print2(
-                "?Error: file \"%s%s\" (included in \"%s\") was not found\n",
-                fullIncludeFn, g_rootDirectory, sourceFileName);
+                "?Error: file \"%s\" (included in \"%s\") could not be read\n",
+                fullIncludeFn, sourceFileName);
             tmpSource = "";
             inclSize = 0;
             *errorFlag = 1;
@@ -5989,10 +5991,9 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
           free_vstring(tmpSource);
           tmpSource = readFileToString(fullIncludeFn, 1 /* verbose */, &inclSize);
           if (tmpSource == NULL) {
-            // TODO: print better error msg
             print2(
-                "?Error: file \"%s%s\" (included in \"%s\") was not found\n",
-                fullIncludeFn, g_rootDirectory, sourceFileName);
+                "?Error: file \"%s\" (included in \"%s\") could not be read\n",
+                fullIncludeFn, sourceFileName);
             *errorFlag = 1;
             tmpSource = ""; // Prevent seg fault
             inclSize = 0;
@@ -6226,7 +6227,9 @@ vstring readSourceAndIncludes(const char *inputFn /* input */, long *size /* out
   let(&fullInputFn, cat(g_rootDirectory, inputFn, NULL));
   fileBuf = readFileToString(fullInputFn, 1 /* verbose */, &(*size));
   if (fileBuf == NULL) {
-    print2("?Error: file \"%s\" was not found\n", fullInputFn);
+    // readFileToString() returns NULL for any of four reasons, and has
+    // already said which.  Do not name one of them here.
+    print2("?Error: file \"%s\" could not be read\n", fullInputFn);
     fileBuf = "";
     *size = 0;
     errorFlag = 1;
@@ -6236,7 +6239,12 @@ vstring readSourceAndIncludes(const char *inputFn /* input */, long *size /* out
     // getNextInclusion() call.
     // goto RETURN_POINT;
   }
-  print2("Reading source file \"%s\"... %ld bytes\n", fullInputFn, *size);
+  // Only when there is something to report reading.  Announcing 0 bytes
+  // just after saying the file could not be read reads as a second,
+  // contradictory result.
+  if (!errorFlag) {
+    print2("Reading source file \"%s\"... %ld bytes\n", fullInputFn, *size);
+  }
   free_vstring(fullInputFn);
 
   // Create a fictitious initial include for the main file (at least 2
