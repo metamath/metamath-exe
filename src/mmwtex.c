@@ -1610,7 +1610,7 @@ void printTexHeader(flag texHeaderFlag)
       // there is no table open (mmascii, mmdefinitions), so don't
       // add </TD> which caused HTML validation failure.
       print2("      <TD ALIGN=RIGHT VALIGN=TOP\n");
-      print2("       ><FONT FACE=sans-serif SIZE=-2>\n", "%");
+      print2("       ><FONT FACE=sans-serif SIZE=-2>\n");
 
       // Print the GIF/Unicode Font choice, if directories are specified
       if (htmlDir[0]) {
@@ -5543,7 +5543,7 @@ flag writeBibliography(vstring bibFile,
         remove(bibFile); // Delete output file
         // Restore input file name
         rename(cat(bibFile, "~1", NULL), g_fullArg[2]);
-        print2("?The file \"%s\" was not modified.\n", g_fullArg[2]);
+        print2("?The file \"%s\" was not modified.\n", (vstring)g_fullArg[2]);
       }
     }
   }

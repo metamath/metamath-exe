@@ -838,7 +838,10 @@ vstring cmdInput(FILE *stream, const char *ask) {
       fflush(stdout);
 #endif
       backFromCmdInput = 1; // Flag for print2()
-      print2(""); // Only the backup buffer will be looked at
+      // Only the backup buffer will be looked at, so the text is irrelevant.
+      // Spelled "%s" with an empty argument because an empty format string
+      // draws -Wformat-zero-length.
+      print2("%s", "");
       backFromCmdInput = 0;
     } else {
       // If the command line is empty (at main prompt), let user still
