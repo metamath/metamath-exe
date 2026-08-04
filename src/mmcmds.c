@@ -3764,7 +3764,7 @@ void writeSource(
   } else { // Write a non-split version
     fp = fSafeOpen(fullOutput_fn, "w", noVersioningFlag);
     if (fp == NULL) {
-      print2("?Error trying to write \"%s\".\n", fp);
+      print2("?Error trying to write \"%s\".\n", fullOutput_fn);
     } else {
       fprintf(fp, "%s", buffer); // Write the non-split output file
       fclose(fp);
@@ -4177,7 +4177,7 @@ void writeExtractedSource(
 
   fp = fSafeOpen(fullOutput_fn, "w", noVersioningFlag);
   if (fp == NULL) {
-    print2("?Error trying to write \"%s\".\n", fp);
+    print2("?Error trying to write \"%s\".\n", fullOutput_fn);
     goto EXTRACT_RETURN;
   }
 
