@@ -17,6 +17,19 @@
 #include "mmvstr.h"
 #include "mmdata.h"
 
+/*! \def PRINTF_FORMAT_ATTR
+ * Ask the compiler to type-check a printf-style format string against its
+ * variadic arguments.  \p fmtIdx is the 1-based parameter position of the
+ * format string, \p argIdx that of the first value it consumes.  Expands to
+ * nothing on compilers without the GNU attribute syntax, so it is portable
+ * to plain C99. */
+#if defined(__GNUC__)
+# define PRINTF_FORMAT_ATTR(fmtIdx, argIdx) \
+    __attribute__((format(printf, fmtIdx, argIdx)))
+#else
+# define PRINTF_FORMAT_ATTR(fmtIdx, argIdx)
+#endif
+
 extern int g_errorCount;     /*!< Total error count */
 
 // Global variables used by print2()
@@ -329,7 +342,7 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *   end.
  * \warning never call print2 with string longer than PRINTBUFFERSIZE - 1
  */
-flag print2(const char* fmt,...);
+flag print2(const char* fmt,...) PRINTF_FORMAT_ATTR(1, 2);
 
 /*!
  * \var long g_screenHeight

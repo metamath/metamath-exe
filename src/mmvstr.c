@@ -123,7 +123,7 @@ static void pushTempAlloc(void *mem)
     // pushTempAlloc(), reports the same overflow again, and recurses
     // until the C stack runs out.
     printf("*** FATAL ERROR ***  Temporary string stack overflow\n");
-    printf(BUG_CHECK_FORMAT, 2201L);
+    printf(BUG_CHECK_FORMAT, 2201);
 #if __STDC__
     fflush(stdout);
 #endif

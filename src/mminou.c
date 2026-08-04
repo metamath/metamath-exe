@@ -338,8 +338,8 @@ flag print2(const char* fmt, ...) {
   va_end(ap);
   if (charsPrinted != bufsiz) {
     // Give some info with printf in case print2 crashes during bug() call
-    printf("For bug #1528: charsPrinted = %ld != bufsiz = %ld\n", charsPrinted,
-        (long)bufsiz);
+    printf("For bug #1528: charsPrinted = %ld != bufsiz = %d\n", charsPrinted,
+        bufsiz);
     bug(1528);
   }
 

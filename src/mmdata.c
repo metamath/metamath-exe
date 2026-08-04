@@ -753,11 +753,11 @@ void bug(int bugNum)
 
   if (mode == 2) {
     // If user chose to ignore bugs, print brief info and return
-    print2("?BUG CHECK:  *** DETECTED BUG %ld, IGNORING IT...\n", (long)bugNum);
+    print2("?BUG CHECK:  *** DETECTED BUG %d, IGNORING IT...\n", bugNum);
     return;
   }
 
-  print2(BUG_CHECK_FORMAT, (long)bugNum);
+  print2(BUG_CHECK_FORMAT, bugNum);
   if (mode == 0) { // Print detailed info for first bug
     print2("\n");
     print2("To get technical support, please open an issue \n");
@@ -765,7 +765,7 @@ void bug(int bugNum)
     print2("detailed command sequence or a command file that reproduces this bug,\n");
     print2("along with the source file that was used.  See HELP OPEN LOG for help on\n");
     print2("recording a session.  See HELP SUBMIT for help on command files.  Search\n");
-    print2("for \"bug(%ld)\" in the m*.c source code to find its origin.\n", bugNum);
+    print2("for \"bug(%d)\" in the m*.c source code to find its origin.\n", bugNum);
     print2("If earlier errors were reported, try fixing them first, because they\n");
     print2("may occasionally lead to false bug detection\n");
     print2("\n");
