@@ -731,12 +731,11 @@ void command(int argc, char *argv[]);
  */
 int main(int argc, char *argv[]) {
 
-// argc is the number of arguments; argv points to an array containing them
+  // argc is the number of arguments; argv points to an array containing them
 
-#ifdef TEST_ENABLE // enable this in mmtest.h or via './build.sh -t'
-  RUN_TESTS();
-  // you never get here
-#endif
+  // enable this in mmtest.h or via './build.sh -t'
+  RUN_TESTS_IF_ENABLED();
+  // The following code is not reached if tests are enabled.
 
   // ******** If g_listMode is set to 1 here, the startup will be Text
   //          Tools utilities, and Metamath will be disabled *********
