@@ -733,7 +733,7 @@ int main(int argc, char *argv[]) {
 
   // argc is the number of arguments; argv points to an array containing them
 
-  // enable this in mmtest.h or via './build.sh -t'
+  // see mmtest.h for how to run the regression tests
   RUN_TESTS_IF_ENABLED();
   // The following code is not reached if tests are enabled.
 
