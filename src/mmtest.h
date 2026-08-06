@@ -26,14 +26,14 @@
  *
  * 3. Execute the following commands:
  * \verbatim
- * ./build.sh -ct
- * ./metamath_test
- * \endverbatim
+   ./build.sh -ct
+   ./metamath_test
+   \endverbatim
  *
  * 4. The test program produces output similar to the following:
- * \verbatim
- * > running test_mmfatl:test_fatalErrorInit... ok
- * \endverbatim
+ *  \verbatim
+   > running test_mmfatl:test_fatalErrorInit... ok
+  \endverbatim
  *
  * If every test ends with \c ok, all regression tests have passed.
  * Otherwise, diagnostic information identifies the failed test.
@@ -45,7 +45,7 @@
  * without modifying any source files in between, also pass the \c -c
  * (clean) option to \c build.sh to remove intermediate build artifacts.
  *
- * If testing is disabled, the \ref RUN_TESTS_IF_ENABLED macro expands to
+ * If testing is disabled, the \c RUN_TESTS_IF_ENABLED macro expands to
  * nothing. The compiler also excludes all test code, so the resulting
  * executable does not increase in size. Thus, a disabled test suite incurs
  * neither a linking nor a runtime penalty.
