@@ -492,13 +492,31 @@ void outOfMemory(const char *msg);
  * \anchor bugfn
  * \fn void bug(int bugNum)
  * \param[in] bugNum
+ *
+ * \warning
+ * The code that bug() itself relies on must not call bug().  bug() reports
+ * through print2(), which maintains its back buffer with the pntrString
+ * pool; it builds its messages with let(), cat() and str(), which allocate
+ * from the tempAlloc stack; and it reads the user's answer with
+ * cmdInput1().  A bug() call from any of those returns into bug()'s own
+ * dependencies and recurses until the C stack is exhausted -- so instead of
+ * the diagnostic, the program dies without one.  Report a fatal condition in
+ * that layer with fatalErrorExitAt() (mmfatl.h), which allocates nothing and
+ * does not return.  Prefix the message with \ref BUG_CHECK_FATAL_FORMAT so
+ * that anything watching for a bug line still sees one.
  */
 void bug(int bugNum);
 
-/*! Format of the line bug() prints when it detects a bug.  pushTempAlloc() in
-    mmvstr.c prints this line itself instead of calling bug() -- see the
-    comment there for why -- so the two are kept in step through this. */
+/*! Format of the line that bug() prints when it detects a bug. */
 #define BUG_CHECK_FORMAT "?BUG CHECK:  *** DETECTED BUG %d\n"
+
+/*!
+ * Format of the line that fatalErrorExitAt() and the other mmfatl.h functions
+ * print (their placeholders are %s and %u only).  Used by the low-level code
+ * that must not call bug() -- see the warning at bug().  Both macros must
+ * produce the same text: fuzz/run-cases.sh counts a "?BUG CHECK" line as a
+ * detection, and tests grep for it. */
+#define BUG_CHECK_FATAL_FORMAT "?BUG CHECK:  *** DETECTED BUG %u\n"
 
 /*! Null nmbrString -- -1 flags the end of a nmbrString */
 struct nullNmbrStruct {

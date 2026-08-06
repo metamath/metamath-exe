@@ -18,14 +18,18 @@ This is an emulation of the string functions available in VMS BASIC.
 #include "mmvstr.h"
 /*E*/ // Next line is need to declare "db" for debugging
 #include "mmdata.h"
-// mmdata.h is also used to declare the bug() function that is called in
-// several places by mmvstr.c.  To make mmvstr.c and mmvstr.h completely
+#include "mmfatl.h"
+// mmvstr.c does not call bug().  The functions here are the ones with which
+// bug() builds its own messages, so a bug() call from this file would
+// recurse -- see the warning at bug() in mmdata.h.  Fatal conditions are
+// reported with fatalErrorExitAt() from mmfatl.h, which allocates nothing and
+// does not return.  mmdata.h is still included for the "db" debugging counter
+// and for BUG_CHECK_FATAL_FORMAT.  To make mmvstr.c and mmvstr.h completely
 // independent of the other programs, for use with another project, do the
 // following:
 //   (1) Remove all lines beginning with the "/ *E* /" comment.
-//   (2) Remove all calls to the bug() function (3 places).
-//   (3) Replace BUG_CHECK_FORMAT in pushTempAlloc() with its text from
-//       mmdata.h, or with a message of your own.
+//   (2) Replace the fatalErrorExitAt() calls (4 places) with a report of your
+//       own that does not return.
 // To see an example of stand-alone usage of the mmvstr.c functions, see
 // the program lattice.c and several others included in
 //   http://us.metamath.org/downloads/quantum-logic.tar.gz
@@ -117,17 +121,14 @@ void freeTempAlloc(void) {
 static void pushTempAlloc(void *mem)
 {
   if (g_tempAllocStackTop >= (MAX_ALLOC_STACK-1)) {
-    // Report this one directly rather than through bug().  bug() builds
-    // its messages with let() and print2(), which allocate temporaries of
-    // their own, so with this stack already full it re-enters
-    // pushTempAlloc(), reports the same overflow again, and recurses
-    // until the C stack runs out.
-    printf("*** FATAL ERROR ***  Temporary string stack overflow\n");
-    printf(BUG_CHECK_FORMAT, 2201);
-#if __STDC__
-    fflush(stdout);
-#endif
-    exit(EXIT_FAILURE);
+    // Report this one directly rather than through bug(): see the warning at
+    // bug() in mmdata.h.  With this stack already full, bug() building a
+    // message would re-enter pushTempAlloc(), report the same overflow again,
+    // and recurse until the C stack runs out.
+    fatalErrorExitAt(__FILE__, __LINE__,
+        BUG_CHECK_FATAL_FORMAT
+        "*** FATAL ERROR ***  Temporary string stack overflow\n",
+        2201u);
   }
   tempAllocStack[g_tempAllocStackTop++] = mem;
 } // pushTempAlloc
@@ -139,8 +140,8 @@ static void pushTempAlloc(void *mem)
  *   \ref tempAllocStack
  *
  * This low level function does NOT initialize the allocated memory.  If the
- * allocation on the heap fails, \ref bugfn "bug" is called and the program
- * is then terminated.  The statistic value \ref db1 is updated.
+ * allocation on the heap fails, then the program reports the failure and
+ * terminates.  The statistic value \ref db1 is updated.
  *
  * \param size (> 0) number of bytes to allocate on the heap.  If the memory is
  *   intended to hold NUL terminated text, then size must account for the final
@@ -158,17 +159,14 @@ static void* tempAlloc(long size) // String memory allocation/deallocation
 {
   void* memptr = malloc((size_t)size);
   if (!memptr || size == 0) {
-    printf("*** FATAL ERROR ***  Temporary string allocation failed\n");
-#if __STDC__
-    fflush(stdout);
-#endif
-    bug(2202);
-    // bug() returns if the user answers "I" or "S" to its prompt, so a
-    // fatal condition has to stop the program itself.  Returning here
-    // would hand back a null pointer that every caller writes through at
-    // once.  The two other fatal sites below do the same for the same
-    // reason.
-    exit(EXIT_FAILURE);
+    // Not bug(), and not printf() either: the heap has just failed, and both
+    // allocate.  See the warning at bug() in mmdata.h.  Returning would hand
+    // back a null pointer that every caller writes through at once, so this
+    // has to stop the program; fatalErrorExitAt() does not return.
+    fatalErrorExitAt(__FILE__, __LINE__,
+        BUG_CHECK_FATAL_FORMAT
+        "*** FATAL ERROR ***  Temporary string allocation failed\n",
+        2202u);
   }
   pushTempAlloc(memptr);
 /*E*/INCDB1(size);
@@ -206,14 +204,12 @@ void let(vstring *target, const char *source) {
       free(*target); // Free old space
     *target = malloc(sourceLength + 1); // Allocate new space
     if (!*target) {
-      printf("*** FATAL ERROR ***  String memory couldn't be allocated\n");
-#if __STDC__
-      fflush(stdout);
-#endif
-      bug(2204);
-      // Returning would leave *target null for the strcpy() below.
-      // See the comment at bug(2202).
-      exit(EXIT_FAILURE);
+      // Returning would leave *target null for the copy below.
+      // See the comment at bug 2202 above.
+      fatalErrorExitAt(__FILE__, __LINE__,
+          BUG_CHECK_FATAL_FORMAT
+          "*** FATAL ERROR ***  String memory couldn't be allocated\n",
+          2204u);
     }
   }
   if (sourceLength) {
@@ -255,14 +251,12 @@ temp_vstring cat(const char *string1, ...) {
   do {
     // User-provided argument list must terminate with 0
     if (numArgs >= MAX_CAT_ARGS) {
-      printf("*** FATAL ERROR ***  Too many cat() arguments\n");
-#if __STDC__
-      fflush(stdout);
-#endif
-      bug(2206);
       // Returning would write arg[] and argPos[] past their end.
-      // See the comment at bug(2202).
-      exit(EXIT_FAILURE);
+      // See the comment at bug 2202 above.
+      fatalErrorExitAt(__FILE__, __LINE__,
+          BUG_CHECK_FATAL_FORMAT
+          "*** FATAL ERROR ***  Too many cat() arguments\n",
+          2206u);
     }
     arg[numArgs] = curArg;
     argPos[numArgs] = pos;
