@@ -414,7 +414,7 @@ void *poolFixedMalloc(long size) // bytes
     if (size <= ((long *)ptr)[-2]) { // We have enough space already
       ptr2 = realloc( (long *)ptr - 3, 3 * sizeof(long) + (size_t)size);
       // Reallocation cannot fail, since we are shrinking space
-      if (!ptr2) bug(1382);
+      if (!ptr2) bug(1306);
       ptr = ptr2;
     } else { // The pool's last entry is too small; free and allocate new
       free((long *)ptr - 3);
@@ -500,7 +500,14 @@ void *poolMalloc(long size) // bytes
       memUsedPoolTmpPtr = malloc((size_t)memUsedPoolTmpMax
           * sizeof(void *));
       // Shouldn't have allocation problems when program first starts
-      if (!memUsedPoolTmpPtr) bug(1303); 
+      if (!memUsedPoolTmpPtr)
+        // Not bug(): bug() reports through print2(), which maintains its back
+        // buffer with this pool -- see the warning at bug() in mmdata.h.
+        // Nor can this return: memUsedPoolTmpPtr is dereferenced just below.
+        fatalErrorExitAt(__FILE__, __LINE__,
+            BUG_CHECK_FATAL_FORMAT
+            "*** FATAL ERROR ***  Memory pool could not be initialized\n",
+            1303u);
     } else {
       // Normal reallocation
       memUsedPoolTmpPtr = realloc(memUsedPool,
@@ -553,7 +560,13 @@ void poolFree(void *ptr) {
       memFreePoolTmpPtr = malloc((size_t)memFreePoolTmpMax
           * sizeof(void *));
       // Shouldn't have allocation problems when program first starts
-      if (!memFreePoolTmpPtr) bug(1304);
+      if (!memFreePoolTmpPtr)
+        // Not bug(): see the comment at bug 1303 above.  Nor can this return:
+        // memFreePoolTmpPtr is dereferenced just below.
+        fatalErrorExitAt(__FILE__, __LINE__,
+            BUG_CHECK_FATAL_FORMAT
+            "*** FATAL ERROR ***  Free memory pool could not be initialized\n",
+            1304u);
     } else {
       // Normal reallocation
       memFreePoolTmpPtr = realloc(memFreePool,
@@ -587,7 +600,11 @@ void addToUsedPool(void *ptr)
   void *memUsedPoolTmpPtr;
 /*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("d0: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
   // No need to add it when it's not partially used
-  if (((long *)ptr)[-1] == ((long *)ptr)[-2]) bug(1305); 
+  // Not bug(): bug() reports through print2(), which maintains its back
+  // buffer with this pool -- see the warning at bug() in mmdata.h.  This
+  // one is not fatal, though: the next line returns, so it only has to
+  // be reported.  BUG_CHECK_FORMAT keeps the line greppable.
+  if (((long *)ptr)[-1] == ((long *)ptr)[-2]) printf(BUG_CHECK_FORMAT, 1305);
   if (((long *)ptr)[-1] == ((long *)ptr)[-2]) return;
   // Allocated and actual sizes are different, so add this array to used pool
   if (memUsedPoolSize >= memUsedPoolMax) { // Increase size of used pool
@@ -598,7 +615,13 @@ void addToUsedPool(void *ptr)
       memUsedPoolTmpPtr = malloc((size_t)memUsedPoolTmpMax
           * sizeof(void *));
        // Shouldn't have allocation problems when program first starts
-      if (!memUsedPoolTmpPtr) bug(1362);
+      if (!memUsedPoolTmpPtr)
+        // Not bug(): see the comment at bug 1303 above.  Nor can this return:
+        // memUsedPoolTmpPtr is dereferenced just below.
+        fatalErrorExitAt(__FILE__, __LINE__,
+            BUG_CHECK_FATAL_FORMAT
+            "*** FATAL ERROR ***  Used memory pool could not be grown\n",
+            1362u);
     } else {
       // Normal reallocation
       memUsedPoolTmpPtr = realloc(memUsedPool, (size_t)memUsedPoolTmpMax
@@ -2531,7 +2554,14 @@ void pntrLet(pntrString **target, const pntrString *source) {
         // If actual size of target string is less than allocated size, we
         // may have to add it to the used pool.
         if (((long *)(*target))[-1] != ((long *)(*target))[-2]) {
-          if (((long *)(*target))[-1] > ((long *)(*target))[-2]) bug(1359);
+          if (((long *)(*target))[-1] > ((long *)(*target))[-2])
+            // Not bug(): see the comment at bug 1303 above.  The pool
+            // header says the block holds more than was allocated for it,
+            // so the pool is corrupt and the code below must not act on it.
+            fatalErrorExitAt(__FILE__, __LINE__,
+                BUG_CHECK_FATAL_FORMAT
+                "*** FATAL ERROR ***  Memory pool header is inconsistent\n",
+                1359u);
           if (((long *)(*target))[-3] == -1) {
             // It's not already in the used pool, so add it
             addToUsedPool(*target);
@@ -2567,7 +2597,14 @@ void pntrLet(pntrString **target, const pntrString *source) {
         // may have to add it to the used pool.
         // (The 1st 'if' is redundant with target doubling above)
         if (((long *)(*target))[-1] != ((long *)(*target))[-2]) {
-          if (((long *)(*target))[-1] > ((long *)(*target))[-2]) bug(1360);
+          if (((long *)(*target))[-1] > ((long *)(*target))[-2])
+            // Not bug(): see the comment at bug 1303 above.  The pool
+            // header says the block holds more than was allocated for it,
+            // so the pool is corrupt and the code below must not act on it.
+            fatalErrorExitAt(__FILE__, __LINE__,
+                BUG_CHECK_FATAL_FORMAT
+                "*** FATAL ERROR ***  Memory pool header is inconsistent\n",
+                1360u);
           if (((long *)(*target))[-3] == -1) {
             // It's not already in the used pool, so add it
             addToUsedPool(*target);
@@ -2792,7 +2829,7 @@ temp_pntrString *pntrRight(const pntrString *sin, long n) {
 // Each entry in the allocated array points to an empty vString.
 temp_pntrString *pntrSpace(long n) {
   long j = 0;
-  if (n<0) bug(1360);
+  if (n<0) bug(1366);
   temp_pntrString *sout = pntrTempAlloc(n+1);
   while (j<n) {
     // Initialize all fields

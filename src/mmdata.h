@@ -429,8 +429,10 @@ void poolFree(void *ptr);
  * \param[in] ptr pointer to a \ref pgBlock.
  * \pre
  *   the block is \ref pgFragmentation "fragmented" (contains unused memory)
- *   If it is full, \ref bugfn "bug" is called and the function returns without
- *   further action.
+ *   If it is full, the condition is reported and the function returns without
+ *   further action.  It cannot report through \ref bugfn "bug", which prints
+ *   through \ref print2 and so reaches this very pool -- see the warning at
+ *   \ref bugfn "bug".
  * \post
  *   - \ref poolTotalFree is the current free space in bytes in both pools.
  *   - A full \ref pgBlock is not added to \ref memUsedPool by this function.
