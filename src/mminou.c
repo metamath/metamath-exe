@@ -1012,7 +1012,7 @@ vstring cmdInput1(const char *ask) {
 } // cmdInput1
 
 void errorMessage(vstring line, long lineNum, long column, long tokenLength,
-  vstring error, vstring fileName, long statementNum, flag severity)
+  vstring error, vstring fileName, long statementNum, enum severity severity)
 {
   // Note:  "line" may be terminated with \n.  "error" and "fileName"
   // should NOT be terminated with \n.  This is done for the convenience
@@ -1057,13 +1057,13 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
   }
 
   switch (severity) {
-    case (char)notice_:
+    case notice_:
       let(&prntStr, "?Notice"); break;
-    case (char)warning_:
+    case warning_:
       let(&prntStr, "?Warning"); break;
-    case (char)error_:
+    case error_:
       let(&prntStr, "?Error"); break;
-    case (char)fatal_:
+    case fatal_:
       let(&prntStr, "?Fatal error"); break;
   }
   if (lineNum) {
@@ -1100,7 +1100,7 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
     printLongLine(errorPointer, "", "");
   }
   printLongLine(error,""," ");
-  if (severity == 2) g_errorCount++;
+  if (severity == error_) g_errorCount++;
 
   // ???Should there be a limit?
   // if (g_errorCount > 1000) {
@@ -1113,7 +1113,7 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
 
   // g_outputToString = saveOutputToString;
 
-  if (severity == 3) {
+  if (severity == fatal_) {
     print2("Aborting Metamath.\n");
     exit(EXIT_FAILURE);
   }

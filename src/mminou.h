@@ -720,7 +720,7 @@ flag cmdInputIsY(const char *ask);
 
 enum severity {notice_,warning_,error_,fatal_};
 void errorMessage(vstring line, long lineNum, long column, long tokenLength,
-  vstring error, vstring fileName, long statementNum, flag warnFlag);
+  vstring error, vstring fileName, long statementNum, enum severity severity);
 
 /*! Opens files with error message; opens output files with
    backup of previous version.   Mode must be "r" or "w". */

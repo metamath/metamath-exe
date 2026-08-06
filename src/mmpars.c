@@ -3697,7 +3697,7 @@ void rawSourceError(char *startFile, char *ptr, long tokLen, vstring errMsg) {
   let(&errLine, space(endLine - startLine));
   memcpy(errLine, startLine, (size_t)(endLine - startLine));
   errorMessage(errLine, lineNum, ptr - startLine + 1, tokLen, errorMsg,
-      fileName, 0, (char)error_);
+      fileName, 0, error_);
   print2("\n");
   free_vstring(errLine);
   free_vstring(errorMsg);
@@ -3794,14 +3794,14 @@ void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
   if (!lineNum) {
     // Not a source file parse
     errorMessage(errLine, lineNum, ptr - startLine + 1, tokLen, errorMsg,
-        NULL, stmtNum, (char)error_);
+        NULL, stmtNum, error_);
   } else {
     errorMessage(errLine, lineNum,
         ptr - startLine + 1, tokLen, // column
         errorMsg,
         fileName,
         stmtNum,
-        (char)error_ // severity
+        error_ // severity
         );
   }
   free_vstring(errLine);
