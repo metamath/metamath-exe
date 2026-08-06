@@ -121,10 +121,7 @@ void freeTempAlloc(void) {
 static void pushTempAlloc(void *mem)
 {
   if (g_tempAllocStackTop >= (MAX_ALLOC_STACK-1)) {
-    // Report this one directly rather than through bug(): see the warning at
-    // bug() in mmdata.h.  With this stack already full, bug() building a
-    // message would re-enter pushTempAlloc(), report the same overflow again,
-    // and recurse until the C stack runs out.
+    // bug() builds its message here; with the stack full it would recurse.
     fatalErrorExitAt(__FILE__, __LINE__,
         BUG_CHECK_FATAL_FORMAT
         "*** FATAL ERROR ***  Temporary string stack overflow\n",
@@ -159,9 +156,7 @@ static void* tempAlloc(long size) // String memory allocation/deallocation
 {
   void* memptr = malloc((size_t)size);
   if (!memptr || size == 0) {
-    // Not bug(), nor printf(): the heap has just failed and both allocate --
-    // see bug() in mmdata.h.  Returning would hand back a null pointer that
-    // every caller writes through at once.
+    // The heap has just failed, so bug() and printf() are both unusable.
     fatalErrorExitAt(__FILE__, __LINE__,
         BUG_CHECK_FATAL_FORMAT
         "*** FATAL ERROR ***  Temporary string allocation failed\n",

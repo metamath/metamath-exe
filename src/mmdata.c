@@ -501,9 +501,7 @@ void *poolMalloc(long size) // bytes
           * sizeof(void *));
       // Shouldn't have allocation problems when program first starts
       if (!memUsedPoolTmpPtr)
-        // Not bug(): it reports through print2(), which keeps its back buffer
-        // in this pool -- see bug() in mmdata.h.  Nor can this return:
-        // memUsedPoolTmpPtr is dereferenced just below.
+        // bug() reports through print2(), which uses this pool.
         fatalErrorExitAt(__FILE__, __LINE__,
             BUG_CHECK_FATAL_FORMAT
             "*** FATAL ERROR ***  Memory pool could not be initialized\n",
@@ -561,8 +559,7 @@ void poolFree(void *ptr) {
           * sizeof(void *));
       // Shouldn't have allocation problems when program first starts
       if (!memFreePoolTmpPtr)
-        // Not bug(): see bug 1303 above.  Nor can this return:
-        // memFreePoolTmpPtr is dereferenced just below.
+        // bug() reports through print2(), which uses this pool.
         fatalErrorExitAt(__FILE__, __LINE__,
             BUG_CHECK_FATAL_FORMAT
             "*** FATAL ERROR ***  Free memory pool could not be initialized\n",
@@ -600,10 +597,8 @@ void addToUsedPool(void *ptr)
   void *memUsedPoolTmpPtr;
 /*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("d0: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
   // No need to add it when it's not partially used
-  // Not bug(): it reports through print2(), which keeps its back buffer in
-  // this pool -- see bug() in mmdata.h.  This one is not fatal, though: the
-  // next line returns, so it only has to be reported.  BUG_CHECK_FORMAT keeps
-  // the line greppable.
+  // bug() reports through print2(), which uses this pool.
+  // Not fatal: the next line returns on the same condition.
   if (((long *)ptr)[-1] == ((long *)ptr)[-2]) printf(BUG_CHECK_FORMAT, 1305);
   if (((long *)ptr)[-1] == ((long *)ptr)[-2]) return;
   // Allocated and actual sizes are different, so add this array to used pool
@@ -616,8 +611,7 @@ void addToUsedPool(void *ptr)
           * sizeof(void *));
        // Shouldn't have allocation problems when program first starts
       if (!memUsedPoolTmpPtr)
-        // Not bug(): see bug 1303 above.  Nor can this return:
-        // memUsedPoolTmpPtr is dereferenced just below.
+        // bug() reports through print2(), which uses this pool.
         fatalErrorExitAt(__FILE__, __LINE__,
             BUG_CHECK_FATAL_FORMAT
             "*** FATAL ERROR ***  Used memory pool could not be grown\n",
@@ -841,7 +835,7 @@ void bug(int bugNum)
     g_logFileOpenFlag = 0;
   }
   print2("The program was aborted.\n");
-  exit(1); // Use 1 instead of 0 to flag abnormal termination to scripts
+  exit(EXIT_FAILURE);
 }
 
 /*!
@@ -1055,11 +1049,11 @@ temp_nmbrString *nmbrTempAlloc(long size)
 temp_nmbrString *nmbrMakeTempAlloc(nmbrString *s)
 {
   if (g_nmbrTempAllocStackTop>=(M_MAX_ALLOC_STACK-1)) {
-    printf("*** FATAL ERROR ***  Temporary nmbrString stack overflow in nmbrMakeTempAlloc()\n");
-#if __STDC__
-    fflush(stdout);
-#endif
-    bug(1368);
+    // bug() can return; returning would push past nmbrTempAllocStack's end.
+    fatalErrorExitAt(__FILE__, __LINE__,
+        BUG_CHECK_FATAL_FORMAT
+        "*** FATAL ERROR ***  Temporary nmbrString stack overflow\n",
+        1368u);
   }
   if (s[0] != -1) { // End of string
     // Do it only if nmbrString is not empty
@@ -1188,11 +1182,11 @@ temp_nmbrString *nmbrCat(const nmbrString *string1,...) // String concatenation
   // User-provided argument list must terminate with NULL
   while ((arg[numArgs++]=va_arg(ap,nmbrString *)))
     if (numArgs>=M_MAX_CAT_ARGS-1) {
-      printf("*** FATAL ERROR ***  Too many cat() arguments\n");
-#if __STDC__
-      fflush(stdout);
-#endif
-      bug(1369);
+      // bug() can return; returning would write arg[] past its end.
+      fatalErrorExitAt(__FILE__, __LINE__,
+          BUG_CHECK_FATAL_FORMAT
+          "*** FATAL ERROR ***  Too many nmbrCat() arguments\n",
+          1369u);
     }
   va_end(ap); // End varargs session
 
@@ -2510,12 +2504,11 @@ temp_pntrString *pntrTempAlloc(long size) {
 
 temp_pntrString *pntrMakeTempAlloc(pntrString *s) {
   if (g_pntrTempAllocStackTop>=(M_MAX_ALLOC_STACK-1)) {
-    printf(
-    "*** FATAL ERROR ***  Temporary pntrString stack overflow in pntrMakeTempAlloc()\n");
-#if __STDC__
-    fflush(stdout);
-#endif
-    bug(1370);
+    // bug() can return; returning would push past pntrTempAllocStack's end.
+    fatalErrorExitAt(__FILE__, __LINE__,
+        BUG_CHECK_FATAL_FORMAT
+        "*** FATAL ERROR ***  Temporary pntrString stack overflow\n",
+        1370u);
   }
   if (s[0] != NULL) { // Don't do it if pntrString is empty
     pntrTempAllocStack[g_pntrTempAllocStackTop++] = s;
@@ -2555,9 +2548,7 @@ void pntrLet(pntrString **target, const pntrString *source) {
         // may have to add it to the used pool.
         if (((long *)(*target))[-1] != ((long *)(*target))[-2]) {
           if (((long *)(*target))[-1] > ((long *)(*target))[-2])
-            // Not bug(): see bug 1303 above.  The pool header says the block
-            // holds more than was allocated for it, so the pool is corrupt and
-            // the code below must not act on it.
+            // bug() reports through print2(), which uses this pool.
             fatalErrorExitAt(__FILE__, __LINE__,
                 BUG_CHECK_FATAL_FORMAT
                 "*** FATAL ERROR ***  Memory pool header is inconsistent\n",
@@ -2598,9 +2589,7 @@ void pntrLet(pntrString **target, const pntrString *source) {
         // (The 1st 'if' is redundant with target doubling above)
         if (((long *)(*target))[-1] != ((long *)(*target))[-2]) {
           if (((long *)(*target))[-1] > ((long *)(*target))[-2])
-            // Not bug(): see bug 1303 above.  The pool header says the block
-            // holds more than was allocated for it, so the pool is corrupt and
-            // the code below must not act on it.
+            // bug() reports through print2(), which uses this pool.
             fatalErrorExitAt(__FILE__, __LINE__,
                 BUG_CHECK_FATAL_FORMAT
                 "*** FATAL ERROR ***  Memory pool header is inconsistent\n",
@@ -2655,11 +2644,11 @@ temp_pntrString *pntrCat(const pntrString *string1,...) {
   // User-provided argument list must terminate with NULL
   while ((arg[numArgs++]=va_arg(ap,pntrString *)))
     if (numArgs>=M_MAX_CAT_ARGS-1) {
-      printf("*** FATAL ERROR ***  Too many cat() arguments\n");
-#if __STDC__
-      fflush(stdout);
-#endif
-      bug(1371);
+      // bug() can return; returning would write arg[] past its end.
+      fatalErrorExitAt(__FILE__, __LINE__,
+          BUG_CHECK_FATAL_FORMAT
+          "*** FATAL ERROR ***  Too many pntrCat() arguments\n",
+          1371u);
     }
   va_end(ap); // End varargs session
 

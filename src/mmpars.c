@@ -335,8 +335,7 @@ void parseKeywords(void)
         // counted one.  Trap it rather than corrupt the heap if the two ever
         // disagree, which they have before.
         if (g_statements + 1 >= potentialStatements) {
-          // Not bug(): it can return ("I" or "S" at its prompt), and returning
-          // would write g_Statement[] past its end -- what this trap prevents.
+          // bug() can return; returning would write g_Statement[] past its end.
           fatalErrorExitAt(__FILE__, __LINE__,
               BUG_CHECK_FATAL_FORMAT
               "*** FATAL ERROR ***  More statements than were counted\n",
@@ -3688,10 +3687,8 @@ void rawSourceError(char *startFile, char *ptr, long tokLen, vstring errMsg) {
   // at the last character: for a 0-length line that would compute a pointer
   // before the start of the buffer, which is undefined behavior.
   if (endLine - startLine < 0) {
-    // Not bug(): it can return ("I" or "S" at its prompt), and returning would
-    // hand the negative length to the memcpy() below, which reads it as a huge
-    // size_t; space() clamps it to 0 first, so the copy would be into the ""
-    // literal.
+    // bug() can return; returning would hand the negative length to the
+    // memcpy() below as a huge size_t.
     fatalErrorExitAt(__FILE__, __LINE__,
         BUG_CHECK_FATAL_FORMAT
         "*** FATAL ERROR ***  Negative source line length\n",

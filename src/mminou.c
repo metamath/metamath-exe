@@ -197,7 +197,7 @@ flag print2(const char* fmt, ...) {
 
   if (backBufferPos == 0) {
     // Initialize backBuffer - 1st time in program
-    // Not bug(): it reports through print2() -- see bug() in mmdata.h.
+    // bug() reports through this function; calling it would recurse.
     if (pntrLen(backBuffer)) {
       printf("*** BUG #1501\n");
 #if __STDC__
@@ -223,7 +223,7 @@ flag print2(const char* fmt, ...) {
       if (backFromCmdInput && backBufferPos == pntrLen(backBuffer))
         break; // Exhausted buffer
       if (backBufferPos < 1 || backBufferPos > pntrLen(backBuffer)) {
-        // Not bug(): it reports through print2() -- see bug() in mmdata.h.
+        // bug() reports through this function; calling it would recurse.
         printf("*** BUG #1502 %ld\n", backBufferPos);
 #if __STDC__
         fflush(stdout);
@@ -329,9 +329,8 @@ flag print2(const char* fmt, ...) {
   // Warning: some older compilers, including lcc-win32 version 3.8 (2004),
   // return -1 instead of the buffer size.
   if (bufsiz == -1) {
-    // Not bug(): it reports through print2() -- see bug() in mmdata.h.  Nor
-    // can this return: bufsiz would still be -1 at the malloc() below, giving
-    // a zero-length buffer that vsprintf() then overruns.
+    // bug() reports through this function; calling it would recurse.
+    // Returning would leave bufsiz -1 for the malloc() below.
     fatalErrorExitAt(__FILE__, __LINE__,
         BUG_CHECK_FATAL_FORMAT
         "*** FATAL ERROR ***  vsnprintf() could not size the output\n",
@@ -346,8 +345,8 @@ flag print2(const char* fmt, ...) {
   charsPrinted = vsprintf(printBuffer, fmt, ap);
   va_end(ap);
   if (charsPrinted != bufsiz) {
-    // Not bug(), and this cannot return either, see bug 1527 above:
-    // printBuffer would hold a different count than it was sized for.
+    // bug() reports through this function; calling it would recurse.
+    // Returning would leave printBuffer sized for a different count.
     fatalErrorExitAt(__FILE__, __LINE__,
         BUG_CHECK_FATAL_FORMAT
         "*** FATAL ERROR ***  vsprintf() wrote %u characters, not %u\n",
@@ -428,7 +427,7 @@ flag print2(const char* fmt, ...) {
       }
     }
     // Add line to backBuffer string array.
-    // Not bug(): it reports through print2() -- see bug() in mmdata.h.
+    // bug() reports through this function; calling it would recurse.
     if (backBufferPos < 1) {
       printf("*** PROGRAM BUG #1504\n");
 #if __STDC__
@@ -466,8 +465,8 @@ flag print2(const char* fmt, ...) {
 
   // Check for lines too long
   if (lineLen > g_screenWidth + 1) { // The +1 ignores \n
-    // Not bug(): it reports through print2() -- see bug() in mmdata.h.  If
-    // this bug occurs, the calling function should be fixed.
+    // bug() reports through this function; calling it would recurse.
+    // If this bug occurs, the calling function should be fixed.
     printf("*** PROGRAM BUG #1505 (not serious, but please report it)\n");
     printf("Line exceeds screen width; caller should use printLongLine.\n");
     printf("%ld %s\n", lineLen, printBuffer);
@@ -479,7 +478,7 @@ flag print2(const char* fmt, ...) {
   // If this bug occurs, it means print2() is being called with \n in the
   // middle of the line and should be fixed in the caller.  printLongLine()
   // may be used if this is necessary.
-  // Not bug(): it reports through print2() -- see bug() in mmdata.h.
+  // bug() reports through this function; calling it would recurse.
   if (nlpos != 0 && nlpos != lineLen) {
     printf("*** PROGRAM BUG #1506\n");
 #if __STDC__
@@ -638,7 +637,13 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
       p = g_screenWidth - (long)tildeFlag - (long)(breakMatch1[0] == '\\') + 1;
       if (!firstLine) p = p - startNextLineLen;
 
-      if (p < 4) bug(1524); // This may cause out-of-string ref below
+      if (p < 4)
+        // bug() reports through print2(), which this function calls.
+        // The tests below index longLine[p - 3] and longLine[p - 4].
+        fatalErrorExitAt(__FILE__, __LINE__,
+            BUG_CHECK_FATAL_FORMAT
+            "*** FATAL ERROR ***  Line break position below 4\n",
+            1524u);
       // Assume compressed proof if 1st char of breakMatch1 is "&"
       if (breakMatch1[0] == '&'
           && ((!instr(p, left(longLine, (long)strlen(longLine) - 3), " ")
@@ -655,7 +660,12 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
         if (!breakMatch1[0]) {
           p = p + 0; // Break line anywhere; don't change position
         } else {
-          if (p <= 0) bug(1518);
+          if (p <= 0)
+            // bug() would recurse; the loop below indexes longLine[p - 1].
+            fatalErrorExitAt(__FILE__, __LINE__,
+                BUG_CHECK_FATAL_FORMAT
+                "*** FATAL ERROR ***  Line break position not positive\n",
+                1518u);
           // For LaTeX, match space, not backslash
           // (Todo:  is backslash match mode really needed?)
           while (strchr(breakMatch1[0] != '\\' ? breakMatch1 : " ",
@@ -685,11 +695,22 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
         if (!firstLine) p = p - startNextLineLen;
         if (p <= 0) p = 1; // If startNextLine too long
       }
-      if (!p) bug(1515); // p should never be 0 by this point
+      if (!p)
+        // bug() would recurse; p == 0 would split the line at nothing.
+        fatalErrorExitAt(__FILE__, __LINE__,
+            BUG_CHECK_FATAL_FORMAT
+            "*** FATAL ERROR ***  Line break position is zero\n",
+            1515u);
       // If we broke at a non-space 1st char, line length won't get reduced
       // Hopefully this will never happen with the breakMatch's we use,
       // otherwise the code will require a rework.
-      if (p == 1 && longLine[0] != ' ') bug(1516);
+      if (p == 1 && longLine[0] != ' ')
+        // bug() would recurse.  Breaking at a non-space first character does
+        // not shorten the line, so the enclosing loop would never end.
+        fatalErrorExitAt(__FILE__, __LINE__,
+            BUG_CHECK_FATAL_FORMAT
+            "*** FATAL ERROR ***  Line break would not shorten the line\n",
+            1516u);
       if (firstLine) {
         firstLine = 0;
         free_vstring(prefix);
@@ -770,9 +791,7 @@ vstring cmdInput(FILE *stream, const char *ask) {
     }
     let(&g, space(CMD_BUFFER_SIZE)); // Allocate CMD_BUFFER_SIZE+1 bytes
     if (g[CMD_BUFFER_SIZE]) {
-      // Not bug(): it reads its answer through cmdInput1(), which calls this
-      // function -- see bug() in mmdata.h.  let() has just failed to terminate
-      // the string it allocated.
+      // bug() reads its answer through this function; calling it would recurse.
       fatalErrorExitAt(__FILE__, __LINE__,
           BUG_CHECK_FATAL_FORMAT
           "*** FATAL ERROR ***  let() did not terminate its allocation\n",
@@ -786,8 +805,7 @@ vstring cmdInput(FILE *stream, const char *ask) {
     }
     if (g[CMD_BUFFER_SIZE - 1]) {
       // Detect input overflow
-      // Not bug(): it reads its answer through cmdInput1(), which calls this
-      // function -- see bug() in mmdata.h.
+      // bug() reads its answer through this function; calling it would recurse.
       printf("***BUG #1508\n");
 #if __STDC__
       fflush(stdout);
@@ -804,8 +822,7 @@ vstring cmdInput(FILE *stream, const char *ask) {
     } else {
       // The last line in the file has no new-line
       if (g[i - 1] != '\n') {
-        // Not bug(): it reads its answer through cmdInput1(), which calls this
-        // function -- see bug() in mmdata.h.
+        // bug() reads its answer through this function; calling it would recurse.
         if (!feof(stream)) {
           printf("***BUG #1525\n");
 #if __STDC__
@@ -1098,7 +1115,7 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
 
   if (severity == 3) {
     print2("Aborting Metamath.\n");
-    exit(0);
+    exit(EXIT_FAILURE);
   }
   free_vstring(errorPointer);
   free_vstring(tmpStr);
