@@ -10,6 +10,19 @@
 #include <stdbool.h>
 #include "mmtest.h"
 
+/*! \def PRINTF_FORMAT_ATTR
+ * Ask the compiler to type-check a printf-style format string against its
+ * variadic arguments.  \p fmtIdx is the 1-based parameter position of the
+ * format string, \p argIdx that of the first value it consumes.  Expands to
+ * nothing on compilers without the GNU attribute syntax, so it is portable
+ * to plain C99. */
+#if defined(__GNUC__)
+# define PRINTF_FORMAT_ATTR(fmtIdx, argIdx) \
+    __attribute__((format(printf, fmtIdx, argIdx)))
+#else
+# define PRINTF_FORMAT_ATTR(fmtIdx, argIdx)
+#endif
+
 /* Documentation
  * =============
  *
@@ -209,7 +222,7 @@ extern void fatalErrorInit(void);
  *   up text at the last column, but that may depend on the used
  *   hard-/software.
  */
-extern bool fatalErrorPush(char const* format, ...);
+extern bool fatalErrorPush(char const* format, ...) PRINTF_FORMAT_ATTR(1, 2);
 
 /*!
  * \brief display buffer contents and exit program with code EXIT_FAILURE.
@@ -294,7 +307,8 @@ extern void fatalErrorPrintAndExit(void);
  *   case there is still a function in the atexit queue).
  */
 extern void fatalErrorExitAt(char const* file, unsigned line,
-                             char const* msgWithPlaceholders, ...);
+                             char const* msgWithPlaceholders, ...)
+                             PRINTF_FORMAT_ATTR(3, 4);
 
 #ifdef TEST_ENABLE
 

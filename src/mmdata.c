@@ -731,13 +731,12 @@ void outOfMemory(const char *msg) {
     fclose(g_logFilePtr);
     g_logFileOpenFlag = 0;
   }
-  char const* format =
+  fatalErrorExitAt(__FILE__, __LINE__,
         "*** FATAL ERROR:  Out of memory.\n"
         "Internal identifier (for technical support):  %s\n"
         "To solve this problem, remove some unnecessary statements or file\n"
         "inclusions to reduce the size of your input source.\n"
-        "Monitor memory periodically with SHOW MEMORY.\n";
-  fatalErrorExitAt(__FILE__, __LINE__, format, msg);
+        "Monitor memory periodically with SHOW MEMORY.\n", msg);
 }
 
 // Bug check

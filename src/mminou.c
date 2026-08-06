@@ -1116,7 +1116,7 @@ FILE *fSafeOpen(const char *fileName, const char *mode, flag noVersioningFlag) {
 #define VERSIONS 9
       // The file exists. Rename it.
 
-#if defined __WATCOMC__ // MSDOS
+#if defined (__WATCOMC__) // MSDOS
       // Make sure file name before extension is 8 chars or less
       i = instr(1, fileName, ".");
       if (i) {
@@ -1129,16 +1129,13 @@ FILE *fSafeOpen(const char *fileName, const char *mode, flag noVersioningFlag) {
       let(&prefix, cat(left(prefix, 5), "~", NULL));
       let(&postfix, cat("~", postfix, NULL));
       if (0) goto skip_backup; // Prevent compiler warning
-
-#elif defined __GNUC__ // Assume unix
+#elif defined (__GNUC__) // Assume unix
       let(&prefix, cat(fileName, "~", NULL));
       free_vstring(postfix);
-
 #else // Unknown; assume unix standard
       // if (1) goto skip_backup; // [if no backup desired]
       let(&prefix, cat(fileName, "~", NULL));
       free_vstring(postfix);
-
 #endif
 
       // See if the lowest version already exists.

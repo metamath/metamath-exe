@@ -832,9 +832,6 @@ temp_vstring time_(void) {
   struct tm *time_structure;
   time_t time_val;
   int i;
-  char *format;
-  char *format1 = "%d:%d %s";
-  char *format2 = "%d:0%d %s";
   char *am_pm[2];
   // (Aggregate initialization is not portable)
   // (It must be done explicitly for portability)
@@ -852,14 +849,10 @@ temp_vstring time_(void) {
   if (time_structure->tm_hour == 0)
     time_structure->tm_hour = 12;
   temp_vstring sout = tempAlloc(12);
-  if (time_structure->tm_min >= 10)
-    format = format1;
-  else
-    format = format2;
-  sprintf(sout,format,
-      time_structure->tm_hour,
-      time_structure->tm_min,
-      am_pm[i]);
+  sprintf(sout, "%d:%02d %s",
+    time_structure->tm_hour,
+    time_structure->tm_min,
+    am_pm[i]);
   return sout;
 } // time
 

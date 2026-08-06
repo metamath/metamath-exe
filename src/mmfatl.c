@@ -224,7 +224,7 @@ struct ParserState {
   va_list args;
 };
 
-static struct ParserState state;
+static struct ParserState state = { .out = &buffer, .format = "" };
 
 /*!
  * \brief initialize the parser state (but not the associated message buffer!)
@@ -311,7 +311,7 @@ static bool checkOverflow(struct ParserState* state) {
  *   overflow.
  */
 static void handleText(struct ParserState* state) {
-  state->format += appendText(state->format, FORMAT, &buffer);
+  state->format += appendText(state->format, FORMAT, state->out);
   checkOverflow(state);
 }
 
@@ -451,28 +451,23 @@ void fatalErrorPrintAndExit(void) {
 void fatalErrorExitAt(char const* file, unsigned line,
                       char const* msgWithPlaceholders, ...) {
   fatalErrorInit();
-
-  // a format for the error location, only showing relevant data
-  char const* format = NULL;
-  if (file && *file)
-  {
+  bool locationOk;
+  if (file && *file) {
     if (line > 0)
-      format = "At %s:%u\n";
+      locationOk = fatalErrorPush("At %s:%u\n", file, line);
     else
-      format = "In file %s:\n";
-  }
-  else if (line > 0)
-    format = "%sIn line %u:\n";
-
-  if (fatalErrorPush(format, file, line) && msgWithPlaceholders) {
+      locationOk = fatalErrorPush("In file %s:\n", file);
+  } else if (line > 0)
+    locationOk = fatalErrorPush("In line %u:\n", line);
+  else
+    locationOk = true;  // no location to show
+  if (locationOk && msgWithPlaceholders) {
     struct ParserState* state = getParserStateInstance();
-
     state->format = msgWithPlaceholders;
     va_start(state->args, msgWithPlaceholders);
     parse(state);
     va_end(state->args);
   }
-
   fatalErrorPrintAndExit();
 }
 
@@ -810,6 +805,12 @@ static bool test_fatalErrorPush() {
   // case format NULL or empty (do nothing)
   ASSERT(fatalErrorPush(NULL));
   ASSERT(strcmp(buffer.text, "") == 0);
+#if defined(__GNUC__)
+// An empty format is deliberately supported (see mmfatl.h); the format
+// attribute on fatalErrorPush() makes GCC flag the empty literal.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-zero-length"
+#endif
   ASSERT(fatalErrorPush(""));
   ASSERT(strcmp(buffer.text, "") == 0);
 
@@ -818,7 +819,7 @@ static bool test_fatalErrorPush() {
   ASSERT(strcmp(buffer.text, "abc") == 0);
 
   // message with placeholders, appended
-  ASSERT(fatalErrorPush("x%sy%uz", "--", 123));
+  ASSERT(fatalErrorPush("x%sy%uz", "--", 123u));
   ASSERT(strcmp(buffer.text, "abcx--y123z") == 0);
 
   // overflow
@@ -828,6 +829,9 @@ static bool test_fatalErrorPush() {
 
   ASSERT(!fatalErrorPush(NULL));
   ASSERT(!fatalErrorPush(""));
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
   ASSERT(strcmp(buffer.text, "$ab$") == 0);
 
   return true;
@@ -862,7 +866,7 @@ static bool test_fatalErrorExitAt() {
   fatalErrorExitAt("test.c", 1000, "%s failed!", "program");
   ASSERT(strcmp(buffer.text, "At test.c:1000\nprogram failed!\n") == 0);
   // ignoring line
-  fatalErrorExitAt("x.c", 0, "test %u failed!", 5);
+  fatalErrorExitAt("x.c", 0, "test %u failed!", 5u);
   ASSERT(strcmp(buffer.text, "In file x.c:\ntest 5 failed!\n") == 0);
   // ignoring file
   fatalErrorExitAt(NULL, 123, "%s", "need help!\n");
