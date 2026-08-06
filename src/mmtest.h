@@ -43,9 +43,9 @@
  * the macro is defined matters. Defining the macro directly in this file does
  * not affect the executable's name.
  *
- * If testing is enableded or disabled without modifying any source files in
- * between, also pass the \c -c (clean) option to \c build.sh to remove
- * intermediate build artifacts.
+ * After enabling or disabling testing, even without modifying any source
+ * files, also pass the \c -c (clean) option to \c build.sh to rebuild all
+ * intermediate artifacts.
  *
  * If testing is disabled, the \c RUN_TESTS_IF_ENABLED macro expands to
  * nothing. The compiler also excludes all test code, so the resulting
