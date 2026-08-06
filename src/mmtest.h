@@ -20,8 +20,8 @@
  *
  * 1. Open a shell for running Bash commands.
  *
- * 2. Change to the directory containing Metamath's build script
- * \c build.sh.
+ * 2. Change to the directory containing Metamath's build script \c build.sh,
+ * typically located at the top level of the \c metamath-exe project.
  *
  * 3. Execute the following commands:
  * \verbatim
@@ -30,9 +30,9 @@
    \endverbatim
  *
  * 4. The test program produces output similar to the following:
- *  \verbatim
+ * \verbatim
    > running test_mmfatl:test_fatalErrorInit... ok
-  \endverbatim
+   \endverbatim
  *
  * If every test ends with \c ok, all regression tests have passed.
  * Otherwise, diagnostic information identifies the failed test.
