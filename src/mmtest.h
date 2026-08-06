@@ -38,12 +38,12 @@
  * If every test ends with \c ok, all regression tests have passed.
  * Otherwise, diagnostic information identifies the failed test.
  *
- * If the macro \c TEST_ENABLE is defined (the \c -t option of
- * \c build.sh), the regression tests are compiled into a separate
- * executable named \c metamath_test. The value of \c TEST_ENABLE can
- * also be overridden in this file. If testing is switched on or off
- * without modifying any source files in between, also pass the \c -c
- * (clean) option to \c build.sh to remove intermediate build artifacts.
+ * If the macro \c TEST_ENABLE is defined (the \c -t option of \c build.sh),
+ * the regression tests are compiled into a separate executable named
+ * \c metamath_test. The macro may also be defined directly in this file; its
+ * value is irrelevant. If testing is switched on or off without modifying any
+ * source files in between, also pass the \c -c (clean) option to \c build.sh
+ * to remove intermediate build artifacts.
  *
  * If testing is disabled, the \c RUN_TESTS_IF_ENABLED macro expands to
  * nothing. The compiler also excludes all test code, so the resulting
