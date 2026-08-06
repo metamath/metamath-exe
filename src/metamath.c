@@ -727,7 +727,7 @@ void command(int argc, char *argv[]);
  * to "verify proof *" (both without quotes) and argv[2] to NULL.
  * Returning 0 indicates successful completion, anything else some kind of
  * failure.
- * For details see https://en.cppreference.com/w/cpp/language/main_function.
+ * For details see https://en.cppreference.com/w/c/language/main_function.
  */
 int main(int argc, char *argv[]) {
 
