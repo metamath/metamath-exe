@@ -961,9 +961,9 @@ void command(int argc, char *argv[]) {
     free_nmbrString(nmbrSaveProof);
     free_nmbrString(essentialFlags);
     j = nmbrLen(g_rawArgNmbr);
-    if (j != g_rawArgs) bug(1110);
+    if (j != g_rawArgs) bug(1113);
     j = pntrLen(g_rawArgPntr);
-    if (j != g_rawArgs) bug(1111);
+    if (j != g_rawArgs) bug(1115);
     g_rawArgs = 0;
     for (i = 0; i < j; i++) let((vstring *)(&g_rawArgPntr[i]), "");
     free_pntrString(g_rawArgPntr);
@@ -5073,7 +5073,7 @@ void command(int argc, char *argv[]) {
       if (g_proveStatement > g_mathboxStmt) {
         // We're in a mathbox
         i = getMathboxNum(g_proveStatement);
-        if (i <= 0) bug(1130);
+        if (i <= 0) bug(1116);
         thisMathboxStartStmt = g_mathboxStart[i - 1];
       } else {
         thisMathboxStartStmt = g_mathboxStmt;

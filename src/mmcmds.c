@@ -782,7 +782,7 @@ void typeStatement(long showStmt,
           // Temporarily zap proof into statement structure
           // (The bug check makes sure there is no proof attached to the
           // definition - this would be impossible)
-          if (strcmp(g_Statement[showStmt].proofSectionPtr, "")) bug(231);
+          if (strcmp(g_Statement[showStmt].proofSectionPtr, "")) bug(236);
           if (g_Statement[showStmt].proofSectionLen != 0) bug(232);
           let(&str1, nmbrCvtRToVString(nmbrTmpPtr2,
                 0, // explicitTargets

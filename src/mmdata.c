@@ -3126,7 +3126,7 @@ vstring getDescriptionAndLabel(long stmt) {
   if (dontUseComment == 1) {
     // Get everything that follows the comment
     p2 = rinstr(descriptionAndLabel, "$)");
-    if (p2 == 0) bug(1401); // Should have exited earlier if no "$)"
+    if (p2 == 0) bug(1307); // Should have exited earlier if no "$)"
     let(&descriptionAndLabel, right(descriptionAndLabel, p2 + 2));
   }
 

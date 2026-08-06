@@ -6152,7 +6152,7 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
           if (startOffset != cmdPos2 - 1) bug(1772);
           break;
         default:
-          bug(1745);
+          bug(1746);
       } // end switch(cmdType)
     } // if alreadyInclBy == -1
 
