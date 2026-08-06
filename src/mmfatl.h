@@ -23,6 +23,17 @@
 # define PRINTF_FORMAT_ATTR(fmtIdx, argIdx)
 #endif
 
+/*! \def NORETURN_ATTR
+ * Tell the compiler the function never returns, so it can diagnose code that
+ * assumes otherwise and drop what would follow a call.  Expands to nothing on
+ * compilers without the GNU attribute syntax, so it is portable to plain
+ * C99. */
+#if defined(__GNUC__)
+# define NORETURN_ATTR __attribute__((noreturn))
+#else
+# define NORETURN_ATTR
+#endif
+
 /* Documentation
  * =============
  *
@@ -247,7 +258,8 @@ extern bool fatalErrorPush(char const* format, ...) PRINTF_FORMAT_ATTR(1, 2);
  *   possibly followed by a sequence of \ref fatalErrorPush filling it with a
  *   message.
  * \post [noreturn] the program terminates with error code EXIT_FAILURE, after
- *   writing the buffer contents to stderr.
+ *   writing the buffer contents to stderr.  This holds in every build: the
+ *   declaration carries \ref NORETURN_ATTR, so the compiler enforces it.
  * \post a line feed is appended to any non-empty message, if it is not
  *   provided
  * \invariant the memory state of the rest of the program is not changed (in
@@ -264,7 +276,7 @@ extern bool fatalErrorPush(char const* format, ...) PRINTF_FORMAT_ATTR(1, 2);
  *   by the C11 standard.  In fact, some systems may interpret 1 as a success
  *   code, so EXIT_FAILURE is more appropriate.
  */
-extern void fatalErrorPrintAndExit(void);
+extern void fatalErrorPrintAndExit(void) NORETURN_ATTR;
 
 /*!
  * \brief standard error reporting and program exit with failure code.
@@ -301,14 +313,16 @@ extern void fatalErrorPrintAndExit(void);
  *   and their number must be enough (can be more) to cover all placeholders.
  *   The details of this process is explained in \ref fatalErrorPush.  Ignored
  *   if NULL.
- * \post the program exits with EXIT_FAILURE return code, after writing the
- *   error location and message to stderr.
+ * \post [noreturn] the program exits with EXIT_FAILURE return code, after
+ *   writing the error location and message to stderr.  This holds in every
+ *   build: the declaration carries \ref NORETURN_ATTR, so the compiler
+ *   enforces it.
  * \invariant the memory state of the rest of the program is not changed (in
  *   case there is still a function in the atexit queue).
  */
 extern void fatalErrorExitAt(char const* file, unsigned line,
                              char const* msgWithPlaceholders, ...)
-                             PRINTF_FORMAT_ATTR(3, 4);
+                             PRINTF_FORMAT_ATTR(3, 4) NORETURN_ATTR;
 
 #ifdef TEST_ENABLE
 

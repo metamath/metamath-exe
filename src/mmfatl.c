@@ -219,9 +219,10 @@ struct ParserState {
    * \invariant The parameters match the placeholders in \ref format in
    * type, and their number is not less than that of the placeholders.
    * This invariant cannot be verified at runtime in this module, but must be
-   * guaranteed on invocation by the caller.
+   * guaranteed on invocation by the caller.  The list itself is not held here:
+   * it belongs to the call, not to the parser, so it is threaded through
+   * \ref parse and \ref handleSubstitution as a parameter.
    */
-  va_list args;
 };
 
 static struct ParserState state = { .out = &buffer, .format = "" };
@@ -339,18 +340,18 @@ static void handleText(struct ParserState* state) {
  * \post the substituted value is written to \ref buffer.
  * \post the format member in \ref state is skipped
  */
-static void handleSubstitution(struct ParserState* state) {
+static void handleSubstitution(struct ParserState* state, va_list* args) {
   // replacement value for a token representing MMFATL_PH_PREFIX itself
   static char const defaultArg[2] = { MMFATL_PH_PREFIX, NUL };
   char const* arg;
   int placeholderSize = 2; // advance state.format by this many characters
   switch (*(state->format + 1)) {
     case MMFATL_PH_STRING:
-      arg = va_arg(state->args, char const*);
+      arg = va_arg(*args, char const*);
       break;
     case MMFATL_PH_UNSIGNED:
       // a %u format specifier is recognized.
-      arg = unsignedToString(va_arg(state->args, unsigned));
+      arg = unsignedToString(va_arg(*args, unsigned));
       break;
     case MMFATL_PH_PREFIX:
       // %%
@@ -378,10 +379,10 @@ static void handleSubstitution(struct ParserState* state) {
  * \param[in,out] state struct ParserState* parser state going to be handled and updated
  * \pre \ref initState was called
  */
-static void parse(struct ParserState* state) {
+static void parse(struct ParserState* state, va_list* args) {
   do {
     if (*state->format == MMFATL_PH_PREFIX)
-      handleSubstitution(state);
+      handleSubstitution(state, args);
     else
       handleText(state);
   } while (*state->format != NUL);
@@ -425,31 +426,47 @@ bool fatalErrorPush(char const* format, ...) {
   bool overflow = isBufferOverflow(state->out);
   if (!overflow && format != NULL) {
     // initialize the parser state
+    va_list args;
+
     state->format = format;
-    va_start(state->args, format);
-    parse(state);
+    va_start(args, format);
+    parse(state, &args);
     overflow = isBufferOverflow(state->out);
-    va_end(state->args);
+    va_end(args);
   }
 
   return !overflow;
 }
 
-void fatalErrorPrintAndExit(void) {
+/*!
+ * \brief finish the message in the buffer, without emitting it.
+ *
+ * The part of \ref fatalErrorPrintAndExit that carries logic: it pads a
+ * non-empty message with a LF when it lacks one.  Split out so the regression
+ * tests can check that logic without terminating the test program, and so
+ * that no test-only condition has to appear in the emitting path below.
+ */
+static void finishMessage(void) {
   struct Buffer* buffer = getBufferInstance();
 
   if (!isBufferOverflow(buffer)
       && !isBufferEmpty(buffer)
       && getLastBufferedChar(buffer) != LF)
     fatalErrorPush("\n");
-#ifndef TEST_ENABLE // we do not want a test program terminating here
-  fputs(buffer->text, stderr);
-  exit(EXIT_FAILURE);
-#endif // TEST_ENABLE
 }
 
-void fatalErrorExitAt(char const* file, unsigned line,
-                      char const* msgWithPlaceholders, ...) {
+void fatalErrorPrintAndExit(void) {
+  finishMessage();
+  fputs(getBufferInstance()->text, stderr);
+  exit(EXIT_FAILURE);
+}
+
+/*!
+ * \brief compose the error location and message in the buffer, without
+ * emitting it.  Split out for the same reason as \ref finishMessage.
+ */
+static void composeErrorAt(char const* file, unsigned line,
+                           char const* msgWithPlaceholders, va_list* args) {
   fatalErrorInit();
   bool locationOk;
   if (file && *file) {
@@ -464,10 +481,17 @@ void fatalErrorExitAt(char const* file, unsigned line,
   if (locationOk && msgWithPlaceholders) {
     struct ParserState* state = getParserStateInstance();
     state->format = msgWithPlaceholders;
-    va_start(state->args, msgWithPlaceholders);
-    parse(state);
-    va_end(state->args);
+    parse(state, args);
   }
+}
+
+void fatalErrorExitAt(char const* file, unsigned line,
+                      char const* msgWithPlaceholders, ...) {
+  va_list args;
+
+  va_start(args, msgWithPlaceholders);
+  composeErrorAt(file, line, msgWithPlaceholders, &args);
+  va_end(args);
   fatalErrorPrintAndExit();
 }
 
@@ -669,7 +693,8 @@ bool test_unsignedToString(void)
 }
 
 static bool test_handleSubstitution1(char const* format, ...) {
-  va_start(state.args, format);
+  va_list args;
+  va_start(args, format);
 
   // without initializing the buffer each test appends
   // to the result of the former test.
@@ -677,51 +702,51 @@ static bool test_handleSubstitution1(char const* format, ...) {
   // %s NULL
   fatalErrorInit();
   state.format = format;
-  handleSubstitution(&state);
+  handleSubstitution(&state, &args);
   format += 2;
   ASSERT(format == state.format);
   ASSERT(strcmp(buffer.text, "") == 0);
 
   // %s ""
-  handleSubstitution(&state);
+  handleSubstitution(&state, &args);
   format += 2;
   ASSERT(format == state.format);
   ASSERT(strcmp(buffer.text, "") == 0);
 
   // %s "abc"
-  handleSubstitution(&state);
+  handleSubstitution(&state, &args);
   format += 2;
   ASSERT(format == state.format);
   ASSERT(strcmp(buffer.text, "abc") == 0);
 
   // %s "%s"
-  handleSubstitution(&state);
+  handleSubstitution(&state, &args);
   format += 2;
   ASSERT(format == state.format);
   ASSERT(strcmp(buffer.text, "abc%s") == 0);
 
   // %u 0
-  handleSubstitution(&state);
+  handleSubstitution(&state, &args);
   format += 2;
   ASSERT(format == state.format);
   ASSERT(strcmp(buffer.text, "abc%s0") == 0);
 
   // %u 123
-  handleSubstitution(&state);
+  handleSubstitution(&state, &args);
   format += 2;
   ASSERT(format == state.format);
   ASSERT(strcmp(buffer.text, "abc%s0123") == 0);
 
   // %u ~0u
   initBuffer(&buffer);
-  handleSubstitution(&state);
+  handleSubstitution(&state, &args);
   format += 2;
   ASSERT(format == state.format);
   ASSERT(strtoul(buffer.text, NULL, 10) == ~0u);
 
   // case buffer overflow
   limitFreeBuffer(1);
-  handleSubstitution(&state);
+  handleSubstitution(&state, &args);
   format += 2;
   ASSERT(*state.format == NUL);
   char const* errmsg = bufferCompare("$o$", -2, 3, 2);
@@ -730,25 +755,25 @@ static bool test_handleSubstitution1(char const* format, ...) {
   // %%
   initBuffer(&buffer);
   state.format = format;
-  handleSubstitution(&state);
+  handleSubstitution(&state, &args);
   format += 2;
   ASSERT(format == state.format);
   ASSERT(strcmp(buffer.text, "%") == 0);
 
   // %;
-  handleSubstitution(&state);
+  handleSubstitution(&state, &args);
   ++state.format; // skip the ;
   format += 2;
   ASSERT(format == state.format);
   ASSERT(strcmp(buffer.text, "%%") == 0);
 
   // %<NUL>
-  handleSubstitution(&state);
+  handleSubstitution(&state, &args);
   ++format;
   ASSERT(format == state.format);
   ASSERT(strcmp(buffer.text, "%%%") == 0);
 
-  va_end(state.args);
+  va_end(args);
   return true;
 }
 
@@ -759,11 +784,13 @@ bool test_handleSubstitution(void) {
 }
 
 static char const* testcase_parse(char const* expect, char const* format, ...) {
+  va_list args;
+
   fatalErrorInit();
-  va_start(state.args, format);
+  va_start(args, format);
   state.format = format;
-  parse(&state);
-  va_end(state.args);
+  parse(&state, &args);
+  va_end(args);
   return strcmp(buffer.text, expect) == 0?
     NULL
     : "text mismatch";
@@ -775,6 +802,15 @@ static char const* testcase_parse(char const* expect, char const* format, ...) {
   char const* errmsg =                           \
     testcase_parse(expect, format, __VA_ARGS__); \
   ASSERTF(errmsg == NULL, "%s\n", errmsg);       \
+}
+
+// parse() with a format that has no placeholder still needs a (never read)
+// argument list; a local variadic helper is the only legal way to make one.
+static void parse_noargs(struct ParserState* st, ...) {
+  va_list args;
+  va_start(args, st);
+  parse(st, &args);
+  va_end(args);
 }
 
 static bool test_parse(void) {
@@ -789,11 +825,11 @@ static bool test_parse(void) {
   // buffer overflow
   limitFreeBuffer(0);
   state.format = "";
-  parse(&state);
+  parse_noargs(&state);
   ASSERT(strcmp(buffer.text, "$$") == 0);
   limitFreeBuffer(1);
   state.format = "123";
-  parse(&state);
+  parse_noargs(&state);
   ASSERT(strcmp(buffer.text, "$1$") == 0);
 
   return true;
@@ -839,15 +875,15 @@ static bool test_fatalErrorPush() {
 
 static bool test_fatalErrorPrintAndExit(void) {
   fatalErrorInit(); // pre-condition
-  fatalErrorPrintAndExit();
+  finishMessage();
   ASSERT(strcmp(buffer.text, "") == 0);
 
   fatalErrorPush("aaa");
-  fatalErrorPrintAndExit();
+  finishMessage();
   ASSERT(strcmp(buffer.text, "aaa\n") == 0);
 
   // no second \n is appended
-  fatalErrorPrintAndExit();
+  finishMessage();
   ASSERT(strcmp(buffer.text, "aaa\n") == 0);
 
   // in overflow condition do not append a LF
@@ -859,21 +895,30 @@ static bool test_fatalErrorPrintAndExit(void) {
   return true;
 }
 
-static bool test_fatalErrorExitAt() {
-  // note that in test mode the fatalErrorExitAt neither prints to stderr
-  // nor exits.  The message is still in the buffer.
+// Exercises composeErrorAt(): everything fatalErrorExitAt() does apart from
+// emitting the message and terminating.
+static void testcase_ExitAt(char const* file, unsigned line,
+                            char const* msg, ...) {
+  va_list args;
+  va_start(args, msg);
+  composeErrorAt(file, line, msg, &args);
+  va_end(args);
+  finishMessage();
+}
 
-  fatalErrorExitAt("test.c", 1000, "%s failed!", "program");
+static bool test_fatalErrorExitAt() {
+
+  testcase_ExitAt("test.c", 1000, "%s failed!", "program");
   ASSERT(strcmp(buffer.text, "At test.c:1000\nprogram failed!\n") == 0);
   // ignoring line
-  fatalErrorExitAt("x.c", 0, "test %u failed!", 5u);
+  testcase_ExitAt("x.c", 0, "test %u failed!", 5u);
   ASSERT(strcmp(buffer.text, "In file x.c:\ntest 5 failed!\n") == 0);
   // ignoring file
-  fatalErrorExitAt(NULL, 123, "%s", "need help!\n");
+  testcase_ExitAt(NULL, 123, "%s", "need help!\n");
   ASSERT(strcmp(buffer.text, "In line 123:\nneed help!\n") == 0);
 
   // ignoring error location
-  fatalErrorExitAt(NULL, 0, "take lessons, you fool!");
+  testcase_ExitAt(NULL, 0, "take lessons, you fool!");
   ASSERT(strcmp(buffer.text, "take lessons, you fool!\n") == 0);
 
   return true;
