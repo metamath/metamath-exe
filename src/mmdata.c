@@ -501,9 +501,9 @@ void *poolMalloc(long size) // bytes
           * sizeof(void *));
       // Shouldn't have allocation problems when program first starts
       if (!memUsedPoolTmpPtr)
-        // Not bug(): bug() reports through print2(), which maintains its back
-        // buffer with this pool -- see the warning at bug() in mmdata.h.
-        // Nor can this return: memUsedPoolTmpPtr is dereferenced just below.
+        // Not bug(): it reports through print2(), which keeps its back buffer
+        // in this pool -- see bug() in mmdata.h.  Nor can this return:
+        // memUsedPoolTmpPtr is dereferenced just below.
         fatalErrorExitAt(__FILE__, __LINE__,
             BUG_CHECK_FATAL_FORMAT
             "*** FATAL ERROR ***  Memory pool could not be initialized\n",
@@ -561,7 +561,7 @@ void poolFree(void *ptr) {
           * sizeof(void *));
       // Shouldn't have allocation problems when program first starts
       if (!memFreePoolTmpPtr)
-        // Not bug(): see the comment at bug 1303 above.  Nor can this return:
+        // Not bug(): see bug 1303 above.  Nor can this return:
         // memFreePoolTmpPtr is dereferenced just below.
         fatalErrorExitAt(__FILE__, __LINE__,
             BUG_CHECK_FATAL_FORMAT
@@ -600,10 +600,10 @@ void addToUsedPool(void *ptr)
   void *memUsedPoolTmpPtr;
 /*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("d0: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
   // No need to add it when it's not partially used
-  // Not bug(): bug() reports through print2(), which maintains its back
-  // buffer with this pool -- see the warning at bug() in mmdata.h.  This
-  // one is not fatal, though: the next line returns, so it only has to
-  // be reported.  BUG_CHECK_FORMAT keeps the line greppable.
+  // Not bug(): it reports through print2(), which keeps its back buffer in
+  // this pool -- see bug() in mmdata.h.  This one is not fatal, though: the
+  // next line returns, so it only has to be reported.  BUG_CHECK_FORMAT keeps
+  // the line greppable.
   if (((long *)ptr)[-1] == ((long *)ptr)[-2]) printf(BUG_CHECK_FORMAT, 1305);
   if (((long *)ptr)[-1] == ((long *)ptr)[-2]) return;
   // Allocated and actual sizes are different, so add this array to used pool
@@ -616,7 +616,7 @@ void addToUsedPool(void *ptr)
           * sizeof(void *));
        // Shouldn't have allocation problems when program first starts
       if (!memUsedPoolTmpPtr)
-        // Not bug(): see the comment at bug 1303 above.  Nor can this return:
+        // Not bug(): see bug 1303 above.  Nor can this return:
         // memUsedPoolTmpPtr is dereferenced just below.
         fatalErrorExitAt(__FILE__, __LINE__,
             BUG_CHECK_FATAL_FORMAT
@@ -2555,9 +2555,9 @@ void pntrLet(pntrString **target, const pntrString *source) {
         // may have to add it to the used pool.
         if (((long *)(*target))[-1] != ((long *)(*target))[-2]) {
           if (((long *)(*target))[-1] > ((long *)(*target))[-2])
-            // Not bug(): see the comment at bug 1303 above.  The pool
-            // header says the block holds more than was allocated for it,
-            // so the pool is corrupt and the code below must not act on it.
+            // Not bug(): see bug 1303 above.  The pool header says the block
+            // holds more than was allocated for it, so the pool is corrupt and
+            // the code below must not act on it.
             fatalErrorExitAt(__FILE__, __LINE__,
                 BUG_CHECK_FATAL_FORMAT
                 "*** FATAL ERROR ***  Memory pool header is inconsistent\n",
@@ -2598,9 +2598,9 @@ void pntrLet(pntrString **target, const pntrString *source) {
         // (The 1st 'if' is redundant with target doubling above)
         if (((long *)(*target))[-1] != ((long *)(*target))[-2]) {
           if (((long *)(*target))[-1] > ((long *)(*target))[-2])
-            // Not bug(): see the comment at bug 1303 above.  The pool
-            // header says the block holds more than was allocated for it,
-            // so the pool is corrupt and the code below must not act on it.
+            // Not bug(): see bug 1303 above.  The pool header says the block
+            // holds more than was allocated for it, so the pool is corrupt and
+            // the code below must not act on it.
             fatalErrorExitAt(__FILE__, __LINE__,
                 BUG_CHECK_FATAL_FORMAT
                 "*** FATAL ERROR ***  Memory pool header is inconsistent\n",

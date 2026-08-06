@@ -21,7 +21,7 @@ This is an emulation of the string functions available in VMS BASIC.
 #include "mmfatl.h"
 // mmvstr.c does not call bug().  The functions here are the ones with which
 // bug() builds its own messages, so a bug() call from this file would
-// recurse -- see the warning at bug() in mmdata.h.  Fatal conditions are
+// recurse -- see bug() in mmdata.h.  Fatal conditions are
 // reported with fatalErrorExitAt() from mmfatl.h, which allocates nothing and
 // does not return.  mmdata.h is still included for the "db" debugging counter
 // and for BUG_CHECK_FATAL_FORMAT.  To make mmvstr.c and mmvstr.h completely
@@ -159,10 +159,9 @@ static void* tempAlloc(long size) // String memory allocation/deallocation
 {
   void* memptr = malloc((size_t)size);
   if (!memptr || size == 0) {
-    // Not bug(), and not printf() either: the heap has just failed, and both
-    // allocate.  See the warning at bug() in mmdata.h.  Returning would hand
-    // back a null pointer that every caller writes through at once, so this
-    // has to stop the program; fatalErrorExitAt() does not return.
+    // Not bug(), nor printf(): the heap has just failed and both allocate --
+    // see bug() in mmdata.h.  Returning would hand back a null pointer that
+    // every caller writes through at once.
     fatalErrorExitAt(__FILE__, __LINE__,
         BUG_CHECK_FATAL_FORMAT
         "*** FATAL ERROR ***  Temporary string allocation failed\n",

@@ -335,10 +335,8 @@ void parseKeywords(void)
         // counted one.  Trap it rather than corrupt the heap if the two ever
         // disagree, which they have before.
         if (g_statements + 1 >= potentialStatements) {
-          // Not bug(): it can return, if the user answers "I" or "S" at its
-          // prompt, and returning would write g_Statement[] past its end --
-          // exactly what this trap exists to prevent.  fatalErrorExitAt() is
-          // declared NORETURN_ATTR, so the compiler holds us to that.
+          // Not bug(): it can return ("I" or "S" at its prompt), and returning
+          // would write g_Statement[] past its end -- what this trap prevents.
           fatalErrorExitAt(__FILE__, __LINE__,
               BUG_CHECK_FATAL_FORMAT
               "*** FATAL ERROR ***  More statements than were counted\n",
@@ -3690,12 +3688,10 @@ void rawSourceError(char *startFile, char *ptr, long tokLen, vstring errMsg) {
   // at the last character: for a 0-length line that would compute a pointer
   // before the start of the buffer, which is undefined behavior.
   if (endLine - startLine < 0) {
-    // Not bug(): it can return, if the user answers "I" or "S" at its prompt,
-    // and returning would hand the negative length to the memcpy() below,
-    // which reads it as a huge size_t.  space() clamps it to 0 first, so
-    // errLine would be the "" literal by then and the copy would be into
-    // read-only memory.  fatalErrorExitAt() is declared NORETURN_ATTR, so the
-    // compiler holds us to that.
+    // Not bug(): it can return ("I" or "S" at its prompt), and returning would
+    // hand the negative length to the memcpy() below, which reads it as a huge
+    // size_t; space() clamps it to 0 first, so the copy would be into the ""
+    // literal.
     fatalErrorExitAt(__FILE__, __LINE__,
         BUG_CHECK_FATAL_FORMAT
         "*** FATAL ERROR ***  Negative source line length\n",
