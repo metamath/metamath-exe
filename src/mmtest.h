@@ -44,8 +44,8 @@
  * not affect the executable's name.
  *
  * After enabling or disabling testing, even without modifying any source
- * files, also pass the \c -c (clean) option to \c build.sh to rebuild all
- * intermediate artifacts.
+ * files, all intermediate artifacts must be rebuilt. Pass the \c -c (clean)
+ * option to \c build.sh to enforce this.
  *
  * If testing is disabled, the \c RUN_TESTS_IF_ENABLED macro expands to
  * nothing. The compiler also excludes all test code, so the resulting
