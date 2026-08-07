@@ -385,6 +385,13 @@ static void parse(struct ParserState* state, va_list* args) {
     else
       handleText(state);
   } while (*state->format != NUL);
+  // Parsing has left state->format pointing at the *caller's* terminating NUL.
+  // The value there is already NUL, so this changes nothing that is ever read;
+  // what it changes is provenance.  state is a file-scope static that outlives
+  // the caller's frame, so retaining a pointer into a caller's automatic
+  // buffer would leave an indeterminate value behind.  "" has static storage
+  // duration and cannot dangle.
+  state->format = "";
 }
 
 /****    Implementation of the interface in the header file   ****/
@@ -870,6 +877,24 @@ static bool test_fatalErrorPush() {
 #endif
   ASSERT(strcmp(buffer.text, "$ab$") == 0);
 
+  // the caller's format is not retained past the call.  Checking
+  // *state.format == NUL alone would prove nothing: the format's own
+  // terminator is a NUL too.  Overwriting the caller's buffer, terminator
+  // included, is what tells the two apart.
+  fatalErrorInit();
+  char callerFormat[] = "abc";
+#if defined(__GNUC__)
+// The format is deliberately not a literal: that is the point of the case.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-security"
+#endif
+  ASSERT(fatalErrorPush(callerFormat));
+#if defined(__GNUC__)
+#pragma GCC diagnostic pop
+#endif
+  memset(callerFormat, 'x', sizeof(callerFormat));
+  ASSERT(*state.format == NUL);
+
   return true;
 }
 
@@ -920,6 +945,16 @@ static bool test_fatalErrorExitAt() {
   // ignoring error location
   testcase_ExitAt(NULL, 0, "take lessons, you fool!");
   ASSERT(strcmp(buffer.text, "take lessons, you fool!\n") == 0);
+
+  // the caller's message is not retained past the call.  composeErrorAt
+  // assigns state.format itself instead of going through fatalErrorPush, so
+  // this is a second, independent case.  No location and a message already
+  // ending in LF, so finishMessage() pushes nothing and that assignment is
+  // the only thing that touched state.format.
+  char callerMsg[] = "hi\n";
+  testcase_ExitAt(NULL, 0, callerMsg);
+  memset(callerMsg, 'y', sizeof(callerMsg));
+  ASSERT(*state.format == NUL);
 
   return true;
 }
