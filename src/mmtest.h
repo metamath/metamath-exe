@@ -7,7 +7,6 @@
 #ifndef METAMATH_MMTEST_H_
 #define METAMATH_MMTEST_H_
 
-
 /*!
  * \file mmtest.h
  * \brief Framework for regression tests.
@@ -25,20 +24,22 @@
  *
  * 3. Execute the following commands:
  * \verbatim
-   ./build.sh -ct
-   ./metamath_test
-   \endverbatim
+ *   ./build.sh -ct
+ *   ./metamath_test
+ *   \endverbatim
  *
- * 4. The test program produces output similar to the following:
+ * 4. Assuming \ref TEST_SILENT is set to its default value, the test program
+ * produces progress lines similar to the following:
  * \verbatim
-   > running test_mmfatl:test_fatalErrorInit... ok
-   \endverbatim
+ *   running test_mmfatl:test_fatalErrorInit... ok
+ *   \endverbatim
  *
- * If every test ends with \c ok, all regression tests have passed.
- * Otherwise, diagnostic information identifies the failed test.
+ * If every displayed test ends with \c ok, all regression tests have passed.
+ * A failed test outputs diagnostic information identifying the test and the
+ * failure.
  *
  * If the macro \c TEST_ENABLE is defined by the \c -t option of \c build.sh,
- * the script compiles regression tests into an executable named
+ * the script compiles the regression tests into an executable named
  * \c metamath_test. The value of \c TEST_ENABLE is irrelevant; only whether
  * the macro is defined matters. Defining the macro directly in this file does
  * not affect the executable's name.
@@ -52,18 +53,20 @@
  * executable does not increase in size. Thus, a disabled test suite incurs
  * neither a linking nor a runtime penalty.
  *
- * If testing is enabled, the tests report their progress to \c stdout.
- * Execution stops at the first regression failure, and a diagnostic
- * message provides further details about the context of the failure.
+ * If testing is enabled, the tests report their progress to \c stdout, if
+ * permitted by \ref TEST_SILENT. The first failed assertion aborts the test in
+ * which it occurs, and a diagnostic message always identifies the failing
+ * assertion and its source location. Remaining tests still run, and the
+ * program exits with a nonzero status if any test failed.
  *
  * We recommend running the regression tests whenever the code is modified
  * to ensure that it continues to behave as intended. The tests are also
- * run automatically by GitHub checks whenever changes are pushed.
+ * run automatically by GitHub's checks whenever changes are pushed.
  *
  * The macro \c RUN_TESTS_IF_ENABLED should be the first instruction in
  * \c main. It expands to nothing when testing is disabled. When testing
  * is enabled, it runs the regression tests and terminates the program,
- * so the normal program code is not executed:
+ * so the normal program execution does not take place:
  * \code
  * int main(int argc, char *argv[]) {
  *
@@ -76,7 +79,6 @@
  * }
  * \endcode
  */
-
 
 // Uncomment this to force-disable tests
 // #undef TEST_ENABLE
