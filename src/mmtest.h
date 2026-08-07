@@ -14,6 +14,7 @@
  * This file is part of the application's test infrastructure.
  *
  * \section regression_tests Regression tests
+ * \subsection running_tests Running the tests
  *
  * Regression tests can be run as follows:
  *
@@ -38,6 +39,7 @@
  * Otherwise, failing tests always display diagnostic information identifying
  * the test and the kind of failure.
  *
+ * \subsection test_details Details and implementation
  * If the macro \c TEST_ENABLE is defined by the \c -t option of \c build.sh,
  * the script compiles the regression tests into an executable named
  * \c metamath_test. The value of \c TEST_ENABLE is irrelevant; only whether
