@@ -237,9 +237,8 @@ static struct ParserState state = { .out = &buffer, .format = "" };
  */
 static void initState(struct ParserState* state, struct Buffer* buffer) {
   // The invariants in state are established.
-  static char empty[] = "";
   state->out = buffer;
-  state->format = empty;
+  state->format = "";
 }
 
 /*!
