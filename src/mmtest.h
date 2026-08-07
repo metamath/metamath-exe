@@ -28,15 +28,15 @@
    ./metamath_test
    \endverbatim
  *
- * 4. Assuming \ref TEST_SILENT is set to its default value, the test program
- * produces progress lines similar to the following:
+ * 4. The macro \ref TEST_SILENT can suppress progress and success information.
+ * When left in its default state, messages of the following kind are issued:
  * \verbatim
    running test_mmfatl:test_fatalErrorInit... ok
    \endverbatim
  *
  * If every displayed test ends with \c ok, all regression tests have passed.
- * A failed test outputs diagnostic information identifying the test and the
- * failure.
+ * Otherwise, failing tests always display diagnostic information identifying
+ * the test and the kind of failure.
  *
  * If the macro \c TEST_ENABLE is defined by the \c -t option of \c build.sh,
  * the script compiles the regression tests into an executable named
@@ -53,11 +53,11 @@
  * executable does not increase in size. Thus, a disabled test suite incurs
  * neither a linking nor a runtime penalty.
  *
- * If testing is enabled, the tests report their progress to \c stdout, if
- * permitted by \ref TEST_SILENT. The first failed assertion aborts the test in
- * which it occurs, and a diagnostic message always identifies the failing
- * assertion and its source location. Remaining tests still run, and the
- * program exits with a nonzero status if any test failed.
+ * If testing is enabled, the progress of tests is reported to \c stdout,
+ * subject to \ref TEST_SILENT. The first failed assertion aborts the test
+ * suite to which it belongs, and a diagnostic message identifying the failing
+ * assertion and its source location is always written. Remaining test suites
+ * still run, and the program exits with a nonzero status if any test failed.
  *
  * We recommend running the regression tests whenever the code is modified
  * to ensure that it continues to behave as intended. The tests are also
