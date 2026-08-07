@@ -441,9 +441,10 @@ bool fatalErrorPush(char const* format, ...) {
  * \brief finish the message in the buffer, without emitting it.
  *
  * The part of \ref fatalErrorPrintAndExit that carries logic: it pads a
- * non-empty message with a LF when it lacks one.  Split out so the regression
- * tests can check that logic without terminating the test program, and so
- * that no test-only condition has to appear in the emitting path below.
+ * non-empty message with a LF when it lacks one, so a following command
+ * prompt starts on a new line.  Split out so the regression tests can check
+ * that logic without terminating the test program, and so that no test-only
+ * condition has to appear in the emitting path below.
  */
 static void finishMessage(void) {
   struct Buffer* buffer = getBufferInstance();
