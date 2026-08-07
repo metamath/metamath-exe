@@ -336,7 +336,7 @@ void parseKeywords(void)
         // disagree, which they have before.
         if (g_statements + 1 >= potentialStatements) {
           // bug() can return; returning would write g_Statement[] past its end.
-          fatalErrorExitAt(__FILE__, __LINE__,
+          fatalErrorExitAt(MMFATL_FILE, __LINE__,
               BUG_CHECK_FATAL_FORMAT
               "*** FATAL ERROR ***  More statements than were counted\n",
               1774u);
@@ -3689,7 +3689,7 @@ void rawSourceError(char *startFile, char *ptr, long tokLen, vstring errMsg) {
   if (endLine - startLine < 0) {
     // bug() can return; returning would hand the negative length to the
     // memcpy() below as a huge size_t.
-    fatalErrorExitAt(__FILE__, __LINE__,
+    fatalErrorExitAt(MMFATL_FILE, __LINE__,
         BUG_CHECK_FATAL_FORMAT
         "*** FATAL ERROR ***  Negative source line length\n",
         1721u);

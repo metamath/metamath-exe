@@ -122,7 +122,7 @@ static void pushTempAlloc(void *mem)
 {
   if (g_tempAllocStackTop >= (MAX_ALLOC_STACK-1)) {
     // bug() builds its message here; with the stack full it would recurse.
-    fatalErrorExitAt(__FILE__, __LINE__,
+    fatalErrorExitAt(MMFATL_FILE, __LINE__,
         BUG_CHECK_FATAL_FORMAT
         "*** FATAL ERROR ***  Temporary string stack overflow\n",
         2201u);
@@ -157,7 +157,7 @@ static void* tempAlloc(long size) // String memory allocation/deallocation
   void* memptr = malloc((size_t)size);
   if (!memptr || size == 0) {
     // The heap has just failed, so bug() and printf() are both unusable.
-    fatalErrorExitAt(__FILE__, __LINE__,
+    fatalErrorExitAt(MMFATL_FILE, __LINE__,
         BUG_CHECK_FATAL_FORMAT
         "*** FATAL ERROR ***  Temporary string allocation failed\n",
         2202u);
@@ -200,7 +200,7 @@ void let(vstring *target, const char *source) {
     if (!*target) {
       // Returning would leave *target null for the copy below.
       // See the comment at bug 2202 above.
-      fatalErrorExitAt(__FILE__, __LINE__,
+      fatalErrorExitAt(MMFATL_FILE, __LINE__,
           BUG_CHECK_FATAL_FORMAT
           "*** FATAL ERROR ***  String memory couldn't be allocated\n",
           2204u);
@@ -247,7 +247,7 @@ temp_vstring cat(const char *string1, ...) {
     if (numArgs >= MAX_CAT_ARGS) {
       // Returning would write arg[] and argPos[] past their end.
       // See the comment at bug 2202 above.
-      fatalErrorExitAt(__FILE__, __LINE__,
+      fatalErrorExitAt(MMFATL_FILE, __LINE__,
           BUG_CHECK_FATAL_FORMAT
           "*** FATAL ERROR ***  Too many cat() arguments\n",
           2206u);

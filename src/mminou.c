@@ -331,7 +331,7 @@ flag print2(const char* fmt, ...) {
   if (bufsiz == -1) {
     // bug() reports through this function; calling it would recurse.
     // Returning would leave bufsiz -1 for the malloc() below.
-    fatalErrorExitAt(__FILE__, __LINE__,
+    fatalErrorExitAt(MMFATL_FILE, __LINE__,
         BUG_CHECK_FATAL_FORMAT
         "*** FATAL ERROR ***  vsnprintf() could not size the output\n",
         1527u);
@@ -347,7 +347,7 @@ flag print2(const char* fmt, ...) {
   if (charsPrinted != bufsiz) {
     // bug() reports through this function; calling it would recurse.
     // Returning would leave printBuffer sized for a different count.
-    fatalErrorExitAt(__FILE__, __LINE__,
+    fatalErrorExitAt(MMFATL_FILE, __LINE__,
         BUG_CHECK_FATAL_FORMAT
         "*** FATAL ERROR ***  vsprintf() wrote %u characters, not %u\n",
         1528u, (unsigned)charsPrinted, (unsigned)bufsiz);
@@ -640,7 +640,7 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
       if (p < 4)
         // bug() reports through print2(), which this function calls.
         // The tests below index longLine[p - 3] and longLine[p - 4].
-        fatalErrorExitAt(__FILE__, __LINE__,
+        fatalErrorExitAt(MMFATL_FILE, __LINE__,
             BUG_CHECK_FATAL_FORMAT
             "*** FATAL ERROR ***  Line break position below 4\n",
             1524u);
@@ -662,7 +662,7 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
         } else {
           if (p <= 0)
             // bug() would recurse; the loop below indexes longLine[p - 1].
-            fatalErrorExitAt(__FILE__, __LINE__,
+            fatalErrorExitAt(MMFATL_FILE, __LINE__,
                 BUG_CHECK_FATAL_FORMAT
                 "*** FATAL ERROR ***  Line break position not positive\n",
                 1518u);
@@ -697,7 +697,7 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
       }
       if (!p)
         // bug() would recurse; p == 0 would split the line at nothing.
-        fatalErrorExitAt(__FILE__, __LINE__,
+        fatalErrorExitAt(MMFATL_FILE, __LINE__,
             BUG_CHECK_FATAL_FORMAT
             "*** FATAL ERROR ***  Line break position is zero\n",
             1515u);
@@ -707,7 +707,7 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
       if (p == 1 && longLine[0] != ' ')
         // bug() would recurse.  Breaking at a non-space first character does
         // not shorten the line, so the enclosing loop would never end.
-        fatalErrorExitAt(__FILE__, __LINE__,
+        fatalErrorExitAt(MMFATL_FILE, __LINE__,
             BUG_CHECK_FATAL_FORMAT
             "*** FATAL ERROR ***  Line break would not shorten the line\n",
             1516u);
@@ -792,7 +792,7 @@ vstring cmdInput(FILE *stream, const char *ask) {
     let(&g, space(CMD_BUFFER_SIZE)); // Allocate CMD_BUFFER_SIZE+1 bytes
     if (g[CMD_BUFFER_SIZE]) {
       // bug() reads its answer through this function; calling it would recurse.
-      fatalErrorExitAt(__FILE__, __LINE__,
+      fatalErrorExitAt(MMFATL_FILE, __LINE__,
           BUG_CHECK_FATAL_FORMAT
           "*** FATAL ERROR ***  let() did not terminate its allocation\n",
           1520u);

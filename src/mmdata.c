@@ -502,7 +502,7 @@ void *poolMalloc(long size) // bytes
       // Shouldn't have allocation problems when program first starts
       if (!memUsedPoolTmpPtr)
         // bug() reports through print2(), which uses this pool.
-        fatalErrorExitAt(__FILE__, __LINE__,
+        fatalErrorExitAt(MMFATL_FILE, __LINE__,
             BUG_CHECK_FATAL_FORMAT
             "*** FATAL ERROR ***  Memory pool could not be initialized\n",
             1303u);
@@ -560,7 +560,7 @@ void poolFree(void *ptr) {
       // Shouldn't have allocation problems when program first starts
       if (!memFreePoolTmpPtr)
         // bug() reports through print2(), which uses this pool.
-        fatalErrorExitAt(__FILE__, __LINE__,
+        fatalErrorExitAt(MMFATL_FILE, __LINE__,
             BUG_CHECK_FATAL_FORMAT
             "*** FATAL ERROR ***  Free memory pool could not be initialized\n",
             1304u);
@@ -612,7 +612,7 @@ void addToUsedPool(void *ptr)
        // Shouldn't have allocation problems when program first starts
       if (!memUsedPoolTmpPtr)
         // bug() reports through print2(), which uses this pool.
-        fatalErrorExitAt(__FILE__, __LINE__,
+        fatalErrorExitAt(MMFATL_FILE, __LINE__,
             BUG_CHECK_FATAL_FORMAT
             "*** FATAL ERROR ***  Used memory pool could not be grown\n",
             1362u);
@@ -748,7 +748,7 @@ void outOfMemory(const char *msg) {
     fclose(g_logFilePtr);
     g_logFileOpenFlag = 0;
   }
-  fatalErrorExitAt(__FILE__, __LINE__,
+  fatalErrorExitAt(MMFATL_FILE, __LINE__,
         "*** FATAL ERROR:  Out of memory.\n"
         "Internal identifier (for technical support):  %s\n"
         "To solve this problem, remove some unnecessary statements or file\n"
@@ -1050,7 +1050,7 @@ temp_nmbrString *nmbrMakeTempAlloc(nmbrString *s)
 {
   if (g_nmbrTempAllocStackTop>=(M_MAX_ALLOC_STACK-1)) {
     // bug() can return; returning would push past nmbrTempAllocStack's end.
-    fatalErrorExitAt(__FILE__, __LINE__,
+    fatalErrorExitAt(MMFATL_FILE, __LINE__,
         BUG_CHECK_FATAL_FORMAT
         "*** FATAL ERROR ***  Temporary nmbrString stack overflow\n",
         1368u);
@@ -1183,7 +1183,7 @@ temp_nmbrString *nmbrCat(const nmbrString *string1,...) // String concatenation
   while ((arg[numArgs++]=va_arg(ap,nmbrString *)))
     if (numArgs>=M_MAX_CAT_ARGS-1) {
       // bug() can return; returning would write arg[] past its end.
-      fatalErrorExitAt(__FILE__, __LINE__,
+      fatalErrorExitAt(MMFATL_FILE, __LINE__,
           BUG_CHECK_FATAL_FORMAT
           "*** FATAL ERROR ***  Too many nmbrCat() arguments\n",
           1369u);
@@ -2505,7 +2505,7 @@ temp_pntrString *pntrTempAlloc(long size) {
 temp_pntrString *pntrMakeTempAlloc(pntrString *s) {
   if (g_pntrTempAllocStackTop>=(M_MAX_ALLOC_STACK-1)) {
     // bug() can return; returning would push past pntrTempAllocStack's end.
-    fatalErrorExitAt(__FILE__, __LINE__,
+    fatalErrorExitAt(MMFATL_FILE, __LINE__,
         BUG_CHECK_FATAL_FORMAT
         "*** FATAL ERROR ***  Temporary pntrString stack overflow\n",
         1370u);
@@ -2549,7 +2549,7 @@ void pntrLet(pntrString **target, const pntrString *source) {
         if (((long *)(*target))[-1] != ((long *)(*target))[-2]) {
           if (((long *)(*target))[-1] > ((long *)(*target))[-2])
             // bug() reports through print2(), which uses this pool.
-            fatalErrorExitAt(__FILE__, __LINE__,
+            fatalErrorExitAt(MMFATL_FILE, __LINE__,
                 BUG_CHECK_FATAL_FORMAT
                 "*** FATAL ERROR ***  Memory pool header is inconsistent\n",
                 1359u);
@@ -2590,7 +2590,7 @@ void pntrLet(pntrString **target, const pntrString *source) {
         if (((long *)(*target))[-1] != ((long *)(*target))[-2]) {
           if (((long *)(*target))[-1] > ((long *)(*target))[-2])
             // bug() reports through print2(), which uses this pool.
-            fatalErrorExitAt(__FILE__, __LINE__,
+            fatalErrorExitAt(MMFATL_FILE, __LINE__,
                 BUG_CHECK_FATAL_FORMAT
                 "*** FATAL ERROR ***  Memory pool header is inconsistent\n",
                 1360u);
@@ -2645,7 +2645,7 @@ temp_pntrString *pntrCat(const pntrString *string1,...) {
   while ((arg[numArgs++]=va_arg(ap,pntrString *)))
     if (numArgs>=M_MAX_CAT_ARGS-1) {
       // bug() can return; returning would write arg[] past its end.
-      fatalErrorExitAt(__FILE__, __LINE__,
+      fatalErrorExitAt(MMFATL_FILE, __LINE__,
           BUG_CHECK_FATAL_FORMAT
           "*** FATAL ERROR ***  Too many pntrCat() arguments\n",
           1371u);
@@ -2995,11 +2995,11 @@ long **alloc2DMatrix(size_t xsize, size_t ysize)
   long i;
   matrix = malloc(xsize * sizeof(long *));
   if (matrix == NULL)
-    fatalErrorExitAt(__FILE__, __LINE__, "?FATAL ERROR 1376 Out of memory\n");
+    fatalErrorExitAt(MMFATL_FILE, __LINE__, "?FATAL ERROR 1376 Out of memory\n");
   for (i = 0; i < (long)xsize; i++) {
     matrix[i] = malloc(ysize * sizeof(long));
     if (matrix[i] == NULL)
-      fatalErrorExitAt(__FILE__, __LINE__, "?FATAL ERROR 1377 Out of memory\n");
+      fatalErrorExitAt(MMFATL_FILE, __LINE__, "?FATAL ERROR 1377 Out of memory\n");
   }
   return matrix;
 } // alloc2DMatrix

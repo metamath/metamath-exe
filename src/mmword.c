@@ -161,7 +161,7 @@ l7100:
 l7130:  gosub_7320();
         i1_=i1_+1;
         if (i1_ >= MAX_LINES) {
-          fatalErrorExitAt(__FILE__, __LINE__,
+          fatalErrorExitAt(MMFATL_FILE, __LINE__,
               BUG_CHECK_FATAL_FORMAT
               "*** FATAL ERROR ***  Line buffer 1 overflow\n",
               1601u);
@@ -192,7 +192,7 @@ l7140:  if (strcmpe(line1_[i1_+t-m+1], line2_[i+t])) {
         gosub_7330();
         i2_=i2_+1;
         if (i2_ >= MAX_LINES) {
-          fatalErrorExitAt(__FILE__, __LINE__,
+          fatalErrorExitAt(MMFATL_FILE, __LINE__,
               BUG_CHECK_FATAL_FORMAT
               "*** FATAL ERROR ***  Line buffer 2 overflow\n",
               1602u);
@@ -232,7 +232,7 @@ l7200:  i=i+m-1;
         }
         r2=r2+i2_-i;
         if (r2 >= MAX_BUF) {
-          fatalErrorExitAt(__FILE__, __LINE__,
+          fatalErrorExitAt(MMFATL_FILE, __LINE__,
               BUG_CHECK_FATAL_FORMAT
               "*** FATAL ERROR ***  Reserve buffer 2 overflow\n",
               1603u);
@@ -251,7 +251,7 @@ l7220:  i=i+m-1;
         }
         r1=r1+i1_-i;
         if (r1 >= MAX_BUF) {
-          fatalErrorExitAt(__FILE__, __LINE__,
+          fatalErrorExitAt(MMFATL_FILE, __LINE__,
               BUG_CHECK_FATAL_FORMAT
               "*** FATAL ERROR ***  Reserve buffer 1 overflow\n",
               1604u);

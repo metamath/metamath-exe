@@ -34,6 +34,18 @@
 # define NORETURN_ATTR
 #endif
 
+/*! \def MMFATL_FILE
+ * The source file name to pass to \ref fatalErrorExitAt.  __FILE__ expands to
+ * the path as handed to the compiler, which an out-of-tree build makes
+ * absolute: it puts the build directory into a user's error message, and eats
+ * into the \ref MMFATL_MAX_MSG_SIZE the message has to fit in.  __FILE_NAME__
+ * is the bare file name, and falls back to __FILE__ where it is unavailable. */
+#ifdef __FILE_NAME__
+# define MMFATL_FILE __FILE_NAME__
+#else
+# define MMFATL_FILE __FILE__
+#endif
+
 /* Documentation
  * =============
  *
@@ -86,7 +98,7 @@
  * \p printf. The variety and functionality is greatly reduced in our case,
  * though.  Only pieces of text or unsigned integers can be embedded
  * (%s or %u placeholder).  This is sufficient to embed an error location
- * given by __FILE__ and __LINE__ into the message.
+ * given by \ref MMFATL_FILE and __LINE__ into the message.
  *
  * For this kind of expansion you still need a buffer where the final message
  * is constructed.  In our context, this buffer is pre-allocated, fixed in
@@ -301,7 +313,7 @@ extern void fatalErrorPrintAndExit(void) NORETURN_ATTR;
  * \ref fatalErrorPrintAndExit instead of this function.
  *
  * \param[in] file [null] filename of code responsible for calling this
- *   function, suitable for macro __FILE__.  Part of an error location.
+ *   function, suitable for macro \ref MMFATL_FILE.  Part of an error location.
  *   Ignored in case of NULL.
  * \param[in] line [unsigned] if greater 0, interpreted as a line number, where
  *   a call to this function is initiated, suitable for macro __LINE__.  Part
