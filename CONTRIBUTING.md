@@ -78,6 +78,9 @@ may need to be checked manually.
 We expect all code merged to compile and not break existing
 functionality.
 
+We also expect the regression tests to pass.  See `src/mmtest.h` for how to
+run them and for more details.
+
 To be merged, a pull request must be approved by a different existing
 contributor (someone who's already had some previous contributions accepted).
 You can approve a change by viewing the pull request, selecting
