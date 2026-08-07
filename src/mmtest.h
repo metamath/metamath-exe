@@ -24,15 +24,15 @@
  *
  * 3. Execute the following commands:
  * \verbatim
- *   ./build.sh -ct
- *   ./metamath_test
- *   \endverbatim
+   ./build.sh -ct
+   ./metamath_test
+   \endverbatim
  *
  * 4. Assuming \ref TEST_SILENT is set to its default value, the test program
  * produces progress lines similar to the following:
  * \verbatim
- *   running test_mmfatl:test_fatalErrorInit... ok
- *   \endverbatim
+   running test_mmfatl:test_fatalErrorInit... ok
+   \endverbatim
  *
  * If every displayed test ends with \c ok, all regression tests have passed.
  * A failed test outputs diagnostic information identifying the test and the
