@@ -734,7 +734,7 @@ int main(int argc, char *argv[]) {
   // argc is the number of arguments; argv points to an array containing them
 
   // see mmtest.h for how to run the regression tests
-  RUN_TESTS_IF_ENABLED();
+  RUN_TESTS_AND_EXIT_IF_ENABLED();
   // The following code is not reached if tests are enabled.
 
   // ******** If g_listMode is set to 1 here, the startup will be Text

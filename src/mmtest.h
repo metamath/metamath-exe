@@ -50,8 +50,8 @@
  * files, all intermediate artifacts must be rebuilt. Pass the \c -c (clean)
  * option to \c build.sh to enforce this.
  *
- * If testing is disabled, the \c RUN_TESTS_IF_ENABLED macro expands to
- * nothing. The compiler also excludes all test code, so the resulting
+ * If testing is disabled, the \c RUN_TESTS_AND_EXIT_IF_ENABLED macro expands
+ * to nothing. The compiler also excludes all test code, so the resulting
  * executable does not increase in size. Thus, a disabled test suite incurs
  * neither a linking nor a runtime penalty.
  *
@@ -65,15 +65,15 @@
  * to ensure that it continues to behave as intended. The tests are also
  * run automatically by GitHub's checks whenever changes are pushed.
  *
- * The macro \c RUN_TESTS_IF_ENABLED should be the first instruction in
- * \c main. It expands to nothing when testing is disabled. When testing
+ * The macro \c RUN_TESTS_AND_EXIT_IF_ENABLED should be the first instruction
+ * in \c main. It expands to nothing when testing is disabled. When testing
  * is enabled, it runs the regression tests and terminates the program,
  * so the normal program execution does not take place:
  * \code
  * int main(int argc, char *argv[]) {
  *
  *  // Expands to nothing if tests are not enabled.
- *  RUN_TESTS_IF_ENABLED();
+ *  RUN_TESTS_AND_EXIT_IF_ENABLED();
  *
  *  // This code is not reached if tests are enabled.
  *
@@ -132,10 +132,10 @@
       ASSERTF(bool_expr, "assertion %s failed", #bool_expr)
 
   extern void runTests(void);
-  #define RUN_TESTS_IF_ENABLED() runTests()
+  #define RUN_TESTS_AND_EXIT_IF_ENABLED() runTests()
 
 #else // TEST_ENABLE
-  #define RUN_TESTS_IF_ENABLED()
+  #define RUN_TESTS_AND_EXIT_IF_ENABLED()
 #endif // TEST_ENABLE
 
 #endif // METAMATH_MMTEST_H_
