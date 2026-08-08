@@ -735,7 +735,6 @@ int main(int argc, char *argv[]) {
 
   // see mmtest.h for how to run the regression tests
   RUN_TESTS_AND_EXIT_IF_ENABLED();
-  // The following code is not reached if tests are enabled.
 
   // ******** If g_listMode is set to 1 here, the startup will be Text
   //          Tools utilities, and Metamath will be disabled *********
