@@ -1,0 +1,22 @@
+! Regression test: the scrolling pager must not spin when input runs out.
+!
+! print2()'s pager used to store getchar()'s result in a char, so it never
+! recognized EOF: once the input was exhausted, metamath read EOF forever at
+! 100% CPU, with its output half delivered.
+!
+! To reach the pager, this case turns prompted scrolling back on (the harness
+! starts every case with SET SCROLL CONTINUOUS).  HEIGHT and HELP are chosen
+! so that the displayed output does not fit on a single page, but are
+! otherwise irrelevant.  The input ends right after HELP, while the pager is
+! waiting for an answer, and metamath should stop that output and exit.
+!
+! The output is ignored, by the directive below: this case only checks that
+! metamath terminates, so edits to the help text do not affect it.
+!
+! Caution: the harness applies no timeout, so a regression makes this case
+! hang rather than fail.
+!
+! run_test
+SET SCROLL PROMPTED
+SET HEIGHT 1
+HELP

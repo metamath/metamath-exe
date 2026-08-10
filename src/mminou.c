@@ -220,6 +220,22 @@ long backBufferPos = 0;
  */
 flag backFromCmdInput = 0;
 
+/*!
+ * Read the user's answer to the scrolling prompt of \ref print2, which is one
+ * line of standard input.
+ * \return '\n' for an empty line, the character itself for a one-character
+ *   line, 0 for a longer line, or EOF once input is exhausted, even part way
+ *   through a line.
+ */
+static int readScrollAnswer(void) {
+  int first = getchar();
+  if (first == EOF || first == '\n') return first;
+  int next = getchar();
+  if (next == '\n') return first;
+  while (next != '\n' && next != EOF) next = getchar(); // Discard the rest
+  return next == EOF ? EOF : 0;
+}
+
 // Special: if global flag g_outputToString = 1, then the output is not
 // printed but is added to global string g_printString.
 // Returns 0 if user typed "q" during scroll prompt; this lets a procedure
@@ -230,7 +246,7 @@ flag print2(const char* fmt, ...) {
   // open, the characters will also be printed to the log file.
   // Also, scrolling is paused at each page if in scroll-prompted mode.
   va_list ap;
-  char c;
+  int c; // Answer to the scrolling prompt, see readScrollAnswer()
   long nlpos, lineLen, charsPrinted;
   long i;
 
@@ -287,7 +303,18 @@ flag print2(const char* fmt, ...) {
         fflush(stdout);
 #endif
       }
-      c = (char)(getchar());
+      c = readScrollAnswer();
+      if (c == EOF) {
+        // Input is exhausted, so the prompt can never be answered, and
+        // reading on would spin here.  Stop printing as a "Q" answer would.
+        printf("\n");
+#if __STDC__
+        fflush(stdout);
+#endif
+        if (!backFromCmdInput)
+          g_quitPrint = 1;
+        break;
+      }
       if (c == '\n') {
         if (backBufferPos == pntrLen(backBuffer)) {
           // Normal output
@@ -302,7 +329,7 @@ flag print2(const char* fmt, ...) {
           continue;
         }
       }
-      if (getchar() == '\n') {
+      if (c != 0) { // A one-character answer; a longer one is ignored
         if (c == 'q' || c == 'Q') {
           if (!backFromCmdInput)
             g_quitPrint = 1;
@@ -341,7 +368,6 @@ flag print2(const char* fmt, ...) {
 #endif
         continue;
       }
-      while (c != '\n') c = (char)(getchar());
     } // While 1
 
     if (backFromCmdInput)
