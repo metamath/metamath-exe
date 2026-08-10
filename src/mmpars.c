@@ -237,6 +237,7 @@ void parseKeywords(void)
   g_Statement[i].optDisjVarsStmt = NULL_NMBRSTRING;
   g_Statement[i].pinkNumber = 0;
   g_Statement[i].headerStartStmt = 0;
+  g_Statement[i].hasVarWithoutHyp = 0;
   for (i = 1; i < potentialStatements; i++) {
     g_Statement[i] = g_Statement[0];
   }
@@ -274,9 +275,17 @@ void parseKeywords(void)
     }
     fbPtr++;
     switch (fbPtr[0]) {
-      case '$': // "$$" means literal "$"
-        fbPtr++;
-        continue;
+      // Note there is deliberately no "$$" case here.  This function used to
+      // treat "$$" as an escaped literal "$" and skip both characters, but it
+      // was the only scanner in the program that did: readRawSource(), which
+      // counts statements to size g_Statement[], did not, and neither does
+      // getNextInclusion() or parseMathDecl().  The Metamath language has no
+      // such escape either.  The disagreement meant that on "$$(" this
+      // function stayed outside a comment while readRawSource() entered one,
+      // after which the two disagreed about the rest of the file, the count
+      // came up short, and the statement loop below wrote past the end of
+      // g_Statement[].  A stray "$" now falls to the default arm below and is
+      // reported like any other invalid keyword.
       case '(': // Start of comment
         insideComment = 1;
         continue;
@@ -318,6 +327,19 @@ void parseKeywords(void)
         }
         // Initialize a new statement
         g_statements++;
+        // g_Statement[] was sized from readRawSource()'s count, and a dummy
+        // statement is written at g_statements + 1 after this loop, so both
+        // indexes have to stay inside the array.  This should always hold:
+        // this function creates a statement only where readRawSource()
+        // counted one.  Trap it rather than corrupt the heap if the two ever
+        // disagree, which they have before.
+        if (g_statements + 1 >= potentialStatements) {
+          bug(1774);
+          // Returning would write g_Statement[] past its end, which is what
+          // the trap is here to prevent.  bug() returns if the user answers
+          // "I" or "S"; see the comment at bug(2202) in mmvstr.c.
+          exit(EXIT_FAILURE);
+        }
         g_Statement[g_statements].type = type;
         g_Statement[g_statements].labelSectionPtr = startSection;
         g_Statement[g_statements].labelSectionLen = fbPtr - startSection - 1;
@@ -342,6 +364,17 @@ void parseKeywords(void)
                 "Expected \"$=\" here.");
             if (fbPtr[0] == '.') {
               mode = 2; // If $. switch mode to help reduce error msgs
+            } else {
+              // Give up on this keyword rather than opening a proof
+              // section at it, the way the "$." case just below does for
+              // every other statement type.  Falling through would set
+              // startSection past this keyword and switch to mode 2, so
+              // the next "$" -- which on "$p ... $$." is the very next
+              // character -- closed a proof section that starts after it,
+              // recording a length of -1.  Consumers then do space(-1),
+              // which clamps to an empty string, followed by memcpy() of
+              // (size_t)-1 bytes into it.
+              continue;
             }
           }
           if (type != p_ && fbPtr[0] != '.') {
@@ -551,12 +584,65 @@ void parseLabels(void) {
   }
 }
 
+/*!
+ * \brief tokenLen() bounded by the end of the section being scanned
+ *
+ * A caller that walks a section sizes an array from that section's length,
+ * then fills it one token at a time.  A token running past the end of the
+ * section would overrun that array.
+ *
+ * A token can do that.  The token length functions know nothing about where
+ * the section was recorded to end, so on malformed input the two disagree.
+ * tokenLen() is one way in: it stops at any "$" unless a digit follows it,
+ * that being the "$1" dummy variable form, so the "$" that ends a section
+ * does not always end the token.  A section can even be empty and start at
+ * such a "$", as in "$p$6".
+ *
+ * Trimming here keeps the scan inside the array the caller sized.  It takes
+ * malformed input to get there: over all of set.mm nothing is ever trimmed.
+ *
+ * Callers already stop on a zero length, so report the end of the section
+ * that way and there is nothing else for them to check.
+ *
+ * \param[in] ptr where the token would start
+ * \param[in] sectionEnd just past the last character of the section
+ * \returns the token length, trimmed to what lies inside the section, or 0 at
+ *   or past its end
+ */
+static long tokenLenInSection(char *ptr, const char *sectionEnd) {
+  long len;
+  if (ptr >= sectionEnd) return 0; // At or past the end of the section
+  len = tokenLen(ptr);
+  if (len > sectionEnd - ptr) len = sectionEnd - ptr; // Trim to the section
+  return len;
+}
+
+/*!
+ * \brief proofTokenLen() bounded by the end of the section being scanned
+ *
+ * The proof counterpart of tokenLenInSection(); see it for why this is
+ * needed.
+ *
+ * \param[in] ptr where the token would start
+ * \param[in] sectionEnd just past the last character of the section
+ * \returns the token length, trimmed to what lies inside the section, or 0 at
+ *   or past its end
+ */
+static long proofTokenLenInSection(char *ptr, const char *sectionEnd) {
+  long len;
+  if (ptr >= sectionEnd) return 0; // At or past the end of the section
+  len = proofTokenLen(ptr);
+  if (len > sectionEnd - ptr) len = sectionEnd - ptr; // Trim to the section
+  return len;
+}
+
 // This functions retrieves all possible math symbols from $c and $v
 // statements.
 void parseMathDecl(void) {
   long potentialSymbols;
   long stmt;
   char *fbPtr;
+  char *mathSectionEnd; // Just past the last character of the math section
   long i, j, k;
   char *tmpPtr;
   nmbrString *nmbrTmpPtr;
@@ -588,10 +674,22 @@ void parseMathDecl(void) {
       case v_:
         oldG_mathTokens = g_mathTokens;
         fbPtr = g_Statement[stmt].mathSectionPtr;
+        // Stop at the recorded end of the math section rather than relying on
+        // tokenLen() to stop at the "$" that ends it.  tokenLen() deliberately
+        // runs through a "$" followed by a digit, that being the "$1" dummy
+        // variable form, and through a "$$" as well, so on a statement like
+        // "$c A ]$$.$" the token "]$$." swallows the "$." that should have
+        // ended the statement and the scan carries on into the next one.
+        // g_MathToken was sized from the math section lengths totalled above,
+        // so symbols found out there overran it.  The two agree on every
+        // well-formed statement: over all of set.mm no token ends past the
+        // recorded section, so this bound never fires there.
+        mathSectionEnd = fbPtr + (g_Statement[stmt].mathSectionLen > 0
+            ? g_Statement[stmt].mathSectionLen : 0);
         while (1) {
           i = whiteSpaceLen(fbPtr);
-          j = tokenLen(fbPtr + i);
-          if (!j) break;
+          j = tokenLenInSection(fbPtr + i, mathSectionEnd);
+          if (!j) break; // End of the section, or nothing left to tokenize
           tmpPtr = malloc((size_t)j + 1); // Math symbol name
           if (!tmpPtr) outOfMemory("#8 (symbol name)");
           tmpPtr[j] = 0; // End of string
@@ -703,11 +801,20 @@ void parseStatements(void) {
   long tokenNum;
   long lowerKey, upperKey;
   long symbolLen, origSymbolLen, mathSectionLen, g_mathKeyNum;
+  char *mathSectionEnd; // Just past the last character of the math section
   void *g_mathKeyPtr; // bsearch returned value
   int maxScope;
   long reqHyps, optHyps, reqVars, optVars;
   flag reqFlag;
   int undeclErrorCount = 0;
+  // g_dummyVarBase is the index of the "$|$" boundary token that sits
+  // directly below the proof assistant's dummy variables, so that the
+  // parser's placeholders below it and the dummy variables above it can
+  // never land on the same slot.  With no placeholders that is the boundary
+  // token parseMathDecl() already made; otherwise a second one is added
+  // after the placeholders at the end of this function.  Track the top as we
+  // go so it stays right even if parsing stops early.
+  g_dummyVarBase = g_mathTokens;
   vstring_def(tmpStr);
 
   nmbrString *nmbrTmpPtr;
@@ -1078,10 +1185,17 @@ void parseStatements(void) {
         // Scan the math section for tokens
         mathStringLen = 0;
         fbPtr = g_Statement[stmt].mathSectionPtr;
+        // Stop at the end of the math section instead of trusting tokenLen()
+        // to stop at the "$" that ends it.  wrkStrPtr is sized from
+        // mathSectionLen, so a token past the end of the section would
+        // overrun it.  "$p$6 ..." is the case to picture: the section is
+        // empty and starts at that very "$", and tokenLen() runs through a
+        // "$" followed by a digit.  See tokenLenInSection().
+        mathSectionEnd = fbPtr + (mathSectionLen > 0 ? mathSectionLen : 0);
         while (1) {
           fbPtr = fbPtr + whiteSpaceLen(fbPtr);
-          origSymbolLen = tokenLen(fbPtr);
-          if (!origSymbolLen) break; // Done scanning source line
+          origSymbolLen = tokenLenInSection(fbPtr, mathSectionEnd);
+          if (!origSymbolLen) break; // End of the section, or nothing left
 
           // Scan for largest matching token from the left
           nextAdjToken:
@@ -1093,8 +1207,12 @@ void parseStatements(void) {
           // ???Speed-up is possible by rewriting this now unnecessary code
           for (; symbolLen > 0; symbolLen = 0) {
 
-            // symbolLenExists means a symbol of this length was declared
-            if (!symbolLenExists[symbolLen]) continue;
+            // symbolLenExists means a symbol of this length was declared.
+            // symbolLenExists[] only has entries 0 through maxSymbolLen, and
+            // a token longer than the longest declared symbol cannot match
+            // one, so reject it before indexing the array.
+            if (symbolLen > maxSymbolLen || !symbolLenExists[symbolLen])
+              continue;
             wrkStrPtr[symbolLen] = 0; // Define end of trial token to look up
             g_mathKeyPtr = (void *)bsearch(wrkStrPtr, g_mathKey, (size_t)g_mathTokens,
                 sizeof(long), mathSrchCmp);
@@ -1167,7 +1285,9 @@ void parseStatements(void) {
             // stray pointer to active variable stack.
             undeclErrorCount++;
             tokenNum = g_mathTokens + undeclErrorCount;
-            if (tokenNum >= g_MAX_MATHTOKENS) {
+            g_dummyVarBase = tokenNum;
+            // "- 1" leaves room for the boundary token added after these
+            if (tokenNum >= g_MAX_MATHTOKENS - 1) {
               // There are current 100 places for bad tokens
               print2(
 "?Error: The temporary space for holding bad tokens has run out, because\n");
@@ -1182,12 +1302,36 @@ void parseStatements(void) {
             g_MathToken[tokenNum].tokenType = (char)var_;
             // Prevent stray pointers later
             g_MathToken[tokenNum].tmp = 0; // Location in active variable stack
+            // Fill in the rest of the fields too.  Everything else that
+            // creates a g_MathToken[] entry sets all eight; leaving these
+            // holding whatever realloc() left behind meant
+            // writeExtractedSource() used .statement as an array index.
+            // 0 is what the "$|$" token uses to mean "not declared in any
+            // statement", which is exactly the case here.
+            g_MathToken[tokenNum].active = 0;
+            g_MathToken[tokenNum].scope = 0;
+            g_MathToken[tokenNum].statement = 0;
+            g_MathToken[tokenNum].endStatement = g_statements;
             if (!activeVarStackPtr) { // Make a fictitious entry
               activeVarStack[activeVarStackPtr].tokenNum = tokenNum;
               activeVarStack[activeVarStackPtr].scope = g_currentScope;
               activeVarStack[activeVarStackPtr].tmpFlag = 0;
               activeVarStackPtr++;
             }
+          }
+
+          // Every path above has resolved the symbol to a tokenNum, and each
+          // one that failed to find an active declaration has reported it and
+          // pointed .tmp at activeVarStack[] entry 0 just to keep it in range
+          // (an entry another variable usually owns).  Nothing downstream can
+          // make sense of such a variable: it has no hypothesis to be
+          // substituted from, and the bookkeeping hung off that borrowed entry
+          // is not its own.  Record it once here, and let the users of the
+          // statement decline to work with it rather than each of them trying
+          // to detect the damage afterwards.
+          if (g_MathToken[tokenNum].tokenType == (char)var_
+              && !g_MathToken[tokenNum].active) {
+            g_Statement[stmt].hasVarWithoutHyp = 1;
           }
 
           if (type == d_) {
@@ -1241,6 +1385,17 @@ void parseStatements(void) {
           if (!mathStringLen) {
             sourceError(fbPtr, 2, stmt,
                 "This statement type requires at least one math symbol.");
+            // Much of the code elsewhere assumes a $f, $e, $a or $p has at
+            // least one math symbol, and uses mathString[0] to index
+            // g_MathToken[].  Without a symbol here, mathString[0] would be
+            // the -1 terminator and those accesses would be out of bounds.
+            // So give the statement one placeholder symbol: the "$|$"
+            // boundary token, which parseMathDecl() always creates just past
+            // the declared symbols.  The statement is already reported as an
+            // error, and a length of 1 is a case the rest of the code
+            // handles anyway (e.g. a "$f" with only one symbol).
+            wrkNmbrPtr[0] = g_mathTokens;
+            mathStringLen = 1;
           } else {
             if (type == f_ && mathStringLen < 2) {
               sourceError(fbPtr, 2, stmt,
@@ -1562,6 +1717,7 @@ void parseStatements(void) {
                     " \"$p\" statements must appear in at least one such",
                     " hypothesis.",NULL));
               activeVarStack[g_MathToken[k].tmp].tmpFlag = 1; // One msg per var
+              g_Statement[stmt].hasVarWithoutHyp = 1;
             }
           }
           j++;
@@ -1723,7 +1879,12 @@ void parseStatements(void) {
     type = g_Statement[stmt].type;
     if (type == a_) {
       if (g_minSubstLen) {
-        if (g_Statement[stmt].mathStringLen == 1) {
+        // Do not count the "$|$" placeholder given above to a $a that had
+        // no math symbols at all: that is an error statement, not a
+        // deliberate "$a wff $.", and it must not silently change how
+        // unification behaves for the whole database.
+        if (g_Statement[stmt].mathStringLen == 1
+            && (g_Statement[stmt].mathString)[0] != g_mathTokens) {
           g_minSubstLen = 0;
           printLongLine(cat("SET EMPTY_SUBSTITUTION was",
              " turned ON (allowed) for this database.", NULL),
@@ -1881,6 +2042,24 @@ void parseStatements(void) {
   free(wrkStrPtr);
   free(symbolLenExists);
   free_vstring(tmpStr);
+
+  // If any placeholders were created above, put another "$|$" boundary token
+  // just past them, so dummy variables start above it.  Without this,
+  // declareDummyVars() would reuse the slots the placeholders are in, and a
+  // math string still referring to a placeholder would silently start naming
+  // a dummy variable instead.
+  if (undeclErrorCount) {
+    g_dummyVarBase++;
+    g_MathToken[g_dummyVarBase].tokenName = "";
+    let(&g_MathToken[g_dummyVarBase].tokenName, "$|$");
+    g_MathToken[g_dummyVarBase].length = 2; // Never used
+    g_MathToken[g_dummyVarBase].tokenType = (char)con_;
+    g_MathToken[g_dummyVarBase].active = 0; // Never used
+    g_MathToken[g_dummyVarBase].scope = 0; // Never used
+    g_MathToken[g_dummyVarBase].tmp = 0; // Never used
+    g_MathToken[g_dummyVarBase].statement = 0; // Never used
+    g_MathToken[g_dummyVarBase].endStatement = g_statements; // Never used
+  }
 }
 
 // Parse proof of one statement in source file.  Uses g_WrkProof structure.
@@ -1892,6 +2071,7 @@ char parseProof(long statemNum)
 
   long i, j, k, m, tok, step;
   char *fbPtr;
+  char *proofSectionEnd; // Just past the last character of the proof section
   long tokLength;
   long numReqHyp;
   long numOptHyp;
@@ -1903,7 +2083,10 @@ char parseProof(long statemNum)
   void *voidPtr; // bsearch returned value
   vstring tmpStrPtr;
 
+  long wrkProofNeeded; // Working space this proof needs
   flag explicitTargets = 0; // Proof is of form <target>=<source>
+  // 1 only if targetPntr[] below was filled in for every proof step
+  flag targetsComplete = 0;
   // Source file pointers and token sizes for targets in a /EXPLICIT proof
   pntrString_def(targetPntr); // Pointers to target tokens
   nmbrString_def(targetNmbr); // Size of target tokens
@@ -1942,8 +2125,17 @@ char parseProof(long statemNum)
   // plus the number of active hypotheses.
 
   numOptHyp = nmbrLen(g_Statement[statemNum].optHypList);
-  if (g_Statement[statemNum].proofSectionLen + g_Statement[statemNum].numReqHyp
-      + numOptHyp > g_wrkProofMaxSize) {
+  // Work out the size needed once, including the "+ 2" floor, and test that
+  // same value below.  Applying the floor only when growing (which is what
+  // this used to do) meant the test could pass with nothing allocated at
+  // all: g_wrkProofMaxSize starts at 0, so the first proof to need 0 gave
+  // "0 > 0", which is false, and every g_WrkProof pointer stayed null.
+  // It also allowed the buffers to be up to 2 entries short of the floor.
+  wrkProofNeeded = g_Statement[statemNum].proofSectionLen
+      + g_Statement[statemNum].numReqHyp + numOptHyp
+      // 2 is minimum for 1-step proof; the other terms could all be 0
+      + 2;
+  if (wrkProofNeeded > g_wrkProofMaxSize) {
     if (g_wrkProofMaxSize) { // Not the first allocation
       free(g_WrkProof.tokenSrcPtrNmbr);
       free(g_WrkProof.tokenSrcPtrPntr);
@@ -1957,10 +2149,7 @@ char parseProof(long statemNum)
       free(g_WrkProof.RPNStack);
       free(g_WrkProof.compressedPfLabelMap);
     }
-    g_wrkProofMaxSize = g_Statement[statemNum].proofSectionLen
-        + g_Statement[statemNum].numReqHyp + numOptHyp
-        // 2 is minimum for 1-step proof; the other terms could all be 0
-        + 2;
+    g_wrkProofMaxSize = wrkProofNeeded;
     g_WrkProof.tokenSrcPtrNmbr = malloc((size_t)g_wrkProofMaxSize
         * sizeof(nmbrString));
     g_WrkProof.tokenSrcPtrPntr = malloc((size_t)g_wrkProofMaxSize
@@ -2007,9 +2196,17 @@ char parseProof(long statemNum)
   // fbPtr points to the first token now.
 
   // First break up proof section of source into tokens
+  //
+  // Stop at the end of the proof section instead of trusting proofTokenLen()
+  // to stop at the "$." that ends it.  The arrays filled below are sized from
+  // proofSectionLen, so a token past the end of the section would overrun
+  // them.  See tokenLenInSection() for how the two come to disagree.
+  proofSectionEnd = g_Statement[statemNum].proofSectionPtr
+      + (g_Statement[statemNum].proofSectionLen > 0
+          ? g_Statement[statemNum].proofSectionLen : 0);
   while (1) {
-    tokLength = proofTokenLen(fbPtr);
-    if (!tokLength) break;
+    tokLength = proofTokenLenInSection(fbPtr, proofSectionEnd);
+    if (!tokLength) break; // End of the section, or nothing left to tokenize
     g_WrkProof.tokenSrcPtrPntr[g_WrkProof.numTokens] = fbPtr;
     g_WrkProof.tokenSrcPtrNmbr[g_WrkProof.numTokens] = tokLength;
     g_WrkProof.numTokens++;
@@ -2205,6 +2402,9 @@ char parseProof(long statemNum)
   if (explicitTargets == 1) {
     pntrLet(&targetPntr, pntrSpace(g_WrkProof.numSteps));
     nmbrLet(&targetNmbr, nmbrSpace(g_WrkProof.numSteps));
+    // Cleared below if the scan does not reach every step, which leaves
+    // the rest of targetPntr[] holding the "" that pntrSpace() put there.
+    targetsComplete = 1;
     step = 0;
     for (tok = 0; tok < g_WrkProof.numTokens - 2; tok++) {
       // If next token is = then this token is a target for /EXPLICIT format,
@@ -2247,6 +2447,13 @@ char parseProof(long statemNum)
       }
       g_WrkProof.errorCount++;
       if (returnFlag < 2) returnFlag = 2;
+      // targetPntr[step] onwards were never assigned a source pointer, so
+      // they still hold the "" string literal.  The hypothesis rearranging
+      // further below writes a temporary null into whatever they point at,
+      // which for "" is a write to read-only memory.  Skip that step
+      // instead; this proof has just been marked severity 2, so every
+      // caller discards it anyway.
+      targetsComplete = 0;
     }
   } // if explicitTargets == 1
 
@@ -2466,7 +2673,7 @@ char parseProof(long statemNum)
     // For proofs saved with /EXPLICIT, the user may have changed the order
     // of hypotheses.  First, get the subproofs for the hypotheses.  Then
     // reassemble them in the right order.
-    if (explicitTargets == 1) {
+    if (explicitTargets == 1 && targetsComplete) {
       // nmbrString to rearrange proof then when done reassign to
       // g_WrkProof.proofString structure component.
       nmbrLet(&wrkProofString, g_WrkProof.proofString);
@@ -2750,6 +2957,7 @@ char parseCompressedProof(long statemNum)
 
   long i, j, k, step, stmt;
   char *fbPtr;
+  char *proofSectionEnd; // Just past the last character of the proof section
   char *fbStartProof;
   char *labelStart;
   long tokLength;
@@ -2908,9 +3116,21 @@ char parseCompressedProof(long statemNum)
   // ****** in order to easily parse the label section.
 
   // First break up the label section of proof into tokens
+  //
+  // Bounded at the end of the proof section for the same reason as the scan
+  // in parseProof(): stepSrcPtrPntr[] is sized from proofSectionLen, so a
+  // token past the end would overrun it.  This loop also stops at the ")"
+  // that ends the label list, but that is no help here -- a scan that ran
+  // past the section would miss the ")" too.  This is the scan that trims on
+  // the open-assignvar-undeclared-var case in fuzz/cases/.
+  proofSectionEnd = g_Statement[statemNum].proofSectionPtr
+      + (g_Statement[statemNum].proofSectionLen > 0
+          ? g_Statement[statemNum].proofSectionLen : 0);
   while (1) {
     fbPtr = fbPtr + whiteSpaceLen(fbPtr);
-    tokLength = proofTokenLen(fbPtr);
+    // Running off the end of the section arrives here as a zero length, and
+    // so is reported as the missing ")" that it is
+    tokLength = proofTokenLenInSection(fbPtr, proofSectionEnd);
     if (!tokLength) {
       if (!g_WrkProof.errorCount) {
         sourceError(fbPtr, 2, statemNum,
@@ -3124,7 +3344,20 @@ char parseCompressedProof(long statemNum)
           labelMapIndex = 0; // Make it something legal to avoid side effects
         }
 
-        stmt = g_WrkProof.compressedPfLabelMap[labelMapIndex];
+        if (g_WrkProof.compressedPfNumLabels <= 0) {
+          // The label map is empty: the statement has no required
+          // hypotheses and its "( )" list is empty, and no local label has
+          // been seen yet.  Then index 0 is out of range as well, so the
+          // clamp above has nothing legal to clamp to and reading the map
+          // would put uninitialized heap into the proof.  Treat the
+          // reference as an unknown step, which is what the other
+          // unusable-token paths here do.  The proof is already flagged:
+          // labelMapIndex cannot be negative, so with an empty map the
+          // range test just above rejects every reference.
+          stmt = -(long)'?';
+        } else {
+          stmt = g_WrkProof.compressedPfLabelMap[labelMapIndex];
+        }
         g_WrkProof.proofString[g_WrkProof.numSteps] = stmt;
 
         // Update stack
@@ -3212,8 +3445,20 @@ char parseCompressedProof(long statemNum)
         }
 
         // Put local label in label map
-        g_WrkProof.compressedPfLabelMap[g_WrkProof.compressedPfNumLabels] =
-          -1000 - (g_WrkProof.numSteps - 1);
+        if (g_WrkProof.numSteps == 0) {
+          // A "Z" here has no proof step to name, and the formula below
+          // would store -1000 - (0 - 1), that is -999.  A local label
+          // reference is <= -1000, so -999 is not one, and a later label
+          // resolving to it made verifyProof() abort with bug(2101).
+          // Store an unknown step instead, which is a legal proof string
+          // value.  Keeping the slot leaves any later local label at the
+          // index the source gives it.  The error is reported just below.
+          g_WrkProof.compressedPfLabelMap[g_WrkProof.compressedPfNumLabels] =
+            -(long)'?';
+        } else {
+          g_WrkProof.compressedPfLabelMap[g_WrkProof.compressedPfNumLabels] =
+            -1000 - (g_WrkProof.numSteps - 1);
+        }
         g_WrkProof.compressedPfNumLabels++;
 
         hypLocUnkFlag = 0;
@@ -3436,10 +3681,20 @@ void rawSourceError(char *startFile, char *ptr, long tokLen, vstring errMsg) {
   while (endLine[0] != '\n' && endLine[0] != 0) {
     endLine++;
   }
-  endLine--;
-  let(&errLine, space(endLine - startLine + 1));
-  if (endLine - startLine + 1 < 0) bug(1721);
-  memcpy(errLine, startLine, (size_t)(endLine - startLine) + 1);
+  // endLine now points just past the last character of the line, so the line
+  // length is endLine - startLine.  Do not decrement endLine to make it point
+  // at the last character: for a 0-length line that would compute a pointer
+  // before the start of the buffer, which is undefined behavior.
+  if (endLine - startLine < 0) {
+    bug(1721);
+    // Returning would hand the negative length to the memcpy() below, which
+    // reads it as a huge size_t.  space() clamps it to 0 first, so errLine
+    // would be the "" literal by then, and the copy would be into read-only
+    // memory.  See the comment at bug(2202) in mmvstr.c.
+    exit(EXIT_FAILURE);
+  }
+  let(&errLine, space(endLine - startLine));
+  memcpy(errLine, startLine, (size_t)(endLine - startLine));
   errorMessage(errLine, lineNum, ptr - startLine + 1, tokLen, errorMsg,
       fileName, 0, (char)error_);
   print2("\n");
@@ -3526,11 +3781,14 @@ void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
   while (endLine[0] != '\n' && endLine[0] != 0) {
     endLine++;
   }
-  endLine--;
+  // endLine now points just past the last character of the line, so the line
+  // length is endLine - startLine.  Do not decrement endLine to make it point
+  // at the last character: for a 0-length line that would compute a pointer
+  // before the start of the buffer, which is undefined behavior.
 
   // Save line with error (with no newline on it)
-  let(&errLine, space(endLine - startLine + 1));
-  memcpy(errLine, startLine, (size_t)(endLine - startLine) + 1);
+  let(&errLine, space(endLine - startLine));
+  memcpy(errLine, startLine, (size_t)(endLine - startLine));
 
   if (!lineNum) {
     // Not a source file parse
@@ -3697,6 +3955,22 @@ long whiteSpaceLen(char *ptr) {
             return i + (long)strlen(&ptr[i]); // Unterminated comment - goto EOF
           }
           if (ptr1[1] == ')') break;
+          // A "$" at the very end of the string cannot open the "$)" that
+          // would close the comment, so the comment is unterminated, the
+          // same conclusion the "!ptr1" test above reaches.  Say so here
+          // rather than fall into the rescan below, which resumes two
+          // characters on from this "$" and would start past the
+          // terminating NUL.
+          //
+          // readFileToString() leaves a file ending in a new-line, so no
+          // buffer read from one ends in a "$" and this does not trigger.
+          // It is here because the loop should not depend on that: the
+          // rescan is only in bounds when something has established that
+          // the character after the "$" is not the terminator, and until
+          // now nothing had.
+          if (ptr1[1] == 0) {
+            return i + (long)strlen(&ptr[i]); // Unterminated comment - goto EOF
+          }
           i = ptr1 - ptr;
         }
         i = ptr1 - ptr + 2;
@@ -3751,18 +4025,12 @@ long tokenLen(char *ptr)
   while (1) {
     tmpchr = ptr[i];
     if (tmpchr == '$') {
-      if (ptr[i + 1] == '$') { // '$$' character
+      // Tolerate digit after "$"
+      if (ptr[i + 1] >= '0' && ptr[i + 1] <= '9') {
         i = i + 2;
         continue;
-      } else {
-        // Tolerate digit after "$"
-        if (ptr[i + 1] >= '0' && ptr[i + 1] <= '9') {
-          i = i + 2;
-          continue;
-        } else {
-          return i; // Keyword or comment
-        }
       }
+      return i; // Keyword or comment
     }
     if (!isgraph((unsigned char)tmpchr)) return i; // White space or null
     i++;
@@ -3810,12 +4078,7 @@ long proofTokenLen(char *ptr)
   while (1) {
     tmpchr = ptr[i];
     if (tmpchr == '$') {
-      if (ptr[i + 1] == '$') { // '$$' character
-        i = i + 2;
-        continue;
-      } else {
-        return i; // Keyword or comment
-      }
+      return i; // Keyword or comment
     }
     if (!isgraph((unsigned char)tmpchr)) return i; // White space or null
     if (tmpchr == ':') return i; // Colon ends a token
@@ -4764,10 +5027,10 @@ nmbrString *parseMathTokens(vstring userText, long statemNum)
               } else {
                 memcpy(wrkStrPtr, fbPtr + 1, (size_t)i - 1);
                 wrkStrPtr[i - 1] = 0; // End of string
-                tokenNum = (long)(val(wrkStrPtr)) + g_mathTokens;
+                tokenNum = (long)(val(wrkStrPtr)) + g_dummyVarBase;
                 // See if dummy var has been declared; if not, declare it
-                if (tokenNum > g_pipDummyVars + g_mathTokens) {
-                  declareDummyVars(tokenNum - g_pipDummyVars - g_mathTokens);
+                if (tokenNum > g_pipDummyVars + g_dummyVarBase) {
+                  declareDummyVars(tokenNum - g_pipDummyVars - g_dummyVarBase);
                 }
               }
             } // End if fbPtr == '$'
@@ -5652,10 +5915,12 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
           free_vstring(tmpSource);
           tmpSource = readFileToString(fullIncludeFn, 0 /* verbose */, &inclSize);
           if (tmpSource == NULL) {
-            // TODO: print better error msg?
+            // This one reads quietly, so it is the only message the user
+            // gets; it cannot say which of readFileToString()'s four
+            // reasons applied.
             print2(
-                "?Error: file \"%s%s\" (included in \"%s\") was not found\n",
-                fullIncludeFn, g_rootDirectory, sourceFileName);
+                "?Error: file \"%s\" (included in \"%s\") could not be read\n",
+                fullIncludeFn, sourceFileName);
             tmpSource = "";
             inclSize = 0;
             *errorFlag = 1;
@@ -5726,10 +5991,9 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
           free_vstring(tmpSource);
           tmpSource = readFileToString(fullIncludeFn, 1 /* verbose */, &inclSize);
           if (tmpSource == NULL) {
-            // TODO: print better error msg
             print2(
-                "?Error: file \"%s%s\" (included in \"%s\") was not found\n",
-                fullIncludeFn, g_rootDirectory, sourceFileName);
+                "?Error: file \"%s\" (included in \"%s\") could not be read\n",
+                fullIncludeFn, sourceFileName);
             *errorFlag = 1;
             tmpSource = ""; // Prevent seg fault
             inclSize = 0;
@@ -5963,7 +6227,9 @@ vstring readSourceAndIncludes(const char *inputFn /* input */, long *size /* out
   let(&fullInputFn, cat(g_rootDirectory, inputFn, NULL));
   fileBuf = readFileToString(fullInputFn, 1 /* verbose */, &(*size));
   if (fileBuf == NULL) {
-    print2("?Error: file \"%s\" was not found\n", fullInputFn);
+    // readFileToString() returns NULL for any of four reasons, and has
+    // already said which.  Do not name one of them here.
+    print2("?Error: file \"%s\" could not be read\n", fullInputFn);
     fileBuf = "";
     *size = 0;
     errorFlag = 1;
@@ -5973,7 +6239,12 @@ vstring readSourceAndIncludes(const char *inputFn /* input */, long *size /* out
     // getNextInclusion() call.
     // goto RETURN_POINT;
   }
-  print2("Reading source file \"%s\"... %ld bytes\n", fullInputFn, *size);
+  // Only when there is something to report reading.  Announcing 0 bytes
+  // just after saying the file could not be read reads as a second,
+  // contradictory result.
+  if (!errorFlag) {
+    print2("Reading source file \"%s\"... %ld bytes\n", fullInputFn, *size);
+  }
   free_vstring(fullInputFn);
 
   // Create a fictitious initial include for the main file (at least 2

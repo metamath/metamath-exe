@@ -207,6 +207,16 @@ struct statement_struct { // Array index is statement number, starting at 1
   flag uniqueLabel; /*!< Flag that label is unique (future implementations may
                       allow duplicate labels on hypotheses) */
   char type;    /*!< 2nd character of keyword, e.g. 'e' for $e */
+  flag hasVarWithoutHyp; /*!< A variable in mathString has no active "$e" or
+       "$f" hypothesis that could supply a substitution for it; either it
+       was never declared or is out of scope, or it is active but no
+       hypothesis mentions it.  Parsing reports it and then keeps going, but
+       the statement cannot take part in a proof.  Always 0 for a database
+       without errors.  Placed here to sit in the padding that already
+       precedes "scope", so statement_struct stays 256 bytes, which is
+       exactly four cache lines.  Adding it at the end instead pushed the
+       struct to 264 and measurably slowed "verify proof *" over set.mm
+       (median of seven runs 7.84 s to 9.41 s). */
   int scope;    /*!< Block scope level, increased by ${ and decreased by $};
        ${ has scope _before_ the increase; $} has scope _before_ the decrease */
   long beginScopeStatementNum;  /*!< statement of previous ${ ; 0 if we're in
@@ -293,6 +303,33 @@ extern struct statement_struct *g_Statement;
 /*! \warning `mathToken[i]` is 0-based, not 1-based! */
 extern struct mathToken_struct *g_MathToken;
 extern long g_statements, /*labels,*/ g_mathTokens;
+/*! Highest g_MathToken[] index owned by the parser; proof assistant dummy
+    variables are numbered above this.  See mmdata.c. */
+extern long g_dummyVarBase;
+/*! The number of dummy variables currently declared.  They occupy the
+    g_MathToken[] entries just above \ref g_dummyVarBase, so this and that
+    together give the extent of the array.  Defined in mmpfas.c, which is what
+    declares them. */
+extern long g_dummyVars;
+
+/*!
+ * \brief highest g_MathToken[] index currently in use
+ *
+ * The entries run contiguously: the declared symbols, the "$|$" boundary
+ * token, any placeholders the parser made for undeclared symbols, a second
+ * boundary token if there were placeholders, then the dummy variables.
+ * \ref g_dummyVarBase indexes that last boundary token, so the dummy
+ * variables occupy g_dummyVarBase + 1 through g_dummyVarBase +
+ * \ref g_dummyVars.
+ *
+ * Both the place that grows the array and the place that frees it need this
+ * number; computing it in one place keeps them from disagreeing.
+ *
+ * \returns the index of the last g_MathToken[] entry in use
+ */
+static inline long highestMathToken(void) {
+  return g_dummyVarBase + g_dummyVars;
+}
 
 extern long g_MAX_INCLUDECALLS;
 extern struct includeCall_struct *g_IncludeCall;
@@ -457,6 +494,11 @@ void outOfMemory(const char *msg);
  * \param[in] bugNum
  */
 void bug(int bugNum);
+
+/*! Format of the line bug() prints when it detects a bug.  pushTempAlloc() in
+    mmvstr.c prints this line itself instead of calling bug() -- see the
+    comment there for why -- so the two are kept in step through this. */
+#define BUG_CHECK_FORMAT "?BUG CHECK:  *** DETECTED BUG %ld\n"
 
 /*! Null nmbrString -- -1 flags the end of a nmbrString */
 struct nullNmbrStruct {

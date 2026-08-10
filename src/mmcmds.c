@@ -3977,9 +3977,12 @@ void writeExtractedSource(
       let(&dollarTCmt, left(tmpPtr, p2 + 1));
       // We need the above because rinstr doesn't have starting arg
       p1 = rinstr(dollarTCmt, "$(");
-      // Search backwards for non-space or beginning of string
+      // Search backwards for non-space or beginning of string.
+      // rinstr() returns 0 if "$(" was not found (which happens when the
+      // comment is unterminated), making p1 negative below, so stop at
+      // p1 <= 0 rather than only at p1 == 0.
       p1--;
-      while (p1 != 0) {
+      while (p1 > 0) {
         if (dollarTCmt[p1 - 1] != ' ') break;
         p1--;
       }
@@ -4526,10 +4529,11 @@ void eraseSource(void) // ERASE command
     }
   } // Next i (statement)
 
-  // g_MathToken[g_mathTokens].tokenName is assigned in
-  // parseMathDecl() by let().  eraseSource() should free every g_MathToken and
-  // there are (g_mathTokens + g_dummyVars) tokens.
-  for (i = 0; i <= g_mathTokens + g_dummyVars; i++) {
+  // Free the name of every g_MathToken[] entry.  parseMathDecl() gives the
+  // "$|$" boundary token at g_mathTokens a name with let(), just like a real
+  // symbol, so the loop has to reach that one too.  highestMathToken() is the
+  // highest index in use; see its definition in mmdata.h for what lies below.
+  for (i = 0; i <= highestMathToken(); i++) {
     free_vstring(g_MathToken[i].tokenName);
   }
 
@@ -4540,6 +4544,7 @@ void eraseSource(void) // ERASE command
   free(g_IncludeCall); // Will be initialized in initBigArrays
   free(g_MathToken);
   g_dummyVars = 0; // For Proof Assistant
+  g_dummyVarBase = 0; // Reset with g_mathTokens; set again by parseStatements
   free(g_sourcePtr);
   free(g_labelKey);
   free(g_mathKey);

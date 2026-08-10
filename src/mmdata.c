@@ -23,6 +23,19 @@
 #include "mmwtex.h" // Needed for SMALL_DECORATION etc.
 #include "mmfatl.h"
 
+/* statement_struct is exactly four 64-byte cache lines, and hasVarWithoutHyp
+   was put in padding that already existed so as to keep it that way.  The
+   reasoning, and what it cost when the struct grew instead, is at that field
+   in mmdata.h.  This is a speed property rather than a correctness one, so
+   check it only where it was measured: the size is legitimately different on
+   ILP32 and on LLP64.  */
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+#if defined(__LP64__) || defined(_LP64)
+_Static_assert(sizeof(struct statement_struct) == 256,
+    "statement_struct grew; see hasVarWithoutHyp in mmdata.h");
+#endif
+#endif
+
 /*E*/long db=0,db0=0,db2=0,db3=0,db4=0,db5=0,db6=0,db7=0,db8=0,db9=0;
 flag g_listMode = 0; // 0 = metamath, 1 = list utility
 flag g_toolsMode = 0; // In metamath: 0 = metamath, 1 = text tools utility
@@ -47,6 +60,12 @@ long *g_labelKey = NULL;
 struct mathToken_struct *g_MathToken;
 long *g_mathKey = NULL;
 long g_statements = 0, labels = 0, g_mathTokens = 0;
+/*!
+ * Index of the last g_MathToken[] entry the parser owns: the "$|$" boundary
+ * token plus one slot per undeclared-symbol placeholder.  Proof assistant
+ * dummy variables start immediately above it, so the two never share a slot.
+ */
+long g_dummyVarBase = 0;
 
 struct includeCall_struct *g_IncludeCall = NULL;
 long g_includeCalls = -1; // For eraseSource() in mmcmds.c
@@ -738,7 +757,7 @@ void bug(int bugNum)
     return;
   }
 
-  print2("?BUG CHECK:  *** DETECTED BUG %ld\n", (long)bugNum);
+  print2(BUG_CHECK_FORMAT, (long)bugNum);
   if (mode == 0) { // Print detailed info for first bug
     print2("\n");
     print2("To get technical support, please open an issue \n");

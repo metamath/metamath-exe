@@ -31,3 +31,10 @@ build/
 Doxyfile
 doxy/
 *.produced
+
+# Artifact written by the tests/untab test
+tests/untab-rewrapped.mm
+
+# Artifacts written by the tests/proof-section test
+tests/proof-section-out.mm
+tests/proof-section-plain.mm
