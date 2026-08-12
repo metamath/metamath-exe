@@ -11,8 +11,9 @@ help_text=\
 otherwise).  Change to the metamath-exe top folder first before running
 this script, or issue the -m option.
 
-Building with CC=cosmocc uses metamath-exe/build-cosmo instead, so that
-Cosmopolitan and native objects never share a directory.
+Building with CC=cosmocc uses metamath-exe/build-cosmo instead, and -t appends
+"-test", so that no two builds compiled with different flags ever share a
+directory (build, build-cosmo, build-test, build-cosmo-test).
 
 Possible options are:
 
@@ -79,6 +80,16 @@ case "${CC:-}" in
   *cosmocc*) default_dir="$top_dir/build-cosmo";;
   *)         default_dir="$top_dir/build";;
 esac
+
+# -t only adds -DTEST_ENABLE to CFLAGS, and make compares timestamps, not
+# flags: reusing a normal build's objects relinks them untouched, so
+# RUN_TESTS() expands to nothing and the binary runs no test while still
+# exiting 0.  Append rather than replace, so a test build keeps its toolchain's
+# directory apart too.
+if [ $do_make_test -eq 1 ]
+then
+  default_dir="${default_dir}-test"
+fi
 
 build_dir=${dest_dir:-"$default_dir"}
 doc_dir=${dest_dir:-"$default_dir"}
