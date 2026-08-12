@@ -84,6 +84,11 @@ int printedLines = 0;
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
 
+/*! Milliseconds between yields.  Larger is faster but less smooth. */
+#ifndef MM_YIELD_MS
+# define MM_YIELD_MS 50
+#endif
+
 /*!
  * \brief let the web browser repaint during a long operation.
  *
@@ -91,14 +96,9 @@ int printedLines = 0;
  * VERIFY PROOF * would hold that thread for many seconds.  Nothing already
  * written could be painted, and the page would appear to have frozen.
  * Yielding briefly lets the browser draw the output produced so far and stay
- * responsive.  Yields happen no more than every 50 milliseconds, so the cost
- * is negligible compared with the work being done.
+ * responsive.  Yields happen no more often than \ref MM_YIELD_MS
+ * milliseconds, so the cost is negligible compared with the work being done.
  */
-/*! Milliseconds between yields.  Larger is faster but less smooth. */
-#ifndef MM_YIELD_MS
-# define MM_YIELD_MS 50
-#endif
-
 static void mm_browser_yield(void) {
   static double lastYield = 0;
   double now = emscripten_get_now();

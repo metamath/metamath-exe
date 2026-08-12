@@ -1182,9 +1182,15 @@ void command(int argc, char *argv[]) {
         g_scrollMode = 0;
         print2("Continuous scrolling is now in effect.\n");
       } else {
+#ifdef __EMSCRIPTEN__
+        // The page supplies its own scrollback, and the prompted pager waits
+        // in getchar() for an answer the browser has no way to deliver.
+        print2("?Prompted scrolling is not available in the browser.\n");
+#else
         defaultScrollMode = 1;
         g_scrollMode = 1;
         print2("Prompted scrolling is now in effect.\n");
+#endif
       }
       continue;
     }
