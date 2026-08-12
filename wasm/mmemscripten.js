@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later OR MIT
+
 // JavaScript support library for the WebAssembly build of metamath.
 //
 // Linked in with emcc's --js-library option.  It implements the program's two

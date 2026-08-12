@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later OR MIT
+
 // Bootstrap for the Metamath web page.  Split out of metamath.html (along with
 // the CSS and the app script) so the page carries no inline JavaScript or CSS
 // and can be served under a strict Content-Security-Policy (script-src 'self').

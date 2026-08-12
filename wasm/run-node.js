@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: GPL-2.0-or-later OR MIT
+
 // Runs the WebAssembly build as an ordinary command line program under node,
 // so that the existing test suite can be run against it.  This is how the
 // browser build is tested before it is published; there is no other way to
