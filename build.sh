@@ -11,6 +11,9 @@ help_text=\
 otherwise).  Change to the metamath-exe top folder first before running
 this script, or issue the -m option.
 
+Building with CC=cosmocc uses metamath-exe/build-cosmo instead, so that
+Cosmopolitan and native objects never share a directory.
+
 Possible options are:
 
 -a Used by autotools. Put hyphens in the version string when used with -v
@@ -67,8 +70,18 @@ fi
 #===========   setup environment   =====================
 
 src_dir="$top_dir/src"
-build_dir=${dest_dir:-"$top_dir/build"}
-doc_dir=${dest_dir:-"$top_dir/build"}
+
+# Cosmopolitan objects cannot be mixed with a native compiler's.  Sharing one
+# build directory lets make reuse whatever objects are already there, and what
+# comes out is an ordinary ELF that merely looks like a successful portable
+# build, so give each toolchain its own default.  An explicit -o still wins.
+case "${CC:-}" in
+  *cosmocc*) default_dir="$top_dir/build-cosmo";;
+  *)         default_dir="$top_dir/build";;
+esac
+
+build_dir=${dest_dir:-"$default_dir"}
+doc_dir=${dest_dir:-"$default_dir"}
 
 # verify we can navigate to the sources
 if [ ! -f "$src_dir/metamath.c" ]
@@ -102,6 +115,9 @@ then
   fi
   exit
 fi
+
+# say which directory is in use, since the default depends on $CC
+echo "Building in $build_dir"
 
 # clear the build directory
 if [ $do_clean -eq 1 ]

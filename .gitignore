@@ -28,6 +28,8 @@ configure.ac2
 build/
 # Cosmopolitan toolchain, installed locally for cross-platform builds (not checked in)
 cosmocc/
+# Build directory used when CC=cosmocc, kept apart from the native build/
+build-cosmo/
 # Emscripten SDK and WebAssembly build output (not checked in)
 emsdk/
 wasm-dist/

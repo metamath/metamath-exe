@@ -46,13 +46,14 @@ jobs:
 
       # Build the fat APE. A single build already targets every supported OS and
       # architecture, so there is no per-platform build matrix to fan out.
-      # Start from a clean build dir: a stale one makes `make` reuse old objects
-      # and silently emit a non-portable ELF instead of an APE.
+      # CC=cosmocc builds in build-cosmo/, never in the native build/, so no
+      # native object can be reused here and silently turn the APE into an
+      # ordinary ELF.  -c clears that directory first, so the build starts clean
+      # even on a runner that kept one from an earlier job.
       - name: Build (Cosmopolitan fat APE)
         run: |
           export PATH="$PWD/cosmocc/bin:$PATH"
-          rm -rf build
-          CC=cosmocc ./build.sh
+          CC=cosmocc ./build.sh -c
           file metamath   # sanity: should report an MZ/DOS (APE) header, not ELF
 
       # Test BEFORE packaging/publishing, so a regression blocks the release.

@@ -11,6 +11,11 @@
 # After running, build the portable binary with:
 #   PATH="$PWD/cosmocc/bin:$PATH" CC=cosmocc ./build.sh
 #
+# CC=cosmocc builds in build-cosmo/ rather than the native build/, so the two
+# toolchains never share objects.  The executable still lands in the top folder
+# as ./metamath, so whichever build ran last is the one sitting there; run
+# "file metamath" if you need to know which.
+#
 # A single build already produces a "fat" APE: cosmocc compiles the program
 # twice (x86-64 and aarch64) and bundles both native code images into the one
 # file, and the loader picks the slice matching the host CPU.  Arm64 machines
@@ -57,3 +62,4 @@ rm -f "$dest/cosmocc.zip"
 echo "Installed:"
 "$dest/bin/cosmocc" --version | head -n 1
 echo "Done.  Build with: PATH=\"\$PWD/$dest/bin:\$PATH\" CC=cosmocc ./build.sh"
+echo "That builds in build-cosmo/, leaving the native build/ untouched."
