@@ -1,0 +1,13 @@
+! Regression test for issue #196, "website generation is failing with BUG 1741".
+! See issue196.mm for what this covers and why it is shaped this way.
+! The website build generates both formats, so generate both here.  Each set
+! of pages is shown before the next overwrites it.
+verify proof *
+show statement * /html
+"sed -n '/Detailed syntax breakdown/,/<\/TABLE>/p' ax-1.html"
+"sed -n '/Detailed syntax breakdown/,/<\/TABLE>/p' ax-mp.html"
+"sed -n '/Detailed syntax breakdown/,/<\/TABLE>/p' df-an.html"
+show statement * /alt_html
+"sed -n '/Detailed syntax breakdown/,/<\/TABLE>/p' ax-1.html"
+"sed -n '/Detailed syntax breakdown/,/<\/TABLE>/p' ax-mp.html"
+"sed -n '/Detailed syntax breakdown/,/<\/TABLE>/p' df-an.html"

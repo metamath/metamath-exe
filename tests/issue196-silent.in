@@ -1,0 +1,8 @@
+! Regression test for the quiet form of issue #196.  Unlike issue196.in, the
+! broken build exits 0 here and reports nothing, so only the page contents
+! catch it.  See issue196-silent.mm.  Both output formats are generated
+! because the website build uses both.
+show statement ax-sil/html
+"sed -n '/Detailed syntax breakdown/,/<\/TABLE>/p' ax-sil.html"
+show statement ax-sil/alt_html
+"sed -n '/Detailed syntax breakdown/,/<\/TABLE>/p' ax-sil.html"
