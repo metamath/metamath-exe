@@ -787,9 +787,16 @@ void typeStatement(long showStmt,
                 0, // explicitTargets
                 0 // statemNum, used only if explicitTargets
                 ));
-          // Temporarily zap proof into the $a statement
+          // Temporarily zap proof into the $a statement.
+          // The length is the whole string.  A proof section recorded while
+          // parsing runs up to but not including the "$" of the "$." that ends
+          // it, and nmbrCvtRToVString() has already trimmed its trailing
+          // space, so str1 is exactly the proof and nothing may be taken off
+          // its end.  Subtracting 1 here truncated the last label; that went
+          // unnoticed for as long as parseProof() tokenized to the "$."
+          // and ignored this length, but it is now what bounds the scan.
           g_Statement[showStmt].proofSectionPtr = str1;
-          g_Statement[showStmt].proofSectionLen = (long)strlen(str1) - 1;
+          g_Statement[showStmt].proofSectionLen = (long)strlen(str1);
 
           // Display the HTML proof of syntax breakdown
           typeProof(showStmt,
