@@ -727,7 +727,7 @@ void command(int argc, char *argv[]);
  * to "verify proof *" (both without quotes) and argv[2] to NULL.
  * Returning 0 indicates successful completion, anything else some kind of
  * failure.
- * For details see https://en.cppreference.com/w/cpp/language/main_function.
+ * For details see https://en.cppreference.com/w/c/language/main_function.
  */
 int main(int argc, char *argv[]) {
 
@@ -2556,7 +2556,9 @@ void command(int argc, char *argv[]) {
       str1 = outputStatement(g_showStatement, // cleanFlag
           0); // reformatFlag
       let(&str1,edit(str1,128)); // Trim trailing spaces
-      if (str1[strlen(str1)-1] == '\n') let(&str1, left(str1,
+      // Test for an empty string first so that strlen(str1) - 1 (which is
+      // unsigned) never underflows.
+      if (str1[0] != 0 && str1[strlen(str1)-1] == '\n') let(&str1, left(str1,
           (long)strlen(str1) - 1));
       printLongLine(str1, "", "");
       free_vstring(str1); // Deallocate vstring
@@ -5600,13 +5602,17 @@ void command(int argc, char *argv[]) {
       } else {
         s = nmbrLen(g_ProofInProgress.proof);
       }
-      if ((g_ProofInProgress.proof)[s - 1] == -(long)'?') {
-        print2("?Step %ld is unknown and cannot be deleted.\n", s);
-        continue;
-      }
+      // Check the range before using the step number as an index.  The other
+      // order reads past the end of the array on a "DELETE STEP" whose step
+      // number is past the end of the proof, since nothing has established
+      // yet that the step exists.
       m = nmbrLen(g_ProofInProgress.proof); // Original proof length
       if (s > m || s < 1) {
         print2("?The step must be in the range from 1 to %ld.\n", m);
+        continue;
+      }
+      if ((g_ProofInProgress.proof)[s - 1] == -(long)'?') {
+        print2("?Step %ld is unknown and cannot be deleted.\n", s);
         continue;
       }
 

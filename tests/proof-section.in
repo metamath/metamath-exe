@@ -1,0 +1,11 @@
+! A "$p" with no "$=" used to record a proof section of length -1.
+! Each of these commands consumed that length in a different place and
+! crashed: SHOW PROOF and SAVE PROOF through parseProof(), which sizes
+! its work arrays from it, and both WRITE SOURCE forms through the
+! memcpy() that copies the proof section into the output.
+verify proof *
+show statement z2 /full
+show proof z2
+save proof z2
+write source proof-section-plain.mm
+write source proof-section-out.mm /extract *

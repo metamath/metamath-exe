@@ -1,0 +1,17 @@
+! A compressed proof label reference outside the label list, in the two
+! cases that differ: an empty label map, where there is no entry 0 to
+! fall back on, and a non-empty one, where there is.
+!
+! PROVE is the command that matters here.  VERIFY PROOF stops on the
+! severe error, but PROVE calls verifyProof() on the proof string anyway,
+! so whatever parseCompressedProof() stored for the bad step is used.
+! Before the fix, "prove th1" read uninitialized heap and dumped core.
+verify proof *
+show proof th1 /normal
+show proof th2 /normal
+prove th1
+show new_proof /unknown
+exit
+prove th2
+show new_proof /unknown
+exit

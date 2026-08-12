@@ -1,0 +1,41 @@
+MM> READ "dummyvar.mm"
+Reading source file "dummyvar.mm"... 232 bytes
+232 bytes were read into the source buffer.
+The source has 14 statements; 5 are $a and 1 are $p.
+
+?Error on line 12 of file "dummyvar.mm" at statement 12, label "badax", type
+"$a":
+badax $a |- zzundeclared $.
+            ^^^^^^^^^^^^
+This math symbol was not declared (with a "$c" or "$v" statement).
+
+?Error on line 12 of file "dummyvar.mm" at statement 12, label "badax", type
+"$a":
+badax $a |- zzundeclared $.
+The variable "zzundeclared" does not appear in an active "$f" statement.
+
+2 errors were found.
+MM> Continuous scrolling is now in effect.
+MM> MM> MM> MM> MM> MM> Entering the Proof Assistant.  HELP PROOF_ASSISTANT for help, EXIT to exit.
+You will be working on statement (from "SHOW STATEMENT th"):
+14 th $p |- q $= ... $.
+Unknown step summary (from "SHOW NEW_PROOF / UNKNOWN"):
+1    th=? $? |- q
+MM-PA> 3 -1   mi=?  $? |- $2
+4      mj=?  $? |- ( $2 -> q )
+MM-PA> 1   wp=?  $? wff $2
+2   wq=?  $? wff q
+3   mi=?  $? |- $2
+4   mj=?  $? |- ( $2 -> q )
+5 th=mp $a |- q
+MM-PA> 3 substitutions were made in 3 steps.
+3 -1   mi=?  $? |- p
+4      mj=?  $? |- ( p -> q )
+MM-PA> 1   wp=?  $? wff p
+2   wq=?  $? wff q
+3   mi=?  $? |- p
+4   mj=?  $? |- ( p -> q )
+5 th=mp $a |- q
+MM-PA> Warning:  You have not saved changes to the proof of "th".
+Do you want to EXIT anyway (Y, N) <N>? Y
+Exiting the Proof Assistant.  Type EXIT again to exit Metamath.

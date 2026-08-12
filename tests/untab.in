@@ -1,0 +1,10 @@
+! Exercise tab expansion in outputStatement(), which runs the label and
+! math sections through edit(...,2048) when reformatting.  No other test
+! .mm file contains a tab, and neither does set.mm, so this is the only
+! coverage of that path.
+verify proof *
+write source untab-rewrapped.mm /rewrap
+tools
+type untab-rewrapped.mm
+exit
+show statement ax1

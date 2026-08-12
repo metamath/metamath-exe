@@ -857,7 +857,9 @@ vstring cmdInput(FILE *stream, const char *ask) {
       }
     }
 
-    if (g[1]) {
+    // i is 0 if the line started with a NUL character, in which case there
+    // is no new-line to zap and g[i - 1] would be out of bounds.
+    if (i > 0 && g[1]) {
       i--;
       if (g[i] != '\n') {
         printf("***BUG #1519\n");
@@ -1056,7 +1058,9 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
 
   // Add a newline to line1 if there is none
   if (line) {
-    if (line[strlen(line) - 1] != '\n') {
+    // An empty line has no trailing new-line; test it first so that
+    // strlen(line) - 1 never underflows.
+    if (line[0] == 0 || line[strlen(line) - 1] != '\n') {
       let(&line1, line);
     } else {
       bug(1509);
@@ -1342,6 +1346,47 @@ vstring fGetTmpName(const char *filePrefix) {
   return fname; // Caller must deallocate!
 } // fGetTmpName()
 
+/*!
+ * \brief find the first c in s, or where s ends, in one scan
+ *
+ * Returns a pointer to the first occurrence of c in s, or to the NUL that
+ * ends s if there is none.  Never returns NULL.  That is the difference from
+ * strchr(), and the point of this function: strchr() reports only whether it
+ * found c, and throws away where it stopped, which is what tells a NUL
+ * belonging to the file apart from the terminator.  This is the GNU
+ * strchrnul(), written out so it is there on every platform.
+ *
+ * It scans with strchr(), so it runs at the C library's speed.  That matters:
+ * the same loop written by hand is about five times slower over a 51 MB
+ * set.mm, because a loop with two data-dependent exits cannot be vectorized,
+ * while strchr() is hand-written for the machine.  Storing c in the
+ * terminator's place first is what lets strchr() be used at all, since it
+ * guarantees a match at or before the end, so the one outcome strchr() cannot
+ * describe -- reaching the end with no match -- cannot happen.
+ *
+ * A NUL of s's own also stops strchr(), and it reports that as NULL.  The
+ * position is wanted in that case too, so fall back to strlen() for it.  That
+ * is a second scan, but only for a file that is about to be rejected.
+ *
+ * \param[in,out] s the string to scan.  Must be writable at s[len]: the
+ *   sentinel is written there and restored before this returns.
+ * \param[in] len the offset of s's terminating NUL.  This is a requirement,
+ *   not a description.  Too large and the sentinel is written outside the
+ *   string; too small and the scan stops at the sentinel and reports a
+ *   position that is neither a c nor the end.  Nothing reports either one.
+ * \param[in] c the character to look for
+ * \returns a pointer into s, never NULL
+ */
+static char *scanToCharOrEnd(char *s, long len, char c) {
+  char saved = s[len];
+  char *p;
+  s[len] = c; // Sentinel, so strchr() always stops at or before s[len]
+  p = strchr(s, c);
+  s[len] = saved;
+  if (p == NULL) p = s + strlen(s); // Stopped at a NUL belonging to s
+  return p;
+}
+
 // This function returns a character string containing the entire contents of
 // an ASCII file, or Unicode file with only ASCII characters. On some
 // systems it is faster than reading the file line by line. The caller
@@ -1352,6 +1397,8 @@ vstring readFileToString(const char *fileName, char verbose, long *charCount) {
   FILE *inputFp;
   long fileBufSize;
   char *fileBuf;
+  char *scanStop;
+  long nulPos;
   long i, j;
 
   // Find out the upper limit of the number of characters in the file.
@@ -1432,7 +1479,7 @@ vstring readFileToString(const char *fileName, char verbose, long *charCount) {
         if (fileBuf[j] == 0) {
           if (verbose) print2(
               "?Sorry, the Unicode file \"%s\" %s at byte %ld.\n",
-              fileName, "has a null character", j);
+              fileName, "has a NUL character", j);
           free(fileBuf);
           return NULL;
         }
@@ -1449,8 +1496,34 @@ vstring readFileToString(const char *fileName, char verbose, long *charCount) {
     }
   }
 
-  // Make sure the file has no carriage-returns
-  if (strchr(fileBuf, '\r') != NULL) {
+  // Make sure the file has no carriage-returns, and no NUL character.
+  //
+  // A NUL is worth refusing the file over.  The Metamath language does not
+  // have one, and everything that handles a file here reads it as a C string,
+  // so a NUL inside one ends the string early: the text after it is neither
+  // read nor reported as unread, and let() copies only that far, leaving a
+  // copy that stops in the middle of the file.  That copy is what does the
+  // damage, because a file always ends the way this function leaves it, so
+  // the scanners may look a character or two past what they are examining,
+  // while a copy that stops early can end anywhere.  Refusing the file keeps
+  // all of them out of that state at once, and the Unicode branch above
+  // already refuses a file for the same reason.
+  //
+  // Both answers come out of one scan.  scanToCharOrEnd() looks for the
+  // carriage-return and reports where it stopped, and that position is what
+  // says whether the scan ended at the terminator or at a NUL of the file's
+  // own.  When it ends at a carriage-return instead, the clean-up loop below
+  // walks every remaining byte anyway, so it carries the rest of the check.
+  //
+  // fileBuf[*charCount] is the terminating NUL written above -- and rewritten
+  // by the Unicode branch, which resets *charCount along with it -- which is
+  // what scanToCharOrEnd() requires of its len.
+  nulPos = -1; // Offset of a NUL belonging to the file; -1 if there is none
+  scanStop = scanToCharOrEnd(fileBuf, *charCount, '\r');
+  if (*scanStop != '\r') {
+    // Ended at a NUL; it is the file's own unless it is the terminator
+    if ((scanStop - fileBuf) != (*charCount)) nulPos = scanStop - fileBuf;
+  } else {
     if (verbose) print2(
        "?Warning: the file \"%s\" has carriage-returns.  Cleaning them up...\n",
         fileName);
@@ -1458,6 +1531,10 @@ vstring readFileToString(const char *fileName, char verbose, long *charCount) {
     i = 0;
     j = 0;
     while (j <= (*charCount)) {
+      if (fileBuf[j] == 0 && j != (*charCount)) {
+        nulPos = j; // A NUL before the end, which the scan above passed over
+        break;
+      }
       if (fileBuf[j] == '\r') {
         if (fileBuf[j + 1] == '\n') {
           // DOS file - skip '\r'
@@ -1471,11 +1548,20 @@ vstring readFileToString(const char *fileName, char verbose, long *charCount) {
       i++;
       j++;
     }
-    (*charCount) = i - 1;
+    if (nulPos < 0) (*charCount) = i - 1;
+  }
+  if (nulPos >= 0) {
+    if (verbose) print2(
+        "?Sorry, the file \"%s\" has a NUL character at byte %ld.\n",
+        fileName, nulPos + 1);
+    free(fileBuf);
+    return NULL;
   }
 
-  // Make sure the last line is not a partial line
-  if (fileBuf[(*charCount) - 1] != '\n') {
+  // Make sure the last line is not a partial line.
+  // An empty file has no last line; test it first so that fileBuf[-1]
+  // is never read.
+  if ((*charCount) == 0 || fileBuf[(*charCount) - 1] != '\n') {
     if (verbose) print2(
         "?Warning: the last line in file \"%s\" is incomplete.\n",
         fileName);
@@ -1489,19 +1575,11 @@ vstring readFileToString(const char *fileName, char verbose, long *charCount) {
     bug(1522); // Keeping track of charCount went wrong somewhere
   }
 
-  // Make sure there aren't null characters
-  i = (long)strlen(fileBuf);
-  if ((*charCount) != i) {
-    if (verbose) {
-      print2(
-          "?Warning: the file \"%s\" is not an ASCII file.\n",
-          fileName);
-      print2(
-          "Its size is %ld characters with null at character %ld.\n",
-          (*charCount), strlen(fileBuf));
-    }
-  }
-/*E*/db = db + i; // For memory usage tracking (ignore stuff after null)
+  // Nothing here looks for a NUL inside the file.  There cannot be one:
+  // the scan further up returns NULL for any file that has one.  So
+  // strlen(fileBuf) is *charCount, unless bug(1522) just above has fired,
+  // in which case the count is already wrong in ways this line cannot mend.
+/*E*/db = db + (*charCount); // For memory usage tracking
 
   //******* For debugging
   // print2("In binary mode the file has %ld bytes.\n", fileBufSize - 10);

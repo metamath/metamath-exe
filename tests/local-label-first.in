@@ -1,0 +1,17 @@
+! A local label character "Z" before any proof step.  Every "Z" appends a
+! label map entry, and one with no step to name used to store -999, which
+! is not a legal local label reference, so verifyProof() aborted with
+! bug(2101) once a later label resolved to it.
+!
+! PROVE is the command that reaches it: VERIFY PROOF stops at the severe
+! error, but PROVE runs verifyProof() over the proof string anyway.
+verify proof *
+prove z1
+show new_proof /unknown
+exit
+prove z2
+show new_proof /unknown
+exit
+prove z3
+show new_proof /unknown
+exit

@@ -1,0 +1,8 @@
+! Exercise the /EXPLICIT target-label handling in parseProof().
+verify proof *
+show proof th /explicit
+show proof th /lemmon
+show proof th /packed
+save proof th /explicit
+show statement th
+verify proof *

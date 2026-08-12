@@ -1,0 +1,71 @@
+MM> READ "local-label-first.mm"
+Reading source file "local-label-first.mm"... 1171 bytes
+1171 bytes were read into the source buffer.
+The source has 5 statements; 1 are $a and 3 are $p.
+No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
+if you want to check them.
+MM> Continuous scrolling is now in effect.
+MM> MM> MM> MM> MM> MM> MM> MM> 0 10%  20%  30%  40%  50%  60%  70%  80%  90% 100%
+..............................
+?Error on line 19 of file "local-label-first.mm" at statement 3, label "z1",
+type "$p":
+z1 $p |- T $= ( ) ZA $.
+                  ^
+A local label character must occur after a proof step.
+..........
+?Error on line 23 of file "local-label-first.mm" at statement 4, label "z2",
+type "$p":
+z2 $p |- T $= ( ax ) ZB $.
+                     ^
+A local label character must occur after a proof step.
+..........
+?Error on line 30 of file "local-label-first.mm" at statement 5, label "z3",
+type "$p":
+z3 $p |- T $= ( ax ) AZB $.
+                       ^
+After proof step 2 (the last step), the RPN stack contains 2 entries: "A" (step
+1) and  "B" (step 2).  It should contain exactly one entry.
+
+MM> Entering the Proof Assistant.  HELP PROOF_ASSISTANT for help, EXIT to exit.
+
+?Error on line 19 of file "local-label-first.mm" at statement 3, label "z1",
+type "$p":
+z1 $p |- T $= ( ) ZA $.
+                  ^
+A local label character must occur after a proof step.
+The starting proof has a severe error.  It will not be used.
+You will be working on statement (from "SHOW STATEMENT z1"):
+3 z1 $p |- T $= ... $.
+Unknown step summary (from "SHOW NEW_PROOF / UNKNOWN"):
+1    z1=? $? |- T
+MM-PA> 1    z1=? $? |- T
+MM-PA> Exiting the Proof Assistant.  Type EXIT again to exit Metamath.
+MM> Entering the Proof Assistant.  HELP PROOF_ASSISTANT for help, EXIT to exit.
+
+?Error on line 23 of file "local-label-first.mm" at statement 4, label "z2",
+type "$p":
+z2 $p |- T $= ( ax ) ZB $.
+                     ^
+A local label character must occur after a proof step.
+The starting proof has a severe error.  It will not be used.
+You will be working on statement (from "SHOW STATEMENT z2"):
+4 z2 $p |- T $= ... $.
+Unknown step summary (from "SHOW NEW_PROOF / UNKNOWN"):
+1    z2=? $? |- T
+MM-PA> 1    z2=? $? |- T
+MM-PA> Exiting the Proof Assistant.  Type EXIT again to exit Metamath.
+MM> Entering the Proof Assistant.  HELP PROOF_ASSISTANT for help, EXIT to exit.
+
+?Error on line 30 of file "local-label-first.mm" at statement 5, label "z3",
+type "$p":
+z3 $p |- T $= ( ax ) AZB $.
+                       ^
+After proof step 2 (the last step), the RPN stack contains 2 entries: "A" (step
+1) and  "B" (step 2).  It should contain exactly one entry.
+The starting proof has a severe error.  It will not be used.
+You will be working on statement (from "SHOW STATEMENT z3"):
+5 z3 $p |- T $= ... $.
+Unknown step summary (from "SHOW NEW_PROOF / UNKNOWN"):
+1    z3=? $? |- T
+MM-PA> 1    z3=? $? |- T
+MM-PA> Exiting the Proof Assistant.  Type EXIT again to exit Metamath.

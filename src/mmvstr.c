@@ -23,7 +23,9 @@ This is an emulation of the string functions available in VMS BASIC.
 // independent of the other programs, for use with another project, do the
 // following:
 //   (1) Remove all lines beginning with the "/ *E* /" comment.
-//   (2) Remove all calls to the bug() function (4 places).
+//   (2) Remove all calls to the bug() function (3 places).
+//   (3) Replace BUG_CHECK_FORMAT in pushTempAlloc() with its text from
+//       mmdata.h, or with a message of your own.
 // To see an example of stand-alone usage of the mmvstr.c functions, see
 // the program lattice.c and several others included in
 //   http://us.metamath.org/downloads/quantum-logic.tar.gz
@@ -96,7 +98,7 @@ void freeTempAlloc(void) {
  * \fn pushTempAlloc(void *mem)
  * \brief pushes a pointer onto the \ref tempAllocStack.
  *
- * In case of a stack overflow \ref bugfn "bug" is called.  This function is low level
+ * In case of a stack overflow the program is terminated.  This function is low level
  * that does not ensure that invariants of \ref tempAllocStack are kept.
  *
  * \param mem (not null) points to either a non-mutable empty string, or
@@ -109,18 +111,23 @@ void freeTempAlloc(void) {
  *   \ref g_tempAllocStackTop is increased.  This function
  *   does not ensure a NULL pointer follows the pushed pointer.  Statistics in
  *   \ref db1 is not updated.
- * \warning
- *   In case of stack overflow, the caller is not notified and a memory leak
- *   is likely.
+ * \post
+ *   [noreturn] If full, the program terminates with error code EXIT_FAILURE.
  */
 static void pushTempAlloc(void *mem)
 {
   if (g_tempAllocStackTop >= (MAX_ALLOC_STACK-1)) {
+    // Report this one directly rather than through bug().  bug() builds
+    // its messages with let() and print2(), which allocate temporaries of
+    // their own, so with this stack already full it re-enters
+    // pushTempAlloc(), reports the same overflow again, and recurses
+    // until the C stack runs out.
     printf("*** FATAL ERROR ***  Temporary string stack overflow\n");
+    printf(BUG_CHECK_FORMAT, 2201L);
 #if __STDC__
     fflush(stdout);
 #endif
-    bug(2201);
+    exit(EXIT_FAILURE);
   }
   tempAllocStack[g_tempAllocStackTop++] = mem;
 } // pushTempAlloc
@@ -132,8 +139,8 @@ static void pushTempAlloc(void *mem)
  *   \ref tempAllocStack
  *
  * This low level function does NOT initialize the allocated memory.  If the
- * allocation on the heap fails, \ref bugfn "bug" is called.  The statistic
- * value \ref db1 is updated.
+ * allocation on the heap fails, \ref bugfn "bug" is called and the program
+ * is then terminated.  The statistic value \ref db1 is updated.
  *
  * \param size (> 0) number of bytes to allocate on the heap.  If the memory is
  *   intended to hold NUL terminated text, then size must account for the final
@@ -142,10 +149,10 @@ static void pushTempAlloc(void *mem)
  *   The \ref tempAllocStack must not be full.
  * \post
  *   The top of \ref tempAllocStack addresses memory at least the size of the
- *   submitted parameter.
- * \warning
- *   In case of stack overflow, the caller is not notified and a memory leak
- *   is likely.
+ *   submitted parameter.  The result is never null.
+ * \post
+ *   [noreturn] If the allocation fails, or the \ref tempAllocStack is full,
+ *   the program terminates with error code EXIT_FAILURE.
  */
 static void* tempAlloc(long size) // String memory allocation/deallocation
 {
@@ -156,6 +163,12 @@ static void* tempAlloc(long size) // String memory allocation/deallocation
     fflush(stdout);
 #endif
     bug(2202);
+    // bug() returns if the user answers "I" or "S" to its prompt, so a
+    // fatal condition has to stop the program itself.  Returning here
+    // would hand back a null pointer that every caller writes through at
+    // once.  The two other fatal sites below do the same for the same
+    // reason.
+    exit(EXIT_FAILURE);
   }
   pushTempAlloc(memptr);
 /*E*/INCDB1(size);
@@ -198,10 +211,23 @@ void let(vstring *target, const char *source) {
       fflush(stdout);
 #endif
       bug(2204);
+      // Returning would leave *target null for the strcpy() below.
+      // See the comment at bug(2202).
+      exit(EXIT_FAILURE);
     }
   }
   if (sourceLength) {
-    strcpy(*target, source);
+    // memmove() is defined when its arguments overlap, unlike strcpy(),
+    // whose parameters are restrict-qualified.  That covers the callers who
+    // write let(&x, x) purely to trigger the freeTempAlloc() below (mmunif.c
+    // and mmwtex.c), and any future caller handing over a pointer into
+    // *target.  The length is known already, so this is no slower.
+    // The test is only there to skip the copy in the let(&x, x) case;
+    // memmove() would do the right thing without it.
+    // The test has to stay nested inside "if (sourceLength)": folding it
+    // into that condition would send a self-assignment to the else branch,
+    // which would wrongly replace the string with "".
+    if (*target != source) memmove(*target, source, sourceLength + 1);
   } else {
     // Empty strings could still be temporaries, so always assign a constant
     if (targetLength) {
@@ -216,7 +242,6 @@ void let(vstring *target, const char *source) {
 // String concatenation
 temp_vstring cat(const char *string1, ...) {
 #define MAX_CAT_ARGS 50
-  va_list ap; // Declare list incrementer
   const char *arg[MAX_CAT_ARGS]; // Array to store arguments
   size_t argPos[MAX_CAT_ARGS]; // Array of argument positions in result
   int i;
@@ -225,7 +250,8 @@ temp_vstring cat(const char *string1, ...) {
   size_t pos = 0;
   const char* curArg = string1;
 
-  va_start(ap, string1); // Begin the session
+  va_list ap; // Declare list incrementer
+  va_start(ap, string1); // Begin varargs session
   do {
     // User-provided argument list must terminate with 0
     if (numArgs >= MAX_CAT_ARGS) {
@@ -234,6 +260,9 @@ temp_vstring cat(const char *string1, ...) {
       fflush(stdout);
 #endif
       bug(2206);
+      // Returning would write arg[] and argPos[] past their end.
+      // See the comment at bug(2202).
+      exit(EXIT_FAILURE);
     }
     arg[numArgs] = curArg;
     argPos[numArgs] = pos;
@@ -277,12 +306,14 @@ int linput(FILE *stream, const char* ask, vstring *target) {
   if (stream == NULL) stream = stdin;
   while (!eol_found && fgets(f, sizeof(f), stream))
   {
-    size_t endpos = strlen(f) - 1;
-    eol_found = (f[endpos] == '\n');
+    // len is 0 if the line started with a null character; testing it first
+    // keeps len - 1 from underflowing (size_t is unsigned).
+    size_t len = strlen(f);
+    eol_found = (len > 0 && f[len - 1] == '\n');
     // If the last line in the file has no newline, eol_found will be 0 here.
     // The fgets() above will return 0 and prevent another loop iteration.
     if (eol_found)
-      f[endpos] = 0; // The return string will have any newline stripped.
+      f[len - 1] = 0; // The return string will have any newline stripped.
     if (result)
       // Append additional parts of the line to *target.
       // The let() reallocates *target and copies the concatenation of the
@@ -312,8 +343,20 @@ temp_vstring seg(const char *sin, long start, long stop) {
 temp_vstring mid(const char *sin, long start, long length) {
   if (start < 1) start = 1;
   if (length < 0) length = 0;
+  if (start > 1) {
+    /* Keep sin + (start - 1) below from pointing past the end of sin[],
+       which would be 'pointer arithmetic out of object bounds' UB.  Starting
+       at the terminating null yields the empty string the caller expects,
+       instead of copying unspecified bytes from beyond it.
+    */
+    long sinLen = (long)strlen(sin);
+    if (start > sinLen + 1) start = sinLen + 1;
+  }
   temp_vstring sout = tempAlloc(length + 1);
-  strncpy(sout, sin + start - 1, (size_t)length);
+  /* parentheses in next line ensure integer subtraction is evaluated before
+     pointer arithmetic to avoid 'pointer arithmetic out of object bounds' UB.
+  */
+  strncpy(sout, sin + (start - 1), (size_t)length);
 /*E*/ // ??? Should db be subtracted from if length > end of string?
   sout[length] = 0;
   return sout;
@@ -387,7 +430,19 @@ temp_vstring edit(const char *sin, long control) {
 
   // Copy string
   i = (long)strlen(sin) + 1;
-  if (untab_flag) i = i * 7; // Allow for max possible length
+  if (untab_flag || tab_flag) {
+    // Allow for the maximum possible length.  The tab-expansion loop further
+    // below runs for either flag, not just for untab_flag, and it replaces
+    // each tab with as many as 8 spaces.  Every other character keeps its
+    // one position, and nothing between here and that loop makes the string
+    // longer, so 8 times the input length always covers the result.
+    //
+    // Do not narrow this by counting the tabs in sin.  The clear-parity step
+    // in the main loop below turns '\211' into a tab, so a count taken here
+    // can be too low by the time the expansion runs.  A bound that does not
+    // depend on which characters are tabs cannot go stale that way.
+    i = i * 8;
+  }
   temp_vstring sout = tempAlloc(i);
   strcpy(sout, sin);
 
@@ -560,7 +615,13 @@ temp_vstring edit(const char *sin, long control) {
       for (j = i; j < i + 8 - ((m - 1) & 7); j++) {
         sout[j - 1] = ' ';
       }
-      k = k + 8 - ((m - 1) & 7);
+      // The tab is replaced by 8 - ((m - 1) & 7) spaces, so the string grows
+      // by one less than that -- which is just what the shift loop above
+      // moves each character by.  Adding the full count would put k a
+      // position past the terminator per tab, and this scan would then run
+      // into the bytes tempAlloc() never wrote and expand any tab among
+      // them, pushing k further still.
+      k = k + 7 - ((m - 1) & 7);
     }
   }
 
@@ -594,11 +655,16 @@ temp_vstring edit(const char *sin, long control) {
       // error message returns.
       m = i - 2;
 
-      while (sout[j - 1] == ' ' && j > i - 8) j--;
+      // Test j > i - 8 first: when i is 8, j can reach 0, and evaluating
+      // sout[j - 1] then would read before the start of the string.
+      while (j > i - 8 && sout[j - 1] == ' ') j--;
       if (j <= m) {
         sout[j] = '\t';
         j = i;
-        while (sout[j - 1] == ' ' && j > i - 8 + 1) {
+        // Bound first, as in the loop above.  Here the bound holds j - 1 at
+        // 1 or more whichever way round it is tested, so this is for
+        // consistency rather than to fix a read out of range.
+        while (j - 1 > i - 8 && sout[j - 1] == ' ') {
           sout[j - 1] = 0;
           j--;
         }
@@ -804,15 +870,24 @@ temp_vstring str(double f) {
   // the one after the decimal point are stripped; e.g., it returns 7.
   // instead of 7.000000000000000.
   long i;
-  temp_vstring s = tempAlloc(50);
-  sprintf(s,"%f", f);
+  const long size = 50; // How much is allocated, and how much may be written
+  temp_vstring s = tempAlloc(size);
+  // Bound the write by the size just allocated.  "%f" prints every digit
+  // before the point, so a large enough f needs far more room than that:
+  // 1e300 expands to over 300 characters.  No caller passes anything like
+  // that today -- the largest is a long, which fits in 26 -- so this only
+  // changes what happens if one ever does, from overrunning the buffer to
+  // truncating.  It also silences a bogus "null destination pointer"
+  // warning from the fortified sprintf() under -fsanitize; that warning
+  // fires even for a plain local array, so it is not about s being null.
+  snprintf(s, (size_t)size, "%f", f);
   if (strchr(s, '.') != 0) { // The string has a period in it
     for (i = (long)strlen(s) - 1; i > 0; i--) { // Scan string backwards
       if (s[i] != '0') break; // 1st non-zero digit
       s[i] = 0; // Delete the trailing 0
     }
     if (s[i] == '.') s[i] = 0; // Delete trailing period
-/*E*/INCDB1(-(49 - (long)strlen(s)));
+/*E*/INCDB1(-(size - 1 - (long)strlen(s)));
   }
   return s;
 } // str
@@ -865,7 +940,11 @@ temp_vstring entry(long element, const char *list)
   length = i - lastComma - 1;
   if (length < 1) return ("");
   temp_vstring sout = tempAlloc(length + 1);
-  strncpy(sout, list + lastComma + 1, (size_t)length);
+  /* lastComma == -1 when element == 1 (no preceding comma);
+     parentheses in next line ensure integer addition is evaluated before
+     pointer arithmetic to avoid 'pointer arithmetic out of object bounds' UB.
+  */
+  strncpy(sout, list + (lastComma + 1), (size_t)length);
   sout[length] = 0;
   return sout;
 }

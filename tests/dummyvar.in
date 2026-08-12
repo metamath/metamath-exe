@@ -1,0 +1,11 @@
+! Proof Assistant session that creates dummy variables and then refers to
+! one by name with LET VARIABLE.  The database also has an undeclared
+! symbol, so the parser makes a placeholder token; placeholders and dummy
+! variables are kept in separate g_MathToken[] slots, and this checks that
+! a dummy variable is still found by its "$n" name when both are present.
+prove th
+assign 1 mp
+show new_proof /all
+let variable $2 = " p "
+show new_proof /all
+exit

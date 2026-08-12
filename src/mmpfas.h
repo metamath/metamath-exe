@@ -17,7 +17,9 @@ extern flag g_proofChangedFlag; /*!< Flag to push 'undo' stack */
 
 extern long g_userMaxProveFloat; /*!< Upper limit for proveFloating */
 
-extern long g_dummyVars; /*!< The number of dummy variables currently declared */
+// g_dummyVars and highestMathToken() are in mmdata.h, with g_dummyVarBase,
+// since between them they say how far g_MathToken[] extends.
+
 extern long g_pipDummyVars; /*!< Number of dummy vars used by proof in progress */
 
 /*!< Structure for holding a proof in progress.
