@@ -229,7 +229,7 @@ flag processCommandLine(void) {
             "mmbiblio.html", ">? ", NULL)))
           goto pclbad;
         print2(
-          "The old file will be renamed %s~1.\n", g_fullArg[2]);
+          "The old file will be renamed %s~1.\n", (vstring)g_fullArg[2]);
         goto pclgood;
       }
       if (cmdMatches("WRITE RECENT_ADDITIONS")) {
@@ -242,7 +242,7 @@ flag processCommandLine(void) {
             "mmrecent.html", ">? ", NULL)))
           goto pclbad;
         print2(
-          "The old file will be renamed %s~1.\n", g_fullArg[2]);
+          "The old file will be renamed %s~1.\n", (vstring)g_fullArg[2]);
 
         // Get any switches
         i = 2;
@@ -1500,7 +1500,8 @@ flag processCommandLine(void) {
           g_fullArg[2], ">? ", NULL)))
         goto pclbad;
       if (!strcmp(g_fullArg[2], g_fullArg[3])) {
-        print2("The input file will be renamed %s~1.\n", g_fullArg[2]);
+        print2("The input file will be renamed %s~1.\n",
+            (vstring)g_fullArg[2]);
       }
       if (!getFullArg(4,
           cat("* Revision tag for added lines </* #",
@@ -1826,7 +1827,7 @@ static flag getFullArg(long arg, const char *cmdList1) {
         let(&tmpArg, possCmd[0]);
         print2("The command so far is:  ");
         for (long i = 0; i < arg; i++) {
-          print2("%s ", g_fullArg[i]);
+          print2("%s ", (vstring)g_fullArg[i]);
         }
         print2("%s\n", tmpArg);
       }

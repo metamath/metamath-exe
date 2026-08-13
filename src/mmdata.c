@@ -414,7 +414,7 @@ void *poolFixedMalloc(long size) // bytes
     if (size <= ((long *)ptr)[-2]) { // We have enough space already
       ptr2 = realloc( (long *)ptr - 3, 3 * sizeof(long) + (size_t)size);
       // Reallocation cannot fail, since we are shrinking space
-      if (!ptr2) bug(1382);
+      if (!ptr2) bug(1306);
       ptr = ptr2;
     } else { // The pool's last entry is too small; free and allocate new
       free((long *)ptr - 3);
@@ -500,7 +500,12 @@ void *poolMalloc(long size) // bytes
       memUsedPoolTmpPtr = malloc((size_t)memUsedPoolTmpMax
           * sizeof(void *));
       // Shouldn't have allocation problems when program first starts
-      if (!memUsedPoolTmpPtr) bug(1303); 
+      if (!memUsedPoolTmpPtr)
+        // bug() reports through print2(), which uses this pool.
+        fatalErrorExitAt(MMFATL_FILE, __LINE__,
+            BUG_CHECK_FATAL_FORMAT
+            "*** FATAL ERROR ***  Memory pool could not be initialized\n",
+            1303u);
     } else {
       // Normal reallocation
       memUsedPoolTmpPtr = realloc(memUsedPool,
@@ -553,7 +558,12 @@ void poolFree(void *ptr) {
       memFreePoolTmpPtr = malloc((size_t)memFreePoolTmpMax
           * sizeof(void *));
       // Shouldn't have allocation problems when program first starts
-      if (!memFreePoolTmpPtr) bug(1304);
+      if (!memFreePoolTmpPtr)
+        // bug() reports through print2(), which uses this pool.
+        fatalErrorExitAt(MMFATL_FILE, __LINE__,
+            BUG_CHECK_FATAL_FORMAT
+            "*** FATAL ERROR ***  Free memory pool could not be initialized\n",
+            1304u);
     } else {
       // Normal reallocation
       memFreePoolTmpPtr = realloc(memFreePool,
@@ -587,7 +597,9 @@ void addToUsedPool(void *ptr)
   void *memUsedPoolTmpPtr;
 /*E*/if(db9)getPoolStats(&i1,&j1_,&k1); if(db9)printf("d0: pool %ld stat %ld\n",poolTotalFree,i1+j1_);
   // No need to add it when it's not partially used
-  if (((long *)ptr)[-1] == ((long *)ptr)[-2]) bug(1305); 
+  // bug() reports through print2(), which uses this pool.
+  // Not fatal: the next line returns on the same condition.
+  if (((long *)ptr)[-1] == ((long *)ptr)[-2]) printf(BUG_CHECK_FORMAT, 1305);
   if (((long *)ptr)[-1] == ((long *)ptr)[-2]) return;
   // Allocated and actual sizes are different, so add this array to used pool
   if (memUsedPoolSize >= memUsedPoolMax) { // Increase size of used pool
@@ -598,7 +610,12 @@ void addToUsedPool(void *ptr)
       memUsedPoolTmpPtr = malloc((size_t)memUsedPoolTmpMax
           * sizeof(void *));
        // Shouldn't have allocation problems when program first starts
-      if (!memUsedPoolTmpPtr) bug(1362);
+      if (!memUsedPoolTmpPtr)
+        // bug() reports through print2(), which uses this pool.
+        fatalErrorExitAt(MMFATL_FILE, __LINE__,
+            BUG_CHECK_FATAL_FORMAT
+            "*** FATAL ERROR ***  Used memory pool could not be grown\n",
+            1362u);
     } else {
       // Normal reallocation
       memUsedPoolTmpPtr = realloc(memUsedPool, (size_t)memUsedPoolTmpMax
@@ -731,13 +748,12 @@ void outOfMemory(const char *msg) {
     fclose(g_logFilePtr);
     g_logFileOpenFlag = 0;
   }
-  char const* format =
+  fatalErrorExitAt(MMFATL_FILE, __LINE__,
         "*** FATAL ERROR:  Out of memory.\n"
         "Internal identifier (for technical support):  %s\n"
         "To solve this problem, remove some unnecessary statements or file\n"
         "inclusions to reduce the size of your input source.\n"
-        "Monitor memory periodically with SHOW MEMORY.\n";
-  fatalErrorExitAt(__FILE__, __LINE__, format, msg);
+        "Monitor memory periodically with SHOW MEMORY.\n", msg);
 }
 
 // Bug check
@@ -753,11 +769,11 @@ void bug(int bugNum)
 
   if (mode == 2) {
     // If user chose to ignore bugs, print brief info and return
-    print2("?BUG CHECK:  *** DETECTED BUG %ld, IGNORING IT...\n", (long)bugNum);
+    print2("?BUG CHECK:  *** DETECTED BUG %d, IGNORING IT...\n", bugNum);
     return;
   }
 
-  print2(BUG_CHECK_FORMAT, (long)bugNum);
+  print2(BUG_CHECK_FORMAT, bugNum);
   if (mode == 0) { // Print detailed info for first bug
     print2("\n");
     print2("To get technical support, please open an issue \n");
@@ -765,7 +781,7 @@ void bug(int bugNum)
     print2("detailed command sequence or a command file that reproduces this bug,\n");
     print2("along with the source file that was used.  See HELP OPEN LOG for help on\n");
     print2("recording a session.  See HELP SUBMIT for help on command files.  Search\n");
-    print2("for \"bug(%ld)\" in the m*.c source code to find its origin.\n", bugNum);
+    print2("for \"bug(%d)\" in the m*.c source code to find its origin.\n", bugNum);
     print2("If earlier errors were reported, try fixing them first, because they\n");
     print2("may occasionally lead to false bug detection\n");
     print2("\n");
@@ -819,7 +835,7 @@ void bug(int bugNum)
     g_logFileOpenFlag = 0;
   }
   print2("The program was aborted.\n");
-  exit(1); // Use 1 instead of 0 to flag abnormal termination to scripts
+  exit(EXIT_FAILURE);
 }
 
 /*!
@@ -1033,11 +1049,11 @@ temp_nmbrString *nmbrTempAlloc(long size)
 temp_nmbrString *nmbrMakeTempAlloc(nmbrString *s)
 {
   if (g_nmbrTempAllocStackTop>=(M_MAX_ALLOC_STACK-1)) {
-    printf("*** FATAL ERROR ***  Temporary nmbrString stack overflow in nmbrMakeTempAlloc()\n");
-#if __STDC__
-    fflush(stdout);
-#endif
-    bug(1368);
+    // bug() can return; returning would push past nmbrTempAllocStack's end.
+    fatalErrorExitAt(MMFATL_FILE, __LINE__,
+        BUG_CHECK_FATAL_FORMAT
+        "*** FATAL ERROR ***  Temporary nmbrString stack overflow\n",
+        1368u);
   }
   if (s[0] != -1) { // End of string
     // Do it only if nmbrString is not empty
@@ -1166,11 +1182,11 @@ temp_nmbrString *nmbrCat(const nmbrString *string1,...) // String concatenation
   // User-provided argument list must terminate with NULL
   while ((arg[numArgs++]=va_arg(ap,nmbrString *)))
     if (numArgs>=M_MAX_CAT_ARGS-1) {
-      printf("*** FATAL ERROR ***  Too many cat() arguments\n");
-#if __STDC__
-      fflush(stdout);
-#endif
-      bug(1369);
+      // bug() can return; returning would write arg[] past its end.
+      fatalErrorExitAt(MMFATL_FILE, __LINE__,
+          BUG_CHECK_FATAL_FORMAT
+          "*** FATAL ERROR ***  Too many nmbrCat() arguments\n",
+          1369u);
     }
   va_end(ap); // End varargs session
 
@@ -2488,12 +2504,11 @@ temp_pntrString *pntrTempAlloc(long size) {
 
 temp_pntrString *pntrMakeTempAlloc(pntrString *s) {
   if (g_pntrTempAllocStackTop>=(M_MAX_ALLOC_STACK-1)) {
-    printf(
-    "*** FATAL ERROR ***  Temporary pntrString stack overflow in pntrMakeTempAlloc()\n");
-#if __STDC__
-    fflush(stdout);
-#endif
-    bug(1370);
+    // bug() can return; returning would push past pntrTempAllocStack's end.
+    fatalErrorExitAt(MMFATL_FILE, __LINE__,
+        BUG_CHECK_FATAL_FORMAT
+        "*** FATAL ERROR ***  Temporary pntrString stack overflow\n",
+        1370u);
   }
   if (s[0] != NULL) { // Don't do it if pntrString is empty
     pntrTempAllocStack[g_pntrTempAllocStackTop++] = s;
@@ -2532,7 +2547,12 @@ void pntrLet(pntrString **target, const pntrString *source) {
         // If actual size of target string is less than allocated size, we
         // may have to add it to the used pool.
         if (((long *)(*target))[-1] != ((long *)(*target))[-2]) {
-          if (((long *)(*target))[-1] > ((long *)(*target))[-2]) bug(1359);
+          if (((long *)(*target))[-1] > ((long *)(*target))[-2])
+            // bug() reports through print2(), which uses this pool.
+            fatalErrorExitAt(MMFATL_FILE, __LINE__,
+                BUG_CHECK_FATAL_FORMAT
+                "*** FATAL ERROR ***  Memory pool header is inconsistent\n",
+                1359u);
           if (((long *)(*target))[-3] == -1) {
             // It's not already in the used pool, so add it
             addToUsedPool(*target);
@@ -2568,7 +2588,12 @@ void pntrLet(pntrString **target, const pntrString *source) {
         // may have to add it to the used pool.
         // (The 1st 'if' is redundant with target doubling above)
         if (((long *)(*target))[-1] != ((long *)(*target))[-2]) {
-          if (((long *)(*target))[-1] > ((long *)(*target))[-2]) bug(1360);
+          if (((long *)(*target))[-1] > ((long *)(*target))[-2])
+            // bug() reports through print2(), which uses this pool.
+            fatalErrorExitAt(MMFATL_FILE, __LINE__,
+                BUG_CHECK_FATAL_FORMAT
+                "*** FATAL ERROR ***  Memory pool header is inconsistent\n",
+                1360u);
           if (((long *)(*target))[-3] == -1) {
             // It's not already in the used pool, so add it
             addToUsedPool(*target);
@@ -2619,11 +2644,11 @@ temp_pntrString *pntrCat(const pntrString *string1,...) {
   // User-provided argument list must terminate with NULL
   while ((arg[numArgs++]=va_arg(ap,pntrString *)))
     if (numArgs>=M_MAX_CAT_ARGS-1) {
-      printf("*** FATAL ERROR ***  Too many cat() arguments\n");
-#if __STDC__
-      fflush(stdout);
-#endif
-      bug(1371);
+      // bug() can return; returning would write arg[] past its end.
+      fatalErrorExitAt(MMFATL_FILE, __LINE__,
+          BUG_CHECK_FATAL_FORMAT
+          "*** FATAL ERROR ***  Too many pntrCat() arguments\n",
+          1371u);
     }
   va_end(ap); // End varargs session
 
@@ -2793,7 +2818,7 @@ temp_pntrString *pntrRight(const pntrString *sin, long n) {
 // Each entry in the allocated array points to an empty vString.
 temp_pntrString *pntrSpace(long n) {
   long j = 0;
-  if (n<0) bug(1360);
+  if (n<0) bug(1366);
   temp_pntrString *sout = pntrTempAlloc(n+1);
   while (j<n) {
     // Initialize all fields
@@ -2970,11 +2995,11 @@ long **alloc2DMatrix(size_t xsize, size_t ysize)
   long i;
   matrix = malloc(xsize * sizeof(long *));
   if (matrix == NULL)
-    fatalErrorExitAt(__FILE__, __LINE__, "?FATAL ERROR 1376 Out of memory\n");
+    fatalErrorExitAt(MMFATL_FILE, __LINE__, "?FATAL ERROR 1376 Out of memory\n");
   for (i = 0; i < (long)xsize; i++) {
     matrix[i] = malloc(ysize * sizeof(long));
     if (matrix[i] == NULL)
-      fatalErrorExitAt(__FILE__, __LINE__, "?FATAL ERROR 1377 Out of memory\n");
+      fatalErrorExitAt(MMFATL_FILE, __LINE__, "?FATAL ERROR 1377 Out of memory\n");
   }
   return matrix;
 } // alloc2DMatrix
@@ -3090,7 +3115,7 @@ vstring getDescriptionAndLabel(long stmt) {
   if (dontUseComment == 1) {
     // Get everything that follows the comment
     p2 = rinstr(descriptionAndLabel, "$)");
-    if (p2 == 0) bug(1401); // Should have exited earlier if no "$)"
+    if (p2 == 0) bug(1307); // Should have exited earlier if no "$)"
     let(&descriptionAndLabel, right(descriptionAndLabel, p2 + 2));
   }
 

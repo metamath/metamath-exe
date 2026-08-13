@@ -961,9 +961,9 @@ void command(int argc, char *argv[]) {
     free_nmbrString(nmbrSaveProof);
     free_nmbrString(essentialFlags);
     j = nmbrLen(g_rawArgNmbr);
-    if (j != g_rawArgs) bug(1110);
+    if (j != g_rawArgs) bug(1113);
     j = pntrLen(g_rawArgPntr);
-    if (j != g_rawArgs) bug(1111);
+    if (j != g_rawArgs) bug(1115);
     g_rawArgs = 0;
     for (i = 0; i < j; i++) let((vstring *)(&g_rawArgPntr[i]), "");
     free_pntrString(g_rawArgPntr);
@@ -1503,7 +1503,7 @@ void command(int argc, char *argv[]) {
                   }
                 } else { // EOF reached
                   print2("Warning: file %s has an odd number of lines\n",
-                      g_fullArg[1]);
+                      (vstring)g_fullArg[1]);
                 }
               }
 
@@ -1646,7 +1646,7 @@ void command(int argc, char *argv[]) {
           // Make message depend on line counts
           if (!changedFlag) {
             if (!lines) {
-              print2("The file %s has no lines.\n", g_fullArg[1]);
+              print2("The file %s has no lines.\n", (vstring)g_fullArg[1]);
             } else {
               print2(
 "The file %s has %ld line%s; none were changed.  First line:\n",
@@ -1666,7 +1666,8 @@ void command(int argc, char *argv[]) {
             // For SWAP command
             print2(
 "Warning:  %ld line%s more than one \"%s\".  The first one was used.\n",
-                twoMatches, (twoMatches == 1) ? " has" : "s have", g_fullArg[2]);
+                twoMatches, (twoMatches == 1) ? " has" : "s have",
+                (vstring)g_fullArg[2]);
           }
         } else {
           // if (changedLines == 0) let(&str3, "");
@@ -1861,10 +1862,10 @@ void command(int argc, char *argv[]) {
         } else {
           print2(
 "Warning: file \"%s\" had %ld lines while file \"%s\" had %ld lines.\n",
-              g_fullArg[1], p, g_fullArg[2], q);
+              (vstring)g_fullArg[1], p, (vstring)g_fullArg[2], q);
           if (p < q) p = q;
           print2("The output file \"%s\" has %ld lines.  The first line is:\n",
-              g_fullArg[3], p);
+              (vstring)g_fullArg[3], p);
         }
         print2("%s\n", str3);
 
@@ -1933,7 +1934,7 @@ void command(int argc, char *argv[]) {
         }
         print2(
 "The file has %ld lines.  The string \"%s\" occurs %ld times on %ld lines.\n",
-            lines, g_fullArg[2], p2, p1);
+            lines, (vstring)g_fullArg[2], p2, p1);
         if (firstChangedLine) {
           print2("The first occurrence is on line %ld:\n", firstChangedLine);
           print2("%s\n", str3);
@@ -2023,7 +2024,8 @@ void command(int argc, char *argv[]) {
         }
         if (j) continue; // One of the input files couldn't be opened
         fclose(list2_fp);
-        print2("The output file \"%s\" has %ld lines.\n", g_fullArg[2], lines);
+        print2("The output file \"%s\" has %ld lines.\n",
+            (vstring)g_fullArg[2], lines);
         fSafeRename(list2_ftmpname, g_fullArg[2]);
         continue;
       }
@@ -2241,7 +2243,7 @@ void command(int argc, char *argv[]) {
         if (!linput(list1_fp, NULL, &str1)) {
           print2(
 "?Error: Could not find \"<!-- #START# -->\" line in input file \"%s\".\n",
-              g_fullArg[2]);
+              (vstring)g_fullArg[2]);
           tmpFlag = 1; // Error flag to recover input file
           break;
         }
@@ -2411,7 +2413,7 @@ void command(int argc, char *argv[]) {
         if (!linput(list1_fp, NULL, &str1)) {
           print2(
 "?Error: Could not find \"<!-- #END# -->\" line in input file \"%s\".\n",
-              g_fullArg[2]);
+              (vstring)g_fullArg[2]);
           tmpFlag = 1; // Error flag to recover input file
           break;
         }
@@ -2447,7 +2449,7 @@ void command(int argc, char *argv[]) {
         remove(g_fullArg[2]); // Delete output file
         // Restore input file name
         rename(cat(g_fullArg[2], "~1", NULL), g_fullArg[2]);
-        print2("?The file \"%s\" was not modified.\n", g_fullArg[2]);
+        print2("?The file \"%s\" was not modified.\n", (vstring)g_fullArg[2]);
       }
       continue;
     } // End of "WRITE RECENT_ADDITIONS"
@@ -3855,7 +3857,7 @@ void command(int argc, char *argv[]) {
             }
           } else {
             // print2("\n"); // Add a blank line to make clipping easier
-            print2(cat(
+            print2("%s", cat(
                 "---------The proof of \"", g_Statement[outStatement].labelName,
                 // "\" to clip out ends above this line.\n",NULL));
                 "\" (", str((double)l), " bytes) ends above this line.\n", NULL));
@@ -4011,7 +4013,7 @@ void command(int argc, char *argv[]) {
 /*E*/ // ???????? DEBUG command for debugging only
     if (cmdMatches("DBG")) {
       print2("DEBUGGING MODE IS FOR DEVELOPER'S USE ONLY!\n");
-      print2("Argument:  %s\n", g_fullArg[1]);
+      print2("Argument:  %s\n", (vstring)g_fullArg[1]);
       nmbrLet(&nmbrTmp, parseMathTokens(g_fullArg[1], g_proveStatement));
       for (j = 0; j < 3; j++) {
         print2("Trying depth %ld\n", j);
@@ -5071,7 +5073,7 @@ void command(int argc, char *argv[]) {
       if (g_proveStatement > g_mathboxStmt) {
         // We're in a mathbox
         i = getMathboxNum(g_proveStatement);
-        if (i <= 0) bug(1130);
+        if (i <= 0) bug(1116);
         thisMathboxStartStmt = g_mathboxStart[i - 1];
       } else {
         thisMathboxStartStmt = g_mathboxStmt;
@@ -5490,7 +5492,7 @@ void command(int argc, char *argv[]) {
       if (!prntStatus /* && !noDistinctFlag */)
         print2("?No earlier %s$p or $a label matches \"%s\".\n",
             (overrideFlag ? "" : "(allowed) "),
-            g_fullArg[1]);
+            (vstring)g_fullArg[1]);
       if (!mathboxFlag && g_proveStatement >= g_mathboxStmt) {
         print2(
   "(Other mathboxes were not checked.  Use / INCLUDE_MATHBOXES to include them.)\n");
@@ -6055,7 +6057,7 @@ void command(int argc, char *argv[]) {
 
     if (cmdMatches("SET CONTRIBUTOR")) {
       print2("\"Contributed by...\" name was changed from \"%s\" to \"%s\"\n",
-          g_contributorName, g_fullArg[2]);
+          g_contributorName, (vstring)g_fullArg[2]);
       let(&g_contributorName, g_fullArg[2]);
       continue;
     }
@@ -6257,10 +6259,10 @@ void command(int argc, char *argv[]) {
       } else {
         if (m == 1) {
           print2("There was %ld matching line in the file %s.\n", m,
-              g_fullArg[2]);
+              (vstring)g_fullArg[2]);
         } else {
           print2("There were %ld matching lines in the file %s.\n", m,
-              g_fullArg[2]);
+              (vstring)g_fullArg[2]);
         }
       }
 

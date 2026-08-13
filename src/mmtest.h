@@ -78,7 +78,7 @@
     if (!(bool_expr)) {                        \
       printf("\n%s: ", __func__);              \
       printf(__VA_ARGS__);                     \
-      printf(" at %s:%u", __FILE__, __LINE__); \
+      printf(" at %s:%d", __FILE__, __LINE__); \
       return false;                            \
     }
 
