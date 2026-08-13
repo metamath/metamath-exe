@@ -1,0 +1,61 @@
+MM> READ "issue196-silent.mm"
+Reading source file "issue196-silent.mm"... 3036 bytes
+3036 bytes were read into the source buffer.
+The source has 7 statements; 3 are $a and 0 are $p.
+No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
+if you want to check them.
+MM> Continuous scrolling is now in effect.
+MM> MM> MM> MM> MM> Creating HTML file "ax-sil.html"...
+Reading definitions from $t statement of issue196-silent.mm...
+7 typesetting statements were read from "issue196-silent.mm".
+MM> SUMMARY="Detailed syntax breakdown of axiom">
+<CAPTION><B>Detailed syntax breakdown of Axiom <FONT
+   COLOR="#006633">ax-sil</FONT></B></CAPTION>
+<TR><TH>Step</TH><TH>Hyp</TH><TH>Ref
+</TH><TH>Expression</TH></TR>
+<TR ALIGN=LEFT><TD>1</TD><TD>&nbsp;</TD><TD>wph</TD><TD><A NAME="1"></A>
+<SPAN CLASS=i>. 2</SPAN>
+WFF PH</TD></TR>
+<TR ALIGN=LEFT><TD>2</TD><TD>&nbsp;</TD><TD>wps</TD><TD><A NAME="2"></A>
+<SPAN CLASS=i>. . 3</SPAN>
+WFF PS</TD></TR>
+<TR ALIGN=LEFT><TD>3</TD><TD><A HREF="#2">2</A>, <A HREF="#1">1</A></TD><TD><A
+HREF="wii.html"
+TITLE="Implication, long name. Declared after ~ wi , which is the one proveFloating picks,...">wii</A>&nbsp;<SPAN
+CLASS=r STYLE="color:#4D8E00">2</SPAN></TD><TD><A NAME="3"></A>
+<SPAN CLASS=i>. 2</SPAN>
+WFF (PS -> PH)</TD></TR>
+<TR ALIGN=LEFT><TD>4</TD><TD><A HREF="#1">1</A>, <A HREF="#3">3</A></TD><TD><A
+HREF="wii.html"
+TITLE="Implication, long name. Declared after ~ wi , which is the one proveFloating picks,...">wii</A>&nbsp;<SPAN
+CLASS=r STYLE="color:#4D8E00">2</SPAN></TD><TD><A NAME="4"></A>
+<SPAN CLASS=i>1</SPAN>
+WFF (PH -> (PS -> PH))</TD></TR>
+</TABLE></CENTER>
+MM> Creating HTML file "ax-sil.html"...
+Reading definitions from $t statement of issue196-silent.mm...
+7 typesetting statements were read from "issue196-silent.mm".
+MM> SUMMARY="Detailed syntax breakdown of axiom">
+<CAPTION><B>Detailed syntax breakdown of Axiom <FONT
+   COLOR="#006633">ax-sil</FONT></B></CAPTION>
+<TR><TH>Step</TH><TH>Hyp</TH><TH>Ref
+</TH><TH>Expression</TH></TR>
+<TR ALIGN=LEFT><TD>1</TD><TD>&nbsp;</TD><TD>wph</TD><TD><A NAME="1"></A>
+<SPAN CLASS=i>. 2</SPAN>
+<SPAN >wff ph</SPAN></TD></TR>
+<TR ALIGN=LEFT><TD>2</TD><TD>&nbsp;</TD><TD>wps</TD><TD><A NAME="2"></A>
+<SPAN CLASS=i>. . 3</SPAN>
+<SPAN >wff ps</SPAN></TD></TR>
+<TR ALIGN=LEFT><TD>3</TD><TD><A HREF="#2">2</A>, <A HREF="#1">1</A></TD><TD><A
+HREF="wii.html"
+TITLE="Implication, long name. Declared after ~ wi , which is the one proveFloating picks,...">wii</A>&nbsp;<SPAN
+CLASS=r STYLE="color:#4D8E00">2</SPAN></TD><TD><A NAME="3"></A>
+<SPAN CLASS=i>. 2</SPAN>
+<SPAN >wff (ps -> ph)</SPAN></TD></TR>
+<TR ALIGN=LEFT><TD>4</TD><TD><A HREF="#1">1</A>, <A HREF="#3">3</A></TD><TD><A
+HREF="wii.html"
+TITLE="Implication, long name. Declared after ~ wi , which is the one proveFloating picks,...">wii</A>&nbsp;<SPAN
+CLASS=r STYLE="color:#4D8E00">2</SPAN></TD><TD><A NAME="4"></A>
+<SPAN CLASS=i>1</SPAN>
+<SPAN >wff (ph -> (ps -> ph))</SPAN></TD></TR>
+</TABLE></CENTER>

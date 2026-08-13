@@ -1554,12 +1554,10 @@ vstring readFileToString(const char *fileName, char verbose, long *charCount) {
     bug(1522); // Keeping track of charCount went wrong somewhere
   }
 
-  // Nothing here looks for a NUL inside the file any more.  There cannot be
-  // one: the scan further up returns NULL for any file that has one.  So
-  // strlen(fileBuf) is *charCount, unless bug(1522) just above has fired, in
-  // which case the count is already wrong in ways this line cannot mend.
-  // What stood here warned about a NUL and then handed the truncated buffer
-  // back regardless, which is the behavior that scan replaced.
+  // Nothing here looks for a NUL inside the file.  There cannot be one:
+  // the scan further up returns NULL for any file that has one.  So
+  // strlen(fileBuf) is *charCount, unless bug(1522) just above has fired,
+  // in which case the count is already wrong in ways this line cannot mend.
 /*E*/db = db + (*charCount); // For memory usage tracking
 
   //******* For debugging
