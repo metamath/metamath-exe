@@ -29,3 +29,40 @@ jobs:
 
       - name: test
         run: ./metamath_test
+
+  databases:
+    name: Real Databases
+    runs-on: ubuntu-latest
+    env:
+      # The databases the website is really generated from.  Tracking them is
+      # the point: if a change on the set.mm side stops metamath-exe from
+      # processing it, that breaks the website the same way a change here would,
+      # and this is where we want to hear about it.  Set SETMM_COMMIT to a sha
+      # to hold it still instead, when reproducing an older run.
+      SETMM_REF: develop
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: build
+        run: ./build.sh
+
+      - name: download databases
+        # Resolve the branch to a commit and report it, so that a failure here
+        # says which databases it was reading, and can be repeated exactly.
+        # The tarball is about 25 MB; a git clone of set.mm is about 400 MB.
+        run: |
+          set -o pipefail
+          sha="${SETMM_COMMIT:-}"
+          if [ -z "$sha" ]; then
+            sha=$(curl -fsSL \
+              "https://api.github.com/repos/metamath/set.mm/commits/$SETMM_REF" \
+              | jq -r .sha)
+          fi
+          [ -n "$sha" ] || { echo "could not resolve set.mm $SETMM_REF"; exit 1; }
+          echo "set.mm commit: $sha"
+          mkdir -p set.mm
+          curl -fsSL "https://api.github.com/repos/metamath/set.mm/tarball/$sha" \
+            | tar xz --strip=1 -C set.mm
+
+      - name: smoke test
+        run: tests/smoke_databases.sh ./metamath ./set.mm

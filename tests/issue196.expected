@@ -1,0 +1,176 @@
+MM> READ "issue196.mm"
+Reading source file "issue196.mm"... 4470 bytes
+4470 bytes were read into the source buffer.
+The source has 22 statements; 8 are $a and 2 are $p.
+No errors were found.  However, proofs were not checked.  Type VERIFY PROOF *
+if you want to check them.
+MM> Continuous scrolling is now in effect.
+MM> MM> MM> MM> MM> 0 10%  20%  30%  40%  50%  60%  70%  80%  90% 100%
+..................................................
+All proofs in the database were verified in x.xx s.
+MM> Creating HTML file "mmascii.html"...
+Reading definitions from $t statement of issue196.mm...
+10 typesetting statements were read from "issue196.mm".
+Creating HTML file "mmtheoremsall.html"...
+Creating HTML file "mmdefinitions.html"...
+Creating HTML file "wn.html"...
+Creating HTML file "wi.html"...
+Creating HTML file "wa.html"...
+Creating HTML file "ax-1.html"...
+Creating HTML file "ax-2.html"...
+Creating HTML file "ax-3.html"...
+Creating HTML file "ax-mp.html"...
+Creating HTML file "df-an.html"...
+Creating HTML file "a1i.html"...
+Creating HTML file "a1iALT.html"...
+MM> SUMMARY="Detailed syntax breakdown of axiom">
+<CAPTION><B>Detailed syntax breakdown of Axiom <FONT
+   COLOR="#006633">ax-1</FONT></B></CAPTION>
+<TR><TH>Step</TH><TH>Hyp</TH><TH>Ref
+</TH><TH>Expression</TH></TR>
+<TR ALIGN=LEFT><TD>1</TD><TD>&nbsp;</TD><TD>wph</TD><TD><A NAME="1"></A>
+<SPAN CLASS=i>. 2</SPAN>
+WFF PH</TD></TR>
+<TR ALIGN=LEFT><TD>2</TD><TD>&nbsp;</TD><TD>wps</TD><TD><A NAME="2"></A>
+<SPAN CLASS=i>. . 3</SPAN>
+WFF PS</TD></TR>
+<TR ALIGN=LEFT><TD>3</TD><TD><A HREF="#2">2</A>, <A HREF="#1">1</A></TD><TD><A
+HREF="wi.html" TITLE="Implication.">wi</A>&nbsp;<SPAN CLASS=r
+STYLE="color:#E14100">2</SPAN></TD><TD><A NAME="3"></A>
+<SPAN CLASS=i>. 2</SPAN>
+WFF (PS -> PH)</TD></TR>
+<TR ALIGN=LEFT><TD>4</TD><TD><A HREF="#1">1</A>, <A HREF="#3">3</A></TD><TD><A
+HREF="wi.html" TITLE="Implication.">wi</A>&nbsp;<SPAN CLASS=r
+STYLE="color:#E14100">2</SPAN></TD><TD><A NAME="4"></A>
+<SPAN CLASS=i>1</SPAN>
+WFF (PH -> (PS -> PH))</TD></TR>
+</TABLE></CENTER>
+MM> SUMMARY="Detailed syntax breakdown of axiom">
+<CAPTION><B>Detailed syntax breakdown of Axiom <FONT
+   COLOR="#006633">ax-mp</FONT></B></CAPTION>
+<TR><TH>Step</TH><TH>Hyp</TH><TH>Ref
+</TH><TH>Expression</TH></TR>
+<TR ALIGN=LEFT><TD>1</TD><TD>&nbsp;</TD><TD>wps</TD><TD><A NAME="1"></A>
+<SPAN CLASS=i>1</SPAN>
+WFF PS</TD></TR>
+</TABLE></CENTER>
+MM> SUMMARY="Detailed syntax breakdown of definition">
+<CAPTION><B>Detailed syntax breakdown of Definition <FONT
+   COLOR="#006633">df-an</FONT></B></CAPTION>
+<TR><TH>Step</TH><TH>Hyp</TH><TH>Ref
+</TH><TH>Expression</TH></TR>
+<TR ALIGN=LEFT><TD>1</TD><TD>&nbsp;</TD><TD>wph</TD><TD><A NAME="1"></A>
+<SPAN CLASS=i>. . 3</SPAN>
+WFF PH</TD></TR>
+<TR ALIGN=LEFT><TD>2</TD><TD>&nbsp;</TD><TD>wps</TD><TD><A NAME="2"></A>
+<SPAN CLASS=i>. . 3</SPAN>
+WFF PS</TD></TR>
+<TR ALIGN=LEFT><TD>3</TD><TD><A HREF="#1">1</A>, <A HREF="#2">2</A></TD><TD><A
+HREF="wa.html" TITLE="Conjunction.">wa</A>&nbsp;<SPAN CLASS=r
+STYLE="color:#A37400">3</SPAN></TD><TD><A NAME="3"></A>
+<SPAN CLASS=i>. 2</SPAN>
+WFF (PH /\ PS)</TD></TR>
+<TR ALIGN=LEFT><TD>4</TD><TD><A HREF="#2">2</A></TD><TD><A HREF="wn.html"
+TITLE="Negation.">wn</A>&nbsp;<SPAN CLASS=r
+STYLE="color:#FB0000">1</SPAN></TD><TD><A NAME="4"></A>
+<SPAN CLASS=i>. . . 4</SPAN>
+WFF -. PS</TD></TR>
+<TR ALIGN=LEFT><TD>5</TD><TD><A HREF="#1">1</A>, <A HREF="#4">4</A></TD><TD><A
+HREF="wi.html" TITLE="Implication.">wi</A>&nbsp;<SPAN CLASS=r
+STYLE="color:#E14100">2</SPAN></TD><TD><A NAME="5"></A>
+<SPAN CLASS=i>. . 3</SPAN>
+WFF (PH -> -. PS)</TD></TR>
+<TR ALIGN=LEFT><TD>6</TD><TD><A HREF="#5">5</A></TD><TD><A HREF="wn.html"
+TITLE="Negation.">wn</A>&nbsp;<SPAN CLASS=r
+STYLE="color:#FB0000">1</SPAN></TD><TD><A NAME="6"></A>
+<SPAN CLASS=i>. 2</SPAN>
+WFF -. (PH -> -. PS)</TD></TR>
+<TR ALIGN=LEFT><TD>7</TD><TD><A HREF="#3">3</A>, <A HREF="#6">6</A></TD><TD><A
+HREF="wi.html" TITLE="Implication.">wi</A>&nbsp;<SPAN CLASS=r
+STYLE="color:#E14100">2</SPAN></TD><TD><A NAME="7"></A>
+<SPAN CLASS=i>1</SPAN>
+WFF ((PH /\ PS) -> -. (PH -> -. PS))</TD></TR>
+</TABLE></CENTER>
+MM> Creating HTML file "mmascii.html"...
+Reading definitions from $t statement of issue196.mm...
+10 typesetting statements were read from "issue196.mm".
+Creating HTML file "mmtheoremsall.html"...
+Creating HTML file "mmdefinitions.html"...
+Creating HTML file "wn.html"...
+Creating HTML file "wi.html"...
+Creating HTML file "wa.html"...
+Creating HTML file "ax-1.html"...
+Creating HTML file "ax-2.html"...
+Creating HTML file "ax-3.html"...
+Creating HTML file "ax-mp.html"...
+Creating HTML file "df-an.html"...
+Creating HTML file "a1i.html"...
+Creating HTML file "a1iALT.html"...
+MM> SUMMARY="Detailed syntax breakdown of axiom">
+<CAPTION><B>Detailed syntax breakdown of Axiom <FONT
+   COLOR="#006633">ax-1</FONT></B></CAPTION>
+<TR><TH>Step</TH><TH>Hyp</TH><TH>Ref
+</TH><TH>Expression</TH></TR>
+<TR ALIGN=LEFT><TD>1</TD><TD>&nbsp;</TD><TD>wph</TD><TD><A NAME="1"></A>
+<SPAN CLASS=i>. 2</SPAN>
+<SPAN >wff ph</SPAN></TD></TR>
+<TR ALIGN=LEFT><TD>2</TD><TD>&nbsp;</TD><TD>wps</TD><TD><A NAME="2"></A>
+<SPAN CLASS=i>. . 3</SPAN>
+<SPAN >wff ps</SPAN></TD></TR>
+<TR ALIGN=LEFT><TD>3</TD><TD><A HREF="#2">2</A>, <A HREF="#1">1</A></TD><TD><A
+HREF="wi.html" TITLE="Implication.">wi</A>&nbsp;<SPAN CLASS=r
+STYLE="color:#E14100">2</SPAN></TD><TD><A NAME="3"></A>
+<SPAN CLASS=i>. 2</SPAN>
+<SPAN >wff (ps -> ph)</SPAN></TD></TR>
+<TR ALIGN=LEFT><TD>4</TD><TD><A HREF="#1">1</A>, <A HREF="#3">3</A></TD><TD><A
+HREF="wi.html" TITLE="Implication.">wi</A>&nbsp;<SPAN CLASS=r
+STYLE="color:#E14100">2</SPAN></TD><TD><A NAME="4"></A>
+<SPAN CLASS=i>1</SPAN>
+<SPAN >wff (ph -> (ps -> ph))</SPAN></TD></TR>
+</TABLE></CENTER>
+MM> SUMMARY="Detailed syntax breakdown of axiom">
+<CAPTION><B>Detailed syntax breakdown of Axiom <FONT
+   COLOR="#006633">ax-mp</FONT></B></CAPTION>
+<TR><TH>Step</TH><TH>Hyp</TH><TH>Ref
+</TH><TH>Expression</TH></TR>
+<TR ALIGN=LEFT><TD>1</TD><TD>&nbsp;</TD><TD>wps</TD><TD><A NAME="1"></A>
+<SPAN CLASS=i>1</SPAN>
+<SPAN >wff ps</SPAN></TD></TR>
+</TABLE></CENTER>
+MM> SUMMARY="Detailed syntax breakdown of definition">
+<CAPTION><B>Detailed syntax breakdown of Definition <FONT
+   COLOR="#006633">df-an</FONT></B></CAPTION>
+<TR><TH>Step</TH><TH>Hyp</TH><TH>Ref
+</TH><TH>Expression</TH></TR>
+<TR ALIGN=LEFT><TD>1</TD><TD>&nbsp;</TD><TD>wph</TD><TD><A NAME="1"></A>
+<SPAN CLASS=i>. . 3</SPAN>
+<SPAN >wff ph</SPAN></TD></TR>
+<TR ALIGN=LEFT><TD>2</TD><TD>&nbsp;</TD><TD>wps</TD><TD><A NAME="2"></A>
+<SPAN CLASS=i>. . 3</SPAN>
+<SPAN >wff ps</SPAN></TD></TR>
+<TR ALIGN=LEFT><TD>3</TD><TD><A HREF="#1">1</A>, <A HREF="#2">2</A></TD><TD><A
+HREF="wa.html" TITLE="Conjunction.">wa</A>&nbsp;<SPAN CLASS=r
+STYLE="color:#A37400">3</SPAN></TD><TD><A NAME="3"></A>
+<SPAN CLASS=i>. 2</SPAN>
+<SPAN >wff (ph /\ ps)</SPAN></TD></TR>
+<TR ALIGN=LEFT><TD>4</TD><TD><A HREF="#2">2</A></TD><TD><A HREF="wn.html"
+TITLE="Negation.">wn</A>&nbsp;<SPAN CLASS=r
+STYLE="color:#FB0000">1</SPAN></TD><TD><A NAME="4"></A>
+<SPAN CLASS=i>. . . 4</SPAN>
+<SPAN >wff -. ps</SPAN></TD></TR>
+<TR ALIGN=LEFT><TD>5</TD><TD><A HREF="#1">1</A>, <A HREF="#4">4</A></TD><TD><A
+HREF="wi.html" TITLE="Implication.">wi</A>&nbsp;<SPAN CLASS=r
+STYLE="color:#E14100">2</SPAN></TD><TD><A NAME="5"></A>
+<SPAN CLASS=i>. . 3</SPAN>
+<SPAN >wff (ph -> -. ps)</SPAN></TD></TR>
+<TR ALIGN=LEFT><TD>6</TD><TD><A HREF="#5">5</A></TD><TD><A HREF="wn.html"
+TITLE="Negation.">wn</A>&nbsp;<SPAN CLASS=r
+STYLE="color:#FB0000">1</SPAN></TD><TD><A NAME="6"></A>
+<SPAN CLASS=i>. 2</SPAN>
+<SPAN >wff -. (ph -> -. ps)</SPAN></TD></TR>
+<TR ALIGN=LEFT><TD>7</TD><TD><A HREF="#3">3</A>, <A HREF="#6">6</A></TD><TD><A
+HREF="wi.html" TITLE="Implication.">wi</A>&nbsp;<SPAN CLASS=r
+STYLE="color:#E14100">2</SPAN></TD><TD><A NAME="7"></A>
+<SPAN CLASS=i>1</SPAN>
+<SPAN >wff ((ph /\ ps) -> -. (ph -> -. ps))</SPAN></TD></TR>
+</TABLE></CENTER>
