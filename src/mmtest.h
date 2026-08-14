@@ -84,9 +84,7 @@
  * run automatically by GitHub's checks whenever changes are pushed.
  *
  * The macro \c RUN_TESTS_AND_EXIT_IF_ENABLED should be the first instruction
- * in \c main. It expands to nothing when testing is disabled. When testing
- * is enabled, it runs the regression tests and terminates the program,
- * so the normal program execution does not take place:
+ * in \c main:
  * \code
  * int main(int argc, char *argv[]) {
  *
