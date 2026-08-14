@@ -71,9 +71,13 @@
  * executable does not increase in size. Thus, a disabled test suite incurs
  * neither a linking nor a runtime penalty.
  *
- * A failed assertion skips the rest of the function in which it occurs. The
- * other functions registered with \c RUN_TEST are still executed. The program
- * exits with status 0 if all tests passed, and nonzero otherwise.
+ * If testing is enabled, the expansion of the macro
+ * \c RUN_TESTS_AND_EXIT_IF_ENABLED runs the regression tests, and exits
+ * afterwards. The progress of tests is controlled by \ref TEST_SILENT. A
+ * failed assertion issues a diagnostic message, and may abort the test suite
+ * to which it belongs. Other independent test suites continue to run, and the
+ * program exits afterwards with status 0 if all tests passed, and nonzero
+ * otherwise.
  *
  * We recommend running the regression tests whenever the code is modified
  * to ensure that it continues to behave as intended. The tests are also
