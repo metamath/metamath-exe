@@ -16,7 +16,14 @@
  * \section regression_tests Regression tests
  * \subsection running_tests Running the tests
  *
- * Regression tests can be run as follows:
+ * Regression tests are part of a development cycle. They are routinely run
+ * whenever changes are pushed to GitHub's metamath-exe project.
+ *
+ * A developer may additionally want to run them during development to ensure
+ * that intermediate changes remain functionally correct and do not deviate
+ * from previous implementations that are known to be correct.
+ *
+ * Regression tests can, for example, be run as follows:
  *
  * 1. Open a shell for running Bash commands.
  *
