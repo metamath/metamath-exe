@@ -55,6 +55,14 @@
    \endverbatim
  *
  * \subsection test_details Details and implementation
+ * The normal Metamath application distributed by GitHub has already passed
+ * the regression tests. To avoid the overhead of loading a larger executable
+ * and initializing regression-test code when the normal application starts,
+ * that code should therefore be included only conditionally during
+ * compilation. An executable compiled with regression tests executes the tests
+ * and then exits, although all normal application code remains available
+ * both to preserve the normal executable's behavior and to support testing.
+ *
  * If the macro \c TEST_ENABLE is defined by the \c -t option of \c build.sh,
  * the script compiles the regression tests into an executable named
  * \c metamath_test. The value of \c TEST_ENABLE is irrelevant; only whether
