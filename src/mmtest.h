@@ -63,6 +63,9 @@
  * and then exits, although all normal application code remains available
  * both to preserve the normal executable's behavior and to support testing.
  *
+ * The macro \c TEST_ENABLE controls whether the regression tests are
+ * compiled into an executable.
+ *
  * If testing is disabled, the \c RUN_TESTS_AND_EXIT_IF_ENABLED macro expands
  * to nothing. The compiler also excludes all test code, so the resulting
  * executable does not increase in size. Thus, a disabled test suite incurs
