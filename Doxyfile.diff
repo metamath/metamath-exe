@@ -67,4 +67,4 @@ EXTRACT_STATIC            = YES
 MACRO_EXPANSION        = YES
 
 # used for documentation-only-declarations
-PREDEFINED = DOXYGEN_PARSE
+PREDEFINED = DOXYGEN_BUILD

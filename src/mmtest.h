@@ -99,13 +99,12 @@
 // Uncomment this to force-enable tests
 // #define TEST_ENABLE
 
-/*
- * This macro is nowhere defined in the Metamath source code; it is used only
+/* This macro is nowhere defined in the Metamath source code; it is used only
  * for Doxygen by a PREDEFINED entry in Doxyfile.diff. Therefore, code
  * conditional on this macro being defined is ignored by the compiler, but
  * processed by Doxygen.
  */
-#ifdef DOXYGEN_PARSE
+#ifdef DOXYGEN_BUILD
 
 /* Fake definition visible to Doxygen only. Without defining TEST_ENABLE,
  * Doxygen issues a warning that the documentation item is not related to
@@ -114,7 +113,7 @@
  * external, non-central tool.
  */
   #define TEST_ENABLE
-#endif // DOXYGEN_PARSE
+#endif // DOXYGEN_BUILD
 
 #include <stdio.h>
 
