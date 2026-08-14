@@ -120,7 +120,7 @@
  * including knowledge about Metamath details in the configuration of an
  * external, non-central tool.
  */
-#define TEST_ENABLE
+  #define TEST_ENABLE
 #endif // DOXYGEN_PARSE
 
 #include <stdio.h>
