@@ -104,6 +104,25 @@
 // Uncomment this to force-enable tests
 // #define TEST_ENABLE
 
+/*!
+ * \def DOXYGEN_PARSE
+ * \brief controls Doxygen behavior.
+ * This macro is nowhere defined in the Metamath source code; it is used only
+ * for Doxygen by a PREDEFINED entry in Doxyfile.diff. Therefore, code
+ * conditional on this macro being defined is ignored by the compiler, but
+ * processed by Doxygen.
+ */
+#ifdef DOXYGEN_PARSE
+
+/* Fake definition visible to Doxygen only. Without defining TEST_ENABLE,
+ * Doxygen issues a warning that the documentation item is not related to
+ * anything. One could have used PREDEFINED for this as well, but we avoid
+ * including knowledge about Metamath details in the configuration of an
+ * external, non-central tool.
+ */
+#define TEST_ENABLE
+#endif // DOXYGEN_PARSE
+
 #include <stdio.h>
 
 /*!
