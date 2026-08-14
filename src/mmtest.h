@@ -63,16 +63,6 @@
  * and then exits, although all normal application code remains available
  * both to preserve the normal executable's behavior and to support testing.
  *
- * If the macro \c TEST_ENABLE is defined by the \c -t option of \c build.sh,
- * the script compiles the regression tests into an executable named
- * \c metamath_test. The value of \c TEST_ENABLE is irrelevant; only whether
- * the macro is defined matters. Defining the macro directly in this file does
- * not affect the executable's name.
- *
- * After enabling or disabling testing, even without modifying any source
- * files, all intermediate artifacts must be rebuilt. Pass the \c -c (clean)
- * option to \c build.sh to enforce this.
- *
  * If testing is disabled, the \c RUN_TESTS_AND_EXIT_IF_ENABLED macro expands
  * to nothing. The compiler also excludes all test code, so the resulting
  * executable does not increase in size. Thus, a disabled test suite incurs
