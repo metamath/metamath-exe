@@ -99,9 +99,7 @@
 // Uncomment this to force-enable tests
 // #define TEST_ENABLE
 
-/*!
- * \def DOXYGEN_PARSE
- * \brief controls Doxygen behavior.
+/*
  * This macro is nowhere defined in the Metamath source code; it is used only
  * for Doxygen by a PREDEFINED entry in Doxyfile.diff. Therefore, code
  * conditional on this macro being defined is ignored by the compiler, but
