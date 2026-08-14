@@ -40,7 +40,6 @@
  * \verbatim
    running test_mmfatl:test_fatalErrorInit... ok
    \endverbatim
- *
  * If every displayed test ends with \c ok, all regression tests have passed.
  * Progress and success messages can be suppressed, see \ref TEST_SILENT.
  * Failing tests always display diagnostic information identifying the failing
@@ -78,10 +77,6 @@
  * to which it belongs. Other independent test suites continue to run, and the
  * program exits afterwards with status 0 if all tests passed, and nonzero
  * otherwise.
- *
- * We recommend running the regression tests whenever the code is modified
- * to ensure that it continues to behave as intended. The tests are also
- * run automatically by GitHub's checks whenever changes are pushed.
  *
  * The macro \c RUN_TESTS_AND_EXIT_IF_ENABLED should be the first instruction
  * in \c main:
