@@ -16,6 +16,7 @@
 
 #include "mmvstr.h"
 #include "mmdata.h"
+#include "mmfatl.h"
 
 extern int g_errorCount;     /*!< Total error count */
 
@@ -329,7 +330,7 @@ extern vstring g_input_fn, g_output_fn;  /*!< File names */
  *   end.
  * \warning never call print2 with string longer than PRINTBUFFERSIZE - 1
  */
-flag print2(const char* fmt,...);
+flag print2(const char* fmt,...) PRINTF_FORMAT_ATTR(1, 2);
 
 /*!
  * \var long g_screenHeight
@@ -719,7 +720,7 @@ flag cmdInputIsY(const char *ask);
 
 enum severity {notice_,warning_,error_,fatal_};
 void errorMessage(vstring line, long lineNum, long column, long tokenLength,
-  vstring error, vstring fileName, long statementNum, flag warnFlag);
+  vstring error, vstring fileName, long statementNum, enum severity severity);
 
 /*! Opens files with error message; opens output files with
    backup of previous version.   Mode must be "r" or "w". */

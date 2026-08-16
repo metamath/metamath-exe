@@ -307,7 +307,6 @@ void freeTempAlloc(void);
  * - If the assigned value is the empty string, but the \p target not, it is
  *   freed and assigned to a constant "";
  * - \ref db is updated.
- * \bug In an out-of-memory situation the program is not exited
  */
 void let(vstring *target, const char *source);
 
@@ -330,7 +329,6 @@ void let(vstring *target, const char *source);
  * \return the concatenated \ref temp_vstring terminated by a NUL character.
  * \post the resulting string is pushed onto the \ref tempAllocStack.
  *   \ref db is updated.
- * \bug a stack overflow of \ref tempAllocStack is not handled correctly.
  */
 temp_vstring cat(const char * string1, ...);
 
@@ -376,7 +374,6 @@ int linput(FILE *stream, const char *ask, vstring *target);
  *   A pointer to the substring is pushed on \ref tempAllocStack, even if it
  *   empty;
  * \warning not UTF-8 safe.
- * \bug a stack overflow of \ref tempAllocStack is not handled correctly;
  */
 temp_vstring seg(const char *sin, long start, long stop);
 
@@ -403,7 +400,6 @@ temp_vstring seg(const char *sin, long start, long stop);
  *   A pointer to the substring is pushed on \ref tempAllocStack, even if it
  *   is empty;
  * \warning not UTF-8 safe.
- * \bug a stack overflow of \ref tempAllocStack is not handled correctly;
  */
 temp_vstring mid(const char *sin, long start, long length);
 
@@ -425,7 +421,6 @@ temp_vstring mid(const char *sin, long start, long length);
  *   A pointer to the substring is pushed on \ref tempAllocStack, even if it
  *   is empty.
  * \warning not UTF-8 safe.
- * \bug a stack overflow of \ref tempAllocStack is not handled correctly.
  */
 temp_vstring left(const char *sin, long n);
 
@@ -450,7 +445,6 @@ temp_vstring left(const char *sin, long n);
  *   A pointer to the substring is pushed on \ref tempAllocStack, even if it
  *   is empty.
  * \warning not UTF-8 safe.
- * \bug a stack overflow of \a tempAllocStack is not handled correctly.
  */
 temp_vstring right(const char *sin, long n);
 
@@ -491,7 +485,6 @@ temp_vstring edit(const char *sin, long control);
  * \return a pointer to new allocated \ref temp_vstring referencing the
  *   requested contents, also pushed onto the top of \ref tempAllocStack
  * \post The returned string is NUL terminated
- * \bug a stack overflow of \ref tempAllocStack is not handled correctly.
  */
 temp_vstring space(long n);
 
@@ -507,7 +500,6 @@ temp_vstring space(long n);
  * \post The returned string is NUL terminated
  * \return a pointer to new allocated \ref temp_vstring referencing the
  *   requested contents, also pushed onto the top of \ref tempAllocStack
- * \bug a stack overflow of \ref tempAllocStack is not handled correctly.
  */
 temp_vstring string(long n, char c);
 
@@ -529,7 +521,6 @@ temp_vstring string(long n, char c);
  *   the resulting string need not contain exactly 1 character, and if it does,
  *   this character need not be ASCII or UTF-8.  If CHAR_BITS is not 8
  *   (extremely rare nowadays) there might be a portability issue.
- * \bug a stack overflow of \ref tempAllocStack is not handled correctly.
  */
 temp_vstring chr(long n);
 

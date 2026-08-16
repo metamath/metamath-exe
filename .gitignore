@@ -41,6 +41,9 @@ Doxyfile
 doxy/
 *.produced
 
+# Working directory of tests/smoke_databases.sh
+,smoke/
+
 # Artifact written by the tests/untab test
 tests/untab-rewrapped.mm
 

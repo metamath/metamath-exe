@@ -9,38 +9,75 @@
 
 /*!
  * \file mmtest.h
- * \brief runs the regression tests
+ * \brief Framework for regression tests.
  *
- * part of the application's infrastructure
+ * This file is part of the application's test infrastructure.
  *
- * Regression tests
- * ================
+ * \section regression_tests Regression tests
+ * \subsection running_tests Running the tests
  *
- * If the macro **TEST_ENABLE** is defined (option -t of build.sh), then
- * regression tests are run. The setting can be overridden in this file.
- * Invoke in addition option -c (clean) on build.sh, should you switch
- * between with/out testing, but no intermediate source file change.
+ * Regression tests can be run as follows:
  *
- * If tests are disabled the \ref runTests line evaluates to nothing.
- * In addition, the compiler skips any test code, so the artifact size will not
- * grow.  All in all, a disabled test suite does not come with a linking or
- * runtime penalty.
+ * 1. Open a shell for running Bash commands.
  *
- * If enabled, running tests document their progress to stdout.  Testing exits
- * on the first regression found with a diagnostic message further detailing on
- * the context of the failure.
+ * 2. Change to the directory containing Metamath's build script \c build.sh,
+ * typically located at the top level of the \c metamath-exe project.
  *
- * We recommend running the tests each time you modify the code to ensure it
- * still executes as desired.  They are automatically invoked by Github checks
- * on each push request.
- */
-
-/*!
- * \def TEST_ENABLE
- * macro, no value, just defined or not.
+ * 3. Execute the following commands:
+ * \verbatim
+   ./build.sh -ct
+   ./metamath_test
+   \endverbatim
  *
- * Controls whether the regression tests for a
- * particular module is in/excluded.
+ * 4. The test program reports its progress to \c stdout:
+ * \verbatim
+   running test_mmfatl:test_fatalErrorInit... ok
+   \endverbatim
+ *
+ * If every displayed test ends with \c ok, all regression tests have passed.
+ * Progress and success messages can be suppressed, see \ref TEST_SILENT.
+ * Failing tests always display diagnostic information identifying the failing
+ * assertion and its source location.
+ *
+ * \subsection test_details Details and implementation
+ * If the macro \c TEST_ENABLE is defined by the \c -t option of \c build.sh,
+ * the script compiles the regression tests into an executable named
+ * \c metamath_test. The value of \c TEST_ENABLE is irrelevant; only whether
+ * the macro is defined matters. Defining the macro directly in this file does
+ * not affect the executable's name.
+ *
+ * After enabling or disabling testing, even without modifying any source
+ * files, all intermediate artifacts must be rebuilt. Pass the \c -c (clean)
+ * option to \c build.sh to enforce this.
+ *
+ * If testing is disabled, the \c RUN_TESTS_AND_EXIT_IF_ENABLED macro expands
+ * to nothing. The compiler also excludes all test code, so the resulting
+ * executable does not increase in size. Thus, a disabled test suite incurs
+ * neither a linking nor a runtime penalty.
+ *
+ * A failed assertion skips the rest of the function in which it occurs. The
+ * other functions registered with \c RUN_TEST are still executed. The program
+ * exits with status 0 if all tests passed, and nonzero otherwise.
+ *
+ * We recommend running the regression tests whenever the code is modified
+ * to ensure that it continues to behave as intended. The tests are also
+ * run automatically by GitHub's checks whenever changes are pushed.
+ *
+ * The macro \c RUN_TESTS_AND_EXIT_IF_ENABLED should be the first instruction
+ * in \c main. It expands to nothing when testing is disabled. When testing
+ * is enabled, it runs the regression tests and terminates the program,
+ * so the normal program execution does not take place:
+ * \code
+ * int main(int argc, char *argv[]) {
+ *
+ *  // Expands to nothing if tests are not enabled.
+ *  RUN_TESTS_AND_EXIT_IF_ENABLED();
+ *
+ *  // This code is not reached if tests are enabled.
+ *
+ *  // Code performing normal execution of Metamath goes here.
+ * }
+ * \endcode
  */
 
 // Uncomment this to force-disable tests
@@ -78,7 +115,7 @@
     if (!(bool_expr)) {                        \
       printf("\n%s: ", __func__);              \
       printf(__VA_ARGS__);                     \
-      printf(" at %s:%u", __FILE__, __LINE__); \
+      printf(" at %s:%d", __FILE__, __LINE__); \
       return false;                            \
     }
 
@@ -93,10 +130,10 @@
       ASSERTF(bool_expr, "assertion %s failed", #bool_expr)
 
   extern void runTests(void);
-  #define RUN_TESTS() runTests()
+  #define RUN_TESTS_AND_EXIT_IF_ENABLED() runTests()
 
 #else // TEST_ENABLE
-  #define RUN_TESTS()
+  #define RUN_TESTS_AND_EXIT_IF_ENABLED()
 #endif // TEST_ENABLE
 
 #endif // METAMATH_MMTEST_H_

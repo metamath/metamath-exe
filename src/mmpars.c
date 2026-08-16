@@ -12,6 +12,7 @@
 #include "mmdata.h"
 #include "mminou.h"
 #include "mmpars.h"
+#include "mmfatl.h"
 // #include "mmcmds.h" // For getContribs() if used
 #include "mmpfas.h" // Needed for g_pipDummyVars, subproofLen()
 #include "mmunif.h" // Needed for g_minSubstLen
@@ -334,11 +335,11 @@ void parseKeywords(void)
         // counted one.  Trap it rather than corrupt the heap if the two ever
         // disagree, which they have before.
         if (g_statements + 1 >= potentialStatements) {
-          bug(1774);
-          // Returning would write g_Statement[] past its end, which is what
-          // the trap is here to prevent.  bug() returns if the user answers
-          // "I" or "S"; see the comment at bug(2202) in mmvstr.c.
-          exit(EXIT_FAILURE);
+          // bug() can return; returning would write g_Statement[] past its end.
+          fatalErrorExitAt(MMFATL_FILE, __LINE__,
+              BUG_CHECK_FATAL_FORMAT
+              "*** FATAL ERROR ***  More statements than were counted\n",
+              1774u);
         }
         g_Statement[g_statements].type = type;
         g_Statement[g_statements].labelSectionPtr = startSection;
@@ -3697,17 +3698,17 @@ void rawSourceError(char *startFile, char *ptr, long tokLen, vstring errMsg) {
   // at the last character: for a 0-length line that would compute a pointer
   // before the start of the buffer, which is undefined behavior.
   if (endLine - startLine < 0) {
-    bug(1721);
-    // Returning would hand the negative length to the memcpy() below, which
-    // reads it as a huge size_t.  space() clamps it to 0 first, so errLine
-    // would be the "" literal by then, and the copy would be into read-only
-    // memory.  See the comment at bug(2202) in mmvstr.c.
-    exit(EXIT_FAILURE);
+    // bug() can return; returning would hand the negative length to the
+    // memcpy() below as a huge size_t.
+    fatalErrorExitAt(MMFATL_FILE, __LINE__,
+        BUG_CHECK_FATAL_FORMAT
+        "*** FATAL ERROR ***  Negative source line length\n",
+        1721u);
   }
   let(&errLine, space(endLine - startLine));
   memcpy(errLine, startLine, (size_t)(endLine - startLine));
   errorMessage(errLine, lineNum, ptr - startLine + 1, tokLen, errorMsg,
-      fileName, 0, (char)error_);
+      fileName, 0, error_);
   print2("\n");
   free_vstring(errLine);
   free_vstring(errorMsg);
@@ -3804,14 +3805,14 @@ void sourceError(char *ptr, long tokLen, long stmtNum, vstring errMsg)
   if (!lineNum) {
     // Not a source file parse
     errorMessage(errLine, lineNum, ptr - startLine + 1, tokLen, errorMsg,
-        NULL, stmtNum, (char)error_);
+        NULL, stmtNum, error_);
   } else {
     errorMessage(errLine, lineNum,
         ptr - startLine + 1, tokLen, // column
         errorMsg,
         fileName,
         stmtNum,
-        (char)error_ // severity
+        error_ // severity
         );
   }
   free_vstring(errLine);
@@ -6159,7 +6160,7 @@ vstring readInclude(const char *fileBuf, long fileBufOffset,
           if (startOffset != cmdPos2 - 1) bug(1772);
           break;
         default:
-          bug(1745);
+          bug(1746);
       } // end switch(cmdType)
     } // if alreadyInclBy == -1
 

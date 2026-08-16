@@ -17,6 +17,7 @@
 #include "mmdata.h"
 #include "mminou.h"
 #include "mmcmdl.h" // for g_commandPrompt global
+#include "mmfatl.h"
 
 #ifdef __WATCOMC__
   // Bugs in WATCOMC:
@@ -239,7 +240,7 @@ flag print2(const char* fmt, ...) {
 
   if (backBufferPos == 0) {
     // Initialize backBuffer - 1st time in program
-    // Warning:  Don't call bug(), because it calls print2.
+    // bug() reports through this function; calling it would recurse.
     if (pntrLen(backBuffer)) {
       printf("*** BUG #1501\n");
 #if __STDC__
@@ -265,7 +266,7 @@ flag print2(const char* fmt, ...) {
       if (backFromCmdInput && backBufferPos == pntrLen(backBuffer))
         break; // Exhausted buffer
       if (backBufferPos < 1 || backBufferPos > pntrLen(backBuffer)) {
-        // Warning:  Don't call bug(), because it calls print2.
+        // bug() reports through this function; calling it would recurse.
         printf("*** BUG #1502 %ld\n", backBufferPos);
 #if __STDC__
         fflush(stdout);
@@ -370,7 +371,14 @@ flag print2(const char* fmt, ...) {
   va_end(ap);
   // Warning: some older compilers, including lcc-win32 version 3.8 (2004),
   // return -1 instead of the buffer size.
-  if (bufsiz == -1) bug(1527);
+  if (bufsiz == -1) {
+    // bug() reports through this function; calling it would recurse.
+    // Returning would leave bufsiz -1 for the malloc() below.
+    fatalErrorExitAt(MMFATL_FILE, __LINE__,
+        BUG_CHECK_FATAL_FORMAT
+        "*** FATAL ERROR ***  vsnprintf() could not size the output\n",
+        1527u);
+  }
   printBuffer = malloc((size_t)bufsiz + 1);
 
   // Let each vs[n]printf have its own va_start...va_end
@@ -380,10 +388,12 @@ flag print2(const char* fmt, ...) {
   charsPrinted = vsprintf(printBuffer, fmt, ap);
   va_end(ap);
   if (charsPrinted != bufsiz) {
-    // Give some info with printf in case print2 crashes during bug() call
-    printf("For bug #1528: charsPrinted = %ld != bufsiz = %ld\n", charsPrinted,
-        (long)bufsiz);
-    bug(1528);
+    // bug() reports through this function; calling it would recurse.
+    // Returning would leave printBuffer sized for a different count.
+    fatalErrorExitAt(MMFATL_FILE, __LINE__,
+        BUG_CHECK_FATAL_FORMAT
+        "*** FATAL ERROR ***  vsprintf() wrote %u characters, not %u\n",
+        1528u, (unsigned)charsPrinted, (unsigned)bufsiz);
   }
 
   nlpos = instr(1, printBuffer, "\n");
@@ -460,7 +470,7 @@ flag print2(const char* fmt, ...) {
       }
     }
     // Add line to backBuffer string array.
-    // Warning:  Don't call bug(), because it calls print2.
+    // bug() reports through this function; calling it would recurse.
     if (backBufferPos < 1) {
       printf("*** PROGRAM BUG #1504\n");
 #if __STDC__
@@ -498,7 +508,7 @@ flag print2(const char* fmt, ...) {
 
   // Check for lines too long
   if (lineLen > g_screenWidth + 1) { // The +1 ignores \n
-    // Warning:  Do not call bug(), because it calls print2.
+    // bug() reports through this function; calling it would recurse.
     // If this bug occurs, the calling function should be fixed.
     printf("*** PROGRAM BUG #1505 (not serious, but please report it)\n");
     printf("Line exceeds screen width; caller should use printLongLine.\n");
@@ -511,7 +521,7 @@ flag print2(const char* fmt, ...) {
   // If this bug occurs, it means print2() is being called with \n in the
   // middle of the line and should be fixed in the caller.  printLongLine()
   // may be used if this is necessary.
-  // Warning:  Don't call bug(), because it calls print2.
+  // bug() reports through this function; calling it would recurse.
   if (nlpos != 0 && nlpos != lineLen) {
     printf("*** PROGRAM BUG #1506\n");
 #if __STDC__
@@ -675,7 +685,13 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
       p = g_screenWidth - (long)tildeFlag - (long)(breakMatch1[0] == '\\') + 1;
       if (!firstLine) p = p - startNextLineLen;
 
-      if (p < 4) bug(1524); // This may cause out-of-string ref below
+      if (p < 4)
+        // bug() reports through print2(), which this function calls.
+        // The tests below index longLine[p - 3] and longLine[p - 4].
+        fatalErrorExitAt(MMFATL_FILE, __LINE__,
+            BUG_CHECK_FATAL_FORMAT
+            "*** FATAL ERROR ***  Line break position below 4\n",
+            1524u);
       // Assume compressed proof if 1st char of breakMatch1 is "&"
       if (breakMatch1[0] == '&'
           && ((!instr(p, left(longLine, (long)strlen(longLine) - 3), " ")
@@ -692,7 +708,12 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
         if (!breakMatch1[0]) {
           p = p + 0; // Break line anywhere; don't change position
         } else {
-          if (p <= 0) bug(1518);
+          if (p <= 0)
+            // bug() would recurse; the loop below indexes longLine[p - 1].
+            fatalErrorExitAt(MMFATL_FILE, __LINE__,
+                BUG_CHECK_FATAL_FORMAT
+                "*** FATAL ERROR ***  Line break position not positive\n",
+                1518u);
           // For LaTeX, match space, not backslash
           // (Todo:  is backslash match mode really needed?)
           while (strchr(breakMatch1[0] != '\\' ? breakMatch1 : " ",
@@ -722,11 +743,22 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
         if (!firstLine) p = p - startNextLineLen;
         if (p <= 0) p = 1; // If startNextLine too long
       }
-      if (!p) bug(1515); // p should never be 0 by this point
+      if (!p)
+        // bug() would recurse; p == 0 would split the line at nothing.
+        fatalErrorExitAt(MMFATL_FILE, __LINE__,
+            BUG_CHECK_FATAL_FORMAT
+            "*** FATAL ERROR ***  Line break position is zero\n",
+            1515u);
       // If we broke at a non-space 1st char, line length won't get reduced
       // Hopefully this will never happen with the breakMatch's we use,
       // otherwise the code will require a rework.
-      if (p == 1 && longLine[0] != ' ') bug(1516);
+      if (p == 1 && longLine[0] != ' ')
+        // bug() would recurse.  Breaking at a non-space first character does
+        // not shorten the line, so the enclosing loop would never end.
+        fatalErrorExitAt(MMFATL_FILE, __LINE__,
+            BUG_CHECK_FATAL_FORMAT
+            "*** FATAL ERROR ***  Line break would not shorten the line\n",
+            1516u);
       if (firstLine) {
         firstLine = 0;
         free_vstring(prefix);
@@ -806,7 +838,13 @@ vstring cmdInput(FILE *stream, const char *ask) {
 #endif
     }
     let(&g, space(CMD_BUFFER_SIZE)); // Allocate CMD_BUFFER_SIZE+1 bytes
-    if (g[CMD_BUFFER_SIZE]) bug(1520); // Bug in let() (improbable)
+    if (g[CMD_BUFFER_SIZE]) {
+      // bug() reads its answer through this function; calling it would recurse.
+      fatalErrorExitAt(MMFATL_FILE, __LINE__,
+          BUG_CHECK_FATAL_FORMAT
+          "*** FATAL ERROR ***  let() did not terminate its allocation\n",
+          1520u);
+    }
     g[CMD_BUFFER_SIZE - 1] = 0; // For overflow detection
 #ifdef __EMSCRIPTEN__
     // A web browser cannot block waiting on stdin, so when reading from the
@@ -826,7 +864,7 @@ vstring cmdInput(FILE *stream, const char *ask) {
     }
     if (g[CMD_BUFFER_SIZE - 1]) {
       // Detect input overflow
-      // Warning:  Don't call bug() - it calls print2 which may call this.
+      // bug() reads its answer through this function; calling it would recurse.
       printf("***BUG #1508\n");
 #if __STDC__
       fflush(stdout);
@@ -843,7 +881,7 @@ vstring cmdInput(FILE *stream, const char *ask) {
     } else {
       // The last line in the file has no new-line
       if (g[i - 1] != '\n') {
-        // Warning:  Don't call bug() - it calls print2 which may call this.
+        // bug() reads its answer through this function; calling it would recurse.
         if (!feof(stream)) {
           printf("***BUG #1525\n");
 #if __STDC__
@@ -897,7 +935,10 @@ vstring cmdInput(FILE *stream, const char *ask) {
       fflush(stdout);
 #endif
       backFromCmdInput = 1; // Flag for print2()
-      print2(""); // Only the backup buffer will be looked at
+      // Only the backup buffer will be looked at, so the text is irrelevant.
+      // Spelled "%s" with an empty argument because an empty format string
+      // draws -Wformat-zero-length.
+      print2("%s", "");
       backFromCmdInput = 0;
     } else {
       // If the command line is empty (at main prompt), let user still
@@ -1030,7 +1071,7 @@ vstring cmdInput1(const char *ask) {
 } // cmdInput1
 
 void errorMessage(vstring line, long lineNum, long column, long tokenLength,
-  vstring error, vstring fileName, long statementNum, flag severity)
+  vstring error, vstring fileName, long statementNum, enum severity severity)
 {
   // Note:  "line" may be terminated with \n.  "error" and "fileName"
   // should NOT be terminated with \n.  This is done for the convenience
@@ -1075,13 +1116,13 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
   }
 
   switch (severity) {
-    case (char)notice_:
+    case notice_:
       let(&prntStr, "?Notice"); break;
-    case (char)warning_:
+    case warning_:
       let(&prntStr, "?Warning"); break;
-    case (char)error_:
+    case error_:
       let(&prntStr, "?Error"); break;
-    case (char)fatal_:
+    case fatal_:
       let(&prntStr, "?Fatal error"); break;
   }
   if (lineNum) {
@@ -1118,7 +1159,7 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
     printLongLine(errorPointer, "", "");
   }
   printLongLine(error,""," ");
-  if (severity == 2) g_errorCount++;
+  if (severity == error_) g_errorCount++;
 
   // ???Should there be a limit?
   // if (g_errorCount > 1000) {
@@ -1131,9 +1172,9 @@ void errorMessage(vstring line, long lineNum, long column, long tokenLength,
 
   // g_outputToString = saveOutputToString;
 
-  if (severity == 3) {
+  if (severity == fatal_) {
     print2("Aborting Metamath.\n");
-    exit(0);
+    exit(EXIT_FAILURE);
   }
   free_vstring(errorPointer);
   free_vstring(tmpStr);
@@ -1172,7 +1213,7 @@ FILE *fSafeOpen(const char *fileName, const char *mode, flag noVersioningFlag) {
 #define VERSIONS 9
       // The file exists. Rename it.
 
-#if defined __WATCOMC__ // MSDOS
+#if defined (__WATCOMC__) // MSDOS
       // Make sure file name before extension is 8 chars or less
       i = instr(1, fileName, ".");
       if (i) {
@@ -1185,16 +1226,13 @@ FILE *fSafeOpen(const char *fileName, const char *mode, flag noVersioningFlag) {
       let(&prefix, cat(left(prefix, 5), "~", NULL));
       let(&postfix, cat("~", postfix, NULL));
       if (0) goto skip_backup; // Prevent compiler warning
-
-#elif defined __GNUC__ // Assume unix
+#elif defined (__GNUC__) // Assume unix
       let(&prefix, cat(fileName, "~", NULL));
       free_vstring(postfix);
-
 #else // Unknown; assume unix standard
       // if (1) goto skip_backup; // [if no backup desired]
       let(&prefix, cat(fileName, "~", NULL));
       free_vstring(postfix);
-
 #endif
 
       // See if the lowest version already exists.
