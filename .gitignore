@@ -26,6 +26,15 @@ configure.ac2
 *~8
 *~9
 build/
+# Cosmopolitan toolchain, installed locally for cross-platform builds (not checked in)
+cosmocc/
+# build-cosmo/, build-test/, build-cosmo-test/: one directory per set of
+# compiler flags, so that no two builds ever reuse each other's objects.
+# Only directories, so build-wasm.sh is not matched.
+build-*/
+# Emscripten SDK and WebAssembly build output (not checked in)
+emsdk/
+wasm-dist/
 # Doxygen related: configuration file and destination folderbuild/
 
 Doxyfile

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<!-- SPDX-License-Identifier: GPL-2.0-or-later OR MIT -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Metamath-exe in your web browser</title>
+<link rel="stylesheet" href="./metamath.css">
+</head>
+<body>
+
+<div id="busybar" aria-hidden="true"><div class="fill"></div></div>
+
+<header>
+  <h1>Metamath-exe in your web browser</h1>
+  <div class="controls">
+    <button id="load-db" title="Download a Metamath database (set.mm, iset.mm, ...) from us.metamath.org into the virtual filesystem.">Download database&#8230;</button>
+    <button id="add-btn" title="Copy a file from your own computer into the virtual filesystem. The file stays in your browser and is not sent anywhere. It is not read into metamath until you run: read &quot;yourfile.mm&quot;">Add from computer</button>
+    <input type="file" id="addfile" accept=".mm,.txt" hidden>
+    <button id="explore" title="Explore the virtual filesystem: list, rename, copy, delete, and save files.">Explore</button>
+    <span id="status" role="status" data-state="starting"
+          title="Starting metamath…" aria-label="Starting metamath…"><span class="ind" aria-hidden="true"></span><span id="statustext"></span></span>
+  </div>
+</header>
+
+<dialog id="done-dlg">
+  <h2 id="done-title">Download complete</h2>
+  <p id="done-msg"></p>
+  <div class="row">
+    <button id="done-run" autofocus title="Read the database from the virtual filesystem into metamath now.">Read it now</button>
+    <button id="done-close" title="Leave the file in the virtual filesystem without reading it into metamath.">Not yet</button>
+  </div>
+</dialog>
+
+<dialog id="conflict-dlg">
+  <h2 id="conflict-title">File already exists</h2>
+  <p id="conflict-msg"></p>
+  <div class="row">
+    <button id="conflict-rename" autofocus title="Keep the existing file under a new name, then download a fresh copy.">Rename old</button>
+    <button id="conflict-overwrite" title="Replace the existing file with the freshly downloaded copy, discarding the current one.">Overwrite</button>
+    <button id="conflict-cancel" title="Do nothing; do not download.">Cancel</button>
+  </div>
+</dialog>
+
+<dialog id="db-dlg">
+  <button type="button" id="db-x" class="dlg-x" title="Do not download anything." aria-label="Cancel">&times;</button>
+  <h2>Download a database</h2>
+  <p>Choose a database to copy into the virtual filesystem. It is not read into
+     metamath until you run, for example, <code>read "set.mm"</code>.</p>
+  <div id="db-list"></div>
+  <div class="row">
+    <button id="db-close" autofocus title="Do not download anything.">Cancel</button>
+  </div>
+</dialog>
+
+<dialog id="explore-dlg">
+  <button type="button" id="explore-x" class="dlg-x" title="Close the explorer." aria-label="Close">&times;</button>
+  <h2>Virtual filesystem</h2>
+  <p id="explore-msg">Select a file, then choose an action.</p>
+  <div id="explore-list"></div>
+  <div class="row">
+    <button id="explore-new" title="Create a new empty file.">New</button>
+    <button id="explore-edit" disabled title="Edit the selected file as text.">Edit</button>
+    <button id="explore-diff" disabled title="Diff the selected file against another (default: its .orig).">Diff</button>
+    <button id="explore-patch" disabled title="Apply a diff (patch) to a file.">Patch</button>
+    <button id="explore-rename" disabled title="Rename the selected file.">Rename</button>
+    <button id="explore-copy" disabled title="Copy the selected file to a new name.">Copy</button>
+    <button id="explore-save" disabled title="Save the selected file to your computer.">Save</button>
+    <button id="explore-delete" disabled title="Delete the selected file.">Delete</button>
+    <button id="explore-close" autofocus title="Close the explorer.">Close</button>
+  </div>
+</dialog>
+
+<dialog id="editor-dlg">
+  <button type="button" id="editor-x" class="dlg-x" title="Close the editor (asks to confirm if there are unsaved changes)." aria-label="Close">&times;</button>
+  <h2 id="editor-title">Edit file</h2>
+  <div class="editor-find">
+    <input type="text" id="editor-findtext" placeholder="Find" autocomplete="off" spellcheck="false" aria-label="Find text">
+    <input type="text" id="editor-repltext" placeholder="Replace with" autocomplete="off" spellcheck="false" aria-label="Replace with">
+    <button id="editor-findprev" title="Find previous (Shift-Enter)" aria-label="Find previous">&#8593;</button>
+    <button id="editor-findnext" title="Find next (Enter, or Ctrl-F to focus)" aria-label="Find next">&#8595;</button>
+    <button id="editor-replace" title="Replace the current match, then find the next.">Replace</button>
+    <button id="editor-replaceall" title="Replace every match in the whole file.">Replace all</button>
+    <span id="editor-findinfo"></span>
+  </div>
+  <textarea id="editor-area" wrap="off" spellcheck="false" autocomplete="off" aria-label="File contents"></textarea>
+  <div class="editor-nav">
+    <span id="editor-pos" title="line:column">1:1</span>
+    <span id="editor-seginfo"></span>
+    <span class="nav-spacer"></span>
+    <button id="editor-prev" title="Previous segment (Ctrl-PageUp).">Prev</button>
+    <button id="editor-next" title="Next segment (Ctrl-PageDown).">Next</button>
+    <label class="gotobox">Go to line <input type="number" id="editor-gotoline" min="1"></label>
+    <button id="editor-goto" title="Jump to that line.">Go</button>
+  </div>
+  <div class="row">
+    <button id="editor-save" title="Write the changes back to the file (Ctrl-S).">Save</button>
+    <button id="editor-close" autofocus title="Close the editor.">Close</button>
+  </div>
+</dialog>
+
+<dialog id="diff-dlg">
+  <h2>Create a diff</h2>
+  <p id="diff-msg">Write a unified diff of two files. The defaults compare a file with its .orig baseline.</p>
+  <div class="diff-fields">
+    <label><span>Original (old)</span><input id="diff-old" autocomplete="off" spellcheck="false"></label>
+    <label><span>Changed (new)</span><input id="diff-new" autocomplete="off" spellcheck="false"></label>
+    <label><span>Save diff to</span><input id="diff-out" autocomplete="off" spellcheck="false"></label>
+  </div>
+  <div class="row">
+    <button id="diff-swap" title="Swap the two files.">Swap</button>
+    <button id="diff-run" title="Create the diff.">Create diff</button>
+    <button id="diff-close" autofocus title="Do not create a diff.">Cancel</button>
+  </div>
+</dialog>
+
+<dialog id="patch-dlg">
+  <h2>Apply a patch</h2>
+  <p id="patch-msg">Apply a unified diff to a file. Target and output default to the diff's own --- and +++ names.</p>
+  <div class="diff-fields">
+    <label><span>Patch (.diff)</span><input id="patch-file" autocomplete="off" spellcheck="false"></label>
+    <label><span>Apply to</span><input id="patch-target" autocomplete="off" spellcheck="false"></label>
+    <label><span>Save result to</span><input id="patch-out" autocomplete="off" spellcheck="false"></label>
+  </div>
+  <div class="row">
+    <button id="patch-run" title="Apply the patch.">Apply patch</button>
+    <button id="patch-close" autofocus title="Do not apply a patch.">Cancel</button>
+  </div>
+</dialog>
+
+<pre id="term" aria-live="polite" role="log"></pre>
+
+<div id="inputrow">
+  <span class="cmdspin" aria-hidden="true"></span>
+  <span id="prompt" aria-hidden="true">MM&gt;</span>
+  <input id="cmd" autocomplete="off" autocapitalize="off" spellcheck="false"
+         aria-label="Metamath-exe command"
+         placeholder="Type commands here, for example: help" disabled>
+</div>
+
+<script src="./loader.js"></script>
+</body>
+</html>

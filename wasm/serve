@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+"""Serve the WebAssembly build on http://localhost:8000/ for local UI testing.
+
+This is the checked-in source; the build stages it into wasm-dist/ (as a
+symlink where possible), so run it from there, next to the built files:
+
+    ./wasm-dist/serve
+
+Then reload the page after each change to see it.  Works on Linux/BSD/macOS
+(run ./serve, via the shebang above) and on Windows (run: py serve).
+
+Set PORT to serve on a different port, e.g.  PORT=9000 ./wasm-dist/serve
+"""
+
+import http.server
+import os
+import socketserver
+
+PORT = int(os.environ.get("PORT", "8000"))
+
+# Serve the directory this script lives in, whatever the current directory is
+# (so double-clicking it on Windows, or running it from elsewhere, still works).
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
+
+# Serve only files within the build directory and the wasm/ source directory the
+# staged symlinks point into; never anything else on the filesystem.  http.server
+# already strips ".." from request paths; this additionally refuses any symlink
+# whose real target escapes those directories, so a stray or hostile link cannot
+# expose the rest of the disk.  (The wasm/ source is found as the real location
+# of this script, which is also where the index.html symlink target lives.)
+ALLOWED_ROOTS = [
+    os.path.realpath(os.getcwd()),                  # the build directory served
+    os.path.dirname(os.path.realpath(__file__)),    # the wasm/ source (link targets)
+]
+
+
+def within_allowed(real_path):
+    return any(real_path == r or real_path.startswith(r + os.sep)
+               for r in ALLOWED_ROOTS)
+
+
+class Handler(http.server.SimpleHTTPRequestHandler):
+    def send_head(self):
+        path = self.translate_path(self.path)   # already has ".." stripped
+        # Resolve a directory to the index file the base class would serve, so
+        # the containment check covers what is actually sent.
+        if os.path.isdir(path):
+            for index in ("index.html", "index.htm"):
+                candidate = os.path.join(path, index)
+                if os.path.exists(candidate):
+                    path = candidate
+                    break
+        if not within_allowed(os.path.realpath(path)):
+            self.send_error(403, "Forbidden")
+            return None
+        return super().send_head()
+
+
+class Server(socketserver.TCPServer):
+    # Let the port be reused immediately, so restarting after Ctrl-C during
+    # rapid iteration does not fail with "address already in use".
+    allow_reuse_address = True
+
+
+with Server(("", PORT), Handler) as httpd:
+    print(f"Serving http://localhost:{PORT}/  (press Ctrl-C to stop)")
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        pass

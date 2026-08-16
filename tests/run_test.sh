@@ -2,7 +2,7 @@
 
 usage() {
   cat >&2 <<"HELP"
-Usage: run_test [-c CMD] [--bless] TESTS...
+Usage: run_test [-c CMD] [--bless] [--no-shell] TESTS...
 Run tests from the test suite.
 
 Each TEST should be the name of a TEST.in file in the current directory.  It
@@ -16,6 +16,11 @@ variable, or via the '-c CMD' option (which takes priority).
 
 The --bless option can be used to update the TEST.expected file to match
 TEST.produced.  Always review the changes after a call to run_test --bless.
+
+The --no-shell option skips tests that hand a command to the operating system,
+which is how a test is written when a line begins with a quote.  Use it for a
+build that has no shell to hand the command to, such as the WebAssembly build
+that runs in a web browser.
 
 TEST.in files have the syntax of metamath scripts, so leading ! can be used to
 write comments.  This script contains some special directives in tests:
@@ -36,6 +41,13 @@ cmd="${METAMATH:-metamath}"
 if [ "$1" = "-c" ]; then shift; cmd=$1; shift; fi
 
 if [ "$1" = "--bless" ]; then bless=1; shift; fi
+
+# Skip tests that hand a command to the operating system.  Builds that have no
+# shell, such as the WebAssembly build that runs in a web browser, cannot pass
+# those tests, and are not expected to.  Such a test is recognized by a line
+# beginning with a quote, which is how metamath is told to run an operating
+# system command.
+if [ "$1" = "--no-shell" ]; then no_shell=1; shift; fi
 
 # Check that the 'metamath' command actually exists
 if ! [ -x "$(command -v "$cmd")" ]; then
@@ -67,6 +79,12 @@ for test in "$@"; do
   # The test file input is the only required part.
   # If it doesn't exist then it's a hard error and we abort the test run
   if [ ! -f "$test.in" ]; then echo >&2 "$test.in ${red}missing${off}"; exit 2; fi
+
+  # With --no-shell, skip a test that runs an operating system command
+  if [ "$no_shell" = 1 ] && grep -q '^["'"'"']' "$test.in"; then
+    echo "test ${white}$test${off}.in: ${cyan}skipped${off} (needs an operating system shell)"
+    continue
+  fi
 
   # For tests with `! run_test` in them, we want to ignore the output
   if grep -q "! run_test" "$test.in"; then

@@ -1054,11 +1054,19 @@ flag processCommandLine(void) {
       }
 
       if (cmdMatches("SET SCROLL")) {
+#ifdef __EMSCRIPTEN__
+        // Continuous is the only mode the browser can run, so offer that as
+        // the default instead of the one that will be refused.  PROMPTED
+        // stays a valid keyword, so a script that asks for it still gets an
+        // explanation rather than a complaint about the spelling.
+        if (!getFullArg(2, "CONTINUOUS|PROMPTED|<CONTINUOUS>")) goto pclbad;
+#else
         if (g_scrollMode == 1) {
           if (!getFullArg(2, "CONTINUOUS|PROMPTED|<CONTINUOUS>")) goto pclbad;
         } else {
           if (!getFullArg(2, "CONTINUOUS|PROMPTED|<PROMPTED>")) goto pclbad;
         }
+#endif
         goto pclgood;
       }
 

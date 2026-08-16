@@ -922,7 +922,11 @@ void command(int argc, char *argv[]) {
   double timeIncr = 0;
   flag printTime; // Set by "/ TIME" in SAVE PROOF and others
 
+#ifdef __EMSCRIPTEN__
+  flag defaultScrollMode = 0; // Browser: continuous, see g_scrollMode in mminou.c
+#else
   flag defaultScrollMode = 1; // Default to prompted mode
+#endif
 
   // Initialization to avoid compiler warning (should not be theoretically
   // necessary).
@@ -1076,7 +1080,12 @@ void command(int argc, char *argv[]) {
     // (This is a command line that begins with a quote.)
     if (g_commandLine[0] == '\'' || g_commandLine[0] == '\"') {
       // See if this computer has this feature
+#ifdef __EMSCRIPTEN__
+      // A web browser has no operating system shell to hand the command to.
+      if (1) {
+#else
       if (!system(NULL)) {
+#endif
         print2("?This computer does not accept an operating system command.\n");
         continue;
       } else {
@@ -1171,9 +1180,15 @@ void command(int argc, char *argv[]) {
         g_scrollMode = 0;
         print2("Continuous scrolling is now in effect.\n");
       } else {
+#ifdef __EMSCRIPTEN__
+        // The page supplies its own scrollback, and the prompted pager waits
+        // in getchar() for an answer the browser has no way to deliver.
+        print2("?Prompted scrolling is not available in the browser.\n");
+#else
         defaultScrollMode = 1;
         g_scrollMode = 1;
         print2("Prompted scrolling is now in effect.\n");
+#endif
       }
       continue;
     }

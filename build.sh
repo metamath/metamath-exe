@@ -11,6 +11,10 @@ help_text=\
 otherwise).  Change to the metamath-exe top folder first before running
 this script, or issue the -m option.
 
+Building with CC=cosmocc uses metamath-exe/build-cosmo instead, and -t appends
+"-test", so that no two builds compiled with different flags ever share a
+directory (build, build-cosmo, build-test, build-cosmo-test).
+
 Possible options are:
 
 -a Used by autotools. Put hyphens in the version string when used with -v
@@ -67,8 +71,28 @@ fi
 #===========   setup environment   =====================
 
 src_dir="$top_dir/src"
-build_dir=${dest_dir:-"$top_dir/build"}
-doc_dir=${dest_dir:-"$top_dir/build"}
+
+# Cosmopolitan objects cannot be mixed with a native compiler's.  Sharing one
+# build directory lets make reuse whatever objects are already there, and what
+# comes out is an ordinary ELF that merely looks like a successful portable
+# build, so give each toolchain its own default.  An explicit -o still wins.
+case "${CC:-}" in
+  *cosmocc*) default_dir="$top_dir/build-cosmo";;
+  *)         default_dir="$top_dir/build";;
+esac
+
+# -t only adds -DTEST_ENABLE to CFLAGS, and make compares timestamps, not
+# flags: reusing a normal build's objects relinks them untouched, so
+# RUN_TESTS() expands to nothing and the binary runs no test while still
+# exiting 0.  Append rather than replace, so a test build keeps its toolchain's
+# directory apart too.
+if [ $do_make_test -eq 1 ]
+then
+  default_dir="${default_dir}-test"
+fi
+
+build_dir=${dest_dir:-"$default_dir"}
+doc_dir=${dest_dir:-"$default_dir"}
 
 # verify we can navigate to the sources
 if [ ! -f "$src_dir/metamath.c" ]
@@ -102,6 +126,9 @@ then
   fi
   exit
 fi
+
+# say which directory is in use, since the default depends on $CC
+echo "Building in $build_dir"
 
 # clear the build directory
 if [ $do_clean -eq 1 ]

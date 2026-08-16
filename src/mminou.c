@@ -82,7 +82,50 @@ long g_screenHeight = SCREEN_HEIGHT; // Default = 23
  * are enforced by overly long lines.
  */
 int printedLines = 0;
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+
+/*! Milliseconds between yields.  Larger is faster but less smooth. */
+#ifndef MM_YIELD_MS
+# define MM_YIELD_MS 50
+#endif
+
+/*!
+ * \brief let the web browser repaint during a long operation.
+ *
+ * A web page runs on a single thread, so a long command such as
+ * VERIFY PROOF * would hold that thread for many seconds.  Nothing already
+ * written could be painted, and the page would appear to have frozen.
+ * Yielding briefly lets the browser draw the output produced so far and stay
+ * responsive.  Yields happen no more often than \ref MM_YIELD_MS
+ * milliseconds, so the cost is negligible compared with the work being done.
+ */
+static void mm_browser_yield(void) {
+  static double lastYield = 0;
+  double now = emscripten_get_now();
+  if (now - lastYield >= MM_YIELD_MS) {
+    lastYield = now;
+    emscripten_sleep(0);
+  }
+}
+
+/*!
+ * \fn int mm_read_line(char *buf, int maxLen)
+ * Implemented in JavaScript (wasm/mmemscripten.js).  Stores one line of user
+ * input, including its trailing new-line, into \p buf and returns 1, or
+ * returns 0 when the input is exhausted.  Never stores more than
+ * \p maxLen bytes including the terminating null character.
+ */
+extern int mm_read_line(char *buf, int maxLen);
+
+// In a web browser the surrounding page provides its own scrollback, and the
+// prompted-scroll pager would otherwise block in getchar() with no way for the
+// user to answer it.  Note this only affects run time behaviour; it does not
+// reduce the Asyncify instrumentation, which is decided statically.
+flag g_scrollMode = 0; // Flag for continuous (0) or prompted (1) scroll.
+#else
 flag g_scrollMode = 1; // Flag for continuous (0) or prompted (1) scroll.
+#endif
 flag g_quitPrint = 0; // Flag that user quit the output.
 
 /*!
@@ -489,6 +532,11 @@ flag print2(const char* fmt, ...) {
   free(printBuffer);
 
  PRINT2_RETURN:
+#ifdef __EMSCRIPTEN__
+  // Only when text actually reached the screen; while output is being
+  // collected into a string there is nothing new for the browser to paint.
+  if (!g_outputToString) mm_browser_yield();
+#endif
   return !g_quitPrint;
 }
 
@@ -798,6 +846,17 @@ vstring cmdInput(FILE *stream, const char *ask) {
           1520u);
     }
     g[CMD_BUFFER_SIZE - 1] = 0; // For overflow detection
+#ifdef __EMSCRIPTEN__
+    // A web browser cannot block waiting on stdin, so when reading from the
+    // terminal a line is obtained asynchronously from the hosting page (see
+    // wasm/mmemscripten.js).  SUBMIT files still use fgets() below.
+    if (stream == stdin) {
+      if (!mm_read_line(g, CMD_BUFFER_SIZE)) {
+        free_vstring(g); // Deallocate memory
+        return NULL; // End of input
+      }
+    } else
+#endif
     if (!fgets(g, CMD_BUFFER_SIZE, stream)) {
       // End of file
       free_vstring(g); // Deallocate memory

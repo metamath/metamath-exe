@@ -3334,9 +3334,17 @@ char parseCompressedProof(long statemNum)
           labelMapIndex, lettersLen, chrWeight[(long)(fbPtr[0])]);
         if (labelMapIndex >= g_WrkProof.compressedPfNumLabels) {
           if (!g_WrkProof.errorCount) {
+            // saturatingMulAdd() returns LONG_MAX when the value it computed
+            // did not fit, so in that case the decoded value is not known.
+            // Report that rather than a number, because LONG_MAX depends on
+            // how wide a long is, and because it is too large to survive the
+            // conversion to double used for printing.
+            const char *labelValue = (labelMapIndex == LONG_MAX)
+                ? "too large to represent"
+                : str((double)labelMapIndex);
             sourceError(labelStart, tokLength, statemNum, cat(
      "This compressed label reference is outside the range of the label list.",
-                "  The compressed label value is ", str((double)labelMapIndex),
+                "  The compressed label value is ", labelValue,
                 " but the largest label defined is ",
                 str((double)(g_WrkProof.compressedPfNumLabels - 1)), ".", NULL));
           }
@@ -3430,7 +3438,10 @@ char parseCompressedProof(long statemNum)
         } else {
           labelMapIndex = saturatingMulAdd(
             labelMapIndex, digitsLen, chrWeight[(long)(fbPtr[0])] + 1);
-          if (bggyAlgo) labelMapIndex--; // Adjust for buggy algorithm
+          // Adjust for buggy algorithm, but leave a value that
+          // saturatingMulAdd() clamped alone, so that it stays recognizable
+          // as clamped.
+          if (bggyAlgo && labelMapIndex != LONG_MAX) labelMapIndex--;
         }
         break;
 

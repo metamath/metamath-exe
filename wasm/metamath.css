@@ -1,0 +1,192 @@
+/* SPDX-License-Identifier: GPL-2.0-or-later OR MIT */
+
+  :root { color-scheme: light dark; }
+  body {
+    margin: 0; font-family: system-ui, sans-serif;
+    display: flex; flex-direction: column; height: 100vh;
+  }
+  header { padding: .5rem .75rem; border-bottom: 1px solid #8888; }
+  header h1 { font-size: 1rem; margin: 0 0 .4rem 0; }
+  .controls { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+  button, select { font: inherit; padding: .25rem .5rem; }
+  #status { margin-left: .3rem; display: inline-flex; align-items: center; gap: .3rem; }
+  #term {
+    flex: 1; overflow-y: auto; margin: 0; padding: .5rem .75rem;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: .9rem; line-height: 1.35; white-space: pre-wrap;
+    word-break: break-word; background: Canvas;
+  }
+  /* The command line is tinted and labelled so it is obvious that this, and
+     not the transcript above, is where you type. */
+  #inputrow {
+    display: flex; align-items: center; gap: .5rem;
+    padding-left: .75rem;
+    border-top: 2px solid rgba(110, 140, 255, .55);
+    background: rgba(110, 140, 255, .14);
+  }
+  #prompt {
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: .9rem; font-weight: 700; opacity: .85; user-select: none;
+  }
+  #cmd {
+    flex: 1; font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: .9rem; padding: .5rem .75rem .5rem 0; border: 0;
+    background: transparent; color: inherit;
+  }
+  #cmd:focus { outline: none; }
+  #inputrow:focus-within { background: rgba(110, 140, 255, .22); }
+  #term { cursor: text; }
+  dialog {
+    position: relative;
+    border: 1px solid #8888; border-radius: 8px; padding: 1rem 1.25rem;
+    max-width: 30rem; color: inherit; background: Canvas;
+  }
+  dialog::backdrop { background: rgba(0, 0, 0, .45); }
+  dialog h2 { margin: 0 0 .5rem 0; font-size: 1.05rem; padding-right: 1.5rem; }
+  /* Small "x" close button pinned to a dialog's top-right corner. */
+  .dlg-x {
+    position: absolute; top: .5rem; right: .55rem;
+    width: 1.6rem; height: 1.6rem; padding: 0; line-height: 1;
+    font-size: 1.2rem; border: 1px solid #8888; border-radius: 4px;
+    background: transparent; color: inherit; cursor: pointer;
+  }
+  .dlg-x:hover { background: rgba(128, 128, 128, .22); }
+  dialog code {
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    background: rgba(110, 140, 255, .18); padding: .1rem .3rem; border-radius: 3px;
+  }
+  dialog .row { margin-top: 1rem; display: flex; flex-wrap: wrap; gap: .5rem; justify-content: flex-end; }
+  /* Placeholder row shown when a file list is empty (used by the explorer). */
+  .filenone {
+    font-family: system-ui, sans-serif; font-style: italic;
+    opacity: .65; font-size: .85rem; padding: .35rem .4rem;
+  }
+  /* File explorer: a selectable list of files plus a row of actions. */
+  #explore-dlg { max-width: min(42rem, 94vw); }
+  #explore-list {
+    display: flex; flex-direction: column; gap: .25rem;
+    margin: .4rem 0; padding: .5rem; min-height: 3rem; max-height: 55vh;
+    overflow-y: auto; border: 1px solid #8884; border-radius: 8px;
+    background: rgba(128, 128, 128, .08);
+  }
+  .filerow {
+    display: flex; align-items: baseline; gap: .75rem; width: 100%;
+    text-align: left; cursor: pointer; color: inherit;
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .85rem;
+    padding: .35rem .5rem; border: 1px solid transparent; border-radius: 5px;
+    background: none;
+  }
+  .filerow:hover { background: rgba(110, 140, 255, .12); }
+  .filerow.sel {
+    background: rgba(110, 140, 255, .25); border-color: rgba(110, 140, 255, .6);
+  }
+  .filerow .fn { flex: 1; font-weight: 600; word-break: break-all; }
+  .filerow .sz { opacity: .75; white-space: nowrap; text-align: right; min-width: 10ch; }
+  .filerow .mt { opacity: .6; white-space: nowrap; }
+  /* Database picker: one action row per downloadable database. */
+  #db-list { display: flex; flex-direction: column; gap: .4rem; margin: .5rem 0; }
+  .dbrow {
+    display: flex; flex-direction: column; align-items: flex-start; gap: .15rem;
+    width: 100%; text-align: left; cursor: pointer; color: inherit;
+    padding: .5rem .6rem; border: 1px solid #8886; border-radius: 6px;
+    background: rgba(110, 140, 255, .10);
+  }
+  .dbrow:hover, .dbrow:focus-visible {
+    background: rgba(110, 140, 255, .22); border-color: rgba(110, 140, 255, .7);
+  }
+  .dbrow .dbname { font-family: ui-monospace, Menlo, Consolas, monospace; font-weight: 600; }
+  .dbrow .dbdesc { font-size: .8rem; opacity: .75; }
+  /* Diff dialog: three editable file-name fields. */
+  #diff-dlg, #patch-dlg { max-width: min(34rem, 94vw); }
+  .diff-fields { display: flex; flex-direction: column; gap: .5rem; margin: .6rem 0; }
+  .diff-fields label { display: flex; align-items: center; gap: .5rem; }
+  .diff-fields label span { flex: 0 0 8.5rem; }
+  .diff-fields input {
+    flex: 1; min-width: 0;
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .85rem;
+    padding: .3rem .4rem;
+  }
+  /* Text editor: a segmented textarea, a find/replace bar, and a nav/status bar. */
+  #editor-dlg { max-width: min(56rem, 96vw); width: 56rem; }
+  #editor-area {
+    width: 100%; box-sizing: border-box; height: 50vh; resize: vertical;
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .85rem;
+    line-height: 1.4; color: inherit; background: Canvas;
+    border: 1px solid #8886; border-radius: 6px; padding: .5rem;
+  }
+  .editor-find {
+    display: flex; flex-wrap: wrap; gap: .4rem; align-items: center;
+    margin: .2rem 0 .5rem;
+  }
+  .editor-find input[type="text"] { font: inherit; padding: .25rem .4rem; flex: 1; min-width: 7rem; }
+  #editor-findinfo { font-size: .8rem; opacity: .75; flex-basis: 100%; min-height: 1em; }
+  .editor-nav {
+    display: flex; flex-wrap: wrap; gap: .5rem; align-items: center;
+    margin: .4rem 0 .2rem; font-size: .82rem;
+  }
+  .editor-nav .nav-spacer { flex: 1 1 1rem; }
+  #editor-pos { font-variant-numeric: tabular-nums; font-weight: 600; }
+  #editor-seginfo { opacity: .65; font-variant-numeric: tabular-nums; }
+  .editor-nav .gotobox { opacity: .85; }
+  .editor-nav input[type="number"] { font: inherit; width: 7em; padding: .2rem .3rem; }
+
+  /* ---- activity + state feedback -------------------------------------
+     The state is shown with small icons rather than words, to spend as
+     little horizontal space as possible; each icon's meaning is in its
+     tooltip.  The moving parts are animated with a CSS transform, which the
+     browser runs on the compositor, so they keep moving even while a long
+     command blocks the main thread, which is exactly when the user most
+     needs to see that work is still happening. */
+  @keyframes mm-spin { to { transform: rotate(360deg); } }
+
+  /* Thin activity bar across the very top of the page.  Costs no horizontal
+     room, and is visible wherever the user is looking. */
+  #busybar {
+    position: fixed; top: 0; left: 0; right: 0; height: 3px;
+    z-index: 10; opacity: 0; transition: opacity .15s;
+    pointer-events: none; overflow: hidden;
+  }
+  #busybar.active { opacity: 1; }
+  #busybar .fill { height: 100%; width: 40%; background: rgba(110, 140, 255, .95); }
+  /* While a command runs we do not know how much is left, so the bar slides. */
+  #busybar.indeterminate .fill { animation: mm-slide 1.1s ease-in-out infinite; }
+  @keyframes mm-slide {
+    0%   { transform: translateX(-120%); }
+    100% { transform: translateX(360%); }
+  }
+  /* While downloading we do know the percentage, so the bar fills. */
+  #busybar.determinate .fill {
+    width: var(--pct, 0%); transform: none; animation: none;
+    transition: width .1s linear;
+  }
+
+  /* Compact header state icon: a spinner while busy, a dot when idle. */
+  #status .ind {
+    width: .7em; height: .7em; box-sizing: border-box; border-radius: 50%;
+    flex: none;
+  }
+  #status[data-state="ready"]  .ind { background: #3fae5a; }
+  #status[data-state="exited"] .ind { background: #888; border-radius: 2px; }
+  #status[data-state="error"]  .ind { background: #d9534f; }
+  #status[data-state="starting"] .ind,
+  #status[data-state="busy"]     .ind,
+  #status[data-state="download"] .ind {
+    border: 2px solid #8884; border-top-color: currentColor; background: none;
+    animation: mm-spin .8s linear infinite;
+  }
+  #statustext { font-size: .85rem; opacity: .8; }
+
+  /* A spinner at the command prompt while a command is running, so the
+     activity is visible right where the user is typing.  The input stays
+     enabled: anything typed is queued and runs next, so the prompt is only
+     dimmed, not hidden. */
+  #inputrow .cmdspin {
+    width: .8em; height: .8em; box-sizing: border-box; border-radius: 50%;
+    border: 2px solid #8884; border-top-color: currentColor;
+    display: none; animation: mm-spin .8s linear infinite; flex: none;
+  }
+  #inputrow.busy .cmdspin { display: inline-block; }
+  #inputrow.busy #prompt { opacity: .45; }
+
+  /* "Busy, but you can still interact": the correct cursor while working. */
+  body.busy #term { cursor: progress; }
