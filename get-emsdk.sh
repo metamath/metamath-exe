@@ -16,8 +16,9 @@
 
 set -eu
 
-# Pinned for reproducible builds.  Bump deliberately, and keep in sync with the
-# EMSDK_VERSION in .github/workflows/ if the browser build is ever released.
+# Pinned for reproducible builds, and pinned only here: the workflows key
+# their cached copy of the SDK off this file, so bumping the version below is
+# the whole change.
 EMSDK_VERSION="${EMSDK_VERSION:-6.0.3}"
 
 force=0

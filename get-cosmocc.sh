@@ -27,8 +27,9 @@
 
 set -eu
 
-# Pinned for reproducible builds.  Bump deliberately (keep in sync with the
-# COSMOCC_VERSION in .github/workflows/release.yml).  4.0.2 ships GCC 14.1.0.
+# Pinned for reproducible builds, and pinned only here: the workflows key
+# their cached copy of the toolchain off this file, so bumping the version
+# below is the whole change.  4.0.2 ships GCC 14.1.0.
 COSMOCC_VERSION="${COSMOCC_VERSION:-4.0.2}"
 
 force=0
