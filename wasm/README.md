@@ -43,7 +43,15 @@ From the repository top level:
     ./get-emsdk.sh       # install the pinned Emscripten SDK into ./emsdk (once)
     ./build-wasm.sh      # build into ./wasm-dist
     ./build-wasm.sh -s   # build, then serve on http://localhost:8000/
-    ./build-wasm.sh -t   # build, then run the test suite against the build
+    ./build-wasm.sh -t   # build, then run the whole test suite against it
+    ./build-wasm.sh -q   # build, then run only tests/wasm-smoke.txt
+
+The whole suite takes several minutes, because each test starts a fresh wasm
+instance. `-q` runs the subset listed in `../tests/wasm-smoke.txt`, about a
+minute, which covers what only this build has: a 32-bit `long`, input through
+ASYNCIFY, and files reached through the `fopen` wrapper. That file says why
+each test is in it. The workflow runs the subset while a change is being
+reviewed and merged, and the whole suite for a tagged version.
 
 `build-wasm.sh` compiles `../src/*.c`, writes `metamath-browser.js` and
 `metamath-browser.wasm` into `wasm-dist/`, and stages `index.html` and `serve`
@@ -53,10 +61,9 @@ to the source appear without another build), or as copies otherwise.
 ## Updating the pinned Emscripten version
 
 The Emscripten version is pinned so that every developer, and CI, builds with
-the same toolchain. It is written in two places, which must be kept in sync:
-
-- `../get-emsdk.sh`: the `EMSDK_VERSION` default (currently `6.0.3`).
-- `../.github/workflows/release.yml`: the `EMSDK_VERSION` environment variable.
+the same toolchain. It is written in one place: the `EMSDK_VERSION` default in
+`../get-emsdk.sh` (currently `6.0.3`). The workflows key their cached copy of
+the SDK off that file, so there is nothing to keep in sync with it.
 
 To move to a new version:
 
@@ -64,10 +71,10 @@ To move to a new version:
    list` (run `git -C emsdk pull` first to refresh that list), and the release
    notes are in the Emscripten
    [ChangeLog](https://github.com/emscripten-core/emscripten/blob/main/ChangeLog.md).
-2. Set that same version string in both files listed above.
+2. Set that version string in `../get-emsdk.sh`.
 3. Reinstall the SDK: `./get-emsdk.sh --force`.
 4. Rebuild and run the test suite: `./build-wasm.sh -t`.
-5. Once the tests pass, commit the two edited files.
+5. Once the tests pass, commit that file.
 
 To try a candidate version without editing anything, override it for a single
 install: `EMSDK_VERSION=6.0.4 ./get-emsdk.sh`. The `EMSDK_VERSION` environment
