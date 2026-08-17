@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<!--
+  Page for the build made from the main line of development.  It becomes
+  /main/index.html; tools/make-site.sh fills in what the build produced
+  wherever a name appears between at-signs below: VERSION, COMMIT,
+  COMMIT_SHORT, BUILT, SHA256, APE_SIZE, APE_VERSIONED.  That script refuses to
+  publish a page with any of them left over, so do not write one here that it
+  does not know how to fill in.
+
+  Everything this page links to is beside it in the same directory, except the
+  stylesheet and the way back to the top of the site.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Metamath-exe: current build</title>
+<link rel="stylesheet" href="../style.css">
+</head>
+<body>
+
+<p class="crumb"><a href="../">Metamath-exe</a></p>
+
+<h1>The current build</h1>
+<p class="tagline">
+Built from the main line of development, rebuilt and tested whenever anything
+changes, so it is newer than the most recent release.
+</p>
+
+<div class="actions">
+  <a class="action" href="run/">
+    <strong>Run it in your browser &rarr;</strong>
+    <span>Nothing to install. The program runs on your own machine, inside the page.</span>
+  </a>
+  <a class="action" href="@APE_VERSIONED@">
+    <strong>Download metamath &darr;</strong>
+    <span>@APE_SIZE@ &middot; one file that runs on Linux, macOS, Windows, and the BSDs.</span>
+  </a>
+</div>
+
+<h2>What you are downloading</h2>
+<dl>
+  <dt>Version</dt><dd>@VERSION@</dd>
+  <dt>Built from</dt>
+  <dd><a href="https://github.com/metamath/metamath-exe/commit/@COMMIT@"><code>@COMMIT_SHORT@</code></a></dd>
+  <dt>Built</dt><dd>@BUILT@</dd>
+  <dt>SHA-256</dt><dd><code>@SHA256@</code></dd>
+</dl>
+<p>
+The same facts, for a script that would rather not read this page, are in
+<a href="build-info.json">build-info.json</a>. If you would rather have a
+version that never moves under you, use a
+<a href="https://github.com/metamath/metamath-exe/releases">tagged release</a>.
+</p>
+
+<h2>Getting it from a script</h2>
+<p>
+The button above saves the program under a name carrying its version and
+commit, which is what you want on a desktop. A script wants the opposite: one
+address that always gives the current build, whatever it is called.
+</p>
+<pre>curl -fsSLO https://metamath-exe.metamath.org/main/metamath.exe
+chmod +x metamath.exe</pre>
+<p>
+Both names hold the identical file:
+<a href="metamath.exe">metamath.exe</a> and
+<a href="@APE_VERSIONED@">@APE_VERSIONED@</a> have the same checksum.
+</p>
+
+<h2>Checking what you got</h2>
+<p>The published checksums are in <a href="SHA256SUMS">SHA256SUMS</a>, one line per name:</p>
+<pre>sha256sum --check --ignore-missing SHA256SUMS</pre>
+<p>
+You can also confirm that this exact file was built by this project's CI, from
+the commit named above, rather than assembled by someone else:
+</p>
+<pre>gh attestation verify metamath.exe --repo metamath/metamath-exe</pre>
+<p class="note">
+Running the program does not alter the file, so you can check it whenever you
+like. The first run does place a small loader in your home directory, which is
+how one file runs on several operating systems.
+</p>
+
+<h2>Running it</h2>
+<p>
+On Windows, run it as it is; elsewhere, <code>chmod +x metamath.exe</code>
+first. Your system may object: Windows warns about an unrecognized program, and
+macOS quarantines a file that is not notarized. The
+<a href="https://github.com/metamath/metamath-exe/blob/HEAD/README.TXT">README</a>
+says what to do about both.
+</p>
+
+<footer>
+<a href="../">Back to the top of this site</a> &middot;
+<a href="https://github.com/metamath/metamath-exe">Source code</a> &middot;
+GNU General Public License v2 or later
+</footer>
+
+</body>
+</html>

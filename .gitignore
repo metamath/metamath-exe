@@ -5,6 +5,8 @@ stamp-h1
 missing
 metamath
 metamath_test
+# The published name for the Cosmopolitan build, made by copying "metamath".
+metamath.exe
 Makefile
 Makefile.in
 compile
@@ -43,6 +45,16 @@ doxy/
 
 # Working directory of tests/smoke_databases.sh
 ,smoke/
+
+# The real databases, checked out or downloaded here to test against.  The
+# workflow puts them here too.  They belong to the metamath/set.mm repository,
+# not to this one.
+set.mm/
+
+# Web site assembled by tools/make-site.sh; "_site" is what the deployment
+# workflow builds, ",site" is the name suggested for looking at it locally.
+_site/
+,site/
 
 # Artifact written by the tests/untab test
 tests/untab-rewrapped.mm

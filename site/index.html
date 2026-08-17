@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<!--
+  The top of the metamath-exe web site.  It becomes /index.html and says only
+  what is here and where to find it; each build describes itself on its own
+  page.  A /release/ holding the most recent tagged version would be listed
+  beside /main/ when there is one.
+
+  Nothing here is filled in by that script, and nothing here should be: this
+  page says nothing that changes from one build to the next, which is why it
+  can name a build's directory without naming the build.  Every link is
+  relative, so the same page works
+  whether it is served from https://metamath-exe.metamath.org/ or from
+  https://metamath.github.io/metamath-exe/ .
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Metamath-exe</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<h1>Metamath-exe</h1>
+<p class="tagline">The Metamath proof verifier and proof assistant, ready to run.</p>
+
+<div class="actions">
+  <a class="action" href="main/">
+    <strong>The current build &rarr;</strong>
+    <span>Built from the main line of development, rebuilt and tested whenever
+    anything changes. Run it in your browser, or download one file that runs on
+    Linux, macOS, Windows, and the BSDs.</span>
+  </a>
+</div>
+
+<p>
+For a version that never moves under you, every
+<a href="https://github.com/metamath/metamath-exe/releases">tagged release</a>
+carries the same two builds, kept at an address that does not change.
+</p>
+
+<p class="note">
+This site distributes the <em>program</em>. The Metamath databases it reads,
+such as <code>set.mm</code> and <code>iset.mm</code>, are maintained
+separately; get them from <a href="https://us.metamath.org/">us.metamath.org</a>
+or the <a href="https://github.com/metamath/set.mm">set.mm repository</a>.
+</p>
+
+<footer>
+<a href="https://github.com/metamath/metamath-exe">Source code</a> &middot;
+<a href="https://github.com/metamath/metamath-exe/blob/HEAD/README.TXT">README</a> &middot;
+GNU General Public License v2 or later &middot;
+built with <a href="https://justine.lol/cosmopolitan/">Cosmopolitan</a> and
+<a href="https://emscripten.org/">Emscripten</a>
+</footer>
+
+</body>
+</html>
