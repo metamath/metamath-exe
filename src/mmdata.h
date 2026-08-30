@@ -12,6 +12,8 @@
  * \brief includes for some principal data structures and data-string handling
  */
 
+#include <stddef.h> // offsetof, used by NULL_PNTRSTRING
+
 #include "mmvstr.h"
 
 // debugging flags & variables
@@ -520,6 +522,20 @@ void bug(int bugNum);
  * detection, and tests grep for it. */
 #define BUG_CHECK_FATAL_FORMAT "?BUG CHECK:  *** DETECTED BUG %u\n"
 
+/*! \def PACKED_ATTR
+ * Lay a struct out with no padding between its members.  Used where a struct
+ * has to reproduce a memory layout the program computes by hand elsewhere, so
+ * that padding the compiler is otherwise free to insert would put the members
+ * at the wrong offsets.  Expands to nothing on compilers without the GNU
+ * attribute syntax; unlike the attributes in mmfatl.h this one is needed for
+ * correctness rather than diagnostics, so every use of it is paired with a
+ * _Static_assert on the resulting offsets. */
+#if defined(__GNUC__)
+# define PACKED_ATTR __attribute__((__packed__))
+#else
+# define PACKED_ATTR
+#endif
+
 /*! Null nmbrString -- -1 flags the end of a nmbrString */
 struct nullNmbrStruct {
     long poolLoc;
@@ -542,8 +558,21 @@ extern struct nullNmbrStruct g_NmbrNull;
  * The values in this administrative header are such that it is never subject to
  * memory allocation or deallocation.
  *
- * \bug The C standard does not require a long having the same size as a
- * void*.  In fact there might be **no** integer type matching a pointer in size.
+ * The header must occupy exactly the 3 * sizeof(long) that poolFixedMalloc()
+ * writes, because pntrLen() and pntrAllocLen() reach backwards from the
+ * element to read it.  The C standard does not require a long to be the size
+ * of a void*, and where it is not -- LLP64, that is 64-bit Windows -- a
+ * naturally aligned nullElement lands at offset 16 rather than 12, so
+ * pntrLen() reads the padding and returns -1 for an empty string.  Packing
+ * removes that padding.  It leaves nullElement at an offset that is not a
+ * multiple of sizeof(void*), which is where every pooled block already sits:
+ * poolFixedMalloc() returns malloc()'s result advanced by 3 * sizeof(long),
+ * so on LLP64 the data of every pntrString in the program is at that same
+ * offset.  This makes the static block agree with the allocated ones rather
+ * than differ from them.
+ *
+ * The offsets are asserted in mmdata.c, so a compiler that does not honour
+ * PACKED_ATTR fails the build instead of producing a broken executable.
  */
 struct nullPntrStruct {
   /*!
@@ -570,7 +599,7 @@ struct nullPntrStruct {
    * A null marks the end of the array.
    */
   pntrString nullElement;
-};
+} PACKED_ATTR;
 
 /*!
  * \var g_PntrNull
@@ -589,7 +618,17 @@ extern struct nullPntrStruct g_PntrNull;
  * \ref pntrString
  * stack.  Used to initialize \ref pntrString variables .
  */
-#define NULL_PNTRSTRING &(g_PntrNull.nullElement)
+/* Reached by offset from the start of the block rather than by &.  The element
+   follows a 3 * sizeof(long) header, so where a pntrString is wider than a
+   long it is deliberately not on a sizeof(pntrString) boundary -- exactly as
+   poolFixedMalloc(), which hands back malloc()'s result advanced by the same
+   header, leaves every other pntrString in the program.  Taking its address
+   with & instead reports every use of this macro as an unaligned pointer to a
+   packed member: 124 of them on LLP64 under the -Wall -Wextra in configure.ac,
+   131 with no warning flags at all. */
+#define NULL_PNTRSTRING \
+    ((pntrString *)(void *)((char *)&g_PntrNull \
+        + offsetof(struct nullPntrStruct, nullElement)))
 
 /*!
  * \def pntrString_def
