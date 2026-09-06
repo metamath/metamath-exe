@@ -16,7 +16,14 @@
  * \section regression_tests Regression tests
  * \subsection running_tests Running the tests
  *
- * Regression tests can be run as follows:
+ * Regression tests are part of a development cycle. They are routinely run
+ * whenever changes are pushed to GitHub's metamath-exe project.
+ *
+ * A developer may additionally want to run them during development to ensure
+ * that intermediate changes remain functionally correct and do not deviate
+ * from previous implementations that are known to be correct.
+ *
+ * Regression tests can, for example, be run as follows:
  *
  * 1. Open a shell for running Bash commands.
  *
@@ -33,40 +40,46 @@
  * \verbatim
    running test_mmfatl:test_fatalErrorInit... ok
    \endverbatim
- *
  * If every displayed test ends with \c ok, all regression tests have passed.
  * Progress and success messages can be suppressed, see \ref TEST_SILENT.
  * Failing tests always display diagnostic information identifying the failing
  * assertion and its source location.
  *
- * \subsection test_details Details and implementation
- * If the macro \c TEST_ENABLE is defined by the \c -t option of \c build.sh,
- * the script compiles the regression tests into an executable named
- * \c metamath_test. The value of \c TEST_ENABLE is irrelevant; only whether
- * the macro is defined matters. Defining the macro directly in this file does
- * not affect the executable's name.
- *
- * After enabling or disabling testing, even without modifying any source
+ * 5. After enabling or disabling testing, even without modifying any source
  * files, all intermediate artifacts must be rebuilt. Pass the \c -c (clean)
- * option to \c build.sh to enforce this.
+ * option to \c build.sh to enforce a complete recompilation of Metamath:
+ * \verbatim
+   ./build.sh -c
+   ./metamath
+   \endverbatim
+ *
+ * \subsection test_details Details and implementation
+ * The normal Metamath application distributed by GitHub has already passed
+ * the regression tests. To avoid the overhead of loading a larger executable
+ * and initializing regression-test code when the normal application starts,
+ * that code should therefore be included only conditionally during
+ * compilation. An executable compiled with regression tests executes the tests
+ * and then exits, although all normal application code remains available
+ * both to preserve the normal executable's behavior and to support testing.
+ *
+ * The macro \c TEST_ENABLE controls whether the regression tests are
+ * compiled into an executable.
  *
  * If testing is disabled, the \c RUN_TESTS_AND_EXIT_IF_ENABLED macro expands
  * to nothing. The compiler also excludes all test code, so the resulting
  * executable does not increase in size. Thus, a disabled test suite incurs
  * neither a linking nor a runtime penalty.
  *
- * A failed assertion skips the rest of the function in which it occurs. The
- * other functions registered with \c RUN_TEST are still executed. The program
- * exits with status 0 if all tests passed, and nonzero otherwise.
- *
- * We recommend running the regression tests whenever the code is modified
- * to ensure that it continues to behave as intended. The tests are also
- * run automatically by GitHub's checks whenever changes are pushed.
+ * If testing is enabled, the expansion of the macro
+ * \c RUN_TESTS_AND_EXIT_IF_ENABLED runs the regression tests, and exits
+ * afterwards. The progress of tests is controlled by \ref TEST_SILENT. A
+ * failed assertion issues a diagnostic message, and may abort the test suite
+ * to which it belongs. Other independent test suites continue to run, and the
+ * program exits afterwards with status 0 if all tests passed, and nonzero
+ * otherwise.
  *
  * The macro \c RUN_TESTS_AND_EXIT_IF_ENABLED should be the first instruction
- * in \c main. It expands to nothing when testing is disabled. When testing
- * is enabled, it runs the regression tests and terminates the program,
- * so the normal program execution does not take place:
+ * in \c main:
  * \code
  * int main(int argc, char *argv[]) {
  *
@@ -85,6 +98,22 @@
 
 // Uncomment this to force-enable tests
 // #define TEST_ENABLE
+
+/* This macro is nowhere defined in the Metamath source code; it is used only
+ * for Doxygen by a PREDEFINED entry in Doxyfile.diff. Therefore, code
+ * conditional on this macro being defined is ignored by the compiler, but
+ * processed by Doxygen.
+ */
+#ifdef DOXYGEN_BUILD
+
+/* Fake definition visible to Doxygen only. Without defining TEST_ENABLE,
+ * Doxygen issues a warning that the documentation item is not related to
+ * anything. One could have used PREDEFINED for this as well, but we avoid
+ * including knowledge about Metamath details in the configuration of an
+ * external, non-central tool.
+ */
+  #define TEST_ENABLE
+#endif // DOXYGEN_BUILD
 
 #include <stdio.h>
 

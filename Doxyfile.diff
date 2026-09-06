@@ -65,3 +65,6 @@ EXTRACT_STATIC            = YES
 # This tag requires that the tag ENABLE_PREPROCESSING is set to YES.
 
 MACRO_EXPANSION        = YES
+
+# used for documentation-only-declarations
+PREDEFINED = DOXYGEN_BUILD
