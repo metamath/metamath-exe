@@ -71,7 +71,7 @@
  * - never use space characters at the beginning or at the end;
  * - the length is limited to 26 characters.
  */
-#define MVERSION "0.199.pre 29-Jan-2022"
+#define MVERSION "0.200.pre 17-Aug-2026"
 // 0.199.pre
 // 30-Dec-2021 mc metamath.c mmdata.c mminou.c mmmaci.c -
 //   Remove mmmaci and everything related to THINK_C compiler

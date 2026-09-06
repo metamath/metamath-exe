@@ -20,7 +20,7 @@ Instructions
 Prebuilt portable executable (easiest, no compiler needed)
 ----------------------------------------------------------
 
-Each release provides a single "actually portable executable" (APE)
+This project publishes a single "actually portable executable" (APE)
 that runs on Windows, macOS, Linux, and the BSDs (both x86-64 and Arm64)
 without installation. It is built with the Cosmopolitan toolchain as an
 "Actually Portable Executable".
@@ -34,10 +34,41 @@ speed, with no emulation penalty.  Similarly for x86_64.  The trade-off
 is that the file is more than twice the size of a single-CPU build, since
 it includes two CPU builds, along with shims for various operating systems.
 
-This one URL always downloads the newest release, and works the same in a web
-browser, in curl, in wget, and in scripts:
+There are two of these to choose between, and either URL works the same in a
+web browser, in curl, in wget, and in scripts.
+
+The current program, rebuilt and tested every time anything changes:
+
+  https://metamath-exe.metamath.org/main/metamath.exe
+
+That name never changes, which is what a script wants.  The web page offers
+the identical file under a name carrying its version and the commit it was
+built from, such as "metamath-0.200.pre-3d6ca1f.exe", which is friendlier on a
+desktop and which Windows treats less suspiciously than an unsigned program
+with a bare name.
+
+The newest release, which never changes under you once you have it:
 
   https://github.com/metamath/metamath-exe/releases/latest/download/metamath.exe
+
+Use the release if you want a version you can name and come back to; use the
+first if you want the fixes that are in it.  Which commit the first one was
+built from, and its checksum, are shown on the page it comes from and in
+https://metamath-exe.metamath.org/main/build-info.json .
+
+Either way you can check what you got:
+
+  sha256sum --check --ignore-missing SHA256SUMS   # published beside it
+  gh attestation verify metamath.exe --repo metamath/metamath-exe
+
+The second command asks GitHub to confirm that this exact file was built by
+this project, from the commit it claims, rather than assembled by someone else.
+Running the program does not alter the file, so its checksum stays true and can
+be checked at any time.  The first run does extract a small loader into your
+home directory (~/.ape-VERSION), which is how one file manages to run on
+several operating systems; the program itself is only read.  The cosmocc
+toolchain has an "assimilate" program that converts a portable executable into
+an ordinary one for a single platform, but that only happens if you ask for it.
 
 Each release also contains the identical program under a name that includes the
 version, such as "metamath-v0.199.exe", for people who prefer to keep the
@@ -45,8 +76,12 @@ version in the file name.  Both are on the Releases page:
 
   https://github.com/metamath/metamath-exe/releases
 
-The program always reports its own version when it starts, so a copy named just
-"metamath.exe" is never ambiguous.
+The program reports its own version when it starts.  A release reports that
+release's version, so a copy of it named just "metamath.exe" is never
+ambiguous.  A build taken from the web site reports the version under
+development, which stays the same from one build to the next; when you need to
+know exactly which build you have, use its checksum, or read build-info.json on
+the site.
 
 Then run it and type "read set.mm" (or point it at a database, see below):
 
@@ -83,12 +118,13 @@ Running metamath-exe in a web browser
 Metamath-exe can also be run inside a web browser, with nothing installed at
 all:
 
-  https://metamath.github.io/metamath-exe/
+  https://metamath-exe.metamath.org/main/run/
 
-Every release is also kept permanently at its own address, so that work done
-with a particular version stays reproducible:
-
-  https://metamath.github.io/metamath-exe/v0.199/
+That is the current program, rebuilt whenever anything changes, the same as the
+download above.  Each release also has its browser version attached to it as
+"metamath-browser-<version>.zip", so work done with a particular version stays
+reproducible; unpack it and run the "serve" script inside, because a browser
+cannot load WebAssembly from a file:// address.
 
 The page provides a terminal (with up and down arrow command history), buttons
 to download set.mm or iset.mm into the virtual filesystem, a way to

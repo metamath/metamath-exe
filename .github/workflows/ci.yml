@@ -1,0 +1,295 @@
+# One pipeline: build the program, test what was built, then hand what passed
+# to whoever should have it.  A change to master goes to the web site; a v*
+# tag goes to a GitHub Release; a pull request goes nowhere, but is checked by
+# the same jobs that gate both.
+#
+#   build and test        every event
+#     deploy              push to master
+#     release             push of a v* tag
+#
+# Because the jobs that publish take their files from the jobs that tested
+# them, what reaches the site or a release is the file that passed, not a
+# rebuild of it.
+#
+# What the site holds is decided by tools/make-site.sh, and described there,
+# so that it is not written down twice and cannot go stale here.  Nothing from
+# the source tree is published, and nothing is committed in order to publish
+# it: the site is uploaded straight to Pages, so no build output enters the
+# git history.  This needs Settings -> Pages source set to "GitHub Actions".
+
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+    tags: ['v*']
+  workflow_dispatch:
+
+# Read-only by default.  Three things below are worth keeping apart: deploying
+# to Pages can put anything on the site, attesting can vouch for a file as
+# built here, and contents: write can change a release.  Each belongs to one
+# job, and the jobs that run a compiler over the source have none of them.
+permissions:
+  contents: read
+
+# A newer run cancels a build it overtakes.  The ref is in the group so that a
+# tag, a branch, and a pull request cannot cancel each other.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native:
+    name: Native build and tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: build
+        run: ./build.sh
+
+      - name: test
+        working-directory: tests
+        run: env METAMATH=../metamath ./run_test.sh *.in
+
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: build
+        run: ./build.sh -t
+
+      - name: test
+        run: ./metamath_test
+
+  portable:
+    name: Portable executable
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # Keyed off the installer script, which is where the version it pins
+      # lives, so bumping that version is one edit in one file.
+      - name: Cache cosmocc toolchain
+        id: cache-cosmocc
+        uses: actions/cache@v4
+        with:
+          path: cosmocc
+          key: cosmocc-${{ hashFiles('get-cosmocc.sh') }}
+
+      - name: Install cosmocc
+        if: steps.cache-cosmocc.outputs.cache-hit != 'true'
+        run: ./get-cosmocc.sh
+
+      # CC=cosmocc builds in build-cosmo/, so no native object can be reused;
+      # reusing one gives an ordinary ELF that still looks like a portable
+      # build.  -c starts from an empty directory whatever the runner kept.
+      # The name is settled here so the tests can run against the file that
+      # will be published, rather than against a copy of it.
+      - name: build
+        run: |
+          export PATH="$PWD/cosmocc/bin:$PATH"
+          CC=cosmocc ./build.sh -c
+          file metamath   # an MZ/DOS (APE) header, not ELF
+          cp metamath metamath.exe
+
+      # A build that cannot process the real databases is not fit to publish,
+      # whatever the test suite says.  The token raises an API rate limit that
+      # hosted runners share, so a busy hour cannot stop the pipeline.
+      - name: download the databases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -o pipefail
+          sha=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/metamath/set.mm/commits/develop" \
+            | jq -r .sha)
+          [ -n "$sha" ] || { echo "could not resolve set.mm develop"; exit 1; }
+          echo "set.mm commit: $sha"
+          mkdir -p set.mm
+          curl -fsSL -H "Authorization: Bearer $GH_TOKEN" \
+            "https://api.github.com/repos/metamath/set.mm/tarball/$sha" \
+            | tar xz --strip=1 -C set.mm
+
+      # Every test, plus the real databases, run against the file that will be
+      # published.  Running the program is not supposed to alter it; the hashes
+      # either side say whether that held, so a file that no longer matches its
+      # own checksum stops the pipeline instead of shipping.
+      - name: test
+        run: |
+          before=$(sha256sum metamath.exe)
+          echo "$before"
+
+          ( cd tests && env METAMATH=../metamath.exe ./run_test.sh *.in )
+          tests/smoke_databases.sh ./metamath.exe ./set.mm
+
+          [ "$before" = "$(sha256sum metamath.exe)" ] \
+            || { echo "the file changed while it was being tested"; exit 1; }
+
+      # Only for a real push: a pull request build is not something to vouch
+      # for, and one from a fork could not sign anyway.  Lets anyone who
+      # downloads it run:
+      #   gh attestation verify metamath.exe --repo metamath/metamath-exe
+      # Verification is by content, so this covers every copy of these bytes.
+      - name: attest what was built
+        if: github.event_name != 'pull_request'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: metamath.exe
+
+      # Kept on a pull request too, where nothing consumes it, so that a
+      # reviewer can download the program the change produces.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ape
+          path: metamath.exe
+          retention-days: 7
+
+  browser:
+    name: Browser version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Emscripten SDK
+        id: cache-emsdk
+        uses: actions/cache@v4
+        with:
+          path: emsdk
+          key: emsdk-${{ hashFiles('get-emsdk.sh') }}
+
+      - name: Install Emscripten SDK
+        if: steps.cache-emsdk.outputs.cache-hit != 'true'
+        run: ./get-emsdk.sh
+
+      # -q runs tests/wasm-smoke.txt, about a minute, which is enough while a
+      # change is being reviewed and merged.  A tagged version is meant to be
+      # kept, so it gets every test and the several minutes that takes.
+      - name: build and test
+        run: |
+          if [ "$GITHUB_REF_TYPE" = tag ] \
+             || [ "$GITHUB_EVENT_NAME" = workflow_dispatch ]; then
+            ./build-wasm.sh -t
+          else
+            ./build-wasm.sh -q
+          fi
+
+      # build-wasm.sh links the page files in from wasm/ rather than copying
+      # them, and a symlink out of the directory would not survive being packed
+      # up and unpacked elsewhere.  Everything is kept, including what the site
+      # leaves out, because the release zip wants some of it.
+      - name: collect the files
+        run: cp -rL wasm-dist wasm-upload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wasm
+          path: wasm-upload
+          retention-days: 7
+
+  deploy:
+    name: Publish the site
+    # Everything has to have passed, not only the two builds that ship.
+    needs: [native, unit, portable, browser]
+    # Only from master: tagging an old commit must not roll the site back, and
+    # a pull request must not publish at all.
+    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    # A deployment already under way is left to finish; the newer one follows.
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # Naming no artifact fetches every one this run produced, each into a
+      # directory of its own name.
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: assemble the site
+        run: |
+          chmod +x artifacts/ape/metamath.exe
+          tools/make-site.sh \
+            artifacts/ape/metamath.exe artifacts/wasm _site "$GITHUB_SHA"
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+  release:
+    name: Attach the built files to the release
+    needs: [native, unit, portable, browser]
+    # Only for a tag that was pushed, so dispatching this against a tag by hand
+    # cannot alter a release that has already been published.
+    if: github.event_name == 'push' && github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      # Two names for one program.  metamath-<tag>.exe shows the version, which
+      # is what Cosmopolitan recommends against Windows Defender false
+      # positives, the toolchain having no way to embed a PE VERSIONINFO
+      # resource.  metamath.exe is fixed, so this URL keeps working:
+      #   .../releases/latest/download/metamath.exe
+      # The zip keeps "serve", unlike the site, because a browser cannot load
+      # WebAssembly over a file:// URL.
+      - name: name the files
+        run: |
+          tag="$GITHUB_REF_NAME"
+          mv artifacts/ape/metamath.exe metamath.exe
+          chmod +x metamath.exe
+          cp metamath.exe "metamath-${tag}.exe"
+
+          dir="metamath-browser-${tag}"
+          mkdir "$dir"
+          for f in artifacts/wasm/*; do
+            case "$(basename "$f")" in
+              metamath-node.*|metamath-wasm) continue ;;
+            esac
+            cp "$f" "$dir/"
+          done
+          zip -qr "$dir.zip" "$dir"
+
+          sha256sum "metamath-${tag}.exe" metamath.exe "$dir.zip" > SHA256SUMS
+          cat SHA256SUMS
+          echo "TAG=$tag" >> "$GITHUB_ENV"
+
+      - name: publish to the release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # This job downloads artifacts and never checks the sources out, so
+          # gh has no git remote to learn the repository from.  Naming it here
+          # is cheaper than a checkout that nothing else would use.
+          GH_REPO: ${{ github.repository }}
+        run: |
+          files="metamath-${TAG}.exe metamath.exe metamath-browser-${TAG}.zip SHA256SUMS"
+          # shellcheck disable=SC2086  # the list has to be split into arguments
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" $files --clobber
+          else
+            gh release create "$TAG" $files \
+              --title "metamath $TAG" --generate-notes
+          fi

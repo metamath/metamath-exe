@@ -109,6 +109,32 @@ to be listed here.
 
 * Mario Carneiro (@digama0)
 
+## What happens when a change is merged
+
+Merging into `master` updates the web site. `.github/workflows/ci.yml`
+rebuilds both portable versions of the program, tests them, and puts them on
+<https://metamath-exe.metamath.org/>, so within minutes the site offers the
+program as it stands after your change. Nobody has to wait for a tagged
+version to get it, and nobody has to compile it.
+
+Two things follow from that.
+
+First, a merged change reaches users directly, so the pull request is where a
+problem has to be caught. The checks on a pull request build the program with
+three compilers: the native one, the Cosmopolitan one that produces the file
+people download, and Emscripten for the browser version. Each of those builds
+runs the test suite. All of it runs again after the merge, and the site is not
+updated unless it passes. When it does not pass, the site keeps serving the
+previous build, and the failure appears in the Actions log instead of in front
+of users.
+
+Second, releases still exist, and are a separate thing. Pushing a `v*` tag
+attaches the same built files to a GitHub Release, where they stay at an
+address that never changes, for anyone who needs to name the version they
+used. A tag does not touch the web site, which always shows the current state
+of `master`, so tagging an older commit cannot roll the site back. Releases
+are occasional; merges are how the program reaches people day to day.
+
 ## Documentation Rules
 
 Here are some links on how to improve documentation in general:

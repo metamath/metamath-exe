@@ -1,0 +1,53 @@
+# Tests run against the WebAssembly build on every push to master.
+#
+# The full suite takes several minutes under node, because each test starts a
+# fresh wasm instance, so running all of it on every push would hold up the
+# deployment of the web site for no good reason.  The command line build tests
+# the same C code in well under a second and runs the whole suite, so this list
+# does not need to check metamath's logic again.  What it checks is the part of
+# the WebAssembly build that has no counterpart in a native build:
+#
+#   * a "long" is 32 bits on wasm32, and 64 bits everywhere else.  This is the
+#     only build we have where that is exercised at all.
+#   * input arrives through mm_read_line(), which suspends the program with
+#     ASYNCIFY and resumes it.  When that breaks, the program stops reading
+#     commands and its output truncates, rather than failing outright.
+#   * files are reached through __wrap_fopen() and NODERAWFS, not through the
+#     C library directly.
+#
+# Every test also exercises the exit path, since run_test.sh checks the exit
+# code of each one.
+#
+# Format: one test name per line, no ".in" suffix.  Lines beginning with "#"
+# and blank lines are ignored.  Run this subset with "./build-wasm.sh -q"; run
+# everything with "./build-wasm.sh -t".
+
+# Reads a database and verifies every proof in it: the file goes through
+# __wrap_fopen(), and proof verification is where a 32-bit long would show.
+demo0
+
+# Heavier verification and unification arithmetic, for the same reason.
+big-unifier
+
+# Ten commands in one run, so mm_read_line() suspends and resumes repeatedly
+# rather than just once.
+local-label-first
+
+# Writes a file (untab-rewrapped.mm), which is the other half of the
+# filesystem path, and no other test in this list writes one.
+untab
+
+# About 6 KB of output.  Truncated output is how a broken suspend shows up, so
+# one test here has to produce more than a screenful.
+disjoint2
+
+# Runs with no database on the command line, which starts up along a different
+# path from every other test here.
+issue136
+
+# The two below are not about WebAssembly.  They are an ordinary correctness
+# double-check, cheap enough to keep: if these two pass under wasm and the full
+# suite passes against the command line build, a wasm-only fault has to be in
+# something this list covers above.
+anatomy
+verify_markup_1
