@@ -12,6 +12,7 @@
  * to BASIC string functions; memory management; converts between proof formats
 */
 #include <stdarg.h>
+#include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
 #include "mmvstr.h"
@@ -34,6 +35,24 @@
 _Static_assert(sizeof(struct statement_struct) == 256,
     "statement_struct grew; see hasVarWithoutHyp in mmdata.h");
 #endif
+#endif
+
+/* g_NmbrNull and g_PntrNull stand in for a block from poolFixedMalloc(), which
+   writes its three administrative values into the 3 * sizeof(long) directly
+   below the data.  nmbrLen(), nmbrAllocLen(), pntrLen() and pntrAllocLen()
+   read them back from there, so the element has to sit at exactly that offset
+   in these structs too.  Unlike the size check above this is a correctness
+   property and holds on every platform: where it failed -- LLP64, where a
+   naturally aligned void* is padded out to offset 16 -- pntrLen() returned -1
+   for the empty string and metamath died during start-up (issue #164).  */
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+_Static_assert(offsetof(struct nullNmbrStruct, nullElement)
+        == 3 * sizeof(long),
+    "g_NmbrNull's header must be the 3 longs poolFixedMalloc() writes");
+_Static_assert(offsetof(struct nullPntrStruct, nullElement)
+        == 3 * sizeof(long),
+    "g_PntrNull's header must be the 3 longs poolFixedMalloc() writes"
+    " -- see PACKED_ATTR in mmdata.h");
 #endif
 
 /*E*/long db=0,db0=0,db2=0,db3=0,db4=0,db5=0,db6=0,db7=0,db8=0,db9=0;
@@ -77,7 +96,12 @@ long g_sourceLen;
 struct nullNmbrStruct g_NmbrNull = {-1, sizeof(long), sizeof(long), -1};
 
 // Null pntrString
-struct nullPntrStruct g_PntrNull = {-1, sizeof(long), sizeof(long), NULL};
+// The two size fields are the size of the one element the block holds, which
+// is a pntrString and not a long; they differ on LLP64.  Both spellings happen
+// to give pntrLen() == 0 there, the old one by truncating -4/8, so this is a
+// correction of intent rather than of behaviour.
+struct nullPntrStruct g_PntrNull
+    = {-1, sizeof(pntrString), sizeof(pntrString), NULL};
 
 // nmbrString memory allocation/deallocation
 temp_nmbrString *nmbrTempAlloc(long size);
