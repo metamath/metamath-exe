@@ -47,13 +47,19 @@ int hypAndLocSrchCmp(const void *key, const void *data);
 
 /*! This function returns the length of the white space starting at ptr.
    Comments are considered white space.  ptr should point to the first character
-   of the white space.  If ptr does not point to a white space character, 0
-   is returned.  If ptr points to a null character, 0 is returned. */
-long whiteSpaceLen(char *ptr);
+   of the white space.  Return 0 if ptr does not point to a white space
+   character (including if it points to a null character).
+
+   White space is any character that is neither the null character nor
+   graphic (see isgraph()); tokenLen() takes the graphic ones, so every
+   character belongs to one or the other.  A comment is "$(" up to the next
+   "$)", or "$!" up to the end of the line.  An unterminated "$(" comment
+   extends to the end of the string. */
+long whiteSpaceLen(const char *ptr);
 
 // For .mm file splitting
 /*! Like whiteSpaceLen except comments are not whitespace */
-long rawWhiteSpaceLen(char *ptr);
+long rawWhiteSpaceLen(const char *ptr);
 
 /*! This function returns the length of the token (non-white-space) starting at
    ptr.  Comments are considered white space.  ptr should point to the first
