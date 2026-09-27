@@ -15,7 +15,7 @@ assuming it is enough for more.
 
 ```sh
 cd fuzz
-./build-sanitizer.sh          # builds ./metamath-san from ../src
+./build-sanitizer.sh          # builds ./metamath-san and ./metamath-msan
 ./run-cases.sh                # re-check the known bugs
 ./fuzz.py --iterations 2000 --workers 6
 ./fuzz.py --duration 2h --workers 6    # or just run until you want the CPU back
@@ -89,6 +89,11 @@ out-of-bounds accesses into loud, greppable reports, and that is what
 `fuzz.py` watches for. Run it against a normal build and it will find
 nothing, no matter how long you leave it.
 
+`build-sanitizer.sh` also builds `metamath-msan`, with MemorySanitizer,
+which reports reads of uninitialized memory. It needs clang on Linux or a
+BSD, and is skipped elsewhere. `run-cases.sh` runs it too; pass
+`--binary ./metamath-msan` to fuzz with it.
+
 Each iteration:
 
 1. Picks a seed `.mm` at random (by default every `.mm` in `../tests`).
@@ -101,7 +106,8 @@ Each iteration:
 3. Picks one command from a list (`verify proof *`, `show statement *
    /alt_html`, `write source ... /extract *`, and about twenty others).
 4. Runs `metamath` with `read t.mm` plus that command, 25s timeout.
-5. Greps the output for `runtime error`, `AddressSanitizer`, `SEGV`.
+5. Greps the output for `runtime error`, `AddressSanitizer`,
+   `MemorySanitizer`, `SEGV`.
 
 The command list matters more than the mutations. Most bugs found so
 far were reachable from exactly one command -- `/extract` or
@@ -153,8 +159,11 @@ to run after startup. `./run-cases.sh` runs them all.
 Cases named `open-*` are known-unfixed and are **expected** to be
 detected; everything else is fixed and expected to be clean. The
 script fails if a fixed case regresses, and tells you to rename a case
-if an `open-` one starts passing. Nothing runs it for you: CI builds and
-runs `tests/`, not this, so it is on you to run it.
+if an `open-` one starts passing. When `metamath-msan` was built, the
+script runs the cases against it too. An `open-` case is judged by the
+binary that found it: `open-msan-*` cases by `metamath-msan`, the others
+by `metamath-san`. Nothing runs it for you: CI builds and runs `tests/`,
+not this, so it is on you to run it.
 
 A detection is a sanitizer report or a `?BUG CHECK` line. Counting the
 latter matters, and not only in theory. `bug()` is the program catching
@@ -206,9 +215,10 @@ so read the name as where it came from, not as what it now catches.
 | `mathdecl-token-past-section` | `g_MathToken[]` heap write overflow, `parseMathDecl()`, token running past the recorded math section | fixed |
 | `parseproof-token-past-section` | `tokenSrcPtrPntr[]` heap write overflow, `parseProof()`, token running past the recorded proof section | fixed |
 | `compressedproof-token-past-section` | `stepSrcPtrPntr[]` heap write overflow, `parseCompressedProof()`, label-list token running past the recorded proof section | fixed |
+| `open-msan-parseproof-uninit` | uninitialized `proofString` element copied by `parseProof()` on an `/EXPLICIT` proof; seen only by MemorySanitizer | **open** |
 
-No case is open at the moment.  Every bug found so far reproduced on
-master; none was introduced by the fixes here.
+Every bug found so far reproduced on master; none was introduced by the
+fixes here.
 
 ## Limitations
 
