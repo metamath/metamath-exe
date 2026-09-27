@@ -215,7 +215,7 @@ so read the name as where it came from, not as what it now catches.
 | `mathdecl-token-past-section` | `g_MathToken[]` heap write overflow, `parseMathDecl()`, token running past the recorded math section | fixed |
 | `parseproof-token-past-section` | `tokenSrcPtrPntr[]` heap write overflow, `parseProof()`, token running past the recorded proof section | fixed |
 | `compressedproof-token-past-section` | `stepSrcPtrPntr[]` heap write overflow, `parseCompressedProof()`, label-list token running past the recorded proof section | fixed |
-| `open-msan-parseproof-uninit` | uninitialized `proofString` element copied by `parseProof()` on an `/EXPLICIT` proof; seen only by MemorySanitizer | **open** |
+| `parseproof-uninit` | uninitialized `proofString` element copied by `parseProof()` on an `/EXPLICIT` proof; seen only by MemorySanitizer | fixed |
 
 Every bug found so far reproduced on master; none was introduced by the
 fixes here.
