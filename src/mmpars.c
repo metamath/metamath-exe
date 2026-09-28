@@ -3524,10 +3524,10 @@ char parseCompressedProof(long statemNum)
           break;
         }
         // Otherwise, it must be a comment
-        if (fbPtr[1] != '(' && fbPtr[1] != '!') {
+        if (fbPtr[1] != '(') {
           if (!g_WrkProof.errorCount) {
             sourceError(fbPtr + 1, 1, statemNum,
-             "Expected \".\", \"(\", or \"!\" here.");
+             "Expected \".\" or \"(\" here.");
           }
           g_WrkProof.errorCount++;
           if (returnFlag < 2) returnFlag = 2;
@@ -3948,10 +3948,6 @@ long whiteSpaceLen(const char *ptr) {
       p = strstr(p + 2, "$)");
       if (!p) return (long)strlen(ptr); // Unterminated comment
       p += 2;
-    } else if (p[0] == '$' && p[1] == '!') {
-      p = strchr(p + 2, '\n');
-      if (!p) bug(1716);
-      p++;
     } else if (p[0] == 0 || isgraph((unsigned char)p[0])) {
       return (long)(p - ptr);
     } else {

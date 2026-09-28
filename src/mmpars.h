@@ -53,8 +53,7 @@ int hypAndLocSrchCmp(const void *key, const void *data);
    White space is any character that is neither the null character nor
    graphic (see isgraph()); tokenLen() takes the graphic ones, so every
    character belongs to one or the other.  A comment is "$(" up to the next
-   "$)", or "$!" up to the end of the line.  An unterminated "$(" comment
-   extends to the end of the string. */
+   "$)" or the end of the string. */
 long whiteSpaceLen(const char *ptr);
 
 // For .mm file splitting
