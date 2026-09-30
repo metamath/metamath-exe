@@ -93,6 +93,24 @@
  * \endcode
  */
 
+/*!
+ * \def TEST_ENABLE
+ * \brief If defined, enables regression tests.
+ *
+ * This macro controls the conditional inclusion of regression tests. Its value
+ * is irrelevant; only whether it is defined matters.
+ *
+ * Metamath provides three ways to define \p TEST_ENABLE:
+ * 1. Set the \c -ct option when running \c build.sh. This is the recommended
+ *   and easiest method, see \ref running-tests;
+ * 2. If you use your own build script and compile the sources with \c gcc
+ *   specify the \c -DTEST_ENABLE option to the GNU compiler;
+ * 3. Patch this file and uncomment one of the \c #define or \c #undef lines
+ *   related to \p TEST_ENABLE. These lines take precedence over other methods
+ *   of controlling testing. Scripts that operate directly on the source code
+ *   may prefer this method.
+ */
+
 // Uncomment this to force-disable tests
 // #undef TEST_ENABLE
 

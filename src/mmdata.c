@@ -133,7 +133,7 @@ vstring g_qsortKey; // Used by qsortStringCmp; pointer only, do not deallocate
 
  /*! \page pgBlock Block of memory
  *
- * Each block used by the \ref pgSuballocator "suballocator" is formally´
+ * Each block used by the \ref pgSuballocator "suballocator" is formally
  * treated as an array of pointer (void*).  It is divided into an
  * administrative header, followed by elements reserved for application data.
  * The header is assigned elements -3 to -1 in the formal array, so that
