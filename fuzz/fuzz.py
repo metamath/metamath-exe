@@ -5,8 +5,8 @@ Mutates .mm files from a seed corpus, feeds each one to a metamath
 binary along with a randomly chosen command, and reports anything the
 sanitizers complain about.  See README.md in this directory.
 
-The binary under test MUST be built with AddressSanitizer and/or
-UndefinedBehaviorSanitizer -- they are the oracle.  Without them a
+The binary under test MUST be built with sanitizers, as
+build-sanitizer.sh does -- they are the oracle.  Without them a
 malformed .mm just produces an error message, which is correct
 behavior, and this script will never find anything.
 
@@ -110,7 +110,8 @@ PA_OPS = [
 FALLBACK = b'$c a $.\n'
 
 # Strings in the output that mean we found something.
-MARKERS = (b'runtime error', b'AddressSanitizer', b'SEGV', b'LeakSanitizer')
+MARKERS = (b'runtime error', b'AddressSanitizer', b'MemorySanitizer', b'SEGV',
+           b'LeakSanitizer')
 
 
 def parse_duration(text):
@@ -291,6 +292,9 @@ def main():
     parser.add_argument('--worker-id', type=int, default=None,
                         help=argparse.SUPPRESS)  # used when re-execing
     args = parser.parse_args()
+    # Each run happens in a temporary directory, where a relative path to
+    # the binary would not resolve.
+    args.binary = os.path.abspath(args.binary)
 
     if not os.access(args.binary, os.X_OK):
         sys.exit("%s is not executable; run ./build-sanitizer.sh first"
