@@ -8,11 +8,26 @@
 #
 # Usage:
 #   ./run-cases.sh [path-to-sanitizer-metamath]
+#
+# With no argument, this runs the cases against ./metamath-san, and again
+# against ./metamath-msan if build-sanitizer.sh could build it.  Set
+# MSAN_PASS=1 when passing a MemorySanitizer binary yourself.
 
 set -u
 
 here=$(cd "$(dirname "$0")" && pwd)
-binary=${1:-"$here/metamath-san"}
+
+if [ $# -eq 0 ]; then
+  [ -x "$here/metamath-msan" ] || exec sh "$0" "$here/metamath-san"
+  echo "== metamath-san"
+  sh "$0" "$here/metamath-san"
+  status1=$?
+  echo "== metamath-msan"
+  MSAN_PASS=1 sh "$0" "$here/metamath-msan"
+  status2=$?
+  exit $((status1 > status2 ? status1 : status2))
+fi
+binary=$1
 
 if [ ! -x "$binary" ]; then
   echo "$binary is not executable; run ./build-sanitizer.sh first" >&2
@@ -66,7 +81,7 @@ for cmd in "$here"/cases/*.cmd; do
   # this a case that trips bug() and nothing else was reported passing,
   # whatever the program then did.
   if printf '%s' "$out" \
-       | grep -qE 'runtime error|AddressSanitizer|SEGV|\?BUG CHECK'; then
+       | grep -qE 'runtime error|AddressSanitizer|MemorySanitizer|SEGV|\?BUG CHECK'; then
     result=DETECTED
   # metamath exits 0 or 1 and nothing else, so any other status means the
   # run did not finish: killed by the timeout, killed by a signal, or
@@ -80,6 +95,14 @@ for cmd in "$here"/cases/*.cmd; do
 
   case "$name" in
     open-*)
+      # An open case is expected to fail under the sanitizer that found it,
+      # so it is judged by that binary only: open-msan-* by metamath-msan,
+      # the others by metamath-san.  MemorySanitizer cannot see an
+      # overflow, nor AddressSanitizer an uninitialized read.
+      case "$name" in
+        open-msan-*) [ -n "${MSAN_PASS:-}" ] || continue ;;
+        *) [ -z "${MSAN_PASS:-}" ] || continue ;;
+      esac
       if [ "$result" != clean ]; then
         echo "known-open  $name: $result (expected)"
       else
