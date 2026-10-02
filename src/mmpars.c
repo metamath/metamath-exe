@@ -3524,10 +3524,10 @@ char parseCompressedProof(long statemNum)
           break;
         }
         // Otherwise, it must be a comment
-        if (fbPtr[1] != '(' && fbPtr[1] != '!') {
+        if (fbPtr[1] != '(') {
           if (!g_WrkProof.errorCount) {
             sourceError(fbPtr + 1, 1, statemNum,
-             "Expected \".\", \"(\", or \"!\" here.");
+             "Expected \".\" or \"(\" here.");
           }
           g_WrkProof.errorCount++;
           if (returnFlag < 2) returnFlag = 2;
@@ -3941,83 +3941,30 @@ int hypAndLocSrchCmp(const void *key, const void *data) {
 // Comments are considered white space.  ptr should point to the first character
 // of the white space.  If ptr does not point to a white space character, 0
 // is returned.  If ptr points to a null character, 0 is returned.
-long whiteSpaceLen(char *ptr) {
-  long i = 0;
-  char tmpchr;
-  char *ptr1;
+long whiteSpaceLen(const char *ptr) {
+  const char *p = ptr;
   while (1) {
-    tmpchr = ptr[i];
-    if (!tmpchr) return (i); // End of string
-    if (tmpchr == '$') {
-      if (ptr[i + 1] == '(') {
-        while (1) {
-          // ptr1 = strchr(ptr + i + 2, '$');
-          // in-line code for speed
-          // (for the lcc-win32 compiler, this speeds it up from 94 sec
-          // for set.mm read to 4 sec).
-          for (ptr1 = ptr + i + 2; ptr1[0] != '$'; ptr1++) {
-            if (ptr1[0] == 0) {
-              if ('$' != 0)
-                ptr1 = NULL;
-              break;
-            }
-          }
-          // end in-line strchr code
-          if (!ptr1) {
-            return i + (long)strlen(&ptr[i]); // Unterminated comment - goto EOF
-          }
-          if (ptr1[1] == ')') break;
-          // A "$" at the very end of the string cannot open the "$)" that
-          // would close the comment, so the comment is unterminated, the
-          // same conclusion the "!ptr1" test above reaches.  Say so here
-          // rather than fall into the rescan below, which resumes two
-          // characters on from this "$" and would start past the
-          // terminating NUL.
-          //
-          // readFileToString() leaves a file ending in a new-line, so no
-          // buffer read from one ends in a "$" and this does not trigger.
-          // It is here because the loop should not depend on that: the
-          // rescan is only in bounds when something has established that
-          // the character after the "$" is not the terminator, and until
-          // now nothing had.
-          if (ptr1[1] == 0) {
-            return i + (long)strlen(&ptr[i]); // Unterminated comment - goto EOF
-          }
-          i = ptr1 - ptr;
-        }
-        i = ptr1 - ptr + 2;
-        continue;
-      } else {
-        if (ptr[i + 1] == '!') {
-          ptr1 = strchr(ptr + i + 2, '\n');
-          if (!ptr1) bug(1716);
-          i = ptr1 - ptr + 1;
-          continue;
-        }
-        return i;
-      }
-    } // if (tmpchr == '$')
-    if (isgraph((unsigned char)tmpchr)) return i;
-    i++;
+    if (p[0] == '$' && p[1] == '(') {
+      p = strstr(p + 2, "$)");
+      if (!p) return (long)strlen(ptr); // Unterminated comment
+      p += 2;
+    } else if (p[0] == 0 || isgraph((unsigned char)p[0])) {
+      return (long)(p - ptr);
+    } else {
+      p++;
+    }
   }
-  return 0; // Dummy return - never happens
 } // whiteSpaceLen
 
 // For .mm file splitting.
 // This function is like whiteSpaceLen() except that comments are NOT
 // considered white space.  ptr should point to the first character
-// of the white space.  If ptr does not point to a white space character, 0
-// is returned.  If ptr points to a null character, 0 is returned.
-long rawWhiteSpaceLen(char *ptr) {
+// of the white space.  Return 0 if ptr does not point to a white space
+// character (including if it points to a null character).
+long rawWhiteSpaceLen(const char *ptr) {
   long i = 0;
-  char tmpchr;
-  while (1) {
-    tmpchr = ptr[i];
-    if (!tmpchr) return (i); // End of string
-    if (isgraph((unsigned char)tmpchr)) return i;
-    i++;
-  }
-  return 0; // Dummy return - never happens
+  while (ptr[i] != 0 && !isgraph((unsigned char)ptr[i])) i++;
+  return i;
 } // rawWhiteSpaceLen
 
 // This function returns the length of the token (non-white-space) starting at
