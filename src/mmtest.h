@@ -150,7 +150,7 @@
    * an optional \c t-silent or \c t-verbose argument to \c build.sh also
    * explicitly sets this macro, as in
    * \code
-   * .\build.sh -tc t-silent
+   * ./build.sh -tc t-silent
    * \endcode
    *
    * Developers verifying that no breaking change was accidentally introduced
