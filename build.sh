@@ -30,7 +30,7 @@ Possible options are:
 -t compile a metamath_test executable for regression testing.
     An optional parameter, "t-silent" or "t-verbose", following all flags explicitly
     selects whether messages from successful tests are shown.
--v extract the version from metamath sources, print it and exit'
+-v extract the version from metamath sources, print it and exit.'
 
 #============   evaluate command line parameters   ==========
 
