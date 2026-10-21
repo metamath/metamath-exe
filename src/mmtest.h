@@ -138,26 +138,25 @@
 #ifdef TEST_ENABLE
   /*!
    * \def TEST_SILENT
-   * \brief A \c _Bool-compatible value controlling the output of successful
-   * regression tests.
+   * \brief A \c _Bool-compatible macro controlling whether successful regression
+   * tests produce output.
    *
-   * Has no effect if regression tests are disabled.  Its default is \c false,
-   * allowing output.
+   * Has no effect when regression tests are disabled. The default is \c false,
+   * allowing successful tests to report their progress.
    *
-   * Defining \p TEST_SILENT on the compiler command line takes precedence.
-   * This is recommended, for example, in a build script used for automated
-   * checks, when only failures need to be reported. Using an optional
-   * \c t-silent argument to \c build.sh also explicitly sets this macro, as in
+   * Defining \p TEST_SILENT on the compiler command line takes precedence over
+   * the default. This is recommended for automated checks, where only test
+   * failures need to be reported. The \c -q option to \c build.sh also sets
+   * this macro to \c true, suppressing output from successful tests:
    * \code
-   * ./build.sh -tc t-silent
+   * ./build.sh -cqt
    * \endcode
    *
-   * Developers verifying that no breaking change was accidentally introduced
-   * often want to monitor test progress until an error is reported. The default
-   * allows this.
+   * Developers may prefer to see test progress when verifying that a change
+   * has not introduced regressions, which is why output is enabled by default.
    *
-   * Historically, \p TEST_SILENT was modified directly in this file for this
-   * purpose, so this method remains supported for backward compatibility.
+   * Historically, \p TEST_SILENT was modified directly in this file to control
+   * test output. This method remains supported for backward compatibility.
    */
   #ifndef TEST_SILENT
     // the default
