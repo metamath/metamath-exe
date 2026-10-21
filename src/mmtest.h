@@ -47,14 +47,6 @@
  * Failing tests always display diagnostic information identifying the failing
  * assertion and its source location.
  *
- * 5. After enabling or disabling testing, even without modifying any source
- * files, all intermediate artifacts must be rebuilt. Pass the \c -c (clean)
- * option to \c build.sh to enforce a complete recompilation of Metamath:
- * \verbatim
-   ./build.sh -c
-   ./metamath
-   \endverbatim
- *
  * \subsection test_details Details and implementation
  * The normal Metamath application distributed by GitHub has already passed
  * the regression tests. To avoid the overhead of loading a larger executable
