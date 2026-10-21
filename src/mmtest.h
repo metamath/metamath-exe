@@ -143,7 +143,7 @@
    * failures need to be reported. The \c -q option to \c build.sh also sets
    * this macro to \c true, suppressing output from successful tests:
    * \code
-   * ./build.sh -cqt
+   * ./build.sh -qt
    * \endcode
    *
    * Developers may prefer to see test progress when verifying that a change
