@@ -60,8 +60,7 @@ do
     m) cd "${OPTARG}" && top_dir=$(pwd);;
     o) dest_dir=${OPTARG};;
     q) show_success_message=0;;
-    t) do_make_test=1
-       do_clean=1;;
+    t) do_make_test=1;;
     v) version_only=1;;
     *) echo "unknown parameter" >&2
        exit 1;;
@@ -188,6 +187,7 @@ then
     TEST_SILENT_DEFINE="-DTEST_SILENT=true"
   fi
 
+  make clean
   make "CFLAGS=-DTEST_ENABLE $TEST_SILENT_DEFINE"
   mv src/metamath "$top_dir"/metamath_test
 else
