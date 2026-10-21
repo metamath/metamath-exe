@@ -60,7 +60,8 @@ do
     m) cd "${OPTARG}" && top_dir=$(pwd);;
     o) dest_dir=${OPTARG};;
     q) show_success_message=0;;
-    t) do_make_test=1;;
+    t) do_make_test=1
+       do_clean=1;;
     v) version_only=1;;
     *) echo "unknown parameter" >&2
        exit 1;;

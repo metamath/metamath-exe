@@ -32,9 +32,11 @@
  *
  * 3. Execute the following commands:
  * \verbatim
-   ./build.sh -ct
+   ./build.sh -t
    ./metamath_test
    \endverbatim
+ * You don't need to use flag \c -c, because the build script always cleans the
+ * build directory.
  *
  * 4. The test program reports its progress to \c stdout:
  * \verbatim
@@ -101,7 +103,7 @@
  * is irrelevant; only whether it is defined matters.
  *
  * Metamath provides three ways to define \p TEST_ENABLE:
- * 1. Set the \c -ct option when running \c build.sh. This is the recommended
+ * 1. Set the \c -t option when running \c build.sh. This is the recommended
  *   and easiest method, see \ref running-tests;
  * 2. If you use your own build script and compile the sources with \c gcc
  *   specify the \c -DTEST_ENABLE option to the GNU compiler;
