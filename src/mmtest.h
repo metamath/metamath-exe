@@ -145,10 +145,9 @@
    * allowing output.
    *
    * Defining \p TEST_SILENT on the compiler command line takes precedence.
-   * This is recommended, for example, in a build script
-   * used for automated checks, when only failures need to be reported. Using
-   * an optional \c t-silent or \c t-verbose argument to \c build.sh also
-   * explicitly sets this macro, as in
+   * This is recommended, for example, in a build script used for automated
+   * checks, when only failures need to be reported. Using an optional
+   * \c t-silent argument to \c build.sh also explicitly sets this macro, as in
    * \code
    * ./build.sh -tc t-silent
    * \endcode
