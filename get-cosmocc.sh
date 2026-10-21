@@ -39,7 +39,7 @@ force=0
 cd "$(dirname "$0")"
 
 dest="cosmocc"
-url="https://cosmo.zip/pub/cosmocc/cosmocc-${COSMOCC_VERSION}.zip"
+url="https://github.com/jart/cosmopolitan/releases/download/${COSMOCC_VERSION}/cosmocc-${COSMOCC_VERSION}.zip"
 
 if [ "$force" -eq 0 ] && [ -x "$dest/bin/cosmocc" ]; then
   echo "cosmocc already present at $dest/bin/cosmocc:"
