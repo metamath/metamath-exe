@@ -105,7 +105,7 @@
  *   and easiest method, see \ref running-tests;
  * 2. If you use your own build script and compile the sources with \c gcc
  *   specify the \c -DTEST_ENABLE option to the GNU compiler;
- * 3. Patch this file and uncomment one of the \c #define or \c #undef lines
+ * 3. Modify this file and uncomment one of the \c #define or \c #undef lines
  *   related to \p TEST_ENABLE. These lines take precedence over other methods
  *   of controlling testing. Scripts that operate directly on the source code
  *   may prefer this method.

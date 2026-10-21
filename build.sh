@@ -67,18 +67,6 @@ do
   esac
 done
 
-# check trailing parameters after flags are parsed
-shift $((OPTIND - 1))
-
-if [ "$do_make_test" -eq 1 ] && [ $# -gt 0 ]; then
-  case "$1" in
-    t-silent)
-      show_success_message=0
-      shift
-      ;;
-  esac
-fi
-
 if [ $print_help -gt 0 ]
 then
   echo "$help_text"
