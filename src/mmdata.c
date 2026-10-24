@@ -77,7 +77,9 @@ long g_sourceLen;
 struct nullNmbrStruct g_NmbrNull = {-1, sizeof(long), sizeof(long), -1};
 
 // Null pntrString
-struct nullPntrStruct g_PntrNull = {-1, sizeof(long), sizeof(long), NULL};
+// Leading 0 is the alignment pad added to struct nullPntrStruct; the rest is
+// unchanged (poolLoc = -1, the two size fields, and the null element).
+struct nullPntrStruct g_PntrNull = {0, -1, sizeof(long), sizeof(long), NULL};
 
 // nmbrString memory allocation/deallocation
 temp_nmbrString *nmbrTempAlloc(long size);

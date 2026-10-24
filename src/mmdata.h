@@ -547,6 +547,17 @@ extern struct nullNmbrStruct g_NmbrNull;
  */
 struct nullPntrStruct {
   /*!
+   * Padding.  poolFixedMalloc() writes its three-long administrative header in
+   * the 3 * sizeof(long) directly below the data, and pntrLen() and
+   * pntrAllocLen() read it back from there.  Where a pointer is wider than a
+   * long -- LLP64, that is 64-bit Windows -- a naturally aligned nullElement is
+   * padded out to offset 16, leaving that header at bytes 0..11 with padding at
+   * 12..15; the accessors then read the padding and return -1 (issue #164).
+   * This leading long shifts the header down to bytes 4..15, directly below
+   * nullElement, matching the layout of every block poolFixedMalloc() returns.
+   */
+  long dummy;
+  /*!
    * An instance of a nullPntrStruct is always standalone and never part of a
    * larger pool.  Indicated by the fixed value -1.
    */
