@@ -7,7 +7,7 @@
 # Draft version, proof of concept.
 
 help_text=\
-'Builds all artefacts in the metamath-exe/build subfolder (if not directed
+'Builds all artefacts in the metamath-exe/build subfolder (unless directed
 otherwise).  Change to the metamath-exe top folder first before running
 this script, or issue the -m option.
 
@@ -17,18 +17,21 @@ directory (build, build-cosmo, build-test, build-cosmo-test).
 
 Possible options are:
 
--a Used by autotools. Put hyphens in the version string when used with -v
--b build binary only, no reconfigure. Faster, but should not be used on first run.
+-a Used by autotools. Put hyphens in the version string when used with -v.
+-b Build binary only, no reconfigure. Faster, but should not be used on first run.
 -c Clean the build directory.
--d build documentation using Doxygen, in addition to building the executable.
--g build in debug mode: enables debug symbols and turns off optimizations
--h print this help and exit.
+-d Build documentation using Doxygen, in addition to building the executable.
+-g Build in debug mode: enables debug symbols and disables optimizations.
+-h Print this help and exit.
 -m followed by a directory: top folder of metamath-exe.
     Relative paths are relative to the current directory.
 -o followed by a directory: optionally clean directory and build all artefacts there.
     Relative paths are relative to the destination'"'"'s top metamath-exe directory.
--t compile a metamath_test executable for regression tests
--v extract the version from metamath sources, print it and exit'
+-q Used in conjunction with flag -t. Build a quiet metamath_test executable
+    which reports test failures but suppresses output of successful tests.
+-t Compile a metamath_test executable for regression testing. The -q option
+    determines whether messages from successful tests are shown.
+-v Extract the version from metamath sources, print it and exit.'
 
 #============   evaluate command line parameters   ==========
 
@@ -37,6 +40,7 @@ do_clean=0
 do_doc=0
 debug=0
 do_make_test=0
+show_success_message=1
 print_help=0
 version_only=0
 version_for_autoconf=0
@@ -44,7 +48,7 @@ unset dest_dir
 unset doc_dir
 top_dir="$(pwd)"
 
-while getopts abcdghm:o:tv flag
+while getopts abcdghm:o:qtv flag
 do
   case "${flag}" in
     a) version_for_autoconf=1;;
@@ -55,6 +59,7 @@ do
     h) print_help=1;;
     m) cd "${OPTARG}" && top_dir=$(pwd);;
     o) dest_dir=${OPTARG};;
+    q) show_success_message=0;;
     t) do_make_test=1;;
     v) version_only=1;;
     *) echo "unknown parameter" >&2
@@ -167,7 +172,23 @@ fi
 if [ $do_make_test -eq 1 ]
 then
   # create an executable running regression tests
-  make "CFLAGS=-DTEST_ENABLE"
+
+  # Silent tests produce no output when they pass.
+  # In automated contexts like continuous integration checks we do not want
+  # to clutter log files with success messages. This is avoided when the
+  # option -q is submitted.
+
+  # In an automated context, call this script as follows
+  # build.sh -qt
+
+  TEST_SILENT_DEFINE=""
+
+  if [ $show_success_message == 0 ]; then
+    TEST_SILENT_DEFINE="-DTEST_SILENT=true"
+  fi
+
+  make clean
+  make "CFLAGS=-DTEST_ENABLE $TEST_SILENT_DEFINE"
   mv src/metamath "$top_dir"/metamath_test
 else
   # normal executable

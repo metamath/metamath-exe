@@ -32,9 +32,11 @@
  *
  * 3. Execute the following commands:
  * \verbatim
-   ./build.sh -ct
+   ./build.sh -t
    ./metamath_test
    \endverbatim
+ * You don't need to use flag \c -c, because the build script always cleans the
+ * build directory.
  *
  * 4. The test program reports its progress to \c stdout:
  * \verbatim
@@ -44,14 +46,6 @@
  * Progress and success messages can be suppressed, see \ref TEST_SILENT.
  * Failing tests always display diagnostic information identifying the failing
  * assertion and its source location.
- *
- * 5. After enabling or disabling testing, even without modifying any source
- * files, all intermediate artifacts must be rebuilt. Pass the \c -c (clean)
- * option to \c build.sh to enforce a complete recompilation of Metamath:
- * \verbatim
-   ./build.sh -c
-   ./metamath
-   \endverbatim
  *
  * \subsection test_details Details and implementation
  * The normal Metamath application distributed by GitHub has already passed
@@ -101,11 +95,11 @@
  * is irrelevant; only whether it is defined matters.
  *
  * Metamath provides three ways to define \p TEST_ENABLE:
- * 1. Set the \c -ct option when running \c build.sh. This is the recommended
+ * 1. Set the \c -t option when running \c build.sh. This is the recommended
  *   and easiest method, see \ref running-tests;
  * 2. If you use your own build script and compile the sources with \c gcc
  *   specify the \c -DTEST_ENABLE option to the GNU compiler;
- * 3. Patch this file and uncomment one of the \c #define or \c #undef lines
+ * 3. Modify this file and uncomment one of the \c #define or \c #undef lines
  *   related to \p TEST_ENABLE. These lines take precedence over other methods
  *   of controlling testing. Scripts that operate directly on the source code
  *   may prefer this method.
@@ -135,16 +129,33 @@
 
 #include <stdio.h>
 
-/*!
- * \def TEST_SILENT
- * macro, either true or false.
- *
- * Controls the verbosity of a regression test.  If true, success messages are
- * mostly suppressed during a test run.  A failing test always produces output.
- */
-#define TEST_SILENT false
-
 #ifdef TEST_ENABLE
+  /*!
+   * \def TEST_SILENT
+   * \brief A \c _Bool-compatible macro controlling whether successful regression
+   * tests produce output.
+   *
+   * Has no effect when regression tests are disabled. The default is \c false,
+   * allowing successful tests to report their progress.
+   *
+   * Defining \p TEST_SILENT on the compiler command line takes precedence over
+   * the default. This is recommended for automated checks, where only test
+   * failures need to be reported. The \c -q option to \c build.sh also sets
+   * this macro to \c true, suppressing output from successful tests:
+   * \code
+   * ./build.sh -qt
+   * \endcode
+   *
+   * Developers may prefer to see test progress when verifying that a change
+   * has not introduced regressions, which is why output is enabled by default.
+   *
+   * Historically, \p TEST_SILENT was modified directly in this file to control
+   * test output. This method remains supported for backward compatibility.
+   */
+  #ifndef TEST_SILENT
+    // the default
+    #define TEST_SILENT false
+  #endif
 
   extern void runTest(
       bool (*test)(), const char* funcName, const char* testName);
