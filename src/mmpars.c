@@ -2677,7 +2677,9 @@ char parseProof(long statemNum)
     if (explicitTargets == 1 && targetsComplete) {
       // nmbrString to rearrange proof then when done reassign to
       // g_WrkProof.proofString structure component.
-      nmbrLet(&wrkProofString, g_WrkProof.proofString);
+      // Only steps 0 to step have been built so far, and the rearrangement
+      // below changes none after step, so copy just those.
+      nmbrLet(&wrkProofString, nmbrLeft(g_WrkProof.proofString, step + 1));
 
       nmbrTmpPtr = g_Statement[j].reqHypList;
       numReqHyp = g_Statement[j].numReqHyp;
