@@ -17,13 +17,14 @@
 // integer.)
 
 addToLibrary({
-  // int mm_read_line(char *buf, int maxLen)
+  // char *mm_read_line(void)
   //
-  // Returns 1 and stores a line (with its trailing new-line) in buf, or
-  // returns 0 to signal end of input.  Module.mmReadLine is supplied by the
+  // Return a line of any length, followed by a newline character and a null
+  // character, in memory allocated with malloc() that the caller frees, or
+  // return NULL to signal end of input.  Module.mmReadLine is supplied by the
   // hosting page and returns a promise for the next line, or null when the
   // user is finished.
-  mm_read_line: function (bufPtr, maxLen) {
+  mm_read_line: function () {
     return Asyncify.handleAsync(async function () {
       let line;
       try {
@@ -34,20 +35,22 @@ addToLibrary({
       if (line === null || line === undefined) {
         return 0; // end of input
       }
-      // cmdInput() expects fgets() semantics, so the new-line must be present.
+      // cmdInput() finds the end of the line by its newline character.
       let text = line + "\n";
-      // stringToUTF8 always writes a terminating null and never exceeds the
-      // size given, so an over-long line is truncated rather than corrupting
-      // memory.  Metamath separately detects and reports over-long input.
-      stringToUTF8(text, bufPtr, maxLen);
-      return 1;
+      let size = lengthBytesUTF8(text) + 1;
+      let buf = _malloc(size);
+      if (!buf) {
+        return 0; // out of memory: end the input rather than write through 0
+      }
+      stringToUTF8(text, buf, size);
+      return buf;
     });
   },
   // Tells Asyncify this import may suspend, so the compiler instruments the
   // call path that reaches it.  Without this the program traps as soon as it
   // tries to unwind.
   mm_read_line__async: true,
-  mm_read_line__deps: ["$stringToUTF8"],
+  mm_read_line__deps: ["$stringToUTF8", "$lengthBytesUTF8", "malloc"],
 
   // void mm_materialize(const char *path)
   //
