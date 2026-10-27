@@ -597,7 +597,7 @@ static char const* testcase_appendText(char const* text, unsigned adv,
 #define TESTCASE_appendText(format, adv, match, from, lg, begin) { \
   char const* errmsg =                                             \
     testcase_appendText(format, adv, match, from, lg, begin);      \
-  ASSERT_OR_RETURN_FMSG(errmsg == NULL, "%s\n", errmsg);                         \
+  ASSERT_OR_RETURN_FMSG(errmsg == NULL, "%s\n", errmsg);           \
 }
 
 static bool test_appendText(void) {
@@ -612,7 +612,7 @@ static bool test_appendText(void) {
   // corner case 1: insertion at the very beginning of the buffer
   TESTCASE_appendText("_$", 1, "$", -1, 2, 1);
   // corner case 2: empty text, placeholder handling
-  TESTCASE_appendText("%", 0, "$", -1, 2, 1)
+  TESTCASE_appendText("%", 0, "$", -1, 2, 1);
   TESTCASE_appendText("%%", 0, "$", -1, 2, 1);
   // non-empty text, placeholder handling
   TESTCASE_appendText("%abc", 3, "$abc", -4, 5, 4);

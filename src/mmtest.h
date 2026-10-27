@@ -127,12 +127,13 @@
   #define TEST_ENABLE
 #endif // DOXYGEN_BUILD
 
+#include <stdbool.h>
 #include <stdio.h>
 
 #ifdef TEST_ENABLE
   /*!
    * \def TEST_SILENT
-   * \brief A \c _Bool compatible macro controlling whether successful
+   * \brief A <tt>_Bool</tt>-compatible macro controlling whether successful
    * regression tests produce output.
    *
    * Has no effect when regression tests are disabled. The default is \c false,
@@ -175,14 +176,14 @@
    * string and optional arguments for an error message.
    *
    * \pre Macro \ref TEST_ENABLE is defined.
-   * \pre A test has been executed and has yielded a result. The result is
-   *   either given directly as an integer value, with 0 indicating failure, or
-   *   can be obtained by evaluating variables used by the test.
+   * \pre The function expanding this macro returns a \c bool.  With a pointer
+   *   return type, \c false converts to \c NULL without a diagnostic, and a
+   *   failure may then be reported as success.
    * \param[in] bool_expr an integer expression representing the result of a
    *   test. A value 0 or \c false indicates failure; a non-zero or \c true
    *   value indicates success.
-   * \param[in] ... Optional arguments that uniquely identify a particular test
-   *   if the location of the macro alone is not sufficient. For example, these
+   * \param[in] ... A format string followed by any arguments used to provide
+   *   additional information about the failing test. For example, these
    *   arguments can identify individual tests when a test is run repeatedly in
    *   a loop with different input values. The first argument must be a format
    *   string, and \c printf must be able to format each subsequent argument
@@ -196,13 +197,14 @@
    *   On success, no message is printed, and execution of the remainder of the
    *   current function continues.
    */
-  #define ASSERT_OR_RETURN_FMSG(bool_expr, ...)              \
-    if (!(bool_expr)) {                        \
-      printf("\n%s: ", __func__);              \
-      printf(__VA_ARGS__);                     \
-      printf(" at %s:%d", __FILE__, __LINE__); \
-      return false;                            \
-    }
+  #define ASSERT_OR_RETURN_FMSG(bool_expr, ...)                \
+    do {                                                       \
+      if (!(bool_expr)) {                                      \
+        printf("\n%s:%d: %s: ", __FILE__, __LINE__, __func__); \
+        printf(__VA_ARGS__);                                   \
+        return false;                                          \
+      }                                                        \
+    } while(0);
 
   /*!
    * \brief Checks a Boolean expression and, if false, issues an error message
@@ -222,17 +224,13 @@
    * \ref ASSERT_OR_RETURN_FMSG accepts extra arguments if needed for
    * identification.
    *
-   * \pre Macro \ref TEST_ENABLE is defined.
-   * \pre A test has been executed and has yielded a result. The result is
-   *   either given directly as an integer value, with 0 indicating failure, or
-   *   can be obtained by evaluating variables used by the test.
-   * \param[in] bool_expr an integer expression representing the result of a
-   *   test. A value of 0 or \c false indicates failure; a non-zero or \c true
-   *   value indicates success.
+   * \pre See the preconditions listed in \ref ASSERT_OR_RETURN_FMSG.
+   * \param[in] bool_expr represents the result of a test. For details see
+   *   \ref ASSERT_OR_RETURN_FMSG.
    * \post On failure, a message consisting of the checked \p bool_expr, the
    *   name of the function from which this macro is called, and the location
    *   of this macro in the test code, thereby identifying the particular test,
-   *   is printed to \c stdout. The current test function is then exited
+   *   is printed to \c stdout.  The current test function is then exited
    *   prematurely with a return value of \c false, indicating failure. This
    *   skips all subsequent tests in that function.
    *   On success, no message is printed, and execution of the remainder of the
