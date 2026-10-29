@@ -188,8 +188,8 @@
    *   a loop with different input values. The first argument must be a format
    *   string, and \c printf must be able to format each subsequent argument
    *   according to that string.
-   * \post On failure, a message consisting of the name of the function from
-   *   which this macro is called, the location of this macro in the test code,
+   * \post On failure, a message consisting of the location of this macro in
+   *   the test code, the name of the function from which this macro is called,
    *   and optionally, additional values identifying the particular test is
    *   printed to \c stdout. The function in which this macro is expanded is
    *   exited prematurely with a return value of \c false, indicating failure.
@@ -204,7 +204,7 @@
         printf(__VA_ARGS__);                                   \
         return false;                                          \
       }                                                        \
-    } while(0);
+    } while(0)
 
   /*!
    * \brief Checks a Boolean expression and, if false, issues an error message
