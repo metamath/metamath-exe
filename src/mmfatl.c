@@ -513,23 +513,23 @@ static bool test_fatalErrorInit(void) {
 
   fatalErrorInit();
 
-  ASSERT(*state.format == NUL);
-  ASSERT(buffer.begin == buffer.text);
+  ASSERT_OR_RETURN(*state.format == NUL);
+  ASSERT_OR_RETURN(buffer.begin == buffer.text);
 
   unsigned i = 0;
   // check the buffer is filled with NUL...
   for (; i < MMFATL_MAX_MSG_SIZE; ++i)
-    ASSERT(buffer.text[i] == NUL);
+    ASSERT_OR_RETURN(buffer.text[i] == NUL);
 
-  ASSERT(buffer.end == buffer.text + i);
+  ASSERT_OR_RETURN(buffer.end == buffer.text + i);
 
   // ...and has the ELLIPSIS string at the end...
   char ellipsis[] = MMFATL_ELLIPSIS;
   for (unsigned j = 0; ellipsis[j] != NUL; ++i, ++j)
-    ASSERT(buffer.text[i] == ellipsis[j]);
+    ASSERT_OR_RETURN(buffer.text[i] == ellipsis[j]);
 
   // ... and a terminating NUL character
-  ASSERT(buffer.text[i] == NUL);
+  ASSERT_OR_RETURN(buffer.text[i] == NUL);
 
   return true;
 }
@@ -548,18 +548,18 @@ static bool test_isBufferOverflow(void) {
   fatalErrorInit();
 
   limitFreeBuffer(0);
-  ASSERT(isBufferOverflow(&buffer));
+  ASSERT_OR_RETURN(isBufferOverflow(&buffer));
   limitFreeBuffer(1);
-  ASSERT(!isBufferOverflow(&buffer));
+  ASSERT_OR_RETURN(!isBufferOverflow(&buffer));
 
   char const* format = "abc";
   state.format = format;
   limitFreeBuffer(1);
-  ASSERT(checkOverflow(&state));
-  ASSERT(state.format == format);
+  ASSERT_OR_RETURN(checkOverflow(&state));
+  ASSERT_OR_RETURN(state.format == format);
   limitFreeBuffer(0);
-  ASSERT(!checkOverflow(&state));
-  ASSERT(*state.format == NUL);
+  ASSERT_OR_RETURN(!checkOverflow(&state));
+  ASSERT_OR_RETURN(*state.format == NUL);
 
   return true;
 }
@@ -597,7 +597,7 @@ static char const* testcase_appendText(char const* text, unsigned adv,
 #define TESTCASE_appendText(format, adv, match, from, lg, begin) { \
   char const* errmsg =                                             \
     testcase_appendText(format, adv, match, from, lg, begin);      \
-  ASSERTF(errmsg == NULL, "%s\n", errmsg);                         \
+  ASSERT_OR_RETURN_FMSG(errmsg == NULL, "%s\n", errmsg);           \
 }
 
 static bool test_appendText(void) {
@@ -612,7 +612,7 @@ static bool test_appendText(void) {
   // corner case 1: insertion at the very beginning of the buffer
   TESTCASE_appendText("_$", 1, "$", -1, 2, 1);
   // corner case 2: empty text, placeholder handling
-  TESTCASE_appendText("%", 0, "$", -1, 2, 1)
+  TESTCASE_appendText("%", 0, "$", -1, 2, 1);
   TESTCASE_appendText("%%", 0, "$", -1, 2, 1);
   // non-empty text, placeholder handling
   TESTCASE_appendText("%abc", 3, "$abc", -4, 5, 4);
@@ -636,23 +636,23 @@ static bool test_appendText(void) {
 
 static bool test_isBufferEmpty(void) {
   fatalErrorInit();
-  ASSERT(isBufferEmpty(&buffer));
+  ASSERT_OR_RETURN(isBufferEmpty(&buffer));
   appendText("a", STRING, &buffer);
-  ASSERT(!isBufferEmpty(&buffer));
+  ASSERT_OR_RETURN(!isBufferEmpty(&buffer));
   limitFreeBuffer(0);
-  ASSERT(!isBufferEmpty(&buffer));
+  ASSERT_OR_RETURN(!isBufferEmpty(&buffer));
 
   return true;
 }
 
 static bool test_getLastBufferedChar(void) {
   fatalErrorInit();
-  ASSERT(getLastBufferedChar(&buffer) == NUL);
+  ASSERT_OR_RETURN(getLastBufferedChar(&buffer) == NUL);
   appendText("a", STRING, &buffer);
-  ASSERT(getLastBufferedChar(&buffer) == 'a');
+  ASSERT_OR_RETURN(getLastBufferedChar(&buffer) == 'a');
   limitFreeBuffer(1);
   appendText("bc", STRING, &buffer);
-  ASSERT(getLastBufferedChar(&buffer) == 'b');
+  ASSERT_OR_RETURN(getLastBufferedChar(&buffer) == 'b');
 
   return true;
 }
@@ -662,39 +662,39 @@ static bool test_handleText(void) {
   char const* format = state.format;
   // no format
   handleText(&state);
-  ASSERT(strcmp(buffer.text, "") == 0);
-  ASSERT(format == state.format);
+  ASSERT_OR_RETURN(strcmp(buffer.text, "") == 0);
+  ASSERT_OR_RETURN(format == state.format);
 
   state.format = "abc";
   handleText(&state);
-  ASSERT(strcmp(buffer.text, "abc") == 0);
-  ASSERT(*state.format == NUL);
+  ASSERT_OR_RETURN(strcmp(buffer.text, "abc") == 0);
+  ASSERT_OR_RETURN(*state.format == NUL);
 
   state.format = "abc%s";
   handleText(&state);
-  ASSERT(strcmp(buffer.text, "abcabc") == 0);
-  ASSERT(*state.format == '%');
+  ASSERT_OR_RETURN(strcmp(buffer.text, "abcabc") == 0);
+  ASSERT_OR_RETURN(*state.format == '%');
 
   limitFreeBuffer(1);
   state.format = "%s";
   handleText(&state);
-  ASSERT(*state.format == '%');
-  ASSERT(buffer.begin == buffer.text + 1);
+  ASSERT_OR_RETURN(*state.format == '%');
+  ASSERT_OR_RETURN(buffer.begin == buffer.text + 1);
 
   state.format = "abc";
   handleText(&state);
-  ASSERT(strcmp(buffer.text, "$a$") == 0);
-  ASSERT(*state.format == NUL);
+  ASSERT_OR_RETURN(strcmp(buffer.text, "$a$") == 0);
+  ASSERT_OR_RETURN(*state.format == NUL);
 
   return true;
 }
 
 bool test_unsignedToString(void)
 {
-  ASSERT(strcmp(unsignedToString(0), "0") == 0);
-  ASSERT(strcmp(unsignedToString(123), "123") == 0);
+  ASSERT_OR_RETURN(strcmp(unsignedToString(0), "0") == 0);
+  ASSERT_OR_RETURN(strcmp(unsignedToString(123), "123") == 0);
   // test max unsigned by converting back and forth
-  ASSERT(strtoul(unsignedToString(~0u), NULL, 10) == ~0u);
+  ASSERT_OR_RETURN(strtoul(unsignedToString(~0u), NULL, 10) == ~0u);
 
   return true;
 }
@@ -711,74 +711,74 @@ static bool test_handleSubstitution1(char const* format, ...) {
   state.format = format;
   handleSubstitution(&state, &args);
   format += 2;
-  ASSERT(format == state.format);
-  ASSERT(strcmp(buffer.text, "") == 0);
+  ASSERT_OR_RETURN(format == state.format);
+  ASSERT_OR_RETURN(strcmp(buffer.text, "") == 0);
 
   // %s ""
   handleSubstitution(&state, &args);
   format += 2;
-  ASSERT(format == state.format);
-  ASSERT(strcmp(buffer.text, "") == 0);
+  ASSERT_OR_RETURN(format == state.format);
+  ASSERT_OR_RETURN(strcmp(buffer.text, "") == 0);
 
   // %s "abc"
   handleSubstitution(&state, &args);
   format += 2;
-  ASSERT(format == state.format);
-  ASSERT(strcmp(buffer.text, "abc") == 0);
+  ASSERT_OR_RETURN(format == state.format);
+  ASSERT_OR_RETURN(strcmp(buffer.text, "abc") == 0);
 
   // %s "%s"
   handleSubstitution(&state, &args);
   format += 2;
-  ASSERT(format == state.format);
-  ASSERT(strcmp(buffer.text, "abc%s") == 0);
+  ASSERT_OR_RETURN(format == state.format);
+  ASSERT_OR_RETURN(strcmp(buffer.text, "abc%s") == 0);
 
   // %u 0
   handleSubstitution(&state, &args);
   format += 2;
-  ASSERT(format == state.format);
-  ASSERT(strcmp(buffer.text, "abc%s0") == 0);
+  ASSERT_OR_RETURN(format == state.format);
+  ASSERT_OR_RETURN(strcmp(buffer.text, "abc%s0") == 0);
 
   // %u 123
   handleSubstitution(&state, &args);
   format += 2;
-  ASSERT(format == state.format);
-  ASSERT(strcmp(buffer.text, "abc%s0123") == 0);
+  ASSERT_OR_RETURN(format == state.format);
+  ASSERT_OR_RETURN(strcmp(buffer.text, "abc%s0123") == 0);
 
   // %u ~0u
   initBuffer(&buffer);
   handleSubstitution(&state, &args);
   format += 2;
-  ASSERT(format == state.format);
-  ASSERT(strtoul(buffer.text, NULL, 10) == ~0u);
+  ASSERT_OR_RETURN(format == state.format);
+  ASSERT_OR_RETURN(strtoul(buffer.text, NULL, 10) == ~0u);
 
   // case buffer overflow
   limitFreeBuffer(1);
   handleSubstitution(&state, &args);
   format += 2;
-  ASSERT(*state.format == NUL);
+  ASSERT_OR_RETURN(*state.format == NUL);
   char const* errmsg = bufferCompare("$o$", -2, 3, 2);
-  ASSERTF(errmsg == NULL, "%s\n", errmsg);
+  ASSERT_OR_RETURN_FMSG(errmsg == NULL, "%s\n", errmsg);
 
   // %%
   initBuffer(&buffer);
   state.format = format;
   handleSubstitution(&state, &args);
   format += 2;
-  ASSERT(format == state.format);
-  ASSERT(strcmp(buffer.text, "%") == 0);
+  ASSERT_OR_RETURN(format == state.format);
+  ASSERT_OR_RETURN(strcmp(buffer.text, "%") == 0);
 
   // %;
   handleSubstitution(&state, &args);
   ++state.format; // skip the ;
   format += 2;
-  ASSERT(format == state.format);
-  ASSERT(strcmp(buffer.text, "%%") == 0);
+  ASSERT_OR_RETURN(format == state.format);
+  ASSERT_OR_RETURN(strcmp(buffer.text, "%%") == 0);
 
   // %<NUL>
   handleSubstitution(&state, &args);
   ++format;
-  ASSERT(format == state.format);
-  ASSERT(strcmp(buffer.text, "%%%") == 0);
+  ASSERT_OR_RETURN(format == state.format);
+  ASSERT_OR_RETURN(strcmp(buffer.text, "%%%") == 0);
 
   va_end(args);
   return true;
@@ -808,7 +808,7 @@ static char const* testcase_parse(char const* expect, char const* format, ...) {
 #define TESTCASE_parse(expect, format, ...) {    \
   char const* errmsg =                           \
     testcase_parse(expect, format, __VA_ARGS__); \
-  ASSERTF(errmsg == NULL, "%s\n", errmsg);       \
+  ASSERT_OR_RETURN_FMSG(errmsg == NULL, "%s\n", errmsg);       \
 }
 
 // parse() with a format that has no placeholder still needs a (never read)
@@ -821,8 +821,8 @@ static void parse_noargs(struct ParserState* st, ...) {
 }
 
 static bool test_parse(void) {
-  ASSERT(testcase_parse("", "") == NULL);
-  ASSERT(testcase_parse("abc", "abc") == NULL);
+  ASSERT_OR_RETURN(testcase_parse("", "") == NULL);
+  ASSERT_OR_RETURN(testcase_parse("abc", "abc") == NULL);
 
   TESTCASE_parse("abc", "%s", "abc");
   TESTCASE_parse("123", "%u", 123);
@@ -833,11 +833,11 @@ static bool test_parse(void) {
   limitFreeBuffer(0);
   state.format = "";
   parse_noargs(&state);
-  ASSERT(strcmp(buffer.text, "$$") == 0);
+  ASSERT_OR_RETURN(strcmp(buffer.text, "$$") == 0);
   limitFreeBuffer(1);
   state.format = "123";
   parse_noargs(&state);
-  ASSERT(strcmp(buffer.text, "$1$") == 0);
+  ASSERT_OR_RETURN(strcmp(buffer.text, "$1$") == 0);
 
   return true;
 }
@@ -846,36 +846,36 @@ static bool test_fatalErrorPush() {
   fatalErrorInit(); // pre-condition
 
   // case format NULL or empty (do nothing)
-  ASSERT(fatalErrorPush(NULL));
-  ASSERT(strcmp(buffer.text, "") == 0);
+  ASSERT_OR_RETURN(fatalErrorPush(NULL));
+  ASSERT_OR_RETURN(strcmp(buffer.text, "") == 0);
 #if defined(__GNUC__)
 // An empty format is deliberately supported (see mmfatl.h); the format
 // attribute on fatalErrorPush() makes GCC flag the empty literal.
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-zero-length"
 #endif
-  ASSERT(fatalErrorPush(""));
-  ASSERT(strcmp(buffer.text, "") == 0);
+  ASSERT_OR_RETURN(fatalErrorPush(""));
+  ASSERT_OR_RETURN(strcmp(buffer.text, "") == 0);
 
   // simple message, no placeholder
-  ASSERT(fatalErrorPush("abc"));
-  ASSERT(strcmp(buffer.text, "abc") == 0);
+  ASSERT_OR_RETURN(fatalErrorPush("abc"));
+  ASSERT_OR_RETURN(strcmp(buffer.text, "abc") == 0);
 
   // message with placeholders, appended
-  ASSERT(fatalErrorPush("x%sy%uz", "--", 123u));
-  ASSERT(strcmp(buffer.text, "abcx--y123z") == 0);
+  ASSERT_OR_RETURN(fatalErrorPush("x%sy%uz", "--", 123u));
+  ASSERT_OR_RETURN(strcmp(buffer.text, "abcx--y123z") == 0);
 
   // overflow
   limitFreeBuffer(2);
-  ASSERT(!fatalErrorPush("abc"));
-  ASSERT(strcmp(buffer.text, "$ab$") == 0);
+  ASSERT_OR_RETURN(!fatalErrorPush("abc"));
+  ASSERT_OR_RETURN(strcmp(buffer.text, "$ab$") == 0);
 
-  ASSERT(!fatalErrorPush(NULL));
-  ASSERT(!fatalErrorPush(""));
+  ASSERT_OR_RETURN(!fatalErrorPush(NULL));
+  ASSERT_OR_RETURN(!fatalErrorPush(""));
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
 #endif
-  ASSERT(strcmp(buffer.text, "$ab$") == 0);
+  ASSERT_OR_RETURN(strcmp(buffer.text, "$ab$") == 0);
 
   // the caller's format is not retained past the call.  Checking
   // *state.format == NUL alone would prove nothing: the format's own
@@ -888,12 +888,12 @@ static bool test_fatalErrorPush() {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wformat-security"
 #endif
-  ASSERT(fatalErrorPush(callerFormat));
+  ASSERT_OR_RETURN(fatalErrorPush(callerFormat));
 #if defined(__GNUC__)
 #pragma GCC diagnostic pop
 #endif
   memset(callerFormat, 'x', sizeof(callerFormat));
-  ASSERT(*state.format == NUL);
+  ASSERT_OR_RETURN(*state.format == NUL);
 
   return true;
 }
@@ -901,21 +901,21 @@ static bool test_fatalErrorPush() {
 static bool test_fatalErrorPrintAndExit(void) {
   fatalErrorInit(); // pre-condition
   finishMessage();
-  ASSERT(strcmp(buffer.text, "") == 0);
+  ASSERT_OR_RETURN(strcmp(buffer.text, "") == 0);
 
   fatalErrorPush("aaa");
   finishMessage();
-  ASSERT(strcmp(buffer.text, "aaa\n") == 0);
+  ASSERT_OR_RETURN(strcmp(buffer.text, "aaa\n") == 0);
 
   // no second \n is appended
   finishMessage();
-  ASSERT(strcmp(buffer.text, "aaa\n") == 0);
+  ASSERT_OR_RETURN(strcmp(buffer.text, "aaa\n") == 0);
 
   // in overflow condition do not append a LF
   fatalErrorInit();
   while (!isBufferOverflow(&buffer)) // fill the buffer with "a"
     fatalErrorPush("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
-  ASSERT(strcmp(buffer.text + MMFATL_MAX_MSG_SIZE - 3, "aaa" MMFATL_ELLIPSIS) == 0);
+  ASSERT_OR_RETURN(strcmp(buffer.text + MMFATL_MAX_MSG_SIZE - 3, "aaa" MMFATL_ELLIPSIS) == 0);
 
   return true;
 }
@@ -934,17 +934,17 @@ static void testcase_ExitAt(char const* file, unsigned line,
 static bool test_fatalErrorExitAt() {
 
   testcase_ExitAt("test.c", 1000, "%s failed!", "program");
-  ASSERT(strcmp(buffer.text, "At test.c:1000\nprogram failed!\n") == 0);
+  ASSERT_OR_RETURN(strcmp(buffer.text, "At test.c:1000\nprogram failed!\n") == 0);
   // ignoring line
   testcase_ExitAt("x.c", 0, "test %u failed!", 5u);
-  ASSERT(strcmp(buffer.text, "In file x.c:\ntest 5 failed!\n") == 0);
+  ASSERT_OR_RETURN(strcmp(buffer.text, "In file x.c:\ntest 5 failed!\n") == 0);
   // ignoring file
   testcase_ExitAt(NULL, 123, "%s", "need help!\n");
-  ASSERT(strcmp(buffer.text, "In line 123:\nneed help!\n") == 0);
+  ASSERT_OR_RETURN(strcmp(buffer.text, "In line 123:\nneed help!\n") == 0);
 
   // ignoring error location
   testcase_ExitAt(NULL, 0, "take lessons, you fool!");
-  ASSERT(strcmp(buffer.text, "take lessons, you fool!\n") == 0);
+  ASSERT_OR_RETURN(strcmp(buffer.text, "take lessons, you fool!\n") == 0);
 
   // the caller's message is not retained past the call.  composeErrorAt
   // assigns state.format itself instead of going through fatalErrorPush, so
@@ -954,7 +954,7 @@ static bool test_fatalErrorExitAt() {
   char callerMsg[] = "hi\n";
   testcase_ExitAt(NULL, 0, callerMsg);
   memset(callerMsg, 'y', sizeof(callerMsg));
-  ASSERT(*state.format == NUL);
+  ASSERT_OR_RETURN(*state.format == NUL);
 
   return true;
 }

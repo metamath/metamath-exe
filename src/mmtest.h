@@ -13,8 +13,8 @@
  *
  * This file is part of the application's test infrastructure.
  *
- * \section regression_tests Regression tests
- * \subsection running_tests Running the tests
+ * \section regression-tests Regression tests
+ * \subsection running-tests Running the tests
  *
  * Regression tests are part of a development cycle. They are routinely run
  * whenever changes are pushed to GitHub's metamath-exe project.
@@ -47,7 +47,7 @@
  * Failing tests always display diagnostic information identifying the failing
  * assertion and its source location.
  *
- * \subsection test_details Details and implementation
+ * \subsection test-details Details and implementation
  * The normal Metamath application distributed by GitHub has already passed
  * the regression tests. To avoid the overhead of loading a larger executable
  * and initializing regression-test code when the normal application starts,
@@ -99,7 +99,7 @@
  *   and easiest method, see \ref running-tests;
  * 2. If you use your own build script and compile the sources with \c gcc
  *   specify the \c -DTEST_ENABLE option to the GNU compiler;
- * 3. Modify this file and uncomment one of the \c #define or \c #undef lines
+ * 3. Modify this file and uncomment one of the \c \#define or \c \#undef lines
  *   related to \p TEST_ENABLE. These lines take precedence over other methods
  *   of controlling testing. Scripts that operate directly on the source code
  *   may prefer this method.
@@ -127,13 +127,14 @@
   #define TEST_ENABLE
 #endif // DOXYGEN_BUILD
 
+#include <stdbool.h>
 #include <stdio.h>
 
 #ifdef TEST_ENABLE
   /*!
    * \def TEST_SILENT
-   * \brief A \c _Bool-compatible macro controlling whether successful regression
-   * tests produce output.
+   * \brief A <tt>_Bool</tt>-compatible macro controlling whether successful
+   * regression tests produce output.
    *
    * Has no effect when regression tests are disabled. The default is \c false,
    * allowing successful tests to report their progress.
@@ -161,31 +162,82 @@
       bool (*test)(), const char* funcName, const char* testName);
   #define RUN_TEST(testName) runTest(testName, __func__, #testName)
 
-  /*
-  * If bool_expr evaluates to false, print an error message and return to
-  * caller.
-  *
-  * Use this extension of ASSERT if file and line number is not
-  * sufficient to locate the failing test.
-  * Accepts a format string for the assertion message.
-  */
-  #define ASSERTF(bool_expr, ...)              \
-    if (!(bool_expr)) {                        \
-      printf("\n%s: ", __func__);              \
-      printf(__VA_ARGS__);                     \
-      printf(" at %s:%d", __FILE__, __LINE__); \
-      return false;                            \
-    }
+  /*!
+   * \brief Checks a boolean expression and if false, issues an error message
+   *   using a format and terminates the current test function.
+   *
+   * If \p bool_expr evaluates to 0 or \c false, an error message is printed
+   * and the currently running function is exited immediately. Consequently,
+   * all tests following the one just run in the same function are skipped.
+   * This is the behavior expected from a test suite.
+   *
+   * Use this extension of \ref ASSERT_OR_RETURN if file and line number alone
+   * are not sufficient to identify the failing test. It accepts a format
+   * string and optional arguments for an error message.
+   *
+   * \pre Macro \ref TEST_ENABLE is defined.
+   * \pre The function expanding this macro returns a \c bool.  With a pointer
+   *   return type, \c false converts to \c NULL without a diagnostic, and a
+   *   failure may then be reported as success.
+   * \param[in] bool_expr an integer expression representing the result of a
+   *   test. A value 0 or \c false indicates failure; a non-zero or \c true
+   *   value indicates success.
+   * \param[in] ... A format string followed by any arguments used to provide
+   *   additional information about the failing test. For example, these
+   *   arguments can identify individual tests when a test is run repeatedly in
+   *   a loop with different input values. The first argument must be a format
+   *   string, and \c printf must be able to format each subsequent argument
+   *   according to that string.
+   * \post On failure, a message consisting of the location of this macro in
+   *   the test code, the name of the function from which this macro is called,
+   *   and optionally, additional values identifying the particular test is
+   *   printed to \c stdout. The function in which this macro is expanded is
+   *   exited prematurely with a return value of \c false, indicating failure.
+   *   This skips all subsequent tests in that function.
+   *   On success, no message is printed, and execution of the remainder of the
+   *   current function continues.
+   */
+  #define ASSERT_OR_RETURN_FMSG(bool_expr, ...)                \
+    do {                                                       \
+      if (!(bool_expr)) {                                      \
+        printf("\n%s:%d: %s: ", __FILE__, __LINE__, __func__); \
+        printf(__VA_ARGS__);                                   \
+        return false;                                          \
+      }                                                        \
+    } while(0)
 
-  /*
-  * If bool_expr evaluates to false, print an error message and return to
-  * caller.
-  *
-  * File, line and the function this macro is embedded in is sufficient to
-  * identify the error position.
-  */
-  #define ASSERT(bool_expr) \
-      ASSERTF(bool_expr, "assertion %s failed", #bool_expr)
+  /*!
+   * \brief Checks a Boolean expression and, if false, issues an error message
+   *   and terminates the current test function.
+   *
+   * If \p bool_expr evaluates to 0 or \c false, an error message is printed
+   * and the currently running function is exited immediately. Consequently,
+   * all tests following the one just run in the same function are skipped.
+   * This is the behavior expected from a test suite.
+   *
+   * On failure, a standard message is printed on \c stdout. It contains the
+   * expression \p bool_expr and the location where this macro is expanded in
+   * the test code.
+   *
+   * Use this macro if the file, line, and function in which this macro is
+   * embedded are sufficient to identify the failing test. The macro
+   * \ref ASSERT_OR_RETURN_FMSG accepts extra arguments if needed for
+   * identification.
+   *
+   * \pre See the preconditions listed in \ref ASSERT_OR_RETURN_FMSG.
+   * \param[in] bool_expr represents the result of a test. For details see
+   *   \ref ASSERT_OR_RETURN_FMSG.
+   * \post On failure, a message consisting of the checked \p bool_expr, the
+   *   name of the function from which this macro is called, and the location
+   *   of this macro in the test code, thereby identifying the particular test,
+   *   is printed to \c stdout.  The current test function is then exited
+   *   prematurely with a return value of \c false, indicating failure. This
+   *   skips all subsequent tests in that function.
+   *   On success, no message is printed, and execution of the remainder of the
+   *   current function continues.
+   */
+  #define ASSERT_OR_RETURN(bool_expr) \
+      ASSERT_OR_RETURN_FMSG(bool_expr, "assertion %s failed", #bool_expr)
 
   extern void runTests(void);
   #define RUN_TESTS_AND_EXIT_IF_ENABLED() runTests()
