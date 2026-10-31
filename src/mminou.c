@@ -110,13 +110,13 @@ static void mm_browser_yield(void) {
 }
 
 /*!
- * \fn int mm_read_line(char *buf, int maxLen)
- * Implemented in JavaScript (wasm/mmemscripten.js).  Stores one line of user
- * input, including its trailing new-line, into \p buf and returns 1, or
- * returns 0 when the input is exhausted.  Never stores more than
- * \p maxLen bytes including the terminating null character.
+ * \fn char *mm_read_line(void)
+ * Implemented in JavaScript (wasm/mmemscripten.js).  Return one line of user
+ * input, of any length, followed by a newline character and a null character,
+ * in memory allocated with malloc().  Return NULL when the input is
+ * exhausted.
  */
-extern int mm_read_line(char *buf, int maxLen);
+extern char *mm_read_line(void);
 
 // In a web browser the surrounding page provides its own scrollback, and the
 // prompted-scroll pager would otherwise block in getchar() with no way for the
@@ -842,11 +842,34 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
 } // printLongLine
 
 /*!
- * \def CMD_BUFFER_SIZE
- * Number of bytes allocated for prompted text, including the terminating NUL,
- * but excluding the return key stroke the user finishes her/his input with.
+ * Read a line of any length from \p stream.  Return it followed by a newline
+ * character, added if the last line of a file has none, and a null character,
+ * in memory allocated with malloc().  Return NULL at the end of the file.
  */
-#define CMD_BUFFER_SIZE 2000
+static char *readLine(FILE *stream) {
+  size_t size = 128; // Doubled as needed
+  size_t n = 0;
+  int c;
+  char *line = malloc(size);
+  if (!line) outOfMemory("#115 (command line)");
+  while ((c = getc(stream)) != EOF && c != '\n') {
+    // Keep room for c, the newline character and the null character.
+    if (n + 3 > size) {
+      size *= 2;
+      char *bigger = realloc(line, size);
+      if (!bigger) outOfMemory("#115 (command line)");
+      line = bigger;
+    }
+    line[n++] = (char)c;
+  }
+  if (c == EOF && !n) {
+    free(line);
+    return NULL;
+  }
+  line[n] = '\n';
+  line[n + 1] = 0;
+  return line;
+}
 
 vstring cmdInput(FILE *stream, const char *ask) {
   // This function prints a prompt (if 'ask' is not NULL) and gets a line from
@@ -863,86 +886,37 @@ vstring cmdInput(FILE *stream, const char *ask) {
       fflush(stdout);
 #endif
     }
-    let(&g, space(CMD_BUFFER_SIZE)); // Allocate CMD_BUFFER_SIZE+1 bytes
-    if (g[CMD_BUFFER_SIZE]) {
-      // bug() reads its answer through this function; calling it would recurse.
-      fatalErrorExitAt(MMFATL_FILE, __LINE__,
-          BUG_CHECK_FATAL_FORMAT
-          "*** FATAL ERROR ***  let() did not terminate its allocation\n",
-          1520u);
-    }
-    g[CMD_BUFFER_SIZE - 1] = 0; // For overflow detection
+    free_vstring(g); // The "B" of a previous pass
 #ifdef __EMSCRIPTEN__
     // A web browser cannot block waiting on stdin, so when reading from the
     // terminal a line is obtained asynchronously from the hosting page (see
-    // wasm/mmemscripten.js).  SUBMIT files still use fgets() below.
-    if (stream == stdin) {
-      if (!mm_read_line(g, CMD_BUFFER_SIZE)) {
-        free_vstring(g); // Deallocate memory
-        return NULL; // End of input
-      }
-    } else
+    // wasm/mmemscripten.js).  SUBMIT files still use readLine() below.
+    if (stream == stdin)
+      g = mm_read_line();
+    else
 #endif
-    if (!fgets(g, CMD_BUFFER_SIZE, stream)) {
-      // End of file
-      free_vstring(g); // Deallocate memory
-      return NULL;
-    }
-    if (g[CMD_BUFFER_SIZE - 1]) {
-      // Detect input overflow
-      // bug() reads its answer through this function; calling it would recurse.
-      printf("***BUG #1508\n");
-#if __STDC__
-      fflush(stdout);
-#endif
+    g = readLine(stream);
+    if (!g) return NULL; // End of input
+    // The only newline character ends the line, so a NUL character before it
+    // hides it from strchr().  Reject the line rather than run it cut short.
+    if (!strchr(g, '\n')) {
+      print2("?The line contains a NUL character and was ignored.\n");
+      // Not free_vstring(): db has not counted g, and let() takes a g
+      // beginning with a NUL character for "".
+      free(g);
+      g = "";
+      continue;
     }
     i = (long)strlen(g);
-/*E*/db = db - (CMD_BUFFER_SIZE - i); // Adjust string usage to detect leaks.
-    // Detect operating system bug of inputting no characters.
-    if (!i) {
-      printf("***BUG #1507\n");
-#if __STDC__
-      fflush(stdout);
-#endif
-    } else {
-      // The last line in the file has no new-line
-      if (g[i - 1] != '\n') {
-        // bug() reads its answer through this function; calling it would recurse.
-        if (!feof(stream)) {
-          printf("***BUG #1525\n");
-#if __STDC__
-          fflush(stdout);
-#endif
-        }
-        // Add a new-line so processing below will behave correctly.
-        let(&g, cat(g, chr('\n'), NULL));
-/*E*/db = db + (CMD_BUFFER_SIZE - i); // Cancel extra piece of string
-        i++;
-      }
-    }
-
-    // i is 0 if the line started with a NUL character, in which case there
-    // is no new-line to zap and g[i - 1] would be out of bounds.
-    if (i > 0 && g[1]) {
+/*E*/db = db + i + 1; // Count g, which let() did not allocate.
+    if (g[1]) {
       i--;
-      if (g[i] != '\n') {
-        printf("***BUG #1519\n");
-#if __STDC__
-        fflush(stdout);
-#endif
-      }
-      g[i]=0; // Eliminate new-line character by zapping it
+      g[i]=0; // Eliminate newline character by zapping it
 /*E*/db = db - 1;
     } else {
-      if (g[0] != '\n') {
-        printf("***BUG #1521\n");
-#if __STDC__
-        fflush(stdout);
-#endif
-      }
-      // Eliminate new-line by deallocating vstring space (if we just zap
-      // character [0], let() will later think g is an empty string constant
-      // and will never deallocate g).
+      // Eliminate newline character by deallocating vstring space (if we just
+      // zap character [0], let() will later think g is an empty string
+      // constant and will never deallocate g).
       free_vstring(g);
     }
 

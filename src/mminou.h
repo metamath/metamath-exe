@@ -547,18 +547,16 @@ void printLongLine(const char *line, const char *startNextLine, const char *brea
  * below, in which case the prompt is reprinted and the next line is read.
  * Returns the first not interpreted line as a \ref vstring.
  *
- * A line in the \p stream is terminated by a LF character (0x0D) character
- * alone.  It is read, but removed from the result.  The maximum line length
- * without the LF is \ref CMD_BUFFER_SIZE - 1.  Reaching EOF (end of file,
- * CTRL-D) is equivalent to reading LF, if at least 1 byte was read before.
- * Note that the NUL character can be part of the line.  Reading a NUL is not
- * sufficiently supported in the current implementation and may or may not
- * cause an error message or even undefined behavior.
+ * A line in the \p stream is terminated by a LF character (0x0A) alone.  It
+ * is read, but removed from the result.  A line can be of any length.
+ * Reaching EOF (end of file, CTRL-D) is equivalent to reading LF, if at least
+ * 1 byte was read before.  A line containing a NUL character is reported as an
+ * error and skipped, and the next line is read.  No truncated value is
+ * returned.
  *
  * Reading from an empty \p stream (or one that is at EOF position, on the
  * console CTRL-D) returns NULL, not the empty string, and is formally
- * signalled as an error.  Overflowing the buffer is also an error.  No
- * truncated value is returned.
+ * signalled as an error.
  *
  * This routine interprets some input without returning it to the caller under
  * following two conditions:
