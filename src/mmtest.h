@@ -219,7 +219,7 @@
    * \pre Macro \ref TEST_ENABLE is defined.
    * \pre Macro \ref TEST_SILENT is set. It determines whether successful tests
    *   are reported.
-   * \param [in] testName The name of a function executing one feature test, or
+   * \param[in] testName The name of a function executing one feature test, or
    *   a test suite consisting of multiple tests.
    * \post If \p testName fails, an internal status is updated to indicate at
    *   least one regression test failed.
@@ -227,7 +227,7 @@
   #define RUN_TEST(testName) runTest(testName, __func__, #testName)
 
   /*!
-   * \brief Checks a boolean expression and if false, issues an error message
+   * \brief Checks a Boolean expression and, if false, issues an error message
    *   using a format and terminates the current test function.
    *
    * If \p bool_expr evaluates to 0 or \c false, an error message is printed
@@ -243,8 +243,11 @@
    * \pre The function expanding this macro returns a \c bool.  With a pointer
    *   return type, \c false converts to \c NULL without a diagnostic, and a
    *   failure may then be reported as success.
+   * \pre No cleanup (\c va_end, \c free, \c fclose, ...) is pending in the
+   *   function expanding this macro, since a failure returns immediately and
+   *   skips it. Put such checks in a helper and clean up in its caller.
    * \param[in] bool_expr an integer expression representing the result of a
-   *   test. A value 0 or \c false indicates failure; a non-zero or \c true
+   *   test. A value of 0 or \c false indicates failure; a non-zero or \c true
    *   value indicates success.
    * \param[in] ... A format string followed by any arguments used to provide
    *   additional information about the failing test. For example, these
@@ -254,7 +257,7 @@
    *   according to that string.
    * \post On failure, a message consisting of the location of this macro in
    *   the test code, the name of the function from which this macro is called,
-   *   and optionally, additional values identifying the particular test is
+   *   and the message formatted from the remaining arguments is
    *   printed to \c stdout. The function in which this macro is expanded is
    *   exited prematurely with a return value of \c false, indicating failure.
    *   This skips all subsequent tests in that function.
@@ -268,37 +271,21 @@
         printf(__VA_ARGS__);                                   \
         return false;                                          \
       }                                                        \
-    } while(0)
+    } while (0)
 
   /*!
    * \brief Checks a Boolean expression and, if false, issues an error message
    *   and terminates the current test function.
    *
-   * If \p bool_expr evaluates to 0 or \c false, an error message is printed
-   * and the currently running function is exited immediately. Consequently,
-   * all tests following the one just run in the same function are skipped.
-   * This is the behavior expected from a test suite.
-   *
-   * On failure, a standard message is printed on \c stdout. It contains the
-   * expression \p bool_expr and the location where this macro is expanded in
-   * the test code.
-   *
-   * Use this macro if the file, line, and function in which this macro is
-   * embedded are sufficient to identify the failing test. The macro
-   * \ref ASSERT_OR_RETURN_FMSG accepts extra arguments if needed for
-   * identification.
+   * Equivalent to \ref ASSERT_OR_RETURN_FMSG with the standard message
+   * "assertion ... failed", which quotes \p bool_expr as written.  Use this
+   * macro if the file, line, and function in which it is expanded are
+   * sufficient to identify the failing test.
    *
    * \pre See the preconditions listed in \ref ASSERT_OR_RETURN_FMSG.
    * \param[in] bool_expr represents the result of a test. For details see
    *   \ref ASSERT_OR_RETURN_FMSG.
-   * \post On failure, a message consisting of the checked \p bool_expr, the
-   *   name of the function from which this macro is called, and the location
-   *   of this macro in the test code, thereby identifying the particular test,
-   *   is printed to \c stdout.  The current test function is then exited
-   *   prematurely with a return value of \c false, indicating failure. This
-   *   skips all subsequent tests in that function.
-   *   On success, no message is printed, and execution of the remainder of the
-   *   current function continues.
+   * \post See \ref ASSERT_OR_RETURN_FMSG.
    */
   #define ASSERT_OR_RETURN(bool_expr) \
       ASSERT_OR_RETURN_FMSG(bool_expr, "assertion %s failed", #bool_expr)

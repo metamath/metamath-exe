@@ -594,11 +594,12 @@ static char const* testcase_appendText(char const* text, unsigned adv,
 
 // wrapper macro to get the function, line number right, and prevent
 // further test cases on error
-#define TESTCASE_appendText(format, adv, match, from, lg, begin) { \
-  char const* errmsg =                                             \
-    testcase_appendText(format, adv, match, from, lg, begin);      \
-  ASSERT_OR_RETURN_FMSG(errmsg == NULL, "%s\n", errmsg);           \
-}
+#define TESTCASE_appendText(format, adv, match, from, lg, begin) \
+  do {                                                           \
+    char const* errmsg =                                         \
+      testcase_appendText(format, adv, match, from, lg, begin);  \
+    ASSERT_OR_RETURN_FMSG(errmsg == NULL, "%s\n", errmsg);       \
+  } while (0)
 
 static bool test_appendText(void) {
   fatalErrorInit();
@@ -699,61 +700,58 @@ bool test_unsignedToString(void)
   return true;
 }
 
-static bool test_handleSubstitution1(char const* format, ...) {
-  va_list args;
-  va_start(args, format);
-
+static bool test_handleSubstitutionArgs(char const* format, va_list* args) {
   // without initializing the buffer each test appends
   // to the result of the former test.
 
   // %s NULL
   fatalErrorInit();
   state.format = format;
-  handleSubstitution(&state, &args);
+  handleSubstitution(&state, args);
   format += 2;
   ASSERT_OR_RETURN(format == state.format);
   ASSERT_OR_RETURN(strcmp(buffer.text, "") == 0);
 
   // %s ""
-  handleSubstitution(&state, &args);
+  handleSubstitution(&state, args);
   format += 2;
   ASSERT_OR_RETURN(format == state.format);
   ASSERT_OR_RETURN(strcmp(buffer.text, "") == 0);
 
   // %s "abc"
-  handleSubstitution(&state, &args);
+  handleSubstitution(&state, args);
   format += 2;
   ASSERT_OR_RETURN(format == state.format);
   ASSERT_OR_RETURN(strcmp(buffer.text, "abc") == 0);
 
   // %s "%s"
-  handleSubstitution(&state, &args);
+  handleSubstitution(&state, args);
   format += 2;
   ASSERT_OR_RETURN(format == state.format);
   ASSERT_OR_RETURN(strcmp(buffer.text, "abc%s") == 0);
 
   // %u 0
-  handleSubstitution(&state, &args);
+  handleSubstitution(&state, args);
   format += 2;
   ASSERT_OR_RETURN(format == state.format);
   ASSERT_OR_RETURN(strcmp(buffer.text, "abc%s0") == 0);
 
   // %u 123
-  handleSubstitution(&state, &args);
+  handleSubstitution(&state, args);
   format += 2;
   ASSERT_OR_RETURN(format == state.format);
   ASSERT_OR_RETURN(strcmp(buffer.text, "abc%s0123") == 0);
 
   // %u ~0u
   initBuffer(&buffer);
-  handleSubstitution(&state, &args);
+  handleSubstitution(&state, args);
   format += 2;
   ASSERT_OR_RETURN(format == state.format);
   ASSERT_OR_RETURN(strtoul(buffer.text, NULL, 10) == ~0u);
 
   // case buffer overflow
   limitFreeBuffer(1);
-  handleSubstitution(&state, &args);
+  handleSubstitution(&state, args);
   format += 2;
   ASSERT_OR_RETURN(*state.format == NUL);
   char const* errmsg = bufferCompare("$o$", -2, 3, 2);
@@ -762,26 +760,33 @@ static bool test_handleSubstitution1(char const* format, ...) {
   // %%
   initBuffer(&buffer);
   state.format = format;
-  handleSubstitution(&state, &args);
+  handleSubstitution(&state, args);
   format += 2;
   ASSERT_OR_RETURN(format == state.format);
   ASSERT_OR_RETURN(strcmp(buffer.text, "%") == 0);
 
   // %;
-  handleSubstitution(&state, &args);
+  handleSubstitution(&state, args);
   ++state.format; // skip the ;
   format += 2;
   ASSERT_OR_RETURN(format == state.format);
   ASSERT_OR_RETURN(strcmp(buffer.text, "%%") == 0);
 
   // %<NUL>
-  handleSubstitution(&state, &args);
+  handleSubstitution(&state, args);
   ++format;
   ASSERT_OR_RETURN(format == state.format);
   ASSERT_OR_RETURN(strcmp(buffer.text, "%%%") == 0);
 
-  va_end(args);
   return true;
+}
+
+static bool test_handleSubstitution1(char const* format, ...) {
+  va_list args;
+  va_start(args, format);
+  bool ok = test_handleSubstitutionArgs(format, &args);
+  va_end(args);
+  return ok;
 }
 
 bool test_handleSubstitution(void) {
@@ -805,11 +810,12 @@ static char const* testcase_parse(char const* expect, char const* format, ...) {
 
 // wrapper macro to get the function, line number right, and prevent
 // further test cases on error
-#define TESTCASE_parse(expect, format, ...) {    \
-  char const* errmsg =                           \
-    testcase_parse(expect, format, __VA_ARGS__); \
-  ASSERT_OR_RETURN_FMSG(errmsg == NULL, "%s\n", errmsg);       \
-}
+#define TESTCASE_parse(expect, format, ...)                \
+  do {                                                     \
+    char const* errmsg =                                   \
+      testcase_parse(expect, format, __VA_ARGS__);         \
+    ASSERT_OR_RETURN_FMSG(errmsg == NULL, "%s\n", errmsg); \
+  } while (0)
 
 // parse() with a format that has no placeholder still needs a (never read)
 // argument list; a local variadic helper is the only legal way to make one.
@@ -842,7 +848,7 @@ static bool test_parse(void) {
   return true;
 }
 
-static bool test_fatalErrorPush() {
+static bool test_fatalErrorPush(void) {
   fatalErrorInit(); // pre-condition
 
   // case format NULL or empty (do nothing)
@@ -915,7 +921,8 @@ static bool test_fatalErrorPrintAndExit(void) {
   fatalErrorInit();
   while (!isBufferOverflow(&buffer)) // fill the buffer with "a"
     fatalErrorPush("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa");
-  ASSERT_OR_RETURN(strcmp(buffer.text + MMFATL_MAX_MSG_SIZE - 3, "aaa" MMFATL_ELLIPSIS) == 0);
+  ASSERT_OR_RETURN(strcmp(buffer.text + MMFATL_MAX_MSG_SIZE - 3,
+                          "aaa" MMFATL_ELLIPSIS) == 0);
 
   return true;
 }
@@ -931,10 +938,11 @@ static void testcase_ExitAt(char const* file, unsigned line,
   finishMessage();
 }
 
-static bool test_fatalErrorExitAt() {
+static bool test_fatalErrorExitAt(void) {
 
   testcase_ExitAt("test.c", 1000, "%s failed!", "program");
-  ASSERT_OR_RETURN(strcmp(buffer.text, "At test.c:1000\nprogram failed!\n") == 0);
+  ASSERT_OR_RETURN(
+      strcmp(buffer.text, "At test.c:1000\nprogram failed!\n") == 0);
   // ignoring line
   testcase_ExitAt("x.c", 0, "test %u failed!", 5u);
   ASSERT_OR_RETURN(strcmp(buffer.text, "In file x.c:\ntest 5 failed!\n") == 0);

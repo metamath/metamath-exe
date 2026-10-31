@@ -14,7 +14,7 @@
 
 #ifdef TEST_ENABLE
 
-bool g_testFailed = false;
+static bool g_testFailed = false;
 
 void runTest(bool (*test)(void), const char* suiteName, const char* testName) {
   if (!TEST_SILENT) printf("running %s:%s...", suiteName, testName);
