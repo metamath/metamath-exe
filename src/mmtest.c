@@ -5,7 +5,6 @@
 /*34567890123456 (79-character line to adjust editor window) 2345678901234567*/
 
 #include <stdlib.h>
-#include <stdbool.h>
 #include "mmtest.h"
 #include "mmfatl.h"
 
@@ -17,7 +16,7 @@
 
 bool g_testFailed = false;
 
-void runTest(bool (*test)(), const char* suiteName, const char* testName) {
+void runTest(bool (*test)(void), const char* suiteName, const char* testName) {
   if (!TEST_SILENT) printf("running %s:%s...", suiteName, testName);
   if (test()) {
     if (!TEST_SILENT) printf(" ok\n");

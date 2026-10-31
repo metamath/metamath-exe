@@ -147,13 +147,13 @@
   #define TEST_ENABLE
 #endif // DOXYGEN_BUILD
 
-#include <stdbool.h>
-#include <stdio.h>
+#include <stdbool.h> // for bool, true and false
+#include <stdio.h>   // for printf
 
 #ifdef TEST_ENABLE
   /*!
    * \def TEST_SILENT
-   * \brief A <tt>_Bool</tt>-compatible macro controlling whether successful
+   * \brief A <tt>bool</tt>-compatible macro controlling whether successful
    * regression tests produce output.
    *
    * Has no effect when regression tests are disabled. The default is \c false,
@@ -189,13 +189,11 @@
    * function. Otherwise, a message indicating successful completion of the
    * test may be written, depending on the setting of \ref TEST_SILENT.
    *
-   * A failing test sets an internal flag .
-   *
    * \pre Macro \ref TEST_ENABLE is defined.
    * \pre Macro \ref TEST_SILENT is set. It determines whether successful tests
    *   are reported.
    * \param[in] test [not null] Pointer to a function taking no parameters and
-   *   returning a \c _Bool value: \c true indicates success of the called
+   *   returning a \c bool value: \c true indicates success of the called
    *   individual test of the suite, \c false a failure.
    * \param[in] suiteName Name identifying the suite being run, often derived
    *   from the module whose functionality is being tested.
@@ -214,18 +212,17 @@
    * function, the name of the calling function as the suite name, and the test
    * function's name as the test name.
    *
-   * Each test returns a Boolean value indicating success or failure. On
-   * failure, the calling code may conditionally skip subsequent tests or
-   * abort further testing altogether. Tests can be organized hierarchically
-   * into suites, with tests of basic features residing at the leaf nodes.
+   * Each test returns a Boolean value indicating success or failure. Tests can
+   * be organized hierarchically into suites, with tests of basic features
+   * residing at the leaf nodes.
    *
    * \pre Macro \ref TEST_ENABLE is defined.
    * \pre Macro \ref TEST_SILENT is set. It determines whether successful tests
    *   are reported.
    * \param [in] testName The name of a function executing one feature test, or
    *   a test suite consisting of multiple tests.
-   * \post If \p test fails, an internal status is updated to indicate at least
-   *   one regression test failed.
+   * \post If \p testName fails, an internal status is updated to indicate at
+   *   least one regression test failed.
    */
   #define RUN_TEST(testName) runTest(testName, __func__, #testName)
 
