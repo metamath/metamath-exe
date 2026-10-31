@@ -333,7 +333,6 @@
    * this macro appears as a function call, imitating the signature of
    * \c runTests. A semicolon must follow this call.
    *
-   * \pre Macro \ref TEST_ENABLE is defined and \ref TEST_SILENT is set.
    * \post The program terminates with exit status \c EXIT_FAILURE if any
    *   regression test failed, and \c EXIT_SUCCESS otherwise.
    */
