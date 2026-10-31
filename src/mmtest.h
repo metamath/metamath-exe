@@ -7,6 +7,26 @@
 #ifndef METAMATH_MMTEST_H_
 #define METAMATH_MMTEST_H_
 
+/* Documentation
+ * =============
+ *
+ * Most comments are written in <a href="https://doxygen.nl/index.html">
+ * doxygen</a> (Qt variant) style.  If you have doxygen installed on your
+ * computer, you may generate a hyperlinked HTML documentation out of them with
+ * its root page placed in build/html/index.html by running build.sh with the
+ * -d flag.
+ *
+ * Delete this once we have this description available in a central location.
+ * Keep this as a simple comment, so it is outside of Doxygen documentation.
+ */
+
+/* Compilation of this code requires at least C99. This should be established
+ *   somewhere during configuration, but is explicitly required here (again).
+ */
+#if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 199901L
+# error "C99 or later is required."
+#endif
+
 /*!
  * \file mmtest.h
  * \brief Framework for regression tests.
@@ -158,8 +178,55 @@
     #define TEST_SILENT false
   #endif
 
-  extern void runTest(
-      bool (*test)(), const char* funcName, const char* testName);
+  /*!
+   * \brief Runs a test function and reports its result.
+   *
+   * Wraps a particular test named \p testName, which belongs to the test suite
+   * \p suiteName, and writes a message to \c stdout according to the result.
+   * If the test function \p test returns \c false, indicating failure, a
+   * summary error message consisting of the suite name and test name is sent
+   * to \c stdout, following any messages already issued by the \p test
+   * function. Otherwise, a message indicating successful completion of the
+   * test may be written, depending on the setting of \ref TEST_SILENT.
+   *
+   * A failing test sets an internal flag .
+   *
+   * \pre Macro \ref TEST_ENABLE is defined.
+   * \pre Macro \ref TEST_SILENT is set. It determines whether successful tests
+   *   are reported.
+   * \param[in] test [not null] Pointer to a function taking no parameters and
+   *   returning a \c _Bool value: \c true indicates success of the called
+   *   individual test of the suite, \c false a failure.
+   * \param[in] suiteName Name identifying the suite being run, often derived
+   *   from the module whose functionality is being tested.
+   * \param[in] testName Name identifying the test. Should be unique within a
+   *   test suite.
+   * \post If \p test fails, an internal status is updated to indicate at least
+   *   one regression test failed.
+   */
+  void runTest(
+      bool (*test)(void), const char* suiteName, const char* testName);
+
+  /*!
+   * \brief Runs a single test or a suite of tests.
+   *
+   * This macro expands to a call to \c runTest, passing the specified test
+   * function, the name of the calling function as the suite name, and the test
+   * function's name as the test name.
+   *
+   * Each test returns a Boolean value indicating success or failure. On
+   * failure, the calling code may conditionally skip subsequent tests or
+   * abort further testing altogether. Tests can be organized hierarchically
+   * into suites, with tests of basic features residing at the leaf nodes.
+   *
+   * \pre Macro \ref TEST_ENABLE is defined.
+   * \pre Macro \ref TEST_SILENT is set. It determines whether successful tests
+   *   are reported.
+   * \param [in] testName The name of a function executing one feature test, or
+   *   a test suite consisting of multiple tests.
+   * \post If \p test fails, an internal status is updated to indicate at least
+   *   one regression test failed.
+   */
   #define RUN_TEST(testName) runTest(testName, __func__, #testName)
 
   /*!
@@ -239,7 +306,36 @@
   #define ASSERT_OR_RETURN(bool_expr) \
       ASSERT_OR_RETURN_FMSG(bool_expr, "assertion %s failed", #bool_expr)
 
-  extern void runTests(void);
+  /*!
+   * \brief Runs all regression tests and then terminates the program.
+   *
+   * Usually called from \c main(), at the earliest possible point, after only
+   * the initializations necessary to run the tests.
+   *
+   * Called via macro \c RUN_TESTS_AND_EXIT_IF_ENABLED.
+   *
+   * \pre Macro \ref TEST_ENABLE is defined and \ref TEST_SILENT is set.
+   * \post The program terminates with exit status \c EXIT_FAILURE if any
+   *   regression test failed, and \c EXIT_SUCCESS otherwise.
+   */
+  void runTests(void);
+
+  /*!
+   * \def RUN_TESTS_AND_EXIT_IF_ENABLED
+   *
+   * \brief If enabled, runs all regression tests and then exits the program.
+   *
+   * If the macro \ref TEST_ENABLE is defined, this macro expands to a call to
+   * \c runTests which executes all regression tests, and then exits the
+   * program. Otherwise, it expands to nothing.
+   *
+   * The macro is function-like and expects no parameters. In ordinary C code,
+   * this macro appears as a function call, imitating the signature of
+   * \c runTests. A semicolon must follow this call.
+   *
+   * \post The program terminates with exit status \c EXIT_FAILURE if any
+   *   regression test failed, and \c EXIT_SUCCESS otherwise.
+   */
   #define RUN_TESTS_AND_EXIT_IF_ENABLED() runTests()
 
 #else // TEST_ENABLE

@@ -17,12 +17,12 @@
 
 bool g_testFailed = false;
 
-void runTest(bool (*test)(), const char* funcName, const char* testName) {
-  if (!TEST_SILENT) printf("running %s:%s...", funcName, testName);
+void runTest(bool (*test)(), const char* suiteName, const char* testName) {
+  if (!TEST_SILENT) printf("running %s:%s...", suiteName, testName);
   if (test()) {
     if (!TEST_SILENT) printf(" ok\n");
   } else {
-    printf("\nTEST %s:%s FAILED\n", funcName, testName);
+    printf("\nTEST %s:%s FAILED\n", suiteName, testName);
     g_testFailed = true;
   }
 }
