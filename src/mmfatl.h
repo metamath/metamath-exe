@@ -186,7 +186,7 @@ enum fatalErrorPlaceholderType {
  * \invariant the memory state of the rest of the program is not changed (in
  *   case there is still a function in the atexit queue).
  */
-extern void fatalErrorInit(void);
+void fatalErrorInit(void);
 
 /*!
  * \brief append text to the current contents in the message buffer.
@@ -245,7 +245,7 @@ extern void fatalErrorInit(void);
  *   up text at the last column, but that may depend on the used
  *   hard-/software.
  */
-extern bool fatalErrorPush(char const* format, ...) PRINTF_FORMAT_ATTR(1, 2);
+bool fatalErrorPush(char const* format, ...) PRINTF_FORMAT_ATTR(1, 2);
 
 /*!
  * \brief display buffer contents and exit program with code EXIT_FAILURE.
@@ -288,7 +288,7 @@ extern bool fatalErrorPush(char const* format, ...) PRINTF_FORMAT_ATTR(1, 2);
  *   by the C11 standard.  In fact, some systems may interpret 1 as a success
  *   code, so EXIT_FAILURE is more appropriate.
  */
-extern void fatalErrorPrintAndExit(void) NORETURN_ATTR;
+void fatalErrorPrintAndExit(void) NORETURN_ATTR;
 
 /*!
  * \brief standard error reporting and program exit with failure code.
@@ -332,13 +332,13 @@ extern void fatalErrorPrintAndExit(void) NORETURN_ATTR;
  * \invariant the memory state of the rest of the program is not changed (in
  *   case there is still a function in the atexit queue).
  */
-extern void fatalErrorExitAt(char const* file, unsigned line,
-                             char const* msgWithPlaceholders, ...)
-                             PRINTF_FORMAT_ATTR(3, 4) NORETURN_ATTR;
+void fatalErrorExitAt(char const* file, unsigned line,
+                      char const* msgWithPlaceholders, ...)
+                      PRINTF_FORMAT_ATTR(3, 4) NORETURN_ATTR;
 
 #ifdef TEST_ENABLE
 
-extern void test_mmfatl(void);
+void test_mmfatl(void);
 
 #endif // TEST_ENABLE
 
