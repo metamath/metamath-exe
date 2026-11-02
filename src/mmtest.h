@@ -20,92 +20,24 @@
  * Keep this as a simple comment, so it is outside of Doxygen documentation.
  */
 
+/*!
+ * \file mmtest.h Regression test framework
+ * \brief Interface to the framework for regression tests.
+ *
+ * This file is part of the application's test infrastructure. See
+ * \ref mmtest.c for implementation details.
+ *
+ * A description of how to use this interface is given in
+ * \ref usage-regression-tests.
+ */
+
 /* Compilation of this code requires at least C99. This should be established
  *   somewhere during configuration, but is explicitly required here (again).
+ *   For C99: https://www.open-std.org/jtc1/sc22/wg14/www/docs/n1256.pdf
  */
 #if !defined(__STDC_VERSION__) || __STDC_VERSION__ < 199901L
 # error "C99 or later is required."
 #endif
-
-/*!
- * \file mmtest.h
- * \brief Framework for regression tests.
- *
- * This file is part of the application's test infrastructure.
- *
- * \section regression-tests Regression tests
- * \subsection running-tests Running the tests
- *
- * Regression tests are part of a development cycle. They are routinely run
- * whenever changes are pushed to GitHub's metamath-exe project.
- *
- * A developer may additionally want to run them during development to ensure
- * that intermediate changes remain functionally correct and do not deviate
- * from previous implementations that are known to be correct.
- *
- * Regression tests can, for example, be run as follows:
- *
- * 1. Open a shell for running Bash commands.
- *
- * 2. Change to the directory containing Metamath's build script \c build.sh,
- * typically located at the top level of the \c metamath-exe project.
- *
- * 3. Execute the following commands:
- * \verbatim
-   ./build.sh -t
-   ./metamath_test
-   \endverbatim
- * You don't need to use flag \c -c, because the build script always cleans the
- * build directory.
- *
- * 4. The test program reports its progress to \c stdout:
- * \verbatim
-   running test_mmfatl:test_fatalErrorInit... ok
-   \endverbatim
- * If every displayed test ends with \c ok, all regression tests have passed.
- * Progress and success messages can be suppressed, see \ref TEST_SILENT.
- * Failing tests always display diagnostic information identifying the failing
- * assertion and its source location.
- *
- * \subsection test-details Details and implementation
- * The normal Metamath application distributed by GitHub has already passed
- * the regression tests. To avoid the overhead of loading a larger executable
- * and initializing regression-test code when the normal application starts,
- * that code should therefore be included only conditionally during
- * compilation. An executable compiled with regression tests executes the tests
- * and then exits, although all normal application code remains available
- * both to preserve the normal executable's behavior and to support testing.
- *
- * The macro \c TEST_ENABLE controls whether the regression tests are
- * compiled into an executable.
- *
- * If testing is disabled, the \c RUN_TESTS_AND_EXIT_IF_ENABLED macro expands
- * to nothing. The compiler also excludes all test code, so the resulting
- * executable does not increase in size. Thus, a disabled test suite incurs
- * neither a linking nor a runtime penalty.
- *
- * If testing is enabled, the expansion of the macro
- * \c RUN_TESTS_AND_EXIT_IF_ENABLED runs the regression tests, and exits
- * afterwards. The progress of tests is controlled by \ref TEST_SILENT. A
- * failed assertion issues a diagnostic message, and may abort the test suite
- * to which it belongs. Other independent test suites continue to run, and the
- * program exits afterwards with status 0 if all tests passed, and nonzero
- * otherwise.
- *
- * The macro \c RUN_TESTS_AND_EXIT_IF_ENABLED should be the first instruction
- * in \c main:
- * \code
- * int main(int argc, char *argv[]) {
- *
- *  // Expands to nothing if tests are not enabled.
- *  RUN_TESTS_AND_EXIT_IF_ENABLED();
- *
- *  // This code is not reached if tests are enabled.
- *
- *  // Code performing normal execution of Metamath goes here.
- * }
- * \endcode
- */
 
 /*!
  * \def TEST_ENABLE
@@ -115,10 +47,10 @@
  * is irrelevant; only whether it is defined matters.
  *
  * Metamath provides three ways to define \p TEST_ENABLE:
- * 1. Set the \c -t option when running \c build.sh. This is the recommended
+ * 1. Set the \e -t option when running \c build.sh. This is the recommended
  *   and easiest method, see \ref running-tests;
- * 2. If you use your own build script and compile the sources with \c gcc
- *   specify the \c -DTEST_ENABLE option to the GNU compiler;
+ * 2. If you use your own build script and compile the sources with \e gcc
+ *   specify the \e -DTEST_ENABLE option to the GNU compiler;
  * 3. Modify this file and uncomment one of the \c \#define or \c \#undef lines
  *   related to \p TEST_ENABLE. These lines take precedence over other methods
  *   of controlling testing. Scripts that operate directly on the source code
@@ -161,7 +93,7 @@
    *
    * Defining \p TEST_SILENT on the compiler command line takes precedence over
    * the default. This is recommended for automated checks, where only test
-   * failures need to be reported. The \c -q option to \c build.sh also sets
+   * failures need to be reported. The \e -q option to \e build.sh also sets
    * this macro to \c true, suppressing output from successful tests:
    * \code
    * ./build.sh -qt
@@ -258,11 +190,12 @@
    * \post On failure, a message consisting of the location of this macro in
    *   the test code, the name of the function from which this macro is called,
    *   and the message formatted from the remaining arguments is
-   *   printed to \c stdout. The function in which this macro is expanded is
-   *   exited prematurely with a return value of \c false, indicating failure.
-   *   This skips all subsequent tests in that function.
-   *   On success, no message is printed, and execution of the remainder of the
-   *   current function continues.
+   *   printed to \c stdout. On success, no message is printed, and execution
+   *   of the remainder of the current function continues.
+   * \warning The function in which this macro is expanded can be exited
+   *   prematurely with a return value of \c false, indicating failure. This
+   *   skips all subsequent tests in that function, and also any clean up code
+   *   following this macro.
    */
   #define ASSERT_OR_RETURN_FMSG(bool_expr, ...)                \
     do {                                                       \
@@ -286,6 +219,10 @@
    * \param[in] bool_expr represents the result of a test. For details see
    *   \ref ASSERT_OR_RETURN_FMSG.
    * \post See \ref ASSERT_OR_RETURN_FMSG.
+   * \warning The function in which this macro is expanded can be exited
+   *   prematurely with a return value of \c false, indicating failure. This
+   *   skips all subsequent tests in that function, and also any clean up code
+   *   following this macro.
    */
   #define ASSERT_OR_RETURN(bool_expr) \
       ASSERT_OR_RETURN_FMSG(bool_expr, "assertion %s failed", #bool_expr)
